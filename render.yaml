@@ -2,7 +2,6 @@ services:
   - type: web
     name: jtlai-engineering-biomed-portfolio
     runtime: static
-    plan: free
     buildCommand: bash ./scripts/build_static_site.sh
     staticPublishPath: ./dist
     envVars:
