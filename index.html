@@ -510,6 +510,187 @@
             height: 220px;
         }
 
+        .live-seq-grid {
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1fr);
+            gap: 24px;
+        }
+
+        .live-seq-sidebar,
+        .live-seq-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .live-seq-status {
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, .03);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: .84rem;
+            line-height: 1.6;
+        }
+
+        .live-seq-status[data-state="success"] {
+            color: var(--green);
+            border-color: rgba(63, 185, 80, .24);
+            background: rgba(63, 185, 80, .08);
+        }
+
+        .live-seq-status[data-state="warning"] {
+            color: var(--orange);
+            border-color: rgba(240, 136, 62, .24);
+            background: rgba(240, 136, 62, .08);
+        }
+
+        .live-seq-status[data-state="error"] {
+            color: #ffd7d4;
+            border-color: rgba(248, 81, 73, .24);
+            background: rgba(248, 81, 73, .10);
+        }
+
+        .live-seq-stats {
+            display: grid;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .live-seq-stat {
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .02);
+            padding: 14px;
+        }
+
+        .live-seq-stat .k {
+            color: var(--muted);
+            font-size: .72rem;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .live-seq-stat .v {
+            font-family: var(--mono);
+            font-size: .96rem;
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .live-seq-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .live-seq-meta {
+            margin-top: 16px;
+            color: var(--muted);
+            font-size: .78rem;
+            line-height: 1.7;
+        }
+
+        .live-seq-columns {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .live-seq-column {
+            display: grid;
+            gap: 12px;
+        }
+
+        .live-seq-column-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .live-seq-column h3 {
+            font-size: .9rem;
+            font-weight: 700;
+        }
+
+        .live-seq-pill {
+            font-family: var(--mono);
+            font-size: .72rem;
+            border-radius: 999px;
+            padding: 4px 10px;
+            border: 1px solid rgba(57, 208, 240, .18);
+            color: var(--teal);
+            background: rgba(57, 208, 240, .08);
+        }
+
+        .live-seq-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .live-seq-item {
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .02);
+            padding: 16px;
+        }
+
+        .live-seq-item-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .live-seq-item-title {
+            font-size: .92rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .live-seq-item-sub {
+            color: var(--muted);
+            font-size: .78rem;
+        }
+
+        .live-seq-preview {
+            font-family: var(--mono);
+            font-size: .76rem;
+            color: #cbe7ff;
+            word-break: break-all;
+            margin-bottom: 10px;
+        }
+
+        .live-seq-item-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--muted);
+            font-size: .74rem;
+        }
+
+        .live-seq-link {
+            color: var(--teal);
+            text-decoration: none;
+        }
+
+        .live-seq-link:hover {
+            color: var(--text);
+        }
+
+        .live-seq-empty {
+            border: 1px dashed var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            color: var(--muted);
+            font-size: .84rem;
+            background: rgba(255, 255, 255, .02);
+        }
+
         /* ─── Algorithms section ─────────────────────────────────────────── */
         .algo-tabs {
             display: flex;
@@ -916,6 +1097,11 @@
             }
 
             .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .live-seq-grid,
+            .live-seq-columns {
                 grid-template-columns: 1fr;
             }
 
@@ -1568,6 +1754,7 @@
             <li><a href="#interview">面試準備</a></li>
             <li><a href="ngs.html">NGS 定序</a></li>
             <li><a href="gene_ai.html">基因 AI</a></li>
+            <li><a href="#sequence-live">序列資料庫</a></li>
             <li><a href="#demo" class="btn btn-primary" style="padding:6px 16px;font-size:.8rem">互動展示</a></li>
         </ul>
     </nav>
@@ -1590,6 +1777,7 @@
                 <a href="about_me.html" class="btn btn-primary">認識創作者</a>
                 <a href="works.html" class="btn btn-outline">查看代表作品</a>
                 <a href="gene_ai.html" class="btn btn-outline">開啟基因 AI 平台</a>
+                <a href="#sequence-live" class="btn btn-outline">看即時序列庫</a>
                 <a href="#pipeline" class="btn btn-outline">看技術流程</a>
             </div>
             <div class="hero-stats">
@@ -1691,6 +1879,66 @@
                         style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)">
                         <div style="font-size:.82rem;color:var(--teal);font-weight:700;margin-bottom:6px">資料管理系統</div>
                         <div style="font-size:.8rem;color:var(--muted)">補齊平台化所需的資料組織、查詢與流程管理能力，不只停留在模型 demo。</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="divider">
+
+    <section id="sequence-live">
+        <div class="reveal">
+            <div class="section-label">Live Sequence Feed</div>
+            <h2 class="section-title">首頁直接看 Render Postgres 裡的 protein / gene 快取</h2>
+            <p class="section-sub">
+                這裡顯示的是同一套 Sequence Vault 的唯讀版本。管理、同步與刪除留在 gene_ai 頁，首頁只負責快速展示目前資料庫裡最新的蛋白質與基因序列紀錄。
+            </p>
+        </div>
+
+        <div class="live-seq-grid reveal">
+            <aside class="live-seq-sidebar">
+                <div class="section-label" style="margin-bottom:10px">Render API</div>
+                <div id="portfolioSequenceStatus" class="live-seq-status" data-state="info">正在連線 Render API 並讀取 sequence_library...</div>
+                <div class="live-seq-stats">
+                    <div class="live-seq-stat">
+                        <div class="k">Protein cache</div>
+                        <div class="v" id="portfolioProteinCount">0</div>
+                    </div>
+                    <div class="live-seq-stat">
+                        <div class="k">Gene cache</div>
+                        <div class="v" id="portfolioGeneCount">0</div>
+                    </div>
+                    <div class="live-seq-stat">
+                        <div class="k">Latest sync</div>
+                        <div class="v" id="portfolioLatestFetched">-</div>
+                    </div>
+                </div>
+                <div class="live-seq-actions">
+                    <button id="portfolioSequenceRefresh" class="btn btn-primary" type="button">重新讀取</button>
+                    <a href="gene_ai.html#sequence-vault" class="btn btn-outline">前往管理介面</a>
+                </div>
+                <div class="live-seq-meta">
+                    API base: <span id="portfolioApiBase" style="font-family:var(--mono);color:var(--text)">detecting...</span><br>
+                    來源: UniProt proteins、Ensembl genes。首頁只顯示最新快取，實際同步與刪除請到 gene_ai 頁處理。
+                </div>
+            </aside>
+
+            <div class="live-seq-panel">
+                <div class="live-seq-columns">
+                    <div class="live-seq-column">
+                        <div class="live-seq-column-head">
+                            <h3>Protein Cache</h3>
+                            <div class="live-seq-pill">Top 3</div>
+                        </div>
+                        <div id="portfolioProteinFeed" class="live-seq-list"></div>
+                    </div>
+                    <div class="live-seq-column">
+                        <div class="live-seq-column-head">
+                            <h3>Gene Cache</h3>
+                            <div class="live-seq-pill">Top 3</div>
+                        </div>
+                        <div id="portfolioGeneFeed" class="live-seq-list"></div>
                     </div>
                 </div>
             </div>
@@ -2400,6 +2648,7 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
     </footer>
 
     <!-- ════════ JS ════════ -->
+    <script src="app-config.js"></script>
     <script>
         /* ── Reveal on scroll ── */
         const reveals = document.querySelectorAll('.reveal');
@@ -2407,6 +2656,189 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
             entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
         }, { threshold: .1 });
         reveals.forEach(r => obs.observe(r));
+
+        let _portfolioApiBase = '';
+
+        function portfolioEscapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function portfolioFormatDateTime(value) {
+            if (!value) return '-';
+            const parsed = new Date(value);
+            if (Number.isNaN(parsed.getTime())) return '-';
+            return parsed.toLocaleString('zh-TW', {
+                hour12: false,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function portfolioSequencePreview(sequence) {
+            const normalized = String(sequence || '').replace(/\s+/g, '').toUpperCase();
+            if (!normalized) return '-';
+            if (normalized.length <= 36) return normalized;
+            return `${normalized.slice(0, 18)}...${normalized.slice(-12)}`;
+        }
+
+        function setPortfolioSequenceStatus(message, state = 'info') {
+            const el = document.getElementById('portfolioSequenceStatus');
+            if (!el) return;
+            el.textContent = message;
+            el.dataset.state = state;
+        }
+
+        function derivePortfolioApiCandidates() {
+            const configuredApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
+                ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
+                : '';
+            const candidates = [];
+            const pushCandidate = (value) => {
+                const normalized = String(value || '').trim().replace(/\/+$/, '');
+                if (normalized && !candidates.includes(normalized)) {
+                    candidates.push(normalized);
+                }
+            };
+
+            pushCandidate(configuredApiBase);
+
+            const currentOrigin = window.location.origin.replace(/\/+$/, '');
+            if (currentOrigin.includes('-portfolio.onrender.com')) {
+                pushCandidate(currentOrigin.replace('-portfolio.onrender.com', '-api.onrender.com'));
+            }
+
+            pushCandidate('https://jtlai-engineering-biomed-api.onrender.com');
+            return candidates;
+        }
+
+        async function resolvePortfolioApiBase() {
+            if (_portfolioApiBase) {
+                return _portfolioApiBase;
+            }
+
+            const apiBaseLabel = document.getElementById('portfolioApiBase');
+            const candidates = derivePortfolioApiCandidates();
+            for (const candidate of candidates) {
+                try {
+                    const response = await fetch(`${candidate}/healthz`);
+                    if (!response.ok) {
+                        continue;
+                    }
+
+                    const data = await response.json().catch(() => null);
+                    if (data?.status === 'ok') {
+                        _portfolioApiBase = candidate;
+                        if (apiBaseLabel) {
+                            apiBaseLabel.textContent = candidate;
+                        }
+                        return _portfolioApiBase;
+                    }
+                } catch (error) {
+                    continue;
+                }
+            }
+
+            if (apiBaseLabel) {
+                apiBaseLabel.textContent = 'unavailable';
+            }
+            return '';
+        }
+
+        async function portfolioApiJson(path) {
+            const apiBase = await resolvePortfolioApiBase();
+            if (!apiBase) {
+                throw new Error('目前找不到可用的 Render API。');
+            }
+
+            const response = await fetch(`${apiBase}${path}`);
+            if (!response.ok) {
+                const data = await response.json().catch(() => null);
+                throw new Error(data?.detail || `HTTP ${response.status}`);
+            }
+            return response.json();
+        }
+
+        function renderPortfolioSequenceList(containerId, records, sequenceType) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            if (!Array.isArray(records) || !records.length) {
+                container.innerHTML = '<div class="live-seq-empty">目前沒有資料。先到 gene_ai 頁同步公開資料到資料庫。</div>';
+                return;
+            }
+
+            container.innerHTML = records.map((record) => {
+                const unit = sequenceType === 'protein' ? 'aa' : 'nt';
+                const tertiary = sequenceType === 'gene'
+                    ? `${Number(record.gcContent || 0).toFixed(1)}% GC`
+                    : portfolioEscapeHtml(record.queryTerm || 'protein search');
+                const link = record.recordUrl
+                    ? `<a class="live-seq-link" href="${portfolioEscapeHtml(record.recordUrl)}" target="_blank" rel="noreferrer">來源</a>`
+                    : '<span></span>';
+
+                return `
+                    <article class="live-seq-item">
+                        <div class="live-seq-item-head">
+                            <div>
+                                <div class="live-seq-item-title">${portfolioEscapeHtml(record.displayName)}</div>
+                                <div class="live-seq-item-sub">${portfolioEscapeHtml(record.organism)}</div>
+                            </div>
+                            <div class="live-seq-pill">${sequenceType.toUpperCase()}</div>
+                        </div>
+                        <div class="live-seq-preview">${portfolioEscapeHtml(portfolioSequencePreview(record.sequence))}</div>
+                        <div class="live-seq-item-meta">
+                            <span>${Number(record.sequenceLength || 0).toLocaleString()} ${unit}</span>
+                            <span>${tertiary}</span>
+                            <span>${portfolioEscapeHtml(record.sourceName || '')}</span>
+                            ${link}
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        async function loadPortfolioSequenceFeed() {
+            setPortfolioSequenceStatus('正在載入 Render Postgres 的 sequence_library...', 'info');
+
+            try {
+                const [summary, proteinPayload, genePayload] = await Promise.all([
+                    portfolioApiJson('/api/sequences/summary'),
+                    portfolioApiJson('/api/sequences?sequence_type=protein&limit=3'),
+                    portfolioApiJson('/api/sequences?sequence_type=gene&limit=3')
+                ]);
+
+                document.getElementById('portfolioProteinCount').textContent = String(summary.proteinCount ?? 0);
+                document.getElementById('portfolioGeneCount').textContent = String(summary.geneCount ?? 0);
+                document.getElementById('portfolioLatestFetched').textContent = portfolioFormatDateTime(summary.latestFetchedAt);
+
+                renderPortfolioSequenceList('portfolioProteinFeed', proteinPayload.records || [], 'protein');
+                renderPortfolioSequenceList('portfolioGeneFeed', genePayload.records || [], 'gene');
+
+                setPortfolioSequenceStatus('首頁已接上動態序列資料庫，顯示的是目前 DB 中最新快取。', 'success');
+            } catch (error) {
+                renderPortfolioSequenceList('portfolioProteinFeed', [], 'protein');
+                renderPortfolioSequenceList('portfolioGeneFeed', [], 'gene');
+                document.getElementById('portfolioProteinCount').textContent = '0';
+                document.getElementById('portfolioGeneCount').textContent = '0';
+                document.getElementById('portfolioLatestFetched').textContent = '-';
+                setPortfolioSequenceStatus(`序列資料庫讀取失敗：${error.message}`, 'error');
+            }
+        }
+
+        function initPortfolioSequenceLive() {
+            document.getElementById('portfolioSequenceRefresh')?.addEventListener('click', () => {
+                loadPortfolioSequenceFeed();
+            });
+            loadPortfolioSequenceFeed();
+        }
 
         /* ── Active nav link ── */
         const sections = document.querySelectorAll('section[id]');
@@ -3242,7 +3674,10 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
             if (typeof $3Dmol !== 'undefined') { loadPdbById('1VII'); }
             else if (tries > 0) { setTimeout(() => _waitAndLoadHP35(tries - 1), 400); }
         }
-        window.addEventListener('DOMContentLoaded', () => { _waitAndLoadHP35(10); });
+        window.addEventListener('DOMContentLoaded', () => {
+            initPortfolioSequenceLive();
+            _waitAndLoadHP35(10);
+        });
     </script>
 </body>
 

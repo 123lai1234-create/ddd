@@ -258,6 +258,12 @@
             color: var(--text);
         }
 
+        .btn-danger {
+            background: rgba(255, 123, 139, .10);
+            border-color: rgba(255, 123, 139, .24);
+            color: #ffd9dd;
+        }
+
         .hero-stats {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -757,6 +763,226 @@
             font-weight: 700;
         }
 
+        .sequence-grid {
+            display: grid;
+            grid-template-columns: 340px minmax(0, 1fr);
+            gap: 22px;
+        }
+
+        .status-banner {
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .025);
+            color: #dbe8e4;
+            font-size: .86rem;
+        }
+
+        .status-banner[data-state="success"] {
+            color: var(--mint);
+            border-color: rgba(119, 242, 178, .24);
+            background: rgba(119, 242, 178, .08);
+        }
+
+        .status-banner[data-state="warning"] {
+            color: var(--amber);
+            border-color: rgba(255, 191, 103, .24);
+            background: rgba(255, 191, 103, .08);
+        }
+
+        .status-banner[data-state="error"] {
+            color: #ffd9dd;
+            border-color: rgba(255, 123, 139, .26);
+            background: rgba(255, 123, 139, .10);
+        }
+
+        .sequence-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .sequence-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1.25fr) minmax(180px, .75fr) auto auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .sequence-filter-meta {
+            color: var(--muted);
+            font-size: .78rem;
+            text-align: right;
+            padding-bottom: 4px;
+        }
+
+        .sequence-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .02);
+            color: var(--muted);
+            font: inherit;
+            font-size: .84rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform .18s ease, border-color .18s ease, color .18s ease;
+        }
+
+        .sequence-tab:hover {
+            transform: translateY(-1px);
+            color: var(--text);
+        }
+
+        .sequence-tab.active {
+            color: var(--text);
+            border-color: rgba(94, 215, 255, .3);
+            background: rgba(94, 215, 255, .08);
+        }
+
+        .sequence-tab span {
+            font-family: var(--mono);
+            font-size: .78rem;
+            color: var(--cyan);
+        }
+
+        .sequence-feed {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .sequence-card {
+            width: 100%;
+            text-align: left;
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .022);
+            color: inherit;
+            cursor: pointer;
+            transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+        }
+
+        .sequence-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(94, 215, 255, .24);
+        }
+
+        .sequence-card.active {
+            border-color: rgba(119, 242, 178, .34);
+            background: linear-gradient(180deg, rgba(119, 242, 178, .08), rgba(255, 255, 255, .02));
+            box-shadow: 0 14px 32px rgba(119, 242, 178, .08);
+        }
+
+        .sequence-card-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .sequence-card-title {
+            font-size: .96rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .sequence-card-sub {
+            color: var(--muted);
+            font-size: .8rem;
+        }
+
+        .sequence-chip {
+            padding: 6px 9px;
+            border-radius: 999px;
+            font-family: var(--mono);
+            font-size: .72rem;
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, .08);
+            align-self: start;
+        }
+
+        .sequence-chip.protein {
+            color: var(--cyan);
+            background: rgba(94, 215, 255, .08);
+        }
+
+        .sequence-chip.gene {
+            color: var(--mint);
+            background: rgba(119, 242, 178, .08);
+        }
+
+        .sequence-preview {
+            color: #d9ece5;
+            font-size: .8rem;
+            margin-bottom: 12px;
+            word-break: break-all;
+            min-height: 40px;
+        }
+
+        .sequence-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--muted);
+            font-size: .76rem;
+        }
+
+        .sequence-feed-empty {
+            grid-column: 1 / -1;
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px dashed rgba(149, 167, 164, .18);
+            color: var(--muted);
+            background: rgba(255, 255, 255, .02);
+        }
+
+        .sequence-detail-shell {
+            overflow: hidden;
+        }
+
+        .sequence-link-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            color: var(--muted);
+            font-size: .78rem;
+        }
+
+        .sequence-source-link {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        .sequence-source-link:hover {
+            color: var(--text);
+        }
+
+        .sequence-detail-seq {
+            margin-top: 14px;
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, .05);
+            background: rgba(255, 255, 255, .018);
+            color: #dbece5;
+            font-size: .8rem;
+            line-height: 1.8;
+            word-break: break-all;
+            max-height: 280px;
+            overflow: auto;
+        }
+
+        .sequence-empty {
+            color: var(--muted);
+            font-size: .88rem;
+        }
+
         .table-wrap {
             overflow-x: auto;
             border-radius: 18px;
@@ -914,6 +1140,7 @@
         @media (max-width: 1120px) {
 
             .hero-grid,
+            .sequence-grid,
             .studio-grid,
             .guide-grid,
             .variant-grid,
@@ -950,8 +1177,18 @@
             .candidate-list,
             .summary-strip,
             .signal-matrix,
-            .detail-meta {
+            .detail-meta,
+            .sequence-feed {
                 grid-template-columns: 1fr;
+            }
+
+            .sequence-toolbar {
+                grid-template-columns: 1fr;
+            }
+
+            .sequence-filter-meta {
+                text-align: left;
+                padding-bottom: 0;
             }
 
             .result-top {
@@ -972,6 +1209,7 @@
             <li><a href="about_me.html">About Me</a></li>
             <li><a href="works.html">作品總覽</a></li>
             <li><a href="#profile">創作者</a></li>
+            <li><a href="#sequence-vault">序列資料庫</a></li>
             <li><a href="#studio">設計工作台</a></li>
             <li><a href="#guides">CRISPR 排序</a></li>
             <li><a href="#variants">變異解讀</a></li>
@@ -993,10 +1231,10 @@
                     這是瀏覽器內的規劃型展示。所有候選序列、分數與 guide preview 都是模擬輸出，目的是展示平台設計與決策流程，不是可直接下實驗的 wet-lab 指令。
                 </div>
                 <div class="hero-cta-row">
-                    <a href="#studio" class="btn btn-primary">啟動設計工作台</a>
+                    <a href="#sequence-vault" class="btn btn-primary">啟動序列資料庫</a>
+                    <a href="#studio" class="btn btn-secondary">看設計工作台</a>
                     <a href="about_me.html" class="btn btn-secondary">看 About Me</a>
                     <a href="works.html" class="btn btn-secondary">看代表作品</a>
-                    <a href="#stack" class="btn btn-secondary">看模型堆疊</a>
                 </div>
                 <div class="hero-stats">
                     <div class="hero-stat">
@@ -1115,6 +1353,101 @@
                         <div class="detail-item">自動化機器手臂操作介面：把實驗室設備操作與工作流程 UI 經驗帶進平台設計。</div>
                         <div class="detail-item">簡易健康檢測 APP：展現醫療場景產品化與互動設計能力。</div>
                         <div class="detail-item">資料管理系統：對應 AI 平台後台、資料治理與結果管理需求。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="sequence-vault" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Sequence Vault</div>
+                    <h2 class="section-title">把公開蛋白質與基因序列爬進 DB，直接在平台內動態展示</h2>
+                    <p class="section-sub">
+                        這個模組會從 UniProt 與 Ensembl 抓取 protein / gene sequence，寫進 Render PostgreSQL，之後頁面就直接從 DB
+                        讀快取，不再只是靜態示範卡片。
+                    </p>
+                </div>
+                <div class="section-badge">UniProt + Ensembl + Render Postgres</div>
+            </div>
+
+            <div class="sequence-grid">
+                <aside class="panel control-panel">
+                    <div>
+                        <div class="control-title">同步設定</div>
+                        <div class="control-sub">先抓公開資料，再把結果存進 Render DB 給互動介面讀取。</div>
+                    </div>
+                    <div class="field">
+                        <label for="sequenceProteinQuery">UniProt protein query</label>
+                        <input id="sequenceProteinQuery" type="text" value="kinase">
+                    </div>
+                    <div class="field">
+                        <label for="sequenceGeneSymbols">Gene symbols</label>
+                        <textarea id="sequenceGeneSymbols" rows="3">TP53, BRCA1, EGFR, APOE</textarea>
+                    </div>
+                    <div class="field">
+                        <label for="sequenceSpecies">Ensembl species</label>
+                        <select id="sequenceSpecies">
+                            <option value="homo_sapiens">Homo sapiens</option>
+                            <option value="mus_musculus">Mus musculus</option>
+                            <option value="danio_rerio">Danio rerio</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="sequenceLimit">每次同步筆數</label>
+                        <select id="sequenceLimit">
+                            <option value="4">4</option>
+                            <option value="6">6</option>
+                            <option value="8">8</option>
+                        </select>
+                    </div>
+                    <button id="sequenceSync" class="btn btn-primary" type="button">同步序列到 DB</button>
+                    <button id="sequenceReload" class="btn btn-secondary" type="button">重新讀取 DB 快取</button>
+                    <div id="sequenceStatus" class="status-banner" data-state="info">正在偵測可用 API 並載入序列快取...</div>
+                    <div class="small-note">
+                        策略是先讀 DB，只有 DB 還是空的，或你手動按同步時，才會重新打公開來源。這樣前端展示會穩定很多。
+                    </div>
+                    <div class="small-note">API base: <span id="sequenceApiLabel" class="mono">detecting...</span></div>
+                </aside>
+
+                <div class="panel result-panel">
+                    <div class="result-top">
+                        <div>
+                            <h3>Render Sequence Cache</h3>
+                            <p>切換 protein / gene cache，查看最新入庫紀錄與來源 metadata。</p>
+                        </div>
+                        <div class="section-badge">DB-backed Interactive Feed</div>
+                    </div>
+
+                    <div id="sequenceSummary" class="summary-strip"></div>
+
+                    <div class="sequence-toolbar">
+                        <div class="field">
+                            <label for="sequenceSearch">搜尋名稱 / accession / query</label>
+                            <input id="sequenceSearch" type="text" placeholder="例如 TP53, kinase, P24941">
+                        </div>
+                        <div class="field">
+                            <label for="sequenceOrganismFilter">物種篩選</label>
+                            <select id="sequenceOrganismFilter">
+                                <option value="">全部物種</option>
+                            </select>
+                        </div>
+                        <button id="sequenceDelete" class="btn btn-danger" type="button" disabled>刪除選取紀錄</button>
+                        <div id="sequenceFilterMeta" class="sequence-filter-meta">顯示 0 筆</div>
+                    </div>
+
+                    <div class="sequence-tabs">
+                        <button class="sequence-tab active" type="button" data-sequence-type="protein">Protein Cache
+                            <span>0</span></button>
+                        <button class="sequence-tab" type="button" data-sequence-type="gene">Gene Cache
+                            <span>0</span></button>
+                    </div>
+
+                    <div id="sequenceFeed" class="sequence-feed"></div>
+
+                    <div class="detail-card sequence-detail-shell">
+                        <div class="detail-head">Sequence Detail</div>
+                        <div id="sequenceDetail" class="sequence-empty">尚未選取資料列。</div>
                     </div>
                 </div>
             </div>
@@ -1470,6 +1803,7 @@
         </div>
     </footer>
 
+    <script src="app-config.js"></script>
     <script>
         const objectivePresets = {
             upreg: {
@@ -1508,6 +1842,20 @@
         let guideScatterChart = null;
         let variantImpactChart = null;
         let currentCandidates = [];
+        let resolvedSequenceApiBase = '';
+        const sequenceVaultState = {
+            activeType: 'protein',
+            selectedId: null,
+            records: {
+                protein: [],
+                gene: []
+            },
+            summary: {
+                proteinCount: 0,
+                geneCount: 0,
+                latestFetchedAt: null
+            }
+        };
 
         function safeRenderChart(renderFn) {
             try {
@@ -1516,6 +1864,479 @@
                 console.error('[gene_ai] chart render failed:', error);
                 return null;
             }
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatDateTime(value) {
+            if (!value) return '-';
+            const parsed = new Date(value);
+            if (Number.isNaN(parsed.getTime())) return '-';
+            return parsed.toLocaleString('zh-TW', {
+                hour12: false,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function setSequenceStatus(message, state = 'info') {
+            const statusEl = document.getElementById('sequenceStatus');
+            if (!statusEl) return;
+            statusEl.textContent = message;
+            statusEl.dataset.state = state;
+        }
+
+        function deriveSequenceApiCandidates() {
+            const configuredApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
+                ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
+                : '';
+            const candidates = [];
+            const pushCandidate = (value) => {
+                const normalized = String(value || '').trim().replace(/\/+$/, '');
+                if (normalized && !candidates.includes(normalized)) {
+                    candidates.push(normalized);
+                }
+            };
+
+            pushCandidate(configuredApiBase);
+
+            const currentOrigin = window.location.origin.replace(/\/+$/, '');
+            if (currentOrigin.includes('-portfolio.onrender.com')) {
+                pushCandidate(currentOrigin.replace('-portfolio.onrender.com', '-api.onrender.com'));
+            }
+
+            pushCandidate('https://jtlai-engineering-biomed-api.onrender.com');
+            return candidates;
+        }
+
+        async function resolveSequenceApiBase() {
+            if (resolvedSequenceApiBase) {
+                return resolvedSequenceApiBase;
+            }
+
+            const apiBaseLabel = document.getElementById('sequenceApiLabel');
+            const candidates = deriveSequenceApiCandidates();
+            for (const candidate of candidates) {
+                try {
+                    const response = await fetch(`${candidate}/healthz`);
+                    if (!response.ok) {
+                        continue;
+                    }
+
+                    const data = await response.json().catch(() => null);
+                    if (data?.status === 'ok') {
+                        resolvedSequenceApiBase = candidate;
+                        if (apiBaseLabel) {
+                            apiBaseLabel.textContent = candidate;
+                        }
+                        return resolvedSequenceApiBase;
+                    }
+                } catch (error) {
+                    continue;
+                }
+            }
+
+            if (apiBaseLabel) {
+                apiBaseLabel.textContent = 'unavailable';
+            }
+            return '';
+        }
+
+        async function requestSequenceApi(path, options = {}) {
+            const apiBase = await resolveSequenceApiBase();
+            if (!apiBase) {
+                throw new Error('目前找不到可用的 Render API。');
+            }
+
+            const response = await fetch(`${apiBase}${path}`, options);
+            if (!response.ok) {
+                const data = await response.json().catch(() => null);
+                throw new Error(data?.detail || `HTTP ${response.status}`);
+            }
+
+            return response.json();
+        }
+
+        function formatSequencePreview(sequence) {
+            const normalized = String(sequence || '').replace(/\s+/g, '').toUpperCase();
+            if (!normalized) return '-';
+            if (normalized.length <= 42) return normalized;
+            return `${normalized.slice(0, 24)}...${normalized.slice(-12)}`;
+        }
+
+        function formatSequenceBlock(sequence) {
+            const normalized = String(sequence || '').replace(/\s+/g, '').toUpperCase();
+            if (!normalized) return '-';
+            const truncated = normalized.length > 720
+                ? `${normalized.slice(0, 360)}...${normalized.slice(-240)}`
+                : normalized;
+            const grouped = truncated.match(/.{1,60}/g) || [truncated];
+            return escapeHtml(grouped.join('\n')).replace(/\n/g, '<br>');
+        }
+
+        function renderSequenceFilterOptions() {
+            const select = document.getElementById('sequenceOrganismFilter');
+            if (!select) return;
+
+            const currentValue = select.value;
+            const records = sequenceVaultState.records[sequenceVaultState.activeType] || [];
+            const organisms = [...new Set(records.map((record) => String(record.organism || '').trim()).filter(Boolean))].sort((left, right) => left.localeCompare(right));
+
+            select.innerHTML = `
+                <option value="">全部物種</option>
+                ${organisms.map((organism) => `<option value="${escapeHtml(organism)}">${escapeHtml(organism)}</option>`).join('')}
+            `;
+
+            select.value = organisms.includes(currentValue) ? currentValue : '';
+        }
+
+        function getVisibleSequenceRecords() {
+            const records = sequenceVaultState.records[sequenceVaultState.activeType] || [];
+            const searchText = String(document.getElementById('sequenceSearch')?.value || '').trim().toLowerCase();
+            const organismFilter = String(document.getElementById('sequenceOrganismFilter')?.value || '').trim().toLowerCase();
+
+            return records.filter((record) => {
+                const matchesOrganism = !organismFilter || String(record.organism || '').toLowerCase() === organismFilter;
+                if (!matchesOrganism) {
+                    return false;
+                }
+
+                if (!searchText) {
+                    return true;
+                }
+
+                const haystack = [
+                    record.displayName,
+                    record.organism,
+                    record.sourceId,
+                    record.sourceName,
+                    record.queryTerm,
+                    record.description,
+                ].join(' ').toLowerCase();
+
+                return haystack.includes(searchText);
+            });
+        }
+
+        function updateSequenceFilterMeta(visibleCount, totalCount) {
+            const metaEl = document.getElementById('sequenceFilterMeta');
+            if (!metaEl) return;
+            metaEl.textContent = `顯示 ${visibleCount} / ${totalCount} 筆`;
+        }
+
+        function renderSequenceSummary() {
+            const summaryEl = document.getElementById('sequenceSummary');
+            if (!summaryEl) return;
+
+            const summary = sequenceVaultState.summary;
+            summaryEl.innerHTML = `
+                <div class="summary-card"><div class="k">Protein cache</div><div class="v">${summary.proteinCount}</div></div>
+                <div class="summary-card"><div class="k">Gene cache</div><div class="v">${summary.geneCount}</div></div>
+                <div class="summary-card"><div class="k">Latest sync</div><div class="v">${escapeHtml(formatDateTime(summary.latestFetchedAt))}</div></div>
+            `;
+        }
+
+        function renderSequenceTabs() {
+            document.querySelectorAll('.sequence-tab').forEach((button) => {
+                const type = button.dataset.sequenceType;
+                const count = sequenceVaultState.records[type]?.length || 0;
+                const label = type === 'protein' ? 'Protein Cache' : 'Gene Cache';
+                button.innerHTML = `${label} <span>${count}</span>`;
+                button.classList.toggle('active', type === sequenceVaultState.activeType);
+            });
+        }
+
+        function renderSequenceDetail(record) {
+            const detailEl = document.getElementById('sequenceDetail');
+            if (!detailEl) return;
+
+            if (!record) {
+                detailEl.innerHTML = '<div class="sequence-empty">目前沒有可顯示的序列資料。可以先同步 UniProt / Ensembl，再回到這裡檢視 DB 快取。</div>';
+                return;
+            }
+
+            const sequenceUnit = record.sequenceType === 'protein' ? 'aa' : 'nt';
+            const compositionLabel = record.sequenceType === 'gene'
+                ? `${Number(record.gcContent || 0).toFixed(2)}% GC`
+                : escapeHtml(record.queryTerm || 'protein search');
+            const compositionKey = record.sequenceType === 'gene' ? 'GC content' : 'Query term';
+            const sourceLink = record.recordUrl
+                ? `<a class="sequence-source-link" href="${escapeHtml(record.recordUrl)}" target="_blank" rel="noreferrer">查看來源紀錄</a>`
+                : '<span></span>';
+
+            detailEl.innerHTML = `
+                <div class="detail-title">${escapeHtml(record.displayName)}</div>
+                <div class="detail-copy">${escapeHtml(record.description || 'No description available.')}</div>
+                <div class="detail-meta">
+                    <div class="box"><div class="k">Source</div><div class="v">${escapeHtml(record.sourceName)} · ${escapeHtml(record.sourceId)}</div></div>
+                    <div class="box"><div class="k">Organism</div><div class="v">${escapeHtml(record.organism)}</div></div>
+                    <div class="box"><div class="k">Length</div><div class="v">${Number(record.sequenceLength || 0).toLocaleString()} ${sequenceUnit}</div></div>
+                    <div class="box"><div class="k">${compositionKey}</div><div class="v">${compositionLabel}</div></div>
+                </div>
+                <div class="sequence-link-row">
+                    ${sourceLink}
+                    <span>寫入時間：${escapeHtml(formatDateTime(record.fetchedAt))}</span>
+                </div>
+                <div class="sequence-detail-seq mono">${formatSequenceBlock(record.sequence)}</div>
+            `;
+        }
+
+        function renderSequenceFeed() {
+            const feedEl = document.getElementById('sequenceFeed');
+            if (!feedEl) return;
+
+            const records = sequenceVaultState.records[sequenceVaultState.activeType] || [];
+            const visibleRecords = getVisibleSequenceRecords();
+            const deleteBtn = document.getElementById('sequenceDelete');
+            updateSequenceFilterMeta(visibleRecords.length, records.length);
+
+            if (!records.length) {
+                feedEl.innerHTML = '<div class="sequence-feed-empty">這個快取目前是空的。先按「同步序列到 DB」，或讓頁面首次自動初始化。</div>';
+                if (deleteBtn) deleteBtn.disabled = true;
+                renderSequenceDetail(null);
+                return;
+            }
+
+            if (!visibleRecords.length) {
+                feedEl.innerHTML = '<div class="sequence-feed-empty">目前沒有符合搜尋或物種篩選的紀錄。調整條件後就會重新顯示。</div>';
+                if (deleteBtn) deleteBtn.disabled = true;
+                renderSequenceDetail(null);
+                return;
+            }
+
+            const selectedRecord = visibleRecords.find((record) => record.id === sequenceVaultState.selectedId) || visibleRecords[0];
+            sequenceVaultState.selectedId = selectedRecord.id;
+            if (deleteBtn) deleteBtn.disabled = false;
+
+            feedEl.innerHTML = visibleRecords.map((record) => {
+                const activeClass = record.id === sequenceVaultState.selectedId ? 'active' : '';
+                const sequenceUnit = record.sequenceType === 'protein' ? 'aa' : 'nt';
+                const secondaryMetric = record.sequenceType === 'gene'
+                    ? `${Number(record.gcContent || 0).toFixed(1)}% GC`
+                    : escapeHtml(record.queryTerm || 'protein search');
+
+                return `
+                    <button class="sequence-card ${activeClass}" type="button" data-record-id="${record.id}">
+                        <div class="sequence-card-top">
+                            <div>
+                                <div class="sequence-card-title">${escapeHtml(record.displayName)}</div>
+                                <div class="sequence-card-sub">${escapeHtml(record.organism)}</div>
+                            </div>
+                            <div class="sequence-chip ${record.sequenceType}">${record.sequenceType.toUpperCase()}</div>
+                        </div>
+                        <div class="sequence-preview mono">${escapeHtml(formatSequencePreview(record.sequence))}</div>
+                        <div class="sequence-meta-row">
+                            <span>${Number(record.sequenceLength || 0).toLocaleString()} ${sequenceUnit}</span>
+                            <span>${secondaryMetric}</span>
+                            <span>${escapeHtml(record.sourceName)}</span>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+
+            feedEl.querySelectorAll('.sequence-card').forEach((button) => {
+                button.addEventListener('click', () => {
+                    sequenceVaultState.selectedId = Number(button.dataset.recordId);
+                    renderSequenceFeed();
+                });
+            });
+
+            renderSequenceDetail(selectedRecord);
+        }
+
+        function updateSequenceStateFromPayload(payload) {
+            sequenceVaultState.records.protein = Array.isArray(payload.proteinRecords)
+                ? payload.proteinRecords
+                : Array.isArray(payload.records) && payload.sequenceType === 'protein'
+                    ? payload.records
+                    : sequenceVaultState.records.protein;
+
+            sequenceVaultState.records.gene = Array.isArray(payload.geneRecords)
+                ? payload.geneRecords
+                : Array.isArray(payload.records) && payload.sequenceType === 'gene'
+                    ? payload.records
+                    : sequenceVaultState.records.gene;
+
+            sequenceVaultState.summary = {
+                proteinCount: Number(payload.proteinCount ?? sequenceVaultState.records.protein.length ?? 0),
+                geneCount: Number(payload.geneCount ?? sequenceVaultState.records.gene.length ?? 0),
+                latestFetchedAt: payload.latestFetchedAt ?? sequenceVaultState.summary.latestFetchedAt
+            };
+        }
+
+        function sequenceSyncPayload() {
+            const symbols = document.getElementById('sequenceGeneSymbols').value
+                .split(',')
+                .map((value) => value.trim().toUpperCase())
+                .filter(Boolean)
+                .slice(0, 8);
+
+            return {
+                protein_query: document.getElementById('sequenceProteinQuery').value.trim() || 'kinase',
+                gene_symbols: symbols.length ? symbols : ['TP53', 'BRCA1', 'EGFR', 'APOE'],
+                species: document.getElementById('sequenceSpecies').value,
+                limit: Number(document.getElementById('sequenceLimit').value) || 4
+            };
+        }
+
+        function setSequenceBusy(isBusy) {
+            document.getElementById('sequenceSync').disabled = isBusy;
+            document.getElementById('sequenceReload').disabled = isBusy;
+            document.getElementById('sequenceDelete').disabled = isBusy || !sequenceVaultState.selectedId;
+        }
+
+        async function loadSequenceCache(autoSyncIfEmpty = true) {
+            setSequenceBusy(true);
+            setSequenceStatus('正在從 Render DB 讀取序列快取...', 'info');
+
+            try {
+                const [summary, proteinPayload, genePayload] = await Promise.all([
+                    requestSequenceApi('/api/sequences/summary'),
+                    requestSequenceApi('/api/sequences?sequence_type=protein&limit=20'),
+                    requestSequenceApi('/api/sequences?sequence_type=gene&limit=20')
+                ]);
+
+                updateSequenceStateFromPayload(summary);
+                updateSequenceStateFromPayload({ ...proteinPayload, sequenceType: 'protein' });
+                updateSequenceStateFromPayload({ ...genePayload, sequenceType: 'gene' });
+                renderSequenceSummary();
+                renderSequenceTabs();
+                renderSequenceFilterOptions();
+                renderSequenceFeed();
+
+                const total = sequenceVaultState.records.protein.length + sequenceVaultState.records.gene.length;
+                if (autoSyncIfEmpty && total === 0) {
+                    setSequenceStatus('DB 目前沒有序列資料，開始從 UniProt / Ensembl 初始化快取...', 'warning');
+                    await syncSequenceVault(true);
+                    return;
+                }
+
+                setSequenceStatus(`已載入 ${sequenceVaultState.records.protein.length} 筆 protein 與 ${sequenceVaultState.records.gene.length} 筆 gene 快取。`, 'success');
+            } catch (error) {
+                renderSequenceSummary();
+                renderSequenceTabs();
+                renderSequenceFilterOptions();
+                renderSequenceFeed();
+                setSequenceStatus(`序列快取讀取失敗：${error.message}`, 'error');
+            } finally {
+                setSequenceBusy(false);
+            }
+        }
+
+        async function syncSequenceVault(autoMode = false) {
+            setSequenceBusy(true);
+            setSequenceStatus(autoMode ? '正在自動初始化資料源...' : '正在同步 UniProt / Ensembl 並寫入 DB...', 'info');
+
+            try {
+                const payload = sequenceSyncPayload();
+                const response = await requestSequenceApi('/api/sequences/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                updateSequenceStateFromPayload(response);
+                renderSequenceSummary();
+                renderSequenceTabs();
+                renderSequenceFilterOptions();
+                renderSequenceFeed();
+
+                setSequenceStatus(
+                    `同步完成，已寫入 ${Number(response.stored?.protein || 0)} 筆 protein 與 ${Number(response.stored?.gene || 0)} 筆 gene 紀錄。`,
+                    'success'
+                );
+            } catch (error) {
+                setSequenceStatus(`同步失敗：${error.message}`, 'error');
+            } finally {
+                setSequenceBusy(false);
+            }
+        }
+
+        async function deleteSelectedSequence() {
+            const activeRecords = getVisibleSequenceRecords();
+            const selectedRecord = activeRecords.find((record) => record.id === sequenceVaultState.selectedId);
+            if (!selectedRecord) {
+                setSequenceStatus('目前沒有選取可刪除的紀錄。', 'warning');
+                return;
+            }
+
+            const confirmed = window.confirm(`確定要刪除 ${selectedRecord.displayName} (${selectedRecord.sourceId}) 嗎？`);
+            if (!confirmed) {
+                return;
+            }
+
+            setSequenceBusy(true);
+            setSequenceStatus(`正在刪除 ${selectedRecord.displayName}...`, 'info');
+
+            try {
+                const response = await requestSequenceApi(`/api/sequences/${selectedRecord.id}`, {
+                    method: 'DELETE'
+                });
+
+                const deletedType = response.deleted?.sequenceType;
+                if (deletedType && sequenceVaultState.records[deletedType]) {
+                    sequenceVaultState.records[deletedType] = sequenceVaultState.records[deletedType].filter((record) => record.id !== selectedRecord.id);
+                }
+                sequenceVaultState.selectedId = null;
+                updateSequenceStateFromPayload(response);
+                renderSequenceSummary();
+                renderSequenceTabs();
+                renderSequenceFilterOptions();
+                renderSequenceFeed();
+                setSequenceStatus(`已刪除 ${response.deleted?.displayName || selectedRecord.displayName}。`, 'success');
+            } catch (error) {
+                setSequenceStatus(`刪除失敗：${error.message}`, 'error');
+            } finally {
+                setSequenceBusy(false);
+            }
+        }
+
+        function initSequenceVault() {
+            document.querySelectorAll('.sequence-tab').forEach((button) => {
+                button.addEventListener('click', () => {
+                    sequenceVaultState.activeType = button.dataset.sequenceType;
+                    sequenceVaultState.selectedId = null;
+                    renderSequenceTabs();
+                    renderSequenceFilterOptions();
+                    renderSequenceFeed();
+                });
+            });
+
+            document.getElementById('sequenceSearch').addEventListener('input', () => {
+                sequenceVaultState.selectedId = null;
+                renderSequenceFeed();
+            });
+
+            document.getElementById('sequenceOrganismFilter').addEventListener('change', () => {
+                sequenceVaultState.selectedId = null;
+                renderSequenceFeed();
+            });
+
+            document.getElementById('sequenceSync').addEventListener('click', () => {
+                syncSequenceVault(false);
+            });
+
+            document.getElementById('sequenceReload').addEventListener('click', () => {
+                loadSequenceCache(false);
+            });
+
+            document.getElementById('sequenceDelete').addEventListener('click', () => {
+                deleteSelectedSequence();
+            });
+
+            loadSequenceCache(true);
         }
 
         function hashString(text) {
@@ -1913,6 +2734,7 @@
             refreshStudio();
             renderGuides();
             evaluateVariantCase();
+            initSequenceVault();
 
             document.getElementById('generateDesign').addEventListener('click', refreshStudio);
             document.getElementById('rerankGuides').addEventListener('click', renderGuides);
