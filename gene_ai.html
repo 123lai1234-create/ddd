@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基因 AI 設計平台 | 工程 × 生醫</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #071017;
+            --bg2: #0c161e;
+            --surface: rgba(18, 29, 38, .84);
+            --surface-strong: #101b24;
+            --surface-soft: #152532;
+            --border: rgba(158, 196, 184, .12);
+            --text: #ebf3ef;
+            --muted: #95a7a4;
+            --dim: #59706d;
+            --mint: #77f2b2;
+            --cyan: #5ed7ff;
+            --amber: #ffbf67;
+            --rose: #ff7b8b;
+            --violet: #b199ff;
+            --ink: #081016;
+            --nav-h: 64px;
+            --font: 'Inter', system-ui, sans-serif;
+            --mono: 'JetBrains Mono', Consolas, monospace;
+            --shadow: 0 20px 60px rgba(0, 0, 0, .35);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at 18% 12%, rgba(94, 215, 255, .10), transparent 28%),
+                radial-gradient(circle at 82% 18%, rgba(119, 242, 178, .08), transparent 30%),
+                radial-gradient(circle at 58% 78%, rgba(255, 191, 103, .06), transparent 30%),
+                linear-gradient(180deg, var(--bg) 0%, #09141b 46%, #081018 100%);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 15px;
+            line-height: 1.65;
+            overflow-x: hidden;
+        }
+
+        ::selection {
+            background: rgba(94, 215, 255, .22);
+        }
+
+        a {
+            color: inherit;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            height: var(--nav-h);
+            background: rgba(7, 16, 23, .84);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+        }
+
+        .nav-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            letter-spacing: .04em;
+            font-size: .92rem;
+        }
+
+        .nav-brand .mark {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--mint), var(--cyan));
+            box-shadow: 0 0 20px rgba(119, 242, 178, .45);
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--muted);
+            font-size: .86rem;
+            font-weight: 500;
+            transition: color .2s ease, transform .2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+            transform: translateY(-1px);
+        }
+
+        .nav-links .nav-cta {
+            background: linear-gradient(135deg, rgba(119, 242, 178, .18), rgba(94, 215, 255, .16));
+            color: var(--text);
+            border: 1px solid rgba(119, 242, 178, .28);
+            padding: 9px 14px;
+            border-radius: 999px;
+        }
+
+        .hero {
+            position: relative;
+            padding: calc(var(--nav-h) + 56px) 40px 56px;
+            overflow: hidden;
+        }
+
+        .hero::before,
+        .hero::after {
+            content: '';
+            position: absolute;
+            border-radius: 999px;
+            filter: blur(4px);
+            opacity: .55;
+        }
+
+        .hero::before {
+            width: 420px;
+            height: 420px;
+            top: -140px;
+            right: -80px;
+            background: radial-gradient(circle, rgba(119, 242, 178, .18), transparent 68%);
+        }
+
+        .hero::after {
+            width: 300px;
+            height: 300px;
+            bottom: -120px;
+            left: -70px;
+            background: radial-gradient(circle, rgba(94, 215, 255, .16), transparent 70%);
+        }
+
+        .hero-grid {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr);
+            gap: 28px;
+            align-items: center;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(119, 242, 178, .24);
+            background: rgba(119, 242, 178, .08);
+            color: var(--mint);
+            font-size: .78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 22px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.8rem, 6vw, 5rem);
+            line-height: 1.02;
+            letter-spacing: -.04em;
+            margin-bottom: 18px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--mint), var(--cyan) 58%, var(--amber));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            color: var(--muted);
+            font-size: 1.04rem;
+            max-width: 680px;
+            margin-bottom: 26px;
+        }
+
+        .hero-note {
+            max-width: 700px;
+            color: #bfd2cd;
+            font-size: .92rem;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: rgba(255, 191, 103, .08);
+            border: 1px solid rgba(255, 191, 103, .18);
+            margin-bottom: 26px;
+        }
+
+        .hero-cta-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 26px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 12px;
+            padding: 12px 18px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: .9rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--mint), var(--cyan));
+            color: #041118;
+            box-shadow: 0 12px 28px rgba(94, 215, 255, .18);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, .02);
+            border-color: var(--border);
+            color: var(--text);
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            max-width: 760px;
+        }
+
+        .hero-stat {
+            background: rgba(12, 22, 30, .75);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-stat .value {
+            font-family: var(--mono);
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .hero-stat .label {
+            font-size: .82rem;
+            color: var(--muted);
+        }
+
+        .signal-card {
+            position: relative;
+            background: linear-gradient(180deg, rgba(15, 28, 37, .96), rgba(10, 19, 25, .94));
+            border: 1px solid rgba(119, 242, 178, .16);
+            border-radius: 24px;
+            padding: 22px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .signal-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(115deg, transparent 0 28%, rgba(119, 242, 178, .06) 28% 34%, transparent 34% 100%),
+                radial-gradient(circle at 80% 20%, rgba(94, 215, 255, .12), transparent 35%);
+            pointer-events: none;
+        }
+
+        .signal-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .signal-title {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .status-pill {
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: .76rem;
+            font-weight: 700;
+            color: var(--mint);
+            background: rgba(119, 242, 178, .08);
+            border: 1px solid rgba(119, 242, 178, .18);
+        }
+
+        .signal-matrix {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .signal-block {
+            border-radius: 16px;
+            background: rgba(255, 255, 255, .02);
+            border: 1px solid var(--border);
+            padding: 14px;
+        }
+
+        .signal-block .k {
+            color: var(--muted);
+            font-size: .75rem;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-bottom: 8px;
+        }
+
+        .signal-block .v {
+            font-family: var(--mono);
+            font-size: .95rem;
+            font-weight: 700;
+        }
+
+        .signal-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .signal-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, .02);
+            border: 1px solid var(--border);
+        }
+
+        .signal-item .left {
+            font-size: .86rem;
+            color: var(--muted);
+        }
+
+        .signal-item .right {
+            font-family: var(--mono);
+            font-size: .84rem;
+            font-weight: 700;
+        }
+
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 40px 90px;
+        }
+
+        .section {
+            padding: 34px 0 0;
+        }
+
+        .section-head {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .section-label {
+            color: var(--cyan);
+            font-size: .8rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .section-title {
+            font-size: clamp(1.75rem, 4vw, 2.6rem);
+            letter-spacing: -.03em;
+            margin-bottom: 8px;
+        }
+
+        .section-sub {
+            color: var(--muted);
+            max-width: 760px;
+        }
+
+        .section-badge {
+            color: var(--amber);
+            font-size: .78rem;
+            border: 1px solid rgba(255, 191, 103, .18);
+            background: rgba(255, 191, 103, .07);
+            border-radius: 999px;
+            padding: 8px 12px;
+            white-space: nowrap;
+        }
+
+        .studio-grid,
+        .guide-grid,
+        .variant-grid {
+            display: grid;
+            grid-template-columns: 340px minmax(0, 1fr);
+            gap: 22px;
+        }
+
+        .panel {
+            background: rgba(15, 24, 33, .84);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .control-panel {
+            padding: 22px;
+            display: grid;
+            gap: 16px;
+            align-self: start;
+            position: sticky;
+            top: calc(var(--nav-h) + 18px);
+        }
+
+        .control-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .control-sub {
+            color: var(--muted);
+            font-size: .88rem;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field label {
+            font-size: .8rem;
+            color: #c0d0cc;
+            font-weight: 600;
+        }
+
+        .field input,
+        .field select,
+        .field button,
+        .field textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, .03);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 13px;
+            font: inherit;
+            outline: none;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .field textarea:focus {
+            border-color: rgba(94, 215, 255, .4);
+            box-shadow: 0 0 0 3px rgba(94, 215, 255, .09);
+        }
+
+        .range-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .range-row output {
+            color: var(--mint);
+            font-family: var(--mono);
+            font-size: .84rem;
+            font-weight: 700;
+        }
+
+        input[type="range"] {
+            padding: 0;
+            border: none;
+            background: transparent;
+        }
+
+        .small-note {
+            font-size: .8rem;
+            color: var(--muted);
+            padding: 12px 13px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, .02);
+            border: 1px dashed rgba(149, 167, 164, .18);
+        }
+
+        .result-panel {
+            padding: 22px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .result-top {
+            display: flex;
+            align-items: start;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .result-top h3 {
+            font-size: 1.25rem;
+            margin-bottom: 6px;
+        }
+
+        .result-top p {
+            color: var(--muted);
+            font-size: .88rem;
+        }
+
+        .candidate-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .candidate-card {
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .025);
+            cursor: pointer;
+            transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+        }
+
+        .candidate-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(94, 215, 255, .24);
+        }
+
+        .candidate-card.active {
+            border-color: rgba(119, 242, 178, .34);
+            box-shadow: 0 14px 32px rgba(119, 242, 178, .10);
+            background: linear-gradient(180deg, rgba(119, 242, 178, .09), rgba(255, 255, 255, .03));
+        }
+
+        .candidate-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .candidate-name {
+            font-weight: 700;
+            font-size: .95rem;
+        }
+
+        .candidate-score {
+            font-family: var(--mono);
+            font-size: .86rem;
+            color: var(--mint);
+            font-weight: 700;
+        }
+
+        .candidate-preview {
+            font-family: var(--mono);
+            color: #d4ebe3;
+            font-size: .82rem;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+
+        .tag-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .tag {
+            font-size: .73rem;
+            padding: 5px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(94, 215, 255, .18);
+            color: #cae7ef;
+            background: rgba(94, 215, 255, .06);
+        }
+
+        .mini-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .mini-metric {
+            border-radius: 12px;
+            background: rgba(255, 255, 255, .025);
+            border: 1px solid rgba(255, 255, 255, .04);
+            padding: 10px 8px;
+        }
+
+        .mini-metric .k {
+            color: var(--muted);
+            font-size: .67rem;
+            margin-bottom: 4px;
+        }
+
+        .mini-metric .v {
+            font-family: var(--mono);
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            gap: 14px;
+        }
+
+        .detail-card {
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .02);
+        }
+
+        .detail-head {
+            font-size: .82rem;
+            color: var(--cyan);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 12px;
+        }
+
+        .detail-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .detail-copy {
+            color: var(--muted);
+            margin-bottom: 14px;
+        }
+
+        .detail-meta {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .detail-meta .box {
+            border-radius: 14px;
+            padding: 12px;
+            background: rgba(255, 255, 255, .022);
+            border: 1px solid rgba(255, 255, 255, .05);
+        }
+
+        .detail-meta .box .k {
+            color: var(--muted);
+            font-size: .72rem;
+            margin-bottom: 4px;
+        }
+
+        .detail-meta .box .v {
+            font-family: var(--mono);
+            font-size: .85rem;
+            font-weight: 700;
+        }
+
+        .detail-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .detail-item {
+            padding-left: 14px;
+            position: relative;
+            color: #d6e4de;
+            font-size: .88rem;
+        }
+
+        .detail-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: .62em;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--mint);
+        }
+
+        .chart-footnote {
+            font-size: .78rem;
+            color: var(--muted);
+            margin-top: 10px;
+        }
+
+        .summary-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .summary-card {
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .025);
+        }
+
+        .summary-card .k {
+            color: var(--muted);
+            font-size: .72rem;
+            margin-bottom: 6px;
+        }
+
+        .summary-card .v {
+            font-size: 1rem;
+            font-family: var(--mono);
+            font-weight: 700;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .02);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, .05);
+            font-size: .86rem;
+        }
+
+        th {
+            color: var(--muted);
+            font-size: .74rem;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, .02);
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, .02);
+        }
+
+        .mono {
+            font-family: var(--mono);
+        }
+
+        .good {
+            color: var(--mint);
+        }
+
+        .warn {
+            color: var(--amber);
+        }
+
+        .risk {
+            color: var(--rose);
+        }
+
+        .variant-output {
+            display: grid;
+            gap: 14px;
+        }
+
+        .narrative-box {
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .024);
+            padding: 18px;
+            color: #d7e5df;
+        }
+
+        .stack-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .stack-card {
+            padding: 18px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .015));
+            border: 1px solid var(--border);
+        }
+
+        .stack-step {
+            font-family: var(--mono);
+            font-size: .78rem;
+            color: var(--cyan);
+            margin-bottom: 12px;
+        }
+
+        .stack-card h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .stack-card p {
+            color: var(--muted);
+            font-size: .88rem;
+        }
+
+        .loop-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .loop-step {
+            padding: 18px 16px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .02);
+        }
+
+        .loop-step .num {
+            font-family: var(--mono);
+            color: var(--mint);
+            font-size: .8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .loop-step h4 {
+            font-size: .95rem;
+            margin-bottom: 8px;
+        }
+
+        .loop-step p {
+            color: var(--muted);
+            font-size: .84rem;
+        }
+
+        footer {
+            max-width: 1240px;
+            margin: 32px auto 0;
+            padding: 28px 40px 44px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: center;
+            color: var(--muted);
+        }
+
+        .footer-brand {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--muted);
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            color: var(--text);
+        }
+
+        @media (max-width: 1120px) {
+
+            .hero-grid,
+            .studio-grid,
+            .guide-grid,
+            .variant-grid,
+            .detail-grid,
+            .stack-grid,
+            .loop-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .control-panel {
+                position: static;
+            }
+        }
+
+        @media (max-width: 840px) {
+            nav {
+                padding: 0 18px;
+            }
+
+            .nav-links {
+                gap: 12px;
+                overflow-x: auto;
+                scrollbar-width: none;
+            }
+
+            .hero,
+            .container,
+            footer {
+                padding-left: 18px;
+                padding-right: 18px;
+            }
+
+            .hero-stats,
+            .candidate-list,
+            .summary-strip,
+            .signal-matrix,
+            .detail-meta {
+                grid-template-columns: 1fr;
+            }
+
+            .result-top {
+                flex-direction: column;
+                align-items: start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a class="nav-brand" href="index.html">
+            <span class="mark"></span>
+            Genome AI Studio
+        </a>
+        <ul class="nav-links">
+            <li><a href="about_me.html">About Me</a></li>
+            <li><a href="works.html">作品總覽</a></li>
+            <li><a href="#profile">創作者</a></li>
+            <li><a href="#studio">設計工作台</a></li>
+            <li><a href="#guides">CRISPR 排序</a></li>
+            <li><a href="#variants">變異解讀</a></li>
+            <li><a href="ngs.html">NGS</a></li>
+            <li><a href="index.html" class="nav-cta">蛋白質 AI</a></li>
+        </ul>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-grid">
+            <div>
+                <div class="eyebrow">Engineer × Biomedical Research × Browser Demo</div>
+                <h1>基因序列到功能，<br><span>AI 設計平台</span></h1>
+                <p class="hero-sub">
+                    把 DNA 視為語言，把調控元件、編輯窗口與變異效應視為可優化目標。
+                    這一頁除了示範基因 AI 工作台，也把您個人網站中的工程、生醫研究與平台實作背景收進來，讓這個頁面更像真正的產品敘事，而不是單純模型 demo。
+                </p>
+                <div class="hero-note">
+                    這是瀏覽器內的規劃型展示。所有候選序列、分數與 guide preview 都是模擬輸出，目的是展示平台設計與決策流程，不是可直接下實驗的 wet-lab 指令。
+                </div>
+                <div class="hero-cta-row">
+                    <a href="#studio" class="btn btn-primary">啟動設計工作台</a>
+                    <a href="about_me.html" class="btn btn-secondary">看 About Me</a>
+                    <a href="works.html" class="btn btn-secondary">看代表作品</a>
+                    <a href="#stack" class="btn btn-secondary">看模型堆疊</a>
+                </div>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="value">4-layer</div>
+                        <div class="label">從序列模型到 wet-lab loop 的決策堆疊</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="value">Multi-objective</div>
+                        <div class="label">同時優化表達、特異性、可合成性與風險</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="value">Portfolio-ready</div>
+                        <div class="label">把模型展示、個人品牌與作品脈絡收進同一頁</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="signal-card">
+                <div class="signal-top">
+                    <div class="signal-title">平台訊號面板</div>
+                    <div class="status-pill">Simulated Runtime</div>
+                </div>
+                <div class="signal-matrix">
+                    <div class="signal-block">
+                        <div class="k">Foundation Model</div>
+                        <div class="v">Hybrid · Enformer + NT</div>
+                    </div>
+                    <div class="signal-block">
+                        <div class="k">Design Space</div>
+                        <div class="v">Promoter · Guide · Variant</div>
+                    </div>
+                    <div class="signal-block">
+                        <div class="k">Risk Gate</div>
+                        <div class="v">Off-target · Synthesis · Context</div>
+                    </div>
+                    <div class="signal-block">
+                        <div class="k">Loop</div>
+                        <div class="v">In silico → Reporter assay</div>
+                    </div>
+                </div>
+                <div class="signal-list">
+                    <div class="signal-item">
+                        <div class="left">Promoter 候選集</div>
+                        <div class="right">4 variants / batch</div>
+                    </div>
+                    <div class="signal-item">
+                        <div class="left">Guide ranking 綜合分數</div>
+                        <div class="right">0.45 eff · 0.40 spec · -0.15 risk</div>
+                    </div>
+                    <div class="signal-item">
+                        <div class="left">Variant effect report</div>
+                        <div class="right">cell-type aware</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="profile" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Creator Profile</div>
+                    <h2 class="section-title">把您的個人網站脈絡接進基因 AI 頁</h2>
+                    <p class="section-sub">
+                        這一段整理自您的個人網站：工程、生醫研究、應用介面與 NGS 相關經驗，不再只是外部連結，而是直接成為這個基因 AI 平台的背景敘事。
+                    </p>
+                </div>
+                <div class="section-badge">Integrated from Personal Website</div>
+            </div>
+
+            <div class="summary-strip">
+                <div class="summary-card">
+                    <div class="k">背景</div>
+                    <div class="v">工程 × 生醫雙碩士</div>
+                </div>
+                <div class="summary-card">
+                    <div class="k">工程經歷</div>
+                    <div class="v">前後端介面 / App 開發</div>
+                </div>
+                <div class="summary-card">
+                    <div class="k">研究經歷</div>
+                    <div class="v">生物醫學研究與 NGS 應用</div>
+                </div>
+            </div>
+
+            <div class="detail-grid" style="margin-top:14px">
+                <div class="detail-card">
+                    <div class="detail-head">Personal Site Summary</div>
+                    <div class="detail-title">從個人履歷站延伸出平台型作品</div>
+                    <div class="detail-copy">
+                        您的個人網站提到前後端開發、生物醫學研究、臨床與醫藥相關訓練，以及曾協助團隊取得國家新創獎與 2 項發明專利。這讓這個基因 AI
+                        頁不只是概念頁，而是能回扣到一位真正做過工程、研究與產品落地整合的人。
+                    </div>
+                    <div class="detail-list">
+                        <div class="detail-item">網站與應用程式經驗，支撐了這個頁面的互動工作台形式。</div>
+                        <div class="detail-item">NGS 與生物醫學背景，讓變異解讀與基因設計模組不只是空泛術語。</div>
+                        <div class="detail-item">自動化與資料系統作品，補上平台化落地所需的流程與工具思維。</div>
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+                        <a href="about_me.html" class="btn btn-secondary">本地 About Me</a>
+                        <a href="works.html" class="btn btn-secondary">本地作品總覽</a>
+                        <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer"
+                            class="btn btn-secondary">個人網站首頁</a>
+                        <a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer"
+                            class="btn btn-secondary">About Me</a>
+                        <a href="https://jtlai0921.wixsite.com/mysite/research-blog" target="_blank" rel="noreferrer"
+                            class="btn btn-secondary">Research Blog</a>
+                    </div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-head">Featured Works</div>
+                    <div class="detail-title">和這個平台最能接軌的既有作品</div>
+                    <div class="detail-list">
+                        <div class="detail-item">「次世代定序法」NGS 工作站：直接補強本站的 NGS 與基因分析敘事。</div>
+                        <div class="detail-item">自動化機器手臂操作介面：把實驗室設備操作與工作流程 UI 經驗帶進平台設計。</div>
+                        <div class="detail-item">簡易健康檢測 APP：展現醫療場景產品化與互動設計能力。</div>
+                        <div class="detail-item">資料管理系統：對應 AI 平台後台、資料治理與結果管理需求。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="studio" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Design Workbench</div>
+                    <h2 class="section-title">基因設計工作台</h2>
+                    <p class="section-sub">
+                        用一組需求描述，生成多個模擬候選並比較多目標分數。這裡的重點不是單一最高分，而是讓你快速看到不同候選在表達、特異性、可製造性與風險上的取捨。
+                    </p>
+                </div>
+                <div class="section-badge">Interactive · Candidate Synthesis Planner</div>
+            </div>
+
+            <div class="studio-grid">
+                <aside class="panel control-panel">
+                    <div>
+                        <div class="control-title">設計輸入</div>
+                        <div class="control-sub">輸入目標與偏好，生成一批示範候選。</div>
+                    </div>
+                    <div class="field">
+                        <label for="designTarget">目標基因 / 專案代號</label>
+                        <input id="designTarget" type="text" value="GENE-X tumor suppressor panel">
+                    </div>
+                    <div class="field">
+                        <label for="designOrganism">宿主或資料背景</label>
+                        <select id="designOrganism">
+                            <option value="human">Human regulatory context</option>
+                            <option value="mouse">Mouse screening panel</option>
+                            <option value="ecoli">E. coli high-throughput screen</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="designObjective">設計任務</label>
+                        <select id="designObjective">
+                            <option value="upreg">提升啟動子表現</option>
+                            <option value="specific">拉高組織特異性</option>
+                            <option value="edit_ready">提高可編輯性窗口</option>
+                            <option value="manufacture">優先可合成與穩定性</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="designModel">基礎模型</label>
+                        <select id="designModel">
+                            <option value="hybrid">Hybrid FM (Enformer + NT)</option>
+                            <option value="enformer">Enformer context scorer</option>
+                            <option value="nt">Nucleotide Transformer</option>
+                            <option value="dnabert">DNABERT motif encoder</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <div class="range-row">
+                            <label for="designStrictness">風險門檻</label>
+                            <output id="designStrictnessOut">Balanced</output>
+                        </div>
+                        <input id="designStrictness" type="range" min="0" max="100" value="56">
+                    </div>
+                    <button id="generateDesign" class="btn btn-primary" type="button">產生候選集</button>
+                    <div class="small-note">
+                        顯示的是平台決策介面範例：序列預覽經過遮罩，保留 motif 與結構偏好，避免變成可直接執行的實驗配方。
+                    </div>
+                </aside>
+
+                <div class="panel result-panel">
+                    <div class="result-top">
+                        <div>
+                            <h3 id="designSummary">候選批次尚未建立</h3>
+                            <p id="designSummarySub">平台會根據目標需求產生四組具不同偏好的候選策略。</p>
+                        </div>
+                        <div class="section-badge">Select a Candidate</div>
+                    </div>
+
+                    <div id="candidateList" class="candidate-list"></div>
+
+                    <div class="detail-grid">
+                        <div class="detail-card">
+                            <div class="detail-head">Candidate Detail</div>
+                            <div id="candidateDetail"></div>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-head">Multi-objective Score</div>
+                            <canvas id="designRadar" height="220"></canvas>
+                            <div class="chart-footnote">四軸對應：表達預期、特異性、可合成性、風險餘裕。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="guides" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Guide Ranking</div>
+                    <h2 class="section-title">CRISPR Guide 排序台</h2>
+                    <p class="section-sub">
+                        這個模組示範平台如何在效率、特異性與風險之間重排 guide 候選。表格中的 guide 只保留遮罩後的 seed preview，用來展示 ranking 與審核流程。
+                    </p>
+                </div>
+                <div class="section-badge">Masked Preview · Not Wet-lab Ready</div>
+            </div>
+
+            <div class="guide-grid">
+                <aside class="panel control-panel">
+                    <div>
+                        <div class="control-title">Guide 設定</div>
+                        <div class="control-sub">切換 enzyme 與風險偏好，重新計算排序。</div>
+                    </div>
+                    <div class="field">
+                        <label for="guideTarget">目標區域</label>
+                        <input id="guideTarget" type="text" value="regulatory hotspot · enhancer block A">
+                    </div>
+                    <div class="field">
+                        <label for="pamType">PAM / enzyme</label>
+                        <select id="pamType">
+                            <option value="NGG">SpCas9 · NGG</option>
+                            <option value="TTTV">Cas12a · TTTV</option>
+                            <option value="NGA">Flexible editor · NGA</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="editMode">編輯模式</label>
+                        <select id="editMode">
+                            <option value="knockout">Knock-out screen</option>
+                            <option value="base">Base editing</option>
+                            <option value="prime">Prime editing</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <div class="range-row">
+                            <label for="guideStrictness">Off-target 嚴格度</label>
+                            <output id="guideStrictnessOut">High</output>
+                        </div>
+                        <input id="guideStrictness" type="range" min="0" max="100" value="72">
+                    </div>
+                    <button id="rerankGuides" class="btn btn-primary" type="button">重新排序 guides</button>
+                    <div class="small-note">
+                        平台實際上會整合 genomic context、repeat 區域與 assay feedback。這裡只示範 decision surface，不顯示可直接下單的完整 guide
+                        sequence。
+                    </div>
+                </aside>
+
+                <div class="panel result-panel">
+                    <div class="summary-strip" id="guideSummary"></div>
+                    <div class="detail-grid">
+                        <div class="detail-card">
+                            <div class="detail-head">Efficiency × Specificity</div>
+                            <canvas id="guideScatter" height="250"></canvas>
+                            <div class="chart-footnote">每個點是一個 guide 候選，半徑代表綜合排名。</div>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-head">Ranking Logic</div>
+                            <div class="detail-copy">
+                                綜合分數以效率為主，但會被 off-target 風險與編輯窗口穩定度拉回。高風險設定下，平台會把高效率但 context 不穩定的 guide 往後排。
+                            </div>
+                            <div class="detail-list">
+                                <div class="detail-item">效率分數決定初始排序，但不會單獨決策。</div>
+                                <div class="detail-item">特異性不足時，平台會提高審核優先權而非直接推薦。</div>
+                                <div class="detail-item">不同 enzyme 會改變 PAM 可行窗口與風險容忍度。</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Guide Preview</th>
+                                    <th>Window</th>
+                                    <th>Efficiency</th>
+                                    <th>Specificity</th>
+                                    <th>Bystander Risk</th>
+                                    <th>Edit Bias</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guideTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="variants" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Variant Interpretation</div>
+                    <h2 class="section-title">變異效應解讀台</h2>
+                    <p class="section-sub">
+                        用同一組介面連接基因調控視角與臨床優先排序：輸入變異背景後，平台會估計表達位移、splicing 風險與 chromatin 影響，並給出下一步驗證建議。
+                    </p>
+                </div>
+                <div class="section-badge">Cell-context Aware Scoring</div>
+            </div>
+
+            <div class="variant-grid">
+                <aside class="panel control-panel">
+                    <div>
+                        <div class="control-title">變異輸入</div>
+                        <div class="control-sub">切換區域類型、位置與替換鹼基，更新示範報告。</div>
+                    </div>
+                    <div class="field">
+                        <label for="variantGene">變異案例代號</label>
+                        <input id="variantGene" type="text" value="panel-case-17">
+                    </div>
+                    <div class="field">
+                        <label for="variantRegion">區域類型</label>
+                        <select id="variantRegion">
+                            <option value="promoter">Promoter / enhancer</option>
+                            <option value="splice">Splice junction</option>
+                            <option value="coding">Coding exon</option>
+                            <option value="utr">UTR / post-transcriptional</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <div class="range-row">
+                            <label for="variantPos">位置</label>
+                            <output id="variantPosOut">842</output>
+                        </div>
+                        <input id="variantPos" type="range" min="1" max="3000" value="842">
+                    </div>
+                    <div class="field">
+                        <label for="variantModel">分析模型</label>
+                        <select id="variantModel">
+                            <option value="hybrid">Hybrid interpretation stack</option>
+                            <option value="enformer">Enformer expression context</option>
+                            <option value="nt">Nucleotide Transformer</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="variantRef">REF / ALT</label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <select id="variantRef">
+                                <option>A</option>
+                                <option>C</option>
+                                <option selected>G</option>
+                                <option>T</option>
+                            </select>
+                            <select id="variantAlt">
+                                <option selected>A</option>
+                                <option>C</option>
+                                <option>G</option>
+                                <option>T</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="evaluateVariant" class="btn btn-primary" type="button">更新解讀報告</button>
+                    <div class="small-note">
+                        這裡展示的是 interpretation UI，而不是臨床定論。真正的 clinical sign-out 還需要樣本品質、coverage、族群頻率與功能證據共同支持。
+                    </div>
+                </aside>
+
+                <div class="panel result-panel variant-output">
+                    <div class="summary-strip" id="variantSummary"></div>
+                    <div class="detail-grid">
+                        <div class="detail-card">
+                            <div class="detail-head">Cell-type Impact</div>
+                            <canvas id="variantImpactChart" height="250"></canvas>
+                            <div class="chart-footnote">顯示不同 cell context 下的預測相對位移。</div>
+                        </div>
+                        <div class="narrative-box" id="variantNarrative"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="stack" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Platform Stack</div>
+                    <h2 class="section-title">模型與決策堆疊</h2>
+                    <p class="section-sub">
+                        真正的基因 AI 平台不是單一模型，而是把 foundation model、生成器、風險閘門與實驗閉環接成一個產品化系統。
+                    </p>
+                </div>
+            </div>
+            <div class="stack-grid">
+                <div class="stack-card">
+                    <div class="stack-step">Layer 01</div>
+                    <h3>Genome Tokenization</h3>
+                    <p>把 DNA/RNA 視為語言，學習 motif、long-range context 與 regulatory grammar。</p>
+                </div>
+                <div class="stack-card">
+                    <div class="stack-step">Layer 02</div>
+                    <h3>Conditional Generator</h3>
+                    <p>依據任務條件生成候選，像是 promoter bias、guide window 或 codon balance。</p>
+                </div>
+                <div class="stack-card">
+                    <div class="stack-step">Layer 03</div>
+                    <h3>Risk & Manufacturability Gate</h3>
+                    <p>把 off-target、repeat、GC extremes 與 synthesis difficulty 放進同一個審核層。</p>
+                </div>
+                <div class="stack-card">
+                    <div class="stack-step">Layer 04</div>
+                    <h3>Assay Feedback Loop</h3>
+                    <p>把 reporter assay、amplicon readout 與 RNA-seq 重新餵回模型，縮小設計空間。</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Operating Loop</div>
+                    <h2 class="section-title">平台化運作流程</h2>
+                    <p class="section-sub">從規劃到驗證，平台最重要的是把每一步變成可以重用、可追蹤、可比較的決策流程。</p>
+                </div>
+            </div>
+            <div class="loop-grid">
+                <div class="loop-step">
+                    <div class="num">01</div>
+                    <h4>Define Intent</h4>
+                    <p>先把任務定義成可量化的目標，例如表達提升、特異性提高或編輯窗口穩定。</p>
+                </div>
+                <div class="loop-step">
+                    <div class="num">02</div>
+                    <h4>Generate Candidates</h4>
+                    <p>利用 foundation model 和條件化生成器建立多個方向不同的候選，而不是只給一個答案。</p>
+                </div>
+                <div class="loop-step">
+                    <div class="num">03</div>
+                    <h4>Score & Filter</h4>
+                    <p>以多目標評分比較效率、風險與可製造性，保留可進入下一輪的候選。</p>
+                </div>
+                <div class="loop-step">
+                    <div class="num">04</div>
+                    <h4>Assay Prioritization</h4>
+                    <p>把有限的實驗資源投向最值得驗證的候選，而不是平均分配給全部設計。</p>
+                </div>
+                <div class="loop-step">
+                    <div class="num">05</div>
+                    <h4>Learn from Readout</h4>
+                    <p>把失敗與成功樣本一起回灌平台，讓下次設計更快收斂，而不是每次都從零開始。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div>
+            <div class="footer-brand">基因 AI 設計平台</div>
+            <div>Genome foundation models · regulatory design · variant interpretation · creator portfolio</div>
+        </div>
+        <div class="footer-links">
+            <a href="about_me.html">About Me</a>
+            <a href="works.html">作品總覽</a>
+            <a href="index.html">蛋白質 AI 首頁</a>
+            <a href="ngs.html">NGS 頁面</a>
+            <a href="report.html">專案報告</a>
+            <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer">個人網站</a>
+        </div>
+    </footer>
+
+    <script>
+        const objectivePresets = {
+            upreg: {
+                label: 'Promoter amplification',
+                motifs: ['GC-box', 'CCAAT', 'TATA-lite', 'Kozak-tuned', 'CpG-balance'],
+                bases: { expression: 86, specificity: 70, synthesis: 76, safety: 72 },
+                narrative: '偏向提升整體訊號，但要避免把表達噪音一起放大。'
+            },
+            specific: {
+                label: 'Tissue-specific control',
+                motifs: ['Insulator edge', 'Cell-state motif', 'Low-leakage core', 'Enhancer spacing', 'Context gate'],
+                bases: { expression: 74, specificity: 88, synthesis: 72, safety: 80 },
+                narrative: '將 focus 放在 cell-context specificity，而不是追求單純最大表達。'
+            },
+            edit_ready: {
+                label: 'Edit-window accessibility',
+                motifs: ['Open-chromatin bias', 'PAM-friendly flank', 'Spacer-safe zone', 'Low-repeat patch', 'Repair-aware core'],
+                bases: { expression: 70, specificity: 82, synthesis: 74, safety: 78 },
+                narrative: '優先保留可編輯窗口與 genomic context 的穩定性。'
+            },
+            manufacture: {
+                label: 'Manufacturability-first',
+                motifs: ['GC flattening', 'Repeat suppression', 'Short-synthesis block', 'Low-hairpin', 'Assembly-safe'],
+                bases: { expression: 68, specificity: 74, synthesis: 92, safety: 88 },
+                narrative: '這類候選分數不一定最亮眼，但通常最適合進入製造與 assay。'
+            }
+        };
+
+        const organismPresets = {
+            human: { gcShift: 6, safetyShift: 4, label: 'human regulatory context' },
+            mouse: { gcShift: 2, safetyShift: 1, label: 'mouse discovery panel' },
+            ecoli: { gcShift: -5, safetyShift: -2, label: 'bacterial screen' }
+        };
+
+        let designRadarChart = null;
+        let guideScatterChart = null;
+        let variantImpactChart = null;
+        let currentCandidates = [];
+
+        function safeRenderChart(renderFn) {
+            try {
+                return renderFn();
+            } catch (error) {
+                console.error('[gene_ai] chart render failed:', error);
+                return null;
+            }
+        }
+
+        function hashString(text) {
+            let hash = 2166136261;
+            for (let i = 0; i < text.length; i++) {
+                hash ^= text.charCodeAt(i);
+                hash = Math.imul(hash, 16777619);
+            }
+            return hash >>> 0;
+        }
+
+        function mulberry32(seed) {
+            return function () {
+                let t = seed += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+        }
+
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        function pick(rand, items) {
+            return items[Math.floor(rand() * items.length)];
+        }
+
+        function pickMany(rand, items, count) {
+            const pool = [...items];
+            const out = [];
+            while (pool.length && out.length < count) {
+                out.push(pool.splice(Math.floor(rand() * pool.length), 1)[0]);
+            }
+            return out;
+        }
+
+        function scoreWithNoise(rand, base, swing, min, max) {
+            return Math.round(clamp(base + (rand() - .5) * swing, min, max));
+        }
+
+        function maskedSequence(rand, length, suffix) {
+            const alphabet = ['A', 'C', 'G', 'T'];
+            let seq = '';
+            for (let i = 0; i < length; i++) seq += pick(rand, alphabet);
+            const start = seq.slice(0, 6);
+            const end = seq.slice(-4);
+            return `${start}••••••${end}${suffix ? ' ' + suffix : ''}`;
+        }
+
+        function strictnessLabel(value) {
+            if (value < 34) return 'Exploratory';
+            if (value < 67) return 'Balanced';
+            return 'High';
+        }
+
+        function updateRangeOutputs() {
+            document.getElementById('designStrictnessOut').textContent = strictnessLabel(Number(document.getElementById('designStrictness').value));
+            document.getElementById('guideStrictnessOut').textContent = strictnessLabel(Number(document.getElementById('guideStrictness').value));
+            document.getElementById('variantPosOut').textContent = document.getElementById('variantPos').value;
+        }
+
+        function createCandidates() {
+            const target = document.getElementById('designTarget').value.trim() || 'untitled-design';
+            const objective = document.getElementById('designObjective').value;
+            const organism = document.getElementById('designOrganism').value;
+            const model = document.getElementById('designModel').value;
+            const strictness = Number(document.getElementById('designStrictness').value);
+            const preset = objectivePresets[objective];
+            const org = organismPresets[organism];
+
+            const seed = hashString(`${target}|${objective}|${organism}|${model}|${strictness}`);
+            const candidates = [];
+
+            for (let i = 0; i < 4; i++) {
+                const rand = mulberry32(seed + i * 97);
+                const expression = scoreWithNoise(rand, preset.bases.expression + org.gcShift * .6 - strictness * .03, 16, 52, 98);
+                const specificity = scoreWithNoise(rand, preset.bases.specificity + strictness * .18, 14, 48, 99);
+                const synthesis = scoreWithNoise(rand, preset.bases.synthesis - Math.abs(org.gcShift) * .4, 18, 45, 97);
+                const safety = scoreWithNoise(rand, preset.bases.safety + org.safetyShift + strictness * .15, 12, 44, 99);
+                const gc = Math.round(clamp(48 + org.gcShift + (rand() - .5) * 18, 32, 69));
+                const length = Math.round(120 + rand() * 46);
+                const tags = pickMany(rand, preset.motifs, 3);
+                const score = Math.round(expression * .34 + specificity * .28 + synthesis * .20 + safety * .18);
+                const riskBand = safety > 84 ? 'Low review load' : safety > 68 ? 'Moderate review' : 'High review';
+                const anchor = ['core promoter', 'flanking enhancer', 'editing access lane', 'assembly-safe block'][i];
+                candidates.push({
+                    id: `GX-${i + 1}`,
+                    name: `${preset.label} · Candidate ${i + 1}`,
+                    preview: maskedSequence(rand, 18, `(${anchor})`),
+                    tags,
+                    expression,
+                    specificity,
+                    synthesis,
+                    safety,
+                    gc,
+                    length,
+                    score,
+                    riskBand,
+                    narrative: `${preset.narrative} 目前這組候選偏向 ${i % 2 === 0 ? '訊號強度' : '審核穩定性'}，適合先進入 reporter assay 規劃。`,
+                    nextSteps: [
+                        '先用 reporter assay 比較相對表達與 leakage。',
+                        '把高分候選送進 context-specific sequencing readout。',
+                        '若要進入製造階段，再加入更嚴格的 synthesis filter。'
+                    ]
+                });
+            }
+
+            candidates.sort((a, b) => b.score - a.score);
+            return { candidates, target, objective, organism, model, strictness };
+        }
+
+        function renderCandidates() {
+            const candidateList = document.getElementById('candidateList');
+            candidateList.innerHTML = '';
+            currentCandidates.forEach((candidate, index) => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'candidate-card' + (index === 0 ? ' active' : '');
+                card.innerHTML = `
+                    <div class="candidate-head">
+                        <div class="candidate-name">${candidate.id}</div>
+                        <div class="candidate-score">Score ${candidate.score}</div>
+                    </div>
+                    <div class="candidate-preview mono">${candidate.preview}</div>
+                    <div class="tag-row">${candidate.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}</div>
+                    <div class="mini-metrics">
+                        <div class="mini-metric"><div class="k">Expr</div><div class="v">${candidate.expression}</div></div>
+                        <div class="mini-metric"><div class="k">Spec</div><div class="v">${candidate.specificity}</div></div>
+                        <div class="mini-metric"><div class="k">Synth</div><div class="v">${candidate.synthesis}</div></div>
+                        <div class="mini-metric"><div class="k">Risk</div><div class="v">${candidate.safety}</div></div>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.candidate-card').forEach(node => node.classList.remove('active'));
+                    card.classList.add('active');
+                    renderCandidateDetail(candidate);
+                });
+                candidateList.appendChild(card);
+            });
+
+            if (currentCandidates.length) renderCandidateDetail(currentCandidates[0]);
+        }
+
+        function renderCandidateDetail(candidate) {
+            const container = document.getElementById('candidateDetail');
+            container.innerHTML = `
+                <div class="detail-title">${candidate.name}</div>
+                <div class="detail-copy">${candidate.narrative}</div>
+                <div class="detail-meta">
+                    <div class="box"><div class="k">Masked Preview</div><div class="v">${candidate.preview}</div></div>
+                    <div class="box"><div class="k">Review Band</div><div class="v">${candidate.riskBand}</div></div>
+                    <div class="box"><div class="k">GC%</div><div class="v">${candidate.gc}%</div></div>
+                    <div class="box"><div class="k">Design Length</div><div class="v">${candidate.length} bp</div></div>
+                </div>
+                <div class="detail-list">
+                    ${candidate.nextSteps.map(step => `<div class="detail-item">${step}</div>`).join('')}
+                </div>
+            `;
+
+            if (typeof window.Chart === 'undefined') return;
+            const canvas = document.getElementById('designRadar');
+            if (designRadarChart) designRadarChart.destroy();
+            designRadarChart = safeRenderChart(() => new Chart(canvas, {
+                type: 'radar',
+                data: {
+                    labels: ['Expression', 'Specificity', 'Synthesis', 'Safety'],
+                    datasets: [{
+                        data: [candidate.expression, candidate.specificity, candidate.synthesis, candidate.safety],
+                        borderColor: '#77f2b2',
+                        backgroundColor: 'rgba(119,242,178,.15)',
+                        pointBackgroundColor: '#5ed7ff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 100,
+                            ticks: { display: false },
+                            angleLines: { color: 'rgba(255,255,255,.08)' },
+                            grid: { color: 'rgba(255,255,255,.08)' },
+                            pointLabels: { color: '#95a7a4', font: { size: 11 } }
+                        }
+                    }
+                }
+            }));
+        }
+
+        function refreshStudio() {
+            const batch = createCandidates();
+            currentCandidates = batch.candidates;
+            const modelLabel = document.getElementById('designModel').selectedOptions[0].textContent;
+            document.getElementById('designSummary').textContent = `${batch.target} · ${objectivePresets[batch.objective].label}`;
+            document.getElementById('designSummarySub').textContent = `${modelLabel} 在 ${organismPresets[batch.organism].label} 條件下，生成四組偏好不同的候選。`;
+            renderCandidates();
+        }
+
+        function createGuides() {
+            const target = document.getElementById('guideTarget').value.trim() || 'guide-target';
+            const pam = document.getElementById('pamType').value;
+            const mode = document.getElementById('editMode').value;
+            const strictness = Number(document.getElementById('guideStrictness').value);
+            const seed = hashString(`${target}|${pam}|${mode}|${strictness}`);
+            const items = [];
+
+            for (let i = 0; i < 6; i++) {
+                const rand = mulberry32(seed + i * 131);
+                const efficiencyBase = mode === 'knockout' ? 78 : mode === 'base' ? 72 : 68;
+                const specificityBase = 56 + strictness * .35;
+                const bystanderBase = mode === 'base' ? 28 : mode === 'prime' ? 20 : 16;
+                const efficiency = scoreWithNoise(rand, efficiencyBase, 18, 38, 96);
+                const specificity = scoreWithNoise(rand, specificityBase, 16, 34, 99);
+                const risk = scoreWithNoise(rand, bystanderBase + (100 - strictness) * .16, 14, 3, 52);
+                const score = Math.round(efficiency * .45 + specificity * .40 - risk * .15 + 8);
+                const windowStart = 90 + Math.floor(rand() * 260);
+                const repairBias = mode === 'knockout'
+                    ? pick(rand, ['NHEJ-biased', 'frameshift-rich', 'balanced'])
+                    : mode === 'base'
+                        ? pick(rand, ['narrow window', 'bystander-prone', 'clean edit'])
+                        : pick(rand, ['pegRNA-sensitive', 'PBS-stable', 'long RTT']);
+
+                items.push({
+                    rank: i + 1,
+                    preview: maskedSequence(rand, 20, pam),
+                    window: `${windowStart}-${windowStart + 19}`,
+                    efficiency,
+                    specificity,
+                    risk,
+                    repairBias,
+                    score
+                });
+            }
+
+            items.sort((a, b) => b.score - a.score);
+            return items.map((item, idx) => ({ ...item, rank: idx + 1 }));
+        }
+
+        function renderGuides() {
+            const guides = createGuides();
+            const tbody = document.getElementById('guideTable');
+            tbody.innerHTML = guides.map(guide => `
+                <tr>
+                    <td class="mono">#${guide.rank}</td>
+                    <td class="mono">${guide.preview}</td>
+                    <td class="mono">${guide.window}</td>
+                    <td class="good mono">${guide.efficiency}</td>
+                    <td class="mono">${guide.specificity}</td>
+                    <td class="${guide.risk > 28 ? 'risk' : 'warn'} mono">${guide.risk}</td>
+                    <td>${guide.repairBias}</td>
+                </tr>
+            `).join('');
+
+            const recommended = guides[0];
+            const avgSpecificity = Math.round(guides.reduce((sum, item) => sum + item.specificity, 0) / guides.length);
+            const avgRisk = Math.round(guides.reduce((sum, item) => sum + item.risk, 0) / guides.length);
+            document.getElementById('guideSummary').innerHTML = `
+                <div class="summary-card"><div class="k">Top ranked</div><div class="v">${recommended.preview}</div></div>
+                <div class="summary-card"><div class="k">Mean specificity</div><div class="v">${avgSpecificity}</div></div>
+                <div class="summary-card"><div class="k">Mean bystander risk</div><div class="v">${avgRisk}</div></div>
+            `;
+
+            if (typeof window.Chart === 'undefined') return;
+            const canvas = document.getElementById('guideScatter');
+            if (guideScatterChart) guideScatterChart.destroy();
+            guideScatterChart = safeRenderChart(() => new Chart(canvas, {
+                type: 'bubble',
+                data: {
+                    datasets: [{
+                        data: guides.map(guide => ({
+                            x: guide.specificity,
+                            y: guide.efficiency,
+                            r: clamp((guide.score - 40) / 4, 6, 15)
+                        })),
+                        backgroundColor: guides.map(guide => guide.rank === 1 ? 'rgba(119,242,178,.45)' : 'rgba(94,215,255,.28)'),
+                        borderColor: guides.map(guide => guide.rank === 1 ? '#77f2b2' : '#5ed7ff'),
+                        borderWidth: 1.5
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Specificity', color: '#95a7a4' },
+                            min: 20,
+                            max: 100,
+                            grid: { color: 'rgba(255,255,255,.06)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Efficiency', color: '#95a7a4' },
+                            min: 20,
+                            max: 100,
+                            grid: { color: 'rgba(255,255,255,.06)' }
+                        }
+                    }
+                }
+            }));
+        }
+
+        function evaluateVariantCase() {
+            const gene = document.getElementById('variantGene').value.trim() || 'panel-case';
+            const region = document.getElementById('variantRegion').value;
+            const pos = Number(document.getElementById('variantPos').value);
+            const model = document.getElementById('variantModel').value;
+            const ref = document.getElementById('variantRef').value;
+            const alt = document.getElementById('variantAlt').value;
+            const seed = hashString(`${gene}|${region}|${pos}|${model}|${ref}|${alt}`);
+            const rand = mulberry32(seed);
+
+            const regionBias = {
+                promoter: { expr: .44, splice: .14, chrom: .52 },
+                splice: { expr: .28, splice: .78, chrom: .12 },
+                coding: { expr: .22, splice: .34, chrom: .18 },
+                utr: { expr: .30, splice: .18, chrom: .26 }
+            }[region];
+
+            const expressionDelta = clamp((rand() - .5) * .9 + regionBias.expr - .18, -1.2, 1.2);
+            const spliceRisk = clamp(regionBias.splice + rand() * .26, 0, .98);
+            const chromShift = clamp((rand() - .5) * .8 + regionBias.chrom - .2, -1, 1);
+            const reviewScore = Math.round((Math.abs(expressionDelta) * 42) + spliceRisk * 36 + Math.abs(chromShift) * 22);
+
+            const priority = reviewScore > 68 ? 'High review priority' : reviewScore > 46 ? 'Moderate review priority' : 'Low review priority';
+            const exprLabel = expressionDelta > .18 ? '+' : expressionDelta < -.18 ? '-' : '≈';
+
+            document.getElementById('variantSummary').innerHTML = `
+                <div class="summary-card"><div class="k">Predicted expression</div><div class="v">${exprLabel}${Math.abs(expressionDelta).toFixed(2)}</div></div>
+                <div class="summary-card"><div class="k">Splice risk</div><div class="v">${Math.round(spliceRisk * 100)}%</div></div>
+                <div class="summary-card"><div class="k">Review priority</div><div class="v">${priority}</div></div>
+            `;
+
+            const cellTypes = ['Hepatic', 'Lymphoid', 'Epithelial', 'Neuronal', 'Stem-like'];
+            const values = cellTypes.map((_, i) => clamp(expressionDelta * 100 + (rand() - .5) * 22 + i * (chromShift * 8), -95, 95));
+
+            document.getElementById('variantNarrative').innerHTML = `
+                <div class="detail-head">Interpretation Note</div>
+                <div class="detail-title mono">${gene} · ${region} · ${ref}>${alt} @ ${pos}</div>
+                <div class="detail-copy">
+                    ${model === 'enformer' ? 'Enformer-style context scoring' : model === 'nt' ? 'Nucleotide Transformer encoding' : 'Hybrid stack'}
+                    顯示這個變異在 ${region} 背景下帶有 ${priority.toLowerCase()}。
+                    目前最值得注意的是 ${spliceRisk > .55 ? 'splicing disruption 風險' : Math.abs(expressionDelta) > .35 ? 'expression shift' : 'context-dependent chromatin movement'}。
+                </div>
+                <div class="detail-list">
+                    <div class="detail-item">若這是臨床判讀情境，下一步應優先回看 coverage、allelic balance 與樣本 QC。</div>
+                    <div class="detail-item">若這是功能驗證情境，可先做 reporter assay 或 targeted RNA readout，比對 cell-type-specific response。</div>
+                    <div class="detail-item">模型分數只能做優先排序，最後仍需結合文獻、族群頻率與實驗訊號。</div>
+                </div>
+            `;
+
+            if (typeof window.Chart === 'undefined') return;
+            const canvas = document.getElementById('variantImpactChart');
+            if (variantImpactChart) variantImpactChart.destroy();
+            variantImpactChart = safeRenderChart(() => new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: cellTypes,
+                    datasets: [{
+                        label: 'Relative change',
+                        data: values,
+                        backgroundColor: values.map(v => v >= 0 ? 'rgba(119,242,178,.48)' : 'rgba(255,123,139,.42)'),
+                        borderColor: values.map(v => v >= 0 ? '#77f2b2' : '#ff7b8b'),
+                        borderWidth: 1.3,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            min: -100,
+                            max: 100,
+                            title: { display: true, text: 'Relative shift', color: '#95a7a4' },
+                            grid: { color: 'rgba(255,255,255,.06)' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            }));
+        }
+
+        function initChartDefaults() {
+            if (typeof window.Chart === 'undefined') return;
+            Chart.defaults.color = '#95a7a4';
+            Chart.defaults.borderColor = 'rgba(255,255,255,.08)';
+            Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+        }
+
+        function initPage() {
+            initChartDefaults();
+            updateRangeOutputs();
+            refreshStudio();
+            renderGuides();
+            evaluateVariantCase();
+
+            document.getElementById('generateDesign').addEventListener('click', refreshStudio);
+            document.getElementById('rerankGuides').addEventListener('click', renderGuides);
+            document.getElementById('evaluateVariant').addEventListener('click', evaluateVariantCase);
+
+            ['designStrictness', 'guideStrictness', 'variantPos'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateRangeOutputs);
+            });
+        }
+
+        initPage();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,171 @@
+# Protein Design AI — ESM-2 × Bayesian Optimization × RL × ProteinMPNN
+
+A full end-to-end pipeline for **data-driven protein sequence optimisation**, built as a technical portfolio project for the **大分子 AI 演算法研究** role.
+
+---
+
+## What This Project Demonstrates
+
+| Competency             | Implementation                                                  |
+| ---------------------- | --------------------------------------------------------------- |
+| Pre-trained protein LM | ESM-2 (`facebook/esm2_t6_8M_UR50D`) embedding extraction        |
+| Surrogate modelling    | MLP regressor (LayerNorm + Dropout) mapping embedding → fitness |
+| Bayesian Optimisation  | GP + `qLogExpectedImprovement`, PCA-reduced latent space        |
+| Graph neural network   | Simplified ProteinMPNN (k-NN Cα graph, message passing)         |
+| Policy gradient RL     | REINFORCE with LSTM policy, multi-objective reward              |
+| End-to-end ML hygiene  | Train/test split, Pearson r, Spearman ρ, reproducible seeds     |
+
+---
+
+## Architecture Overview
+
+```
+Protein Sequences
+       │
+       ▼
+ ┌─────────────┐
+ │   ESM-2 8M  │  ← Pre-trained protein language model (HuggingFace)
+ │  Embedder   │    Mean-pooled representation  (N × 320)
+ └──────┬──────┘
+        │
+        ├─────────────────────────────────────────────┐
+        ▼                                             ▼
+ ┌────────────────┐                        ┌──────────────────┐
+ │  MLP Surrogate │                        │  ProteinMPNN     │
+ │  (Predictor)   │                        │  (Graph NN)      │
+ └──────┬─────────┘                        │  Cα k-NN graph   │
+        │                                  │  → sequence      │
+        ├─────────────────────┐            └──────────────────┘
+        ▼                     ▼
+ ┌────────────────┐   ┌──────────────────┐
+ │  Bayesian Opt  │   │  REINFORCE RL    │
+ │  GP + LogEI    │   │  LSTM Policy     │
+ │  PCA latent    │   │  Multi-obj reward│
+ └────────────────┘   └──────────────────┘
+```
+
+---
+
+## Project Structure
+
+```
+d:\project\
+├── run_pipeline.py          # CLI 入口，支援 --mode all / bo / rl / mpnn
+├── demo_notebook.ipynb      # 面試 Live Demo 筆記本
+├── requirements.txt
+├── src/
+│   ├── data_prep.py         # Demo 資料生成 / ProteinGym CSV 載入
+│   ├── embeddings.py        # ESM2Embedder (lazy load, batch, mean-pool)
+│   ├── predictor.py         # StabilityPredictor MLP + PredictorTrainer
+│   ├── bayes_opt.py         # BayesianOptimizer (GP + qLogEI + PCA)
+│   ├── protein_mpnn.py      # SimplifiedProteinMPNN (message passing)
+│   ├── rl_reinforce.py      # REINFORCE + MultiObjectiveReward
+│   └── visualize.py         # Output plots
+└── outputs/
+    ├── results_esm2.png     # BO pipeline results
+    ├── rl_training.png      # RL reward curve
+    └── mpnn_loss.png        # ProteinMPNN loss curve
+```
+
+---
+
+## Quick Start
+
+```bash
+# 1. 安裝套件
+pip install -r requirements.txt
+
+# 2. 跑完整 pipeline（含 ESM-2 下載 ~30 MB）
+python run_pipeline.py --mode all
+
+# 3. 只跑 Bayesian Optimisation
+python run_pipeline.py --mode bo --epochs 100 --bo-iters 20
+
+# 4. 只跑 RL
+python run_pipeline.py --mode rl --rl-episodes 50
+
+# 5. 只跑 ProteinMPNN
+python run_pipeline.py --mode mpnn
+```
+
+---
+
+## Key Results (Demo Data, 100 sequences, seq_len=56)
+
+| Pipeline        | Metric                            | Value                      |
+| --------------- | --------------------------------- | -------------------------- |
+| ESM-2 Embedding | PCA 8D explained variance         | **81.9%**                  |
+| Surrogate MLP   | Pearson r (test)                  | 0.29                       |
+| Bayesian Opt    | Fitness improvement over 15 iters | **+16.6%** (0.209 → 0.243) |
+| RL REINFORCE    | Reward convergence                | ✅ in ~20 episodes         |
+| ProteinMPNN     | Cross-entropy loss                | ✅ decreasing              |
+
+> Note: Low Pearson r is expected — the MLP is trained on only 80 sequences with a stochastic fitness oracle. The BO still finds improvements because GP uncertainty drives exploration.
+
+---
+
+## Core Algorithms
+
+### 1. ESM-2 Embedding
+
+```python
+# Mean pooling (masked, ignoring padding tokens)
+attention_mask = ...                        # (B, L)
+token_emb      = model(input_ids, ...).last_hidden_state  # (B, L, 320)
+mask           = attention_mask.unsqueeze(-1).float()
+embedding      = (token_emb * mask).sum(1) / mask.sum(1)  # (B, 320)
+```
+
+### 2. Bayesian Optimisation (GP + LogEI)
+
+$$
+\alpha_{\text{LogEI}}(x) = \log \mathbb{E}\bigl[\max(f(x) - f^*, 0)\bigr]
+$$
+
+PCA reduces 320-D embedding to 8-D before GP fitting, making covariance matrix well-conditioned.
+
+### 3. ProteinMPNN Message Passing
+
+$$
+h_v^{(l+1)} = \text{LN}\bigl(h_v^{(l)} + \text{ReLU}(W_O \cdot \text{SUM}_{u \in \mathcal{N}(v)} \phi(h_v^{(l)}, h_u^{(l)}, e_{vu}))\bigr)
+$$
+
+### 4. REINFORCE Policy Gradient
+
+$$
+\nabla_\theta J(\theta) = \mathbb{E}_\pi\bigl[\nabla_\theta \log \pi_\theta(a_t|s_t) \cdot G_t\bigr]
+$$
+
+Multi-objective reward: `R = w_s·stability + w_h·hydrophobic + w_c·charged_ratio`
+
+---
+
+## Dependencies
+
+```
+torch>=2.0        transformers>=4.35   botorch>=0.9
+gpytorch>=1.11    scikit-learn>=1.3    matplotlib>=3.7
+pandas>=2.0       numpy>=1.24          scipy
+```
+
+---
+
+## Author Note
+
+This project was built as a **6-week sprint** to demonstrate core competencies for protein ML research positions. The architecture intentionally mirrors production systems (e.g., ProteinMPNN, wet-lab-in-the-loop BO) while remaining fully reproducible on a single CPU in under 2 minutes.
+
+---
+
+## Static Site Deployment
+
+This repository also includes a multi-page portfolio website that is prepared for Render Static Site deployment.
+
+The current Render-ready setup can also be expanded into a small full-stack portfolio deployment:
+
+- Static site for the portfolio pages
+- FastAPI service for contact form submission
+- Render Postgres for inquiry storage
+
+- Project-specific deployment guide: [DEPLOY_RENDER.md](DEPLOY_RENDER.md)
+- Render blueprint config: [render.yaml](render.yaml)
+- Static bundle build script: [scripts/build_static_site.sh](scripts/build_static_site.sh)

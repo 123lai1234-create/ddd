@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Me | 工程 × 生醫 × AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a1116;
+            --bg2: #111922;
+            --surface: rgba(18, 26, 33, .9);
+            --surface2: #17222c;
+            --border: rgba(151, 190, 181, .12);
+            --text: #e9f0ec;
+            --muted: #94a59f;
+            --mint: #7bf0be;
+            --cyan: #58d7ff;
+            --amber: #ffbc72;
+            --rose: #ff8392;
+            --nav-h: 64px;
+            --font: 'Inter', system-ui, sans-serif;
+            --mono: 'JetBrains Mono', Consolas, monospace;
+            --shadow: 0 20px 60px rgba(0, 0, 0, .34);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at 12% 18%, rgba(88, 215, 255, .08), transparent 28%),
+                radial-gradient(circle at 86% 14%, rgba(123, 240, 190, .08), transparent 28%),
+                linear-gradient(180deg, #091015 0%, #0d151c 42%, #081016 100%);
+            color: var(--text);
+            font-family: var(--font);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+            height: var(--nav-h);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            background: rgba(10, 17, 22, .84);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            letter-spacing: .04em;
+            font-size: .92rem;
+        }
+
+        .nav-brand .mark {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--mint), var(--cyan));
+            box-shadow: 0 0 18px rgba(123, 240, 190, .35);
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            gap: 18px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--muted);
+            font-size: .84rem;
+            transition: color .2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
+        .hero {
+            padding: calc(var(--nav-h) + 58px) 32px 44px;
+        }
+
+        .hero-wrap {
+            max-width: 1180px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.06fr .94fr;
+            gap: 24px;
+            align-items: stretch;
+        }
+
+        .hero-copy,
+        .hero-panel,
+        .card,
+        .timeline-card,
+        .skill-card,
+        .link-card,
+        .contact-panel,
+        .contact-form {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-copy {
+            padding: 30px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 13px;
+            border-radius: 999px;
+            background: rgba(123, 240, 190, .08);
+            border: 1px solid rgba(123, 240, 190, .18);
+            color: var(--mint);
+            font-size: .78rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            font-size: clamp(2.4rem, 5vw, 4.3rem);
+            line-height: 1.04;
+            letter-spacing: -.04em;
+            margin-bottom: 16px;
+        }
+
+        h1 span {
+            background: linear-gradient(135deg, var(--mint), var(--cyan) 56%, var(--amber));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            color: var(--muted);
+            font-size: 1rem;
+            margin-bottom: 18px;
+            max-width: 680px;
+        }
+
+        .hero-note {
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: rgba(255, 188, 114, .07);
+            border: 1px solid rgba(255, 188, 114, .16);
+            color: #d7e4de;
+            margin-bottom: 18px;
+        }
+
+        .cta-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 17px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: .88rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--mint), var(--cyan));
+            color: #041016;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, .02);
+            border-color: var(--border);
+        }
+
+        .hero-panel {
+            padding: 24px;
+            display: grid;
+            gap: 14px;
+            background:
+                radial-gradient(circle at 80% 12%, rgba(88, 215, 255, .08), transparent 28%),
+                linear-gradient(180deg, rgba(23, 34, 44, .96), rgba(12, 19, 25, .96));
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .signal-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .signal {
+            border-radius: 16px;
+            padding: 14px;
+            border: 1px solid rgba(255, 255, 255, .05);
+            background: rgba(255, 255, 255, .03);
+        }
+
+        .signal .k {
+            color: var(--muted);
+            font-size: .74rem;
+            margin-bottom: 6px;
+        }
+
+        .signal .v {
+            font-family: var(--mono);
+            font-size: .9rem;
+            font-weight: 700;
+        }
+
+        .container {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 32px 92px;
+        }
+
+        section {
+            padding-top: 34px;
+        }
+
+        .section-label {
+            color: var(--cyan);
+            font-size: .78rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .section-title {
+            font-size: clamp(1.7rem, 4vw, 2.5rem);
+            margin-bottom: 10px;
+            letter-spacing: -.03em;
+        }
+
+        .section-sub {
+            color: var(--muted);
+            max-width: 760px;
+            margin-bottom: 22px;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .card,
+        .skill-card,
+        .link-card {
+            padding: 18px;
+        }
+
+        .card h3,
+        .skill-card h3,
+        .timeline-card h3,
+        .link-card h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .card p,
+        .skill-card p,
+        .timeline-card p,
+        .link-card p {
+            color: var(--muted);
+            font-size: .9rem;
+        }
+
+        .tiny {
+            font-size: .74rem;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 10px;
+        }
+
+        .timeline {
+            display: grid;
+            gap: 14px;
+        }
+
+        .timeline-card {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .time-tag {
+            font-family: var(--mono);
+            font-size: .86rem;
+            color: var(--mint);
+            font-weight: 700;
+        }
+
+        .timeline-copy ul {
+            list-style: none;
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .timeline-copy li {
+            color: #d8e3de;
+            font-size: .88rem;
+            position: relative;
+            padding-left: 14px;
+        }
+
+        .timeline-copy li::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--mint);
+            position: absolute;
+            left: 0;
+            top: .65em;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .tag-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .tag {
+            padding: 6px 9px;
+            border-radius: 999px;
+            background: rgba(88, 215, 255, .06);
+            border: 1px solid rgba(88, 215, 255, .16);
+            color: #cdebf1;
+            font-size: .76rem;
+        }
+
+        .link-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .link-card a {
+            display: inline-flex;
+            margin-top: 14px;
+            text-decoration: none;
+            color: var(--mint);
+            font-weight: 700;
+        }
+
+        .contact-layout {
+            display: grid;
+            grid-template-columns: .9fr 1.1fr;
+            gap: 18px;
+        }
+
+        .contact-panel,
+        .contact-form {
+            padding: 24px;
+        }
+
+        .contact-panel p {
+            color: var(--muted);
+            margin-top: 10px;
+        }
+
+        .inline-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .metric-mini {
+            padding: 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, .02);
+            border: 1px solid var(--border);
+        }
+
+        .metric-mini .k {
+            font-size: .72rem;
+            color: var(--muted);
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .metric-mini .v {
+            font-size: .98rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .contact-meta {
+            margin-top: 16px;
+            font-family: var(--mono);
+            font-size: .78rem;
+            color: var(--muted);
+            word-break: break-all;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .field label {
+            font-size: .82rem;
+            color: #d2e6dd;
+            font-weight: 600;
+        }
+
+        .field input,
+        .field textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .03);
+            color: var(--text);
+            font: inherit;
+        }
+
+        .field textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .field input:focus,
+        .field textarea:focus {
+            outline: none;
+            border-color: rgba(88, 215, 255, .6);
+            box-shadow: 0 0 0 4px rgba(88, 215, 255, .12);
+        }
+
+        .form-status {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .03);
+            color: var(--muted);
+            font-size: .85rem;
+        }
+
+        .form-status[data-state="success"] {
+            border-color: rgba(123, 240, 190, .32);
+            background: rgba(123, 240, 190, .08);
+            color: #d2f3e3;
+        }
+
+        .form-status[data-state="warning"] {
+            border-color: rgba(255, 188, 114, .32);
+            background: rgba(255, 188, 114, .08);
+            color: #ffe4c6;
+        }
+
+        .form-status[data-state="error"] {
+            border-color: rgba(255, 131, 146, .32);
+            background: rgba(255, 131, 146, .08);
+            color: #ffd4da;
+        }
+
+        .contact-form .btn {
+            margin-top: 4px;
+        }
+
+        .hp-field {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        footer {
+            max-width: 1180px;
+            margin: 28px auto 0;
+            padding: 26px 32px 42px;
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            color: var(--muted);
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .footer-links a {
+            text-decoration: none;
+            color: var(--muted);
+        }
+
+        .footer-links a:hover {
+            color: var(--text);
+        }
+
+        @media (max-width: 1000px) {
+
+            .hero-wrap,
+            .card-grid,
+            .skills-grid,
+            .link-grid,
+            .contact-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline-card {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 760px) {
+
+            nav,
+            .container,
+            .hero,
+            footer {
+                padding-left: 18px;
+                padding-right: 18px;
+            }
+
+            .nav-links {
+                gap: 10px;
+                overflow-x: auto;
+            }
+
+            .signal-grid,
+            .form-grid,
+            .inline-metrics {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a href="index.html" class="nav-brand">
+            <span class="mark"></span>
+            About Me
+        </a>
+        <ul class="nav-links">
+            <li><a href="works.html">作品總覽</a></li>
+            <li><a href="gene_ai.html">基因 AI</a></li>
+            <li><a href="ngs.html">NGS</a></li>
+            <li><a href="index.html">首頁</a></li>
+        </ul>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-wrap">
+            <div class="hero-copy">
+                <div class="eyebrow">About Me · Engineering × Biomedical Research</div>
+                <h1>工程、生醫與<br><span>平台實作的交會點</span></h1>
+                <p class="hero-sub">
+                    這一頁把您原本個人網站中的關鍵內容，本地化整理成更適合目前作品集的版本：
+                    從前後端介面開發、生物醫學研究、NGS 與臨床訓練，到把研究概念轉成可操作的網站與應用平台。
+                </p>
+                <div class="hero-note">
+                    內容依據您既有個人網站整理：重點保留跨域背景、教育歷程、技術技能與代表性的實務能力，不照搬 Wix 版面，而是改寫成與本站一致的產品與技術敘事。
+                </div>
+                <div class="cta-row">
+                    <a href="works.html" class="btn btn-primary">看代表作品</a>
+                    <a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer"
+                        class="btn btn-secondary">原始 About Me</a>
+                    <a href="https://www.linkedin.com/in/ctlai" target="_blank" rel="noreferrer"
+                        class="btn btn-secondary">LinkedIn</a>
+                </div>
+            </div>
+            <div class="hero-panel">
+                <div class="panel-title">Profile Snapshot</div>
+                <div class="signal-grid">
+                    <div class="signal">
+                        <div class="k">Primary Identity</div>
+                        <div class="v">Engineer × Biomedical</div>
+                    </div>
+                    <div class="signal">
+                        <div class="k">Education</div>
+                        <div class="v">Electronic Eng. + Anatomy/Cell Biology</div>
+                    </div>
+                    <div class="signal">
+                        <div class="k">Work Axis</div>
+                        <div class="v">Frontend / App / NGS / Research</div>
+                    </div>
+                    <div class="signal">
+                        <div class="k">Output Style</div>
+                        <div class="v">Research → Product → Interface</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section>
+            <div class="section-label">Identity</div>
+            <h2 class="section-title">我在這個作品集裡扮演什麼角色</h2>
+            <p class="section-sub">
+                個人網站中最明顯的主線不是單一職稱，而是持續在工程、研究與平台介面三條線之間移動。
+                這也是為什麼本站會同時出現蛋白質設計、基因 AI、NGS 與互動式產品頁面。
+            </p>
+            <div class="card-grid">
+                <div class="card">
+                    <div class="tiny">Role 01</div>
+                    <h3>介面與應用開發者</h3>
+                    <p>從前後端網站、應用程式到互動工作台，把分析流程轉成可操作的使用體驗，而不是只停留在腳本或論文圖。</p>
+                </div>
+                <div class="card">
+                    <div class="tiny">Role 02</div>
+                    <h3>生物醫學研究導向</h3>
+                    <p>個人網站內容顯示您長期處於研究與臨床邊界，這讓 NGS、變異解讀與 assay workflow 不只是名詞，而是具場景感的設計對象。</p>
+                </div>
+                <div class="card">
+                    <div class="tiny">Role 03</div>
+                    <h3>平台型整合者</h3>
+                    <p>能把模型、資料、流程與 UI 接成一體。這也是目前本站從蛋白質 AI 延伸到基因 AI、再接回 NGS 的核心價值。</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-label">Experience</div>
+            <h2 class="section-title">經歷主軸</h2>
+            <p class="section-sub">依據個人網站與 About Me 頁整理出的高訊號版本。</p>
+            <div class="timeline">
+                <div class="timeline-card">
+                    <div class="time-tag">2020 / 07 — 迄今</div>
+                    <div class="timeline-copy">
+                        <h3>工程師：前後端介面開發、網站與應用程式</h3>
+                        <p>這一段經歷直接對應到目前本站的互動作品形式：不是單純放成果，而是把技術包成一個能操作、能展示、能說故事的平台。</p>
+                        <ul>
+                            <li>網站、介面與應用產品型輸出</li>
+                            <li>前端互動頁面與資料流程視覺化</li>
+                            <li>把研究或操作流程轉成使用者可理解的工作台</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="timeline-card">
+                    <div class="time-tag">2014 / 01 — 2019 / 03</div>
+                    <div class="timeline-copy">
+                        <h3>生物醫學研究及相關工作</h3>
+                        <p>這段背景讓您目前做的 NGS、變異解讀、基因平台與生醫資料頁面有了真正的應用場景與判斷脈絡。</p>
+                        <ul>
+                            <li>生物醫學研究與分析工作</li>
+                            <li>接觸臨床與醫藥相關訓練、流程與判讀語境</li>
+                            <li>對 wet-lab 到 data pipeline 的關係有實務理解</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="timeline-card">
+                    <div class="time-tag">Cross-domain layer</div>
+                    <div class="timeline-copy">
+                        <h3>臨床、醫藥行銷、智財與產品轉譯</h3>
+                        <p>個人網站提到醫藥行銷師背景、專業訓練與考核、曾協助團隊獲得國家新創獎與 2 項發明專利，這類經驗會自然反映在產品敘事與研究轉譯能力上。</p>
+                        <ul>
+                            <li>能用非純研究語言來描述技術價值</li>
+                            <li>理解創新、專利與落地場景的連結</li>
+                            <li>適合把研究成果包裝成 demo、作品集與平台原型</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-label">Education</div>
+            <h2 class="section-title">教育背景</h2>
+            <p class="section-sub">目前可從個人網站 About Me 頁明確識別出的教育主線如下。</p>
+            <div class="card-grid">
+                <div class="card">
+                    <div class="tiny">2022 / 09 — 2025 / 08</div>
+                    <h3>Electronic Engineering</h3>
+                    <p>National Taipei University of Technology, Taipei Tech。這條線補足系統、電子與工程開發邏輯，對平台與應用開發特別關鍵。</p>
+                </div>
+                <div class="card">
+                    <div class="tiny">2015 / 09 — 2017 / 08</div>
+                    <h3>Anatomy and Cell Biology</h3>
+                    <p>National Yang-Ming University。這條線是本站所有生醫與基因體頁面的研究基礎。</p>
+                </div>
+                <div class="card">
+                    <div class="tiny">Cross-training</div>
+                    <h3>持續進修與工具訓練</h3>
+                    <p>個人站提到多種職訓與在職訓練，包括程式、APP、音訊與相關工具，反映您不是單一學科出身，而是持續跨域擴充。</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-label">Skills</div>
+            <h2 class="section-title">技能組合</h2>
+            <p class="section-sub">以下是依個人網站資訊重組後，更貼近目前本站的技能分類。</p>
+            <div class="skills-grid">
+                <div class="skill-card">
+                    <div class="tiny">Software</div>
+                    <h3>程式與開發</h3>
+                    <p>Java、Python、C，以及前後端網站與應用程式實作能力，是您把研究需求變成實際平台介面的核心基礎。</p>
+                    <div class="tag-row">
+                        <span class="tag">Java</span>
+                        <span class="tag">Python</span>
+                        <span class="tag">C</span>
+                        <span class="tag">Frontend</span>
+                        <span class="tag">App</span>
+                    </div>
+                </div>
+                <div class="skill-card">
+                    <div class="tiny">Biomedical</div>
+                    <h3>生醫與基因體應用</h3>
+                    <p>生物醫學研究、NGS、變異分析與研究工作流理解，讓您能從問題定義一路走到資料分析與結果展示。</p>
+                    <div class="tag-row">
+                        <span class="tag">NGS</span>
+                        <span class="tag">Variant Interpretation</span>
+                        <span class="tag">Biomedical Research</span>
+                        <span class="tag">Genomics</span>
+                    </div>
+                </div>
+                <div class="skill-card">
+                    <div class="tiny">Translation</div>
+                    <h3>產品與敘事轉譯</h3>
+                    <p>醫藥、臨床與智財相關訓練，使您擅長把技術成果轉譯成產品故事、展示內容與可被非研究背景理解的介面。</p>
+                    <div class="tag-row">
+                        <span class="tag">Product Framing</span>
+                        <span class="tag">Research Translation</span>
+                        <span class="tag">Clinical Context</span>
+                        <span class="tag">IP Awareness</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-label">Connect</div>
+            <h2 class="section-title">把合作訊息直接寫進 Render PostgreSQL</h2>
+            <p class="section-sub">這個區塊不再只是外部連結。部署後，表單會透過 FastAPI API 寫入 Render Postgres，變成這份作品集真正的 DB-backed 功能。</p>
+            <div class="contact-layout">
+                <div class="contact-panel">
+                    <div class="tiny">Render stack</div>
+                    <h3>Static Site + Python API + Postgres</h3>
+                    <p>網站本身仍是靜態頁，但這裡的送出會經過獨立 API 服務，資料表會保存姓名、Email、單位、訊息與來源頁面，讓 Render 的資料庫不只是掛名存在。</p>
+                    <div class="inline-metrics">
+                        <div class="metric-mini">
+                            <div class="k">API status</div>
+                            <div class="v" id="apiHealthLabel">Waiting</div>
+                        </div>
+                        <div class="metric-mini">
+                            <div class="k">DB status</div>
+                            <div class="v" id="dbHealthLabel">Waiting</div>
+                        </div>
+                        <div class="metric-mini">
+                            <div class="k">Inquiries</div>
+                            <div class="v" id="dbCountLabel">-</div>
+                        </div>
+                        <div class="metric-mini">
+                            <div class="k">Last received</div>
+                            <div class="v" id="dbLastSeen">-</div>
+                        </div>
+                    </div>
+                    <div class="contact-meta">API base: <span id="apiBaseLabel">Not configured</span></div>
+                </div>
+                <form id="contactForm" class="contact-form" novalidate>
+                    <div class="tiny">Leave a message</div>
+                    <h3 style="margin-bottom:8px">合作洽詢 / 聯絡表單</h3>
+                    <p style="color:var(--muted);margin-bottom:18px">如果你要聊合作、研究、產品或平台整合，部署完成後這裡會直接寫入 Render DB。</p>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="contact-name">姓名</label>
+                            <input id="contact-name" name="name" type="text" maxlength="120" placeholder="Your name"
+                                required>
+                        </div>
+                        <div class="field">
+                            <label for="contact-email">Email</label>
+                            <input id="contact-email" name="email" type="email" maxlength="255"
+                                placeholder="you@example.com" required>
+                        </div>
+                        <div class="field full">
+                            <label for="contact-organization">公司 / 單位</label>
+                            <input id="contact-organization" name="organization" type="text" maxlength="160"
+                                placeholder="Lab, company, hospital, startup...">
+                        </div>
+                        <div class="field full">
+                            <label for="contact-message">訊息內容</label>
+                            <textarea id="contact-message" name="message" maxlength="4000"
+                                placeholder="想聊的主題、合作方向、研究需求或平台想法" required></textarea>
+                        </div>
+                        <input class="hp-field" name="website" type="text" tabindex="-1" autocomplete="off">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="contactSubmitBtn">送出到 Render DB</button>
+                    <div id="contactStatus" class="form-status" data-state="idle" role="status" aria-live="polite">尚未啟用
+                        API 連線。部署 API 與資料庫後，這裡會顯示連線狀態。</div>
+                </form>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-label">Links</div>
+            <h2 class="section-title">延伸入口</h2>
+            <p class="section-sub">原始網站與外部履歷連結仍保留，方便對照本地化版本與原始資料來源。</p>
+            <div class="link-grid">
+                <div class="link-card">
+                    <div class="tiny">External</div>
+                    <h3>個人網站首頁</h3>
+                    <p>Wix 原始個人站，包含 About Me、Research Blog 與作品入口。</p>
+                    <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer">前往網站</a>
+                </div>
+                <div class="link-card">
+                    <div class="tiny">External</div>
+                    <h3>About Me 原頁</h3>
+                    <p>保留原始 About Me 版面，方便比對本站本地化整理後的版本。</p>
+                    <a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer">開啟 About
+                        Me</a>
+                </div>
+                <div class="link-card">
+                    <div class="tiny">External</div>
+                    <h3>LinkedIn</h3>
+                    <p>補充履歷與社群身份入口。</p>
+                    <a href="https://www.linkedin.com/in/ctlai" target="_blank" rel="noreferrer">前往 LinkedIn</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div>
+            <div style="font-weight:700;color:var(--text)">About Me</div>
+            <div>本地化整理自既有個人網站，與本站技術作品集同步。</div>
+        </div>
+        <div class="footer-links">
+            <a href="index.html">首頁</a>
+            <a href="works.html">作品總覽</a>
+            <a href="gene_ai.html">基因 AI</a>
+            <a href="ngs.html">NGS</a>
+        </div>
+    </footer>
+    <script src="app-config.js"></script>
+    <script>
+        (() => {
+            const form = document.getElementById('contactForm');
+            const statusEl = document.getElementById('contactStatus');
+            const submitBtn = document.getElementById('contactSubmitBtn');
+            const apiHealthLabel = document.getElementById('apiHealthLabel');
+            const dbHealthLabel = document.getElementById('dbHealthLabel');
+            const dbCountLabel = document.getElementById('dbCountLabel');
+            const dbLastSeen = document.getElementById('dbLastSeen');
+            const apiBaseLabel = document.getElementById('apiBaseLabel');
+            const apiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
+                ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
+                : '';
+
+            const setStatus = (message, state) => {
+                statusEl.textContent = message;
+                statusEl.dataset.state = state;
+            };
+
+            const setMetrics = (payload) => {
+                apiHealthLabel.textContent = payload.api;
+                dbHealthLabel.textContent = payload.db;
+                dbCountLabel.textContent = payload.count;
+                dbLastSeen.textContent = payload.lastSeen;
+            };
+
+            const formatDateTime = (value) => {
+                if (!value) {
+                    return '-';
+                }
+
+                const parsed = new Date(value);
+                if (Number.isNaN(parsed.getTime())) {
+                    return '-';
+                }
+
+                return parsed.toLocaleString('zh-TW', {
+                    hour12: false,
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            };
+
+            const updateStats = async () => {
+                apiBaseLabel.textContent = apiBase || 'Not configured';
+
+                if (!apiBase) {
+                    submitBtn.disabled = true;
+                    setMetrics({
+                        api: 'Config needed',
+                        db: 'Unavailable',
+                        count: '-',
+                        lastSeen: '-'
+                    });
+                    setStatus('尚未設定 API_BASE_URL，因此這個表單目前無法寫入 Render DB。', 'warning');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${apiBase}/api/inquiries/stats`);
+                    if (!response.ok) {
+                        throw new Error('API request failed');
+                    }
+
+                    const data = await response.json();
+                    submitBtn.disabled = false;
+                    setMetrics({
+                        api: data.connected ? 'Online' : 'Booting',
+                        db: data.databaseConfigured ? 'Connected' : 'Missing DB',
+                        count: String(data.totalInquiries ?? 0),
+                        lastSeen: formatDateTime(data.latestCreatedAt)
+                    });
+                    setStatus('API 與資料庫已連線，可以直接把表單寫進 Render PostgreSQL。', 'success');
+                } catch (error) {
+                    submitBtn.disabled = true;
+                    setMetrics({
+                        api: 'Offline',
+                        db: 'Unavailable',
+                        count: '-',
+                        lastSeen: '-'
+                    });
+                    setStatus('目前無法連線到 Render API。請先建立 API service 與 Postgres database。', 'error');
+                }
+            };
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                if (!apiBase) {
+                    setStatus('API_BASE_URL 尚未設定，無法送出表單。', 'warning');
+                    return;
+                }
+
+                const formData = new FormData(form);
+                const payload = {
+                    name: String(formData.get('name') || '').trim(),
+                    email: String(formData.get('email') || '').trim(),
+                    organization: String(formData.get('organization') || '').trim(),
+                    message: String(formData.get('message') || '').trim(),
+                    website: String(formData.get('website') || '').trim(),
+                    source_page: window.location.pathname.split('/').pop() || 'about_me.html'
+                };
+
+                if (!payload.name || !payload.email || !payload.message) {
+                    setStatus('請至少填寫姓名、Email 與訊息內容。', 'warning');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = '送出中...';
+                setStatus('正在把訊息寫入 Render PostgreSQL...', 'idle');
+
+                try {
+                    const response = await fetch(`${apiBase}/api/inquiries`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(data.detail || '訊息送出失敗');
+                    }
+
+                    form.reset();
+                    setStatus(`已成功寫入 Render DB，記錄編號 #${data.id}。`, 'success');
+                    await updateStats();
+                } catch (error) {
+                    setStatus(error.message || '目前無法送出，請稍後再試。', 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '送出到 Render DB';
+                }
+            });
+
+            updateStats();
+        })();
+    </script>
+</body>
+
+</html>
