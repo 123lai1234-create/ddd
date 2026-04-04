@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import psycopg
 from fastapi import FastAPI, HTTPException, status
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS site_inquiries (
 
 logger = logging.getLogger(__name__)
 SCHEMA_READY = False
+LAST_DATABASE_ERROR = ""
 
 
 class InquiryCreate(BaseModel):
@@ -52,6 +54,55 @@ class InquiryCreate(BaseModel):
 
 def get_database_url() -> str:
     return os.getenv("DATABASE_URL", "").strip()
+
+
+def _with_query_params(url: str, params: dict[str, str]) -> str:
+    parsed = urlparse(url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query.update(params)
+    return urlunparse(parsed._replace(query=urlencode(query)))
+
+
+def get_database_url_candidates() -> list[str]:
+    database_url = get_database_url()
+    if not database_url:
+        return []
+
+    candidates: list[str] = []
+
+    def append_candidate(candidate: str) -> None:
+        normalized = candidate.strip()
+        if normalized and normalized not in candidates:
+            candidates.append(normalized)
+
+    append_candidate(database_url)
+    append_candidate(_with_query_params(database_url, {"connect_timeout": "5"}))
+
+    parsed = urlparse(database_url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    if "sslmode" not in query:
+        append_candidate(_with_query_params(database_url, {"sslmode": "require", "connect_timeout": "5"}))
+
+    return candidates
+
+
+def get_connection() -> psycopg.Connection:
+    global LAST_DATABASE_ERROR
+
+    last_error: Exception | None = None
+    for candidate in get_database_url_candidates():
+        try:
+            connection = psycopg.connect(candidate)
+            LAST_DATABASE_ERROR = ""
+            return connection
+        except psycopg.Error as error:
+            last_error = error
+            LAST_DATABASE_ERROR = str(error)
+
+    if last_error is not None:
+        raise last_error
+
+    raise psycopg.OperationalError("DATABASE_URL is not configured.")
 
 
 def get_allowed_origins() -> list[str]:
@@ -82,7 +133,7 @@ def ensure_schema() -> bool:
         return False
 
     try:
-        with psycopg.connect(database_url) as connection:
+        with get_connection() as connection:
             connection.execute(CREATE_TABLE_SQL)
             connection.commit()
         SCHEMA_READY = True
@@ -98,7 +149,7 @@ def database_available() -> bool:
         return False
 
     try:
-        with psycopg.connect(database_url) as connection:
+        with get_connection() as connection:
             connection.execute("SELECT 1;")
         return True
     except psycopg.Error:
@@ -142,7 +193,7 @@ def inquiry_stats() -> dict[str, Any]:
         )
 
     try:
-        with psycopg.connect(database_url) as connection:
+        with get_connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT COUNT(*), MAX(created_at) FROM site_inquiries;")
                 total_inquiries, latest_created_at = cursor.fetchone()
@@ -178,7 +229,7 @@ def create_inquiry(payload: InquiryCreate) -> dict[str, Any]:
         )
 
     try:
-        with psycopg.connect(database_url) as connection:
+        with get_connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
