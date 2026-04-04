@@ -59,8 +59,8 @@ The database-backed path adds a separate web service and database, so the static
 5. Render will read [render.yaml](render.yaml) automatically and create:
    - the static portfolio site
    - the FastAPI web service
-   - the Postgres database
-6. After the first deploy, open [about_me.html](about_me.html) and verify that the contact section reports API and DB connectivity.
+6. If your workspace already has an active free-tier Postgres database, do not create another one through the Blueprint. Reuse the existing database by setting DATABASE_URL manually on the API service.
+7. After the first deploy, open [about_me.html](about_me.html) and verify that the contact section reports API and DB connectivity.
 
 ## GitHub Path
 
@@ -89,6 +89,16 @@ Create the following resources in Render manually if you do not want to use Blue
    - Plan: Free is available, but note the 30-day limit on free Postgres instances in current Render pricing
 
 Then set the web service DATABASE_URL from the created Postgres instance connection string.
+
+## If Blueprint Fails Because of Free DB Limits
+
+Render workspaces can only have one active free-tier Postgres database.
+
+- If you already have a free Render Postgres instance in this workspace, keep it.
+- Deploy the static site and API service only.
+- After the API service is created, open its Environment settings.
+- Add DATABASE_URL manually using the connection string from your existing Render Postgres instance.
+- Prefer the internal Render connection string when the API service and database are in the same workspace.
 
 ## Important Routes
 

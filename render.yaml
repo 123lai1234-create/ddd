@@ -57,10 +57,4 @@ services:
         - "render.yaml"
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: jtlai-engineering-biomed-db
-          property: connectionString
-
-databases:
-  - name: jtlai-engineering-biomed-db
-    plan: free
+        sync: false
