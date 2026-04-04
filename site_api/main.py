@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
@@ -20,6 +21,10 @@ CREATE TABLE IF NOT EXISTS site_inquiries (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 """
+
+
+logger = logging.getLogger(__name__)
+SCHEMA_READY = False
 
 
 class InquiryCreate(BaseModel):
@@ -66,14 +71,25 @@ app.add_middleware(
 )
 
 
-def ensure_schema() -> None:
+def ensure_schema() -> bool:
+    global SCHEMA_READY
+
+    if SCHEMA_READY:
+        return True
+
     database_url = get_database_url()
     if not database_url:
-        return
+        return False
 
-    with psycopg.connect(database_url) as connection:
-        connection.execute(CREATE_TABLE_SQL)
-        connection.commit()
+    try:
+        with psycopg.connect(database_url) as connection:
+            connection.execute(CREATE_TABLE_SQL)
+            connection.commit()
+        SCHEMA_READY = True
+        return True
+    except psycopg.Error as error:
+        logger.warning("Database schema is not ready yet: %s", error)
+        return False
 
 
 def database_available() -> bool:
@@ -119,6 +135,12 @@ def inquiry_stats() -> dict[str, Any]:
             "latestCreatedAt": None,
         }
 
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
     try:
         with psycopg.connect(database_url) as connection:
             with connection.cursor() as cursor:
@@ -147,6 +169,12 @@ def create_inquiry(payload: InquiryCreate) -> dict[str, Any]:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="DATABASE_URL is not configured.",
+        )
+
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
         )
 
     try:
