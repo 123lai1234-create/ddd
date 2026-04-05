@@ -146,6 +146,95 @@
             color: var(--teal);
         }
 
+        /* ─── Nav CTA button ─────────────────────────────────────────────── */
+        .nav-cta {
+            background: var(--teal);
+            color: #000 !important;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: .82rem;
+            font-weight: 700;
+            transition: opacity .2s !important;
+        }
+
+        .nav-cta:hover {
+            opacity: .85;
+            color: #000 !important;
+        }
+
+        /* ─── Hamburger button ───────────────────────────────────────────── */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            width: 36px;
+            height: 36px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: var(--muted);
+            border-radius: 2px;
+            transition: all .3s ease;
+        }
+
+        .hamburger.open span:nth-child(1) {
+            transform: translateY(7px) rotate(45deg);
+        }
+
+        .hamburger.open span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.open span:nth-child(3) {
+            transform: translateY(-7px) rotate(-45deg);
+        }
+
+        /* ─── Mobile nav drawer ─────────────────────────────────────────── */
+        .nav-drawer {
+            display: none;
+            position: fixed;
+            top: var(--nav-h);
+            left: 0;
+            right: 0;
+            background: rgba(8, 12, 16, .97);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            z-index: 99;
+            padding: 12px 24px 24px;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .nav-drawer.open {
+            display: flex;
+        }
+
+        .nav-drawer a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: .95rem;
+            font-weight: 500;
+            padding: 12px 4px;
+            border-bottom: 1px solid var(--border);
+            transition: color .2s;
+        }
+
+        .nav-drawer a:last-child {
+            border-bottom: none;
+        }
+
+        .nav-drawer a:hover {
+            color: var(--teal);
+        }
+
         /* ─── Hero ───────────────────────────────────────────────────────── */
         #hero {
             min-height: 100vh;
@@ -1118,6 +1207,10 @@
                 display: none;
             }
 
+            .hamburger {
+                display: flex;
+            }
+
             section {
                 padding: 70px 20px;
             }
@@ -1784,19 +1877,24 @@
         <ul class="nav-links">
             <li><a href="about_me.html">About Me</a></li>
             <li><a href="works.html">作品總覽</a></li>
-            <li><a href="#pipeline">流程架構</a></li>
-            <li><a href="#results">實驗結果</a></li>
-            <li><a href="#algorithms">核心演算法</a></li>
-            <li><a href="#creator">創作者</a></li>
-            <li><a href="#codebase">程式碼庫</a></li>
-            <li><a href="#interview">面試準備</a></li>
             <li><a href="ngs.html">NGS 定序</a></li>
             <li><a href="gene_ai.html">基因 AI</a></li>
-            <li><a href="#sequence-live">序列資料庫</a></li>
-            <li><a href="#knowledge-live">知識資料庫</a></li>
-            <li><a href="#demo" class="btn btn-primary" style="padding:6px 16px;font-size:.8rem">互動展示</a></li>
+            <li><a href="#demo" class="nav-cta">互動展示</a></li>
         </ul>
+        <button class="hamburger" id="hamburger" aria-label="開啟選單">
+            <span></span><span></span><span></span>
+        </button>
     </nav>
+    <div class="nav-drawer" id="navDrawer">
+        <a href="about_me.html">About Me</a>
+        <a href="works.html">作品總覽</a>
+        <a href="ngs.html">NGS 定序</a>
+        <a href="gene_ai.html">基因 AI 平台</a>
+        <a href="#pipeline"
+            onclick="document.getElementById('navDrawer').classList.remove('open');document.getElementById('hamburger').classList.remove('open')">技術流程</a>
+        <a href="#demo"
+            onclick="document.getElementById('navDrawer').classList.remove('open');document.getElementById('hamburger').classList.remove('open')">互動展示</a>
+    </div>
 
     <!-- ════════ HERO ════════ -->
     <section id="hero" style="padding:0;max-width:none">
@@ -1809,16 +1907,12 @@
                 <span class="grad">AI 平台作品集</span>
             </h1>
             <p class="hero-sub">
-                這個網站把您的個人站內容、本地化的 About Me、代表作品，以及蛋白質設計、基因 AI、NGS 等互動頁面整合成同一個敘事：
-                不只會做模型，也能把研究、介面與產品化工作串成一個可操作的平台。
+                電資工程與生物醫學雙碩士背景，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發，展示從研究到可操作系統的全端跨域能力。
             </p>
             <div class="hero-ctas">
-                <a href="about_me.html" class="btn btn-primary">認識創作者</a>
-                <a href="works.html" class="btn btn-outline">查看代表作品</a>
-                <a href="gene_ai.html" class="btn btn-outline">開啟基因 AI 平台</a>
-                <a href="#sequence-live" class="btn btn-outline">看即時序列庫</a>
-                <a href="#knowledge-live" class="btn btn-outline">看知識資料庫</a>
-                <a href="#pipeline" class="btn btn-outline">看技術流程</a>
+                <a href="about_me.html" class="btn btn-primary">認識我</a>
+                <a href="works.html" class="btn btn-outline">作品總覽</a>
+                <a href="gene_ai.html" class="btn btn-outline">基因 AI 平台</a>
             </div>
             <div class="hero-stats">
                 <div class="hero-stat">
@@ -1849,10 +1943,10 @@
     <!-- ════════ CREATOR ════════ -->
     <section id="creator">
         <div class="reveal">
-            <div class="section-label">創作者整合</div>
-            <h2 class="section-title">從個人網站延伸到這個技術作品集</h2>
+            <div class="section-label">關於我</div>
+            <h2 class="section-title">工程與生醫的跨域能力線</h2>
             <p class="section-sub">
-                我把您的個人網站脈絡一併整合進來，讓這個站不只展示蛋白質與基因 AI 的技術內容，也能看出您本人的工程、生醫研究與產品實作背景。
+                電資工程與生物醫學的雙碩士訓練，加上研究與產品實作的第一線經驗，讓這裡展示的每個作品都有真實意義的背景支撐。
             </p>
         </div>
 
@@ -1860,7 +1954,7 @@
             <div class="metric-card">
                 <div class="mval">雙碩士</div>
                 <div class="mlabel">電資 × 生醫跨域背景</div>
-                <div class="mdetail">個人網站描述您同時具備工程與生物醫學訓練，這正好補上本作品集的研究與產品交界定位。</div>
+                <div class="mdetail">同時具備工程設計與生物醫學研究的訓練，站在研究與產品交界上進行有深度的距域設計。</div>
             </div>
             <div class="metric-card">
                 <div class="mval">2020–Now</div>
@@ -1870,17 +1964,17 @@
             <div class="metric-card">
                 <div class="mval">2014–2019</div>
                 <div class="mlabel">生物醫學研究工作</div>
-                <div class="mdetail">涵蓋臨床與研究場景，讓 NGS、變異解讀與生物資料流程的敘事更有真實背景。</div>
+                <div class="mdetail">涵蓋臨床與研究場景的第一手經驗，直接支撐 NGS、變異解讀與生物資料流程的設計判斷。</div>
             </div>
         </div>
 
         <div class="charts-grid reveal">
             <div class="chart-card">
-                <h3>個人網站摘要</h3>
+                <h3>背景與能力摘要</h3>
                 <div style="color:var(--text);font-size:1rem;font-weight:600;margin-bottom:12px">工程 × 生醫 × 產品實作</div>
                 <p style="color:var(--muted);line-height:1.8">
-                    根據您的個人網站內容，您是一位具電資與生醫雙背景的工程師，同時具備醫藥行銷與臨床訓練經驗，並提到曾協助團隊拿到國家新創獎與 2 項發明專利。這讓目前站內的蛋白質 AI、NGS 與基因 AI
-                    頁面，都能被理解成同一條跨域能力線上的不同作品，而不是零散單點。
+                    具備電資與生醫雙碩士學位，擁有醫藥行銷與臨床訓練的第一手經歷，曾協助團隊取得國家新創獎與 2 項發明專利。站內的蛋白質 AI、NGS 與基因 AI
+                    頁面，是同一條跨域能力線上的不同實作，而非零散單點展示。
                 </p>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
                     <a href="about_me.html" class="btn btn-outline" style="padding:8px 14px;font-size:.8rem">本地 About
@@ -1906,19 +2000,19 @@
                         style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)">
                         <div style="font-size:.82rem;color:var(--teal);font-weight:700;margin-bottom:6px">自動化機器手臂操作介面
                         </div>
-                        <div style="font-size:.8rem;color:var(--muted)">補上您對實驗設備與操作流程 UI 的經驗，讓平台不只是資料分析，也有 lab workflow
-                            味道。</div>
+                        <div style="font-size:.8rem;color:var(--muted)">涵蓋實驗設備與操作流程 UI 的第一線經驗，讓平台同時兼顧資料分析與 lab workflow
+                            整合。</div>
                     </div>
                     <div
                         style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)">
                         <div style="font-size:.82rem;color:var(--teal);font-weight:700;margin-bottom:6px">簡易健康檢測 APP
                         </div>
-                        <div style="font-size:.8rem;color:var(--muted)">突顯您把醫療場景轉成可用產品介面的能力，與目前互動式 AI 頁面方向一致。</div>
+                        <div style="font-size:.8rem;color:var(--muted)">將醫療場景轉化為可用的產品介面，與作品集整體的互動平台方向一致。</div>
                     </div>
                     <div
                         style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)">
                         <div style="font-size:.82rem;color:var(--teal);font-weight:700;margin-bottom:6px">資料管理系統</div>
-                        <div style="font-size:.8rem;color:var(--muted)">補齊平台化所需的資料組織、查詢與流程管理能力，不只停留在模型 demo。</div>
+                        <div style="font-size:.8rem;color:var(--muted)">補齊平台化所需的資料組織、查詢與流程管理能力，將作品集推進到真實系統層級。</div>
                     </div>
                 </div>
             </div>
@@ -2768,6 +2862,27 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
             entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
         }, { threshold: .1 });
         reveals.forEach(r => obs.observe(r));
+
+        /* ── Hamburger nav ── */
+        const _hamburger = document.getElementById('hamburger');
+        const _navDrawer = document.getElementById('navDrawer');
+        _hamburger?.addEventListener('click', () => {
+            _hamburger.classList.toggle('open');
+            _navDrawer.classList.toggle('open');
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                _hamburger?.classList.remove('open');
+                _navDrawer?.classList.remove('open');
+            }
+        });
+        /* close drawer on anchor click within the drawer */
+        _navDrawer?.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', () => {
+                _hamburger?.classList.remove('open');
+                _navDrawer?.classList.remove('open');
+            });
+        });
 
         let _portfolioApiBase = '';
 

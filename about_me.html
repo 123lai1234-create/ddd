@@ -108,6 +108,78 @@
             color: var(--text);
         }
 
+        /* ─── Hamburger ────────────────────────────────────────── */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            width: 36px;
+            height: 36px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: var(--muted);
+            border-radius: 2px;
+            transition: all .3s ease;
+        }
+
+        .hamburger.open span:nth-child(1) {
+            transform: translateY(7px) rotate(45deg);
+        }
+
+        .hamburger.open span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.open span:nth-child(3) {
+            transform: translateY(-7px) rotate(-45deg);
+        }
+
+        .nav-drawer {
+            display: none;
+            position: fixed;
+            top: var(--nav-h);
+            left: 0;
+            right: 0;
+            background: rgba(7, 16, 23, .97);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            z-index: 99;
+            padding: 12px 24px 24px;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .nav-drawer.open {
+            display: flex;
+        }
+
+        .nav-drawer a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: .95rem;
+            font-weight: 500;
+            padding: 12px 4px;
+            border-bottom: 1px solid var(--border);
+            transition: color .2s;
+        }
+
+        .nav-drawer a:last-child {
+            border-bottom: none;
+        }
+
+        .nav-drawer a:hover {
+            color: var(--mint);
+        }
+
         .hero {
             padding: calc(var(--nav-h) + 58px) 32px 44px;
         }
@@ -588,8 +660,11 @@
             }
 
             .nav-links {
-                gap: 10px;
-                overflow-x: auto;
+                display: none;
+            }
+
+            .hamburger {
+                display: flex;
             }
 
             .signal-grid,
@@ -613,7 +688,16 @@
             <li><a href="ngs.html">NGS</a></li>
             <li><a href="index.html">首頁</a></li>
         </ul>
+        <button class="hamburger" id="hamburger" aria-label="開啟選單">
+            <span></span><span></span><span></span>
+        </button>
     </nav>
+    <div class="nav-drawer" id="navDrawer">
+        <a href="index.html">首頁</a>
+        <a href="works.html">作品總覽</a>
+        <a href="ngs.html">NGS 定序</a>
+        <a href="gene_ai.html">基因 AI</a>
+    </div>
 
     <header class="hero">
         <div class="hero-wrap">
@@ -621,11 +705,10 @@
                 <div class="eyebrow">About Me · Engineering × Biomedical Research</div>
                 <h1>工程、生醫與<br><span>平台實作的交會點</span></h1>
                 <p class="hero-sub">
-                    這一頁把您原本個人網站中的關鍵內容，本地化整理成更適合目前作品集的版本：
-                    從前後端介面開發、生物醫學研究、NGS 與臨床訓練，到把研究概念轉成可操作的網站與應用平台。
+                    電資工程與生物醫學雙碩士背景，加上臨床訓練、藥廠行銷與研究第一線的實際歷練，讓這裡展示的每個作品都有真實場景的支撐。
                 </p>
                 <div class="hero-note">
-                    內容依據您既有個人網站整理：重點保留跨域背景、教育歷程、技術技能與代表性的實務能力，不照搬 Wix 版面，而是改寫成與本站一致的產品與技術敘事。
+                    具備工程設計與生醫研究的雙線能力，協助團隊取得國家新創獎與 2 項發明專利，目前路徑是把跨域知識轉化為可操作的系統與平台。
                 </div>
                 <div class="cta-row">
                     <a href="works.html" class="btn btn-primary">看代表作品</a>
@@ -1103,6 +1186,22 @@
 
             updateStats();
         })();
+
+        // Hamburger nav drawer
+        const hamburger = document.getElementById('hamburger');
+        const navDrawer = document.getElementById('navDrawer');
+        hamburger.addEventListener('click', () => {
+            const open = navDrawer.classList.toggle('open');
+            hamburger.classList.toggle('open', open);
+            hamburger.setAttribute('aria-label', open ? '關閉選單' : '開啟選單');
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                navDrawer.classList.remove('open');
+                hamburger.classList.remove('open');
+                hamburger.setAttribute('aria-label', '開啟選單');
+            }
+        });
     </script>
 </body>
 
