@@ -10,6 +10,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="shared.css">
+    <script src="nav.js" defer></script>
     <style>
         :root {
             --bg: #091117;
@@ -22,22 +24,11 @@
             --amber: #ffbf72;
             --rose: #ff8592;
             --violet: #b59cff;
-            --nav-h: 64px;
+            --nav-h: 60px;
+            --nav-accent: var(--mint);
             --font: 'Inter', system-ui, sans-serif;
             --mono: 'JetBrains Mono', Consolas, monospace;
             --shadow: 0 18px 50px rgba(0, 0, 0, .35);
-        }
-
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html {
-            scroll-behavior: smooth;
         }
 
         body {
@@ -54,54 +45,6 @@
             color: inherit;
         }
 
-        nav {
-            position: fixed;
-            inset: 0 0 auto 0;
-            z-index: 30;
-            height: var(--nav-h);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 28px;
-            background: rgba(9, 17, 23, .84);
-            backdrop-filter: blur(14px);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .nav-brand {
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: .92rem;
-            letter-spacing: .04em;
-        }
-
-        .nav-brand .mark {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--mint), var(--cyan));
-        }
-
-        .nav-links {
-            list-style: none;
-            display: flex;
-            gap: 18px;
-            align-items: center;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: var(--muted);
-            font-size: .84rem;
-        }
-
-        .nav-links a:hover {
-            color: var(--text);
-        }
-
         .hero {
             padding: calc(var(--nav-h) + 54px) 30px 42px;
         }
@@ -111,11 +54,11 @@
             margin: 0 auto;
             background:
                 radial-gradient(circle at 86% 18%, rgba(181, 156, 255, .08), transparent 22%),
-                linear-gradient(180deg, rgba(18, 28, 36, .96), rgba(10, 18, 24, .96));
+                linear-gradient(135deg, rgba(20, 32, 42, .97), rgba(10, 18, 24, .97));
             border: 1px solid var(--border);
             border-radius: 28px;
-            padding: 30px;
-            box-shadow: var(--shadow);
+            padding: 36px 44px;
+            box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .04);
         }
 
         .eyebrow {
@@ -163,22 +106,38 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 11px 16px;
+            padding: 11px 22px;
             border-radius: 12px;
             text-decoration: none;
             font-weight: 700;
             font-size: .88rem;
             border: 1px solid transparent;
+            transition: opacity .18s, transform .18s, box-shadow .18s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            opacity: .9;
         }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--mint), var(--cyan));
             color: #041018;
+            box-shadow: 0 4px 20px rgba(124, 241, 191, .2);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 8px 28px rgba(124, 241, 191, .34);
         }
 
         .btn-secondary {
             background: rgba(255, 255, 255, .02);
             border-color: var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: rgba(124, 241, 191, .25);
+            background: rgba(124, 241, 191, .05);
         }
 
         .container {
@@ -218,17 +177,22 @@
             color: var(--muted);
             border: 1px solid var(--border);
             border-radius: 999px;
-            padding: 9px 13px;
+            padding: 9px 16px;
             font: inherit;
+            font-size: .82rem;
             cursor: pointer;
-            transition: .2s ease;
+            transition: background .18s, border-color .18s, color .18s, transform .15s;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-1px);
         }
 
         .filter-btn.active,
         .filter-btn:hover {
             color: var(--text);
-            border-color: rgba(124, 241, 191, .25);
-            background: rgba(124, 241, 191, .07);
+            border-color: rgba(124, 241, 191, .28);
+            background: rgba(124, 241, 191, .08);
         }
 
         .works-grid {
@@ -241,10 +205,18 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 24px;
-            padding: 20px;
+            padding: 24px;
             box-shadow: var(--shadow);
             display: grid;
             gap: 14px;
+            transition: transform .24s ease, box-shadow .24s ease, border-color .24s ease;
+            will-change: transform;
+        }
+
+        .work-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 32px 70px rgba(0, 0, 0, .52);
+            border-color: rgba(124, 241, 191, .22);
         }
 
         .work-head {
@@ -255,8 +227,8 @@
         }
 
         .work-kicker {
-            font-size: .76rem;
-            letter-spacing: .08em;
+            font-size: .72rem;
+            letter-spacing: .1em;
             text-transform: uppercase;
             color: var(--cyan);
             font-weight: 700;
@@ -264,12 +236,14 @@
         }
 
         .work-card h3 {
-            font-size: 1.12rem;
+            font-size: 1.14rem;
+            letter-spacing: -.02em;
         }
 
         .work-desc {
             color: var(--muted);
-            font-size: .9rem;
+            font-size: .88rem;
+            line-height: 1.72;
         }
 
         .score-pill {
@@ -294,11 +268,19 @@
             background: rgba(255, 255, 255, .022);
             border: 1px solid rgba(255, 255, 255, .05);
             padding: 12px;
+            transition: background .2s, border-color .2s;
+        }
+
+        .work-card:hover .meta {
+            background: rgba(124, 241, 191, .03);
+            border-color: rgba(124, 241, 191, .09);
         }
 
         .meta .k {
             color: var(--muted);
-            font-size: .7rem;
+            font-size: .68rem;
+            text-transform: uppercase;
+            letter-spacing: .06em;
             margin-bottom: 4px;
         }
 
@@ -314,12 +296,18 @@
         }
 
         .tag {
-            padding: 6px 9px;
+            padding: 5px 10px;
             border-radius: 999px;
             background: rgba(90, 214, 255, .06);
             border: 1px solid rgba(90, 214, 255, .14);
-            color: #d2e9ef;
-            font-size: .75rem;
+            color: #c8e4ec;
+            font-size: .73rem;
+            transition: background .15s, border-color .15s;
+        }
+
+        .work-card:hover .tag {
+            background: rgba(90, 214, 255, .1);
+            border-color: rgba(90, 214, 255, .22);
         }
 
         .work-links {
@@ -331,17 +319,21 @@
         .work-links a {
             display: inline-flex;
             text-decoration: none;
-            padding: 10px 12px;
-            border-radius: 12px;
+            padding: 9px 15px;
+            border-radius: 10px;
             border: 1px solid var(--border);
             color: var(--text);
             background: rgba(255, 255, 255, .02);
             font-size: .82rem;
             font-weight: 600;
+            transition: background .18s, border-color .18s, color .18s, transform .15s;
         }
 
         .work-links a:hover {
-            border-color: rgba(124, 241, 191, .22);
+            background: rgba(124, 241, 191, .08);
+            border-color: rgba(124, 241, 191, .28);
+            color: var(--mint);
+            transform: translateY(-1px);
         }
 
         .hidden {
@@ -349,28 +341,32 @@
         }
 
         footer {
+            border-top: 1px solid var(--border);
             max-width: 1180px;
-            margin: 28px auto 0;
-            padding: 26px 30px 42px;
+            margin: 0 auto;
+            padding: 26px 30px 48px;
             display: flex;
             justify-content: space-between;
+            align-items: center;
             gap: 16px;
             color: var(--muted);
+            font-size: .85rem;
         }
 
         .footer-links {
             display: flex;
             flex-wrap: wrap;
-            gap: 16px;
+            gap: 18px;
         }
 
         .footer-links a {
             text-decoration: none;
             color: var(--muted);
+            transition: color .18s;
         }
 
         .footer-links a:hover {
-            color: var(--text);
+            color: var(--mint);
         }
 
         @media (max-width: 980px) {
@@ -383,19 +379,17 @@
             }
         }
 
-        @media (max-width: 760px) {
+        @media (max-width: 840px) {
 
-            nav,
             .hero,
             .container,
             footer {
-                padding-left: 18px;
-                padding-right: 18px;
+                padding-left: 20px;
+                padding-right: 20px;
             }
 
-            .nav-links {
-                gap: 10px;
-                overflow-x: auto;
+            .hero-inner {
+                padding: 24px 22px;
             }
         }
     </style>
@@ -404,19 +398,29 @@
 <body>
     <nav>
         <a href="index.html" class="nav-brand">
-            <span class="mark"></span>
-            作品總覽
+            <span class="nav-dot"></span>&nbsp;作品總覽
         </a>
         <ul class="nav-links">
-            <li><a href="about_me.html">About Me</a></li>
-            <li><a href="gene_ai.html">基因 AI</a></li>
-            <li><a href="ngs.html">NGS</a></li>
             <li><a href="index.html">首頁</a></li>
+            <li><a href="about_me.html">About Me</a></li>
+            <li><a href="ngs.html">NGS</a></li>
+            <li><a href="gene_ai.html">基因 AI</a></li>
+            <li><a href="thesis.html">論文展示</a></li>
         </ul>
+        <button class="hamburger" id="hamburger" aria-label="開啟選單">
+            <span></span><span></span><span></span>
+        </button>
     </nav>
+    <div class="nav-drawer" id="navDrawer">
+        <a href="index.html">首頁</a>
+        <a href="about_me.html">About Me</a>
+        <a href="ngs.html">NGS 定序</a>
+        <a href="gene_ai.html">基因 AI</a>
+        <a href="thesis.html">論文展示</a>
+    </div>
 
     <header class="hero">
-        <div class="hero-inner">
+        <div class="hero-inner reveal">
             <div class="eyebrow">Works · Engineering × Biomedical × Interactive Platforms</div>
             <h1>把分散的經歷整理成<br><span>一個可閱讀的作品地圖</span></h1>
             <p class="hero-sub">
@@ -723,6 +727,8 @@
         </div>
     </footer>
 
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+
     <script>
         const filterButtons = document.querySelectorAll('.filter-btn');
         const workCards = document.querySelectorAll('.work-card');
@@ -733,10 +739,19 @@
                 button.classList.add('active');
                 const filter = button.dataset.filter;
 
-                workCards.forEach(card => {
+                workCards.forEach((card, i) => {
                     const categories = card.dataset.cat.split(' ');
                     const visible = filter === 'all' || categories.includes(filter);
-                    card.classList.toggle('hidden', !visible);
+                    if (visible) {
+                        card.classList.remove('hidden');
+                        card.style.animationDelay = (i * 0.04) + 's';
+                        card.style.animation = 'none';
+                        requestAnimationFrame(() => {
+                            card.style.animation = '';
+                        });
+                    } else {
+                        card.classList.add('hidden');
+                    }
                 });
             });
         });

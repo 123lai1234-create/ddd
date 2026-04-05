@@ -113,7 +113,10 @@
         }
 
         .hero h1 span {
-            color: var(--green);
+            background: linear-gradient(135deg, #3cb95a 0%, #30c8e8 65%, #b490ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .hero-sub {
@@ -490,18 +493,6 @@
             padding: 0 8px;
         }
 
-        /* ── Reveal ── */
-        .reveal {
-            opacity: 0;
-            transform: translateY(16px);
-            transition: opacity .5s, transform .5s;
-        }
-
-        .reveal.visible {
-            opacity: 1;
-            transform: none;
-        }
-
         /* ── Footer ── */
         footer {
             border-top: 1px solid var(--border);
@@ -809,6 +800,8 @@
         &nbsp;·&nbsp;
         <a href="about_me.html">About Me</a>
     </footer>
+
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
 
     <script>
         /* ============================================================
@@ -1290,9 +1283,6 @@
 
         gotoGen(0);  // Initialize simulator at generation 0
 
-        /* ── Scroll reveal ── */
-        const _obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }), { threshold: .07 });
-        document.querySelectorAll('.reveal').forEach(r => _obs.observe(r));
     </script>
 </body>
 
