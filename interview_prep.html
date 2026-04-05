@@ -6,7 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>大分子AI演算法研究職位 · 面試準備手冊</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="shared.css">
     <style>
         :root {
@@ -422,8 +424,6 @@
                 font-size: .82rem;
             }
         }
-
-
     </style>
 </head>
 
@@ -881,51 +881,74 @@ python run_pipeline.py --mode bo</code></pre>
             <div class="card-title" style="margin-top:20px">📊 四張圖 × 四個故事（15 分鐘 Project Presentation 框架）</div>
 
             <div style="display:grid;gap:14px;margin-top:14px">
-                <div style="background:var(--surface);border:1px solid #2e3352;border-left:3px solid #6c63ff;border-radius:10px;padding:16px">
-                    <div style="font-size:.75rem;font-weight:700;color:#6c63ff;letter-spacing:.08em;margin-bottom:6px">① 學習曲線　Training + Validation Loss</div>
-                    <p style="color:var(--text-muted);font-size:.88rem;margin:0 0 8px">訓練與驗證損失同步下降、間距收窄 → 模型有效學習且未過擬合。</p>
-                    <div style="background:#0a0d15;border-radius:6px;padding:10px 14px;font-size:.82rem;color:#e6edf3;font-style:italic;border-left:2px solid #6c63ff">
-                        「兩條曲線的間距代表 generalization gap。若驗證損失開始反彈（overfitting），我的對策是提早停止或加強 Dropout。這個模型訓練到 ~60 epoch 後 val loss 趨於平穩，表示沒有 overfit。」
+                <div
+                    style="background:var(--surface);border:1px solid #2e3352;border-left:3px solid #6c63ff;border-radius:10px;padding:16px">
+                    <div style="font-size:.75rem;font-weight:700;color:#6c63ff;letter-spacing:.08em;margin-bottom:6px">①
+                        學習曲線　Training + Validation Loss</div>
+                    <p style="color:var(--text-muted);font-size:.88rem;margin:0 0 8px">訓練與驗證損失同步下降、間距收窄 → 模型有效學習且未過擬合。
+                    </p>
+                    <div
+                        style="background:#0a0d15;border-radius:6px;padding:10px 14px;font-size:.82rem;color:#e6edf3;font-style:italic;border-left:2px solid #6c63ff">
+                        「兩條曲線的間距代表 generalization gap。若驗證損失開始反彈（overfitting），我的對策是提早停止或加強 Dropout。這個模型訓練到 ~60 epoch 後
+                        val loss 趨於平穩，表示沒有 overfit。」
                     </div>
                 </div>
 
-                <div style="background:var(--surface);border:1px solid #2e3352;border-left:3px solid #00d4aa;border-radius:10px;padding:16px">
-                    <div style="font-size:.75rem;font-weight:700;color:#00d4aa;letter-spacing:.08em;margin-bottom:6px">② 散點圖　Predicted vs. True Fitness</div>
-                    <p style="color:var(--text-muted);font-size:.88rem;margin:0 0 8px">點越靠近紅色對角線（Ideal line）代表預測越準確。X 軸為實驗測量值，Y 軸為模型預測值。</p>
-                    <div style="background:#0a0d15;border-radius:6px;padding:10px 14px;font-size:.82rem;color:#e6edf3;font-style:italic;border-left:2px solid #00d4aa">
-                        「R² = 0.81 表示模型能解釋 81% 的實驗變異。在這類含高噪音的生物數據上，這是合理且實用的結果。更重要的是 Spearman ρ 也達到 0.79，代表模型的排序能力強——這在虛擬篩選中比絕對值準確度更關鍵。」
+                <div
+                    style="background:var(--surface);border:1px solid #2e3352;border-left:3px solid #00d4aa;border-radius:10px;padding:16px">
+                    <div style="font-size:.75rem;font-weight:700;color:#00d4aa;letter-spacing:.08em;margin-bottom:6px">②
+                        散點圖　Predicted vs. True Fitness</div>
+                    <p style="color:var(--text-muted);font-size:.88rem;margin:0 0 8px">點越靠近紅色對角線（Ideal line）代表預測越準確。X
+                        軸為實驗測量值，Y 軸為模型預測值。</p>
+                    <div
+                        style="background:#0a0d15;border-radius:6px;padding:10px 14px;font-size:.82rem;color:#e6edf3;font-style:italic;border-left:2px solid #00d4aa">
+                        「R² = 0.81 表示模型能解釋 81% 的實驗變異。在這類含高噪音的生物數據上，這是合理且實用的結果。更重要的是 Spearman ρ 也達到
+                        0.79，代表模型的排序能力強——這在虛擬篩選中比絕對值準確度更關鍵。」
                     </div>
                 </div>
 
-                <div style="background:var(--surface);border:1px solid #2e3352;border-left:3px solid #ffd166;border-radius:10px;padding:16px">
-                    <div style="font-size:.75rem;font-weight:700;color:#ffd166;letter-spacing:.08em;margin-bottom:6px">③ BO 收斂曲線　Bayesian Optimization Convergence</div>
-                    <p style="color:var(--text-muted);font-size:.88rem;margin:0 0 8px">每輪迭代後「當前最佳 fitness」的變化。曲線持續上升（或 Kd 持續下降）代表 BO 有效在序列空間探索。</p>
-                    <div style="background:#0a0d15;border-radius:6px;padding:10px 14px;font-size:.82rem;color:#e6edf3;font-style:italic;border-left:2px solid #ffd166">
-                        「這條曲線展示了主動學習的效率。不需要窮舉所有序列，每一輪 EI（Expected Improvement）都在做最有資訊量的探索——它自動平衡『開採已知好區域』和『探索不確定高的區域』。15 輪中我找到初始最佳值 +0.23 的候選。」
+                <div
+                    style="background:var(--surface);border:1px solid #2e3352;border-left:3px solid #ffd166;border-radius:10px;padding:16px">
+                    <div style="font-size:.75rem;font-weight:700;color:#ffd166;letter-spacing:.08em;margin-bottom:6px">③
+                        BO 收斂曲線　Bayesian Optimization Convergence</div>
+                    <p style="color:var(--text-muted);font-size:.88rem;margin:0 0 8px">每輪迭代後「當前最佳 fitness」的變化。曲線持續上升（或
+                        Kd 持續下降）代表 BO 有效在序列空間探索。</p>
+                    <div
+                        style="background:#0a0d15;border-radius:6px;padding:10px 14px;font-size:.82rem;color:#e6edf3;font-style:italic;border-left:2px solid #ffd166">
+                        「這條曲線展示了主動學習的效率。不需要窮舉所有序列，每一輪 EI（Expected Improvement）都在做最有資訊量的探索——它自動平衡『開採已知好區域』和『探索不確定高的區域』。15
+                        輪中我找到初始最佳值 +0.23 的候選。」
                     </div>
                 </div>
 
-                <div style="background:var(--surface);border:1px solid #2e3352;border-left:3px solid #ff6b6b;border-radius:10px;padding:16px">
-                    <div style="font-size:.75rem;font-weight:700;color:#ff6b6b;letter-spacing:.08em;margin-bottom:6px">④ 多樣性散點圖　UMAP Diversity（BO 候選以紅星標記）</div>
-                    <p style="color:var(--text-muted);font-size:.88rem;margin:0 0 8px">用 UMAP 將高維 ESM-2 embedding 壓縮到 2D。紅星是 BO 推薦的候選序列。</p>
-                    <div style="background:#0a0d15;border-radius:6px;padding:10px 14px;font-size:.82rem;color:#e6edf3;font-style:italic;border-left:2px solid #ff6b6b">
-                        「理想情況是紅星聚集在高穩定性區域，但不擠在同一個點——這代表解的多樣性，不只找到單一局部最優。如果所有候選都疊在一起，我會調高 EI 的 exploration 權重或加入 diversity penalty。」
+                <div
+                    style="background:var(--surface);border:1px solid #2e3352;border-left:3px solid #ff6b6b;border-radius:10px;padding:16px">
+                    <div style="font-size:.75rem;font-weight:700;color:#ff6b6b;letter-spacing:.08em;margin-bottom:6px">④
+                        多樣性散點圖　UMAP Diversity（BO 候選以紅星標記）</div>
+                    <p style="color:var(--text-muted);font-size:.88rem;margin:0 0 8px">用 UMAP 將高維 ESM-2 embedding 壓縮到
+                        2D。紅星是 BO 推薦的候選序列。</p>
+                    <div
+                        style="background:#0a0d15;border-radius:6px;padding:10px 14px;font-size:.82rem;color:#e6edf3;font-style:italic;border-left:2px solid #ff6b6b">
+                        「理想情況是紅星聚集在高穩定性區域，但不擠在同一個點——這代表解的多樣性，不只找到單一局部最優。如果所有候選都疊在一起，我會調高 EI 的 exploration 權重或加入
+                        diversity penalty。」
                     </div>
                 </div>
             </div>
 
             <div class="card-title" style="margin-top:20px">💬 15 分鐘 Project Presentation 腳本</div>
-            <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:start;font-size:.85rem;margin-top:10px">
+            <div
+                style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:start;font-size:.85rem;margin-top:10px">
                 <span style="color:#ffd166;font-weight:700;white-space:nowrap">0–2 min</span>
                 <span style="color:var(--text-muted)">問題定義：「蛋白質設計是在龐大序列空間（20^N）中找高穩定性序列。直接實驗太慢，所以我用代理模型加速搜索。」</span>
                 <span style="color:#ffd166;font-weight:700;white-space:nowrap">2–5 min</span>
-                <span style="color:var(--text-muted)">架構說明：ESM-2 embedding（為什麼比 one-hot 好）→ MLP surrogate → PCA latent space → GP + EI。</span>
+                <span style="color:var(--text-muted)">架構說明：ESM-2 embedding（為什麼比 one-hot 好）→ MLP surrogate → PCA latent
+                    space → GP + EI。</span>
                 <span style="color:#ffd166;font-weight:700;white-space:nowrap">5–8 min</span>
                 <span style="color:var(--text-muted)">展示①②：學習曲線收斂正常，R² = 0.81，模型可靠。</span>
                 <span style="color:#ffd166;font-weight:700;white-space:nowrap">8–12 min</span>
                 <span style="color:var(--text-muted)">展示③④：BO 15 輪找到 +0.23 提升，UMAP 顯示解具多樣性。</span>
                 <span style="color:#ffd166;font-weight:700;white-space:nowrap">12–15 min</span>
-                <span style="color:var(--text-muted)">局限性與下一步：「真實應用我會換成濕實驗 oracle，並加入 batch BO 同時評估多個候選，降低實驗與等待成本。」</span>
+                <span style="color:var(--text-muted)">局限性與下一步：「真實應用我會換成濕實驗 oracle，並加入 batch BO
+                    同時評估多個候選，降低實驗與等待成本。」</span>
             </div>
 
             <div class="card-title" style="margin-top:16px">⚠️ 準備好討論局限性（展示深度）</div>
@@ -936,242 +959,243 @@ python run_pipeline.py --mode bo</code></pre>
                 <li>Demo 數據為模擬，真實上線需用 ProteinGym 或自家 assay 數據驗證</li>
             </ul>
 
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- TAB 03: Math Derivations                              -->
-    <!-- ══════════════════════════════════════════════════════ -->
-    <div id="tab-math" class="tab-content">
+            <!-- ══════════════════════════════════════════════════════ -->
+            <!-- TAB 03: Math Derivations                              -->
+            <!-- ══════════════════════════════════════════════════════ -->
+            <div id="tab-math" class="tab-content">
 
-        <div class="card">
-            <div class="card-title">📐 ProteinMPNN 完整數學推導</div>
+                <div class="card">
+                    <div class="card-title">📐 ProteinMPNN 完整數學推導</div>
 
-            <h3 style="color:var(--accent2);margin:16px 0 8px;font-size:.95rem">1. 核心問題定義</h3>
-            <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:10px">
-                給定蛋白質結構 <strong>G</strong>（原子座標），找最佳序列 <strong>s = (s₁, s₂, ..., sₙ)</strong>，使序列能折疊回該結構。
-            </p>
-            <div class="math">
-                P(s | G) = ∏ᵢ₌₁ᴺ P(sᵢ | s&lt;ᵢ, G)
+                    <h3 style="color:var(--accent2);margin:16px 0 8px;font-size:.95rem">1. 核心問題定義</h3>
+                    <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:10px">
+                        給定蛋白質結構 <strong>G</strong>（原子座標），找最佳序列 <strong>s = (s₁, s₂, ..., sₙ)</strong>，使序列能折疊回該結構。
+                    </p>
+                    <div class="math">
+                        P(s | G) = ∏ᵢ₌₁ᴺ P(sᵢ | s&lt;ᵢ, G)
+                    </div>
+                    <p style="color:var(--text-muted);font-size:.88rem;margin-top:8px">
+                        自迴歸分解：每個位置的胺基酸，依賴結構 G + 已知的前序位置 s&lt;ᵢ。
+                    </p>
+
+                    <h3 style="color:var(--accent2);margin:20px 0 8px;font-size:.95rem">2. 圖的構建</h3>
+                    <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:10px">蛋白質結構 → 圖 G = (V, E)：</p>
+                    <ul class="styled">
+                        <li><strong>節點 vᵢ</strong>：每個殘基，特徵包含骨架原子座標（N, Cα, C, O）</li>
+                        <li><strong>邊 eᵢⱼ</strong>：空間距離 &lt; 閾值（通常10Å）的殘基對，特徵包含相對位置和方向的幾何編碼</li>
+                        <li><strong>幾何特徵</strong>：使用四元數或旋轉矩陣編碼殘基的局部坐標系，確保旋轉等變性</li>
+                    </ul>
+
+                    <h3 style="color:var(--accent2);margin:20px 0 8px;font-size:.95rem">3. 訊息傳遞（Message Passing）</h3>
+                    <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:10px">每一層更新節點表示：</p>
+                    <div class="math">
+                        hᵢ⁽ˡ⁺¹⁾ = Update(hᵢ⁽ˡ⁾, Σⱼ∈N(i) Message(hᵢ⁽ˡ⁾, hⱼ⁽ˡ⁾, eᵢⱼ))
+                    </div>
+                    <ul class="styled" style="margin-top:10px">
+                        <li>Message = MLP([hᵢ, hⱼ, eᵢⱼ])，捕捉殘基對之間的交互</li>
+                        <li>Update = LayerNorm(hᵢ + Linear(聚合後的訊息))</li>
+                        <li>本質等價於帶結構約束的座標下降——你的最佳化背景最相關</li>
+                    </ul>
+
+                    <h3 style="color:var(--accent2);margin:20px 0 8px;font-size:.95rem">4. 訓練目標函數</h3>
+                    <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:10px">最大化條件對數似然：</p>
+                    <div class="math">
+                        L = -Σᵢ₌₁ᴺ log P(sᵢ* | s&lt;ᵢ, G)
+                    </div>
+                    <p style="color:var(--text-muted);font-size:.88rem;margin-top:8px">
+                        理解為：帶圖結構約束的交叉熵最小化，目標是讓模型學到「什麼結構偏好什麼序列」。
+                    </p>
+
+                    <h3 style="color:var(--accent2);margin:20px 0 8px;font-size:.95rem">5. ProteinMPNN vs. Rosetta</h3>
+                    <table style="margin-top:8px">
+                        <thead>
+                            <tr>
+                                <th>維度</th>
+                                <th>Rosetta</th>
+                                <th>ProteinMPNN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>目標函數</td>
+                                <td>物理能量函數（手工設計）</td>
+                                <td>學習到的條件概率</td>
+                            </tr>
+                            <tr>
+                                <td>搜索方式</td>
+                                <td>Monte Carlo / 貪婪搜索</td>
+                                <td>自迴歸採樣</td>
+                            </tr>
+                            <tr>
+                                <td>泛化能力</td>
+                                <td>依賴能量函數精度</td>
+                                <td>從大量實驗數據學習</td>
+                            </tr>
+                            <tr>
+                                <td>速度</td>
+                                <td>慢（秒~分鐘/序列）</td>
+                                <td>快（毫秒）</td>
+                            </tr>
+                            <tr>
+                                <td>局限</td>
+                                <td>無法學習未知物理交互</td>
+                                <td>依賴訓練數據分布</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📐 ESM-2 訓練目標（遮罩語言模型）</div>
+
+                    <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:10px">
+                        ESM-2 使用 Masked Language Modeling（MLM）預訓練：
+                    </p>
+                    <div class="math">
+                        L_MLM = -Σᵢ∈Mask log P(sᵢ | s\{Mask})
+                    </div>
+                    <ul class="styled" style="margin-top:10px">
+                        <li>隨機遮蔽 15% 的胺基酸，讓模型從上下文恢復</li>
+                        <li>訓練後的 embedding 隱含進化資訊（訓練數據為 2.5 億條蛋白質序列）</li>
+                        <li>關鍵洞見：序列中「共同進化」的位置 → 結構接觸 → embedding 中有隱含結構資訊</li>
+                    </ul>
+
+                    <h3 style="color:var(--accent2);margin:16px 0 8px;font-size:.95rem">為什麼 ESM-2 embedding 適合做代理模型輸入
+                    </h3>
+                    <ul class="styled">
+                        <li>把離散的序列空間映射到連續向量空間，使梯度最佳化和高斯過程可行</li>
+                        <li>預訓練學到的進化知識作為正則化先驗，避免預測模型過擬合小數據集</li>
+                        <li>遷移學習：僅需少量有label數據（親和力實驗結果）就能微調</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📐 AlphaFold2 核心架構（高層理解）</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>模組</th>
+                                <th>數學本質</th>
+                                <th>生物對應</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Evoformer</td>
+                                <td>雙軸 attention（序列軸 + 殘基對軸）</td>
+                                <td>序列共進化資訊 → 接觸圖</td>
+                            </tr>
+                            <tr>
+                                <td>Structure Module</td>
+                                <td>SE(3)-equivariant transformer</td>
+                                <td>骨架剛體旋轉 + 平移迭代細化</td>
+                            </tr>
+                            <tr>
+                                <td>訓練目標</td>
+                                <td>FAPE（Frame Aligned Point Error）</td>
+                                <td>預測坐標 vs 真實坐標的幾何損失</td>
+                            </tr>
+                            <tr>
+                                <td>Recycling</td>
+                                <td>迭代精化（3~4輪）</td>
+                                <td>模擬折疊的漸進收斂</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="quote" style="margin-top:14px">
+                        面試答法：「AlphaFold2 本質是一個帶幾何約束的最佳化問題：在 SE(3) 空間中，最小化預測剛體坐標和真實坐標的對齊誤差（FAPE）。Evoformer 用雙軸 attention
+                        提取共進化約束，Structure Module 在每次迭代中用這些約束調整骨架，類似約束最佳化的內點法迭代。」
+                    </div>
+                </div>
             </div>
-            <p style="color:var(--text-muted);font-size:.88rem;margin-top:8px">
-                自迴歸分解：每個位置的胺基酸，依賴結構 G + 已知的前序位置 s&lt;ᵢ。
-            </p>
 
-            <h3 style="color:var(--accent2);margin:20px 0 8px;font-size:.95rem">2. 圖的構建</h3>
-            <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:10px">蛋白質結構 → 圖 G = (V, E)：</p>
-            <ul class="styled">
-                <li><strong>節點 vᵢ</strong>：每個殘基，特徵包含骨架原子座標（N, Cα, C, O）</li>
-                <li><strong>邊 eᵢⱼ</strong>：空間距離 &lt; 閾值（通常10Å）的殘基對，特徵包含相對位置和方向的幾何編碼</li>
-                <li><strong>幾何特徵</strong>：使用四元數或旋轉矩陣編碼殘基的局部坐標系，確保旋轉等變性</li>
-            </ul>
+            <!-- ══════════════════════════════════════════════════════ -->
+            <!-- TAB 04: RL Applications                               -->
+            <!-- ══════════════════════════════════════════════════════ -->
+            <div id="tab-rl" class="tab-content">
 
-            <h3 style="color:var(--accent2);margin:20px 0 8px;font-size:.95rem">3. 訊息傳遞（Message Passing）</h3>
-            <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:10px">每一層更新節點表示：</p>
-            <div class="math">
-                hᵢ⁽ˡ⁺¹⁾ = Update(hᵢ⁽ˡ⁾, Σⱼ∈N(i) Message(hᵢ⁽ˡ⁾, hⱼ⁽ˡ⁾, eᵢⱼ))
-            </div>
-            <ul class="styled" style="margin-top:10px">
-                <li>Message = MLP([hᵢ, hⱼ, eᵢⱼ])，捕捉殘基對之間的交互</li>
-                <li>Update = LayerNorm(hᵢ + Linear(聚合後的訊息))</li>
-                <li>本質等價於帶結構約束的座標下降——你的最佳化背景最相關</li>
-            </ul>
+                <div class="card">
+                    <div class="card-title">🤖 為什麼RL天然適合分子設計</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>MDP要素</th>
+                                <th>在分子設計中的對應</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>State</strong></td>
+                                <td>當前分子/序列的狀態表示</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Action</strong></td>
+                                <td>添加原子、突變一個殘基、修改側鏈</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Reward</strong></td>
+                                <td>預測的親和力、穩定性、可開發性評分</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Policy</strong></td>
+                                <td>生成下一步修改的模型（可以是 LLM/GNN）</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Episode</strong></td>
+                                <td>從初始序列到最終設計序列的完整設計流程</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-            <h3 style="color:var(--accent2);margin:20px 0 8px;font-size:.95rem">4. 訓練目標函數</h3>
-            <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:10px">最大化條件對數似然：</p>
-            <div class="math">
-                L = -Σᵢ₌₁ᴺ log P(sᵢ* | s&lt;ᵢ, G)
-            </div>
-            <p style="color:var(--text-muted);font-size:.88rem;margin-top:8px">
-                理解為：帶圖結構約束的交叉熵最小化，目標是讓模型學到「什麼結構偏好什麼序列」。
-            </p>
+                <div class="card">
+                    <div class="card-title">案例一：抗體 CDR 優化（最貼近職責描述）</div>
+                    <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:12px">
+                        問題：固定抗體框架，優化 CDR3 序列以提高對靶點的親和力
+                    </p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>RL設定</th>
+                                <th>實作細節</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>State</td>
+                                <td>當前 CDR 序列 + ESM-2 embedding + 結構 context</td>
+                            </tr>
+                            <tr>
+                                <td>Action</td>
+                                <td>在某個位置替換為某個胺基酸（20 × CDR長度 種）</td>
+                            </tr>
+                            <tr>
+                                <td>Reward</td>
+                                <td>Rosetta 計算的結合能 or 代理模型預測的 Kd（需要 sign 轉換：-ΔΔG）</td>
+                            </tr>
+                            <tr>
+                                <td>Policy</td>
+                                <td>自迴歸語言模型（微調的 ESM-2 作為 policy）</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top:12px;color:var(--text-muted);font-size:.9rem">
+                        <strong style="color:var(--accent4)">關鍵挑戰：</strong> Reward 稀疏（大多數突變沒有改善）<br>
+                        <strong style="color:var(--accent2)">解法：</strong> Shaped reward — 加入中間獎勵如結構合理性分數（RMSD、pLDDT）
+                    </div>
+                </div>
 
-            <h3 style="color:var(--accent2);margin:20px 0 8px;font-size:.95rem">5. ProteinMPNN vs. Rosetta</h3>
-            <table style="margin-top:8px">
-                <thead>
-                    <tr>
-                        <th>維度</th>
-                        <th>Rosetta</th>
-                        <th>ProteinMPNN</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>目標函數</td>
-                        <td>物理能量函數（手工設計）</td>
-                        <td>學習到的條件概率</td>
-                    </tr>
-                    <tr>
-                        <td>搜索方式</td>
-                        <td>Monte Carlo / 貪婪搜索</td>
-                        <td>自迴歸採樣</td>
-                    </tr>
-                    <tr>
-                        <td>泛化能力</td>
-                        <td>依賴能量函數精度</td>
-                        <td>從大量實驗數據學習</td>
-                    </tr>
-                    <tr>
-                        <td>速度</td>
-                        <td>慢（秒~分鐘/序列）</td>
-                        <td>快（毫秒）</td>
-                    </tr>
-                    <tr>
-                        <td>局限</td>
-                        <td>無法學習未知物理交互</td>
-                        <td>依賴訓練數據分布</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="card">
-            <div class="card-title">📐 ESM-2 訓練目標（遮罩語言模型）</div>
-
-            <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:10px">
-                ESM-2 使用 Masked Language Modeling（MLM）預訓練：
-            </p>
-            <div class="math">
-                L_MLM = -Σᵢ∈Mask log P(sᵢ | s\{Mask})
-            </div>
-            <ul class="styled" style="margin-top:10px">
-                <li>隨機遮蔽 15% 的胺基酸，讓模型從上下文恢復</li>
-                <li>訓練後的 embedding 隱含進化資訊（訓練數據為 2.5 億條蛋白質序列）</li>
-                <li>關鍵洞見：序列中「共同進化」的位置 → 結構接觸 → embedding 中有隱含結構資訊</li>
-            </ul>
-
-            <h3 style="color:var(--accent2);margin:16px 0 8px;font-size:.95rem">為什麼 ESM-2 embedding 適合做代理模型輸入</h3>
-            <ul class="styled">
-                <li>把離散的序列空間映射到連續向量空間，使梯度最佳化和高斯過程可行</li>
-                <li>預訓練學到的進化知識作為正則化先驗，避免預測模型過擬合小數據集</li>
-                <li>遷移學習：僅需少量有label數據（親和力實驗結果）就能微調</li>
-            </ul>
-        </div>
-
-        <div class="card">
-            <div class="card-title">📐 AlphaFold2 核心架構（高層理解）</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>模組</th>
-                        <th>數學本質</th>
-                        <th>生物對應</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Evoformer</td>
-                        <td>雙軸 attention（序列軸 + 殘基對軸）</td>
-                        <td>序列共進化資訊 → 接觸圖</td>
-                    </tr>
-                    <tr>
-                        <td>Structure Module</td>
-                        <td>SE(3)-equivariant transformer</td>
-                        <td>骨架剛體旋轉 + 平移迭代細化</td>
-                    </tr>
-                    <tr>
-                        <td>訓練目標</td>
-                        <td>FAPE（Frame Aligned Point Error）</td>
-                        <td>預測坐標 vs 真實坐標的幾何損失</td>
-                    </tr>
-                    <tr>
-                        <td>Recycling</td>
-                        <td>迭代精化（3~4輪）</td>
-                        <td>模擬折疊的漸進收斂</td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="quote" style="margin-top:14px">
-                面試答法：「AlphaFold2 本質是一個帶幾何約束的最佳化問題：在 SE(3) 空間中，最小化預測剛體坐標和真實坐標的對齊誤差（FAPE）。Evoformer 用雙軸 attention
-                提取共進化約束，Structure Module 在每次迭代中用這些約束調整骨架，類似約束最佳化的內點法迭代。」
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- TAB 04: RL Applications                               -->
-    <!-- ══════════════════════════════════════════════════════ -->
-    <div id="tab-rl" class="tab-content">
-
-        <div class="card">
-            <div class="card-title">🤖 為什麼RL天然適合分子設計</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>MDP要素</th>
-                        <th>在分子設計中的對應</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>State</strong></td>
-                        <td>當前分子/序列的狀態表示</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Action</strong></td>
-                        <td>添加原子、突變一個殘基、修改側鏈</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Reward</strong></td>
-                        <td>預測的親和力、穩定性、可開發性評分</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Policy</strong></td>
-                        <td>生成下一步修改的模型（可以是 LLM/GNN）</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Episode</strong></td>
-                        <td>從初始序列到最終設計序列的完整設計流程</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="card">
-            <div class="card-title">案例一：抗體 CDR 優化（最貼近職責描述）</div>
-            <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:12px">
-                問題：固定抗體框架，優化 CDR3 序列以提高對靶點的親和力
-            </p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>RL設定</th>
-                        <th>實作細節</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>State</td>
-                        <td>當前 CDR 序列 + ESM-2 embedding + 結構 context</td>
-                    </tr>
-                    <tr>
-                        <td>Action</td>
-                        <td>在某個位置替換為某個胺基酸（20 × CDR長度 種）</td>
-                    </tr>
-                    <tr>
-                        <td>Reward</td>
-                        <td>Rosetta 計算的結合能 or 代理模型預測的 Kd（需要 sign 轉換：-ΔΔG）</td>
-                    </tr>
-                    <tr>
-                        <td>Policy</td>
-                        <td>自迴歸語言模型（微調的 ESM-2 作為 policy）</td>
-                    </tr>
-                </tbody>
-            </table>
-            <div style="margin-top:12px;color:var(--text-muted);font-size:.9rem">
-                <strong style="color:var(--accent4)">關鍵挑戰：</strong> Reward 稀疏（大多數突變沒有改善）<br>
-                <strong style="color:var(--accent2)">解法：</strong> Shaped reward — 加入中間獎勵如結構合理性分數（RMSD、pLDDT）
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">案例二：REINFORCE 用於序列生成（最基礎的 Policy Gradient）</div>
-            <div class="math">
-                ∇θ L = 𝔼ₛ~πθ[R(s) · ∇θ log πθ(s)]
-            </div>
-            <p style="color:var(--text-muted);font-size:.88rem;margin:12px 0">
-                直觀理解：讓 reward 高的序列生成概率上升，reward 低的下降。<br>
-                這就是你熟悉的梯度上升，只是目標函數換成了期望 reward。
-            </p>
-            <div class="code-label">簡化實作（概念示意）</div>
-            <pre><code>import torch
+                <div class="card">
+                    <div class="card-title">案例二：REINFORCE 用於序列生成（最基礎的 Policy Gradient）</div>
+                    <div class="math">
+                        ∇θ L = 𝔼ₛ~πθ[R(s) · ∇θ log πθ(s)]
+                    </div>
+                    <p style="color:var(--text-muted);font-size:.88rem;margin:12px 0">
+                        直觀理解：讓 reward 高的序列生成概率上升，reward 低的下降。<br>
+                        這就是你熟悉的梯度上升，只是目標函數換成了期望 reward。
+                    </p>
+                    <div class="code-label">簡化實作（概念示意）</div>
+                    <pre><code>import torch
 import torch.nn.functional as F
 
 def reinforce_update(model, sequences, rewards, optimizer, baseline=None):
@@ -1203,359 +1227,382 @@ def reinforce_update(model, sequences, rewards, optimizer, baseline=None):
     optimizer.step()
     
     return total_loss.item()</code></pre>
-        </div>
-
-        <div class="card">
-            <div class="card-title">案例三：多目標RL（最接近實際製藥需求）</div>
-            <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:12px">
-                真實場景需要同時優化多個目標（可開發性三元組）：
-            </p>
-            <div class="math">
-                R_total = w₁·R_affinity + w₂·R_stability + w₃·R_developability − w₄·R_immunogenicity
-            </div>
-            <p style="color:var(--text-muted);font-size:.88rem;margin-top:10px;margin-bottom:12px">
-                你的最佳化背景在這裡最有價值——如何設定權重、如何處理目標衝突（Pareto front）。
-            </p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>方法</th>
-                        <th>適用場景</th>
-                        <th>數學工具</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>加權和</td>
-                        <td>目標間可量化 trade-off</td>
-                        <td>線性組合，需要調參</td>
-                    </tr>
-                    <tr>
-                        <td>Pareto RL</td>
-                        <td>需要找 trade-off frontier</td>
-                        <td>多目標優化、Hypervolume 指標</td>
-                    </tr>
-                    <tr>
-                        <td>約束 RL</td>
-                        <td>某些指標必須達到硬性閾值</td>
-                        <td>Lagrangian duality + 對偶梯度下降</td>
-                    </tr>
-                    <tr>
-                        <td>Lexicographic</td>
-                        <td>目標有明確優先級</td>
-                        <td>分層最佳化</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="card">
-            <div class="card-title">RL vs. 貝葉斯最佳化：如何選擇</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>維度</th>
-                        <th>貝葉斯最佳化（BO）</th>
-                        <th>強化學習（RL）</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>評估代價</td>
-                        <td>高代價（少量實驗）</td>
-                        <td>低代價（模擬/代理模型）</td>
-                    </tr>
-                    <tr>
-                        <td>搜索空間</td>
-                        <td>連續、低維（&lt;20D）</td>
-                        <td>離散、高維、序列型</td>
-                    </tr>
-                    <tr>
-                        <td>先驗知識</td>
-                        <td>GP kernel 編碼先驗</td>
-                        <td>Policy 架構編碼歸納偏置</td>
-                    </tr>
-                    <tr>
-                        <td>數據效率</td>
-                        <td>高（主動學習）</td>
-                        <td>低（需要大量樣本）</td>
-                    </tr>
-                    <tr>
-                        <td>可解釋性</td>
-                        <td>高（GP 提供不確定性估計）</td>
-                        <td>低（policy 為黑箱）</td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="quote" style="margin-top:14px">
-                面試框架：「對預算緊張的早期多輪篩選，貝葉斯最佳化更合適；對迭代設計cycle短、可以大量模擬的場景（如虛擬篩選），RL更適合。在我的mini project中，我選BO是因為假設真實實驗評估代價高。」
-            </div>
-        </div>
-    </div>
-
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- TAB 05: Mock Interview                                 -->
-    <!-- ══════════════════════════════════════════════════════ -->
-    <div id="tab-mock" class="tab-content">
-
-        <div class="card" style="margin-bottom:12px">
-            <p style="color:var(--text-muted);font-size:.9rem">
-                建議：先閉著答案想30秒，再展開參考回答。重點不是背答案，而是用「最佳化框架」解讀每個問題。
-            </p>
-        </div>
-
-        <div class="accordion">
-            <div class="accordion-header" onclick="toggleAccordion(this)">
-                <span>Q1｜AlphaFold2 的基本原理是什麼？它能做什麼、不能做什麼？</span>
-                <span class="accordion-arrow">▼</span>
-            </div>
-            <div class="accordion-body">
-                <strong style="color:var(--accent2)">回答框架：</strong>
-                <p>「AlphaFold2 本質是一個帶幾何約束的最佳化問題，目標是學習一個映射 f: 序列 → 3D坐標，損失函數是FAPE（Frame Aligned Point
-                    Error），在SE(3)空間度量剛體坐標的對齊誤差。</p>
-                <p style="margin-top:8px">架構上有兩個關鍵創新：Evoformer用雙軸attention同時建模序列和殘基對關係，Structure
-                    Module用可微分的幾何操作迭代精化骨架坐標，類似約束最佳化的迭代细化。</p>
-                <p style="margin-top:8px"><strong style="color:var(--accent4)">能做：</strong> 單體蛋白質結構預測（從序列），精度接近實驗方法（PDB
-                    benchmark &lt;1Å RMSD多數情況）。</p>
-                <p style="margin-top:8px"><strong style="color:var(--accent3)">不能做：</strong>
-                    預測動態狀態（只給一個靜態構象）；對本質無序蛋白（IDR）置信度低（pLDDT &lt;70要注意）；無法預測結合後的構象變化（需要AlphaFold-Multimer或Rosetta
-                    dock）；不預測序列→功能。」</p>
-            </div>
-        </div>
-
-        <div class="accordion">
-            <div class="accordion-header" onclick="toggleAccordion(this)">
-                <span>Q2｜如何設計抗體親和力優化的AI方案？（開放式設計題）</span>
-                <span class="accordion-arrow">▼</span>
-            </div>
-            <div class="accordion-body">
-                <strong style="color:var(--accent2)">回答框架（展示最佳化思維）：</strong>
-                <p>「我會先把這個問題框架化：目標函數是最大化CDR序列的抗原結合親和力（可用Kd或ΔΔG量化），約束包括可開發性（溶解度、免疫原性、PTM位點），搜索空間是CDR3位置的20^L種組合（L為序列長）。
-                </p>
-                <p style="margin-top:8px"><strong>方案一（數據豐富）：</strong>
-                    用現有親和力SAR數據微調ESM-2或IgLM，作為序列生成的prior；用PPO或REINFORCE微調，reward為代理模型預測的ΔΔG，加入可開發性作為約束reward。</p>
-                <p style="margin-top:8px"><strong>方案二（數據稀缺）：</strong> 用ESM-2
-                    embedding作特徵，用貝葉斯最佳化做主動學習循環，每輪選擇EI最大的幾條候選序列送實驗，模型隨實驗數據迭代更新。這在早期項目、預算緊張時更高效。</p>
-                <p style="margin-top:8px"><strong>我的優勢：</strong> 因為我有濕實驗背景，我能評估哪個方案在實際實驗流程中可落地，避免『模型很漂亮但實驗無法配合』的問題。」</p>
-            </div>
-        </div>
-
-        <div class="accordion">
-            <div class="accordion-header" onclick="toggleAccordion(this)">
-                <span>Q3｜ProteinMPNN 和傳統 Rosetta 設計有什麼本質差異？</span>
-                <span class="accordion-arrow">▼</span>
-            </div>
-            <div class="accordion-body">
-                <strong style="color:var(--accent2)">回答框架：</strong>
-                <p>「從最佳化的角度，兩者解決的問題相同——給定結構，找最佳序列——但目標函數本質不同。</p>
-                <p style="margin-top:8px">Rosetta 使用手工設計的物理能量函數（Lennard-Jones、氫鍵項等），在這個能量函數上用Monte
-                    Carlo做序列搜索。它的問題是：能量函數是人對物理的近似，有誤差，而且計算慢（秒~分鐘/序列）。</p>
-                <p style="margin-top:8px">ProteinMPNN 直接學習 P(sequence |
-                    structure)，目標函數是最大化對數條件概率。它學到的不是物理規則，而是大量真實蛋白質數據中「哪種結構喜歡哪種序列」的統計模式。優點是能捕捉到能量函數沒有明確建模的交互，速度快几千倍。</p>
-                <p style="margin-top:8px">但 ProteinMPNN 的局限是：它的生成域受訓練數據分布限制，對非天然骨架可能外推失效。在實際應用中，我會用 ProteinMPNN
-                    快速生成大量候選序列，再用 Rosetta 對 top 候選做精細能量評估，兩者互補。」</p>
-            </div>
-        </div>
-
-        <div class="accordion">
-            <div class="accordion-header" onclick="toggleAccordion(this)">
-                <span>Q4｜GCN（圖神經網路）為什麼適合處理分子結構？</span>
-                <span class="accordion-arrow">▼</span>
-            </div>
-            <div class="accordion-body">
-                <strong style="color:var(--accent2)">回答框架：</strong>
-                <p>「分子天然是圖結構：原子是節點，化學鍵/空間接觸是邊。這種結構有兩個特性使得傳統向量方法不適用：一是變長（不同分子/蛋白質原子數不同）；二是不具位置不變性（分子圖的節點沒有固定的全局座位）。</p>
-                <p style="margin-top:8px">GCN 的訊息傳遞機制天然滿足這兩個需求：無論分子多大，都可以用相同的訊息函數 Message(v_i, v_j, e_ij)
-                    聚合局部鄰居信息；而且由於用的是局部聚合，對節點重排是不變的（置換不變性）。</p>
-                <p style="margin-top:8px">在蛋白質結構中，每個殘基的化學性質由它周圍的環境決定（正是GCN的感受野概念），這和實驗中觀察到的接觸殘基協同進化現象完全吻合。這也是為什麼
-                    ProteinMPNN 用圖上訊息傳遞比純序列模型在設計任務上效果好：它顯式用了結構圖的局部環境信息。」</p>
-            </div>
-        </div>
-
-        <div class="accordion">
-            <div class="accordion-header" onclick="toggleAccordion(this)">
-                <span>Q5｜你的濕實驗數據如何轉化為AI訓練數據？你踩過哪些坑？</span>
-                <span class="accordion-arrow">▼</span>
-            </div>
-            <div class="accordion-body">
-                <strong style="color:var(--accent2)">回答框架（展示稀缺的跨界視角）：</strong>
-                <p>「這是大多數計算背景的人容易忽略的問題，但實際上卻是整個pipeline最脆弱的部分。</p>
-                <p style="margin-top:8px"><strong>數據清洗層面：</strong> 親和力測定（如SPR/ITC）的結果受surface density、參考buffer、批次等影響，直接拿
-                    Kd 值做訓練標籤會引入系統誤差。我在實驗中學到：最好是用同批次內的相對排名（ordinal label）而不是絕對 Kd 值，或者對跨批次數據做 batch correction。</p>
-                <p style="margin-top:8px"><strong>selection bias：</strong>
-                    實驗通常只測定「看起來有希望」的候選，導致訓練數據分布偏向序列空間的特定區域，模型對未探索區域的外推能力差。主動學習（貝葉斯最佳化）能部分解決這個問題。</p>
-                <p style="margin-top:8px"><strong>Label noise：</strong> 多次重複實驗之間的差異（尤其是 cell-based assay）可能超過
-                    2~3倍，需要在損失函數中顯式建模不確定性，或用異方差回歸。」</p>
-            </div>
-        </div>
-
-        <div class="accordion">
-            <div class="accordion-header" onclick="toggleAccordion(this)">
-                <span>Q6｜如果模型預測和實驗結果不一致，你怎麼排查？</span>
-                <span class="accordion-arrow">▼</span>
-            </div>
-            <div class="accordion-body">
-                <strong style="color:var(--accent2)">回答框架（結構化分析）：</strong>
-                <p>「我會系統性地排查三個層次：</p>
-                <p style="margin-top:8px"><strong>1. 是否是數據問題：</strong>
-                    新實驗結果是否在訓練集的分布範圍內？如果不一致的序列和訓練數據差異很大，這是正常的外推誤差，不是模型bug。確認實驗assay條件是否有變化（batch effect）。</p>
-                <p style="margin-top:8px"><strong>2. 是否是特徵問題：</strong> 模型用的特徵（如ESM
-                    embedding）是否捕獲了導致實驗差異的物理機制？例如：如果親和力差異來自特定的構象變化，而模型只看了一個靜態結構，那模型天然會盲。</p>
-                <p style="margin-top:8px"><strong>3. 是否是模型問題：</strong>
-                    在已知正確答案的留存集上，模型在類似序列上是否也有這種偏差？是系統性誤差（需要重新設計特徵）還是隨機誤差（需要更多數據）？</p>
-                <p style="margin-top:8px">最後，我很重視把這些不一致的案例記錄下來，它們往往是模型改善最寶貴的信號。」</p>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- TAB 06: Checklist                                      -->
-    <!-- ══════════════════════════════════════════════════════ -->
-    <div id="tab-checklist" class="tab-content">
-
-        <div class="card">
-            <div class="card-title">✅ 週度準備清單</div>
-
-            <p class="week-header">第 1 週</p>
-            <div class="check-item"><input type="checkbox" id="c1"><label for="c1">在 Hugging Face 上跑通 ESM-2 模型，提取一條序列的
-                    embedding</label></div>
-            <div class="check-item"><input type="checkbox" id="c2"><label for="c2">閱讀 ProteinMPNN 論文 Methods
-                    部分，手寫一遍訊息傳遞公式</label></div>
-            <div class="check-item"><input type="checkbox" id="c3"><label for="c3">完成 PyTorch Geometric 的「Introduction
-                    by Example」教學</label></div>
-            <div class="check-item"><input type="checkbox" id="c4"><label for="c4">用 BioPython 解析一個 PDB
-                    文件，提取殘基座標</label></div>
-
-            <p class="week-header">第 2 週</p>
-            <div class="check-item"><input type="checkbox" id="c5"><label for="c5">閱讀 ESM-2 論文，理解 MLM 預訓練目標和 scaling law
-                    部分</label></div>
-            <div class="check-item"><input type="checkbox" id="c6"><label for="c6">能口頭解釋 ProteinMPNN 和 Rosetta
-                    的本質差異（不看筆記版）</label></div>
-            <div class="check-item"><input type="checkbox" id="c7"><label for="c7">下載 ProteinGym 數據集，做基本的
-                    EDA（序列長度分布、fitness分布）</label></div>
-            <div class="check-item"><input type="checkbox" id="c8"><label for="c8">完成 Mini Project 的 Step 1–2（數據準備 +
-                    embedding 提取）</label></div>
-
-            <p class="week-header">第 3 週</p>
-            <div class="check-item"><input type="checkbox" id="c9"><label for="c9">讀 OpenAI Spinning Up：Part 1（Key
-                    Concepts）+ Part 2（Vanilla Policy Gradient）</label></div>
-            <div class="check-item"><input type="checkbox" id="c10"><label for="c10">能解釋 REINFORCE 的目標函數推導（從期望 reward
-                    到梯度估計）</label></div>
-            <div class="check-item"><input type="checkbox" id="c11"><label for="c11">完成 Mini Project 的 Step
-                    3（訓練穩定性預測模型）</label></div>
-            <div class="check-item"><input type="checkbox" id="c12"><label for="c12">閱讀 AlphaFold2 論文的 Abstract +
-                    Methods 概覽（了解 FAPE 和 Evoformer）</label></div>
-
-            <p class="week-header">第 4 週</p>
-            <div class="check-item"><input type="checkbox" id="c13"><label for="c13">閱讀 RFdiffusion
-                    論文，理解擴散過程的去噪目標函數</label></div>
-            <div class="check-item"><input type="checkbox" id="c14"><label for="c14">完成 Mini Project 的 Step
-                    4（貝葉斯最佳化循環）</label></div>
-            <div class="check-item"><input type="checkbox" id="c15"><label for="c15">能畫出擴散模型的前向/逆向過程示意圖，解釋訓練目標</label>
-            </div>
-
-            <p class="week-header">第 5 週</p>
-            <div class="check-item"><input type="checkbox" id="c16"><label for="c16">完成 Mini Project 的 Step 5（可視化），整理成 2
-                    頁的 PDF/Notebook</label></div>
-            <div class="check-item"><input type="checkbox" id="c17"><label for="c17">準備 3 個「用最佳化框架解釋生物AI問題」的回答（參考模擬面試
-                    Q2）</label></div>
-            <div class="check-item"><input type="checkbox" id="c18"><label for="c18">自我模擬面試：計時回答本手冊中的 6 題，每題控制在 3
-                    分鐘內</label></div>
-
-            <p class="week-header">第 6 週</p>
-            <div class="check-item"><input type="checkbox" id="c19"><label for="c19">找一個朋友模擬技術面試（若無，用錄音回放自評）</label>
-            </div>
-            <div class="check-item"><input type="checkbox" id="c20"><label for="c20">準備 3 個體現「濕實驗 + 計算」跨界思維的 STAR
-                    案例</label></div>
-            <div class="check-item"><input type="checkbox" id="c21"><label for="c21">研究目標公司的 GitHub/論文，準備 2
-                    個關於他們技術的針對性問題</label></div>
-            <div class="check-item"><input type="checkbox" id="c22"><label for="c22">更新 CV：把 Mini Project 和論文的最佳化方法用 AI
-                    domain 語言重新描述</label></div>
-
-            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-                <div id="progress-text" style="color:var(--text-muted);font-size:.85rem;margin-bottom:6px">進度：0 / 22
                 </div>
-                <div class="progress-wrap">
-                    <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+
+                <div class="card">
+                    <div class="card-title">案例三：多目標RL（最接近實際製藥需求）</div>
+                    <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:12px">
+                        真實場景需要同時優化多個目標（可開發性三元組）：
+                    </p>
+                    <div class="math">
+                        R_total = w₁·R_affinity + w₂·R_stability + w₃·R_developability − w₄·R_immunogenicity
+                    </div>
+                    <p style="color:var(--text-muted);font-size:.88rem;margin-top:10px;margin-bottom:12px">
+                        你的最佳化背景在這裡最有價值——如何設定權重、如何處理目標衝突（Pareto front）。
+                    </p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>方法</th>
+                                <th>適用場景</th>
+                                <th>數學工具</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>加權和</td>
+                                <td>目標間可量化 trade-off</td>
+                                <td>線性組合，需要調參</td>
+                            </tr>
+                            <tr>
+                                <td>Pareto RL</td>
+                                <td>需要找 trade-off frontier</td>
+                                <td>多目標優化、Hypervolume 指標</td>
+                            </tr>
+                            <tr>
+                                <td>約束 RL</td>
+                                <td>某些指標必須達到硬性閾值</td>
+                                <td>Lagrangian duality + 對偶梯度下降</td>
+                            </tr>
+                            <tr>
+                                <td>Lexicographic</td>
+                                <td>目標有明確優先級</td>
+                                <td>分層最佳化</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">RL vs. 貝葉斯最佳化：如何選擇</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>維度</th>
+                                <th>貝葉斯最佳化（BO）</th>
+                                <th>強化學習（RL）</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>評估代價</td>
+                                <td>高代價（少量實驗）</td>
+                                <td>低代價（模擬/代理模型）</td>
+                            </tr>
+                            <tr>
+                                <td>搜索空間</td>
+                                <td>連續、低維（&lt;20D）</td>
+                                <td>離散、高維、序列型</td>
+                            </tr>
+                            <tr>
+                                <td>先驗知識</td>
+                                <td>GP kernel 編碼先驗</td>
+                                <td>Policy 架構編碼歸納偏置</td>
+                            </tr>
+                            <tr>
+                                <td>數據效率</td>
+                                <td>高（主動學習）</td>
+                                <td>低（需要大量樣本）</td>
+                            </tr>
+                            <tr>
+                                <td>可解釋性</td>
+                                <td>高（GP 提供不確定性估計）</td>
+                                <td>低（policy 為黑箱）</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="quote" style="margin-top:14px">
+                        面試框架：「對預算緊張的早期多輪篩選，貝葉斯最佳化更合適；對迭代設計cycle短、可以大量模擬的場景（如虛擬篩選），RL更適合。在我的mini
+                        project中，我選BO是因為假設真實實驗評估代價高。」
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="card">
-            <div class="card-title">📌 資源清單</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>資源</th>
-                        <th>用途</th>
-                        <th>連結</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Hugging Face ESM-2</td>
-                        <td>Mini Project 特徵提取</td>
-                        <td>facebook/esm2_t6_8M_UR50D</td>
-                    </tr>
-                    <tr>
-                        <td>ProteinGym</td>
-                        <td>突變穩定性數據集</td>
-                        <td>github.com/OATML-Markslab/ProteinGym</td>
-                    </tr>
-                    <tr>
-                        <td>OpenAI Spinning Up</td>
-                        <td>RL 基礎入門</td>
-                        <td>spinningup.openai.com</td>
-                    </tr>
-                    <tr>
-                        <td>PyTorch Geometric</td>
-                        <td>GCN 實作</td>
-                        <td>pytorch-geometric.readthedocs.io</td>
-                    </tr>
-                    <tr>
-                        <td>BoTorch</td>
-                        <td>貝葉斯最佳化</td>
-                        <td>botorch.org</td>
-                    </tr>
-                    <tr>
-                        <td>fast.ai Practical DL</td>
-                        <td>PyTorch 補強</td>
-                        <td>fast.ai（免費）</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+            <!-- ══════════════════════════════════════════════════════ -->
+            <!-- TAB 05: Mock Interview                                 -->
+            <!-- ══════════════════════════════════════════════════════ -->
+            <div id="tab-mock" class="tab-content">
 
-    <script>
-        function switchTab(id, btn) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-' + id).classList.add('active');
-            btn.classList.add('active');
-        }
+                <div class="card" style="margin-bottom:12px">
+                    <p style="color:var(--text-muted);font-size:.9rem">
+                        建議：先閉著答案想30秒，再展開參考回答。重點不是背答案，而是用「最佳化框架」解讀每個問題。
+                    </p>
+                </div>
 
-        function toggleAccordion(header) {
-            const acc = header.parentElement;
-            acc.classList.toggle('open');
-        }
+                <div class="accordion">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q1｜AlphaFold2 的基本原理是什麼？它能做什麼、不能做什麼？</span>
+                        <span class="accordion-arrow">▼</span>
+                    </div>
+                    <div class="accordion-body">
+                        <strong style="color:var(--accent2)">回答框架：</strong>
+                        <p>「AlphaFold2 本質是一個帶幾何約束的最佳化問題，目標是學習一個映射 f: 序列 → 3D坐標，損失函數是FAPE（Frame Aligned Point
+                            Error），在SE(3)空間度量剛體坐標的對齊誤差。</p>
+                        <p style="margin-top:8px">架構上有兩個關鍵創新：Evoformer用雙軸attention同時建模序列和殘基對關係，Structure
+                            Module用可微分的幾何操作迭代精化骨架坐標，類似約束最佳化的迭代细化。</p>
+                        <p style="margin-top:8px"><strong style="color:var(--accent4)">能做：</strong>
+                            單體蛋白質結構預測（從序列），精度接近實驗方法（PDB
+                            benchmark &lt;1Å RMSD多數情況）。</p>
+                        <p style="margin-top:8px"><strong style="color:var(--accent3)">不能做：</strong>
+                            預測動態狀態（只給一個靜態構象）；對本質無序蛋白（IDR）置信度低（pLDDT &lt;70要注意）；無法預測結合後的構象變化（需要AlphaFold-Multimer或Rosetta
+                            dock）；不預測序列→功能。」</p>
+                    </div>
+                </div>
 
-        // Progress bar
-        function updateProgress() {
-            const boxes = document.querySelectorAll('#tab-checklist input[type="checkbox"]');
-            const checked = Array.from(boxes).filter(b => b.checked).length;
-            const total = boxes.length;
-            document.getElementById('progress-text').textContent = `進度：${checked} / ${total}`;
-            document.getElementById('progress-bar').style.width = (checked / total * 100) + '%';
-        }
-        document.querySelectorAll('#tab-checklist input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', updateProgress);
-        });
-    </script>
+                <div class="accordion">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q2｜如何設計抗體親和力優化的AI方案？（開放式設計題）</span>
+                        <span class="accordion-arrow">▼</span>
+                    </div>
+                    <div class="accordion-body">
+                        <strong style="color:var(--accent2)">回答框架（展示最佳化思維）：</strong>
+                        <p>「我會先把這個問題框架化：目標函數是最大化CDR序列的抗原結合親和力（可用Kd或ΔΔG量化），約束包括可開發性（溶解度、免疫原性、PTM位點），搜索空間是CDR3位置的20^L種組合（L為序列長）。
+                        </p>
+                        <p style="margin-top:8px"><strong>方案一（數據豐富）：</strong>
+                            用現有親和力SAR數據微調ESM-2或IgLM，作為序列生成的prior；用PPO或REINFORCE微調，reward為代理模型預測的ΔΔG，加入可開發性作為約束reward。
+                        </p>
+                        <p style="margin-top:8px"><strong>方案二（數據稀缺）：</strong> 用ESM-2
+                            embedding作特徵，用貝葉斯最佳化做主動學習循環，每輪選擇EI最大的幾條候選序列送實驗，模型隨實驗數據迭代更新。這在早期項目、預算緊張時更高效。</p>
+                        <p style="margin-top:8px"><strong>我的優勢：</strong>
+                            因為我有濕實驗背景，我能評估哪個方案在實際實驗流程中可落地，避免『模型很漂亮但實驗無法配合』的問題。」</p>
+                    </div>
+                </div>
 
-    <button class="scroll-top" aria-label="返回頂部">↑</button>
-    <script src="nav.js"></script>
+                <div class="accordion">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q3｜ProteinMPNN 和傳統 Rosetta 設計有什麼本質差異？</span>
+                        <span class="accordion-arrow">▼</span>
+                    </div>
+                    <div class="accordion-body">
+                        <strong style="color:var(--accent2)">回答框架：</strong>
+                        <p>「從最佳化的角度，兩者解決的問題相同——給定結構，找最佳序列——但目標函數本質不同。</p>
+                        <p style="margin-top:8px">Rosetta 使用手工設計的物理能量函數（Lennard-Jones、氫鍵項等），在這個能量函數上用Monte
+                            Carlo做序列搜索。它的問題是：能量函數是人對物理的近似，有誤差，而且計算慢（秒~分鐘/序列）。</p>
+                        <p style="margin-top:8px">ProteinMPNN 直接學習 P(sequence |
+                            structure)，目標函數是最大化對數條件概率。它學到的不是物理規則，而是大量真實蛋白質數據中「哪種結構喜歡哪種序列」的統計模式。優點是能捕捉到能量函數沒有明確建模的交互，速度快几千倍。
+                        </p>
+                        <p style="margin-top:8px">但 ProteinMPNN 的局限是：它的生成域受訓練數據分布限制，對非天然骨架可能外推失效。在實際應用中，我會用 ProteinMPNN
+                            快速生成大量候選序列，再用 Rosetta 對 top 候選做精細能量評估，兩者互補。」</p>
+                    </div>
+                </div>
+
+                <div class="accordion">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q4｜GCN（圖神經網路）為什麼適合處理分子結構？</span>
+                        <span class="accordion-arrow">▼</span>
+                    </div>
+                    <div class="accordion-body">
+                        <strong style="color:var(--accent2)">回答框架：</strong>
+                        <p>「分子天然是圖結構：原子是節點，化學鍵/空間接觸是邊。這種結構有兩個特性使得傳統向量方法不適用：一是變長（不同分子/蛋白質原子數不同）；二是不具位置不變性（分子圖的節點沒有固定的全局座位）。
+                        </p>
+                        <p style="margin-top:8px">GCN 的訊息傳遞機制天然滿足這兩個需求：無論分子多大，都可以用相同的訊息函數 Message(v_i, v_j, e_ij)
+                            聚合局部鄰居信息；而且由於用的是局部聚合，對節點重排是不變的（置換不變性）。</p>
+                        <p style="margin-top:8px">在蛋白質結構中，每個殘基的化學性質由它周圍的環境決定（正是GCN的感受野概念），這和實驗中觀察到的接觸殘基協同進化現象完全吻合。這也是為什麼
+                            ProteinMPNN 用圖上訊息傳遞比純序列模型在設計任務上效果好：它顯式用了結構圖的局部環境信息。」</p>
+                    </div>
+                </div>
+
+                <div class="accordion">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q5｜你的濕實驗數據如何轉化為AI訓練數據？你踩過哪些坑？</span>
+                        <span class="accordion-arrow">▼</span>
+                    </div>
+                    <div class="accordion-body">
+                        <strong style="color:var(--accent2)">回答框架（展示稀缺的跨界視角）：</strong>
+                        <p>「這是大多數計算背景的人容易忽略的問題，但實際上卻是整個pipeline最脆弱的部分。</p>
+                        <p style="margin-top:8px"><strong>數據清洗層面：</strong> 親和力測定（如SPR/ITC）的結果受surface
+                            density、參考buffer、批次等影響，直接拿
+                            Kd 值做訓練標籤會引入系統誤差。我在實驗中學到：最好是用同批次內的相對排名（ordinal label）而不是絕對 Kd 值，或者對跨批次數據做 batch correction。
+                        </p>
+                        <p style="margin-top:8px"><strong>selection bias：</strong>
+                            實驗通常只測定「看起來有希望」的候選，導致訓練數據分布偏向序列空間的特定區域，模型對未探索區域的外推能力差。主動學習（貝葉斯最佳化）能部分解決這個問題。</p>
+                        <p style="margin-top:8px"><strong>Label noise：</strong> 多次重複實驗之間的差異（尤其是 cell-based assay）可能超過
+                            2~3倍，需要在損失函數中顯式建模不確定性，或用異方差回歸。」</p>
+                    </div>
+                </div>
+
+                <div class="accordion">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q6｜如果模型預測和實驗結果不一致，你怎麼排查？</span>
+                        <span class="accordion-arrow">▼</span>
+                    </div>
+                    <div class="accordion-body">
+                        <strong style="color:var(--accent2)">回答框架（結構化分析）：</strong>
+                        <p>「我會系統性地排查三個層次：</p>
+                        <p style="margin-top:8px"><strong>1. 是否是數據問題：</strong>
+                            新實驗結果是否在訓練集的分布範圍內？如果不一致的序列和訓練數據差異很大，這是正常的外推誤差，不是模型bug。確認實驗assay條件是否有變化（batch effect）。</p>
+                        <p style="margin-top:8px"><strong>2. 是否是特徵問題：</strong> 模型用的特徵（如ESM
+                            embedding）是否捕獲了導致實驗差異的物理機制？例如：如果親和力差異來自特定的構象變化，而模型只看了一個靜態結構，那模型天然會盲。</p>
+                        <p style="margin-top:8px"><strong>3. 是否是模型問題：</strong>
+                            在已知正確答案的留存集上，模型在類似序列上是否也有這種偏差？是系統性誤差（需要重新設計特徵）還是隨機誤差（需要更多數據）？</p>
+                        <p style="margin-top:8px">最後，我很重視把這些不一致的案例記錄下來，它們往往是模型改善最寶貴的信號。」</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════ -->
+            <!-- TAB 06: Checklist                                      -->
+            <!-- ══════════════════════════════════════════════════════ -->
+            <div id="tab-checklist" class="tab-content">
+
+                <div class="card">
+                    <div class="card-title">✅ 週度準備清單</div>
+
+                    <p class="week-header">第 1 週</p>
+                    <div class="check-item"><input type="checkbox" id="c1"><label for="c1">在 Hugging Face 上跑通 ESM-2
+                            模型，提取一條序列的
+                            embedding</label></div>
+                    <div class="check-item"><input type="checkbox" id="c2"><label for="c2">閱讀 ProteinMPNN 論文 Methods
+                            部分，手寫一遍訊息傳遞公式</label></div>
+                    <div class="check-item"><input type="checkbox" id="c3"><label for="c3">完成 PyTorch Geometric
+                            的「Introduction
+                            by Example」教學</label></div>
+                    <div class="check-item"><input type="checkbox" id="c4"><label for="c4">用 BioPython 解析一個 PDB
+                            文件，提取殘基座標</label></div>
+
+                    <p class="week-header">第 2 週</p>
+                    <div class="check-item"><input type="checkbox" id="c5"><label for="c5">閱讀 ESM-2 論文，理解 MLM 預訓練目標和
+                            scaling law
+                            部分</label></div>
+                    <div class="check-item"><input type="checkbox" id="c6"><label for="c6">能口頭解釋 ProteinMPNN 和 Rosetta
+                            的本質差異（不看筆記版）</label></div>
+                    <div class="check-item"><input type="checkbox" id="c7"><label for="c7">下載 ProteinGym 數據集，做基本的
+                            EDA（序列長度分布、fitness分布）</label></div>
+                    <div class="check-item"><input type="checkbox" id="c8"><label for="c8">完成 Mini Project 的 Step
+                            1–2（數據準備 +
+                            embedding 提取）</label></div>
+
+                    <p class="week-header">第 3 週</p>
+                    <div class="check-item"><input type="checkbox" id="c9"><label for="c9">讀 OpenAI Spinning Up：Part
+                            1（Key
+                            Concepts）+ Part 2（Vanilla Policy Gradient）</label></div>
+                    <div class="check-item"><input type="checkbox" id="c10"><label for="c10">能解釋 REINFORCE 的目標函數推導（從期望
+                            reward
+                            到梯度估計）</label></div>
+                    <div class="check-item"><input type="checkbox" id="c11"><label for="c11">完成 Mini Project 的 Step
+                            3（訓練穩定性預測模型）</label></div>
+                    <div class="check-item"><input type="checkbox" id="c12"><label for="c12">閱讀 AlphaFold2 論文的 Abstract
+                            +
+                            Methods 概覽（了解 FAPE 和 Evoformer）</label></div>
+
+                    <p class="week-header">第 4 週</p>
+                    <div class="check-item"><input type="checkbox" id="c13"><label for="c13">閱讀 RFdiffusion
+                            論文，理解擴散過程的去噪目標函數</label></div>
+                    <div class="check-item"><input type="checkbox" id="c14"><label for="c14">完成 Mini Project 的 Step
+                            4（貝葉斯最佳化循環）</label></div>
+                    <div class="check-item"><input type="checkbox" id="c15"><label
+                            for="c15">能畫出擴散模型的前向/逆向過程示意圖，解釋訓練目標</label>
+                    </div>
+
+                    <p class="week-header">第 5 週</p>
+                    <div class="check-item"><input type="checkbox" id="c16"><label for="c16">完成 Mini Project 的 Step
+                            5（可視化），整理成 2
+                            頁的 PDF/Notebook</label></div>
+                    <div class="check-item"><input type="checkbox" id="c17"><label for="c17">準備 3
+                            個「用最佳化框架解釋生物AI問題」的回答（參考模擬面試
+                            Q2）</label></div>
+                    <div class="check-item"><input type="checkbox" id="c18"><label for="c18">自我模擬面試：計時回答本手冊中的 6 題，每題控制在
+                            3
+                            分鐘內</label></div>
+
+                    <p class="week-header">第 6 週</p>
+                    <div class="check-item"><input type="checkbox" id="c19"><label
+                            for="c19">找一個朋友模擬技術面試（若無，用錄音回放自評）</label>
+                    </div>
+                    <div class="check-item"><input type="checkbox" id="c20"><label for="c20">準備 3 個體現「濕實驗 + 計算」跨界思維的
+                            STAR
+                            案例</label></div>
+                    <div class="check-item"><input type="checkbox" id="c21"><label for="c21">研究目標公司的 GitHub/論文，準備 2
+                            個關於他們技術的針對性問題</label></div>
+                    <div class="check-item"><input type="checkbox" id="c22"><label for="c22">更新 CV：把 Mini Project
+                            和論文的最佳化方法用 AI
+                            domain 語言重新描述</label></div>
+
+                    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+                        <div id="progress-text" style="color:var(--text-muted);font-size:.85rem;margin-bottom:6px">進度：0
+                            / 22
+                        </div>
+                        <div class="progress-wrap">
+                            <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📌 資源清單</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>資源</th>
+                                <th>用途</th>
+                                <th>連結</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Hugging Face ESM-2</td>
+                                <td>Mini Project 特徵提取</td>
+                                <td>facebook/esm2_t6_8M_UR50D</td>
+                            </tr>
+                            <tr>
+                                <td>ProteinGym</td>
+                                <td>突變穩定性數據集</td>
+                                <td>github.com/OATML-Markslab/ProteinGym</td>
+                            </tr>
+                            <tr>
+                                <td>OpenAI Spinning Up</td>
+                                <td>RL 基礎入門</td>
+                                <td>spinningup.openai.com</td>
+                            </tr>
+                            <tr>
+                                <td>PyTorch Geometric</td>
+                                <td>GCN 實作</td>
+                                <td>pytorch-geometric.readthedocs.io</td>
+                            </tr>
+                            <tr>
+                                <td>BoTorch</td>
+                                <td>貝葉斯最佳化</td>
+                                <td>botorch.org</td>
+                            </tr>
+                            <tr>
+                                <td>fast.ai Practical DL</td>
+                                <td>PyTorch 補強</td>
+                                <td>fast.ai（免費）</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <script>
+                function switchTab(id, btn) {
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.getElementById('tab-' + id).classList.add('active');
+                    btn.classList.add('active');
+                }
+
+                function toggleAccordion(header) {
+                    const acc = header.parentElement;
+                    acc.classList.toggle('open');
+                }
+
+                // Progress bar
+                function updateProgress() {
+                    const boxes = document.querySelectorAll('#tab-checklist input[type="checkbox"]');
+                    const checked = Array.from(boxes).filter(b => b.checked).length;
+                    const total = boxes.length;
+                    document.getElementById('progress-text').textContent = `進度：${checked} / ${total}`;
+                    document.getElementById('progress-bar').style.width = (checked / total * 100) + '%';
+                }
+                document.querySelectorAll('#tab-checklist input[type="checkbox"]').forEach(cb => {
+                    cb.addEventListener('change', updateProgress);
+                });
+            </script>
+
+            <button class="scroll-top" aria-label="返回頂部">↑</button>
+            <script src="nav.js"></script>
 </body>
 
 </html>
