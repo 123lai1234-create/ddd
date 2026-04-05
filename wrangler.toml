@@ -1,0 +1,3 @@
+name = "jtlai-engineering-biomed-portfolio"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-04-05"

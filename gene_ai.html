@@ -2109,6 +2109,7 @@
             pushCandidate(configuredApiBase);
 
             const currentOrigin = window.location.origin.replace(/\/+$/, '');
+            pushCandidate(currentOrigin);
             if (currentOrigin.includes(renderPortfolioServiceName)) {
                 pushCandidate(currentOrigin.replace(renderPortfolioServiceName, renderApiServiceName));
             }

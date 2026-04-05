@@ -1,0 +1,63 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "pip install -r site_api/requirements.txt",
+  "buildCommand": "bash ./scripts/build_static_site.sh",
+  "outputDirectory": "dist",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/healthz",
+      "destination": "/api/healthz"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/about",
+      "destination": "/about_me.html",
+      "permanent": true
+    },
+    {
+      "source": "/works",
+      "destination": "/works.html",
+      "permanent": true
+    },
+    {
+      "source": "/gene-ai",
+      "destination": "/gene_ai.html",
+      "permanent": true
+    },
+    {
+      "source": "/ngs",
+      "destination": "/ngs.html",
+      "permanent": true
+    },
+    {
+      "source": "/report",
+      "destination": "/report.html",
+      "permanent": true
+    },
+    {
+      "source": "/interview",
+      "destination": "/interview_prep.html",
+      "permanent": true
+    }
+  ]
+}

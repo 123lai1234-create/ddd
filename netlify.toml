@@ -1,0 +1,40 @@
+[build]
+  command = "bash ./scripts/build_static_site.sh"
+  publish = "dist"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[redirects]]
+  from = "/about"
+  to = "/about_me.html"
+  status = 301
+
+[[redirects]]
+  from = "/works"
+  to = "/works.html"
+  status = 301
+
+[[redirects]]
+  from = "/gene-ai"
+  to = "/gene_ai.html"
+  status = 301
+
+[[redirects]]
+  from = "/ngs"
+  to = "/ngs.html"
+  status = 301
+
+[[redirects]]
+  from = "/report"
+  to = "/report.html"
+  status = 301
+
+[[redirects]]
+  from = "/interview"
+  to = "/interview_prep.html"
+  status = 301

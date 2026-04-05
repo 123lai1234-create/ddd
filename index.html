@@ -2094,7 +2094,8 @@
                                             </p>
                                             <p>我們使用 <code>facebook/esm2_t6_8M_UR50D</code>模型（8M 參數）作為
                                                 <strong>凍結特徵擷取器</strong>。對所有殘基酸 tokens 做遮罩平均池化，經永產生一個固定 320-D
-                                                向量不管序列長度為何。</p>
+                                                向量不管序列長度為何。
+                                            </p>
                                             <ul>
                                                 <li>嵌入步驟不需標註資料（零樣本遷移學習）</li>
                                                 <li>透過自注意力捕捉長程依賴關係</li>
@@ -2115,7 +2116,8 @@
                                                     m<sub>t</sub></strong><br><br>MLM 預訓練目標函數：<br>L<sub>MLM</sub>=−Σ log
                                                 P(x<sub>t</sub> | x<sub>\t</sub>; θ) </div>
                                             <div class="math-header" style="border-top:1px solid var(--border)">
-                                                <span>程式實作</span><span class="math-lang">Python</span></div>
+                                                <span>程式實作</span><span class="math-lang">Python</span>
+                                            </div>
                                             <div class="code-body">
                                                 <pre><span class="kw">with</span>torch.no_grad(): out=<span class="fn">model</span>(input_ids, attention_mask=mask) h=out.last_hidden_state <span class="cm"># (B, L, 320)</span>m=mask.unsqueeze(<span class="str" >-1</span>).float() z=(h * m).<span class="fn">sum</span>(<span class="str" >1</span>) / m.<span class="fn">sum</span>(<span class="str" >1</span>) <span class="cm"># (B, 320)</span></pre>
                                             </div>
@@ -2126,9 +2128,11 @@
                                             <div class="algo-desc">
                                                 <h3>貝葉斯最佳化：樣本高效的適應性搜尋</h3>
                                                 <p>濕實驗室檢測費用是昂貴的——我們無法每序列全評估。貝葉斯最佳化將適應性函數視為未知
-                                                    <strong>黑盒子</strong>，利用迄今為止的評估結果建立機率性高斯過程（GP）代理模型。</p>
+                                                    <strong>黑盒子</strong>，利用迄今為止的評估結果建立機率性高斯過程（GP）代理模型。
+                                                </p>
                                                 <p>每一步，指標函數決定 <em>接下來評估序列</em>，平衡 <strong>利用</strong>（预測較高的區域）與
-                                                    <strong>探索</strong>（不確定性較高的區域）。</p>
+                                                    <strong>探索</strong>（不確定性較高的區域）。
+                                                </p>
                                                 <ul>
                                                     <li>GP 在序列空間任意點提供校準不確定性估計</li>
                                                     <li>qLogEI=對數空間期望改善，數學穩定（BoTorch 預設）</li>
@@ -2146,7 +2150,8 @@
                                                     k(r)=(1 + √5r/l + 5r²/3l²) exp(−√5r/l)
                                                 </div>
                                                 <div class="math-header" style="border-top:1px solid var(--border)">
-                                                    <span>程式實作</span><span class="math-lang">Python</span></div>
+                                                    <span>程式實作</span><span class="math-lang">Python</span>
+                                                </div>
                                                 <div class="code-body">
                                                     <pre><span class="cm" ># PCA 降維 → GP 擬合 → LogEI 指標 → 最佳化</span> X_pca=<span class="fn" >pca.transform</span>(X_scaled) gp=<span class="fn" >SingleTaskGP</span>(X_t, y_t) ei=<span class="fn" >qLogExpectedImprovement</span>(gp, best_f) X_next, _=<span class="fn" >optimize_acqf</span>(ei, bounds, ...) <span class="cm" ># 逆 PCA → oracle 查詢 → 更新 GP</span></pre>
                                                 </div>
@@ -2180,9 +2185,11 @@
                                                         L<sub>CE</sub>=−Σ<sub>v</sub> log P(a<sub>v</sub> | G;
                                                         θ)<br><br> φ(h<sub>v</sub>, h<sub>u</sub>,
                                                         e)=W<sub>1</sub>h<sub>v</sub> + W<sub>2</sub>h<sub>u</sub> +
-                                                        W<sub>3</sub>e </div>
+                                                        W<sub>3</sub>e
+                                                    </div>
                                                     <div class="math-header" style="border-top:1px solid var(--border)">
-                                                        <span>程式實作</span><span class="math-lang">Python</span></div>
+                                                        <span>程式實作</span><span class="math-lang">Python</span>
+                                                    </div>
                                                     <div class="code-body">
                                                         <pre><span class="cm" ># scatter-add 訊息傳遞</span> msg=<span class="fn" >self.edge_mlp</span>(<span class="fn" >torch.cat</span>([h[src], h[dst], edge_attr], dim=<span class="str" >-1</span>)) agg=<span class="fn" >scatter_add</span>(msg, dst, dim=<span class="str" >0</span>, dim_size=N) h=<span class="fn" >self.ln</span>(h + <span class="fn" >F.relu</span>(self.W_O(agg)))</pre>
                                                     </div>
@@ -2195,7 +2202,8 @@
                                                         <p>我們將蛋白質設計建模為 <strong>順序決策問題</strong>。LSTM 策略網路每次自回歸地生成一個氺基酸
                                                             token，條件为前序生成結果。</p>
                                                         <p>REINFORCE 演算法更新策略以更大化期望獎勵（適應性）。我們使用
-                                                            <strong>多目標獎勵</strong>，結合測預穩定性、疏水性與帶電荷比例。</p>
+                                                            <strong>多目標獎勵</strong>，結合測預穩定性、疏水性與帶電荷比例。
+                                                        </p>
                                                         <ul>
                                                             <li>採樣在 <code>torch.no_grad()</code> 下執行以提升效率</li>
                                                             <li>用 <strong>teacher-forcing</strong> 重新計算 log 機率，穩定梯度图
@@ -2220,7 +2228,8 @@
                                                         </div>
                                                         <div class="math-header"
                                                             style="border-top:1px solid var(--border)">
-                                                            <span>程式實作</span><span class="math-lang">Python</span></div>
+                                                            <span>程式實作</span><span class="math-lang">Python</span>
+                                                        </div>
                                                         <div class="code-body">
                                                             <pre><span class="cm" ># teacher-forcing log 機率重新計算</span> logits=<span class="fn" >policy</span>(input_tokens) <span class="cm" ># 含梯度</span> log_p=<span class="fn" >F.log_softmax</span>(logits, dim=<span class="str" >-1</span>) log_p=log_p.<span class="fn" >gather</span>(<span class="str" >-1</span>, sampled[:, <span class="str" >1:</span>].<span class="fn" >unsqueeze</span>(<span class="str" >-1</span>)) loss=−(log_p.squeeze() * R_baseline).<span class="fn" >mean</span>()</pre>
                                                         </div>
@@ -2341,7 +2350,8 @@
                                                     從比對中捕捉成對替換頻率，但它是固定的20×20 矩陣——無法表示具體序列中的歘基酸互作用。<br><br>
                                                     <strong>ESM-2</strong> 學習上下文相依賦表示：歘基酸 L
                                                     的嵌入向量取決於自注意力處理整條序列，捕捉長程共演化限制。它也將預訓練腫隱式學到的結構知識轉移過來。實階上，ESM-2
-                                                    嵌入在小資料情境下的適應性預測 (精確率) 比 one-hot 提升 15–30%。 </div>
+                                                    嵌入在小資料情境下的適應性預測 (精確率) 比 one-hot 提升 15–30%。
+                                                </div>
                                             </div>
                                             <div class="faq-item">
                                                 <div class="faq-q" onclick="toggleFaq(this)">為什麼在做 GP 之前要先做 PCA？</div>
@@ -2362,7 +2372,8 @@
                                                         Optimisation）</strong>切割策略比率以防止破壞性大更新，使用價値函數基線降低變異性，并能對同一批次資料多次訓練。對於蛋白質序列設計（長序列》高價車
                                                     Oracle），PPO 通常在少 5–10倍 Oracle 呼叫次數下收斂。<br><br>在實際生產中我會升級到 PPO，並進一步考慮
                                                     <strong>GRPO（DeepSeek-R1
-                                                        所用）</strong>——無需獨立價値網路，在同一批次採樣序列中計算優勢，直接適用於我們的序列生成場景。 </div>
+                                                        所用）</strong>——無需獨立價値網路，在同一批次採樣序列中計算優勢，直接適用於我們的序列生成場景。
+                                                </div>
                                             </div>
                                             <div class="faq-item">
                                                 <div class="faq-q" onclick="toggleFaq(this)">這個 pipeline 如何接到真實濕實驗室？
@@ -2588,7 +2599,8 @@
                                                                                                     onmouseover="this.style.opacity='.8'"
                                                                                                     onmouseout="this.style.opacity='1'">⚡
                                                                                                     Rosetta 能量評分
-                                                                                                </button></div>
+                                                                                                </button>
+                                                                                            </div>
                                                                                             <div
                                                                                                 class="mpnn-table-wrap">
                                                                                                 <table
@@ -2783,6 +2795,8 @@
                                                         pushCandidate(configuredApiBase);
 
                                                         const currentOrigin = window.location.origin.replace(/\/+$/, '');
+
+                                                        pushCandidate(currentOrigin);
 
                                                         if (currentOrigin.includes(renderPortfolioServiceName)) {
                                                             pushCandidate(currentOrigin.replace(renderPortfolioServiceName, renderApiServiceName));
