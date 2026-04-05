@@ -10,6 +10,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="shared.css">
+    <script src="nav.js" defer></script>
     <style>
         :root {
             --bg: #0a1116;
@@ -27,59 +29,11 @@
             --font: 'Inter', system-ui, sans-serif;
             --mono: 'JetBrains Mono', Consolas, monospace;
             --shadow: 0 20px 60px rgba(0, 0, 0, .34);
-        }
-
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            background:
-                radial-gradient(circle at 12% 18%, rgba(88, 215, 255, .08), transparent 28%),
-                radial-gradient(circle at 86% 14%, rgba(123, 240, 190, .08), transparent 28%),
-                linear-gradient(180deg, #091015 0%, #0d151c 42%, #081016 100%);
-            color: var(--text);
-            font-family: var(--font);
-            line-height: 1.7;
-            overflow-x: hidden;
+            --nav-accent: var(--mint);
         }
 
         a {
             color: inherit;
-        }
-
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 40;
-            height: var(--nav-h);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 28px;
-            background: rgba(10, 17, 22, .84);
-            backdrop-filter: blur(14px);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .nav-brand {
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            font-weight: 700;
-            letter-spacing: .04em;
-            font-size: .92rem;
         }
 
         .nav-brand .mark {
@@ -90,96 +44,7 @@
             box-shadow: 0 0 18px rgba(123, 240, 190, .35);
         }
 
-        .nav-links {
-            list-style: none;
-            display: flex;
-            gap: 18px;
-            align-items: center;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: var(--muted);
-            font-size: .84rem;
-            transition: color .2s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--text);
-        }
-
         /* ─── Hamburger ────────────────────────────────────────── */
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            gap: 5px;
-            width: 36px;
-            height: 36px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-        }
-
-        .hamburger span {
-            display: block;
-            width: 22px;
-            height: 2px;
-            background: var(--muted);
-            border-radius: 2px;
-            transition: all .3s ease;
-        }
-
-        .hamburger.open span:nth-child(1) {
-            transform: translateY(7px) rotate(45deg);
-        }
-
-        .hamburger.open span:nth-child(2) {
-            opacity: 0;
-        }
-
-        .hamburger.open span:nth-child(3) {
-            transform: translateY(-7px) rotate(-45deg);
-        }
-
-        .nav-drawer {
-            display: none;
-            position: fixed;
-            top: var(--nav-h);
-            left: 0;
-            right: 0;
-            background: rgba(7, 16, 23, .97);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border);
-            z-index: 99;
-            padding: 12px 24px 24px;
-            flex-direction: column;
-            gap: 0;
-        }
-
-        .nav-drawer.open {
-            display: flex;
-        }
-
-        .nav-drawer a {
-            color: var(--muted);
-            text-decoration: none;
-            font-size: .95rem;
-            font-weight: 500;
-            padding: 12px 4px;
-            border-bottom: 1px solid var(--border);
-            transition: color .2s;
-        }
-
-        .nav-drawer a:last-child {
-            border-bottom: none;
-        }
-
-        .nav-drawer a:hover {
-            color: var(--mint);
-        }
-
         .hero {
             padding: calc(var(--nav-h) + 58px) 32px 44px;
         }
@@ -657,14 +522,6 @@
             footer {
                 padding-left: 18px;
                 padding-right: 18px;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .hamburger {
-                display: flex;
             }
 
             .signal-grid,
@@ -1186,22 +1043,6 @@
 
             updateStats();
         })();
-
-        // Hamburger nav drawer
-        const hamburger = document.getElementById('hamburger');
-        const navDrawer = document.getElementById('navDrawer');
-        hamburger.addEventListener('click', () => {
-            const open = navDrawer.classList.toggle('open');
-            hamburger.classList.toggle('open', open);
-            hamburger.setAttribute('aria-label', open ? '關閉選單' : '開啟選單');
-        });
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') {
-                navDrawer.classList.remove('open');
-                hamburger.classList.remove('open');
-                hamburger.setAttribute('aria-label', '開啟選單');
-            }
-        });
     </script>
 </body>
 
