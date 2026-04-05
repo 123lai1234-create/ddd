@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+dist/
+outputs/*.pt
+.git/
+.gitignore
+*.md
+*.ipynb
+src/
+scripts/
+*.html
+*.css
+shared.css
