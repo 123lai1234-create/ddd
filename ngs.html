@@ -763,6 +763,155 @@
                 padding: 22px 18px;
             }
         }
+
+        /* ── RAG Search ── */
+        .rag-section {
+            max-width: 1100px;
+            margin: 64px auto 0;
+            padding: 0 40px 80px;
+        }
+
+        .rag-section-label {
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--teal);
+            margin-bottom: 6px;
+        }
+
+        .rag-section-title {
+            font-size: clamp(1.4rem, 2.6vw, 2rem);
+            font-weight: 800;
+            letter-spacing: -.03em;
+            margin-bottom: 8px;
+        }
+
+        .rag-section-sub {
+            color: var(--muted);
+            max-width: 580px;
+            font-size: .9rem;
+            line-height: 1.7;
+            margin-bottom: 26px;
+        }
+
+        .rag-input-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .rag-input {
+            flex: 1;
+            min-width: 200px;
+            background: #111b24;
+            border: 1px solid #21262d;
+            border-radius: 10px;
+            padding: 11px 16px;
+            color: #e6edf3;
+            font-family: inherit;
+            font-size: .9rem;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .rag-input:focus {
+            border-color: var(--teal);
+        }
+
+        .rag-input::placeholder {
+            color: #484f58;
+        }
+
+        .rag-btn {
+            background: var(--teal);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            padding: 11px 22px;
+            font: 700 .88rem/1 inherit;
+            cursor: pointer;
+            transition: opacity .18s, transform .15s;
+        }
+
+        .rag-btn:hover {
+            opacity: .88;
+            transform: translateY(-1px);
+        }
+
+        .rag-btn:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .rag-results {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .rag-card {
+            background: rgba(22, 27, 34, .92);
+            border: 1px solid #21262d;
+            border-radius: 14px;
+            padding: 18px 20px;
+            transition: border-color .2s;
+        }
+
+        .rag-card:hover {
+            border-color: rgba(57, 208, 240, .25);
+        }
+
+        .rag-card-title {
+            font-size: .88rem;
+            font-weight: 700;
+            color: #e6edf3;
+            margin-bottom: 6px;
+        }
+
+        .rag-card-type {
+            display: inline-block;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: rgba(57, 208, 240, .1);
+            border: 1px solid rgba(57, 208, 240, .2);
+            color: var(--teal);
+            margin-bottom: 8px;
+        }
+
+        .rag-card-text {
+            font-size: .82rem;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .rag-empty {
+            text-align: center;
+            color: var(--muted);
+            font-size: .88rem;
+            padding: 32px;
+            border: 1px dashed #21262d;
+            border-radius: 14px;
+        }
+
+        .rag-status {
+            font-size: .8rem;
+            color: var(--muted);
+            margin-bottom: 12px;
+            min-height: 1.4em;
+        }
+
+        @media (max-width: 640px) {
+            .rag-section {
+                padding: 0 20px 60px;
+            }
+        }
     </style>
 </head>
 
@@ -1968,7 +2117,93 @@ gatk VariantFiltration \
         }
     </script>
 
+    <!-- ── RAG Knowledge Search ── -->
+    <section class="rag-section reveal">
+        <div class="rag-section-label">Render API 動態連接</div>
+        <h2 class="rag-section-title">NGS <span style="color:var(--teal)">知識庫搜尋</span></h2>
+        <p class="rag-section-sub">
+            透過後端 RAG（檢索增強）模型，從同步自 UniProt / PubMed 的知識庫中搜尋與 NGS 相關的蛋白質注釋與文獻片段。
+        </p>
+        <div class="rag-input-row">
+            <input class="rag-input" id="ragInput" type="text"
+                placeholder="輸入關鍵字，例如：variant calling, RNA sequencing, quality control…" maxlength="120">
+            <button class="rag-btn" id="ragSearchBtn" onclick="doRagSearch()">🔍 搜尋</button>
+        </div>
+        <div class="rag-status" id="ragStatus"></div>
+        <div class="rag-results" id="ragResults">
+            <div class="rag-empty">輸入關鍵字後按搜尋，從知識庫取得相關文獻與注釋片段。</div>
+        </div>
+    </section>
+
     <button class="scroll-top" aria-label="返回頂部">↑</button>
+
+    <script>
+        /* ── RAG Search ── */
+        const RAG_API = 'https://jtlai-engineering-biomed-api-yz11.onrender.com';
+
+        async function doRagSearch() {
+            const input = document.getElementById('ragInput');
+            const btn = document.getElementById('ragSearchBtn');
+            const status = document.getElementById('ragStatus');
+            const results = document.getElementById('ragResults');
+            const q = input.value.trim();
+            if (!q) { input.focus(); return; }
+
+            btn.disabled = true;
+            btn.textContent = '搜尋中…';
+            status.textContent = '正在連接 Render 知識庫…';
+            results.innerHTML = '';
+
+            try {
+                const params = new URLSearchParams({ query: q, limit: 6, chunk_size: 600, chunk_overlap: 80 });
+                const r = await fetch(`${RAG_API}/api/rag/documents?${params}`, {
+                    signal: AbortSignal.timeout(12000)
+                });
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const data = await r.json();
+                const docs = data.documents || data.items || data || [];
+
+                status.textContent = docs.length
+                    ? `找到 ${docs.length} 筆相關片段`
+                    : '知識庫中暫無匹配結果，可先至「基因 AI」頁同步資料。';
+
+                if (!docs.length) {
+                    results.innerHTML = '<div class="rag-empty">目前知識庫無此關鍵字的相關條目。<br>請前往 <a href="gene_ai.html" style="color:var(--teal)">基因 AI</a> 頁面同步資料後再試。</div>';
+                    return;
+                }
+
+                results.innerHTML = docs.map(doc => {
+                    const title = doc.source_name || doc.title || doc.name || '知識條目';
+                    const type = doc.record_type || doc.type || 'document';
+                    const text = doc.content || doc.text || doc.chunk || doc.summary || '';
+                    const typeLabel = type === 'literature' ? '📄 文獻' :
+                        type === 'protein_annotation' ? '🧬 蛋白質注釋' : '📚 文件';
+                    return `<div class="rag-card">
+                        <div class="rag-card-type">${typeLabel}</div>
+                        <div class="rag-card-title">${escapeHtml(title)}</div>
+                        <div class="rag-card-text">${escapeHtml(text.slice(0, 320))}${text.length > 320 ? '…' : ''}</div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                status.textContent = 'API 連線失敗：' + err.message;
+                results.innerHTML = '<div class="rag-empty">無法連接 Render API，請稍後再試。</div>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 搜尋';
+            }
+        }
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Allow Enter key to trigger search
+        document.getElementById('ragInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') doRagSearch();
+        });
+    </script>
 
 </body>
 
