@@ -7,6 +7,8 @@ services:
     buildFilter:
       paths:
         - "*.html"
+        - "*.css"
+        - "*.js"
         - "outputs/*.png"
         - "README.md"
         - "demo_notebook.ipynb"

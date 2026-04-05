@@ -15,11 +15,14 @@ window.APP_CONFIG = {
 };
 EOF
 
+cp shared.css "$DIST_DIR/"
+cp nav.js "$DIST_DIR/"
 cp index.html "$DIST_DIR/"
 cp about_me.html "$DIST_DIR/"
 cp works.html "$DIST_DIR/"
 cp gene_ai.html "$DIST_DIR/"
 cp ngs.html "$DIST_DIR/"
+cp thesis.html "$DIST_DIR/"
 cp report.html "$DIST_DIR/"
 cp interview_prep.html "$DIST_DIR/"
 cp README.md "$DIST_DIR/"
