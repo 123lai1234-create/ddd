@@ -59,8 +59,9 @@ The database-backed path adds a separate web service and database, so the static
 5. Render will read [render.yaml](render.yaml) automatically and create:
    - the static portfolio site
    - the FastAPI web service
-6. If your workspace already has an active free-tier Postgres database, do not create another one through the Blueprint. Reuse the existing database by setting DATABASE_URL manually on the API service.
-7. After the first deploy, open [about_me.html](about_me.html) and verify that the contact section reports API and DB connectivity.
+6. Use each service page's Open App button to get the actual live hostname. Render may append a unique suffix to the service URL, so do not assume the hostname is exactly the same as the service name.
+7. If your workspace already has an active free-tier Postgres database, do not create another one through the Blueprint. Reuse the existing database by setting DATABASE_URL manually on the API service.
+8. After the first deploy, open [about_me.html](about_me.html) and verify that the contact section reports API and DB connectivity.
 
 ## GitHub Path
 
@@ -79,7 +80,6 @@ Create the following resources in Render manually if you do not want to use Blue
 1. Static Site
    - Build Command: bash ./scripts/build_static_site.sh
    - Publish Directory: ./dist
-   - Environment variable: API_BASE_URL=https://jtlai-engineering-biomed-api.onrender.com
 2. Web Service
    - Runtime: Python
    - Build Command: pip install -r site_api/requirements.txt
@@ -89,6 +89,8 @@ Create the following resources in Render manually if you do not want to use Blue
    - Plan: Free is available, but note the 30-day limit on free Postgres instances in current Render pricing
 
 Then set the web service DATABASE_URL from the created Postgres instance connection string.
+
+If the static site is using the default Render hostname, the frontend can derive the matching API hostname automatically even when Render adds a unique suffix. If you use a custom domain, set API_BASE_URL manually on the static site to the API service's Open App URL.
 
 ## If Blueprint Fails Because of Free DB Limits
 

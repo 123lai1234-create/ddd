@@ -1899,7 +1899,8 @@
         <div class="live-seq-grid reveal">
             <aside class="live-seq-sidebar">
                 <div class="section-label" style="margin-bottom:10px">Render API</div>
-                <div id="portfolioSequenceStatus" class="live-seq-status" data-state="info">正在連線 Render API 並讀取 sequence_library...</div>
+                <div id="portfolioSequenceStatus" class="live-seq-status" data-state="info">正在連線 Render API 並讀取
+                    sequence_library...</div>
                 <div class="live-seq-stats">
                     <div class="live-seq-stat">
                         <div class="k">Protein cache</div>
@@ -1919,7 +1920,8 @@
                     <a href="gene_ai.html#sequence-vault" class="btn btn-outline">前往管理介面</a>
                 </div>
                 <div class="live-seq-meta">
-                    API base: <span id="portfolioApiBase" style="font-family:var(--mono);color:var(--text)">detecting...</span><br>
+                    API base: <span id="portfolioApiBase"
+                        style="font-family:var(--mono);color:var(--text)">detecting...</span><br>
                     來源: UniProt proteins、Ensembl genes。首頁只顯示最新快取，實際同步與刪除請到 gene_ai 頁處理。
                 </div>
             </aside>
@@ -2701,6 +2703,8 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
                 ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
                 : '';
             const candidates = [];
+            const renderPortfolioServiceName = 'jtlai-engineering-biomed-portfolio';
+            const renderApiServiceName = 'jtlai-engineering-biomed-api';
             const pushCandidate = (value) => {
                 const normalized = String(value || '').trim().replace(/\/+$/, '');
                 if (normalized && !candidates.includes(normalized)) {
@@ -2711,8 +2715,8 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
             pushCandidate(configuredApiBase);
 
             const currentOrigin = window.location.origin.replace(/\/+$/, '');
-            if (currentOrigin.includes('-portfolio.onrender.com')) {
-                pushCandidate(currentOrigin.replace('-portfolio.onrender.com', '-api.onrender.com'));
+            if (currentOrigin.includes(renderPortfolioServiceName)) {
+                pushCandidate(currentOrigin.replace(renderPortfolioServiceName, renderApiServiceName));
             }
 
             pushCandidate('https://jtlai-engineering-biomed-api.onrender.com');

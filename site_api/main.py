@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
+from site_api.knowledge_sources import KnowledgeRecordPayload, fetch_pubmed_knowledge, fetch_uniprot_knowledge
 from site_api.sequence_sources import SequenceRecordPayload, fetch_gene_sequences, fetch_protein_sequences
 
 
@@ -43,6 +44,26 @@ CREATE TABLE IF NOT EXISTS sequence_library (
 );
 """
 
+CREATE_KNOWLEDGE_LIBRARY_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS knowledge_library (
+    id BIGSERIAL PRIMARY KEY,
+    record_type VARCHAR(32) NOT NULL,
+    source_name VARCHAR(64) NOT NULL,
+    source_id VARCHAR(64) NOT NULL,
+    query_term VARCHAR(200) NOT NULL,
+    title VARCHAR(500) NOT NULL,
+    organism VARCHAR(160) NOT NULL DEFAULT '',
+    summary_text TEXT NOT NULL DEFAULT '',
+    content_text TEXT NOT NULL DEFAULT '',
+    keywords TEXT NOT NULL DEFAULT '',
+    record_url TEXT NOT NULL DEFAULT '',
+    published_at VARCHAR(64) NOT NULL DEFAULT '',
+    raw_payload TEXT NOT NULL DEFAULT '',
+    fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(record_type, source_name, source_id)
+);
+"""
+
 UPSERT_SEQUENCE_LIBRARY_SQL = """
 INSERT INTO sequence_library (
     sequence_type,
@@ -66,6 +87,36 @@ DO UPDATE SET
     sequence_length = EXCLUDED.sequence_length,
     description = EXCLUDED.description,
     record_url = EXCLUDED.record_url,
+    fetched_at = NOW();
+"""
+
+UPSERT_KNOWLEDGE_LIBRARY_SQL = """
+INSERT INTO knowledge_library (
+    record_type,
+    source_name,
+    source_id,
+    query_term,
+    title,
+    organism,
+    summary_text,
+    content_text,
+    keywords,
+    record_url,
+    published_at,
+    raw_payload,
+    fetched_at
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+ON CONFLICT (record_type, source_name, source_id)
+DO UPDATE SET
+    query_term = EXCLUDED.query_term,
+    title = EXCLUDED.title,
+    organism = EXCLUDED.organism,
+    summary_text = EXCLUDED.summary_text,
+    content_text = EXCLUDED.content_text,
+    keywords = EXCLUDED.keywords,
+    record_url = EXCLUDED.record_url,
+    published_at = EXCLUDED.published_at,
+    raw_payload = EXCLUDED.raw_payload,
     fetched_at = NOW();
 """
 
@@ -124,6 +175,19 @@ class SequenceSyncRequest(BaseModel):
             if normalized and normalized not in cleaned:
                 cleaned.append(normalized)
         return cleaned[:8]
+
+
+class KnowledgeSyncRequest(BaseModel):
+    protein_query: str = Field(default="kinase")
+    literature_query: str = Field(default="kinase AND cancer")
+    limit: int = Field(default=4, ge=1, le=8)
+
+    @field_validator("protein_query", "literature_query", mode="before")
+    @classmethod
+    def strip_query_fields(cls, value: Any) -> str:
+        if value is None:
+            return ""
+        return str(value).strip()
 
 
 def gc_content(sequence: str) -> float:
@@ -216,6 +280,110 @@ def sequence_summary() -> dict[str, Any]:
     }
 
 
+def serialize_knowledge_row(row: tuple[Any, ...]) -> dict[str, Any]:
+    (
+        row_id,
+        record_type,
+        source_name,
+        source_id,
+        query_term,
+        title,
+        organism,
+        summary_text,
+        content_text,
+        keywords,
+        record_url,
+        published_at,
+        fetched_at,
+    ) = row
+
+    keyword_items = [item.strip() for item in str(keywords or "").split(",") if item.strip()]
+    return {
+        "id": int(row_id),
+        "recordType": record_type,
+        "sourceName": source_name,
+        "sourceId": source_id,
+        "queryTerm": query_term,
+        "title": title,
+        "organism": organism,
+        "summaryText": summary_text,
+        "contentText": content_text,
+        "keywords": keyword_items,
+        "recordUrl": record_url,
+        "publishedAt": published_at or None,
+        "fetchedAt": fetched_at.isoformat() if fetched_at else None,
+    }
+
+
+def fetch_knowledge_rows(
+    record_type: str | None = None,
+    source_name: str | None = None,
+    search_query: str | None = None,
+    limit: int = 8,
+) -> list[dict[str, Any]]:
+    query = """
+        SELECT id, record_type, source_name, source_id, query_term, title,
+               organism, summary_text, content_text, keywords, record_url,
+               published_at, fetched_at
+        FROM knowledge_library
+    """
+    conditions: list[str] = []
+    params: list[Any] = []
+
+    if record_type:
+        conditions.append("record_type = %s")
+        params.append(record_type)
+
+    if source_name:
+        conditions.append("source_name = %s")
+        params.append(source_name)
+
+    if search_query:
+        like_query = f"%{search_query}%"
+        conditions.append("(query_term ILIKE %s OR title ILIKE %s OR summary_text ILIKE %s OR content_text ILIKE %s OR keywords ILIKE %s)")
+        params.extend([like_query, like_query, like_query, like_query, like_query])
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+
+    query += " ORDER BY fetched_at DESC, id DESC LIMIT %s"
+    params.append(limit)
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+
+    return [serialize_knowledge_row(row) for row in rows]
+
+
+def knowledge_summary() -> dict[str, Any]:
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT record_type, COUNT(*), MAX(fetched_at)
+                FROM knowledge_library
+                GROUP BY record_type
+                ORDER BY record_type;
+                """
+            )
+            rows = cursor.fetchall()
+
+    counts = {"protein_annotation": 0, "literature": 0}
+    latest_fetched_at = None
+    for record_type, count, fetched_at in rows:
+        counts[str(record_type)] = int(count or 0)
+        if fetched_at and (latest_fetched_at is None or fetched_at > latest_fetched_at):
+            latest_fetched_at = fetched_at
+
+    return {
+        "proteinAnnotationCount": counts["protein_annotation"],
+        "literatureCount": counts["literature"],
+        "latestFetchedAt": latest_fetched_at.isoformat() if latest_fetched_at else None,
+    }
+
+
 def upsert_sequence_records(records: list[SequenceRecordPayload]) -> None:
     if not records:
         return
@@ -236,6 +404,33 @@ def upsert_sequence_records(records: list[SequenceRecordPayload]) -> None:
                         record.sequence_length,
                         record.description,
                         record.record_url,
+                    ),
+                )
+        connection.commit()
+
+
+def upsert_knowledge_records(records: list[KnowledgeRecordPayload]) -> None:
+    if not records:
+        return
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            for record in records:
+                cursor.execute(
+                    UPSERT_KNOWLEDGE_LIBRARY_SQL,
+                    (
+                        record.record_type,
+                        record.source_name,
+                        record.source_id,
+                        record.query_term,
+                        record.title,
+                        record.organism,
+                        record.summary_text,
+                        record.content_text,
+                        record.keywords,
+                        record.record_url,
+                        record.published_at,
+                        record.raw_payload,
                     ),
                 )
         connection.commit()
@@ -352,6 +547,7 @@ def ensure_schema() -> bool:
         with get_connection() as connection:
             connection.execute(CREATE_INQUIRIES_TABLE_SQL)
             connection.execute(CREATE_SEQUENCE_LIBRARY_TABLE_SQL)
+            connection.execute(CREATE_KNOWLEDGE_LIBRARY_TABLE_SQL)
             connection.commit()
         SCHEMA_READY = True
         return True
@@ -390,6 +586,119 @@ def root() -> dict[str, Any]:
 @app.get("/healthz")
 def healthz() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/knowledge/summary")
+def get_knowledge_summary() -> dict[str, Any]:
+    database_url = get_database_url()
+    if not database_url:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="DATABASE_URL is not configured.",
+        )
+
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    try:
+        summary = knowledge_summary()
+        return {
+            "databaseConfigured": True,
+            "connected": True,
+            **summary,
+        }
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not reachable right now.",
+        ) from error
+
+
+@app.get("/api/knowledge")
+def list_knowledge(
+    record_type: str | None = None,
+    source_name: str | None = None,
+    query: str | None = None,
+    limit: int = 8,
+) -> dict[str, Any]:
+    normalized_record_type = (record_type or "").strip().lower() or None
+    normalized_source_name = (source_name or "").strip() or None
+    normalized_query = (query or "").strip() or None
+
+    if normalized_record_type and normalized_record_type not in {"protein_annotation", "literature"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="record_type must be either protein_annotation or literature.",
+        )
+
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    try:
+        records = fetch_knowledge_rows(
+            record_type=normalized_record_type,
+            source_name=normalized_source_name,
+            search_query=normalized_query,
+            limit=max(1, min(limit, 20)),
+        )
+        summary = knowledge_summary()
+        return {
+            "records": records,
+            "recordType": normalized_record_type,
+            "sourceName": normalized_source_name,
+            "query": normalized_query,
+            **summary,
+        }
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not reachable right now.",
+        ) from error
+
+
+@app.post("/api/knowledge/sync")
+def sync_knowledge(payload: KnowledgeSyncRequest) -> dict[str, Any]:
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    protein_query = payload.protein_query or "kinase"
+    literature_query = payload.literature_query or protein_query
+
+    try:
+        protein_records = fetch_uniprot_knowledge(protein_query, payload.limit)
+        literature_records = fetch_pubmed_knowledge(literature_query, payload.limit)
+    except Exception as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Knowledge crawl failed: {error}",
+        ) from error
+
+    try:
+        upsert_knowledge_records(protein_records + literature_records)
+        summary = knowledge_summary()
+        return {
+            "stored": {
+                "proteinAnnotation": len(protein_records),
+                "literature": len(literature_records),
+            },
+            "proteinAnnotationRecords": fetch_knowledge_rows(record_type="protein_annotation", limit=payload.limit),
+            "literatureRecords": fetch_knowledge_rows(record_type="literature", limit=payload.limit),
+            **summary,
+        }
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist crawled knowledge to Render Postgres.",
+        ) from error
 
 
 @app.get("/api/sequences/summary")

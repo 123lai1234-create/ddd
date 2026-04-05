@@ -948,6 +948,8 @@
 
             const deriveApiCandidates = () => {
                 const candidates = [];
+                const renderPortfolioServiceName = 'jtlai-engineering-biomed-portfolio';
+                const renderApiServiceName = 'jtlai-engineering-biomed-api';
                 const pushCandidate = (value) => {
                     const normalized = String(value || '').trim().replace(/\/+$/, '');
                     if (normalized && !candidates.includes(normalized)) {
@@ -958,8 +960,8 @@
                 pushCandidate(configuredApiBase);
 
                 const currentOrigin = window.location.origin.replace(/\/+$/, '');
-                if (currentOrigin.includes('-portfolio.onrender.com')) {
-                    pushCandidate(currentOrigin.replace('-portfolio.onrender.com', '-api.onrender.com'));
+                if (currentOrigin.includes(renderPortfolioServiceName)) {
+                    pushCandidate(currentOrigin.replace(renderPortfolioServiceName, renderApiServiceName));
                 }
 
                 pushCandidate('https://jtlai-engineering-biomed-api.onrender.com');

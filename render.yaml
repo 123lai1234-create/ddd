@@ -4,9 +4,6 @@ services:
     runtime: static
     buildCommand: bash ./scripts/build_static_site.sh
     staticPublishPath: ./dist
-    envVars:
-      - key: API_BASE_URL
-        value: https://jtlai-engineering-biomed-api.onrender.com
     buildFilter:
       paths:
         - "*.html"
