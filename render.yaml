@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: jtlai-engineering-biomed-portfolio
+    name: donttalk
     runtime: static
     buildCommand: bash ./scripts/build_static_site.sh
     staticPublishPath: ./dist

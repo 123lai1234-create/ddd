@@ -2779,7 +2779,7 @@
                                                         const configuredApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
                                                             ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '') : '';
                                                         const candidates = [];
-                                                        const renderPortfolioServiceName = 'jtlai-engineering-biomed-portfolio';
+                                                        const renderPortfolioServiceNames = ['donttalk', 'jtlai-engineering-biomed-portfolio'];
                                                         const renderApiServiceName = 'jtlai-engineering-biomed-api';
 
                                                         const pushCandidate = (value) => {
@@ -2798,8 +2798,10 @@
 
                                                         pushCandidate(currentOrigin);
 
-                                                        if (currentOrigin.includes(renderPortfolioServiceName)) {
-                                                            pushCandidate(currentOrigin.replace(renderPortfolioServiceName, renderApiServiceName));
+                                                        for (const renderPortfolioServiceName of renderPortfolioServiceNames) {
+                                                            if (currentOrigin.includes(renderPortfolioServiceName)) {
+                                                                pushCandidate(currentOrigin.replace(renderPortfolioServiceName, renderApiServiceName));
+                                                            }
                                                         }
 
                                                         pushCandidate('https://jtlai-engineering-biomed-api-yz11.onrender.com');
