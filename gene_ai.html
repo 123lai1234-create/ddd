@@ -941,6 +941,133 @@
             background: rgba(255, 255, 255, .02);
         }
 
+        .knowledge-feed {
+            display: grid;
+            gap: 14px;
+        }
+
+        .knowledge-card {
+            width: 100%;
+            text-align: left;
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .022);
+            color: inherit;
+            cursor: pointer;
+            transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+        }
+
+        .knowledge-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 191, 103, .22);
+        }
+
+        .knowledge-card.active {
+            border-color: rgba(255, 191, 103, .32);
+            background: linear-gradient(180deg, rgba(255, 191, 103, .08), rgba(255, 255, 255, .02));
+            box-shadow: 0 14px 32px rgba(255, 191, 103, .08);
+        }
+
+        .knowledge-card-top,
+        .rag-doc-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .knowledge-card-title,
+        .rag-doc-title {
+            font-size: .96rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .knowledge-card-sub {
+            color: var(--muted);
+            font-size: .8rem;
+        }
+
+        .knowledge-chip,
+        .rag-doc-chip {
+            padding: 6px 9px;
+            border-radius: 999px;
+            font-family: var(--mono);
+            font-size: .72rem;
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, .08);
+            align-self: start;
+        }
+
+        .knowledge-chip.annotation,
+        .rag-doc-chip.annotation {
+            color: var(--cyan);
+            background: rgba(94, 215, 255, .08);
+        }
+
+        .knowledge-chip.literature,
+        .rag-doc-chip.literature {
+            color: var(--amber);
+            background: rgba(255, 191, 103, .10);
+        }
+
+        .knowledge-chip.sequence,
+        .rag-doc-chip.sequence {
+            color: var(--mint);
+            background: rgba(119, 242, 178, .08);
+        }
+
+        .knowledge-snippet,
+        .rag-doc-text {
+            color: #dbe8e4;
+            font-size: .8rem;
+            line-height: 1.72;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .knowledge-meta-row,
+        .rag-doc-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--muted);
+            font-size: .76rem;
+        }
+
+        .knowledge-empty {
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px dashed rgba(149, 167, 164, .18);
+            color: var(--muted);
+            background: rgba(255, 255, 255, .018);
+        }
+
+        .rag-preview-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .rag-doc-card {
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .022);
+        }
+
+        .rag-doc-title {
+            font-size: .84rem;
+        }
+
+        .rag-doc-text {
+            font-size: .78rem;
+            margin-bottom: 0;
+        }
+
         .sequence-detail-shell {
             overflow: hidden;
         }
@@ -1210,6 +1337,7 @@
             <li><a href="works.html">作品總覽</a></li>
             <li><a href="#profile">創作者</a></li>
             <li><a href="#sequence-vault">序列資料庫</a></li>
+            <li><a href="#knowledge-vault">知識檢索</a></li>
             <li><a href="#studio">設計工作台</a></li>
             <li><a href="#guides">CRISPR 排序</a></li>
             <li><a href="#variants">變異解讀</a></li>
@@ -1232,6 +1360,7 @@
                 </div>
                 <div class="hero-cta-row">
                     <a href="#sequence-vault" class="btn btn-primary">啟動序列資料庫</a>
+                    <a href="#knowledge-vault" class="btn btn-secondary">看知識檢索台</a>
                     <a href="#studio" class="btn btn-secondary">看設計工作台</a>
                     <a href="about_me.html" class="btn btn-secondary">看 About Me</a>
                     <a href="works.html" class="btn btn-secondary">看代表作品</a>
@@ -1448,6 +1577,105 @@
                     <div class="detail-card sequence-detail-shell">
                         <div class="detail-head">Sequence Detail</div>
                         <div id="sequenceDetail" class="sequence-empty">尚未選取資料列。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="knowledge-vault" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Knowledge Vault</div>
+                    <h2 class="section-title">把 UniProt 註釋與 PubMed 摘要整理成可查詢、可匯出的知識庫</h2>
+                    <p class="section-sub">
+                        這個模組把蛋白質功能註釋和 NCBI 文獻摘要存進 Render PostgreSQL，再整理成 RAG-ready documents。前端可直接搜尋證據，後端可直接輸出 chunk 與
+                        metadata 給檢索流程。
+                    </p>
+                </div>
+                <div class="section-badge">UniProt + NCBI E-utilities + RAG-ready</div>
+            </div>
+
+            <div class="sequence-grid">
+                <aside class="panel control-panel">
+                    <div>
+                        <div class="control-title">知識同步設定</div>
+                        <div class="control-sub">抓取蛋白質註釋與 PubMed 摘要，寫進 knowledge_library，並輸出可分塊 documents。</div>
+                    </div>
+                    <div class="field">
+                        <label for="knowledgeProteinQuery">UniProt annotation query</label>
+                        <input id="knowledgeProteinQuery" type="text" value="kinase">
+                    </div>
+                    <div class="field">
+                        <label for="knowledgeLiteratureQuery">PubMed literature query</label>
+                        <textarea id="knowledgeLiteratureQuery" rows="3">kinase AND cancer</textarea>
+                    </div>
+                    <div class="field">
+                        <label for="knowledgeLimit">每次同步筆數</label>
+                        <select id="knowledgeLimit">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="4">4</option>
+                            <option value="6">6</option>
+                        </select>
+                    </div>
+                    <button id="knowledgeSync" class="btn btn-primary" type="button">同步知識到 DB</button>
+                    <button id="knowledgeReload" class="btn btn-secondary" type="button">重新讀取知識庫</button>
+                    <button id="knowledgeRagRefresh" class="btn btn-secondary" type="button">更新 RAG 預覽</button>
+                    <div id="knowledgeStatus" class="status-banner" data-state="info">正在讀取知識庫與 RAG 文件預覽...</div>
+                    <div class="small-note">
+                        UniProt 比較適合做 protein annotation cache，PubMed 則補文獻語意層。這兩類內容合在一起，會比只有序列更適合做 RAG。
+                    </div>
+                    <div class="small-note">API base: <span id="knowledgeApiLabel" class="mono">detecting...</span>
+                    </div>
+                </aside>
+
+                <div class="panel result-panel">
+                    <div class="result-top">
+                        <div>
+                            <h3>Knowledge Search Surface</h3>
+                            <p>切換 protein annotation / literature，查看 DB 快取與對應的 RAG chunk 預覽。</p>
+                        </div>
+                        <div class="section-badge">Search + Evidence + Documents</div>
+                    </div>
+
+                    <div id="knowledgeSummary" class="summary-strip"></div>
+
+                    <div class="sequence-toolbar">
+                        <div class="field">
+                            <label for="knowledgeSearch">搜尋 title / source / keyword / query</label>
+                            <input id="knowledgeSearch" type="text" placeholder="例如 kinase, TP53, cancer fusion">
+                        </div>
+                        <div class="field">
+                            <label for="knowledgeSourceFilter">來源篩選</label>
+                            <select id="knowledgeSourceFilter">
+                                <option value="">全部來源</option>
+                            </select>
+                        </div>
+                        <div id="knowledgeFilterMeta" class="sequence-filter-meta">顯示 0 筆</div>
+                    </div>
+
+                    <div class="sequence-tabs">
+                        <button class="sequence-tab knowledge-tab active" type="button"
+                            data-record-type="protein_annotation">Protein Annotation <span>0</span></button>
+                        <button class="sequence-tab knowledge-tab" type="button"
+                            data-record-type="literature">Literature <span>0</span></button>
+                    </div>
+
+                    <div id="knowledgeFeed" class="knowledge-feed"></div>
+
+                    <div class="detail-grid">
+                        <div class="detail-card knowledge-detail-shell">
+                            <div class="detail-head">Knowledge Detail</div>
+                            <div id="knowledgeDetail" class="knowledge-empty">尚未選取知識紀錄。</div>
+                        </div>
+                        <div class="detail-card knowledge-rag-shell">
+                            <div class="detail-head">RAG-ready Documents</div>
+                            <div class="detail-copy">這裡顯示的是後端整理好的 chunk 與 metadata，可直接餵進向量資料庫或檢索流程。</div>
+                            <div id="knowledgeRagMeta" class="sequence-link-row" style="margin:14px 0">尚未產生文件預覽。</div>
+                            <div id="knowledgeRagPreview" class="rag-preview-list">
+                                <div class="knowledge-empty">目前還沒有 RAG 文件預覽。先同步知識資料或按「更新 RAG 預覽」。</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1856,6 +2084,26 @@
                 latestFetchedAt: null
             }
         };
+        const knowledgeVaultState = {
+            activeType: 'protein_annotation',
+            selectedId: null,
+            records: {
+                protein_annotation: [],
+                literature: []
+            },
+            summary: {
+                proteinAnnotationCount: 0,
+                literatureCount: 0,
+                latestFetchedAt: null
+            },
+            ragDocuments: [],
+            ragMeta: {
+                totalChunks: 0,
+                knowledgeRecords: 0,
+                sequenceRecords: 0,
+                includeSequences: true
+            }
+        };
 
         function safeRenderChart(renderFn) {
             try {
@@ -1896,6 +2144,15 @@
             statusEl.dataset.state = state;
         }
 
+        function setSharedApiLabels(value) {
+            ['sequenceApiLabel', 'knowledgeApiLabel'].forEach((id) => {
+                const label = document.getElementById(id);
+                if (label) {
+                    label.textContent = value;
+                }
+            });
+        }
+
         function deriveSequenceApiCandidates() {
             const configuredApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
                 ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
@@ -1926,7 +2183,6 @@
                 return resolvedSequenceApiBase;
             }
 
-            const apiBaseLabel = document.getElementById('sequenceApiLabel');
             const candidates = deriveSequenceApiCandidates();
             for (const candidate of candidates) {
                 try {
@@ -1938,9 +2194,7 @@
                     const data = await response.json().catch(() => null);
                     if (data?.status === 'ok') {
                         resolvedSequenceApiBase = candidate;
-                        if (apiBaseLabel) {
-                            apiBaseLabel.textContent = candidate;
-                        }
+                        setSharedApiLabels(candidate);
                         return resolvedSequenceApiBase;
                     }
                 } catch (error) {
@@ -1948,9 +2202,7 @@
                 }
             }
 
-            if (apiBaseLabel) {
-                apiBaseLabel.textContent = 'unavailable';
-            }
+            setSharedApiLabels('unavailable');
             return '';
         }
 
@@ -1967,6 +2219,10 @@
             }
 
             return response.json();
+        }
+
+        async function requestKnowledgeApi(path, options = {}) {
+            return requestSequenceApi(path, options);
         }
 
         function formatSequencePreview(sequence) {
@@ -2049,7 +2305,7 @@
         }
 
         function renderSequenceTabs() {
-            document.querySelectorAll('.sequence-tab').forEach((button) => {
+            document.querySelectorAll('.sequence-tab[data-sequence-type]').forEach((button) => {
                 const type = button.dataset.sequenceType;
                 const count = sequenceVaultState.records[type]?.length || 0;
                 const label = type === 'protein' ? 'Protein Cache' : 'Gene Cache';
@@ -2306,7 +2562,7 @@
         }
 
         function initSequenceVault() {
-            document.querySelectorAll('.sequence-tab').forEach((button) => {
+            document.querySelectorAll('.sequence-tab[data-sequence-type]').forEach((button) => {
                 button.addEventListener('click', () => {
                     sequenceVaultState.activeType = button.dataset.sequenceType;
                     sequenceVaultState.selectedId = null;
@@ -2339,6 +2595,405 @@
             });
 
             loadSequenceCache(true);
+        }
+
+        function setKnowledgeStatus(message, state = 'info') {
+            const statusEl = document.getElementById('knowledgeStatus');
+            if (!statusEl) return;
+            statusEl.textContent = message;
+            statusEl.dataset.state = state;
+        }
+
+        function renderKnowledgeSourceOptions() {
+            const select = document.getElementById('knowledgeSourceFilter');
+            if (!select) return;
+
+            const currentValue = select.value;
+            const records = knowledgeVaultState.records[knowledgeVaultState.activeType] || [];
+            const sources = [...new Set(records.map((record) => String(record.sourceName || '').trim()).filter(Boolean))]
+                .sort((left, right) => left.localeCompare(right));
+
+            select.innerHTML = `
+                <option value="">全部來源</option>
+                ${sources.map((source) => `<option value="${escapeHtml(source)}">${escapeHtml(source)}</option>`).join('')}
+            `;
+
+            select.value = sources.includes(currentValue) ? currentValue : '';
+        }
+
+        function getVisibleKnowledgeRecords() {
+            const records = knowledgeVaultState.records[knowledgeVaultState.activeType] || [];
+            const searchText = String(document.getElementById('knowledgeSearch')?.value || '').trim().toLowerCase();
+            const sourceFilter = String(document.getElementById('knowledgeSourceFilter')?.value || '').trim().toLowerCase();
+
+            return records.filter((record) => {
+                const matchesSource = !sourceFilter || String(record.sourceName || '').toLowerCase() === sourceFilter;
+                if (!matchesSource) {
+                    return false;
+                }
+
+                if (!searchText) {
+                    return true;
+                }
+
+                const haystack = [
+                    record.title,
+                    record.sourceName,
+                    record.sourceId,
+                    record.queryTerm,
+                    record.summaryText,
+                    record.contentText,
+                    ...(Array.isArray(record.keywords) ? record.keywords : []),
+                ].join(' ').toLowerCase();
+
+                return haystack.includes(searchText);
+            });
+        }
+
+        function updateKnowledgeFilterMeta(visibleCount, totalCount) {
+            const metaEl = document.getElementById('knowledgeFilterMeta');
+            if (!metaEl) return;
+            metaEl.textContent = `顯示 ${visibleCount} / ${totalCount} 筆`;
+        }
+
+        function renderKnowledgeSummary() {
+            const summaryEl = document.getElementById('knowledgeSummary');
+            if (!summaryEl) return;
+
+            const summary = knowledgeVaultState.summary;
+            summaryEl.innerHTML = `
+                <div class="summary-card"><div class="k">Protein annotations</div><div class="v">${summary.proteinAnnotationCount}</div></div>
+                <div class="summary-card"><div class="k">PubMed literature</div><div class="v">${summary.literatureCount}</div></div>
+                <div class="summary-card"><div class="k">Latest sync</div><div class="v">${escapeHtml(formatDateTime(summary.latestFetchedAt))}</div></div>
+            `;
+        }
+
+        function renderKnowledgeTabs() {
+            document.querySelectorAll('.knowledge-tab').forEach((button) => {
+                const type = button.dataset.recordType;
+                const count = knowledgeVaultState.records[type]?.length || 0;
+                const label = type === 'protein_annotation' ? 'Protein Annotation' : 'Literature';
+                button.innerHTML = `${label} <span>${count}</span>`;
+                button.classList.toggle('active', type === knowledgeVaultState.activeType);
+            });
+        }
+
+        function renderKnowledgeDetail(record) {
+            const detailEl = document.getElementById('knowledgeDetail');
+            if (!detailEl) return;
+
+            if (!record) {
+                detailEl.innerHTML = '<div class="knowledge-empty">目前沒有可顯示的知識紀錄。可以先同步 UniProt / PubMed，再在這裡檢視證據內容。</div>';
+                return;
+            }
+
+            const keywordTags = (Array.isArray(record.keywords) ? record.keywords : []).slice(0, 12)
+                .map((keyword) => `<span class="tag">${escapeHtml(keyword)}</span>`).join('');
+            const sourceLink = record.recordUrl
+                ? `<a class="sequence-source-link" href="${escapeHtml(record.recordUrl)}" target="_blank" rel="noreferrer">查看來源紀錄</a>`
+                : '<span></span>';
+
+            detailEl.innerHTML = `
+                <div class="detail-title">${escapeHtml(record.title)}</div>
+                <div class="detail-copy">${escapeHtml(record.summaryText || 'No summary available.')}</div>
+                <div class="detail-meta">
+                    <div class="box"><div class="k">Source</div><div class="v">${escapeHtml(record.sourceName)} · ${escapeHtml(record.sourceId)}</div></div>
+                    <div class="box"><div class="k">Query</div><div class="v">${escapeHtml(record.queryTerm || '-')}</div></div>
+                    <div class="box"><div class="k">Published</div><div class="v">${escapeHtml(record.publishedAt || '-')}</div></div>
+                    <div class="box"><div class="k">Organism</div><div class="v">${escapeHtml(record.organism || '-')}</div></div>
+                </div>
+                ${keywordTags ? `<div class="tag-row" style="margin:14px 0 10px">${keywordTags}</div>` : ''}
+                <div class="sequence-link-row">
+                    ${sourceLink}
+                    <span>寫入時間：${escapeHtml(formatDateTime(record.fetchedAt))}</span>
+                </div>
+                <div class="sequence-detail-seq">${escapeHtml(record.contentText || record.summaryText || '-').replace(/\n/g, '<br>')}</div>
+            `;
+        }
+
+        function renderKnowledgeFeed() {
+            const feedEl = document.getElementById('knowledgeFeed');
+            if (!feedEl) return;
+
+            const records = knowledgeVaultState.records[knowledgeVaultState.activeType] || [];
+            const visibleRecords = getVisibleKnowledgeRecords();
+            updateKnowledgeFilterMeta(visibleRecords.length, records.length);
+
+            if (!records.length) {
+                feedEl.innerHTML = '<div class="knowledge-empty">這個知識快取目前是空的。先按「同步知識到 DB」，或讓頁面首次自動初始化。</div>';
+                renderKnowledgeDetail(null);
+                return;
+            }
+
+            if (!visibleRecords.length) {
+                feedEl.innerHTML = '<div class="knowledge-empty">目前沒有符合搜尋或來源篩選的紀錄。調整條件後就會重新顯示。</div>';
+                renderKnowledgeDetail(null);
+                return;
+            }
+
+            const selectedRecord = visibleRecords.find((record) => record.id === knowledgeVaultState.selectedId) || visibleRecords[0];
+            knowledgeVaultState.selectedId = selectedRecord.id;
+
+            feedEl.innerHTML = visibleRecords.map((record) => {
+                const activeClass = record.id === knowledgeVaultState.selectedId ? 'active' : '';
+                const chipClass = record.recordType === 'literature' ? 'literature' : 'annotation';
+                const chipLabel = record.recordType === 'literature' ? 'PUBMED' : 'UNIPROT';
+                const snippet = String(record.summaryText || record.contentText || '').trim();
+                const secondary = record.publishedAt || record.organism || '-';
+                const keywordPreview = Array.isArray(record.keywords) ? record.keywords.slice(0, 3).join(', ') : '';
+
+                return `
+                    <button class="knowledge-card ${activeClass}" type="button" data-record-id="${record.id}">
+                        <div class="knowledge-card-top">
+                            <div>
+                                <div class="knowledge-card-title">${escapeHtml(record.title)}</div>
+                                <div class="knowledge-card-sub">${escapeHtml(record.sourceName)} · ${escapeHtml(record.sourceId)}</div>
+                            </div>
+                            <div class="knowledge-chip ${chipClass}">${chipLabel}</div>
+                        </div>
+                        <div class="knowledge-snippet">${escapeHtml(snippet || 'No summary available.')}</div>
+                        <div class="knowledge-meta-row">
+                            <span>${escapeHtml(secondary)}</span>
+                            <span>${escapeHtml(record.queryTerm || '-')}</span>
+                            <span>${escapeHtml(keywordPreview || 'no-keywords')}</span>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+
+            feedEl.querySelectorAll('.knowledge-card').forEach((button) => {
+                button.addEventListener('click', () => {
+                    knowledgeVaultState.selectedId = Number(button.dataset.recordId);
+                    renderKnowledgeFeed();
+                });
+            });
+
+            renderKnowledgeDetail(selectedRecord);
+        }
+
+        function updateKnowledgeStateFromPayload(payload) {
+            knowledgeVaultState.records.protein_annotation = Array.isArray(payload.proteinAnnotationRecords)
+                ? payload.proteinAnnotationRecords
+                : Array.isArray(payload.records) && payload.recordType === 'protein_annotation'
+                    ? payload.records
+                    : knowledgeVaultState.records.protein_annotation;
+
+            knowledgeVaultState.records.literature = Array.isArray(payload.literatureRecords)
+                ? payload.literatureRecords
+                : Array.isArray(payload.records) && payload.recordType === 'literature'
+                    ? payload.records
+                    : knowledgeVaultState.records.literature;
+
+            knowledgeVaultState.summary = {
+                proteinAnnotationCount: Number(payload.proteinAnnotationCount ?? knowledgeVaultState.records.protein_annotation.length ?? 0),
+                literatureCount: Number(payload.literatureCount ?? knowledgeVaultState.records.literature.length ?? 0),
+                latestFetchedAt: payload.latestFetchedAt ?? knowledgeVaultState.summary.latestFetchedAt
+            };
+        }
+
+        function knowledgeSyncPayload() {
+            return {
+                protein_query: document.getElementById('knowledgeProteinQuery').value.trim() || 'kinase',
+                literature_query: document.getElementById('knowledgeLiteratureQuery').value.trim() || 'kinase AND cancer',
+                limit: Number(document.getElementById('knowledgeLimit').value) || 2
+            };
+        }
+
+        function setKnowledgeBusy(isBusy) {
+            document.getElementById('knowledgeSync').disabled = isBusy;
+            document.getElementById('knowledgeReload').disabled = isBusy;
+            document.getElementById('knowledgeRagRefresh').disabled = isBusy;
+        }
+
+        function renderKnowledgeRagPreview() {
+            const previewEl = document.getElementById('knowledgeRagPreview');
+            const metaEl = document.getElementById('knowledgeRagMeta');
+            if (!previewEl || !metaEl) return;
+
+            metaEl.textContent = `知識紀錄 ${knowledgeVaultState.ragMeta.knowledgeRecords} 筆 · 序列紀錄 ${knowledgeVaultState.ragMeta.sequenceRecords} 筆 · chunks ${knowledgeVaultState.ragMeta.totalChunks} 個`;
+
+            if (!knowledgeVaultState.ragDocuments.length) {
+                previewEl.innerHTML = '<div class="knowledge-empty">目前沒有可預覽的 RAG documents。可先同步知識資料，或調整搜尋條件後再更新。</div>';
+                return;
+            }
+
+            previewEl.innerHTML = knowledgeVaultState.ragDocuments.slice(0, 4).map((document) => {
+                const chipClass = document.sourceKind === 'sequence'
+                    ? 'sequence'
+                    : document.recordType === 'literature' ? 'literature' : 'annotation';
+                const previewText = String(document.text || '').trim();
+                return `
+                    <article class="rag-doc-card">
+                        <div class="rag-doc-head">
+                            <div>
+                                <div class="rag-doc-title">${escapeHtml(document.title || document.documentId)}</div>
+                                <div class="knowledge-card-sub">${escapeHtml(document.chunkId || '-')}</div>
+                            </div>
+                            <div class="rag-doc-chip ${chipClass}">${escapeHtml(document.embeddingHint || 'rag')}</div>
+                        </div>
+                        <div class="rag-doc-text">${escapeHtml(previewText || 'No chunk text available.')}</div>
+                        <div class="rag-doc-meta">
+                            <span>${escapeHtml(document.metadata?.sourceName || '-')}</span>
+                            <span>${escapeHtml(document.metadata?.sourceId || '-')}</span>
+                            <span>${escapeHtml(document.metadata?.queryTerm || '-')}</span>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        async function loadRagDocumentPreview(silent = false) {
+            if (!silent) {
+                setKnowledgeStatus('正在產生 RAG-ready 文件預覽...', 'info');
+            }
+
+            try {
+                const params = new URLSearchParams();
+                const searchText = String(document.getElementById('knowledgeSearch')?.value || '').trim();
+                params.set('include_sequences', 'true');
+                params.set('limit', '4');
+                params.set('record_type', knowledgeVaultState.activeType);
+                params.set('chunk_size', '720');
+                params.set('chunk_overlap', '120');
+                if (searchText) {
+                    params.set('query', searchText);
+                }
+
+                const response = await requestKnowledgeApi(`/api/rag/documents?${params.toString()}`);
+                knowledgeVaultState.ragDocuments = Array.isArray(response.documents) ? response.documents : [];
+                knowledgeVaultState.ragMeta = {
+                    totalChunks: Number(response.totalChunks || 0),
+                    knowledgeRecords: Number(response.knowledgeRecords || 0),
+                    sequenceRecords: Number(response.sequenceRecords || 0),
+                    includeSequences: Boolean(response.includeSequences)
+                };
+                renderKnowledgeRagPreview();
+
+                if (!silent) {
+                    setKnowledgeStatus(`RAG 預覽已更新，共 ${knowledgeVaultState.ragMeta.totalChunks} 個 chunks。`, 'success');
+                }
+            } catch (error) {
+                knowledgeVaultState.ragDocuments = [];
+                knowledgeVaultState.ragMeta = {
+                    totalChunks: 0,
+                    knowledgeRecords: 0,
+                    sequenceRecords: 0,
+                    includeSequences: true
+                };
+                renderKnowledgeRagPreview();
+                if (!silent) {
+                    setKnowledgeStatus(`RAG 文件預覽失敗：${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function loadKnowledgeCache(autoSyncIfEmpty = true) {
+            setKnowledgeBusy(true);
+            setKnowledgeStatus('正在從 Render DB 讀取知識庫...', 'info');
+
+            try {
+                const [summary, annotationPayload, literaturePayload] = await Promise.all([
+                    requestKnowledgeApi('/api/knowledge/summary'),
+                    requestKnowledgeApi('/api/knowledge?record_type=protein_annotation&limit=20'),
+                    requestKnowledgeApi('/api/knowledge?record_type=literature&limit=20')
+                ]);
+
+                updateKnowledgeStateFromPayload(summary);
+                updateKnowledgeStateFromPayload({ ...annotationPayload, recordType: 'protein_annotation' });
+                updateKnowledgeStateFromPayload({ ...literaturePayload, recordType: 'literature' });
+                renderKnowledgeSummary();
+                renderKnowledgeTabs();
+                renderKnowledgeSourceOptions();
+                renderKnowledgeFeed();
+
+                const total = knowledgeVaultState.records.protein_annotation.length + knowledgeVaultState.records.literature.length;
+                if (autoSyncIfEmpty && total === 0) {
+                    setKnowledgeStatus('DB 目前沒有知識資料，開始初始化 UniProt / PubMed 快取...', 'warning');
+                    await syncKnowledgeVault(true);
+                    return;
+                }
+
+                await loadRagDocumentPreview(true);
+                setKnowledgeStatus(`已載入 ${knowledgeVaultState.records.protein_annotation.length} 筆 annotation 與 ${knowledgeVaultState.records.literature.length} 筆 literature。`, 'success');
+            } catch (error) {
+                renderKnowledgeSummary();
+                renderKnowledgeTabs();
+                renderKnowledgeSourceOptions();
+                renderKnowledgeFeed();
+                renderKnowledgeRagPreview();
+                setKnowledgeStatus(`知識庫讀取失敗：${error.message}`, 'error');
+            } finally {
+                setKnowledgeBusy(false);
+            }
+        }
+
+        async function syncKnowledgeVault(autoMode = false) {
+            setKnowledgeBusy(true);
+            setKnowledgeStatus(autoMode ? '正在自動初始化 UniProt / PubMed 知識源...' : '正在同步知識資料並寫入 DB...', 'info');
+
+            try {
+                const payload = knowledgeSyncPayload();
+                const response = await requestKnowledgeApi('/api/knowledge/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                updateKnowledgeStateFromPayload(response);
+                renderKnowledgeSummary();
+                renderKnowledgeTabs();
+                renderKnowledgeSourceOptions();
+                renderKnowledgeFeed();
+                await loadRagDocumentPreview(true);
+
+                setKnowledgeStatus(
+                    `同步完成，已寫入 ${Number(response.stored?.proteinAnnotation || 0)} 筆 protein annotation 與 ${Number(response.stored?.literature || 0)} 筆 literature。`,
+                    'success'
+                );
+            } catch (error) {
+                setKnowledgeStatus(`同步失敗：${error.message}`, 'error');
+            } finally {
+                setKnowledgeBusy(false);
+            }
+        }
+
+        function initKnowledgeVault() {
+            document.querySelectorAll('.knowledge-tab').forEach((button) => {
+                button.addEventListener('click', async () => {
+                    knowledgeVaultState.activeType = button.dataset.recordType;
+                    knowledgeVaultState.selectedId = null;
+                    renderKnowledgeTabs();
+                    renderKnowledgeSourceOptions();
+                    renderKnowledgeFeed();
+                    await loadRagDocumentPreview(true);
+                });
+            });
+
+            document.getElementById('knowledgeSearch').addEventListener('input', () => {
+                knowledgeVaultState.selectedId = null;
+                renderKnowledgeFeed();
+            });
+
+            document.getElementById('knowledgeSourceFilter').addEventListener('change', () => {
+                knowledgeVaultState.selectedId = null;
+                renderKnowledgeFeed();
+            });
+
+            document.getElementById('knowledgeSync').addEventListener('click', () => {
+                syncKnowledgeVault(false);
+            });
+
+            document.getElementById('knowledgeReload').addEventListener('click', () => {
+                loadKnowledgeCache(false);
+            });
+
+            document.getElementById('knowledgeRagRefresh').addEventListener('click', () => {
+                loadRagDocumentPreview(false);
+            });
+
+            loadKnowledgeCache(true);
         }
 
         function hashString(text) {
@@ -2737,6 +3392,7 @@
             renderGuides();
             evaluateVariantCase();
             initSequenceVault();
+            initKnowledgeVault();
 
             document.getElementById('generateDesign').addEventListener('click', refreshStudio);
             document.getElementById('rerankGuides').addEventListener('click', renderGuides);

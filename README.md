@@ -165,7 +165,20 @@ The current Render-ready setup can also be expanded into a small full-stack port
 - Static site for the portfolio pages
 - FastAPI service for contact form submission
 - Render Postgres for inquiry storage
+- Dynamic sequence cache sourced from UniProt and Ensembl
+- Dynamic knowledge cache sourced from UniProt annotations and NCBI PubMed
+- RAG-ready document export for knowledge chunks and cached sequence metadata
 
 - Project-specific deployment guide: [DEPLOY_RENDER.md](DEPLOY_RENDER.md)
 - Render blueprint config: [render.yaml](render.yaml)
 - Static bundle build script: [scripts/build_static_site.sh](scripts/build_static_site.sh)
+
+## Bio Knowledge Layer
+
+The deployed FastAPI service now exposes a small bioinformatics knowledge layer for the portfolio pages and downstream RAG workflows.
+
+- Sequence cache endpoints: `/api/sequences`, `/api/sequences/summary`, `/api/sequences/sync`
+- Knowledge cache endpoints: `/api/knowledge`, `/api/knowledge/summary`, `/api/knowledge/sync`
+- RAG document export: `/api/rag/documents`
+
+The `gene_ai.html` page provides the interactive management UI, while `index.html` surfaces a read-only homepage preview of the latest sequence, knowledge, and RAG-ready records stored in Render Postgres.

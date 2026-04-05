@@ -384,6 +384,159 @@ def knowledge_summary() -> dict[str, Any]:
     }
 
 
+def fetch_sequence_rows_for_search(search_query: str | None = None, limit: int = 8) -> list[dict[str, Any]]:
+    query = """
+        SELECT id, sequence_type, source_name, source_id, query_term, display_name,
+               organism, sequence, sequence_length, description, record_url, fetched_at
+        FROM sequence_library
+    """
+    params: list[Any] = []
+
+    if search_query:
+        like_query = f"%{search_query}%"
+        query += " WHERE (query_term ILIKE %s OR display_name ILIKE %s OR organism ILIKE %s OR source_id ILIKE %s OR description ILIKE %s)"
+        params.extend([like_query, like_query, like_query, like_query, like_query])
+
+    query += " ORDER BY fetched_at DESC, id DESC LIMIT %s"
+    params.append(limit)
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+
+    return [serialize_sequence_row(row) for row in rows]
+
+
+def chunk_text_for_rag(text: str, chunk_size: int = 900, chunk_overlap: int = 140) -> list[str]:
+    normalized = " ".join(str(text or "").split())
+    if not normalized:
+        return []
+
+    normalized_chunk_size = max(240, min(chunk_size, 2200))
+    normalized_overlap = max(0, min(chunk_overlap, normalized_chunk_size // 3))
+    if len(normalized) <= normalized_chunk_size:
+        return [normalized]
+
+    chunks: list[str] = []
+    start = 0
+    text_length = len(normalized)
+    while start < text_length:
+        end = min(start + normalized_chunk_size, text_length)
+        if end < text_length:
+            boundary_candidates = [
+                normalized.rfind(". ", start, end),
+                normalized.rfind("; ", start, end),
+                normalized.rfind("。", start, end),
+                normalized.rfind(" ", start, end),
+            ]
+            boundary = max(boundary_candidates)
+            if boundary > start + normalized_chunk_size // 2:
+                end = boundary + 1
+
+        chunk = normalized[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
+
+        if end >= text_length:
+            break
+
+        next_start = max(end - normalized_overlap, start + 1)
+        if next_start <= start:
+            break
+        start = next_start
+
+    return chunks
+
+
+def build_knowledge_rag_documents(
+    records: list[dict[str, Any]],
+    chunk_size: int = 900,
+    chunk_overlap: int = 140,
+) -> list[dict[str, Any]]:
+    documents: list[dict[str, Any]] = []
+    for record in records:
+        source_name = str(record.get("sourceName") or "source").strip()
+        source_id = str(record.get("sourceId") or "unknown").strip()
+        document_id = f"knowledge:{source_name.lower().replace(' ', '_')}:{source_id}"
+        base_text = record.get("contentText") or record.get("summaryText") or record.get("title") or ""
+        preamble = f"Title: {record.get('title') or 'Untitled'}. Source: {source_name}."
+        if record.get("organism"):
+            preamble += f" Organism: {record['organism']}."
+        if record.get("queryTerm"):
+            preamble += f" Query: {record['queryTerm']}."
+
+        chunks = chunk_text_for_rag(f"{preamble} {base_text}", chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+        for index, chunk in enumerate(chunks):
+            documents.append(
+                {
+                    "documentId": document_id,
+                    "chunkId": f"{document_id}:{index}",
+                    "sourceKind": "knowledge",
+                    "recordType": record.get("recordType"),
+                    "title": record.get("title"),
+                    "text": chunk,
+                    "embeddingHint": "text-embedding",
+                    "metadata": {
+                        "sourceName": source_name,
+                        "sourceId": source_id,
+                        "queryTerm": record.get("queryTerm"),
+                        "organism": record.get("organism"),
+                        "recordUrl": record.get("recordUrl"),
+                        "publishedAt": record.get("publishedAt"),
+                        "keywords": record.get("keywords") or [],
+                    },
+                }
+            )
+
+    return documents
+
+
+def build_sequence_rag_documents(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    documents: list[dict[str, Any]] = []
+    for record in records:
+        sequence_type = str(record.get("sequenceType") or "sequence").strip()
+        source_name = str(record.get("sourceName") or "source").strip()
+        source_id = str(record.get("sourceId") or "unknown").strip()
+        document_id = f"sequence:{sequence_type}:{source_id}"
+        sequence_value = str(record.get("sequence") or "").strip().upper()
+        sequence_preview = sequence_value[:24] + ("..." if len(sequence_value) > 24 else "")
+        text = (
+            f"{sequence_type.capitalize()} sequence record for {record.get('displayName') or source_id}. "
+            f"Organism: {record.get('organism') or 'Unknown'}. "
+            f"Source: {source_name} ({source_id}). "
+            f"Length: {record.get('sequenceLength') or 0}. "
+            f"Description: {record.get('description') or 'No description available.'} "
+            f"Query term: {record.get('queryTerm') or '-'}"
+        )
+
+        documents.append(
+            {
+                "documentId": document_id,
+                "chunkId": f"{document_id}:0",
+                "sourceKind": "sequence",
+                "recordType": f"{sequence_type}_sequence",
+                "title": record.get("displayName"),
+                "text": text,
+                "embeddingHint": "protein-language-model" if sequence_type == "protein" else "genome-language-model",
+                "metadata": {
+                    "sourceName": source_name,
+                    "sourceId": source_id,
+                    "queryTerm": record.get("queryTerm"),
+                    "organism": record.get("organism"),
+                    "sequenceLength": record.get("sequenceLength"),
+                    "sequencePreview": sequence_preview,
+                    "sequence": sequence_value,
+                    "recordUrl": record.get("recordUrl"),
+                    "fetchedAt": record.get("fetchedAt"),
+                    "description": record.get("description"),
+                },
+            }
+        )
+
+    return documents
+
+
 def upsert_sequence_records(records: list[SequenceRecordPayload]) -> None:
     if not records:
         return
@@ -698,6 +851,70 @@ def sync_knowledge(payload: KnowledgeSyncRequest) -> dict[str, Any]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to persist crawled knowledge to Render Postgres.",
+        ) from error
+
+
+@app.get("/api/rag/documents")
+def list_rag_documents(
+    query: str | None = None,
+    record_type: str | None = None,
+    include_sequences: bool = True,
+    limit: int = 8,
+    chunk_size: int = 900,
+    chunk_overlap: int = 140,
+) -> dict[str, Any]:
+    normalized_query = (query or "").strip() or None
+    normalized_record_type = (record_type or "").strip().lower() or None
+    if normalized_record_type and normalized_record_type not in {"protein_annotation", "literature"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="record_type must be either protein_annotation or literature.",
+        )
+
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    try:
+        normalized_limit = max(1, min(limit, 20))
+        knowledge_records = fetch_knowledge_rows(
+            record_type=normalized_record_type,
+            search_query=normalized_query,
+            limit=normalized_limit,
+        )
+        sequence_records = fetch_sequence_rows_for_search(
+            search_query=normalized_query,
+            limit=normalized_limit,
+        ) if include_sequences else []
+
+        documents = build_knowledge_rag_documents(
+            knowledge_records,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+        documents.extend(build_sequence_rag_documents(sequence_records))
+
+        return {
+            "documents": documents,
+            "query": normalized_query,
+            "recordType": normalized_record_type,
+            "includeSequences": include_sequences,
+            "knowledgeRecords": len(knowledge_records),
+            "sequenceRecords": len(sequence_records),
+            "totalChunks": len(documents),
+            "embeddingAdvice": {
+                "literature": "Use a general text embedding model for abstracts and curated annotation chunks.",
+                "protein_annotation": "Use text embeddings for annotation chunks; keep accession and evidence metadata as filters.",
+                "protein_sequence": "For raw sequence similarity, prefer protein language models such as ESM-2 instead of plain text embeddings.",
+                "gene_sequence": "For DNA/RNA content, prefer genome-specific models or structured retrieval rather than naive text embeddings.",
+            },
+        }
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not reachable right now.",
         ) from error
 
 

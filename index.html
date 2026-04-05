@@ -691,6 +691,44 @@
             background: rgba(255, 255, 255, .02);
         }
 
+        .live-knowledge-preview,
+        .live-rag-text {
+            color: #d8ebe3;
+            font-size: .8rem;
+            line-height: 1.72;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .live-rag-shell {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .live-rag-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .live-rag-item {
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .02);
+            padding: 16px;
+        }
+
+        .live-rag-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--muted);
+            font-size: .74rem;
+        }
+
         /* ─── Algorithms section ─────────────────────────────────────────── */
         .algo-tabs {
             display: flex;
@@ -1755,6 +1793,7 @@
             <li><a href="ngs.html">NGS 定序</a></li>
             <li><a href="gene_ai.html">基因 AI</a></li>
             <li><a href="#sequence-live">序列資料庫</a></li>
+            <li><a href="#knowledge-live">知識資料庫</a></li>
             <li><a href="#demo" class="btn btn-primary" style="padding:6px 16px;font-size:.8rem">互動展示</a></li>
         </ul>
     </nav>
@@ -1778,6 +1817,7 @@
                 <a href="works.html" class="btn btn-outline">查看代表作品</a>
                 <a href="gene_ai.html" class="btn btn-outline">開啟基因 AI 平台</a>
                 <a href="#sequence-live" class="btn btn-outline">看即時序列庫</a>
+                <a href="#knowledge-live" class="btn btn-outline">看知識資料庫</a>
                 <a href="#pipeline" class="btn btn-outline">看技術流程</a>
             </div>
             <div class="hero-stats">
@@ -1942,6 +1982,76 @@
                         </div>
                         <div id="portfolioGeneFeed" class="live-seq-list"></div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="divider">
+
+    <section id="knowledge-live">
+        <div class="reveal">
+            <div class="section-label">Live Knowledge Feed</div>
+            <h2 class="section-title">首頁直接看 knowledge_library 與 RAG-ready 文件預覽</h2>
+            <p class="section-sub">
+                這裡顯示 UniProt 註釋、PubMed 摘要，以及後端整理好的文件 chunks。首頁維持唯讀展示，搜尋與同步操作留在 gene_ai 頁的 Knowledge Vault。
+            </p>
+        </div>
+
+        <div class="live-seq-grid reveal">
+            <aside class="live-seq-sidebar">
+                <div class="section-label" style="margin-bottom:10px">Knowledge API</div>
+                <div id="portfolioKnowledgeStatus" class="live-seq-status" data-state="info">正在連線 Render API 並讀取
+                    knowledge_library...</div>
+                <div class="live-seq-stats">
+                    <div class="live-seq-stat">
+                        <div class="k">Protein annotations</div>
+                        <div class="v" id="portfolioKnowledgeProteinCount">0</div>
+                    </div>
+                    <div class="live-seq-stat">
+                        <div class="k">PubMed literature</div>
+                        <div class="v" id="portfolioKnowledgeLiteratureCount">0</div>
+                    </div>
+                    <div class="live-seq-stat">
+                        <div class="k">Latest sync</div>
+                        <div class="v" id="portfolioKnowledgeLatestFetched">-</div>
+                    </div>
+                </div>
+                <div class="live-seq-actions">
+                    <button id="portfolioKnowledgeRefresh" class="btn btn-primary" type="button">重新讀取</button>
+                    <a href="gene_ai.html#knowledge-vault" class="btn btn-outline">前往知識檢索台</a>
+                </div>
+                <div class="live-seq-meta">
+                    API base: <span id="portfolioKnowledgeApiBase"
+                        style="font-family:var(--mono);color:var(--text)">detecting...</span><br>
+                    這裡只放唯讀摘要與 RAG chunks preview，方便在首頁快速驗證資料層是否正常更新。
+                </div>
+            </aside>
+
+            <div class="live-seq-panel">
+                <div class="live-seq-columns">
+                    <div class="live-seq-column">
+                        <div class="live-seq-column-head">
+                            <h3>Protein Annotations</h3>
+                            <div class="live-seq-pill">Top 2</div>
+                        </div>
+                        <div id="portfolioKnowledgeProteinFeed" class="live-seq-list"></div>
+                    </div>
+                    <div class="live-seq-column">
+                        <div class="live-seq-column-head">
+                            <h3>Literature Abstracts</h3>
+                            <div class="live-seq-pill">Top 2</div>
+                        </div>
+                        <div id="portfolioKnowledgeLiteratureFeed" class="live-seq-list"></div>
+                    </div>
+                </div>
+
+                <div class="live-rag-shell">
+                    <div class="live-seq-column-head">
+                        <h3>RAG-ready Preview</h3>
+                        <div class="live-seq-pill">Top 3</div>
+                    </div>
+                    <div id="portfolioRagFeed" class="live-rag-list"></div>
                 </div>
             </div>
         </div>
@@ -2728,7 +2838,6 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
                 return _portfolioApiBase;
             }
 
-            const apiBaseLabel = document.getElementById('portfolioApiBase');
             const candidates = derivePortfolioApiCandidates();
             for (const candidate of candidates) {
                 try {
@@ -2740,9 +2849,12 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
                     const data = await response.json().catch(() => null);
                     if (data?.status === 'ok') {
                         _portfolioApiBase = candidate;
-                        if (apiBaseLabel) {
-                            apiBaseLabel.textContent = candidate;
-                        }
+                        ['portfolioApiBase', 'portfolioKnowledgeApiBase'].forEach((id) => {
+                            const label = document.getElementById(id);
+                            if (label) {
+                                label.textContent = candidate;
+                            }
+                        });
                         return _portfolioApiBase;
                     }
                 } catch (error) {
@@ -2750,9 +2862,12 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
                 }
             }
 
-            if (apiBaseLabel) {
-                apiBaseLabel.textContent = 'unavailable';
-            }
+            ['portfolioApiBase', 'portfolioKnowledgeApiBase'].forEach((id) => {
+                const label = document.getElementById(id);
+                if (label) {
+                    label.textContent = 'unavailable';
+                }
+            });
             return '';
         }
 
@@ -2809,6 +2924,70 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
             }).join('');
         }
 
+        function renderPortfolioKnowledgeList(containerId, records, recordType) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            if (!Array.isArray(records) || !records.length) {
+                container.innerHTML = '<div class="live-seq-empty">目前沒有知識紀錄。可前往 gene_ai 頁同步 UniProt 與 PubMed 資料。</div>';
+                return;
+            }
+
+            container.innerHTML = records.map((record) => {
+                const chip = recordType === 'literature' ? 'PUBMED' : 'UNIPROT';
+                const preview = String(record.summaryText || record.contentText || '').trim();
+                const sourceLink = record.recordUrl
+                    ? `<a class="live-seq-link" href="${portfolioEscapeHtml(record.recordUrl)}" target="_blank" rel="noreferrer">來源</a>`
+                    : '<span></span>';
+
+                return `
+                    <article class="live-seq-item">
+                        <div class="live-seq-item-head">
+                            <div>
+                                <div class="live-seq-item-title">${portfolioEscapeHtml(record.title)}</div>
+                                <div class="live-seq-item-sub">${portfolioEscapeHtml(record.sourceName || '-')} · ${portfolioEscapeHtml(record.sourceId || '-')}</div>
+                            </div>
+                            <div class="live-seq-pill">${chip}</div>
+                        </div>
+                        <div class="live-knowledge-preview">${portfolioEscapeHtml(preview || 'No summary available.')}</div>
+                        <div class="live-seq-item-meta">
+                            <span>${portfolioEscapeHtml(record.organism || record.publishedAt || '-')}</span>
+                            <span>${portfolioEscapeHtml(record.queryTerm || '-')}</span>
+                            ${sourceLink}
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function renderPortfolioRagPreview(documents) {
+            const container = document.getElementById('portfolioRagFeed');
+            if (!container) return;
+
+            if (!Array.isArray(documents) || !documents.length) {
+                container.innerHTML = '<div class="live-seq-empty">目前沒有 RAG 文件預覽。知識資料同步後就會在這裡看到 chunk 與 metadata。</div>';
+                return;
+            }
+
+            container.innerHTML = documents.map((document) => `
+                <article class="live-rag-item">
+                    <div class="live-seq-item-head">
+                        <div>
+                            <div class="live-seq-item-title">${portfolioEscapeHtml(document.title || document.documentId)}</div>
+                            <div class="live-seq-item-sub">${portfolioEscapeHtml(document.chunkId || '-')}</div>
+                        </div>
+                        <div class="live-seq-pill">${portfolioEscapeHtml(document.embeddingHint || 'rag')}</div>
+                    </div>
+                    <div class="live-rag-text">${portfolioEscapeHtml(String(document.text || '').trim() || 'No text available.')}</div>
+                    <div class="live-rag-meta">
+                        <span>${portfolioEscapeHtml(document.metadata?.sourceName || '-')}</span>
+                        <span>${portfolioEscapeHtml(document.metadata?.sourceId || '-')}</span>
+                        <span>${portfolioEscapeHtml(document.metadata?.queryTerm || '-')}</span>
+                    </div>
+                </article>
+            `).join('');
+        }
+
         async function loadPortfolioSequenceFeed() {
             setPortfolioSequenceStatus('正在載入 Render Postgres 的 sequence_library...', 'info');
 
@@ -2837,11 +3016,56 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
             }
         }
 
+        function setPortfolioKnowledgeStatus(message, state = 'info') {
+            const statusEl = document.getElementById('portfolioKnowledgeStatus');
+            if (!statusEl) return;
+            statusEl.textContent = message;
+            statusEl.dataset.state = state;
+        }
+
+        async function loadPortfolioKnowledgeFeed() {
+            setPortfolioKnowledgeStatus('正在載入 Render Postgres 的 knowledge_library 與 RAG 預覽...', 'info');
+
+            try {
+                const [summary, annotationPayload, literaturePayload, ragPayload] = await Promise.all([
+                    portfolioApiJson('/api/knowledge/summary'),
+                    portfolioApiJson('/api/knowledge?record_type=protein_annotation&limit=2'),
+                    portfolioApiJson('/api/knowledge?record_type=literature&limit=2'),
+                    portfolioApiJson('/api/rag/documents?include_sequences=true&limit=3&chunk_size=680&chunk_overlap=100')
+                ]);
+
+                document.getElementById('portfolioKnowledgeProteinCount').textContent = String(summary.proteinAnnotationCount ?? 0);
+                document.getElementById('portfolioKnowledgeLiteratureCount').textContent = String(summary.literatureCount ?? 0);
+                document.getElementById('portfolioKnowledgeLatestFetched').textContent = portfolioFormatDateTime(summary.latestFetchedAt);
+
+                renderPortfolioKnowledgeList('portfolioKnowledgeProteinFeed', annotationPayload.records || [], 'protein_annotation');
+                renderPortfolioKnowledgeList('portfolioKnowledgeLiteratureFeed', literaturePayload.records || [], 'literature');
+                renderPortfolioRagPreview(ragPayload.documents || []);
+
+                setPortfolioKnowledgeStatus('首頁已接上知識資料庫與 RAG 文件預覽。', 'success');
+            } catch (error) {
+                document.getElementById('portfolioKnowledgeProteinCount').textContent = '0';
+                document.getElementById('portfolioKnowledgeLiteratureCount').textContent = '0';
+                document.getElementById('portfolioKnowledgeLatestFetched').textContent = '-';
+                renderPortfolioKnowledgeList('portfolioKnowledgeProteinFeed', [], 'protein_annotation');
+                renderPortfolioKnowledgeList('portfolioKnowledgeLiteratureFeed', [], 'literature');
+                renderPortfolioRagPreview([]);
+                setPortfolioKnowledgeStatus(`知識資料庫讀取失敗：${error.message}`, 'error');
+            }
+        }
+
         function initPortfolioSequenceLive() {
             document.getElementById('portfolioSequenceRefresh')?.addEventListener('click', () => {
                 loadPortfolioSequenceFeed();
             });
             loadPortfolioSequenceFeed();
+        }
+
+        function initPortfolioKnowledgeLive() {
+            document.getElementById('portfolioKnowledgeRefresh')?.addEventListener('click', () => {
+                loadPortfolioKnowledgeFeed();
+            });
+            loadPortfolioKnowledgeFeed();
         }
 
         /* ── Active nav link ── */
@@ -3680,6 +3904,7 @@ loss   = −(log_p.squeeze() * R_baseline).<span class="fn">mean</span>()</pre>
         }
         window.addEventListener('DOMContentLoaded', () => {
             initPortfolioSequenceLive();
+            initPortfolioKnowledgeLive();
             _waitAndLoadHP35(10);
         });
     </script>
