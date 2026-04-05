@@ -885,11 +885,16 @@
         });
     </script>
 
+    <script src="app-config.js"></script>
+
     <script>
         /* ============================================================
          *  LIVE API STATS
          * ============================================================ */
-        const API_BASE = 'https://jtlai-engineering-biomed-api-yz11.onrender.com';
+        const configuredApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
+            ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
+            : '';
+        const API_BASE = configuredApiBase || window.location.origin.replace(/\/+$/, '');
 
         async function apiGet(path) {
             const r = await fetch(API_BASE + path, { signal: AbortSignal.timeout(9000) });
@@ -925,7 +930,7 @@
                 });
 
                 ind.classList.add('connected');
-                lbl.textContent = 'Render 後端 · 已連線';
+                lbl.textContent = 'API 後端 · 已連線';
             } catch (err) {
                 ind.classList.add('error');
                 lbl.textContent = 'API 暫時離線';

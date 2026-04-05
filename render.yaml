@@ -44,7 +44,7 @@ services:
         source: /interview
         destination: /interview_prep.html
   - type: web
-    name: jtlai-engineering-biomed-api
+    name: donttalk-api
     runtime: python
     plan: free
     buildCommand: pip install -r site_api/requirements.txt

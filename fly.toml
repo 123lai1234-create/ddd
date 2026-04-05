@@ -1,4 +1,4 @@
-app = "jtlai-engineering-biomed-api"
+app = "donttalk-api"
 primary_region = "nrt"
 
 [build]

@@ -1,0 +1,136 @@
+name: Deploy Platforms
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  RAILWAY_PROJECT_ID: 098c670f-4a87-475e-b934-ca8b7dc74f4e
+  RAILWAY_ENVIRONMENT_ID: ea437d7d-5e2d-4a84-92e5-afd344389170
+  RAILWAY_SERVICE_ID: 29c6f948-a536-4f11-a317-dad1293a66ac
+  NETLIFY_SITE_ID: 65af318c-45c6-413e-837b-685a4fc01444
+  CLOUDFLARE_ACCOUNT_ID: e9fdfcda5eaca594919634b8fe84a8f1
+  CLOUDFLARE_PAGES_PROJECT: donttalk
+  VERCEL_ORG_ID: team_a3kKe1wDrxqQfuXTUnw4SUxw
+  VERCEL_PROJECT_ID: prj_Knbnl6axKI8AQJApFYlIx2sQ4aXV
+
+jobs:
+  deploy-railway:
+    name: Deploy Railway API
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy backend to Railway
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: |
+          npx --yes @railway/cli up --ci \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID"
+
+  deploy-vercel:
+    name: Deploy Vercel Frontend
+    needs: deploy-railway
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Pull Vercel project settings
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          npx --yes vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Deploy frontend to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          npx --yes vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+
+  deploy-netlify:
+    name: Deploy Netlify Frontend
+    needs: deploy-railway
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build static site
+        run: |
+          bash ./scripts/build_static_site.sh
+
+      - name: Deploy frontend to Netlify
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          npx --yes netlify-cli deploy \
+            --dir=dist \
+            --prod \
+            --site="$NETLIFY_SITE_ID" \
+            --auth="$NETLIFY_AUTH_TOKEN"
+
+  deploy-cloudflare:
+    name: Deploy Cloudflare Pages Frontend
+    needs: deploy-railway
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Resolve Railway public domain
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: |
+          response=$(curl -sS https://backboard.railway.com/graphql/v2 \
+            -H "Authorization: Bearer $RAILWAY_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"query":"query($projectId:String!,$environmentId:String!,$serviceId:String!){ domains(projectId:$projectId, environmentId:$environmentId, serviceId:$serviceId){ serviceDomains { domain } } }","variables":{"projectId":"'"$RAILWAY_PROJECT_ID"'","environmentId":"'"$RAILWAY_ENVIRONMENT_ID"'","serviceId":"'"$RAILWAY_SERVICE_ID"'"}}')
+          railway_domain=$(echo "$response" | node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync(0,'utf8')); const domain=data?.data?.domains?.serviceDomains?.[0]?.domain; if(!domain){ console.error('No Railway service domain found'); process.exit(1); } process.stdout.write(domain);")
+          echo "API_BASE_URL=https://$railway_domain" >> "$GITHUB_ENV"
+
+      - name: Build static site
+        run: |
+          bash ./scripts/build_static_site.sh
+
+      - name: Deploy frontend to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --yes wrangler pages deploy dist --project-name "$CLOUDFLARE_PAGES_PROJECT" --branch main

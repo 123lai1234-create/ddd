@@ -2137,9 +2137,14 @@ gatk VariantFiltration \
 
     <button class="scroll-top" aria-label="返回頂部">↑</button>
 
+    <script src="app-config.js"></script>
+
     <script>
         /* ── RAG Search ── */
-        const RAG_API = 'https://jtlai-engineering-biomed-api-yz11.onrender.com';
+        const configuredRagApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
+            ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
+            : '';
+        const RAG_API = configuredRagApiBase || window.location.origin.replace(/\/+$/, '');
 
         async function doRagSearch() {
             const input = document.getElementById('ragInput');
@@ -2151,7 +2156,7 @@ gatk VariantFiltration \
 
             btn.disabled = true;
             btn.textContent = '搜尋中…';
-            status.textContent = '正在連接 Render 知識庫…';
+            status.textContent = '正在連接知識庫…';
             results.innerHTML = '';
 
             try {
@@ -2186,7 +2191,7 @@ gatk VariantFiltration \
                 }).join('');
             } catch (err) {
                 status.textContent = 'API 連線失敗：' + err.message;
-                results.innerHTML = '<div class="rag-empty">無法連接 Render API，請稍後再試。</div>';
+                results.innerHTML = '<div class="rag-empty">無法連接 API，請稍後再試。</div>';
             } finally {
                 btn.disabled = false;
                 btn.textContent = '🔍 搜尋';

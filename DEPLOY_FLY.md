@@ -36,7 +36,7 @@ fly launch --no-deploy
 
 當系統提問時：
 
-- **App name**: `jtlai-engineering-biomed-api`（或其他名稱，需同步更新 `fly.toml` 中的 `app`）
+- **App name**: `donttalk-api`（或其他名稱，需同步更新 `fly.toml` 中的 `app`）
 - **Region**: `nrt`（東京，離台灣最近）
 - **Copy existing config**: **Yes**（使用現有 `fly.toml`）
 
@@ -96,12 +96,12 @@ GET https://<your-app>.fly.dev/healthz
 
 部署完成後，若靜態站（Render）的 API URL 需要更新，請確認
 `about_me.html`、`gene_ai.html`、`index.html` 中的 API hostname 自動偵測邏輯
-能對應到新的 Fly.io hostname `jtlai-engineering-biomed-api.fly.dev`。
+能對應到新的 Fly.io hostname `donttalk-api.fly.dev`。
 
 若使用 `app-config.js` 本機覆蓋，修改為：
 
 ```js
-window.API_BASE_URL = "https://jtlai-engineering-biomed-api.fly.dev";
+window.API_BASE_URL = "https://donttalk-api.fly.dev";
 ```
 
 ---

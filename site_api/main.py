@@ -730,7 +730,7 @@ def startup() -> None:
 @app.get("/")
 def root() -> dict[str, Any]:
     return {
-        "service": "jtlai-engineering-biomed-api",
+        "service": "donttalk-api",
         "databaseConfigured": bool(get_database_url()),
         "connected": database_available(),
     }
