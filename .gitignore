@@ -5,3 +5,6 @@ __pycache__/
 
 outputs/*.pt
 .vercel
+.netlify/
+.wrangler/
+.railway/

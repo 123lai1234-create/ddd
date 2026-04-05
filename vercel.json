@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "pip install -r site_api/requirements.txt",
   "buildCommand": "bash ./scripts/build_static_site.sh",
   "outputDirectory": "dist",
   "headers": [
@@ -25,7 +24,11 @@
   "rewrites": [
     {
       "source": "/healthz",
-      "destination": "/api/healthz"
+      "destination": "https://jtlai-engineering-biomed-api-production.up.railway.app/healthz"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://jtlai-engineering-biomed-api-production.up.railway.app/api/:path*"
     }
   ],
   "redirects": [
