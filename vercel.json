@@ -1,34 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "bash ./scripts/build_static_site.sh",
-  "outputDirectory": "dist",
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "SAMEORIGIN"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        }
-      ]
-    }
-  ],
   "rewrites": [
     {
       "source": "/healthz",
-        "destination": "https://donttalk-api-production.up.railway.app/healthz"
+      "destination": "/api/index"
     },
     {
       "source": "/api/:path*",
-        "destination": "https://donttalk-api-production.up.railway.app/api/:path*"
+      "destination": "/api/index"
     }
   ],
   "redirects": [

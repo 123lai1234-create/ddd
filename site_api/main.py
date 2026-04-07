@@ -618,6 +618,8 @@ def delete_sequence_record(record_id: int) -> dict[str, Any] | None:
 
 DATABASE_URL_ENV_KEYS = [
     "DATABASE_URL",
+    "POSTGRES_URL",
+    "POSTGRES_URL_NON_POOLING",
     "DATABASE_URL_NEON",
     "DATABASE_URL_SUPABASE",
     "DATABASE_URL_COCKROACH",
@@ -650,6 +652,21 @@ def _with_query_params(url: str, params: dict[str, str]) -> str:
     return urlunparse(parsed._replace(query=urlencode(query)))
 
 
+_PG_KNOWN_PARAMS = frozenset({
+    "sslmode", "connect_timeout", "application_name", "options",
+    "keepalives", "keepalives_idle", "keepalives_interval", "keepalives_count",
+    "target_session_attrs", "channel_binding",
+})
+
+
+def _sanitize_database_url(url: str) -> str:
+    """Remove non-PostgreSQL query parameters from a database URL."""
+    parsed = urlparse(url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    cleaned = {k: v for k, v in query.items() if k in _PG_KNOWN_PARAMS}
+    return urlunparse(parsed._replace(query=urlencode(cleaned)))
+
+
 def _expand_url_candidates(database_url: str) -> list[str]:
     candidates: list[str] = []
 
@@ -658,8 +675,9 @@ def _expand_url_candidates(database_url: str) -> list[str]:
         if normalized and normalized not in candidates:
             candidates.append(normalized)
 
-    append_candidate(database_url)
-    append_candidate(_with_query_params(database_url, {"connect_timeout": "5"}))
+    sanitized = _sanitize_database_url(database_url)
+    append_candidate(sanitized)
+    append_candidate(_with_query_params(sanitized, {"connect_timeout": "5"}))
 
     parsed = urlparse(database_url)
     query = dict(parse_qsl(parsed.query, keep_blank_values=True))
@@ -763,14 +781,15 @@ def check_all_databases() -> list[dict[str, Any]]:
         parsed = urlparse(value)
         host = parsed.hostname or "unknown"
         entry: dict[str, Any] = {"envKey": key, "host": host, "connected": False, "error": None}
+        sanitized_value = _sanitize_database_url(value)
         try:
-            conn = psycopg.connect(_with_query_params(value, {"sslmode": "require", "connect_timeout": "5"}))
+            conn = psycopg.connect(_with_query_params(sanitized_value, {"sslmode": "require", "connect_timeout": "5"}))
             conn.execute("SELECT 1;")
             conn.close()
             entry["connected"] = True
         except psycopg.Error as error:
             try:
-                conn = psycopg.connect(_with_query_params(value, {"connect_timeout": "5"}))
+                conn = psycopg.connect(_with_query_params(sanitized_value, {"connect_timeout": "5"}))
                 conn.execute("SELECT 1;")
                 conn.close()
                 entry["connected"] = True

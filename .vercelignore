@@ -1,15 +1,11 @@
 .git/
 .venv/
 dist/
-api/
-site_api/
-outputs/\*.pt
+outputs/*.pt
 src/
-requirements.txt
 run_pipeline.py
 DEPLOY_FLY.md
 DEPLOY_RENDER.md
-render.yaml
 fly.toml
 Dockerfile
 netlify.toml

@@ -80,7 +80,7 @@ jobs:
           fi
 
   deploy-vercel:
-    name: Deploy Vercel Frontend
+    name: Deploy Vercel (Frontend + API)
     needs: deploy-railway
     if: always()
     runs-on: ubuntu-latest
