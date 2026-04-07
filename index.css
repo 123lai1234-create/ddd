@@ -527,3 +527,65 @@
             opacity: 1;
             transform: none;
         }
+
+/* ── Explore Grid ── */
+.explore-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 32px;
+}
+
+.explore-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color .2s, transform .2s;
+    position: relative;
+}
+
+.explore-card:hover {
+    border-color: var(--teal);
+    transform: translateY(-3px);
+}
+
+.explore-icon {
+    font-size: 1.6rem;
+}
+
+.explore-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.explore-card p {
+    font-size: .82rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 0;
+    flex: 1;
+}
+
+.explore-arrow {
+    font-size: 1.1rem;
+    color: var(--teal);
+    align-self: flex-end;
+    transition: transform .2s;
+}
+
+.explore-card:hover .explore-arrow {
+    transform: translateX(4px);
+}
+
+@media (max-width: 768px) {
+    .explore-grid {
+        grid-template-columns: 1fr;
+    }
+}

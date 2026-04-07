@@ -10,13 +10,10 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/3dmol@2.4.2/build/3Dmol-min.js"></script>
     <link rel="stylesheet" href="shared.css">
     <script src="nav.js" defer></script>
     <link rel="stylesheet" href="index.css">
-    <link rel="stylesheet" href="index-live.css">
-    <link rel="stylesheet" href="index-content.css">
     <link rel="stylesheet" href="index-mpnn.css">
 </head>
 
@@ -33,8 +30,7 @@
         </ul><button class="hamburger" id="hamburger" aria-label="開啟選單"><span></span><span></span><span></span></button>
     </nav>
     <div class="nav-drawer" id="navDrawer"><a href="about_me.html">About Me</a><a href="works.html">作品總覽</a><a
-            href="ngs.html">NGS 定序</a><a href="gene_ai.html">基因 AI 平台</a><a href="#pipeline"
-            onclick="document.getElementById('navDrawer').classList.remove('open');document.getElementById('hamburger').classList.remove('open')">技術流程</a><a
+            href="ngs.html">NGS 定序</a><a href="gene_ai.html">基因 AI 平台</a><a href="report.html">專案報告</a><a
             href="#demo"
             onclick="document.getElementById('navDrawer').classList.remove('open');document.getElementById('hamburger').classList.remove('open')">互動展示</a>
     </div>
@@ -150,565 +146,51 @@
         </div>
     </section>
     <hr class="divider">
-    <section id="sequence-live">
+    <!-- ════════ EXPLORE ════════ -->
+    <section id="explore">
         <div class="reveal">
-            <div class="section-label">Live Sequence Feed</div>
-            <h2 class="section-title">首頁直接看 Render Postgres 裡的 protein / gene 快取</h2>
-            <p class="section-sub">這裡顯示的是同一套 Sequence Vault 的唯讀版本。管理、同步與刪除留在 gene_ai
-                頁，首頁只負責快速展示目前資料庫裡最新的蛋白質與基因序列紀錄。 </p>
+            <div class="section-label">深入探索</div>
+            <h2 class="section-title">各主題專頁</h2>
+            <p class="section-sub">每個主題都有獨立頁面，包含完整技術細節、互動圖表與操作介面。</p>
         </div>
-        <div class="live-seq-grid reveal">
-            <aside class="live-seq-sidebar">
-                <div class="section-label" style="margin-bottom:10px">Render API</div>
-                <div id="portfolioSequenceStatus" class="live-seq-status" data-state="info">正在連線 Render API
-                    並讀取 sequence_library...</div>
-                <div class="live-seq-stats">
-                    <div class="live-seq-stat">
-                        <div class="k">Protein cache</div>
-                        <div class="v" id="portfolioProteinCount">0</div>
-                    </div>
-                    <div class="live-seq-stat">
-                        <div class="k">Gene cache</div>
-                        <div class="v" id="portfolioGeneCount">0</div>
-                    </div>
-                    <div class="live-seq-stat">
-                        <div class="k">Latest sync</div>
-                        <div class="v" id="portfolioLatestFetched">-</div>
-                    </div>
-                </div>
-                <div class="live-seq-actions"><button id="portfolioSequenceRefresh" class="btn btn-primary"
-                        type="button">重新讀取</button><a href="gene_ai.html#sequence-vault"
-                        class="btn btn-outline">前往管理介面</a></div>
-                <div class="live-seq-meta">API base: <span id="portfolioApiBase"
-                        style="font-family:var(--mono);color:var(--text)">detecting...</span><br>來源: UniProt
-                    proteins、Ensembl genes。首頁只顯示最新快取，實際同步與刪除請到 gene_ai 頁處理。 </div>
-            </aside>
-            <div class="live-seq-panel">
-                <div class="live-seq-columns">
-                    <div class="live-seq-column">
-                        <div class="live-seq-column-head">
-                            <h3>Protein Cache</h3>
-                            <div class="live-seq-pill">Top 3</div>
-                        </div>
-                        <div id="portfolioProteinFeed" class="live-seq-list"></div>
-                    </div>
-                    <div class="live-seq-column">
-                        <div class="live-seq-column-head">
-                            <h3>Gene Cache</h3>
-                            <div class="live-seq-pill">Top 3</div>
-                        </div>
-                        <div id="portfolioGeneFeed" class="live-seq-list"></div>
-                    </div>
-                </div>
-            </div>
+        <div class="explore-grid reveal">
+            <a href="report.html" class="explore-card">
+                <div class="explore-icon">🧬</div>
+                <h3>蛋白質 AI 專案報告</h3>
+                <p>端到端 Pipeline 架構、實驗結果圖表、核心演算法數學推導、程式碼庫結構一覽。</p>
+                <span class="explore-arrow">→</span>
+            </a>
+            <a href="gene_ai.html" class="explore-card">
+                <div class="explore-icon">🔬</div>
+                <h3>基因 AI 平台</h3>
+                <p>序列資料庫、知識庫、RAG 文件搜尋、啟動子設計、CRISPR 導引排序、變異效應評估。</p>
+                <span class="explore-arrow">→</span>
+            </a>
+            <a href="ngs.html" class="explore-card">
+                <div class="explore-icon">📊</div>
+                <h3>NGS 次世代定序</h3>
+                <p>實驗設計計算器、定序深度估算、QC 到功能分析的完整結果圖表集。</p>
+                <span class="explore-arrow">→</span>
+            </a>
+            <a href="interview_prep.html" class="explore-card">
+                <div class="explore-icon">🎯</div>
+                <h3>面試準備手冊</h3>
+                <p>模擬面試問答、數學推導筆記、Mini Project 完整程式碼、六週衝刺計劃。</p>
+                <span class="explore-arrow">→</span>
+            </a>
+            <a href="works.html" class="explore-card">
+                <div class="explore-icon">💼</div>
+                <h3>作品總覽</h3>
+                <p>所有專案卡片篩選、即時 API 統計、跨域作品集一覽。</p>
+                <span class="explore-arrow">→</span>
+            </a>
+            <a href="thesis.html" class="explore-card">
+                <div class="explore-icon">📝</div>
+                <h3>論文 · 遺傳演算法</h3>
+                <p>互動式遺傳演算法模擬器，即時觀察族群演化與適應性收斂。</p>
+                <span class="explore-arrow">→</span>
+            </a>
         </div>
-    </section>
-    <hr class="divider">
-    <section id="knowledge-live">
-        <div class="reveal">
-            <div class="section-label">Live Knowledge Feed</div>
-            <h2 class="section-title">首頁直接看 knowledge_library 與 RAG-ready 文件預覽</h2>
-            <p class="section-sub">這裡顯示 UniProt 註釋、PubMed 摘要，以及後端整理好的文件 chunks。首頁維持唯讀展示，搜尋與同步操作留在 gene_ai 頁的
-                Knowledge Vault。 </p>
-        </div>
-        <div class="live-seq-grid reveal">
-            <aside class="live-seq-sidebar">
-                <div class="section-label" style="margin-bottom:10px">Knowledge API</div>
-                <div id="portfolioKnowledgeStatus" class="live-seq-status" data-state="info">正在連線 Render API
-                    並讀取 knowledge_library...</div>
-                <div class="live-seq-stats">
-                    <div class="live-seq-stat">
-                        <div class="k">Protein annotations</div>
-                        <div class="v" id="portfolioKnowledgeProteinCount">0</div>
-                    </div>
-                    <div class="live-seq-stat">
-                        <div class="k">PubMed literature</div>
-                        <div class="v" id="portfolioKnowledgeLiteratureCount">0</div>
-                    </div>
-                    <div class="live-seq-stat">
-                        <div class="k">Latest sync</div>
-                        <div class="v" id="portfolioKnowledgeLatestFetched">-</div>
-                    </div>
-                </div>
-                <div class="live-seq-actions"><button id="portfolioKnowledgeRefresh" class="btn btn-primary"
-                        type="button">重新讀取</button><a href="gene_ai.html#knowledge-vault"
-                        class="btn btn-outline">前往知識檢索台</a></div>
-                <div class="live-seq-meta">API base: <span id="portfolioKnowledgeApiBase"
-                        style="font-family:var(--mono);color:var(--text)">detecting...</span><br>這裡只放唯讀摘要與
-                    RAG chunks preview，方便在首頁快速驗證資料層是否正常更新。 </div>
-            </aside>
-            <div class="live-seq-panel">
-                <div class="live-seq-columns">
-                    <div class="live-seq-column">
-                        <div class="live-seq-column-head">
-                            <h3>Protein Annotations</h3>
-                            <div class="live-seq-pill">Top 2</div>
-                        </div>
-                        <div id="portfolioKnowledgeProteinFeed" class="live-seq-list"></div>
-                    </div>
-                    <div class="live-seq-column">
-                        <div class="live-seq-column-head">
-                            <h3>Literature Abstracts</h3>
-                            <div class="live-seq-pill">Top 2</div>
-                        </div>
-                        <div id="portfolioKnowledgeLiteratureFeed" class="live-seq-list"></div>
-                    </div>
-                </div>
-                <div class="live-rag-shell">
-                    <div class="live-seq-column-head">
-                        <h3>RAG-ready Preview</h3>
-                        <div class="live-seq-pill">Top 3</div>
-                    </div>
-                    <div id="portfolioRagFeed" class="live-rag-list"></div>
-                </div>
-            </div>
-        </div>
-    </section>
-    <hr class="divider">
-    <!-- ════════ PIPELINE ════════ -->
-    <section id="pipeline">
-        <div class="reveal">
-            <div class="section-label">架構總覽</div>
-            <h2 class="section-title">端到端完整流程</h2>
-            <p class="section-sub">五個模組串接成一套完整的 pipeline，從原始序列到最佳化設計。 各模組互相獨立，可單獨測試與替換。 </p>
-        </div>
-        <div class="pipeline-wrap reveal">
-            <div class="pipe-card"><span class="pipe-icon">🧬</span>
-                <div class="pipe-title">蛋白質序列</div>
-                <div class="pipe-sub">氺基酸序列+適應性標籤（ProteinGym / 合成資料）</div><span class="pipe-badge">L ×
-                    20 one-hot</span>
-            </div>
-            <div class="pipe-card"><span class="pipe-icon">🤖</span>
-                <div class="pipe-title">ESM-2 嵌入向量</div>
-                <div class="pipe-sub">預訓練蛋白質語言模型，對序列 tokens 做遮罩平均池化</div><span class="pipe-badge">N ×
-                    320-D</span>
-            </div>
-            <div class="pipe-card"><span class="pipe-icon">🧠</span>
-                <div class="pipe-title">MLP 代理模型</div>
-                <div class="pipe-sub">LayerNorm+Dropout 回歸器 → 這得適應性預測</div><span class="pipe-badge">AdamW+MSE</span>
-            </div>
-            <div class="pipe-card"><span class="pipe-icon">📈</span>
-                <div class="pipe-title">貝葉斯最佳化</div>
-                <div class="pipe-sub">GP+qLogEI 在 PCA 降維潛在空間（8-D）中搜尋</div><span class="pipe-badge">BoTorch GP</span>
-            </div>
-            <div class="pipe-card"><span class="pipe-icon">🎯</span>
-                <div class="pipe-title">RL / GNN 設計</div>
-                <div class="pipe-sub">REINFORCE LSTM 策略+ProteinMPNN 結構條件式設計</div><span class="pipe-badge">REINFORCE /
-                    MPNN</span>
-            </div>
-        </div>
-        <!-- sub-flow -->
-        <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:16px" class="reveal">
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px">
-                <div
-                    style="font-size:.72rem;color:var(--teal);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">
-                    貝葉斯最佳化迴圈</div>
-                <div style="font-family:var(--mono);font-size:.78rem;color:var(--muted);line-height:2">
-                    序列 → ESM-2 → 標準化 → PCA(8D)<br>↓<br>GP 擬合 → qLogEI 指標 → optimize_acqf<br>↓<br>逆
-                    PCA → Oracle (MLP) → 更新 GP → ↺ </div>
-            </div>
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px">
-                <div
-                    style="font-size:.72rem;color:var(--purple);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">
-                    RL REINFORCE 迴圈</div>
-                <div style="font-family:var(--mono);font-size:.78rem;color:var(--muted);line-height:2">
-                    START token → LSTM 策略 → 採樣 tokens<br>↓<br>解碼序列 → ESM-2 → MLP Oracle →
-                    R<br>↓<br>Teacher-forcing log π → ∇J(θ) → Adam → ↺ </div>
-            </div>
-        </div>
-    </section>
-    <hr class="divider">
-    <!-- ════════ RESULTS ════════ -->
-    <section id="results">
-        <div class="reveal">
-            <div class="section-label">實驗結果</div>
-            <h2 class="section-title">定量分析成果</h2>
-            <p class="section-sub">所有結果均可在單一 CPU 上以隨機種子 42、100 筆示範序列完全復現。</p>
-        </div>
-        <div class="metrics-grid reveal">
-            <div class="metric-card">
-                <div class="mval">320-D</div>
-                <div class="mlabel">ESM-2 蛋白質嵌入向量</div>
-                <div class="mdetail">facebook/esm2_t6_8M_UR50D · 6 層 Transformer · 以 MLM
-                    全程序列预訓練，資料源含 2.5 億層筆序列</div>
-            </div>
-            <div class="metric-card">
-                <div class="mval">81.9%</div>
-                <div class="mlabel">PCA 8D 解釋變異量</div>
-                <div class="mdetail">將 320-D 降至 8-D，使高斯過程協方差矩陣數値穩定，避免 Cholesky 分解失敗</div>
-            </div>
-            <div class="metric-card">
-                <div class="mval">+16.6%</div>
-                <div class="mlabel">適應性提升（15 輪 BO）</div>
-                <div class="mdetail">最佳適應性：0.209 → 0.243，使用 BoTorch qLogExpectedImprovement</div>
-            </div>
-            <div class="metric-card">
-                <div class="mval">✓</div>
-                <div class="mlabel">RL 策略收斂</div>
-                <div class="mdetail">REINFORCE+teacher-forcing，多目標獎勵（穩定性+疏水性+帶電荷ま一式）</div>
-            </div>
-            <div class="metric-card">
-                <div class="mval">✓</div>
-                <div class="mlabel">ProteinMPNN 搏失下降</div>
-                <div class="mdetail">k-NN Cα 圖（k=8）、19-D 邊特徵》scatter-add 訊息傳遞》交叉熵目標函數</div>
-            </div>
-            <div class="metric-card">
-                <div class="mval">&lt;
-                    2 分鐘</div>
-                <div class="mlabel">完整 Pipeline 執行時間（CPU）</div>
-                <div class="mdetail">ESM-2 首次下載（~30 MB）後，完整端到端可復現，無需 GPU</div>
-            </div>
-        </div>
-        <div class="charts-grid reveal">
-            <div class="chart-card">
-                <h3>貝葉斯最佳化 — 每輪最佳適應性</h3>
-                <div class="chart-wrap"><canvas id="boChart"></canvas></div>
-            </div>
-            <div class="chart-card">
-                <h3>代理 MLP 訓練搏失（對數尺度）</h3>
-                <div class="chart-wrap"><canvas id="lossChart"></canvas></div>
-            </div>
-            <div class="chart-card">
-                <h3>REINFORCE — 訓練迴圈獎勵變化</h3>
-                <div class="chart-wrap"><canvas id="rlChart"></canvas></div>
-            </div>
-            <div class="chart-card">
-                <h3>ProteinMPNN — 交叉熵搏失曲線</h3>
-                <div class="chart-wrap"><canvas id="mpnnChart"></canvas></div>
-            </div>
-        </div>
-        <div style="margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;font-size:.82rem;color:var(--muted)"
-            class="reveal"><strong style="color:var(--orange)">關於代理模型 Pearson r=0.29
-                的說明：</strong>訓練資料僅 80 筆序列且 oracle 含隨機雜訊，此為預期現象。 BO 中的 GP
-            不需要完美預測器也能發現改善空間；它利用不確定性（UCB / EI）平衡探索與利用。 在真實濕實驗室迴圈中，隨著測定輪數增加，r 值將顯著提升。 </div>
-    </section>
-    <hr class="divider">
-    <!-- ════════ ALGORITHMS ════════ -->
-    <section id="algorithms">
-        <div class="reveal">
-            <div class="section-label">核心演算法</div>
-            <h2 class="section-title">數學基礎與原理</h2>
-            <p class="section-sub">每個模組對應大分子 AI 演算法研究的一項關鍵能力指標。</p>
-        </div>
-        <div class="algo-tabs reveal"><button class="algo-tab active" onclick="switchTab(0)">ESM-2 嵌入向量</button><button
-                class="algo-tab" onclick="switchTab(1)">貝葉斯最佳化</button><button class="algo-tab"
-                onclick="switchTab(2)">ProteinMPNN</button><button class="algo-tab" onclick="switchTab(3)">REINFORCE
-                RL</button></div>
-        <!-- Tab 0: ESM-2 -->
-        <div class="algo-panel active reveal" id="tab0">
-            <div class="algo-desc">
-                <h3>ESM-2：預訓練蛋白質語言模型</h3>
-                <p>ESM-2 是一個 以 UniRef 中 2.5 億層蛋白質序列通過 <strong>遮罩語言模型（MLM）</strong>訓練的
-                    Transformer。预訓練期間，15% 的 tokens 被遮罩，模型學習預測它們，此過程迫使模型捕捉演化共變、二級結構訊號與接觸資訊。
-                </p>
-                <p>我們使用 <code>facebook/esm2_t6_8M_UR50D</code>模型（8M 參數）作為
-                    <strong>凍結特徵擷取器</strong>。對所有殘基酸 tokens 做遮罩平均池化，經永產生一個固定 320-D
-                    向量不管序列長度為何。
-                </p>
-                <ul>
-                    <li>嵌入步驟不需標註資料（零樣本遷移學習）</li>
-                    <li>透過自注意力捕捉長程依賴關係</li>
-                    <li>更大變體（650M、3B）對下游任務性能䑟呈線性提升</li>
-                    <li>遮罩平均池化忽略 padding tokens，支援變長序列</li>
-                </ul>
-            </div>
-            <div class="math-card">
-                <div class="math-header"><span>平均池化</span><span class="math-lang">數學公式</span></div>
-                <div class="math-body">輸入：長度為 L 的序列<br>h<sub>t</sub>∈ ℝ<sup>320</sup>=第 t
-                    位置的 Transformer 隱藏狀態<br>m<sub>t</sub>∈ {
-                    0,
-                    1
-                    }
-
-                    =注意力遮罩<br><br><strong>z=Σ(m<sub>t</sub> · h<sub>t</sub>) / Σ
-                        m<sub>t</sub></strong><br><br>MLM 預訓練目標函數：<br>L<sub>MLM</sub>=−Σ log
-                    P(x<sub>t</sub> | x<sub>\t</sub>; θ) </div>
-                <div class="math-header" style="border-top:1px solid var(--border)">
-                    <span>程式實作</span><span class="math-lang">Python</span>
-                </div>
-                <div class="code-body">
-                    <pre><span class="kw">with</span>torch.no_grad(): out=<span class="fn">model</span>(input_ids, attention_mask=mask) h=out.last_hidden_state <span class="cm"># (B, L, 320)</span>m=mask.unsqueeze(<span class="str" >-1</span>).float() z=(h * m).<span class="fn">sum</span>(<span class="str" >1</span>) / m.<span class="fn">sum</span>(<span class="str" >1</span>) <span class="cm"># (B, 320)</span></pre>
-                </div>
-            </div>
-        </div>
-        <!-- Tab 1: Bayesian Opt -->
-        <div class="algo-panel reveal" id="tab1">
-            <div class="algo-desc">
-                <h3>貝葉斯最佳化：樣本高效的適應性搜尋</h3>
-                <p>濕實驗室檢測費用是昂貴的——我們無法每序列全評估。貝葉斯最佳化將適應性函數視為未知
-                    <strong>黑盒子</strong>，利用迄今為止的評估結果建立機率性高斯過程（GP）代理模型。
-                </p>
-                <p>每一步，指標函數決定 <em>接下來評估序列</em>，平衡 <strong>利用</strong>（预測較高的區域）與
-                    <strong>探索</strong>（不確定性較高的區域）。
-                </p>
-                <ul>
-                    <li>GP 在序列空間任意點提供校準不確定性估計</li>
-                    <li>qLogEI=對數空間期望改善，數學穩定（BoTorch 預設）</li>
-                    <li>PCA 將 320-D 降至 8-D，保持 GP 協方差矩陣良好條件數</li>
-                    <li>BO 完成後，逆 PCA 將建議潛在點映射回嵌入向量空間</li>
-                </ul>
-            </div>
-            <div class="math-card">
-                <div class="math-header"><span>指標函數</span><span class="math-lang">數學公式</span></div>
-                <div class="math-body">GP 後驗分布： f(x)~GP(μ(x), k(x, x'))<br><br>
-                    <strong>α<sub>LogEI</sub>(x)=log E[max(f(x) − f*,
-                        0)]</strong><br><br> 解析式：<br> EI(x)=(μ(x)−f*) Φ(Z) + σ(x)
-                    φ(Z)<br> Z=(μ(x) − f*) / σ(x)<br><br> GP 核函數（Matérn-5/2）：<br>
-                    k(r)=(1 + √5r/l + 5r²/3l²) exp(−√5r/l)
-                </div>
-                <div class="math-header" style="border-top:1px solid var(--border)">
-                    <span>程式實作</span><span class="math-lang">Python</span>
-                </div>
-                <div class="code-body">
-                    <pre><span class="cm" ># PCA 降維 → GP 擬合 → LogEI 指標 → 最佳化</span> X_pca=<span class="fn" >pca.transform</span>(X_scaled) gp=<span class="fn" >SingleTaskGP</span>(X_t, y_t) ei=<span class="fn" >qLogExpectedImprovement</span>(gp, best_f) X_next, _=<span class="fn" >optimize_acqf</span>(ei, bounds, ...) <span class="cm" ># 逆 PCA → oracle 查詢 → 更新 GP</span></pre>
-                </div>
-            </div>
-        </div>
-        <!-- Tab 2: ProteinMPNN -->
-        <div class="algo-panel reveal" id="tab2">
-            <div class="algo-desc">
-                <h3>ProteinMPNN：結構條件式序列設計</h3>
-                <p>ProteinMPNN 在給定 <strong>蛋白質骨架（Cα
-                        坐標）</strong>的前提下設計氺基酸序列。它將蛋白質建模為圖結構，每個殘基酸為節點，邊連接 3D 空間中的 k
-                    個最近鄰。</p>
-                <p>多輪 <strong>訊息傳遞</strong>讓每個節點能聚合局部結構鄰域的資訊，再預測該位置的最佳氺基酸。</p>
-                <ul>
-                    <li>邊特徵（19-D）：相對距離、二面角編碼</li>
-                    <li>節點特徵（16-D）：正弦二面角嵌入</li>
-                    <li>k-NN 上限為 N−1，确保短序列安全處理</li>
-                    <li>每殘基酸用交叉熵訓練；推斷時對機率分布採樣</li>
-                </ul>
-            </div>
-            <div class="math-card">
-                <div class="math-header"><span>訊息傳遞</span><span class="math-lang">數學公式</span></div>
-                <div class="math-body"> 圖 G=(V, E)，V=歘基酸，E=Cα 上k-NN 邊<br><br> 訊息：
-                    m<sub>vu</sub>=φ(h<sub>v</sub><sup>(l)</sup>,
-                    h<sub>u</sub><sup>(l)</sup>,
-                    e<sub>vu</sub>)<br><br>
-                    <strong>h<sub>v</sub><sup>(l+1)</sup>=LN(h<sub>v</sub><sup>(l)</sup>
-                        + ReLU(W<sub>O</sub> · Σ<sub>u∈N(v)</sub>
-                        m<sub>vu</sub>))</strong><br><br> 目標：
-                    L<sub>CE</sub>=−Σ<sub>v</sub> log P(a<sub>v</sub> | G;
-                    θ)<br><br> φ(h<sub>v</sub>, h<sub>u</sub>,
-                    e)=W<sub>1</sub>h<sub>v</sub> + W<sub>2</sub>h<sub>u</sub> +
-                    W<sub>3</sub>e
-                </div>
-                <div class="math-header" style="border-top:1px solid var(--border)">
-                    <span>程式實作</span><span class="math-lang">Python</span>
-                </div>
-                <div class="code-body">
-                    <pre><span class="cm" ># scatter-add 訊息傳遞</span> msg=<span class="fn" >self.edge_mlp</span>(<span class="fn" >torch.cat</span>([h[src], h[dst], edge_attr], dim=<span class="str" >-1</span>)) agg=<span class="fn" >scatter_add</span>(msg, dst, dim=<span class="str" >0</span>, dim_size=N) h=<span class="fn" >self.ln</span>(h + <span class="fn" >F.relu</span>(self.W_O(agg)))</pre>
-                </div>
-            </div>
-        </div>
-        <!-- Tab 3: REINFORCE -->
-        <div class="algo-panel reveal" id="tab3">
-            <div class="algo-desc">
-                <h3>REINFORCE：策略梯度式序列生成</h3>
-                <p>我們將蛋白質設計建模為 <strong>順序決策問題</strong>。LSTM 策略網路每次自回歸地生成一個氺基酸
-                    token，條件为前序生成結果。</p>
-                <p>REINFORCE 演算法更新策略以更大化期望獎勵（適應性）。我們使用
-                    <strong>多目標獎勵</strong>，結合測預穩定性、疏水性與帶電荷比例。
-                </p>
-                <ul>
-                    <li>採樣在 <code>torch.no_grad()</code> 下執行以提升效率</li>
-                    <li>用 <strong>teacher-forcing</strong> 重新計算 log 機率，穩定梯度图
-                    </li>
-                    <li>平均獎勵基線減少變異性</li>
-                    <li>多目標：R=0.6·穩定性 + 0.3·疏水性 + 0.1·帶電荷比</li>
-                </ul>
-            </div>
-            <div class="math-card">
-                <div class="math-header"><span>策略梯度</span><span class="math-lang">數學公式</span></div>
-                <div class="math-body"> 策略： π<sub>θ</sub>(a<sub>t</sub> |
-                    s<sub>t</sub>)=LSTM(token<sub>t-1</sub>,
-                    h<sub>t-1</sub>)<br><br> 回報： G<sub>t</sub>=Σ<sub>t'≥t</sub>
-                    γ<sup>t' -t</sup> r<sub>t'</sub><br><br>
-                    <strong>∇<sub>θ</sub>J(θ)=E<sub>π</sub>[∇<sub>θ</sub> log
-                        π<sub>θ</sub>(a<sub>t</sub>|s<sub>t</sub>) ·
-                        (G<sub>t</sub> − b)]</strong><br><br> 獎勵：
-                    R=w<sub>s</sub>·f<sub>stab</sub> +
-                    w<sub>h</sub>·f<sub>hydro</sub> +
-                    w<sub>c</sub>·f<sub>charged</sub>
-                </div>
-                <div class="math-header" style="border-top:1px solid var(--border)">
-                    <span>程式實作</span><span class="math-lang">Python</span>
-                </div>
-                <div class="code-body">
-                    <pre><span class="cm" ># teacher-forcing log 機率重新計算</span> logits=<span class="fn" >policy</span>(input_tokens) <span class="cm" ># 含梯度</span> log_p=<span class="fn" >F.log_softmax</span>(logits, dim=<span class="str" >-1</span>) log_p=log_p.<span class="fn" >gather</span>(<span class="str" >-1</span>, sampled[:, <span class="str" >1:</span>].<span class="fn" >unsqueeze</span>(<span class="str" >-1</span>)) loss=−(log_p.squeeze() * R_baseline).<span class="fn" >mean</span>()</pre>
-                </div>
-            </div>
-        </div>
-    </section>
-    <hr class="divider">
-    <!-- ════════ CODEBASE ════════ -->
-    <section id="codebase">
-        <div class="reveal">
-            <div class="section-label">程式碼庫</div>
-            <h2 class="section-title">專案結構總覽</h2>
-            <p class="section-sub">七個功能模組 + CLI 入口 + 互動筆記本。每個模組可独立匯入與測試。</p>
-        </div>
-        <div class="module-list reveal">
-            <div class="module-row"> <span class="module-file">src/embeddings.py</span>
-                <span class="module-desc">ESM-2 惰性載入、批次推斷、對序列 tokens 關鍵遮罩平均池化。支援 8M / 150M /
-                    650M 模型大小。</span>
-                <div class="module-tags"><span class="tag">ESM2Embedder</span><span class="tag">.transform(seqs)</span>
-                </div>
-            </div>
-            <div class="module-row"> <span class="module-file">src/predictor.py</span> <span class="module-desc">MLP
-                    代理模型：Linear→LayerNorm→ReLU→Dropout×2→Linear。AdamW 優化器，評估 MSE / Pearson r
-                    / Spearman ρ。</span>
-                <div class="module-tags"><span class="tag-purple tag">PredictorTrainer</span><span
-                        class="tag-purple tag">.fit() .evaluate()</span></div>
-            </div>
-            <div class="module-row"> <span class="module-file">src/bayes_opt.py</span> <span class="module-desc">高斯過程代理
-                    + qLogExpectedImprovement 指標函數。StandardScaler
-                    + PCA(8D) 前處理。整合 BoTorch 序库。</span>
-                <div class="module-tags"><span class="tag-orange tag">BayesianOptimizer</span><span
-                        class="tag-orange tag">.run(n_iter)</span></div>
-            </div>
-            <div class="module-row"> <span class="module-file">src/protein_mpnn.py</span>
-                <span class="module-desc">k-NN Cα 圖標建構器（k 上限為 N-1）、19-D 邊特徵、scatter-add
-                    訊息傳遞層，交叉熵目標函數。</span>
-                <div class="module-tags"><span class="tag-green tag">SimplifiedProteinMPNN</span><span
-                        class="tag-green tag">ProteinMPNNTrainer</span></div>
-            </div>
-            <div class="module-row"> <span class="module-file">src/rl_reinforce.py</span>
-                <span class="module-desc">LSTM 自回歸策略（vocab=21）、teacher-forcing
-                    梯度重計算、多目標獎勵（穩定性 + 疏水性 + 帶電荷）。</span>
-                <div class="module-tags"><span class="tag">SequencePolicy</span><span
-                        class="tag">REINFORCETrainer</span><span class="tag">MultiObjectiveReward</span></div>
-            </div>
-            <div class="module-row"> <span class="module-file">src/data_prep.py</span> <span
-                    class="module-desc">合成適應性景觀（疏水性/GP/帶電荷規則 + 高斯雜訊） + ProteinGym CSV
-                    載入器支援真實實驗資料。</span>
-                <div class="module-tags"><span class="tag-purple tag">make_demo_data()</span><span
-                        class="tag-purple tag">load_proteingym_data()</span></div>
-            </div>
-            <div class="module-row"> <span class="module-file">run_pipeline.py</span> <span class="module-desc">CLI
-                    入口統籱三套 pipeline。支援 --mode all/bo/rl/mpnn
-                    及可配置超參數。</span>
-                <div class="module-tags"><span class="tag-orange tag">--mode
-                        all/bo/rl/mpnn</span><span class="tag-orange tag">--epochs
-                        --bo-iters --rl-episodes</span></div>
-            </div>
-            <div class="module-row"> <span class="module-file">demo_notebook.ipynb</span>
-                <span class="module-desc">7 個章節的互動式 Jupyter 筆記本，专為面試現場 live demo
-                    設計。每個章節含內嵌圖表與逐步說明。</span>
-                <div class="module-tags"><span class="tag-green tag">Live Demo</span><span class="tag-green tag">Jupyter
-                        Notebook</span></div>
-            </div>
-        </div>
-        <div class="terminal reveal" style="margin-top:32px">
-            <div class="terminal-bar">
-                <div class="t-dot t-red"></div>
-                <div class="t-dot t-yellow"></div>
-                <div class="t-dot t-green"></div> <span class="t-title">PowerShell —
-                    d:\project</span>
-            </div>
-            <div class="terminal-body">
-                <div><span class="t-prompt">PS d:\project&gt; </span><span class="t-cmd">pip
-                        install -r requirements.txt</span></div>
-                <div class="t-out">成功安裝 torch transformers botorch gpytorch scikit-learn ...
-                </div> <span class="t-blank"></span>
-                <div><span class="t-prompt">PS d:\project&gt; </span><span class="t-cmd">python run_pipeline.py --mode
-                        all</span></div>
-                <div class="t-out">===Step 2: ESM-2 Embedding===</div>
-                <div class="t-out">model.safetensors: <span class="t-hi">100%</span>
-                    ██████████████ 31.4M/31.4M [00:06] </div>
-                <div class="t-out">[embeddings] shape=<span class="t-hi">(100, 320)</span>
-                </div>
-                <div class="t-out">===Step 4: Bayesian Optimisation===</div>
-                <div class="t-out">[bayes_opt] PCA 8D explained variance: <span class="t-hi">81.9%</span></div>
-                <div class="t-out">[bayes_opt] 最佳 fitness: <span class="t-hi">0.2434</span>（初始: 0.2087，提升: <span
-                        class="t-hi">+16.6%</span>）</div>
-                <div class="t-out">===Pipeline 完成===</div> <span class="t-blank"></span>
-                <div><span class="t-prompt">PS d:\project&gt; </span><span class="t-cmd">jupyter notebook
-                        demo_notebook.ipynb</span></div>
-                <div class="t-out">筆記本已在 http: //localhost:8888/ 啟動...</div>
-            </div>
-        </div>
-    </section>
-    <hr class="divider">
-    <!-- ════════ INTERVIEW ════════ -->
-    <section id="interview">
-        <div class="reveal">
-            <div class="section-label">面試準備</div>
-            <h2 class="section-title">預期面試問答</h2>
-            <p class="section-sub">面試官最可能提問的核心技術問題，點擊每項展開詳細答案。</p>
-        </div>
-        <div class="faq-list reveal">
-            <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">為什麼用 ESM-2 而不是 one-hot
-                    encoding 或 BLOSUM？</div>
-                <div class="faq-a"> <strong>One-hot</strong>
-                    把每個氺基酸獨立處理，忽略了決定蛋白質功能的替換偈向性與演化脈絡。<strong>BLOSUM</strong>
-                    從比對中捕捉成對替換頻率，但它是固定的20×20 矩陣——無法表示具體序列中的歘基酸互作用。<br><br>
-                    <strong>ESM-2</strong> 學習上下文相依賦表示：歘基酸 L
-                    的嵌入向量取決於自注意力處理整條序列，捕捉長程共演化限制。它也將預訓練腫隱式學到的結構知識轉移過來。實階上，ESM-2
-                    嵌入在小資料情境下的適應性預測 (精確率) 比 one-hot 提升 15–30%。
-                </div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">為什麼在做 GP 之前要先做 PCA？</div>
-                <div class="faq-a"> 320-D 的 GP 需要計算一個含 320-D 核函數的 N×N
-                    協方差矩陣。高維度下：<strong>1)
-                        維度詛咒</strong>——距離指標失效，因為所有成對距離集中於相同値。<strong>2)
-                        病態條件數</strong>——協方差矩陣 K 趨近奇異，Cholesky 分解（GP
-                    推斷必須）在數學上失敗。<br><br>PCA 降至 8-D 保留 81.9% 嵌入變異量，同時使 GP 良好條件化。8
-                    個主成分也對應訓練集中序列變化最有意義的軸。其他方案有 deep kernel（Deep GP 或 DKL），同時學習神經網路嵌入和
-                    GP——這是對目下一步生產部署的自然影長。 </div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">REINFORCE vs PPO — 什麼時候該升級？
-                </div>
-                <div class="faq-a"><strong>REINFORCE</strong>是無偏差但
-                    <em>高變異性</em>的梯度估計器——作為原型相當好用，但訓練很喵囉。每阡回報直接用於更新策略，當獎勵稀疏或喵囉時（如蛋白質適應性）導致大梯度步進。<br><br><strong>PPO（Proximal
-                        Policy
-                        Optimisation）</strong>切割策略比率以防止破壞性大更新，使用價値函數基線降低變異性，并能對同一批次資料多次訓練。對於蛋白質序列設計（長序列》高價車
-                    Oracle），PPO 通常在少 5–10倍 Oracle 呼叫次數下收斂。<br><br>在實際生產中我會升級到 PPO，並進一步考慮
-                    <strong>GRPO（DeepSeek-R1
-                        所用）</strong>——無需獨立價値網路，在同一批次採樣序列中計算優勢，直接適用於我們的序列生成場景。
-                </div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">這個 pipeline 如何接到真實濕實驗室？
-                </div>
-                <div class="faq-a">這個系統實現一套 <strong>貝葉斯主動學習迴圈</strong>：<br><br>1.
-                    <strong>第 0 輪</strong>：以小型庫存出發（例：組合設計的 24 個變體），執行檢測，取得適應性標籤。<br>2.
-                    <strong>ESM-2+MLP</strong>：用目前所有資料訓練/更新代理模型。<br>3. <strong>BO
-                        指標函數</strong>：提出下一批 K 序列（batch qLogEI，q&gt;
-                    1）或考慮 Thompson Sampling；<br>4. <strong>濕實驗室</strong>：合成並測定 K
-                    序列的適應性。<br>5. 回到步驟 2，實行 5–10
-                    輪。<br><br>關鍵實際考量：<strong>可合成性限制</strong>（避免稀有密碼子）、<strong>多樣性懲罰</strong>以防
-                    BO 崩潰到局部區域，以及 <strong>不確定性校準</strong>——GP 不確定性必須反映真實誤差，需定期重新校準。
-                </div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">ProteinMPNN 和 AlphaFold2
-                    有什麼關係？</div>
-                <div class="faq-a">
-                    兩者都處理相同的蛋白質結構-序列關係，但方向相反：<br><br><strong>AlphaFold2</strong>：序列 →
-                    結構（結構預測）。給定氺基酸序列，透過 Evoformer+結構模組預測 3D
-                    骨架坐標。<br><br><strong>ProteinMPNN</strong>：結構 → 序列（逆折疊 /
-                    <!-- ════════ DEMO ════════ -->
-                    生成目標骨架（RFdiffusion / FrameDiff）；（2）用 ProteinMPNN 設計能折疊成該結構的序列；（3）用
-                    AlphaFold2 驗證各設計（pLDDT &gt;
-                    80 作為筋選）；（4）濕實驗室驗證頂尖候選。這個繁雜管線贏得了 2022 年蛋白質設計挑戰賽冠軍。
-                </div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">你的 wet lab 背景如何與這個 AI
-                    <!-- ── 輸入面板 ── -->
-                    <div class="faq-a">我的濕實驗室背景（3 年以上）直接帶來三項優勢：<br><br><strong>1.
-                            檢測設計直覺</strong>：我能判斷哪種實驗讀出（DSF 的 Tm、kcat/KM、熱爭變性
-                        ΔΔG）作為適應性代理最有資訊量，並知道如何減少測量雜訊——這對 BO 中 oracle
-                        函數的質量至關重要。<br><br><strong>2. 序列空間意識</strong>：我知道蛋白質哪些區域能容忍突變（loop
-                        與活性位殘基酸的差異），並可將此編碼為獎勵函數的 <em>軟約束</em>或 GP 核的先驗知識。<br><br><strong>3.
-                            失效模式診斷</strong>：當 AI
-                        設計的變體在實驗室失效，我能分辨是般因错誤折疊、聚集還是催化失活，並將此反饋為結構化負資料重新訓練代理模型。 </div>
-                </div>
-            </div>
     </section>
     <hr class="divider">
     <!-- ════════ DEMO ════════ -->
@@ -925,10 +407,7 @@
                 href="gene_ai.html">基因 AI 平台</a><a href="README.md">README</a></div>
     </footer>
     <!-- ════════ JS ════════ -->
-    <script src="app-config.js"></script>
     <script src="index-ui.js"></script>
-    <script src="index-live.js"></script>
-    <script src="index-charts.js"></script>
     <script src="index.js"></script>
 
     <button class="scroll-top" aria-label="返回頂部">↑</button>
