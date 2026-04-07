@@ -123,8 +123,8 @@ const objectivePresets = {
                 ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
                 : '';
             const candidates = [];
-            const renderPortfolioServiceNames = ['donttalk', 'jtlai-engineering-biomed-portfolio'];
-            const renderApiServiceNames = ['donttalk-api', 'jtlai-engineering-biomed-api'];
+            const renderPortfolioServiceNames = ['donttalk'];
+            const renderApiServiceNames = ['donttalk-api'];
             const pushCandidate = (value) => {
                 const normalized = String(value || '').trim().replace(/\/+$/, '');
                 if (normalized && !candidates.includes(normalized)) {
@@ -145,7 +145,6 @@ const objectivePresets = {
             }
 
             pushCandidate('https://donttalk-api.onrender.com');
-            pushCandidate('https://jtlai-engineering-biomed-api-yz11.onrender.com');
             return candidates;
         }
 
