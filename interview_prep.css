@@ -1,41 +1,46 @@
 :root {
-    --bg: #080c10;
-    --surface: #161b22;
-    --surface2: #1c2230;
-    --border: #21262d;
-    --accent: #bc8cff;
-    --accent2: #39d0f0;
-    --accent3: #f85149;
-    --accent4: #d29922;
-    --text: #e6edf3;
-    --text-muted: #7d8590;
-    --muted: #7d8590;
-    --code-bg: #0d1117;
-    --green: #3fb950;
-    --orange: #f0883e;
-    --red: #f85149;
-    --nav-h: 60px;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+    --bg: #0a1116;
+    --surface: rgba(18, 26, 33, 0.92);
+    --surface2: rgba(24, 34, 44, 0.9);
+    --border: rgba(151, 190, 181, 0.10);
+    --border-hover: rgba(181, 156, 255, 0.28);
+    --accent: #b59cff;
+    --accent2: #58d7ff;
+    --accent3: #ff8392;
+    --accent4: #ffd56b;
+    --text: #e9f0ec;
+    --text-muted: #94a59f;
+    --muted: #94a59f;
+    --code-bg: #111922;
+    --green: #7bf0be;
+    --orange: #ffbc72;
+    --red: #ff8392;
+    --nav-h: 64px;
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    --radius: 20px;
+    --radius-sm: 14px;
+    --nav-accent: var(--accent);
 }
 
 body {
     font-family: 'Inter', system-ui, sans-serif;
-    background: var(--bg);
+    background:
+        radial-gradient(ellipse 60% 50% at 20% 20%, rgba(181, 156, 255, 0.06), transparent),
+        radial-gradient(ellipse 50% 40% at 80% 30%, rgba(88, 215, 255, 0.05), transparent),
+        linear-gradient(180deg, #081016 0%, #0b141c 50%, #081015 100%);
     color: var(--text);
     min-height: 100vh;
     padding-top: var(--nav-h);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* ── Header ── */
 header {
-    background: linear-gradient(135deg, #1a1d27 0%, #12152a 100%);
+    background: linear-gradient(135deg, rgba(26, 29, 39, 0.9) 0%, rgba(18, 21, 42, 0.9) 100%);
     border-bottom: 1px solid var(--border);
     padding: 24px 32px 0;
+    backdrop-filter: blur(16px);
 }
 
 .header-top {
@@ -113,9 +118,12 @@ header p {
 .card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     padding: 24px;
     margin-bottom: 20px;
+    backdrop-filter: blur(16px);
+    box-shadow: var(--shadow);
+    transition: border-color .3s ease, transform .3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .card-title {

@@ -36,9 +36,9 @@ nav {
   left: 0;
   right: 0;
   z-index: 100;
-  height: var(--nav-h, 60px);
-  background: rgba(8, 12, 16, 0.88);
-  backdrop-filter: blur(12px);
+  height: var(--nav-h, 64px);
+  background: rgba(8, 12, 16, 0.92);
+  backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -126,7 +126,7 @@ nav {
 .nav-drawer {
   display: none;
   position: fixed;
-  top: var(--nav-h, 60px);
+  top: var(--nav-h, 64px);
   left: 0;
   right: 0;
   background: rgba(8, 12, 16, 0.97);

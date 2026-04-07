@@ -1,34 +1,46 @@
 :root {
-    --bg: #080c10;
-    --bg2: #0d1117;
-    --surface: #161b22;
-    --surface2: #1c2230;
-    --border: #21262d;
-    --text: #e6edf3;
-    --muted: #7d8590;
-    --dim: #484f58;
-    --teal: #39d0f0;
-    --green: #3fb950;
-    --orange: #f0883e;
-    --purple: #bc8cff;
-    --red: #f85149;
-    --yellow: #d29922;
-    --nav-h: 60px;
+    --bg: #0a1116;
+    --bg2: #111922;
+    --surface: rgba(18, 26, 33, 0.92);
+    --surface2: rgba(24, 34, 44, 0.9);
+    --border: rgba(151, 190, 181, 0.10);
+    --border-hover: rgba(63, 185, 80, 0.28);
+    --text: #e9f0ec;
+    --muted: #94a59f;
+    --dim: #5a716b;
+    --teal: #58d7ff;
+    --green: #7bf0be;
+    --orange: #ffbc72;
+    --purple: #b59cff;
+    --red: #ff8392;
+    --yellow: #ffd56b;
+    --nav-h: 64px;
     --font: 'Inter', system-ui, sans-serif;
     --mono: 'JetBrains Mono', Consolas, monospace;
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.35);
+    --radius: 20px;
+    --radius-sm: 14px;
+    --nav-accent: var(--green);
 }
 
 body {
-    background: var(--bg);
+    background:
+        radial-gradient(ellipse 70% 50% at 15% 15%, rgba(123, 240, 190, 0.06), transparent),
+        radial-gradient(ellipse 60% 40% at 85% 25%, rgba(88, 215, 255, 0.05), transparent),
+        radial-gradient(ellipse 50% 40% at 50% 90%, rgba(255, 188, 114, 0.04), transparent),
+        linear-gradient(180deg, #081016 0%, #0b141c 50%, #081015 100%);
     color: var(--text);
     font-family: var(--font);
     font-size: 15px;
     line-height: 1.7;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-    background: rgba(57, 208, 240, .25);
+    background: rgba(123, 240, 190, .22);
 }
 
 /* ── Nav ── */
@@ -67,8 +79,8 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: rgba(63, 185, 80, .1);
-    border: 1px solid rgba(63, 185, 80, .3);
+    background: rgba(123, 240, 190, .08);
+    border: 1px solid rgba(123, 240, 190, .2);
     color: var(--green);
     border-radius: 20px;
     padding: 5px 16px;
@@ -115,17 +127,20 @@ body {
 .step-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: var(--radius);
     padding: 28px 32px;
     display: grid;
     grid-template-columns: 56px 1fr;
     gap: 24px;
     align-items: start;
-    transition: border-color .2s;
+    backdrop-filter: blur(16px);
+    box-shadow: var(--shadow);
+    transition: border-color .3s ease, transform .3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .step-card:hover {
-    border-color: var(--dim);
+    border-color: var(--border-hover);
+    transform: translateY(-3px);
 }
 
 .step-num {
