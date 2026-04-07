@@ -57,3 +57,13 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+      - key: DATABASE_URL_NEON
+        sync: false
+      - key: DATABASE_URL_SUPABASE
+        sync: false
+      - key: DATABASE_URL_COCKROACH
+        sync: false
+      - key: DATABASE_URL_AIVEN
+        sync: false
+      - key: DATABASE_URL_RAILWAY
+        sync: false

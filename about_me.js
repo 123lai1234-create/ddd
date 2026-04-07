@@ -109,7 +109,7 @@
                 count: '-',
                 lastSeen: '-'
             });
-            setStatus('目前無法找到可用的 Render API。請確認靜態站的 API 設定或等候部署完成。', 'error');
+            setStatus('目前無法找到可用的 API。請確認靜態站的 API 設定或等候部署完成。', 'error');
             return;
         }
 
@@ -132,9 +132,9 @@
             });
 
             if (dbConfigured && dbConnected) {
-                setStatus('API 與資料庫已連線，可以直接把表單寫進 Render PostgreSQL。', 'success');
+                setStatus('API 與資料庫已連線，可以直接把表單寫進 PostgreSQL。', 'success');
             } else if (!dbConfigured) {
-                setStatus('API 已上線，但尚未設定 DATABASE_URL，所以表單暫時不能寫入資料庫。', 'warning');
+                setStatus('API 已上線，但尚未設定任何 DATABASE_URL，所以表單暫時不能寫入資料庫。', 'warning');
             } else {
                 setStatus('API 已上線，但資料庫仍在啟動或尚未可連線。', 'warning');
             }
@@ -146,7 +146,36 @@
                 count: '-',
                 lastSeen: '-'
             });
-            setStatus('目前無法連線到 Render API。請先建立 API service 與 Postgres database。', 'error');
+            setStatus('目前無法連線到 API。請先建立 API service 與 PostgreSQL database。', 'error');
+        }
+
+        updateDbMultiStatus(apiBase);
+    };
+
+    const updateDbMultiStatus = async (apiBase) => {
+        const container = document.getElementById('dbMultiStatus');
+        if (!container || !apiBase) return;
+
+        try {
+            const response = await fetch(`${apiBase}/api/db/status`);
+            if (!response.ok) return;
+
+            const data = await response.json();
+            if (!data.databases || data.databases.length === 0) {
+                container.innerHTML = '<div class="db-row db-row--empty">尚未設定任何雲端 DB</div>';
+                return;
+            }
+
+            const rows = data.databases.map(db => {
+                const statusClass = db.connected ? 'db-row--ok' : 'db-row--fail';
+                const statusText = db.connected ? '✓ Connected' : '✗ ' + (db.error || 'Unreachable');
+                const label = db.envKey.replace('DATABASE_URL_', '').replace('DATABASE_URL', 'PRIMARY');
+                return `<div class="db-row ${statusClass}"><span class="db-label">${label}</span><span class="db-host">${db.host}</span><span class="db-status">${statusText}</span></div>`;
+            });
+
+            container.innerHTML = `<div class="db-summary">${data.totalConnected}/${data.totalConfigured} DB connected</div>${rows.join('')}`;
+        } catch (error) {
+            // silently ignore
         }
     };
 
@@ -177,7 +206,7 @@
 
         submitBtn.disabled = true;
         submitBtn.textContent = '送出中...';
-        setStatus('正在把訊息寫入 Render PostgreSQL...', 'idle');
+        setStatus('正在把訊息寫入 PostgreSQL...', 'idle');
 
         try {
             const response = await fetch(`${apiBase}/api/inquiries`, {
@@ -194,13 +223,13 @@
             }
 
             form.reset();
-            setStatus(`已成功寫入 Render DB，記錄編號 #${data.id}。`, 'success');
+            setStatus(`已成功寫入 PostgreSQL，記錄編號 #${data.id}。`, 'success');
             await updateStats();
         } catch (error) {
             setStatus(error.message || '目前無法送出，請稍後再試。', 'error');
         } finally {
             submitBtn.disabled = false;
-            submitBtn.textContent = '送出到 Render DB';
+            submitBtn.textContent = '送出到 PostgreSQL';
         }
     });
 

@@ -616,8 +616,31 @@ def delete_sequence_record(record_id: int) -> dict[str, Any] | None:
     }
 
 
+DATABASE_URL_ENV_KEYS = [
+    "DATABASE_URL",
+    "DATABASE_URL_NEON",
+    "DATABASE_URL_SUPABASE",
+    "DATABASE_URL_COCKROACH",
+    "DATABASE_URL_AIVEN",
+    "DATABASE_URL_RAILWAY",
+]
+
+
 def get_database_url() -> str:
-    return os.getenv("DATABASE_URL", "").strip()
+    for key in DATABASE_URL_ENV_KEYS:
+        value = os.getenv(key, "").strip()
+        if value:
+            return value
+    return ""
+
+
+def get_all_database_urls() -> list[str]:
+    urls: list[str] = []
+    for key in DATABASE_URL_ENV_KEYS:
+        value = os.getenv(key, "").strip()
+        if value and value not in urls:
+            urls.append(value)
+    return urls
 
 
 def _with_query_params(url: str, params: dict[str, str]) -> str:
@@ -627,11 +650,7 @@ def _with_query_params(url: str, params: dict[str, str]) -> str:
     return urlunparse(parsed._replace(query=urlencode(query)))
 
 
-def get_database_url_candidates() -> list[str]:
-    database_url = get_database_url()
-    if not database_url:
-        return []
-
+def _expand_url_candidates(database_url: str) -> list[str]:
     candidates: list[str] = []
 
     def append_candidate(candidate: str) -> None:
@@ -647,6 +666,19 @@ def get_database_url_candidates() -> list[str]:
     if "sslmode" not in query:
         append_candidate(_with_query_params(database_url, {"sslmode": "require", "connect_timeout": "5"}))
 
+    return candidates
+
+
+def get_database_url_candidates() -> list[str]:
+    all_urls = get_all_database_urls()
+    if not all_urls:
+        return []
+
+    candidates: list[str] = []
+    for url in all_urls:
+        for candidate in _expand_url_candidates(url):
+            if candidate not in candidates:
+                candidates.append(candidate)
     return candidates
 
 
@@ -722,6 +754,32 @@ def database_available() -> bool:
         return False
 
 
+def check_all_databases() -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for key in DATABASE_URL_ENV_KEYS:
+        value = os.getenv(key, "").strip()
+        if not value:
+            continue
+        parsed = urlparse(value)
+        host = parsed.hostname or "unknown"
+        entry: dict[str, Any] = {"envKey": key, "host": host, "connected": False, "error": None}
+        try:
+            conn = psycopg.connect(_with_query_params(value, {"sslmode": "require", "connect_timeout": "5"}))
+            conn.execute("SELECT 1;")
+            conn.close()
+            entry["connected"] = True
+        except psycopg.Error as error:
+            try:
+                conn = psycopg.connect(_with_query_params(value, {"connect_timeout": "5"}))
+                conn.execute("SELECT 1;")
+                conn.close()
+                entry["connected"] = True
+            except psycopg.Error as error2:
+                entry["error"] = str(error2)
+        results.append(entry)
+    return results
+
+
 @app.on_event("startup")
 def startup() -> None:
     ensure_schema()
@@ -739,6 +797,17 @@ def root() -> dict[str, Any]:
 @app.get("/healthz")
 def healthz() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/db/status")
+def db_status() -> dict[str, Any]:
+    all_results = check_all_databases()
+    return {
+        "databases": all_results,
+        "totalConfigured": len(all_results),
+        "totalConnected": sum(1 for r in all_results if r["connected"]),
+        "primaryHost": urlparse(get_database_url()).hostname if get_database_url() else None,
+    }
 
 
 @app.get("/api/knowledge/summary")
@@ -850,7 +919,7 @@ def sync_knowledge(payload: KnowledgeSyncRequest) -> dict[str, Any]:
     except psycopg.Error as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to persist crawled knowledge to Render Postgres.",
+            detail="Unable to persist crawled knowledge to PostgreSQL.",
         ) from error
 
 
@@ -1013,7 +1082,7 @@ def sync_sequences(payload: SequenceSyncRequest) -> dict[str, Any]:
     except psycopg.Error as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to persist crawled sequences to Render Postgres.",
+            detail="Unable to persist crawled sequences to PostgreSQL.",
         ) from error
 
 
@@ -1049,7 +1118,7 @@ def delete_sequence(record_id: int) -> dict[str, Any]:
     except psycopg.Error as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to delete sequence record from Render Postgres.",
+            detail="Unable to delete sequence record from PostgreSQL.",
         ) from error
 
 
@@ -1133,5 +1202,5 @@ def create_inquiry(payload: InquiryCreate) -> dict[str, Any]:
     except psycopg.Error as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to persist inquiry to Render Postgres.",
+            detail="Unable to persist inquiry to PostgreSQL.",
         ) from error

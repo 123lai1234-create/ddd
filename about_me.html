@@ -224,13 +224,15 @@
 
         <section>
             <div class="section-label">Connect</div>
-            <h2 class="section-title">把合作訊息直接寫進 Render PostgreSQL</h2>
-            <p class="section-sub">這個區塊不再只是外部連結。部署後，表單會透過 FastAPI API 寫入 Render Postgres，變成這份作品集真正的 DB-backed 功能。</p>
+            <h2 class="section-title">把合作訊息直接寫進 PostgreSQL</h2>
+            <p class="section-sub">這個區塊不再只是外部連結。部署後，表單會透過 FastAPI API 寫入 PostgreSQL（支援 Neon / Supabase / CockroachDB /
+                Aiven / Railway 多源 fallback），變成這份作品集真正的 DB-backed 功能。</p>
             <div class="contact-layout">
                 <div class="contact-panel">
-                    <div class="tiny">Render stack</div>
-                    <h3>Static Site + Python API + Postgres</h3>
-                    <p>網站本身仍是靜態頁，但這裡的送出會經過獨立 API 服務，資料表會保存姓名、Email、單位、訊息與來源頁面，讓 Render 的資料庫不只是掛名存在。</p>
+                    <div class="tiny">Multi-DB stack</div>
+                    <h3>Static Site + Python API + Multi-Cloud Postgres</h3>
+                    <p>網站本身仍是靜態頁，但這裡的送出會經過獨立 API 服務，自動嘗試所有已設定的 PostgreSQL
+                        來源（Neon、Supabase、CockroachDB、Aiven、Railway），第一個連上的就寫入。</p>
                     <div class="inline-metrics">
                         <div class="metric-mini">
                             <div class="k">API status</div>
@@ -249,12 +251,13 @@
                             <div class="v" id="dbLastSeen">-</div>
                         </div>
                     </div>
+                    <div id="dbMultiStatus" class="db-multi-status" style="margin-top:12px"></div>
                     <div class="contact-meta">API base: <span id="apiBaseLabel">Not configured</span></div>
                 </div>
                 <form id="contactForm" class="contact-form" novalidate>
                     <div class="tiny">Leave a message</div>
                     <h3 style="margin-bottom:8px">合作洽詢 / 聯絡表單</h3>
-                    <p style="color:var(--muted);margin-bottom:18px">如果你要聊合作、研究、產品或平台整合，部署完成後這裡會直接寫入 Render DB。</p>
+                    <p style="color:var(--muted);margin-bottom:18px">如果你要聊合作、研究、產品或平台整合，部署完成後這裡會直接寫入多雲端 PostgreSQL。</p>
                     <div class="form-grid">
                         <div class="field">
                             <label for="contact-name">姓名</label>
@@ -278,9 +281,9 @@
                         </div>
                         <input class="hp-field" name="website" type="text" tabindex="-1" autocomplete="off">
                     </div>
-                    <button type="submit" class="btn btn-primary" id="contactSubmitBtn">送出到 Render DB</button>
+                    <button type="submit" class="btn btn-primary" id="contactSubmitBtn">送出到 PostgreSQL</button>
                     <div id="contactStatus" class="form-status" data-state="idle" role="status" aria-live="polite">尚未啟用
-                        API 連線。部署 API 與資料庫後，這裡會顯示連線狀態。</div>
+                        API 連線。部署 API 與資料庫後，這裡會顯示多 DB 連線狀態。</div>
                 </form>
             </div>
         </section>
