@@ -245,8 +245,14 @@ nav {
   transform: translateY(-3px);
 }
 
-/* ─── Focus outline ───────────────────────────────────────── */
+/* ─── Focus outline ────────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--nav-accent, var(--teal, #39d0f0));
   outline-offset: 3px;
 }
+
+/* ─── Footer note ───────────────────────────────────────────────────── */
+.footer-note {
+  margin-top: 4px;
+}
+

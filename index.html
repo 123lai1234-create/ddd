@@ -5,12 +5,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>工程 × 生醫 × AI 平台作品集</title>
+    <meta name="description" content="工程與生醫雙碩士背景，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。">
+    <meta property="og:title" content="工程 × 生醫 × AI 平台作品集">
+    <meta property="og:description" content="工程與生醫雙碩士背景，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/3dmol@2.4.2/build/3Dmol-min.js"></script>
+    <script>
+    window._3dmolLoaded = false;
+    window.load3Dmol = function(callback) {
+        if (window._3dmolLoaded) { if (callback) callback(); return; }
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/3dmol@2.4.2/build/3Dmol-min.js';
+        s.onload = function() { window._3dmolLoaded = true; if (callback) callback(); };
+        document.head.appendChild(s);
+    };
+    </script>
     <link rel="stylesheet" href="shared.css">
     <script src="nav.js" defer></script>
     <link rel="stylesheet" href="index.css">
@@ -29,9 +43,13 @@
             <li><a href="#demo" class="nav-cta">互動展示</a></li>
         </ul><button class="hamburger" id="hamburger" aria-label="開啟選單"><span></span><span></span><span></span></button>
     </nav>
-    <div class="nav-drawer" id="navDrawer"><a href="about_me.html">About Me</a><a href="works.html">作品總覽</a><a
-            href="ngs.html">NGS 定序</a><a href="gene_ai.html">基因 AI 平台</a><a href="report.html">專案報告</a><a href="#demo"
-            onclick="document.getElementById('navDrawer').classList.remove('open');document.getElementById('hamburger').classList.remove('open')">互動展示</a>
+    <div class="nav-drawer" id="navDrawer">
+        <a href="about_me.html">About Me</a>
+        <a href="works.html">作品總覽</a>
+        <a href="ngs.html">NGS 定序</a>
+        <a href="gene_ai.html">基因 AI 平台</a>
+        <a href="report.html">專案報告</a>
+        <a href="#demo">互動展示</a>
     </div>
     <!-- ════════ HERO ════════ -->
     <section id="hero" style="padding:0;max-width:none">
@@ -270,7 +288,7 @@
                             style="position:absolute;inset:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center;border-radius:10px">
                             <div style="font-size:2rem">🔬</div>
                             <div style="font-size:.88rem;color:var(--muted)">
-                                輸入 PDB ID 或點擊百下方標籤載入結構</div>
+                                輸入 PDB ID 或點擊下方標籤載入結構</div>
                             <div style="font-size:.72rem;color:var(--dim)">
                                 支援任意公開 PDB 檔案 · 3Dmol.js 渲染引擎</div>
                         </div>
@@ -372,8 +390,7 @@
                             </div>
                         </div>
                         <!-- Rosetta 能量評分面板 -->
-                        <div id="rosettaPanel"
-                            style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:4px">
+                        <div id="rosettaPanel" class="rosetta-panel" style="display:none">
                             <div style="font-size:.9rem;font-weight:600;color:var(--fg);margin-bottom:12px">
                                 ⚡ Rosetta
                                 REF2015
@@ -397,8 +414,7 @@
     <footer>
         <div>
             <div class="footer-brand">工程 × 生醫 × AI 作品集</div>
-            <div class="footer-note" style="margin-top:4px">個人品牌、本地作品頁與技術平台整合版 ·
-                2026</div>
+            <div class="footer-note">個人品牌、本地作品頁與技術平台整合版 · 2026</div>
         </div>
         <div class="footer-links"><a href="about_me.html">About Me</a><a href="works.html">作品總覽</a><a
                 href="demo_notebook.ipynb">互動筆記本</a><a href="report.html">專案報告</a><a

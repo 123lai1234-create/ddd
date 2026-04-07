@@ -595,3 +595,12 @@
                 transform: rotate(360deg)
             }
         }
+
+/* ─── Rosetta panel ──────────────────────────────────────────── */
+.rosetta-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 4px;
+}
