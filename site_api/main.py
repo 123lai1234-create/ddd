@@ -6,7 +6,7 @@ from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import psycopg
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
@@ -800,7 +800,13 @@ def healthz() -> dict[str, str]:
 
 
 @app.get("/api/db/status")
-def db_status() -> dict[str, Any]:
+def db_status(x_admin_token: str | None = Header(default=None)) -> dict[str, Any]:
+    admin_token = os.getenv("ADMIN_TOKEN", "").strip()
+    if not admin_token or x_admin_token != admin_token:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin token required.",
+        )
     all_results = check_all_databases()
     return {
         "databases": all_results,

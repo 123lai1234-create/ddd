@@ -152,13 +152,29 @@
         updateDbMultiStatus(apiBase);
     };
 
+    const getAdminToken = () => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('admin') || '';
+    };
+
     const updateDbMultiStatus = async (apiBase) => {
         const container = document.getElementById('dbMultiStatus');
         if (!container || !apiBase) return;
 
+        const adminToken = getAdminToken();
+        if (!adminToken) {
+            container.style.display = 'none';
+            return;
+        }
+
         try {
-            const response = await fetch(`${apiBase}/api/db/status`);
-            if (!response.ok) return;
+            const response = await fetch(`${apiBase}/api/db/status`, {
+                headers: { 'X-Admin-Token': adminToken }
+            });
+            if (!response.ok) {
+                container.style.display = 'none';
+                return;
+            }
 
             const data = await response.json();
             if (!data.databases || data.databases.length === 0) {
