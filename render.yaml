@@ -6,9 +6,7 @@ services:
     staticPublishPath: ./dist
     buildFilter:
       paths:
-        - "*.html"
-        - "*.css"
-        - "*.js"
+        - "frontend/**"
         - "outputs/*.png"
         - "README.md"
         - "demo_notebook.ipynb"

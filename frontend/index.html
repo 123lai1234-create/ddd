@@ -16,19 +16,75 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <script>
-    window._3dmolLoaded = false;
-    window.load3Dmol = function(callback) {
-        if (window._3dmolLoaded) { if (callback) callback(); return; }
-        var s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/3dmol@2.4.2/build/3Dmol-min.js';
-        s.onload = function() { window._3dmolLoaded = true; if (callback) callback(); };
-        document.head.appendChild(s);
-    };
+        window._3dmolLoaded = false;
+        window._3dmolLoading = false;
+        window._3dmolLoadError = null;
+        window._3dmolCallbacks = [];
+        window._3dmolSources = [
+            'https://cdn.jsdelivr.net/npm/3dmol@2.4.2/build/3Dmol-min.js',
+            'https://unpkg.com/3dmol@2.4.2/build/3Dmol-min.js',
+            'https://3dmol.org/build/3Dmol-min.js'
+        ];
+
+        window.load3Dmol = function (callback) {
+            if (window._3dmolLoaded && typeof window.$3Dmol !== 'undefined') {
+                if (callback) callback(null, window.$3Dmol);
+                return;
+            }
+
+            if (callback) window._3dmolCallbacks.push(callback);
+
+            if (window._3dmolLoading) return;
+            window._3dmolLoading = true;
+            window._3dmolLoadError = null;
+
+            var sources = window._3dmolSources.slice();
+
+            function finish(err) {
+                window._3dmolLoading = false;
+                window._3dmolLoadError = err || null;
+                var callbacks = window._3dmolCallbacks.slice();
+                window._3dmolCallbacks.length = 0;
+                callbacks.forEach(function (cb) {
+                    try { cb(err || null, window.$3Dmol); } catch (e) { }
+                });
+            }
+
+            function tryNext() {
+                if (!sources.length) {
+                    finish(new Error('3Dmol.js 載入失敗'));
+                    return;
+                }
+
+                var src = sources.shift();
+                var s = document.createElement('script');
+                s.src = src;
+                s.async = true;
+                s.onload = function () {
+                    if (typeof window.$3Dmol === 'undefined') {
+                        tryNext();
+                        return;
+                    }
+
+                    window._3dmolLoaded = true;
+                    finish(null);
+                };
+                s.onerror = function () {
+                    s.remove();
+                    tryNext();
+                };
+                document.head.appendChild(s);
+            }
+
+            tryNext();
+        };
     </script>
-    <link rel="stylesheet" href="shared.css">
-    <script src="nav.js" defer></script>
-    <link rel="stylesheet" href="index.css">
-    <link rel="stylesheet" href="index-mpnn.css">
+    <link rel="stylesheet" href="styles/shared.css">
+    <script src="scripts/nav.js" defer></script>
+    <link rel="stylesheet" href="styles/index.css">
+    <link rel="stylesheet" href="styles/index-live.css">
+    <link rel="stylesheet" href="styles/index-content.css">
+    <link rel="stylesheet" href="styles/index-mpnn.css">
 </head>
 
 <body>
@@ -422,8 +478,11 @@
                 href="gene_ai.html">基因 AI 平台</a><a href="README.md">README</a></div>
     </footer>
     <!-- ════════ JS ════════ -->
-    <script src="index-ui.js"></script>
-    <script src="index.js"></script>
+    <script src="scripts/app-config.js"></script>
+    <script src="scripts/index-ui.js"></script>
+    <script src="scripts/index-live.js"></script>
+    <script src="scripts/index-charts.js"></script>
+    <script src="scripts/index.js"></script>
 
     <button class="scroll-top" aria-label="返回頂部">↑</button>
 </body>

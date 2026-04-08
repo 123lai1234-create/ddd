@@ -3,9 +3,8 @@
 dist/
 outputs/*.pt
 src/
-run_pipeline.py
-DEPLOY_FLY.md
-DEPLOY_RENDER.md
+scripts/run_pipeline.py
+docs/
 fly.toml
 Dockerfile
 netlify.toml

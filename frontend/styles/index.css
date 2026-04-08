@@ -4,7 +4,7 @@
   --bg2: #111922;
   --surface: rgba(18, 26, 33, 0.92);
   --surface2: rgba(24, 34, 44, 0.9);
-  --border: rgba(151, 190, 181, 0.10);
+  --border: rgba(151, 190, 181, 0.1);
   --border-hover: rgba(88, 215, 255, 0.24);
   --text: #e9f0ec;
   --muted: #94a59f;
@@ -27,9 +27,21 @@
 
 body {
   background:
-    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(88, 215, 255, 0.06), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 70%, rgba(181, 156, 255, 0.05), transparent),
-    radial-gradient(ellipse 50% 40% at 20% 80%, rgba(123, 240, 190, 0.04), transparent),
+    radial-gradient(
+      ellipse 80% 60% at 50% 30%,
+      rgba(88, 215, 255, 0.06),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 80% 70%,
+      rgba(181, 156, 255, 0.05),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 20% 80%,
+      rgba(123, 240, 190, 0.04),
+      transparent
+    ),
     linear-gradient(180deg, #081016 0%, #0b141c 50%, #081015 100%);
   color: var(--text);
   font-family: var(--font);

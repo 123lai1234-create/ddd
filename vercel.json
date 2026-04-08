@@ -2,6 +2,50 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/about_me.html",
+      "destination": "/frontend/about_me.html"
+    },
+    {
+      "source": "/works.html",
+      "destination": "/frontend/works.html"
+    },
+    {
+      "source": "/gene_ai.html",
+      "destination": "/frontend/gene_ai.html"
+    },
+    {
+      "source": "/ngs.html",
+      "destination": "/frontend/ngs.html"
+    },
+    {
+      "source": "/report.html",
+      "destination": "/frontend/report.html"
+    },
+    {
+      "source": "/thesis.html",
+      "destination": "/frontend/thesis.html"
+    },
+    {
+      "source": "/interview_prep.html",
+      "destination": "/frontend/interview_prep.html"
+    },
+    {
+      "source": "/styles/:path*",
+      "destination": "/frontend/styles/:path*"
+    },
+    {
+      "source": "/scripts/:path*",
+      "destination": "/frontend/scripts/:path*"
+    },
+    {
       "source": "/healthz",
       "destination": "/api/index"
     },

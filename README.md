@@ -50,8 +50,25 @@ Protein Sequences
 
 ```
 d:\project\
-├── run_pipeline.py          # CLI 入口，支援 --mode all / bo / rl / mpnn
+├── frontend/
+│   ├── index.html           # 首頁 / ProteinMPNN demo
+│   ├── about_me.html        # About Me
+│   ├── works.html           # 作品總覽
+│   ├── gene_ai.html         # Gene AI 頁面
+│   ├── ngs.html             # NGS 頁面
+│   ├── report.html          # 專案報告
+│   ├── thesis.html          # Thesis 頁面
+│   ├── interview_prep.html  # 面試準備頁面
+│   ├── styles/              # 全站與頁面 CSS
+│   └── scripts/             # 全站與頁面 JS
+├── scripts/
+│   ├── build_static_site.sh # 靜態站建置，輸出到 dist/
+│   └── run_pipeline.py      # CLI 入口，支援 --mode all / bo / rl / mpnn
 ├── demo_notebook.ipynb      # 面試 Live Demo 筆記本
+├── docs/
+│   ├── DEPLOY_AUTOMATION.md
+│   ├── DEPLOY_FLY.md
+│   └── DEPLOY_RENDER.md
 ├── requirements.txt
 ├── src/
 │   ├── data_prep.py         # Demo 資料生成 / ProteinGym CSV 載入
@@ -76,16 +93,16 @@ d:\project\
 pip install -r requirements.txt
 
 # 2. 跑完整 pipeline（含 ESM-2 下載 ~30 MB）
-python run_pipeline.py --mode all
+python scripts/run_pipeline.py --mode all
 
 # 3. 只跑 Bayesian Optimisation
-python run_pipeline.py --mode bo --epochs 100 --bo-iters 20
+python scripts/run_pipeline.py --mode bo --epochs 100 --bo-iters 20
 
 # 4. 只跑 RL
-python run_pipeline.py --mode rl --rl-episodes 50
+python scripts/run_pipeline.py --mode rl --rl-episodes 50
 
 # 5. 只跑 ProteinMPNN
-python run_pipeline.py --mode mpnn
+python scripts/run_pipeline.py --mode mpnn
 ```
 
 ---
@@ -169,9 +186,14 @@ The current Render-ready setup can also be expanded into a small full-stack port
 - Dynamic knowledge cache sourced from UniProt annotations and NCBI PubMed
 - RAG-ready document export for knowledge chunks and cached sequence metadata
 
-- Project-specific deployment guide: [DEPLOY_RENDER.md](DEPLOY_RENDER.md)
+- Project-specific deployment guide: [docs/DEPLOY_RENDER.md](docs/DEPLOY_RENDER.md)
 - Render blueprint config: [render.yaml](render.yaml)
 - Static bundle build script: [scripts/build_static_site.sh](scripts/build_static_site.sh)
+
+The frontend source is organized under `frontend/`, with page templates in `frontend/`, styles in `frontend/styles/`, and scripts in `frontend/scripts/`.
+
+- Render, Netlify, and Cloudflare Pages deploy the generated `dist/` bundle from [scripts/build_static_site.sh](scripts/build_static_site.sh)
+- Vercel serves the same frontend structure through [vercel.json](vercel.json) rewrites and builds deployment output in CI before publish
 
 ## Bio Knowledge Layer
 
