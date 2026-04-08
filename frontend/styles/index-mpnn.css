@@ -125,11 +125,14 @@
   font-family: var(--mono);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .mpnn-pdb-tag:hover {
-  background: rgba(57,208,240,0.1);
+  background: rgba(57, 208, 240, 0.1);
   color: var(--teal);
   border-color: var(--teal);
 }
