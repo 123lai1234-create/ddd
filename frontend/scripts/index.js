@@ -945,7 +945,11 @@ async function _searchPdbBySeq(seq) {
     }
 }
 
-document.getElementById('mpnnSeq').addEventListener('input', updateMpnnSeqInfo);
+let _seqInputRaf = null;
+document.getElementById('mpnnSeq').addEventListener('input', function () {
+    if (_seqInputRaf) cancelAnimationFrame(_seqInputRaf);
+    _seqInputRaf = requestAnimationFrame(updateMpnnSeqInfo);
+});
 
 function parseMpnnFixed(str, len) {
     const fixed = new Set();
@@ -1136,6 +1140,7 @@ async function runMPNN() {
 
     const tbody = document.getElementById('mpnnTableBody');
     tbody.innerHTML = '';
+    const frag = document.createDocumentFragment();
 
     results.forEach((r, i) => {
         const idPct = (r.identity * 100).toFixed(1);
@@ -1156,8 +1161,9 @@ async function runMPNN() {
             }
 
                 </span></td> <td><button class="expand-btn view3d-btn" id="view3dBtn-${i}" onclick="viewSeqIn3D(${i})" title="在 3D 中查看此序列的突變" >🔬</button></td> <td><button class="expand-btn" onclick="showMpnnResidue(${i})" >詳情</button></td>`;
-        tbody.appendChild(tr);
+        frag.appendChild(tr);
     });
+    tbody.appendChild(frag);
 
     window._mpnnResults = results;
     window._mpnnInputSeq = seq;
@@ -1187,7 +1193,8 @@ function showMpnnResidue(idx) {
 
             `;
 
-    document.getElementById('residueSeqDisplay').innerHTML = r.seq.split('').map((aa, i) => {
+    const seqFrag = document.createDocumentFragment();
+    r.seq.split('').forEach((aa, i) => {
         const prop = AA_PROP[aa] || 'special';
         const isFixed = fixedSet.has(i);
         const changed = aa !== (inputSeq[i] || '').toUpperCase();
@@ -1205,17 +1212,22 @@ function showMpnnResidue(idx) {
 
                     `;
 
-        return `<span class="aa-chip ${PROP_CSS[prop]}${isFixed ? ' fixed' : ''}" title="${title}" >${aa
-            }
-
-                    </span>`;
-    }).join('');
+        const sp = document.createElement('span');
+        sp.className = `aa-chip ${PROP_CSS[prop]}${isFixed ? ' fixed' : ''}`;
+        sp.title = title;
+        sp.textContent = aa;
+        seqFrag.appendChild(sp);
+    });
+    const seqDisplay = document.getElementById('residueSeqDisplay');
+    seqDisplay.innerHTML = '';
+    seqDisplay.appendChild(seqFrag);
 
     // 用 reduce 取代 spread，防止超長序列 stack overflow
     const minLL = r.ll.reduce((a, b) => a < b ? a : b);
     const maxLL = r.ll.reduce((a, b) => a > b ? a : b);
 
-    document.getElementById('residueHeatmap').innerHTML = r.ll.map((ll, i) => {
+    const heatFrag = document.createDocumentFragment();
+    r.ll.forEach((ll, i) => {
         const norm = (ll - minLL) / (maxLL - minLL + 1e-8);
         const rC = Math.round(248 * (1 - norm));
         const gC = Math.round(185 * norm);
@@ -1228,11 +1240,16 @@ function showMpnnResidue(idx) {
 
                         , 50)`;
 
-        return `<div class="heat-cell" style="background:${bg}" title="位置 ${i + 1} (${r.seq[i]}): ll=${ll.toFixed(3)}" >${r.seq[i]
-            }
-
-                    </div>`;
-    }).join('');
+        const hc = document.createElement('div');
+        hc.className = 'heat-cell';
+        hc.style.background = bg;
+        hc.title = `位置 ${i + 1} (${r.seq[i]}): ll=${ll.toFixed(3)}`;
+        hc.textContent = r.seq[i];
+        heatFrag.appendChild(hc);
+    });
+    const heatmap = document.getElementById('residueHeatmap');
+    heatmap.innerHTML = '';
+    heatmap.appendChild(heatFrag);
 
     document.getElementById('mpnnResiduePanel').style.display = 'block';
 }
