@@ -100,11 +100,13 @@ jobs:
         run: |
           npx --yes vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
-      - name: Build Vercel output
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      - name: Prepare Vercel output directory
         run: |
-          npx --yes vercel build --prod --token="$VERCEL_TOKEN"
+          mkdir -p .vercel/output/static
+          cp -r frontend/. .vercel/output/static/
+          cat > .vercel/output/config.json <<'EOF'
+          {"version":3}
+          EOF
 
       - name: Deploy frontend to Vercel
         env:
