@@ -32,9 +32,22 @@ cp "$FRONTEND_STYLES_DIR"/*.css "$DIST_DIR/styles/"
 cp "$FRONTEND_SCRIPTS_DIR"/*.js "$DIST_DIR/scripts/"
 
 cat > "$DIST_DIR/scripts/app-config.js" <<EOF
-window.APP_CONFIG = {
-	API_BASE_URL: "${API_BASE_URL_VALUE}"
-};
+(() => {
+	const existingConfig = window.APP_CONFIG || {};
+	const injectedApiBase = "${API_BASE_URL_VALUE}".trim().replace(/\/+$/, '');
+	const configuredApiBase = typeof existingConfig.API_BASE_URL === 'string'
+		? existingConfig.API_BASE_URL.trim().replace(/\/+$/, '')
+		: '';
+	const host = window.location.hostname;
+	const fallbackApiBase = ['localhost', '127.0.0.1'].includes(host)
+		? 'http://' + host + ':8080'
+		: 'https://donttalk-api-production.up.railway.app';
+
+	window.APP_CONFIG = {
+		...existingConfig,
+		API_BASE_URL: configuredApiBase || injectedApiBase || fallbackApiBase
+	};
+})();
 EOF
 
 cp README.md "$DIST_DIR/"

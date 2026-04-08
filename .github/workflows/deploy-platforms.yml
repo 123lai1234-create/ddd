@@ -94,10 +94,14 @@ jobs:
         with:
           node-version: 22
 
+      - name: Build static site
+        run: |
+          bash ./scripts/build_static_site.sh
+
       - name: Prepare Vercel output directory
         run: |
           mkdir -p .vercel/output/static
-          cp -r frontend/. .vercel/output/static/
+          cp -r dist/. .vercel/output/static/
           printf '{"version":3}' > .vercel/output/config.json
 
       - name: Deploy frontend to Vercel
