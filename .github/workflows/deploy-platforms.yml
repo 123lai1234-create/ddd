@@ -18,7 +18,7 @@ env:
   RAILWAY_ENVIRONMENT_ID: ea437d7d-5e2d-4a84-92e5-afd344389170
   RAILWAY_SERVICE_ID: 29c6f948-a536-4f11-a317-dad1293a66ac
   NETLIFY_SITE_ID: 65af318c-45c6-413e-837b-685a4fc01444
-  CLOUDFLARE_ACCOUNT_ID: e9fdfcda5eaca594919634b8fe84a8f1
+  CLOUDFLARE_ACCOUNT_ID: 3c09721dfbc2ab9071ccd45f257813af
   CLOUDFLARE_PAGES_PROJECT: donttalk
   VERCEL_ORG_ID: team_a3kKe1wDrxqQfuXTUnw4SUxw
   VERCEL_PROJECT_ID: prj_Knbnl6axKI8AQJApFYlIx2sQ4aXV
@@ -170,31 +170,10 @@ jobs:
         run: |
           bash ./scripts/build_static_site.sh
 
-      - name: Configure Cloudflare auth
-        env:
-          CF_OAUTH_TOKEN: ${{ secrets.CLOUDFLARE_OAUTH_TOKEN }}
-          CF_REFRESH_TOKEN: ${{ secrets.CLOUDFLARE_REFRESH_TOKEN }}
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          if [ -n "$CF_API_TOKEN" ]; then
-            echo "Using CLOUDFLARE_API_TOKEN"
-            echo "CLOUDFLARE_API_TOKEN=$CF_API_TOKEN" >> "$GITHUB_ENV"
-          elif [ -n "$CF_REFRESH_TOKEN" ]; then
-            echo "Using OAuth refresh token flow"
-            mkdir -p "$HOME/.config/.wrangler/config"
-            cat > "$HOME/.config/.wrangler/config/default.toml" <<TOML
-          oauth_token = "${CF_OAUTH_TOKEN:-expired}"
-          expiration_time = "1970-01-01T00:00:00.000Z"
-          refresh_token = "$CF_REFRESH_TOKEN"
-          scopes = ["account:read","user:read","workers:write","workers_kv:write","workers_routes:write","workers_scripts:write","workers_tail:read","d1:write","pages:write","zone:read","ssl_certs:write","ai:write","offline_access"]
-          TOML
-          else
-            echo "::error::No Cloudflare credentials configured (set CLOUDFLARE_API_TOKEN or CLOUDFLARE_REFRESH_TOKEN)"
-            exit 1
-          fi
-
       - name: Deploy frontend to Cloudflare Pages
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          npx --yes wrangler pages deploy dist --project-name "$CLOUDFLARE_PAGES_PROJECT" --branch main
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || env.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PAGES_PROJECT }} --branch=main
