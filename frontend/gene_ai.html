@@ -17,37 +17,13 @@
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="styles/shared.css">
+    <script src="scripts/site-shell-config.js" defer></script>
     <script src="scripts/nav.js" defer></script>
     <link rel="stylesheet" href="styles/gene_ai.css">
 </head>
 
-<body>
-    <nav>
-        <a class="nav-brand" href="index.html">
-            <span class="mark"></span>
-            Genome AI Studio
-        </a>
-        <ul class="nav-links">
-            <li><a href="index.html">首頁</a></li>
-            <li><a href="about_me.html">About Me</a></li>
-            <li><a href="ngs.html">NGS</a></li>
-            <li><a href="index.html" class="nav-cta">蛋白質 AI</a></li>
-        </ul>
-        <button class="hamburger" id="hamburger" aria-label="開啟選單">
-            <span></span><span></span><span></span>
-        </button>
-    </nav>
-    <div class="nav-drawer" id="navDrawer">
-        <a href="index.html">首頁</a>
-        <a href="about_me.html">About Me</a>
-        <a href="works.html">作品總覽</a>
-        <a href="ngs.html">NGS 定序</a>
-        <a href="#sequence-vault">Live · 序列資料庫</a>
-        <a href="#knowledge-vault">Live · 知識檢索</a>
-        <a href="#studio">Demo · 設計工作台</a>
-        <a href="#guides">Demo · CRISPR 排序</a>
-        <a href="#variants">Demo · 變異解讀</a>
-    </div>
+<body data-page="gene_ai">
+    <div data-site-nav></div>
 
     <header class="hero">
         <div class="hero-grid">
@@ -1016,20 +992,7 @@
         </section>
     </main>
 
-    <footer>
-        <div>
-            <div class="footer-brand">基因 AI 設計平台</div>
-            <div>Genome foundation models · regulatory design · variant interpretation · creator portfolio</div>
-        </div>
-        <div class="footer-links">
-            <a href="about_me.html">About Me</a>
-            <a href="works.html">作品總覽</a>
-            <a href="index.html">蛋白質 AI 首頁</a>
-            <a href="ngs.html">NGS 頁面</a>
-            <a href="report.html">專案報告</a>
-            <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer">個人網站</a>
-        </div>
-    </footer>
+    <div data-site-footer></div>
 
     <script src="scripts/app-config.js"></script>
     <script src="scripts/gene_ai.js"></script>

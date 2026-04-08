@@ -15,98 +15,17 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <script>
-        window._3dmolLoaded = false;
-        window._3dmolLoading = false;
-        window._3dmolLoadError = null;
-        window._3dmolCallbacks = [];
-        window._3dmolSources = [
-            'https://cdn.jsdelivr.net/npm/3dmol@2.4.2/build/3Dmol-min.js',
-            'https://unpkg.com/3dmol@2.4.2/build/3Dmol-min.js',
-            'https://3dmol.org/build/3Dmol-min.js'
-        ];
-
-        window.load3Dmol = function (callback) {
-            if (window._3dmolLoaded && typeof window.$3Dmol !== 'undefined') {
-                if (callback) callback(null, window.$3Dmol);
-                return;
-            }
-
-            if (callback) window._3dmolCallbacks.push(callback);
-
-            if (window._3dmolLoading) return;
-            window._3dmolLoading = true;
-            window._3dmolLoadError = null;
-
-            var sources = window._3dmolSources.slice();
-
-            function finish(err) {
-                window._3dmolLoading = false;
-                window._3dmolLoadError = err || null;
-                var callbacks = window._3dmolCallbacks.slice();
-                window._3dmolCallbacks.length = 0;
-                callbacks.forEach(function (cb) {
-                    try { cb(err || null, window.$3Dmol); } catch (e) { }
-                });
-            }
-
-            function tryNext() {
-                if (!sources.length) {
-                    finish(new Error('3Dmol.js 載入失敗'));
-                    return;
-                }
-
-                var src = sources.shift();
-                var s = document.createElement('script');
-                s.src = src;
-                s.async = true;
-                s.onload = function () {
-                    if (typeof window.$3Dmol === 'undefined') {
-                        tryNext();
-                        return;
-                    }
-
-                    window._3dmolLoaded = true;
-                    finish(null);
-                };
-                s.onerror = function () {
-                    s.remove();
-                    tryNext();
-                };
-                document.head.appendChild(s);
-            }
-
-            tryNext();
-        };
-    </script>
     <link rel="stylesheet" href="styles/shared.css">
+    <script src="scripts/site-shell-config.js" defer></script>
     <script src="scripts/nav.js" defer></script>
     <link rel="stylesheet" href="styles/index.css">
     <link rel="stylesheet" href="styles/index-live.css">
     <link rel="stylesheet" href="styles/index-content.css">
-    <link rel="stylesheet" href="styles/index-mpnn.css">
 </head>
 
-<body>
+<body data-page="index">
     <!-- ════════ NAV ════════ -->
-    <nav>
-        <div class="nav-brand"><span class="dot"></span>工程 × 生醫 AI </div>
-        <ul class="nav-links">
-            <li><a href="about_me.html">About Me</a></li>
-            <li><a href="works.html">作品總覽</a></li>
-            <li><a href="ngs.html">NGS 定序</a></li>
-            <li><a href="gene_ai.html">基因 AI</a></li>
-            <li><a href="#demo" class="nav-cta">互動展示</a></li>
-        </ul><button class="hamburger" id="hamburger" aria-label="開啟選單"><span></span><span></span><span></span></button>
-    </nav>
-    <div class="nav-drawer" id="navDrawer">
-        <a href="about_me.html">About Me</a>
-        <a href="works.html">作品總覽</a>
-        <a href="ngs.html">NGS 定序</a>
-        <a href="gene_ai.html">基因 AI 平台</a>
-        <a href="report.html">專案報告</a>
-        <a href="#demo">互動展示</a>
-    </div>
+    <div data-site-nav></div>
     <!-- ════════ HERO ════════ -->
     <section id="hero" style="padding:0;max-width:none">
         <div class="hero-canvas"></div>
@@ -233,6 +152,12 @@
                 <p>端到端 Pipeline 架構、實驗結果圖表、核心演算法數學推導、程式碼庫結構一覽。</p>
                 <span class="explore-arrow">→</span>
             </a>
+            <a href="protein_mpnn.html" class="explore-card">
+                <div class="explore-icon">🧪</div>
+                <h3>ProteinMPNN 互動展示</h3>
+                <p>獨立工作台頁面，直接操作序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</p>
+                <span class="explore-arrow">→</span>
+            </a>
             <a href="gene_ai.html" class="explore-card">
                 <div class="explore-icon">🔬</div>
                 <h3>基因 AI 平台</h3>
@@ -268,197 +193,43 @@
     <hr class="divider">
     <!-- ════════ DEMO ════════ -->
     <section id="demo">
-        <div class="section-label">互動展示</div>
-        <h2 class="section-title">ProteinMPNN 序列設計</h2>
-        <p class="section-sub">在瀏覽器中即時模擬 ProteinMPNN 逆折疊演算法——基於 BLOSUM62 替換矩陣與溫度控制
-            Softmax 取樣，輸入序列即可生成多樣化設計結果。</p>
-        <div class="mpnn-layout">
-            <!-- ── 輸入面板 ── -->
-            <div class="mpnn-panel">
-                <div class="mpnn-panel-title">⚙ 輸入參數</div>
-                <div class="mpnn-field"><label class="mpnn-label">蛋白質序列 <span class="mpnn-badge">1
-                            字母代碼</span></label>
-                    <div class="mpnn-presets"><button onclick="loadPreset('hp35')">Villin
-                            HP35</button><button onclick="loadPreset('trpcage')">Trp-cage</button><button
-                            onclick="loadPreset('gb1')">GB1
-                            β-hairpin</button><button onclick="loadPreset('crambim')">Crambin</button><button
-                            onclick="loadPreset('hbb')">Hb β-chain</button>
-                    </div><textarea id="mpnnSeq" spellcheck="false" placeholder="輸入胺基酸序列，例: ACDEFGHIKLMN..."></textarea>
-                    <div class="mpnn-seq-info"><span id="mpnnLen">0
-                            殘基</span><span id="mpnnValid" class="mpnn-valid"></span></div>
-                    <div id="seqPdbSuggest" class="seq-pdb-suggest" style="display:none"></div>
-                </div>
-                <div class="mpnn-field"><label class="mpnn-label">固定位置 <span class="mpnn-hint">逗號分隔，支援範圍
-                            (1-10)</span></label><input id="mpnnFixed" type="text" class="mpnn-input"
-                        placeholder="例: 1,5,10-15（空白 = 全序列設計）"></div>
-                <div class="mpnn-field"><label class="mpnn-label">生成序列數 <span class="mpnn-val-badge"
-                            id="numSeqBadge">5</span></label><input type="range" id="mpnnNumSeq" min="1" max="10"
-                        value="5" oninput="document.getElementById('numSeqBadge').textContent=this.value">
-                    <div class="range-meta"><span>1</span><span>10</span></div>
-                </div>
-                <div class="mpnn-field"><label class="mpnn-label">取樣溫度 <span class="mpnn-val-badge"
-                            id="tempBadge">0.10</span></label><input type="range" id="mpnnTemp" min="0.05" max="1.50"
-                        step="0.05" value="0.10"
-                        oninput="document.getElementById('tempBadge').textContent=parseFloat(this.value).toFixed(2)">
-                    <div class="range-meta"><span>低溫 (保守)</span><span>高溫
-                            (多樣)</span></div>
-                </div>
-                <div class="mpnn-field"><label class="mpnn-label">模型版本</label>
-                    <div class="mpnn-model-btns" id="modelBtns"><button class="mpnn-model-btn active"
-                            onclick="selectModel(this,'v_48_020')">v_48_020</button><button class="mpnn-model-btn"
-                            onclick="selectModel(this,'v_48_030')">v_48_030</button><button class="mpnn-model-btn"
-                            onclick="selectModel(this,'soluble')">SolubleMPNN</button>
-                    </div>
-                    <div class="mpnn-model-desc" id="modelDesc">邊緣數 48，偏差 0.2Å —
-                        標準精確度模型（論文推薦）</div>
-                </div><button class="mpnn-run-btn" id="mpnnRunBtn" onclick="runMPNN()"><span id="mpnnBtnText">▶
-                        設計序列</span></button>
+        <div class="reveal">
+            <div class="section-label">互動展示</div>
+            <h2 class="section-title">ProteinMPNN 工作台已獨立成頁</h2>
+            <p class="section-sub">首頁現在只保留入口與說明；完整的序列設計、結構預覽、突變著色與 Rosetta 簡化評分已搬到獨立頁面，分享與操作都更直接。</p>
+        </div>
+        <div class="charts-grid reveal">
+            <div class="chart-card">
+                <h3>Interactive Lab</h3>
+                <div style="color:var(--text);font-size:1rem;font-weight:600;margin-bottom:12px">獨立頁面，完整工作流</div>
+                <p style="color:var(--muted);line-height:1.8">新的 ProteinMPNN 頁面把互動式序列設計從首頁拆開，保留 preset、PDB 載入、ESMFold 與
+                    Rosetta 評分，適合直接展示給面試官、合作夥伴或作品集訪客。</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px"><a href="protein_mpnn.html"
+                        class="btn btn-primary" style="padding:10px 16px;font-size:.82rem">開啟互動展示</a><a
+                        href="report.html" class="btn btn-outline"
+                        style="padding:10px 16px;font-size:.82rem">看技術報告</a><a href="demo_notebook.ipynb"
+                        class="btn btn-outline" style="padding:10px 16px;font-size:.82rem">互動筆記本</a></div>
             </div>
-            <!-- ── 右側：3D 結構+設計結果 ── -->
-            <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
-                <!-- 3D 結構預覽 -->
-                <div class="mpnn-output-panel">
-                    <div class="mpnn-panel-title">🔬 蛋白質 3D 結構預覽</div>
-                    <!-- PDB 搜尋列 -->
-                    <div class="mpnn-pdb-search"><input id="pdbIdInput" type="text" class="mpnn-pdb-input" maxlength="6"
-                            placeholder="輸入 PDB ID，例： 2GI9" oninput="this.value=this.value.toUpperCase()"
-                            onkeydown="if(event.key==='Enter')loadPdbDirect()"><button class="mpnn-pdb-btn"
-                            onclick="loadPdbDirect()">載入 →</button>
+            <div class="chart-card">
+                <h3>頁面現在包含什麼</h3>
+                <div style="display:grid;gap:12px">
+                    <div
+                        style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)">
+                        <div style="font-size:.82rem;color:var(--teal);font-weight:700;margin-bottom:6px">Sequence
+                            Design</div>
+                        <div style="font-size:.8rem;color:var(--muted)">瀏覽器端即時取樣，保留固定位置、溫度與模型切換。</div>
                     </div>
-                    <div class="mpnn-pdb-tags"><span class="mpnn-pdb-tag" onclick="loadPdbById('1VII')">1VII ·
-                            HP35</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1L2Y')">1L2Y ·
-                            Trp-cage</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1PGB')">1PGB ·
-                            GB1</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1CRN')">1CRN ·
-                            Crambin</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1UBQ')">1UBQ ·
-                            Ubiquitin</span><span class="mpnn-pdb-tag" onclick="loadPdbById('4HHB')">4HHB ·
-                            血紅蛋白</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1LYZ')">1LYZ ·
-                            Lysozyme</span><span class="mpnn-pdb-tag" onclick="loadPdbById('3HHR')">3HHR ·
-                            生長激素</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1GFL')">1GFL · GFP</span><span
-                            class="mpnn-pdb-tag" onclick="loadPdbById('1ATP')">1ATP · PKA</span><span
-                            class="mpnn-pdb-tag" onclick="loadPdbById('2HHB')">2HHB · Hb脫氧</span><span
-                            class="mpnn-pdb-tag" onclick="loadPdbById('1BNA')">1BNA · DNA</span></div>
-                    <div style="position:relative;border-radius:10px;overflow:hidden">
-                        <div id="mpnnStruct3d" style="height:340px;width:100%"></div>
-                        <div id="mpnnStructPlaceholder"
-                            style="position:absolute;inset:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center;border-radius:10px">
-                            <div style="font-size:2rem">🔬</div>
-                            <div style="font-size:.88rem;color:var(--muted)">
-                                輸入 PDB ID 或點擊下方標籤載入結構</div>
-                            <div style="font-size:.72rem;color:var(--dim)">
-                                支援任意公開 PDB 檔案 · 3Dmol.js 渲染引擎</div>
-                        </div>
+                    <div
+                        style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)">
+                        <div style="font-size:.82rem;color:var(--teal);font-weight:700;margin-bottom:6px">3D Structure
+                            Preview</div>
+                        <div style="font-size:.8rem;color:var(--muted)">RCSB / proxy 備援下載、3Dmol.js 檢視與自動比對最相似結構。</div>
                     </div>
-                    <div id="mpnnStructInfo" class="mpnn-struct-info" style="display:none"></div>
-                </div>
-                <!-- 設計結果 -->
-                <div class="mpnn-output-panel">
-                    <div class="mpnn-panel-title">📊 設計結果</div>
-                    <!-- 佔位符 -->
-                    <div id="mpnnPlaceholder" class="mpnn-placeholder">
-                        <div class="mpnn-placeholder-icon">🧬
+                    <div
+                        style="padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)">
+                        <div style="font-size:.82rem;color:var(--teal);font-weight:700;margin-bottom:6px">Result Review
                         </div>
-                        <div>設定參數後點擊「設計序列」</div>
-                        <div class="mpnn-placeholder-sub">
-                            ProteinMPNN 演算法將在瀏覽器中即時執行<br>基於
-                            BLOSUM62 × 溫度控制 Softmax 取樣 </div>
-                    </div>
-                    <!-- 進度條 -->
-                    <div id="mpnnProgress" style="display:none">
-                        <div class="mpnn-progress-label" id="mpnnProgressLabel">初始化模型...
-                        </div>
-                        <div class="mpnn-progress-bar">
-                            <div class="mpnn-progress-fill" id="mpnnProgressFill"></div>
-                        </div>
-                        <div class="mpnn-log" id="mpnnLog">
-                        </div>
-                    </div>
-                    <!-- 結果 -->
-                    <div id="mpnnResults" style="display:none">
-                        <div class="mpnn-stats-row">
-                            <div class="mpnn-stat-pill" id="statSeqs">-</div>
-                            <div class="mpnn-stat-pill" id="statAvgId">-</div>
-                            <div class="mpnn-stat-pill" id="statBestScore">-
-                            </div>
-                            <div class="mpnn-stat-pill" id="statTemp">-</div>
-                        </div>
-                        <!-- AI 工具列 — 著色切換+Rosetta 能量評分
-                                                                                            -->
-                        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
-                            <button id="esmFoldBtn" onclick="toggleDesignColor(this)"
-                                style="flex:1;min-width:190px;padding:9px 14px;background:linear-gradient(135deg,#0d1f0d,#1a3a1a);border:1px solid #3fb950;color:#3fb950;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;letter-spacing:.3px;transition:all .2s"
-                                onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">🎨
-                                突變著色
-                            </button><button id="rosettaBtn" onclick="showRosettaScore()"
-                                style="flex:1;min-width:190px;padding:9px 14px;background:linear-gradient(135deg,#1f150d,#3a2a0d);border:1px solid #f0883e;color:#f0883e;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;letter-spacing:.3px;transition:opacity .2s"
-                                onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">⚡
-                                Rosetta 能量評分
-                            </button>
-                        </div>
-                        <div class="mpnn-table-wrap">
-                            <table class="mpnn-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>設計序列
-                                        </th>
-                                        <th>序列相似度
-                                        </th>
-                                        <th>平均
-                                            log-likelihood
-                                        </th>
-                                        <th>3D</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="mpnnTableBody">
-                                </tbody>
-                            </table>
-                        </div>
-                        <!-- 殘基詳情面板 -->
-                        <div id="mpnnResiduePanel" class="mpnn-residue-panel" style="display:none">
-                            <div class="mpnn-residue-title">
-                                殘基詳情 — <span id="residuePanelInfo"></span>
-                            </div>
-                            <div class="aa-legend">
-                                <span class="aa-legend-item"><span
-                                        class="aa-chip aa-hydrophobic">A</span>疏水性</span><span
-                                    class="aa-legend-item"><span class="aa-chip aa-polar">S</span>極性</span><span
-                                    class="aa-legend-item"><span class="aa-chip aa-positive">K</span>帶正電</span><span
-                                    class="aa-legend-item"><span class="aa-chip aa-negative">D</span>帶負電</span><span
-                                    class="aa-legend-item"><span class="aa-chip aa-special">G</span>特殊</span><span
-                                    class="aa-legend-item" style="margin-left:4px;opacity:.5">虛線框=固定位置</span>
-                            </div>
-                            <div class="mpnn-seq-display" id="residueSeqDisplay">
-                            </div>
-                            <div class="mpnn-heatmap-label">
-                                Per-residue
-                                log-likelihood
-                                熱圖（紅=低信心 →
-                                綠=高信心）</div>
-                            <div class="mpnn-heatmap" id="residueHeatmap">
-                            </div>
-                            <div class="mpnn-legend">
-                                <div class="mpnn-legend-bar">
-                                </div><span>低 →
-                                    高
-                                    log-likelihood</span>
-                            </div>
-                        </div>
-                        <!-- Rosetta 能量評分面板 -->
-                        <div id="rosettaPanel" class="rosetta-panel" style="display:none">
-                            <div style="font-size:.9rem;font-weight:600;color:var(--fg);margin-bottom:12px">
-                                ⚡ Rosetta
-                                REF2015
-                                能量評分（簡化版）
-                            </div>
-                            <div id="rosettaContent">
-                            </div>
-                            <div style="font-size:.68rem;color:var(--dim);margin-top:10px">
-                                * 基於 REF2015
-                                殘基傾向性+疏水溶解能+氫鍵估算，單位
-                                REU。負值代表更穩定的序列。
-                            </div>
-                        </div>
+                        <div style="font-size:.8rem;color:var(--muted)">突變著色、殘基熱圖與 Rosetta 簡化評分都在同一頁完成。</div>
                     </div>
                 </div>
             </div>
@@ -466,23 +237,12 @@
     </section>
     <hr class="divider">
     <!-- ════════ FOOTER ════════ -->
-    <footer>
-        <div>
-            <div class="footer-brand">工程 × 生醫 × AI 作品集</div>
-            <div class="footer-note">個人品牌、本地作品頁與技術平台整合版 · 2026</div>
-        </div>
-        <div class="footer-links"><a href="about_me.html">About Me</a><a href="works.html">作品總覽</a><a
-                href="demo_notebook.ipynb">互動筆記本</a><a href="report.html">專案報告</a><a
-                href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer">個人網站</a><a
-                href="gene_ai.html">基因 AI 平台</a><a href="README.md">README</a></div>
-    </footer>
+    <div data-site-footer></div>
     <!-- ════════ JS ════════ -->
     <script src="scripts/app-config.js"></script>
     <script src="scripts/index-ui.js"></script>
     <script src="scripts/index-live.js"></script>
     <script src="scripts/index-charts.js"></script>
-    <script src="scripts/index.js"></script>
-
     <button class="scroll-top" aria-label="返回頂部">↑</button>
 </body>
 

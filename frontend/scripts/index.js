@@ -1098,10 +1098,13 @@ async function _searchPdbBySeq(seq) {
 }
 
 let _seqInputRaf = null;
-document.getElementById('mpnnSeq').addEventListener('input', function () {
-    if (_seqInputRaf) cancelAnimationFrame(_seqInputRaf);
-    _seqInputRaf = requestAnimationFrame(updateMpnnSeqInfo);
-});
+const _mpnnSeqInput = document.getElementById('mpnnSeq');
+if (_mpnnSeqInput) {
+    _mpnnSeqInput.addEventListener('input', function () {
+        if (_seqInputRaf) cancelAnimationFrame(_seqInputRaf);
+        _seqInputRaf = requestAnimationFrame(updateMpnnSeqInfo);
+    });
+}
 
 function parseMpnnFixed(str, len) {
     const fixed = new Set();
@@ -1604,6 +1607,10 @@ function _rosettaScore(seq) {
 
 // 頁面載入後等 3Dmol.js 確認可用再預載 HP35
 function _waitAndLoadHP35(tries) {
+    if (!document.getElementById('mpnnSeq') || !document.getElementById('mpnnStruct3d')) {
+        return;
+    }
+
     if (typeof $3Dmol !== 'undefined') {
         loadPdbById('1VII');
     }
@@ -1614,5 +1621,18 @@ function _waitAndLoadHP35(tries) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    if (!document.getElementById('mpnnSeq')) {
+        return;
+    }
+
+    if (typeof window.load3Dmol === 'function') {
+        window.load3Dmol(function (err) {
+            if (!err) {
+                _waitAndLoadHP35(10);
+            }
+        });
+        return;
+    }
+
     _waitAndLoadHP35(10);
 });

@@ -16,32 +16,13 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles/shared.css">
+    <script src="scripts/site-shell-config.js" defer></script>
     <script src="scripts/nav.js" defer></script>
     <link rel="stylesheet" href="styles/about_me.css">
 </head>
 
-<body>
-    <nav>
-        <a href="index.html" class="nav-brand">
-            <span class="mark"></span>
-            About Me
-        </a>
-        <ul class="nav-links">
-            <li><a href="works.html">作品總覽</a></li>
-            <li><a href="gene_ai.html">基因 AI</a></li>
-            <li><a href="ngs.html">NGS</a></li>
-            <li><a href="index.html">首頁</a></li>
-        </ul>
-        <button class="hamburger" id="hamburger" aria-label="開啟選單">
-            <span></span><span></span><span></span>
-        </button>
-    </nav>
-    <div class="nav-drawer" id="navDrawer">
-        <a href="index.html">首頁</a>
-        <a href="works.html">作品總覽</a>
-        <a href="ngs.html">NGS 定序</a>
-        <a href="gene_ai.html">基因 AI</a>
-    </div>
+<body data-page="about_me">
+    <div data-site-nav></div>
 
     <header class="hero">
         <div class="hero-wrap">
@@ -316,18 +297,7 @@
         </section>
     </main>
 
-    <footer>
-        <div>
-            <div style="font-weight:700;color:var(--text)">About Me</div>
-            <div>本地化整理自既有個人網站，與本站技術作品集同步。</div>
-        </div>
-        <div class="footer-links">
-            <a href="index.html">首頁</a>
-            <a href="works.html">作品總覽</a>
-            <a href="gene_ai.html">基因 AI</a>
-            <a href="ngs.html">NGS</a>
-        </div>
-    </footer>
+    <div data-site-footer></div>
     <script src="scripts/app-config.js"></script>
     <script src="scripts/about_me.js"></script>
 

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProteinMPNN 互動展示 | 工程 × 生醫 × AI</title>
+    <meta name="description" content="獨立的 ProteinMPNN 互動工作台，提供序列設計、PDB 結構預覽、ESMFold 與簡化 Rosetta 評分。">
+    <meta property="og:title" content="ProteinMPNN 互動展示 | 工程 × 生醫 × AI">
+    <meta property="og:description" content="將 ProteinMPNN demo 抽成獨立頁面，方便直接操作、展示與分享。">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script>
+        window._3dmolLoaded = false;
+        window._3dmolLoading = false;
+        window._3dmolLoadError = null;
+        window._3dmolCallbacks = [];
+        window._3dmolSources = [
+            'https://cdn.jsdelivr.net/npm/3dmol@2.4.2/build/3Dmol-min.js',
+            'https://unpkg.com/3dmol@2.4.2/build/3Dmol-min.js',
+            'https://3dmol.org/build/3Dmol-min.js'
+        ];
+
+        window.load3Dmol = function (callback) {
+            if (window._3dmolLoaded && typeof window.$3Dmol !== 'undefined') {
+                if (callback) callback(null, window.$3Dmol);
+                return;
+            }
+
+            if (callback) window._3dmolCallbacks.push(callback);
+
+            if (window._3dmolLoading) return;
+            window._3dmolLoading = true;
+            window._3dmolLoadError = null;
+
+            var sources = window._3dmolSources.slice();
+
+            function finish(err) {
+                window._3dmolLoading = false;
+                window._3dmolLoadError = err || null;
+                var callbacks = window._3dmolCallbacks.slice();
+                window._3dmolCallbacks.length = 0;
+                callbacks.forEach(function (cb) {
+                    try { cb(err || null, window.$3Dmol); } catch (e) { }
+                });
+            }
+
+            function tryNext() {
+                if (!sources.length) {
+                    finish(new Error('3Dmol.js 載入失敗'));
+                    return;
+                }
+
+                var src = sources.shift();
+                var s = document.createElement('script');
+                s.src = src;
+                s.async = true;
+                s.onload = function () {
+                    if (typeof window.$3Dmol === 'undefined') {
+                        tryNext();
+                        return;
+                    }
+
+                    window._3dmolLoaded = true;
+                    finish(null);
+                };
+                s.onerror = function () {
+                    s.remove();
+                    tryNext();
+                };
+                document.head.appendChild(s);
+            }
+
+            tryNext();
+        };
+    </script>
+    <link rel="stylesheet" href="styles/shared.css">
+    <script src="scripts/site-shell-config.js" defer></script>
+    <script src="scripts/nav.js" defer></script>
+    <link rel="stylesheet" href="styles/index.css">
+    <link rel="stylesheet" href="styles/index-mpnn.css">
+    <link rel="stylesheet" href="styles/protein_mpnn.css">
+</head>
+
+<body data-page="protein_mpnn">
+    <div data-site-nav></div>
+
+    <header class="demo-hero">
+        <div class="demo-hero-inner">
+            <div class="demo-hero-copy">
+                <div class="demo-kicker">Standalone Interactive Lab · Protein Design × Structure Preview</div>
+                <h1 class="demo-title">ProteinMPNN 互動展示</h1>
+                <p class="demo-sub">
+                    原本放在首頁的 ProteinMPNN 工作台現在拆成獨立頁面，將序列設計、PDB 結構預覽、ESMFold 與簡化 Rosetta 評分集中在同一個操作面，方便直接展示、分享與後續擴充。
+                </p>
+                <div class="demo-actions">
+                    <a href="#workspace" class="btn btn-primary">開始設計</a>
+                    <a href="report.html" class="btn btn-outline">看技術報告</a>
+                    <a href="demo_notebook.ipynb" class="btn btn-outline">互動筆記本</a>
+                </div>
+                <div class="demo-chip-row">
+                    <span class="demo-chip">Browser-side sampling</span>
+                    <span class="demo-chip">RCSB / ESMFold structure</span>
+                    <span class="demo-chip">Rosetta-style scoring</span>
+                </div>
+            </div>
+
+            <aside class="demo-summary-panel">
+                <div class="demo-summary-head">Workspace Snapshot</div>
+                <div class="demo-summary-grid">
+                    <div class="demo-metric">
+                        <span class="demo-metric-label">Input</span>
+                        <strong>Sequence + fixed positions</strong>
+                    </div>
+                    <div class="demo-metric">
+                        <span class="demo-metric-label">Sampling</span>
+                        <strong>BLOSUM62 × temperature softmax</strong>
+                    </div>
+                    <div class="demo-metric">
+                        <span class="demo-metric-label">Structure</span>
+                        <strong>PDB / mmCIF fallback + 3Dmol.js</strong>
+                    </div>
+                    <div class="demo-metric">
+                        <span class="demo-metric-label">Output</span>
+                        <strong>Mutation coloring + Rosetta panel</strong>
+                    </div>
+                </div>
+                <p class="demo-summary-note">
+                    結構載入流程會先嘗試站內 proxy，再備援 RCSB 的 mmCIF 與 PDB 端點。若來源回應異常，頁面會保留錯誤訊息，但不影響序列設計工作台本身使用。
+                </p>
+            </aside>
+        </div>
+    </header>
+
+    <main class="demo-main">
+        <section class="demo-context-grid">
+            <article class="demo-context-card demo-context-card-wide">
+                <div class="section-label">使用情境</div>
+                <h2 class="section-title">把設計、搜尋與結構預覽放在同一頁</h2>
+                <p class="section-sub">
+                    這個工作台適合快速展示逆折疊設計流程：先用序列或 preset 啟動設計，再即時比對結構、切換著色模式，最後用簡化能量分數做初步排序。
+                </p>
+                <div class="demo-flow-grid">
+                    <div class="demo-flow-card">
+                        <span class="demo-flow-index">01</span>
+                        <h3>輸入序列</h3>
+                        <p>支援 preset、手動輸入與固定殘基區段，直接模擬 ProteinMPNN 的設計約束。</p>
+                    </div>
+                    <div class="demo-flow-card">
+                        <span class="demo-flow-index">02</span>
+                        <h3>載入結構</h3>
+                        <p>可手動輸入 PDB ID，或讓系統嘗試從相似序列與資料庫快取自動配對。</p>
+                    </div>
+                    <div class="demo-flow-card">
+                        <span class="demo-flow-index">03</span>
+                        <h3>檢視結果</h3>
+                        <p>檢查多條設計序列、突變位置與 Rosetta 近似分數，快速做第一輪比較。</p>
+                    </div>
+                </div>
+            </article>
+
+            <article class="demo-context-card">
+                <div class="demo-side-label">What This Page Keeps</div>
+                <ul class="demo-side-list">
+                    <li>保留首頁原本的互動設計體驗，不需要跳回首頁捲動操作。</li>
+                    <li>結構視窗與結果表格同頁，分享連結時脈絡更完整。</li>
+                    <li>後續若要加 API proxy、快取或更多模型，不會再讓首頁過重。</li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="demo-workspace-heading">
+            <div class="section-label">Interactive Workspace</div>
+            <h2 class="section-title">直接操作 ProteinMPNN 工作台</h2>
+            <p class="section-sub">以下保留完整互動區塊，包含序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</p>
+        </section>
+
+        <section id="workspace" class="demo-workspace">
+            <div class="mpnn-layout">
+                <div class="mpnn-panel">
+                    <div class="mpnn-panel-title">⚙ 輸入參數</div>
+                    <div class="mpnn-field"><label class="mpnn-label">蛋白質序列 <span class="mpnn-badge">1
+                                字母代碼</span></label>
+                        <div class="mpnn-presets"><button onclick="loadPreset('hp35')">Villin HP35</button><button
+                                onclick="loadPreset('trpcage')">Trp-cage</button><button onclick="loadPreset('gb1')">GB1
+                                β-hairpin</button><button onclick="loadPreset('crambim')">Crambin</button><button
+                                onclick="loadPreset('hbb')">Hb β-chain</button>
+                        </div><textarea id="mpnnSeq" spellcheck="false"
+                            placeholder="輸入胺基酸序列，例: ACDEFGHIKLMN..."></textarea>
+                        <div class="mpnn-seq-info"><span id="mpnnLen">0 殘基</span><span id="mpnnValid"
+                                class="mpnn-valid"></span></div>
+                        <div id="seqPdbSuggest" class="seq-pdb-suggest" style="display:none"></div>
+                    </div>
+                    <div class="mpnn-field"><label class="mpnn-label">固定位置 <span class="mpnn-hint">逗號分隔，支援範圍
+                                (1-10)</span></label><input id="mpnnFixed" type="text" class="mpnn-input"
+                            placeholder="例: 1,5,10-15（空白 = 全序列設計）"></div>
+                    <div class="mpnn-field"><label class="mpnn-label">生成序列數 <span class="mpnn-val-badge"
+                                id="numSeqBadge">5</span></label><input type="range" id="mpnnNumSeq" min="1" max="10"
+                            value="5" oninput="document.getElementById('numSeqBadge').textContent=this.value">
+                        <div class="range-meta"><span>1</span><span>10</span></div>
+                    </div>
+                    <div class="mpnn-field"><label class="mpnn-label">取樣溫度 <span class="mpnn-val-badge"
+                                id="tempBadge">0.10</span></label><input type="range" id="mpnnTemp" min="0.05"
+                            max="1.50" step="0.05" value="0.10"
+                            oninput="document.getElementById('tempBadge').textContent=parseFloat(this.value).toFixed(2)">
+                        <div class="range-meta"><span>低溫 (保守)</span><span>高溫 (多樣)</span></div>
+                    </div>
+                    <div class="mpnn-field"><label class="mpnn-label">模型版本</label>
+                        <div class="mpnn-model-btns" id="modelBtns"><button class="mpnn-model-btn active"
+                                onclick="selectModel(this,'v_48_020')">v_48_020</button><button class="mpnn-model-btn"
+                                onclick="selectModel(this,'v_48_030')">v_48_030</button><button class="mpnn-model-btn"
+                                onclick="selectModel(this,'soluble')">SolubleMPNN</button>
+                        </div>
+                        <div class="mpnn-model-desc" id="modelDesc">邊緣數 48，偏差 0.2Å — 標準精確度模型（論文推薦）</div>
+                    </div><button class="mpnn-run-btn" id="mpnnRunBtn" onclick="runMPNN()"><span id="mpnnBtnText">▶
+                            設計序列</span></button>
+                </div>
+                <div class="demo-results-column">
+                    <div class="mpnn-output-panel">
+                        <div class="mpnn-panel-title">🔬 蛋白質 3D 結構預覽</div>
+                        <div class="mpnn-pdb-search"><input id="pdbIdInput" type="text" class="mpnn-pdb-input"
+                                maxlength="6" placeholder="輸入 PDB ID，例： 2GI9"
+                                oninput="this.value=this.value.toUpperCase()"
+                                onkeydown="if(event.key==='Enter')loadPdbDirect()"><button class="mpnn-pdb-btn"
+                                onclick="loadPdbDirect()">載入 →</button>
+                        </div>
+                        <div class="mpnn-pdb-tags"><span class="mpnn-pdb-tag" onclick="loadPdbById('1VII')">1VII ·
+                                HP35</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1L2Y')">1L2Y ·
+                                Trp-cage</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1PGB')">1PGB ·
+                                GB1</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1CRN')">1CRN ·
+                                Crambin</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1UBQ')">1UBQ ·
+                                Ubiquitin</span><span class="mpnn-pdb-tag" onclick="loadPdbById('4HHB')">4HHB ·
+                                血紅蛋白</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1LYZ')">1LYZ ·
+                                Lysozyme</span><span class="mpnn-pdb-tag" onclick="loadPdbById('3HHR')">3HHR ·
+                                生長激素</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1GFL')">1GFL ·
+                                GFP</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1ATP')">1ATP ·
+                                PKA</span><span class="mpnn-pdb-tag" onclick="loadPdbById('2HHB')">2HHB ·
+                                Hb脫氧</span><span class="mpnn-pdb-tag" onclick="loadPdbById('1BNA')">1BNA · DNA</span>
+                        </div>
+                        <div style="position:relative;border-radius:10px;overflow:hidden">
+                            <div id="mpnnStruct3d" style="height:340px;width:100%"></div>
+                            <div id="mpnnStructPlaceholder"
+                                style="position:absolute;inset:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center;border-radius:10px">
+                                <div style="font-size:2rem">🔬</div>
+                                <div style="font-size:.88rem;color:var(--muted)">
+                                    輸入 PDB ID 或點擊下方標籤載入結構</div>
+                                <div style="font-size:.72rem;color:var(--dim)">
+                                    支援任意公開 PDB 檔案 · 3Dmol.js 渲染引擎</div>
+                            </div>
+                        </div>
+                        <div id="mpnnStructInfo" class="mpnn-struct-info" style="display:none"></div>
+                    </div>
+
+                    <div class="mpnn-output-panel">
+                        <div class="mpnn-panel-title">📊 設計結果</div>
+                        <div id="mpnnPlaceholder" class="mpnn-placeholder">
+                            <div class="mpnn-placeholder-icon">🧬</div>
+                            <div>設定參數後點擊「設計序列」</div>
+                            <div class="mpnn-placeholder-sub">
+                                ProteinMPNN 演算法將在瀏覽器中即時執行<br>基於 BLOSUM62 × 溫度控制 Softmax 取樣
+                            </div>
+                        </div>
+                        <div id="mpnnProgress" style="display:none">
+                            <div class="mpnn-progress-label" id="mpnnProgressLabel">初始化模型...</div>
+                            <div class="mpnn-progress-bar">
+                                <div class="mpnn-progress-fill" id="mpnnProgressFill"></div>
+                            </div>
+                            <div class="mpnn-log" id="mpnnLog"></div>
+                        </div>
+                        <div id="mpnnResults" style="display:none">
+                            <div class="mpnn-stats-row">
+                                <div class="mpnn-stat-pill" id="statSeqs">-</div>
+                                <div class="mpnn-stat-pill" id="statAvgId">-</div>
+                                <div class="mpnn-stat-pill" id="statBestScore">-</div>
+                                <div class="mpnn-stat-pill" id="statTemp">-</div>
+                            </div>
+                            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+                                <button id="esmFoldBtn" onclick="toggleDesignColor(this)"
+                                    style="flex:1;min-width:190px;padding:9px 14px;background:linear-gradient(135deg,#0d1f0d,#1a3a1a);border:1px solid #3fb950;color:#3fb950;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;letter-spacing:.3px;transition:all .2s"
+                                    onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">🎨
+                                    突變著色
+                                </button><button id="rosettaBtn" onclick="showRosettaScore()"
+                                    style="flex:1;min-width:190px;padding:9px 14px;background:linear-gradient(135deg,#1f150d,#3a2a0d);border:1px solid #f0883e;color:#f0883e;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;letter-spacing:.3px;transition:opacity .2s"
+                                    onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">⚡
+                                    Rosetta 能量評分
+                                </button>
+                            </div>
+                            <div class="mpnn-table-wrap">
+                                <table class="mpnn-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>設計序列</th>
+                                            <th>序列相似度</th>
+                                            <th>平均 log-likelihood</th>
+                                            <th>3D</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="mpnnTableBody"></tbody>
+                                </table>
+                            </div>
+                            <div id="mpnnResiduePanel" class="mpnn-residue-panel" style="display:none">
+                                <div class="mpnn-residue-title">
+                                    殘基詳情 — <span id="residuePanelInfo"></span>
+                                </div>
+                                <div class="aa-legend">
+                                    <span class="aa-legend-item"><span
+                                            class="aa-chip aa-hydrophobic">A</span>疏水性</span><span
+                                        class="aa-legend-item"><span class="aa-chip aa-polar">S</span>極性</span><span
+                                        class="aa-legend-item"><span class="aa-chip aa-positive">K</span>帶正電</span><span
+                                        class="aa-legend-item"><span class="aa-chip aa-negative">D</span>帶負電</span><span
+                                        class="aa-legend-item"><span class="aa-chip aa-special">G</span>特殊</span><span
+                                        class="aa-legend-item" style="margin-left:4px;opacity:.5">虛線框=固定位置</span>
+                                </div>
+                                <div class="mpnn-seq-display" id="residueSeqDisplay"></div>
+                                <div class="mpnn-heatmap-label">
+                                    Per-residue log-likelihood 熱圖（紅=低信心 → 綠=高信心）</div>
+                                <div class="mpnn-heatmap" id="residueHeatmap"></div>
+                                <div class="mpnn-legend">
+                                    <div class="mpnn-legend-bar"></div><span>低 → 高 log-likelihood</span>
+                                </div>
+                            </div>
+                            <div id="rosettaPanel" class="rosetta-panel" style="display:none">
+                                <div style="font-size:.9rem;font-weight:600;color:var(--fg);margin-bottom:12px">
+                                    ⚡ Rosetta REF2015 能量評分（簡化版）
+                                </div>
+                                <div id="rosettaContent"></div>
+                                <div style="font-size:.68rem;color:var(--dim);margin-top:10px">
+                                    * 基於 REF2015 殘基傾向性+疏水溶解能+氫鍵估算，單位 REU。負值代表更穩定的序列。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div data-site-footer></div>
+
+    <script src="scripts/app-config.js"></script>
+    <script src="scripts/index.js"></script>
+</body>
+
+</html>

@@ -16,36 +16,14 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles/shared.css">
+    <script src="scripts/site-shell-config.js" defer></script>
     <script src="scripts/nav.js" defer></script>
     <link rel="stylesheet" href="styles/report.css">
 </head>
 
-<body>
+<body data-page="report">
     <!-- ── Nav ── -->
-    <nav>
-        <a href="index.html" class="nav-brand">
-            <span class="nav-dot"></span>&nbsp;蛋白質設計 AI
-        </a>
-        <ul class="nav-links">
-            <li><a href="index.html">首頁</a></li>
-            <li><a href="about_me.html">關於我</a></li>
-            <li><a href="works.html">作品總覽</a></li>
-            <li><a href="ngs.html">NGS</a></li>
-            <li><a href="gene_ai.html">基因 AI</a></li>
-            <li><a href="report.html" class="active">報告</a></li>
-        </ul>
-        <button class="hamburger" id="hamburger" aria-label="開啟選單">
-            <span></span><span></span><span></span>
-        </button>
-    </nav>
-    <div class="nav-drawer" id="navDrawer">
-        <a href="index.html">首頁</a>
-        <a href="about_me.html">關於我</a>
-        <a href="works.html">作品總覽</a>
-        <a href="ngs.html">NGS 定序</a>
-        <a href="gene_ai.html">基因 AI</a>
-        <a href="report.html" class="active">報告</a>
-    </div>
+    <div data-site-nav></div>
 
     <div class="container">
 
@@ -331,15 +309,7 @@ jupyter notebook demo_notebook.ipynb</code></pre>
             </div>
         </section>
 
-        <footer>
-            作為大分子 AI 演算法研究方向的技術作品集專案製作 • 2026
-            &nbsp;·&nbsp;
-            <a href="index.html" style="color:var(--teal);text-decoration:none">返回首頁</a>
-            &nbsp;·&nbsp;
-            <a href="ngs.html" style="color:var(--teal);text-decoration:none">NGS 定序</a>
-            &nbsp;·&nbsp;
-            <a href="interview_prep.html" style="color:var(--teal);text-decoration:none">面試準備</a>
-        </footer>
+        <div data-site-footer></div>
 
     </div>
 

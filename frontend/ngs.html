@@ -16,33 +16,15 @@
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="styles/shared.css">
+    <script src="scripts/site-shell-config.js" defer></script>
     <script src="scripts/nav.js" defer></script>
     <link rel="stylesheet" href="styles/ngs.css">
 </head>
 
-<body>
+<body data-page="ngs">
 
     <!-- ── Nav ── -->
-    <nav>
-        <a href="index.html" class="nav-brand">
-            <span class="dot"></span>蛋白質設計 AI
-        </a>
-        <ul class="nav-links">
-            <li><a href="about_me.html">About Me</a></li>
-            <li><a href="works.html">作品總覽</a></li>
-            <li><a href="gene_ai.html">基因 AI</a></li>
-            <li><a href="index.html">首頁</a></li>
-        </ul>
-        <button class="hamburger" id="hamburger" aria-label="開啟選單">
-            <span></span><span></span><span></span>
-        </button>
-    </nav>
-    <div class="nav-drawer" id="navDrawer">
-        <a href="index.html">首頁</a>
-        <a href="about_me.html">About Me</a>
-        <a href="works.html">作品總覽</a>
-        <a href="gene_ai.html">基因 AI</a>
-    </div>
+    <div data-site-nav></div>
 
     <!-- ── Hero ── -->
     <div class="page-hero">
@@ -713,19 +695,7 @@ gatk VariantFiltration \
     </div>
 
     <hr class="divider">
-    <footer>
-        <div>
-            <div style="font-size:.9rem;font-weight:600;color:var(--text)">NGS 實驗設計</div>
-            <div class="footer-note" style="margin-top:4px">蛋白質設計 AI Pipeline · 基因體學模組 · 2026</div>
-        </div>
-        <div class="footer-links">
-            <a href="about_me.html">About Me</a>
-            <a href="works.html">作品總覽</a>
-            <a href="index.html">← 作品集首頁</a>
-            <a href="gene_ai.html">基因 AI</a>
-            <a href="report.html">專案報告</a>
-        </div>
-    </footer>
+    <div data-site-footer></div>
 
     <!-- ── RAG Knowledge Search ── -->
     <section class="rag-section reveal">

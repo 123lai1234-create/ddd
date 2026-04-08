@@ -16,34 +16,14 @@
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="styles/shared.css">
+    <script src="scripts/site-shell-config.js" defer></script>
     <script src="scripts/nav.js" defer></script>
     <link rel="stylesheet" href="styles/thesis.css">
 </head>
 
-<body>
+<body data-page="thesis">
     <!-- Nav -->
-    <nav>
-        <a href="index.html" class="nav-brand">
-            <span class="nav-dot"></span>&nbsp;交易策略研究
-        </a>
-        <ul class="nav-links">
-            <li><a href="index.html">首頁</a></li>
-            <li><a href="about_me.html">About Me</a></li>
-            <li><a href="works.html">作品總覽</a></li>
-            <li><a href="ngs.html">NGS</a></li>
-            <li><a href="gene_ai.html">基因 AI</a></li>
-        </ul>
-        <button class="hamburger" id="hamburger" aria-label="開啟選單">
-            <span></span><span></span><span></span>
-        </button>
-    </nav>
-    <div class="nav-drawer" id="navDrawer">
-        <a href="index.html">首頁</a>
-        <a href="about_me.html">About Me</a>
-        <a href="works.html">作品總覽</a>
-        <a href="ngs.html">NGS 定序</a>
-        <a href="gene_ai.html">基因 AI</a>
-    </div>
+    <div data-site-nav></div>
 
     <!-- Hero -->
     <header class="hero">
@@ -312,15 +292,7 @@
         </div>
     </div>
 
-    <footer>
-        碩士論文互動展示 · 電資工程研究所 · 利用遺傳演算法於利潤價格分布為基礎的交易策略最佳化技術之研究
-        &nbsp;·&nbsp;
-        <a href="index.html">返回首頁</a>
-        &nbsp;·&nbsp;
-        <a href="works.html">作品總覽</a>
-        &nbsp;·&nbsp;
-        <a href="about_me.html">About Me</a>
-    </footer>
+    <div data-site-footer></div>
 
     <button class="scroll-top" aria-label="返回頂部">↑</button>
 

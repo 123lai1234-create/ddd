@@ -1,0 +1,262 @@
+window.SITE_SHELL_CONFIG = {
+    index: {
+        brandHref: 'index.html',
+        brandHtml: '<span class="dot"></span>工程 × 生醫 AI',
+        navLinks: [
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'ngs.html', label: 'NGS 定序' },
+            { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'protein_mpnn.html', label: '互動展示', classes: 'nav-cta' }
+        ],
+        drawerLinks: [
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'ngs.html', label: 'NGS 定序' },
+            { href: 'gene_ai.html', label: '基因 AI 平台' },
+            { href: 'report.html', label: '專案報告' },
+            { href: 'protein_mpnn.html', label: '互動展示' }
+        ],
+        footer: {
+            variant: 'standard',
+            titleHtml: '<div class="footer-brand">工程 × 生醫 × AI 作品集</div>',
+            noteHtml: '<div class="footer-note">個人品牌、本地作品頁與技術平台整合版 · 2026</div>',
+            links: [
+                { href: 'about_me.html', label: 'About Me' },
+                { href: 'works.html', label: '作品總覽' },
+                { href: 'protein_mpnn.html', label: '互動展示' },
+                { href: 'demo_notebook.ipynb', label: '互動筆記本' },
+                { href: 'report.html', label: '專案報告' },
+                { href: 'https://jtlai0921.wixsite.com/mysite', label: '個人網站', target: '_blank', rel: 'noreferrer' },
+                { href: 'gene_ai.html', label: '基因 AI 平台' },
+                { href: 'README.md', label: 'README' }
+            ]
+        }
+    },
+    about_me: {
+        brandHref: 'index.html',
+        brandHtml: '<span class="mark"></span>About Me',
+        navLinks: [
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'ngs.html', label: 'NGS' },
+            { href: 'index.html', label: '首頁' }
+        ],
+        drawerLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'ngs.html', label: 'NGS 定序' },
+            { href: 'gene_ai.html', label: '基因 AI' }
+        ],
+        footer: {
+            variant: 'standard',
+            titleHtml: '<div style="font-weight:700;color:var(--text)">About Me</div>',
+            noteHtml: '<div>本地化整理自既有個人網站，與本站技術作品集同步。</div>',
+            links: [
+                { href: 'index.html', label: '首頁' },
+                { href: 'works.html', label: '作品總覽' },
+                { href: 'gene_ai.html', label: '基因 AI' },
+                { href: 'ngs.html', label: 'NGS' }
+            ]
+        }
+    },
+    works: {
+        brandHref: 'index.html',
+        brandHtml: '<span class="nav-dot"></span>作品總覽',
+        navLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'ngs.html', label: 'NGS' },
+            { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'thesis.html', label: '論文展示' }
+        ],
+        drawerLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'ngs.html', label: 'NGS 定序' },
+            { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'thesis.html', label: '論文展示' }
+        ],
+        footer: {
+            variant: 'standard',
+            titleHtml: '<div style="font-weight:700;color:var(--text)">作品總覽</div>',
+            noteHtml: '<div>本地整理版，串起個人網站既有作品與本站新建立的 AI 頁面。</div>',
+            links: [
+                { href: 'about_me.html', label: 'About Me' },
+                { href: 'index.html', label: '首頁' },
+                { href: 'gene_ai.html', label: '基因 AI' },
+                { href: 'ngs.html', label: 'NGS' }
+            ]
+        }
+    },
+    gene_ai: {
+        brandHref: 'index.html',
+        brandHtml: '<span class="mark"></span>Genome AI Studio',
+        navLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'ngs.html', label: 'NGS' },
+            { href: 'protein_mpnn.html', label: '互動展示', classes: 'nav-cta' }
+        ],
+        drawerLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'ngs.html', label: 'NGS 定序' },
+            { href: '#sequence-vault', label: 'Live · 序列資料庫' },
+            { href: '#knowledge-vault', label: 'Live · 知識檢索' },
+            { href: '#studio', label: 'Demo · 設計工作台' },
+            { href: '#guides', label: 'Demo · CRISPR 排序' },
+            { href: '#variants', label: 'Demo · 變異解讀' }
+        ],
+        footer: {
+            variant: 'standard',
+            titleHtml: '<div class="footer-brand">基因 AI 設計平台</div>',
+            noteHtml: '<div>Genome foundation models · regulatory design · variant interpretation · creator portfolio</div>',
+            links: [
+                { href: 'about_me.html', label: 'About Me' },
+                { href: 'works.html', label: '作品總覽' },
+                { href: 'index.html', label: '蛋白質 AI 首頁' },
+                { href: 'ngs.html', label: 'NGS 頁面' },
+                { href: 'report.html', label: '專案報告' },
+                { href: 'https://jtlai0921.wixsite.com/mysite', label: '個人網站', target: '_blank', rel: 'noreferrer' }
+            ]
+        }
+    },
+    ngs: {
+        brandHref: 'index.html',
+        brandHtml: '<span class="dot"></span>蛋白質設計 AI',
+        navLinks: [
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'index.html', label: '首頁' }
+        ],
+        drawerLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'gene_ai.html', label: '基因 AI' }
+        ],
+        footer: {
+            variant: 'standard',
+            titleHtml: '<div style="font-size:.9rem;font-weight:600;color:var(--text)">NGS 實驗設計</div>',
+            noteHtml: '<div class="footer-note">蛋白質設計 AI Pipeline · 基因體學模組 · 2026</div>',
+            links: [
+                { href: 'about_me.html', label: 'About Me' },
+                { href: 'works.html', label: '作品總覽' },
+                { href: 'index.html', label: '← 作品集首頁' },
+                { href: 'gene_ai.html', label: '基因 AI' },
+                { href: 'report.html', label: '專案報告' }
+            ]
+        }
+    },
+    protein_mpnn: {
+        brandHref: 'index.html',
+        brandHtml: '<span class="dot"></span>ProteinMPNN Demo',
+        navLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'report.html', label: '專案報告' },
+            { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'demo_notebook.ipynb', label: '互動筆記本', classes: 'nav-cta' }
+        ],
+        drawerLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'report.html', label: '專案報告' },
+            { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'ngs.html', label: 'NGS 定序' },
+            { href: 'demo_notebook.ipynb', label: '互動筆記本' }
+        ],
+        footer: {
+            variant: 'standard',
+            titleHtml: '<div class="footer-brand">ProteinMPNN Interactive Workspace</div>',
+            noteHtml: '<div class="footer-note">獨立工作台頁面 · 結合序列設計、結構預覽與初步評分</div>',
+            links: [
+                { href: 'index.html', label: '首頁' },
+                { href: 'works.html', label: '作品總覽' },
+                { href: 'report.html', label: '專案報告' },
+                { href: 'demo_notebook.ipynb', label: '互動筆記本' },
+                { href: 'gene_ai.html', label: '基因 AI 平台' },
+                { href: 'README.md', label: 'README' }
+            ]
+        }
+    },
+    report: {
+        brandHref: 'index.html',
+        brandHtml: '<span class="nav-dot"></span>蛋白質設計 AI',
+        navLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'about_me.html', label: '關於我' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'ngs.html', label: 'NGS' },
+            { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'report.html', label: '報告', classes: 'active' }
+        ],
+        drawerLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'about_me.html', label: '關於我' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'ngs.html', label: 'NGS 定序' },
+            { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'report.html', label: '報告', classes: 'active' }
+        ],
+        footer: {
+            variant: 'inline',
+            noteHtml: '作為大分子 AI 演算法研究方向的技術作品集專案製作 • 2026',
+            links: [
+                { href: 'index.html', label: '返回首頁', style: 'color:var(--teal);text-decoration:none' },
+                { href: 'ngs.html', label: 'NGS 定序', style: 'color:var(--teal);text-decoration:none' },
+                { href: 'interview_prep.html', label: '面試準備', style: 'color:var(--teal);text-decoration:none' }
+            ]
+        }
+    },
+    thesis: {
+        brandHref: 'index.html',
+        brandHtml: '<span class="nav-dot"></span>交易策略研究',
+        navLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'ngs.html', label: 'NGS' },
+            { href: 'gene_ai.html', label: '基因 AI' }
+        ],
+        drawerLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'ngs.html', label: 'NGS 定序' },
+            { href: 'gene_ai.html', label: '基因 AI' }
+        ],
+        footer: {
+            variant: 'inline',
+            noteHtml: '碩士論文互動展示 · 電資工程研究所 · 利用遺傳演算法於利潤價格分布為基礎的交易策略最佳化技術之研究',
+            links: [
+                { href: 'index.html', label: '返回首頁' },
+                { href: 'works.html', label: '作品總覽' },
+                { href: 'about_me.html', label: 'About Me' }
+            ]
+        }
+    },
+    interview_prep: {
+        brandHref: 'index.html',
+        brandHtml: '<span class="nav-dot"></span>蛋白質設計 AI',
+        navLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'ngs.html', label: 'NGS' },
+            { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'interview_prep.html', label: '面試', classes: 'active' }
+        ],
+        drawerLinks: [
+            { href: 'index.html', label: '首頁' },
+            { href: 'about_me.html', label: 'About Me' },
+            { href: 'works.html', label: '作品總覽' },
+            { href: 'ngs.html', label: 'NGS 定序' },
+            { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'interview_prep.html', label: '面試準備', classes: 'active' }
+        ]
+    }
+};
