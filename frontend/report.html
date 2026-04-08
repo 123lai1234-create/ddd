@@ -4,12 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Protein Design AI — Project Report</title>
-    <meta name="description"
-        content="蛋白質 AI Pipeline 完整報告——ESM-2 嵌入、Bayesian Optimization、REINFORCE RL、ProteinMPNN 架構與實驗結果。">
-    <meta property="og:title" content="Protein Design AI — Project Report">
+    <title>蛋白質設計 AI — 專案報告</title>
+    <meta name="description" content="蛋白質 AI Pipeline 完整報告，涵蓋 ESM-2 嵌入、貝葉斯最佳化、REINFORCE 強化學習、ProteinMPNN 架構與實驗結果。">
+    <meta property="og:title" content="蛋白質設計 AI — 專案報告">
     <meta property="og:description"
-        content="蛋白質 AI Pipeline 完整報告——ESM-2 嵌入、Bayesian Optimization、REINFORCE RL、ProteinMPNN 架構與實驗結果。">
+        content="蛋白質 AI Pipeline 完整報告，涵蓋 ESM-2 嵌入、貝葉斯最佳化、REINFORCE 強化學習、ProteinMPNN 架構與實驗結果。">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,7 +28,7 @@
         </a>
         <ul class="nav-links">
             <li><a href="index.html">首頁</a></li>
-            <li><a href="about_me.html">About Me</a></li>
+            <li><a href="about_me.html">關於我</a></li>
             <li><a href="works.html">作品總覽</a></li>
             <li><a href="ngs.html">NGS</a></li>
             <li><a href="gene_ai.html">基因 AI</a></li>
@@ -41,7 +40,7 @@
     </nav>
     <div class="nav-drawer" id="navDrawer">
         <a href="index.html">首頁</a>
-        <a href="about_me.html">About Me</a>
+        <a href="about_me.html">關於我</a>
         <a href="works.html">作品總覽</a>
         <a href="ngs.html">NGS 定序</a>
         <a href="gene_ai.html">基因 AI</a>
@@ -52,8 +51,8 @@
 
         <!-- Header -->
         <header class="reveal">
-            <h1>Protein Design <span>AI Pipeline</span></h1>
-            <p>ESM-2 × Bayesian Optimisation × ProteinMPNN × REINFORCE RL</p>
+            <h1>蛋白質設計 <span>AI Pipeline</span></h1>
+            <p>ESM-2 × 貝葉斯最佳化 × ProteinMPNN × REINFORCE 強化學習</p>
             <div class="badges">
                 <span class="badge">PyTorch</span>
                 <span class="badge">HuggingFace Transformers</span>
@@ -65,147 +64,146 @@
 
         <!-- Pipeline -->
         <section class="reveal">
-            <h2>Pipeline Architecture</h2>
+            <h2>Pipeline 架構</h2>
             <div class="pipeline">
                 <div class="pipe-step">
                     <div class="icon">🧬</div>
-                    <div class="label">Protein Sequences</div>
-                    <div class="sub">Demo / ProteinGym</div>
+                    <div class="label">蛋白質序列</div>
+                    <div class="sub">示範資料 / ProteinGym</div>
                 </div>
                 <div class="pipe-arrow">→</div>
                 <div class="pipe-step">
                     <div class="icon">🤖</div>
                     <div class="label">ESM-2 8M</div>
-                    <div class="sub">320-D embedding</div>
+                    <div class="sub">320 維嵌入</div>
                 </div>
                 <div class="pipe-arrow">→</div>
                 <div class="pipe-step">
                     <div class="icon">🧠</div>
-                    <div class="label">MLP Surrogate</div>
-                    <div class="sub">Fitness predictor</div>
+                    <div class="label">MLP 代理模型</div>
+                    <div class="sub">適應度預測器</div>
                 </div>
                 <div class="pipe-arrow">⤵</div>
                 <div class="pipe-step">
                     <div class="icon">📈</div>
-                    <div class="label">Bayesian Opt</div>
+                    <div class="label">貝葉斯最佳化</div>
                     <div class="sub">GP + LogEI</div>
                 </div>
                 <div class="pipe-arrow">|</div>
                 <div class="pipe-step">
                     <div class="icon">🕸</div>
                     <div class="label">ProteinMPNN</div>
-                    <div class="sub">Graph NN design</div>
+                    <div class="sub">圖神經網路設計</div>
                 </div>
                 <div class="pipe-arrow">|</div>
                 <div class="pipe-step">
                     <div class="icon">🎯</div>
                     <div class="label">REINFORCE RL</div>
-                    <div class="sub">LSTM policy</div>
+                    <div class="sub">LSTM 策略網路</div>
                 </div>
             </div>
         </section>
 
         <!-- Key Results -->
         <section class="reveal">
-            <h2>Key Results</h2>
+            <h2>關鍵實驗結果</h2>
             <div class="results-grid">
                 <div class="metric-card">
                     <div class="metric-val">320-D</div>
-                    <div class="metric-label">ESM-2 Embedding Dimension</div>
-                    <div class="metric-detail">8M params, pre-trained on 250M sequences via MLM</div>
+                    <div class="metric-label">ESM-2 嵌入維度</div>
+                    <div class="metric-detail">8M 參數，以 2.5 億序列透過 MLM 預訓練</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-val">81.9%</div>
-                    <div class="metric-label">PCA 8D Variance Explained</div>
-                    <div class="metric-detail">Enables numerically stable GP covariance matrix</div>
+                    <div class="metric-label">PCA 8D 解釋變異量</div>
+                    <div class="metric-detail">使 GP 協方差矩陣數值穩定</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-val">+16.6%</div>
-                    <div class="metric-label">Fitness Improvement (BO)</div>
-                    <div class="metric-detail">0.209 → 0.243 in 15 iterations (qLogEI)</div>
+                    <div class="metric-label">適應度提升（貝葉斯最佳化）</div>
+                    <div class="metric-detail">0.209 → 0.243，15 次迭代（qLogEI）</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-val">✓ Conv.</div>
-                    <div class="metric-label">RL Policy Convergence</div>
-                    <div class="metric-detail">REINFORCE + teacher-forcing, 20 episodes</div>
+                    <div class="metric-val">✓ 收斂</div>
+                    <div class="metric-label">強化學習策略收斂</div>
+                    <div class="metric-detail">REINFORCE + 教師強制，20 回合</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-val">✓ Conv.</div>
-                    <div class="metric-label">ProteinMPNN Loss</div>
-                    <div class="metric-detail">k-NN Cα graph, scatter-add message passing</div>
+                    <div class="metric-val">✓ 收斂</div>
+                    <div class="metric-label">ProteinMPNN 損失收斂</div>
+                    <div class="metric-detail">k-NN Cα 圖，scatter-add 訊息傳遞</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-val">&lt;2 min</div>
-                    <div class="metric-label">Full Pipeline Runtime</div>
-                    <div class="metric-detail">CPU only, reproducible, after ESM-2 download</div>
+                    <div class="metric-val">&lt;2 分鐘</div>
+                    <div class="metric-label">完整 Pipeline 執行時間</div>
+                    <div class="metric-detail">僅需 CPU，可重現，ESM-2 下載後</div>
                 </div>
             </div>
         </section>
 
         <!-- Output Images -->
         <section class="reveal">
-            <h2>Visual Results</h2>
+            <h2>視覺化結果</h2>
             <div class="img-grid">
                 <div class="img-card">
-                    <img src="outputs/results_esm2.png" alt="BO Pipeline Results"
+                    <img src="outputs/results_esm2.png" alt="貝葉斯最佳化結果"
                         onerror="this.style.display='none';this.nextSibling.style.display='block'">
                     <div style="display:none;padding:40px;text-align:center;color:#555;">results_esm2.png</div>
-                    <div class="cap">Bayesian Optimisation: training loss, surrogate predictions, and BO fitness curve
-                    </div>
+                    <div class="cap">貝葉斯最佳化：訓練損失、代理模型預測與 BO 適應度曲線</div>
                 </div>
                 <div class="img-card">
-                    <img src="outputs/rl_training.png" alt="RL Reward Curve"
+                    <img src="outputs/rl_training.png" alt="RL 獎勵曲線"
                         onerror="this.style.display='none';this.nextSibling.style.display='block'">
                     <div style="display:none;padding:40px;text-align:center;color:#555;">rl_training.png</div>
-                    <div class="cap">REINFORCE RL: multi-objective reward over training episodes</div>
+                    <div class="cap">REINFORCE RL：多目標獎勵隨訓練回合的變化</div>
                 </div>
                 <div class="img-card">
-                    <img src="outputs/mpnn_loss.png" alt="ProteinMPNN Loss"
+                    <img src="outputs/mpnn_loss.png" alt="ProteinMPNN 損失"
                         onerror="this.style.display='none';this.nextSibling.style.display='block'">
                     <div style="display:none;padding:40px;text-align:center;color:#555;">mpnn_loss.png</div>
-                    <div class="cap">ProteinMPNN: cross-entropy training loss over steps</div>
+                    <div class="cap">ProteinMPNN：交叉熵訓練損失隨步驟的收斂情形</div>
                 </div>
             </div>
         </section>
 
         <!-- Core Algorithms -->
         <section class="reveal">
-            <h2>Core Algorithms</h2>
+            <h2>核心演算法</h2>
             <div class="algo-grid">
                 <div class="algo-card">
-                    <h3>ESM-2 Mean Pooling</h3>
+                    <h3>ESM-2 平均池化</h3>
                     <div class="math-block">z = Σ(mₜ · hₜ) / Σ mₜ</div>
                     <ul>
-                        <li>Masked Language Modelling pre-training</li>
-                        <li>Evolutionary co-variation captured</li>
-                        <li>Zero-shot transfer to fitness prediction</li>
+                        <li>遮蔽語言模型（MLM）預訓練</li>
+                        <li>捕捉演化共變異資訊</li>
+                        <li>零樣本遷移至適應度預測</li>
                     </ul>
                 </div>
                 <div class="algo-card">
-                    <h3>Bayesian Optimisation</h3>
+                    <h3>貝葉斯最佳化</h3>
                     <div class="math-block">α(x) = log E[max(f(x)−f*, 0)]</div>
                     <ul>
-                        <li>GP surrogate in PCA-reduced space</li>
-                        <li>qLogExpectedImprovement (BoTorch)</li>
-                        <li>Sample-efficient: &lt;20 oracle calls needed</li>
+                        <li>PCA 降維空間中的 GP 代理模型</li>
+                        <li>qLogExpectedImprovement（BoTorch）</li>
+                        <li>樣本效率高：&lt;20 次 oracle 查詢</li>
                     </ul>
                 </div>
                 <div class="algo-card">
                     <h3>ProteinMPNN</h3>
                     <div class="math-block">h⁽ˡ⁺¹⁾ = LN(h⁽ˡ⁾ + ReLU(Wₒ · Σ φ(h,e)))</div>
                     <ul>
-                        <li>k-NN graph on Cα coordinates</li>
-                        <li>19-D edge features (distance + direction)</li>
-                        <li>Cross-entropy objective per residue</li>
+                        <li>基於 Cα 座標的 k-NN 圖</li>
+                        <li>19 維邊特徵（距離 + 方向）</li>
+                        <li>逐殘基交叉熵目標函數</li>
                     </ul>
                 </div>
                 <div class="algo-card">
-                    <h3>REINFORCE RL</h3>
+                    <h3>REINFORCE 強化學習</h3>
                     <div class="math-block">∇J(θ) = E[∇log π(a|s) · Gₜ]</div>
                     <ul>
-                        <li>LSTM autoregressive policy</li>
-                        <li>Teacher-forcing log-prob computation</li>
-                        <li>Multi-objective reward (stability + hydrophobic + charged)</li>
+                        <li>LSTM 自迴歸策略網路</li>
+                        <li>教師強制對數機率計算</li>
+                        <li>多目標獎勵（穩定性 + 疏水性 + 帶電性）</li>
                     </ul>
                 </div>
             </div>
@@ -213,64 +211,64 @@
 
         <!-- Module Overview -->
         <section class="reveal">
-            <h2>Codebase Structure</h2>
+            <h2>程式結構</h2>
             <table class="mod-table">
                 <thead>
                     <tr>
-                        <th>Module</th>
-                        <th>Purpose</th>
-                        <th>Key API</th>
-                        <th>Status</th>
+                        <th>模組</th>
+                        <th>用途</th>
+                        <th>主要 API</th>
+                        <th>狀態</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td><code>src/embeddings.py</code></td>
-                        <td>ESM-2 feature extraction, lazy load, batched inference, mean pooling</td>
+                        <td>ESM-2 特徵抽取、延遲載入、批次推論與平均池化</td>
                         <td><span class="tag">ESM2Embedder.transform(seqs)</span></td>
-                        <td class="status">✅ Tested</td>
+                        <td class="status">✅ 已測試</td>
                     </tr>
                     <tr>
                         <td><code>src/predictor.py</code></td>
-                        <td>MLP surrogate (LayerNorm + Dropout), AdamW training, evaluate with Pearson / Spearman</td>
+                        <td>MLP 代理模型（LayerNorm + Dropout）、AdamW 訓練，並以 Pearson / Spearman 評估</td>
                         <td><span class="tag">PredictorTrainer.fit()</span> <span class="tag">.evaluate()</span></td>
-                        <td class="status">✅ Tested</td>
+                        <td class="status">✅ 已測試</td>
                     </tr>
                     <tr>
                         <td><code>src/bayes_opt.py</code></td>
-                        <td>Gaussian Process + qLogEI, PCA dimensionality reduction, BoTorch integration</td>
+                        <td>高斯過程 + qLogEI、PCA 降維與 BoTorch 整合</td>
                         <td><span class="tag">BayesianOptimizer.run(n_iter)</span></td>
-                        <td class="status">✅ Tested</td>
+                        <td class="status">✅ 已測試</td>
                     </tr>
                     <tr>
                         <td><code>src/protein_mpnn.py</code></td>
-                        <td>k-NN Cα graph builder, MessagePassingLayer, cross-entropy training</td>
+                        <td>k-NN Cα 圖建構器、MessagePassingLayer 與交叉熵訓練</td>
                         <td><span class="tag">ProteinMPNNTrainer.train_demo()</span></td>
-                        <td class="status">✅ Tested</td>
+                        <td class="status">✅ 已測試</td>
                     </tr>
                     <tr>
                         <td><code>src/rl_reinforce.py</code></td>
-                        <td>LSTM policy, REINFORCE update, multi-objective reward, teacher-forcing grad</td>
+                        <td>LSTM 策略網路、REINFORCE 更新、多目標獎勵與教師強制梯度</td>
                         <td><span class="tag">REINFORCETrainer.run(episodes)</span></td>
-                        <td class="status">✅ Tested</td>
+                        <td class="status">✅ 已測試</td>
                     </tr>
                     <tr>
                         <td><code>src/data_prep.py</code></td>
-                        <td>Synthetic demo data generator + ProteinGym CSV loader</td>
+                        <td>合成示範資料產生器 + ProteinGym CSV 載入器</td>
                         <td><span class="tag">make_demo_data(n, seq_len)</span></td>
-                        <td class="status">✅ Tested</td>
+                        <td class="status">✅ 已測試</td>
                     </tr>
                     <tr>
                         <td><code>run_pipeline.py</code></td>
-                        <td>CLI entry point, orchestrates all modules</td>
+                        <td>CLI 入口，協調所有模組執行</td>
                         <td><span class="tag">--mode all/bo/rl/mpnn</span></td>
-                        <td class="status">✅ Tested</td>
+                        <td class="status">✅ 已測試</td>
                     </tr>
                     <tr>
                         <td><code>demo_notebook.ipynb</code></td>
-                        <td>Interview live demo — step-by-step walkthrough with inline plots</td>
-                        <td><span class="tag">Jupyter Notebook</span></td>
-                        <td class="status">✅ Ready</td>
+                        <td>面試現場示範，含逐步說明與內嵌圖表</td>
+                        <td><span class="tag">Jupyter 筆記本</span></td>
+                        <td class="status">✅ 可用</td>
                     </tr>
                 </tbody>
             </table>
@@ -278,63 +276,63 @@
 
         <!-- How to Run -->
         <section class="reveal">
-            <h2>Quick Start</h2>
-            <pre><code># Install dependencies (~2 min)
+            <h2>快速開始</h2>
+            <pre><code># 安裝相依套件（約 2 分鐘）
 pip install -r requirements.txt
 
-# Full pipeline with real ESM-2 embeddings (downloads ~30 MB on first run)
+# 以真實 ESM-2 嵌入執行完整 pipeline（首次會下載約 30 MB）
 python run_pipeline.py --mode all
 
-# Individual modes
+# 個別模組模式
 python run_pipeline.py --mode bo    --epochs 100 --bo-iters 20
 python run_pipeline.py --mode rl    --rl-episodes 50
 python run_pipeline.py --mode mpnn
 
-# Interactive live demo (Jupyter)
+# 互動式示範（Jupyter）
 jupyter notebook demo_notebook.ipynb</code></pre>
         </section>
 
         <!-- Discussion Points -->
         <section class="reveal">
-            <h2>Discussion Points for Interview</h2>
+            <h2>面試可討論重點</h2>
             <div class="algo-grid">
                 <div class="algo-card">
-                    <h3>Why ESM-2 over one-hot?</h3>
+                    <h3>為什麼選 ESM-2，而不是獨熱編碼？</h3>
                     <ul>
-                        <li>Captures long-range co-evolution (MSA-free)</li>
-                        <li>Implicit structure knowledge from pre-training</li>
-                        <li>Transfer learning reduces labelled data requirement</li>
+                        <li>可捕捉長距離共演化訊號，且不依賴 MSA</li>
+                        <li>預訓練過程中隱含學到結構知識</li>
+                        <li>遷移學習可降低標註資料需求</li>
                     </ul>
                 </div>
                 <div class="algo-card">
-                    <h3>Why PCA before GP?</h3>
+                    <h3>為什麼在 GP 前先做 PCA？</h3>
                     <ul>
-                        <li>320-D GP covariance is ill-conditioned</li>
-                        <li>8-D retains 81.9% variance, well-conditioned</li>
-                        <li>Reduces computational cost O(n³ → n·d²)</li>
+                        <li>320 維輸入下的 GP 協方差矩陣容易病態</li>
+                        <li>8 維仍保留 81.9% 變異量，數值條件更穩定</li>
+                        <li>可降低計算成本，從 O(n^3) 壓到較可控的低維運算</li>
                     </ul>
                 </div>
                 <div class="algo-card">
-                    <h3>REINFORCE vs PPO?</h3>
+                    <h3>REINFORCE 和 PPO 差在哪裡？</h3>
                     <ul>
-                        <li>REINFORCE: simple, exact PG, high variance</li>
-                        <li>PPO: clipped surrogate, much lower variance</li>
-                        <li>For production: PPO / SAC preferred; REINFORCE good for prototyping</li>
+                        <li>REINFORCE：簡單、屬於精確策略梯度，但變異較高</li>
+                        <li>PPO：使用截斷代理目標，訓練通常更穩定</li>
+                        <li>若要產品化通常更偏向 PPO / SAC；REINFORCE 適合原型驗證</li>
                     </ul>
                 </div>
                 <div class="algo-card">
-                    <h3>Wet-lab integration?</h3>
+                    <h3>如何接進濕實驗驗證？</h3>
                     <ul>
-                        <li>Use BO to select top-k sequences per round</li>
-                        <li>Query assay → add to GP training set</li>
-                        <li>Iterate: active learning loop (Bayesian optimization)</li>
+                        <li>每一輪先用 BO 挑出 top-k 序列</li>
+                        <li>將 assay 結果回填到 GP 訓練集</li>
+                        <li>反覆迭代成主動學習閉環，也就是貝葉斯最佳化流程</li>
                     </ul>
                 </div>
             </div>
         </section>
 
         <footer>
-            Built as a technical portfolio project for 大分子 AI 演算法研究 • 2026
+            作為大分子 AI 演算法研究方向的技術作品集專案製作 • 2026
             &nbsp;·&nbsp;
             <a href="index.html" style="color:var(--teal);text-decoration:none">返回首頁</a>
             &nbsp;·&nbsp;
