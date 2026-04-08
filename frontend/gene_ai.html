@@ -42,11 +42,11 @@
         <a href="about_me.html">About Me</a>
         <a href="works.html">作品總覽</a>
         <a href="ngs.html">NGS 定序</a>
-        <a href="#sequence-vault">序列資料庫</a>
-        <a href="#knowledge-vault">知識檢索</a>
-        <a href="#studio">設計工作台</a>
-        <a href="#guides">CRISPR 排序</a>
-        <a href="#variants">變異解讀</a>
+        <a href="#sequence-vault">Live · 序列資料庫</a>
+        <a href="#knowledge-vault">Live · 知識檢索</a>
+        <a href="#studio">Demo · 設計工作台</a>
+        <a href="#guides">Demo · CRISPR 排序</a>
+        <a href="#variants">Demo · 變異解讀</a>
     </div>
 
     <header class="hero">
@@ -237,66 +237,18 @@
             </div>
         </section>
 
-        <section id="profile" class="section">
-            <div class="section-head">
+        <section class="section interface-group">
+            <div class="interface-group-card interface-group-card-live">
                 <div>
-                    <div class="section-label">Builder Context</div>
-                    <h2 class="section-title">為什麼這個頁面不只是概念稿，而是能往產品走的原型</h2>
+                    <div class="section-label">Interactive Group A</div>
+                    <h2 class="section-title">Live Data Interfaces</h2>
                     <p class="section-sub">
-                        這一段保留創作者脈絡，但語氣改成 builder context：說明這個 Gene AI 首頁背後，為什麼同時有工程、資料、介面與生醫研究能力可以往下落地。
+                        這一組真的會打後端 API、同步公開資料源、讀寫 Render / Postgres，屬於可運作的資料層工作台。
                     </p>
                 </div>
-                <div class="section-badge badge-architecture">Builder-to-Product Story</div>
-            </div>
-
-            <div class="summary-strip">
-                <div class="summary-card">
-                    <div class="k">背景</div>
-                    <div class="v">工程 × 生醫雙碩士</div>
-                </div>
-                <div class="summary-card">
-                    <div class="k">工程經歷</div>
-                    <div class="v">前後端介面 / App 開發</div>
-                </div>
-                <div class="summary-card">
-                    <div class="k">研究經歷</div>
-                    <div class="v">生物醫學研究與 NGS 應用</div>
-                </div>
-            </div>
-
-            <div class="detail-grid" style="margin-top:14px">
-                <div class="detail-card">
-                    <div class="detail-head">Personal Site Summary</div>
-                    <div class="detail-title">從個人履歷站延伸出平台型作品</div>
-                    <div class="detail-copy">
-                        您的個人網站提到前後端開發、生物醫學研究、臨床與醫藥相關訓練，以及曾協助團隊取得國家新創獎與 2 項發明專利。這讓這個基因 AI
-                        頁不只是概念頁，而是能回扣到一位真正做過工程、研究與產品落地整合的人。
-                    </div>
-                    <div class="detail-list">
-                        <div class="detail-item">網站與應用程式經驗，支撐了這個頁面的互動工作台形式。</div>
-                        <div class="detail-item">NGS 與生物醫學背景，讓變異解讀與基因設計模組不只是空泛術語。</div>
-                        <div class="detail-item">自動化與資料系統作品，補上平台化落地所需的流程與工具思維。</div>
-                    </div>
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-                        <a href="about_me.html" class="btn btn-secondary">本地 About Me</a>
-                        <a href="works.html" class="btn btn-secondary">本地作品總覽</a>
-                        <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer"
-                            class="btn btn-secondary">個人網站首頁</a>
-                        <a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer"
-                            class="btn btn-secondary">About Me</a>
-                        <a href="https://jtlai0921.wixsite.com/mysite/research-blog" target="_blank" rel="noreferrer"
-                            class="btn btn-secondary">Research Blog</a>
-                    </div>
-                </div>
-                <div class="detail-card">
-                    <div class="detail-head">Featured Works</div>
-                    <div class="detail-title">和這個平台最能接軌的既有作品</div>
-                    <div class="detail-list">
-                        <div class="detail-item">「次世代定序法」NGS 工作站：直接補強本站的 NGS 與基因分析敘事。</div>
-                        <div class="detail-item">自動化機器手臂操作介面：把實驗室設備操作與工作流程 UI 經驗帶進平台設計。</div>
-                        <div class="detail-item">簡易健康檢測 APP：展現醫療場景產品化與互動設計能力。</div>
-                        <div class="detail-item">資料管理系統：對應 AI 平台後台、資料治理與結果管理需求。</div>
-                    </div>
+                <div class="group-chip-row">
+                    <a href="#sequence-vault" class="group-chip group-chip-live">Sequence Vault</a>
+                    <a href="#knowledge-vault" class="group-chip group-chip-live">Knowledge Vault</a>
                 </div>
             </div>
         </section>
@@ -304,7 +256,7 @@
         <section id="sequence-vault" class="section">
             <div class="section-head">
                 <div>
-                    <div class="section-label">Sequence Vault</div>
+                    <div class="section-label">Live Interface · Data Cache</div>
                     <h2 class="section-title">把公開蛋白質與基因序列爬進 DB，直接在平台內動態展示</h2>
                     <p class="section-sub">
                         這個模組會從 UniProt 與 Ensembl 抓取 protein / gene sequence，寫進 Render PostgreSQL，之後頁面就直接從 DB
@@ -399,7 +351,7 @@
         <section id="knowledge-vault" class="section">
             <div class="section-head">
                 <div>
-                    <div class="section-label">Knowledge Vault</div>
+                    <div class="section-label">Live Interface · Evidence Cache</div>
                     <h2 class="section-title">把 UniProt 註釋與 PubMed 摘要整理成可查詢、可匯出的知識庫</h2>
                     <p class="section-sub">
                         這個模組把蛋白質功能註釋和 NCBI 文獻摘要存進 Render PostgreSQL，再整理成 RAG-ready documents。前端可直接搜尋證據，後端可直接輸出 chunk 與
@@ -495,10 +447,27 @@
             </div>
         </section>
 
+        <section class="section interface-group">
+            <div class="interface-group-card interface-group-card-demo">
+                <div>
+                    <div class="section-label">Interactive Group B</div>
+                    <h2 class="section-title">Decision Demo Interfaces</h2>
+                    <p class="section-sub">
+                        這一組是受控模擬的決策介面，用來展示產品流程、審核邏輯與風險視角，不直接輸出可執行的 wet-lab 結果。
+                    </p>
+                </div>
+                <div class="group-chip-row">
+                    <a href="#studio" class="group-chip group-chip-demo">Design Workbench</a>
+                    <a href="#guides" class="group-chip group-chip-demo">Guide Ranking</a>
+                    <a href="#variants" class="group-chip group-chip-demo">Variant Interpretation</a>
+                </div>
+            </div>
+        </section>
+
         <section id="studio" class="section">
             <div class="section-head">
                 <div>
-                    <div class="section-label">Design Workbench</div>
+                    <div class="section-label">Decision Demo · Design</div>
                     <h2 class="section-title">基因設計工作台</h2>
                     <p class="section-sub">
                         用一組需求描述，生成多個模擬候選並比較多目標分數。這裡的重點不是單一最高分，而是讓你快速看到不同候選在表達、特異性、可製造性與風險上的取捨。
@@ -585,7 +554,7 @@
         <section id="guides" class="section">
             <div class="section-head">
                 <div>
-                    <div class="section-label">Guide Ranking</div>
+                    <div class="section-label">Decision Demo · CRISPR</div>
                     <h2 class="section-title">CRISPR Guide 排序台</h2>
                     <p class="section-sub">
                         這個模組示範平台如何在效率、特異性與風險之間重排 guide 候選。表格中的 guide 只保留遮罩後的 seed preview，用來展示 ranking 與審核流程。
@@ -678,7 +647,7 @@
         <section id="variants" class="section">
             <div class="section-head">
                 <div>
-                    <div class="section-label">Variant Interpretation</div>
+                    <div class="section-label">Decision Demo · Interpretation</div>
                     <h2 class="section-title">變異效應解讀台</h2>
                     <p class="section-sub">
                         用同一組介面連接基因調控視角與臨床優先排序：輸入變異背景後，平台會估計表達位移、splicing 風險與 chromatin 影響，並給出下一步驗證建議。
@@ -753,6 +722,70 @@
                             <div class="chart-footnote">顯示不同 cell context 下的預測相對位移。</div>
                         </div>
                         <div class="narrative-box" id="variantNarrative"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="profile" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Builder Context</div>
+                    <h2 class="section-title">為什麼這個頁面不只是概念稿，而是能往產品走的原型</h2>
+                    <p class="section-sub">
+                        這一段保留創作者脈絡，但移到互動介面之後，避免干擾資料層與 demo 工作台的分類閱讀路徑。
+                    </p>
+                </div>
+                <div class="section-badge badge-architecture">Builder-to-Product Story</div>
+            </div>
+
+            <div class="summary-strip">
+                <div class="summary-card">
+                    <div class="k">背景</div>
+                    <div class="v">工程 × 生醫雙碩士</div>
+                </div>
+                <div class="summary-card">
+                    <div class="k">工程經歷</div>
+                    <div class="v">前後端介面 / App 開發</div>
+                </div>
+                <div class="summary-card">
+                    <div class="k">研究經歷</div>
+                    <div class="v">生物醫學研究與 NGS 應用</div>
+                </div>
+            </div>
+
+            <div class="detail-grid" style="margin-top:14px">
+                <div class="detail-card">
+                    <div class="detail-head">Personal Site Summary</div>
+                    <div class="detail-title">從個人履歷站延伸出平台型作品</div>
+                    <div class="detail-copy">
+                        您的個人網站提到前後端開發、生物醫學研究、臨床與醫藥相關訓練，以及曾協助團隊取得國家新創獎與 2 項發明專利。這讓這個基因 AI
+                        頁不只是概念頁，而是能回扣到一位真正做過工程、研究與產品落地整合的人。
+                    </div>
+                    <div class="detail-list">
+                        <div class="detail-item">網站與應用程式經驗，支撐了這個頁面的互動工作台形式。</div>
+                        <div class="detail-item">NGS 與生物醫學背景，讓變異解讀與基因設計模組不只是空泛術語。</div>
+                        <div class="detail-item">自動化與資料系統作品，補上平台化落地所需的流程與工具思維。</div>
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+                        <a href="about_me.html" class="btn btn-secondary">本地 About Me</a>
+                        <a href="works.html" class="btn btn-secondary">本地作品總覽</a>
+                        <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer"
+                            class="btn btn-secondary">個人網站首頁</a>
+                        <a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer"
+                            class="btn btn-secondary">About Me</a>
+                        <a href="https://jtlai0921.wixsite.com/mysite/research-blog" target="_blank" rel="noreferrer"
+                            class="btn btn-secondary">Research Blog</a>
+                    </div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-head">Featured Works</div>
+                    <div class="detail-title">和這個平台最能接軌的既有作品</div>
+                    <div class="detail-list">
+                        <div class="detail-item">「次世代定序法」NGS 工作站：直接補強本站的 NGS 與基因分析敘事。</div>
+                        <div class="detail-item">自動化機器手臂操作介面：把實驗室設備操作與工作流程 UI 經驗帶進平台設計。</div>
+                        <div class="detail-item">簡易健康檢測 APP：展現醫療場景產品化與互動設計能力。</div>
+                        <div class="detail-item">資料管理系統：對應 AI 平台後台、資料治理與結果管理需求。</div>
                     </div>
                 </div>
             </div>
