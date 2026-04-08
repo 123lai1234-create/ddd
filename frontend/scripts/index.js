@@ -853,34 +853,49 @@ async function _searchPdbBySeq(seq) {
     const el = document.getElementById('seqPdbSuggest');
     if (!el) return;
     el.style.display = 'flex';
-    el.innerHTML = `⏳ 搜尋 RCSB 相似序列中…`;
+    el.innerHTML = `⏳ 查詢序列資料庫快取…`;
 
+    // ── ① 先查 DB 快取 ────────────────────────────────────────
+    try {
+        const apiBase = (typeof resolvePortfolioApiBase === 'function')
+            ? await resolvePortfolioApiBase() : '';
+        if (apiBase) {
+            const dbResp = await fetch(
+                `${apiBase}/api/sequences/search?q=${encodeURIComponent(seq.substring(0, 20))}&limit=3`,
+                { signal: AbortSignal.timeout(4000) }
+            );
+            if (dbResp.ok) {
+                const dbData = await dbResp.json();
+                const dbHit = (dbData.hits || [])[0];
+                if (dbHit && dbHit.sourceId) {
+                    const pdbId = dbHit.sourceId.toUpperCase();
+                    if (window._loadedPdbId !== pdbId) {
+                        loadPdbById(pdbId);
+                        _showToast(`🗄️ 從 DB 快取載入 ${dbHit.displayName || pdbId}（${pdbId}）`);
+                    }
+                    el.style.display = 'none';
+                    return;
+                }
+            }
+        }
+    } catch (_) { /* DB 失敗直接 fallback RCSB */ }
+
+    // ── ② DB 無結果 → RCSB 搜尋 ──────────────────────────────
+    el.innerHTML = `⏳ 搜尋 RCSB 相似序列中…`;
     try {
         const resp = await fetch('https://search.rcsb.org/rcsbsearch/v2/query', {
-
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-
-            ,
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 query: {
-
                     type: 'terminal', service: 'sequence',
                     parameters: {
                         evalue_cutoff: 1, identity_cutoff: 0.5,
                         target: 'pdb_protein_sequence', value: seq
                     }
-                }
-
-                ,
+                },
                 result_type: 'entry',
-                request_options: {
-                    paginate: {
-                        start: 0, rows: 3
-                    }
-                }
+                request_options: { paginate: { start: 0, rows: 3 } }
             })
         });
         if (!resp.ok) throw new Error('search failed');
@@ -889,58 +904,49 @@ async function _searchPdbBySeq(seq) {
 
         if (!hits.length) {
             el.innerHTML = `⚠️ 找不到相似的已知結構`;
-
-            setTimeout(() => {
-                el.style.display = 'none';
-            }
-
-                , 3000);
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
             return;
         }
 
         const topPdb = hits[0].identifier;
         const identity = hits[0].services?.[0]?.nodes?.[0]?.match_context?.[0]?.sequence_identity;
+        const idStr = identity ? `（相似度 ${(identity * 100).toFixed(0)}%）` : '';
 
-        const idStr = identity ? `（相似度 ${(identity * 100).toFixed(0)
-            }
+        if (window._loadedPdbId === topPdb) { el.style.display = 'none'; return; }
 
-        %）` : '';
+        const _doLoadAndCache = async (pdbId) => {
+            loadPdbById(pdbId);
+            // ── ③ 存回 DB 快取 ─────────────────────────────────
+            try {
+                const apiBase = (typeof resolvePortfolioApiBase === 'function')
+                    ? await resolvePortfolioApiBase() : '';
+                if (apiBase) {
+                    fetch(`${apiBase}/api/sequences/upsert-one`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            source_id: pdbId,
+                            display_name: pdbId,
+                            sequence: seq,
+                            query_term: seq.substring(0, 20),
+                            source_name: 'RCSB',
+                            sequence_type: 'protein',
+                            record_url: `https://www.rcsb.org/structure/${pdbId}`,
+                            description: `RCSB search result${identity ? ', identity=' + (identity * 100).toFixed(1) + '%' : ''}`
+                        })
+                    }).catch(() => {});
+                }
+            } catch (_) {}
+        };
 
-        if (window._loadedPdbId === topPdb) {
-            el.style.display = 'none'; return;
-        }
-
-        // 相似度 ≥ 90% → 直接自動載入
         if (identity && identity >= 0.9) {
-            loadPdbById(topPdb);
+            await _doLoadAndCache(topPdb);
             el.style.display = 'none';
-
-            _showToast(`🔬 自動載入最相似結構 ${topPdb
-                }
-
-                ${idStr
-                }
-
-                `);
+            _showToast(`🔬 自動載入最相似結構 ${topPdb} ${idStr}`);
+        } else {
+            el.innerHTML = `💡 最相似結構：<strong>${topPdb}</strong>${idStr} <button onclick="(async()=>{document.getElementById('seqPdbSuggest').style.display='none';loadPdbById('${topPdb}')})()">載入 ${topPdb} →</button>`;
         }
-
-        else {
-
-            // 低相似度 → 顯示建議，讓使用者決定
-            el.innerHTML = `💡 最相似結構：<strong>${topPdb
-                }
-
-            </strong>${idStr
-                }
-
-            <button onclick="loadPdbById('${topPdb}');document.getElementById('seqPdbSuggest').style.display='none'" > 載入 ${topPdb
-                }
-
-            → </button>`;
-        }
-    }
-
-    catch (e) {
+    } catch (e) {
         el.style.display = 'none';
     }
 }

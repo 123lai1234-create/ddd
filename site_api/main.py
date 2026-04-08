@@ -1041,6 +1041,136 @@ def get_sequence_summary() -> dict[str, Any]:
         ) from error
 
 
+@app.get("/api/sequences/search")
+def search_sequences_by_prefix(q: str = "", limit: int = 5) -> dict[str, Any]:
+    """Query sequence_library by sequence prefix or display_name / source_id.
+
+    The client sends the first 20+ amino acids of an input sequence.
+    The backend searches for rows where the stored sequence starts with the
+    query prefix (case-insensitive), or where source_id / display_name
+    contains the query string.  Returns lightweight records (no full sequence
+    body) so the payload stays small.
+    """
+    normalized = q.strip().upper()
+    if len(normalized) < 10:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Query must be at least 10 characters.",
+        )
+
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    try:
+        with get_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT id, source_id, display_name, organism, sequence_length,
+                           record_url, fetched_at,
+                           SUBSTRING(sequence, 1, 30) AS seq_preview,
+                           sequence_type, source_name
+                    FROM sequence_library
+                    WHERE sequence_type = 'protein'
+                      AND (
+                          UPPER(sequence) LIKE %s
+                          OR UPPER(source_id) LIKE %s
+                          OR UPPER(display_name) LIKE %s
+                      )
+                    ORDER BY sequence_length ASC, fetched_at DESC
+                    LIMIT %s;
+                    """,
+                    (
+                        normalized[:20] + "%",
+                        "%" + normalized[:20] + "%",
+                        "%" + normalized[:20] + "%",
+                        max(1, min(limit, 10)),
+                    ),
+                )
+                rows = cursor.fetchall()
+
+        hits = [
+            {
+                "id": int(r[0]),
+                "sourceId": r[1],
+                "displayName": r[2],
+                "organism": r[3],
+                "sequenceLength": int(r[4]),
+                "recordUrl": r[5],
+                "fetchedAt": r[6].isoformat() if r[6] else None,
+                "seqPreview": r[7],
+                "sequenceType": r[8],
+                "sourceName": r[9],
+            }
+            for r in rows
+        ]
+        return {"hits": hits, "query": normalized[:20], "count": len(hits)}
+
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not reachable right now.",
+        ) from error
+
+
+class SequenceUpsertOneRequest(BaseModel):
+    source_id: str = Field(min_length=1, max_length=64)
+    display_name: str = Field(default="", max_length=255)
+    organism: str = Field(default="", max_length=160)
+    sequence: str = Field(min_length=1)
+    description: str = Field(default="", max_length=500)
+    record_url: str = Field(default="", max_length=500)
+    query_term: str = Field(default="", max_length=160)
+    source_name: str = Field(default="RCSB", max_length=32)
+    sequence_type: str = Field(default="protein", max_length=16)
+
+    @field_validator("sequence", mode="before")
+    @classmethod
+    def normalize_sequence(cls, value: Any) -> str:
+        return str(value or "").strip().upper()
+
+    @field_validator("source_id", "display_name", "organism", "description",
+                     "record_url", "query_term", "source_name", "sequence_type", mode="before")
+    @classmethod
+    def strip_str(cls, value: Any) -> str:
+        return str(value or "").strip()
+
+
+@app.post("/api/sequences/upsert-one", status_code=status.HTTP_201_CREATED)
+def upsert_one_sequence(payload: SequenceUpsertOneRequest) -> dict[str, Any]:
+    """Store a single sequence found by the frontend (e.g. via RCSB search)."""
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    record = SequenceRecordPayload(
+        sequence_type=payload.sequence_type or "protein",
+        source_name=payload.source_name or "RCSB",
+        source_id=payload.source_id,
+        query_term=payload.query_term or payload.source_id,
+        display_name=payload.display_name or payload.source_id,
+        organism=payload.organism or "Unknown",
+        sequence=payload.sequence,
+        sequence_length=len(payload.sequence),
+        description=payload.description or "",
+        record_url=payload.record_url or f"https://www.rcsb.org/structure/{payload.source_id}",
+    )
+
+    try:
+        upsert_sequence_records([record])
+        return {"stored": True, "sourceId": payload.source_id, "sequenceLength": len(payload.sequence)}
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist sequence.",
+        ) from error
+
+
 @app.get("/api/sequences")
 def list_sequences(sequence_type: str | None = None, limit: int = 8) -> dict[str, Any]:
     normalized_type = (sequence_type or "").strip().lower() or None
