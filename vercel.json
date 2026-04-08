@@ -4,16 +4,7 @@
   "env": {
     "API_PROXY_TARGET": "https://donttalk-api-production.up.railway.app"
   },
-  "rewrites": [
-    {
-      "source": "/healthz",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "/api/index"
-    }
-  ],
+  "rewrites": [],
   "redirects": [
     {
       "source": "/about",

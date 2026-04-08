@@ -94,19 +94,11 @@ jobs:
         with:
           node-version: 22
 
-      - name: Pull Vercel project settings
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          npx --yes vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-
       - name: Prepare Vercel output directory
         run: |
           mkdir -p .vercel/output/static
           cp -r frontend/. .vercel/output/static/
-          cat > .vercel/output/config.json <<'EOF'
-          {"version":3}
-          EOF
+          printf '{"version":3}' > .vercel/output/config.json
 
       - name: Deploy frontend to Vercel
         env:
