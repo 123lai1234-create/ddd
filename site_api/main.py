@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 import os
 from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+from urllib.request import Request, urlopen
 
 import psycopg
 from fastapi import FastAPI, Header, HTTPException, status
@@ -799,6 +801,79 @@ def check_all_databases() -> list[dict[str, Any]]:
     return results
 
 
+def _is_valid_structure_payload(text: str, format_name: str) -> bool:
+    if not text:
+        return False
+
+    normalized_format = format_name.strip().lower()
+    if normalized_format == "pdb":
+        return "ATOM" in text or "HETATM" in text
+
+    return "_atom_site" in text or "atom_site." in text
+
+
+def fetch_structure_payload(pdb_id: str) -> dict[str, Any]:
+    normalized_pdb_id = "".join(character for character in str(pdb_id or "").upper() if character.isalnum())
+    if len(normalized_pdb_id) < 4 or len(normalized_pdb_id) > 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="pdb_id must be 4 to 6 alphanumeric characters.",
+        )
+
+    sources = [
+        {
+            "url": f"https://files.rcsb.org/download/{normalized_pdb_id}.pdb",
+            "format": "pdb",
+        },
+        {
+            "url": f"https://files.rcsb.org/view/{normalized_pdb_id}.pdb",
+            "format": "pdb",
+        },
+        {
+            "url": f"https://files.rcsb.org/download/{normalized_pdb_id}.cif",
+            "format": "cif",
+        },
+        {
+            "url": f"https://models.rcsb.org/v1/{normalized_pdb_id}/full?format=cif",
+            "format": "cif",
+        },
+    ]
+
+    attempt_errors: list[str] = []
+    request_headers = {
+        "User-Agent": "donttalk-api/1.0",
+        "Accept": "text/plain, chemical/x-cif, */*",
+    }
+
+    for source in sources:
+        try:
+            request = Request(source["url"], headers=request_headers)
+            with urlopen(request, timeout=15) as response:
+                raw_body = response.read()
+            structure_text = raw_body.decode("utf-8", errors="replace")
+            if _is_valid_structure_payload(structure_text, source["format"]):
+                return {
+                    "pdbId": normalized_pdb_id,
+                    "format": source["format"],
+                    "text": structure_text,
+                    "sourceUrl": source["url"],
+                }
+
+            attempt_errors.append(f"invalid payload @ {source['url']}")
+        except HTTPError as error:
+            attempt_errors.append(f"HTTP {error.code} @ {source['url']}")
+        except URLError as error:
+            attempt_errors.append(f"URL error @ {source['url']}: {error.reason}")
+        except Exception as error:  # pragma: no cover - defensive path for remote services
+            attempt_errors.append(f"{type(error).__name__} @ {source['url']}: {error}")
+
+    logger.warning("Failed to fetch structure for %s: %s", normalized_pdb_id, " | ".join(attempt_errors))
+    raise HTTPException(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail=f"Unable to retrieve structure from upstream sources for {normalized_pdb_id}.",
+    )
+
+
 @app.on_event("startup")
 def startup() -> None:
     ensure_schema()
@@ -833,6 +908,11 @@ def db_status(x_admin_token: str | None = Header(default=None)) -> dict[str, Any
         "totalConnected": sum(1 for r in all_results if r["connected"]),
         "primaryHost": urlparse(get_database_url()).hostname if get_database_url() else None,
     }
+
+
+@app.get("/api/structures/pdb/{pdb_id}")
+def get_pdb_structure(pdb_id: str) -> dict[str, Any]:
+    return fetch_structure_payload(pdb_id)
 
 
 @app.get("/api/knowledge/summary")

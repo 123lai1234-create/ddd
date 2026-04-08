@@ -185,11 +185,29 @@ function _setStructPlaceholder(html, showInfo = false) {
 }
 
 async function _fetchPdbTextWithFallback(pdbId, signal) {
+    let resolvedApiBase = '';
+    if (typeof resolvePortfolioApiBase === 'function') {
+        try {
+            resolvedApiBase = await resolvePortfolioApiBase();
+        } catch (error) {
+            resolvedApiBase = '';
+        }
+    }
+
+    if (!resolvedApiBase) {
+        resolvedApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
+            ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
+            : '';
+    }
+
     const sources = [
         {
-            url: 'https://models.rcsb.org/v1/' + pdbId + '/full?format=bcif',
-            format: 'cif',
-            isValid: text => text && text.includes('_atom_site')
+            url: resolvedApiBase ? (resolvedApiBase + '/api/structures/pdb/' + encodeURIComponent(pdbId)) : '',
+            format: 'json-proxy',
+            isValid: payload => payload && typeof payload.text === 'string' && (
+                (payload.format === 'pdb' && (payload.text.includes('ATOM') || payload.text.includes('HETATM'))) ||
+                (payload.format === 'cif' && payload.text.includes('_atom_site'))
+            )
         },
         {
             url: 'https://models.rcsb.org/v1/' + pdbId + '/full?format=cif',
@@ -200,8 +218,13 @@ async function _fetchPdbTextWithFallback(pdbId, signal) {
             url: 'https://files.rcsb.org/download/' + pdbId + '.pdb',
             format: 'pdb',
             isValid: text => text && text.includes('ATOM')
+        },
+        {
+            url: 'https://files.rcsb.org/view/' + pdbId + '.pdb',
+            format: 'pdb',
+            isValid: text => text && text.includes('ATOM')
         }
-    ];
+    ].filter(source => Boolean(source.url));
 
     let lastError = null;
 
@@ -225,6 +248,32 @@ async function _fetchPdbTextWithFallback(pdbId, signal) {
 
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status + ' @ ' + source.url);
+            }
+
+            if (source.format === 'json-proxy') {
+                const structurePayload = await response.json();
+                _log3dDebug('fetch:proxy-payload', {
+                    pdbId,
+                    url: source.url,
+                    format: structurePayload?.format,
+                    sourceUrl: structurePayload?.sourceUrl,
+                    length: structurePayload?.text ? structurePayload.text.length : 0
+                });
+                if (source.isValid(structurePayload)) {
+                    _log3dDebug('fetch:valid', {
+                        pdbId,
+                        url: source.url,
+                        format: structurePayload.format,
+                        sourceUrl: structurePayload.sourceUrl
+                    });
+                    return {
+                        text: structurePayload.text,
+                        format: structurePayload.format,
+                        url: structurePayload.sourceUrl || source.url
+                    };
+                }
+
+                throw new Error('Invalid structure proxy response @ ' + source.url);
             }
 
             const structureText = await response.text();
@@ -303,7 +352,7 @@ async function loadSeqWithEsmFold(seq) {
         const viewer3d = document.getElementById('mpnnStruct3d');
         const placeholder = document.getElementById('mpnnStructPlaceholder');
         viewer3d.innerHTML = '';
-        if (_3dmolViewer) { try { _3dmolViewer.removeAllModels(); _3dmolViewer.clear(); } catch (e) {} _3dmolViewer = null; }
+        if (_3dmolViewer) { try { _3dmolViewer.removeAllModels(); _3dmolViewer.clear(); } catch (e) { } _3dmolViewer = null; }
 
         await new Promise(r => requestAnimationFrame(r));
         const rect = viewer3d.getBoundingClientRect();
@@ -504,7 +553,7 @@ async function _loadStructureByPdbId(pdbId) {
             '<div style="font-size:1.8rem">⚠️</div>' +
             '<div style="font-size:.9rem;color:var(--muted)">結構載入失敗：<strong>' + pdbId + '</strong></div>' +
             '<div style="font-size:.75rem;color:var(--dim)">' +
-            (isTimeout ? '請求逾時 (18s)，請檢查網路後重試。' : 'RCSB 來源回應異常，已嘗試多個下載端點。') +
+            (isTimeout ? '請求逾時 (18s)，請檢查網路後重試。' : '結構來源回應或解析異常，已嘗試多個下載端點。') +
             '</div>'
         );
     } finally {
