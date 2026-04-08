@@ -309,6 +309,81 @@
             </div>
         </section>
 
+        <section id="sequencing-run-vault" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Live Interface · ENA Metadata Cache</div>
+                    <h2 class="section-title">把 ENA sequencing run metadata 收進 DB，直接查 study / sample / instrument</h2>
+                    <p class="section-sub">
+                        這個模組會從 ENA Portal API 抓取 sequencing run metadata，寫進 Render PostgreSQL，之後頁面就能直接查詢 study accession、sample accession、library strategy、instrument model 與 FASTQ metadata。
+                    </p>
+                </div>
+                <div class="section-badge badge-live">Live API · ENA Portal API + Render Postgres</div>
+            </div>
+
+            <div class="sequence-grid">
+                <aside class="panel control-panel">
+                    <div>
+                        <div class="control-title">ENA run 同步設定</div>
+                        <div class="control-sub">抓取 sequencing run metadata，寫進 sequencing_run_library 給前端直接檢索與摘要展示。</div>
+                    </div>
+                    <div class="field">
+                        <label for="sequencingRunQuery">ENA query</label>
+                        <textarea id="sequencingRunQuery" rows="4">tax_name("Homo sapiens") AND library_strategy="RNA-Seq"</textarea>
+                    </div>
+                    <div class="field">
+                        <label for="sequencingRunLimit">每次同步筆數</label>
+                        <select id="sequencingRunLimit">
+                            <option value="4">4</option>
+                            <option value="6">6</option>
+                            <option value="8">8</option>
+                            <option value="12">12</option>
+                        </select>
+                    </div>
+                    <button id="sequencingRunSync" class="btn btn-primary" type="button">同步 ENA run 到 DB</button>
+                    <button id="sequencingRunReload" class="btn btn-secondary" type="button">重新讀取 run 快取</button>
+                    <div id="sequencingRunStatus" class="status-banner" data-state="info">正在讀取 sequencing run metadata 快取...</div>
+                    <div class="small-note">
+                        這裡適合接 NGS / multi-omics 的 metadata 層。前端先看 study 與 sample 分布，後端再把 record_url 與 ftp_url 串到後續分析流程。
+                    </div>
+                    <div class="small-note">API base: <span id="sequencingRunApiLabel" class="mono">detecting...</span></div>
+                </aside>
+
+                <div class="panel result-panel">
+                    <div class="result-top">
+                        <div>
+                            <h3>Sequencing Run Cache</h3>
+                            <p>查看 ENA run metadata、library strategy 與 instrument 分布，直接驗證資料有沒有正確落進 DB。</p>
+                        </div>
+                        <div class="section-badge">Study + Sample + Run Metadata</div>
+                    </div>
+
+                    <div id="sequencingRunSummary" class="summary-strip summary-strip-4"></div>
+
+                    <div class="sequence-toolbar">
+                        <div class="field">
+                            <label for="sequencingRunSearch">搜尋 run / study / sample / organism</label>
+                            <input id="sequencingRunSearch" type="text" placeholder="例如 DRR000897, PRJNA, Homo sapiens">
+                        </div>
+                        <div class="field">
+                            <label for="sequencingRunStrategyFilter">library strategy</label>
+                            <select id="sequencingRunStrategyFilter">
+                                <option value="">全部 strategy</option>
+                            </select>
+                        </div>
+                        <div id="sequencingRunFilterMeta" class="sequence-filter-meta">顯示 0 筆</div>
+                    </div>
+
+                    <div id="sequencingRunFeed" class="knowledge-feed"></div>
+
+                    <div class="detail-card knowledge-detail-shell">
+                        <div class="detail-head">Sequencing Run Detail</div>
+                        <div id="sequencingRunDetail" class="knowledge-empty">尚未選取 sequencing run 紀錄。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section id="knowledge-vault" class="section">
             <div class="section-head">
                 <div>
@@ -419,6 +494,7 @@
             </div>
             <div class="section-actions">
                 <a href="#sequence-vault" class="btn btn-primary">打開 Sequence Vault</a>
+                <a href="#sequencing-run-vault" class="btn btn-secondary">查看 Sequencing Runs</a>
                 <a href="#knowledge-vault" class="btn btn-secondary">查看 Knowledge Vault</a>
                 <a href="#rag-layer" class="btn btn-secondary">查看 RAG Documents</a>
             </div>

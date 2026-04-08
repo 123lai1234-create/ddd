@@ -606,6 +606,219 @@ footer a {
   color: var(--text);
 }
 
+/* ── Market Ops ── */
+.ops-shell {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.ops-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+
+.ops-controls {
+  position: sticky;
+  top: calc(var(--nav-h) + 24px);
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ops-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.ops-status {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.ops-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ops-summary-card {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.ops-summary-card .k {
+  color: var(--muted);
+  font-size: 0.72rem;
+  margin-bottom: 6px;
+}
+
+.ops-summary-card .v {
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.ops-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.ops-toolbar-meta {
+  align-self: end;
+  padding-bottom: 6px;
+}
+
+.ops-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ops-card {
+  width: 100%;
+  text-align: left;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.ops-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(79, 160, 248, 0.28);
+}
+
+.ops-card.active {
+  border-color: rgba(60, 185, 90, 0.36);
+  background: linear-gradient(
+    180deg,
+    rgba(60, 185, 90, 0.08),
+    rgba(255, 255, 255, 0.02)
+  );
+  box-shadow: 0 14px 32px rgba(60, 185, 90, 0.08);
+}
+
+.ops-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ops-card-title {
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.ops-card-sub {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-bottom: 10px;
+}
+
+.ops-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.ops-chip,
+.ops-bar-chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ops-chip.stock {
+  color: var(--teal);
+  background: rgba(48, 200, 232, 0.12);
+}
+
+.ops-chip.etf {
+  color: var(--yellow);
+  background: rgba(255, 213, 107, 0.12);
+}
+
+.ops-chip.futures,
+.ops-bar-chip {
+  color: var(--purple);
+  background: rgba(180, 144, 255, 0.12);
+}
+
+.ops-empty {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.ops-bar-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ops-bar-row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.ops-bar-primary {
+  color: var(--text);
+  font-family: var(--mono);
+  font-weight: 700;
+}
+
+.ops-bar-secondary {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.ops-bar-value {
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
 /* ── Responsive ── */
 @media (max-width: 840px) {
   .section {
@@ -622,7 +835,11 @@ footer a {
 
   .grid-2,
   .grid-3,
-  .ga-grid {
+  .ga-grid,
+  .ops-shell,
+  .ops-list,
+  .ops-summary,
+  .ops-toolbar {
     grid-template-columns: 1fr;
   }
 
@@ -637,5 +854,14 @@ footer a {
 
   .stock-meta {
     font-size: 0.8rem;
+  }
+
+  .ops-controls {
+    position: static;
+  }
+
+  .ops-bar-row {
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 }

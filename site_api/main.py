@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS market_price_bars (
     symbol VARCHAR(64) NOT NULL,
     asset_type VARCHAR(16) NOT NULL,
     market VARCHAR(64) NOT NULL DEFAULT '',
+    contract_month VARCHAR(16) NOT NULL DEFAULT '',
     trade_date DATE NOT NULL,
     open_price DOUBLE PRECISION,
     high_price DOUBLE PRECISION,
@@ -130,9 +131,45 @@ CREATE TABLE IF NOT EXISTS market_price_bars (
     open_interest BIGINT,
     change_value DOUBLE PRECISION,
     raw_payload TEXT NOT NULL DEFAULT '',
-    fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE(source_name, symbol, trade_date)
+        fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+"""
+
+ALTER_MARKET_PRICE_BARS_ADD_CONTRACT_MONTH_SQL = """
+ALTER TABLE market_price_bars
+ADD COLUMN IF NOT EXISTS contract_month VARCHAR(16) NOT NULL DEFAULT '';
+"""
+
+DROP_LEGACY_MARKET_PRICE_BARS_UNIQUE_SQL = """
+DO $$
+DECLARE legacy_constraint_name text;
+BEGIN
+        SELECT con.conname
+            INTO legacy_constraint_name
+            FROM pg_constraint AS con
+            JOIN pg_class AS rel ON rel.oid = con.conrelid
+            JOIN pg_namespace AS ns ON ns.oid = rel.relnamespace
+         WHERE rel.relname = 'market_price_bars'
+             AND ns.nspname = current_schema()
+             AND con.contype = 'u'
+             AND ARRAY(
+                        SELECT att.attname
+                            FROM unnest(con.conkey) WITH ORDINALITY AS cols(attnum, ord)
+                            JOIN pg_attribute AS att
+                                ON att.attrelid = rel.oid
+                             AND att.attnum = cols.attnum
+                         ORDER BY cols.ord
+             ) = ARRAY['source_name', 'symbol', 'trade_date'];
+
+        IF legacy_constraint_name IS NOT NULL THEN
+                EXECUTE format('ALTER TABLE market_price_bars DROP CONSTRAINT %I', legacy_constraint_name);
+        END IF;
+END $$;
+"""
+
+CREATE_MARKET_PRICE_BARS_UNIQUE_INDEX_SQL = """
+CREATE UNIQUE INDEX IF NOT EXISTS market_price_bars_source_symbol_contract_trade_date_uidx
+        ON market_price_bars (source_name, symbol, contract_month, trade_date);
 """
 
 UPSERT_SEQUENCE_LIBRARY_SQL = """
@@ -267,6 +304,7 @@ INSERT INTO market_price_bars (
     symbol,
     asset_type,
     market,
+    contract_month,
     trade_date,
     open_price,
     high_price,
@@ -279,11 +317,12 @@ INSERT INTO market_price_bars (
     change_value,
     raw_payload,
     fetched_at
-) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
-ON CONFLICT (source_name, symbol, trade_date)
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+ON CONFLICT (source_name, symbol, contract_month, trade_date)
 DO UPDATE SET
     asset_type = EXCLUDED.asset_type,
     market = EXCLUDED.market,
+    contract_month = EXCLUDED.contract_month,
     open_price = EXCLUDED.open_price,
     high_price = EXCLUDED.high_price,
     low_price = EXCLUDED.low_price,
@@ -1012,6 +1051,7 @@ def serialize_market_bar_row(row: tuple[Any, ...]) -> dict[str, Any]:
         display_name,
         asset_type,
         market,
+        contract_month,
         trade_date,
         open_price,
         high_price,
@@ -1032,6 +1072,7 @@ def serialize_market_bar_row(row: tuple[Any, ...]) -> dict[str, Any]:
         "displayName": display_name,
         "assetType": asset_type,
         "market": market,
+        "contractMonth": contract_month or None,
         "tradeDate": trade_date.isoformat() if trade_date else None,
         "open": float(open_price) if open_price is not None else None,
         "high": float(high_price) if high_price is not None else None,
@@ -1049,12 +1090,13 @@ def serialize_market_bar_row(row: tuple[Any, ...]) -> dict[str, Any]:
 def fetch_market_bar_rows(
     asset_type: str | None = None,
     symbol: str | None = None,
+    contract_month: str | None = None,
     limit: int = 60,
 ) -> list[dict[str, Any]]:
     sql = """
         SELECT bars.id, bars.source_name, bars.symbol,
                COALESCE(inst.display_name, bars.symbol) AS display_name,
-               bars.asset_type, bars.market, bars.trade_date, bars.open_price,
+               bars.asset_type, bars.market, bars.contract_month, bars.trade_date, bars.open_price,
                bars.high_price, bars.low_price, bars.close_price, bars.settlement_price,
                bars.volume, bars.turnover, bars.open_interest, bars.change_value,
                bars.fetched_at
@@ -1073,10 +1115,14 @@ def fetch_market_bar_rows(
         conditions.append("bars.symbol = %s")
         params.append(symbol)
 
+    if contract_month:
+        conditions.append("bars.contract_month = %s")
+        params.append(contract_month)
+
     if conditions:
         sql += " WHERE " + " AND ".join(conditions)
 
-    sql += " ORDER BY bars.trade_date DESC, bars.fetched_at DESC LIMIT %s"
+    sql += " ORDER BY bars.trade_date DESC, bars.contract_month DESC, bars.fetched_at DESC LIMIT %s"
     params.append(limit)
 
     with get_connection() as connection:
@@ -1101,11 +1147,11 @@ def market_summary() -> dict[str, Any]:
             instrument_rows = cursor.fetchall()
             cursor.execute(
                 """
-                SELECT COUNT(*), MAX(trade_date), MAX(fetched_at)
+                SELECT COUNT(*), COUNT(DISTINCT NULLIF(contract_month, '')), MAX(trade_date), MAX(fetched_at)
                 FROM market_price_bars;
                 """
             )
-            bar_count, latest_trade_date, latest_fetched_at = cursor.fetchone()
+            bar_count, contract_month_count, latest_trade_date, latest_fetched_at = cursor.fetchone()
 
     counts = {"stock": 0, "etf": 0, "futures": 0}
     latest_instrument_fetched_at = None
@@ -1118,6 +1164,7 @@ def market_summary() -> dict[str, Any]:
         "instrumentCounts": counts,
         "totalInstruments": sum(counts.values()),
         "barCount": int(bar_count or 0),
+        "contractMonthCount": int(contract_month_count or 0),
         "latestTradeDate": latest_trade_date.isoformat() if latest_trade_date else None,
         "latestFetchedAt": (
             latest_fetched_at.isoformat()
@@ -1165,6 +1212,7 @@ def upsert_market_bars(records: list[MarketBarPayload]) -> None:
                         record.symbol,
                         record.asset_type,
                         record.market,
+                        record.contract_month,
                         record.trade_date,
                         record.open_price,
                         record.high_price,
@@ -1346,6 +1394,9 @@ def ensure_schema() -> bool:
             connection.execute(CREATE_SEQUENCING_RUN_LIBRARY_TABLE_SQL)
             connection.execute(CREATE_MARKET_INSTRUMENTS_TABLE_SQL)
             connection.execute(CREATE_MARKET_PRICE_BARS_TABLE_SQL)
+            connection.execute(ALTER_MARKET_PRICE_BARS_ADD_CONTRACT_MONTH_SQL)
+            connection.execute(DROP_LEGACY_MARKET_PRICE_BARS_UNIQUE_SQL)
+            connection.execute(CREATE_MARKET_PRICE_BARS_UNIQUE_INDEX_SQL)
             connection.commit()
         SCHEMA_READY = True
         return True
@@ -2053,10 +2104,12 @@ def list_market_instruments(
 def list_market_bars(
     asset_type: str | None = None,
     symbol: str | None = None,
+    contract_month: str | None = None,
     limit: int = 60,
 ) -> dict[str, Any]:
     normalized_asset_type = (asset_type or "").strip().lower() or None
     normalized_symbol = (symbol or "").strip().upper() or None
+    normalized_contract_month = (contract_month or "").strip() or None
 
     if normalized_asset_type and normalized_asset_type not in {"stock", "etf", "futures"}:
         raise HTTPException(
@@ -2075,10 +2128,12 @@ def list_market_bars(
             "records": fetch_market_bar_rows(
                 asset_type=normalized_asset_type,
                 symbol=normalized_symbol,
+                contract_month=normalized_contract_month,
                 limit=max(1, min(limit, 200)),
             ),
             "assetType": normalized_asset_type,
             "symbol": normalized_symbol,
+            "contractMonth": normalized_contract_month,
             **market_summary(),
         }
     except psycopg.Error as error:

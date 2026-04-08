@@ -954,6 +954,10 @@ input[type="range"] {
   gap: 12px;
 }
 
+.summary-strip.summary-strip-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .summary-card {
   padding: 14px;
   border-radius: 16px;
@@ -1245,6 +1249,12 @@ input[type="range"] {
   background: rgba(119, 242, 178, 0.08);
 }
 
+.knowledge-chip.run,
+.rag-doc-chip.run {
+  color: var(--violet);
+  background: rgba(181, 156, 255, 0.12);
+}
+
 .knowledge-snippet,
 .rag-doc-text {
   color: #dbe8e4;
@@ -1252,6 +1262,7 @@ input[type="range"] {
   line-height: 1.72;
   margin-bottom: 10px;
   display: -webkit-box;
+  line-clamp: 4;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;

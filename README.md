@@ -201,6 +201,15 @@ The frontend source is organized under `frontend/`, with page templates in `fron
 - Render, Netlify, and Cloudflare Pages deploy the generated `dist/` bundle from [scripts/build_static_site.sh](scripts/build_static_site.sh)
 - Vercel serves the same frontend structure through [vercel.json](vercel.json) rewrites and builds deployment output in CI before publish
 
+## Recommended Database Setup
+
+This repo should use PostgreSQL. The current best default is Neon.
+
+- Primary recommendation: Neon Postgres
+- Alternative if you also want hosted Auth, Storage, and admin tooling: Supabase Postgres
+- Env example: [.env.example](.env.example)
+- Setup notes: [docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md)
+
 ## Bio Knowledge Layer
 
 The deployed FastAPI service now exposes a small bioinformatics knowledge layer for the portfolio pages and downstream RAG workflows.
@@ -222,8 +231,17 @@ The FastAPI service now also exposes a market ingestion layer that can write dai
 Default upstreams:
 
 - Taiwan stocks / ETFs: TWSE official daily report API
+- Taiwan index / stock / ETF futures: TAIFEX official daily market report with contract month handling
 - Futures and non-TWSE symbols: Yahoo Finance chart API
 - Sequencing run metadata: ENA Portal API
+
+## Scheduled Sync
+
+The repo now includes a dedicated scheduled sync workflow for production cache refresh.
+
+- Workflow: [.github/workflows/scheduled-sync.yml](.github/workflows/scheduled-sync.yml)
+- Weekday post-close market sync for stocks, ETFs, and TAIFEX futures
+- Daily bio sync for sequences, knowledge, and ENA sequencing-run metadata
 
 PostgreSQL tables created automatically at startup:
 

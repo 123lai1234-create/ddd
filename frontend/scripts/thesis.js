@@ -226,6 +226,49 @@ function formatValue(value, digits = 2) {
     return roundTo(value, digits).toFixed(digits);
 }
 
+function formatDateTime(value) {
+    if (!value) {
+        return '-';
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return '-';
+    }
+    return parsed.toLocaleString('zh-TW', {
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+function formatCount(value) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+        return '-';
+    }
+    return parsed.toLocaleString('zh-TW');
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function safeJsonParse(text) {
+    try {
+        return JSON.parse(text);
+    } catch {
+        return null;
+    }
+}
+
 function renderKVRows(rows) {
     return rows.map(([key, value, color]) => `
         <div class="kv-row">
@@ -685,9 +728,26 @@ const uiState = {
     currentIndustry: '全部',
 };
 
+const marketState = {
+    selectedSymbol: '',
+    selectedAssetType: '',
+    instruments: [],
+    bars: [],
+    summary: {
+        instrumentCounts: { stock: 0, etf: 0, futures: 0 },
+        totalInstruments: 0,
+        barCount: 0,
+        contractMonthCount: 0,
+        latestTradeDate: null,
+        latestFetchedAt: null,
+    },
+};
+
 let curGen = 0;
 let playTimer = null;
 let rerunTimer = null;
+let marketReloadTimer = null;
+let resolvedMarketApiBase = '';
 
 function getVisibleStocks() {
     if (uiState.currentIndustry === '全部') {
@@ -1240,12 +1300,417 @@ function bindEvents() {
     });
 }
 
+function setMarketStatus(message, state = 'info') {
+    const status = document.getElementById('marketStatus');
+    if (!status) {
+        return;
+    }
+    status.textContent = message;
+    status.dataset.state = state;
+}
+
+function setMarketApiLabel(value) {
+    const label = document.getElementById('marketApiLabel');
+    if (label) {
+        label.textContent = value;
+    }
+}
+
+function deriveMarketApiCandidates() {
+    const configuredApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
+        ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
+        : '';
+    const candidates = [];
+
+    const pushCandidate = (value) => {
+        const normalized = String(value || '').trim().replace(/\/+$/, '');
+        if (normalized && !candidates.includes(normalized)) {
+            candidates.push(normalized);
+        }
+    };
+
+    pushCandidate(configuredApiBase);
+    const currentOrigin = window.location.origin.replace(/\/+$/, '');
+    pushCandidate(currentOrigin);
+    if (currentOrigin.includes('donttalk') && !currentOrigin.includes('donttalk-api')) {
+        pushCandidate(currentOrigin.replace('donttalk', 'donttalk-api'));
+    }
+    pushCandidate('https://donttalk-api-production.up.railway.app');
+    pushCandidate('https://donttalk-api.onrender.com');
+    return candidates;
+}
+
+async function resolveMarketApiBase() {
+    if (resolvedMarketApiBase) {
+        return resolvedMarketApiBase;
+    }
+
+    const candidates = deriveMarketApiCandidates();
+    for (const candidate of candidates) {
+        try {
+            const response = await fetch(`${candidate}/healthz`);
+            if (!response.ok) {
+                continue;
+            }
+            const payload = await response.json().catch(() => null);
+            if (payload?.status === 'ok') {
+                resolvedMarketApiBase = candidate;
+                setMarketApiLabel(candidate);
+                return resolvedMarketApiBase;
+            }
+        } catch {
+            continue;
+        }
+    }
+
+    setMarketApiLabel('unavailable');
+    return '';
+}
+
+async function requestMarketApi(path, options = {}) {
+    const apiBase = await resolveMarketApiBase();
+    if (!apiBase) {
+        throw new Error('目前找不到可用的市場 API。');
+    }
+
+    const response = await fetch(`${apiBase}${path}`, options);
+    if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.detail || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+}
+
+function parseSymbolList(rawValue) {
+    if (!rawValue) {
+        return [];
+    }
+
+    const seen = new Set();
+    return String(rawValue)
+        .split(',')
+        .map((value) => value.trim().toUpperCase())
+        .filter((value) => {
+            if (!value || seen.has(value)) {
+                return false;
+            }
+            seen.add(value);
+            return true;
+        })
+        .slice(0, 20);
+}
+
+function marketSyncPayload() {
+    return {
+        stock_symbols: parseSymbolList(document.getElementById('marketStockSymbols').value),
+        etf_symbols: parseSymbolList(document.getElementById('marketEtfSymbols').value),
+        futures_symbols: parseSymbolList(document.getElementById('marketFuturesSymbols').value),
+        twse_months: Number(document.getElementById('marketTwseMonths').value) || 3,
+        yahoo_range: document.getElementById('marketYahooRange').value || '3mo',
+    };
+}
+
+function setMarketBusy(isBusy) {
+    document.getElementById('marketSyncBtn').disabled = isBusy;
+    document.getElementById('marketReloadBtn').disabled = isBusy;
+}
+
+function updateMarketStateFromPayload(payload) {
+    marketState.summary = {
+        instrumentCounts: payload.instrumentCounts || marketState.summary.instrumentCounts,
+        totalInstruments: Number(payload.totalInstruments ?? marketState.summary.totalInstruments ?? 0),
+        barCount: Number(payload.barCount ?? marketState.summary.barCount ?? 0),
+        contractMonthCount: Number(payload.contractMonthCount ?? marketState.summary.contractMonthCount ?? 0),
+        latestTradeDate: payload.latestTradeDate ?? marketState.summary.latestTradeDate,
+        latestFetchedAt: payload.latestFetchedAt ?? marketState.summary.latestFetchedAt,
+    };
+}
+
+function renderMarketSummary() {
+    const container = document.getElementById('marketSummary');
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="ops-summary-card"><div class="k">Instruments</div><div class="v">${formatCount(marketState.summary.totalInstruments)}</div></div>
+        <div class="ops-summary-card"><div class="k">Bars</div><div class="v">${formatCount(marketState.summary.barCount)}</div></div>
+        <div class="ops-summary-card"><div class="k">Contract Months</div><div class="v">${formatCount(marketState.summary.contractMonthCount)}</div></div>
+        <div class="ops-summary-card"><div class="k">Latest Trade</div><div class="v">${escapeHtml(marketState.summary.latestTradeDate || '-')}</div></div>
+    `;
+}
+
+function renderMarketFilterMeta() {
+    const meta = document.getElementById('marketFilterMeta');
+    if (!meta) {
+        return;
+    }
+
+    const counts = marketState.summary.instrumentCounts || { stock: 0, etf: 0, futures: 0 };
+    const selected = marketState.selectedSymbol
+        ? ` · selected ${marketState.selectedAssetType || '-'} ${marketState.selectedSymbol}`
+        : '';
+    meta.textContent = `stock ${counts.stock || 0} · etf ${counts.etf || 0} · futures ${counts.futures || 0}${selected}`;
+}
+
+function renderMarketBars() {
+    const meta = document.getElementById('marketBarsMeta');
+    const list = document.getElementById('marketBarsList');
+    if (!meta || !list) {
+        return;
+    }
+
+    if (!marketState.selectedSymbol) {
+        meta.textContent = '尚未選取 instrument。';
+        list.innerHTML = '<div class="ops-empty">先點選一個 instrument，再查看最近 bars。</div>';
+        return;
+    }
+
+    const contractMonth = document.getElementById('marketContractMonthFilter').value.trim();
+    meta.textContent = `${marketState.selectedAssetType || '-'} ${marketState.selectedSymbol} · bars ${marketState.bars.length} 筆${contractMonth ? ` · contract ${contractMonth}` : ''} · latest sync ${formatDateTime(marketState.summary.latestFetchedAt)}`;
+
+    if (!marketState.bars.length) {
+        list.innerHTML = '<div class="ops-empty">這個 symbol 目前沒有符合條件的 bars。</div>';
+        return;
+    }
+
+    list.innerHTML = marketState.bars.map((bar) => `
+        <article class="ops-bar-row">
+            <div>
+                <div class="ops-bar-primary">${escapeHtml(bar.tradeDate || '-')}</div>
+                <div class="ops-bar-secondary">${escapeHtml(bar.displayName || bar.symbol || '-')}</div>
+            </div>
+            <div class="ops-bar-secondary">${escapeHtml(bar.sourceName || '-')} · ${escapeHtml(bar.symbol || '-')}</div>
+            <div class="ops-bar-chip">${escapeHtml(bar.contractMonth || bar.market || '-')}</div>
+            <div class="ops-bar-value">C ${bar.close == null ? '-' : formatValue(bar.close, 2)}</div>
+            <div class="ops-bar-value">V ${bar.volume == null ? '-' : formatCount(bar.volume)}</div>
+        </article>
+    `).join('');
+}
+
+function renderMarketInstrumentList() {
+    const list = document.getElementById('marketInstrumentList');
+    if (!list) {
+        return;
+    }
+
+    renderMarketFilterMeta();
+
+    if (!marketState.instruments.length) {
+        list.innerHTML = '<div class="ops-empty">目前沒有 instrument cache。先按「同步市場資料」建立快取。</div>';
+        return;
+    }
+
+    list.innerHTML = marketState.instruments.map((record) => {
+        const metadata = safeJsonParse(record.metadataText || '{}') || {};
+        const activeClass = record.symbol === marketState.selectedSymbol && record.assetType === marketState.selectedAssetType
+            ? 'active'
+            : '';
+        const detailBits = [];
+        if (record.sourceName === 'TAIFEX' && metadata.commodityCode) {
+            detailBits.push(`code ${metadata.commodityCode}`);
+        }
+        if (Array.isArray(metadata.contractMonths) && metadata.contractMonths.length) {
+            detailBits.push(`${metadata.contractMonths.length} contract months`);
+        }
+        if (record.exchangeName) {
+            detailBits.push(record.exchangeName);
+        }
+
+        return `
+            <button class="ops-card ${activeClass}" type="button" data-symbol="${escapeHtml(record.symbol)}" data-asset-type="${escapeHtml(record.assetType)}">
+                <div class="ops-card-top">
+                    <div>
+                        <div class="ops-card-title">${escapeHtml(record.displayName || record.symbol)}</div>
+                        <div class="ops-card-sub">${escapeHtml(record.symbol)} · ${escapeHtml(record.sourceName || '-')} · ${escapeHtml(record.market || '-')}</div>
+                    </div>
+                    <div class="ops-chip ${escapeHtml(record.assetType || '')}">${escapeHtml((record.assetType || '').toUpperCase())}</div>
+                </div>
+                <div class="ops-card-meta">
+                    <span>${escapeHtml(detailBits.join(' · ') || 'metadata unavailable')}</span>
+                    <span>${escapeHtml(formatDateTime(record.fetchedAt))}</span>
+                </div>
+            </button>
+        `;
+    }).join('');
+
+    list.querySelectorAll('.ops-card').forEach((button) => {
+        button.addEventListener('click', async () => {
+            marketState.selectedSymbol = button.dataset.symbol || '';
+            marketState.selectedAssetType = button.dataset.assetType || '';
+            renderMarketInstrumentList();
+            await loadMarketBars(true);
+        });
+    });
+}
+
+async function loadMarketBars(silent = false) {
+    const params = new URLSearchParams();
+    const contractMonth = document.getElementById('marketContractMonthFilter').value.trim();
+
+    if (marketState.selectedAssetType) {
+        params.set('asset_type', marketState.selectedAssetType);
+    }
+    if (marketState.selectedSymbol) {
+        params.set('symbol', marketState.selectedSymbol);
+    }
+    if (contractMonth) {
+        params.set('contract_month', contractMonth);
+    }
+    params.set('limit', '40');
+
+    try {
+        const response = await requestMarketApi(`/api/market/bars?${params.toString()}`);
+        marketState.bars = Array.isArray(response.records) ? response.records : [];
+        updateMarketStateFromPayload(response);
+        renderMarketSummary();
+        renderMarketBars();
+        if (!silent) {
+            setMarketStatus(`已載入 ${marketState.selectedSymbol || '市場'} 的 ${marketState.bars.length} 筆 bars。`, 'success');
+        }
+    } catch (error) {
+        marketState.bars = [];
+        renderMarketBars();
+        if (!silent) {
+            setMarketStatus(`bar 快取讀取失敗：${error.message}`, 'error');
+        }
+    }
+}
+
+async function loadMarketCache(silent = false) {
+    setMarketBusy(true);
+    if (!silent) {
+        setMarketStatus('正在讀取市場 instrument 與 summary...', 'info');
+    }
+
+    const params = new URLSearchParams();
+    const assetType = document.getElementById('marketAssetTypeFilter').value;
+    const query = document.getElementById('marketInstrumentQuery').value.trim();
+    if (assetType) {
+        params.set('asset_type', assetType);
+    }
+    if (query) {
+        params.set('query', query);
+    }
+    params.set('limit', '18');
+
+    try {
+        const [summary, instrumentsPayload] = await Promise.all([
+            requestMarketApi('/api/market/summary'),
+            requestMarketApi(`/api/market/instruments?${params.toString()}`),
+        ]);
+
+        updateMarketStateFromPayload(summary);
+        updateMarketStateFromPayload(instrumentsPayload);
+        marketState.instruments = Array.isArray(instrumentsPayload.records) ? instrumentsPayload.records : [];
+
+        const activeRecord = marketState.instruments.find((record) => record.symbol === marketState.selectedSymbol && record.assetType === marketState.selectedAssetType)
+            || marketState.instruments[0]
+            || null;
+
+        if (activeRecord) {
+            marketState.selectedSymbol = activeRecord.symbol;
+            marketState.selectedAssetType = activeRecord.assetType;
+        } else {
+            marketState.selectedSymbol = '';
+            marketState.selectedAssetType = '';
+            marketState.bars = [];
+        }
+
+        renderMarketSummary();
+        renderMarketInstrumentList();
+        renderMarketBars();
+
+        if (marketState.selectedSymbol) {
+            await loadMarketBars(true);
+        }
+
+        if (!silent) {
+            setMarketStatus(`已載入 ${marketState.instruments.length} 筆 instrument cache。`, 'success');
+        }
+    } catch (error) {
+        marketState.instruments = [];
+        marketState.bars = [];
+        renderMarketSummary();
+        renderMarketInstrumentList();
+        renderMarketBars();
+        setMarketStatus(`市場快取讀取失敗：${error.message}`, 'error');
+    } finally {
+        setMarketBusy(false);
+    }
+}
+
+async function syncMarketCache() {
+    setMarketBusy(true);
+    setMarketStatus('正在同步 TWSE / TAIFEX / Yahoo 市場資料...', 'info');
+
+    try {
+        const response = await requestMarketApi('/api/market/sync', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(marketSyncPayload()),
+        });
+        updateMarketStateFromPayload(response);
+        await loadMarketCache(true);
+        const stored = response.stored || {};
+        const failureCount = Array.isArray(response.failures) ? response.failures.length : 0;
+        setMarketStatus(`同步完成，stock ${stored.stock?.symbols || 0} 檔 · etf ${stored.etf?.symbols || 0} 檔 · futures ${stored.futures?.symbols || 0} 檔 · failures ${failureCount}。`, failureCount ? 'warning' : 'success');
+    } catch (error) {
+        setMarketStatus(`市場同步失敗：${error.message}`, 'error');
+    } finally {
+        setMarketBusy(false);
+    }
+}
+
+function scheduleMarketReload(message = '市場條件已更新，重新查詢快取…') {
+    setMarketStatus(message, 'info');
+    if (marketReloadTimer) {
+        clearTimeout(marketReloadTimer);
+    }
+    marketReloadTimer = setTimeout(() => {
+        marketReloadTimer = null;
+        loadMarketCache(true);
+    }, 220);
+}
+
+function initMarketOps() {
+    document.getElementById('marketSyncBtn').addEventListener('click', () => {
+        syncMarketCache();
+    });
+
+    document.getElementById('marketReloadBtn').addEventListener('click', () => {
+        loadMarketCache(false);
+    });
+
+    document.getElementById('marketAssetTypeFilter').addEventListener('change', () => {
+        scheduleMarketReload('資產類型已變更，重新查詢市場快取…');
+    });
+
+    document.getElementById('marketInstrumentQuery').addEventListener('input', () => {
+        scheduleMarketReload('搜尋條件已變更，重新查詢市場快取…');
+    });
+
+    document.getElementById('marketContractMonthFilter').addEventListener('input', () => {
+        if (!marketState.selectedSymbol) {
+            renderMarketBars();
+            return;
+        }
+        scheduleMarketReload('合約月條件已變更，重新查詢 bars…');
+    });
+
+    loadMarketCache(true);
+}
+
 function initialisePage() {
     renderHeroStats();
     renderStaticCards();
     populateFilters();
     populateStockSelect(uiState.currentStockCode);
     bindEvents();
+    initMarketOps();
     renderSelectedStockMeta(getStockByCode(uiState.currentStockCode), null);
     rerunGA();
 }

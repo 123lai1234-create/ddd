@@ -49,6 +49,16 @@ const sequenceVaultState = {
         latestFetchedAt: null
     }
 };
+const sequencingRunState = {
+    selectedId: null,
+    records: [],
+    summary: {
+        runCount: 0,
+        organismCount: 0,
+        studyCount: 0,
+        latestFetchedAt: null
+    }
+};
 const knowledgeVaultState = {
     activeType: 'protein_annotation',
     selectedId: null,
@@ -102,6 +112,26 @@ function formatDateTime(value) {
     });
 }
 
+function formatCompactNumber(value) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return '-';
+    return parsed.toLocaleString('zh-TW');
+}
+
+function formatBytes(value) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) return '-';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let size = parsed;
+    let index = 0;
+    while (size >= 1024 && index < units.length - 1) {
+        size /= 1024;
+        index += 1;
+    }
+    const digits = size >= 100 || index === 0 ? 0 : size >= 10 ? 1 : 2;
+    return `${size.toFixed(digits)} ${units[index]}`;
+}
+
 function setSequenceStatus(message, state = 'info') {
     const statusEl = document.getElementById('sequenceStatus');
     if (!statusEl) return;
@@ -110,7 +140,7 @@ function setSequenceStatus(message, state = 'info') {
 }
 
 function setSharedApiLabels(value) {
-    ['sequenceApiLabel', 'knowledgeApiLabel'].forEach((id) => {
+    ['sequenceApiLabel', 'sequencingRunApiLabel', 'knowledgeApiLabel'].forEach((id) => {
         const label = document.getElementById(id);
         if (label) {
             label.textContent = value;
@@ -566,6 +596,285 @@ function initSequenceVault() {
     });
 
     loadSequenceCache(true);
+}
+
+function setSequencingRunStatus(message, state = 'info') {
+    const statusEl = document.getElementById('sequencingRunStatus');
+    if (!statusEl) return;
+    statusEl.textContent = message;
+    statusEl.dataset.state = state;
+}
+
+function renderSequencingRunStrategyOptions() {
+    const select = document.getElementById('sequencingRunStrategyFilter');
+    if (!select) return;
+
+    const currentValue = select.value;
+    const strategies = [...new Set(sequencingRunState.records
+        .map((record) => String(record.libraryStrategy || '').trim())
+        .filter(Boolean))].sort((left, right) => left.localeCompare(right));
+
+    select.innerHTML = `
+                <option value="">全部 strategy</option>
+                ${strategies.map((strategy) => `<option value="${escapeHtml(strategy)}">${escapeHtml(strategy)}</option>`).join('')}
+            `;
+    select.value = strategies.includes(currentValue) ? currentValue : '';
+}
+
+function getVisibleSequencingRunRecords() {
+    const searchText = String(document.getElementById('sequencingRunSearch')?.value || '').trim().toLowerCase();
+    const strategyFilter = String(document.getElementById('sequencingRunStrategyFilter')?.value || '').trim().toLowerCase();
+
+    return sequencingRunState.records.filter((record) => {
+        const matchesStrategy = !strategyFilter || String(record.libraryStrategy || '').toLowerCase() === strategyFilter;
+        if (!matchesStrategy) {
+            return false;
+        }
+
+        if (!searchText) {
+            return true;
+        }
+
+        const haystack = [
+            record.sourceId,
+            record.studyAccession,
+            record.experimentAccession,
+            record.sampleAccession,
+            record.organism,
+            record.libraryStrategy,
+            record.instrumentModel,
+            record.instrumentPlatform,
+            record.queryTerm,
+        ].join(' ').toLowerCase();
+
+        return haystack.includes(searchText);
+    });
+}
+
+function updateSequencingRunFilterMeta(visibleCount, totalCount) {
+    const metaEl = document.getElementById('sequencingRunFilterMeta');
+    if (!metaEl) return;
+    metaEl.textContent = `顯示 ${visibleCount} / ${totalCount} 筆`;
+}
+
+function renderSequencingRunSummary() {
+    const summaryEl = document.getElementById('sequencingRunSummary');
+    if (!summaryEl) return;
+
+    const summary = sequencingRunState.summary;
+    summaryEl.innerHTML = `
+                <div class="summary-card"><div class="k">Runs</div><div class="v">${formatCompactNumber(summary.runCount)}</div></div>
+                <div class="summary-card"><div class="k">Studies</div><div class="v">${formatCompactNumber(summary.studyCount)}</div></div>
+                <div class="summary-card"><div class="k">Organisms</div><div class="v">${formatCompactNumber(summary.organismCount)}</div></div>
+                <div class="summary-card"><div class="k">Latest sync</div><div class="v">${escapeHtml(formatDateTime(summary.latestFetchedAt))}</div></div>
+            `;
+}
+
+function renderSequencingRunDetail(record) {
+    const detailEl = document.getElementById('sequencingRunDetail');
+    if (!detailEl) return;
+
+    if (!record) {
+        detailEl.innerHTML = '<div class="knowledge-empty">目前沒有可顯示的 sequencing run 紀錄。可以先同步 ENA metadata，再在這裡檢視 study / sample / instrument 細節。</div>';
+        return;
+    }
+
+    const links = [];
+    if (record.recordUrl) {
+        links.push(`<a class="sequence-source-link" href="${escapeHtml(record.recordUrl)}" target="_blank" rel="noreferrer">查看 ENA 紀錄</a>`);
+    }
+    if (record.ftpUrl) {
+        links.push(`<a class="sequence-source-link" href="${escapeHtml(record.ftpUrl)}" target="_blank" rel="noreferrer">查看 FASTQ FTP</a>`);
+    }
+
+    detailEl.innerHTML = `
+                <div class="detail-title">${escapeHtml(record.sourceId)}</div>
+                <div class="detail-copy">${escapeHtml(record.organism || 'Unknown organism')} · ${escapeHtml(record.libraryStrategy || 'Unknown strategy')} · ${escapeHtml(record.instrumentModel || 'Unknown instrument')}</div>
+                <div class="detail-meta">
+                    <div class="box"><div class="k">Study</div><div class="v">${escapeHtml(record.studyAccession || '-')}</div></div>
+                    <div class="box"><div class="k">Experiment</div><div class="v">${escapeHtml(record.experimentAccession || '-')}</div></div>
+                    <div class="box"><div class="k">Sample</div><div class="v">${escapeHtml(record.sampleAccession || '-')}</div></div>
+                    <div class="box"><div class="k">Layout</div><div class="v">${escapeHtml(record.libraryLayout || '-')}</div></div>
+                    <div class="box"><div class="k">Reads</div><div class="v">${formatCompactNumber(record.readCount)}</div></div>
+                    <div class="box"><div class="k">Bases</div><div class="v">${formatCompactNumber(record.baseCount)}</div></div>
+                    <div class="box"><div class="k">FASTQ size</div><div class="v">${formatBytes(record.fastqBytes)}</div></div>
+                    <div class="box"><div class="k">Published</div><div class="v">${escapeHtml(record.publishedAt || '-')}</div></div>
+                </div>
+                <div class="sequence-link-row">
+                    <span>${links.join(' · ') || 'No external links available.'}</span>
+                    <span>寫入時間：${escapeHtml(formatDateTime(record.fetchedAt))}</span>
+                </div>
+                <div class="sequence-detail-seq">
+                    <div><strong>Query:</strong> ${escapeHtml(record.queryTerm || '-')}</div>
+                    <div><strong>Library Source:</strong> ${escapeHtml(record.librarySource || '-')}</div>
+                    <div><strong>Instrument Platform:</strong> ${escapeHtml(record.instrumentPlatform || '-')}</div>
+                </div>
+            `;
+}
+
+function renderSequencingRunFeed() {
+    const feedEl = document.getElementById('sequencingRunFeed');
+    if (!feedEl) return;
+
+    const visibleRecords = getVisibleSequencingRunRecords();
+    updateSequencingRunFilterMeta(visibleRecords.length, sequencingRunState.records.length);
+
+    if (!sequencingRunState.records.length) {
+        feedEl.innerHTML = '<div class="knowledge-empty">這個 sequencing run 快取目前是空的。先按「同步 ENA run 到 DB」，或讓頁面首次自動初始化。</div>';
+        renderSequencingRunDetail(null);
+        return;
+    }
+
+    if (!visibleRecords.length) {
+        feedEl.innerHTML = '<div class="knowledge-empty">目前沒有符合搜尋或 strategy 篩選的 sequencing run。調整條件後就會重新顯示。</div>';
+        renderSequencingRunDetail(null);
+        return;
+    }
+
+    const selectedRecord = visibleRecords.find((record) => record.id === sequencingRunState.selectedId) || visibleRecords[0];
+    sequencingRunState.selectedId = selectedRecord.id;
+
+    feedEl.innerHTML = visibleRecords.map((record) => {
+        const activeClass = record.id === sequencingRunState.selectedId ? 'active' : '';
+        const strategy = record.libraryStrategy || 'RUN';
+        const snippetParts = [
+            record.studyAccession,
+            record.sampleAccession,
+            record.instrumentModel,
+        ].filter(Boolean);
+
+        return `
+                    <button class="knowledge-card ${activeClass}" type="button" data-record-id="${record.id}">
+                        <div class="knowledge-card-top">
+                            <div>
+                                <div class="knowledge-card-title">${escapeHtml(record.sourceId)}</div>
+                                <div class="knowledge-card-sub">${escapeHtml(record.organism || '-')}</div>
+                            </div>
+                            <div class="knowledge-chip run">${escapeHtml(strategy)}</div>
+                        </div>
+                        <div class="knowledge-snippet">${escapeHtml(snippetParts.join(' · ') || 'No study / sample / instrument metadata available.')}</div>
+                        <div class="knowledge-meta-row">
+                            <span>${escapeHtml(record.libraryLayout || '-')}</span>
+                            <span>${escapeHtml(record.instrumentPlatform || '-')}</span>
+                            <span>${formatCompactNumber(record.readCount)}</span>
+                        </div>
+                    </button>
+                `;
+    }).join('');
+
+    feedEl.querySelectorAll('.knowledge-card').forEach((button) => {
+        button.addEventListener('click', () => {
+            sequencingRunState.selectedId = Number(button.dataset.recordId);
+            renderSequencingRunFeed();
+        });
+    });
+
+    renderSequencingRunDetail(selectedRecord);
+}
+
+function updateSequencingRunStateFromPayload(payload) {
+    sequencingRunState.records = Array.isArray(payload.records)
+        ? payload.records
+        : sequencingRunState.records;
+
+    sequencingRunState.summary = {
+        runCount: Number(payload.runCount ?? sequencingRunState.records.length ?? 0),
+        organismCount: Number(payload.organismCount ?? sequencingRunState.summary.organismCount ?? 0),
+        studyCount: Number(payload.studyCount ?? sequencingRunState.summary.studyCount ?? 0),
+        latestFetchedAt: payload.latestFetchedAt ?? sequencingRunState.summary.latestFetchedAt,
+    };
+}
+
+function sequencingRunSyncPayload() {
+    return {
+        query: document.getElementById('sequencingRunQuery').value.trim() || 'tax_name("Homo sapiens") AND library_strategy="RNA-Seq"',
+        limit: Number(document.getElementById('sequencingRunLimit').value) || 4,
+    };
+}
+
+function setSequencingRunBusy(isBusy) {
+    document.getElementById('sequencingRunSync').disabled = isBusy;
+    document.getElementById('sequencingRunReload').disabled = isBusy;
+}
+
+async function loadSequencingRunCache(autoSyncIfEmpty = true) {
+    setSequencingRunBusy(true);
+    setSequencingRunStatus('正在從 Render DB 讀取 sequencing run 快取...', 'info');
+
+    try {
+        const [summary, payload] = await Promise.all([
+            requestSequenceApi('/api/sequencing-runs/summary'),
+            requestSequenceApi('/api/sequencing-runs?limit=20')
+        ]);
+
+        updateSequencingRunStateFromPayload(summary);
+        updateSequencingRunStateFromPayload(payload);
+        renderSequencingRunSummary();
+        renderSequencingRunStrategyOptions();
+        renderSequencingRunFeed();
+
+        if (autoSyncIfEmpty && sequencingRunState.records.length === 0) {
+            setSequencingRunStatus('DB 目前沒有 sequencing run metadata，開始從 ENA 初始化快取...', 'warning');
+            await syncSequencingRunVault(true);
+            return;
+        }
+
+        setSequencingRunStatus(`已載入 ${sequencingRunState.records.length} 筆 sequencing run metadata。`, 'success');
+    } catch (error) {
+        renderSequencingRunSummary();
+        renderSequencingRunStrategyOptions();
+        renderSequencingRunFeed();
+        setSequencingRunStatus(`sequencing run 快取讀取失敗：${error.message}`, 'error');
+    } finally {
+        setSequencingRunBusy(false);
+    }
+}
+
+async function syncSequencingRunVault(autoMode = false) {
+    setSequencingRunBusy(true);
+    setSequencingRunStatus(autoMode ? '正在自動初始化 ENA sequencing metadata...' : '正在同步 ENA sequencing metadata 並寫入 DB...', 'info');
+
+    try {
+        const response = await requestSequenceApi('/api/sequencing-runs/sync', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(sequencingRunSyncPayload())
+        });
+
+        updateSequencingRunStateFromPayload(response);
+        renderSequencingRunSummary();
+        renderSequencingRunStrategyOptions();
+        renderSequencingRunFeed();
+        setSequencingRunStatus(`同步完成，已寫入 ${formatCompactNumber(response.stored || 0)} 筆 sequencing run metadata。`, 'success');
+    } catch (error) {
+        setSequencingRunStatus(`同步失敗：${error.message}`, 'error');
+    } finally {
+        setSequencingRunBusy(false);
+    }
+}
+
+function initSequencingRunVault() {
+    document.getElementById('sequencingRunSearch').addEventListener('input', () => {
+        sequencingRunState.selectedId = null;
+        renderSequencingRunFeed();
+    });
+
+    document.getElementById('sequencingRunStrategyFilter').addEventListener('change', () => {
+        sequencingRunState.selectedId = null;
+        renderSequencingRunFeed();
+    });
+
+    document.getElementById('sequencingRunSync').addEventListener('click', () => {
+        syncSequencingRunVault(false);
+    });
+
+    document.getElementById('sequencingRunReload').addEventListener('click', () => {
+        loadSequencingRunCache(false);
+    });
+
+    loadSequencingRunCache(true);
 }
 
 function setKnowledgeStatus(message, state = 'info') {
@@ -1358,6 +1667,7 @@ function initChartDefaults() {
 
 function initPage() {
     initSequenceVault();
+    initSequencingRunVault();
     initKnowledgeVault();
 }
 

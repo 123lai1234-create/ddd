@@ -287,10 +287,110 @@
         </div>
     </div>
 
+    <div id="market-ops" class="section reveal">
+        <div class="section-inner">
+            <div class="section-label">Live Market Ops</div>
+            <h2 class="section-title">市場資料同步、TAIFEX 合約月與日線快取檢視</h2>
+            <p class="section-sub">這一區直接讀取後端 market layer。你可以手動同步 TWSE 現貨、TAIFEX 期貨與 Yahoo fallback 資料，並直接檢查 instrument cache、contract month 與最近日線 bars。</p>
+
+            <div class="ops-shell">
+                <aside class="ops-panel ops-controls">
+                    <div>
+                        <div class="card-title">同步設定</div>
+                        <div class="card-note">預設會同步台股、ETF、台指期 / 台股期，以及海外期貨 fallback。TAIFEX 合約月會保留在 bar cache 內。</div>
+                    </div>
+
+                    <div class="ga-cfg-field">
+                        <label class="ga-cfg-label" for="marketStockSymbols">TWSE stock symbols</label>
+                        <textarea class="ga-cfg-input" id="marketStockSymbols" rows="2">2330, 2317</textarea>
+                    </div>
+                    <div class="ga-cfg-field">
+                        <label class="ga-cfg-label" for="marketEtfSymbols">TWSE ETF symbols</label>
+                        <textarea class="ga-cfg-input" id="marketEtfSymbols" rows="2">0050, 0056</textarea>
+                    </div>
+                    <div class="ga-cfg-field">
+                        <label class="ga-cfg-label" for="marketFuturesSymbols">Futures symbols</label>
+                        <textarea class="ga-cfg-input" id="marketFuturesSymbols" rows="3">TX, MTX, 2330, 0050, ES=F</textarea>
+                    </div>
+
+                    <div class="ga-cfg-grid" style="margin-bottom:0">
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="marketTwseMonths">抓取月數</label>
+                            <select class="ga-cfg-input" id="marketTwseMonths">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3" selected>3</option>
+                            </select>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="marketYahooRange">Yahoo range</label>
+                            <select class="ga-cfg-input" id="marketYahooRange">
+                                <option value="1mo">1mo</option>
+                                <option value="3mo" selected>3mo</option>
+                                <option value="6mo">6mo</option>
+                                <option value="1y">1y</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="ga-cfg-actions">
+                        <button class="btn btn-primary" id="marketSyncBtn" type="button">同步市場資料</button>
+                        <button class="btn btn-ghost" id="marketReloadBtn" type="button">重新讀取快取</button>
+                    </div>
+
+                    <div id="marketStatus" class="ops-status">正在讀取市場資料快取...</div>
+                    <div class="ga-cfg-hint">API base: <span id="marketApiLabel">detecting...</span></div>
+                </aside>
+
+                <div class="ops-panel ops-results">
+                    <div class="ops-top">
+                        <div>
+                            <div class="card-title">Market Cache</div>
+                            <div class="card-note">點選 instrument 後，右側 bars 會重新查詢對應 symbol；若是 TAIFEX 來源，contract month 會一起顯示。</div>
+                        </div>
+                        <span class="badge">TWSE + TAIFEX + Yahoo</span>
+                    </div>
+
+                    <div id="marketSummary" class="ops-summary"></div>
+
+                    <div class="ops-toolbar">
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="marketAssetTypeFilter">資產類型</label>
+                            <select class="ga-cfg-input" id="marketAssetTypeFilter">
+                                <option value="">全部</option>
+                                <option value="stock">Stock</option>
+                                <option value="etf">ETF</option>
+                                <option value="futures">Futures</option>
+                            </select>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="marketInstrumentQuery">搜尋 instrument</label>
+                            <input class="ga-cfg-input" id="marketInstrumentQuery" type="text" placeholder="例如 TX, 2330, 0050, 台積電期貨">
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="marketContractMonthFilter">合約月篩選</label>
+                            <input class="ga-cfg-input" id="marketContractMonthFilter" type="text" placeholder="例如 202404">
+                        </div>
+                        <div id="marketFilterMeta" class="ga-cfg-hint ops-toolbar-meta">尚未載入資料</div>
+                    </div>
+
+                    <div id="marketInstrumentList" class="ops-list"></div>
+
+                    <div class="card" style="margin-top:18px">
+                        <div class="card-title">Recent Daily Bars</div>
+                        <div id="marketBarsMeta" class="card-note">尚未選取 instrument。</div>
+                        <div id="marketBarsList" class="ops-bar-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div data-site-footer></div>
 
     <button class="scroll-top" aria-label="返回頂部">↑</button>
 
+    <script src="scripts/app-config.js"></script>
     <script src="scripts/thesis.js"></script>
 </body>
 
