@@ -259,6 +259,96 @@ async function _fetchPdbTextWithFallback(pdbId, signal) {
     throw lastError || new Error('No PDB source available');
 }
 
+// ── ESMFold API：折疊任意序列 ──────────────────────────────────────────
+const ESMFOLD_API = 'https://api.esmatlas.com/foldSequence/v1/pdb/';
+
+async function loadSeqWithEsmFold(seq) {
+    if (!seq || seq.length < 10) { alert('序列太短（最少 10 個殘基）'); return; }
+    if (seq.length > 400) { alert('ESMFold 免費 API 建議序列長度 ≤ 400，請截短後再試。'); return; }
+
+    _log3dDebug('esmfold:start', { seqLen: seq.length });
+
+    _setStructPlaceholder(
+        '<div style="font-size:1.6rem;animation:spin3d 1s linear infinite">🧬</div>' +
+        '<div style="margin-top:12px;font-size:.88rem;color:var(--muted)">ESMFold 預測結構中（' + seq.length + ' 殘基）…<br>' +
+        '<span style="font-size:.75rem;color:var(--dim)">通常需要 10–30 秒</span></div>'
+    );
+
+    if (typeof $3Dmol === 'undefined') {
+        if (typeof window.load3Dmol === 'function') {
+            await new Promise((resolve, reject) => {
+                window.load3Dmol(err => err ? reject(err) : resolve());
+            });
+        }
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    try {
+        const resp = await fetch(ESMFOLD_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: seq,
+            signal: controller.signal,
+        });
+
+        if (!resp.ok) throw new Error('ESMFold API HTTP ' + resp.status);
+        const pdbText = await resp.text();
+        if (!pdbText || !pdbText.includes('ATOM')) throw new Error('ESMFold 回傳無效 PDB');
+
+        _log3dDebug('esmfold:got-pdb', { length: pdbText.length });
+
+        // 建立 viewer
+        const viewer3d = document.getElementById('mpnnStruct3d');
+        const placeholder = document.getElementById('mpnnStructPlaceholder');
+        viewer3d.innerHTML = '';
+        if (_3dmolViewer) { try { _3dmolViewer.removeAllModels(); _3dmolViewer.clear(); } catch (e) {} _3dmolViewer = null; }
+
+        await new Promise(r => requestAnimationFrame(r));
+        const rect = viewer3d.getBoundingClientRect();
+        const w = Math.max(Math.round(rect.width || viewer3d.offsetWidth || 320), 320);
+        const h = Math.max(Math.round(rect.height || viewer3d.offsetHeight || 340), 340);
+        _3dmolViewer = $3Dmol.createViewer(viewer3d, { backgroundColor: '#080c10', antialias: true, width: w, height: h });
+
+        _3dmolViewer.addModel(pdbText, 'pdb');
+        _3dmolViewer.setStyle({}, { cartoon: { color: 'spectrum', opacity: 0.95, thickness: 0.4 } });
+        _3dmolViewer.zoomTo();
+        _3dmolViewer.resize();
+        _3dmolViewer.render();
+        _3dmolViewer.spin(true);
+        _spinning = true; _structStyle = 'cartoon'; _3dColorMode = 'spectrum';
+        requestAnimationFrame(() => { if (placeholder) placeholder.style.display = 'none'; });
+
+        // 更新資訊列
+        const infoEl = document.getElementById('mpnnStructInfo');
+        if (infoEl) {
+            infoEl.style.display = 'flex';
+            const nameEl = infoEl.querySelector('.struct-name');
+            if (nameEl) nameEl.textContent = 'ESMFold 預測（' + seq.length + ' aa）';
+            const lenEl = infoEl.querySelector('.struct-len');
+            if (lenEl) lenEl.textContent = seq.length + ' 殘基';
+        }
+
+        window._loadedPdbId = null;
+        _showToast('🧬 ESMFold 結構預測完成（' + seq.length + ' 殘基）');
+        _log3dDebug('esmfold:rendered', { seqLen: seq.length });
+
+    } catch (err) {
+        _log3dDebug('esmfold:error', { message: err && err.message });
+        const isTimeout = err && err.name === 'AbortError';
+        _setStructPlaceholder(
+            '<div style="font-size:1.8rem">⚠️</div>' +
+            '<div style="font-size:.9rem;color:var(--muted)">ESMFold 預測失敗</div>' +
+            '<div style="font-size:.75rem;color:var(--dim)">' +
+            (isTimeout ? '請求逾時（60s），ESMFold API 可能暫時繁忙，請稍後再試。' :
+                (err && err.message) || '未知錯誤') + '</div>'
+        );
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 async function _loadStructureByPdbId(pdbId) {
     const placeholder = document.getElementById('mpnnStructPlaceholder');
     const viewer3d = document.getElementById('mpnnStruct3d');
@@ -497,7 +587,14 @@ function toggleStyle() {
 // 切換 3D 顯示到指定設計序列
 function viewSeqIn3D(idx) {
     if (!_3dmolViewer) {
-        alert('請先載入 PDB 結構'); return;
+        if (window._mpnnResults && window._mpnnResults[idx]) {
+            if (confirm('尚未載入 PDB 結構。\n是否用 ESMFold 預測此設計序列的結構？')) {
+                loadSeqWithEsmFold(window._mpnnResults[idx].seq);
+            }
+        } else {
+            alert('請先載入 PDB 結構或執行序列設計');
+        }
+        return;
     }
 
     if (!window._mpnnResults) {
@@ -934,9 +1031,9 @@ async function _searchPdbBySeq(seq) {
                             record_url: `https://www.rcsb.org/structure/${pdbId}`,
                             description: `RCSB search result${identity ? ', identity=' + (identity * 100).toFixed(1) + '%' : ''}`
                         })
-                    }).catch(() => {});
+                    }).catch(() => { });
                 }
-            } catch (_) {}
+            } catch (_) { }
         };
 
         if (identity && identity >= 0.9) {
@@ -1154,19 +1251,7 @@ async function runMPNN() {
         const idClr = r.identity > 0.7 ? '#3fb950' : r.identity > 0.4 ? '#f0883e' : '#f85149';
         const tr = document.createElement('tr');
 
-        tr.innerHTML = ` <td><span class="mpnn-badge-rank ${rankCls}" >${i + 1
-            }
-
-                </span></td> <td><div class="mpnn-seq-cell" title="${r.seq}" >${r.seq
-            }
-
-                </div></td> <td><div class="mpnn-id-bar" > <div class="mpnn-id-fill" style="width:${Math.round(r.identity * 80)}px;background:${idClr}" ></div> <span class="mpnn-id-text" style="color:${idClr}" >${idPct
-            }
-
-                %</span> </div></td> <td><span class="mpnn-score-cell" style="color:var(--purple)" >${r.score.toFixed(4)
-            }
-
-                </span></td> <td><button class="expand-btn view3d-btn" id="view3dBtn-${i}" onclick="viewSeqIn3D(${i})" title="在 3D 中查看此序列的突變" >🔬</button></td> <td><button class="expand-btn" onclick="showMpnnResidue(${i})" >詳情</button></td>`;
+        tr.innerHTML = ` <td><span class="mpnn-badge-rank ${rankCls}" >${i + 1}</span></td> <td><div class="mpnn-seq-cell" title="${r.seq}" >${r.seq}</div></td> <td><div class="mpnn-id-bar" > <div class="mpnn-id-fill" style="width:${Math.round(r.identity * 80)}px;background:${idClr}" ></div> <span class="mpnn-id-text" style="color:${idClr}" >${idPct}%</span> </div></td> <td><span class="mpnn-score-cell" style="color:var(--purple)" >${r.score.toFixed(4)}</span></td> <td><button class="expand-btn view3d-btn" id="view3dBtn-${i}" onclick="viewSeqIn3D(${i})" title="突變著色（需先載入PDB）">🔬</button> <button class="expand-btn" onclick="loadSeqWithEsmFold(window._mpnnResults[${i}].seq)" title="ESMFold 結構預測" style="font-size:.75rem;padding:2px 7px;opacity:.85">🧬 折疊</button></td> <td><button class="expand-btn" onclick="showMpnnResidue(${i})" >詳情</button></td>`;
         frag.appendChild(tr);
     });
     tbody.appendChild(frag);
