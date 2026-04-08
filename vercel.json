@@ -1,6 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": "frontend",
+  "env": {
+    "API_PROXY_TARGET": "https://donttalk-api-production.up.railway.app"
+  },
   "rewrites": [
     {
       "source": "/healthz",
