@@ -52,69 +52,72 @@
     <header class="hero">
         <div class="hero-grid">
             <div>
-                <div class="eyebrow">Engineer × Biomedical Research × Browser Demo</div>
-                <h1>基因序列到功能，<br><span>AI 設計平台</span></h1>
+                <div class="eyebrow">Genome SaaS Demo · Live Data + Simulated Decisioning</div>
+                <h1>把序列資料、知識檢索與設計評估<br><span>收進同一個 Gene AI 工作台</span></h1>
                 <p class="hero-sub">
-                    把 DNA 視為語言，把調控元件、編輯窗口與變異效應視為可優化目標。整合序列設計、CRISPR guide 排序與變異解讀，讓基因研究的每個環節都能在瀏覽器內走完一遍決策流程。
+                    這頁不是單一模型展示，而是把 live data layer、RAG-ready knowledge layer 與 decision surfaces
+                    放進同一個產品化介面，讓基因研究團隊能先建資料面，再做設計評估與風險排序。
                 </p>
                 <div class="hero-note">
-                    這是瀏覽器內的規劃型展示。所有候選序列、分數與 guide preview 都是模擬輸出，目的是展示平台設計與決策流程，不是可直接下實驗的 wet-lab 指令。
+                    目前 Sequence Vault 與 Knowledge Vault 會真的呼叫後端 API；Design Workbench、Guide Ranking、Variant
+                    Interpretation 則是受控模擬，用來展示產品決策面，而不是可直接下單的 wet-lab 配方。
                 </div>
                 <div class="hero-cta-row">
-                    <a href="#sequence-vault" class="btn btn-primary">啟動序列資料庫</a>
-                    <a href="#studio" class="btn btn-secondary">設計工作台</a>
+                    <a href="#product-overview" class="btn btn-primary">查看產品能力</a>
+                    <a href="#sequence-vault" class="btn btn-secondary">進入 Live Data Layer</a>
+                    <a href="#studio" class="btn btn-secondary">查看 Decision Studio</a>
                 </div>
                 <div class="hero-stats">
                     <div class="hero-stat">
-                        <div class="value">4-layer</div>
-                        <div class="label">從序列模型到 wet-lab loop 的決策堆疊</div>
+                        <div class="value">2 Live APIs</div>
+                        <div class="label">序列與知識模組目前已接 FastAPI + Render / Postgres</div>
                     </div>
                     <div class="hero-stat">
-                        <div class="value">Multi-objective</div>
-                        <div class="label">同時優化表達、特異性、可合成性與風險</div>
+                        <div class="value">3 Demo Surfaces</div>
+                        <div class="label">設計、guide、variant 三塊目前是可操作的前端模擬工作台</div>
                     </div>
                     <div class="hero-stat">
-                        <div class="value">Portfolio-ready</div>
-                        <div class="label">把模型展示、個人品牌與作品脈絡收進同一頁</div>
+                        <div class="value">RAG-ready</div>
+                        <div class="label">知識同步後可直接產生 chunks 與 metadata 給檢索流程</div>
                     </div>
                 </div>
             </div>
 
             <div class="signal-card">
                 <div class="signal-top">
-                    <div class="signal-title">平台訊號面板</div>
-                    <div class="status-pill">Simulated Runtime</div>
+                    <div class="signal-title">Product Runtime Snapshot</div>
+                    <div class="status-pill">Hybrid Demo</div>
                 </div>
                 <div class="signal-matrix">
                     <div class="signal-block">
-                        <div class="k">Foundation Model</div>
-                        <div class="v">Hybrid · Enformer + NT</div>
+                        <div class="k">Live Data Layer</div>
+                        <div class="v">Sequence Cache · Knowledge Cache</div>
                     </div>
                     <div class="signal-block">
-                        <div class="k">Design Space</div>
-                        <div class="v">Promoter · Guide · Variant</div>
+                        <div class="k">Knowledge Output</div>
+                        <div class="v">Evidence Search · RAG Documents</div>
                     </div>
                     <div class="signal-block">
-                        <div class="k">Risk Gate</div>
-                        <div class="v">Off-target · Synthesis · Context</div>
+                        <div class="k">Decision Surfaces</div>
+                        <div class="v">Design · Guide · Variant</div>
                     </div>
                     <div class="signal-block">
-                        <div class="k">Loop</div>
-                        <div class="v">In silico → Reporter assay</div>
+                        <div class="k">Governance</div>
+                        <div class="v">Masked Preview · Risk Gate · Audit UI</div>
                     </div>
                 </div>
                 <div class="signal-list">
                     <div class="signal-item">
-                        <div class="left">Promoter 候選集</div>
-                        <div class="right">4 variants / batch</div>
+                        <div class="left">Sequence sync</div>
+                        <div class="right">UniProt / Ensembl → Render DB</div>
                     </div>
                     <div class="signal-item">
-                        <div class="left">Guide ranking 綜合分數</div>
-                        <div class="right">0.45 eff · 0.40 spec · -0.15 risk</div>
+                        <div class="left">Knowledge sync</div>
+                        <div class="right">UniProt / PubMed → RAG-ready docs</div>
                     </div>
                     <div class="signal-item">
-                        <div class="left">Variant effect report</div>
-                        <div class="right">cell-type aware</div>
+                        <div class="left">Decision layer</div>
+                        <div class="right">Client-side simulated scoring surfaces</div>
                     </div>
                 </div>
             </div>
@@ -122,16 +125,128 @@
     </header>
 
     <main class="container">
+        <section id="product-overview" class="section section-tight">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Product Surfaces</div>
+                    <h2 class="section-title">先把產品面講清楚，再進互動工作台</h2>
+                    <p class="section-sub">
+                        這頁現在比較像真正的 SaaS 首頁：先說清楚平台提供哪三種工作面，再讓使用者往下看 live data 模組與 decision demo。
+                    </p>
+                </div>
+                <div class="section-badge badge-architecture">SaaS-style Information Architecture</div>
+            </div>
+
+            <div class="surface-grid">
+                <article class="surface-card">
+                    <div class="surface-head">
+                        <span class="runtime-badge runtime-badge-live">Live API</span>
+                        <h3>Sequence Operations</h3>
+                    </div>
+                    <p>從公開來源抓 protein / gene sequence，落到 Postgres 快取後，前端就能直接搜尋、篩選、檢視與刪除。</p>
+                    <div class="surface-points">
+                        <div class="surface-point">UniProt / Ensembl 同步</div>
+                        <div class="surface-point">Render DB 快取</div>
+                        <div class="surface-point">前端即時讀取</div>
+                    </div>
+                    <a href="#sequence-vault" class="text-link">查看 Sequence Vault</a>
+                </article>
+
+                <article class="surface-card">
+                    <div class="surface-head">
+                        <span class="runtime-badge runtime-badge-live">Live API</span>
+                        <h3>Knowledge Retrieval</h3>
+                    </div>
+                    <p>把 UniProt annotation 與 PubMed 摘要整成 evidence feed，再輸出可直接送進向量資料庫的 RAG 文件片段。</p>
+                    <div class="surface-points">
+                        <div class="surface-point">Evidence Search</div>
+                        <div class="surface-point">Document Chunking</div>
+                        <div class="surface-point">Metadata-ready</div>
+                    </div>
+                    <a href="#knowledge-vault" class="text-link">查看 Knowledge Vault</a>
+                </article>
+
+                <article class="surface-card">
+                    <div class="surface-head">
+                        <span class="runtime-badge runtime-badge-demo">Simulated</span>
+                        <h3>Decision Studio</h3>
+                    </div>
+                    <p>用受控模擬方式展示設計候選、guide ranking、variant interpretation 三種決策介面，重點是產品流程，不是直接輸出實驗序列。</p>
+                    <div class="surface-points">
+                        <div class="surface-point">Masked Sequence Preview</div>
+                        <div class="surface-point">Multi-objective Scores</div>
+                        <div class="surface-point">Risk-aware UI</div>
+                    </div>
+                    <a href="#studio" class="text-link">查看 Decision Studio</a>
+                </article>
+            </div>
+        </section>
+
+        <section id="runtime-status" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Runtime Status</div>
+                    <h2 class="section-title">目前哪些模組是真接 API，哪些還是產品 demo</h2>
+                    <p class="section-sub">
+                        這裡把現況講白，讓使用者一眼看懂哪些功能已經連到後端資料面，哪些區塊目前仍是前端模擬與產品概念驗證。
+                    </p>
+                </div>
+                <div class="section-badge badge-live">Honest Product Positioning</div>
+            </div>
+
+            <div class="runtime-grid">
+                <article class="runtime-card">
+                    <div class="runtime-top">
+                        <h3>Sequence Vault</h3>
+                        <span class="runtime-badge runtime-badge-live">Live API-backed</span>
+                    </div>
+                    <p>真的會讀 `/healthz`、`/api/sequences/summary`、`/api/sequences`，也能同步與刪除 DB 紀錄。</p>
+                </article>
+
+                <article class="runtime-card">
+                    <div class="runtime-top">
+                        <h3>Knowledge Vault</h3>
+                        <span class="runtime-badge runtime-badge-live">Live API-backed</span>
+                    </div>
+                    <p>真的會同步知識資料、讀取快取，並向 `/api/rag/documents` 產生 RAG 文件預覽。</p>
+                </article>
+
+                <article class="runtime-card">
+                    <div class="runtime-top">
+                        <h3>Design Workbench</h3>
+                        <span class="runtime-badge runtime-badge-demo">Client-side simulation</span>
+                    </div>
+                    <p>依輸入條件在前端產生可重現的候選分數與雷達圖，不會呼叫真實設計模型。</p>
+                </article>
+
+                <article class="runtime-card">
+                    <div class="runtime-top">
+                        <h3>Guide Ranking</h3>
+                        <span class="runtime-badge runtime-badge-demo">Client-side simulation</span>
+                    </div>
+                    <p>依 PAM、模式與嚴格度在前端重建 ranking table 與 bubble chart，不打 CRISPR backend。</p>
+                </article>
+
+                <article class="runtime-card">
+                    <div class="runtime-top">
+                        <h3>Variant Interpretation</h3>
+                        <span class="runtime-badge runtime-badge-demo">Client-side simulation</span>
+                    </div>
+                    <p>前端用 seeded scoring 產生 expression、splice、chromatin 報告，現在是 UI demo，不是 clinical engine。</p>
+                </article>
+            </div>
+        </section>
+
         <section id="profile" class="section">
             <div class="section-head">
                 <div>
-                    <div class="section-label">Creator Profile</div>
-                    <h2 class="section-title">把您的個人網站脈絡接進基因 AI 頁</h2>
+                    <div class="section-label">Builder Context</div>
+                    <h2 class="section-title">為什麼這個頁面不只是概念稿，而是能往產品走的原型</h2>
                     <p class="section-sub">
-                        這一段整理自您的個人網站：工程、生醫研究、應用介面與 NGS 相關經驗，不再只是外部連結，而是直接成為這個基因 AI 平台的背景敘事。
+                        這一段保留創作者脈絡，但語氣改成 builder context：說明這個 Gene AI 首頁背後，為什麼同時有工程、資料、介面與生醫研究能力可以往下落地。
                     </p>
                 </div>
-                <div class="section-badge">Integrated from Personal Website</div>
+                <div class="section-badge badge-architecture">Builder-to-Product Story</div>
             </div>
 
             <div class="summary-strip">
@@ -196,7 +311,7 @@
                         讀快取，不再只是靜態示範卡片。
                     </p>
                 </div>
-                <div class="section-badge">UniProt + Ensembl + Render Postgres</div>
+                <div class="section-badge badge-live">Live API · UniProt + Ensembl + Render Postgres</div>
             </div>
 
             <div class="sequence-grid">
@@ -291,7 +406,7 @@
                         metadata 給檢索流程。
                     </p>
                 </div>
-                <div class="section-badge">UniProt + NCBI E-utilities + RAG-ready</div>
+                <div class="section-badge badge-live">Live API · UniProt + NCBI E-utilities + RAG-ready</div>
             </div>
 
             <div class="sequence-grid">
@@ -389,7 +504,7 @@
                         用一組需求描述，生成多個模擬候選並比較多目標分數。這裡的重點不是單一最高分，而是讓你快速看到不同候選在表達、特異性、可製造性與風險上的取捨。
                     </p>
                 </div>
-                <div class="section-badge">Interactive · Candidate Synthesis Planner</div>
+                <div class="section-badge badge-demo">Simulated · Candidate Synthesis Planner</div>
             </div>
 
             <div class="studio-grid">
@@ -476,7 +591,7 @@
                         這個模組示範平台如何在效率、特異性與風險之間重排 guide 候選。表格中的 guide 只保留遮罩後的 seed preview，用來展示 ranking 與審核流程。
                     </p>
                 </div>
-                <div class="section-badge">Masked Preview · Not Wet-lab Ready</div>
+                <div class="section-badge badge-demo">Simulated · Masked Preview · Not Wet-lab Ready</div>
             </div>
 
             <div class="guide-grid">
@@ -569,7 +684,7 @@
                         用同一組介面連接基因調控視角與臨床優先排序：輸入變異背景後，平台會估計表達位移、splicing 風險與 chromatin 影響，並給出下一步驗證建議。
                     </p>
                 </div>
-                <div class="section-badge">Cell-context Aware Scoring</div>
+                <div class="section-badge badge-demo">Simulated · Cell-context Aware Scoring</div>
             </div>
 
             <div class="variant-grid">
@@ -849,6 +964,21 @@
                     </div>
                 </div>
 
+            </div>
+        </section>
+
+        <section class="section cta-band">
+            <div>
+                <div class="section-label">Next Step</div>
+                <h2 class="section-title">先用 live data layer 建庫，再把 decision layer 接上真模型</h2>
+                <p class="section-sub">
+                    現在這頁最適合用來展示產品化方向：資料同步和知識檢索已經能工作，下一步就是把設計、guide、variant 三塊從模擬層換成真正的模型與服務。
+                </p>
+            </div>
+            <div class="section-actions">
+                <a href="#sequence-vault" class="btn btn-primary">打開 Live Data Modules</a>
+                <a href="#knowledge-vault" class="btn btn-secondary">查看 RAG Knowledge Layer</a>
+                <a href="#studio" class="btn btn-secondary">回到 Decision Demo</a>
             </div>
         </section>
     </main>

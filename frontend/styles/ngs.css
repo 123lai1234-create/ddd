@@ -129,6 +129,175 @@ body {
   padding: 0 40px 80px;
 }
 
+.service-overview {
+  margin-bottom: 28px;
+  padding: 28px 30px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.service-overview-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 22px;
+}
+
+.service-overview-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(88, 215, 255, 0.2);
+  background: rgba(88, 215, 255, 0.08);
+  color: var(--teal);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.service-overview-title {
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  margin-bottom: 10px;
+}
+
+.service-overview-sub {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.service-overview-note {
+  color: #c9d6d2;
+  font-size: 0.84rem;
+  line-height: 1.75;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: rgba(255, 188, 114, 0.08);
+  border: 1px solid rgba(255, 188, 114, 0.18);
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.service-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.service-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+
+.service-card-highlight {
+  border-color: rgba(123, 240, 190, 0.22);
+  box-shadow: 0 12px 28px rgba(123, 240, 190, 0.06);
+}
+
+.service-card-top {
+  display: grid;
+  gap: 10px;
+}
+
+.service-card h3 {
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.service-card p {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.service-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.service-badge-teal {
+  color: var(--teal);
+  background: rgba(88, 215, 255, 0.1);
+  border-color: rgba(88, 215, 255, 0.2);
+}
+
+.service-badge-green {
+  color: var(--green);
+  background: rgba(123, 240, 190, 0.1);
+  border-color: rgba(123, 240, 190, 0.22);
+}
+
+.service-badge-orange {
+  color: var(--orange);
+  background: rgba(255, 188, 114, 0.12);
+  border-color: rgba(255, 188, 114, 0.2);
+}
+
+.service-badge-purple {
+  color: var(--purple);
+  background: rgba(181, 156, 255, 0.1);
+  border-color: rgba(181, 156, 255, 0.2);
+}
+
+.service-badge-yellow {
+  color: var(--yellow);
+  background: rgba(255, 213, 107, 0.1);
+  border-color: rgba(255, 213, 107, 0.2);
+}
+
+.service-badge-red {
+  color: var(--red);
+  background: rgba(255, 131, 146, 0.1);
+  border-color: rgba(255, 131, 146, 0.2);
+}
+
+.service-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.service-meta span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  color: #c8d6d1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+}
+
 /* ── Step cards ── */
 .steps-grid {
   display: flex;
@@ -492,6 +661,14 @@ footer {
 }
 
 @media (max-width: 700px) {
+  .service-overview {
+    padding: 22px 20px;
+  }
+
+  .service-overview-head {
+    grid-template-columns: 1fr;
+  }
+
   .page-hero,
   .container {
     padding-left: 20px;

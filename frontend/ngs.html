@@ -53,6 +53,113 @@
 
     <!-- ── Content ── -->
     <div class="container">
+        <section class="service-overview reveal">
+            <div class="service-overview-head">
+                <div>
+                    <div class="service-overview-label">Multi-omics Service Catalog</div>
+                    <h2 class="service-overview-title">你的網站可以做，而且很適合做成多體學分析入口</h2>
+                    <p class="service-overview-sub">
+                        以目前網站架構來看，這些項目完全可以放進站上。最合理的定位不是「所有分析都在瀏覽器內完成」，而是把網站做成分析模組總覽、任務入口、結果報告與雲端工作台，再把重計算流程交給後端
+                        pipeline。
+                    </p>
+                </div>
+                <div class="service-overview-note">
+                    前台可先承接：模組介紹、資料上傳、任務提交、報告瀏覽、互動圖表與結果下載。真正要跑 scRNA、WES/WGS、Proteomics 等高計算量分析時，再接 job queue、物件儲存與
+                    worker。
+                </div>
+            </div>
+
+            <div class="service-grid">
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-green">標準轉錄體</span>
+                        <h3>RNAseq</h3>
+                    </div>
+                    <p>轉錄體定序分析，用於差異表現、PCA、volcano plot、heatmap、GSEA 與 pathway enrichment。</p>
+                    <div class="service-meta">
+                        <span>STAR / Salmon</span><span>DESeq2</span><span>GSEA</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-red">高計算量</span>
+                        <h3>scRNA</h3>
+                    </div>
+                    <p>單細胞 RNA 定序，可做 QC、細胞分群、marker genes、UMAP/TSNE 與 cell type annotation。</p>
+                    <div class="service-meta">
+                        <span>Cell Ranger</span><span>Seurat</span><span>Scanpy</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-teal">微生物相</span>
+                        <h3>FL16S</h3>
+                    </div>
+                    <p>全長 16S rRNA 菌相分析，可輸出 taxonomy profile、alpha/beta diversity、relative abundance 與群落比較。</p>
+                    <div class="service-meta">
+                        <span>SILVA</span><span>DADA2</span><span>Kraken2</span>
+                    </div>
+                </article>
+
+                <article class="service-card service-card-highlight">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-green">最適合產品化</span>
+                        <h3>FL16S ASAP</h3>
+                    </div>
+                    <p>把 FL16S 做成一鍵式自動分析平台，特別適合網站型產品：上傳樣本、跑標準流程、回傳固定報告。</p>
+                    <div class="service-meta">
+                        <span>Upload Portal</span><span>Auto Report</span><span>Batch Mode</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-purple">變異分析</span>
+                        <h3>WES / WGS</h3>
+                    </div>
+                    <p>全外顯子與全基因體定序，可做 variant calling、annotation、CNV / SV 報告與優先排序。</p>
+                    <div class="service-meta">
+                        <span>BWA</span><span>GATK</span><span>VEP / ANNOVAR</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-orange">特色模組</span>
+                        <h3>miLinker / miRNA</h3>
+                    </div>
+                    <p>小分子 RNA 定序與標靶基因預測分析，可延伸成 regulatory network、target ranking 與 pathway view。</p>
+                    <div class="service-meta">
+                        <span>miRDeep2</span><span>TargetScan</span><span>Network View</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-yellow">蛋白質體</span>
+                        <h3>Proteomics</h3>
+                    </div>
+                    <p>蛋白質體分析雲平台，可做顯著差異蛋白、火山圖、聚類熱圖與功能富集分析。</p>
+                    <div class="service-meta">
+                        <span>MaxQuant</span><span>FragPipe</span><span>DEP</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-teal">瀏覽器可直接做</span>
+                        <h3>Toolbox</h3>
+                    </div>
+                    <p>內建統計圖表、序列反轉互補、轉譯、GC 計算與多序列比對等工具，最適合先做成前端即時小工具。</p>
+                    <div class="service-meta">
+                        <span>Sequence Utils</span><span>Chart Tools</span><span>Alignment</span>
+                    </div>
+                </article>
+            </div>
+        </section>
+
         <div class="steps-grid">
 
             <!-- Step 1 -->
