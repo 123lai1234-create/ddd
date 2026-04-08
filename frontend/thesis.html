@@ -222,7 +222,7 @@
                 <button class="btn btn-ghost" id="btnPrev" onclick="gotoGen(curGen-1)">← 前一代</button>
                 <div class="gen-display" id="genDisplay">第 1 代 / 50</div>
                 <button class="btn btn-ghost" id="btnNext" onclick="gotoGen(curGen+1)">下一代 →</button>
-                <button class="btn btn-ghost" id="btnLast" onclick="gotoGen(49)">⏭ 最終代</button>
+                <button class="btn btn-ghost" id="btnLast" onclick="gotoGen(lastGenIndex())">⏭ 最終代</button>
                 <button class="btn btn-primary" id="btnPlay" onclick="togglePlay()">▶ 自動播放</button>
                 <div class="fitness-badge" id="fitBadge">Fitness —</div>
             </div>
