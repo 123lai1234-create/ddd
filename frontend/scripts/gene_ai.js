@@ -1357,21 +1357,8 @@ function initChartDefaults() {
 }
 
 function initPage() {
-    initChartDefaults();
-    updateRangeOutputs();
-    refreshStudio();
-    renderGuides();
-    evaluateVariantCase();
     initSequenceVault();
     initKnowledgeVault();
-
-    document.getElementById('generateDesign').addEventListener('click', refreshStudio);
-    document.getElementById('rerankGuides').addEventListener('click', renderGuides);
-    document.getElementById('evaluateVariant').addEventListener('click', evaluateVariantCase);
-
-    ['designStrictness', 'guideStrictness', 'variantPos'].forEach(id => {
-        document.getElementById(id).addEventListener('input', updateRangeOutputs);
-    });
 }
 
 initPage();

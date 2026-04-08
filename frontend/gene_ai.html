@@ -4,13 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>基因 AI 設計平台 | 工程 × 生醫</title>
-    <meta name="description" content="基因 AI 設計平台——序列資料庫、知識庫、RAG 文件搜尋、CRISPR 導引排序、變異效應評估互動介面。">
-    <meta property="og:title" content="基因 AI 設計平台 | 工程 × 生醫">
-    <meta property="og:description" content="基因 AI 設計平台——序列資料庫、知識庫、RAG 文件搜尋、CRISPR 導引排序、變異效應評估互動介面。">
+    <title>基因資料平台 | 序列資料庫 × 知識庫 × RAG</title>
+    <meta name="description" content="基因資料平台——保留真實可用的 Sequence Vault、Knowledge Vault 與 RAG-ready documents，直接連接 FastAPI 與資料庫。">
+    <meta property="og:title" content="基因資料平台 | 序列資料庫 × 知識庫 × RAG">
+    <meta property="og:description" content="基因資料平台——保留真實可用的 Sequence Vault、Knowledge Vault 與 RAG-ready documents，直接連接 FastAPI 與資料庫。">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- BEGIN COMMON_HEAD -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,29 +29,28 @@
     <header class="hero">
         <div class="hero-grid">
             <div>
-                <div class="eyebrow">Genome SaaS Demo · Live Data + Simulated Decisioning</div>
-                <h1>把序列資料、知識檢索與設計評估<br><span>收進同一個 Gene AI 工作台</span></h1>
+                <div class="eyebrow">Genome Data Platform · Live Sequence + Knowledge + RAG</div>
+                <h1>把序列資料、知識檢索與 RAG 文件<br><span>收進同一個基因資料平台</span></h1>
                 <p class="hero-sub">
-                    這頁不是單一模型展示，而是把 live data layer、RAG-ready knowledge layer 與 decision surfaces
-                    放進同一個產品化介面，讓基因研究團隊能先建資料面，再做設計評估與風險排序。
+                    這頁只保留已經接上後端的真功能：Sequence Vault 會同步序列快取，Knowledge Vault 會整理證據資料，RAG
+                    layer 會輸出可直接送進檢索流程的文件片段。重點是先把資料層做好，而不是把模擬介面和真功能混在一起。
                 </p>
                 <div class="hero-note">
-                    目前 Sequence Vault 與 Knowledge Vault 會真的呼叫後端 API；Design Workbench、Guide Ranking、Variant
-                    Interpretation 則是受控模擬，用來展示產品決策面，而不是可直接下單的 wet-lab 配方。
+                    目前這頁已移除前端模擬的設計、guide 與 variant demo，只留下可驗證的 API-backed 功能，避免產品定位混亂。
                 </div>
                 <div class="hero-cta-row">
                     <a href="#product-overview" class="btn btn-primary">查看產品能力</a>
-                    <a href="#sequence-vault" class="btn btn-secondary">進入 Live Data Layer</a>
-                    <a href="#studio" class="btn btn-secondary">查看 Decision Studio</a>
+                    <a href="#sequence-vault" class="btn btn-secondary">進入 Sequence Vault</a>
+                    <a href="#rag-layer" class="btn btn-secondary">查看 RAG 輸出</a>
                 </div>
                 <div class="hero-stats">
                     <div class="hero-stat">
                         <div class="value">2 Live APIs</div>
-                        <div class="label">序列與知識模組目前已接 FastAPI + Render / Postgres</div>
+                        <div class="label">序列與知識模組目前已接 FastAPI 與資料庫快取</div>
                     </div>
                     <div class="hero-stat">
-                        <div class="value">3 Demo Surfaces</div>
-                        <div class="label">設計、guide、variant 三塊目前是可操作的前端模擬工作台</div>
+                        <div class="value">DB-backed</div>
+                        <div class="label">Sequence Vault 與 Knowledge Vault 都是從後端快取即時讀取</div>
                     </div>
                     <div class="hero-stat">
                         <div class="value">RAG-ready</div>
@@ -64,7 +62,7 @@
             <div class="signal-card">
                 <div class="signal-top">
                     <div class="signal-title">Product Runtime Snapshot</div>
-                    <div class="status-pill">Hybrid Demo</div>
+                    <div class="status-pill">Live Data</div>
                 </div>
                 <div class="signal-matrix">
                     <div class="signal-block">
@@ -72,16 +70,16 @@
                         <div class="v">Sequence Cache · Knowledge Cache</div>
                     </div>
                     <div class="signal-block">
-                        <div class="k">Knowledge Output</div>
-                        <div class="v">Evidence Search · RAG Documents</div>
+                        <div class="k">Knowledge Retrieval</div>
+                        <div class="v">Evidence Search · Source Metadata</div>
                     </div>
                     <div class="signal-block">
-                        <div class="k">Decision Surfaces</div>
-                        <div class="v">Design · Guide · Variant</div>
+                        <div class="k">RAG Output</div>
+                        <div class="v">Chunk Preview · Retrieval-ready Docs</div>
                     </div>
                     <div class="signal-block">
-                        <div class="k">Governance</div>
-                        <div class="v">Masked Preview · Risk Gate · Audit UI</div>
+                        <div class="k">Operations</div>
+                        <div class="v">Sync · Search · Filter · Delete</div>
                     </div>
                 </div>
                 <div class="signal-list">
@@ -94,8 +92,8 @@
                         <div class="right">UniProt / PubMed → RAG-ready docs</div>
                     </div>
                     <div class="signal-item">
-                        <div class="left">Decision layer</div>
-                        <div class="right">Client-side simulated scoring surfaces</div>
+                        <div class="left">RAG export</div>
+                        <div class="right">Chunk + metadata preview from backend</div>
                     </div>
                 </div>
             </div>
@@ -107,9 +105,9 @@
             <div class="section-head">
                 <div>
                     <div class="section-label">Product Surfaces</div>
-                    <h2 class="section-title">先把產品面講清楚，再進互動工作台</h2>
+                    <h2 class="section-title">這頁現在只保留三個可驗證模組</h2>
                     <p class="section-sub">
-                        這頁現在比較像真正的 SaaS 首頁：先說清楚平台提供哪三種工作面，再讓使用者往下看 live data 模組與 decision demo。
+                        重心改成真實資料流，不再混入前端模擬的決策介面。你現在看到的每一塊都能直接追到後端 API、DB 快取或 RAG 文件輸出。
                     </p>
                 </div>
                 <div class="section-badge badge-architecture">SaaS-style Information Architecture</div>
@@ -133,7 +131,7 @@
                 <article class="surface-card">
                     <div class="surface-head">
                         <span class="runtime-badge runtime-badge-live">Live API</span>
-                        <h3>Knowledge Retrieval</h3>
+                        <h3>Knowledge Vault</h3>
                     </div>
                     <p>把 UniProt annotation 與 PubMed 摘要整成 evidence feed，再輸出可直接送進向量資料庫的 RAG 文件片段。</p>
                     <div class="surface-points">
@@ -146,16 +144,16 @@
 
                 <article class="surface-card">
                     <div class="surface-head">
-                        <span class="runtime-badge runtime-badge-demo">Simulated</span>
-                        <h3>Decision Studio</h3>
+                        <span class="runtime-badge runtime-badge-live">Live API</span>
+                        <h3>RAG Documents</h3>
                     </div>
-                    <p>用受控模擬方式展示設計候選、guide ranking、variant interpretation 三種決策介面，重點是產品流程，不是直接輸出實驗序列。</p>
+                    <p>把知識庫中的 annotation 與 literature 整理成 chunk 與 metadata，前端可以直接預覽後端輸出的檢索文件格式。</p>
                     <div class="surface-points">
-                        <div class="surface-point">Masked Sequence Preview</div>
-                        <div class="surface-point">Multi-objective Scores</div>
-                        <div class="surface-point">Risk-aware UI</div>
+                        <div class="surface-point">Chunk Preview</div>
+                        <div class="surface-point">Source Metadata</div>
+                        <div class="surface-point">Retrieval-ready</div>
                     </div>
-                    <a href="#studio" class="text-link">查看 Decision Studio</a>
+                    <a href="#rag-layer" class="text-link">查看 RAG Documents</a>
                 </article>
             </div>
         </section>
@@ -164,9 +162,9 @@
             <div class="section-head">
                 <div>
                     <div class="section-label">Runtime Status</div>
-                    <h2 class="section-title">目前哪些模組是真接 API，哪些還是產品 demo</h2>
+                    <h2 class="section-title">全部都是真實資料流，不再混前端模擬 demo</h2>
                     <p class="section-sub">
-                        這裡把現況講白，讓使用者一眼看懂哪些功能已經連到後端資料面，哪些區塊目前仍是前端模擬與產品概念驗證。
+                        現在這頁只剩 API-backed capability：序列同步、知識同步，以及 RAG 文件輸出。每一塊都能對應到真實端點與資料結構。
                     </p>
                 </div>
                 <div class="section-badge badge-live">Honest Product Positioning</div>
@@ -191,26 +189,10 @@
 
                 <article class="runtime-card">
                     <div class="runtime-top">
-                        <h3>Design Workbench</h3>
-                        <span class="runtime-badge runtime-badge-demo">Client-side simulation</span>
+                        <h3>RAG Documents</h3>
+                        <span class="runtime-badge runtime-badge-live">Live API-backed</span>
                     </div>
-                    <p>依輸入條件在前端產生可重現的候選分數與雷達圖，不會呼叫真實設計模型。</p>
-                </article>
-
-                <article class="runtime-card">
-                    <div class="runtime-top">
-                        <h3>Guide Ranking</h3>
-                        <span class="runtime-badge runtime-badge-demo">Client-side simulation</span>
-                    </div>
-                    <p>依 PAM、模式與嚴格度在前端重建 ranking table 與 bubble chart，不打 CRISPR backend。</p>
-                </article>
-
-                <article class="runtime-card">
-                    <div class="runtime-top">
-                        <h3>Variant Interpretation</h3>
-                        <span class="runtime-badge runtime-badge-demo">Client-side simulation</span>
-                    </div>
-                    <p>前端用 seeded scoring 產生 expression、splice、chromatin 報告，現在是 UI demo，不是 clinical engine。</p>
+                    <p>會向 `/api/rag/documents` 讀取後端整理好的 chunk 與 metadata，直接預覽檢索文件輸出。</p>
                 </article>
             </div>
         </section>
@@ -218,15 +200,16 @@
         <section class="section interface-group">
             <div class="interface-group-card interface-group-card-live">
                 <div>
-                    <div class="section-label">Interactive Group A</div>
-                    <h2 class="section-title">Live Data Interfaces</h2>
+                    <div class="section-label">Live Modules</div>
+                    <h2 class="section-title">資料同步、證據檢索與 RAG 輸出</h2>
                     <p class="section-sub">
-                        這一組真的會打後端 API、同步公開資料源、讀寫 Render / Postgres，屬於可運作的資料層工作台。
+                        Sequence Vault 與 Knowledge Vault 負責建庫，RAG preview 負責把後端文件輸出直接攤在 UI 上檢查。
                     </p>
                 </div>
                 <div class="group-chip-row">
                     <a href="#sequence-vault" class="group-chip group-chip-live">Sequence Vault</a>
                     <a href="#knowledge-vault" class="group-chip group-chip-live">Knowledge Vault</a>
+                    <a href="#rag-layer" class="group-chip group-chip-live">RAG Documents</a>
                 </div>
             </div>
         </section>
@@ -412,7 +395,7 @@
                             <div class="detail-head">Knowledge Detail</div>
                             <div id="knowledgeDetail" class="knowledge-empty">尚未選取知識紀錄。</div>
                         </div>
-                        <div class="detail-card knowledge-rag-shell">
+                        <div id="rag-layer" class="detail-card knowledge-rag-shell">
                             <div class="detail-head">RAG-ready Documents</div>
                             <div class="detail-copy">這裡顯示的是後端整理好的 chunk 與 metadata，可直接餵進向量資料庫或檢索流程。</div>
                             <div id="knowledgeRagMeta" class="sequence-link-row" style="margin:14px 0">尚未產生文件預覽。</div>
@@ -425,571 +408,19 @@
             </div>
         </section>
 
-        <section class="section interface-group">
-            <div class="interface-group-card interface-group-card-demo">
-                <div>
-                    <div class="section-label">Interactive Group B</div>
-                    <h2 class="section-title">Decision Demo Interfaces</h2>
-                    <p class="section-sub">
-                        這一組是受控模擬的決策介面，用來展示產品流程、審核邏輯與風險視角，不直接輸出可執行的 wet-lab 結果。
-                    </p>
-                </div>
-                <div class="group-chip-row">
-                    <a href="#studio" class="group-chip group-chip-demo">Design Workbench</a>
-                    <a href="#guides" class="group-chip group-chip-demo">Guide Ranking</a>
-                    <a href="#variants" class="group-chip group-chip-demo">Variant Interpretation</a>
-                </div>
-            </div>
-        </section>
-
-        <section id="studio" class="section">
-            <div class="section-head">
-                <div>
-                    <div class="section-label">Decision Demo · Design</div>
-                    <h2 class="section-title">基因設計工作台</h2>
-                    <p class="section-sub">
-                        用一組需求描述，生成多個模擬候選並比較多目標分數。這裡的重點不是單一最高分，而是讓你快速看到不同候選在表達、特異性、可製造性與風險上的取捨。
-                    </p>
-                </div>
-                <div class="section-badge badge-demo">Simulated · Candidate Synthesis Planner</div>
-            </div>
-
-            <div class="studio-grid">
-                <aside class="panel control-panel">
-                    <div>
-                        <div class="control-title">設計輸入</div>
-                        <div class="control-sub">輸入目標與偏好，生成一批示範候選。</div>
-                    </div>
-                    <div class="field">
-                        <label for="designTarget">目標基因 / 專案代號</label>
-                        <input id="designTarget" type="text" value="GENE-X tumor suppressor panel">
-                    </div>
-                    <div class="field">
-                        <label for="designOrganism">宿主或資料背景</label>
-                        <select id="designOrganism">
-                            <option value="human">Human regulatory context</option>
-                            <option value="mouse">Mouse screening panel</option>
-                            <option value="ecoli">E. coli high-throughput screen</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label for="designObjective">設計任務</label>
-                        <select id="designObjective">
-                            <option value="upreg">提升啟動子表現</option>
-                            <option value="specific">拉高組織特異性</option>
-                            <option value="edit_ready">提高可編輯性窗口</option>
-                            <option value="manufacture">優先可合成與穩定性</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label for="designModel">基礎模型</label>
-                        <select id="designModel">
-                            <option value="hybrid">Hybrid FM (Enformer + NT)</option>
-                            <option value="enformer">Enformer context scorer</option>
-                            <option value="nt">Nucleotide Transformer</option>
-                            <option value="dnabert">DNABERT motif encoder</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <div class="range-row">
-                            <label for="designStrictness">風險門檻</label>
-                            <output id="designStrictnessOut">Balanced</output>
-                        </div>
-                        <input id="designStrictness" type="range" min="0" max="100" value="56">
-                    </div>
-                    <button id="generateDesign" class="btn btn-primary" type="button">產生候選集</button>
-                    <div class="small-note">
-                        顯示的是平台決策介面範例：序列預覽經過遮罩，保留 motif 與結構偏好，避免變成可直接執行的實驗配方。
-                    </div>
-                </aside>
-
-                <div class="panel result-panel">
-                    <div class="result-top">
-                        <div>
-                            <h3 id="designSummary">候選批次尚未建立</h3>
-                            <p id="designSummarySub">平台會根據目標需求產生四組具不同偏好的候選策略。</p>
-                        </div>
-                        <div class="section-badge">Select a Candidate</div>
-                    </div>
-
-                    <div id="candidateList" class="candidate-list"></div>
-
-                    <div class="detail-grid">
-                        <div class="detail-card">
-                            <div class="detail-head">Candidate Detail</div>
-                            <div id="candidateDetail"></div>
-                        </div>
-                        <div class="detail-card">
-                            <div class="detail-head">Multi-objective Score</div>
-                            <canvas id="designRadar" height="220"></canvas>
-                            <div class="chart-footnote">四軸對應：表達預期、特異性、可合成性、風險餘裕。</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="guides" class="section">
-            <div class="section-head">
-                <div>
-                    <div class="section-label">Decision Demo · CRISPR</div>
-                    <h2 class="section-title">CRISPR Guide 排序台</h2>
-                    <p class="section-sub">
-                        這個模組示範平台如何在效率、特異性與風險之間重排 guide 候選。表格中的 guide 只保留遮罩後的 seed preview，用來展示 ranking 與審核流程。
-                    </p>
-                </div>
-                <div class="section-badge badge-demo">Simulated · Masked Preview · Not Wet-lab Ready</div>
-            </div>
-
-            <div class="guide-grid">
-                <aside class="panel control-panel">
-                    <div>
-                        <div class="control-title">Guide 設定</div>
-                        <div class="control-sub">切換 enzyme 與風險偏好，重新計算排序。</div>
-                    </div>
-                    <div class="field">
-                        <label for="guideTarget">目標區域</label>
-                        <input id="guideTarget" type="text" value="regulatory hotspot · enhancer block A">
-                    </div>
-                    <div class="field">
-                        <label for="pamType">PAM / enzyme</label>
-                        <select id="pamType">
-                            <option value="NGG">SpCas9 · NGG</option>
-                            <option value="TTTV">Cas12a · TTTV</option>
-                            <option value="NGA">Flexible editor · NGA</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label for="editMode">編輯模式</label>
-                        <select id="editMode">
-                            <option value="knockout">Knock-out screen</option>
-                            <option value="base">Base editing</option>
-                            <option value="prime">Prime editing</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <div class="range-row">
-                            <label for="guideStrictness">Off-target 嚴格度</label>
-                            <output id="guideStrictnessOut">High</output>
-                        </div>
-                        <input id="guideStrictness" type="range" min="0" max="100" value="72">
-                    </div>
-                    <button id="rerankGuides" class="btn btn-primary" type="button">重新排序 guides</button>
-                    <div class="small-note">
-                        平台實際上會整合 genomic context、repeat 區域與 assay feedback。這裡只示範 decision surface，不顯示可直接下單的完整 guide
-                        sequence。
-                    </div>
-                </aside>
-
-                <div class="panel result-panel">
-                    <div class="summary-strip" id="guideSummary"></div>
-                    <div class="detail-grid">
-                        <div class="detail-card">
-                            <div class="detail-head">Efficiency × Specificity</div>
-                            <canvas id="guideScatter" height="250"></canvas>
-                            <div class="chart-footnote">每個點是一個 guide 候選，半徑代表綜合排名。</div>
-                        </div>
-                        <div class="detail-card">
-                            <div class="detail-head">Ranking Logic</div>
-                            <div class="detail-copy">
-                                綜合分數以效率為主，但會被 off-target 風險與編輯窗口穩定度拉回。高風險設定下，平台會把高效率但 context 不穩定的 guide 往後排。
-                            </div>
-                            <div class="detail-list">
-                                <div class="detail-item">效率分數決定初始排序，但不會單獨決策。</div>
-                                <div class="detail-item">特異性不足時，平台會提高審核優先權而非直接推薦。</div>
-                                <div class="detail-item">不同 enzyme 會改變 PAM 可行窗口與風險容忍度。</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Guide Preview</th>
-                                    <th>Window</th>
-                                    <th>Efficiency</th>
-                                    <th>Specificity</th>
-                                    <th>Bystander Risk</th>
-                                    <th>Edit Bias</th>
-                                </tr>
-                            </thead>
-                            <tbody id="guideTable"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="variants" class="section">
-            <div class="section-head">
-                <div>
-                    <div class="section-label">Decision Demo · Interpretation</div>
-                    <h2 class="section-title">變異效應解讀台</h2>
-                    <p class="section-sub">
-                        用同一組介面連接基因調控視角與臨床優先排序：輸入變異背景後，平台會估計表達位移、splicing 風險與 chromatin 影響，並給出下一步驗證建議。
-                    </p>
-                </div>
-                <div class="section-badge badge-demo">Simulated · Cell-context Aware Scoring</div>
-            </div>
-
-            <div class="variant-grid">
-                <aside class="panel control-panel">
-                    <div>
-                        <div class="control-title">變異輸入</div>
-                        <div class="control-sub">切換區域類型、位置與替換鹼基，更新示範報告。</div>
-                    </div>
-                    <div class="field">
-                        <label for="variantGene">變異案例代號</label>
-                        <input id="variantGene" type="text" value="panel-case-17">
-                    </div>
-                    <div class="field">
-                        <label for="variantRegion">區域類型</label>
-                        <select id="variantRegion">
-                            <option value="promoter">Promoter / enhancer</option>
-                            <option value="splice">Splice junction</option>
-                            <option value="coding">Coding exon</option>
-                            <option value="utr">UTR / post-transcriptional</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <div class="range-row">
-                            <label for="variantPos">位置</label>
-                            <output id="variantPosOut">842</output>
-                        </div>
-                        <input id="variantPos" type="range" min="1" max="3000" value="842">
-                    </div>
-                    <div class="field">
-                        <label for="variantModel">分析模型</label>
-                        <select id="variantModel">
-                            <option value="hybrid">Hybrid interpretation stack</option>
-                            <option value="enformer">Enformer expression context</option>
-                            <option value="nt">Nucleotide Transformer</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label for="variantRef">REF / ALT</label>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                            <select id="variantRef">
-                                <option>A</option>
-                                <option>C</option>
-                                <option selected>G</option>
-                                <option>T</option>
-                            </select>
-                            <select id="variantAlt">
-                                <option selected>A</option>
-                                <option>C</option>
-                                <option>G</option>
-                                <option>T</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button id="evaluateVariant" class="btn btn-primary" type="button">更新解讀報告</button>
-                    <div class="small-note">
-                        這裡展示的是 interpretation UI，而不是臨床定論。真正的 clinical sign-out 還需要樣本品質、coverage、族群頻率與功能證據共同支持。
-                    </div>
-                </aside>
-
-                <div class="panel result-panel variant-output">
-                    <div class="summary-strip" id="variantSummary"></div>
-                    <div class="detail-grid">
-                        <div class="detail-card">
-                            <div class="detail-head">Cell-type Impact</div>
-                            <canvas id="variantImpactChart" height="250"></canvas>
-                            <div class="chart-footnote">顯示不同 cell context 下的預測相對位移。</div>
-                        </div>
-                        <div class="narrative-box" id="variantNarrative"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="profile" class="section">
-            <div class="section-head">
-                <div>
-                    <div class="section-label">Builder Context</div>
-                    <h2 class="section-title">為什麼這個頁面不只是概念稿，而是能往產品走的原型</h2>
-                    <p class="section-sub">
-                        這一段保留創作者脈絡，但移到互動介面之後，避免干擾資料層與 demo 工作台的分類閱讀路徑。
-                    </p>
-                </div>
-                <div class="section-badge badge-architecture">Builder-to-Product Story</div>
-            </div>
-
-            <div class="summary-strip">
-                <div class="summary-card">
-                    <div class="k">背景</div>
-                    <div class="v">工程 × 生醫雙碩士</div>
-                </div>
-                <div class="summary-card">
-                    <div class="k">工程經歷</div>
-                    <div class="v">前後端介面 / App 開發</div>
-                </div>
-                <div class="summary-card">
-                    <div class="k">研究經歷</div>
-                    <div class="v">生物醫學研究與 NGS 應用</div>
-                </div>
-            </div>
-
-            <div class="detail-grid" style="margin-top:14px">
-                <div class="detail-card">
-                    <div class="detail-head">Personal Site Summary</div>
-                    <div class="detail-title">從個人履歷站延伸出平台型作品</div>
-                    <div class="detail-copy">
-                        您的個人網站提到前後端開發、生物醫學研究、臨床與醫藥相關訓練，以及曾協助團隊取得國家新創獎與 2 項發明專利。這讓這個基因 AI
-                        頁不只是概念頁，而是能回扣到一位真正做過工程、研究與產品落地整合的人。
-                    </div>
-                    <div class="detail-list">
-                        <div class="detail-item">網站與應用程式經驗，支撐了這個頁面的互動工作台形式。</div>
-                        <div class="detail-item">NGS 與生物醫學背景，讓變異解讀與基因設計模組不只是空泛術語。</div>
-                        <div class="detail-item">自動化與資料系統作品，補上平台化落地所需的流程與工具思維。</div>
-                    </div>
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-                        <a href="about_me.html" class="btn btn-secondary">本地 About Me</a>
-                        <a href="works.html" class="btn btn-secondary">本地作品總覽</a>
-                        <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer"
-                            class="btn btn-secondary">個人網站首頁</a>
-                        <a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer"
-                            class="btn btn-secondary">About Me</a>
-                        <a href="https://jtlai0921.wixsite.com/mysite/research-blog" target="_blank" rel="noreferrer"
-                            class="btn btn-secondary">Research Blog</a>
-                    </div>
-                </div>
-                <div class="detail-card">
-                    <div class="detail-head">Featured Works</div>
-                    <div class="detail-title">和這個平台最能接軌的既有作品</div>
-                    <div class="detail-list">
-                        <div class="detail-item">「次世代定序法」NGS 工作站：直接補強本站的 NGS 與基因分析敘事。</div>
-                        <div class="detail-item">自動化機器手臂操作介面：把實驗室設備操作與工作流程 UI 經驗帶進平台設計。</div>
-                        <div class="detail-item">簡易健康檢測 APP：展現醫療場景產品化與互動設計能力。</div>
-                        <div class="detail-item">資料管理系統：對應 AI 平台後台、資料治理與結果管理需求。</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="stack" class="section">
-            <div class="section-head">
-                <div>
-                    <div class="section-label">Platform Stack</div>
-                    <h2 class="section-title">模型與決策堆疊</h2>
-                    <p class="section-sub">
-                        真正的基因 AI 平台不是單一模型，而是把 foundation model、生成器、風險閘門與實驗閉環接成一個產品化系統。
-                    </p>
-                </div>
-            </div>
-            <div class="stack-grid">
-                <div class="stack-card">
-                    <div class="stack-step">Layer 01</div>
-                    <h3>Genome Tokenization</h3>
-                    <p>把 DNA/RNA 視為語言，學習 motif、long-range context 與 regulatory grammar。</p>
-                </div>
-                <div class="stack-card">
-                    <div class="stack-step">Layer 02</div>
-                    <h3>Conditional Generator</h3>
-                    <p>依據任務條件生成候選，像是 promoter bias、guide window 或 codon balance。</p>
-                </div>
-                <div class="stack-card">
-                    <div class="stack-step">Layer 03</div>
-                    <h3>Risk & Manufacturability Gate</h3>
-                    <p>把 off-target、repeat、GC extremes 與 synthesis difficulty 放進同一個審核層。</p>
-                </div>
-                <div class="stack-card">
-                    <div class="stack-step">Layer 04</div>
-                    <h3>Assay Feedback Loop</h3>
-                    <p>把 reporter assay、amplicon readout 與 RNA-seq 重新餵回模型，縮小設計空間。</p>
-                </div>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="section-head">
-                <div>
-                    <div class="section-label">Operating Loop</div>
-                    <h2 class="section-title">平台化運作流程</h2>
-                    <p class="section-sub">從規劃到驗證，平台最重要的是把每一步變成可以重用、可追蹤、可比較的決策流程。</p>
-                </div>
-            </div>
-            <div class="loop-grid">
-                <div class="loop-step">
-                    <div class="num">01</div>
-                    <h4>Define Intent</h4>
-                    <p>先把任務定義成可量化的目標，例如表達提升、特異性提高或編輯窗口穩定。</p>
-                </div>
-                <div class="loop-step">
-                    <div class="num">02</div>
-                    <h4>Generate Candidates</h4>
-                    <p>利用 foundation model 和條件化生成器建立多個方向不同的候選，而不是只給一個答案。</p>
-                </div>
-                <div class="loop-step">
-                    <div class="num">03</div>
-                    <h4>Score & Filter</h4>
-                    <p>以多目標評分比較效率、風險與可製造性，保留可進入下一輪的候選。</p>
-                </div>
-                <div class="loop-step">
-                    <div class="num">04</div>
-                    <h4>Assay Prioritization</h4>
-                    <p>把有限的實驗資源投向最值得驗證的候選，而不是平均分配給全部設計。</p>
-                </div>
-                <div class="loop-step">
-                    <div class="num">05</div>
-                    <h4>Learn from Readout</h4>
-                    <p>把失敗與成功樣本一起回灌平台，讓下次設計更快收斂，而不是每次都從零開始。</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="platform-landscape" class="section">
-            <div class="section-head">
-                <div>
-                    <div class="section-label">Platform Landscape</div>
-                    <h2 class="section-title">基因設計平台生態全覽</h2>
-                    <p class="section-sub">依照使用場景分為四大類——從雲端協作到 AI 生成，了解各平台的定位與適用時機。</p>
-                </div>
-            </div>
-
-            <div class="platform-categories">
-
-                <div class="platform-cat">
-                    <div class="platform-cat-header">
-                        <span class="platform-cat-icon">☁️</span>
-                        <div>
-                            <div class="platform-cat-label">Category 01</div>
-                            <h3>雲端協作 × 全功能平台</h3>
-                            <p>適合實驗室管理與複雜建構設計，目前是業界主流。</p>
-                        </div>
-                    </div>
-                    <div class="platform-cards">
-                        <div class="platform-card">
-                            <div class="platform-name">Benchling</div>
-                            <div class="platform-tag">Most Popular</div>
-                            <p>提供 DNA/RNA 序列編輯、CRISPR gRNA 設計、引子設計與電子實驗記錄簿。完全雲端化，方便團隊同步數據。</p>
-                            <div class="platform-features">
-                                <span>gRNA Design</span><span>Primer Design</span><span>ELN</span><span>Team Sync</span>
-                            </div>
-                        </div>
-                        <div class="platform-card">
-                            <div class="platform-name">VectorBee</div>
-                            <div class="platform-tag">Visual-First</div>
-                            <p>知名質體設計軟體，視覺化介面友好，提供自動化引子設計與序列分析工具。</p>
-                            <div class="platform-features">
-                                <span>Plasmid Design</span><span>Auto Primer</span><span>Visual UI</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="platform-cat">
-                    <div class="platform-cat-header">
-                        <span class="platform-cat-icon">🖥️</span>
-                        <div>
-                            <div class="platform-cat-label">Category 02</div>
-                            <h3>專業序列分析 × 桌面版</h3>
-                            <p>適合需要深度模擬克隆實驗流程的使用者。</p>
-                        </div>
-                    </div>
-                    <div class="platform-cards">
-                        <div class="platform-card">
-                            <div class="platform-name">SnapGene</div>
-                            <div class="platform-tag">Cloning Standard</div>
-                            <p>能「視覺化」整個克隆過程，模擬 Gibson Assembly、Golden Gate 等實驗方案，並自動記錄修改歷史。</p>
-                            <div class="platform-features">
-                                <span>Gibson Assembly</span><span>Golden Gate</span><span>Clone History</span>
-                            </div>
-                        </div>
-                        <div class="platform-card">
-                            <div class="platform-name">Geneious</div>
-                            <div class="platform-tag">Genomics Scale</div>
-                            <p>功能強大，適合大規模定序數據比對、演化樹分析及基因組註解。</p>
-                            <div class="platform-features">
-                                <span>Alignment</span><span>Phylogenetics</span><span>Genome Annotation</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="platform-cat">
-                    <div class="platform-cat-header">
-                        <span class="platform-cat-icon">🧪</span>
-                        <div>
-                            <div class="platform-cat-label">Category 03</div>
-                            <h3>密碼子優化 × 廠商配套</h3>
-                            <p>設計基因是為了「下單生產」時，這些廠商工具最直接。</p>
-                        </div>
-                    </div>
-                    <div class="platform-cards">
-                        <div class="platform-card">
-                            <div class="platform-name">IDT</div>
-                            <div class="platform-tag">Synthesis Leader</div>
-                            <p>提供 Codon Optimization Tool，根據宿主（大腸桿菌、人類細胞等）優化基因序列，並檢查可合成性。</p>
-                            <div class="platform-features">
-                                <span>Codon Optimization</span><span>Synthesizability</span><span>Host-specific</span>
-                            </div>
-                        </div>
-                        <div class="platform-card">
-                            <div class="platform-name">Twist Bioscience</div>
-                            <div class="platform-tag">High-Throughput</div>
-                            <p>線上平台提供直觀的基因片段設計與下單流程，適合高通量的基因合成需求。</p>
-                            <div class="platform-features">
-                                <span>Gene Fragments</span><span>HT Synthesis</span><span>Direct Order</span>
-                            </div>
-                        </div>
-                        <div class="platform-card">
-                            <div class="platform-name">GenScript</div>
-                            <div class="platform-tag">Full Service</div>
-                            <p>提供罕見密碼子分析、蛋白質性質預測等豐富線上工具。</p>
-                            <div class="platform-features">
-                                <span>Rare Codon</span><span>Protein Property</span><span>Online Tools</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="platform-cat platform-cat--ai">
-                    <div class="platform-cat-header">
-                        <span class="platform-cat-icon">🤖</span>
-                        <div>
-                            <div class="platform-cat-label">Category 04</div>
-                            <h3>AI 驅動 × 前沿設計平台</h3>
-                            <p>最新趨勢：利用 AI 大模型設計全新基因序列或蛋白質，大幅降低試錯成本。</p>
-                        </div>
-                    </div>
-                    <div class="platform-cards">
-                        <div class="platform-card platform-card--highlight">
-                            <div class="platform-name">GenoDesign Pro</div>
-                            <div class="platform-tag platform-tag--ai">AI + CRISPR</div>
-                            <p>整合 AI 大模型與 CRISPR 演算法，大幅降低基因編輯試錯成本，提升研發效率。</p>
-                            <div class="platform-features">
-                                <span>LLM Integration</span><span>CRISPR Algo</span><span>Cost Reduction</span>
-                            </div>
-                        </div>
-                        <div class="platform-card platform-card--highlight">
-                            <div class="platform-name">Evo 2</div>
-                            <div class="platform-tag platform-tag--ai">Genome Scale</div>
-                            <p>新一代基因組設計平台，擅長處理龐大基因組數據並預測基因編輯的潛在影響。</p>
-                            <div class="platform-features">
-                                <span>Genome-scale</span><span>Edit Prediction</span><span>Impact Analysis</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </section>
 
         <section class="section cta-band">
             <div>
-                <div class="section-label">Next Step</div>
-                <h2 class="section-title">先用 live data layer 建庫，再把 decision layer 接上真模型</h2>
+                <div class="section-label">Current Scope</div>
+                <h2 class="section-title">這頁現在只做資料同步、證據檢索與 RAG 輸出</h2>
                 <p class="section-sub">
-                    現在這頁最適合用來展示產品化方向：資料同步和知識檢索已經能工作，下一步就是把設計、guide、variant 三塊從模擬層換成真正的模型與服務。
+                    若未來要把設計、guide 或 variant 模組做成真功能，建議獨立成後端服務，不要再回到前端模擬混排的版本。
                 </p>
             </div>
             <div class="section-actions">
-                <a href="#sequence-vault" class="btn btn-primary">打開 Live Data Modules</a>
-                <a href="#knowledge-vault" class="btn btn-secondary">查看 RAG Knowledge Layer</a>
-                <a href="#studio" class="btn btn-secondary">回到 Decision Demo</a>
+                <a href="#sequence-vault" class="btn btn-primary">打開 Sequence Vault</a>
+                <a href="#knowledge-vault" class="btn btn-secondary">查看 Knowledge Vault</a>
+                <a href="#rag-layer" class="btn btn-secondary">查看 RAG Documents</a>
             </div>
         </section>
     </main>

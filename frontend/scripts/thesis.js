@@ -687,6 +687,7 @@ const uiState = {
 
 let curGen = 0;
 let playTimer = null;
+let rerunTimer = null;
 
 function getVisibleStocks() {
     if (uiState.currentIndustry === '全部') {
@@ -1071,6 +1072,7 @@ function updateGenerationState(generation) {
 
     const nextGeneration = clamp(generation, 0, run.history.length - 1);
     curGen = nextGeneration;
+    window.curGen = nextGeneration;
     const highlight = run.history.map(() => NaN);
     highlight[nextGeneration] = run.history[nextGeneration].bestFit;
     CHARTS.convChart.data.datasets[3].data = highlight;
@@ -1161,6 +1163,11 @@ function rerunGA() {
     const stock = getStockByCode(document.getElementById('stockSelect').value);
     const config = parseConfig();
 
+    if (rerunTimer) {
+        clearTimeout(rerunTimer);
+        rerunTimer = null;
+    }
+
     button.disabled = true;
     status.textContent = `⏳ ${stock.name} · POP=${config.POP} · GENS=${config.GENS} 計算中…`;
 
@@ -1184,12 +1191,28 @@ function rerunGA() {
     }, 20);
 }
 
+function scheduleRerun(message = '參數已更新，重新計算中…') {
+    const status = document.getElementById('cfgStatus');
+    if (status) {
+        status.textContent = message;
+    }
+
+    if (rerunTimer) {
+        clearTimeout(rerunTimer);
+    }
+
+    rerunTimer = setTimeout(() => {
+        rerunTimer = null;
+        rerunGA();
+    }, 220);
+}
+
 function resetGaCfg() {
     document.getElementById('cfgPop').value = String(DEFAULT_GA_CFG.POP);
     document.getElementById('cfgGens').value = String(DEFAULT_GA_CFG.GENS);
     document.getElementById('cfgCR').value = DEFAULT_GA_CFG.CR.toFixed(2);
     document.getElementById('cfgMR').value = DEFAULT_GA_CFG.MR.toFixed(2);
-    document.getElementById('cfgStatus').textContent = '已恢復論文預設值';
+    scheduleRerun('已恢復論文預設值，重新計算中…');
 }
 
 function bindEvents() {
@@ -1204,6 +1227,16 @@ function bindEvents() {
         uiState.currentStockCode = event.target.value;
         renderSelectedStockMeta(getStockByCode(uiState.currentStockCode), uiState.currentRun);
         rerunGA();
+    });
+
+    ['cfgPop', 'cfgGens', 'cfgCR', 'cfgMR'].forEach((id) => {
+        const input = document.getElementById(id);
+        input.addEventListener('change', () => {
+            scheduleRerun('GA 參數已變更，重新計算中…');
+        });
+        input.addEventListener('input', () => {
+            scheduleRerun('GA 參數已變更，重新計算中…');
+        });
     });
 }
 
@@ -1222,5 +1255,6 @@ window.togglePlay = togglePlay;
 window.rerunGA = rerunGA;
 window.resetGaCfg = resetGaCfg;
 window.lastGenIndex = lastGenIndex;
+window.curGen = curGen;
 
 initialisePage();

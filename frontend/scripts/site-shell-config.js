@@ -91,7 +91,7 @@ window.SITE_SHELL_CONFIG = {
     },
     gene_ai: {
         brandHref: 'index.html',
-        brandHtml: '<span class="mark"></span>Genome AI Studio',
+        brandHtml: '<span class="mark"></span>Genome Data Platform',
         navLinks: [
             { href: 'index.html', label: '首頁' },
             { href: 'about_me.html', label: 'About Me' },
@@ -105,14 +105,12 @@ window.SITE_SHELL_CONFIG = {
             { href: 'ngs.html', label: 'NGS 定序' },
             { href: '#sequence-vault', label: 'Live · 序列資料庫' },
             { href: '#knowledge-vault', label: 'Live · 知識檢索' },
-            { href: '#studio', label: 'Demo · 設計工作台' },
-            { href: '#guides', label: 'Demo · CRISPR 排序' },
-            { href: '#variants', label: 'Demo · 變異解讀' }
+            { href: '#rag-layer', label: 'Live · RAG 文件輸出' }
         ],
         footer: {
             variant: 'standard',
-            titleHtml: '<div class="footer-brand">基因 AI 設計平台</div>',
-            noteHtml: '<div>Genome foundation models · regulatory design · variant interpretation · creator portfolio</div>',
+            titleHtml: '<div class="footer-brand">基因資料平台</div>',
+            noteHtml: '<div>Sequence cache · knowledge retrieval · RAG-ready documents</div>',
             links: [
                 { href: 'about_me.html', label: 'About Me' },
                 { href: 'works.html', label: '作品總覽' },
