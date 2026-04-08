@@ -15,6 +15,18 @@ mkdir -p "$DIST_DIR/docs"
 mkdir -p "$DIST_DIR/styles"
 mkdir -p "$DIST_DIR/scripts"
 
+NODE_BIN="node"
+if ! command -v "$NODE_BIN" >/dev/null 2>&1; then
+	if command -v node.exe >/dev/null 2>&1; then
+		NODE_BIN="node.exe"
+	else
+		echo "Node.js is required to sync frontend heads" >&2
+		exit 1
+	fi
+fi
+
+"$NODE_BIN" ./scripts/sync_frontend_heads.mjs
+
 cp "$FRONTEND_DIR"/*.html "$DIST_DIR/"
 cp "$FRONTEND_STYLES_DIR"/*.css "$DIST_DIR/styles/"
 cp "$FRONTEND_SCRIPTS_DIR"/*.js "$DIST_DIR/scripts/"
