@@ -51,7 +51,9 @@ cp README.md "$DIST_DIR/"
 cp docs/*.md "$DIST_DIR/docs/"
 cp demo_notebook.ipynb "$DIST_DIR/"
 
-cp outputs/*.png "$DIST_DIR/outputs/"
+if compgen -G "outputs/*.png" > /dev/null 2>&1; then
+    cp outputs/*.png "$DIST_DIR/outputs/"
+fi
 
 cp "$FRONTEND_DIR/index.html" "$DIST_DIR/404.html"
 
