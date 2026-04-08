@@ -107,6 +107,33 @@
   color: var(--muted);
 }
 
+.mpnn-pdb-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.mpnn-pdb-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.mpnn-pdb-tag:hover {
+  background: rgba(57,208,240,0.1);
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
 .seq-pdb-suggest {
   align-items: center;
   gap: 10px;
