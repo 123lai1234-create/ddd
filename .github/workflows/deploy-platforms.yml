@@ -131,14 +131,25 @@ jobs:
           bash ./scripts/build_static_site.sh
 
       - name: Deploy frontend to Netlify
+        id: netlify_deploy
+        continue-on-error: true
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
+            echo "::warning::NETLIFY_AUTH_TOKEN is not set, skipping Netlify deploy"
+            exit 0
+          fi
           npx --yes netlify-cli deploy \
             --dir=dist \
             --prod \
             --site="$NETLIFY_SITE_ID" \
             --auth="$NETLIFY_AUTH_TOKEN"
+
+      - name: Warn about Netlify permissions
+        if: steps.netlify_deploy.outcome == 'failure'
+        run: |
+          echo "::warning::Netlify deploy failed. Verify NETLIFY_AUTH_TOKEN belongs to the Netlify user or team that owns site $NETLIFY_SITE_ID and can create production deploys for that site. A 403 Forbidden usually means the token cannot access the target site."
 
   deploy-cloudflare:
     name: Deploy Cloudflare Pages Frontend
@@ -175,10 +186,30 @@ jobs:
         run: |
           bash ./scripts/build_static_site.sh
 
+      - name: Check Cloudflare credentials
+        id: cloudflare_preflight
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::CLOUDFLARE_API_TOKEN is not set, skipping Cloudflare Pages deploy"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy frontend to Cloudflare Pages
+        id: cloudflare_deploy
+        if: steps.cloudflare_preflight.outputs.enabled == 'true'
+        continue-on-error: true
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || env.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PAGES_PROJECT }} --branch=main
+
+      - name: Warn about Cloudflare permissions
+        if: steps.cloudflare_deploy.outcome == 'failure'
+        run: |
+          echo "::warning::Cloudflare Pages deploy failed. Verify CLOUDFLARE_API_TOKEN has Account/Cloudflare Pages/Edit on account $CLOUDFLARE_ACCOUNT_ID. Add User/User Details/Read if Wrangler cannot resolve the token identity, and confirm the Pages project accepts direct uploads from Wrangler."
