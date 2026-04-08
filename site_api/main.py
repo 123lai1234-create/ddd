@@ -13,7 +13,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
 from site_api.knowledge_sources import KnowledgeRecordPayload, fetch_pubmed_knowledge, fetch_uniprot_knowledge
+from site_api.market_sources import MarketBarPayload, MarketInstrumentPayload, fetch_market_records
 from site_api.sequence_sources import SequenceRecordPayload, fetch_gene_sequences, fetch_protein_sequences
+from site_api.sequencing_run_sources import SequencingRunPayload, fetch_ena_sequencing_runs
 
 
 CREATE_INQUIRIES_TABLE_SQL = """
@@ -63,6 +65,73 @@ CREATE TABLE IF NOT EXISTS knowledge_library (
     raw_payload TEXT NOT NULL DEFAULT '',
     fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(record_type, source_name, source_id)
+);
+"""
+
+CREATE_SEQUENCING_RUN_LIBRARY_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS sequencing_run_library (
+    id BIGSERIAL PRIMARY KEY,
+    source_name VARCHAR(32) NOT NULL,
+    source_id VARCHAR(64) NOT NULL,
+    query_term VARCHAR(240) NOT NULL,
+    study_accession VARCHAR(64) NOT NULL DEFAULT '',
+    experiment_accession VARCHAR(64) NOT NULL DEFAULT '',
+    sample_accession VARCHAR(64) NOT NULL DEFAULT '',
+    organism VARCHAR(160) NOT NULL DEFAULT '',
+    library_strategy VARCHAR(64) NOT NULL DEFAULT '',
+    library_source VARCHAR(64) NOT NULL DEFAULT '',
+    library_layout VARCHAR(32) NOT NULL DEFAULT '',
+    instrument_platform VARCHAR(64) NOT NULL DEFAULT '',
+    instrument_model VARCHAR(160) NOT NULL DEFAULT '',
+    read_count BIGINT,
+    base_count BIGINT,
+    fastq_bytes BIGINT,
+    published_at VARCHAR(64) NOT NULL DEFAULT '',
+    ftp_url TEXT NOT NULL DEFAULT '',
+    record_url TEXT NOT NULL DEFAULT '',
+    raw_payload TEXT NOT NULL DEFAULT '',
+    fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(source_name, source_id)
+);
+"""
+
+CREATE_MARKET_INSTRUMENTS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS market_instruments (
+    id BIGSERIAL PRIMARY KEY,
+    asset_type VARCHAR(16) NOT NULL,
+    source_name VARCHAR(32) NOT NULL,
+    symbol VARCHAR(64) NOT NULL,
+    display_name VARCHAR(255) NOT NULL,
+    market VARCHAR(64) NOT NULL DEFAULT '',
+    currency VARCHAR(16) NOT NULL DEFAULT '',
+    exchange_name VARCHAR(120) NOT NULL DEFAULT '',
+    reference_url TEXT NOT NULL DEFAULT '',
+    metadata_text TEXT NOT NULL DEFAULT '',
+    fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(source_name, symbol)
+);
+"""
+
+CREATE_MARKET_PRICE_BARS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS market_price_bars (
+    id BIGSERIAL PRIMARY KEY,
+    source_name VARCHAR(32) NOT NULL,
+    symbol VARCHAR(64) NOT NULL,
+    asset_type VARCHAR(16) NOT NULL,
+    market VARCHAR(64) NOT NULL DEFAULT '',
+    trade_date DATE NOT NULL,
+    open_price DOUBLE PRECISION,
+    high_price DOUBLE PRECISION,
+    low_price DOUBLE PRECISION,
+    close_price DOUBLE PRECISION,
+    settlement_price DOUBLE PRECISION,
+    volume BIGINT,
+    turnover DOUBLE PRECISION,
+    open_interest BIGINT,
+    change_value DOUBLE PRECISION,
+    raw_payload TEXT NOT NULL DEFAULT '',
+    fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(source_name, symbol, trade_date)
 );
 """
 
@@ -118,6 +187,112 @@ DO UPDATE SET
     keywords = EXCLUDED.keywords,
     record_url = EXCLUDED.record_url,
     published_at = EXCLUDED.published_at,
+    raw_payload = EXCLUDED.raw_payload,
+    fetched_at = NOW();
+"""
+
+UPSERT_SEQUENCING_RUN_LIBRARY_SQL = """
+INSERT INTO sequencing_run_library (
+    source_name,
+    source_id,
+    query_term,
+    study_accession,
+    experiment_accession,
+    sample_accession,
+    organism,
+    library_strategy,
+    library_source,
+    library_layout,
+    instrument_platform,
+    instrument_model,
+    read_count,
+    base_count,
+    fastq_bytes,
+    published_at,
+    ftp_url,
+    record_url,
+    raw_payload,
+    fetched_at
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+ON CONFLICT (source_name, source_id)
+DO UPDATE SET
+    query_term = EXCLUDED.query_term,
+    study_accession = EXCLUDED.study_accession,
+    experiment_accession = EXCLUDED.experiment_accession,
+    sample_accession = EXCLUDED.sample_accession,
+    organism = EXCLUDED.organism,
+    library_strategy = EXCLUDED.library_strategy,
+    library_source = EXCLUDED.library_source,
+    library_layout = EXCLUDED.library_layout,
+    instrument_platform = EXCLUDED.instrument_platform,
+    instrument_model = EXCLUDED.instrument_model,
+    read_count = EXCLUDED.read_count,
+    base_count = EXCLUDED.base_count,
+    fastq_bytes = EXCLUDED.fastq_bytes,
+    published_at = EXCLUDED.published_at,
+    ftp_url = EXCLUDED.ftp_url,
+    record_url = EXCLUDED.record_url,
+    raw_payload = EXCLUDED.raw_payload,
+    fetched_at = NOW();
+"""
+
+UPSERT_MARKET_INSTRUMENTS_SQL = """
+INSERT INTO market_instruments (
+    asset_type,
+    source_name,
+    symbol,
+    display_name,
+    market,
+    currency,
+    exchange_name,
+    reference_url,
+    metadata_text,
+    fetched_at
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+ON CONFLICT (source_name, symbol)
+DO UPDATE SET
+    asset_type = EXCLUDED.asset_type,
+    display_name = EXCLUDED.display_name,
+    market = EXCLUDED.market,
+    currency = EXCLUDED.currency,
+    exchange_name = EXCLUDED.exchange_name,
+    reference_url = EXCLUDED.reference_url,
+    metadata_text = EXCLUDED.metadata_text,
+    fetched_at = NOW();
+"""
+
+UPSERT_MARKET_PRICE_BARS_SQL = """
+INSERT INTO market_price_bars (
+    source_name,
+    symbol,
+    asset_type,
+    market,
+    trade_date,
+    open_price,
+    high_price,
+    low_price,
+    close_price,
+    settlement_price,
+    volume,
+    turnover,
+    open_interest,
+    change_value,
+    raw_payload,
+    fetched_at
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+ON CONFLICT (source_name, symbol, trade_date)
+DO UPDATE SET
+    asset_type = EXCLUDED.asset_type,
+    market = EXCLUDED.market,
+    open_price = EXCLUDED.open_price,
+    high_price = EXCLUDED.high_price,
+    low_price = EXCLUDED.low_price,
+    close_price = EXCLUDED.close_price,
+    settlement_price = EXCLUDED.settlement_price,
+    volume = EXCLUDED.volume,
+    turnover = EXCLUDED.turnover,
+    open_interest = EXCLUDED.open_interest,
+    change_value = EXCLUDED.change_value,
     raw_payload = EXCLUDED.raw_payload,
     fetched_at = NOW();
 """
@@ -190,6 +365,50 @@ class KnowledgeSyncRequest(BaseModel):
         if value is None:
             return ""
         return str(value).strip()
+
+
+class SequencingRunSyncRequest(BaseModel):
+    query: str = Field(default='tax_name("Homo sapiens") AND library_strategy="RNA-Seq"')
+    limit: int = Field(default=4, ge=1, le=12)
+
+    @field_validator("query", mode="before")
+    @classmethod
+    def strip_query(cls, value: Any) -> str:
+        if value is None:
+            return ""
+        return str(value).strip()
+
+
+class MarketSyncRequest(BaseModel):
+    stock_symbols: list[str] = Field(default_factory=lambda: ["2330", "2317"])
+    etf_symbols: list[str] = Field(default_factory=lambda: ["0050", "0056"])
+    futures_symbols: list[str] = Field(default_factory=lambda: ["ES=F", "NQ=F"])
+    twse_months: int = Field(default=3, ge=1, le=12)
+    yahoo_range: str = Field(default="3mo")
+
+    @field_validator("stock_symbols", "etf_symbols", "futures_symbols", mode="before")
+    @classmethod
+    def normalize_symbol_list(cls, value: Any) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, str):
+            value = value.split(",")
+
+        cleaned: list[str] = []
+        for item in value:
+            normalized = str(item or "").strip().upper()
+            if normalized and normalized not in cleaned:
+                cleaned.append(normalized)
+        return cleaned[:20]
+
+    @field_validator("yahoo_range", mode="before")
+    @classmethod
+    def validate_yahoo_range(cls, value: Any) -> str:
+        normalized = str(value or "3mo").strip().lower() or "3mo"
+        allowed_ranges = {"1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"}
+        if normalized not in allowed_ranges:
+            raise ValueError("yahoo_range must be one of 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max.")
+        return normalized
 
 
 def gc_content(sequence: str) -> float:
@@ -591,6 +810,377 @@ def upsert_knowledge_records(records: list[KnowledgeRecordPayload]) -> None:
         connection.commit()
 
 
+def serialize_sequencing_run_row(row: tuple[Any, ...]) -> dict[str, Any]:
+    (
+        row_id,
+        source_name,
+        source_id,
+        query_term,
+        study_accession,
+        experiment_accession,
+        sample_accession,
+        organism,
+        library_strategy,
+        library_source,
+        library_layout,
+        instrument_platform,
+        instrument_model,
+        read_count,
+        base_count,
+        fastq_bytes,
+        published_at,
+        ftp_url,
+        record_url,
+        fetched_at,
+    ) = row
+
+    return {
+        "id": int(row_id),
+        "sourceName": source_name,
+        "sourceId": source_id,
+        "queryTerm": query_term,
+        "studyAccession": study_accession,
+        "experimentAccession": experiment_accession,
+        "sampleAccession": sample_accession,
+        "organism": organism,
+        "libraryStrategy": library_strategy,
+        "librarySource": library_source,
+        "libraryLayout": library_layout,
+        "instrumentPlatform": instrument_platform,
+        "instrumentModel": instrument_model,
+        "readCount": int(read_count) if read_count is not None else None,
+        "baseCount": int(base_count) if base_count is not None else None,
+        "fastqBytes": int(fastq_bytes) if fastq_bytes is not None else None,
+        "publishedAt": published_at or None,
+        "ftpUrl": ftp_url or None,
+        "recordUrl": record_url or None,
+        "fetchedAt": fetched_at.isoformat() if fetched_at else None,
+    }
+
+
+def fetch_sequencing_run_rows(query: str | None = None, limit: int = 8) -> list[dict[str, Any]]:
+    sql = """
+        SELECT id, source_name, source_id, query_term, study_accession,
+               experiment_accession, sample_accession, organism, library_strategy,
+               library_source, library_layout, instrument_platform, instrument_model,
+               read_count, base_count, fastq_bytes, published_at, ftp_url,
+               record_url, fetched_at
+        FROM sequencing_run_library
+    """
+    params: list[Any] = []
+
+    if query:
+        like_query = f"%{query}%"
+        sql += " WHERE (query_term ILIKE %s OR source_id ILIKE %s OR study_accession ILIKE %s OR sample_accession ILIKE %s OR organism ILIKE %s OR library_strategy ILIKE %s)"
+        params.extend([like_query, like_query, like_query, like_query, like_query, like_query])
+
+    sql += " ORDER BY fetched_at DESC, id DESC LIMIT %s"
+    params.append(limit)
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+
+    return [serialize_sequencing_run_row(row) for row in rows]
+
+
+def sequencing_run_summary() -> dict[str, Any]:
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT COUNT(*), COUNT(DISTINCT organism), COUNT(DISTINCT study_accession), MAX(fetched_at)
+                FROM sequencing_run_library;
+                """
+            )
+            total_runs, organism_count, study_count, latest_fetched_at = cursor.fetchone()
+
+    return {
+        "runCount": int(total_runs or 0),
+        "organismCount": int(organism_count or 0),
+        "studyCount": int(study_count or 0),
+        "latestFetchedAt": latest_fetched_at.isoformat() if latest_fetched_at else None,
+    }
+
+
+def upsert_sequencing_runs(records: list[SequencingRunPayload]) -> None:
+    if not records:
+        return
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            for record in records:
+                cursor.execute(
+                    UPSERT_SEQUENCING_RUN_LIBRARY_SQL,
+                    (
+                        record.source_name,
+                        record.source_id,
+                        record.query_term,
+                        record.study_accession,
+                        record.experiment_accession,
+                        record.sample_accession,
+                        record.organism,
+                        record.library_strategy,
+                        record.library_source,
+                        record.library_layout,
+                        record.instrument_platform,
+                        record.instrument_model,
+                        record.read_count,
+                        record.base_count,
+                        record.fastq_bytes,
+                        record.published_at,
+                        record.ftp_url,
+                        record.record_url,
+                        record.raw_payload,
+                    ),
+                )
+        connection.commit()
+
+
+def serialize_market_instrument_row(row: tuple[Any, ...]) -> dict[str, Any]:
+    (
+        row_id,
+        asset_type,
+        source_name,
+        symbol,
+        display_name,
+        market,
+        currency,
+        exchange_name,
+        reference_url,
+        metadata_text,
+        fetched_at,
+    ) = row
+
+    return {
+        "id": int(row_id),
+        "assetType": asset_type,
+        "sourceName": source_name,
+        "symbol": symbol,
+        "displayName": display_name,
+        "market": market,
+        "currency": currency,
+        "exchangeName": exchange_name,
+        "referenceUrl": reference_url,
+        "metadataText": metadata_text,
+        "fetchedAt": fetched_at.isoformat() if fetched_at else None,
+    }
+
+
+def fetch_market_instrument_rows(
+    asset_type: str | None = None,
+    query: str | None = None,
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    sql = """
+        SELECT id, asset_type, source_name, symbol, display_name, market,
+               currency, exchange_name, reference_url, metadata_text, fetched_at
+        FROM market_instruments
+    """
+    conditions: list[str] = []
+    params: list[Any] = []
+
+    if asset_type:
+        conditions.append("asset_type = %s")
+        params.append(asset_type)
+
+    if query:
+        like_query = f"%{query}%"
+        conditions.append("(symbol ILIKE %s OR display_name ILIKE %s OR market ILIKE %s OR exchange_name ILIKE %s)")
+        params.extend([like_query, like_query, like_query, like_query])
+
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+
+    sql += " ORDER BY fetched_at DESC, id DESC LIMIT %s"
+    params.append(limit)
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+
+    return [serialize_market_instrument_row(row) for row in rows]
+
+
+def serialize_market_bar_row(row: tuple[Any, ...]) -> dict[str, Any]:
+    (
+        row_id,
+        source_name,
+        symbol,
+        display_name,
+        asset_type,
+        market,
+        trade_date,
+        open_price,
+        high_price,
+        low_price,
+        close_price,
+        settlement_price,
+        volume,
+        turnover,
+        open_interest,
+        change_value,
+        fetched_at,
+    ) = row
+
+    return {
+        "id": int(row_id),
+        "sourceName": source_name,
+        "symbol": symbol,
+        "displayName": display_name,
+        "assetType": asset_type,
+        "market": market,
+        "tradeDate": trade_date.isoformat() if trade_date else None,
+        "open": float(open_price) if open_price is not None else None,
+        "high": float(high_price) if high_price is not None else None,
+        "low": float(low_price) if low_price is not None else None,
+        "close": float(close_price) if close_price is not None else None,
+        "settlement": float(settlement_price) if settlement_price is not None else None,
+        "volume": int(volume) if volume is not None else None,
+        "turnover": float(turnover) if turnover is not None else None,
+        "openInterest": int(open_interest) if open_interest is not None else None,
+        "changeValue": float(change_value) if change_value is not None else None,
+        "fetchedAt": fetched_at.isoformat() if fetched_at else None,
+    }
+
+
+def fetch_market_bar_rows(
+    asset_type: str | None = None,
+    symbol: str | None = None,
+    limit: int = 60,
+) -> list[dict[str, Any]]:
+    sql = """
+        SELECT bars.id, bars.source_name, bars.symbol,
+               COALESCE(inst.display_name, bars.symbol) AS display_name,
+               bars.asset_type, bars.market, bars.trade_date, bars.open_price,
+               bars.high_price, bars.low_price, bars.close_price, bars.settlement_price,
+               bars.volume, bars.turnover, bars.open_interest, bars.change_value,
+               bars.fetched_at
+        FROM market_price_bars AS bars
+        LEFT JOIN market_instruments AS inst
+               ON inst.source_name = bars.source_name AND inst.symbol = bars.symbol
+    """
+    conditions: list[str] = []
+    params: list[Any] = []
+
+    if asset_type:
+        conditions.append("bars.asset_type = %s")
+        params.append(asset_type)
+
+    if symbol:
+        conditions.append("bars.symbol = %s")
+        params.append(symbol)
+
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+
+    sql += " ORDER BY bars.trade_date DESC, bars.fetched_at DESC LIMIT %s"
+    params.append(limit)
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+
+    return [serialize_market_bar_row(row) for row in rows]
+
+
+def market_summary() -> dict[str, Any]:
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT asset_type, COUNT(*), MAX(fetched_at)
+                FROM market_instruments
+                GROUP BY asset_type
+                ORDER BY asset_type;
+                """
+            )
+            instrument_rows = cursor.fetchall()
+            cursor.execute(
+                """
+                SELECT COUNT(*), MAX(trade_date), MAX(fetched_at)
+                FROM market_price_bars;
+                """
+            )
+            bar_count, latest_trade_date, latest_fetched_at = cursor.fetchone()
+
+    counts = {"stock": 0, "etf": 0, "futures": 0}
+    latest_instrument_fetched_at = None
+    for asset_type, count, fetched_at in instrument_rows:
+        counts[str(asset_type)] = int(count or 0)
+        if fetched_at and (latest_instrument_fetched_at is None or fetched_at > latest_instrument_fetched_at):
+            latest_instrument_fetched_at = fetched_at
+
+    return {
+        "instrumentCounts": counts,
+        "totalInstruments": sum(counts.values()),
+        "barCount": int(bar_count or 0),
+        "latestTradeDate": latest_trade_date.isoformat() if latest_trade_date else None,
+        "latestFetchedAt": (
+            latest_fetched_at.isoformat()
+            if latest_fetched_at
+            else latest_instrument_fetched_at.isoformat() if latest_instrument_fetched_at else None
+        ),
+    }
+
+
+def upsert_market_instruments(records: list[MarketInstrumentPayload]) -> None:
+    if not records:
+        return
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            for record in records:
+                cursor.execute(
+                    UPSERT_MARKET_INSTRUMENTS_SQL,
+                    (
+                        record.asset_type,
+                        record.source_name,
+                        record.symbol,
+                        record.display_name,
+                        record.market,
+                        record.currency,
+                        record.exchange_name,
+                        record.reference_url,
+                        record.metadata_text,
+                    ),
+                )
+        connection.commit()
+
+
+def upsert_market_bars(records: list[MarketBarPayload]) -> None:
+    if not records:
+        return
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            for record in records:
+                cursor.execute(
+                    UPSERT_MARKET_PRICE_BARS_SQL,
+                    (
+                        record.source_name,
+                        record.symbol,
+                        record.asset_type,
+                        record.market,
+                        record.trade_date,
+                        record.open_price,
+                        record.high_price,
+                        record.low_price,
+                        record.close_price,
+                        record.settlement_price,
+                        record.volume,
+                        record.turnover,
+                        record.open_interest,
+                        record.change_value,
+                        record.raw_payload,
+                    ),
+                )
+        connection.commit()
+
+
 def delete_sequence_record(record_id: int) -> dict[str, Any] | None:
     with get_connection() as connection:
         with connection.cursor() as cursor:
@@ -753,6 +1343,9 @@ def ensure_schema() -> bool:
             connection.execute(CREATE_INQUIRIES_TABLE_SQL)
             connection.execute(CREATE_SEQUENCE_LIBRARY_TABLE_SQL)
             connection.execute(CREATE_KNOWLEDGE_LIBRARY_TABLE_SQL)
+            connection.execute(CREATE_SEQUENCING_RUN_LIBRARY_TABLE_SQL)
+            connection.execute(CREATE_MARKET_INSTRUMENTS_TABLE_SQL)
+            connection.execute(CREATE_MARKET_PRICE_BARS_TABLE_SQL)
             connection.commit()
         SCHEMA_READY = True
         return True
@@ -1318,6 +1911,246 @@ def sync_sequences(payload: SequenceSyncRequest) -> dict[str, Any]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to persist crawled sequences to PostgreSQL.",
+        ) from error
+
+
+@app.get("/api/sequencing-runs/summary")
+def get_sequencing_run_summary() -> dict[str, Any]:
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    try:
+        return {
+            "databaseConfigured": True,
+            "connected": True,
+            **sequencing_run_summary(),
+        }
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not reachable right now.",
+        ) from error
+
+
+@app.get("/api/sequencing-runs")
+def list_sequencing_runs(query: str | None = None, limit: int = 8) -> dict[str, Any]:
+    normalized_query = (query or "").strip() or None
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    try:
+        rows = fetch_sequencing_run_rows(normalized_query, max(1, min(limit, 20)))
+        return {
+            "records": rows,
+            "query": normalized_query,
+            **sequencing_run_summary(),
+        }
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not reachable right now.",
+        ) from error
+
+
+@app.post("/api/sequencing-runs/sync")
+def sync_sequencing_runs(payload: SequencingRunSyncRequest) -> dict[str, Any]:
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    query = payload.query or 'tax_name("Homo sapiens") AND library_strategy="RNA-Seq"'
+    try:
+        records = fetch_ena_sequencing_runs(query, payload.limit)
+    except Exception as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Sequencing metadata crawl failed: {error}",
+        ) from error
+
+    try:
+        upsert_sequencing_runs(records)
+        return {
+            "stored": len(records),
+            "records": fetch_sequencing_run_rows(query=None, limit=payload.limit),
+            **sequencing_run_summary(),
+        }
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist crawled sequencing metadata to PostgreSQL.",
+        ) from error
+
+
+@app.get("/api/market/summary")
+def get_market_summary() -> dict[str, Any]:
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    try:
+        return {
+            "databaseConfigured": True,
+            "connected": True,
+            **market_summary(),
+        }
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not reachable right now.",
+        ) from error
+
+
+@app.get("/api/market/instruments")
+def list_market_instruments(
+    asset_type: str | None = None,
+    query: str | None = None,
+    limit: int = 20,
+) -> dict[str, Any]:
+    normalized_asset_type = (asset_type or "").strip().lower() or None
+    normalized_query = (query or "").strip() or None
+
+    if normalized_asset_type and normalized_asset_type not in {"stock", "etf", "futures"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="asset_type must be one of stock, etf, futures.",
+        )
+
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    try:
+        return {
+            "records": fetch_market_instrument_rows(
+                asset_type=normalized_asset_type,
+                query=normalized_query,
+                limit=max(1, min(limit, 50)),
+            ),
+            "assetType": normalized_asset_type,
+            "query": normalized_query,
+            **market_summary(),
+        }
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not reachable right now.",
+        ) from error
+
+
+@app.get("/api/market/bars")
+def list_market_bars(
+    asset_type: str | None = None,
+    symbol: str | None = None,
+    limit: int = 60,
+) -> dict[str, Any]:
+    normalized_asset_type = (asset_type or "").strip().lower() or None
+    normalized_symbol = (symbol or "").strip().upper() or None
+
+    if normalized_asset_type and normalized_asset_type not in {"stock", "etf", "futures"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="asset_type must be one of stock, etf, futures.",
+        )
+
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    try:
+        return {
+            "records": fetch_market_bar_rows(
+                asset_type=normalized_asset_type,
+                symbol=normalized_symbol,
+                limit=max(1, min(limit, 200)),
+            ),
+            "assetType": normalized_asset_type,
+            "symbol": normalized_symbol,
+            **market_summary(),
+        }
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not reachable right now.",
+        ) from error
+
+
+@app.post("/api/market/sync")
+def sync_market_data(payload: MarketSyncRequest) -> dict[str, Any]:
+    if not ensure_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    instrument_records: list[MarketInstrumentPayload] = []
+    bar_records: list[MarketBarPayload] = []
+    failures: list[dict[str, str]] = []
+    stored = {
+        "stock": {"symbols": 0, "bars": 0},
+        "etf": {"symbols": 0, "bars": 0},
+        "futures": {"symbols": 0, "bars": 0},
+    }
+
+    for current_asset_type, symbols in (
+        ("stock", payload.stock_symbols),
+        ("etf", payload.etf_symbols),
+        ("futures", payload.futures_symbols),
+    ):
+        for current_symbol in symbols:
+            try:
+                instrument, bars = fetch_market_records(
+                    current_symbol,
+                    current_asset_type,
+                    payload.twse_months,
+                    payload.yahoo_range,
+                )
+                instrument_records.append(instrument)
+                bar_records.extend(bars)
+                stored[current_asset_type]["symbols"] += 1
+                stored[current_asset_type]["bars"] += len(bars)
+            except Exception as error:
+                failures.append(
+                    {
+                        "assetType": current_asset_type,
+                        "symbol": current_symbol,
+                        "error": str(error),
+                    }
+                )
+
+    if not instrument_records:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="No market records could be fetched from upstream providers.",
+        )
+
+    try:
+        upsert_market_instruments(instrument_records)
+        upsert_market_bars(bar_records)
+        return {
+            "stored": stored,
+            "failures": failures,
+            "instrumentPreview": fetch_market_instrument_rows(limit=12),
+            "barPreview": fetch_market_bar_rows(limit=24),
+            **market_summary(),
+        }
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist market data to PostgreSQL.",
         ) from error
 
 

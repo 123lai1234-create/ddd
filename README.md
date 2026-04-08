@@ -64,6 +64,12 @@ d:\project\
 ├── scripts/
 │   ├── build_static_site.sh # 靜態站建置，輸出到 dist/
 │   └── run_pipeline.py      # CLI 入口，支援 --mode all / bo / rl / mpnn
+├── site_api/
+│   ├── main.py              # FastAPI + Postgres API
+│   ├── sequence_sources.py  # UniProt / Ensembl 序列資料來源
+│   ├── knowledge_sources.py # UniProt annotation / PubMed 知識來源
+│   ├── sequencing_run_sources.py # ENA 定序 run metadata
+│   └── market_sources.py    # 股票 / ETF / futures 市場資料來源
 ├── demo_notebook.ipynb      # 面試 Live Demo 筆記本
 ├── docs/
 │   ├── DEPLOY_AUTOMATION.md
@@ -200,7 +206,31 @@ The frontend source is organized under `frontend/`, with page templates in `fron
 The deployed FastAPI service now exposes a small bioinformatics knowledge layer for the portfolio pages and downstream RAG workflows.
 
 - Sequence cache endpoints: `/api/sequences`, `/api/sequences/summary`, `/api/sequences/sync`
+- Sequencing run metadata: `/api/sequencing-runs`, `/api/sequencing-runs/summary`, `/api/sequencing-runs/sync`
 - Knowledge cache endpoints: `/api/knowledge`, `/api/knowledge/summary`, `/api/knowledge/sync`
 - RAG document export: `/api/rag/documents`
+
+## Market Data Layer
+
+The FastAPI service now also exposes a market ingestion layer that can write daily bars and instrument metadata into PostgreSQL.
+
+- Market summary: `/api/market/summary`
+- Instrument listing: `/api/market/instruments`
+- Daily price bars: `/api/market/bars`
+- Market sync trigger: `/api/market/sync`
+
+Default upstreams:
+
+- Taiwan stocks / ETFs: TWSE official daily report API
+- Futures and non-TWSE symbols: Yahoo Finance chart API
+- Sequencing run metadata: ENA Portal API
+
+PostgreSQL tables created automatically at startup:
+
+- `sequence_library`
+- `knowledge_library`
+- `sequencing_run_library`
+- `market_instruments`
+- `market_price_bars`
 
 The `gene_ai.html` page provides the interactive management UI, while `index.html` surfaces a read-only homepage preview of the latest sequence, knowledge, and RAG-ready records stored in Render Postgres.
