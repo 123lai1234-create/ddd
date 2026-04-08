@@ -58,6 +58,7 @@ function derivePortfolioApiCandidates() {
         }
     }
 
+    pushCandidate('https://donttalk-api-production.up.railway.app');
     pushCandidate('https://donttalk-api.onrender.com');
     return candidates;
 }
@@ -97,7 +98,7 @@ async function resolvePortfolioApiBase() {
 async function portfolioApiJson(path) {
     const apiBase = await resolvePortfolioApiBase();
     if (!apiBase) {
-        throw new Error('目前找不到可用的 Render API。');
+        throw new Error('目前找不到可用的後端 API。');
     }
 
     const response = await fetch(`${apiBase}${path}`);

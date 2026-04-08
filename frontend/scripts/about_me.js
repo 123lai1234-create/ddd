@@ -67,6 +67,7 @@
             }
         }
 
+        pushCandidate('https://donttalk-api-production.up.railway.app');
         pushCandidate('https://donttalk-api.onrender.com');
         return candidates;
     };

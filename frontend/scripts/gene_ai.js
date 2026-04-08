@@ -144,6 +144,7 @@ function deriveSequenceApiCandidates() {
         }
     }
 
+    pushCandidate('https://donttalk-api-production.up.railway.app');
     pushCandidate('https://donttalk-api.onrender.com');
     return candidates;
 }
@@ -179,7 +180,7 @@ async function resolveSequenceApiBase() {
 async function requestSequenceApi(path, options = {}) {
     const apiBase = await resolveSequenceApiBase();
     if (!apiBase) {
-        throw new Error('目前找不到可用的 Render API。');
+        throw new Error('目前找不到可用的後端 API。');
     }
 
     const response = await fetch(`${apiBase}${path}`, options);
