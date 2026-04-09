@@ -101,7 +101,9 @@ GET https://<your-app>.fly.dev/healthz
 若使用 `app-config.js` 本機覆蓋，修改為：
 
 ```js
-window.API_BASE_URL = "https://donttalk-api.fly.dev";
+window.APP_CONFIG = {
+  API_BASE_URL: "https://donttalk-api.fly.dev",
+};
 ```
 
 ---

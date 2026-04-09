@@ -43,7 +43,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 # ── 將 src 加入 path ─────────────────────────────
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.data_prep import make_demo_data, load_proteingym_data, describe_dataset
 from src.embeddings import ESM2Embedder

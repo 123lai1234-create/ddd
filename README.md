@@ -51,11 +51,12 @@ Protein Sequences
 ```
 d:\project\
 ├── frontend/
-│   ├── index.html           # 首頁 / ProteinMPNN demo
+│   ├── index.html           # 首頁 / live preview
 │   ├── about_me.html        # About Me
 │   ├── works.html           # 作品總覽
 │   ├── gene_ai.html         # Gene AI 頁面
 │   ├── ngs.html             # NGS 頁面
+│   ├── protein_mpnn.html    # ProteinMPNN 互動頁面
 │   ├── report.html          # 專案報告
 │   ├── thesis.html          # Thesis 頁面
 │   ├── interview_prep.html  # 面試準備頁面

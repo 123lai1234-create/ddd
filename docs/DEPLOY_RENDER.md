@@ -30,7 +30,7 @@ The correct target on Render is one of these:
 - [scripts/build_static_site.sh](scripts/build_static_site.sh): builds the deployable bundle into dist
 - [site_api/main.py](site_api/main.py): FastAPI service for inquiry writes and DB health
 - [site_api/requirements.txt](site_api/requirements.txt): isolated backend dependencies for Render web service
-- [app-config.js](app-config.js): local frontend config fallback
+- [frontend/scripts/app-config.js](frontend/scripts/app-config.js): shared frontend API config and hostname fallback logic
 - [.gitignore](.gitignore): excludes local environment files and model weights from git
 
 The build only publishes:
@@ -39,7 +39,7 @@ The build only publishes:
 - README
 - demo notebook
 - PNG assets in outputs
-- generated app-config.js for frontend API settings
+- generated scripts/app-config.js for frontend API settings
 
 It does not publish:
 
@@ -57,8 +57,8 @@ The database-backed path adds a separate web service and database, so the static
 3. In Render, choose New + Blueprint.
 4. Connect the repository.
 5. Render will read [render.yaml](render.yaml) automatically and create:
-   - the static portfolio site
-   - the FastAPI web service
+   - the static portfolio site (`donttalk`)
+   - the FastAPI web service (`donttalk-api`)
 6. Use each service page's Open App button to get the actual live hostname. Render may append a unique suffix to the service URL, so do not assume the hostname is exactly the same as the service name.
 7. If your workspace already has an active free-tier Postgres database, do not create another one through the Blueprint. Reuse the existing database by setting DATABASE_URL manually on the API service.
 8. After the first deploy, open [about_me.html](about_me.html) and verify that the contact section reports API and DB connectivity.
@@ -140,9 +140,10 @@ Check that dist contains:
 - works.html
 - gene_ai.html
 - ngs.html
+- protein_mpnn.html
 - report.html
 - interview_prep.html
-- app-config.js
+- scripts/app-config.js
 - outputs/\*.png
 
 ## Common Mistakes To Avoid

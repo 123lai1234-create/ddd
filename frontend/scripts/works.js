@@ -4,7 +4,8 @@
     const configuredApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
         ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
         : '';
-    const apiBase = configuredApiBase || window.location.origin.replace(/\/+$/, '');
+    const appConfigUtils = window.APP_CONFIG_UTILS;
+    let resolvedApiBase = '';
 
     filterButtons.forEach((button) => {
         button.addEventListener('click', () => {
@@ -29,7 +30,26 @@
         });
     });
 
+    async function resolveApiBase() {
+        if (resolvedApiBase) {
+            return resolvedApiBase;
+        }
+
+        if (typeof appConfigUtils?.resolveApiBase === 'function') {
+            resolvedApiBase = await appConfigUtils.resolveApiBase({ cacheKey: 'works' });
+            return resolvedApiBase;
+        }
+
+        resolvedApiBase = configuredApiBase || window.location.origin.replace(/\/+$/, '');
+        return resolvedApiBase;
+    }
+
     async function apiGet(path) {
+        const apiBase = await resolveApiBase();
+        if (!apiBase) {
+            throw new Error('API unavailable');
+        }
+
         const response = await fetch(apiBase + path, { signal: AbortSignal.timeout(9000) });
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);

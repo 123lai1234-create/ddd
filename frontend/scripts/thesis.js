@@ -1317,32 +1317,27 @@ function setMarketApiLabel(value) {
 }
 
 function deriveMarketApiCandidates() {
+    if (typeof window.APP_CONFIG_UTILS?.deriveApiCandidates === 'function') {
+        return window.APP_CONFIG_UTILS.deriveApiCandidates();
+    }
+
     const configuredApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
         ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
         : '';
-    const candidates = [];
-
-    const pushCandidate = (value) => {
-        const normalized = String(value || '').trim().replace(/\/+$/, '');
-        if (normalized && !candidates.includes(normalized)) {
-            candidates.push(normalized);
-        }
-    };
-
-    pushCandidate(configuredApiBase);
-    const currentOrigin = window.location.origin.replace(/\/+$/, '');
-    pushCandidate(currentOrigin);
-    if (currentOrigin.includes('donttalk') && !currentOrigin.includes('donttalk-api')) {
-        pushCandidate(currentOrigin.replace('donttalk', 'donttalk-api'));
-    }
-    pushCandidate('https://donttalk-api-production.up.railway.app');
-    pushCandidate('https://donttalk-api.onrender.com');
-    return candidates;
+    return configuredApiBase ? [configuredApiBase] : [];
 }
 
 async function resolveMarketApiBase() {
     if (resolvedMarketApiBase) {
         return resolvedMarketApiBase;
+    }
+
+    if (typeof window.APP_CONFIG_UTILS?.resolveApiBase === 'function') {
+        resolvedMarketApiBase = await window.APP_CONFIG_UTILS.resolveApiBase({ cacheKey: 'thesis-market' });
+        if (resolvedMarketApiBase) {
+            setMarketApiLabel(resolvedMarketApiBase);
+            return resolvedMarketApiBase;
+        }
     }
 
     const candidates = deriveMarketApiCandidates();

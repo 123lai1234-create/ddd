@@ -10,6 +10,7 @@
     const configuredApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
         ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
         : '';
+    const appConfigUtils = window.APP_CONFIG_UTILS;
     let resolvedApiBase = '';
 
     const setStatus = (message, state) => {
@@ -45,35 +46,20 @@
     };
 
     const deriveApiCandidates = () => {
-        const candidates = [];
-        const renderPortfolioServiceNames = ['donttalk'];
-        const renderApiServiceNames = ['donttalk-api'];
-        const pushCandidate = (value) => {
-            const normalized = String(value || '').trim().replace(/\/+$/, '');
-            if (normalized && !candidates.includes(normalized)) {
-                candidates.push(normalized);
-            }
-        };
-
-        pushCandidate(configuredApiBase);
-
-        const currentOrigin = window.location.origin.replace(/\/+$/, '');
-        pushCandidate(currentOrigin);
-        for (const renderPortfolioServiceName of renderPortfolioServiceNames) {
-            if (currentOrigin.includes(renderPortfolioServiceName)) {
-                for (const renderApiServiceName of renderApiServiceNames) {
-                    pushCandidate(currentOrigin.replace(renderPortfolioServiceName, renderApiServiceName));
-                }
-            }
+        if (typeof appConfigUtils?.deriveApiCandidates === 'function') {
+            return appConfigUtils.deriveApiCandidates();
         }
 
-        pushCandidate('https://donttalk-api-production.up.railway.app');
-        pushCandidate('https://donttalk-api.onrender.com');
-        return candidates;
+        return configuredApiBase ? [configuredApiBase] : [];
     };
 
     const resolveApiBase = async () => {
         if (resolvedApiBase) {
+            return resolvedApiBase;
+        }
+
+        if (typeof appConfigUtils?.resolveApiBase === 'function') {
+            resolvedApiBase = await appConfigUtils.resolveApiBase({ cacheKey: 'about-me' });
             return resolvedApiBase;
         }
 

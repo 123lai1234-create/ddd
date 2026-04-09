@@ -149,39 +149,27 @@ function setSharedApiLabels(value) {
 }
 
 function deriveSequenceApiCandidates() {
+    if (typeof window.APP_CONFIG_UTILS?.deriveApiCandidates === 'function') {
+        return window.APP_CONFIG_UTILS.deriveApiCandidates();
+    }
+
     const configuredApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
         ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
         : '';
-    const candidates = [];
-    const renderPortfolioServiceNames = ['donttalk'];
-    const renderApiServiceNames = ['donttalk-api'];
-    const pushCandidate = (value) => {
-        const normalized = String(value || '').trim().replace(/\/+$/, '');
-        if (normalized && !candidates.includes(normalized)) {
-            candidates.push(normalized);
-        }
-    };
-
-    pushCandidate(configuredApiBase);
-
-    const currentOrigin = window.location.origin.replace(/\/+$/, '');
-    pushCandidate(currentOrigin);
-    for (const renderPortfolioServiceName of renderPortfolioServiceNames) {
-        if (currentOrigin.includes(renderPortfolioServiceName)) {
-            for (const renderApiServiceName of renderApiServiceNames) {
-                pushCandidate(currentOrigin.replace(renderPortfolioServiceName, renderApiServiceName));
-            }
-        }
-    }
-
-    pushCandidate('https://donttalk-api-production.up.railway.app');
-    pushCandidate('https://donttalk-api.onrender.com');
-    return candidates;
+    return configuredApiBase ? [configuredApiBase] : [];
 }
 
 async function resolveSequenceApiBase() {
     if (resolvedSequenceApiBase) {
         return resolvedSequenceApiBase;
+    }
+
+    if (typeof window.APP_CONFIG_UTILS?.resolveApiBase === 'function') {
+        resolvedSequenceApiBase = await window.APP_CONFIG_UTILS.resolveApiBase({ cacheKey: 'gene-ai' });
+        if (resolvedSequenceApiBase) {
+            setSharedApiLabels(resolvedSequenceApiBase);
+            return resolvedSequenceApiBase;
+        }
     }
 
     const candidates = deriveSequenceApiCandidates();
