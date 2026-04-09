@@ -338,8 +338,24 @@ DO UPDATE SET
 
 
 logger = logging.getLogger(__name__)
-SCHEMA_READY = False
+CORE_SCHEMA_READY = False
+MARKET_SCHEMA_READY = False
 LAST_DATABASE_ERROR = ""
+
+CORE_SCHEMA_STATEMENTS = (
+    CREATE_INQUIRIES_TABLE_SQL,
+    CREATE_SEQUENCE_LIBRARY_TABLE_SQL,
+    CREATE_KNOWLEDGE_LIBRARY_TABLE_SQL,
+    CREATE_SEQUENCING_RUN_LIBRARY_TABLE_SQL,
+)
+
+MARKET_SCHEMA_STATEMENTS = (
+    CREATE_MARKET_INSTRUMENTS_TABLE_SQL,
+    CREATE_MARKET_PRICE_BARS_TABLE_SQL,
+    ALTER_MARKET_PRICE_BARS_ADD_CONTRACT_MONTH_SQL,
+    DROP_LEGACY_MARKET_PRICE_BARS_UNIQUE_SQL,
+    CREATE_MARKET_PRICE_BARS_UNIQUE_INDEX_SQL,
+)
 
 
 class InquiryCreate(BaseModel):
@@ -1376,33 +1392,50 @@ app.add_middleware(
 )
 
 
-def ensure_schema() -> bool:
-    global SCHEMA_READY
-
-    if SCHEMA_READY:
-        return True
-
+def _execute_schema_setup(statements: tuple[str, ...], label: str) -> bool:
     database_url = get_database_url()
     if not database_url:
         return False
 
     try:
         with get_connection() as connection:
-            connection.execute(CREATE_INQUIRIES_TABLE_SQL)
-            connection.execute(CREATE_SEQUENCE_LIBRARY_TABLE_SQL)
-            connection.execute(CREATE_KNOWLEDGE_LIBRARY_TABLE_SQL)
-            connection.execute(CREATE_SEQUENCING_RUN_LIBRARY_TABLE_SQL)
-            connection.execute(CREATE_MARKET_INSTRUMENTS_TABLE_SQL)
-            connection.execute(CREATE_MARKET_PRICE_BARS_TABLE_SQL)
-            connection.execute(ALTER_MARKET_PRICE_BARS_ADD_CONTRACT_MONTH_SQL)
-            connection.execute(DROP_LEGACY_MARKET_PRICE_BARS_UNIQUE_SQL)
-            connection.execute(CREATE_MARKET_PRICE_BARS_UNIQUE_INDEX_SQL)
+            for statement in statements:
+                connection.execute(statement)
             connection.commit()
-        SCHEMA_READY = True
         return True
     except psycopg.Error as error:
-        logger.warning("Database schema is not ready yet: %s", error)
+        logger.warning("%s schema is not ready yet: %s", label, error)
         return False
+
+
+def ensure_core_schema() -> bool:
+    global CORE_SCHEMA_READY
+
+    if CORE_SCHEMA_READY:
+        return True
+
+    if not _execute_schema_setup(CORE_SCHEMA_STATEMENTS, "Core"):
+        return False
+
+    CORE_SCHEMA_READY = True
+    return True
+
+
+def ensure_market_schema() -> bool:
+    global MARKET_SCHEMA_READY
+
+    if MARKET_SCHEMA_READY:
+        return True
+
+    if not _execute_schema_setup(MARKET_SCHEMA_STATEMENTS, "Market"):
+        return False
+
+    MARKET_SCHEMA_READY = True
+    return True
+
+
+def ensure_schema() -> bool:
+    return ensure_core_schema()
 
 
 def database_available() -> bool:
@@ -1520,7 +1553,8 @@ def fetch_structure_payload(pdb_id: str) -> dict[str, Any]:
 
 @app.on_event("startup")
 def startup() -> None:
-    ensure_schema()
+    ensure_core_schema()
+    ensure_market_schema()
 
 
 @app.get("/")
@@ -2042,7 +2076,7 @@ def sync_sequencing_runs(payload: SequencingRunSyncRequest) -> dict[str, Any]:
 
 @app.get("/api/market/summary")
 def get_market_summary() -> dict[str, Any]:
-    if not ensure_schema():
+    if not ensure_market_schema():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database is provisioning or not reachable yet.",
@@ -2076,7 +2110,7 @@ def list_market_instruments(
             detail="asset_type must be one of stock, etf, futures.",
         )
 
-    if not ensure_schema():
+    if not ensure_market_schema():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database is provisioning or not reachable yet.",
@@ -2117,7 +2151,7 @@ def list_market_bars(
             detail="asset_type must be one of stock, etf, futures.",
         )
 
-    if not ensure_schema():
+    if not ensure_market_schema():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database is provisioning or not reachable yet.",
@@ -2145,7 +2179,7 @@ def list_market_bars(
 
 @app.post("/api/market/sync")
 def sync_market_data(payload: MarketSyncRequest) -> dict[str, Any]:
-    if not ensure_schema():
+    if not ensure_market_schema():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database is provisioning or not reachable yet.",
