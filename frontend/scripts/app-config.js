@@ -94,6 +94,27 @@
         return '';
     };
 
+    /**
+     * Returns the sync secret for protected /sync endpoints.
+     * Resolution order:
+     *   1. window.APP_CONFIG.SYNC_SECRET (injected at build/deploy time)
+     *   2. ?sync_token=<value> URL param  →  also saves to localStorage for future calls
+     *   3. localStorage item '_sync_secret'
+     */
+    const getSyncSecret = () => {
+        if (existingConfig.SYNC_SECRET) return String(existingConfig.SYNC_SECRET);
+        try {
+            const urlParam = new URLSearchParams(window.location.search).get('sync_token');
+            if (urlParam) {
+                localStorage.setItem('_sync_secret', urlParam);
+                return urlParam;
+            }
+            return localStorage.getItem('_sync_secret') || '';
+        } catch {
+            return '';
+        }
+    };
+
     window.APP_CONFIG = {
         ...existingConfig,
         API_BASE_URL: configuredApiBase || injectedApiBase || fallbackApiBase,
@@ -105,6 +126,7 @@
     window.APP_CONFIG_UTILS = {
         deriveApiCandidates,
         normalizeUrl,
-        resolveApiBase
+        resolveApiBase,
+        getSyncSecret,
     };
 })();

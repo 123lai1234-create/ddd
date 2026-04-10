@@ -496,10 +496,12 @@ async function syncSequenceVault(autoMode = false) {
 
     try {
         const payload = sequenceSyncPayload();
+        const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
         const response = await requestSequenceApi('/api/sequences/sync', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}),
             },
             body: JSON.stringify(payload)
         });
@@ -836,10 +838,12 @@ async function syncSequencingRunVault(autoMode = false) {
     setSequencingRunStatus(autoMode ? '正在自動初始化 ENA sequencing metadata...' : '正在同步 ENA sequencing metadata 並寫入 DB...', 'info');
 
     try {
+        const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
         const response = await requestSequenceApi('/api/sequencing-runs/sync', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}),
             },
             body: JSON.stringify(sequencingRunSyncPayload())
         });
@@ -1224,10 +1228,12 @@ async function syncKnowledgeVault(autoMode = false) {
 
     try {
         const payload = knowledgeSyncPayload();
+        const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
         const response = await requestKnowledgeApi('/api/knowledge/sync', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}),
             },
             body: JSON.stringify(payload)
         });

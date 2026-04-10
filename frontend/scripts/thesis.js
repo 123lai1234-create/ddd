@@ -1688,10 +1688,12 @@ async function syncMarketCache() {
     setMarketStatus('正在同步 TWSE / TAIFEX / Yahoo 市場資料...', 'info');
 
     try {
+        const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
         const response = await requestMarketApi('/api/market/sync', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}),
             },
             body: JSON.stringify(marketSyncPayload()),
         });
