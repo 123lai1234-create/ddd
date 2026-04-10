@@ -95,17 +95,15 @@ jobs:
         with:
           node-version: 22
 
-      - name: Pull Vercel project settings
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      - name: Build static site
         run: |
-          npx --yes vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          bash ./scripts/build_static_site.sh
 
-      - name: Build Vercel output
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      - name: Prepare Vercel output directory
         run: |
-          npx --yes vercel build --prod --token="$VERCEL_TOKEN"
+          mkdir -p .vercel/output/static
+          cp -r dist/. .vercel/output/static/
+          printf '{"version":3}' > .vercel/output/config.json
 
       - name: Deploy frontend to Vercel
         env:
