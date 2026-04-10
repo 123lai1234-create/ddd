@@ -952,7 +952,7 @@ def esm2_score(request: Request, body: ESM2ScoreRequest) -> dict[str, Any]:
                     # Fatal — cancel remaining and surface the error
                     for f in futures:
                         f.cancel()
-                    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=err_msg)
+                    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=err_msg) from exc
 
     return {
         "profiles": profiles,
