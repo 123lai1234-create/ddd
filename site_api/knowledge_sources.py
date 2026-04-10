@@ -6,11 +6,15 @@ from dataclasses import dataclass
 from typing import Any
 from xml.etree import ElementTree as ET
 
+from site_api.cache import cached_json_get, cached_json_set
 from site_api.http_client import get as http_get
 from site_api.shared_utils import protein_name as _protein_name
 
 
 UNIPROT_SEARCH_URL = "https://rest.uniprot.org/uniprotkb/search"
+SEMANTIC_SCHOLAR_URL = "https://api.semanticscholar.org/graph/v1"
+INTERPRO_API_URL = "https://www.ebi.ac.uk/interpro/api"
+OPENALEX_API_URL = "https://api.openalex.org"
 NCBI_EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 NCBI_ESEARCH_URL = f"{NCBI_EUTILS_BASE_URL}/esearch.fcgi"
 NCBI_ESUMMARY_URL = f"{NCBI_EUTILS_BASE_URL}/esummary.fcgi"
@@ -311,4 +315,206 @@ def fetch_pubmed_knowledge(query: str, limit: int) -> list[KnowledgeRecordPayloa
             )
         )
 
+    return records
+
+
+# ── Semantic Scholar ─────────────────────────────────────────────────────────
+
+def fetch_scholar_knowledge(query: str, limit: int = 8) -> list[KnowledgeRecordPayload]:
+    cache_key = f"scholar:{query}:{limit}"
+    cached = cached_json_get("scholar", cache_key)
+    if cached:
+        return [KnowledgeRecordPayload(**r) for r in cached]
+
+    api_key = os.getenv("SEMANTIC_SCHOLAR_API_KEY", "").strip()
+    headers = {"x-api-key": api_key} if api_key else {}
+    fields = "paperId,title,abstract,authors,year,citationCount,venue,fieldsOfStudy,tldr,url"
+
+    try:
+        resp = http_get(
+            f"{SEMANTIC_SCHOLAR_URL}/paper/search",
+            params={"query": query, "limit": str(min(limit, 50)), "fields": fields},
+            headers=headers,
+            timeout=REQUEST_TIMEOUT,
+        )
+        if resp.status_code != 200:
+            return []
+        papers = resp.json().get("data", [])
+    except Exception as exc:
+        logger.warning("Semantic Scholar fetch failed: %s", exc)
+        return []
+
+    records: list[KnowledgeRecordPayload] = []
+    for p in papers[:limit]:
+        tldr = (p.get("tldr") or {}).get("text", "")
+        abstract = p.get("abstract") or ""
+        records.append(KnowledgeRecordPayload(
+            record_type="scholar_paper",
+            source_name="SemanticScholar",
+            source_id=p.get("paperId", ""),
+            query_term=query,
+            title=p.get("title", ""),
+            organism="",
+            summary_text=tldr or _truncate(abstract, 500),
+            content_text=abstract,
+            keywords=", ".join(p.get("fieldsOfStudy") or []),
+            record_url=p.get("url", ""),
+            published_at=str(p.get("year", "")),
+            raw_payload=json.dumps(p, default=str),
+        ))
+
+    if records:
+        cached_json_set("scholar", cache_key, [r.__dict__ for r in records], ttl=21600)
+    return records
+
+
+# ── InterPro ─────────────────────────────────────────────────────────────────
+
+def fetch_interpro_annotations(uniprot_id: str, limit: int = 10) -> list[KnowledgeRecordPayload]:
+    cache_key = f"interpro:{uniprot_id}"
+    cached = cached_json_get("interpro", cache_key)
+    if cached:
+        return [KnowledgeRecordPayload(**r) for r in cached]
+
+    try:
+        resp = http_get(
+            f"{INTERPRO_API_URL}/entry/interpro/protein/uniprot/{uniprot_id}",
+            params={"page_size": str(min(limit, 30))},
+            timeout=REQUEST_TIMEOUT,
+        )
+        if resp.status_code != 200:
+            return []
+        entries = resp.json().get("results", [])
+    except Exception as exc:
+        logger.warning("InterPro fetch failed for %s: %s", uniprot_id, exc)
+        return []
+
+    records: list[KnowledgeRecordPayload] = []
+    for e in entries[:limit]:
+        meta = e.get("metadata", {})
+        records.append(KnowledgeRecordPayload(
+            record_type="domain_annotation",
+            source_name="InterPro",
+            source_id=meta.get("accession", ""),
+            query_term=uniprot_id,
+            title=meta.get("name", ""),
+            organism="",
+            summary_text=meta.get("type", ""),
+            content_text=_truncate(str(meta.get("description", "")), 2000),
+            keywords=meta.get("type", ""),
+            record_url=f"https://www.ebi.ac.uk/interpro/entry/InterPro/{meta.get('accession', '')}/",
+            published_at="",
+            raw_payload=json.dumps(e, default=str),
+        ))
+
+    if records:
+        cached_json_set("interpro", cache_key, [r.__dict__ for r in records], ttl=86400)
+    return records
+
+
+# ── NCBI GEO ─────────────────────────────────────────────────────────────────
+
+def fetch_geo_datasets(query: str, limit: int = 8) -> list[KnowledgeRecordPayload]:
+    cache_key = f"geo:{query}:{limit}"
+    cached = cached_json_get("geo", cache_key)
+    if cached:
+        return [KnowledgeRecordPayload(**r) for r in cached]
+
+    ncbi_params = _ncbi_common_params()
+    try:
+        search_resp = http_get(
+            NCBI_ESEARCH_URL,
+            params={**ncbi_params, "db": "gds", "term": query, "retmax": str(min(limit, 30))},
+            timeout=REQUEST_TIMEOUT,
+        )
+        ids = search_resp.json().get("esearchresult", {}).get("idlist", [])
+        if not ids:
+            return []
+
+        summary_resp = http_get(
+            NCBI_ESUMMARY_URL,
+            params={**ncbi_params, "db": "gds", "id": ",".join(ids[:limit])},
+            timeout=REQUEST_TIMEOUT,
+        )
+        result_map = summary_resp.json().get("result", {})
+    except Exception as exc:
+        logger.warning("GEO fetch failed: %s", exc)
+        return []
+
+    records: list[KnowledgeRecordPayload] = []
+    for uid in result_map.get("uids", []):
+        entry = result_map.get(uid, {})
+        accession = entry.get("accession", "")
+        records.append(KnowledgeRecordPayload(
+            record_type="geo_dataset",
+            source_name="NCBI GEO",
+            source_id=accession or str(uid),
+            query_term=query,
+            title=entry.get("title", ""),
+            organism=entry.get("taxon", ""),
+            summary_text=_truncate(entry.get("summary", ""), 1000),
+            content_text=entry.get("summary", ""),
+            keywords=entry.get("gdstype", ""),
+            record_url=f"https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc={accession}" if accession else "",
+            published_at=entry.get("pdat", ""),
+            raw_payload=json.dumps(entry, default=str),
+        ))
+
+    if records:
+        cached_json_set("geo", cache_key, [r.__dict__ for r in records], ttl=21600)
+    return records
+
+
+# ── OpenAlex ─────────────────────────────────────────────────────────────────
+
+def fetch_openalex_works(query: str, limit: int = 8) -> list[KnowledgeRecordPayload]:
+    cache_key = f"openalex:{query}:{limit}"
+    cached = cached_json_get("openalex", cache_key)
+    if cached:
+        return [KnowledgeRecordPayload(**r) for r in cached]
+
+    try:
+        resp = http_get(
+            f"{OPENALEX_API_URL}/works",
+            params={"search": query, "per_page": str(min(limit, 50)), "mailto": "portfolio@donttalk.dev"},
+            timeout=REQUEST_TIMEOUT,
+        )
+        if resp.status_code != 200:
+            return []
+        works = resp.json().get("results", [])
+    except Exception as exc:
+        logger.warning("OpenAlex fetch failed: %s", exc)
+        return []
+
+    records: list[KnowledgeRecordPayload] = []
+    for w in works[:limit]:
+        abstract = ""
+        inverted = w.get("abstract_inverted_index")
+        if inverted and isinstance(inverted, dict):
+            word_positions: list[tuple[int, str]] = []
+            for word, positions in inverted.items():
+                for pos in positions:
+                    word_positions.append((pos, word))
+            word_positions.sort()
+            abstract = " ".join(wd for _, wd in word_positions)
+
+        records.append(KnowledgeRecordPayload(
+            record_type="openalex_work",
+            source_name="OpenAlex",
+            source_id=str(w.get("id", "")),
+            query_term=query,
+            title=w.get("title", ""),
+            organism="",
+            summary_text=_truncate(abstract, 500),
+            content_text=abstract,
+            keywords=", ".join(
+                c.get("display_name", "") for c in (w.get("concepts") or [])[:5]
+            ),
+            record_url=w.get("doi") or w.get("id", ""),
+            published_at=w.get("publication_date", ""),
+            raw_payload=json.dumps(w, default=str),
+        ))
+
+    if records:
+        cached_json_set("openalex", cache_key, [r.__dict__ for r in records], ttl=21600)
     return records

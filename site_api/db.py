@@ -11,11 +11,24 @@ import psycopg
 import psycopg_pool
 from fastapi import HTTPException, status
 
-from site_api.schemas import CORE_SCHEMA_STATEMENTS, MARKET_SCHEMA_STATEMENTS
+from site_api.schemas import (
+    CORE_SCHEMA_STATEMENTS,
+    ECONOMIC_SCHEMA_STATEMENTS,
+    INTERACTION_SCHEMA_STATEMENTS,
+    MARKET_SCHEMA_STATEMENTS,
+    POPULATION_SCHEMA_STATEMENTS,
+    STRUCTURE_SCHEMA_STATEMENTS,
+    VARIANT_SCHEMA_STATEMENTS,
+)
 
 logger = logging.getLogger(__name__)
 CORE_SCHEMA_READY = False
 MARKET_SCHEMA_READY = False
+STRUCTURE_SCHEMA_READY = False
+VARIANT_SCHEMA_READY = False
+POPULATION_SCHEMA_READY = False
+INTERACTION_SCHEMA_READY = False
+ECONOMIC_SCHEMA_READY = False
 LAST_DATABASE_ERROR = ""
 _DB_POOL: psycopg_pool.ConnectionPool | None = None
 
@@ -242,6 +255,56 @@ def ensure_market_schema() -> bool:
         return False
 
     MARKET_SCHEMA_READY = True
+    return True
+
+
+def ensure_structure_schema() -> bool:
+    global STRUCTURE_SCHEMA_READY
+    if STRUCTURE_SCHEMA_READY:
+        return True
+    if not _execute_schema_setup(STRUCTURE_SCHEMA_STATEMENTS, "Structure"):
+        return False
+    STRUCTURE_SCHEMA_READY = True
+    return True
+
+
+def ensure_variant_schema() -> bool:
+    global VARIANT_SCHEMA_READY
+    if VARIANT_SCHEMA_READY:
+        return True
+    if not _execute_schema_setup(VARIANT_SCHEMA_STATEMENTS, "Variant"):
+        return False
+    VARIANT_SCHEMA_READY = True
+    return True
+
+
+def ensure_population_schema() -> bool:
+    global POPULATION_SCHEMA_READY
+    if POPULATION_SCHEMA_READY:
+        return True
+    if not _execute_schema_setup(POPULATION_SCHEMA_STATEMENTS, "Population"):
+        return False
+    POPULATION_SCHEMA_READY = True
+    return True
+
+
+def ensure_interaction_schema() -> bool:
+    global INTERACTION_SCHEMA_READY
+    if INTERACTION_SCHEMA_READY:
+        return True
+    if not _execute_schema_setup(INTERACTION_SCHEMA_STATEMENTS, "Interaction"):
+        return False
+    INTERACTION_SCHEMA_READY = True
+    return True
+
+
+def ensure_economic_schema() -> bool:
+    global ECONOMIC_SCHEMA_READY
+    if ECONOMIC_SCHEMA_READY:
+        return True
+    if not _execute_schema_setup(ECONOMIC_SCHEMA_STATEMENTS, "Economic"):
+        return False
+    ECONOMIC_SCHEMA_READY = True
     return True
 
 

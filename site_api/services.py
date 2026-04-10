@@ -15,6 +15,11 @@ from site_api.schemas import (
     UPSERT_SEQUENCING_RUN_LIBRARY_SQL,
     UPSERT_MARKET_INSTRUMENTS_SQL,
     UPSERT_MARKET_PRICE_BARS_SQL,
+    UPSERT_STRUCTURE_PREDICTION_SQL,
+    UPSERT_CLINICAL_VARIANT_SQL,
+    UPSERT_ALLELE_FREQUENCY_SQL,
+    UPSERT_PROTEIN_INTERACTION_SQL,
+    UPSERT_ECONOMIC_INDICATOR_SQL,
 )
 from site_api.knowledge_sources import KnowledgeRecordPayload
 from site_api.market_sources import MarketBarPayload, MarketInstrumentPayload
@@ -961,3 +966,224 @@ def fetch_structure_payload(pdb_id: str) -> dict[str, Any]:
         status_code=status.HTTP_502_BAD_GATEWAY,
         detail=f"Unable to retrieve structure from upstream sources for {normalized_pdb_id}.",
     )
+
+
+# ── Structure Predictions (AlphaFold) ────────────────────────────────────────
+
+def structure_prediction_summary() -> dict[str, Any]:
+    with get_connection() as conn:
+        row = conn.execute("SELECT COUNT(*) AS cnt FROM structure_predictions").fetchone()
+        return {"totalStructures": row[0] if row else 0}
+
+
+def fetch_structure_prediction_rows(uniprot_id: str | None = None, limit: int = 20, cursor: int | None = None) -> list[dict[str, Any]]:
+    sql = "SELECT id, source_name, uniprot_id, entry_id, gene_name, organism, confidence_avg, model_url, model_page_url, sequence_length, fetched_at FROM structure_predictions"
+    conditions: list[str] = []
+    params: list[Any] = []
+    if uniprot_id:
+        conditions.append("uniprot_id = %s")
+        params.append(uniprot_id.upper())
+    if cursor:
+        conditions.append("id < %s")
+        params.append(cursor)
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " ORDER BY id DESC LIMIT %s"
+    params.append(limit)
+
+    with get_connection() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [
+        {"id": r[0], "sourceName": r[1], "uniprotId": r[2], "entryId": r[3], "geneName": r[4],
+         "organism": r[5], "confidenceAvg": r[6], "modelUrl": r[7], "modelPageUrl": r[8],
+         "sequenceLength": r[9], "fetchedAt": r[10].isoformat() if r[10] else None}
+        for r in rows
+    ]
+
+
+def upsert_structure_predictions(records: list) -> None:
+    with get_connection() as conn:
+        for r in records:
+            conn.execute(UPSERT_STRUCTURE_PREDICTION_SQL, (
+                r.source_name, r.uniprot_id, r.entry_id, r.gene_name, r.organism,
+                r.confidence_avg, r.model_url, r.model_page_url, r.sequence_length, r.raw_payload,
+            ))
+        conn.commit()
+
+
+# ── Clinical Variants (ClinVar + COSMIC) ─────────────────────────────────────
+
+def variant_summary() -> dict[str, Any]:
+    with get_connection() as conn:
+        row = conn.execute("SELECT COUNT(*) FROM clinical_variant_library").fetchone()
+        return {"totalVariants": row[0] if row else 0}
+
+
+def fetch_variant_rows(gene_symbol: str | None = None, limit: int = 20, cursor: int | None = None) -> list[dict[str, Any]]:
+    sql = "SELECT id, source_name, source_id, gene_symbol, variant_name, clinical_significance, condition_names, review_status, variant_type, chromosome, position, record_url, fetched_at FROM clinical_variant_library"
+    conditions: list[str] = []
+    params: list[Any] = []
+    if gene_symbol:
+        conditions.append("gene_symbol = %s")
+        params.append(gene_symbol.upper())
+    if cursor:
+        conditions.append("id < %s")
+        params.append(cursor)
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " ORDER BY id DESC LIMIT %s"
+    params.append(limit)
+
+    with get_connection() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [
+        {"id": r[0], "sourceName": r[1], "sourceId": r[2], "geneSymbol": r[3], "variantName": r[4],
+         "clinicalSignificance": r[5], "conditionNames": r[6], "reviewStatus": r[7], "variantType": r[8],
+         "chromosome": r[9], "position": r[10], "recordUrl": r[11],
+         "fetchedAt": r[12].isoformat() if r[12] else None}
+        for r in rows
+    ]
+
+
+def upsert_variants(records: list) -> None:
+    with get_connection() as conn:
+        for r in records:
+            conn.execute(UPSERT_CLINICAL_VARIANT_SQL, (
+                r.source_name, r.source_id, r.query_term, r.gene_symbol, r.variant_name,
+                r.clinical_significance, r.condition_names, r.review_status, r.variant_type,
+                r.chromosome, r.position, r.record_url, r.raw_payload,
+            ))
+        conn.commit()
+
+
+# ── Population Frequencies (gnomAD) ──────────────────────────────────────────
+
+def population_summary() -> dict[str, Any]:
+    with get_connection() as conn:
+        row = conn.execute("SELECT COUNT(*) FROM allele_frequency_library").fetchone()
+        return {"totalAlleleFrequencies": row[0] if row else 0}
+
+
+def fetch_population_rows(gene_symbol: str | None = None, limit: int = 20, cursor: int | None = None) -> list[dict[str, Any]]:
+    sql = "SELECT id, source_name, variant_id, gene_symbol, consequence, allele_frequency, homozygote_count, population_frequencies, record_url, fetched_at FROM allele_frequency_library"
+    conditions: list[str] = []
+    params: list[Any] = []
+    if gene_symbol:
+        conditions.append("gene_symbol = %s")
+        params.append(gene_symbol.upper())
+    if cursor:
+        conditions.append("id < %s")
+        params.append(cursor)
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " ORDER BY id DESC LIMIT %s"
+    params.append(limit)
+
+    with get_connection() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [
+        {"id": r[0], "sourceName": r[1], "variantId": r[2], "geneSymbol": r[3], "consequence": r[4],
+         "alleleFrequency": r[5], "homozygoteCount": r[6], "populationFrequencies": r[7],
+         "recordUrl": r[8], "fetchedAt": r[9].isoformat() if r[9] else None}
+        for r in rows
+    ]
+
+
+def upsert_population(records: list) -> None:
+    with get_connection() as conn:
+        for r in records:
+            conn.execute(UPSERT_ALLELE_FREQUENCY_SQL, (
+                r.source_name, r.variant_id, r.query_term, r.gene_symbol, r.consequence,
+                r.allele_frequency, r.homozygote_count, r.population_frequencies,
+                r.record_url, r.raw_payload,
+            ))
+        conn.commit()
+
+
+# ── Protein Interactions (STRING) ────────────────────────────────────────────
+
+def interaction_summary() -> dict[str, Any]:
+    with get_connection() as conn:
+        row = conn.execute("SELECT COUNT(*) FROM protein_interaction_library").fetchone()
+        return {"totalInteractions": row[0] if row else 0}
+
+
+def fetch_interaction_rows(query: str | None = None, limit: int = 20, cursor: int | None = None) -> list[dict[str, Any]]:
+    sql = "SELECT id, source_name, source_id, protein_a, protein_b, combined_score, experimental_score, database_score, textmining_score, organism_id, record_url, fetched_at FROM protein_interaction_library"
+    conditions: list[str] = []
+    params: list[Any] = []
+    if query:
+        conditions.append("(protein_a ILIKE %s OR protein_b ILIKE %s)")
+        params.extend([f"%{query}%", f"%{query}%"])
+    if cursor:
+        conditions.append("id < %s")
+        params.append(cursor)
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " ORDER BY combined_score DESC, id DESC LIMIT %s"
+    params.append(limit)
+
+    with get_connection() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [
+        {"id": r[0], "sourceName": r[1], "sourceId": r[2], "proteinA": r[3], "proteinB": r[4],
+         "combinedScore": r[5], "experimentalScore": r[6], "databaseScore": r[7],
+         "textminingScore": r[8], "organismId": r[9], "recordUrl": r[10],
+         "fetchedAt": r[11].isoformat() if r[11] else None}
+        for r in rows
+    ]
+
+
+def upsert_interactions(records: list) -> None:
+    with get_connection() as conn:
+        for r in records:
+            conn.execute(UPSERT_PROTEIN_INTERACTION_SQL, (
+                r.source_name, r.source_id, r.query_term, r.protein_a, r.protein_b,
+                r.combined_score, r.experimental_score, r.database_score, r.textmining_score,
+                r.organism_id, r.record_url, r.raw_payload,
+            ))
+        conn.commit()
+
+
+# ── Economic Indicators (FRED) ───────────────────────────────────────────────
+
+def economic_summary() -> dict[str, Any]:
+    with get_connection() as conn:
+        row = conn.execute("SELECT COUNT(*), COUNT(DISTINCT series_id) FROM economic_indicator_library").fetchone()
+        return {"totalObservations": row[0] if row else 0, "totalSeries": row[1] if row else 0}
+
+
+def fetch_economic_rows(series_id: str | None = None, limit: int = 60, cursor: int | None = None) -> list[dict[str, Any]]:
+    sql = "SELECT id, source_name, series_id, observation_date, value, title, frequency, units, fetched_at FROM economic_indicator_library"
+    conditions: list[str] = []
+    params: list[Any] = []
+    if series_id:
+        conditions.append("series_id = %s")
+        params.append(series_id.upper())
+    if cursor:
+        conditions.append("id < %s")
+        params.append(cursor)
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " ORDER BY observation_date DESC, id DESC LIMIT %s"
+    params.append(limit)
+
+    with get_connection() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [
+        {"id": r[0], "sourceName": r[1], "seriesId": r[2],
+         "observationDate": r[3].isoformat() if r[3] else None,
+         "value": r[4], "title": r[5], "frequency": r[6], "units": r[7],
+         "fetchedAt": r[8].isoformat() if r[8] else None}
+        for r in rows
+    ]
+
+
+def upsert_economic_indicators(records: list) -> None:
+    with get_connection() as conn:
+        for r in records:
+            conn.execute(UPSERT_ECONOMIC_INDICATOR_SQL, (
+                r.source_name, r.series_id, r.observation_date, r.value,
+                r.title, r.frequency, r.units, r.raw_payload,
+            ))
+        conn.commit()

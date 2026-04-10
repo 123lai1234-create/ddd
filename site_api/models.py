@@ -59,6 +59,10 @@ class SequenceSyncRequest(BaseModel):
 class KnowledgeSyncRequest(BaseModel):
     protein_query: str = Field(default="kinase")
     literature_query: str = Field(default="kinase AND cancer")
+    scholar_query: str = Field(default="")
+    geo_query: str = Field(default="")
+    openalex_query: str = Field(default="")
+    interpro_uniprot_ids: list[str] = Field(default_factory=list)
     limit: int = Field(default=4, ge=1, le=8)
 
     @field_validator("protein_query", "literature_query", mode="before")
@@ -137,6 +141,53 @@ class SequenceUpsertOneRequest(BaseModel):
 
 
 _VALID_AA = frozenset("ACDEFGHIKLMNPQRSTVWY")
+
+
+class StructurePredictionSyncRequest(BaseModel):
+    uniprot_ids: list[str] = Field(default_factory=lambda: ["P04637", "P38398"])
+    limit: int = Field(default=4, ge=1, le=20)
+
+    @field_validator("uniprot_ids", mode="before")
+    @classmethod
+    def normalize_ids(cls, value: Any) -> list[str]:
+        if isinstance(value, str):
+            value = value.split(",")
+        return [str(v).strip().upper() for v in (value or []) if str(v).strip()][:20]
+
+
+class VariantSyncRequest(BaseModel):
+    gene_symbol: str = Field(default="TP53")
+    include_cosmic: bool = Field(default=False)
+    limit: int = Field(default=8, ge=1, le=30)
+
+    @field_validator("gene_symbol", mode="before")
+    @classmethod
+    def strip_gene(cls, value: Any) -> str:
+        return str(value or "TP53").strip().upper()
+
+
+class PopulationSyncRequest(BaseModel):
+    gene_symbol: str = Field(default="TP53")
+    dataset: str = Field(default="gnomad_r4")
+    limit: int = Field(default=12, ge=1, le=50)
+
+
+class InteractionSyncRequest(BaseModel):
+    identifiers: list[str] = Field(default_factory=lambda: ["TP53", "BRCA1", "MDM2"])
+    species: int = Field(default=9606)
+    limit: int = Field(default=20, ge=1, le=50)
+
+    @field_validator("identifiers", mode="before")
+    @classmethod
+    def normalize_ids(cls, value: Any) -> list[str]:
+        if isinstance(value, str):
+            value = value.split(",")
+        return [str(v).strip() for v in (value or []) if str(v).strip()][:10]
+
+
+class EconomicSyncRequest(BaseModel):
+    series_ids: list[str] = Field(default_factory=lambda: ["GDP", "UNRATE", "DFF", "CPIAUCSL"])
+    limit: int = Field(default=120, ge=1, le=500)
 
 
 class ESM2ScoreRequest(BaseModel):

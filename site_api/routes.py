@@ -16,45 +16,82 @@ from site_api.db import (
     _require_sync_secret,
     check_all_databases,
     database_available,
+    ensure_economic_schema,
+    ensure_interaction_schema,
     ensure_market_schema,
+    ensure_population_schema,
     ensure_schema,
+    ensure_structure_schema,
+    ensure_variant_schema,
     get_connection,
     get_database_url,
 )
 from site_api.models import (
     ESM2ScoreRequest,
+    EconomicSyncRequest,
     InquiryCreate,
+    InteractionSyncRequest,
     KnowledgeSyncRequest,
     MarketSyncRequest,
+    PopulationSyncRequest,
     SequenceSyncRequest,
     SequenceUpsertOneRequest,
     SequencingRunSyncRequest,
+    StructurePredictionSyncRequest,
+    VariantSyncRequest,
 )
 from site_api.services import (
     build_knowledge_rag_documents,
     build_sequence_rag_documents,
     delete_sequence_record,
+    economic_summary,
+    fetch_economic_rows,
+    fetch_interaction_rows,
     fetch_knowledge_rows,
     fetch_market_bar_rows,
     fetch_market_instrument_rows,
+    fetch_population_rows,
     fetch_sequence_rows,
     fetch_sequence_rows_for_search,
     fetch_sequencing_run_rows,
     fetch_structure_payload,
+    fetch_structure_prediction_rows,
+    fetch_variant_rows,
+    interaction_summary,
     knowledge_summary,
     market_summary,
+    population_summary,
     sequence_summary,
     sequencing_run_summary,
+    structure_prediction_summary,
+    upsert_economic_indicators,
+    upsert_interactions,
     upsert_knowledge_records,
     upsert_market_bars,
     upsert_market_instruments,
+    upsert_population,
     upsert_sequence_records,
     upsert_sequencing_runs,
+    upsert_structure_predictions,
+    upsert_variants,
+    variant_summary,
 )
-from site_api.knowledge_sources import fetch_pubmed_knowledge, fetch_uniprot_knowledge
+from site_api.economic_sources import fetch_fred_series
+from site_api.interaction_sources import fetch_string_interactions
+from site_api.knowledge_sources import (
+    fetch_geo_datasets,
+    fetch_interpro_annotations,
+    fetch_openalex_works,
+    fetch_pubmed_knowledge,
+    fetch_scholar_knowledge,
+    fetch_uniprot_knowledge,
+)
 from site_api.market_sources import MarketBarPayload, MarketInstrumentPayload, fetch_market_records
+from site_api.population_sources import fetch_gnomad_variants
 from site_api.sequence_sources import SequenceRecordPayload, fetch_gene_sequences, fetch_protein_sequences
 from site_api.sequencing_run_sources import fetch_ena_sequencing_runs
+from site_api.structure_sources import fetch_alphafold_predictions
+from site_api.variant_sources import fetch_clinvar_variants, fetch_cosmic_mutations
 
 router = APIRouter()
 
@@ -256,19 +293,30 @@ def sync_knowledge(payload: KnowledgeSyncRequest, x_sync_secret: str | None = He
     try:
         protein_records = fetch_uniprot_knowledge(protein_query, payload.limit)
         literature_records = fetch_pubmed_knowledge(literature_query, payload.limit)
+        scholar_records = fetch_scholar_knowledge(payload.scholar_query or literature_query, payload.limit) if payload.scholar_query or literature_query else []
+        geo_records = fetch_geo_datasets(payload.geo_query, payload.limit) if payload.geo_query else []
+        openalex_records = fetch_openalex_works(payload.openalex_query, payload.limit) if payload.openalex_query else []
+        interpro_records: list = []
+        for uid in (payload.interpro_uniprot_ids or [])[:4]:
+            interpro_records.extend(fetch_interpro_annotations(uid, payload.limit))
     except Exception as error:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Knowledge crawl failed: {error}",
         ) from error
 
+    all_records = protein_records + literature_records + scholar_records + geo_records + openalex_records + interpro_records
     try:
-        upsert_knowledge_records(protein_records + literature_records)
+        upsert_knowledge_records(all_records)
         summary = knowledge_summary()
         return {
             "stored": {
                 "proteinAnnotation": len(protein_records),
                 "literature": len(literature_records),
+                "scholar": len(scholar_records),
+                "geo": len(geo_records),
+                "openalex": len(openalex_records),
+                "interpro": len(interpro_records),
             },
             "proteinAnnotationRecords": fetch_knowledge_rows(record_type="protein_annotation", limit=payload.limit),
             "literatureRecords": fetch_knowledge_rows(record_type="literature", limit=payload.limit),
@@ -1029,3 +1077,140 @@ def esm2_score(request: Request, body: ESM2ScoreRequest) -> dict[str, Any]:
         "positionCount": len(profiles),
         "errors": errors,
     }
+
+
+# ── AlphaFold Structure Predictions ──────────────────────────────────────────
+
+@router.get("/api/structures/predictions/summary")
+def get_structure_prediction_summary() -> dict[str, Any]:
+    if not ensure_structure_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    return {"databaseConfigured": True, "connected": True, **structure_prediction_summary()}
+
+
+@router.get("/api/structures/predictions")
+def list_structure_predictions(uniprot_id: str | None = None, limit: int = 20, cursor: int | None = None) -> dict[str, Any]:
+    if not ensure_structure_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    rows = fetch_structure_prediction_rows(uniprot_id, max(1, min(limit, 50)), cursor)
+    return {"records": rows, "nextCursor": rows[-1]["id"] if rows else None, **structure_prediction_summary()}
+
+
+@router.post("/api/structures/predictions/sync")
+def sync_structure_predictions(payload: StructurePredictionSyncRequest, x_sync_secret: str | None = Header(default=None)) -> dict[str, Any]:
+    _require_sync_secret(x_sync_secret)
+    if not ensure_structure_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    records = fetch_alphafold_predictions(payload.uniprot_ids, payload.limit)
+    upsert_structure_predictions(records)
+    return {"stored": len(records), "records": fetch_structure_prediction_rows(limit=payload.limit), **structure_prediction_summary()}
+
+
+# ── Clinical Variants (ClinVar + COSMIC) ─────────────────────────────────────
+
+@router.get("/api/variants/summary")
+def get_variant_summary() -> dict[str, Any]:
+    if not ensure_variant_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    return {"databaseConfigured": True, "connected": True, **variant_summary()}
+
+
+@router.get("/api/variants")
+def list_variants(gene_symbol: str | None = None, limit: int = 20, cursor: int | None = None) -> dict[str, Any]:
+    if not ensure_variant_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    rows = fetch_variant_rows(gene_symbol, max(1, min(limit, 50)), cursor)
+    return {"records": rows, "nextCursor": rows[-1]["id"] if rows else None, **variant_summary()}
+
+
+@router.post("/api/variants/sync")
+def sync_variants(payload: VariantSyncRequest, x_sync_secret: str | None = Header(default=None)) -> dict[str, Any]:
+    _require_sync_secret(x_sync_secret)
+    if not ensure_variant_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    records = fetch_clinvar_variants(payload.gene_symbol, payload.limit)
+    if payload.include_cosmic:
+        records.extend(fetch_cosmic_mutations(payload.gene_symbol, payload.limit))
+    upsert_variants(records)
+    return {"stored": len(records), "records": fetch_variant_rows(payload.gene_symbol, limit=payload.limit), **variant_summary()}
+
+
+# ── Population Allele Frequencies (gnomAD) ────────────────────────────────────
+
+@router.get("/api/population/summary")
+def get_population_summary() -> dict[str, Any]:
+    if not ensure_population_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    return {"databaseConfigured": True, "connected": True, **population_summary()}
+
+
+@router.get("/api/population/variants")
+def list_population_variants(gene_symbol: str | None = None, limit: int = 20, cursor: int | None = None) -> dict[str, Any]:
+    if not ensure_population_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    rows = fetch_population_rows(gene_symbol, max(1, min(limit, 50)), cursor)
+    return {"records": rows, "nextCursor": rows[-1]["id"] if rows else None, **population_summary()}
+
+
+@router.post("/api/population/sync")
+def sync_population(payload: PopulationSyncRequest, x_sync_secret: str | None = Header(default=None)) -> dict[str, Any]:
+    _require_sync_secret(x_sync_secret)
+    if not ensure_population_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    records = fetch_gnomad_variants(payload.gene_symbol, payload.limit, payload.dataset)
+    upsert_population(records)
+    return {"stored": len(records), "records": fetch_population_rows(payload.gene_symbol, limit=payload.limit), **population_summary()}
+
+
+# ── Protein Interactions (STRING) ─────────────────────────────────────────────
+
+@router.get("/api/interactions/summary")
+def get_interaction_summary() -> dict[str, Any]:
+    if not ensure_interaction_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    return {"databaseConfigured": True, "connected": True, **interaction_summary()}
+
+
+@router.get("/api/interactions")
+def list_interactions(query: str | None = None, limit: int = 20, cursor: int | None = None) -> dict[str, Any]:
+    if not ensure_interaction_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    rows = fetch_interaction_rows(query, max(1, min(limit, 50)), cursor)
+    return {"records": rows, "nextCursor": rows[-1]["id"] if rows else None, **interaction_summary()}
+
+
+@router.post("/api/interactions/sync")
+def sync_interactions(payload: InteractionSyncRequest, x_sync_secret: str | None = Header(default=None)) -> dict[str, Any]:
+    _require_sync_secret(x_sync_secret)
+    if not ensure_interaction_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    records = fetch_string_interactions(payload.identifiers, payload.species, payload.limit)
+    upsert_interactions(records)
+    return {"stored": len(records), "records": fetch_interaction_rows(limit=payload.limit), **interaction_summary()}
+
+
+# ── Economic Indicators (FRED) ────────────────────────────────────────────────
+
+@router.get("/api/economic/summary")
+def get_economic_summary() -> dict[str, Any]:
+    if not ensure_economic_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    return {"databaseConfigured": True, "connected": True, **economic_summary()}
+
+
+@router.get("/api/economic/indicators")
+def list_economic_indicators(series_id: str | None = None, limit: int = 60, cursor: int | None = None) -> dict[str, Any]:
+    if not ensure_economic_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    rows = fetch_economic_rows(series_id, max(1, min(limit, 200)), cursor)
+    return {"records": rows, "nextCursor": rows[-1]["id"] if rows else None, **economic_summary()}
+
+
+@router.post("/api/economic/sync")
+def sync_economic(payload: EconomicSyncRequest, x_sync_secret: str | None = Header(default=None)) -> dict[str, Any]:
+    _require_sync_secret(x_sync_secret)
+    if not ensure_economic_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    records = fetch_fred_series(payload.series_ids, payload.limit)
+    upsert_economic_indicators(records)
+    return {"stored": len(records), "records": fetch_economic_rows(limit=min(payload.limit, 60)), **economic_summary()}
