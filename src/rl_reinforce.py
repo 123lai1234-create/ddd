@@ -321,7 +321,7 @@ class REINFORCETrainer:
                     f"baseline={baseline:.4f} | loss={policy_loss.item():.4f}"
                 )
 
-        print(f"\n[rl_reinforce] 訓練完成！")
+        print("\n[rl_reinforce] 訓練完成！")
         print(f"  初始 mean reward : {self.episode_rewards[0]:.4f}")
         print(f"  最終 mean reward : {self.episode_rewards[-1]:.4f}")
         print(f"  提升             : {self.episode_rewards[-1] - self.episode_rewards[0]:+.4f}")

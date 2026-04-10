@@ -123,7 +123,7 @@ def predict_with_local_esmfold(
     sequence = sequence.upper().strip()
     _validate_sequence(sequence)
 
-    print(f"[esm_fold] 載入 ESMFold 本地模型（首次需下載 ~690 MB）...")
+    print("[esm_fold] 載入 ESMFold 本地模型（首次需下載 ~690 MB）...")
     tokenizer = EsmTokenizer.from_pretrained("facebook/esmfold_v1")
     model = EsmForProteinFolding.from_pretrained(
         "facebook/esmfold_v1", low_cpu_mem_usage=True
