@@ -22,7 +22,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r site_api/requirements.txt
-          pip install pytest ruff
+          pip install pytest ruff httpx requests
 
       - name: Lint with ruff
         run: ruff check site_api/ src/ tests/ --output-format=github
