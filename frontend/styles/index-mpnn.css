@@ -606,6 +606,37 @@ input[type="range"] {
   }
 }
 
+@media (max-width: 640px) {
+  /* 3D viewer — reduce hardcoded inline height on small screens */
+  #mpnnStruct3d {
+    height: 220px !important;
+  }
+
+  /* Action buttons — override inline min-width:190px */
+  #esmFoldBtn,
+  #rosettaBtn {
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  .mpnn-panel,
+  .mpnn-output-panel {
+    padding: 18px 14px;
+  }
+
+  /* Sequence preview — narrower on phone */
+  .mpnn-seq-cell {
+    max-width: 120px;
+  }
+
+  /* Heatmap cells — tighter on very small screens */
+  .heat-cell {
+    width: 14px;
+    height: 14px;
+    font-size: 0.5rem;
+  }
+}
+
 .mpnn-struct-info {
   display: flex;
   flex-wrap: wrap;

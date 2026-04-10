@@ -1553,6 +1553,11 @@ footer {
     grid-template-columns: 1fr;
   }
 
+  /* 4-column metrics → 2×2 grid on mobile */
+  .mini-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .sequence-toolbar {
     grid-template-columns: 1fr;
   }
