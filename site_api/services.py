@@ -20,6 +20,8 @@ from site_api.schemas import (
     UPSERT_ALLELE_FREQUENCY_SQL,
     UPSERT_PROTEIN_INTERACTION_SQL,
     UPSERT_ECONOMIC_INDICATOR_SQL,
+    UPSERT_OPENTARGETS_SQL,
+    UPSERT_CHEMBL_SQL,
 )
 from site_api.knowledge_sources import KnowledgeRecordPayload
 from site_api.market_sources import MarketBarPayload, MarketInstrumentPayload
@@ -1185,5 +1187,93 @@ def upsert_economic_indicators(records: list) -> None:
             conn.execute(UPSERT_ECONOMIC_INDICATOR_SQL, (
                 r.source_name, r.series_id, r.observation_date, r.value,
                 r.title, r.frequency, r.units, r.raw_payload,
+            ))
+        conn.commit()
+
+
+# ── OpenTargets Associations ─────────────────────────────────────────────────
+
+def opentargets_summary() -> dict[str, Any]:
+    with get_connection() as conn:
+        row = conn.execute("SELECT COUNT(*) FROM opentargets_library").fetchone()
+        return {"totalAssociations": row[0] if row else 0}
+
+
+def fetch_opentargets_rows(gene_symbol: str | None = None, limit: int = 20, cursor: int | None = None) -> list[dict[str, Any]]:
+    sql = "SELECT id, source_name, source_id, target_id, target_symbol, disease_id, disease_name, overall_score, datatype_scores, drug_names, record_url, fetched_at FROM opentargets_library"
+    conditions: list[str] = []
+    params: list[Any] = []
+    if gene_symbol:
+        conditions.append("target_symbol ILIKE %s")
+        params.append(gene_symbol.upper())
+    if cursor:
+        conditions.append("id < %s")
+        params.append(cursor)
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " ORDER BY overall_score DESC, id DESC LIMIT %s"
+    params.append(limit)
+    with get_connection() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [
+        {"id": r[0], "sourceName": r[1], "sourceId": r[2], "targetId": r[3], "targetSymbol": r[4],
+         "diseaseId": r[5], "diseaseName": r[6], "overallScore": r[7], "datatypeScores": r[8],
+         "drugNames": r[9], "recordUrl": r[10], "fetchedAt": r[11].isoformat() if r[11] else None}
+        for r in rows
+    ]
+
+
+def upsert_opentargets(records: list) -> None:
+    with get_connection() as conn:
+        for r in records:
+            conn.execute(UPSERT_OPENTARGETS_SQL, (
+                r.source_name, r.source_id, r.query_term, r.target_id, r.target_symbol,
+                r.disease_id, r.disease_name, r.overall_score, r.datatype_scores,
+                r.drug_names, r.record_url, r.raw_payload,
+            ))
+        conn.commit()
+
+
+# ── ChEMBL Compounds ────────────────────────────────────────────────────────
+
+def chembl_summary() -> dict[str, Any]:
+    with get_connection() as conn:
+        row = conn.execute("SELECT COUNT(*) FROM chembl_library").fetchone()
+        return {"totalCompounds": row[0] if row else 0}
+
+
+def fetch_chembl_rows(gene_symbol: str | None = None, limit: int = 20, cursor: int | None = None) -> list[dict[str, Any]]:
+    sql = "SELECT id, source_name, source_id, molecule_name, molecule_chembl_id, target_chembl_id, target_name, mechanism_of_action, activity_type, activity_value, activity_units, max_phase, record_url, fetched_at FROM chembl_library"
+    conditions: list[str] = []
+    params: list[Any] = []
+    if gene_symbol:
+        conditions.append("query_term ILIKE %s")
+        params.append(gene_symbol)
+    if cursor:
+        conditions.append("id < %s")
+        params.append(cursor)
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " ORDER BY id DESC LIMIT %s"
+    params.append(limit)
+    with get_connection() as conn:
+        rows = conn.execute(sql, params).fetchall()
+    return [
+        {"id": r[0], "sourceName": r[1], "sourceId": r[2], "moleculeName": r[3],
+         "moleculeChemblId": r[4], "targetChemblId": r[5], "targetName": r[6],
+         "mechanismOfAction": r[7], "activityType": r[8], "activityValue": r[9],
+         "activityUnits": r[10], "maxPhase": r[11], "recordUrl": r[12],
+         "fetchedAt": r[13].isoformat() if r[13] else None}
+        for r in rows
+    ]
+
+
+def upsert_chembl(records: list) -> None:
+    with get_connection() as conn:
+        for r in records:
+            conn.execute(UPSERT_CHEMBL_SQL, (
+                r.source_name, r.source_id, r.query_term, r.molecule_name, r.molecule_chembl_id,
+                r.target_chembl_id, r.target_name, r.mechanism_of_action, r.activity_type,
+                r.activity_value, r.activity_units, r.max_phase, r.record_url, r.raw_payload,
             ))
         conn.commit()

@@ -16,9 +16,11 @@ from site_api.db import (
     _require_sync_secret,
     check_all_databases,
     database_available,
+    ensure_chembl_schema,
     ensure_economic_schema,
     ensure_interaction_schema,
     ensure_market_schema,
+    ensure_opentargets_schema,
     ensure_population_schema,
     ensure_schema,
     ensure_structure_schema,
@@ -27,12 +29,15 @@ from site_api.db import (
     get_database_url,
 )
 from site_api.models import (
+    ChEMBLSyncRequest,
     ESM2ScoreRequest,
     EconomicSyncRequest,
     InquiryCreate,
     InteractionSyncRequest,
     KnowledgeSyncRequest,
     MarketSyncRequest,
+    OpenTargetsSyncRequest,
+    PathwaySyncRequest,
     PopulationSyncRequest,
     SequenceSyncRequest,
     SequenceUpsertOneRequest,
@@ -75,7 +80,21 @@ from site_api.services import (
     upsert_structure_predictions,
     upsert_variants,
     variant_summary,
+    chembl_summary,
+    fetch_chembl_rows,
+    fetch_opentargets_rows,
+    opentargets_summary,
+    upsert_chembl,
+    upsert_opentargets,
 )
+from site_api.bioinfo_utils import (
+    fetch_ensembl_vep,
+    fetch_europe_pmc,
+    fetch_expression_atlas,
+    fetch_mygene_info,
+    fetch_myvariant_info,
+)
+from site_api.chembl_sources import fetch_chembl_compounds
 from site_api.economic_sources import fetch_fred_series
 from site_api.interaction_sources import fetch_string_interactions
 from site_api.knowledge_sources import (
@@ -87,6 +106,8 @@ from site_api.knowledge_sources import (
     fetch_uniprot_knowledge,
 )
 from site_api.market_sources import MarketBarPayload, MarketInstrumentPayload, fetch_market_records
+from site_api.opentargets_sources import fetch_opentargets_associations
+from site_api.pathway_sources import fetch_quickgo_annotations, fetch_reactome_pathways
 from site_api.population_sources import fetch_gnomad_variants
 from site_api.sequence_sources import SequenceRecordPayload, fetch_gene_sequences, fetch_protein_sequences
 from site_api.sequencing_run_sources import fetch_ena_sequencing_runs
@@ -1214,3 +1235,125 @@ def sync_economic(payload: EconomicSyncRequest, x_sync_secret: str | None = Head
     records = fetch_fred_series(payload.series_ids, payload.limit)
     upsert_economic_indicators(records)
     return {"stored": len(records), "records": fetch_economic_rows(limit=min(payload.limit, 60)), **economic_summary()}
+
+
+# ── OpenTargets (gene–disease–drug) ──────────────────────────────────────────
+
+@router.get("/api/opentargets/summary")
+def get_opentargets_summary() -> dict[str, Any]:
+    if not ensure_opentargets_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    return {"databaseConfigured": True, "connected": True, **opentargets_summary()}
+
+
+@router.get("/api/opentargets")
+def list_opentargets(gene_symbol: str | None = None, limit: int = 20, cursor: int | None = None) -> dict[str, Any]:
+    if not ensure_opentargets_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    rows = fetch_opentargets_rows(gene_symbol, max(1, min(limit, 50)), cursor)
+    return {"records": rows, "nextCursor": rows[-1]["id"] if rows else None, **opentargets_summary()}
+
+
+@router.post("/api/opentargets/sync")
+def sync_opentargets(payload: OpenTargetsSyncRequest, x_sync_secret: str | None = Header(default=None)) -> dict[str, Any]:
+    _require_sync_secret(x_sync_secret)
+    if not ensure_opentargets_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    records = fetch_opentargets_associations(payload.gene_symbol, payload.limit)
+    upsert_opentargets(records)
+    return {"stored": len(records), "records": fetch_opentargets_rows(payload.gene_symbol, limit=payload.limit), **opentargets_summary()}
+
+
+# ── ChEMBL (target–compound–bioactivity) ─────────────────────────────────────
+
+@router.get("/api/chembl/summary")
+def get_chembl_summary() -> dict[str, Any]:
+    if not ensure_chembl_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    return {"databaseConfigured": True, "connected": True, **chembl_summary()}
+
+
+@router.get("/api/chembl")
+def list_chembl(gene_symbol: str | None = None, limit: int = 20, cursor: int | None = None) -> dict[str, Any]:
+    if not ensure_chembl_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    rows = fetch_chembl_rows(gene_symbol, max(1, min(limit, 50)), cursor)
+    return {"records": rows, "nextCursor": rows[-1]["id"] if rows else None, **chembl_summary()}
+
+
+@router.post("/api/chembl/sync")
+def sync_chembl(payload: ChEMBLSyncRequest, x_sync_secret: str | None = Header(default=None)) -> dict[str, Any]:
+    _require_sync_secret(x_sync_secret)
+    if not ensure_chembl_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    records = fetch_chembl_compounds(payload.gene_symbol, payload.limit)
+    upsert_chembl(records)
+    return {"stored": len(records), "records": fetch_chembl_rows(payload.gene_symbol, limit=payload.limit), **chembl_summary()}
+
+
+# ── QuickGO + Reactome (pathways, GO terms) ──────────────────────────────────
+
+@router.post("/api/pathways/sync")
+def sync_pathways(payload: PathwaySyncRequest, x_sync_secret: str | None = Header(default=None)) -> dict[str, Any]:
+    _require_sync_secret(x_sync_secret)
+    if not ensure_schema():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database not ready.")
+    records = fetch_reactome_pathways(payload.gene_symbol, limit=payload.limit)
+    if payload.uniprot_id:
+        records.extend(fetch_quickgo_annotations(payload.uniprot_id, limit=payload.limit))
+    upsert_knowledge_records(records)
+    return {"stored": len(records), **knowledge_summary()}
+
+
+# ── Europe PMC (enhanced literature) ─────────────────────────────────────────
+
+@router.get("/api/literature/europepmc")
+def search_europe_pmc(query: str = "protein engineering", limit: int = 8) -> dict[str, Any]:
+    records = fetch_europe_pmc(query, min(limit, 25))
+    if ensure_schema():
+        try:
+            upsert_knowledge_records(records)
+        except Exception:
+            pass
+    return {"records": [r.__dict__ for r in records], "count": len(records), "query": query}
+
+
+# ── Expression Atlas (tissue-level expression) ───────────────────────────────
+
+@router.get("/api/expression/atlas")
+def search_expression_atlas(gene_symbol: str = "TP53", limit: int = 8) -> dict[str, Any]:
+    records = fetch_expression_atlas(gene_symbol, min(limit, 20))
+    if ensure_schema():
+        try:
+            upsert_knowledge_records(records)
+        except Exception:
+            pass
+    return {"records": [r.__dict__ for r in records], "count": len(records), "geneSymbol": gene_symbol}
+
+
+# ── Utility: MyGene.info (gene normalization) ────────────────────────────────
+
+@router.get("/api/utils/mygene")
+def lookup_mygene(query: str = "TP53", limit: int = 5) -> dict[str, Any]:
+    results = fetch_mygene_info(query, min(limit, 20))
+    return {"hits": results, "count": len(results), "query": query}
+
+
+# ── Utility: MyVariant.info (variant annotation) ─────────────────────────────
+
+@router.get("/api/utils/myvariant/{variant_id:path}")
+def lookup_myvariant(variant_id: str) -> dict[str, Any]:
+    result = fetch_myvariant_info(variant_id)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Variant {variant_id} not found.")
+    return {"variant": result, "variantId": variant_id}
+
+
+# ── Utility: Ensembl VEP (variant effect prediction) ─────────────────────────
+
+@router.get("/api/utils/vep/{hgvs:path}")
+def lookup_vep(hgvs: str) -> dict[str, Any]:
+    result = fetch_ensembl_vep(hgvs)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"VEP lookup failed for {hgvs}.")
+    return {"result": result, "hgvs": hgvs}

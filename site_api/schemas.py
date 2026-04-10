@@ -594,3 +594,120 @@ DO UPDATE SET
 ECONOMIC_SCHEMA_STATEMENTS = (
     CREATE_ECONOMIC_INDICATOR_LIBRARY_TABLE_SQL,
 )
+
+# ── OpenTargets gene-disease associations ───────────────────────────────────
+
+CREATE_OPENTARGETS_LIBRARY_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS opentargets_library (
+    id BIGSERIAL PRIMARY KEY,
+    source_name VARCHAR(32) NOT NULL,
+    source_id VARCHAR(120) NOT NULL,
+    query_term VARCHAR(120) NOT NULL DEFAULT '',
+    target_id VARCHAR(32) NOT NULL DEFAULT '',
+    target_symbol VARCHAR(32) NOT NULL DEFAULT '',
+    disease_id VARCHAR(64) NOT NULL DEFAULT '',
+    disease_name VARCHAR(500) NOT NULL DEFAULT '',
+    overall_score DOUBLE PRECISION,
+    datatype_scores TEXT NOT NULL DEFAULT '',
+    drug_names TEXT NOT NULL DEFAULT '',
+    record_url TEXT NOT NULL DEFAULT '',
+    raw_payload TEXT NOT NULL DEFAULT '',
+    fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(source_name, source_id)
+);
+"""
+
+UPSERT_OPENTARGETS_SQL = """
+INSERT INTO opentargets_library (
+    source_name, source_id, query_term, target_id, target_symbol,
+    disease_id, disease_name, overall_score, datatype_scores,
+    drug_names, record_url, raw_payload, fetched_at
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+ON CONFLICT (source_name, source_id)
+DO UPDATE SET
+    query_term = EXCLUDED.query_term,
+    target_symbol = EXCLUDED.target_symbol,
+    disease_name = EXCLUDED.disease_name,
+    overall_score = EXCLUDED.overall_score,
+    datatype_scores = EXCLUDED.datatype_scores,
+    drug_names = EXCLUDED.drug_names,
+    record_url = EXCLUDED.record_url,
+    raw_payload = EXCLUDED.raw_payload,
+    fetched_at = NOW();
+"""
+
+OPENTARGETS_SCHEMA_STATEMENTS = (
+    CREATE_OPENTARGETS_LIBRARY_TABLE_SQL,
+)
+
+# ── ChEMBL compound-bioactivity ─────────────────────────────────────────────
+
+CREATE_CHEMBL_LIBRARY_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS chembl_library (
+    id BIGSERIAL PRIMARY KEY,
+    source_name VARCHAR(32) NOT NULL,
+    source_id VARCHAR(120) NOT NULL,
+    query_term VARCHAR(120) NOT NULL DEFAULT '',
+    molecule_name VARCHAR(500) NOT NULL DEFAULT '',
+    molecule_chembl_id VARCHAR(32) NOT NULL DEFAULT '',
+    target_chembl_id VARCHAR(32) NOT NULL DEFAULT '',
+    target_name VARCHAR(500) NOT NULL DEFAULT '',
+    mechanism_of_action TEXT NOT NULL DEFAULT '',
+    activity_type VARCHAR(64) NOT NULL DEFAULT '',
+    activity_value DOUBLE PRECISION,
+    activity_units VARCHAR(32) NOT NULL DEFAULT '',
+    max_phase INTEGER,
+    record_url TEXT NOT NULL DEFAULT '',
+    raw_payload TEXT NOT NULL DEFAULT '',
+    fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(source_name, source_id)
+);
+"""
+
+UPSERT_CHEMBL_SQL = """
+INSERT INTO chembl_library (
+    source_name, source_id, query_term, molecule_name, molecule_chembl_id,
+    target_chembl_id, target_name, mechanism_of_action, activity_type,
+    activity_value, activity_units, max_phase, record_url, raw_payload, fetched_at
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+ON CONFLICT (source_name, source_id)
+DO UPDATE SET
+    query_term = EXCLUDED.query_term,
+    molecule_name = EXCLUDED.molecule_name,
+    target_name = EXCLUDED.target_name,
+    mechanism_of_action = EXCLUDED.mechanism_of_action,
+    activity_type = EXCLUDED.activity_type,
+    activity_value = EXCLUDED.activity_value,
+    activity_units = EXCLUDED.activity_units,
+    max_phase = EXCLUDED.max_phase,
+    record_url = EXCLUDED.record_url,
+    raw_payload = EXCLUDED.raw_payload,
+    fetched_at = NOW();
+"""
+
+CHEMBL_SCHEMA_STATEMENTS = (
+    CREATE_CHEMBL_LIBRARY_TABLE_SQL,
+)
+
+# ── pgvector embedding support for RAG ──────────────────────────────────────
+
+ENABLE_PGVECTOR_SQL = """
+CREATE EXTENSION IF NOT EXISTS vector;
+"""
+
+ALTER_KNOWLEDGE_ADD_EMBEDDING_SQL = """
+ALTER TABLE knowledge_library
+ADD COLUMN IF NOT EXISTS embedding vector(384);
+"""
+
+CREATE_KNOWLEDGE_EMBEDDING_IDX = """
+CREATE INDEX IF NOT EXISTS idx_knowledge_embedding
+    ON knowledge_library USING ivfflat (embedding vector_cosine_ops)
+    WITH (lists = 50);
+"""
+
+PGVECTOR_SCHEMA_STATEMENTS = (
+    ENABLE_PGVECTOR_SQL,
+    ALTER_KNOWLEDGE_ADD_EMBEDDING_SQL,
+    CREATE_KNOWLEDGE_EMBEDDING_IDX,
+)

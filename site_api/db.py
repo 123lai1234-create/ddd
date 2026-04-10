@@ -12,10 +12,13 @@ import psycopg_pool
 from fastapi import HTTPException, status
 
 from site_api.schemas import (
+    CHEMBL_SCHEMA_STATEMENTS,
     CORE_SCHEMA_STATEMENTS,
+    PGVECTOR_SCHEMA_STATEMENTS,
     ECONOMIC_SCHEMA_STATEMENTS,
     INTERACTION_SCHEMA_STATEMENTS,
     MARKET_SCHEMA_STATEMENTS,
+    OPENTARGETS_SCHEMA_STATEMENTS,
     POPULATION_SCHEMA_STATEMENTS,
     STRUCTURE_SCHEMA_STATEMENTS,
     VARIANT_SCHEMA_STATEMENTS,
@@ -29,6 +32,9 @@ VARIANT_SCHEMA_READY = False
 POPULATION_SCHEMA_READY = False
 INTERACTION_SCHEMA_READY = False
 ECONOMIC_SCHEMA_READY = False
+OPENTARGETS_SCHEMA_READY = False
+CHEMBL_SCHEMA_READY = False
+PGVECTOR_SCHEMA_READY = False
 LAST_DATABASE_ERROR = ""
 _DB_POOL: psycopg_pool.ConnectionPool | None = None
 
@@ -305,6 +311,36 @@ def ensure_economic_schema() -> bool:
     if not _execute_schema_setup(ECONOMIC_SCHEMA_STATEMENTS, "Economic"):
         return False
     ECONOMIC_SCHEMA_READY = True
+    return True
+
+
+def ensure_opentargets_schema() -> bool:
+    global OPENTARGETS_SCHEMA_READY
+    if OPENTARGETS_SCHEMA_READY:
+        return True
+    if not _execute_schema_setup(OPENTARGETS_SCHEMA_STATEMENTS, "OpenTargets"):
+        return False
+    OPENTARGETS_SCHEMA_READY = True
+    return True
+
+
+def ensure_chembl_schema() -> bool:
+    global CHEMBL_SCHEMA_READY
+    if CHEMBL_SCHEMA_READY:
+        return True
+    if not _execute_schema_setup(CHEMBL_SCHEMA_STATEMENTS, "ChEMBL"):
+        return False
+    CHEMBL_SCHEMA_READY = True
+    return True
+
+
+def ensure_pgvector_schema() -> bool:
+    global PGVECTOR_SCHEMA_READY
+    if PGVECTOR_SCHEMA_READY:
+        return True
+    if not _execute_schema_setup(PGVECTOR_SCHEMA_STATEMENTS, "pgvector"):
+        return False
+    PGVECTOR_SCHEMA_READY = True
     return True
 
 

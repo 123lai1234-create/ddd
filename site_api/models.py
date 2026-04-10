@@ -190,6 +190,22 @@ class EconomicSyncRequest(BaseModel):
     limit: int = Field(default=120, ge=1, le=500)
 
 
+class OpenTargetsSyncRequest(BaseModel):
+    gene_symbol: str = Field(default="TP53")
+    limit: int = Field(default=10, ge=1, le=30)
+
+
+class ChEMBLSyncRequest(BaseModel):
+    gene_symbol: str = Field(default="TP53")
+    limit: int = Field(default=12, ge=1, le=30)
+
+
+class PathwaySyncRequest(BaseModel):
+    gene_symbol: str = Field(default="TP53")
+    uniprot_id: str = Field(default="")
+    limit: int = Field(default=10, ge=1, le=30)
+
+
 class ESM2ScoreRequest(BaseModel):
     """Request body for the /api/esm2/score proxy endpoint."""
 
