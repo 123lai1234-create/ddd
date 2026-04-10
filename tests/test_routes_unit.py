@@ -144,13 +144,15 @@ class TestRoutesWithMocks(unittest.TestCase):
         data = response.json()
         self.assertIn("provisioning", data.get("detail", "").lower())
 
+    @patch("site_api.routes.knowledge_summary")
     @patch("site_api.routes.ensure_schema")
     @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.fetch_knowledge_rows")
-    def test_list_knowledge_endpoint(self, mock_fetch, mock_get_url, mock_ensure):
+    def test_list_knowledge_endpoint(self, mock_fetch, mock_get_url, mock_ensure, mock_summary):
         """Test GET /api/knowledge list endpoint."""
         mock_get_url.return_value = "postgres://localhost/test"
         mock_ensure.return_value = True
+        mock_summary.return_value = {"proteinAnnotationCount": 0, "literatureCount": 1, "latestFetchedAt": None}
         mock_fetch.return_value = [
             {
                 "id": "1",
@@ -197,13 +199,15 @@ class TestRoutesWithMocks(unittest.TestCase):
         self.assertTrue(data["connected"])
         self.assertEqual(data["proteinCount"], 5)
 
+    @patch("site_api.routes.sequence_summary")
     @patch("site_api.routes.ensure_schema")
     @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.fetch_sequence_rows")
-    def test_list_sequences_endpoint(self, mock_fetch, mock_get_url, mock_ensure):
+    def test_list_sequences_endpoint(self, mock_fetch, mock_get_url, mock_ensure, mock_summary):
         """Test GET /api/sequences list endpoint."""
         mock_get_url.return_value = "postgres://localhost/test"
         mock_ensure.return_value = True
+        mock_summary.return_value = {"proteinCount": 1, "geneCount": 0, "latestFetchedAt": None}
         mock_fetch.return_value = [
             {
                 "id": "1",
@@ -223,12 +227,21 @@ class TestRoutesWithMocks(unittest.TestCase):
     @patch("site_api.routes.get_connection")
     def test_post_inquiry_endpoint_valid(self, mock_get_conn, mock_get_url, mock_ensure):
         """Test POST /api/inquiries with valid data."""
+        from unittest.mock import MagicMock
+
         mock_get_url.return_value = "postgres://localhost/test"
         mock_ensure.return_value = True
 
         # Mock the connection and cursor
-        mock_cursor = mock_get_conn.return_value.__enter__.return_value.cursor.return_value.__enter__.return_value
-        mock_cursor.fetchone.return_value = (1, "2024-01-01T00:00:00")
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_created_at = MagicMock()
+        mock_created_at.isoformat.return_value = "2024-01-01T00:00:00"
+        mock_cursor.fetchone.return_value = (1, mock_created_at)
+        mock_conn.cursor.return_value.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_conn.cursor.return_value.__exit__ = MagicMock(return_value=False)
+        mock_get_conn.return_value.__enter__ = MagicMock(return_value=mock_conn)
+        mock_get_conn.return_value.__exit__ = MagicMock(return_value=False)
 
         payload = {
             "name": "John Doe",
@@ -270,32 +283,34 @@ class TestRoutesWithMocks(unittest.TestCase):
         response = self.client.post("/api/inquiries", json=payload)
         self.assertEqual(response.status_code, 422)
 
+    @patch("site_api.routes.fetch_sequence_rows")
+    @patch("site_api.routes.sequence_summary")
     @patch("site_api.routes._require_sync_secret")
     @patch("site_api.routes.ensure_schema")
     @patch("site_api.routes.get_database_url")
+    @patch("site_api.routes.fetch_protein_sequences")
     @patch("site_api.routes.fetch_gene_sequences")
     @patch("site_api.routes.upsert_sequence_records")
     def test_sync_sequences_endpoint(
         self,
         mock_upsert,
-        mock_fetch,
+        mock_fetch_gene,
+        mock_fetch_protein,
         mock_get_url,
         mock_ensure_schema,
         mock_require_secret,
+        mock_summary,
+        mock_fetch_rows,
     ):
         """Test POST /api/sequences/sync endpoint."""
         mock_get_url.return_value = "postgres://localhost/test"
         mock_ensure_schema.return_value = True
-        mock_require_secret.return_value = None  # No error
-        mock_fetch.return_value = [
-            {
-                "source_id": "GENE:TP53",
-                "display_name": "TP53 Protein",
-                "sequence": "MKTIIALSYIF",
-                "organism": "Homo sapiens",
-            }
-        ]
+        mock_require_secret.return_value = None
+        mock_fetch_protein.return_value = []
+        mock_fetch_gene.return_value = []
         mock_upsert.return_value = None
+        mock_summary.return_value = {"proteinCount": 0, "geneCount": 0, "latestFetchedAt": None}
+        mock_fetch_rows.return_value = []
 
         payload = {
             "protein_query": "kinase",
@@ -309,7 +324,6 @@ class TestRoutesWithMocks(unittest.TestCase):
             json=payload,
             headers={"X-Sync-Secret": "test-secret"},
         )
-        # May fail without full setup, but structure is correct
         self.assertIn(response.status_code, [200, 401, 503])
 
     @patch("site_api.routes.ensure_market_schema")
@@ -331,6 +345,7 @@ class TestRoutesWithMocks(unittest.TestCase):
         self.assertTrue(data["databaseConfigured"])
         self.assertTrue(data["connected"])
 
+    @patch("site_api.routes.sequencing_run_summary")
     @patch("site_api.routes.ensure_schema")
     @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.fetch_sequencing_run_rows")
@@ -339,10 +354,12 @@ class TestRoutesWithMocks(unittest.TestCase):
         mock_fetch,
         mock_get_url,
         mock_ensure,
+        mock_summary,
     ):
         """Test GET /api/sequencing-runs list endpoint."""
         mock_get_url.return_value = "postgres://localhost/test"
         mock_ensure.return_value = True
+        mock_summary.return_value = {"runCount": 1, "latestFetchedAt": None}
         mock_fetch.return_value = [
             {
                 "id": "1",
@@ -373,14 +390,16 @@ class TestRoutesWithMocks(unittest.TestCase):
             response = self.client.get("/api/sequences/search?q=MKTIIALSYIFCLVFA")
             self.assertEqual(response.status_code, 200)
 
+    @patch("site_api.routes.sequence_summary")
     @patch("site_api.routes.ensure_schema")
     @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.delete_sequence_record")
-    def test_delete_sequence_endpoint(self, mock_delete, mock_get_url, mock_ensure):
+    def test_delete_sequence_endpoint(self, mock_delete, mock_get_url, mock_ensure, mock_summary):
         """Test DELETE /api/sequences/{sequence_id}."""
         mock_get_url.return_value = "postgres://localhost/test"
         mock_ensure.return_value = True
         mock_delete.return_value = True
+        mock_summary.return_value = {"proteinCount": 0, "geneCount": 0, "latestFetchedAt": None}
 
         response = self.client.delete(
             "/api/sequences/1",
@@ -412,7 +431,8 @@ class TestErrorHandling(unittest.TestCase):
         mock_ensure.return_value = True
         mock_summary.side_effect = Exception("Unexpected error")
 
-        response = self.client.get("/api/sequences/summary")
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/api/sequences/summary")
         self.assertEqual(response.status_code, 500)
 
 
