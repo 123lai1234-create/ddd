@@ -88,6 +88,20 @@
   text-transform: uppercase;
 }
 
+.demo-kicker .live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--teal);
+  flex-shrink: 0;
+  animation: livePulse 2.4s ease infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
 .demo-title {
   font-size: clamp(2.3rem, 5vw, 4.6rem);
   line-height: 1.02;
