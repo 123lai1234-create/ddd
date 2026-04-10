@@ -13,7 +13,7 @@ class InquiryCreate(BaseModel):
     source_page: str = Field(default="about_me.html", max_length=120)
     website: str = Field(default="", max_length=200)
 
-    @field_validator("name", "email", "organization", "message", "source_page", mode="before")
+    @field_validator("name", "email", "organization", "message", "source_page", "website", mode="before")
     @classmethod
     def strip_strings(cls, value: Any) -> str:
         if value is None:

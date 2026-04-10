@@ -23,8 +23,8 @@ class TestRoutesWithMocks(unittest.TestCase):
             self.skipTest("FastAPI/TestClient not available - tests will run in CI")
         self.client = TestClient(app)
 
-    @patch("site_api.db.get_database_url")
-    @patch("site_api.db.database_available")
+    @patch("site_api.routes.get_database_url")
+    @patch("site_api.routes.database_available")
     def test_root_endpoint_database_configured(self, mock_db_available, mock_get_db_url):
         """Test GET / returns correct structure when database is configured."""
         mock_get_db_url.return_value = "postgres://localhost/test"
@@ -37,8 +37,8 @@ class TestRoutesWithMocks(unittest.TestCase):
         self.assertTrue(data["databaseConfigured"])
         self.assertTrue(data["connected"])
 
-    @patch("site_api.db.get_database_url")
-    @patch("site_api.db.database_available")
+    @patch("site_api.routes.get_database_url")
+    @patch("site_api.routes.database_available")
     def test_root_endpoint_database_not_configured(self, mock_db_available, mock_get_db_url):
         """Test GET / when database is not configured."""
         mock_get_db_url.return_value = ""
@@ -58,8 +58,8 @@ class TestRoutesWithMocks(unittest.TestCase):
         data = response.json()
         self.assertEqual(data["status"], "ok")
 
-    @patch("site_api.db.get_database_url")
-    @patch("site_api.db.check_all_databases")
+    @patch("site_api.routes.get_database_url")
+    @patch("site_api.routes.check_all_databases")
     def test_db_status_endpoint_requires_admin_token(self, mock_check_dbs, mock_get_db_url):
         """Test GET /api/db/status requires admin token."""
         mock_get_db_url.return_value = "postgres://localhost/test"
@@ -68,8 +68,8 @@ class TestRoutesWithMocks(unittest.TestCase):
         response = self.client.get("/api/db/status")
         self.assertEqual(response.status_code, 403)
 
-    @patch("site_api.db.get_database_url")
-    @patch("site_api.db.check_all_databases")
+    @patch("site_api.routes.get_database_url")
+    @patch("site_api.routes.check_all_databases")
     def test_db_status_endpoint_with_valid_token(self, mock_check_dbs, mock_get_db_url):
         """Test GET /api/db/status with valid admin token."""
         mock_get_db_url.return_value = "postgres://localhost/test"
@@ -102,8 +102,8 @@ class TestRoutesWithMocks(unittest.TestCase):
         self.assertEqual(data["title"], "Test Structure")
         mock_fetch_structure.assert_called_once_with("1A2B")
 
-    @patch("site_api.db.ensure_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.knowledge_summary")
     def test_knowledge_summary_endpoint_success(self, mock_summary, mock_get_url, mock_ensure):
         """Test GET /api/knowledge/summary with successful response."""
@@ -122,7 +122,7 @@ class TestRoutesWithMocks(unittest.TestCase):
         self.assertTrue(data["connected"])
         self.assertEqual(data["proteinAnnotationCount"], 10)
 
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.get_database_url")
     def test_knowledge_summary_endpoint_no_database_url(self, mock_get_url):
         """Test GET /api/knowledge/summary when DATABASE_URL is not configured."""
         mock_get_url.return_value = ""
@@ -132,8 +132,8 @@ class TestRoutesWithMocks(unittest.TestCase):
         data = response.json()
         self.assertIn("not configured", data.get("detail", "").lower())
 
-    @patch("site_api.db.ensure_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     def test_knowledge_summary_endpoint_schema_not_ready(self, mock_get_url, mock_ensure):
         """Test GET /api/knowledge/summary when schema is not ready."""
         mock_get_url.return_value = "postgres://localhost/test"
@@ -144,8 +144,8 @@ class TestRoutesWithMocks(unittest.TestCase):
         data = response.json()
         self.assertIn("provisioning", data.get("detail", "").lower())
 
-    @patch("site_api.db.ensure_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.fetch_knowledge_rows")
     def test_list_knowledge_endpoint(self, mock_fetch, mock_get_url, mock_ensure):
         """Test GET /api/knowledge list endpoint."""
@@ -165,8 +165,8 @@ class TestRoutesWithMocks(unittest.TestCase):
         data = response.json()
         self.assertIsInstance(data.get("records"), list)
 
-    @patch("site_api.db.ensure_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     def test_list_knowledge_invalid_record_type(self, mock_get_url, mock_ensure):
         """Test GET /api/knowledge with invalid record_type."""
         mock_get_url.return_value = "postgres://localhost/test"
@@ -177,8 +177,8 @@ class TestRoutesWithMocks(unittest.TestCase):
         data = response.json()
         self.assertIn("record_type", data.get("detail", "").lower())
 
-    @patch("site_api.db.ensure_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.sequence_summary")
     def test_sequence_summary_endpoint(self, mock_summary, mock_get_url, mock_ensure):
         """Test GET /api/sequences/summary."""
@@ -197,8 +197,8 @@ class TestRoutesWithMocks(unittest.TestCase):
         self.assertTrue(data["connected"])
         self.assertEqual(data["proteinCount"], 5)
 
-    @patch("site_api.db.ensure_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.fetch_sequence_rows")
     def test_list_sequences_endpoint(self, mock_fetch, mock_get_url, mock_ensure):
         """Test GET /api/sequences list endpoint."""
@@ -218,12 +218,17 @@ class TestRoutesWithMocks(unittest.TestCase):
         data = response.json()
         self.assertIsInstance(data.get("records"), list)
 
-    @patch("site_api.db.ensure_schema")
-    @patch("site_api.db.get_database_url")
-    def test_post_inquiry_endpoint_valid(self, mock_get_url, mock_ensure):
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
+    @patch("site_api.routes.get_connection")
+    def test_post_inquiry_endpoint_valid(self, mock_get_conn, mock_get_url, mock_ensure):
         """Test POST /api/inquiries with valid data."""
         mock_get_url.return_value = "postgres://localhost/test"
         mock_ensure.return_value = True
+
+        # Mock the connection and cursor
+        mock_cursor = mock_get_conn.return_value.__enter__.return_value.cursor.return_value.__enter__.return_value
+        mock_cursor.fetchone.return_value = (1, "2024-01-01T00:00:00")
 
         payload = {
             "name": "John Doe",
@@ -231,12 +236,11 @@ class TestRoutesWithMocks(unittest.TestCase):
             "message": "This is a test inquiry message.",
         }
 
-        with patch("site_api.routes.upsert_inquiry_records"):
-            response = self.client.post("/api/inquiries", json=payload)
-            self.assertEqual(response.status_code, 200)
+        response = self.client.post("/api/inquiries", json=payload)
+        self.assertEqual(response.status_code, 201)
 
-    @patch("site_api.db.ensure_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     def test_post_inquiry_endpoint_invalid_email(self, mock_get_url, mock_ensure):
         """Test POST /api/inquiries with invalid email."""
         mock_get_url.return_value = "postgres://localhost/test"
@@ -251,8 +255,8 @@ class TestRoutesWithMocks(unittest.TestCase):
         response = self.client.post("/api/inquiries", json=payload)
         self.assertEqual(response.status_code, 422)
 
-    @patch("site_api.db.ensure_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     def test_post_inquiry_endpoint_missing_required_fields(self, mock_get_url, mock_ensure):
         """Test POST /api/inquiries with missing required fields."""
         mock_get_url.return_value = "postgres://localhost/test"
@@ -266,9 +270,9 @@ class TestRoutesWithMocks(unittest.TestCase):
         response = self.client.post("/api/inquiries", json=payload)
         self.assertEqual(response.status_code, 422)
 
-    @patch("site_api.db._require_sync_secret")
-    @patch("site_api.db.ensure_core_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes._require_sync_secret")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.fetch_gene_sequences")
     @patch("site_api.routes.upsert_sequence_records")
     def test_sync_sequences_endpoint(
@@ -279,7 +283,7 @@ class TestRoutesWithMocks(unittest.TestCase):
         mock_ensure_schema,
         mock_require_secret,
     ):
-        """Test POST /api/sync/sequences endpoint."""
+        """Test POST /api/sequences/sync endpoint."""
         mock_get_url.return_value = "postgres://localhost/test"
         mock_ensure_schema.return_value = True
         mock_require_secret.return_value = None  # No error
@@ -301,15 +305,15 @@ class TestRoutesWithMocks(unittest.TestCase):
         }
 
         response = self.client.post(
-            "/api/sync/sequences",
+            "/api/sequences/sync",
             json=payload,
             headers={"X-Sync-Secret": "test-secret"},
         )
         # May fail without full setup, but structure is correct
         self.assertIn(response.status_code, [200, 401, 503])
 
-    @patch("site_api.db.ensure_market_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_market_schema")
+    @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.market_summary")
     def test_market_summary_endpoint(self, mock_summary, mock_get_url, mock_ensure):
         """Test GET /api/market/summary."""
@@ -327,8 +331,8 @@ class TestRoutesWithMocks(unittest.TestCase):
         self.assertTrue(data["databaseConfigured"])
         self.assertTrue(data["connected"])
 
-    @patch("site_api.db.ensure_core_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.fetch_sequencing_run_rows")
     def test_list_sequencing_runs_endpoint(
         self,
@@ -352,41 +356,37 @@ class TestRoutesWithMocks(unittest.TestCase):
         data = response.json()
         self.assertIsInstance(data.get("records"), list)
 
-    @patch("site_api.db.ensure_core_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.sequence_summary")
     def test_search_sequences_endpoint(self, mock_summary, mock_get_url, mock_ensure):
         """Test GET /api/sequences/search endpoint."""
         mock_get_url.return_value = "postgres://localhost/test"
         mock_ensure.return_value = True
 
-        with patch("site_api.routes.fetch_sequence_rows_for_search") as mock_search:
-            mock_search.return_value = [
-                {
-                    "source_id": "PDB:1A2B",
-                    "display_name": "Test",
-                    "sequence": "MKTII",
-                }
+        with patch("site_api.routes.get_connection") as mock_get_conn:
+            mock_cursor = mock_get_conn.return_value.__enter__.return_value.cursor.return_value.__enter__.return_value
+            mock_cursor.fetchall.return_value = [
+                (1, "PDB:1A2B", "Test", "Unknown", 50, "http://example.com", None, "MKTII", "protein", "RCSB")
             ]
 
-            response = self.client.get("/api/sequences/search?q=kinase")
+            response = self.client.get("/api/sequences/search?q=MKTIIALSYIFCLVFA")
             self.assertEqual(response.status_code, 200)
 
-    @patch("site_api.db.ensure_core_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.delete_sequence_record")
     def test_delete_sequence_endpoint(self, mock_delete, mock_get_url, mock_ensure):
         """Test DELETE /api/sequences/{sequence_id}."""
         mock_get_url.return_value = "postgres://localhost/test"
         mock_ensure.return_value = True
-        mock_delete.return_value = None
+        mock_delete.return_value = True
 
-        with patch("site_api.routes._require_sync_secret"):
-            response = self.client.delete(
-                "/api/sequences/1",
-                headers={"X-Sync-Secret": "test-secret"},
-            )
-            self.assertIn(response.status_code, [200, 401, 404])
+        response = self.client.delete(
+            "/api/sequences/1",
+            headers={"X-Sync-Secret": "test-secret"},
+        )
+        self.assertIn(response.status_code, [200, 401, 404])
 
 
 class TestErrorHandling(unittest.TestCase):
@@ -403,8 +403,8 @@ class TestErrorHandling(unittest.TestCase):
         response = self.client.get("/api/nonexistent")
         self.assertEqual(response.status_code, 404)
 
-    @patch("site_api.db.ensure_schema")
-    @patch("site_api.db.get_database_url")
+    @patch("site_api.routes.ensure_schema")
+    @patch("site_api.routes.get_database_url")
     @patch("site_api.routes.sequence_summary")
     def test_500_on_unexpected_error(self, mock_summary, mock_get_url, mock_ensure):
         """Test that unexpected errors are handled appropriately."""
