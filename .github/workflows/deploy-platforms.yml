@@ -53,6 +53,7 @@ jobs:
             --service "$RAILWAY_SERVICE_ID"
 
       - name: Sync database environment variables
+        continue-on-error: true
         env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
           DB_NEON: ${{ secrets.DATABASE_URL_NEON }}
@@ -103,7 +104,7 @@ jobs:
         run: |
           mkdir -p .vercel/output/static
           cp -r dist/. .vercel/output/static/
-          printf '{"version":3}' > .vercel/output/config.json
+          node ./scripts/write_vercel_output_config.mjs
 
       - name: Deploy frontend to Vercel
         env:
