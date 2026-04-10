@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import os
+from dataclasses import dataclass
 from typing import Any
 from xml.etree import ElementTree as ET
 
@@ -116,7 +116,7 @@ def fetch_uniprot_knowledge(query: str, limit: int) -> list[KnowledgeRecordPaylo
             continue
 
         title = _protein_name(result)
-        organism = str(((result.get("organism") or {}).get("scientificName") or "Unknown organism")).strip()
+        organism = str((result.get("organism") or {}).get("scientificName") or "Unknown organism").strip()
         gene_names = _extract_gene_names(result)
         function_notes = _extract_comment_texts(result, "FUNCTION")
         localization_notes = _extract_comment_texts(result, "SUBCELLULAR LOCATION")

@@ -152,10 +152,8 @@ def get_connection() -> Generator[psycopg.Connection, None, None]:
             LAST_DATABASE_ERROR = str(error)
             if conn is not None:
                 # Return to pool even on error so the slot isn't leaked
-                try:
+                with contextlib.suppress(Exception):
                     _DB_POOL.putconn(conn)
-                except Exception:
-                    pass
                 conn = None
             logger.warning("Pool getconn failed, falling back to direct connect: %s", error)
         finally:

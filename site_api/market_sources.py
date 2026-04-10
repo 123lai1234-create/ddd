@@ -1,17 +1,17 @@
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 from html.parser import HTMLParser
-import json
-import re
 from urllib.parse import quote
 
 import requests
+import urllib3
 
 from site_api.http_client import get as http_get
-import urllib3
 
 
 TWSE_STOCK_DAY_URL = "https://www.twse.com.tw/exchangeReport/STOCK_DAY"
@@ -564,7 +564,7 @@ def fetch_yahoo_daily_records(symbol: str, asset_type: str, range_name: str) -> 
     bars: list[MarketBarPayload] = []
     for index, timestamp in enumerate(timestamps):
         try:
-            trade_date = datetime.fromtimestamp(int(timestamp), tz=timezone.utc).date().isoformat()
+            trade_date = datetime.fromtimestamp(int(timestamp), tz=datetime.UTC).date().isoformat()
         except (TypeError, ValueError, OSError):
             continue
 

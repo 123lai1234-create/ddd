@@ -19,6 +19,11 @@ ignore = [
     "E501",   # line too long (handled by formatter)
     "B008",   # function call in default argument (FastAPI Depends)
     "RUF012", # mutable class variable annotation
+    "RUF001", # ambiguous unicode in strings (CJK fullwidth chars)
+    "RUF002", # ambiguous unicode in docstrings (CJK fullwidth chars)
+    "RUF003", # ambiguous unicode in comments (CJK fullwidth chars)
+    "N803",   # argument name should be lowercase (ML convention: X_embed)
+    "N806",   # variable in function should be lowercase (ML convention: Z_bg)
 ]
 
 [lint.per-file-ignores]

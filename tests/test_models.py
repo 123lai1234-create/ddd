@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import unittest
+
 from pydantic import ValidationError
 
 from site_api.models import (

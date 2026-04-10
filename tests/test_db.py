@@ -5,6 +5,8 @@ import unittest
 from unittest.mock import patch
 from urllib.parse import parse_qsl, urlparse
 
+from fastapi import HTTPException
+
 from site_api.db import (
     get_database_url,
     get_all_database_urls,
@@ -14,7 +16,6 @@ from site_api.db import (
     _require_sync_secret,
     DATABASE_URL_ENV_KEYS,
 )
-from fastapi import HTTPException
 
 
 class TestGetDatabaseUrl(unittest.TestCase):

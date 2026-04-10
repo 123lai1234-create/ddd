@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import patch, MagicMock
 from typing import Any
+from unittest.mock import patch, MagicMock
 
 try:
     from fastapi.testclient import TestClient
+
     from site_api.main import app
+
     FASTAPI_AVAILABLE = True
 except ImportError:
     FASTAPI_AVAILABLE = False

@@ -20,7 +20,6 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from site_api.db import (
-    _DB_POOL,
     _init_pool,
     ensure_core_schema,
     ensure_market_schema,
@@ -32,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(application: FastAPI):  # noqa: ARG001
+async def lifespan(application: FastAPI):
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",

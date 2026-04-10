@@ -10,7 +10,7 @@ class TestAminoAcidConstants:
         assert len(AMINO_ACIDS) == 20
 
     def test_n_aa_matches(self):
-        assert N_AA == len(AMINO_ACIDS)
+        assert len(AMINO_ACIDS) == N_AA
 
     def test_aa_to_idx_complete(self):
         assert len(AA_TO_IDX) == 20
