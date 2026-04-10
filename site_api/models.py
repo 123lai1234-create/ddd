@@ -134,3 +134,25 @@ class SequenceUpsertOneRequest(BaseModel):
     @classmethod
     def strip_str(cls, value: Any) -> str:
         return str(value or "").strip()
+
+
+_VALID_AA = frozenset("ACDEFGHIKLMNPQRSTVWY")
+
+
+class ESM2ScoreRequest(BaseModel):
+    """Request body for the /api/esm2/score proxy endpoint."""
+
+    sequence: str = Field(min_length=2, max_length=500)
+    positions: list[int] | None = Field(
+        default=None,
+        description="Positions to score (0-based). Scores all positions if omitted.",
+    )
+
+    @field_validator("sequence", mode="before")
+    @classmethod
+    def normalize_and_validate_sequence(cls, value: Any) -> str:
+        seq = str(value or "").strip().upper()
+        invalid = set(seq) - _VALID_AA
+        if invalid:
+            raise ValueError(f"Non-standard amino acids: {sorted(invalid)}")
+        return seq

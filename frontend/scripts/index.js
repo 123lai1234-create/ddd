@@ -1125,6 +1125,144 @@ function parseMpnnFixed(str, len) {
     return fixed;
 }
 
+// ── ESM-2 HuggingFace fill-mask engine ──────────────────────────────
+// Uses facebook/esm2_t6_8M_UR50D (smallest, fastest ESM-2 variant).
+// For each free residue position, masks that position and queries the
+// fill-mask API to get real per-residue AA probability distributions.
+// Results are temperature-sampled to produce design sequences.
+
+const _ESM2_URL = 'https://api-inference.huggingface.co/models/facebook/esm2_t6_8M_UR50D';
+
+function getHfToken() {
+    const fromField = document.getElementById('hfTokenInput')?.value?.trim();
+    if (fromField) {
+        try { localStorage.setItem('hf_token', fromField); } catch (e) {}
+        return fromField;
+    }
+    try { return localStorage.getItem('hf_token') || ''; } catch (e) { return ''; }
+}
+
+function updateEngineLabel() {
+    const label = document.getElementById('engineLabel');
+    if (!label) return;
+    const token = document.getElementById('hfTokenInput')?.value?.trim()
+        || (localStorage.getItem('hf_token') || '');
+    if (token) {
+        label.textContent = 'ESM-2';
+        label.style.color = '#3fb950';
+        label.style.borderColor = 'rgba(63,185,80,.4)';
+        label.style.background = 'rgba(63,185,80,.08)';
+    } else {
+        label.textContent = 'BLOSUM62';
+        label.style.color = 'var(--muted)';
+        label.style.borderColor = 'var(--border)';
+        label.style.background = 'rgba(125,133,144,.12)';
+    }
+}
+
+async function _callESM2FillMask(maskedSeq, token) {
+    const resp = await fetch(_ESM2_URL, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputs: maskedSeq, parameters: { top_k: 25 } })
+    });
+    if (!resp.ok) {
+        const body = await resp.text().catch(() => '');
+        if (resp.status === 503) throw new Error('ESM-2 模型正在冷啟動（503），請 30 秒後重試。');
+        if (resp.status === 401) throw new Error('HuggingFace Token 無效。請至 huggingface.co/settings/tokens 取得 token。');
+        throw new Error(`ESM-2 API HTTP ${resp.status}: ${body.slice(0, 120)}`);
+    }
+    return resp.json();
+}
+
+// Returns profiles[i] = { AA: logProb } for each position i.
+// Fixed positions keep null (caller will use original residue with ll = -0.08).
+//
+// Strategy:
+//  1. Try backend proxy /api/esm2/score (server has HF_TOKEN; visitors need nothing)
+//  2. If backend unavailable, fall back to direct HuggingFace API (requires user token)
+//  3. If neither works, throw — caller falls back to BLOSUM62
+async function computeESM2Profiles(seq, fixedSet, onProgress) {
+    const freePos = [];
+    for (let i = 0; i < seq.length; i++) { if (!fixedSet.has(i)) freePos.push(i); }
+    const profiles = new Array(seq.length).fill(null);
+
+    // ── Try backend proxy first ──────────────────────────────────────
+    let apiBase = '';
+    if (typeof resolvePortfolioApiBase === 'function') {
+        try { apiBase = await resolvePortfolioApiBase(); } catch (e) { /* ignore */ }
+    }
+    if (!apiBase && typeof window.APP_CONFIG?.API_BASE_URL === 'string') {
+        apiBase = window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '');
+    }
+
+    if (apiBase) {
+        onProgress(0, 'ESM-2 → 後端 proxy，批次評分中...');
+        try {
+            const resp = await fetch(`${apiBase}/api/esm2/score`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sequence: seq, positions: freePos })
+            });
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                // 503 = HF_TOKEN not set on server or model cold-start
+                if (resp.status !== 503) throw new Error(err.detail || `HTTP ${resp.status}`);
+                // fall through to direct path on 503
+            } else {
+                const data = await resp.json();
+                for (const [posStr, dist] of Object.entries(data.profiles || {})) {
+                    profiles[parseInt(posStr, 10)] = dist;
+                }
+                onProgress(1, `後端 ESM-2 評分完成（${Object.keys(data.profiles || {}).length} 個位置）`);
+                return profiles;
+            }
+        } catch (proxyErr) {
+            // Backend unreachable — fall through to direct path
+            onProgress(0, `後端 proxy 不可用（${proxyErr.message}），改用直接 API...`);
+        }
+    }
+
+    // ── Direct HuggingFace API (requires user token) ─────────────────
+    const token = getHfToken();
+    if (!token) throw new Error('後端 proxy 不可用，且未設定 HuggingFace Token。請填入 token 或確認後端已部署並設定 HF_TOKEN。');
+
+    for (let pi = 0; pi < freePos.length; pi++) {
+        const i = freePos[pi];
+        const maskedSeq = seq.slice(0, i) + '<mask>' + seq.slice(i + 1);
+        onProgress(pi / freePos.length, `ESM-2 (直接) 掃描位置 ${i + 1} / ${seq.length}`);
+        const predictions = await _callESM2FillMask(maskedSeq, token);
+        const dist = {};
+        for (const aa of MPNN_AA) { dist[aa] = -10; }
+        for (const pred of (Array.isArray(predictions) ? predictions : [])) {
+            const aa = (pred.token_str || '').trim().toUpperCase();
+            if (MPNN_AA.includes(aa)) dist[aa] = Math.log(Math.max(pred.score, 1e-10));
+        }
+        profiles[i] = dist;
+        if (pi < freePos.length - 1) await new Promise((r) => setTimeout(r, 200));
+    }
+    return profiles;
+}
+
+function designOneSeqESM(seq, fixedSet, temp, profiles) {
+    let designed = '';
+    const ll = [];
+    for (let i = 0; i < seq.length; i++) {
+        const aa = seq[i];
+        if (fixedSet.has(i) || !profiles[i]) {
+            designed += aa;
+            ll.push(-0.08);
+            continue;
+        }
+        const logits = MPNN_AA.split('').map((a) => profiles[i][a] / temp);
+        const { idx, prob } = softmaxSample(logits);
+        designed += MPNN_AA[idx];
+        ll.push(Math.log(Math.max(prob, 1e-10)));
+    }
+    const identity = seq.split('').filter((c, i) => c === designed[i]).length / seq.length;
+    return { seq: designed, identity, score: ll.reduce((a, b) => a + b, 0) / ll.length, ll };
+}
+
 function softmaxSample(logits) {
     // 用 reduce 取代 spread 對 Math.max，避免長序列 stack overflow
     const mx = logits.reduce((a, b) => a > b ? a : b);
@@ -1221,50 +1359,51 @@ async function runMPNN() {
     document.getElementById('mpnnRunBtn').disabled = true;
     document.getElementById('mpnnBtnText').textContent = '運算中…';
 
-    const steps = [[12, `載入模型權重 <span style="color:var(--teal)" >${_currentModel
+    const hfToken = getHfToken();
+    updateEngineLabel();
+
+    let results;
+    if (hfToken) {
+        // ── ESM-2 path ──
+        appendMpnnLog(`<span style="color:var(--teal)">[ESM-2]</span> 使用 HuggingFace ESM-2 (${_ESM2_URL.split('/').pop()}) 進行真實機率評分...`);
+        appendMpnnLog(`<span style="color:var(--teal)">[ESM-2]</span> 序列長度 ${seq.length} 殘基，需查詢 ${seq.length - fixedSet.size} 個自由位置`);
+        try {
+            const profiles = await computeESM2Profiles(seq, fixedSet, (pct, msg) => {
+                const pctInt = Math.round(10 + pct * 80);
+                document.getElementById('mpnnProgressFill').style.width = pctInt + '%';
+                document.getElementById('mpnnProgressLabel').textContent = msg;
+                appendMpnnLog(`<span style="color:var(--teal)">[ESM-2]</span> ${msg}`);
+            });
+            document.getElementById('mpnnProgressFill').style.width = '92%';
+            document.getElementById('mpnnProgressLabel').textContent = `ESM-2 掃描完成，溫度 T=${temp.toFixed(2)} 取樣 ${numSeq} 條序列...`;
+            appendMpnnLog(`<span style="color:var(--teal)">[ESM-2]</span> 所有位置機率分佈就緒，開始取樣...`);
+            await new Promise((r) => setTimeout(r, 200));
+            results = Array.from({ length: numSeq }, () => designOneSeqESM(seq, fixedSet, temp, profiles));
+        } catch (esmErr) {
+            appendMpnnLog(`<span style="color:#f85149">[ESM-2 ERROR]</span> ${esmErr.message} — 切換至 BLOSUM62 模擬`);
+            results = Array.from({ length: numSeq }, () => designOneSeq(seq, fixedSet, temp, noise));
         }
-
-            </span>...`],
-    [28, `讀取輸入序列：${seq.length
+    } else {
+        // ── BLOSUM62 fallback path ──
+        const steps = [
+            [12, `載入模型權重 <span style="color:var(--teal)">${_currentModel}</span>...`],
+            [28, `讀取輸入序列：${seq.length} 殘基`],
+            [42, fixedSet.size > 0 ? `固定 ${fixedSet.size} 個位置不參與設計` : '全序列設計模式（無固定位置）'],
+            [58, `構建稀疏 k-NN 圖（k=48 近鄰邊）...`],
+            [72, `訊息傳遞前向傳播 × ${seq.length} 殘基...`],
+            [86, `溫度 ${temp.toFixed(2)} Softmax 取樣：生成 ${numSeq} 條候選序列...`],
+            [95, `計算 per-residue log-likelihood...`],
+            [100, `序列設計完成 ✓`]
+        ];
+        for (const [pct, msg] of steps) {
+            document.getElementById('mpnnProgressFill').style.width = pct + '%';
+            document.getElementById('mpnnProgressLabel').textContent = msg.replace(/<[^>]+>/g, '');
+            appendMpnnLog(`<span style="color:var(--teal)">[MPNN]</span> ${msg}`);
+            await new Promise((r) => setTimeout(r, 180 + Math.random() * 220));
         }
-
-            殘基`],
-    [42, fixedSet.size > 0 ? `固定 ${fixedSet.size
-        }
-
-            個位置不參與設計` : '全序列設計模式（無固定位置）'],
-    [58, `構建稀疏 k-NN 圖（k=48 近鄰邊）...`],
-    [72, `訊息傳遞前向傳播 × ${seq.length
-        }
-
-            殘基...`],
-    [86, `溫度 ${temp.toFixed(2)
-        }
-
-            Softmax 取樣：生成 ${numSeq
-        }
-
-            條候選序列...`],
-    [95, `計算 per-residue log-likelihood...`],
-    [100, `序列設計完成 ✓`]];
-
-    for (const [pct, msg] of steps) {
-        document.getElementById('mpnnProgressFill').style.width = pct + '%';
-        document.getElementById('mpnnProgressLabel').textContent = msg.replace(/<[^>]+>/g, '');
-
-        appendMpnnLog(`<span style="color:var(--teal)" >[MPNN]</span> ${msg
-            }
-
-                    `);
-        await new Promise(r => setTimeout(r, 180 + Math.random() * 220));
+        results = Array.from({ length: numSeq }, () => designOneSeq(seq, fixedSet, temp, noise));
     }
 
-    // 生成序列
-    const results = Array.from({
-        length: numSeq
-    }
-
-        , () => designOneSeq(seq, fixedSet, temp, noise));
     results.sort((a, b) => b.score - a.score);
 
     // 顯示結果

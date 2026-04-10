@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import logging
+import math
 import os
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 from urllib.parse import urlparse
 
+import httpx
 import psycopg
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, Request, status
 
 from site_api.db import (
     _require_sync_secret,
@@ -17,6 +22,7 @@ from site_api.db import (
     get_database_url,
 )
 from site_api.models import (
+    ESM2ScoreRequest,
     InquiryCreate,
     KnowledgeSyncRequest,
     MarketSyncRequest,
@@ -848,3 +854,109 @@ def create_inquiry(payload: InquiryCreate) -> dict[str, Any]:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to persist inquiry to PostgreSQL.",
         ) from error
+
+
+# ── ESM-2 HuggingFace proxy ──────────────────────────────────────────
+# Calls HuggingFace fill-mask API server-side so visitors need no token.
+# Results are cached in a process-level LRU dict (key = seq:pos).
+
+_logger = logging.getLogger(__name__)
+_ESM2_HF_URL = "https://api-inference.huggingface.co/models/facebook/esm2_t6_8M_UR50D"
+_MPNN_AA = "ACDEFGHIKLMNPQRSTVWY"
+_ESM2_CACHE: OrderedDict[str, dict[str, float]] = OrderedDict()
+_ESM2_CACHE_MAX = 200  # cache up to 200 position profiles
+_ESM2_CONCURRENCY = 4  # parallel HF requests
+
+
+def _esm2_cache_get(key: str) -> dict[str, float] | None:
+    if key in _ESM2_CACHE:
+        _ESM2_CACHE.move_to_end(key)
+        return _ESM2_CACHE[key]
+    return None
+
+
+def _esm2_cache_set(key: str, value: dict[str, float]) -> None:
+    _ESM2_CACHE[key] = value
+    _ESM2_CACHE.move_to_end(key)
+    while len(_ESM2_CACHE) > _ESM2_CACHE_MAX:
+        _ESM2_CACHE.popitem(last=False)
+
+
+def _score_one_position(seq: str, pos: int, token: str) -> tuple[int, dict[str, float]]:
+    """Mask one position and query ESM-2 fill-mask API. Returns (pos, dist)."""
+    cache_key = f"{seq}:{pos}"
+    cached = _esm2_cache_get(cache_key)
+    if cached is not None:
+        return pos, cached
+
+    masked = seq[:pos] + "<mask>" + seq[pos + 1:]
+    try:
+        resp = httpx.post(
+            _ESM2_HF_URL,
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json={"inputs": masked, "parameters": {"top_k": 25}},
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 503:
+            raise RuntimeError("ESM-2 model is loading (503). Retry in 30 s.") from exc
+        if exc.response.status_code == 401:
+            raise RuntimeError("HF_TOKEN is invalid or expired.") from exc
+        raise RuntimeError(f"HuggingFace API HTTP {exc.response.status_code}") from exc
+
+    predictions = resp.json()
+    dist: dict[str, float] = {aa: -10.0 for aa in _MPNN_AA}
+    for pred in (predictions if isinstance(predictions, list) else []):
+        aa = (pred.get("token_str") or "").strip().upper()
+        if aa in dist:
+            dist[aa] = math.log(max(float(pred.get("score", 0)), 1e-10))
+
+    _esm2_cache_set(cache_key, dist)
+    return pos, dist
+
+
+@router.post("/api/esm2/score")
+def esm2_score(request: Request, body: ESM2ScoreRequest) -> dict[str, Any]:
+    """Proxy ESM-2 fill-mask scoring server-side; visitors need no HuggingFace token."""
+    hf_token = os.getenv("HF_TOKEN", "").strip()
+    if not hf_token:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="HF_TOKEN is not configured on this server.",
+        )
+
+    seq = body.sequence
+    positions = (
+        [p for p in body.positions if 0 <= p < len(seq)]
+        if body.positions is not None
+        else list(range(len(seq)))
+    )
+    if not positions:
+        return {"profiles": {}, "sequence": seq, "positionCount": 0}
+
+    profiles: dict[str, dict[str, float]] = {}
+    errors: list[str] = []
+
+    with ThreadPoolExecutor(max_workers=_ESM2_CONCURRENCY) as pool:
+        futures = {pool.submit(_score_one_position, seq, pos, hf_token): pos for pos in positions}
+        for future in as_completed(futures):
+            try:
+                pos, dist = future.result()
+                profiles[str(pos)] = dist
+            except RuntimeError as exc:
+                err_msg = str(exc)
+                errors.append(err_msg)
+                _logger.warning("ESM-2 position %d failed: %s", futures[future], err_msg)
+                if "loading (503)" in err_msg or "invalid or expired" in err_msg:
+                    # Fatal — cancel remaining and surface the error
+                    for f in futures:
+                        f.cancel()
+                    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=err_msg)
+
+    return {
+        "profiles": profiles,
+        "sequence": seq,
+        "positionCount": len(profiles),
+        "errors": errors,
+    }

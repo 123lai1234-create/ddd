@@ -470,11 +470,21 @@ async function loadSequenceCache(autoSyncIfEmpty = true) {
 
         setSequenceStatus(`已載入 ${sequenceVaultState.records.protein.length} 筆 protein 與 ${sequenceVaultState.records.gene.length} 筆 gene 快取。`, 'success');
     } catch (error) {
-        renderSequenceSummary();
-        renderSequenceTabs();
-        renderSequenceFilterOptions();
-        renderSequenceFeed();
-        setSequenceStatus(`序列快取讀取失敗：${error.message}`, 'error');
+        // backend unavailable — try localStorage cache, then direct API sync
+        const hasCached = _loadSequenceDirectCache();
+        if (!hasCached) {
+            if (autoSyncIfEmpty) {
+                await _syncSequenceDirect().catch((e2) =>
+                    setSequenceStatus(`後端與直接抓取均失敗：${e2.message}`, 'error')
+                );
+            } else {
+                renderSequenceSummary();
+                renderSequenceTabs();
+                renderSequenceFilterOptions();
+                renderSequenceFeed();
+                setSequenceStatus(`後端不可用（${error.message}）。可按「同步」從 UniProt / Ensembl 直接抓取。`, 'error');
+            }
+        }
     } finally {
         setSequenceBusy(false);
     }
@@ -505,7 +515,10 @@ async function syncSequenceVault(autoMode = false) {
             'success'
         );
     } catch (error) {
-        setSequenceStatus(`同步失敗：${error.message}`, 'error');
+        // backend unavailable — fall back to direct API
+        await _syncSequenceDirect().catch((e2) =>
+            setSequenceStatus(`後端與直接抓取均失敗：${e2.message}`, 'error')
+        );
     } finally {
         setSequenceBusy(false);
     }
@@ -1184,12 +1197,22 @@ async function loadKnowledgeCache(autoSyncIfEmpty = true) {
         await loadRagDocumentPreview(true);
         setKnowledgeStatus(`已載入 ${knowledgeVaultState.records.protein_annotation.length} 筆 annotation 與 ${knowledgeVaultState.records.literature.length} 筆 literature。`, 'success');
     } catch (error) {
-        renderKnowledgeSummary();
-        renderKnowledgeTabs();
-        renderKnowledgeSourceOptions();
-        renderKnowledgeFeed();
-        renderKnowledgeRagPreview();
-        setKnowledgeStatus(`知識庫讀取失敗：${error.message}`, 'error');
+        // backend unavailable — try localStorage cache, then direct API sync
+        const hasCached = _loadKnowledgeDirectCache();
+        if (!hasCached) {
+            if (autoSyncIfEmpty) {
+                await _syncKnowledgeDirect().catch((e2) =>
+                    setKnowledgeStatus(`後端與直接抓取均失敗：${e2.message}`, 'error')
+                );
+            } else {
+                renderKnowledgeSummary();
+                renderKnowledgeTabs();
+                renderKnowledgeSourceOptions();
+                renderKnowledgeFeed();
+                renderKnowledgeRagPreview();
+                setKnowledgeStatus(`後端不可用（${error.message}）。可按「同步知識到 DB」從 UniProt / PubMed 直接抓取。`, 'error');
+            }
+        }
     } finally {
         setKnowledgeBusy(false);
     }
@@ -1221,7 +1244,10 @@ async function syncKnowledgeVault(autoMode = false) {
             'success'
         );
     } catch (error) {
-        setKnowledgeStatus(`同步失敗：${error.message}`, 'error');
+        // backend unavailable — fall back to direct API
+        await _syncKnowledgeDirect().catch((e2) =>
+            setKnowledgeStatus(`後端與直接抓取均失敗：${e2.message}`, 'error')
+        );
     } finally {
         setKnowledgeBusy(false);
     }
@@ -1651,6 +1677,237 @@ function initChartDefaults() {
     Chart.defaults.color = '#95a7a4';
     Chart.defaults.borderColor = 'rgba(255,255,255,.08)';
     Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+}
+
+// ── Direct API Fallback (backend unavailable) ────────────────────────
+// Calls UniProt / Ensembl / NCBI directly from the browser.
+// Results are cached in localStorage with a 24-hour TTL.
+
+const _DIRECT_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+function _saveDirectCache(key, records) {
+    try { localStorage.setItem(`gai_${key}`, JSON.stringify({ t: Date.now(), records })); } catch (e) { /* quota */ }
+}
+
+function _loadDirectCache(key) {
+    try {
+        const raw = localStorage.getItem(`gai_${key}`);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (Date.now() - parsed.t > _DIRECT_CACHE_TTL) { localStorage.removeItem(`gai_${key}`); return null; }
+        return parsed.records;
+    } catch (e) { return null; }
+}
+
+async function _fetchUniProtSequences(proteinQuery, species, limit) {
+    const taxon = { human: '9606', mouse: '10090', ecoli: '562' }[species] || '9606';
+    const url = `https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(proteinQuery)}+AND+taxonomy_id:${taxon}&format=json&size=${limit}&fields=accession,protein_name,organism_name,sequence,gene_names`;
+    const resp = await fetch(url, { mode: 'cors' });
+    if (!resp.ok) throw new Error(`UniProt HTTP ${resp.status}`);
+    const data = await resp.json();
+    const now = new Date().toISOString();
+    return (data.results || []).map((item) => {
+        const acc = item.primaryAccession || '';
+        const name = item.proteinDescription?.recommendedName?.fullName?.value
+            || item.proteinDescription?.submittedName?.[0]?.fullName?.value || acc;
+        const gene = item.genes?.[0]?.geneName?.value || '';
+        const seq = item.sequence?.value || '';
+        return {
+            id: `up-${acc}`,
+            displayName: name + (gene ? ` (${gene})` : ''),
+            organism: item.organism?.scientificName || species,
+            sourceId: acc, sourceName: 'UniProt', queryTerm: proteinQuery,
+            description: name, sequence: seq,
+            sequenceLength: item.sequence?.length || seq.length, gcContent: null,
+            recordUrl: `https://www.uniprot.org/uniprotkb/${acc}/entry`,
+            fetchedAt: now, sequenceType: 'protein'
+        };
+    });
+}
+
+async function _fetchEnsemblSequences(geneSymbols, species) {
+    const sp = { human: 'homo_sapiens', mouse: 'mus_musculus' }[species] || 'homo_sapiens';
+    const spDisplay = sp.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join('_');
+    const now = new Date().toISOString();
+    const results = [];
+    for (const sym of (geneSymbols || []).slice(0, 4)) {
+        try {
+            const lResp = await fetch(
+                `https://rest.ensembl.org/lookup/symbol/${sp}/${encodeURIComponent(sym)}?content-type=application/json`,
+                { mode: 'cors' }
+            );
+            if (!lResp.ok) continue;
+            const gene = await lResp.json();
+            if (!gene?.id) continue;
+            const sResp = await fetch(
+                `https://rest.ensembl.org/sequence/id/${gene.id}?content-type=text/plain`,
+                { mode: 'cors' }
+            );
+            if (!sResp.ok) continue;
+            const seq = (await sResp.text()).trim();
+            const gc = seq.length ? ((seq.match(/[GC]/gi) || []).length / seq.length * 100) : 0;
+            results.push({
+                id: `ens-${gene.id}`,
+                displayName: gene.display_name || sym,
+                organism: sp.replace(/_/g, ' '),
+                sourceId: gene.id, sourceName: 'Ensembl', queryTerm: sym,
+                description: (gene.description || '').replace(/\s*\[.*?\]$/, ''),
+                sequence: seq, sequenceLength: seq.length,
+                gcContent: parseFloat(gc.toFixed(1)),
+                recordUrl: `https://www.ensembl.org/${spDisplay}/Gene/Summary?g=${gene.id}`,
+                fetchedAt: now, sequenceType: 'gene'
+            });
+        } catch (e) { /* skip symbol on error */ }
+    }
+    return results;
+}
+
+async function _fetchUniProtAnnotations(proteinQuery, species, limit) {
+    const taxon = { human: '9606', mouse: '10090', ecoli: '562' }[species] || '9606';
+    const url = `https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(proteinQuery)}+AND+taxonomy_id:${taxon}&format=json&size=${limit}&fields=accession,protein_name,organism_name,cc_function,keyword`;
+    const resp = await fetch(url, { mode: 'cors' });
+    if (!resp.ok) throw new Error(`UniProt HTTP ${resp.status}`);
+    const data = await resp.json();
+    const now = new Date().toISOString();
+    return (data.results || []).map((item) => {
+        const acc = item.primaryAccession || '';
+        const name = item.proteinDescription?.recommendedName?.fullName?.value
+            || item.proteinDescription?.submittedName?.[0]?.fullName?.value || acc;
+        const funcComment = item.comments?.find((c) => c.commentType === 'FUNCTION');
+        const summary = funcComment?.texts?.[0]?.value || `${name} — UniProt ${acc}.`;
+        const kws = (item.keywords || []).map((k) => k.name).filter(Boolean).slice(0, 8);
+        return {
+            id: `up-annot-${acc}`, recordType: 'protein_annotation', title: name,
+            sourceName: 'UniProt', sourceId: acc, queryTerm: proteinQuery,
+            summaryText: summary, contentText: summary,
+            organism: item.organism?.scientificName || species,
+            publishedAt: null, keywords: kws,
+            recordUrl: `https://www.uniprot.org/uniprotkb/${acc}/entry`,
+            fetchedAt: now
+        };
+    });
+}
+
+async function _fetchPubMedLiterature(literatureQuery, limit) {
+    const now = new Date().toISOString();
+    const searchResp = await fetch(
+        `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(literatureQuery)}&retmax=${limit}&retmode=json`,
+        { mode: 'cors' }
+    );
+    if (!searchResp.ok) throw new Error(`NCBI esearch HTTP ${searchResp.status}`);
+    const searchData = await searchResp.json();
+    const ids = (searchData.esearchresult?.idlist || []).slice(0, limit);
+    if (!ids.length) return [];
+    const sumResp = await fetch(
+        `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${ids.join(',')}&retmode=json`,
+        { mode: 'cors' }
+    );
+    if (!sumResp.ok) throw new Error(`NCBI esummary HTTP ${sumResp.status}`);
+    const sumData = await sumResp.json();
+    return ids.map((id) => {
+        const item = sumData.result?.[id] || {};
+        const authors = (item.authors || []).slice(0, 3).map((a) => a.name).join(', ');
+        const journal = item.fulljournalname || item.source || '';
+        const year = (item.pubdate || '').split(' ')[0] || '';
+        return {
+            id: `pm-${id}`, recordType: 'literature',
+            title: item.title || `PubMed ${id}`,
+            sourceName: 'PubMed', sourceId: id, queryTerm: literatureQuery,
+            summaryText: item.title || '',
+            contentText: [authors, journal, year ? `(${year})` : '', `PMID:${id}`].filter(Boolean).join(' · '),
+            organism: null, publishedAt: year || item.pubdate || null, keywords: [],
+            recordUrl: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
+            fetchedAt: now
+        };
+    });
+}
+
+async function _syncSequenceDirect() {
+    const payload = sequenceSyncPayload();
+    setSequenceStatus('後端不可用，改從 UniProt + Ensembl 直接抓取...', 'warning');
+    const [proteinRecords, geneRecords] = await Promise.all([
+        _fetchUniProtSequences(payload.protein_query, payload.species, payload.limit),
+        _fetchEnsemblSequences(payload.gene_symbols, payload.species)
+    ]);
+    _saveDirectCache('seq_protein', proteinRecords);
+    _saveDirectCache('seq_gene', geneRecords);
+    updateSequenceStateFromPayload({
+        proteinRecords, geneRecords,
+        proteinCount: proteinRecords.length,
+        geneCount: geneRecords.length,
+        latestFetchedAt: new Date().toISOString()
+    });
+    renderSequenceSummary();
+    renderSequenceTabs();
+    renderSequenceFilterOptions();
+    renderSequenceFeed();
+    setSequenceStatus(
+        `直接抓取完成：${proteinRecords.length} 筆 UniProt protein，${geneRecords.length} 筆 Ensembl gene。（localStorage 快取 24h）`,
+        'success'
+    );
+}
+
+function _loadSequenceDirectCache() {
+    const proteinRecords = _loadDirectCache('seq_protein') || [];
+    const geneRecords = _loadDirectCache('seq_gene') || [];
+    if (!proteinRecords.length && !geneRecords.length) return false;
+    const latest = [...proteinRecords, ...geneRecords].map((r) => r.fetchedAt).sort().pop() || null;
+    updateSequenceStateFromPayload({
+        proteinRecords, geneRecords,
+        proteinCount: proteinRecords.length,
+        geneCount: geneRecords.length,
+        latestFetchedAt: latest
+    });
+    renderSequenceSummary();
+    renderSequenceTabs();
+    renderSequenceFilterOptions();
+    renderSequenceFeed();
+    setSequenceStatus(`從 localStorage 快取載入：${proteinRecords.length} protein、${geneRecords.length} gene。`, 'success');
+    return true;
+}
+
+async function _syncKnowledgeDirect() {
+    const payload = knowledgeSyncPayload();
+    setKnowledgeStatus('後端不可用，改從 UniProt + PubMed 直接抓取...', 'warning');
+    const [proteinAnnotationRecords, literatureRecords] = await Promise.all([
+        _fetchUniProtAnnotations(payload.protein_query, 'human', payload.limit),
+        _fetchPubMedLiterature(payload.literature_query, payload.limit)
+    ]);
+    _saveDirectCache('know_annotation', proteinAnnotationRecords);
+    _saveDirectCache('know_literature', literatureRecords);
+    updateKnowledgeStateFromPayload({
+        proteinAnnotationRecords, literatureRecords,
+        proteinAnnotationCount: proteinAnnotationRecords.length,
+        literatureCount: literatureRecords.length,
+        latestFetchedAt: new Date().toISOString()
+    });
+    renderKnowledgeSummary();
+    renderKnowledgeTabs();
+    renderKnowledgeSourceOptions();
+    renderKnowledgeFeed();
+    setKnowledgeStatus(
+        `直接抓取完成：${proteinAnnotationRecords.length} 筆 UniProt annotation，${literatureRecords.length} 筆 PubMed。（localStorage 快取 24h）`,
+        'success'
+    );
+}
+
+function _loadKnowledgeDirectCache() {
+    const proteinAnnotationRecords = _loadDirectCache('know_annotation') || [];
+    const literatureRecords = _loadDirectCache('know_literature') || [];
+    if (!proteinAnnotationRecords.length && !literatureRecords.length) return false;
+    const latest = [...proteinAnnotationRecords, ...literatureRecords].map((r) => r.fetchedAt).sort().pop() || null;
+    updateKnowledgeStateFromPayload({
+        proteinAnnotationRecords, literatureRecords,
+        proteinAnnotationCount: proteinAnnotationRecords.length,
+        literatureCount: literatureRecords.length,
+        latestFetchedAt: latest
+    });
+    renderKnowledgeSummary();
+    renderKnowledgeTabs();
+    renderKnowledgeSourceOptions();
+    renderKnowledgeFeed();
+    setKnowledgeStatus(`從 localStorage 快取載入：${proteinAnnotationRecords.length} annotation、${literatureRecords.length} literature。`, 'success');
+    return true;
 }
 
 function initPage() {
