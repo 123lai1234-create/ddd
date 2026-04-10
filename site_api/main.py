@@ -20,9 +20,6 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from site_api.db import (
-    _init_pool,
-    ensure_core_schema,
-    ensure_market_schema,
     get_allowed_origins,
 )
 from site_api.routes import router
@@ -37,9 +34,6 @@ async def lifespan(application: FastAPI):
         format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    _init_pool()
-    ensure_core_schema()
-    ensure_market_schema()
     yield
     from site_api import db
     if db._DB_POOL is not None:
