@@ -180,6 +180,7 @@ const RAW_STOCKS = [
 ];
 
 const SERIES_CACHE = new Map();
+const REAL_PRICE_CACHE = new Map();
 const CHARTS = {};
 
 function clamp(value, min, max) {
@@ -1217,7 +1218,7 @@ function renderAll(run) {
     updateGenerationState(0);
 }
 
-function rerunGA() {
+async function rerunGA() {
     const button = document.getElementById('btnRerun');
     const status = document.getElementById('cfgStatus');
     const stock = getStockByCode(document.getElementById('stockSelect').value);
@@ -1229,7 +1230,7 @@ function rerunGA() {
     }
 
     button.disabled = true;
-    status.textContent = `⏳ ${stock.name} · POP=${config.POP} · GENS=${config.GENS} 計算中…`;
+    status.textContent = `⏳ ${stock.name} · 載入數據中…`;
 
     if (playTimer) {
         clearInterval(playTimer);
@@ -1237,12 +1238,33 @@ function rerunGA() {
         document.getElementById('btnPlay').textContent = '▶ 自動播放';
     }
 
+    // Attempt to load real TWSE price data for this stock
+    const realBars = await fetchRealPriceSeries(stock.code);
+    let dataSource;
+    if (realBars && realBars.length >= 50) {
+        const trainLen = Math.max(50, Math.floor(realBars.length * 0.8));
+        SERIES_CACHE.set(stock.code, {
+            train: realBars.slice(0, trainLen),
+            test: realBars.slice(trainLen),
+            isReal: true,
+        });
+        dataSource = `真實數據 ${realBars.length} 筆`;
+    } else {
+        // Clear stale real-data cache so synthetic gets regenerated
+        if (SERIES_CACHE.get(stock.code)?.isReal) {
+            SERIES_CACHE.delete(stock.code);
+        }
+        dataSource = '模擬數據';
+    }
+
+    status.textContent = `⏳ ${stock.name} · ${dataSource} · POP=${config.POP} · GENS=${config.GENS} 計算中…`;
+
     setTimeout(() => {
         try {
             const run = runSimulation(stock, config);
             uiState.currentRun = run;
             renderAll(run);
-            status.textContent = `✓ 完成：${stock.name} 的 GAPPTS 最佳 fitness ${formatValue(run.best.bestFit, 3)}`;
+            status.textContent = `✓ 完成 [${dataSource}]：${stock.name} 最佳 fitness ${formatValue(run.best.bestFit, 3)}`;
         } catch (error) {
             status.textContent = `錯誤：${error.message}`;
         } finally {
@@ -1325,6 +1347,31 @@ function deriveMarketApiCandidates() {
         ? window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '')
         : '';
     return configuredApiBase ? [configuredApiBase] : [];
+}
+
+async function fetchRealPriceSeries(symbol) {
+    if (REAL_PRICE_CACHE.has(symbol)) {
+        return REAL_PRICE_CACHE.get(symbol);
+    }
+    try {
+        const apiBase = await resolveMarketApiBase();
+        if (!apiBase) return null;
+        const params = new URLSearchParams({ symbol, limit: 2000, asset_type: 'stock' });
+        const res = await fetch(`${apiBase}/api/market/bars?${params}`, {
+            signal: AbortSignal.timeout(10000),
+        });
+        if (!res.ok) return null;
+        const payload = await res.json();
+        const bars = (payload.records || [])
+            .filter((r) => r.close != null && r.tradeDate)
+            .sort((a, b) => a.tradeDate.localeCompare(b.tradeDate))
+            .map((r) => Number(r.close));
+        if (bars.length < 50) return null;
+        REAL_PRICE_CACHE.set(symbol, bars);
+        return bars;
+    } catch {
+        return null;
+    }
 }
 
 async function resolveMarketApiBase() {

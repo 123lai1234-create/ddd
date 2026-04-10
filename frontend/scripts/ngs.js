@@ -14,6 +14,8 @@ function safeRenderChart(renderFn) {
     }
 }
 
+let NGS_REAL_DATA = null;
+
 /* ── Depth calculator ── */
 const DEPTH_CONFIG = {
     rnaseq: { readsPerSample: 30e6, unit: '萬 reads/樣本', base: 30, costPerM: 5 },
@@ -255,9 +257,10 @@ const GALLERY_DATA = {
 };
 
 /* ── Mini chart renders ── */
-function renderMiniChart(canvasId, type) {
+function renderMiniChart(canvasId, type, realData) {
     const ctx = document.getElementById(canvasId);
     if (!ctx || typeof window.Chart === 'undefined') return null;
+    const runs = Array.isArray(realData) ? realData : [];
     const common = {
         responsive: true, animation: false,
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
@@ -275,8 +278,18 @@ function renderMiniChart(canvasId, type) {
             }, options: { ...common, scales: { x: { display: false }, y: { display: false, min: 15, max: 42 } } }
         });
     } else if (type === 'qc2') {
-        // Coverage histogram (bell-ish)
-        const d = [0, 1, 4, 12, 28, 45, 52, 46, 29, 13, 5, 2, 1];
+        // Coverage histogram — real: read_count distribution from ENA runs
+        let d;
+        const validCounts = runs.map(r => r.readCount).filter(n => n > 0);
+        if (validCounts.length >= 4) {
+            const bins = 13;
+            const minC = Math.min(...validCounts), maxC = Math.max(...validCounts);
+            const step = (maxC - minC) / bins || 1;
+            d = new Array(bins).fill(0);
+            validCounts.forEach(c => { d[Math.min(bins - 1, Math.floor((c - minC) / step))]++; });
+        } else {
+            d = [0, 1, 4, 12, 28, 45, 52, 46, 29, 13, 5, 2, 1];
+        }
         return new Chart(ctx, {
             type: 'bar', data: {
                 labels: d.map((_, i) => (i + 24) + 'x'),
@@ -354,9 +367,26 @@ function renderMiniChart(canvasId, type) {
             options: { ...common, scales: { x: { display: false, stacked: true }, y: { display: false, stacked: true } } }
         });
     } else if (type === 'de3') {
-        // PCA: scatter two groups
-        const g1 = Array.from({ length: 15 }, () => ({ x: Math.random() * 2 - 3, y: Math.random() * 2 - 1 }));
-        const g2 = Array.from({ length: 15 }, () => ({ x: Math.random() * 2 + 1, y: Math.random() * 2 - 1 }));
+        // PCA scatter — real: read_count vs avg-read-length, coloured by library_layout
+        let g1, g2;
+        const validRuns = runs.filter(r => r.readCount > 0 && r.baseCount > 0);
+        if (validRuns.length >= 4) {
+            const logR = validRuns.map(r => Math.log10(r.readCount));
+            const logL = validRuns.map(r => Math.log10(r.baseCount / r.readCount));
+            const normArr = arr => {
+                const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+                const std = Math.sqrt(arr.reduce((a, b) => a + (b - mean) ** 2, 0) / arr.length) || 1;
+                return arr.map(v => (v - mean) / std);
+            };
+            const nx = normArr(logR), ny = normArr(logL);
+            const all = validRuns.map((r, i) => ({ x: nx[i], y: ny[i], paired: r.libraryLayout === 'PAIRED' }));
+            g1 = all.filter(p => p.paired).map(({ x, y }) => ({ x, y }));
+            g2 = all.filter(p => !p.paired).map(({ x, y }) => ({ x, y }));
+            if (!g1.length) { g1 = g2.splice(0, Math.ceil(g2.length / 2)); }
+        } else {
+            g1 = Array.from({ length: 15 }, () => ({ x: Math.random() * 2 - 3, y: Math.random() * 2 - 1 }));
+            g2 = Array.from({ length: 15 }, () => ({ x: Math.random() * 2 + 1, y: Math.random() * 2 - 1 }));
+        }
         return new Chart(ctx, {
             type: 'scatter', data: {
                 datasets: [
@@ -398,39 +428,69 @@ function renderMiniChart(canvasId, type) {
             }, options: { ...common, scales: { x: { display: false }, y: { display: false } } }
         });
     } else if (type === 'sc1') {
-        // UMAP clusters
-        const clusters = [
-            { cx: -2, cy: -1, color: '#39d0f0', n: 20 },
-            { cx: 2, cy: -1, color: '#f0883e', n: 15 },
-            { cx: 0, cy: 2, color: '#3fb950', n: 18 },
-            { cx: -1, cy: 2.5, color: '#bc8cff', n: 10 },
-        ];
-        const pts = clusters.flatMap(c =>
-            Array.from({ length: c.n }, () => ({ x: c.cx + (Math.random() - .5) * 1.2, y: c.cy + (Math.random() - .5) * 1.2, color: c.color }))
-        );
+        // UMAP-like scatter — real: log(readCount) vs log(baseCount), coloured by library_strategy
+        const STRAT_COLOR = {
+            'RNA-Seq': '#39d0f0', 'WGS': '#f0883e', 'WXS': '#3fb950',
+            'AMPLICON': '#bc8cff', 'ChIP-Seq': '#f85149', 'ATAC-Seq': '#ffd56b',
+        };
+        let pts;
+        const validRuns = runs.filter(r => r.readCount > 0 && r.baseCount > 0);
+        if (validRuns.length >= 4) {
+            const logR = validRuns.map(r => Math.log10(r.readCount));
+            const logB = validRuns.map(r => Math.log10(r.baseCount));
+            const normArr = arr => {
+                const min = Math.min(...arr), max = Math.max(...arr);
+                return arr.map(v => ((v - min) / ((max - min) || 1)) * 6 - 3);
+            };
+            const nx = normArr(logR), ny = normArr(logB);
+            pts = validRuns.map((r, i) => ({
+                x: nx[i], y: ny[i],
+                color: STRAT_COLOR[r.libraryStrategy] || '#7d8590',
+            }));
+        } else {
+            const clusters = [
+                { cx: -2, cy: -1, color: '#39d0f0', n: 20 },
+                { cx: 2, cy: -1, color: '#f0883e', n: 15 },
+                { cx: 0, cy: 2, color: '#3fb950', n: 18 },
+                { cx: -1, cy: 2.5, color: '#bc8cff', n: 10 },
+            ];
+            pts = clusters.flatMap(c =>
+                Array.from({ length: c.n }, () => ({ x: c.cx + (Math.random() - .5) * 1.2, y: c.cy + (Math.random() - .5) * 1.2, color: c.color }))
+            );
+        }
         return new Chart(ctx, {
             type: 'scatter', data: {
-                datasets: [
-                    { data: pts, pointBackgroundColor: pts.map(p => p.color), pointRadius: 2.5, pointBorderWidth: 0 }
-                ]
+                datasets: [{ data: pts, pointBackgroundColor: pts.map(p => p.color), pointRadius: 2.5, pointBorderWidth: 0 }]
             }, options: { ...common, scales: { x: { display: false }, y: { display: false } } }
         });
     } else if (type === 'sc2') {
-        // Circos arcs = just polar area as placeholder
+        // Polar area — real: library_strategy counts from ENA runs
+        const BG = ['rgba(57,208,240,.4)', 'rgba(63,185,80,.4)', 'rgba(240,136,62,.4)',
+                    'rgba(188,140,255,.4)', 'rgba(248,81,73,.4)', 'rgba(210,153,34,.4)'];
+        const BD = ['#39d0f0', '#3fb950', '#f0883e', '#bc8cff', '#f85149', '#d29922'];
+        let labels, data;
+        if (runs.length >= 2) {
+            const counts = {};
+            runs.forEach(r => { const s = r.libraryStrategy || 'Other'; counts[s] = (counts[s] || 0) + 1; });
+            const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            labels = sorted.map(([s]) => s);
+            data = sorted.map(([, n]) => n);
+        } else {
+            labels = ['RNA-Seq', 'WGS', 'WXS', 'AMPLICON', 'ChIP-Seq', 'ATAC-Seq'];
+            data = [12, 8, 15, 6, 10, 9];
+        }
         return new Chart(ctx, {
             type: 'polarArea', data: {
-                labels: ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6'],
+                labels,
                 datasets: [{
-                    data: [12, 8, 15, 6, 10, 9],
-                    backgroundColor: ['rgba(57,208,240,.4)', 'rgba(63,185,80,.4)',
-                        'rgba(240,136,62,.4)', 'rgba(188,140,255,.4)',
-                        'rgba(248,81,73,.4)', 'rgba(210,153,34,.4)'],
-                    borderColor: ['#39d0f0', '#3fb950', '#f0883e', '#bc8cff', '#f85149', '#d29922'],
-                    borderWidth: 1.5
-                }]
+                    data,
+                    backgroundColor: BG.slice(0, labels.length),
+                    borderColor: BD.slice(0, labels.length),
+                    borderWidth: 1.5,
+                }],
             }, options: {
                 ...common, scales: { r: { display: false } },
-                plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
             }
         });
     }
@@ -438,9 +498,11 @@ function renderMiniChart(canvasId, type) {
     return null;
 }
 
-// Render all 11 mini charts
-['qc1', 'qc2', 'var1', 'var2', 'de1', 'de2', 'de3', 'de4', 'func1', 'sc1', 'sc2'].forEach(id => {
-    safeRenderChart(() => renderMiniChart('mini-' + id, id));
+const NGS_REAL_CHART_IDS = ['qc1', 'qc2', 'var1', 'var2', 'de1', 'de2', 'de3', 'de4', 'func1', 'sc1', 'sc2'];
+
+// Initial render (synthetic fallback — real data loaded async below)
+NGS_REAL_CHART_IDS.forEach(id => {
+    safeRenderChart(() => renderMiniChart('mini-' + id, id, NGS_REAL_DATA));
 });
 
 /* ── Modal logic ── */
@@ -488,7 +550,7 @@ function openChartModal(id) {
         if (existingChart) existingChart.destroy();
         mc.style.display = 'block';
         setTimeout(() => {
-            _modalChart = safeRenderChart(() => renderMiniChart('modalCanvas', id));
+            _modalChart = safeRenderChart(() => renderMiniChart('modalCanvas', id, NGS_REAL_DATA));
         }, 60);
     }
 
@@ -597,6 +659,39 @@ if (typeof window.Chart !== 'undefined') {
         }
     }));
 }
+
+/* ── Load real ENA sequencing data for gallery charts ── */
+async function loadNGSRealData() {
+    try {
+        const apiBase = typeof window.APP_CONFIG_UTILS?.resolveApiBase === 'function'
+            ? await window.APP_CONFIG_UTILS.resolveApiBase({ cacheKey: 'ngs-seqruns' })
+            : (window.APP_CONFIG?.API_BASE_URL || '').replace(/\/+$/, '');
+        if (!apiBase) return;
+        const res = await fetch(`${apiBase}/api/sequencing-runs?limit=100`, {
+            signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) return;
+        const payload = await res.json();
+        const records = payload.records || [];
+        if (records.length < 2) return;
+
+        NGS_REAL_DATA = records;
+
+        // Re-render the 4 charts that benefit from real data
+        const REAL_CHARTS = ['qc2', 'de3', 'sc1', 'sc2'];
+        REAL_CHARTS.forEach(id => {
+            const canvas = document.getElementById('mini-' + id);
+            if (!canvas || typeof window.Chart === 'undefined') return;
+            const existing = Chart.getChart(canvas);
+            if (existing) existing.destroy();
+            safeRenderChart(() => renderMiniChart('mini-' + id, id, NGS_REAL_DATA));
+        });
+    } catch {
+        // API unavailable — keep synthetic charts as-is
+    }
+}
+
+loadNGSRealData();
 
 /* ── RAG Search ── */
 const configuredRagApiBase = typeof window.APP_CONFIG?.API_BASE_URL === 'string'
