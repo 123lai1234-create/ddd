@@ -389,6 +389,37 @@
         </div>
     </div>
 
+    <!-- ════════ PYTHON RUNNER ════════ -->
+    <div style="max-width:900px;margin:32px auto;">
+        <h2>試跑 GA 策略 (Python in Browser)</h2>
+        <div class="pyodide-runner">
+            <div class="runner-header">
+                <span>Python 3.11 (Pyodide)</span>
+                <button id="pyodide-run">▶ 執行 Python</button>
+            </div>
+            <textarea id="pyodide-code">import numpy as np
+
+# 模擬 GA 適應度曲線
+pop_size, gens = 50, 30
+best_fitness = []
+fitness = np.random.uniform(0, 1, pop_size)
+
+for g in range(gens):
+    fitness = np.sort(fitness)[::-1]
+    elite = fitness[:5]
+    offspring = elite.mean() + np.random.normal(0, 0.05, pop_size - 5)
+    fitness = np.concatenate([elite, np.clip(offspring, 0, 1)])
+    best_fitness.append(round(float(fitness.max()), 4))
+
+print("GA 最佳適應度曲線:")
+for i, f in enumerate(best_fitness):
+    bar = "█" * int(f * 40)
+    print(f"  Gen {i+1:2d}: {f:.4f} {bar}")
+print(f"\n最終最佳: {best_fitness[-1]:.4f}")</textarea>
+            <div id="pyodide-output"></div>
+        </div>
+    </div>
+
     <div data-site-footer></div>
 
     <button class="scroll-top" aria-label="返回頂部">↑</button>

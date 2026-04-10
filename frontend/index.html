@@ -69,6 +69,13 @@
             <div class="scroll-arrow"></div>
         </div>
     </section>
+    <!-- ════════ GITHUB ACTIVITY ════════ -->
+    <section id="github-activity" style="max-width:800px;margin:0 auto 32px;">
+        <h2>最近開發動態</h2>
+        <div id="github-feed" data-user="onlyforwork2026"
+             style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;"></div>
+    </section>
+
     <hr class="divider">
     <!-- ════════ CREATOR ════════ -->
     <section id="creator">
@@ -230,6 +237,25 @@
     <script src="scripts/index-live.js"></script>
     <script src="scripts/index-charts.js"></script>
     <button class="scroll-top" aria-label="返回頂部">↑</button>
+
+    <!-- tsParticles ambient background -->
+    <div id="tsparticles"></div>
+
+    <!-- Chatbot widget -->
+    <button id="chatbot-toggle" aria-label="AI 助手">💬</button>
+    <div id="chatbot-panel">
+        <div class="chatbot-header">
+            <h4>AI 助手</h4>
+            <button class="chatbot-close" aria-label="關閉">✕</button>
+        </div>
+        <div id="chatbot-messages">
+            <div class="chat-msg chat-bot">你好！有什麼關於這個作品集的問題嗎？</div>
+        </div>
+        <div class="chatbot-input-row">
+            <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off">
+            <button id="chatbot-send">送出</button>
+        </div>
+    </div>
 </body>
 
 </html>

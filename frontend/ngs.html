@@ -698,6 +698,22 @@ gatk VariantFiltration \
         </div>
     </div>
 
+    <!-- ════════ INTERACTIVE PLOTLY CHARTS ════════ -->
+    <section class="section reveal" style="max-width:1000px;margin:0 auto 32px;">
+        <h2>互動分析圖表</h2>
+        <p style="color:var(--muted);font-size:0.88rem;margin-bottom:20px;">可拖曳選取、縮放、hover 查看數值</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div>
+                <h3 style="font-size:0.82rem;color:var(--teal);margin-bottom:8px;">Volcano Plot (DE Analysis)</h3>
+                <div data-plotly="volcano" style="height:320px;background:var(--surface);border-radius:12px;border:1px solid var(--border);"></div>
+            </div>
+            <div>
+                <h3 style="font-size:0.82rem;color:var(--orange);margin-bottom:8px;">Expression Heatmap</h3>
+                <div data-plotly="heatmap" style="height:320px;background:var(--surface);border-radius:12px;border:1px solid var(--border);"></div>
+            </div>
+        </div>
+    </section>
+
     <hr class="divider">
     <div data-site-footer></div>
 

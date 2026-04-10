@@ -1357,3 +1357,46 @@ def lookup_vep(hgvs: str) -> dict[str, Any]:
     if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"VEP lookup failed for {hgvs}.")
     return {"result": result, "hgvs": hgvs}
+
+
+# ── Anthropic AI Chatbot proxy ────────────────────────────────────────────────
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
+@router.post("/api/chat")
+def chat_proxy(payload: ChatRequest) -> dict[str, Any]:
+    api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    if not api_key:
+        return {"reply": "AI 助手尚未設定，請先配置 ANTHROPIC_API_KEY 環境變數。"}
+
+    system_prompt = (
+        "你是一個生物醫學 AI 作品集的助手。這個作品集包含蛋白質 AI 設計 (ProteinMPNN, ESM-2)、"
+        "基因分析平台 (UniProt, Ensembl, PubMed)、NGS 定序工作站、遺傳演算法交易策略研究等項目。"
+        "用繁體中文簡潔回答訪客的問題，保持友善和專業。回答控制在 200 字以內。"
+    )
+
+    try:
+        resp = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 512,
+                "system": system_prompt,
+                "messages": [{"role": "user", "content": payload.message}],
+            },
+            timeout=25,
+        )
+        if resp.status_code != 200:
+            return {"reply": f"API 回應異常 (HTTP {resp.status_code})，請稍後再試。"}
+        data = resp.json()
+        text = data.get("content", [{}])[0].get("text", "")
+        return {"reply": text or "..."}
+    except Exception as exc:
+        return {"reply": f"連線失敗：{exc}"}
