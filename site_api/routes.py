@@ -323,8 +323,7 @@ def search_sequences_by_prefix(q: str = "", limit: int = 5) -> dict[str, Any]:
         )
 
     try:
-        with get_connection() as connection:
-            with connection.cursor() as cursor:
+        with get_connection() as connection, connection.cursor() as cursor:
                 cursor.execute(
                     """
                     SELECT id, source_id, display_name, organism, sequence_length,
@@ -787,8 +786,7 @@ def inquiry_stats() -> dict[str, Any]:
         )
 
     try:
-        with get_connection() as connection:
-            with connection.cursor() as cursor:
+        with get_connection() as connection, connection.cursor() as cursor:
                 cursor.execute("SELECT COUNT(*), MAX(created_at) FROM site_inquiries;")
                 total_inquiries, latest_created_at = cursor.fetchone()
         return {
@@ -823,8 +821,7 @@ def create_inquiry(payload: InquiryCreate) -> dict[str, Any]:
         )
 
     try:
-        with get_connection() as connection:
-            with connection.cursor() as cursor:
+        with get_connection() as connection, connection.cursor() as cursor:
                 cursor.execute(
                     """
                     INSERT INTO site_inquiries (name, email, organization, message, source_page)

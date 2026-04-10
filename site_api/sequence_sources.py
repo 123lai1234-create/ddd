@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 from site_api.http_client import get as http_get
 from site_api.shared_utils import protein_name as _protein_name

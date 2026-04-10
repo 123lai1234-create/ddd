@@ -1,15 +1,11 @@
 from __future__ import annotations
 
-import json
 import logging
-import os
 import time
-from functools import lru_cache
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-import psycopg
 from fastapi import HTTPException, status
 
 from site_api.db import get_connection
@@ -105,8 +101,7 @@ def fetch_sequence_rows(sequence_type: str | None = None, limit: int = 8, cursor
     query += " ORDER BY fetched_at DESC, id DESC LIMIT %s"
     params.append(limit)
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.execute(query, params)
             rows = cursor.fetchall()
 
@@ -114,8 +109,7 @@ def fetch_sequence_rows(sequence_type: str | None = None, limit: int = 8, cursor
 
 
 def _sequence_summary_impl() -> dict[str, Any]:
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
                 SELECT sequence_type, COUNT(*), MAX(fetched_at)
@@ -218,8 +212,7 @@ def fetch_knowledge_rows(
     query += " ORDER BY fetched_at DESC, id DESC LIMIT %s"
     params.append(limit)
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.execute(query, params)
             rows = cursor.fetchall()
 
@@ -227,8 +220,7 @@ def fetch_knowledge_rows(
 
 
 def _knowledge_summary_impl() -> dict[str, Any]:
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
                 SELECT record_type, COUNT(*), MAX(fetched_at)
@@ -273,8 +265,7 @@ def fetch_sequence_rows_for_search(search_query: str | None = None, limit: int =
     query += " ORDER BY fetched_at DESC, id DESC LIMIT %s"
     params.append(limit)
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.execute(query, params)
             rows = cursor.fetchall()
 
@@ -414,8 +405,7 @@ def upsert_sequence_records(records: list[SequenceRecordPayload]) -> None:
     if not records:
         return
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.executemany(
                 UPSERT_SEQUENCE_LIBRARY_SQL,
                 [
@@ -442,8 +432,7 @@ def upsert_knowledge_records(records: list[KnowledgeRecordPayload]) -> None:
     if not records:
         return
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.executemany(
                 UPSERT_KNOWLEDGE_LIBRARY_SQL,
                 [
@@ -543,8 +532,7 @@ def fetch_sequencing_run_rows(query: str | None = None, limit: int = 8, cursor: 
     sql += " ORDER BY fetched_at DESC, id DESC LIMIT %s"
     params.append(limit)
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.execute(sql, params)
             rows = cursor.fetchall()
 
@@ -552,8 +540,7 @@ def fetch_sequencing_run_rows(query: str | None = None, limit: int = 8, cursor: 
 
 
 def _sequencing_run_summary_impl() -> dict[str, Any]:
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
                 SELECT COUNT(*), COUNT(DISTINCT organism), COUNT(DISTINCT study_accession), MAX(fetched_at)
@@ -578,8 +565,7 @@ def upsert_sequencing_runs(records: list[SequencingRunPayload]) -> None:
     if not records:
         return
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.executemany(
                 UPSERT_SEQUENCING_RUN_LIBRARY_SQL,
                 [
@@ -674,8 +660,7 @@ def fetch_market_instrument_rows(
     sql += " ORDER BY fetched_at DESC, id DESC LIMIT %s"
     params.append(limit)
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.execute(sql, params)
             rows = cursor.fetchall()
 
@@ -769,8 +754,7 @@ def fetch_market_bar_rows(
     sql += " ORDER BY bars.trade_date DESC, bars.contract_month DESC, bars.fetched_at DESC LIMIT %s"
     params.append(limit)
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.execute(sql, params)
             rows = cursor.fetchall()
 
@@ -778,8 +762,7 @@ def fetch_market_bar_rows(
 
 
 def _market_summary_impl() -> dict[str, Any]:
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
                 SELECT asset_type, COUNT(*), MAX(fetched_at)
@@ -826,8 +809,7 @@ def upsert_market_instruments(records: list[MarketInstrumentPayload]) -> None:
     if not records:
         return
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.executemany(
                 UPSERT_MARKET_INSTRUMENTS_SQL,
                 [
@@ -853,8 +835,7 @@ def upsert_market_bars(records: list[MarketBarPayload]) -> None:
     if not records:
         return
 
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.executemany(
                 UPSERT_MARKET_PRICE_BARS_SQL,
                 [
@@ -884,8 +865,7 @@ def upsert_market_bars(records: list[MarketBarPayload]) -> None:
 
 
 def delete_sequence_record(record_id: int) -> dict[str, Any] | None:
-    with get_connection() as connection:
-        with connection.cursor() as cursor:
+    with get_connection() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
                 DELETE FROM sequence_library
