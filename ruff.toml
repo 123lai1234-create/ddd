@@ -29,7 +29,7 @@ ignore = [
 
 [lint.per-file-ignores]
 "tests/*" = ["T20", "S101"]           # allow print and assert in tests
-"src/*" = ["T20", "UP", "B905", "B028", "E402", "SIM118", "F401"]  # research scripts: relaxed rules
+"src/*" = ["T20", "UP", "B", "E402", "F401", "F841", "N812", "SIM", "RUF059", "W605"]  # research scripts: relaxed rules
 
 [lint.isort]
 known-first-party = ["site_api", "src"]

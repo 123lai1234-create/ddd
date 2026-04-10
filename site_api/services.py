@@ -102,23 +102,23 @@ def fetch_sequence_rows(sequence_type: str | None = None, limit: int = 8, cursor
     params.append(limit)
 
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
 
     return [serialize_sequence_row(row) for row in rows]
 
 
 def _sequence_summary_impl() -> dict[str, Any]:
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT sequence_type, COUNT(*), MAX(fetched_at)
-                FROM sequence_library
-                GROUP BY sequence_type
-                ORDER BY sequence_type;
-                """
-            )
-            rows = cursor.fetchall()
+        cursor.execute(
+            """
+            SELECT sequence_type, COUNT(*), MAX(fetched_at)
+            FROM sequence_library
+            GROUP BY sequence_type
+            ORDER BY sequence_type;
+            """
+        )
+        rows = cursor.fetchall()
 
     counts = {"protein": 0, "gene": 0}
     latest_fetched_at = None
@@ -213,23 +213,23 @@ def fetch_knowledge_rows(
     params.append(limit)
 
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
 
     return [serialize_knowledge_row(row) for row in rows]
 
 
 def _knowledge_summary_impl() -> dict[str, Any]:
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT record_type, COUNT(*), MAX(fetched_at)
-                FROM knowledge_library
-                GROUP BY record_type
-                ORDER BY record_type;
-                """
-            )
-            rows = cursor.fetchall()
+        cursor.execute(
+            """
+            SELECT record_type, COUNT(*), MAX(fetched_at)
+            FROM knowledge_library
+            GROUP BY record_type
+            ORDER BY record_type;
+            """
+        )
+        rows = cursor.fetchall()
 
     counts = {"protein_annotation": 0, "literature": 0}
     latest_fetched_at = None
@@ -266,8 +266,8 @@ def fetch_sequence_rows_for_search(search_query: str | None = None, limit: int =
     params.append(limit)
 
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
 
     return [serialize_sequence_row(row) for row in rows]
 
@@ -406,25 +406,25 @@ def upsert_sequence_records(records: list[SequenceRecordPayload]) -> None:
         return
 
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.executemany(
-                UPSERT_SEQUENCE_LIBRARY_SQL,
-                [
-                    (
-                        record.sequence_type,
-                        record.source_name,
-                        record.source_id,
-                        record.query_term,
-                        record.display_name,
-                        record.organism,
-                        record.sequence,
-                        record.sequence_length,
-                        record.description,
-                        record.record_url,
-                    )
-                    for record in records
-                ],
-            )
-        connection.commit()
+        cursor.executemany(
+            UPSERT_SEQUENCE_LIBRARY_SQL,
+            [
+                (
+                    record.sequence_type,
+                    record.source_name,
+                    record.source_id,
+                    record.query_term,
+                    record.display_name,
+                    record.organism,
+                    record.sequence,
+                    record.sequence_length,
+                    record.description,
+                    record.record_url,
+                )
+                for record in records
+            ],
+        )
+    connection.commit()
     _summary_cache.pop("sequence", None)
 
 
@@ -433,27 +433,27 @@ def upsert_knowledge_records(records: list[KnowledgeRecordPayload]) -> None:
         return
 
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.executemany(
-                UPSERT_KNOWLEDGE_LIBRARY_SQL,
-                [
-                    (
-                        record.record_type,
-                        record.source_name,
-                        record.source_id,
-                        record.query_term,
-                        record.title,
-                        record.organism,
-                        record.summary_text,
-                        record.content_text,
-                        record.keywords,
-                        record.record_url,
-                        record.published_at,
-                        record.raw_payload,
-                    )
-                    for record in records
-                ],
-            )
-        connection.commit()
+        cursor.executemany(
+            UPSERT_KNOWLEDGE_LIBRARY_SQL,
+            [
+                (
+                    record.record_type,
+                    record.source_name,
+                    record.source_id,
+                    record.query_term,
+                    record.title,
+                    record.organism,
+                    record.summary_text,
+                    record.content_text,
+                    record.keywords,
+                    record.record_url,
+                    record.published_at,
+                    record.raw_payload,
+                )
+                for record in records
+            ],
+        )
+    connection.commit()
     _summary_cache.pop("knowledge", None)
 
 
@@ -533,21 +533,21 @@ def fetch_sequencing_run_rows(query: str | None = None, limit: int = 8, cursor: 
     params.append(limit)
 
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.execute(sql, params)
-            rows = cursor.fetchall()
+        cursor.execute(sql, params)
+        rows = cursor.fetchall()
 
     return [serialize_sequencing_run_row(row) for row in rows]
 
 
 def _sequencing_run_summary_impl() -> dict[str, Any]:
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT COUNT(*), COUNT(DISTINCT organism), COUNT(DISTINCT study_accession), MAX(fetched_at)
-                FROM sequencing_run_library;
-                """
-            )
-            total_runs, organism_count, study_count, latest_fetched_at = cursor.fetchone()
+        cursor.execute(
+            """
+            SELECT COUNT(*), COUNT(DISTINCT organism), COUNT(DISTINCT study_accession), MAX(fetched_at)
+            FROM sequencing_run_library;
+            """
+        )
+        total_runs, organism_count, study_count, latest_fetched_at = cursor.fetchone()
 
     return {
         "runCount": int(total_runs or 0),
@@ -566,34 +566,34 @@ def upsert_sequencing_runs(records: list[SequencingRunPayload]) -> None:
         return
 
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.executemany(
-                UPSERT_SEQUENCING_RUN_LIBRARY_SQL,
-                [
-                    (
-                        record.source_name,
-                        record.source_id,
-                        record.query_term,
-                        record.study_accession,
-                        record.experiment_accession,
-                        record.sample_accession,
-                        record.organism,
-                        record.library_strategy,
-                        record.library_source,
-                        record.library_layout,
-                        record.instrument_platform,
-                        record.instrument_model,
-                        record.read_count,
-                        record.base_count,
-                        record.fastq_bytes,
-                        record.published_at,
-                        record.ftp_url,
-                        record.record_url,
-                        record.raw_payload,
-                    )
-                    for record in records
-                ],
-            )
-        connection.commit()
+        cursor.executemany(
+            UPSERT_SEQUENCING_RUN_LIBRARY_SQL,
+            [
+                (
+                    record.source_name,
+                    record.source_id,
+                    record.query_term,
+                    record.study_accession,
+                    record.experiment_accession,
+                    record.sample_accession,
+                    record.organism,
+                    record.library_strategy,
+                    record.library_source,
+                    record.library_layout,
+                    record.instrument_platform,
+                    record.instrument_model,
+                    record.read_count,
+                    record.base_count,
+                    record.fastq_bytes,
+                    record.published_at,
+                    record.ftp_url,
+                    record.record_url,
+                    record.raw_payload,
+                )
+                for record in records
+            ],
+        )
+    connection.commit()
     _summary_cache.pop("sequencing_run", None)
 
 
@@ -661,8 +661,8 @@ def fetch_market_instrument_rows(
     params.append(limit)
 
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.execute(sql, params)
-            rows = cursor.fetchall()
+        cursor.execute(sql, params)
+        rows = cursor.fetchall()
 
     return [serialize_market_instrument_row(row) for row in rows]
 
@@ -755,30 +755,30 @@ def fetch_market_bar_rows(
     params.append(limit)
 
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.execute(sql, params)
-            rows = cursor.fetchall()
+        cursor.execute(sql, params)
+        rows = cursor.fetchall()
 
     return [serialize_market_bar_row(row) for row in rows]
 
 
 def _market_summary_impl() -> dict[str, Any]:
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT asset_type, COUNT(*), MAX(fetched_at)
-                FROM market_instruments
-                GROUP BY asset_type
-                ORDER BY asset_type;
-                """
-            )
-            instrument_rows = cursor.fetchall()
-            cursor.execute(
-                """
-                SELECT COUNT(*), COUNT(DISTINCT NULLIF(contract_month, '')), MAX(trade_date), MAX(fetched_at)
-                FROM market_price_bars;
-                """
-            )
-            bar_count, contract_month_count, latest_trade_date, latest_fetched_at = cursor.fetchone()
+        cursor.execute(
+            """
+            SELECT asset_type, COUNT(*), MAX(fetched_at)
+            FROM market_instruments
+            GROUP BY asset_type
+            ORDER BY asset_type;
+            """
+        )
+        instrument_rows = cursor.fetchall()
+        cursor.execute(
+            """
+            SELECT COUNT(*), COUNT(DISTINCT NULLIF(contract_month, '')), MAX(trade_date), MAX(fetched_at)
+            FROM market_price_bars;
+            """
+        )
+        bar_count, contract_month_count, latest_trade_date, latest_fetched_at = cursor.fetchone()
 
     counts = {"stock": 0, "etf": 0, "futures": 0}
     latest_instrument_fetched_at = None
@@ -810,24 +810,24 @@ def upsert_market_instruments(records: list[MarketInstrumentPayload]) -> None:
         return
 
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.executemany(
-                UPSERT_MARKET_INSTRUMENTS_SQL,
-                [
-                    (
-                        record.asset_type,
-                        record.source_name,
-                        record.symbol,
-                        record.display_name,
-                        record.market,
-                        record.currency,
-                        record.exchange_name,
-                        record.reference_url,
-                        record.metadata_text,
-                    )
-                    for record in records
-                ],
-            )
-        connection.commit()
+        cursor.executemany(
+            UPSERT_MARKET_INSTRUMENTS_SQL,
+            [
+                (
+                    record.asset_type,
+                    record.source_name,
+                    record.symbol,
+                    record.display_name,
+                    record.market,
+                    record.currency,
+                    record.exchange_name,
+                    record.reference_url,
+                    record.metadata_text,
+                )
+                for record in records
+            ],
+        )
+    connection.commit()
     _summary_cache.pop("market", None)
 
 
@@ -836,46 +836,46 @@ def upsert_market_bars(records: list[MarketBarPayload]) -> None:
         return
 
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.executemany(
-                UPSERT_MARKET_PRICE_BARS_SQL,
-                [
-                    (
-                        record.source_name,
-                        record.symbol,
-                        record.asset_type,
-                        record.market,
-                        record.contract_month,
-                        record.trade_date,
-                        record.open_price,
-                        record.high_price,
-                        record.low_price,
-                        record.close_price,
-                        record.settlement_price,
-                        record.volume,
-                        record.turnover,
-                        record.open_interest,
-                        record.change_value,
-                        record.raw_payload,
-                    )
-                    for record in records
-                ],
-            )
-        connection.commit()
+        cursor.executemany(
+            UPSERT_MARKET_PRICE_BARS_SQL,
+            [
+                (
+                    record.source_name,
+                    record.symbol,
+                    record.asset_type,
+                    record.market,
+                    record.contract_month,
+                    record.trade_date,
+                    record.open_price,
+                    record.high_price,
+                    record.low_price,
+                    record.close_price,
+                    record.settlement_price,
+                    record.volume,
+                    record.turnover,
+                    record.open_interest,
+                    record.change_value,
+                    record.raw_payload,
+                )
+                for record in records
+            ],
+        )
+    connection.commit()
     _summary_cache.pop("market", None)
 
 
 def delete_sequence_record(record_id: int) -> dict[str, Any] | None:
     with get_connection() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                """
-                DELETE FROM sequence_library
-                WHERE id = %s
-                RETURNING id, sequence_type, display_name, source_name, source_id;
-                """,
-                (record_id,),
-            )
-            row = cursor.fetchone()
-        connection.commit()
+        cursor.execute(
+            """
+            DELETE FROM sequence_library
+            WHERE id = %s
+            RETURNING id, sequence_type, display_name, source_name, source_id;
+            """,
+            (record_id,),
+        )
+        row = cursor.fetchone()
+    connection.commit()
 
     if not row:
         return None

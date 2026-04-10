@@ -324,30 +324,30 @@ def search_sequences_by_prefix(q: str = "", limit: int = 5) -> dict[str, Any]:
 
     try:
         with get_connection() as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT id, source_id, display_name, organism, sequence_length,
-                           record_url, fetched_at,
-                           SUBSTRING(sequence, 1, 30) AS seq_preview,
-                           sequence_type, source_name
-                    FROM sequence_library
-                    WHERE sequence_type = 'protein'
-                      AND (
-                          UPPER(sequence) LIKE %s
-                          OR UPPER(source_id) LIKE %s
-                          OR UPPER(display_name) LIKE %s
-                      )
-                    ORDER BY sequence_length ASC, fetched_at DESC
-                    LIMIT %s;
-                    """,
-                    (
-                        normalized[:20] + "%",
-                        "%" + normalized[:20] + "%",
-                        "%" + normalized[:20] + "%",
-                        max(1, min(limit, 10)),
-                    ),
-                )
-                rows = cursor.fetchall()
+            cursor.execute(
+                """
+                SELECT id, source_id, display_name, organism, sequence_length,
+                       record_url, fetched_at,
+                       SUBSTRING(sequence, 1, 30) AS seq_preview,
+                       sequence_type, source_name
+                FROM sequence_library
+                WHERE sequence_type = 'protein'
+                  AND (
+                      UPPER(sequence) LIKE %s
+                      OR UPPER(source_id) LIKE %s
+                      OR UPPER(display_name) LIKE %s
+                  )
+                ORDER BY sequence_length ASC, fetched_at DESC
+                LIMIT %s;
+                """,
+                (
+                    normalized[:20] + "%",
+                    "%" + normalized[:20] + "%",
+                    "%" + normalized[:20] + "%",
+                    max(1, min(limit, 10)),
+                ),
+            )
+            rows = cursor.fetchall()
 
         hits = [
             {
@@ -787,8 +787,8 @@ def inquiry_stats() -> dict[str, Any]:
 
     try:
         with get_connection() as connection, connection.cursor() as cursor:
-                cursor.execute("SELECT COUNT(*), MAX(created_at) FROM site_inquiries;")
-                total_inquiries, latest_created_at = cursor.fetchone()
+            cursor.execute("SELECT COUNT(*), MAX(created_at) FROM site_inquiries;")
+            total_inquiries, latest_created_at = cursor.fetchone()
         return {
             "databaseConfigured": True,
             "connected": True,
@@ -822,22 +822,22 @@ def create_inquiry(payload: InquiryCreate) -> dict[str, Any]:
 
     try:
         with get_connection() as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    INSERT INTO site_inquiries (name, email, organization, message, source_page)
-                    VALUES (%s, %s, %s, %s, %s)
-                    RETURNING id, created_at;
-                    """,
-                    (
-                        payload.name,
-                        payload.email,
-                        payload.organization or None,
-                        payload.message,
-                        payload.source_page,
-                    ),
-                )
-                inquiry_id, created_at = cursor.fetchone()
-            connection.commit()
+            cursor.execute(
+                """
+                INSERT INTO site_inquiries (name, email, organization, message, source_page)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id, created_at;
+                """,
+                (
+                    payload.name,
+                    payload.email,
+                    payload.organization or None,
+                    payload.message,
+                    payload.source_page,
+                ),
+            )
+            inquiry_id, created_at = cursor.fetchone()
+        connection.commit()
         return {
             "id": int(inquiry_id),
             "createdAt": created_at.isoformat(),
