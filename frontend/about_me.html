@@ -73,10 +73,7 @@
         <section>
             <div class="section-label">Identity</div>
             <h2 class="section-title">我在這個作品集裡扮演什麼角色</h2>
-            <p class="section-sub">
-                個人網站中最明顯的主線不是單一職稱，而是持續在工程、研究與平台介面三條線之間移動。
-                這也是為什麼本站會同時出現蛋白質設計、基因 AI、NGS 與互動式產品頁面。
-            </p>
+            <p class="section-sub">最明顯的主線不是單一職稱，而是持續在工程、研究與平台介面三條線之間移動。這也是為什麼本站會同時出現蛋白質設計、基因 AI、NGS 與互動式產品頁面。</p>
             <div class="card-grid">
                 <div class="card">
                     <div class="tiny">Role 01</div>
@@ -99,7 +96,7 @@
         <section>
             <div class="section-label">Experience</div>
             <h2 class="section-title">經歷主軸</h2>
-            <p class="section-sub">依據個人網站與 About Me 頁整理出的高訊號版本。</p>
+            <p class="section-sub">工程開發、生醫研究與跨域轉譯，三條線同步推進。</p>
             <div class="timeline">
                 <div class="timeline-card">
                     <div class="time-tag">2020 / 07 — 迄今</div>
@@ -129,7 +126,7 @@
                     <div class="time-tag">Cross-domain layer</div>
                     <div class="timeline-copy">
                         <h3>臨床、醫藥行銷、智財與產品轉譯</h3>
-                        <p>個人網站提到醫藥行銷師背景、專業訓練與考核、曾協助團隊獲得國家新創獎與 2 項發明專利，這類經驗會自然反映在產品敘事與研究轉譯能力上。</p>
+                        <p>醫藥行銷師背景、專業訓練與考核，曾協助團隊獲得國家新創獎與 2 項發明專利，這類經驗自然反映在產品敘事與研究轉譯能力上。</p>
                         <ul>
                             <li>能用非純研究語言來描述技術價值</li>
                             <li>理解創新、專利與落地場景的連結</li>
@@ -143,7 +140,7 @@
         <section>
             <div class="section-label">Education</div>
             <h2 class="section-title">教育背景</h2>
-            <p class="section-sub">目前可從個人網站 About Me 頁明確識別出的教育主線如下。</p>
+            <p class="section-sub">電資工程與生物醫學雙碩士，兩條學術線交叉支撐跨域設計能力。</p>
             <div class="card-grid">
                 <div class="card">
                     <div class="tiny">2022 / 09 — 2025 / 08</div>
@@ -166,7 +163,7 @@
         <section>
             <div class="section-label">Skills</div>
             <h2 class="section-title">技能組合</h2>
-            <p class="section-sub">以下是依個人網站資訊重組後，更貼近目前本站的技能分類。</p>
+            <p class="section-sub">依工程、生醫與產品三個方向分類，對應本站各主題頁面的技術支撐。</p>
             <div class="skills-grid">
                 <div class="skill-card">
                     <div class="tiny">Software</div>
@@ -208,8 +205,7 @@
         <section>
             <div class="section-label">Connect</div>
             <h2 class="section-title">把合作訊息直接寫進 PostgreSQL</h2>
-            <p class="section-sub">這個區塊不再只是外部連結。部署後，表單會透過 FastAPI API 寫入 PostgreSQL（支援 Neon / Supabase / CockroachDB /
-                Aiven / Railway 多源 fallback），變成這份作品集真正的 DB-backed 功能。</p>
+            <p class="section-sub">表單透過 FastAPI 寫入 PostgreSQL，多雲端備援自動 fallback，是本站 DB-backed 功能的實作之一。</p>
             <div class="contact-layout">
                 <div class="contact-panel">
                     <div class="tiny">Multi-DB stack</div>
@@ -240,7 +236,7 @@
                 <form id="contactForm" class="contact-form" novalidate>
                     <div class="tiny">Leave a message</div>
                     <h3 style="margin-bottom:8px">合作洽詢 / 聯絡表單</h3>
-                    <p style="color:var(--muted);margin-bottom:18px">如果你要聊合作、研究、產品或平台整合，部署完成後這裡會直接寫入多雲端 PostgreSQL。</p>
+                    <p style="color:var(--muted);margin-bottom:18px">合作、研究、產品或平台整合，歡迎直接留言。</p>
                     <div class="form-grid">
                         <div class="field">
                             <label for="contact-name">姓名</label>
@@ -264,9 +260,8 @@
                         </div>
                         <input class="hp-field" name="website" type="text" tabindex="-1" autocomplete="off">
                     </div>
-                    <button type="submit" class="btn btn-primary" id="contactSubmitBtn">送出到 PostgreSQL</button>
-                    <div id="contactStatus" class="form-status" data-state="idle" role="status" aria-live="polite">尚未啟用
-                        API 連線。部署 API 與資料庫後，這裡會顯示多 DB 連線狀態。</div>
+                    <button type="submit" class="btn btn-primary" id="contactSubmitBtn">送出留言</button>
+                    <div id="contactStatus" class="form-status" data-state="idle" role="status" aria-live="polite">連線確認中…</div>
                 </form>
             </div>
         </section>
