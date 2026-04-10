@@ -1,18 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "pip install -r site_api/requirements.txt",
   "buildCommand": "bash ./scripts/build_static_site.sh",
   "outputDirectory": "dist",
-  "env": {
-    "API_PROXY_TARGET": "https://donttalk-api-production.up.railway.app"
-  },
   "rewrites": [
     {
       "source": "/healthz",
-      "destination": "https://donttalk-api-production.up.railway.app/healthz"
+      "destination": "/api/index"
     },
     {
       "source": "/api/:path*",
-      "destination": "https://donttalk-api-production.up.railway.app/api/:path*"
+      "destination": "/api/index"
     }
   ],
   "redirects": [
