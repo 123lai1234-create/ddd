@@ -33,9 +33,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
-AMINO_ACIDS = list("ACDEFGHIKLMNPQRSTVWY")
-AA_TO_IDX = {aa: i for i, aa in enumerate(AMINO_ACIDS)}
-N_AA = len(AMINO_ACIDS)   # 20
+from src.constants import AMINO_ACIDS, AA_TO_IDX, N_AA
 
 
 # ─────────────────────────────────────────────────

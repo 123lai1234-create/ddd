@@ -19,7 +19,7 @@ import pandas as pd
 import torch
 from pathlib import Path
 
-AMINO_ACIDS = list("ACDEFGHIKLMNPQRSTVWY")
+from src.constants import AMINO_ACIDS
 
 
 # ─────────────────────────────────────────────────

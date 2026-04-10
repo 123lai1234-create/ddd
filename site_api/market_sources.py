@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 from html.parser import HTMLParser
 import json
@@ -9,6 +9,8 @@ import re
 from urllib.parse import quote
 
 import requests
+
+from site_api.http_client import get as http_get
 import urllib3
 
 
@@ -146,12 +148,12 @@ def _normalize_taifex_header(value: str) -> str:
 def _get_text(url: str, *, params: dict[str, str]) -> str:
     headers = {"User-Agent": USER_AGENT}
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = http_get(url, params=params, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
         return response.text
     except requests.exceptions.SSLError:
-        response = requests.get(url, params=params, headers=headers, timeout=REQUEST_TIMEOUT, verify=False)
+        response = http_get(url, params=params, headers=headers, timeout=REQUEST_TIMEOUT, verify=False)
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
         return response.text
@@ -451,11 +453,11 @@ def is_twse_symbol(symbol: str) -> bool:
 def _get_json(url: str, *, params: dict[str, str]) -> dict:
     headers = {"User-Agent": USER_AGENT}
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = http_get(url, params=params, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.SSLError:
-        response = requests.get(url, params=params, headers=headers, timeout=REQUEST_TIMEOUT, verify=False)
+        response = http_get(url, params=params, headers=headers, timeout=REQUEST_TIMEOUT, verify=False)
         response.raise_for_status()
         return response.json()
 
@@ -562,7 +564,7 @@ def fetch_yahoo_daily_records(symbol: str, asset_type: str, range_name: str) -> 
     bars: list[MarketBarPayload] = []
     for index, timestamp in enumerate(timestamps):
         try:
-            trade_date = datetime.utcfromtimestamp(int(timestamp)).date().isoformat()
+            trade_date = datetime.fromtimestamp(int(timestamp), tz=timezone.utc).date().isoformat()
         except (TypeError, ValueError, OSError):
             continue
 

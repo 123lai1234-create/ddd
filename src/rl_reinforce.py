@@ -29,8 +29,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from typing import Callable
 
-AMINO_ACIDS = list("ACDEFGHIKLMNPQRSTVWY")
-N_AA = len(AMINO_ACIDS)
+from src.constants import AMINO_ACIDS, N_AA
 START_TOKEN = N_AA        # index 20 = [START]
 VOCAB_SIZE = N_AA + 1     # 20 胺基酸 + 1 START token
 

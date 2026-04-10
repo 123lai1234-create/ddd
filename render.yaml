@@ -41,6 +41,9 @@ services:
       - type: redirect
         source: /interview
         destination: /interview_prep.html
+      - type: redirect
+        source: /thesis
+        destination: /thesis.html
   - type: web
     name: donttalk-api
     runtime: python
@@ -64,4 +67,6 @@ services:
       - key: DATABASE_URL_AIVEN
         sync: false
       - key: DATABASE_URL_RAILWAY
+        sync: false
+      - key: SYNC_SECRET
         sync: false

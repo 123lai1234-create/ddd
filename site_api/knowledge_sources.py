@@ -6,7 +6,8 @@ import os
 from typing import Any
 from xml.etree import ElementTree as ET
 
-import requests
+from site_api.http_client import get as http_get
+from site_api.shared_utils import protein_name as _protein_name
 
 
 UNIPROT_SEARCH_URL = "https://rest.uniprot.org/uniprotkb/search"
@@ -49,21 +50,6 @@ def _truncate(text: str, max_length: int = 4000) -> str:
     if len(normalized) <= max_length:
         return normalized
     return normalized[: max_length - 3].rstrip() + "..."
-
-
-def _protein_name(result: dict[str, Any]) -> str:
-    description = result.get("proteinDescription") or {}
-    recommended_name = (((description.get("recommendedName") or {}).get("fullName") or {}).get("value"))
-    if recommended_name:
-        return str(recommended_name).strip()
-
-    submission_names = description.get("submissionNames") or []
-    if submission_names:
-        submission_name = (((submission_names[0] or {}).get("fullName") or {}).get("value"))
-        if submission_name:
-            return str(submission_name).strip()
-
-    return str(result.get("uniProtkbId") or "Unnamed protein").strip()
 
 
 def _extract_gene_names(result: dict[str, Any]) -> list[str]:
@@ -116,7 +102,7 @@ def _extract_pubmed_ids(result: dict[str, Any]) -> list[str]:
 
 
 def fetch_uniprot_knowledge(query: str, limit: int) -> list[KnowledgeRecordPayload]:
-    response = requests.get(
+    response = http_get(
         UNIPROT_SEARCH_URL,
         params={"query": query, "format": "json", "size": limit},
         timeout=REQUEST_TIMEOUT,
@@ -211,7 +197,7 @@ def _fetch_pubmed_abstracts(pubmed_ids: list[str]) -> dict[str, dict[str, str]]:
     if not pubmed_ids:
         return {}
 
-    response = requests.get(
+    response = http_get(
         NCBI_EFETCH_URL,
         params={
             "db": "pubmed",
@@ -248,7 +234,7 @@ def _fetch_pubmed_abstracts(pubmed_ids: list[str]) -> dict[str, dict[str, str]]:
 
 
 def fetch_pubmed_knowledge(query: str, limit: int) -> list[KnowledgeRecordPayload]:
-    search_response = requests.get(
+    search_response = http_get(
         NCBI_ESEARCH_URL,
         params={
             "db": "pubmed",
@@ -265,7 +251,7 @@ def fetch_pubmed_knowledge(query: str, limit: int) -> list[KnowledgeRecordPayloa
     if not pubmed_ids:
         return []
 
-    summary_response = requests.get(
+    summary_response = http_get(
         NCBI_ESUMMARY_URL,
         params={
             "db": "pubmed",

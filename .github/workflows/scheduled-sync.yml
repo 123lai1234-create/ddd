@@ -36,9 +36,12 @@ jobs:
           echo "API_BASE_URL=https://$railway_domain" >> "$GITHUB_ENV"
 
       - name: Trigger market sync
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
         run: |
           curl --fail-with-body -sS -X POST "$API_BASE_URL/api/market/sync" \
             -H "Content-Type: application/json" \
+            -H "X-Sync-Secret: $SYNC_SECRET" \
             --data '{"stock_symbols":["2330","2317"],"etf_symbols":["0050","0056"],"futures_symbols":["TX","MTX","2330","0050","ES=F"],"twse_months":1,"yahoo_range":"1mo"}'
 
   bio-sync:
@@ -62,19 +65,28 @@ jobs:
           echo "API_BASE_URL=https://$railway_domain" >> "$GITHUB_ENV"
 
       - name: Trigger sequence sync
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
         run: |
           curl --fail-with-body -sS -X POST "$API_BASE_URL/api/sequences/sync" \
             -H "Content-Type: application/json" \
+            -H "X-Sync-Secret: $SYNC_SECRET" \
             --data '{"protein_query":"kinase","gene_symbols":["TP53","BRCA1","EGFR","APOE"],"species":"homo_sapiens","limit":4}'
 
       - name: Trigger knowledge sync
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
         run: |
           curl --fail-with-body -sS -X POST "$API_BASE_URL/api/knowledge/sync" \
             -H "Content-Type: application/json" \
+            -H "X-Sync-Secret: $SYNC_SECRET" \
             --data '{"protein_query":"kinase","literature_query":"kinase AND cancer","limit":4}'
 
       - name: Trigger sequencing run sync
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
         run: |
           curl --fail-with-body -sS -X POST "$API_BASE_URL/api/sequencing-runs/sync" \
             -H "Content-Type: application/json" \
+            -H "X-Sync-Secret: $SYNC_SECRET" \
             --data '{"query":"tax_name(\"Homo sapiens\") AND library_strategy=\"RNA-Seq\"","limit":6}'

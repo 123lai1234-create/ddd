@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 
-import requests
+from site_api.http_client import get as http_get
+from site_api.shared_utils import parse_int_safe
 
 
 ENA_PORTAL_SEARCH_URL = "https://www.ebi.ac.uk/ena/portal/api/search"
@@ -33,18 +34,11 @@ class SequencingRunPayload:
     raw_payload: str
 
 
-def _parse_int(value: str | int | None) -> int | None:
-    normalized = str(value or "").strip().replace(",", "")
-    if not normalized:
-        return None
-    try:
-        return int(float(normalized))
-    except ValueError:
-        return None
+_parse_int = parse_int_safe
 
 
 def fetch_ena_sequencing_runs(query: str, limit: int) -> list[SequencingRunPayload]:
-    response = requests.get(
+    response = http_get(
         ENA_PORTAL_SEARCH_URL,
         params={
             "result": "read_run",

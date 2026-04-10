@@ -31,7 +31,7 @@
         ? normalizeList(existingConfig.API_CANDIDATES)
         : defaultApiCandidates;
     const fallbackApiBase = ['localhost', '127.0.0.1'].includes(host)
-        ? `http://${host}:8080`
+        ? `http://${host}:8000`
         : (resolvedApiCandidates[resolvedApiCandidates.length - 1] || '');
     const resolutionCache = new Map();
 

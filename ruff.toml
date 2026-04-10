@@ -1,0 +1,28 @@
+# Ruff linter + formatter configuration
+target-version = "py311"
+line-length = 120
+
+[lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "SIM",    # flake8-simplify
+    "T20",    # flake8-print
+    "RUF",    # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # function call in default argument (FastAPI Depends)
+    "RUF012", # mutable class variable annotation
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["T20", "S101"]  # allow print and assert in tests
+
+[lint.isort]
+known-first-party = ["site_api", "src"]

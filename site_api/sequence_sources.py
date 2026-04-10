@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-import requests
+from site_api.http_client import get as http_get
+from site_api.shared_utils import protein_name as _protein_name
 
 
 UNIPROT_SEARCH_URL = "https://rest.uniprot.org/uniprotkb/search"
@@ -29,21 +30,8 @@ def _title_case_species(value: str) -> str:
     return " ".join(part.capitalize() for part in value.replace("_", " ").split())
 
 
-def _protein_name(result: dict[str, Any]) -> str:
-    description = result.get("proteinDescription") or {}
-    recommended_name = (((description.get("recommendedName") or {}).get("fullName") or {}).get("value"))
-    if recommended_name:
-        return recommended_name
-
-    submission_names = description.get("submissionNames") or []
-    if submission_names:
-        return (((submission_names[0] or {}).get("fullName") or {}).get("value")) or (result.get("uniProtkbId") or "Unnamed protein")
-
-    return result.get("uniProtkbId") or "Unnamed protein"
-
-
 def fetch_protein_sequences(query: str, limit: int) -> list[SequenceRecordPayload]:
-    response = requests.get(
+    response = http_get(
         UNIPROT_SEARCH_URL,
         params={"query": query, "format": "json", "size": limit},
         timeout=REQUEST_TIMEOUT,
@@ -80,7 +68,7 @@ def fetch_protein_sequences(query: str, limit: int) -> list[SequenceRecordPayloa
 
 
 def _resolve_gene_stable_id(symbol: str, species: str) -> str | None:
-    response = requests.get(
+    response = http_get(
         f"{ENSEMBL_BASE_URL}/xrefs/symbol/{species}/{symbol}",
         params={"content-type": "application/json"},
         timeout=REQUEST_TIMEOUT,
@@ -101,7 +89,7 @@ def fetch_gene_sequences(gene_symbols: list[str], species: str) -> list[Sequence
         if not stable_id:
             continue
 
-        lookup_response = requests.get(
+        lookup_response = http_get(
             f"{ENSEMBL_BASE_URL}/lookup/id/{stable_id}",
             params={"content-type": "application/json"},
             timeout=REQUEST_TIMEOUT,
@@ -109,7 +97,7 @@ def fetch_gene_sequences(gene_symbols: list[str], species: str) -> list[Sequence
         lookup_response.raise_for_status()
         lookup = lookup_response.json()
 
-        sequence_response = requests.get(
+        sequence_response = http_get(
             f"{ENSEMBL_BASE_URL}/sequence/id/{stable_id}",
             params={"object_type": "gene", "content-type": "application/json"},
             timeout=REQUEST_TIMEOUT,

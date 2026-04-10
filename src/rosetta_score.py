@@ -308,12 +308,8 @@ def score_structure(
 
 
 # ─── 輔助函數 ──────────────────────────────────────────
-_AA3TO1 = {
-    "ALA":"A","ARG":"R","ASN":"N","ASP":"D","CYS":"C",
-    "GLN":"Q","GLU":"E","GLY":"G","HIS":"H","ILE":"I",
-    "LEU":"L","LYS":"K","MET":"M","PHE":"F","PRO":"P",
-    "SER":"S","THR":"T","TRP":"W","TYR":"Y","VAL":"V",
-}
+from src.constants import THREE_TO_ONE as _AA3TO1
+
 
 def _three_to_one(three: str) -> str:
     return _AA3TO1.get(three.upper(), "X")

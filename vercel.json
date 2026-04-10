@@ -5,7 +5,16 @@
   "env": {
     "API_PROXY_TARGET": "https://donttalk-api-production.up.railway.app"
   },
-  "rewrites": [],
+  "rewrites": [
+    {
+      "source": "/healthz",
+      "destination": "https://donttalk-api-production.up.railway.app/healthz"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://donttalk-api-production.up.railway.app/api/:path*"
+    }
+  ],
   "redirects": [
     {
       "source": "/about",
@@ -35,6 +44,11 @@
     {
       "source": "/interview",
       "destination": "/interview_prep.html",
+      "permanent": true
+    },
+    {
+      "source": "/thesis",
+      "destination": "/thesis.html",
       "permanent": true
     }
   ]
