@@ -2,8 +2,7 @@
 from __future__ import annotations
 
 import unittest
-from typing import Any
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 try:
     from fastapi.testclient import TestClient
@@ -78,7 +77,7 @@ class TestRoutesWithMocks(unittest.TestCase):
             {"envKey": "DATABASE_URL", "host": "localhost", "connected": True, "error": None}
         ]
 
-        response = self.client.get(
+        self.client.get(
             "/api/db/status",
             headers={"X-Admin-Token": "test-admin-token"},
         )

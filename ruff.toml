@@ -24,10 +24,12 @@ ignore = [
     "RUF003", # ambiguous unicode in comments (CJK fullwidth chars)
     "N803",   # argument name should be lowercase (ML convention: X_embed)
     "N806",   # variable in function should be lowercase (ML convention: Z_bg)
+    "I001",   # import sorting (enforced by formatter, not blocker)
 ]
 
 [lint.per-file-ignores]
-"tests/*" = ["T20", "S101"]  # allow print and assert in tests
+"tests/*" = ["T20", "S101"]           # allow print and assert in tests
+"src/*" = ["T20", "UP", "B905", "B028", "E402", "SIM118", "F401"]  # research scripts: relaxed rules
 
 [lint.isort]
 known-first-party = ["site_api", "src"]

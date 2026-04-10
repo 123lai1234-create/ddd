@@ -6,17 +6,15 @@ from urllib.parse import urlparse
 
 import psycopg
 from fastapi import APIRouter, Header, HTTPException, status
-from pydantic import BaseModel, Field, field_validator
 
 from site_api.db import (
+    _require_sync_secret,
     check_all_databases,
     database_available,
-    ensure_core_schema,
     ensure_market_schema,
     ensure_schema,
     get_connection,
     get_database_url,
-    _require_sync_secret,
 )
 from site_api.models import (
     InquiryCreate,
