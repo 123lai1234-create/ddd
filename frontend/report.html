@@ -33,6 +33,7 @@
 
         <!-- Header -->
         <header class="reveal">
+            <div class="report-eyebrow"><span class="live-dot"></span>Protein AI · Technical Report</div>
             <h1>蛋白質設計 <span>AI Pipeline</span></h1>
             <p>ESM-2 × 貝葉斯最佳化 × ProteinMPNN × REINFORCE 強化學習</p>
             <div class="badges">
@@ -129,20 +130,20 @@
             <div class="img-grid">
                 <div class="img-card">
                     <img src="outputs/results_esm2.png" alt="貝葉斯最佳化結果"
-                        onerror="this.style.display='none';this.nextSibling.style.display='block'">
-                    <div style="display:none;padding:40px;text-align:center;color:#555;">results_esm2.png</div>
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                    <div class="img-fallback">results_esm2.png</div>
                     <div class="cap">貝葉斯最佳化：訓練損失、代理模型預測與 BO 適應度曲線</div>
                 </div>
                 <div class="img-card">
                     <img src="outputs/rl_training.png" alt="RL 獎勵曲線"
-                        onerror="this.style.display='none';this.nextSibling.style.display='block'">
-                    <div style="display:none;padding:40px;text-align:center;color:#555;">rl_training.png</div>
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                    <div class="img-fallback">rl_training.png</div>
                     <div class="cap">REINFORCE RL：多目標獎勵隨訓練回合的變化</div>
                 </div>
                 <div class="img-card">
                     <img src="outputs/mpnn_loss.png" alt="ProteinMPNN 損失"
-                        onerror="this.style.display='none';this.nextSibling.style.display='block'">
-                    <div style="display:none;padding:40px;text-align:center;color:#555;">mpnn_loss.png</div>
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                    <div class="img-fallback">mpnn_loss.png</div>
                     <div class="cap">ProteinMPNN：交叉熵訓練損失隨步驟的收斂情形</div>
                 </div>
             </div>

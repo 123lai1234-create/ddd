@@ -103,6 +103,20 @@ body {
   margin-bottom: 24px;
 }
 
+.page-eyebrow .live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+  animation: livePulse 2.4s ease infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
 .page-title {
   font-size: clamp(2rem, 5vw, 3.4rem);
   font-weight: 800;
@@ -1000,11 +1014,11 @@ footer {
 .rag-input {
   flex: 1;
   min-width: 200px;
-  background: #111b24;
-  border: 1px solid #21262d;
+  background: var(--bg2);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 11px 16px;
-  color: #e6edf3;
+  color: var(--text);
   font-family: inherit;
   font-size: 0.9rem;
   outline: none;
@@ -1050,8 +1064,8 @@ footer {
 }
 
 .rag-card {
-  background: rgba(22, 27, 34, 0.92);
-  border: 1px solid #21262d;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 18px 20px;
   transition: border-color 0.2s;
@@ -1064,7 +1078,7 @@ footer {
 .rag-card-title {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #e6edf3;
+  color: var(--text);
   margin-bottom: 6px;
 }
 
@@ -1093,7 +1107,7 @@ footer {
   color: var(--muted);
   font-size: 0.88rem;
   padding: 32px;
-  border: 1px dashed #21262d;
+  border: 1px dashed var(--border);
   border-radius: 14px;
 }
 
