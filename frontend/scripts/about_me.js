@@ -96,7 +96,7 @@
                 count: '-',
                 lastSeen: '-'
             });
-            setStatus('目前無法找到可用的 API。請確認靜態站的 API 設定或等候部署完成。', 'error');
+            setStatus('後端目前離線，表單暫時無法送出。', 'error');
             return;
         }
 

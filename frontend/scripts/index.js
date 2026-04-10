@@ -1225,7 +1225,7 @@ async function computeESM2Profiles(seq, fixedSet, onProgress) {
 
     // ── Direct HuggingFace API (requires user token) ─────────────────
     const token = getHfToken();
-    if (!token) throw new Error('後端 proxy 不可用，且未設定 HuggingFace Token。請填入 token 或確認後端已部署並設定 HF_TOKEN。');
+    if (!token) throw new Error('後端 proxy 不可用，且未設定 HuggingFace Token。請填入 Token 或確認後端已設定 HF_TOKEN。');
 
     for (let pi = 0; pi < freePos.length; pi++) {
         const i = freePos[pi];

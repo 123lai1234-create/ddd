@@ -20,7 +20,7 @@ window.SITE_SHELL_CONFIG = {
         footer: {
             variant: 'standard',
             titleHtml: '<div class="footer-brand">工程 × 生醫 × AI 作品集</div>',
-            noteHtml: '<div class="footer-note">個人品牌、本地作品頁與技術平台整合版 · 2026</div>',
+            noteHtml: '<div class="footer-note">電資工程 × 生物醫學 × AI 平台作品集 · 2026</div>',
             links: [
                 { href: 'about_me.html', label: 'About Me' },
                 { href: 'works.html', label: '作品總覽' },
@@ -51,7 +51,7 @@ window.SITE_SHELL_CONFIG = {
         footer: {
             variant: 'standard',
             titleHtml: '<div style="font-weight:700;color:var(--text)">About Me</div>',
-            noteHtml: '<div>本地化整理自既有個人網站，與本站技術作品集同步。</div>',
+            noteHtml: '<div>工程師 · 生醫研究者 · 跨域平台整合者</div>',
             links: [
                 { href: 'index.html', label: '首頁' },
                 { href: 'works.html', label: '作品總覽' },
@@ -80,7 +80,7 @@ window.SITE_SHELL_CONFIG = {
         footer: {
             variant: 'standard',
             titleHtml: '<div style="font-weight:700;color:var(--text)">作品總覽</div>',
-            noteHtml: '<div>本地整理版，串起個人網站既有作品與本站新建立的 AI 頁面。</div>',
+            noteHtml: '<div>跨域作品總覽 · 蛋白質 AI · 基因 AI · NGS · 互動平台</div>',
             links: [
                 { href: 'about_me.html', label: 'About Me' },
                 { href: 'index.html', label: '首頁' },
@@ -123,7 +123,7 @@ window.SITE_SHELL_CONFIG = {
     },
     ngs: {
         brandHref: 'index.html',
-        brandHtml: '<span class="dot"></span>蛋白質設計 AI',
+        brandHtml: '<span class="dot"></span>NGS 定序',
         navLinks: [
             { href: 'about_me.html', label: 'About Me' },
             { href: 'works.html', label: '作品總覽' },
@@ -239,7 +239,7 @@ window.SITE_SHELL_CONFIG = {
     },
     interview_prep: {
         brandHref: 'index.html',
-        brandHtml: '<span class="nav-dot"></span>蛋白質設計 AI',
+        brandHtml: '<span class="nav-dot"></span>面試準備手冊',
         navLinks: [
             { href: 'index.html', label: '首頁' },
             { href: 'about_me.html', label: 'About Me' },
