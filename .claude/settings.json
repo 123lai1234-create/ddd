@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(grep -n \"og:image\\\\|twitter:image\" d:/project/frontend/*.html)",
+      "Bash(grep -E \"\\\\.\\(html|js\\)$\")",
+      "Bash(wc -l /d/project/frontend/scripts/*.js)",
+      "Bash(grep -n \"'/api\" /d/project/frontend/scripts/*.js)",
+      "Bash(python -c \"import ast; [ast.parse\\(open\\(f, encoding='utf-8'\\).read\\(\\)\\) for f in ['site_api/cache.py','site_api/structure_sources.py','site_api/variant_sources.py','site_api/population_sources.py','site_api/interaction_sources.py','site_api/economic_sources.py','site_api/schemas.py','site_api/models.py','site_api/db.py','site_api/services.py','site_api/routes.py','site_api/knowledge_sources.py']]\")",
+      "Bash(python -c ':*)"
+    ]
+  }
+}

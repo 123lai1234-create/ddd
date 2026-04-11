@@ -1016,7 +1016,13 @@ function renderBacktestCharts(run) {
     createChart('priceChart', {
         type: 'line',
         data: {
-            labels: evaluation.priceSeries.map((_, index) => index + 1),
+            labels: (() => {
+                const cached = SERIES_CACHE.get(run.stock.code);
+                if (cached?.isReal && cached.testDates) {
+                    return cached.testDates.map((d) => d.slice(5)); // MM-DD
+                }
+                return evaluation.priceSeries.map((_, index) => index + 1);
+            })(),
             datasets: [
                 { label: '測試價格', data: evaluation.priceSeries, borderColor: C.teal, backgroundColor: 'rgba(48,200,232,.05)', fill: true, tension: 0.14, pointRadius: 0, borderWidth: 1.6 },
                 { label: '買入', data: priceScatterBuy, type: 'scatter', pointRadius: 6, pointStyle: 'triangle', pointBackgroundColor: C.green, pointBorderColor: '#fff', pointBorderWidth: 1, showLine: false },
@@ -1027,7 +1033,7 @@ function renderBacktestCharts(run) {
             ...BASE_OPTS,
             parsing: false,
             scales: {
-                x: { ...BASE_OPTS.scales.x, type: 'linear', title: { display: true, text: '2024 交易日', color: C.muted }, ticks: { maxTicksLimit: 9, color: C.muted, font: { size: 9 } } },
+                x: { ...BASE_OPTS.scales.x, type: 'linear', title: { display: true, text: SERIES_CACHE.get(run.stock.code)?.isReal ? '日期' : '交易日', color: C.muted }, ticks: { maxTicksLimit: 9, color: C.muted, font: { size: 9 } } },
                 y: { ...BASE_OPTS.scales.y, title: { display: true, text: '價格', color: C.muted } },
             },
         },
@@ -1239,22 +1245,33 @@ async function rerunGA() {
     }
 
     // Attempt to load real TWSE price data for this stock
-    const realBars = await fetchRealPriceSeries(stock.code);
+    const realData = await fetchRealPriceSeries(stock.code);
     let dataSource;
-    if (realBars && realBars.length >= 50) {
-        const trainLen = Math.max(50, Math.floor(realBars.length * 0.8));
+    if (realData && realData.closes.length >= 50) {
+        // Date-based train/test split: before 2024 = train, 2024+ = test
+        const cutoff = '2024-01-01';
+        let splitIdx = realData.dates.findIndex((d) => d >= cutoff);
+        if (splitIdx < 20) splitIdx = Math.max(20, Math.floor(realData.closes.length * 0.8));
+        if (realData.closes.length - splitIdx < 10) splitIdx = Math.floor(realData.closes.length * 0.8);
+
+        const trainDates = realData.dates.slice(0, splitIdx);
+        const testDates = realData.dates.slice(splitIdx);
         SERIES_CACHE.set(stock.code, {
-            train: realBars.slice(0, trainLen),
-            test: realBars.slice(trainLen),
+            train: realData.closes.slice(0, splitIdx),
+            test: realData.closes.slice(splitIdx),
+            trainDates,
+            testDates,
             isReal: true,
         });
-        dataSource = `真實數據 ${realBars.length} 筆`;
+        const from = realData.dates[0];
+        const to = realData.dates[realData.dates.length - 1];
+        dataSource = `真實 TWSE ${realData.closes.length} 筆 (${from} ~ ${to})`;
     } else {
         // Clear stale real-data cache so synthetic gets regenerated
         if (SERIES_CACHE.get(stock.code)?.isReal) {
             SERIES_CACHE.delete(stock.code);
         }
-        dataSource = '模擬數據';
+        dataSource = '模擬數據（點「同步股價」取得真實資料）';
     }
 
     status.textContent = `⏳ ${stock.name} · ${dataSource} · POP=${config.POP} · GENS=${config.GENS} 計算中…`;
@@ -1364,13 +1381,63 @@ async function fetchRealPriceSeries(symbol) {
         const payload = await res.json();
         const bars = (payload.records || [])
             .filter((r) => r.close != null && r.tradeDate)
-            .sort((a, b) => a.tradeDate.localeCompare(b.tradeDate))
-            .map((r) => Number(r.close));
+            .sort((a, b) => a.tradeDate.localeCompare(b.tradeDate));
         if (bars.length < 50) return null;
-        REAL_PRICE_CACHE.set(symbol, bars);
-        return bars;
+        const result = {
+            dates: bars.map((r) => r.tradeDate),
+            closes: bars.map((r) => Number(r.close)),
+        };
+        REAL_PRICE_CACHE.set(symbol, result);
+        return result;
     } catch {
         return null;
+    }
+}
+
+const THESIS_STOCK_CODES = RAW_STOCKS.map(([code]) => code);
+let _preloadDone = false;
+
+async function preloadAllStockData() {
+    if (_preloadDone) return;
+    _preloadDone = true;
+    const apiBase = await resolveMarketApiBase();
+    if (!apiBase) return;
+    // Fetch first few in parallel to prime the cache
+    const batch = THESIS_STOCK_CODES.slice(0, 10);
+    await Promise.allSettled(batch.map((code) => fetchRealPriceSeries(code)));
+}
+
+async function syncThesisStocks() {
+    const status = document.getElementById('cfgStatus');
+    if (status) status.textContent = '正在同步 48 檔股票真實價格（Yahoo 1Y）…';
+    try {
+        const apiBase = await resolveMarketApiBase();
+        if (!apiBase) throw new Error('API 不可用');
+        const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
+        const resp = await fetch(`${apiBase}/api/market/sync`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}),
+            },
+            body: JSON.stringify({
+                stock_symbols: THESIS_STOCK_CODES,
+                etf_symbols: [],
+                futures_symbols: [],
+                twse_months: 6,
+                yahoo_range: '1y',
+            }),
+            signal: AbortSignal.timeout(60000),
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        const stored = data.stored || {};
+        REAL_PRICE_CACHE.clear();
+        if (status) status.textContent = `✓ 同步完成：${stored.stock?.symbols || 0} 檔股票，可重新執行 GA。`;
+        // Re-run with real data
+        rerunGA();
+    } catch (error) {
+        if (status) status.textContent = `同步失敗：${error.message}`;
     }
 }
 
