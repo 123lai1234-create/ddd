@@ -1337,6 +1337,11 @@ function bindEvents() {
             scheduleRerun('GA 參數已變更，重新計算中…');
         });
     });
+
+    const syncBtn = document.getElementById('btnSyncStocks');
+    if (syncBtn) {
+        syncBtn.addEventListener('click', () => syncThesisStocks());
+    }
 }
 
 function setMarketStatus(message, state = 'info') {
@@ -1824,6 +1829,8 @@ function initialisePage() {
     initMarketOps();
     renderSelectedStockMeta(getStockByCode(uiState.currentStockCode), null);
     rerunGA();
+    // Background preload real price data for faster switching
+    preloadAllStockData();
 }
 
 window.gotoGen = gotoGen;
@@ -1832,5 +1839,6 @@ window.rerunGA = rerunGA;
 window.resetGaCfg = resetGaCfg;
 window.lastGenIndex = lastGenIndex;
 window.curGen = curGen;
+window.syncThesisStocks = syncThesisStocks;
 
 initialisePage();
