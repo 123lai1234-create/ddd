@@ -1829,7 +1829,43 @@ function initialisePage() {
     initMarketOps();
     renderSelectedStockMeta(getStockByCode(uiState.currentStockCode), null);
     rerunGA();
-    // Background preload real price data for faster switching
+    // Background: preload real price data, auto-sync if DB empty
+    autoSyncAndPreload();
+}
+
+async function autoSyncAndPreload() {
+    const testStock = THESIS_STOCK_CODES[0]; // 1101
+    const data = await fetchRealPriceSeries(testStock);
+    if (!data || data.closes.length < 10) {
+        // DB has no market data — auto-sync the thesis stocks
+        const status = document.getElementById('cfgStatus');
+        if (status) status.textContent = '首次載入：正在自動同步 TWSE 股價…';
+        try {
+            const apiBase = await resolveMarketApiBase();
+            if (!apiBase) return;
+            const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
+            const resp = await fetch(`${apiBase}/api/market/sync`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}),
+                },
+                body: JSON.stringify({
+                    stock_symbols: THESIS_STOCK_CODES.slice(0, 20),
+                    etf_symbols: [],
+                    futures_symbols: [],
+                    twse_months: 6,
+                    yahoo_range: '1y',
+                }),
+                signal: AbortSignal.timeout(60000),
+            });
+            if (resp.ok) {
+                REAL_PRICE_CACHE.clear();
+                if (status) status.textContent = '✓ 自動同步完成，重新計算中…';
+                rerunGA();
+            }
+        } catch { /* silent */ }
+    }
     preloadAllStockData();
 }
 

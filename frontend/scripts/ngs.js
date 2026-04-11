@@ -672,7 +672,24 @@ async function loadNGSRealData() {
         });
         if (!res.ok) return;
         const payload = await res.json();
-        const records = payload.records || [];
+        let records = payload.records || [];
+
+        // Auto-sync ENA sequencing runs if DB is empty
+        if (records.length < 2) {
+            try {
+                const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
+                const syncResp = await fetch(`${apiBase}/api/sequencing-runs/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}) },
+                    body: JSON.stringify({ query: 'tax_name("Homo sapiens") AND library_strategy="RNA-Seq"', limit: 8 }),
+                    signal: AbortSignal.timeout(15000),
+                });
+                if (syncResp.ok) {
+                    const syncData = await syncResp.json();
+                    records = syncData.records || [];
+                }
+            } catch { /* sync failed */ }
+        }
         if (records.length < 2) return;
 
         NGS_REAL_DATA = records;

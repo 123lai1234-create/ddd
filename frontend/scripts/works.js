@@ -93,6 +93,22 @@
 
             indicator.classList.add('connected');
             label.textContent = 'API 後端 · 已連線';
+
+            // Auto-sync if DB completely empty
+            if (seqTotal === 0 && knowTotal === 0) {
+                label.textContent = 'API 已連線 · 正在初始化資料…';
+                const base = await resolveApiBase();
+                const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
+                const headers = { 'Content-Type': 'application/json', ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}) };
+                try {
+                    await Promise.allSettled([
+                        fetch(`${base}/api/sequences/sync`, { method: 'POST', headers, body: JSON.stringify({ protein_query: 'kinase', gene_symbols: ['TP53', 'BRCA1'], species: 'homo_sapiens', limit: 4 }) }),
+                        fetch(`${base}/api/knowledge/sync`, { method: 'POST', headers, body: JSON.stringify({ protein_query: 'kinase', literature_query: 'kinase AND cancer', limit: 4 }) }),
+                    ]);
+                    label.textContent = 'API 已連線 · 初始化完成';
+                    loadLiveStats(); // reload stats
+                } catch { label.textContent = 'API 已連線'; }
+            }
         } catch (error) {
             indicator.classList.add('error');
             label.textContent = 'API 暫時離線';

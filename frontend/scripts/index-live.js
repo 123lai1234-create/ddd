@@ -86,13 +86,13 @@ async function resolvePortfolioApiBase() {
     return '';
 }
 
-async function portfolioApiJson(path) {
+async function portfolioApiJson(path, options) {
     const apiBase = await resolvePortfolioApiBase();
     if (!apiBase) {
         throw new Error('目前找不到可用的後端 API。');
     }
 
-    const response = await fetch(`${apiBase}${path}`);
+    const response = await fetch(`${apiBase}${path}`, options);
     if (!response.ok) {
         const data = await response.json().catch(() => null);
         throw new Error(data?.detail || `HTTP ${response.status}`);
@@ -214,6 +214,21 @@ async function loadPortfolioSequenceFeed() {
         renderPortfolioSequenceList('portfolioProteinFeed', proteinPayload.records || [], 'protein');
         renderPortfolioSequenceList('portfolioGeneFeed', genePayload.records || [], 'gene');
 
+        // Auto-sync if DB is empty
+        const totalSeq = (summary.proteinCount ?? 0) + (summary.geneCount ?? 0);
+        if (totalSeq === 0) {
+            setPortfolioSequenceStatus('資料庫為空，正在自動同步 UniProt / Ensembl…', 'info');
+            try {
+                const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
+                await portfolioApiJson('/api/sequences/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}) },
+                    body: JSON.stringify({ protein_query: 'kinase', gene_symbols: ['TP53', 'BRCA1', 'EGFR'], species: 'homo_sapiens', limit: 4 }),
+                });
+                return loadPortfolioSequenceFeed(); // reload after sync
+            } catch { /* sync failed — show empty state */ }
+        }
+
         setPortfolioSequenceStatus('首頁已接上動態序列資料庫，顯示的是目前 DB 中最新快取。', 'success');
     } catch (error) {
         renderPortfolioSequenceList('portfolioProteinFeed', [], 'protein');
@@ -250,6 +265,21 @@ async function loadPortfolioKnowledgeFeed() {
         renderPortfolioKnowledgeList('portfolioKnowledgeProteinFeed', annotationPayload.records || [], 'protein_annotation');
         renderPortfolioKnowledgeList('portfolioKnowledgeLiteratureFeed', literaturePayload.records || [], 'literature');
         renderPortfolioRagPreview(ragPayload.documents || []);
+
+        // Auto-sync if DB is empty
+        const totalKnow = (summary.proteinAnnotationCount ?? 0) + (summary.literatureCount ?? 0);
+        if (totalKnow === 0) {
+            setPortfolioKnowledgeStatus('知識庫為空，正在自動同步 UniProt / PubMed…', 'info');
+            try {
+                const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
+                await portfolioApiJson('/api/knowledge/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}) },
+                    body: JSON.stringify({ protein_query: 'kinase', literature_query: 'kinase AND cancer', limit: 4 }),
+                });
+                return loadPortfolioKnowledgeFeed(); // reload after sync
+            } catch { /* sync failed — show empty state */ }
+        }
 
         setPortfolioKnowledgeStatus('首頁已接上知識資料庫與 RAG 文件預覽。', 'success');
     } catch (error) {
