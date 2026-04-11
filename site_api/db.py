@@ -161,26 +161,25 @@ def get_connection() -> Generator[psycopg.Connection, None, None]:
 
     # Fast path: use pool if available
     if _DB_POOL is not None:
-        conn: psycopg.Connection | None = None
         try:
-            conn = _DB_POOL.getconn()
-            LAST_DATABASE_ERROR = ""
-            yield conn
-            return
+            pooled_connection = _DB_POOL.getconn()
         except Exception as error:
             LAST_DATABASE_ERROR = str(error)
-            if conn is not None:
-                # Return to pool even on error so the slot isn't leaked
-                with contextlib.suppress(Exception):
-                    _DB_POOL.putconn(conn)
-                conn = None
             logger.warning("Pool getconn failed, falling back to direct connect: %s", error)
-        finally:
-            if conn is not None:
+        else:
+            LAST_DATABASE_ERROR = ""
+            try:
+                yield pooled_connection
+            except Exception:
+                with contextlib.suppress(Exception):
+                    pooled_connection.rollback()
+                raise
+            finally:
                 try:
-                    _DB_POOL.putconn(conn)
+                    _DB_POOL.putconn(pooled_connection)
                 except Exception:
-                    conn.close()
+                    pooled_connection.close()
+            return
 
     # Fallback: direct connect (used before pool is ready or if pool fails)
     last_error: Exception | None = None
@@ -188,14 +187,20 @@ def get_connection() -> Generator[psycopg.Connection, None, None]:
         try:
             connection = psycopg.connect(candidate)
             LAST_DATABASE_ERROR = ""
-            try:
-                yield connection
-            finally:
-                connection.close()
-            return
         except psycopg.Error as error:
             last_error = error
             LAST_DATABASE_ERROR = str(error)
+            continue
+
+        try:
+            yield connection
+        except Exception:
+            with contextlib.suppress(Exception):
+                connection.rollback()
+            raise
+        finally:
+            connection.close()
+        return
 
     if last_error is not None:
         raise last_error

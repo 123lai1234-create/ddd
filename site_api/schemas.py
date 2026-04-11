@@ -142,13 +142,13 @@ BEGIN
              AND ns.nspname = current_schema()
              AND con.contype = 'u'
              AND ARRAY(
-                        SELECT att.attname
+                        SELECT att.attname::text
                             FROM unnest(con.conkey) WITH ORDINALITY AS cols(attnum, ord)
                             JOIN pg_attribute AS att
                                 ON att.attrelid = rel.oid
                              AND att.attnum = cols.attnum
                          ORDER BY cols.ord
-             ) = ARRAY['source_name', 'symbol', 'trade_date'];
+             ) = ARRAY['source_name', 'symbol', 'trade_date']::text[];
 
         IF legacy_constraint_name IS NOT NULL THEN
                 EXECUTE format('ALTER TABLE market_price_bars DROP CONSTRAINT %I', legacy_constraint_name);

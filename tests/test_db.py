@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qsl, urlparse
 
 from fastapi import HTTPException
@@ -12,6 +12,7 @@ from site_api.db import (
     get_all_database_urls,
     _sanitize_database_url,
     _expand_url_candidates,
+    get_connection,
     get_allowed_origins,
     _require_sync_secret,
     DATABASE_URL_ENV_KEYS,
@@ -86,7 +87,7 @@ class TestGetAllDatabaseUrls(unittest.TestCase):
                 "POSTGRES_URL": "postgres://second",
                 "DATABASE_URL_NEON": "postgres://neon",
             },
-            clear=False,
+            clear=True,
         ):
             urls = get_all_database_urls()
             self.assertIn("postgres://first", urls)
@@ -101,7 +102,7 @@ class TestGetAllDatabaseUrls(unittest.TestCase):
                 "DATABASE_URL": "postgres://same",
                 "POSTGRES_URL": "postgres://same",
             },
-            clear=False,
+            clear=True,
         ):
             urls = get_all_database_urls()
             self.assertEqual(urls.count("postgres://same"), 1)
@@ -114,7 +115,7 @@ class TestGetAllDatabaseUrls(unittest.TestCase):
                 "DATABASE_URL": "postgres://valid",
                 "POSTGRES_URL": "",
             },
-            clear=False,
+            clear=True,
         ):
             urls = get_all_database_urls()
             self.assertNotIn("", urls)
@@ -128,7 +129,7 @@ class TestGetAllDatabaseUrls(unittest.TestCase):
                 "DATABASE_URL": "  postgres://url1  ",
                 "POSTGRES_URL": "  postgres://url2  ",
             },
-            clear=False,
+            clear=True,
         ):
             urls = get_all_database_urls()
             for url in urls:
@@ -369,6 +370,63 @@ class TestRequireSyncSecret(unittest.TestCase):
             with self.assertRaises(HTTPException) as context:
                 _require_sync_secret("wrongsecret")
             self.assertIn("Sync-Secret", context.exception.detail)
+
+
+class TestGetConnection(unittest.TestCase):
+    """Regression tests for pooled and direct database connection handling."""
+
+    def test_pooled_connection_is_returned_to_pool(self):
+        mock_pool = MagicMock()
+        mock_connection = MagicMock()
+        mock_pool.getconn.return_value = mock_connection
+
+        with patch("site_api.db._DB_POOL", mock_pool):
+            with get_connection() as connection:
+                self.assertIs(connection, mock_connection)
+
+        mock_pool.getconn.assert_called_once_with()
+        mock_pool.putconn.assert_called_once_with(mock_connection)
+        mock_connection.rollback.assert_not_called()
+
+    def test_pooled_connection_reraises_caller_error_and_rolls_back(self):
+        mock_pool = MagicMock()
+        mock_connection = MagicMock()
+        mock_pool.getconn.return_value = mock_connection
+
+        with patch("site_api.db._DB_POOL", mock_pool):
+            with self.assertRaisesRegex(RuntimeError, "boom"):
+                with get_connection():
+                    raise RuntimeError("boom")
+
+        mock_connection.rollback.assert_called_once_with()
+        mock_pool.putconn.assert_called_once_with(mock_connection)
+
+    def test_falls_back_to_direct_connection_when_pool_checkout_fails(self):
+        mock_pool = MagicMock()
+        mock_pool.getconn.side_effect = RuntimeError("pool unavailable")
+        fallback_connection = MagicMock()
+
+        with patch("site_api.db._DB_POOL", mock_pool), \
+             patch("site_api.db.get_database_url_candidates", return_value=["postgres://fallback"]), \
+             patch("site_api.db.psycopg.connect", return_value=fallback_connection) as mock_connect:
+            with get_connection() as connection:
+                self.assertIs(connection, fallback_connection)
+
+        mock_connect.assert_called_once_with("postgres://fallback")
+        fallback_connection.close.assert_called_once_with()
+
+    def test_direct_connection_reraises_caller_error_and_closes(self):
+        mock_connection = MagicMock()
+
+        with patch("site_api.db._DB_POOL", None), \
+             patch("site_api.db.get_database_url_candidates", return_value=["postgres://direct"]), \
+             patch("site_api.db.psycopg.connect", return_value=mock_connection):
+            with self.assertRaisesRegex(RuntimeError, "boom"):
+                with get_connection():
+                    raise RuntimeError("boom")
+
+        mock_connection.rollback.assert_called_once_with()
+        mock_connection.close.assert_called_once_with()
 
 
 if __name__ == "__main__":

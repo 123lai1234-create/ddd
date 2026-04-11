@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 import httpx
 import psycopg
 from fastapi import APIRouter, Header, HTTPException, Request, status
+from pydantic import BaseModel, Field
 
 from site_api.db import (
     _require_sync_secret,
