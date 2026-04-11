@@ -266,7 +266,7 @@ html.is-admin .admin-only {
 .admin-badge {
   position: fixed;
   top: 10px;
-  right: 10px;
+  right: 60px;
   z-index: 10000;
   background: rgba(255, 188, 114, 0.15);
   border: 1px solid rgba(255, 188, 114, 0.35);
@@ -277,4 +277,113 @@ html.is-admin .admin-only {
   font-weight: 600;
   font-family: 'JetBrains Mono', monospace;
   backdrop-filter: blur(8px);
+}
+
+/* ── Admin toggle button ─── */
+#admin-toggle {
+  position: fixed;
+  top: 10px;
+  right: 16px;
+  z-index: 10001;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(24, 34, 44, 0.85);
+  border: 1px solid rgba(151, 190, 181, 0.15);
+  color: #94a59f;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s, border-color 0.2s;
+}
+#admin-toggle:hover {
+  background: rgba(24, 34, 44, 1);
+  border-color: rgba(88, 215, 255, 0.3);
+}
+
+/* ── Admin login overlay ─── */
+#admin-login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+#admin-login-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.admin-login-box {
+  background: #111922;
+  border: 1px solid rgba(151, 190, 181, 0.15);
+  border-radius: 16px;
+  padding: 28px 32px;
+  width: 320px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+.admin-login-box h3 {
+  margin: 0 0 18px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e9f0ec;
+}
+.admin-login-box input {
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: rgba(18, 26, 33, 0.92);
+  border: 1px solid rgba(151, 190, 181, 0.12);
+  border-radius: 8px;
+  color: #e9f0ec;
+  font-size: 0.88rem;
+  outline: none;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+.admin-login-box input:focus {
+  border-color: rgba(88, 215, 255, 0.4);
+}
+.admin-login-box input::placeholder {
+  color: #5a716b;
+}
+.admin-login-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.admin-login-actions button {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+#admin-login-btn {
+  background: #58d7ff;
+  color: #0a1116;
+}
+#admin-login-btn:hover { opacity: 0.85; }
+#admin-cancel-btn {
+  background: rgba(151, 190, 181, 0.08);
+  color: #94a59f;
+  border: 1px solid rgba(151, 190, 181, 0.12);
+}
+#admin-cancel-btn:hover { background: rgba(151, 190, 181, 0.15); }
+#admin-login-error {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: #ff8392;
+  text-align: center;
+  min-height: 1.2em;
 }
