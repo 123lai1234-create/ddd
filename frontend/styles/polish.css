@@ -1,0 +1,153 @@
+/**
+ * Global polish layer — consistent hover, focus, transition, and micro-interaction
+ * patterns across all pages. Loaded after page-specific CSS.
+ */
+
+/* ── Standardized transitions on all interactive elements ────────────────── */
+a, button, input, select, textarea,
+.card, .metric-card, .algo-card, .surface-card, .runtime-card,
+.explore-card, .img-card, .faq-item, .work-card, .skill-card,
+.pipe-step, .badge, .tag, .demo-metric, .demo-context-card,
+.demo-flow-card, .platform-card, .service-card, .chart-card,
+.module-row, .ops-card, .trade-row, .kv-row {
+  transition: transform 0.2s ease, box-shadow 0.2s ease,
+              border-color 0.2s ease, background 0.2s ease,
+              color 0.2s ease, opacity 0.2s ease;
+}
+
+/* ── Universal card hover lift ───────────────────────────────────────────── */
+.card:hover, .metric-card:hover, .algo-card:hover,
+.surface-card:hover, .runtime-card:hover,
+.explore-card:hover, .img-card:hover,
+.work-card:hover, .skill-card:hover,
+.demo-context-card:hover, .demo-flow-card:hover,
+.platform-card:hover, .service-card:hover,
+.chart-card:hover, .pipe-step:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(88, 215, 255, 0.08);
+}
+
+/* ── Button hover & active polish ────────────────────────────────────────── */
+button:not(#admin-toggle):not(.chatbot-close):not(#chatbot-toggle):hover,
+.btn:hover, .filter-btn:hover, .tab-btn:hover,
+.algo-tab:hover, .group-chip:hover {
+  transform: translateY(-1px);
+}
+button:not(#admin-toggle):active, .btn:active,
+.filter-btn:active, .tab-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ── Consistent focus ring for all inputs ────────────────────────────────── */
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(88, 215, 255, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(88, 215, 255, 0.12) !important;
+  outline: none;
+}
+
+/* ── Tag / badge interactive polish ──────────────────────────────────────── */
+.tag:hover, .badge:hover, .htag:hover, .explore-tag:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}
+
+/* ── Table row hover polish ──────────────────────────────────────────────── */
+.mod-table tr:hover td,
+.ops-bar-row:hover,
+.trade-row:hover,
+.kv-row:hover {
+  background: rgba(88, 215, 255, 0.03);
+  border-color: rgba(88, 215, 255, 0.1);
+}
+
+/* ── Metric value glow on hover ──────────────────────────────────────────── */
+.metric-card:hover .metric-val,
+.demo-metric:hover .metric-val,
+.hero-stat:hover .val {
+  text-shadow: 0 0 20px rgba(123, 240, 190, 0.3);
+}
+
+/* ── Timeline dot pulse on hover ─────────────────────────────────────────── */
+.timeline-item:hover::before {
+  box-shadow: 0 0 0 4px rgba(88, 215, 255, 0.2);
+}
+
+/* ── Accordion smoother ──────────────────────────────────────────────────── */
+.faq-q:hover, .accordion-header:hover {
+  background: rgba(88, 215, 255, 0.04);
+}
+
+/* ── Image card hover zoom ───────────────────────────────────────────────── */
+.img-card:hover img {
+  transform: scale(1.02);
+  transition: transform 0.4s ease;
+}
+.img-card img {
+  transition: transform 0.4s ease;
+}
+
+/* ── Code block subtle glow ──────────────────────────────────────────────── */
+pre:hover, .terminal:hover, .math-card:hover {
+  border-color: rgba(88, 215, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Scroll-triggered fade (works with GSAP but also standalone) ─────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Loading skeleton shimmer ────────────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.loading {
+  background: linear-gradient(90deg,
+    rgba(88, 215, 255, 0.04) 25%,
+    rgba(88, 215, 255, 0.08) 50%,
+    rgba(88, 215, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease infinite;
+}
+
+/* ── Smooth scroll behavior ──────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Selection color ─────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(88, 215, 255, 0.25);
+  color: #e9f0ec;
+}
+
+/* ── Scrollbar styling (Webkit) ──────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(151, 190, 181, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(151, 190, 181, 0.3);
+}
+
+/* ── Responsive touch targets ────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  button, .btn, .filter-btn, .tab-btn, .algo-tab {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .tag, .badge, .htag {
+    padding: 4px 10px;
+    font-size: 0.72rem;
+  }
+}

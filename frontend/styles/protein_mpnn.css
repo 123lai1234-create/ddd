@@ -385,3 +385,39 @@
     justify-content: center;
   }
 }
+
+/* ── Polish: hover, focus, micro-interactions ────────────────────────────── */
+.demo-metric {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: default;
+}
+.demo-metric:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+.demo-metric:hover .demo-metric-val {
+  text-shadow: 0 0 16px rgba(88, 215, 255, 0.35);
+}
+
+.demo-context-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.demo-context-card:hover {
+  border-color: rgba(88, 215, 255, 0.2);
+}
+
+.demo-flow-card {
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.demo-flow-card:hover {
+  border-color: rgba(123, 240, 190, 0.2);
+  transform: translateY(-2px);
+}
+
+.demo-summary-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.demo-summary-card:hover {
+  border-color: rgba(88, 215, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}

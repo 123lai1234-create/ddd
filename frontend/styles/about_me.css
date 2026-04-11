@@ -931,3 +931,41 @@ section {
     gap: 14px;
   }
 }
+
+/* ── Polish: hover, focus, micro-interactions ────────────────────────────── */
+.skill-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.skill-card:hover {
+  border-color: rgba(88, 215, 255, 0.18);
+}
+
+.timeline-item {
+  transition: transform 0.15s ease;
+}
+.timeline-item:hover {
+  transform: translateX(4px);
+}
+
+.metric-mini {
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.metric-mini:hover {
+  border-color: rgba(88, 215, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.tag {
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.contact-form input:hover,
+.contact-form textarea:hover,
+.contact-form select:hover {
+  border-color: rgba(88, 215, 255, 0.25);
+}
+
+.contact-form .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(88, 215, 255, 0.2);
+}

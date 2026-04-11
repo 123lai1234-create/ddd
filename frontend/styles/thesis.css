@@ -879,3 +879,46 @@ footer a {
     align-items: start;
   }
 }
+
+/* ── Polish ──────────────────────────────────────────────────────────────── */
+.ops-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.ops-card:hover {
+  border-color: rgba(88, 215, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.ops-chip {
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.ops-chip:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}
+
+.ops-summary-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.ops-summary-card:hover {
+  border-color: rgba(88, 215, 255, 0.15);
+}
+
+.param-bar-fill {
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kv-row {
+  transition: background 0.15s ease;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+
+.trade-row {
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.trade-row:hover {
+  background: rgba(88, 215, 255, 0.03);
+}

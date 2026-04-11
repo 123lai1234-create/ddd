@@ -368,3 +368,60 @@ footer {
   border-top: 1px solid var(--border);
   margin-top: 20px;
 }
+
+/* ── Polish: hover effects for report cards ──────────────────────────────── */
+.metric-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.metric-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(88, 215, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+.metric-card:hover .metric-val {
+  text-shadow: 0 0 16px rgba(123, 240, 190, 0.3);
+}
+
+.img-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.img-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+.algo-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.algo-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 188, 114, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.pipe-step {
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.pipe-step:hover {
+  transform: translateY(-2px);
+  border-color: rgba(88, 215, 255, 0.2);
+}
+
+.mod-table tr {
+  transition: background 0.15s ease;
+}
+
+pre {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+pre:hover {
+  border-color: rgba(88, 215, 255, 0.12);
+}
+
+.math-block {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.math-block:hover {
+  border-color: var(--purple);
+  box-shadow: 0 4px 16px rgba(181, 156, 255, 0.1);
+}
