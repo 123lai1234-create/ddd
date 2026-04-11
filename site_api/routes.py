@@ -8,7 +8,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 from urllib.parse import urlparse
 
+import dotenv
 import httpx
+
+dotenv.load_dotenv()
 import psycopg
 from fastapi import APIRouter, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -1360,7 +1363,7 @@ def lookup_vep(hgvs: str) -> dict[str, Any]:
     return {"result": result, "hgvs": hgvs}
 
 
-# ── Anthropic AI Chatbot proxy ────────────────────────────────────────────────
+# ── Google Gemini AI Chatbot proxy ────────────────────────────────────────────
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
@@ -1368,9 +1371,9 @@ class ChatRequest(BaseModel):
 
 @router.post("/api/chat")
 def chat_proxy(payload: ChatRequest) -> dict[str, Any]:
-    api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
-        return {"reply": "AI 助手尚未設定，請先配置 ANTHROPIC_API_KEY 環境變數。"}
+        return {"reply": "AI 助手尚未設定，請先配置 GEMINI_API_KEY 環境變數。"}
 
     system_prompt = (
         "你是一個生物醫學 AI 作品集的助手。這個作品集包含蛋白質 AI 設計 (ProteinMPNN, ESM-2)、"
@@ -1380,24 +1383,24 @@ def chat_proxy(payload: ChatRequest) -> dict[str, Any]:
 
     try:
         resp = httpx.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}",
+            headers={"content-type": "application/json"},
             json={
-                "model": "claude-haiku-4-5-20251001",
-                "max_tokens": 512,
-                "system": system_prompt,
-                "messages": [{"role": "user", "content": payload.message}],
+                "system_instruction": {"parts": [{"text": system_prompt}]},
+                "contents": [{"role": "user", "parts": [{"text": payload.message}]}],
+                "generationConfig": {"maxOutputTokens": 512},
             },
             timeout=25,
         )
         if resp.status_code != 200:
             return {"reply": f"API 回應異常 (HTTP {resp.status_code})，請稍後再試。"}
         data = resp.json()
-        text = data.get("content", [{}])[0].get("text", "")
+        text = (
+            data.get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+        )
         return {"reply": text or "..."}
     except Exception as exc:
         return {"reply": f"連線失敗：{exc}"}

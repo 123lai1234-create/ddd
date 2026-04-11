@@ -101,22 +101,21 @@ async function initParticles() {
     await tsParticles.load('tsparticles', {
       fullScreen: false,
       particles: {
-        number: { value: 30 },
+        number: { value: 18 },
         color: { value: ['#58d7ff', '#7bf0be', '#b59cff'] },
         shape: { type: 'circle' },
-        opacity: { value: 0.3, random: true },
-        size: { value: { min: 1, max: 3 } },
-        links: { enable: true, distance: 120, color: '#58d7ff', opacity: 0.12 },
-        move: { enable: true, speed: 0.6, direction: 'none', outModes: 'bounce' },
+        opacity: { value: 0.15, random: true },
+        size: { value: { min: 1, max: 2 } },
+        links: { enable: true, distance: 100, color: '#58d7ff', opacity: 0.06 },
+        move: { enable: true, speed: 0.4, direction: 'none', outModes: 'bounce' },
       },
       interactivity: {
         events: {
           onHover: { enable: true, mode: 'grab' },
-          onClick: { enable: true, mode: 'push' },
+          onClick: { enable: false },
         },
         modes: {
-          grab: { distance: 140, links: { opacity: 0.3 } },
-          push: { quantity: 2 },
+          grab: { distance: 120, links: { opacity: 0.15 } },
         },
       },
     });

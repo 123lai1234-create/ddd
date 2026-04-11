@@ -8,5 +8,6 @@ outputs/*.pt
 .netlify/
 .wrangler/
 .railway/
+.env
 .env*.local
 .hftoken

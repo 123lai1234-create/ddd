@@ -1,0 +1,7 @@
+WARNING: Ignoring invalid distribution ~ip (d:\project\.venv\Lib\site-packages)
+Requirement already satisfied: python-dotenv in .\.venv\lib\site-packages (1.2.2)
+WARNING: Ignoring invalid distribution ~ip (d:\project\.venv\Lib\site-packages)
+WARNING: Ignoring invalid distribution ~ip (d:\project\.venv\Lib\site-packages)
+
+[notice] A new release of pip is available: 25.3 -> 26.0.1
+[notice] To update, run: python.exe -m pip install --upgrade pip
