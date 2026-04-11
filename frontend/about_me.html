@@ -213,9 +213,8 @@
                 <div class="contact-panel">
                     <div class="tiny">Multi-DB stack</div>
                     <h3>Static Site + Python API + Multi-Cloud Postgres</h3>
-                    <p>網站本身仍是靜態頁，但這裡的送出會經過獨立 API 服務，自動嘗試所有已設定的 PostgreSQL
-                        來源（Neon、Supabase、CockroachDB、Aiven、Railway），第一個連上的就寫入。</p>
-                    <div class="inline-metrics">
+                    <p>有任何問題或合作想法，歡迎留言。</p>
+                    <div class="inline-metrics admin-only">
                         <div class="metric-mini">
                             <div class="k">API status</div>
                             <div class="v" id="apiHealthLabel">Waiting</div>
@@ -233,8 +232,8 @@
                             <div class="v" id="dbLastSeen">-</div>
                         </div>
                     </div>
-                    <div id="dbMultiStatus" class="db-multi-status" style="margin-top:12px"></div>
-                    <div class="contact-meta">API base: <span id="apiBaseLabel">Not configured</span></div>
+                    <div id="dbMultiStatus" class="db-multi-status admin-only" style="margin-top:12px"></div>
+                    <div class="contact-meta admin-only">API base: <span id="apiBaseLabel">Not configured</span></div>
                 </div>
                 <form id="contactForm" class="contact-form" novalidate>
                     <div class="tiny">Leave a message</div>

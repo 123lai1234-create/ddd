@@ -209,7 +209,7 @@
                 <div class="ga-cfg-actions">
                     <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 重新運算</button>
                     <button class="btn btn-ghost" onclick="resetGaCfg()">↩ 重置論文預設</button>
-                    <button class="btn btn-ghost" id="btnSyncStocks" style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步股價</button>
+                    <button class="btn btn-ghost admin-only" id="btnSyncStocks" style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步股價</button>
                     <span class="ga-cfg-status" id="cfgStatus"></span>
                 </div>
             </div>
@@ -291,7 +291,7 @@
         </div>
     </div>
 
-    <div id="market-ops" class="section reveal">
+    <div id="market-ops" class="section reveal admin-only">
         <div class="section-inner">
             <div class="section-label">Live Market Ops</div>
             <h2 class="section-title">市場資料同步、TAIFEX 合約月與日線快取檢視</h2>

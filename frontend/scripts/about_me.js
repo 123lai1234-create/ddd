@@ -119,11 +119,11 @@
             });
 
             if (dbConfigured && dbConnected) {
-                setStatus('API 與資料庫已連線，可以直接把表單寫進 PostgreSQL。', 'success');
+                setStatus('表單已就緒，可以送出留言。', 'success');
             } else if (!dbConfigured) {
-                setStatus('API 已上線，但尚未設定任何 DATABASE_URL，所以表單暫時不能寫入資料庫。', 'warning');
+                setStatus('後端服務啟動中，表單功能稍後開放。', 'warning');
             } else {
-                setStatus('API 已上線，但資料庫仍在啟動或尚未可連線。', 'warning');
+                setStatus('服務啟動中，請稍候。', 'warning');
             }
         } catch (error) {
             submitBtn.disabled = true;
@@ -133,7 +133,7 @@
                 count: '-',
                 lastSeen: '-'
             });
-            setStatus('目前無法連線到 API。請先建立 API service 與 PostgreSQL database。', 'error');
+            setStatus('後端目前離線，表單暫時無法送出。', 'error');
         }
 
         updateDbMultiStatus(apiBase);

@@ -255,3 +255,26 @@ nav {
 .footer-note {
   margin-top: 4px;
 }
+
+/* ─── Admin mode ───────────────────────────────────────────────────── */
+.admin-only {
+  display: none !important;
+}
+html.is-admin .admin-only {
+  display: revert !important;
+}
+.admin-badge {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 10000;
+  background: rgba(255, 188, 114, 0.15);
+  border: 1px solid rgba(255, 188, 114, 0.35);
+  color: #ffbc72;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  backdrop-filter: blur(8px);
+}

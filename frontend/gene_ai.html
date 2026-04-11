@@ -251,13 +251,13 @@
                             <option value="8">8</option>
                         </select>
                     </div>
-                    <button id="sequenceSync" class="btn btn-primary" type="button">同步序列到 DB</button>
+                    <button id="sequenceSync" class="btn btn-primary admin-only" type="button">同步序列到 DB</button>
                     <button id="sequenceReload" class="btn btn-secondary" type="button">重新讀取 DB 快取</button>
-                    <div id="sequenceStatus" class="status-banner" data-state="info">正在偵測可用 API 並載入序列快取...</div>
+                    <div id="sequenceStatus" class="status-banner admin-only" data-state="info">正在偵測可用 API 並載入序列快取...</div>
                     <div class="small-note">
                         策略是先讀 DB，只有 DB 還是空的，或你手動按同步時，才會重新打公開來源。這樣前端展示會穩定很多。
                     </div>
-                    <div class="small-note">API base: <span id="sequenceApiLabel" class="mono">detecting...</span></div>
+                    <div class="small-note admin-only">API base: <span id="sequenceApiLabel" class="mono">detecting...</span></div>
                 </aside>
 
                 <div class="panel result-panel">
@@ -334,13 +334,13 @@
                             <option value="12">12</option>
                         </select>
                     </div>
-                    <button id="sequencingRunSync" class="btn btn-primary" type="button">同步 ENA run 到 DB</button>
+                    <button id="sequencingRunSync" class="btn btn-primary admin-only" type="button">同步 ENA run 到 DB</button>
                     <button id="sequencingRunReload" class="btn btn-secondary" type="button">重新讀取 run 快取</button>
-                    <div id="sequencingRunStatus" class="status-banner" data-state="info">正在讀取 sequencing run metadata 快取...</div>
+                    <div id="sequencingRunStatus" class="status-banner admin-only" data-state="info">正在讀取 sequencing run metadata 快取...</div>
                     <div class="small-note">
                         這裡適合接 NGS / multi-omics 的 metadata 層。前端先看 study 與 sample 分布，後端再把 record_url 與 ftp_url 串到後續分析流程。
                     </div>
-                    <div class="small-note">API base: <span id="sequencingRunApiLabel" class="mono">detecting...</span></div>
+                    <div class="small-note admin-only">API base: <span id="sequencingRunApiLabel" class="mono">detecting...</span></div>
                 </aside>
 
                 <div class="panel result-panel">
@@ -414,14 +414,14 @@
                             <option value="6">6</option>
                         </select>
                     </div>
-                    <button id="knowledgeSync" class="btn btn-primary" type="button">同步知識到 DB</button>
+                    <button id="knowledgeSync" class="btn btn-primary admin-only" type="button">同步知識到 DB</button>
                     <button id="knowledgeReload" class="btn btn-secondary" type="button">重新讀取知識庫</button>
-                    <button id="knowledgeRagRefresh" class="btn btn-secondary" type="button">更新 RAG 預覽</button>
-                    <div id="knowledgeStatus" class="status-banner" data-state="info">正在讀取知識庫與 RAG 文件預覽...</div>
+                    <button id="knowledgeRagRefresh" class="btn btn-secondary admin-only" type="button">更新 RAG 預覽</button>
+                    <div id="knowledgeStatus" class="status-banner admin-only" data-state="info">正在讀取知識庫與 RAG 文件預覽...</div>
                     <div class="small-note">
                         UniProt 比較適合做 protein annotation cache，PubMed 則補文獻語意層。這兩類內容合在一起，會比只有序列更適合做 RAG。
                     </div>
-                    <div class="small-note">API base: <span id="knowledgeApiLabel" class="mono">detecting...</span>
+                    <div class="small-note admin-only">API base: <span id="knowledgeApiLabel" class="mono">detecting...</span>
                     </div>
                 </aside>
 
