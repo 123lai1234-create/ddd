@@ -34,6 +34,8 @@ async def lifespan(application: FastAPI):
         format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    from site_api.auto_sync import run_auto_sync
+    run_auto_sync()
     yield
     from site_api import db
     if db._DB_POOL is not None:
