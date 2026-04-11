@@ -60,6 +60,7 @@ jobs:
           DB_SUPABASE: ${{ secrets.DATABASE_URL_SUPABASE }}
           DB_COCKROACH: ${{ secrets.DATABASE_URL_COCKROACH }}
           DB_AIVEN: ${{ secrets.DATABASE_URL_AIVEN }}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
         run: |
           if [ -z "$RAILWAY_API_TOKEN" ]; then
             echo "::warning::RAILWAY_API_TOKEN not set, skipping variable sync"
@@ -74,15 +75,73 @@ jobs:
           [ -n "$DB_SUPABASE" ]  && vars="$vars DATABASE_URL_SUPABASE=$DB_SUPABASE"
           [ -n "$DB_COCKROACH" ] && vars="$vars DATABASE_URL_COCKROACH=$DB_COCKROACH"
           [ -n "$DB_AIVEN" ]     && vars="$vars DATABASE_URL_AIVEN=$DB_AIVEN"
+          [ -n "$SYNC_SECRET" ]  && vars="$vars SYNC_SECRET=$SYNC_SECRET"
           if [ -n "$vars" ]; then
             npx --yes @railway/cli variables set $vars --skip-deploys
-            echo "Database variables synced to Railway"
+            echo "Database and sync variables synced to Railway"
           else
-            echo "::warning::No database secrets configured in GitHub"
+            echo "::warning::No database or sync secrets configured in GitHub"
           fi
 
+      - name: Resolve Railway public domain
+        id: railway_domain
+        continue-on-error: true
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: |
+          if [ -z "$RAILWAY_API_TOKEN" ]; then
+            echo "domain=https://donttalk-api-production.up.railway.app" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          response=$(curl -sS https://backboard.railway.com/graphql/v2 \
+            -H "Authorization: Bearer $RAILWAY_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"query":"query($projectId:String!,$environmentId:String!,$serviceId:String!){ domains(projectId:$projectId, environmentId:$environmentId, serviceId:$serviceId){ serviceDomains { domain } } }","variables":{"projectId":"'"$RAILWAY_PROJECT_ID"'","environmentId":"'"$RAILWAY_ENVIRONMENT_ID"'","serviceId":"'"$RAILWAY_SERVICE_ID"'"}}')
+          railway_domain=$(echo "$response" | node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync(0,'utf8')); const domain=data?.data?.domains?.serviceDomains?.[0]?.domain; process.stdout.write(domain ? 'https://' + domain : 'https://donttalk-api-production.up.railway.app');")
+          echo "domain=$railway_domain" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for Railway health
+        continue-on-error: true
+        env:
+          API_BASE_URL: ${{ steps.railway_domain.outputs.domain }}
+        run: |
+          base_url="${API_BASE_URL:-https://donttalk-api-production.up.railway.app}"
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsS "$base_url/healthz" >/dev/null; then
+              echo "Railway health check passed at $base_url"
+              exit 0
+            fi
+            echo "Waiting for Railway health check ($attempt/6) ..."
+            sleep 10
+          done
+          echo "::warning::Railway health did not return 200 before timeout"
+
+      - name: Seed OpenTargets evidence on Railway
+        continue-on-error: true
+        env:
+          API_BASE_URL: ${{ steps.railway_domain.outputs.domain }}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+        run: |
+          if [ -z "$SYNC_SECRET" ]; then
+            echo "::warning::SYNC_SECRET is not set, skipping live OpenTargets seed"
+            exit 0
+          fi
+          base_url="${API_BASE_URL:-https://donttalk-api-production.up.railway.app}"
+          curl -fsS "$base_url/api/opentargets/sync" \
+            -H "Content-Type: application/json" \
+            -H "X-Sync-Secret: $SYNC_SECRET" \
+            -d '{"gene_symbol":"TP53","limit":3}'
+
+      - name: Verify live OpenTargets summary on Railway
+        continue-on-error: true
+        env:
+          API_BASE_URL: ${{ steps.railway_domain.outputs.domain }}
+        run: |
+          base_url="${API_BASE_URL:-https://donttalk-api-production.up.railway.app}"
+          curl -fsS "$base_url/api/opentargets/summary"
+
   deploy-vercel:
-    name: Deploy Vercel (Frontend + API)
+    name: Deploy Vercel Frontend
     needs: deploy-railway
     if: always()
     runs-on: ubuntu-latest
@@ -106,11 +165,29 @@ jobs:
           cp -r dist/. .vercel/output/static/
           node ./scripts/write_vercel_output_config.mjs
 
+      - name: Check Vercel credentials
+        id: vercel_preflight
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::VERCEL_TOKEN is not set, skipping Vercel deploy"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy frontend to Vercel
+        if: steps.vercel_preflight.outputs.enabled == 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           npx --yes vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
+
+      - name: Warn about Vercel permissions
+        if: steps.vercel_preflight.outputs.enabled == 'true' && failure()
+        run: |
+          echo "::warning::Vercel deploy failed. Verify VERCEL_TOKEN can access project $VERCEL_PROJECT_ID in org $VERCEL_ORG_ID and can create production deployments."
 
   deploy-netlify:
     name: Deploy Netlify Frontend

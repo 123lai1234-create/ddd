@@ -8,7 +8,7 @@
   const ADMIN_PASS = 'mike';
 
   let isAdmin = false;
-  try { isAdmin = localStorage.getItem('_admin_mode') === 'true'; } catch {}
+  try { isAdmin = localStorage.getItem('_admin_mode') === 'true'; } catch { }
 
   // Auto-login via URL param (legacy support)
   const urlToken = new URLSearchParams(window.location.search).get('admin');
@@ -17,7 +17,7 @@
       localStorage.setItem('_admin_mode', 'true');
       localStorage.setItem('_sync_secret', urlToken);
       isAdmin = true;
-    } catch {}
+    } catch { }
   }
 
   if (isAdmin) {
@@ -25,12 +25,16 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    const controls = document.createElement('div');
+    controls.id = 'admin-controls';
+    document.body.appendChild(controls);
+
     // ── Floating toggle button (always visible) ──
     const toggle = document.createElement('button');
     toggle.id = 'admin-toggle';
     toggle.setAttribute('aria-label', '管理員模式');
     toggle.textContent = isAdmin ? '🔓' : '🔒';
-    document.body.appendChild(toggle);
+    controls.appendChild(toggle);
 
     // ── Admin badge (only when logged in) ──
     let badge = null;
@@ -38,7 +42,7 @@
       badge = document.createElement('div');
       badge.className = 'admin-badge';
       badge.textContent = '🔧 Admin Mode';
-      document.body.appendChild(badge);
+      controls.prepend(badge);
     }
 
     // ── Login dialog ──
@@ -82,7 +86,7 @@
           if (!localStorage.getItem('_sync_secret')) {
             localStorage.setItem('_sync_secret', u);
           }
-        } catch {}
+        } catch { }
         isAdmin = true;
         document.documentElement.classList.add('is-admin');
         toggle.textContent = '🔓';
@@ -91,7 +95,7 @@
           badge = document.createElement('div');
           badge.className = 'admin-badge';
           badge.textContent = '🔧 Admin Mode';
-          document.body.appendChild(badge);
+          controls.prepend(badge);
         }
       } else {
         errorEl.textContent = '帳號或密碼錯誤';
@@ -104,7 +108,7 @@
       try {
         localStorage.removeItem('_admin_mode');
         localStorage.removeItem('_admin_token');
-      } catch {}
+      } catch { }
       isAdmin = false;
       document.documentElement.classList.remove('is-admin');
       toggle.textContent = '🔒';
@@ -131,7 +135,8 @@
     try {
       localStorage.removeItem('_admin_mode');
       localStorage.removeItem('_admin_token');
-    } catch {}
+    } catch { }
+    isAdmin = false;
     document.documentElement.classList.remove('is-admin');
     document.querySelector('.admin-badge')?.remove();
     const t = document.getElementById('admin-toggle');

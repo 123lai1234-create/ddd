@@ -219,6 +219,18 @@ The deployed FastAPI service now exposes a small bioinformatics knowledge layer 
 - Sequencing run metadata: `/api/sequencing-runs`, `/api/sequencing-runs/summary`, `/api/sequencing-runs/sync`
 - Knowledge cache endpoints: `/api/knowledge`, `/api/knowledge/summary`, `/api/knowledge/sync`
 - RAG document export: `/api/rag/documents`
+- OpenTargets evidence endpoints: `/api/opentargets`, `/api/opentargets/summary`, `/api/opentargets/sync`
+- ChEMBL target compound endpoints: `/api/chembl`, `/api/chembl/summary`, `/api/chembl/sync`
+- Pathway sync endpoint: `/api/pathways/sync`
+
+Default free upstreams for this layer now include:
+
+- UniProt for protein sequence and annotation records
+- Ensembl for gene sequence lookup
+- NCBI PubMed for literature summaries
+- OpenTargets GraphQL for gene-disease-drug evidence
+- ChEMBL for target-compound and bioactivity data
+- Reactome and QuickGO for pathway and GO annotations
 
 ## Market Data Layer
 

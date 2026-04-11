@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any
 from xml.etree import ElementTree as ET
 
@@ -364,7 +364,7 @@ def fetch_scholar_knowledge(query: str, limit: int = 8) -> list[KnowledgeRecordP
         ))
 
     if records:
-        cached_json_set("scholar", cache_key, [r.__dict__ for r in records], ttl=21600)
+        cached_json_set("scholar", cache_key, [asdict(r) for r in records], ttl=21600)
     return records
 
 
@@ -408,7 +408,7 @@ def fetch_interpro_annotations(uniprot_id: str, limit: int = 10) -> list[Knowled
         ))
 
     if records:
-        cached_json_set("interpro", cache_key, [r.__dict__ for r in records], ttl=86400)
+        cached_json_set("interpro", cache_key, [asdict(r) for r in records], ttl=86400)
     return records
 
 
@@ -461,7 +461,7 @@ def fetch_geo_datasets(query: str, limit: int = 8) -> list[KnowledgeRecordPayloa
         ))
 
     if records:
-        cached_json_set("geo", cache_key, [r.__dict__ for r in records], ttl=21600)
+        cached_json_set("geo", cache_key, [asdict(r) for r in records], ttl=21600)
     return records
 
 
@@ -516,5 +516,5 @@ def fetch_openalex_works(query: str, limit: int = 8) -> list[KnowledgeRecordPayl
         ))
 
     if records:
-        cached_json_set("openalex", cache_key, [r.__dict__ for r in records], ttl=21600)
+        cached_json_set("openalex", cache_key, [asdict(r) for r in records], ttl=21600)
     return records

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from site_api.cache import cached_json_get, cached_json_set
 from site_api.http_client import get as http_get
@@ -64,7 +64,7 @@ def fetch_quickgo_annotations(uniprot_id: str, limit: int = 15) -> list[Knowledg
         ))
 
     if records:
-        cached_json_set("quickgo", cache_key, [r.__dict__ for r in records], ttl=86400)
+        cached_json_set("quickgo", cache_key, [asdict(r) for r in records], ttl=86400)
     return records[:limit]
 
 
@@ -112,5 +112,5 @@ def fetch_reactome_pathways(gene_symbol: str, species: str = "Homo sapiens", lim
             ))
 
     if records:
-        cached_json_set("reactome", cache_key, [r.__dict__ for r in records[:limit]], ttl=86400)
+        cached_json_set("reactome", cache_key, [asdict(r) for r in records[:limit]], ttl=86400)
     return records[:limit]

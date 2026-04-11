@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from site_api.cache import cached_json_get, cached_json_set
 from site_api.http_client import post as http_post
@@ -40,7 +40,7 @@ query TargetAssociations($ensemblId: String!, $size: Int!) {
       rows {
         disease { id name }
         score
-        datatypeScores { componentId score }
+                datatypeScores { id score }
       }
     }
   }
@@ -54,8 +54,8 @@ query TargetInfo($ensemblId: String!) {
     approvedSymbol
     approvedName
     biotype
-    knownDrugs(size: 10) {
-      rows { drug { id name } mechanismOfAction phase status }
+        drugAndClinicalCandidates {
+            rows { drug { id name } maxClinicalStage }
     }
   }
 }
@@ -116,7 +116,7 @@ def fetch_opentargets_associations(gene_symbol: str, limit: int = 10) -> list[Op
             timeout=REQUEST_TIMEOUT,
         )
         if drug_resp.status_code == 200:
-            drug_rows = drug_resp.json().get("data", {}).get("target", {}).get("knownDrugs", {}).get("rows", [])
+            drug_rows = drug_resp.json().get("data", {}).get("target", {}).get("drugAndClinicalCandidates", {}).get("rows", [])
             for dr in drug_rows:
                 name = (dr.get("drug") or {}).get("name", "")
                 if name:
@@ -127,7 +127,7 @@ def fetch_opentargets_associations(gene_symbol: str, limit: int = 10) -> list[Op
     results: list[OpenTargetsAssociationPayload] = []
     for row in rows[:limit]:
         disease = row.get("disease", {})
-        dt_scores = {s.get("componentId", ""): round(s.get("score", 0), 4) for s in row.get("datatypeScores", [])}
+        dt_scores = {s.get("id", ""): round(s.get("score", 0), 4) for s in row.get("datatypeScores", []) if s.get("id")}
         results.append(OpenTargetsAssociationPayload(
             source_name="OpenTargets",
             source_id=f"{ensembl_id}--{disease.get('id', '')}",
@@ -144,5 +144,5 @@ def fetch_opentargets_associations(gene_symbol: str, limit: int = 10) -> list[Op
         ))
 
     if results:
-        cached_json_set("opentargets", cache_key, [r.__dict__ for r in results], ttl=43200)
+        cached_json_set("opentargets", cache_key, [asdict(r) for r in results], ttl=43200)
     return results

@@ -263,11 +263,18 @@ nav {
 html.is-admin .admin-only {
   display: revert !important;
 }
-.admin-badge {
+.admin-controls,
+#admin-controls {
   position: fixed;
-  top: 10px;
-  right: 60px;
+  bottom: 24px;
+  right: 16px;
   z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-badge {
+  position: static;
   background: rgba(255, 188, 114, 0.15);
   border: 1px solid rgba(255, 188, 114, 0.35);
   color: #ffbc72;
@@ -275,16 +282,14 @@ html.is-admin .admin-only {
   border-radius: 8px;
   font-size: 0.72rem;
   font-weight: 600;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   backdrop-filter: blur(8px);
+  white-space: nowrap;
 }
 
 /* ── Admin toggle button ─── */
 #admin-toggle {
-  position: fixed;
-  top: 10px;
-  right: 16px;
-  z-index: 10001;
+  position: static;
   width: 36px;
   height: 36px;
   border-radius: 8px;
@@ -297,11 +302,24 @@ html.is-admin .admin-only {
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(8px);
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 #admin-toggle:hover {
   background: rgba(24, 34, 44, 1);
   border-color: rgba(88, 215, 255, 0.3);
+}
+
+@media (max-width: 720px) {
+  #admin-controls {
+    bottom: 16px;
+    right: 12px;
+  }
+
+  .admin-badge {
+    display: none;
+  }
 }
 
 /* ── Admin login overlay ─── */
@@ -346,7 +364,7 @@ html.is-admin .admin-only {
   color: #e9f0ec;
   font-size: 0.88rem;
   outline: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 .admin-login-box input:focus {
   border-color: rgba(88, 215, 255, 0.4);
@@ -367,19 +385,23 @@ html.is-admin .admin-only {
   font-weight: 600;
   cursor: pointer;
   border: none;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 #admin-login-btn {
   background: #58d7ff;
   color: #0a1116;
 }
-#admin-login-btn:hover { opacity: 0.85; }
+#admin-login-btn:hover {
+  opacity: 0.85;
+}
 #admin-cancel-btn {
   background: rgba(151, 190, 181, 0.08);
   color: #94a59f;
   border: 1px solid rgba(151, 190, 181, 0.12);
 }
-#admin-cancel-btn:hover { background: rgba(151, 190, 181, 0.15); }
+#admin-cancel-btn:hover {
+  background: rgba(151, 190, 181, 0.15);
+}
 #admin-login-error {
   margin-top: 10px;
   font-size: 0.78rem;

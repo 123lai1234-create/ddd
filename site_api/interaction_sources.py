@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from site_api.cache import cached_json_get, cached_json_set
 from site_api.http_client import get as http_get
@@ -80,7 +80,7 @@ def fetch_string_interactions(identifiers: list[str], species: int = 9606, limit
         ))
 
     if results:
-        cached_json_set("string", cache_key, [r.__dict__ for r in results], ttl=43200)
+        cached_json_set("string", cache_key, [asdict(r) for r in results], ttl=43200)
     return results[:limit]
 
 

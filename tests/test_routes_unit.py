@@ -407,6 +407,92 @@ class TestRoutesWithMocks(unittest.TestCase):
         )
         self.assertIn(response.status_code, [200, 401, 404])
 
+    @patch("site_api.routes.ensure_opentargets_schema")
+    @patch("site_api.routes.opentargets_summary")
+    def test_opentargets_summary_endpoint(self, mock_summary, mock_ensure):
+        """Test GET /api/opentargets/summary."""
+        mock_ensure.return_value = True
+        mock_summary.return_value = {"totalAssociations": 3}
+
+        response = self.client.get("/api/opentargets/summary")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["databaseConfigured"])
+        self.assertTrue(data["connected"])
+        self.assertEqual(data["totalAssociations"], 3)
+
+    @patch("site_api.routes.ensure_opentargets_schema")
+    @patch("site_api.routes.fetch_opentargets_rows")
+    @patch("site_api.routes.opentargets_summary")
+    def test_list_opentargets_endpoint(self, mock_summary, mock_fetch_rows, mock_ensure):
+        """Test GET /api/opentargets returns stored records."""
+        mock_ensure.return_value = True
+        mock_summary.return_value = {"totalAssociations": 3}
+        mock_fetch_rows.return_value = [
+            {
+                "id": 1,
+                "targetSymbol": "TP53",
+                "diseaseName": "Li-Fraumeni syndrome",
+                "overallScore": 0.8761,
+            }
+        ]
+
+        response = self.client.get("/api/opentargets?gene_symbol=TP53&limit=5")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data["records"]), 1)
+        self.assertEqual(data["records"][0]["targetSymbol"], "TP53")
+        self.assertEqual(data["totalAssociations"], 3)
+
+    @patch("site_api.routes._require_sync_secret")
+    @patch("site_api.routes.ensure_opentargets_schema")
+    @patch("site_api.routes.fetch_opentargets_associations")
+    @patch("site_api.routes.upsert_opentargets")
+    @patch("site_api.routes.fetch_opentargets_rows")
+    @patch("site_api.routes.opentargets_summary")
+    def test_sync_opentargets_endpoint(
+        self,
+        mock_summary,
+        mock_fetch_rows,
+        mock_upsert,
+        mock_fetch_associations,
+        mock_ensure,
+        mock_require_secret,
+    ):
+        """Test POST /api/opentargets/sync stores fetched evidence."""
+        mock_require_secret.return_value = None
+        mock_ensure.return_value = True
+        mock_fetch_associations.return_value = [
+            type("Assoc", (), {
+                "source_name": "OpenTargets",
+                "source_id": "ENSG00000141510--MONDO_0018875",
+                "query_term": "TP53",
+                "target_id": "ENSG00000141510",
+                "target_symbol": "TP53",
+                "disease_id": "MONDO_0018875",
+                "disease_name": "Li-Fraumeni syndrome",
+                "overall_score": 0.8761,
+                "datatype_scores": '{"genetic_association": 0.9564}',
+                "drug_names": "SIREMADLIN",
+                "record_url": "https://platform.opentargets.org/target/ENSG00000141510/associations",
+                "raw_payload": "{}",
+            })()
+        ]
+        mock_upsert.return_value = None
+        mock_fetch_rows.return_value = [{"id": 1, "targetSymbol": "TP53"}]
+        mock_summary.return_value = {"totalAssociations": 1}
+
+        response = self.client.post(
+            "/api/opentargets/sync",
+            json={"gene_symbol": "TP53", "limit": 3},
+            headers={"X-Sync-Secret": "test-secret"},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["stored"], 1)
+        self.assertEqual(data["totalAssociations"], 1)
+        self.assertEqual(data["records"][0]["targetSymbol"], "TP53")
+
 
 class TestErrorHandling(unittest.TestCase):
     """Test error handling in route handlers."""

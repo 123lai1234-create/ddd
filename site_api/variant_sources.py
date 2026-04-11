@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from xml.etree import ElementTree as ET
 
 from site_api.cache import cached_json_get, cached_json_set
@@ -99,7 +99,7 @@ def fetch_clinvar_variants(gene_symbol: str, limit: int = 12) -> list[ClinicalVa
         ))
 
     if results:
-        cached_json_set("clinvar", cache_key, [r.__dict__ for r in results], ttl=43200)
+        cached_json_set("clinvar", cache_key, [asdict(r) for r in results], ttl=43200)
     return results
 
 
@@ -150,5 +150,5 @@ def fetch_cosmic_mutations(gene_symbol: str, limit: int = 12) -> list[ClinicalVa
         ))
 
     if results:
-        cached_json_set("cosmic", cache_key, [r.__dict__ for r in results], ttl=43200)
+        cached_json_set("cosmic", cache_key, [asdict(r) for r in results], ttl=43200)
     return results

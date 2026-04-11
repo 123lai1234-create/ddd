@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from site_api.cache import cached_json_get, cached_json_set
 from site_api.http_client import get as http_get
@@ -125,7 +125,7 @@ def fetch_chembl_compounds(gene_symbol: str, limit: int = 12) -> list[ChEMBLComp
             logger.warning("ChEMBL activity fetch failed for %s: %s", gene_symbol, exc)
 
     if results:
-        cached_json_set("chembl", cache_key, [r.__dict__ for r in results], ttl=43200)
+        cached_json_set("chembl", cache_key, [asdict(r) for r in results], ttl=43200)
     return results[:limit]
 
 
