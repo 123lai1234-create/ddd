@@ -238,4 +238,48 @@
     }
     requestAnimationFrame(tick);
   }
+
+  /* ── 7. Weather widget (OpenWeatherMap — no key needed for basic) ─────────── */
+  function initWeatherWidget() {
+    const hero = document.getElementById('hero');
+    if (!hero) return;
+
+    const widget = document.createElement('div');
+    widget.className = 'weather-widget';
+    widget.innerHTML = '<span class="weather-loading">...</span>';
+    hero.appendChild(widget);
+
+    fetchWeather(widget);
+  }
+
+  async function fetchWeather(widget) {
+    try {
+      // Use wttr.in — no API key needed
+      const resp = await fetch('https://wttr.in/Taipei?format=%c%t&lang=zh-tw', {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!resp.ok) return;
+      const text = (await resp.text()).trim();
+      widget.innerHTML = `<span class="weather-icon">${text.charAt(0)}</span><span class="weather-text">Taipei ${text.slice(1)}</span>`;
+      widget.classList.add('loaded');
+    } catch { widget.remove(); }
+  }
+
+  /* ── 8. Unsplash dynamic hero background ─────────────────────────────────── */
+  function initUnsplashHero() {
+    const canvas = document.querySelector('.hero-canvas');
+    if (!canvas) return;
+
+    // Use Unsplash Source (no API key needed for random images)
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = 'https://source.unsplash.com/1920x1080/?biotechnology,laboratory,dna,science';
+    img.addEventListener('load', () => {
+      canvas.style.backgroundImage = `linear-gradient(rgba(8,12,16,0.82), rgba(8,12,16,0.92)), url(${img.src})`;
+      canvas.style.backgroundSize = 'cover';
+      canvas.style.backgroundPosition = 'center';
+      canvas.classList.add('unsplash-loaded');
+    });
+    // Silently fail if image doesn't load — keep existing gradient
+  }
 })();

@@ -333,3 +333,41 @@ html {
   .live-stats-bar { gap: 16px; padding: 16px; }
   .live-stat .live-val { font-size: 1.1rem; }
 }
+
+/* ── Weather widget ─────────────────────────────────────────────────────── */
+.weather-widget {
+  position: absolute;
+  top: calc(var(--nav-h, 64px) + 12px);
+  right: 24px;
+  z-index: 10;
+  background: rgba(18, 26, 33, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(151, 190, 181, 0.1);
+  border-radius: 10px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  color: var(--muted, #94a59f);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.weather-widget.loaded {
+  opacity: 1;
+}
+.weather-icon {
+  font-size: 1.2rem;
+}
+.weather-text {
+  font-family: "JetBrains Mono", monospace;
+  color: var(--text, #e9f0ec);
+}
+@media (max-width: 640px) {
+  .weather-widget { top: calc(var(--nav-h, 64px) + 8px); right: 12px; font-size: 0.7rem; }
+}
+
+/* ── Unsplash hero background ───────────────────────────────────────────── */
+.hero-canvas.unsplash-loaded {
+  transition: background-image 0.8s ease;
+}
