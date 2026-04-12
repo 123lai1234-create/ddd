@@ -1271,7 +1271,7 @@ async function rerunGA() {
         if (SERIES_CACHE.get(stock.code)?.isReal) {
             SERIES_CACHE.delete(stock.code);
         }
-        dataSource = '模擬數據（點「同步股價」取得真實資料）';
+        dataSource = '⚠ 模擬數據 — 請點「📡 同步真實股價」取得 TWSE 真實資料';
     }
 
     status.textContent = `⏳ ${stock.name} · ${dataSource} · POP=${config.POP} · GENS=${config.GENS} 計算中…`;
@@ -1407,9 +1407,11 @@ async function preloadAllStockData() {
     _preloadDone = true;
     const apiBase = await resolveMarketApiBase();
     if (!apiBase) return;
-    // Fetch first few in parallel to prime the cache
-    const batch = THESIS_STOCK_CODES.slice(0, 10);
-    await Promise.allSettled(batch.map((code) => fetchRealPriceSeries(code)));
+    // Preload all stocks in batches to prime the cache
+    for (let i = 0; i < THESIS_STOCK_CODES.length; i += 10) {
+        const batch = THESIS_STOCK_CODES.slice(i, i + 10);
+        await Promise.allSettled(batch.map((code) => fetchRealPriceSeries(code)));
+    }
 }
 
 async function syncThesisStocks() {
@@ -1851,7 +1853,7 @@ async function autoSyncAndPreload() {
                     ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}),
                 },
                 body: JSON.stringify({
-                    stock_symbols: THESIS_STOCK_CODES.slice(0, 20),
+                    stock_symbols: THESIS_STOCK_CODES,
                     etf_symbols: [],
                     futures_symbols: [],
                     twse_months: 6,

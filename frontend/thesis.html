@@ -215,7 +215,7 @@
                 <div class="ga-cfg-actions">
                     <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 重新運算</button>
                     <button class="btn btn-ghost" onclick="resetGaCfg()">↩ 重置論文預設</button>
-                    <button class="btn btn-ghost admin-only" id="btnSyncStocks" style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步股價</button>
+                    <button class="btn btn-ghost" id="btnSyncStocks" style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步真實股價</button>
                     <span class="ga-cfg-status" id="cfgStatus"></span>
                 </div>
             </div>
@@ -406,23 +406,40 @@
             </div>
             <textarea id="pyodide-code">import numpy as np
 
-# 模擬 GA 適應度曲線
-pop_size, gens = 50, 30
-best_fitness = []
-fitness = np.random.uniform(0, 1, pop_size)
+# PPTS 價格區間利潤分析示範
+# 使用論文方法：將價格切成等距區間，計算各區間平均利潤
 
-for g in range(gens):
-    fitness = np.sort(fitness)[::-1]
-    elite = fitness[:5]
-    offspring = elite.mean() + np.random.normal(0, 0.05, pop_size - 5)
-    fitness = np.concatenate([elite, np.clip(offspring, 0, 1)])
-    best_fitness.append(round(float(fitness.max()), 4))
+prices = np.array([42.5, 43.1, 44.8, 43.2, 45.6, 46.3, 44.9, 47.2, 48.1, 46.8,
+                    49.3, 50.1, 48.7, 51.4, 52.0, 50.5, 53.2, 54.1, 52.8, 55.0,
+                    53.6, 56.2, 57.1, 55.4, 58.3, 57.0, 59.1, 60.2, 58.5, 61.0])
+hold_days = 5
+m = 8  # 價格區間數
+target_profit = 3.0  # 目標利潤 %
 
-print("GA 最佳適應度曲線:")
-for i, f in enumerate(best_fitness):
-    bar = "█" * int(f * 40)
-    print(f"  Gen {i+1:2d}: {f:.4f} {bar}")
-print(f"\n最終最佳: {best_fitness[-1]:.4f}")</textarea>
+p_min, p_max = prices.min(), prices.max()
+width = (p_max - p_min) / m
+
+print(f"價格範圍: {p_min:.1f} ~ {p_max:.1f}")
+print(f"區間寬度: {width:.2f}，共 {m} 個區間")
+print(f"持有天數: {hold_days}，目標利潤: {target_profit}%\n")
+
+for i in range(m):
+    lo = p_min + width * i
+    hi = lo + width
+    profits = []
+    for j in range(len(prices) - hold_days):
+        if lo <= prices[j] < hi or (i == m-1 and prices[j] == hi):
+            pnl = (prices[j+hold_days] - prices[j]) / prices[j] * 100
+            profits.append(pnl)
+    if profits:
+        avg = np.mean(profits)
+        prob = np.mean([p >= target_profit for p in profits]) * 100
+        bar = "█" * int(abs(avg) * 4)
+        sign = "+" if avg >= 0 else "-"
+        print(f"  [{lo:5.1f}~{hi:5.1f}] avg={sign}{abs(avg):.2f}% prob={prob:.0f}% {bar}")
+    else:
+        print(f"  [{lo:5.1f}~{hi:5.1f}] (無交易)")
+</textarea>
             <div id="pyodide-output"></div>
         </div>
     </div>
