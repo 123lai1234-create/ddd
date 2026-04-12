@@ -1861,18 +1861,54 @@ function initialisePage() {
 async function autoSyncAndPreload() {
     const status = document.getElementById('cfgStatus');
     const testStock = THESIS_STOCK_CODES[0]; // 1101
+
+    // 1. Check if DB already has data
     const data = await fetchRealPriceSeries(testStock);
     if (data && data.closes.length >= 50) {
-        // DB or Yahoo has data — preload rest in background
+        if (status) status.textContent = '✓ 已從資料庫載入真實股價';
         preloadAllStockData();
         return;
     }
-    // No data yet — batch fetch from public Yahoo proxy (no auth needed)
-    if (status) status.textContent = '正在從 Yahoo Finance 載入 48 檔真實股價…';
+
+    // 2. Try authenticated DB sync (admin or CI)
+    const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
+    if (syncSecret) {
+        if (status) status.textContent = '正在同步 TWSE 股價至資料庫…';
+        try {
+            const apiBase = await resolveMarketApiBase();
+            if (apiBase) {
+                const resp = await fetch(`${apiBase}/api/market/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Sync-Secret': syncSecret,
+                    },
+                    body: JSON.stringify({
+                        stock_symbols: THESIS_STOCK_CODES,
+                        etf_symbols: [],
+                        futures_symbols: [],
+                        twse_months: 6,
+                        yahoo_range: '2y',
+                    }),
+                    signal: AbortSignal.timeout(90000),
+                });
+                if (resp.ok) {
+                    REAL_PRICE_CACHE.clear();
+                    if (status) status.textContent = '✓ TWSE 同步完成，重新計算中…';
+                    rerunGA();
+                    preloadAllStockData();
+                    return;
+                }
+            }
+        } catch { /* fall through to Yahoo */ }
+    }
+
+    // 3. Fallback: public Yahoo proxy (no auth needed)
+    if (status) status.textContent = '正在從 Yahoo Finance 載入真實股價…';
     await batchFetchYahoo(THESIS_STOCK_CODES);
     const loaded = THESIS_STOCK_CODES.filter((c) => REAL_PRICE_CACHE.has(c)).length;
     if (loaded > 0) {
-        if (status) status.textContent = `✓ 已載入 ${loaded}/48 檔真實股價，重新計算中…`;
+        if (status) status.textContent = `✓ 已載入 ${loaded}/48 檔真實股價（Yahoo），重新計算中…`;
         rerunGA();
     } else {
         if (status) status.textContent = '⚠ 無法取得真實股價，使用模擬數據。請稍後重試。';

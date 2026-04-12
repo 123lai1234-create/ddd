@@ -834,7 +834,7 @@ def upsert_market_instruments(records: list[MarketInstrumentPayload]) -> None:
                 for record in records
             ],
         )
-    connection.commit()
+        connection.commit()
     _summary_cache.pop("market", None)
 
 
@@ -867,7 +867,7 @@ def upsert_market_bars(records: list[MarketBarPayload]) -> None:
                 for record in records
             ],
         )
-    connection.commit()
+        connection.commit()
     _summary_cache.pop("market", None)
 
 
