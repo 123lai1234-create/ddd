@@ -151,3 +151,185 @@ html {
     font-size: 0.72rem;
   }
 }
+
+/* ── Scroll progress bar ────────────────────────────────────────────────── */
+#scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, #58d7ff, #7bf0be, #b59cff);
+  z-index: 9999;
+  transition: width 0.05s linear;
+  pointer-events: none;
+}
+
+/* ── Page load transition ───────────────────────────────────────────────── */
+.page-transition {
+  position: fixed;
+  inset: 0;
+  background: var(--bg, #080c10);
+  z-index: 99999;
+  opacity: 1;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.page-transition.done {
+  opacity: 0;
+}
+
+/* ── Card tilt glow effect ──────────────────────────────────────────────── */
+.explore-card,
+.chart-card,
+.metric-card,
+.work-card,
+.service-card {
+  position: relative;
+  overflow: hidden;
+}
+.explore-card::after,
+.chart-card::after,
+.metric-card::after,
+.work-card::after,
+.service-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(
+    400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(88, 215, 255, 0.06),
+    transparent 60%
+  );
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.explore-card:hover::after,
+.chart-card:hover::after,
+.metric-card:hover::after,
+.work-card:hover::after,
+.service-card:hover::after {
+  opacity: 1;
+}
+
+/* ── Keyboard shortcuts overlay ─────────────────────────────────────────── */
+#shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  background: rgba(8, 12, 16, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+#shortcuts-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.shortcuts-box {
+  background: var(--bg2, #111922);
+  border: 1px solid var(--border, rgba(151, 190, 181, 0.1));
+  border-radius: 16px;
+  padding: 28px 36px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.shortcuts-box h3 {
+  margin: 0 0 18px;
+  font-size: 1rem;
+  color: var(--text, #e9f0ec);
+}
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(151, 190, 181, 0.06);
+}
+.shortcut-row:last-child {
+  border-bottom: none;
+}
+.shortcut-label {
+  color: var(--muted, #94a59f);
+  font-size: 0.84rem;
+}
+.shortcut-keys {
+  display: flex;
+  gap: 4px;
+}
+.shortcut-key {
+  background: rgba(88, 215, 255, 0.08);
+  border: 1px solid rgba(88, 215, 255, 0.15);
+  color: var(--teal, #58d7ff);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* ── Chatbot quick replies ──────────────────────────────────────────────── */
+.chat-quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 16px 4px;
+}
+.chat-quick-btn {
+  background: rgba(88, 215, 255, 0.08);
+  border: 1px solid rgba(88, 215, 255, 0.15);
+  color: var(--teal, #58d7ff);
+  padding: 5px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s;
+}
+.chat-quick-btn:hover {
+  background: rgba(88, 215, 255, 0.15);
+  border-color: rgba(88, 215, 255, 0.3);
+}
+
+/* ── Live stats bar ─────────────────────────────────────────────────────── */
+.live-stats-bar {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding: 20px 24px;
+  background: var(--surface, rgba(18, 26, 33, 0.92));
+  border: 1px solid var(--border, rgba(151, 190, 181, 0.1));
+  border-radius: 12px;
+  margin-top: 24px;
+}
+.live-stat {
+  text-align: center;
+}
+.live-stat .live-val {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--teal, #58d7ff);
+  font-family: "JetBrains Mono", monospace;
+}
+.live-stat .live-lbl {
+  font-size: 0.72rem;
+  color: var(--muted, #94a59f);
+  margin-top: 2px;
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.live-stat.loaded .live-val {
+  animation: countUp 0.4s ease forwards;
+}
+@media (max-width: 640px) {
+  .live-stats-bar { gap: 16px; padding: 16px; }
+  .live-stat .live-val { font-size: 1.1rem; }
+}
