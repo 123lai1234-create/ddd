@@ -1381,26 +1381,36 @@ def chat_proxy(payload: ChatRequest) -> dict[str, Any]:
         "用繁體中文簡潔回答訪客的問題，保持友善和專業。回答控制在 200 字以內。"
     )
 
+    import time
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    body = {
+        "system_instruction": {"parts": [{"text": system_prompt}]},
+        "contents": [{"role": "user", "parts": [{"text": payload.message}]}],
+        "generationConfig": {"maxOutputTokens": 512},
+    }
+
     try:
-        resp = httpx.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}",
-            headers={"content-type": "application/json"},
-            json={
-                "system_instruction": {"parts": [{"text": system_prompt}]},
-                "contents": [{"role": "user", "parts": [{"text": payload.message}]}],
-                "generationConfig": {"maxOutputTokens": 512},
-            },
-            timeout=25,
-        )
-        if resp.status_code != 200:
-            return {"reply": f"API 回應異常 (HTTP {resp.status_code})，請稍後再試。"}
-        data = resp.json()
-        text = (
-            data.get("candidates", [{}])[0]
-            .get("content", {})
-            .get("parts", [{}])[0]
-            .get("text", "")
-        )
-        return {"reply": text or "..."}
+        for attempt in range(3):
+            resp = httpx.post(
+                url,
+                headers={"content-type": "application/json"},
+                json=body,
+                timeout=25,
+            )
+            if resp.status_code == 429:
+                time.sleep(2 ** attempt)
+                continue
+            if resp.status_code != 200:
+                return {"reply": f"API 回應異常 (HTTP {resp.status_code})，請稍後再試。"}
+            data = resp.json()
+            text = (
+                data.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+            )
+            return {"reply": text or "..."}
+        return {"reply": "AI 服務忙碌中，請稍後再試。"}
     except Exception as exc:
         return {"reply": f"連線失敗：{exc}"}
