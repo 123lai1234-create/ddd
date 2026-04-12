@@ -12,6 +12,7 @@
     initLiveStats();
     initWeatherWidget();
     initUnsplashHero();
+    initToast();
   });
 
   /* ── 1. Scroll progress bar ──────────────────────────────────────────────── */
@@ -270,7 +271,6 @@
     const canvas = document.querySelector('.hero-canvas');
     if (!canvas) return;
 
-    // Use Unsplash Source (no API key needed for random images)
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = 'https://source.unsplash.com/1920x1080/?biotechnology,laboratory,dna,science';
@@ -280,6 +280,32 @@
       canvas.style.backgroundPosition = 'center';
       canvas.classList.add('unsplash-loaded');
     });
-    // Silently fail if image doesn't load — keep existing gradient
+  }
+
+  /* ── 9. Toast notification system ────────────────────────────────────────── */
+  function initToast() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+
+    window._toast = (message, type = 'info', duration = 4000) => {
+      const el = document.createElement('div');
+      el.className = `toast toast-${type}`;
+      el.textContent = message;
+      container.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('show'));
+      setTimeout(() => {
+        el.classList.remove('show');
+        el.addEventListener('transitionend', () => el.remove());
+      }, duration);
+    };
+
+    // Global fetch error listener
+    window.addEventListener('unhandledrejection', (e) => {
+      if (e.reason?.name === 'AbortError') return;
+      if (e.reason?.message?.includes('fetch')) {
+        window._toast?.('網路連線失敗，請檢查網路', 'error');
+      }
+    });
   }
 })();

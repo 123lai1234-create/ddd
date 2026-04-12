@@ -425,3 +425,18 @@ pre:hover {
   border-color: var(--purple);
   box-shadow: 0 4px 16px rgba(181, 156, 255, 0.1);
 }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .report-hero h1 { font-size: 1.6rem; }
+  .report-hero .sub { font-size: 0.85rem; }
+  .report-section { padding: 24px 16px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .result-grid { grid-template-columns: 1fr; }
+  .math-grid { grid-template-columns: 1fr; }
+  .img-card img { max-height: 200px; }
+}
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .report-hero h1 { font-size: 1.3rem; }
+}

@@ -118,4 +118,33 @@
             revealObs.observe(el);
         });
     }
+
+    // ── SEO: canonical URL + JSON-LD structured data ──
+    (function injectSEO() {
+        var base = 'https://donttalk.vercel.app/';
+        var page = location.pathname.split('/').pop() || 'index.html';
+        // Canonical
+        var canon = document.createElement('link');
+        canon.rel = 'canonical';
+        canon.href = base + page;
+        document.head.appendChild(canon);
+        // JSON-LD
+        var ld = {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            'name': '工程 × 生醫 × AI 平台作品集',
+            'url': base,
+            'author': {
+                '@type': 'Person',
+                'name': 'JT Lai',
+                'jobTitle': 'Biomedical AI Engineer',
+                'knowsAbout': ['Protein Design', 'NGS', 'Machine Learning', 'FastAPI', 'React']
+            },
+            'description': '工程與生醫雙碩士背景，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。'
+        };
+        var script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.textContent = JSON.stringify(ld);
+        document.head.appendChild(script);
+    })();
 })();

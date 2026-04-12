@@ -333,3 +333,10 @@
 .faq-a strong {
   color: var(--text);
 }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .algo-panel.active { grid-template-columns: 1fr; gap: 18px; }
+  .module-row { grid-template-columns: 1fr; gap: 8px; padding: 12px 14px; }
+  .module-row .mod-lang { text-align: left; }
+}

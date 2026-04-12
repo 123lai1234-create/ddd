@@ -217,3 +217,9 @@
             color: var(--muted);
             font-size: .74rem;
         }
+
+        /* ── Responsive ──────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .portfolio-live-shell { grid-template-columns: 1fr; }
+            .live-pair-grid { grid-template-columns: 1fr; }
+        }
