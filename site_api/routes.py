@@ -109,7 +109,7 @@ from site_api.knowledge_sources import (
     fetch_scholar_knowledge,
     fetch_uniprot_knowledge,
 )
-from site_api.market_sources import MarketBarPayload, MarketInstrumentPayload, fetch_market_records
+from site_api.market_sources import MarketBarPayload, MarketInstrumentPayload, fetch_market_records, fetch_yahoo_daily_records
 from site_api.opentargets_sources import fetch_opentargets_associations
 from site_api.pathway_sources import fetch_quickgo_annotations, fetch_reactome_pathways
 from site_api.population_sources import fetch_gnomad_variants
@@ -1414,3 +1414,28 @@ def chat_proxy(payload: ChatRequest) -> dict[str, Any]:
         return {"reply": "AI 服務忙碌中，請稍後再試。"}
     except Exception as exc:
         return {"reply": f"連線失敗：{exc}"}
+
+
+# ── Public Yahoo Finance price proxy (no auth, no DB) ────────────────────────
+
+class YahooPriceRequest(BaseModel):
+    symbols: list[str] = Field(min_length=1, max_length=50)
+    range: str = Field(default="1y")
+
+
+@router.post("/api/market/yahoo-prices")
+def yahoo_prices_proxy(payload: YahooPriceRequest) -> dict[str, Any]:
+    """Fetch daily OHLC from Yahoo Finance directly — no auth or DB required."""
+    results: dict[str, Any] = {}
+    for symbol in payload.symbols:
+        tw_symbol = f"{symbol}.TW"
+        try:
+            _inst, bars = fetch_yahoo_daily_records(tw_symbol, "stock", payload.range)
+            if bars:
+                results[symbol] = {
+                    "dates": [b.trade_date for b in bars],
+                    "closes": [b.close for b in bars],
+                }
+        except Exception:
+            continue
+    return {"results": results}

@@ -1378,25 +1378,72 @@ async function fetchRealPriceSeries(symbol) {
     try {
         const apiBase = await resolveMarketApiBase();
         if (!apiBase) return null;
+        // Try DB bars first
         const params = new URLSearchParams({ symbol, limit: 2000, asset_type: 'stock' });
         const res = await fetch(`${apiBase}/api/market/bars?${params}`, {
             signal: AbortSignal.timeout(10000),
         });
-        if (!res.ok) return null;
-        const payload = await res.json();
-        const bars = (payload.records || [])
-            .filter((r) => r.close != null && r.tradeDate)
-            .sort((a, b) => a.tradeDate.localeCompare(b.tradeDate));
-        if (bars.length < 50) return null;
-        const result = {
-            dates: bars.map((r) => r.tradeDate),
-            closes: bars.map((r) => Number(r.close)),
-        };
-        REAL_PRICE_CACHE.set(symbol, result);
-        return result;
+        if (res.ok) {
+            const payload = await res.json();
+            const bars = (payload.records || [])
+                .filter((r) => r.close != null && r.tradeDate)
+                .sort((a, b) => a.tradeDate.localeCompare(b.tradeDate));
+            if (bars.length >= 50) {
+                const result = { dates: bars.map((r) => r.tradeDate), closes: bars.map((r) => Number(r.close)) };
+                REAL_PRICE_CACHE.set(symbol, result);
+                return result;
+            }
+        }
+        // Fallback: public Yahoo proxy (no auth needed)
+        return await fetchYahooDirect(apiBase, symbol);
     } catch {
         return null;
     }
+}
+
+async function fetchYahooDirect(apiBase, symbol) {
+    try {
+        const res = await fetch(`${apiBase}/api/market/yahoo-prices`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbols: [symbol], range: '2y' }),
+            signal: AbortSignal.timeout(15000),
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        const entry = data.results?.[symbol];
+        if (!entry || entry.closes.length < 50) return null;
+        REAL_PRICE_CACHE.set(symbol, entry);
+        return entry;
+    } catch {
+        return null;
+    }
+}
+
+async function batchFetchYahoo(symbols) {
+    try {
+        const apiBase = await resolveMarketApiBase();
+        if (!apiBase) return;
+        const uncached = symbols.filter((s) => !REAL_PRICE_CACHE.has(s));
+        if (!uncached.length) return;
+        // Batch in groups of 10
+        for (let i = 0; i < uncached.length; i += 10) {
+            const batch = uncached.slice(i, i + 10);
+            const res = await fetch(`${apiBase}/api/market/yahoo-prices`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbols: batch, range: '2y' }),
+                signal: AbortSignal.timeout(30000),
+            });
+            if (!res.ok) continue;
+            const data = await res.json();
+            for (const [sym, entry] of Object.entries(data.results || {})) {
+                if (entry?.closes?.length >= 50) {
+                    REAL_PRICE_CACHE.set(sym, entry);
+                }
+            }
+        }
+    } catch { /* silent */ }
 }
 
 const THESIS_STOCK_CODES = RAW_STOCKS.map(([code]) => code);
@@ -1405,43 +1452,19 @@ let _preloadDone = false;
 async function preloadAllStockData() {
     if (_preloadDone) return;
     _preloadDone = true;
-    const apiBase = await resolveMarketApiBase();
-    if (!apiBase) return;
-    // Preload all stocks in batches to prime the cache
-    for (let i = 0; i < THESIS_STOCK_CODES.length; i += 10) {
-        const batch = THESIS_STOCK_CODES.slice(i, i + 10);
-        await Promise.allSettled(batch.map((code) => fetchRealPriceSeries(code)));
-    }
+    // Batch fetch all uncached stocks via Yahoo proxy
+    await batchFetchYahoo(THESIS_STOCK_CODES);
 }
 
 async function syncThesisStocks() {
     const status = document.getElementById('cfgStatus');
-    if (status) status.textContent = '正在同步 48 檔股票真實價格（Yahoo 1Y）…';
+    if (status) status.textContent = '正在從 Yahoo Finance 載入 48 檔真實股價…';
     try {
-        const apiBase = await resolveMarketApiBase();
-        if (!apiBase) throw new Error('API 不可用');
-        const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
-        const resp = await fetch(`${apiBase}/api/market/sync`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}),
-            },
-            body: JSON.stringify({
-                stock_symbols: THESIS_STOCK_CODES,
-                etf_symbols: [],
-                futures_symbols: [],
-                twse_months: 6,
-                yahoo_range: '1y',
-            }),
-            signal: AbortSignal.timeout(60000),
-        });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = await resp.json();
-        const stored = data.stored || {};
         REAL_PRICE_CACHE.clear();
-        if (status) status.textContent = `✓ 同步完成：${stored.stock?.symbols || 0} 檔股票，可重新執行 GA。`;
-        // Re-run with real data
+        await batchFetchYahoo(THESIS_STOCK_CODES);
+        const loaded = THESIS_STOCK_CODES.filter((c) => REAL_PRICE_CACHE.has(c)).length;
+        if (loaded === 0) throw new Error('未取得任何股價資料');
+        if (status) status.textContent = `✓ 已載入 ${loaded}/48 檔真實股價，重新計算中…`;
         rerunGA();
     } catch (error) {
         if (status) status.textContent = `同步失敗：${error.message}`;
@@ -1836,39 +1859,24 @@ function initialisePage() {
 }
 
 async function autoSyncAndPreload() {
+    const status = document.getElementById('cfgStatus');
     const testStock = THESIS_STOCK_CODES[0]; // 1101
     const data = await fetchRealPriceSeries(testStock);
-    if (!data || data.closes.length < 10) {
-        // DB has no market data — auto-sync the thesis stocks
-        const status = document.getElementById('cfgStatus');
-        if (status) status.textContent = '首次載入：正在自動同步 TWSE 股價…';
-        try {
-            const apiBase = await resolveMarketApiBase();
-            if (!apiBase) return;
-            const syncSecret = window.APP_CONFIG_UTILS?.getSyncSecret?.() || '';
-            const resp = await fetch(`${apiBase}/api/market/sync`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(syncSecret ? { 'X-Sync-Secret': syncSecret } : {}),
-                },
-                body: JSON.stringify({
-                    stock_symbols: THESIS_STOCK_CODES,
-                    etf_symbols: [],
-                    futures_symbols: [],
-                    twse_months: 6,
-                    yahoo_range: '1y',
-                }),
-                signal: AbortSignal.timeout(60000),
-            });
-            if (resp.ok) {
-                REAL_PRICE_CACHE.clear();
-                if (status) status.textContent = '✓ 自動同步完成，重新計算中…';
-                rerunGA();
-            }
-        } catch { /* silent */ }
+    if (data && data.closes.length >= 50) {
+        // DB or Yahoo has data — preload rest in background
+        preloadAllStockData();
+        return;
     }
-    preloadAllStockData();
+    // No data yet — batch fetch from public Yahoo proxy (no auth needed)
+    if (status) status.textContent = '正在從 Yahoo Finance 載入 48 檔真實股價…';
+    await batchFetchYahoo(THESIS_STOCK_CODES);
+    const loaded = THESIS_STOCK_CODES.filter((c) => REAL_PRICE_CACHE.has(c)).length;
+    if (loaded > 0) {
+        if (status) status.textContent = `✓ 已載入 ${loaded}/48 檔真實股價，重新計算中…`;
+        rerunGA();
+    } else {
+        if (status) status.textContent = '⚠ 無法取得真實股價，使用模擬數據。請稍後重試。';
+    }
 }
 
 window.gotoGen = gotoGen;
