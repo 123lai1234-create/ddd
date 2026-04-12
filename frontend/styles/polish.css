@@ -28,12 +28,12 @@ a, button, input, select, textarea,
 }
 
 /* ── Button hover & active polish ────────────────────────────────────────── */
-button:not(#admin-toggle):not(.chatbot-close):not(#chatbot-toggle):hover,
+button:not(.chatbot-close):not(#chatbot-toggle):hover,
 .btn:hover, .filter-btn:hover, .tab-btn:hover,
 .algo-tab:hover, .group-chip:hover {
   transform: translateY(-1px);
 }
-button:not(#admin-toggle):active, .btn:active,
+button:active, .btn:active,
 .filter-btn:active, .tab-btn:active {
   transform: translateY(0) scale(0.98);
 }

@@ -1,7 +1,7 @@
 /**
  * Admin mode with login dialog.
  * Credentials: username & password both "mike".
- * Adds a floating lock button on every page to toggle admin mode.
+ * Toggle with Ctrl+Shift+L hotkey (no visible button).
  */
 (() => {
   const ADMIN_USER = 'mike';
@@ -25,24 +25,13 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    const controls = document.createElement('div');
-    controls.id = 'admin-controls';
-    document.body.appendChild(controls);
-
-    // ── Floating toggle button (always visible) ──
-    const toggle = document.createElement('button');
-    toggle.id = 'admin-toggle';
-    toggle.setAttribute('aria-label', '管理員模式');
-    toggle.textContent = isAdmin ? '🔓' : '🔒';
-    controls.appendChild(toggle);
-
     // ── Admin badge (only when logged in) ──
     let badge = null;
     if (isAdmin) {
       badge = document.createElement('div');
       badge.className = 'admin-badge';
       badge.textContent = '🔧 Admin Mode';
-      controls.prepend(badge);
+      document.body.appendChild(badge);
     }
 
     // ── Login dialog ──
@@ -89,13 +78,12 @@
         } catch { }
         isAdmin = true;
         document.documentElement.classList.add('is-admin');
-        toggle.textContent = '🔓';
         closeLogin();
         if (!badge) {
           badge = document.createElement('div');
           badge.className = 'admin-badge';
           badge.textContent = '🔧 Admin Mode';
-          controls.prepend(badge);
+          document.body.appendChild(badge);
         }
       } else {
         errorEl.textContent = '帳號或密碼錯誤';
@@ -111,15 +99,18 @@
       } catch { }
       isAdmin = false;
       document.documentElement.classList.remove('is-admin');
-      toggle.textContent = '🔒';
       if (badge) { badge.remove(); badge = null; }
     }
 
-    toggle.addEventListener('click', () => {
-      if (isAdmin) {
-        doLogout();
-      } else {
-        openLogin();
+    // ── Hotkey: Ctrl+Shift+L ──
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'L') {
+        e.preventDefault();
+        if (isAdmin) {
+          doLogout();
+        } else {
+          openLogin();
+        }
       }
     });
 
@@ -139,7 +130,5 @@
     isAdmin = false;
     document.documentElement.classList.remove('is-admin');
     document.querySelector('.admin-badge')?.remove();
-    const t = document.getElementById('admin-toggle');
-    if (t) t.textContent = '🔒';
   };
 })();

@@ -263,18 +263,11 @@ nav {
 html.is-admin .admin-only {
   display: revert !important;
 }
-.admin-controls,
-#admin-controls {
-  position: fixed;
-  bottom: 80px;
-  right: 16px;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 .admin-badge {
-  position: static;
+  position: fixed;
+  bottom: 24px;
+  left: 16px;
+  z-index: 10000;
   background: rgba(255, 188, 114, 0.15);
   border: 1px solid rgba(255, 188, 114, 0.35);
   color: #ffbc72;
@@ -287,38 +280,10 @@ html.is-admin .admin-only {
   white-space: nowrap;
 }
 
-/* ── Admin toggle button ─── */
-#admin-toggle {
-  position: static;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: rgba(24, 34, 44, 0.85);
-  border: 1px solid rgba(151, 190, 181, 0.15);
-  color: #94a59f;
-  font-size: 1.1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(8px);
-  transition:
-    background 0.2s,
-    border-color 0.2s;
-}
-#admin-toggle:hover {
-  background: rgba(24, 34, 44, 1);
-  border-color: rgba(88, 215, 255, 0.3);
-}
-
 @media (max-width: 720px) {
-  #admin-controls {
-    bottom: 72px;
-    right: 12px;
-  }
-
   .admin-badge {
-    display: none;
+    bottom: 16px;
+    left: 12px;
   }
 }
 
