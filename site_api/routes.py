@@ -1363,7 +1363,86 @@ def lookup_vep(hgvs: str) -> dict[str, Any]:
     return {"result": result, "hgvs": hgvs}
 
 
-# ── Google Gemini AI Chatbot proxy ────────────────────────────────────────────
+# ── Multi-model AI Chatbot proxy (Gemini → DeepSeek → OpenRouter) ─────────────
+
+CHAT_SYSTEM_PROMPT = (
+    "你是一個生物醫學 AI 作品集的助手。這個作品集包含蛋白質 AI 設計 (ProteinMPNN, ESM-2)、"
+    "基因分析平台 (UniProt, Ensembl, PubMed)、NGS 定序工作站、遺傳演算法交易策略研究等項目。"
+    "用繁體中文簡潔回答訪客的問題，保持友善和專業。回答控制在 200 字以內。"
+)
+
+
+def _try_gemini(message: str) -> str | None:
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        return None
+    import time
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    body = {
+        "system_instruction": {"parts": [{"text": CHAT_SYSTEM_PROMPT}]},
+        "contents": [{"role": "user", "parts": [{"text": message}]}],
+        "generationConfig": {"maxOutputTokens": 512},
+    }
+    for attempt in range(2):
+        resp = httpx.post(url, headers={"content-type": "application/json"}, json=body, timeout=20)
+        if resp.status_code == 429:
+            time.sleep(2 ** attempt)
+            continue
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        return (
+            data.get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+        ) or None
+    return None
+
+
+def _try_deepseek(message: str) -> str | None:
+    api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
+    if not api_key:
+        return None
+    resp = httpx.post(
+        "https://api.deepseek.com/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": CHAT_SYSTEM_PROMPT},
+                {"role": "user", "content": message},
+            ],
+            "max_tokens": 512,
+        },
+        timeout=20,
+    )
+    if resp.status_code != 200:
+        return None
+    return resp.json().get("choices", [{}])[0].get("message", {}).get("content") or None
+
+
+def _try_openrouter(message: str) -> str | None:
+    api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    if not api_key:
+        return None
+    resp = httpx.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={
+            "model": "meta-llama/llama-3.1-8b-instruct:free",
+            "messages": [
+                {"role": "system", "content": CHAT_SYSTEM_PROMPT},
+                {"role": "user", "content": message},
+            ],
+            "max_tokens": 512,
+        },
+        timeout=20,
+    )
+    if resp.status_code != 200:
+        return None
+    return resp.json().get("choices", [{}])[0].get("message", {}).get("content") or None
+
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
@@ -1371,49 +1450,19 @@ class ChatRequest(BaseModel):
 
 @router.post("/api/chat")
 def chat_proxy(payload: ChatRequest) -> dict[str, Any]:
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
-    if not api_key:
-        return {"reply": "AI 助手尚未設定，請先配置 GEMINI_API_KEY 環境變數。"}
-
-    system_prompt = (
-        "你是一個生物醫學 AI 作品集的助手。這個作品集包含蛋白質 AI 設計 (ProteinMPNN, ESM-2)、"
-        "基因分析平台 (UniProt, Ensembl, PubMed)、NGS 定序工作站、遺傳演算法交易策略研究等項目。"
-        "用繁體中文簡潔回答訪客的問題，保持友善和專業。回答控制在 200 字以內。"
-    )
-
-    import time
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
-    body = {
-        "system_instruction": {"parts": [{"text": system_prompt}]},
-        "contents": [{"role": "user", "parts": [{"text": payload.message}]}],
-        "generationConfig": {"maxOutputTokens": 512},
-    }
-
-    try:
-        for attempt in range(3):
-            resp = httpx.post(
-                url,
-                headers={"content-type": "application/json"},
-                json=body,
-                timeout=25,
-            )
-            if resp.status_code == 429:
-                time.sleep(2 ** attempt)
-                continue
-            if resp.status_code != 200:
-                return {"reply": f"API 回應異常 (HTTP {resp.status_code})，請稍後再試。"}
-            data = resp.json()
-            text = (
-                data.get("candidates", [{}])[0]
-                .get("content", {})
-                .get("parts", [{}])[0]
-                .get("text", "")
-            )
-            return {"reply": text or "..."}
-        return {"reply": "AI 服務忙碌中，請稍後再試。"}
-    except Exception as exc:
-        return {"reply": f"連線失敗：{exc}"}
+    providers = [
+        ("Gemini", _try_gemini),
+        ("DeepSeek", _try_deepseek),
+        ("OpenRouter", _try_openrouter),
+    ]
+    for name, fn in providers:
+        try:
+            result = fn(payload.message)
+            if result:
+                return {"reply": result, "provider": name}
+        except Exception:
+            continue
+    return {"reply": "所有 AI 服務目前都無法回應，請稍後再試。"}
 
 
 # ── Public Yahoo Finance price proxy (no auth, no DB) ────────────────────────

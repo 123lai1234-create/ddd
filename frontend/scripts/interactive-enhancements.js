@@ -10,6 +10,8 @@
     initKeyboardShortcuts();
     initChatQuickReplies();
     initLiveStats();
+    initWeatherWidget();
+    initUnsplashHero();
   });
 
   /* ── 1. Scroll progress bar ──────────────────────────────────────────────── */
