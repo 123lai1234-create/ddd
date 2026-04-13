@@ -7,6 +7,7 @@ window.SITE_SHELL_CONFIG = {
             { href: 'works.html', label: '作品總覽' },
             { href: 'ngs.html', label: 'NGS 定序' },
             { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'game.html', label: '🎮 小遊戲' },
             { href: 'protein_mpnn.html', label: '互動展示', classes: 'nav-cta' }
         ],
         drawerLinks: [
@@ -15,7 +16,8 @@ window.SITE_SHELL_CONFIG = {
             { href: 'ngs.html', label: 'NGS 定序' },
             { href: 'gene_ai.html', label: '基因 AI 平台' },
             { href: 'report.html', label: '專案報告' },
-            { href: 'protein_mpnn.html', label: '互動展示' }
+            { href: 'protein_mpnn.html', label: '互動展示' },
+            { href: 'game.html', label: '🎮 霓虹打磚塊' }
         ],
         footer: {
             variant: 'standard',
@@ -29,6 +31,7 @@ window.SITE_SHELL_CONFIG = {
                 { href: 'report.html', label: '專案報告' },
                 { href: 'https://jtlai0921.wixsite.com/mysite', label: '個人網站', target: '_blank', rel: 'noreferrer' },
                 { href: 'gene_ai.html', label: '基因 AI 平台' },
+                { href: 'game.html', label: '🎮 小遊戲' },
                 { href: 'README.md', label: 'README' }
             ]
         }
