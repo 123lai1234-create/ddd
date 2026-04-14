@@ -34,9 +34,15 @@ async function convert(file) {
         .filter(h => !h.startsWith('http'))
         .map(h => '/' + h.replace(/^\.?\//, ''));
 
-    const pageScripts = extractAll(/<script[^>]*\ssrc=["']([^"']+)["'][^>]*>\s*<\/script>/gi, bodyInner)
+    // Page-local scripts (rewrite to absolute /scripts/...)
+    const localBodyScripts = extractAll(/<script[^>]*\ssrc=["']([^"']+)["'][^>]*>\s*<\/script>/gi, bodyInner)
         .filter(s => !s.startsWith('http'))
         .map(s => '/' + s.replace(/^\.?\//, ''));
+    // External CDN scripts from <head> after COMMON_HEAD (e.g. chart.js, 3dmol)
+    const headCdnScripts = extractAll(/<script[^>]*\ssrc=["'](https?:\/\/[^"']+)["'][^>]*>\s*<\/script>/gi, afterCommon);
+    // Also pick up CDN scripts inside body (rare but safe)
+    const bodyCdnScripts = extractAll(/<script[^>]*\ssrc=["'](https?:\/\/[^"']+)["'][^>]*>\s*<\/script>/gi, bodyInner);
+    const pageScripts = [...headCdnScripts, ...bodyCdnScripts, ...localBodyScripts];
 
     const slug = file.replace(/\.html$/, '');
     const astroName = slug + '.astro';

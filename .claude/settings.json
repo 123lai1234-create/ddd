@@ -17,7 +17,9 @@
       "Bash(curl -sI \"https://a-5fs.pages.dev/\")",
       "Bash(curl -sI \"https://a-5fs.pages.dev/ingest.html\")",
       "Bash(curl -sI \"https://a-5fs.pages.dev/games/\")",
-      "Bash(curl -sIL \"https://a-5fs.pages.dev/ingest.html\")"
+      "Bash(curl -sIL \"https://a-5fs.pages.dev/ingest.html\")",
+      "Bash(curl -s \"https://a-5fs.pages.dev/\")",
+      "Bash(curl -s \"https://donttalk.vercel.app/\")"
     ]
   }
 }
