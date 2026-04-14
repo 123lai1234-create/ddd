@@ -1,3 +1,6 @@
 name = "donttalk"
-pages_build_output_dir = "./astro/dist"
 compatibility_date = "2026-04-05"
+
+[assets]
+directory = "./astro/dist"
+not_found_handling = "single-page-application"
