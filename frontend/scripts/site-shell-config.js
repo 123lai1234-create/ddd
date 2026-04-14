@@ -7,6 +7,7 @@ window.SITE_SHELL_CONFIG = {
             { href: 'works.html', label: '作品總覽' },
             { href: 'ngs.html', label: 'NGS 定序' },
             { href: 'gene_ai.html', label: '基因 AI' },
+            { href: 'firmware.html', label: '🔌 韌體' },
             { href: '/games/', label: '🎮 遊戲中心' },
             { href: 'protein_mpnn.html', label: '互動展示', classes: 'nav-cta' }
         ],
@@ -16,6 +17,7 @@ window.SITE_SHELL_CONFIG = {
             { href: 'ngs.html', label: 'NGS 定序' },
             { href: 'gene_ai.html', label: '基因 AI 平台' },
             { href: 'report.html', label: '專案報告' },
+            { href: 'firmware.html', label: '🔌 韌體 MCU' },
             { href: 'protein_mpnn.html', label: '互動展示' },
             { href: '/games/', label: '🎮 遊戲中心' }
         ],
