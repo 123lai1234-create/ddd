@@ -262,29 +262,6 @@
                 <div class="demo-results-column">
                     <div class="mpnn-output-panel">
                         <div class="mpnn-panel-title">🔬 蛋白質 3D 結構預覽</div>
-                        <div class="mpnn-pdb-search"><input id="pdbIdInput" type="text" class="mpnn-pdb-input"
-                                maxlength="6" placeholder="輸入 PDB ID，例： 2GI9"
-                                oninput="this.value=this.value.toUpperCase()"
-                                onkeydown="if(event.key==='Enter')loadPdbDirect()"><button class="mpnn-pdb-btn"
-                                onclick="loadPdbDirect()">載入 →</button>
-                        </div>
-                        <div class="mpnn-pdb-tags">
-                            <select class="mpnn-pdb-input" onchange="if(this.value){loadPdbById(this.value);this.selectedIndex=0;}">
-                                <option value="">快速選擇 PDB…</option>
-                                <option value="1VII">1VII · HP35</option>
-                                <option value="1L2Y">1L2Y · Trp-cage</option>
-                                <option value="1PGB">1PGB · GB1</option>
-                                <option value="1CRN">1CRN · Crambin</option>
-                                <option value="1UBQ">1UBQ · Ubiquitin</option>
-                                <option value="4HHB">4HHB · 血紅蛋白</option>
-                                <option value="1LYZ">1LYZ · Lysozyme</option>
-                                <option value="3HHR">3HHR · 生長激素</option>
-                                <option value="1GFL">1GFL · GFP</option>
-                                <option value="1ATP">1ATP · PKA</option>
-                                <option value="2HHB">2HHB · Hb脫氧</option>
-                                <option value="1BNA">1BNA · DNA</option>
-                            </select>
-                        </div>
                         <div style="position:relative;border-radius:10px;overflow:hidden">
                             <div id="mpnnStruct3d" style="height:340px;width:100%"></div>
                             <div id="mpnnStructPlaceholder"
