@@ -1,11 +1,12 @@
 .git/
 .venv/
-dist/
+/dist/
 outputs/*.pt
-src/
+/src/
 scripts/run_pipeline.py
 docs/
 fly.toml
 Dockerfile
 netlify.toml
 wrangler.toml
+frontend/
