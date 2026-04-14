@@ -9,7 +9,9 @@ thread so it never blocks the ASGI event loop or delay readiness probes.
 from __future__ import annotations
 
 import logging
+import os
 import threading
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +26,8 @@ _DEFAULT_FUTURES_SYMBOLS = ["ES=F", "NQ=F"]
 _DEFAULT_TWSE_MONTHS = 3
 _DEFAULT_YAHOO_RANGE = "3mo"
 _DEFAULT_FETCH_LIMIT = 4
+
+_DEFAULT_SEQUENCE_REFRESH_SECONDS = 24 * 60 * 60  # 24h
 
 
 def _table_is_empty(table_name: str) -> bool:
@@ -49,7 +53,7 @@ def _table_is_empty(table_name: str) -> bool:
 
 
 def _sync_sequences() -> None:
-    """Seed sequence_library with protein + gene sequences."""
+    """Upsert protein + gene sequences into sequence_library (always refreshes)."""
     from site_api.db import ensure_core_schema
     from site_api.sequence_sources import fetch_gene_sequences, fetch_protein_sequences
     from site_api.services import upsert_sequence_records
@@ -58,22 +62,18 @@ def _sync_sequences() -> None:
         logger.warning("auto-sync: core schema not ready, skipping sequences")
         return
 
-    if not _table_is_empty("sequence_library"):
-        logger.info("auto-sync: sequence_library already has data, skipping")
-        return
-
-    logger.info("auto-sync: seeding protein + gene sequences …")
+    logger.info("auto-sync: refreshing protein + gene sequences …")
     try:
         proteins = fetch_protein_sequences(_DEFAULT_PROTEIN_QUERY, _DEFAULT_FETCH_LIMIT)
         genes = fetch_gene_sequences(_DEFAULT_GENE_SYMBOLS, _DEFAULT_GENE_SPECIES)
         upsert_sequence_records(proteins + genes)
         logger.info(
-            "auto-sync: sequences seeded — %d protein, %d gene",
+            "auto-sync: sequences upserted — %d protein, %d gene",
             len(proteins),
             len(genes),
         )
     except Exception as exc:
-        logger.error("auto-sync: sequence seeding failed: %s", exc)
+        logger.error("auto-sync: sequence refresh failed: %s", exc)
 
 
 def _sync_market() -> None:
@@ -123,6 +123,33 @@ def _sync_market() -> None:
         logger.warning("auto-sync: no market records fetched")
 
 
+def _sequence_refresh_interval() -> int:
+    """Interval in seconds between periodic sequence refreshes (0 disables)."""
+    raw = os.getenv("SEQUENCE_REFRESH_SECONDS", "").strip()
+    if not raw:
+        return _DEFAULT_SEQUENCE_REFRESH_SECONDS
+    try:
+        value = int(raw)
+    except ValueError:
+        logger.warning("auto-sync: invalid SEQUENCE_REFRESH_SECONDS=%r, using default", raw)
+        return _DEFAULT_SEQUENCE_REFRESH_SECONDS
+    return max(0, value)
+
+
+def _periodic_sequence_refresh(interval_seconds: int) -> None:
+    """Re-run sequence sync every *interval_seconds* (sleeps in small slices)."""
+    while True:
+        remaining = interval_seconds
+        while remaining > 0:
+            chunk = min(remaining, 60)
+            time.sleep(chunk)
+            remaining -= chunk
+        try:
+            _sync_sequences()
+        except Exception as exc:
+            logger.error("auto-sync: periodic sequence refresh crashed: %s", exc)
+
+
 def run_auto_sync() -> None:
     """Run all auto-sync tasks in a background daemon thread."""
 
@@ -130,7 +157,20 @@ def run_auto_sync() -> None:
         logger.info("auto-sync: background worker started")
         _sync_sequences()
         _sync_market()
-        logger.info("auto-sync: background worker finished")
+        logger.info("auto-sync: initial pass finished")
 
     thread = threading.Thread(target=_worker, name="auto-sync", daemon=True)
     thread.start()
+
+    interval = _sequence_refresh_interval()
+    if interval > 0:
+        logger.info("auto-sync: scheduling sequence refresh every %ds", interval)
+        refresher = threading.Thread(
+            target=_periodic_sequence_refresh,
+            args=(interval,),
+            name="auto-sync-sequences",
+            daemon=True,
+        )
+        refresher.start()
+    else:
+        logger.info("auto-sync: periodic sequence refresh disabled (SEQUENCE_REFRESH_SECONDS=0)")
