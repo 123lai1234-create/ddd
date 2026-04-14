@@ -116,7 +116,9 @@ const KNOWN_SEQ_MAP = {
     ;
 
 const PRESET_PDB = {
-    hp35: '1VII', trpcage: '1L2Y', gb1: '1PGB', crambim: '1CRN', hbb: '4HHB'
+    hp35: '1VII', trpcage: '1L2Y', gb1: '1PGB', crambim: '1CRN', hbb: '4HHB',
+    ubq: '1UBQ', lyz: '1LYZ', gfp: '1GFL', myo: '1MBN', bpti: '1BPI',
+    insulin_b: '4INS', cyc: '1HRC', rnasea: '7RSA', calmodulin: '1CLL'
 }
 
     ;
@@ -160,7 +162,8 @@ function loadPdbById(pdbId) {
     pdbId = pdbId.trim().toUpperCase();
     if (!pdbId) return;
     _log3dDebug('ui:loadPdbById', { pdbId });
-    document.getElementById('pdbIdInput').value = pdbId;
+    const input = document.getElementById('pdbIdInput');
+    if (input) input.value = pdbId;
     _loadStructureByPdbId(pdbId);
 }
 
