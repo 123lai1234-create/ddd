@@ -132,7 +132,7 @@ const PRESET_PDB = {
     insulin_b: '4INS', cyc: '1HRC', rnasea: '7RSA', calmodulin: '1CLL',
     melittin: '2MLT', defensin: '1DFN', insulin_a: '4INS',
     protein_a: '1BDD', ci2: '2CI2', barnase: '1BNR',
-    thioredoxin: '2TRX', hras: '5P21', streptavidin: '1STP',
+    thioredoxin: '2TRX', hras: '4Q21', streptavidin: '1STP',
     p53_dbd: '1TUP', carbonic_anhydrase: '1CA2'
 }
 
@@ -478,6 +478,7 @@ async function _loadStructureByPdbId(pdbId) {
     }
 
     _activeStructureAbortController = new AbortController();
+    const localAbortController = _activeStructureAbortController;
 
     if (_3dmolViewer) {
         try {
@@ -522,12 +523,12 @@ async function _loadStructureByPdbId(pdbId) {
 
     const fetchTimeout = setTimeout(() => {
         try {
-            _activeStructureAbortController.abort();
+            localAbortController.abort();
         } catch (e) { }
     }, 18000);
 
     try {
-        const structure = await _fetchPdbTextWithFallback(pdbId, _activeStructureAbortController.signal);
+        const structure = await _fetchPdbTextWithFallback(pdbId, localAbortController.signal);
 
         _log3dDebug('load:structure-ready', {
             pdbId,
