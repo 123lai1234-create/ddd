@@ -1,0 +1,8 @@
+{
+  "name": "donttalk-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd astro && npm install && npm run build && cd .. && rm -rf dist && cp -r astro/dist dist"
+  }
+}
