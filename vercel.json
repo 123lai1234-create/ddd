@@ -42,11 +42,6 @@
       "permanent": true
     },
     {
-      "source": "/interview",
-      "destination": "/interview_prep.html",
-      "permanent": true
-    },
-    {
       "source": "/thesis",
       "destination": "/thesis.html",
       "permanent": true

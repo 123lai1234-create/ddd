@@ -208,8 +208,7 @@ window.SITE_SHELL_CONFIG = {
             noteHtml: '作為大分子 AI 演算法研究方向的技術作品集專案製作 • 2026',
             links: [
                 { href: 'index.html', label: '返回首頁', style: 'color:var(--teal);text-decoration:none' },
-                { href: 'ngs.html', label: 'NGS 定序', style: 'color:var(--teal);text-decoration:none' },
-                { href: 'interview_prep.html', label: '面試準備', style: 'color:var(--teal);text-decoration:none' }
+                { href: 'ngs.html', label: 'NGS 定序', style: 'color:var(--teal);text-decoration:none' }
             ]
         }
     },
