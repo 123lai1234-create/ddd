@@ -1,5 +1,5 @@
-# build output
-dist/
+# build output (committed for Cloudflare Pages deploy-from-repo flow)
+# dist/
 # generated types
 .astro/
 

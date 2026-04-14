@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#081016"/>
+      <stop offset="100%" stop-color="#0b141c"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="30%" cy="25%" r="45%">
+      <stop offset="0%" stop-color="#58d7ff" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#58d7ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="75%" cy="80%" r="40%">
+      <stop offset="0%" stop-color="#7bf0be" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#7bf0be" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#58d7ff"/>
+      <stop offset="100%" stop-color="#7bf0be"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow1)"/>
+  <rect width="1200" height="630" fill="url(#glow2)"/>
+
+  <!-- Border frame -->
+  <rect x="32" y="32" width="1136" height="566" rx="20" fill="none" stroke="rgba(88,215,255,0.1)" stroke-width="1"/>
+
+  <!-- Eyebrow badge -->
+  <rect x="80" y="160" width="230" height="36" rx="18" fill="rgba(88,215,255,0.08)" stroke="rgba(88,215,255,0.2)" stroke-width="1"/>
+  <circle cx="100" cy="178" r="5" fill="#58d7ff"/>
+  <text x="116" y="183" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#58d7ff" letter-spacing="1.5">PORTFOLIO · 2026</text>
+
+  <!-- Main title -->
+  <text x="80" y="270" font-family="system-ui,sans-serif" font-size="68" font-weight="800" fill="url(#titleGrad)" letter-spacing="-2">工程 × 生醫 × AI</text>
+
+  <!-- Subtitle -->
+  <text x="80" y="340" font-family="system-ui,sans-serif" font-size="30" font-weight="400" fill="rgba(233,240,236,0.75)">平台作品集</text>
+
+  <!-- Description -->
+  <text x="80" y="400" font-family="system-ui,sans-serif" font-size="20" fill="rgba(148,165,159,0.9)">蛋白質 AI · 基因分析 · NGS 流程 · 互動平台開發</text>
+
+  <!-- Tag pills -->
+  <rect x="80" y="440" width="130" height="32" rx="8" fill="rgba(88,215,255,0.08)" stroke="rgba(88,215,255,0.2)" stroke-width="1"/>
+  <text x="145" y="461" font-family="monospace,sans-serif" font-size="13" font-weight="600" fill="#58d7ff" text-anchor="middle">ProteinMPNN</text>
+
+  <rect x="222" y="440" width="90" height="32" rx="8" fill="rgba(123,240,190,0.08)" stroke="rgba(123,240,190,0.2)" stroke-width="1"/>
+  <text x="267" y="461" font-family="monospace,sans-serif" font-size="13" font-weight="600" fill="#7bf0be" text-anchor="middle">FastAPI</text>
+
+  <rect x="324" y="440" width="80" height="32" rx="8" fill="rgba(181,156,255,0.08)" stroke="rgba(181,156,255,0.2)" stroke-width="1"/>
+  <text x="364" y="461" font-family="monospace,sans-serif" font-size="13" font-weight="600" fill="#b59cff" text-anchor="middle">ESM-2</text>
+
+  <rect x="416" y="440" width="80" height="32" rx="8" fill="rgba(255,188,114,0.08)" stroke="rgba(255,188,114,0.2)" stroke-width="1"/>
+  <text x="456" y="461" font-family="monospace,sans-serif" font-size="13" font-weight="600" fill="#ffbc72" text-anchor="middle">React</text>
+
+  <!-- Domain decoration right side -->
+  <text x="1100" y="290" font-family="system-ui,sans-serif" font-size="80" fill="rgba(88,215,255,0.06)" font-weight="800" text-anchor="middle">🧬</text>
+
+  <!-- URL -->
+  <text x="1120" y="578" font-family="monospace,sans-serif" font-size="14" fill="rgba(90,113,107,0.8)" text-anchor="end">donttalk.vercel.app</text>
+</svg>

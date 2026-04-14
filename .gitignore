@@ -1,7 +1,7 @@
 .venv/
 dist/
+!astro/dist/
 node_modules/
-astro/dist/
 astro/.astro/
 __pycache__/
 *.pyc

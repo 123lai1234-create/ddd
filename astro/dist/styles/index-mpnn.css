@@ -1,0 +1,669 @@
+/* ─── ProteinMPNN Interactive Demo ──────────────────────────────── */
+.mpnn-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.mpnn-panel,
+.mpnn-output-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.mpnn-panel-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 22px;
+}
+
+.mpnn-field {
+  margin-bottom: 18px;
+}
+
+.mpnn-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.mpnn-badge {
+  background: rgba(57, 208, 240, 0.1);
+  color: var(--teal);
+  border: 1px solid rgba(57, 208, 240, 0.2);
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+.mpnn-hint {
+  color: var(--dim);
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+
+.mpnn-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.mpnn-presets button {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font);
+}
+
+.mpnn-presets button:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+#mpnnSeq {
+  width: 100%;
+  min-height: 86px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 13px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#mpnnSeq:focus {
+  border-color: var(--teal2);
+}
+
+.mpnn-seq-info {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.mpnn-pdb-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.mpnn-pdb-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.mpnn-pdb-tag:hover {
+  background: rgba(57, 208, 240, 0.1);
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+.seq-pdb-suggest {
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(57, 208, 240, 0.07);
+  border: 1px solid rgba(57, 208, 240, 0.25);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.seq-pdb-suggest strong {
+  color: var(--teal);
+}
+
+.seq-pdb-suggest button {
+  margin-left: auto;
+  padding: 3px 12px;
+  background: rgba(57, 208, 240, 0.12);
+  border: 1px solid rgba(57, 208, 240, 0.35);
+  border-radius: 6px;
+  color: var(--teal);
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.seq-pdb-suggest button:hover {
+  background: rgba(57, 208, 240, 0.22);
+}
+
+.mpnn-valid {
+  color: var(--green);
+}
+
+.mpnn-invalid {
+  color: var(--red);
+}
+
+.mpnn-input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.mpnn-input:focus {
+  border-color: var(--teal2);
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--teal);
+  cursor: pointer;
+  height: 4px;
+}
+
+.range-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--dim);
+  margin-top: 4px;
+}
+
+.mpnn-val-badge {
+  background: rgba(57, 208, 240, 0.15);
+  color: var(--teal);
+  border-radius: 4px;
+  padding: 1px 8px;
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  min-width: 38px;
+  text-align: center;
+}
+
+.mpnn-model-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mpnn-model-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--mono);
+}
+
+.mpnn-model-btn.active {
+  background: rgba(57, 208, 240, 0.12);
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.mpnn-model-desc {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  color: var(--dim);
+  line-height: 1.5;
+}
+
+.mpnn-run-btn {
+  width: 100%;
+  padding: 13px;
+  background: var(--teal);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 6px;
+  letter-spacing: 0.02em;
+  font-family: var(--font);
+}
+
+.mpnn-run-btn:hover:not(:disabled) {
+  background: #5de0f5;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(57, 208, 240, 0.3);
+}
+
+.mpnn-run-btn:disabled {
+  background: var(--dim);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.mpnn-placeholder {
+  text-align: center;
+  padding: 56px 24px;
+  color: var(--muted);
+}
+
+.mpnn-placeholder-icon {
+  font-size: 2.4rem;
+  margin-bottom: 12px;
+}
+
+.mpnn-placeholder-sub {
+  font-size: 0.76rem;
+  color: var(--dim);
+  margin-top: 6px;
+}
+
+.mpnn-progress-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.mpnn-progress-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.mpnn-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--purple));
+  border-radius: 2px;
+  width: 0;
+  transition: width 0.3s ease;
+}
+
+.mpnn-log {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  line-height: 1.8;
+  color: var(--muted);
+  min-height: 80px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.mpnn-stats-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.mpnn-stat-pill {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.mpnn-table-wrap {
+  overflow-x: auto;
+}
+
+.mpnn-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.mpnn-table th {
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+}
+
+.mpnn-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(33, 38, 45, 0.5);
+  vertical-align: middle;
+}
+
+.mpnn-table tr:hover td {
+  background: rgba(22, 27, 34, 0.7);
+}
+
+.mpnn-seq-cell {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mpnn-id-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.mpnn-id-fill {
+  height: 6px;
+  border-radius: 3px;
+  min-width: 4px;
+}
+
+.mpnn-id-text {
+  font-size: 0.78rem;
+  font-weight: 600;
+  min-width: 40px;
+}
+
+.expand-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font);
+}
+
+.expand-btn:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.view3d-btn {
+  font-size: 0.82rem;
+  padding: 3px 7px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.view3d-btn:hover {
+  border-color: var(--teal);
+  background: rgba(57, 208, 240, 0.15);
+  color: var(--teal);
+}
+
+.mpnn-badge-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.rank-1 {
+  background: rgba(240, 200, 50, 0.15);
+  border-color: rgba(240, 200, 50, 0.4);
+  color: #f0c832;
+}
+
+.rank-2 {
+  background: rgba(180, 180, 180, 0.1);
+  border-color: rgba(180, 180, 180, 0.3);
+  color: #b0b8c0;
+}
+
+.rank-3 {
+  background: rgba(200, 120, 60, 0.12);
+  border-color: rgba(200, 120, 60, 0.3);
+  color: #c87841;
+}
+
+.mpnn-score-cell {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+
+.mpnn-residue-panel {
+  margin-top: 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.mpnn-residue-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.mpnn-seq-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 16px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+}
+
+.aa-chip {
+  padding: 3px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: default;
+  transition: transform 0.1s;
+}
+
+.aa-chip:hover {
+  transform: scale(1.15);
+}
+
+.aa-chip.fixed {
+  opacity: 0.35;
+  outline: 1px dashed var(--dim);
+}
+
+.aa-hydrophobic {
+  background: rgba(240, 136, 62, 0.2);
+  color: #f0883e;
+}
+
+.aa-polar {
+  background: rgba(63, 185, 80, 0.2);
+  color: #3fb950;
+}
+
+.aa-positive {
+  background: rgba(88, 166, 255, 0.2);
+  color: #58a6ff;
+}
+
+.aa-negative {
+  background: rgba(248, 81, 73, 0.2);
+  color: #f85149;
+}
+
+.aa-special {
+  background: rgba(188, 140, 255, 0.2);
+  color: #bc8cff;
+}
+
+.aa-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.aa-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.mpnn-heatmap-label {
+  font-size: 0.72rem;
+  color: var(--dim);
+  margin-bottom: 8px;
+}
+
+.mpnn-heatmap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.heat-cell {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  font-size: 0.56rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: default;
+}
+
+.mpnn-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  color: var(--dim);
+}
+
+.mpnn-legend-bar {
+  display: inline-block;
+  width: 80px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f85149, #f0a030, #3fb950);
+}
+
+@media (max-width: 900px) {
+  .mpnn-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  /* 3D viewer — reduce hardcoded inline height on small screens */
+  #mpnnStruct3d {
+    height: 220px !important;
+  }
+
+  /* Action buttons — override inline min-width:190px */
+  #esmFoldBtn,
+  #rosettaBtn {
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  .mpnn-panel,
+  .mpnn-output-panel {
+    padding: 18px 14px;
+  }
+
+  /* Sequence preview — narrower on phone */
+  .mpnn-seq-cell {
+    max-width: 120px;
+  }
+
+  /* Heatmap cells — tighter on very small screens */
+  .heat-cell {
+    width: 14px;
+    height: 14px;
+    font-size: 0.5rem;
+  }
+}
+
+.mpnn-struct-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+@keyframes spin3d {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── Rosetta panel ──────────────────────────────────────────── */
+.rosetta-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 4px;
+}
