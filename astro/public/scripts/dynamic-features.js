@@ -302,25 +302,20 @@ async function initPyodide() {
     try {
       pyodide.runPython('import sys; from io import StringIO; _buf = StringIO(); sys.stdout = _buf');
 
-      const stratM = document.getElementById('strat-m');
-      const stratHold = document.getElementById('strat-hold');
-      const stratTarget = document.getElementById('strat-target');
-      let userCode = codeEl.value || codeEl.textContent;
-      if (stratM || stratHold || stratTarget) {
-        const clamp = (v, lo, hi, def) => {
-          const n = Number(v);
-          if (!Number.isFinite(n)) return def;
-          return Math.min(hi, Math.max(lo, n));
-        };
-        const m = clamp(stratM?.value, 2, 20, 8);
-        const hold = clamp(stratHold?.value, 1, 30, 5);
-        const target = clamp(stratTarget?.value, 0.5, 20, 3.0);
-        userCode = userCode
-          .replace(/^hold_days\s*=.*$/m, `hold_days = ${Math.round(hold)}`)
-          .replace(/^m\s*=.*$/m, `m = ${Math.round(m)}  # 價格區間數`)
-          .replace(/^target_profit\s*=.*$/m, `target_profit = ${target}  # 目標利潤 %`);
+      if (typeof window.getThesisPyodideContext === 'function') {
+        const ctx = window.getThesisPyodideContext();
+        pyodide.globals.set('stock_code', ctx.stock_code || '');
+        pyodide.globals.set('stock_name', ctx.stock_name || '');
+        pyodide.globals.set('prices', pyodide.toPy(ctx.prices || []));
+        pyodide.globals.set('pop', ctx.pop);
+        pyodide.globals.set('gens', ctx.gens);
+        pyodide.globals.set('cr', ctx.cr);
+        pyodide.globals.set('mr', ctx.mr);
+        pyodide.globals.set('m', ctx.m);
+        pyodide.globals.set('hold_days', ctx.hold_days);
+        pyodide.globals.set('target_profit', ctx.target_profit);
       }
-      pyodide.runPython(userCode);
+      pyodide.runPython(codeEl.value || codeEl.textContent);
       const out = pyodide.runPython('_buf.getvalue()');
       outputEl.textContent = out || '(no output)';
     } catch (e) {

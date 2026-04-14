@@ -422,35 +422,76 @@
             </div>
             <textarea id="pyodide-code">import numpy as np
 
-# PPTS 價格區間利潤分析示範
-# 使用論文方法：將價格切成等距區間，計算各區間平均利潤
+# 變數由上方 GUI 自動注入：
+#   個股: stock_code, stock_name, prices (list[float])
+#   GA 參數: pop, gens, cr, mr
+#   策略參數: m, hold_days, target_profit
 
-prices = np.array([42.5, 43.1, 44.8, 43.2, 45.6, 46.3, 44.9, 47.2, 48.1, 46.8,
-                    49.3, 50.1, 48.7, 51.4, 52.0, 50.5, 53.2, 54.1, 52.8, 55.0,
-                    53.6, 56.2, 57.1, 55.4, 58.3, 57.0, 59.1, 60.2, 58.5, 61.0])
-hold_days = 5
-m = 8  # 價格區間數
-target_profit = 3.0  # 目標利潤 %
+prices = np.asarray(prices, dtype=float)
+p_min, p_max = float(prices.min()), float(prices.max())
 
-p_min, p_max = prices.min(), prices.max()
-width = (p_max - p_min) / m
+print(f"個股: {stock_code} · {stock_name}")
+print(f"價格序列: {len(prices)} 筆 · 範圍 {p_min:.1f}~{p_max:.1f}")
+print(f"GA: POP={pop} GENS={gens} CR={cr:.2f} MR={mr:.2f}")
+print(f"策略起點: m={m}  hold={hold_days}  target={target_profit:.1f}%\n")
 
-print(f"價格範圍: {p_min:.1f} ~ {p_max:.1f}")
-print(f"區間寬度: {width:.2f}，共 {m} 個區間")
-print(f"持有天數: {hold_days}，目標利潤: {target_profit}%\n")
+def fitness(m_, hold_, target_):
+    if hold_ >= len(prices) or m_ < 2:
+        return -1e9
+    width = (p_max - p_min) / m_
+    sum_avg = sum_prob = bins = 0
+    for i in range(m_):
+        lo = p_min + width * i
+        hi = lo + width
+        profs = []
+        for j in range(len(prices) - hold_):
+            if lo <= prices[j] < hi or (i == m_-1 and prices[j] == hi):
+                profs.append((prices[j+hold_] - prices[j]) / prices[j] * 100)
+        if profs:
+            sum_avg += float(np.mean(profs))
+            sum_prob += float(np.mean([p >= target_ for p in profs]))
+            bins += 1
+    return (sum_avg / bins) * (sum_prob / bins) if bins else -1e9
 
-for i in range(m):
+# --- Mini GA: 以 GUI 參數為初始種子，用 POP/GENS/CR/MR 做隨機搜尋 ---
+rng = np.random.default_rng(42)
+best = (m, hold_days, target_profit, fitness(m, hold_days, target_profit))
+print(f"初始 fitness = {best[3]:.3f}")
+for g in range(int(gens)):
+    if rng.random() < cr:  # crossover: 向 best 靠攏 + 混入新基因
+        m_ = int((best[0] + rng.integers(2, 21)) // 2)
+        hold_ = int((best[1] + rng.integers(1, 31)) // 2)
+        target_ = float((best[2] + rng.uniform(0.5, 20.0)) / 2)
+    else:  # mutation: 在 best 附近擾動
+        m_ = int(best[0] + rng.integers(-2, 3))
+        hold_ = int(best[1] + rng.integers(-2, 3))
+        target_ = float(best[2] + rng.normal(0, 1.0))
+    if rng.random() < mr:  # 額外突變
+        target_ += float(rng.normal(0, 2.0))
+    m_ = max(2, min(20, m_))
+    hold_ = max(1, min(30, hold_))
+    target_ = max(0.5, min(20.0, target_))
+    f = fitness(m_, hold_, target_)
+    if f > best[3]:
+        best = (m_, hold_, target_, f)
+
+print(f"\n最佳 ({gens} 代): m={best[0]}  hold={best[1]}  target={best[2]:.1f}%  fitness={best[3]:.3f}\n")
+
+# --- 依最佳參數畫出區間分布 ---
+bm, bh, bt = best[0], best[1], best[2]
+width = (p_max - p_min) / bm
+print(f"區間寬度: {width:.2f}，共 {bm} 個區間")
+for i in range(bm):
     lo = p_min + width * i
     hi = lo + width
     profits = []
-    for j in range(len(prices) - hold_days):
-        if lo <= prices[j] < hi or (i == m-1 and prices[j] == hi):
-            pnl = (prices[j+hold_days] - prices[j]) / prices[j] * 100
-            profits.append(pnl)
+    for j in range(len(prices) - bh):
+        if lo <= prices[j] < hi or (i == bm-1 and prices[j] == hi):
+            profits.append((prices[j+bh] - prices[j]) / prices[j] * 100)
     if profits:
-        avg = np.mean(profits)
-        prob = np.mean([p >= target_profit for p in profits]) * 100
-        bar = "█" * int(abs(avg) * 4)
+        avg = float(np.mean(profits))
+        prob = float(np.mean([p >= bt for p in profits])) * 100
+        bar = "█" * int(min(abs(avg) * 4, 40))
         sign = "+" if avg >= 0 else "-"
         print(f"  [{lo:5.1f}~{hi:5.1f}] avg={sign}{abs(avg):.2f}% prob={prob:.0f}% {bar}")
     else:
