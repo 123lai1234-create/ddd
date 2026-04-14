@@ -197,11 +197,26 @@
                         <div class="mpnn-presets">
                             <select class="mpnn-input" onchange="if(this.value){loadPreset(this.value);this.selectedIndex=0;}">
                                 <option value="">選擇預設序列…</option>
-                                <option value="hp35">Villin HP35</option>
-                                <option value="trpcage">Trp-cage</option>
-                                <option value="gb1">GB1 β-hairpin</option>
-                                <option value="crambim">Crambin</option>
-                                <option value="hbb">Hb β-chain</option>
+                                <optgroup label="小型摺疊 (<60 aa)">
+                                    <option value="trpcage">Trp-cage (20 aa)</option>
+                                    <option value="insulin_b">Insulin B chain (30 aa)</option>
+                                    <option value="hp35">Villin HP35 (35 aa)</option>
+                                    <option value="crambim">Crambin (46 aa)</option>
+                                    <option value="gb1">GB1 β-hairpin (56 aa)</option>
+                                    <option value="bpti">BPTI (58 aa)</option>
+                                </optgroup>
+                                <optgroup label="中型蛋白 (60–150 aa)">
+                                    <option value="ubq">Ubiquitin (76 aa)</option>
+                                    <option value="cyc">Cytochrome c (104 aa)</option>
+                                    <option value="rnasea">RNase A (124 aa)</option>
+                                    <option value="lyz">Lysozyme (129 aa)</option>
+                                    <option value="calmodulin">Calmodulin (148 aa)</option>
+                                    <option value="hbb">Hemoglobin β-chain (146 aa)</option>
+                                </optgroup>
+                                <optgroup label="大型蛋白 (>150 aa)">
+                                    <option value="myo">Myoglobin (153 aa)</option>
+                                    <option value="gfp">GFP (238 aa)</option>
+                                </optgroup>
                             </select>
                         </div><textarea id="mpnnSeq" spellcheck="false"
                             placeholder="輸入胺基酸序列，例: ACDEFGHIKLMN..."></textarea>
