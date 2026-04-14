@@ -235,7 +235,47 @@
                     </div>
                     <div class="field">
                         <label for="sequenceProteinQuery">UniProt protein query</label>
-                        <input id="sequenceProteinQuery" type="text" value="kinase">
+                        <input id="sequenceProteinQuery" type="text" value="kinase"
+                               list="proteinQueryPresets"
+                               placeholder="輸入關鍵字或從下拉選單挑選（可模糊搜尋）"
+                               autocomplete="off">
+                        <datalist id="proteinQueryPresets">
+                            <option value="kinase">kinase — 激酶（如 EGFR、MAPK）</option>
+                            <option value="phosphatase">phosphatase — 磷酸酶</option>
+                            <option value="protease">protease — 蛋白酶</option>
+                            <option value="polymerase">polymerase — 聚合酶</option>
+                            <option value="helicase">helicase — 解旋酶</option>
+                            <option value="ligase">ligase — 連接酶</option>
+                            <option value="transferase">transferase — 轉移酶</option>
+                            <option value="oxidoreductase">oxidoreductase — 氧化還原酶</option>
+                            <option value="isomerase">isomerase — 異構酶</option>
+                            <option value="hydrolase">hydrolase — 水解酶</option>
+                            <option value="receptor">receptor — 受體</option>
+                            <option value="G protein-coupled receptor">G protein-coupled receptor — GPCR</option>
+                            <option value="ion channel">ion channel — 離子通道</option>
+                            <option value="transporter">transporter — 轉運蛋白</option>
+                            <option value="antibody">antibody — 抗體</option>
+                            <option value="immunoglobulin">immunoglobulin — 免疫球蛋白</option>
+                            <option value="cytokine">cytokine — 細胞因子</option>
+                            <option value="hormone">hormone — 激素</option>
+                            <option value="insulin">insulin — 胰島素</option>
+                            <option value="hemoglobin">hemoglobin — 血紅蛋白</option>
+                            <option value="albumin">albumin — 白蛋白</option>
+                            <option value="collagen">collagen — 膠原蛋白</option>
+                            <option value="actin">actin — 肌動蛋白</option>
+                            <option value="myosin">myosin — 肌球蛋白</option>
+                            <option value="tubulin">tubulin — 微管蛋白</option>
+                            <option value="histone">histone — 組蛋白</option>
+                            <option value="transcription factor">transcription factor — 轉錄因子</option>
+                            <option value="tumor suppressor">tumor suppressor — 腫瘤抑制因子</option>
+                            <option value="oncogene">oncogene — 致癌基因產物</option>
+                            <option value="heat shock protein">heat shock protein — 熱休克蛋白</option>
+                            <option value="ubiquitin ligase">ubiquitin ligase — 泛素連接酶</option>
+                            <option value="caspase">caspase — 凋亡蛋白酶</option>
+                            <option value="CRISPR">CRISPR — 基因編輯相關蛋白</option>
+                            <option value="spike glycoprotein">spike glycoprotein — 病毒刺突蛋白</option>
+                            <option value="viral capsid">viral capsid — 病毒衣殼蛋白</option>
+                        </datalist>
                     </div>
                     <div class="field">
                         <label for="sequenceGeneSymbols">Gene symbols</label>
