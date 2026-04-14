@@ -229,18 +229,12 @@
                     </div>
                     <div class="mpnn-field">
                         <label class="mpnn-label">
-                            HuggingFace Token
-                            <span class="mpnn-hint">填入後使用 ESM-2 真實模型；留空則用 BLOSUM62 模擬</span>
+                            推論引擎
+                            <span class="mpnn-hint">由後端 ESM-2 代理服務即時評分</span>
                         </label>
                         <div style="display:flex;gap:8px;align-items:center">
-                            <input id="hfTokenInput" type="password" class="mpnn-input" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxx"
-                                style="flex:1;font-family:var(--mono);font-size:.78rem"
-                                oninput="updateEngineLabel()">
-                            <span id="engineLabel" style="font-size:.72rem;padding:3px 10px;border-radius:20px;background:rgba(125,133,144,.12);border:1px solid var(--border);color:var(--muted);white-space:nowrap">BLOSUM62</span>
-                        </div>
-                        <div style="font-size:.68rem;color:var(--dim);margin-top:4px">
-                            免費帳號：<a href="https://huggingface.co/settings/tokens" target="_blank" rel="noreferrer" style="color:var(--teal)">huggingface.co/settings/tokens</a>
-                            · 僅在本地使用，不會上傳
+                            <span id="engineLabel" style="font-size:.72rem;padding:3px 10px;border-radius:20px;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.4);color:#3fb950;white-space:nowrap">ESM-2</span>
+                            <span style="font-size:.68rem;color:var(--dim)">facebook/esm2_t6_8M_UR50D · 後端代理 · 無需設定</span>
                         </div>
                     </div>
                     <button class="mpnn-run-btn" id="mpnnRunBtn" onclick="runMPNN()"><span id="mpnnBtnText">▶
