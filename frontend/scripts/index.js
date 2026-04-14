@@ -512,6 +512,11 @@ async function _loadStructureByPdbId(pdbId) {
         backgroundColor: '#080c10', antialias: false,
         width: viewerWidth, height: viewerHeight
     });
+    try {
+        if (_3dmolViewer.renderer && typeof _3dmolViewer.renderer.setPixelRatio === 'function') {
+            _3dmolViewer.renderer.setPixelRatio(1);
+        }
+    } catch (e) { }
     _log3dDebug('viewer:created', { pdbId, requestId, hasViewer: !!_3dmolViewer });
     _spinning = true; _structStyle = 'cartoon'; _3dColorMode = 'spectrum';
 
@@ -540,8 +545,17 @@ async function _loadStructureByPdbId(pdbId) {
         _setStructPlaceholder('<div style="font-size:1.6rem;animation:spin3d 1s linear infinite">🧬</div><div style="margin-top:12px;font-size:.88rem;color:var(--muted)">正在渲染 <strong>' + pdbId + '</strong> 結構…</div>');
         _3dmolViewer.addModel(structure.text, structure.format);
         _log3dDebug('viewer:model-added', { pdbId, requestId, format: structure.format });
-        _3dmolViewer.setStyle({}, { cartoon: { color: 'spectrum', opacity: 0.95, thickness: 0.4 } });
-        _3dmolViewer.setStyle({ hetflag: true }, { stick: { radius: 0.15, colorscheme: 'Jmol' } });
+        let primaryChain = 'A';
+        try {
+            const m = _3dmolViewer.getModel();
+            if (m && m.atoms && m.atoms.length) {
+                const chains = new Set();
+                m.atoms.forEach(a => { if (a.chain) chains.add(a.chain); });
+                if (!chains.has('A')) primaryChain = [...chains][0] || 'A';
+            }
+        } catch (e) { }
+        _3dmolViewer.setStyle({ chain: primaryChain }, { cartoon: { color: 'spectrum', opacity: 0.95, thickness: 0.3, arrows: false } });
+        _3dmolViewer.setStyle({ chain: primaryChain, hetflag: true }, { stick: { radius: 0.12, colorscheme: 'Jmol' } });
         _3dmolViewer.zoomTo();
         _3dmolViewer.resize();
         _3dmolViewer.render();
