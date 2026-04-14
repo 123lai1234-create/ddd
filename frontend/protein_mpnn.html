@@ -197,25 +197,38 @@
                         <div class="mpnn-presets">
                             <select class="mpnn-input" onchange="if(this.value){loadPreset(this.value);this.selectedIndex=0;}">
                                 <option value="">選擇預設序列…</option>
-                                <optgroup label="小型摺疊 (<60 aa)">
+                                <optgroup label="超小型 (<40 aa)">
                                     <option value="trpcage">Trp-cage (20 aa)</option>
+                                    <option value="insulin_a">Insulin A chain (21 aa)</option>
+                                    <option value="melittin">Melittin (26 aa)</option>
+                                    <option value="defensin">α-Defensin (30 aa)</option>
                                     <option value="insulin_b">Insulin B chain (30 aa)</option>
                                     <option value="hp35">Villin HP35 (35 aa)</option>
+                                </optgroup>
+                                <optgroup label="小型摺疊 (40–70 aa)">
                                     <option value="crambim">Crambin (46 aa)</option>
                                     <option value="gb1">GB1 β-hairpin (56 aa)</option>
                                     <option value="bpti">BPTI (58 aa)</option>
+                                    <option value="protein_a">Protein A B-domain (59 aa)</option>
+                                    <option value="ci2">CI2 (64 aa)</option>
                                 </optgroup>
-                                <optgroup label="中型蛋白 (60–150 aa)">
+                                <optgroup label="中型蛋白 (70–150 aa)">
                                     <option value="ubq">Ubiquitin (76 aa)</option>
                                     <option value="cyc">Cytochrome c (104 aa)</option>
+                                    <option value="thioredoxin">Thioredoxin (108 aa)</option>
+                                    <option value="barnase">Barnase (110 aa)</option>
                                     <option value="rnasea">RNase A (124 aa)</option>
                                     <option value="lyz">Lysozyme (129 aa)</option>
-                                    <option value="calmodulin">Calmodulin (148 aa)</option>
                                     <option value="hbb">Hemoglobin β-chain (146 aa)</option>
+                                    <option value="calmodulin">Calmodulin (148 aa)</option>
                                 </optgroup>
                                 <optgroup label="大型蛋白 (>150 aa)">
                                     <option value="myo">Myoglobin (153 aa)</option>
+                                    <option value="streptavidin">Streptavidin (159 aa)</option>
+                                    <option value="hras">H-Ras (166 aa)</option>
+                                    <option value="p53_dbd">p53 DNA-binding (219 aa)</option>
                                     <option value="gfp">GFP (238 aa)</option>
+                                    <option value="carbonic_anhydrase">Carbonic Anhydrase II (259 aa)</option>
                                 </optgroup>
                             </select>
                         </div><textarea id="mpnnSeq" spellcheck="false"

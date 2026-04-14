@@ -59,7 +59,18 @@ const PRESETS = {
     insulin_b: 'FVNQHLCGSHLVEALYLVCGERGFFYTPKT',
     cyc: 'GDVEKGKKIFVQKCAQCHTVEKGGKHKTGPNLHGLFGRKTGQAPGFSYTDANKNKGITWKEETLMEYLENPKKYIPGTKMIFAGIKKKTEREDLIAYLKKATNE',
     rnasea: 'KETAAAKFERQHMDSSTSAASSSNYCNQMMKSRNLTKDRCKPVNTFVHESLADVQAVCSQKNVACKNGQTNCYQSYSTMSITDCRETGSSKYPNCAYKTTQANKHIIVACEGNPYVPVHFDASV',
-    calmodulin: 'ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK'
+    calmodulin: 'ADQLTEEQIAEFKEAFSLFDKDGDGTITTKELGTVMRSLGQNPTEAELQDMINEVDADGNGTIDFPEFLTMMARKMKDTDSEEEIREAFRVFDKDGNGYISAAELRHVMTNLGEKLTDEEVDEMIREADIDGDGQVNYEEFVQMMTAK',
+    melittin: 'GIGAVLKVLTTGLPALISWIKRKRQQ',
+    defensin: 'ACYCRIPACIAGERRYGTCIYQGRLWAFCC',
+    insulin_a: 'GIVEQCCTSICSLYQLENYCN',
+    protein_a: 'TADNKFNKEQQNAFYEILHLPNLNEEQRNAFIQSLKDDPSQSANLLAEAKKLNDAQAPK',
+    ci2: 'LKTEWPELVGKSVEEAKKVILQDKPEAQIIVLPVGTIVTMEYRIDRVRLFVDKLDNIAEVPRVG',
+    barnase: 'AQVINTFDGVADYLQTYHKLPDNYITKSEAQALGWVASKGNLADVAPGKSIGGDIFSNREGKLPGKSGRTWREADINYTSGFRNSDRILYSSDWLIYKTTDHYQTFTKIR',
+    thioredoxin: 'SDKIIHLTDDSFDTDVLKADGAILVDFWAEWCGPCKMIAPILDEIADEYQGKLTVAKLNIDQNPGTAPKYGIRGIPTLLLFKNGEVAATKVGALSKGQLKEFLDANLA',
+    hras: 'MTEYKLVVVGAGGVGKSALTIQLIQNHFVDEYDPTIEDSYRKQVVIDGETCLLDILDTAGQEEYSAMRDQYMRTGEGFLCVFAINNTKSFEDIHQYREQIKRVKDSDDVPMVLVGNKCDLAARTVESRQAQDLARSYGIPYIETSAKTRQGVEDAFYTLVREIRQH',
+    streptavidin: 'AEAGITGTWYNQLGSTFIVTAGADGALTGTYESAVGNAESRYVLTGRYDSAPATDGSGTALGWTVAWKNNYRNAHSATTWSGQYVGGAEARINTQWLLTSGTTEANAWKSTLVGHDTFTKVKPSAAS',
+    p53_dbd: 'SSSVPSQKTYQGSYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHERCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELPPGSTKRALPNNTSS',
+    carbonic_anhydrase: 'SHHWGYGKHNGPEHWHKDFPIAKGERQSPVDIDTKAVVQDPALKPLALVYGEATSRRMVNNGHSFNVEYDDSQDKAVLKDGPLTGTYRLVQFHFHWGSSDDQGSEHTVDRKKYAAELHLVHWNTKYGDFGTAAQQPDGLAVVGVFLKVGDANPALQKVLDALDSIKTKGKSTDFPNFDPGSLLPNVLDYWTYPGSLTTPPLLESVTWIVLKEPISVSSQQMLKFRTLNFNAEGEPELLMLANWRPAQPLKNRQVRGFPK'
 }
 
     ;
@@ -118,7 +129,11 @@ const KNOWN_SEQ_MAP = {
 const PRESET_PDB = {
     hp35: '1VII', trpcage: '1L2Y', gb1: '1PGB', crambim: '1CRN', hbb: '4HHB',
     ubq: '1UBQ', lyz: '1LYZ', gfp: '1GFL', myo: '1MBN', bpti: '1BPI',
-    insulin_b: '4INS', cyc: '1HRC', rnasea: '7RSA', calmodulin: '1CLL'
+    insulin_b: '4INS', cyc: '1HRC', rnasea: '7RSA', calmodulin: '1CLL',
+    melittin: '2MLT', defensin: '1DFN', insulin_a: '4INS',
+    protein_a: '1BDD', ci2: '2CI2', barnase: '1BNR',
+    thioredoxin: '2TRX', hras: '5P21', streptavidin: '1STP',
+    p53_dbd: '1TUP', carbonic_anhydrase: '1CA2'
 }
 
     ;
@@ -196,7 +211,13 @@ function _setStructPlaceholder(html, showInfo = false) {
     if (infoEl) infoEl.style.display = showInfo ? 'flex' : 'none';
 }
 
+const _pdbCache = new Map();
+
 async function _fetchPdbTextWithFallback(pdbId, signal) {
+    const cacheKey = pdbId.toUpperCase();
+    if (_pdbCache.has(cacheKey)) {
+        return _pdbCache.get(cacheKey);
+    }
     let resolvedApiBase = '';
     if (typeof resolvePortfolioApiBase === 'function') {
         try {
@@ -298,7 +319,9 @@ async function _fetchPdbTextWithFallback(pdbId, signal) {
             });
             if (source.isValid(structureText)) {
                 _log3dDebug('fetch:valid', { pdbId, url: source.url, format: source.format });
-                return { text: structureText, format: source.format, url: source.url };
+                const result = { text: structureText, format: source.format, url: source.url };
+                _pdbCache.set(cacheKey, result);
+                return result;
             }
 
             throw new Error('Empty or invalid structure response @ ' + source.url);
@@ -486,7 +509,7 @@ async function _loadStructureByPdbId(pdbId) {
     });
 
     _3dmolViewer = $3Dmol.createViewer(viewer3d, {
-        backgroundColor: '#080c10', antialias: true,
+        backgroundColor: '#080c10', antialias: false,
         width: viewerWidth, height: viewerHeight
     });
     _log3dDebug('viewer:created', { pdbId, requestId, hasViewer: !!_3dmolViewer });
@@ -522,7 +545,7 @@ async function _loadStructureByPdbId(pdbId) {
         _3dmolViewer.zoomTo();
         _3dmolViewer.resize();
         _3dmolViewer.render();
-        _3dmolViewer.spin(true);
+        _3dmolViewer.spin('y', 0.4);
         _log3dDebug('viewer:rendered', { pdbId, requestId });
         requestAnimationFrame(function () { placeholder.style.display = 'none'; });
 
