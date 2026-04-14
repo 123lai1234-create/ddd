@@ -35,7 +35,9 @@ escaped_api_base=$(printf '%s' "$API_BASE_URL_VALUE" | sed -e 's/[\/&]/\\&/g')
 sed "s|__API_BASE_URL__|$escaped_api_base|g" "$FRONTEND_SCRIPTS_DIR/app-config.js" > "$DIST_DIR/scripts/app-config.js"
 
 cp README.md "$DIST_DIR/"
-cp docs/*.md "$DIST_DIR/docs/"
+if compgen -G "docs/*.md" > /dev/null 2>&1; then
+    cp docs/*.md "$DIST_DIR/docs/"
+fi
 cp demo_notebook.ipynb "$DIST_DIR/"
 
 if compgen -G "outputs/*.png" > /dev/null 2>&1; then
