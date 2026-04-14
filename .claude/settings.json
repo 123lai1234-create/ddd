@@ -10,7 +10,14 @@
       "Bash(grep -n \"'/api\" /d/project/frontend/scripts/*.js)",
       "Bash(python -c \"import ast; [ast.parse\\(open\\(f, encoding='utf-8'\\).read\\(\\)\\) for f in ['site_api/cache.py','site_api/structure_sources.py','site_api/variant_sources.py','site_api/population_sources.py','site_api/interaction_sources.py','site_api/economic_sources.py','site_api/schemas.py','site_api/models.py','site_api/db.py','site_api/services.py','site_api/routes.py','site_api/knowledge_sources.py']]\")",
       "Bash(python -c ':*)",
-      "Bash(curl -sL \"https://www.youtube.com/feeds/videos.xml?playlist_id=PLUl_fzAL8tWIqU_zk0u1_18sf1LF-ym91\")"
+      "Bash(curl -sL \"https://www.youtube.com/feeds/videos.xml?playlist_id=PLUl_fzAL8tWIqU_zk0u1_18sf1LF-ym91\")",
+      "Bash(curl -sI \"https://donttalk.vercel.app/ingest.html\")",
+      "Bash(curl -sX POST \"https://donttalk-api-production.up.railway.app/api/scrape\" -H \"Content-Type: application/json\" -d '{\"url\":\"https://example.com\"}')",
+      "Bash(curl -sX POST \"https://donttalk-api-production.up.railway.app/api/scrape\" -H \"Content-Type: application/json\" -d '{\"url\":\"https://en.wikipedia.org/wiki/FastAPI\"}')",
+      "Bash(curl -sI \"https://a-5fs.pages.dev/\")",
+      "Bash(curl -sI \"https://a-5fs.pages.dev/ingest.html\")",
+      "Bash(curl -sI \"https://a-5fs.pages.dev/games/\")",
+      "Bash(curl -sIL \"https://a-5fs.pages.dev/ingest.html\")"
     ]
   }
 }
