@@ -280,6 +280,67 @@
                     <div class="field">
                         <label for="sequenceGeneSymbols">Gene symbols</label>
                         <textarea id="sequenceGeneSymbols" rows="3">TP53, BRCA1, EGFR, APOE</textarea>
+                        <div style="display:flex;gap:6px;margin-top:6px;align-items:center">
+                            <input id="geneSymbolPicker" type="text"
+                                   list="geneSymbolPresets"
+                                   placeholder="從下拉選單挑選基因加入清單（可模糊搜尋）"
+                                   autocomplete="off"
+                                   style="flex:1">
+                            <button id="geneSymbolAdd" type="button" class="btn btn-secondary">＋加入</button>
+                        </div>
+                        <datalist id="geneSymbolPresets">
+                            <option value="TP53">TP53 — 腫瘤抑制蛋白 p53</option>
+                            <option value="BRCA1">BRCA1 — 乳癌易感基因 1</option>
+                            <option value="BRCA2">BRCA2 — 乳癌易感基因 2</option>
+                            <option value="EGFR">EGFR — 表皮生長因子受體</option>
+                            <option value="APOE">APOE — 載脂蛋白 E</option>
+                            <option value="KRAS">KRAS — 致癌基因 KRAS</option>
+                            <option value="HRAS">HRAS — 致癌基因 HRAS</option>
+                            <option value="NRAS">NRAS — 致癌基因 NRAS</option>
+                            <option value="MYC">MYC — 轉錄因子 c-Myc</option>
+                            <option value="PTEN">PTEN — 磷酸酶腫瘤抑制因子</option>
+                            <option value="RB1">RB1 — 視網膜母細胞瘤基因</option>
+                            <option value="APC">APC — 腺瘤性息肉病基因</option>
+                            <option value="VHL">VHL — 希佩爾-林道症候群基因</option>
+                            <option value="MLH1">MLH1 — DNA 錯配修復</option>
+                            <option value="MSH2">MSH2 — DNA 錯配修復</option>
+                            <option value="BRAF">BRAF — B-Raf 激酶</option>
+                            <option value="PIK3CA">PIK3CA — PI3K 催化亞基</option>
+                            <option value="AKT1">AKT1 — 蛋白激酶 B</option>
+                            <option value="MTOR">MTOR — 雷帕黴素靶蛋白</option>
+                            <option value="ALK">ALK — 間變性淋巴瘤激酶</option>
+                            <option value="ROS1">ROS1 — 受體酪氨酸激酶</option>
+                            <option value="HER2">HER2 — ERBB2 受體</option>
+                            <option value="ERBB2">ERBB2 — HER2 受體</option>
+                            <option value="VEGFA">VEGFA — 血管內皮生長因子 A</option>
+                            <option value="TNF">TNF — 腫瘤壞死因子</option>
+                            <option value="IL6">IL6 — 白細胞介素 6</option>
+                            <option value="IL2">IL2 — 白細胞介素 2</option>
+                            <option value="INS">INS — 胰島素</option>
+                            <option value="GCG">GCG — 胰高血糖素</option>
+                            <option value="LEP">LEP — 瘦素</option>
+                            <option value="ALB">ALB — 血清白蛋白</option>
+                            <option value="HBB">HBB — 血紅蛋白 β 亞基</option>
+                            <option value="HBA1">HBA1 — 血紅蛋白 α 亞基 1</option>
+                            <option value="CFTR">CFTR — 囊性纖維化跨膜調節因子</option>
+                            <option value="DMD">DMD — 杜氏肌營養不良蛋白</option>
+                            <option value="HTT">HTT — 亨丁頓蛋白</option>
+                            <option value="SNCA">SNCA — α-突觸核蛋白</option>
+                            <option value="APP">APP — 澱粉樣前體蛋白</option>
+                            <option value="MAPT">MAPT — tau 蛋白</option>
+                            <option value="PSEN1">PSEN1 — 早老素 1</option>
+                            <option value="SOD1">SOD1 — 超氧化物歧化酶 1</option>
+                            <option value="ACE2">ACE2 — 血管緊張素轉換酶 2</option>
+                            <option value="TMPRSS2">TMPRSS2 — 跨膜絲氨酸蛋白酶 2</option>
+                            <option value="CD4">CD4 — 輔助性 T 細胞標誌</option>
+                            <option value="CD8A">CD8A — 細胞毒性 T 細胞標誌</option>
+                            <option value="PDCD1">PDCD1 — PD-1 免疫檢查點</option>
+                            <option value="CD274">CD274 — PD-L1 免疫檢查點</option>
+                            <option value="CTLA4">CTLA4 — 細胞毒性 T 淋巴細胞相關蛋白 4</option>
+                            <option value="FOXP3">FOXP3 — 調節性 T 細胞轉錄因子</option>
+                            <option value="GAPDH">GAPDH — 甘油醛-3-磷酸脫氫酶（管家基因）</option>
+                            <option value="ACTB">ACTB — β-肌動蛋白（管家基因）</option>
+                        </datalist>
                     </div>
                     <div class="field">
                         <label for="sequenceSpecies">Ensembl species</label>

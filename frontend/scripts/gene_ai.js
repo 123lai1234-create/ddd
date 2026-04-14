@@ -598,6 +598,32 @@ function initSequenceVault() {
         deleteSelectedSequence();
     });
 
+    const picker = document.getElementById('geneSymbolPicker');
+    const addBtn = document.getElementById('geneSymbolAdd');
+    const appendGeneSymbol = () => {
+        const textarea = document.getElementById('sequenceGeneSymbols');
+        if (!picker || !textarea) return;
+        const symbol = String(picker.value || '').trim().toUpperCase();
+        if (!symbol) return;
+        const current = textarea.value
+            .split(',')
+            .map((value) => value.trim().toUpperCase())
+            .filter(Boolean);
+        if (!current.includes(symbol)) {
+            current.push(symbol);
+            textarea.value = current.join(', ');
+        }
+        picker.value = '';
+        picker.focus();
+    };
+    if (addBtn) addBtn.addEventListener('click', appendGeneSymbol);
+    if (picker) picker.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            appendGeneSymbol();
+        }
+    });
+
     loadSequenceCache(true);
 }
 
