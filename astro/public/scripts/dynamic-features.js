@@ -301,7 +301,26 @@ async function initPyodide() {
     runBtn.textContent = '執行中...';
     try {
       pyodide.runPython('import sys; from io import StringIO; _buf = StringIO(); sys.stdout = _buf');
-      pyodide.runPython(codeEl.value || codeEl.textContent);
+
+      const stratM = document.getElementById('strat-m');
+      const stratHold = document.getElementById('strat-hold');
+      const stratTarget = document.getElementById('strat-target');
+      let userCode = codeEl.value || codeEl.textContent;
+      if (stratM || stratHold || stratTarget) {
+        const clamp = (v, lo, hi, def) => {
+          const n = Number(v);
+          if (!Number.isFinite(n)) return def;
+          return Math.min(hi, Math.max(lo, n));
+        };
+        const m = clamp(stratM?.value, 2, 20, 8);
+        const hold = clamp(stratHold?.value, 1, 30, 5);
+        const target = clamp(stratTarget?.value, 0.5, 20, 3.0);
+        userCode = userCode
+          .replace(/^hold_days\s*=.*$/m, `hold_days = ${Math.round(hold)}`)
+          .replace(/^m\s*=.*$/m, `m = ${Math.round(m)}  # 價格區間數`)
+          .replace(/^target_profit\s*=.*$/m, `target_profit = ${target}  # 目標利潤 %`);
+      }
+      pyodide.runPython(userCode);
       const out = pyodide.runPython('_buf.getvalue()');
       outputEl.textContent = out || '(no output)';
     } catch (e) {
