@@ -3,7 +3,9 @@
     "allow": [
       "Bash(node --check d:/project/frontend/scripts/index.js)",
       "Bash(python -c \"import ast; ast.parse\\(open\\('d:/project/site_api/routes.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('d:/project/site_api/models.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('d:/project/site_api/models.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "WebFetch(domain:www.youtube.com)",
+      "Bash(git commit -m ':*)"
     ]
   }
 }
