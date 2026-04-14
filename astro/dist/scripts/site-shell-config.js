@@ -8,7 +8,6 @@ window.SITE_SHELL_CONFIG = {
             { href: 'ngs.html', label: 'NGS 定序' },
             { href: 'gene_ai.html', label: '基因 AI' },
             { href: 'firmware.html', label: '🔌 韌體' },
-            { href: 'scraper.html', label: '🕸 爬蟲' },
             { href: '/games/', label: '🎮 遊戲中心' },
             { href: 'protein_mpnn.html', label: '互動展示', classes: 'nav-cta' }
         ],
