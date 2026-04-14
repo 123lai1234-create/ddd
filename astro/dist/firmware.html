@@ -1,157 +1,194 @@
 <!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>韌體工程 · MCU Firmware · 作品集</title><meta name="description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><meta property="og:title" content="韌體工程 · MCU Firmware · 作品集"><meta property="og:description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og-image.svg"><meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script></head> <body data-page="firmware">  
     <div data-site-nav></div>
 
-    <section class="fw-hero">
-        <h1>韌體工程 · MCU Firmware</h1>
-        <p>從 Datasheet 到實機驅動的完整流程：Nuvoton Cortex-M0 上的 TFT EBI 圖片顯示、記憶體規劃、Keil + J-Link 工作流。</p>
-        <div class="fw-chips">
-            <span class="fw-chip">Cortex-M0</span>
-            <span class="fw-chip">Nano130KE3BN</span>
-            <span class="fw-chip">Keil µVision</span>
-            <span class="fw-chip">J-Link</span>
-            <span class="fw-chip">EBI / SPI / I2C</span>
-            <span class="fw-chip">RGB565</span>
+    <section class="fw-hero fw">
+        <span class="fw-eyebrow">Firmware Engineer · MCU Development</span>
+        <h1>從 Datasheet 到<br><span class="grad">實機驅動</span>的完整流程</h1>
+        <p class="sub">Nuvoton Cortex-M0 韌體開發實作：EBI 並列匯流排、RGB565 圖像顯示、精準記憶體規劃、Keil 工具鏈 + J-Link 下載。</p>
+        <div class="fw-hero-tags">
+            <span class="fw-tag accent">Cortex-M0</span>
+            <span class="fw-tag">Nano130KE3BN</span>
+            <span class="fw-tag">Keil µVision 5</span>
+            <span class="fw-tag">J-Link SWD</span>
+            <span class="fw-tag">EBI / SPI / I2C / UART</span>
+            <span class="fw-tag">RGB565</span>
+            <span class="fw-tag">128 KB Flash</span>
+            <span class="fw-tag">16 KB SRAM</span>
+        </div>
+        <div class="fw-chip-viz">
+            <svg viewBox="0 0 460 300" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="chipBg" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="#1a1f3a"/>
+                        <stop offset="1" stop-color="#0a0d1f"/>
+                    </linearGradient>
+                    <linearGradient id="traceGrad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0" stop-color="#00e5ff" stop-opacity="0"/>
+                        <stop offset=".5" stop-color="#00e5ff" stop-opacity=".9"/>
+                        <stop offset="1" stop-color="#a855f7" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <g stroke="url(#traceGrad)" stroke-width="1.5" fill="none" opacity=".7">
+                    <path d="M20 60 L140 60 L150 80"/>
+                    <path d="M20 120 L130 120 L145 140"/>
+                    <path d="M20 180 L135 180"/>
+                    <path d="M20 240 L140 240 L150 220"/>
+                    <path d="M440 60 L320 60 L310 80"/>
+                    <path d="M440 120 L330 120 L315 140"/>
+                    <path d="M440 180 L325 180"/>
+                    <path d="M440 240 L320 240 L310 220"/>
+                </g>
+                <rect x="150" y="80" width="160" height="140" rx="8" fill="url(#chipBg)" stroke="#00e5ff" stroke-width="1.5"/>
+                <rect x="162" y="92" width="136" height="116" rx="4" fill="none" stroke="#00e5ff" stroke-width=".5" opacity=".4"/>
+                <text x="230" y="140" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="14" fill="#00e5ff" font-weight="700">NANO130</text>
+                <text x="230" y="158" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#22ffa7">KE3BN</text>
+                <text x="230" y="178" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#a8b0cc" opacity=".7">Cortex-M0 · 42 MHz</text>
+                <text x="230" y="195" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#6b7399">128K FLASH · 16K SRAM</text>
+                <g fill="#6b7399">
+                    <rect x="140" y="95" width="10" height="3"/><rect x="140" y="110" width="10" height="3"/>
+                    <rect x="140" y="125" width="10" height="3"/><rect x="140" y="140" width="10" height="3"/>
+                    <rect x="140" y="155" width="10" height="3"/><rect x="140" y="170" width="10" height="3"/>
+                    <rect x="140" y="185" width="10" height="3"/><rect x="140" y="200" width="10" height="3"/>
+                    <rect x="310" y="95" width="10" height="3"/><rect x="310" y="110" width="10" height="3"/>
+                    <rect x="310" y="125" width="10" height="3"/><rect x="310" y="140" width="10" height="3"/>
+                    <rect x="310" y="155" width="10" height="3"/><rect x="310" y="170" width="10" height="3"/>
+                    <rect x="310" y="185" width="10" height="3"/><rect x="310" y="200" width="10" height="3"/>
+                </g>
+                <circle cx="165" cy="96" r="2" fill="#22ffa7"><animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite"/></circle>
+                <circle cx="165" cy="171" r="2" fill="#ff2d95"><animate attributeName="opacity" values="0;1;0" dur="1.5s" begin=".5s" repeatCount="indefinite"/></circle>
+                <circle cx="295" cy="126" r="2" fill="#fde047"><animate attributeName="opacity" values="0;1;0" dur="1.5s" begin="1s" repeatCount="indefinite"/></circle>
+                <text x="20" y="55" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">EBI[0:15]</text>
+                <text x="20" y="115" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">SPI0 MOSI</text>
+                <text x="20" y="175" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">I2C SDA</text>
+                <text x="20" y="235" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">UART TX</text>
+                <text x="440" y="55" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">TFT RS</text>
+                <text x="440" y="115" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">GPIO LED</text>
+                <text x="440" y="175" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">PWM</text>
+                <text x="440" y="235" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">ADC</text>
+            </svg>
         </div>
     </section>
 
-    <div class="fw-section">
-        <div class="fw-card">
-            <h2>🎯 代表作：TFT 圖片顯示驅動</h2>
-            <p style="color:var(--muted);line-height:1.6">在 Nuvoton Nano130KE3BN 開發板上，透過外部匯流排介面（EBI）驅動 TFT 面板輸出 RGB565 圖片。重點是在只有 16 KB SRAM / 128 KB Flash 的 Cortex-M0 上，對記憶體預算做精細規劃，把高解析度點陣圖直接鎖進 Flash，零 SRAM 執行時配置。</p>
-
-            <h3>核心技術規格</h3>
-            <div class="fw-spec-grid">
-                <div class="fw-spec">
-                    <div class="fw-spec-label">MCU</div>
-                    <div class="fw-spec-val">Nuvoton Nano130KE3BN</div>
-                    <div class="fw-memo">Cortex-M0 @ 42 MHz</div>
-                </div>
-                <div class="fw-spec">
-                    <div class="fw-spec-label">Flash / SRAM</div>
-                    <div class="fw-spec-val">128 KB / 16 KB</div>
-                    <div class="fw-memo">低功耗嵌入式等級</div>
-                </div>
-                <div class="fw-spec">
-                    <div class="fw-spec-label">顯示介面</div>
-                    <div class="fw-spec-val">EBI (External Bus)</div>
-                    <div class="fw-memo">平行資料匯流排</div>
-                </div>
-                <div class="fw-spec">
-                    <div class="fw-spec-label">像素格式</div>
-                    <div class="fw-spec-val">RGB565 · 16-bit</div>
-                    <div class="fw-memo">2 bytes / pixel</div>
-                </div>
-                <div class="fw-spec">
-                    <div class="fw-spec-label">最大解析度</div>
-                    <div class="fw-spec-val">200 × 220</div>
-                    <div class="fw-memo">≈ 88 KB payload</div>
-                </div>
-                <div class="fw-spec">
-                    <div class="fw-spec-label">開發工具鏈</div>
-                    <div class="fw-spec-val">Keil µVision + J-Link</div>
-                    <div class="fw-memo">ARMCC / ELF / Flash 下載</div>
-                </div>
+    <div class="fw">
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">01</span><h2>核心技術規格</h2><span class="note">bill of materials / datasheet</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">🧠</span><div class="lbl">MCU Core</div><div class="val">Cortex-M0</div><div class="sub">42 MHz · Thumb-2 · NVIC</div></div>
+                <div class="fw-spec"><span class="ico">💾</span><div class="lbl">Flash / SRAM</div><div class="val">128 KB / 16 KB</div><div class="sub">on-chip ROM + RAM</div></div>
+                <div class="fw-spec"><span class="ico">🔌</span><div class="lbl">Display Bus</div><div class="val">EBI Parallel</div><div class="sub">memory-mapped I/O</div></div>
+                <div class="fw-spec"><span class="ico">🎨</span><div class="lbl">Pixel Format</div><div class="val">RGB565</div><div class="sub">16-bit · 2 B/px</div></div>
+                <div class="fw-spec"><span class="ico">📐</span><div class="lbl">Max Resolution</div><div class="val">200 × 220</div><div class="sub">~86 KB image payload</div></div>
+                <div class="fw-spec"><span class="ico">🛠</span><div class="lbl">Toolchain</div><div class="val">Keil + J-Link</div><div class="sub">ARMCC · ELF · SWD flash</div></div>
             </div>
+        </section>
 
-            <h3>記憶體預算推導</h3>
-            <div class="fw-code"><span class="c-cm">// Flash 佔用 (bytes)</span>
-flash_usage = width × height × <span class="c-num">2</span>   <span class="c-cm">// RGB565 = 2 B/px</span>
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">02</span><h2>記憶體預算</h2><span class="note">flash budget visualization</span></div>
+            <div class="fw-mem-card">
+                <h3>// flash_usage = width × height × 2</h3>
+                <div class="fw-mem-row">
+                    <span class="name">Code / Data</span>
+                    <div class="bar"><span class="fill" style="animation-delay:.1s;width:23%"></span></div>
+                    <span class="pct"><b>30</b> / 128 KB</span>
+                </div>
+                <div class="fw-mem-row">
+                    <span class="name">200×220 image</span>
+                    <div class="bar"><span class="fill" style="animation-delay:.3s;width:67%"></span></div>
+                    <span class="pct"><b>86</b> / 128 KB</span>
+                </div>
+                <div class="fw-mem-row warn">
+                    <span class="name">total (upper bound)</span>
+                    <div class="bar"><span class="fill" style="animation-delay:.5s;width:91%"></span></div>
+                    <span class="pct"><b>116</b> / 128 KB</span>
+                </div>
+                <div class="fw-mem-row">
+                    <span class="name">剩餘 Flash</span>
+                    <div class="bar"><span class="fill" style="animation-delay:.7s;width:9%;background:linear-gradient(90deg,#22ffa7,#00e5ff)"></span></div>
+                    <span class="pct"><b>12</b> KB</span>
+                </div>
+                <p style="color:var(--ink-3);font-size:.78rem;font-family:'JetBrains Mono',monospace;margin-top:14px;line-height:1.7">※ 一張大圖幾乎吃掉整個 Flash。多張需降解析度或外掛 SPI Flash。</p>
+            </div>
+        </section>
 
-<span class="c-cm">// 以 200 × 220 為例</span>
-flash_usage = <span class="c-num">200</span> × <span class="c-num">220</span> × <span class="c-num">2</span> = <span class="c-num">88000</span> B ≈ <span class="c-num">86</span> KB
-
-<span class="c-cm">// Nano130 Flash 上限 128 KB → 扣掉程式碼 ~30 KB → 剩 ~98 KB</span>
-<span class="c-cm">// 一張大圖吃掉整個 Flash 圖片預算，需要先壓縮或分頁載入</span></div>
-
-            <h3>從 PNG 到 C array 的轉換流程</h3>
-            <ol style="color:var(--muted);line-height:1.8;padding-left:24px">
-                <li>輸入 PNG / JPG（&lt; 300 KB）透過 <code>Rinky-Dink Electronics 影像轉換器</code> 轉成 RGB565</li>
-                <li>輸出 <code>const unsigned short img2[N] = { ... }</code> C header</li>
-                <li>放進 Keil project 的 <code>img2.c</code>，以 <code>const</code> 讓編譯器鎖在 Flash（非 SRAM）</li>
-                <li>透過 EBI 位址寫到 TFT 控制器，DMA-less 但 CPU 週期可控</li>
-                <li>J-Link 下載後實機驗證波形與畫面</li>
-            </ol>
-
-            <h3>示例：Flash-resident 影像宣告</h3>
-            <div class="fw-code"><span class="c-cm">/* img2.c — 200x220 RGB565, Flash-resident */</span>
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">03</span><h2>Flash-resident 影像 + EBI blit</h2><span class="note">img2.c · main.c</span></div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>img2.c — 200×220 RGB565 · Flash-resident</span></div>
+                <pre class="fw-code"><span class="c-cm">/* Generated from PNG via Rinky-Dink RGB565 converter
+   const 讓編譯器鎖在 Flash，零 SRAM 執行時分配 */</span>
 <span class="c-key">const</span> <span class="c-type">unsigned short</span> img2[<span class="c-num">44000</span>] = {
-    <span class="c-num">0x0000</span>, <span class="c-num">0x0000</span>, <span class="c-num">0x1082</span>, <span class="c-num">0x2965</span>, <span class="c-num">0x41A7</span>,
-    <span class="c-cm">/* ... ~44 K entries, each 16-bit RGB565 pixel ... */</span>
-};
-
-<span class="c-cm">/* main.c — EBI blit loop */</span>
+    <span class="c-num">0x0000</span>, <span class="c-num">0x0000</span>, <span class="c-num">0x1082</span>, <span class="c-num">0x2965</span>, <span class="c-num">0x41A7</span>, <span class="c-num">0x62AB</span>,
+    <span class="c-num">0x832F</span>, <span class="c-num">0xA4B3</span>, <span class="c-num">0xC636</span>, <span class="c-num">0xE7BA</span>, <span class="c-num">0xFFFF</span>, <span class="c-num">0xFFDE</span>,
+    <span class="c-cm">/* ... 44 K entries, each 16-bit RGB565 pixel ... */</span>
+};</pre>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>main.c — EBI blit loop</span></div>
+                <pre class="fw-code"><span class="c-cm">/* memory-mapped I/O: 寫到 EBI address = 送一個像素到 TFT */</span>
 <span class="c-type">void</span> <span class="c-fn">tft_blit</span>(<span class="c-key">const</span> <span class="c-type">uint16_t</span> *buf, <span class="c-type">uint32_t</span> n) {
     <span class="c-key">for</span> (<span class="c-type">uint32_t</span> i = <span class="c-num">0</span>; i &lt; n; i++) {
-        EBI_WRITE_DATA(buf[i]);    <span class="c-cm">// memory-mapped I/O</span>
+        EBI_WRITE_DATA(buf[i]);    <span class="c-cm">// triggers CS/WR strobe</span>
     }
-}</div>
+}
 
-            <h3>技術難點 &amp; 處理</h3>
-            <ul style="color:var(--muted);line-height:1.8;padding-left:24px">
-                <li><strong>Flash 空間爆表</strong> → 降採樣至 200×220，犧牲解析度換 Flash；或改用 SPI Flash 外掛儲存</li>
-                <li><strong>EBI 時序對齊</strong> → 調整 tAS / tAH 匹配 TFT 控制器 setup/hold；用邏輯分析儀驗證波形</li>
-                <li><strong>Keil licensing</strong> → 免費版有 32 KB 上限，需申請 PSN 註冊碼才能編譯完整 image</li>
-            </ul>
-        </div>
+<span class="c-type">int</span> <span class="c-fn">main</span>(<span class="c-type">void</span>) {
+    <span class="c-fn">SYS_Init</span>();         <span class="c-cm">// clock tree + multifunction pins</span>
+    <span class="c-fn">EBI_Open</span>(<span class="c-num">0</span>, <span class="c-num">16</span>);   <span class="c-cm">// 16-bit bus, bank 0</span>
+    <span class="c-fn">TFT_Init</span>();         <span class="c-cm">// controller reset + init sequence</span>
+    <span class="c-fn">tft_blit</span>(img2, <span class="c-num">44000</span>);
+    <span class="c-key">while</span> (<span class="c-num">1</span>) { <span class="c-fn">__WFI</span>(); } <span class="c-cm">// sleep, wake on interrupt</span>
+}</pre>
+            </div>
+        </section>
 
-        <div class="fw-card">
-            <h2>📺 完整教學播放清單</h2>
-            <p style="color:var(--muted);line-height:1.6">從零開始的 Nuvoton Nano 系列開發教學，涵蓋 GPIO、按鍵、計時器、TFT、SPI 等主題。</p>
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">04</span><h2>PNG → MCU 流程</h2><span class="note">5-step toolchain</span></div>
+            <div class="fw-pipe">
+                <div class="fw-step"><div class="t">影像輸入</div><div class="d">PNG / JPG &lt; 300 KB，建議 200 × 220</div></div>
+                <div class="fw-step"><div class="t">RGB565 轉換</div><div class="d">Rinky-Dink converter 輸出 C header</div></div>
+                <div class="fw-step"><div class="t">加入專案</div><div class="d">替換 img2.c，以 const 鎖進 Flash</div></div>
+                <div class="fw-step"><div class="t">EBI 時序對齊</div><div class="d">設 tAS / tAH 匹配 TFT setup/hold</div></div>
+                <div class="fw-step"><div class="t">J-Link 下載</div><div class="d">SWD flash + 邏輯分析儀驗證</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">05</span><h2>技術難點 &amp; 解決</h2><span class="note">problem → mitigation</span></div>
+            <div class="fw-diff">
+                <div class="fw-diff-card"><div class="title">✕ Flash 空間爆表</div><div class="desc">一張 200×220 RGB565 約 86 KB，加上 code 只剩 12 KB 餘裕。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ 外掛 SPI Flash</div><div class="desc">影像搬到外部 W25Q 系列，MCU 以 SPI DMA 逐行讀取。</div></div>
+                <div class="fw-diff-card"><div class="title">✕ EBI 時序不對</div><div class="desc">TFT 亂碼或部分列遺失，通常是 setup/hold 沒對齊。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ 邏輯分析儀校正</div><div class="desc">量 CS/WR/RD 波形反推 tAS/tAH 調到穩定。</div></div>
+                <div class="fw-diff-card"><div class="title">✕ Keil 32 KB 上限</div><div class="desc">免費版無法編譯大型 image。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ PSN 註冊碼</div><div class="desc">申請免費教育版完整授權解除限制。</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">06</span><h2>完整教學播放清單</h2><span class="note">YouTube · Nano MCU series</span></div>
             <div class="fw-yt">
                 <iframe src="https://www.youtube.com/embed/videoseries?list=PLUl_fzAL8tWIqU_zk0u1_18sf1LF-ym91" title="Nuvoton Firmware Playlist" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
-        </div>
+        </section>
 
-        <div class="fw-card">
-            <h2>📝 技術文章</h2>
-            <div class="fw-list">
-                <a href="https://jtlai0921.wixsite.com/mysite/post/%E7%8C%B4%E5%AD%90%E9%83%BD%E8%83%BD%E8%AE%80%E6%87%82%E7%9A%84%E7%94%A8tft%E9%A1%AF%E7%A4%BA%E5%9C%96%E7%89%87" target="_blank" rel="noopener">
-                    <span>猴子都能讀懂：用 TFT 顯示圖片（EBI + RGB565 完整教學）</span>
-                    <span class="arrow">→</span>
-                </a>
-                <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noopener">
-                    <span>更多韌體與工程筆記 · 個人部落格</span>
-                    <span class="arrow">→</span>
-                </a>
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">07</span><h2>技術文章</h2><span class="note">blog</span></div>
+            <div class="fw-articles">
+                <a href="https://jtlai0921.wixsite.com/mysite/post/%E7%8C%B4%E5%AD%90%E9%83%BD%E8%83%BD%E8%AE%80%E6%87%82%E7%9A%84%E7%94%A8tft%E9%A1%AF%E7%A4%BA%E5%9C%96%E7%89%87" target="_blank" rel="noopener"><span class="bullet">01 ▸</span><span class="title">猴子都能讀懂：用 TFT 顯示圖片（EBI + RGB565 完整教學）</span><span class="arrow">↗</span></a>
+                <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noopener"><span class="bullet">02 ▸</span><span class="title">更多韌體與工程筆記 · 個人部落格</span><span class="arrow">↗</span></a>
             </div>
-        </div>
+        </section>
 
-        <div class="fw-card">
-            <h2>🛠 工具鏈與工作流</h2>
-            <div class="fw-spec-grid">
-                <div class="fw-spec">
-                    <div class="fw-spec-label">IDE</div>
-                    <div class="fw-spec-val">Keil µVision 5</div>
-                </div>
-                <div class="fw-spec">
-                    <div class="fw-spec-label">Debugger</div>
-                    <div class="fw-spec-val">J-Link / ISP</div>
-                </div>
-                <div class="fw-spec">
-                    <div class="fw-spec-label">BSP</div>
-                    <div class="fw-spec-val">Nuvoton NuEdu</div>
-                </div>
-                <div class="fw-spec">
-                    <div class="fw-spec-label">波形驗證</div>
-                    <div class="fw-spec-val">Logic Analyzer</div>
-                </div>
-                <div class="fw-spec">
-                    <div class="fw-spec-label">影像轉檔</div>
-                    <div class="fw-spec-val">Rinky-Dink RGB565</div>
-                </div>
-                <div class="fw-spec">
-                    <div class="fw-spec-label">版本控制</div>
-                    <div class="fw-spec-val">Git / GitHub</div>
-                </div>
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">08</span><h2>跨域延伸</h2><span class="note">DSP × biomed</span></div>
+            <div class="fw-callout">
+                <h3>從 Bit 到分子：一條完整的工程線</h3>
+                <p>以韌體底層為基礎，整合生醫研究專業：MCU 上實作 ECG / PPG 訊號 FIR / IIR 濾波、心率擷取演算法，結合站內已展示的 <a href="report.html">蛋白質 AI</a>、<a href="ngs.html">NGS</a>、<a href="gene_ai.html">基因 AI</a> 平台，形成「硬體 ↔ 韌體 ↔ 演算法 ↔ 系統」同一條技術線。</p>
             </div>
-        </div>
-
-        <div class="fw-card">
-            <h2>🧬 跨域延伸：DSP × 生醫</h2>
-            <p style="color:var(--muted);line-height:1.6">以韌體底層基礎整合生醫研究專業：在 MCU 上實作 ECG / PPG 訊號濾波（FIR / IIR）與心率擷取演算法，結合本站已展示的 <a href="report.html" style="color:#00e5ff">蛋白質 AI</a>、<a href="ngs.html" style="color:#00e5ff">NGS</a>、<a href="gene_ai.html" style="color:#00e5ff">基因 AI</a> 形成「從 Bit 到分子」的完整技術線。</p>
-        </div>
+        </section>
     </div>
 
+    <hr class="divider" style="margin-top:60px">
     <div data-site-footer></div>
     <button class="scroll-top" aria-label="返回頂部">↑</button>
    </body> </html>

@@ -44,12 +44,24 @@ async function convert(file) {
     const bodyCdnScripts = extractAll(/<script[^>]*\ssrc=["'](https?:\/\/[^"']+)["'][^>]*>\s*<\/script>/gi, bodyInner);
     const pageScripts = [...headCdnScripts, ...bodyCdnScripts, ...localBodyScripts];
 
+    // Inline <script>...</script> blocks in head (no src attr) — need preserving
+    // (protein_mpnn's window.load3Dmol loader lives here)
+    const inlineHeadRe = /<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/gi;
+    const headInlineBlocks = [];
+    let m;
+    while ((m = inlineHeadRe.exec(headBlock)) !== null) {
+        const body = m[1].trim();
+        if (body) headInlineBlocks.push(body);
+    }
+    const headInlineRaw = headInlineBlocks.map(b => `<script is:inline>${b}</script>`).join('\n');
+
     const slug = file.replace(/\.html$/, '');
     const astroName = slug + '.astro';
 
     const content = `---
 import Base from '../layouts/Base.astro';
 const bodyHtml = ${JSON.stringify(bodyInner)};
+const headInline = ${JSON.stringify(headInlineRaw)};
 ---
 <Base
     title=${JSON.stringify(title)}
@@ -57,6 +69,7 @@ const bodyHtml = ${JSON.stringify(bodyInner)};
     bodyPage=${JSON.stringify(bodyPage)}
     pageStyles={${JSON.stringify(pageStyles)}}
     pageScripts={${JSON.stringify(pageScripts)}}
+    headInline={headInline}
 >
     <Fragment set:html={bodyHtml} />
 </Base>

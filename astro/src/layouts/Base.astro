@@ -6,6 +6,7 @@ interface Props {
     bodyPage?: string;
     pageStyles?: string[];
     pageScripts?: string[];
+    headInline?: string;
 }
 
 const {
@@ -15,6 +16,7 @@ const {
     bodyPage,
     pageStyles = [],
     pageScripts = [],
+    headInline = '',
 } = Astro.props;
 ---
 <!DOCTYPE html>
@@ -45,6 +47,7 @@ const {
     <script is:inline src="/scripts/nav.js" defer></script>
     <script is:inline src="/scripts/app-config.js" defer></script>
     <script is:inline src="/scripts/dynamic-features.js" defer></script>
+    <Fragment set:html={headInline} />
 </head>
 <body data-page={bodyPage}>
     <slot />
