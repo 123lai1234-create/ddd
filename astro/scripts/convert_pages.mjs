@@ -38,8 +38,8 @@ async function convert(file) {
     const localBodyScripts = extractAll(/<script[^>]*\ssrc=["']([^"']+)["'][^>]*>\s*<\/script>/gi, bodyInner)
         .filter(s => !s.startsWith('http'))
         .map(s => '/' + s.replace(/^\.?\//, ''));
-    // External CDN scripts from <head> after COMMON_HEAD (e.g. chart.js, 3dmol)
-    const headCdnScripts = extractAll(/<script[^>]*\ssrc=["'](https?:\/\/[^"']+)["'][^>]*>\s*<\/script>/gi, afterCommon);
+    // External CDN scripts from entire <head> (e.g. chart.js, 3dmol — may sit before COMMON_HEAD)
+    const headCdnScripts = extractAll(/<script[^>]*\ssrc=["'](https?:\/\/[^"']+)["'][^>]*>\s*<\/script>/gi, headBlock);
     // Also pick up CDN scripts inside body (rare but safe)
     const bodyCdnScripts = extractAll(/<script[^>]*\ssrc=["'](https?:\/\/[^"']+)["'][^>]*>\s*<\/script>/gi, bodyInner);
     const pageScripts = [...headCdnScripts, ...bodyCdnScripts, ...localBodyScripts];

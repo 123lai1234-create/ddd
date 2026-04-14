@@ -7,7 +7,7 @@ const bodyHtml = "\r\n    <div data-site-nav></div>\r\n\r\n    <header class=\"h
     description="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"
     bodyPage="thesis"
     pageStyles={["/styles/thesis.css"]}
-    pageScripts={["/scripts/app-config.js","/scripts/thesis.js"]}
+    pageScripts={["https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js","/scripts/app-config.js","/scripts/thesis.js"]}
 >
     <Fragment set:html={bodyHtml} />
 </Base>
