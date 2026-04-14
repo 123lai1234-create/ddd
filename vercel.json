@@ -50,6 +50,16 @@
       "source": "/thesis",
       "destination": "/thesis.html",
       "permanent": true
+    },
+    {
+      "source": "/game.html",
+      "destination": "/games/breakout.html",
+      "permanent": true
+    },
+    {
+      "source": "/games",
+      "destination": "/games/",
+      "permanent": false
     }
   ]
 }

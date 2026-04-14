@@ -1488,3 +1488,66 @@ def yahoo_prices_proxy(payload: YahooPriceRequest) -> dict[str, Any]:
         except Exception:
             continue
     return {"results": results}
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Games API — lightweight in-memory leaderboard
+# ──────────────────────────────────────────────────────────────────────
+
+import time as _time
+from threading import Lock as _Lock
+
+_GAME_SCORES: dict[str, list[dict[str, Any]]] = {}
+_GAME_LOCK = _Lock()
+_ALLOWED_GAMES = {"breakout", "snake3d", "shooter3d", "tetris3d"}
+
+
+class GameScoreSubmit(BaseModel):
+    game: str = Field(min_length=1, max_length=32)
+    player: str = Field(min_length=1, max_length=24)
+    score: int = Field(ge=0, le=10_000_000)
+    level: int | None = Field(default=None, ge=0, le=10_000)
+    meta: dict[str, Any] | None = None
+
+
+@router.post("/api/games/scores")
+def submit_game_score(payload: GameScoreSubmit) -> dict[str, Any]:
+    game = payload.game.strip().lower()
+    if game not in _ALLOWED_GAMES:
+        raise HTTPException(status_code=400, detail="unknown game")
+    player = payload.player.strip()[:24] or "anon"
+    entry = {
+        "player": player,
+        "score": int(payload.score),
+        "level": payload.level,
+        "meta": payload.meta or {},
+        "ts": int(_time.time()),
+    }
+    with _GAME_LOCK:
+        bucket = _GAME_SCORES.setdefault(game, [])
+        bucket.append(entry)
+        bucket.sort(key=lambda e: (-e["score"], e["ts"]))
+        del bucket[50:]
+        rank = next((i + 1 for i, e in enumerate(bucket) if e is entry), None)
+    return {"ok": True, "rank": rank, "total": len(_GAME_SCORES.get(game, []))}
+
+
+@router.get("/api/games/leaderboard/{game}")
+def game_leaderboard(game: str, limit: int = 10) -> dict[str, Any]:
+    g = game.strip().lower()
+    if g not in _ALLOWED_GAMES:
+        raise HTTPException(status_code=400, detail="unknown game")
+    limit = max(1, min(50, int(limit)))
+    with _GAME_LOCK:
+        top = list(_GAME_SCORES.get(g, []))[:limit]
+    return {"game": g, "entries": top}
+
+
+@router.get("/api/games/seed/{game}")
+def game_random_seed(game: str) -> dict[str, Any]:
+    g = game.strip().lower()
+    if g not in _ALLOWED_GAMES:
+        raise HTTPException(status_code=400, detail="unknown game")
+    import random as _rand
+    seed = _rand.getrandbits(32)
+    return {"game": g, "seed": seed, "ts": int(_time.time())}

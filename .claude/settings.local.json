@@ -5,7 +5,25 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\('d:/project/site_api/routes.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\('d:/project/site_api/models.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "WebFetch(domain:www.youtube.com)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "WebFetch(domain:donttalk.vercel.app)",
+      "Bash(vercel ls:*)",
+      "Bash(vercel inspect:*)",
+      "Bash(vercel git:*)",
+      "Bash(vercel --prod --yes)",
+      "Bash(ls scripts/build_static_site.sh scripts/sync_frontend_heads*)",
+      "Bash(node scripts/sync_frontend_heads.mjs)",
+      "Bash(git commit --allow-empty -m ':*)",
+      "Bash(mkdir -p astro)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npx astro:*)",
+      "Bash(node scripts/convert_pages.mjs)",
+      "Bash(curl -sSI \"https://files.rcsb.org/download/5P21.pdb\")",
+      "Bash(curl -sSI \"https://models.rcsb.org/v1/5P21/full?format=cif\")",
+      "Bash(curl -sSI -H \"Origin: https://donttalk.vercel.app\" \"https://files.rcsb.org/download/5P21.pdb\")",
+      "Bash(curl -s \"https://files.rcsb.org/download/5P21.pdb\")",
+      "Bash(curl -sS \"https://donttalk.vercel.app/api/structures/pdb/5P21\")"
     ]
   }
 }
