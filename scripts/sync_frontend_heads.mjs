@@ -21,7 +21,7 @@ function replaceCommonHead(content, template) {
     const match = content.match(pattern);
 
     if (!match) {
-        throw new Error('Missing COMMON_HEAD markers');
+        return null;
     }
 
     const indent = match[1] || '';
@@ -47,7 +47,7 @@ async function main() {
         const original = await fs.readFile(filePath, 'utf8');
         const updated = replaceCommonHead(original, template);
 
-        if (updated !== original) {
+        if (updated && updated !== original) {
             await fs.writeFile(filePath, updated, 'utf8');
         }
     }
