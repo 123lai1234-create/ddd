@@ -19,7 +19,7 @@ YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 TAIFEX_DAILY_REPORT_URL = "https://www.taifex.com.tw/cht/3/futDailyMarketReport"
 TAIFEX_CONTRACT_OPTIONS_URL = "https://www.taifex.com.tw/cht/3/getFutcontract"
 REQUEST_TIMEOUT = 20
-USER_AGENT = "donttalk-api/1.0"
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 

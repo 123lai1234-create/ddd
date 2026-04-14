@@ -211,10 +211,26 @@
                             step="0.01">
                         <div class="ga-cfg-hint">論文系統預設：0.10</div>
                     </div>
+                    <div class="ga-cfg-field">
+                        <label class="ga-cfg-label" for="strat-m">價格區間數 m</label>
+                        <input class="ga-cfg-input" id="strat-m" type="number" value="8" min="2" max="20" step="1">
+                        <div class="ga-cfg-hint">PPTS 將價格切成 m 個等距區間</div>
+                    </div>
+                    <div class="ga-cfg-field">
+                        <label class="ga-cfg-label" for="strat-hold">持有天數</label>
+                        <input class="ga-cfg-input" id="strat-hold" type="number" value="5" min="1" max="30" step="1">
+                        <div class="ga-cfg-hint">買入後持有天數</div>
+                    </div>
+                    <div class="ga-cfg-field">
+                        <label class="ga-cfg-label" for="strat-target">目標利潤 (%)</label>
+                        <input class="ga-cfg-input" id="strat-target" type="number" value="3.0" min="0.5" max="20" step="0.5">
+                        <div class="ga-cfg-hint">區間達標機率的門檻</div>
+                    </div>
                 </div>
                 <div class="stock-meta" id="selectedStockMeta"></div>
                 <div class="ga-cfg-actions">
                     <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 重新運算</button>
+                    <button class="btn btn-primary" onclick="document.getElementById('pyodide-run').click(); document.getElementById('pyodide-runner-card').scrollIntoView({behavior:'smooth'})">🐍 Python 試跑策略</button>
                     <button class="btn btn-ghost" onclick="resetGaCfg()">↩ 重置論文預設</button>
                     <button class="btn btn-ghost" id="btnSyncStocks" style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步真實股價</button>
                     <span class="ga-cfg-status" id="cfgStatus"></span>
@@ -397,26 +413,12 @@
         </div>
     </div>
 
-    <!-- ════════ PYTHON RUNNER ════════ -->
-    <div style="max-width:900px;margin:32px auto;">
-        <h2>試跑 GA 策略 (Python in Browser)</h2>
-        <div class="strategy-params" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding:16px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.02);margin-bottom:12px">
-            <div>
-                <label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px">價格區間數 m</label>
-                <input id="strat-m" type="number" min="2" max="20" step="1" value="8" style="width:100%;padding:6px 10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);color:inherit;border-radius:6px;font-family:var(--mono,monospace)">
-                <div style="font-size:.7rem;color:var(--dim);margin-top:2px">2 – 20</div>
-            </div>
-            <div>
-                <label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px">持有天數</label>
-                <input id="strat-hold" type="number" min="1" max="30" step="1" value="5" style="width:100%;padding:6px 10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);color:inherit;border-radius:6px;font-family:var(--mono,monospace)">
-                <div style="font-size:.7rem;color:var(--dim);margin-top:2px">1 – 30 天</div>
-            </div>
-            <div>
-                <label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px">目標利潤 (%)</label>
-                <input id="strat-target" type="number" min="0.5" max="20" step="0.5" value="3.0" style="width:100%;padding:6px 10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);color:inherit;border-radius:6px;font-family:var(--mono,monospace)">
-                <div style="font-size:.7rem;color:var(--dim);margin-top:2px">0.5 – 20 %</div>
-            </div>
-        </div>
+    <!-- ════════ PYTHON RUNNER（使用上方「選股與 GA 參數」整合參數） ════════ -->
+    <div id="pyodide-runner-card" style="max-width:900px;margin:32px auto;">
+        <h2 style="margin-bottom:8px">試跑 GA 策略 (Python in Browser)</h2>
+        <p style="color:var(--muted);font-size:.86rem;margin-bottom:14px;line-height:1.6">
+            直接讀取上方 <b style="color:var(--teal)">「選股與 GA 參數重跑」</b> 的所有欄位：選到的股票、POP / GENS / CR / MR、以及 m / hold / target。按執行會將真實價格序列注入 Python runtime。
+        </p>
         <div class="pyodide-runner">
             <div class="runner-header">
                 <span>Python 3.11 (Pyodide) · GUI 參數會覆蓋程式中的預設值</span>
