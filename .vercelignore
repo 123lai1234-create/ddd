@@ -8,4 +8,5 @@ docs/
 fly.toml
 Dockerfile
 netlify.toml
+wrangler.toml
 frontend/
