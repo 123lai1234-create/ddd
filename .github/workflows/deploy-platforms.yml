@@ -287,7 +287,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' && secrets.CLOUDFLARE_ACCOUNT_ID || env.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PAGES_PROJECT }} --branch=main
+          command: pages deploy astro/dist --project-name=${{ env.CLOUDFLARE_PAGES_PROJECT }} --branch=main
 
       - name: Warn about Cloudflare permissions
         if: steps.cloudflare_deploy.outcome == 'failure'
