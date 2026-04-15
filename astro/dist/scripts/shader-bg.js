@@ -7,7 +7,7 @@
     if (document.getElementById('bg-shader')) return;
     const canvas = document.createElement('canvas');
     canvas.id = 'bg-shader';
-    canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:-3;pointer-events:none;opacity:0.85';
+    canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:-3;pointer-events:none;opacity:0.32';
     const insert = () => document.body.insertBefore(canvas, document.body.firstChild);
     if (document.body) insert();
     else document.addEventListener('DOMContentLoaded', insert, { once: true });

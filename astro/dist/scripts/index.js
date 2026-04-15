@@ -555,10 +555,11 @@ async function _loadStructureByPdbId(pdbId) {
                 if (!chains.has('A')) primaryChain = [...chains][0] || 'A';
             }
         } catch (e) { }
+        _3dmolViewer.setStyle({}, {});
         _3dmolViewer.setStyle({ chain: primaryChain }, { cartoon: { color: 'spectrum', opacity: 0.95, thickness: 0.3, arrows: false } });
         _3dmolViewer.setStyle({ chain: primaryChain, hetflag: true }, { stick: { radius: 0.12, colorscheme: 'Jmol' } });
-        _3dmolViewer.zoomTo();
         _3dmolViewer.resize();
+        _3dmolViewer.zoomTo({ chain: primaryChain });
         _3dmolViewer.render();
         _3dmolViewer.spin('y', 0.4);
         _log3dDebug('viewer:rendered', { pdbId, requestId });
@@ -914,16 +915,7 @@ function applyDesignColoring(idxOverride) {
                     const md = mutDetails.find(m => m.resi === a.resi);
 
                     if (md) {
-                        _3dmolViewer.addLabel(`${md.from
-                            }
-
-                        ${a.resi
-                            }
-
-                        ${md.to
-                            }
-
-                        `, {
+                        _3dmolViewer.addLabel(`${md.from}${a.resi}${md.to}`, {
                             position: {
                                 x: a.x, y: a.y + 1.4, z: a.z
                             }
