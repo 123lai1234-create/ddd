@@ -1288,6 +1288,11 @@ async function rerunGA() {
             uiState.currentRun = run;
             renderAll(run);
             status.textContent = `✓ 完成 [${dataSource}]：${stock.name} 最佳 fitness ${formatValue(run.best.bestFit, 3)}`;
+            const priceCanvas = document.getElementById('priceChart');
+            if (priceCanvas) {
+                const target = priceCanvas.closest('.section') || priceCanvas;
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         } catch (error) {
             status.textContent = `錯誤：${error.message}`;
         } finally {
