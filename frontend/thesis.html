@@ -175,7 +175,7 @@
     <div class="section reveal">
         <div class="section-inner">
             <div class="section-label">互動體驗</div>
-            <h2 class="section-title">選股與 GA 參數重跑</h2>
+            <h2 class="section-title">選股與 GAPPTS 參數產生 GAPPTS 策略</h2>
             <p class="section-sub">你可以切換不同 ETF50 個股，重新執行 GAPPTS，觀察相同方法在不同產業與價格結構上會如何收斂到不同的參數組合。</p>
             <div class="ga-cfg-panel">
                 <div class="ga-cfg-grid">
@@ -230,10 +230,102 @@
                 <div class="stock-meta" id="selectedStockMeta"></div>
                 <div class="ga-cfg-actions">
                     <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 重新運算</button>
-                    <button class="btn btn-primary" onclick="document.getElementById('pyodide-run').click(); document.getElementById('pyodide-runner-card').scrollIntoView({behavior:'smooth'})">🐍 Python 試跑策略</button>
+                    <button class="btn btn-primary" onclick="document.getElementById('pyodide-run').click();">🐍 Python 產生 GAPPTS 策略</button>
                     <button class="btn btn-ghost" onclick="resetGaCfg()">↩ 重置論文預設</button>
                     <button class="btn btn-ghost" id="btnSyncStocks" style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步真實股價</button>
                     <span class="ga-cfg-status" id="cfgStatus"></span>
+                </div>
+            </div>
+
+            <!-- ════════ PYTHON RUNNER（使用上方「選股與 GAPPTS 參數」整合參數） ════════ -->
+            <div id="pyodide-runner-card" style="margin-top:24px;">
+                <h3 style="margin-bottom:8px;font-size:1.1rem">以選股與 GAPPTS 參數產生 GAPPTS 策略 (Python in Browser)</h3>
+                <p style="color:var(--muted);font-size:.86rem;margin-bottom:14px;line-height:1.6">
+                    直接讀取上方 <b style="color:var(--teal)">「選股與 GAPPTS 參數產生 GAPPTS 策略」</b> 面板的所有欄位：選到的股票、POP / GENS / CR / MR、以及 m / hold / target。按執行會將真實價格序列注入 Python runtime。
+                </p>
+                <div class="pyodide-runner">
+                    <div class="runner-header">
+                        <span>Python 3.11 (Pyodide) · GUI 參數會覆蓋程式中的預設值</span>
+                        <button id="pyodide-run">▶ 執行 Python</button>
+                    </div>
+                    <textarea id="pyodide-code">import numpy as np
+
+# 變數由上方 GUI 自動注入：
+#   個股: stock_code, stock_name, prices (list[float])
+#   GA 參數: pop, gens, cr, mr
+#   策略參數: m, hold_days, target_profit
+
+prices = np.asarray(prices, dtype=float)
+p_min, p_max = float(prices.min()), float(prices.max())
+
+print(f"個股: {stock_code} · {stock_name}")
+print(f"價格序列: {len(prices)} 筆 · 範圍 {p_min:.1f}~{p_max:.1f}")
+print(f"GA: POP={pop} GENS={gens} CR={cr:.2f} MR={mr:.2f}")
+print(f"策略起點: m={m}  hold={hold_days}  target={target_profit:.1f}%\n")
+
+def fitness(m_, hold_, target_):
+    if hold_ >= len(prices) or m_ < 2:
+        return -1e9
+    width = (p_max - p_min) / m_
+    sum_avg = sum_prob = bins = 0
+    for i in range(m_):
+        lo = p_min + width * i
+        hi = lo + width
+        profs = []
+        for j in range(len(prices) - hold_):
+            if lo <= prices[j] < hi or (i == m_-1 and prices[j] == hi):
+                profs.append((prices[j+hold_] - prices[j]) / prices[j] * 100)
+        if profs:
+            sum_avg += float(np.mean(profs))
+            sum_prob += float(np.mean([p >= target_ for p in profs]))
+            bins += 1
+    return (sum_avg / bins) * (sum_prob / bins) if bins else -1e9
+
+# --- Mini GA: 以 GUI 參數為初始種子，用 POP/GENS/CR/MR 做隨機搜尋 ---
+rng = np.random.default_rng(42)
+best = (m, hold_days, target_profit, fitness(m, hold_days, target_profit))
+print(f"初始 fitness = {best[3]:.3f}")
+for g in range(int(gens)):
+    if rng.random() < cr:  # crossover: 向 best 靠攏 + 混入新基因
+        m_ = int((best[0] + rng.integers(2, 21)) // 2)
+        hold_ = int((best[1] + rng.integers(1, 31)) // 2)
+        target_ = float((best[2] + rng.uniform(0.5, 20.0)) / 2)
+    else:  # mutation: 在 best 附近擾動
+        m_ = int(best[0] + rng.integers(-2, 3))
+        hold_ = int(best[1] + rng.integers(-2, 3))
+        target_ = float(best[2] + rng.normal(0, 1.0))
+    if rng.random() < mr:  # 額外突變
+        target_ += float(rng.normal(0, 2.0))
+    m_ = max(2, min(20, m_))
+    hold_ = max(1, min(30, hold_))
+    target_ = max(0.5, min(20.0, target_))
+    f = fitness(m_, hold_, target_)
+    if f > best[3]:
+        best = (m_, hold_, target_, f)
+
+print(f"\n最佳 ({gens} 代): m={best[0]}  hold={best[1]}  target={best[2]:.1f}%  fitness={best[3]:.3f}\n")
+
+# --- 依最佳參數畫出區間分布 ---
+bm, bh, bt = best[0], best[1], best[2]
+width = (p_max - p_min) / bm
+print(f"區間寬度: {width:.2f}，共 {bm} 個區間")
+for i in range(bm):
+    lo = p_min + width * i
+    hi = lo + width
+    profits = []
+    for j in range(len(prices) - bh):
+        if lo <= prices[j] < hi or (i == bm-1 and prices[j] == hi):
+            profits.append((prices[j+bh] - prices[j]) / prices[j] * 100)
+    if profits:
+        avg = float(np.mean(profits))
+        prob = float(np.mean([p >= bt for p in profits])) * 100
+        bar = "█" * int(min(abs(avg) * 4, 40))
+        sign = "+" if avg >= 0 else "-"
+        print(f"  [{lo:5.1f}~{hi:5.1f}] avg={sign}{abs(avg):.2f}% prob={prob:.0f}% {bar}")
+    else:
+        print(f"  [{lo:5.1f}~{hi:5.1f}] (無交易)")
+</textarea>
+                    <div id="pyodide-output"></div>
                 </div>
             </div>
         </div>
@@ -309,6 +401,110 @@
                 <div class="card">
                     <div class="card-title">同評估預算下的搜尋效率</div>
                     <div class="chart-box"><canvas id="efficiencyChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section reveal">
+        <div class="section-inner">
+            <div class="section-label">實證發現</div>
+            <h2 class="section-title">股票分類與最佳訓練期間</h2>
+            <p class="section-sub">論文第四章實證結果顯示，不同產業與公司特性對應不同的最佳訓練期間與參數組合。統一的預測模型在台股不適用，差異化策略才能發揮 GAPPTS 的優勢。</p>
+
+            <div class="grid-3" style="margin-bottom:18px">
+                <div class="card" style="border-top:3px solid var(--blue)">
+                    <div class="card-title" style="color:var(--blue)">長期穩定型 · 5–8 年</div>
+                    <div style="font-size:.82rem;line-height:1.9;color:var(--muted);margin-top:6px">
+                        中華電 (2412) · 台塑 (1301) · 合庫金 (2330)<br>
+                        <span style="color:var(--dim)">產業特性穩定、現金流可預期</span><br>
+                        <span style="color:var(--green);font-weight:600">建議：</span>年度重新訓練
+                    </div>
+                </div>
+                <div class="card" style="border-top:3px solid var(--green)">
+                    <div class="card-title" style="color:var(--green)">中期轉型型 · 4–6 年</div>
+                    <div style="font-size:.82rem;line-height:1.9;color:var(--muted);margin-top:6px">
+                        聯電 (2303) · 富邦金 (2881) · 廣達 (2382)<br>
+                        <span style="color:var(--dim)">產業週期明顯、有轉型需求</span><br>
+                        <span style="color:var(--green);font-weight:600">建議：</span>半年重新訓練
+                    </div>
+                </div>
+                <div class="card" style="border-top:3px solid var(--orange)">
+                    <div class="card-title" style="color:var(--orange)">短期動態型 · 3–5 年</div>
+                    <div style="font-size:.82rem;line-height:1.9;color:var(--muted);margin-top:6px">
+                        聯發科 (2454) · 鴻海 (2317) · 日月光 (3711)<br>
+                        <span style="color:var(--dim)">國際供應鏈高度敏感、波動大</span><br>
+                        <span style="color:var(--green);font-weight:600">建議：</span>3–4 個月重新訓練
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2" style="margin-bottom:18px">
+                <div class="card">
+                    <div class="card-title">代表性個股 fitness 排名（論文第四章）</div>
+                    <div class="card-note">聯電在中期轉型型中取得最高 fitness 0.7058，聯發科次之。長期穩定型股票整體 fitness 相對較低。</div>
+                    <div class="chart-box"><canvas id="fitnessRankChart"></canvas></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">各產業最佳訓練期間範圍</div>
+                    <div class="card-note">科技類（半導體、電子製造）偏短，金融適中，電信/石化等傳統產業偏長。</div>
+                    <div class="chart-box"><canvas id="industryPeriodChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">高適應度股票的共通參數特徵</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px">
+                    <div style="padding:14px;background:rgba(123,240,190,0.06);border-radius:12px;border:1px solid rgba(123,240,190,0.15)">
+                        <div style="color:var(--green);font-size:.75rem;letter-spacing:.08em;font-weight:600">目標獲利率</div>
+                        <div style="font-size:1.4rem;font-weight:700;margin:4px 0">低水位</div>
+                        <div style="color:var(--muted);font-size:.78rem;line-height:1.6">避免過度貪婪 · 做頻繁但小額獲利</div>
+                    </div>
+                    <div style="padding:14px;background:rgba(88,215,255,0.06);border-radius:12px;border:1px solid rgba(88,215,255,0.15)">
+                        <div style="color:var(--teal);font-size:.75rem;letter-spacing:.08em;font-weight:600">持有天數</div>
+                        <div style="font-size:1.4rem;font-weight:700;margin:4px 0">18–29 天</div>
+                        <div style="color:var(--muted);font-size:.78rem;line-height:1.6">中短期策略在台股較為有效</div>
+                    </div>
+                    <div style="padding:14px;background:rgba(181,156,255,0.06);border-radius:12px;border:1px solid rgba(181,156,255,0.15)">
+                        <div style="color:var(--purple);font-size:.75rem;letter-spacing:.08em;font-weight:600">α 進場係數</div>
+                        <div style="font-size:1.4rem;font-weight:700;margin:4px 0">0.4–0.8</div>
+                        <div style="color:var(--muted);font-size:.78rem;line-height:1.6">中等門檻平衡機會與品質</div>
+                    </div>
+                    <div style="padding:14px;background:rgba(255,188,114,0.06);border-radius:12px;border:1px solid rgba(255,188,114,0.15)">
+                        <div style="color:var(--orange);font-size:.75rem;letter-spacing:.08em;font-weight:600">染色體結構</div>
+                        <div style="font-size:1.4rem;font-weight:700;margin:4px 0">29 bit</div>
+                        <div style="color:var(--muted);font-size:.78rem;line-height:1.6">區間 5 · 週期 6 · 目標 10 · α 8</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section reveal">
+        <div class="section-inner">
+            <div class="section-label">文獻對照</div>
+            <h2 class="section-title">GAPPTS 相對其他演算法的定位</h2>
+            <p class="section-sub">論文第二章系統性比較了多種股價預測方法。GAPPTS 的優勢在於不需要問題的嚴格數學模型、能避開局部最優、同時保留可解釋的交易規則輸出。</p>
+            <div class="card">
+                <div class="card-title">主流預測演算法比較表（論文表 4.4）</div>
+                <div style="overflow-x:auto;margin-top:12px">
+                    <table style="width:100%;border-collapse:collapse;font-size:.84rem">
+                        <thead>
+                            <tr style="border-bottom:2px solid var(--border);color:var(--muted);text-align:left">
+                                <th style="padding:10px 12px">演算法類別</th>
+                                <th style="padding:10px 12px">預測精度</th>
+                                <th style="padding:10px 12px">計算複雜度</th>
+                                <th style="padding:10px 12px">適用資料規模</th>
+                                <th style="padding:10px 12px">解釋性</th>
+                                <th style="padding:10px 12px">非線性捕捉</th>
+                            </tr>
+                        </thead>
+                        <tbody id="algoCompareTable"></tbody>
+                    </table>
+                </div>
+                <div class="card-note" style="margin-top:14px;line-height:1.8">
+                    <span style="color:var(--green);font-weight:600">GAPPTS 定位：</span>
+                    結合基因演算法的全域搜索能力與 PPTS 的可解釋交易規則，在中型資料規模下取得高解釋性與高非線性捕捉的平衡 — 相較 LSTM/Transformer 不需海量資料，相較 ARIMA 能處理非線性區間結構。
                 </div>
             </div>
         </div>
@@ -410,98 +606,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- ════════ PYTHON RUNNER（使用上方「選股與 GA 參數」整合參數） ════════ -->
-    <div id="pyodide-runner-card" style="max-width:900px;margin:32px auto;">
-        <h2 style="margin-bottom:8px">試跑 GA 策略 (Python in Browser)</h2>
-        <p style="color:var(--muted);font-size:.86rem;margin-bottom:14px;line-height:1.6">
-            直接讀取上方 <b style="color:var(--teal)">「選股與 GA 參數重跑」</b> 的所有欄位：選到的股票、POP / GENS / CR / MR、以及 m / hold / target。按執行會將真實價格序列注入 Python runtime。
-        </p>
-        <div class="pyodide-runner">
-            <div class="runner-header">
-                <span>Python 3.11 (Pyodide) · GUI 參數會覆蓋程式中的預設值</span>
-                <button id="pyodide-run">▶ 執行 Python</button>
-            </div>
-            <textarea id="pyodide-code">import numpy as np
-
-# 變數由上方 GUI 自動注入：
-#   個股: stock_code, stock_name, prices (list[float])
-#   GA 參數: pop, gens, cr, mr
-#   策略參數: m, hold_days, target_profit
-
-prices = np.asarray(prices, dtype=float)
-p_min, p_max = float(prices.min()), float(prices.max())
-
-print(f"個股: {stock_code} · {stock_name}")
-print(f"價格序列: {len(prices)} 筆 · 範圍 {p_min:.1f}~{p_max:.1f}")
-print(f"GA: POP={pop} GENS={gens} CR={cr:.2f} MR={mr:.2f}")
-print(f"策略起點: m={m}  hold={hold_days}  target={target_profit:.1f}%\n")
-
-def fitness(m_, hold_, target_):
-    if hold_ >= len(prices) or m_ < 2:
-        return -1e9
-    width = (p_max - p_min) / m_
-    sum_avg = sum_prob = bins = 0
-    for i in range(m_):
-        lo = p_min + width * i
-        hi = lo + width
-        profs = []
-        for j in range(len(prices) - hold_):
-            if lo <= prices[j] < hi or (i == m_-1 and prices[j] == hi):
-                profs.append((prices[j+hold_] - prices[j]) / prices[j] * 100)
-        if profs:
-            sum_avg += float(np.mean(profs))
-            sum_prob += float(np.mean([p >= target_ for p in profs]))
-            bins += 1
-    return (sum_avg / bins) * (sum_prob / bins) if bins else -1e9
-
-# --- Mini GA: 以 GUI 參數為初始種子，用 POP/GENS/CR/MR 做隨機搜尋 ---
-rng = np.random.default_rng(42)
-best = (m, hold_days, target_profit, fitness(m, hold_days, target_profit))
-print(f"初始 fitness = {best[3]:.3f}")
-for g in range(int(gens)):
-    if rng.random() < cr:  # crossover: 向 best 靠攏 + 混入新基因
-        m_ = int((best[0] + rng.integers(2, 21)) // 2)
-        hold_ = int((best[1] + rng.integers(1, 31)) // 2)
-        target_ = float((best[2] + rng.uniform(0.5, 20.0)) / 2)
-    else:  # mutation: 在 best 附近擾動
-        m_ = int(best[0] + rng.integers(-2, 3))
-        hold_ = int(best[1] + rng.integers(-2, 3))
-        target_ = float(best[2] + rng.normal(0, 1.0))
-    if rng.random() < mr:  # 額外突變
-        target_ += float(rng.normal(0, 2.0))
-    m_ = max(2, min(20, m_))
-    hold_ = max(1, min(30, hold_))
-    target_ = max(0.5, min(20.0, target_))
-    f = fitness(m_, hold_, target_)
-    if f > best[3]:
-        best = (m_, hold_, target_, f)
-
-print(f"\n最佳 ({gens} 代): m={best[0]}  hold={best[1]}  target={best[2]:.1f}%  fitness={best[3]:.3f}\n")
-
-# --- 依最佳參數畫出區間分布 ---
-bm, bh, bt = best[0], best[1], best[2]
-width = (p_max - p_min) / bm
-print(f"區間寬度: {width:.2f}，共 {bm} 個區間")
-for i in range(bm):
-    lo = p_min + width * i
-    hi = lo + width
-    profits = []
-    for j in range(len(prices) - bh):
-        if lo <= prices[j] < hi or (i == bm-1 and prices[j] == hi):
-            profits.append((prices[j+bh] - prices[j]) / prices[j] * 100)
-    if profits:
-        avg = float(np.mean(profits))
-        prob = float(np.mean([p >= bt for p in profits])) * 100
-        bar = "█" * int(min(abs(avg) * 4, 40))
-        sign = "+" if avg >= 0 else "-"
-        print(f"  [{lo:5.1f}~{hi:5.1f}] avg={sign}{abs(avg):.2f}% prob={prob:.0f}% {bar}")
-    else:
-        print(f"  [{lo:5.1f}~{hi:5.1f}] (無交易)")
-</textarea>
-            <div id="pyodide-output"></div>
         </div>
     </div>
 

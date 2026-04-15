@@ -1848,6 +1848,7 @@ function initMarketOps() {
 function initialisePage() {
     renderHeroStats();
     renderStaticCards();
+    renderThesisFindings();
     populateFilters();
     populateStockSelect(uiState.currentStockCode);
     bindEvents();
@@ -1856,6 +1857,122 @@ function initialisePage() {
     rerunGA();
     // Background: preload real price data, auto-sync if DB empty
     autoSyncAndPreload();
+}
+
+function renderThesisFindings() {
+    // Fitness ranking from thesis §4.4
+    const fitnessData = [
+        { stock: '聯電 2303', fitness: 0.7058, type: 'mid' },
+        { stock: '聯發科 2454', fitness: 0.6994, type: 'short' },
+        { stock: '台積電 2330', fitness: 0.6665, type: 'long' },
+        { stock: '中華電 2412', fitness: 0.5410, type: 'long' },
+    ];
+    const typeColor = { short: '#ffbc72', mid: '#7bf0be', long: '#6ab4ff' };
+    createChart('fitnessRankChart', {
+        type: 'bar',
+        data: {
+            labels: fitnessData.map((d) => d.stock),
+            datasets: [{
+                label: 'Fitness',
+                data: fitnessData.map((d) => d.fitness),
+                backgroundColor: fitnessData.map((d) => typeColor[d.type]),
+                borderRadius: 6,
+            }],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, max: 0.8, ticks: { color: '#94a59f' }, grid: { color: 'rgba(151,190,181,0.08)' } },
+                y: { ticks: { color: '#e9f0ec', font: { size: 12 } }, grid: { display: false } },
+            },
+        },
+    });
+
+    // Industry optimal training periods
+    const industries = [
+        { name: '半導體', min: 3.8, max: 5.3 },
+        { name: '電子製造', min: 3.5, max: 5.5 },
+        { name: '金融', min: 4.0, max: 6.0 },
+        { name: '石化', min: 5.0, max: 7.0 },
+        { name: '電信', min: 5.0, max: 8.0 },
+    ];
+    createChart('industryPeriodChart', {
+        type: 'bar',
+        data: {
+            labels: industries.map((d) => d.name),
+            datasets: [
+                {
+                    label: '下限 (年)',
+                    data: industries.map((d) => d.min),
+                    backgroundColor: 'rgba(88,215,255,0.25)',
+                    borderColor: '#58d7ff',
+                    borderWidth: 1,
+                    stack: 'period',
+                },
+                {
+                    label: '上限範圍',
+                    data: industries.map((d) => d.max - d.min),
+                    backgroundColor: 'rgba(123,240,190,0.45)',
+                    borderColor: '#7bf0be',
+                    borderWidth: 1,
+                    stack: 'period',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#94a59f', font: { size: 11 } } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const row = industries[ctx.dataIndex];
+                            return `${row.name}：${row.min}–${row.max} 年`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: { ticks: { color: '#e9f0ec' }, grid: { display: false } },
+                y: { stacked: true, beginAtZero: true, ticks: { color: '#94a59f' }, grid: { color: 'rgba(151,190,181,0.08)' } },
+            },
+        },
+    });
+
+    // Algorithm comparison table (thesis table 4.4)
+    const algoRows = [
+        ['ARIMA', '中', '低', '小–中型', '高', '低'],
+        ['指數平滑法', '低–中', '極低', '小型', '高', '低'],
+        ['GARCH', '中（波動）', '中', '小–中型', '中–高', '中'],
+        ['SVM', '中–高', '中–高', '中型', '低', '高'],
+        ['隨機森林', '高', '高', '中–大型', '中', '高'],
+        ['XGBoost', '高', '高', '中–大型', '中', '高'],
+        ['RNN / LSTM', '高', '極高', '大型', '極低', '極高'],
+        ['CNN', '中–高', '高', '大型', '極低', '高'],
+        ['Transformer', '高', '極高', '大型', '極低', '極高'],
+        ['集成方法', '極高', '極高', '中–大型', '低', '極高'],
+        ['GAPPTS（本研究）', '高', '中–高', '中型', '高', '高'],
+    ];
+    const table = document.getElementById('algoCompareTable');
+    if (table) {
+        table.innerHTML = algoRows.map((row) => {
+            const highlight = row[0].startsWith('GAPPTS');
+            const bg = highlight ? 'background:rgba(123,240,190,0.08)' : '';
+            const weight = highlight ? 'font-weight:700;color:var(--green)' : '';
+            return `<tr style="border-bottom:1px solid var(--border);${bg}">
+                <td style="padding:10px 12px;${weight}">${row[0]}</td>
+                <td style="padding:10px 12px;color:var(--muted)">${row[1]}</td>
+                <td style="padding:10px 12px;color:var(--muted)">${row[2]}</td>
+                <td style="padding:10px 12px;color:var(--muted)">${row[3]}</td>
+                <td style="padding:10px 12px;color:var(--muted)">${row[4]}</td>
+                <td style="padding:10px 12px;color:var(--muted)">${row[5]}</td>
+            </tr>`;
+        }).join('');
+    }
 }
 
 async function autoSyncAndPreload() {
