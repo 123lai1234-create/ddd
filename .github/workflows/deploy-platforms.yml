@@ -62,6 +62,8 @@ jobs:
           DB_AIVEN: ${{ secrets.DATABASE_URL_AIVEN }}
           SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           if [ -z "$RAILWAY_API_TOKEN" ]; then
             echo "::warning::RAILWAY_API_TOKEN not set, skipping variable sync"
@@ -77,7 +79,9 @@ jobs:
           [ -n "$DB_COCKROACH" ] && vars="$vars DATABASE_URL_COCKROACH=$DB_COCKROACH"
           [ -n "$DB_AIVEN" ]     && vars="$vars DATABASE_URL_AIVEN=$DB_AIVEN"
           [ -n "$SYNC_SECRET" ]  && vars="$vars SYNC_SECRET=$SYNC_SECRET"
-          [ -n "$GEMINI_API_KEY" ] && vars="$vars GEMINI_API_KEY=$GEMINI_API_KEY"
+          [ -n "$GEMINI_API_KEY" ]    && vars="$vars GEMINI_API_KEY=$GEMINI_API_KEY"
+          [ -n "$DEEPSEEK_API_KEY" ]  && vars="$vars DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY"
+          [ -n "$OPENROUTER_API_KEY" ] && vars="$vars OPENROUTER_API_KEY=$OPENROUTER_API_KEY"
           if [ -n "$vars" ]; then
             npx --yes @railway/cli variables set $vars --skip-deploys
             echo "Database and sync variables synced to Railway"
