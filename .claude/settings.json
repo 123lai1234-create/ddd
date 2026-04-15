@@ -21,7 +21,8 @@
       "Bash(curl -s \"https://a-5fs.pages.dev/\")",
       "Bash(curl -s \"https://donttalk.vercel.app/\")",
       "Bash(curl -s -X POST \"https://donttalk-api-production.up.railway.app/api/market/yahoo-prices\" -H \"Content-Type: application/json\" -d '{\"symbols\":[\"2330\",\"2609\"],\"range\":\"2y\"}')",
-      "Bash(curl -s \"https://query1.finance.yahoo.com/v8/finance/chart/2330.TW?range=2y&interval=1d\" -H \"User-Agent: Mozilla/5.0\")"
+      "Bash(curl -s \"https://query1.finance.yahoo.com/v8/finance/chart/2330.TW?range=2y&interval=1d\" -H \"User-Agent: Mozilla/5.0\")",
+      "Bash(curl -sI https://donttalk.vercel.app/thesis.html)"
     ]
   }
 }
