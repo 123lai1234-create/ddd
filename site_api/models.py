@@ -89,7 +89,7 @@ class MarketSyncRequest(BaseModel):
     stock_symbols: list[str] = Field(default_factory=lambda: ["2330", "2317"])
     etf_symbols: list[str] = Field(default_factory=lambda: ["0050", "0056"])
     futures_symbols: list[str] = Field(default_factory=lambda: ["ES=F", "NQ=F"])
-    twse_months: int = Field(default=3, ge=1, le=12)
+    twse_months: int = Field(default=3, ge=1, le=120)
     yahoo_range: str = Field(default="3mo")
 
     @field_validator("stock_symbols", "etf_symbols", "futures_symbols", mode="before")

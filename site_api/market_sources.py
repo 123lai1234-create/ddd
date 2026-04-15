@@ -99,7 +99,7 @@ class TableCollector(HTMLParser):
 
 
 def _month_starts(months: int) -> list[date]:
-    months = max(1, min(months, 12))
+    months = max(1, min(months, 120))  # up to 10 years
     today = date.today().replace(day=1)
     values: list[date] = []
 
@@ -532,6 +532,30 @@ def fetch_twse_daily_records(symbol: str, asset_type: str, months: int) -> tuple
     )
     bars = [bar_map[key] for key in sorted(bar_map.keys())]
     return instrument, bars
+
+
+TWSE_LISTED_STOCKS_URL = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"
+
+
+def fetch_twse_listed_stock_symbols() -> list[dict[str, str]]:
+    """Return all currently listed TWSE stocks as [{symbol, name}].
+
+    Uses the TWSE OpenAPI (no auth required).  Returns an empty list if the
+    upstream call fails so callers can degrade gracefully.
+    """
+    try:
+        response = http_get(TWSE_LISTED_STOCKS_URL, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        rows: list[dict[str, object]] = response.json()
+        result: list[dict[str, str]] = []
+        for row in rows:
+            code = str(row.get("Code") or row.get("code") or "").strip()
+            name = str(row.get("Name") or row.get("name") or "").strip()
+            if code and len(code) >= 4:  # TWSE stock codes are 4-6 chars
+                result.append({"symbol": code, "name": name})
+        return result
+    except Exception:
+        return []
 
 
 def fetch_yahoo_daily_records(symbol: str, asset_type: str, range_name: str) -> tuple[MarketInstrumentPayload, list[MarketBarPayload]]:

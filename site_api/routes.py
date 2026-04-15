@@ -109,7 +109,7 @@ from site_api.knowledge_sources import (
     fetch_scholar_knowledge,
     fetch_uniprot_knowledge,
 )
-from site_api.market_sources import MarketBarPayload, MarketInstrumentPayload, fetch_market_records, fetch_yahoo_daily_records
+from site_api.market_sources import MarketBarPayload, MarketInstrumentPayload, fetch_market_records, fetch_twse_daily_records, fetch_twse_listed_stock_symbols, fetch_yahoo_daily_records
 from site_api.opentargets_sources import fetch_opentargets_associations
 from site_api.pathway_sources import fetch_quickgo_annotations, fetch_reactome_pathways
 from site_api.population_sources import fetch_gnomad_variants
@@ -878,6 +878,95 @@ def sync_market_data(payload: MarketSyncRequest, x_sync_secret: str | None = Hea
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to persist market data to PostgreSQL.",
         ) from error
+
+
+@router.get("/api/market/twse-listed")
+def get_twse_listed_stocks() -> dict[str, Any]:
+    """Return all currently listed TWSE stocks fetched from the TWSE OpenAPI."""
+    stocks = fetch_twse_listed_stock_symbols()
+    return {"count": len(stocks), "stocks": stocks}
+
+
+@router.post("/api/market/bulk-sync")
+def bulk_sync_market_data(
+    payload: MarketSyncRequest,
+    x_sync_secret: str | None = Header(default=None),
+) -> dict[str, Any]:
+    """Bulk-import historical TWSE data for a large list of symbols.
+
+    Identical to /api/market/sync but designed for long-running historical
+    backfills (twse_months up to 120 = 10 years).  Failures per symbol are
+    collected rather than aborting the whole batch.
+    """
+    _require_sync_secret(x_sync_secret)
+    if not ensure_market_schema():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is provisioning or not reachable yet.",
+        )
+
+    instrument_records: list[MarketInstrumentPayload] = []
+    bar_records: list[MarketBarPayload] = []
+    failures: list[dict[str, str]] = []
+    stored: dict[str, dict[str, int]] = {
+        "stock": {"symbols": 0, "bars": 0},
+        "etf": {"symbols": 0, "bars": 0},
+        "futures": {"symbols": 0, "bars": 0},
+    }
+
+    for current_asset_type, symbols in (
+        ("stock", payload.stock_symbols),
+        ("etf", payload.etf_symbols),
+        ("futures", payload.futures_symbols),
+    ):
+        for current_symbol in symbols:
+            try:
+                if current_asset_type in ("stock", "etf"):
+                    instrument, bars = fetch_twse_daily_records(
+                        current_symbol, current_asset_type, payload.twse_months
+                    )
+                else:
+                    instrument, bars = fetch_market_records(
+                        current_symbol,
+                        current_asset_type,
+                        payload.twse_months,
+                        payload.yahoo_range,
+                    )
+                instrument_records.append(instrument)
+                bar_records.extend(bars)
+                stored[current_asset_type]["symbols"] += 1
+                stored[current_asset_type]["bars"] += len(bars)
+                # Flush in batches of 20 symbols to keep memory reasonable
+                if len(instrument_records) >= 20:
+                    upsert_market_instruments(instrument_records)
+                    upsert_market_bars(bar_records)
+                    instrument_records = []
+                    bar_records = []
+            except Exception as error:
+                failures.append(
+                    {
+                        "assetType": current_asset_type,
+                        "symbol": current_symbol,
+                        "error": str(error),
+                    }
+                )
+
+    # Flush remaining
+    if instrument_records:
+        try:
+            upsert_market_instruments(instrument_records)
+            upsert_market_bars(bar_records)
+        except psycopg.Error as error:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to persist market data to PostgreSQL.",
+            ) from error
+
+    return {
+        "stored": stored,
+        "failures": failures,
+        **market_summary(),
+    }
 
 
 @router.delete("/api/sequences/{record_id}")
