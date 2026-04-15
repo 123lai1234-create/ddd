@@ -27,7 +27,9 @@
       "Bash(curl -s \"https://donttalk.vercel.app/api/market/bars?symbol=2330&asset_type=stock&limit=5\")",
       "Bash(curl -s \"https://donttalk.vercel.app/api/market/bars?symbol=2330&asset_type=stock&limit=2000\")",
       "Bash(python -c \"import json,sys;d=json.load\\(sys.stdin\\);r=d['records'];print\\(f'count={len\\(r\\)} first={r[-1][\\\\\"tradeDate\\\\\"] if r else None} last={r[0][\\\\\"tradeDate\\\\\"] if r else None}'\\)\")",
-      "Bash(curl -s \"https://donttalk.vercel.app/api/market/instruments?limit=200\")"
+      "Bash(curl -s \"https://donttalk.vercel.app/api/market/instruments?limit=200\")",
+      "Bash(curl -s \"https://donttalk.vercel.app/api/market/instruments?limit=200\" -o /tmp/inst.json)",
+      "Bash(curl -s \"https://donttalk.vercel.app/api/market/instruments?limit=200\" -o inst.json)"
     ]
   }
 }
