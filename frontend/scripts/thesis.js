@@ -1009,6 +1009,8 @@ function renderGACharts(run) {
 }
 
 function renderBacktestCharts(run) {
+    // DOM targets removed; kept as no-op to preserve call sites.
+    if (!document.getElementById('priceChart')) return;
     const evaluation = run.best.bestEvaluation;
     const priceScatterBuy = evaluation.buyMarkers.map((marker) => ({ x: marker.x + 1, y: marker.y }));
     const priceScatterSell = evaluation.sellMarkers.map((marker) => ({ x: marker.x + 1, y: marker.y }));
@@ -1244,35 +1246,31 @@ async function rerunGA() {
         document.getElementById('btnPlay').textContent = '▶ 自動播放';
     }
 
-    // Attempt to load real TWSE price data for this stock
+    // Require real TWSE price data — do not fall back to synthetic.
     const realData = await fetchRealPriceSeries(stock.code);
-    let dataSource;
-    if (realData && realData.closes.length >= 50) {
-        // Date-based train/test split: before 2024 = train, 2024+ = test
-        const cutoff = '2024-01-01';
-        let splitIdx = realData.dates.findIndex((d) => d >= cutoff);
-        if (splitIdx < 20) splitIdx = Math.max(20, Math.floor(realData.closes.length * 0.8));
-        if (realData.closes.length - splitIdx < 10) splitIdx = Math.floor(realData.closes.length * 0.8);
-
-        const trainDates = realData.dates.slice(0, splitIdx);
-        const testDates = realData.dates.slice(splitIdx);
-        SERIES_CACHE.set(stock.code, {
-            train: realData.closes.slice(0, splitIdx),
-            test: realData.closes.slice(splitIdx),
-            trainDates,
-            testDates,
-            isReal: true,
-        });
-        const from = realData.dates[0];
-        const to = realData.dates[realData.dates.length - 1];
-        dataSource = `真實 TWSE ${realData.closes.length} 筆 (${from} ~ ${to})`;
-    } else {
-        // Clear stale real-data cache so synthetic gets regenerated
+    if (!realData || realData.closes.length < 50) {
         if (SERIES_CACHE.get(stock.code)?.isReal) {
             SERIES_CACHE.delete(stock.code);
         }
-        dataSource = '⚠ 模擬數據 — 請點「📡 同步真實股價」取得 TWSE 真實資料';
+        status.textContent = `⚠ ${stock.name} 尚未取得真實股價，請點「📡 同步真實股價」後重試`;
+        button.disabled = false;
+        return;
     }
+
+    // Date-based train/test split: before 2024 = train, 2024+ = test
+    const cutoff = '2024-01-01';
+    let splitIdx = realData.dates.findIndex((d) => d >= cutoff);
+    if (splitIdx < 20) splitIdx = Math.max(20, Math.floor(realData.closes.length * 0.8));
+    if (realData.closes.length - splitIdx < 10) splitIdx = Math.floor(realData.closes.length * 0.8);
+
+    SERIES_CACHE.set(stock.code, {
+        train: realData.closes.slice(0, splitIdx),
+        test: realData.closes.slice(splitIdx),
+        trainDates: realData.dates.slice(0, splitIdx),
+        testDates: realData.dates.slice(splitIdx),
+        isReal: true,
+    });
+    const dataSource = `真實 TWSE ${realData.closes.length} 筆 (${realData.dates[0]} ~ ${realData.dates[realData.dates.length - 1]})`;
 
     status.textContent = `⏳ ${stock.name} · ${dataSource} · POP=${config.POP} · GENS=${config.GENS} 計算中…`;
 

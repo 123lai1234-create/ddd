@@ -364,32 +364,6 @@ for i in range(bm):
 
     <div class="section reveal">
         <div class="section-inner">
-            <div class="section-label">測試回測</div>
-            <h2 class="section-title">所選個股的 2024 年測試表現</h2>
-            <p class="section-sub">下圖以訓練期間建立的價格區間規則，回放 2024 年的測試資料，觀察 GAPPTS 如何在同一檔股票上產生買賣訊號、累積淨值與交易紀錄。</p>
-            <div class="grid-2" style="margin-bottom:18px">
-                <div class="card grid-full">
-                    <div class="card-title">2024 測試價格 + PPTS 進出場訊號</div>
-                    <div class="chart-box-tall"><canvas id="priceChart"></canvas></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">策略淨值曲線（初始資金 100）</div>
-                    <div class="chart-box"><canvas id="equityChart"></canvas></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">績效統計</div>
-                    <div id="perfStats" style="margin-top:6px"></div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-title">代表性交易紀錄（前 8 筆）</div>
-                <div id="tradeList" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="section reveal">
-        <div class="section-inner">
             <div class="section-label">方法比較</div>
             <h2 class="section-title">GAPPTS vs 固定參數 PPTS vs Buy &amp; Hold</h2>
             <p class="section-sub">論文指出 GAPPTS 相較固定參數策略與 Buy &amp; Hold 能更有效提升報酬與風險控制。這裡用所選個股的互動重跑結果做同一視角比較。</p>
