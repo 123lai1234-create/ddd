@@ -1,0 +1,297 @@
+:root {
+            --fw-bg: #0a0d14;
+            --fw-panel: #101521;
+            --fw-panel-2: #0d1220;
+            --fw-border: rgba(255, 255, 255, 0.08);
+            --fw-border-hover: rgba(125, 211, 252, 0.35);
+            --fw-ink: #e6eaf2;
+            --fw-ink-2: #a8b0c2;
+            --fw-ink-3: #6b7488;
+            --fw-accent: #7dd3fc;
+            --fw-accent-dim: rgba(125, 211, 252, 0.12);
+            --fw-warn: #fbbf24;
+            --fw-warn-dim: rgba(251, 191, 36, 0.12);
+            --fw-ok: #4ade80;
+            --fw-ok-dim: rgba(74, 222, 128, 0.10);
+            --fw-bad: #f87171;
+            --fw-bad-dim: rgba(248, 113, 113, 0.10);
+        }
+
+        .fw { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+        .fw-hero { padding: 80px 24px 48px; max-width: 960px; margin: 0 auto; }
+        .fw-hero-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+        @media (max-width: 860px) { .fw-hero-inner { grid-template-columns: 1fr; } }
+
+        .fw-eyebrow {
+            display: inline-block; padding: 4px 10px; border-radius: 4px;
+            background: var(--fw-accent-dim); border: 1px solid rgba(125, 211, 252, 0.25);
+            color: var(--fw-accent); font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        .fw-hero h1 {
+            font-size: clamp(1.8rem, 3.5vw, 2.4rem); font-weight: 700;
+            letter-spacing: -0.015em; line-height: 1.2; margin-bottom: 16px;
+            color: var(--fw-ink);
+        }
+        .fw-hero .sub {
+            color: var(--fw-ink-2); line-height: 1.75; font-size: 0.95rem;
+            margin-bottom: 24px;
+        }
+        .fw-hero-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .fw-tag {
+            padding: 4px 10px; border-radius: 3px;
+            background: rgba(255, 255, 255, 0.04); border: 1px solid var(--fw-border);
+            color: var(--fw-ink-2); font-size: 0.72rem; font-family: 'JetBrains Mono', monospace;
+        }
+
+        .fw-chip-viz svg { width: 100%; height: auto; max-width: 420px; display: block; }
+
+        .fw-section { margin: 64px 0; }
+        .fw-section-head {
+            margin-bottom: 24px; display: flex; align-items: baseline; gap: 16px;
+            flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--fw-border);
+        }
+        .fw-section-num {
+            font-family: 'JetBrains Mono', monospace; color: var(--fw-accent);
+            font-size: 0.78rem; letter-spacing: 0.15em;
+        }
+        .fw-section h2 {
+            font-size: 1.3rem; letter-spacing: -0.01em; font-weight: 600;
+            color: var(--fw-ink);
+        }
+        .fw-section .note {
+            color: var(--fw-ink-3); font-size: 0.76rem; margin-left: auto;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .fw-specgrid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        .fw-spec {
+            padding: 18px 20px; border-radius: 6px;
+            background: var(--fw-panel); border: 1px solid var(--fw-border);
+            transition: border-color 0.2s ease;
+        }
+        .fw-spec:hover { border-color: var(--fw-border-hover); }
+        .fw-spec .lbl {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+            letter-spacing: 0.12em; color: var(--fw-ink-3); text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .fw-spec .val {
+            font-family: 'JetBrains Mono', monospace; font-size: 1rem;
+            font-weight: 600; color: var(--fw-ink); line-height: 1.3;
+        }
+        .fw-spec .sub {
+            font-size: 0.78rem; color: var(--fw-ink-2); margin-top: 4px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Interactive budget calculator */
+        .fw-calc {
+            padding: 24px; border-radius: 6px;
+            background: var(--fw-panel); border: 1px solid var(--fw-border);
+        }
+        .fw-calc-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+        }
+        @media (max-width: 760px) { .fw-calc-grid { grid-template-columns: 1fr; } }
+        .fw-calc-inputs { display: flex; flex-direction: column; gap: 18px; }
+        .fw-calc-field label {
+            display: flex; justify-content: space-between; align-items: baseline;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.76rem;
+            color: var(--fw-ink-2); margin-bottom: 6px;
+        }
+        .fw-calc-field label b {
+            color: var(--fw-accent); font-weight: 600;
+        }
+        .fw-calc-field input[type="range"] {
+            width: 100%; accent-color: var(--fw-accent);
+            background: transparent;
+        }
+        .fw-calc-field select {
+            width: 100%; padding: 8px 12px; border-radius: 4px;
+            background: var(--fw-panel-2); border: 1px solid var(--fw-border);
+            color: var(--fw-ink); font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+        }
+        .fw-calc-output { display: flex; flex-direction: column; gap: 10px; }
+        .fw-calc-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 8px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+        }
+        .fw-calc-row:last-of-type { border: none; }
+        .fw-calc-row .name {
+            min-width: 130px; font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem; color: var(--fw-ink-2);
+        }
+        .fw-calc-row .bar {
+            flex: 1; height: 8px; background: rgba(255, 255, 255, 0.04);
+            border-radius: 2px; overflow: hidden; border: 1px solid var(--fw-border);
+        }
+        .fw-calc-row .fill {
+            display: block; height: 100%; background: var(--fw-accent);
+            transition: width 0.25s ease, background 0.25s ease;
+        }
+        .fw-calc-row .pct {
+            min-width: 120px; text-align: right; font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem; color: var(--fw-ink);
+        }
+        .fw-calc-verdict {
+            margin-top: 16px; padding: 12px 16px; border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+            border-left: 2px solid;
+        }
+        .fw-calc-verdict.ok {
+            background: var(--fw-ok-dim); border-left-color: var(--fw-ok); color: var(--fw-ok);
+        }
+        .fw-calc-verdict.warn {
+            background: var(--fw-warn-dim); border-left-color: var(--fw-warn); color: var(--fw-warn);
+        }
+        .fw-calc-verdict.bad {
+            background: var(--fw-bad-dim); border-left-color: var(--fw-bad); color: var(--fw-bad);
+        }
+
+        /* Code */
+        .fw-code-wrap {
+            border-radius: 6px; border: 1px solid var(--fw-border);
+            background: var(--fw-panel-2); overflow: hidden; margin: 12px 0;
+        }
+        .fw-code-bar {
+            display: flex; align-items: center; padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--fw-border);
+            font-family: 'JetBrains Mono', monospace; font-size: 0.76rem;
+            color: var(--fw-ink-3);
+        }
+        .fw-code {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.84rem;
+            padding: 18px 22px; overflow-x: auto; color: var(--fw-ink);
+            line-height: 1.7; white-space: pre; margin: 0;
+        }
+        .fw-code .c-key { color: #c586c0; }
+        .fw-code .c-type { color: #4ec9b0; }
+        .fw-code .c-fn { color: #dcdcaa; }
+        .fw-code .c-num { color: #b5cea8; }
+        .fw-code .c-str { color: #ce9178; }
+        .fw-code .c-cm { color: #6a9955; font-style: italic; }
+
+        /* Timing viewer */
+        .fw-timing {
+            padding: 24px; border-radius: 6px;
+            background: var(--fw-panel); border: 1px solid var(--fw-border);
+        }
+        .fw-timing-head {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
+        }
+        .fw-timing-title {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+            color: var(--fw-ink-2);
+        }
+        .fw-timing-toggle {
+            display: inline-flex; border: 1px solid var(--fw-border);
+            border-radius: 4px; overflow: hidden;
+        }
+        .fw-timing-toggle button {
+            padding: 6px 14px; background: var(--fw-panel-2);
+            border: none; color: var(--fw-ink-2); cursor: pointer;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.76rem;
+            transition: background 0.15s, color 0.15s;
+        }
+        .fw-timing-toggle button:not(:last-child) { border-right: 1px solid var(--fw-border); }
+        .fw-timing-toggle button.active { background: var(--fw-accent-dim); color: var(--fw-accent); }
+        .fw-timing-toggle button:not(.active):hover { color: var(--fw-ink); }
+        #fw-timing-svg { width: 100%; height: auto; background: var(--fw-panel-2); border-radius: 4px; }
+        .fw-timing-readout {
+            margin-top: 14px; display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+        }
+        .fw-timing-readout .k { color: var(--fw-ink-3); }
+        .fw-timing-readout .v { color: var(--fw-ink); }
+        .fw-timing-readout .v.good { color: var(--fw-ok); }
+        .fw-timing-readout .v.bad { color: var(--fw-bad); }
+
+        /* Pipeline */
+        .fw-pipe {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 10px; counter-reset: step;
+        }
+        .fw-step {
+            position: relative; padding: 16px 18px 16px 48px; border-radius: 4px;
+            background: var(--fw-panel); border: 1px solid var(--fw-border);
+            counter-increment: step;
+        }
+        .fw-step::before {
+            content: counter(step, decimal-leading-zero); position: absolute;
+            left: 16px; top: 16px; font-family: 'JetBrains Mono', monospace;
+            font-size: 0.74rem; font-weight: 600; color: var(--fw-accent);
+            letter-spacing: 0.08em;
+        }
+        .fw-step .t {
+            font-size: 0.92rem; font-weight: 600; color: var(--fw-ink);
+            margin-bottom: 4px;
+        }
+        .fw-step .d { font-size: 0.78rem; color: var(--fw-ink-2); line-height: 1.55; }
+
+        /* Diff cards */
+        .fw-diff {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+        .fw-diff-card {
+            padding: 18px 20px; border-radius: 4px; background: var(--fw-panel);
+            border: 1px solid var(--fw-border); border-left: 2px solid var(--fw-warn);
+        }
+        .fw-diff-card.solve { border-left-color: var(--fw-ok); }
+        .fw-diff-card .tag {
+            display: inline-block; font-family: 'JetBrains Mono', monospace;
+            font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--fw-warn); margin-bottom: 6px;
+        }
+        .fw-diff-card.solve .tag { color: var(--fw-ok); }
+        .fw-diff-card .title {
+            font-size: 0.9rem; font-weight: 600; color: var(--fw-ink);
+            margin-bottom: 6px;
+        }
+        .fw-diff-card .desc { font-size: 0.82rem; color: var(--fw-ink-2); line-height: 1.65; }
+
+        /* YouTube + articles */
+        .fw-yt {
+            position: relative; padding-bottom: 56.25%; height: 0;
+            border-radius: 6px; overflow: hidden; background: #000;
+            border: 1px solid var(--fw-border);
+        }
+        .fw-yt iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+        .fw-articles a {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 18px; margin-bottom: 8px; border-radius: 4px;
+            background: var(--fw-panel); border: 1px solid var(--fw-border);
+            text-decoration: none; color: inherit;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .fw-articles a:hover { border-color: var(--fw-border-hover); transform: translateX(2px); }
+        .fw-articles .bullet {
+            color: var(--fw-accent); font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem; flex-shrink: 0;
+        }
+        .fw-articles .title { flex: 1; font-size: 0.9rem; color: var(--fw-ink); }
+        .fw-articles .arrow { color: var(--fw-ink-3); font-family: 'JetBrains Mono', monospace; }
+
+        .fw-callout {
+            padding: 22px 24px; border-radius: 6px;
+            background: var(--fw-panel-2); border: 1px solid var(--fw-border);
+            border-left: 2px solid var(--fw-accent);
+        }
+        .fw-callout .title {
+            font-size: 0.96rem; font-weight: 600; color: var(--fw-ink);
+            margin-bottom: 10px;
+        }
+        .fw-callout p {
+            color: var(--fw-ink-2); line-height: 1.75; font-size: 0.9rem; margin: 0;
+        }
+        .fw-callout a { color: var(--fw-accent); text-decoration: none; border-bottom: 1px dashed currentColor; }
