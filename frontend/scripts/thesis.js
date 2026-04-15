@@ -581,16 +581,24 @@ function createEvaluator(stock) {
         const intervalAnalysis = analyzeIntervals(intervalModel, profitPairs, params.targetProfit, params.alpha);
         const metrics = runBacktest(test, intervalModel, intervalAnalysis, params.holdDays, params.targetProfit);
         const buyZoneCount = intervalAnalysis.filter((zone) => zone.signal === 'buy').length;
-        const returnScore = metrics.totalReturn >= 0
-            ? Math.min(48, Math.log1p(metrics.totalReturn / 5) * 13)
-            : -Math.min(18, Math.abs(metrics.totalReturn) / 4);
-        const winScore = (metrics.winRate / 100) * 28;
-        const tradeScore = metrics.tradeCount ? Math.min(10, metrics.tradeCount * 0.55) : -6;
-        const signalScore = Math.min(8, buyZoneCount * 0.35);
-        const beatBuyHold = metrics.totalReturn > metrics.buyHoldReturn ? 5 : -2;
-        const anchorPenalty = getParameterDistance(params, stock.anchor) * 12;
-        const drawdownPenalty = Math.abs(metrics.maxDrawdown) * 1.25;
-        const fitness = roundTo(clamp(returnScore + winScore + tradeScore + signalScore + beatBuyHold - anchorPenalty - drawdownPenalty, -12, 99), 3);
+
+        // Thesis fitness (§3.3 pseudocode / pyodide runner):
+        //   fitness = (Σ avg_profit / bins) × (Σ success_prob / bins)
+        // where bins = non-empty intervals. avg_profit is already in percent; normalise by
+        // targetProfit so the two factors are on a comparable scale and the product stays bounded.
+        let sumAvg = 0;
+        let sumProb = 0;
+        let bins = 0;
+        for (const zone of intervalAnalysis) {
+            if (zone.sampleSize > 0) {
+                sumAvg += zone.avgProfit / Math.max(params.targetProfit, 0.1);
+                sumProb += zone.successProb;
+                bins += 1;
+            }
+        }
+        const fitness = bins
+            ? roundTo((sumAvg / bins) * (sumProb / bins), 4)
+            : -1;
 
         const result = {
             ...metrics,
