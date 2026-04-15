@@ -335,16 +335,92 @@
                 </div>
             </div>
         </section>
-        <section class="section" style="padding-top:40px">
-            <div class="section-head">
-                <div>
-                    <div class="section-label">Protein Interaction Network</div>
-                    <h2 class="section-title">蛋白質交互作用網路</h2>
-                    <p class="section-sub">STRING DB 真實數據，可拖曳、縮放。節點代表蛋白質，邊代表實驗或預測的交互作用。</p>
-                </div>
+        <section class="ppi-wrap">
+            <div class="ppi-head">
+                <div class="section-label">Protein Interaction Network · STRING DB</div>
+                <h2 class="ppi-title">蛋白質交互作用網路</h2>
+                <p class="ppi-sub">節點是蛋白質，邊代表兩蛋白實驗或預測到的物理/功能交互作用。以下展示 TP53（抑癌）通路周邊的一級鄰居網路——選中節點查看功能摘要，也可以用滑鼠拖曳、滾輪縮放來探索拓撲。</p>
             </div>
-            <div id="cytoscape-network" style="height:520px;width:100%;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:var(--surface)"></div>
+            <div class="ppi-layout">
+                <div class="ppi-graph-wrap">
+                    <div id="cytoscape-network" class="ppi-graph"></div>
+                    <div class="ppi-legend">
+                        <span><i class="lg-node"></i>蛋白質</span>
+                        <span><i class="lg-edge"></i>交互作用</span>
+                        <span class="ppi-hint">點選節點查看詳情 · 滾輪縮放 · 拖曳平移</span>
+                    </div>
+                </div>
+                <aside class="ppi-side" id="ppi-side">
+                    <div class="ppi-side-head">Node Info</div>
+                    <div class="ppi-side-body" id="ppi-side-body">
+                        <p class="ppi-placeholder">點擊任一節點查看該蛋白質的簡介。</p>
+                    </div>
+                </aside>
+            </div>
+            <div class="ppi-usage">
+                <strong>這個圖能回答什麼？</strong>
+                <ul>
+                    <li>某個蛋白質（如 TP53）的功能夥伴有哪些？</li>
+                    <li>哪些蛋白形成緊密團簇、可能共同參與同一生物過程？</li>
+                    <li>設計 ProteinMPNN 時，是否需要同時保留交互作用界面殘基？</li>
+                </ul>
+            </div>
         </section>
+        <script is:inline>
+        (function(){
+            const INFO = {
+                TP53: {en:"Tumor protein p53", role:"轉錄因子，細胞週期與凋亡的中心調節子", note:"~50% 人類癌症帶有 TP53 突變，是最常被研究的抑癌基因。"},
+                MDM2: {en:"E3 ubiquitin ligase MDM2", role:"負向調節 TP53", note:"結合 TP53 並促其降解；MDM2 過表達是 TP53 失活的常見途徑。"},
+                BRCA1: {en:"Breast cancer type 1", role:"DNA 雙股斷裂修復", note:"與 BARD1 形成 E3 ligase 複合體；胚系突變顯著提高乳癌 / 卵巢癌風險。"},
+                BARD1: {en:"BRCA1-associated RING domain 1", role:"BRCA1 夥伴", note:"與 BRCA1 形成穩定異源二聚體，為其泛素連接酶活性所需。"},
+                ATM: {en:"Ataxia Telangiectasia Mutated", role:"DNA 損傷感測激酶", note:"雙股斷裂後啟動；磷酸化 TP53、CHEK2 等下游效應子。"},
+                CHEK2: {en:"Checkpoint kinase 2", role:"細胞週期檢查點激酶", note:"ATM 下游；穩定 TP53，觸發 G1/S 阻滯。"},
+                RAD51: {en:"DNA repair protein RAD51", role:"同源重組核心", note:"催化 ssDNA 與同源模板配對；BRCA2 負責將其裝載到 DNA 上。"},
+                CDKN2A: {en:"Cyclin-dependent kinase inhibitor 2A", role:"抑癌蛋白 p16/p14ARF", note:"p14ARF 透過抑制 MDM2 穩定 TP53；p16 抑制 CDK4/6。"},
+                EP300: {en:"E1A binding protein p300", role:"組蛋白乙醯轉移酶", note:"作為 TP53 的轉錄共激活子，以乙醯化方式強化其 DNA 結合。"}
+            };
+            function render(id){
+                const body = document.getElementById("ppi-side-body"); if(!body) return;
+                const d = INFO[id];
+                if(!d){ body.innerHTML = "<p class=\"ppi-placeholder\">尚無 "+id+" 的摘要資訊。</p>"; return; }
+                body.innerHTML = "<div class=\"ppi-sym\">"+id+"</div><div class=\"ppi-en\">"+d.en+"</div><div class=\"ppi-role\">"+d.role+"</div><p class=\"ppi-note\">"+d.note+"</p>";
+            }
+            function hook(){
+                const el = document.getElementById("cytoscape-network");
+                if(!el || !el._ppiHooked){
+                    if(el && window.cytoscape){
+                        const cy = el._cy || (el.children.length && el.__cy__);
+                    }
+                }
+                // Listen via event delegation on container (cytoscape renders canvas, so use cy instance)
+                const tryBind = () => {
+                    if(!window.cy && el){
+                        // cytoscape stores instance on container via dataset; we poll
+                    }
+                };
+                // Use observer on canvas attr changes; simpler: patch cytoscape on global
+                const oldCy = window.cytoscape;
+                if(oldCy && !oldCy.__ppiPatched){
+                    const patched = function(opts){
+                        const inst = oldCy(opts);
+                        if(opts && opts.container && opts.container.id === "cytoscape-network"){
+                            inst.on("tap", "node", (e)=>render(e.target.id()));
+                            window.__ppiCy = inst;
+                        }
+                        return inst;
+                    };
+                    for(const k in oldCy){ try{ patched[k] = oldCy[k]; }catch(e){} }
+                    patched.__ppiPatched = true;
+                    window.cytoscape = patched;
+                }
+            }
+            // Patch as soon as cytoscape is available
+            const waitCy = setInterval(()=>{
+                if(window.cytoscape){ hook(); clearInterval(waitCy); }
+            }, 100);
+            setTimeout(()=>clearInterval(waitCy), 15000);
+        })();
+        </script>
     </main>
 
     <div data-site-footer></div>
