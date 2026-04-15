@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化</title><meta name="description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><meta property="og:title" content="PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化"><meta property="og:description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og-image.svg"><meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/thesis.css"><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script></head> <body data-page="thesis">  
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化</title><meta name="description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><meta property="og:title" content="PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化"><meta property="og:description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og-image.svg"><meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/thesis.css"><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script></head> <body data-page="thesis">  
     <div data-site-nav></div>
 
     <header class="hero">
@@ -193,26 +193,15 @@
                 </div>
                 <div class="stock-meta" id="selectedStockMeta"></div>
                 <div class="ga-cfg-actions">
-                    <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 重新運算</button>
-                    <button class="btn btn-primary" onclick="document.getElementById('pyodide-run').click();">🐍 Python 產生 GAPPTS 策略</button>
+                    <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 產生 GAPPTS 策略</button>
                     <button class="btn btn-ghost" onclick="resetGaCfg()">↩ 重置論文預設</button>
                     <button class="btn btn-ghost" id="btnSyncStocks" style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步真實股價</button>
                     <span class="ga-cfg-status" id="cfgStatus"></span>
                 </div>
             </div>
 
-            <!-- ════════ PYTHON RUNNER（使用上方「選股與 GAPPTS 參數」整合參數） ════════ -->
-            <div id="pyodide-runner-card" style="margin-top:24px;">
-                <h3 style="margin-bottom:8px;font-size:1.1rem">以選股與 GAPPTS 參數產生 GAPPTS 策略 (Python in Browser)</h3>
-                <p style="color:var(--muted);font-size:.86rem;margin-bottom:14px;line-height:1.6">
-                    直接讀取上方 <b style="color:var(--teal)">「選股與 GAPPTS 參數產生 GAPPTS 策略」</b> 面板的所有欄位：選到的股票、POP / GENS / CR / MR、以及 m / hold / target。按執行會將真實價格序列注入 Python runtime。
-                </p>
-                <div class="pyodide-runner">
-                    <div class="runner-header">
-                        <span>Python 3.11 (Pyodide) · GUI 參數會覆蓋程式中的預設值</span>
-                        <button id="pyodide-run">▶ 執行 Python</button>
-                    </div>
-                    <textarea id="pyodide-code">import numpy as np
+            <div id="pyodide-runner-card" style="display:none">
+                <textarea id="pyodide-code">import numpy as np
 
 # 變數由上方 GUI 自動注入：
 #   個股: stock_code, stock_name, prices (list[float])
