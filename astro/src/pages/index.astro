@@ -1,3 +1,4 @@
+```astro
 ---
 import Base from '../layouts/Base.astro';
 ---
@@ -85,10 +86,9 @@ import Base from '../layouts/Base.astro';
                 </div>
                 <div class="explore-grid explore-grid-2">
                     <a href="/report" class="explore-card ec-bio"><div class="explore-icon">🧬</div><h3>蛋白質 AI 專案報告</h3><p>端到端 Pipeline 架構、實驗結果圖表、核心演算法數學推導、程式碼庫結構一覽。</p><div class="explore-footer"><span class="explore-tag">Protein AI</span><span class="explore-arrow">→</span></div></a>
-                    <a href="/protein_mpnn.html" class="explore-card ec-bio"><div class="explore-icon">🧪</div><h3>ProteinMPNN 互動展示</h3><p>獨立工作台頁面，直接操作序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</p><div class="explore-footer"><span class="explore-tag">Interactive</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/protein-mpnn" class="explore-card ec-bio"><div class="explore-icon">🧪</div><h3>ProteinMPNN 互動展示</h3><p>獨立工作台頁面，直接操作序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</p><div class="explore-footer"><span class="explore-tag">Interactive</span><span class="explore-arrow">→</span></div></a>
                 </div>
             </div>
-
             <div class="explore-group">
                 <div class="explore-group-head">
                     <span class="explore-group-label">Genomics</span>
@@ -100,7 +100,6 @@ import Base from '../layouts/Base.astro';
                     <a href="/ngs" class="explore-card ec-gene"><div class="explore-icon">📊</div><h3>NGS 次世代定序</h3><p>實驗設計計算器、定序深度估算、QC 到功能分析的完整結果圖表集。</p><div class="explore-footer"><span class="explore-tag">NGS</span><span class="explore-arrow">→</span></div></a>
                 </div>
             </div>
-
             <div class="explore-group">
                 <div class="explore-group-head">
                     <span class="explore-group-label">Other</span>
@@ -110,7 +109,7 @@ import Base from '../layouts/Base.astro';
                 <div class="explore-grid explore-grid-3">
                     <a href="/interview" class="explore-card ec-study"><div class="explore-icon">🎯</div><h3>面試準備手冊</h3><p>模擬面試問答、數學推導筆記、Mini Project 完整程式碼、六週衝刺計劃。</p><div class="explore-footer"><span class="explore-tag">Study</span><span class="explore-arrow">→</span></div></a>
                     <a href="/works" class="explore-card ec-study"><div class="explore-icon">💼</div><h3>作品總覽</h3><p>所有專案卡片篩選、即時 API 統計、跨域作品集一覽。</p><div class="explore-footer"><span class="explore-tag">Portfolio</span><span class="explore-arrow">→</span></div></a>
-                    <a href="/thesis" class="explore-card ec-research"><div class="explore-icon">📝</div><h3>論文 · 遺傳演算法</h3><p>以 48 檔 ETF50 股票池重建 PPTS × GAPPTS，逐檔觀察參數最佳化與回測結果。</p><div class="explore-footer"><span class="explore-tag">Research</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/thesis" class="explore-card ec-research"><div class="explore-icon">📝</div><h3>論文 · 遺傳演算法</h3><p>以 48 檔 ETF50 股票池重建 PPTS × GAPPTS，逐檔觀察族群演化、逐檔回測與方法比較。</p><div class="explore-footer"><span class="explore-tag">Research</span><span class="explore-arrow">→</span></div></a>
                 </div>
             </div>
         </div>
@@ -119,6 +118,7 @@ import Base from '../layouts/Base.astro';
     <div data-site-footer></div>
     <button class="scroll-top" aria-label="返回頂部">↑</button>
     <div id="tsparticles"></div>
+
     <button id="chatbot-toggle" aria-label="AI 助手">💬</button>
     <div id="chatbot-panel">
         <div class="chatbot-header">
@@ -133,4 +133,78 @@ import Base from '../layouts/Base.astro';
             <button id="chatbot-send">送出</button>
         </div>
     </div>
+
+    <script>
+    (function() {
+        const SYSTEM = `你是這個作品集網站的 AI 助手。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師。
+專長：ESM-2 蛋白質語言模型、ProteinMPNN、Bayesian Optimization（BoTorch/qLogEI）、REINFORCE RL、
+FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場資料平台。
+請用繁體中文回答，保持專業友善，回答不超過 200 字。只回答與作品集相關的問題。`;
+
+        let history = [];
+        let busy = false;
+
+        const toggle = document.getElementById('chatbot-toggle');
+        const panel  = document.getElementById('chatbot-panel');
+        const close  = document.querySelector('.chatbot-close');
+        const msgs   = document.getElementById('chatbot-messages');
+        const input  = document.getElementById('chatbot-input');
+        const send   = document.getElementById('chatbot-send');
+
+        toggle.addEventListener('click', () => panel.classList.toggle('open'));
+        close.addEventListener('click',  () => panel.classList.remove('open'));
+        send.addEventListener('click', submit);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) submit(); });
+
+        async function submit() {
+            const text = input.value.trim();
+            if (!text || busy) return;
+            input.value = '';
+            addMsg('user', text);
+            history.push({ role: 'user', content: text });
+            setBusy(true);
+            try {
+                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 1000,
+                        system: SYSTEM,
+                        messages: history.slice(-10)
+                    })
+                });
+                const data = await res.json();
+                const reply = data.content?.[0]?.text ?? '抱歉，暫時無法回應。';
+                history.push({ role: 'assistant', content: reply });
+                addMsg('bot', reply);
+            } catch {
+                addMsg('bot', '⚠️ 連線失敗，請稍後再試。');
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        function addMsg(role, text) {
+            const d = document.createElement('div');
+            d.className = `chat-msg chat-${role}`;
+            d.textContent = text;
+            msgs.appendChild(d);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function setBusy(v) {
+            busy = v; send.disabled = v; input.disabled = v;
+            document.getElementById('chat-typing')?.remove();
+            if (v) {
+                const t = document.createElement('div');
+                t.id = 'chat-typing';
+                t.className = 'chat-msg chat-bot chat-typing';
+                t.innerHTML = '<span></span><span></span><span></span>';
+                msgs.appendChild(t);
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+    })();
+    </script>
 </Base>
