@@ -33,15 +33,17 @@ for (const dir of dirs) {
     const src = path.join(frontendDir, dir);
     const dest = path.join(publicDir, dir);
     try {
+        await fs.access(src);
+    } catch {
+        console.log(`skipped ${dir}/ (source not present — keeping existing public/${dir})`);
+        continue;
+    }
+    try {
         await fs.rm(dest, { recursive: true, force: true });
         await copyDir(src, dest);
         console.log(`synced ${dir}/`);
     } catch (err) {
-        if (err.code === 'ENOENT') {
-            console.log(`skipped ${dir}/ (not in frontend)`);
-        } else {
-            throw err;
-        }
+        throw err;
     }
 }
 
