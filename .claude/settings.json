@@ -24,7 +24,9 @@
       "Bash(curl -s \"https://query1.finance.yahoo.com/v8/finance/chart/2330.TW?range=2y&interval=1d\" -H \"User-Agent: Mozilla/5.0\")",
       "Bash(curl -sI https://donttalk.vercel.app/thesis.html)",
       "Bash(grep -rn \"bars\\\\|tradeDate\" site_api/*.py)",
-      "Bash(curl -s \"https://donttalk.vercel.app/api/market/bars?symbol=2330&asset_type=stock&limit=5\")"
+      "Bash(curl -s \"https://donttalk.vercel.app/api/market/bars?symbol=2330&asset_type=stock&limit=5\")",
+      "Bash(curl -s \"https://donttalk.vercel.app/api/market/bars?symbol=2330&asset_type=stock&limit=2000\")",
+      "Bash(python -c \"import json,sys;d=json.load\\(sys.stdin\\);r=d['records'];print\\(f'count={len\\(r\\)} first={r[-1][\\\\\"tradeDate\\\\\"] if r else None} last={r[0][\\\\\"tradeDate\\\\\"] if r else None}'\\)\")"
     ]
   }
 }
