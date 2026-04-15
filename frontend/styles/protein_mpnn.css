@@ -572,3 +572,100 @@
   margin: 0;
   padding-left: 20px;
 }
+
+/* ── Enhanced PPI section ── */
+.ppi-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-width: var(--demo-shell);
+  margin: 0 auto 14px;
+  padding: 0 24px;
+}
+.ppi-tab {
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(88,215,255,0.25);
+  background: rgba(88,215,255,0.05);
+  color: var(--muted);
+  font-size: .8rem;
+  cursor: pointer;
+  transition: all .2s;
+}
+.ppi-tab:hover { border-color: rgba(88,215,255,0.5); color: var(--fg); }
+.ppi-tab.active { background: rgba(88,215,255,0.15); border-color: rgba(88,215,255,0.6); color: #58d7ff; font-weight: 600; }
+.ppi-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  max-width: var(--demo-shell);
+  margin: 0 auto 12px;
+  padding: 0 24px;
+}
+.ppi-search-input {
+  flex: 1;
+  min-width: 160px;
+  padding: 7px 12px;
+  background: var(--surface);
+  border: 1px solid rgba(88,215,255,0.2);
+  border-radius: 8px;
+  color: var(--fg);
+  font-size: .82rem;
+  outline: none;
+}
+.ppi-search-input:focus { border-color: rgba(88,215,255,0.5); }
+.ppi-select {
+  padding: 7px 10px;
+  background: var(--surface);
+  border: 1px solid rgba(88,215,255,0.2);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: .8rem;
+  cursor: pointer;
+}
+.ppi-btn {
+  padding: 7px 14px;
+  background: rgba(88,215,255,0.08);
+  border: 1px solid rgba(88,215,255,0.25);
+  border-radius: 8px;
+  color: #58d7ff;
+  font-size: .8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ppi-btn:hover { background: rgba(88,215,255,0.15); }
+.ppi-role-legend {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-width: var(--demo-shell);
+  margin: 0 auto 14px;
+  padding: 0 24px;
+}
+.ppi-role-filter {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--rc) 40%, transparent);
+  background: color-mix(in srgb, var(--rc) 8%, transparent);
+  color: var(--rc);
+  font-size: .75rem;
+  cursor: pointer;
+  transition: all .2s;
+}
+.ppi-role-filter.active {
+  background: color-mix(in srgb, var(--rc) 20%, transparent);
+  border-color: var(--rc);
+  font-weight: 600;
+}
+.ppi-stats-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 8px 14px;
+  background: rgba(88,215,255,0.05);
+  border-top: 1px solid rgba(88,215,255,0.1);
+  font-size: .78rem;
+  color: var(--muted);
+}
+.ppi-stats-bar strong { color: var(--fg); }
