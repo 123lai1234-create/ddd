@@ -148,7 +148,6 @@ jobs:
 
   deploy-vercel:
     name: Deploy Vercel Frontend
-    needs: deploy-railway
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -199,7 +198,6 @@ jobs:
 
   deploy-netlify:
     name: Deploy Netlify Frontend
-    needs: deploy-railway
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
