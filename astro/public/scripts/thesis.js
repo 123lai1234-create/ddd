@@ -1254,14 +1254,33 @@ async function rerunGA() {
         document.getElementById('btnPlay').textContent = '▶ 自動播放';
     }
 
-    // Require real TWSE price data — do not fall back to synthetic.
+    // Try real TWSE price data; fall back to synthetic if unavailable.
     const realData = await fetchRealPriceSeries(stock.code);
     if (!realData || realData.closes.length < 50) {
         if (SERIES_CACHE.get(stock.code)?.isReal) {
             SERIES_CACHE.delete(stock.code);
         }
-        status.textContent = `⚠ ${stock.name} 尚未取得真實股價，請點「📡 同步真實股價」後重試`;
-        button.disabled = false;
+        // Use synthetic data so charts always render
+        const synth = getStockSeries(stock);
+        if (!SERIES_CACHE.has(stock.code)) SERIES_CACHE.set(stock.code, synth);
+        const dataSource = '模擬數據（點「📡 同步真實股價」可改用真實 TWSE）';
+        status.textContent = `⏳ ${stock.name} · ${dataSource} · POP=${config.POP} · GENS=${config.GENS} 計算中…`;
+        setTimeout(() => {
+            try {
+                const run = runSimulation(stock, config);
+                uiState.currentRun = run;
+                renderAll(run);
+                status.textContent = `✓ 完成 [${dataSource}]：${stock.name} 最佳 fitness ${formatValue(run.best.bestFit, 3)}`;
+                const priceCanvas = document.getElementById('priceChart');
+                if (priceCanvas) {
+                    const target = priceCanvas.closest('.section') || priceCanvas;
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            } catch (err) {
+                status.textContent = `⚠ 計算錯誤：${err.message}`;
+            }
+            button.disabled = false;
+        }, 20);
         return;
     }
 
