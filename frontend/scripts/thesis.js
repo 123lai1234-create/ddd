@@ -1854,7 +1854,7 @@ function initMarketOps() {
 function initialisePage() {
     renderHeroStats();
     renderStaticCards();
-    renderThesisFindings();
+    try { renderThesisFindings(); } catch (err) { console.warn('renderThesisFindings failed:', err); }
     populateFilters();
     populateStockSelect(uiState.currentStockCode);
     bindEvents();
