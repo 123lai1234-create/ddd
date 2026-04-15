@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "outputDirectory": "frontend",
+  "installCommand": "cd astro && npm ci",
+  "buildCommand": "cd astro && npm run build",
+  "outputDirectory": "astro/dist",
   "env": {
     "API_PROXY_TARGET": "https://donttalk-api-production.up.railway.app"
   },

@@ -581,16 +581,24 @@ function createEvaluator(stock) {
         const intervalAnalysis = analyzeIntervals(intervalModel, profitPairs, params.targetProfit, params.alpha);
         const metrics = runBacktest(test, intervalModel, intervalAnalysis, params.holdDays, params.targetProfit);
         const buyZoneCount = intervalAnalysis.filter((zone) => zone.signal === 'buy').length;
-        const returnScore = metrics.totalReturn >= 0
-            ? Math.min(48, Math.log1p(metrics.totalReturn / 5) * 13)
-            : -Math.min(18, Math.abs(metrics.totalReturn) / 4);
-        const winScore = (metrics.winRate / 100) * 28;
-        const tradeScore = metrics.tradeCount ? Math.min(10, metrics.tradeCount * 0.55) : -6;
-        const signalScore = Math.min(8, buyZoneCount * 0.35);
-        const beatBuyHold = metrics.totalReturn > metrics.buyHoldReturn ? 5 : -2;
-        const anchorPenalty = getParameterDistance(params, stock.anchor) * 12;
-        const drawdownPenalty = Math.abs(metrics.maxDrawdown) * 1.25;
-        const fitness = roundTo(clamp(returnScore + winScore + tradeScore + signalScore + beatBuyHold - anchorPenalty - drawdownPenalty, -12, 99), 3);
+
+        // Thesis fitness (§3.3 pseudocode / pyodide runner):
+        //   fitness = (Σ avg_profit / bins) × (Σ success_prob / bins)
+        // where bins = non-empty intervals. avg_profit is already in percent; normalise by
+        // targetProfit so the two factors are on a comparable scale and the product stays bounded.
+        let sumAvg = 0;
+        let sumProb = 0;
+        let bins = 0;
+        for (const zone of intervalAnalysis) {
+            if (zone.sampleSize > 0) {
+                sumAvg += zone.avgProfit / Math.max(params.targetProfit, 0.1);
+                sumProb += zone.successProb;
+                bins += 1;
+            }
+        }
+        const fitness = bins
+            ? roundTo((sumAvg / bins) * (sumProb / bins), 4)
+            : -1;
 
         const result = {
             ...metrics,
@@ -1009,6 +1017,8 @@ function renderGACharts(run) {
 }
 
 function renderBacktestCharts(run) {
+    // DOM targets removed; kept as no-op to preserve call sites.
+    if (!document.getElementById('priceChart')) return;
     const evaluation = run.best.bestEvaluation;
     const priceScatterBuy = evaluation.buyMarkers.map((marker) => ({ x: marker.x + 1, y: marker.y }));
     const priceScatterSell = evaluation.sellMarkers.map((marker) => ({ x: marker.x + 1, y: marker.y }));
@@ -1244,35 +1254,31 @@ async function rerunGA() {
         document.getElementById('btnPlay').textContent = '▶ 自動播放';
     }
 
-    // Attempt to load real TWSE price data for this stock
+    // Require real TWSE price data — do not fall back to synthetic.
     const realData = await fetchRealPriceSeries(stock.code);
-    let dataSource;
-    if (realData && realData.closes.length >= 50) {
-        // Date-based train/test split: before 2024 = train, 2024+ = test
-        const cutoff = '2024-01-01';
-        let splitIdx = realData.dates.findIndex((d) => d >= cutoff);
-        if (splitIdx < 20) splitIdx = Math.max(20, Math.floor(realData.closes.length * 0.8));
-        if (realData.closes.length - splitIdx < 10) splitIdx = Math.floor(realData.closes.length * 0.8);
-
-        const trainDates = realData.dates.slice(0, splitIdx);
-        const testDates = realData.dates.slice(splitIdx);
-        SERIES_CACHE.set(stock.code, {
-            train: realData.closes.slice(0, splitIdx),
-            test: realData.closes.slice(splitIdx),
-            trainDates,
-            testDates,
-            isReal: true,
-        });
-        const from = realData.dates[0];
-        const to = realData.dates[realData.dates.length - 1];
-        dataSource = `真實 TWSE ${realData.closes.length} 筆 (${from} ~ ${to})`;
-    } else {
-        // Clear stale real-data cache so synthetic gets regenerated
+    if (!realData || realData.closes.length < 50) {
         if (SERIES_CACHE.get(stock.code)?.isReal) {
             SERIES_CACHE.delete(stock.code);
         }
-        dataSource = '⚠ 模擬數據 — 請點「📡 同步真實股價」取得 TWSE 真實資料';
+        status.textContent = `⚠ ${stock.name} 尚未取得真實股價，請點「📡 同步真實股價」後重試`;
+        button.disabled = false;
+        return;
     }
+
+    // Date-based train/test split: before 2024 = train, 2024+ = test
+    const cutoff = '2024-01-01';
+    let splitIdx = realData.dates.findIndex((d) => d >= cutoff);
+    if (splitIdx < 20) splitIdx = Math.max(20, Math.floor(realData.closes.length * 0.8));
+    if (realData.closes.length - splitIdx < 10) splitIdx = Math.floor(realData.closes.length * 0.8);
+
+    SERIES_CACHE.set(stock.code, {
+        train: realData.closes.slice(0, splitIdx),
+        test: realData.closes.slice(splitIdx),
+        trainDates: realData.dates.slice(0, splitIdx),
+        testDates: realData.dates.slice(splitIdx),
+        isReal: true,
+    });
+    const dataSource = `真實 TWSE ${realData.closes.length} 筆 (${realData.dates[0]} ~ ${realData.dates[realData.dates.length - 1]})`;
 
     status.textContent = `⏳ ${stock.name} · ${dataSource} · POP=${config.POP} · GENS=${config.GENS} 計算中…`;
 
@@ -1848,6 +1854,7 @@ function initMarketOps() {
 function initialisePage() {
     renderHeroStats();
     renderStaticCards();
+    renderThesisFindings();
     populateFilters();
     populateStockSelect(uiState.currentStockCode);
     bindEvents();
@@ -1856,6 +1863,122 @@ function initialisePage() {
     rerunGA();
     // Background: preload real price data, auto-sync if DB empty
     autoSyncAndPreload();
+}
+
+function renderThesisFindings() {
+    // Fitness ranking from thesis §4.4
+    const fitnessData = [
+        { stock: '聯電 2303', fitness: 0.7058, type: 'mid' },
+        { stock: '聯發科 2454', fitness: 0.6994, type: 'short' },
+        { stock: '台積電 2330', fitness: 0.6665, type: 'long' },
+        { stock: '中華電 2412', fitness: 0.5410, type: 'long' },
+    ];
+    const typeColor = { short: '#ffbc72', mid: '#7bf0be', long: '#6ab4ff' };
+    createChart('fitnessRankChart', {
+        type: 'bar',
+        data: {
+            labels: fitnessData.map((d) => d.stock),
+            datasets: [{
+                label: 'Fitness',
+                data: fitnessData.map((d) => d.fitness),
+                backgroundColor: fitnessData.map((d) => typeColor[d.type]),
+                borderRadius: 6,
+            }],
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, max: 0.8, ticks: { color: '#94a59f' }, grid: { color: 'rgba(151,190,181,0.08)' } },
+                y: { ticks: { color: '#e9f0ec', font: { size: 12 } }, grid: { display: false } },
+            },
+        },
+    });
+
+    // Industry optimal training periods
+    const industries = [
+        { name: '半導體', min: 3.8, max: 5.3 },
+        { name: '電子製造', min: 3.5, max: 5.5 },
+        { name: '金融', min: 4.0, max: 6.0 },
+        { name: '石化', min: 5.0, max: 7.0 },
+        { name: '電信', min: 5.0, max: 8.0 },
+    ];
+    createChart('industryPeriodChart', {
+        type: 'bar',
+        data: {
+            labels: industries.map((d) => d.name),
+            datasets: [
+                {
+                    label: '下限 (年)',
+                    data: industries.map((d) => d.min),
+                    backgroundColor: 'rgba(88,215,255,0.25)',
+                    borderColor: '#58d7ff',
+                    borderWidth: 1,
+                    stack: 'period',
+                },
+                {
+                    label: '上限範圍',
+                    data: industries.map((d) => d.max - d.min),
+                    backgroundColor: 'rgba(123,240,190,0.45)',
+                    borderColor: '#7bf0be',
+                    borderWidth: 1,
+                    stack: 'period',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#94a59f', font: { size: 11 } } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const row = industries[ctx.dataIndex];
+                            return `${row.name}：${row.min}–${row.max} 年`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: { ticks: { color: '#e9f0ec' }, grid: { display: false } },
+                y: { stacked: true, beginAtZero: true, ticks: { color: '#94a59f' }, grid: { color: 'rgba(151,190,181,0.08)' } },
+            },
+        },
+    });
+
+    // Algorithm comparison table (thesis table 4.4)
+    const algoRows = [
+        ['ARIMA', '中', '低', '小–中型', '高', '低'],
+        ['指數平滑法', '低–中', '極低', '小型', '高', '低'],
+        ['GARCH', '中（波動）', '中', '小–中型', '中–高', '中'],
+        ['SVM', '中–高', '中–高', '中型', '低', '高'],
+        ['隨機森林', '高', '高', '中–大型', '中', '高'],
+        ['XGBoost', '高', '高', '中–大型', '中', '高'],
+        ['RNN / LSTM', '高', '極高', '大型', '極低', '極高'],
+        ['CNN', '中–高', '高', '大型', '極低', '高'],
+        ['Transformer', '高', '極高', '大型', '極低', '極高'],
+        ['集成方法', '極高', '極高', '中–大型', '低', '極高'],
+        ['GAPPTS（本研究）', '高', '中–高', '中型', '高', '高'],
+    ];
+    const table = document.getElementById('algoCompareTable');
+    if (table) {
+        table.innerHTML = algoRows.map((row) => {
+            const highlight = row[0].startsWith('GAPPTS');
+            const bg = highlight ? 'background:rgba(123,240,190,0.08)' : '';
+            const weight = highlight ? 'font-weight:700;color:var(--green)' : '';
+            return `<tr style="border-bottom:1px solid var(--border);${bg}">
+                <td style="padding:10px 12px;${weight}">${row[0]}</td>
+                <td style="padding:10px 12px;color:var(--muted)">${row[1]}</td>
+                <td style="padding:10px 12px;color:var(--muted)">${row[2]}</td>
+                <td style="padding:10px 12px;color:var(--muted)">${row[3]}</td>
+                <td style="padding:10px 12px;color:var(--muted)">${row[4]}</td>
+                <td style="padding:10px 12px;color:var(--muted)">${row[5]}</td>
+            </tr>`;
+        }).join('');
+    }
 }
 
 async function autoSyncAndPreload() {
