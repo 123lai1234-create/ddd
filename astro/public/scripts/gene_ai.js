@@ -470,19 +470,13 @@ async function loadSequenceCache(autoSyncIfEmpty = true) {
 
         setSequenceStatus(`已載入 ${sequenceVaultState.records.protein.length} 筆 protein 與 ${sequenceVaultState.records.gene.length} 筆 gene 快取。`, 'success');
     } catch (error) {
-        // backend unavailable — try localStorage cache, then direct API sync
+        // backend unavailable — try localStorage cache, then direct API sync, then demo fallback
         const hasCached = _loadSequenceDirectCache();
         if (!hasCached) {
             if (autoSyncIfEmpty) {
-                await _syncSequenceDirect().catch((e2) =>
-                    setSequenceStatus(`後端與直接抓取均失敗：${e2.message}`, 'error')
-                );
+                await _syncSequenceDirect().catch(() => _seedSequenceDemo());
             } else {
-                renderSequenceSummary();
-                renderSequenceTabs();
-                renderSequenceFilterOptions();
-                renderSequenceFeed();
-                setSequenceStatus(`後端不可用（${error.message}）。可按「同步」從 UniProt / Ensembl 直接抓取。`, 'error');
+                _seedSequenceDemo();
             }
         }
     } finally {
@@ -1896,6 +1890,32 @@ function _loadSequenceDirectCache() {
     renderSequenceFeed();
     setSequenceStatus(`從 localStorage 快取載入：${proteinRecords.length} protein、${geneRecords.length} gene。`, 'success');
     return true;
+}
+
+function _seedSequenceDemo() {
+    const proteinRecords = [
+        { accession: 'P04637', sequenceType: 'protein', name: 'TP53', organism: 'Homo sapiens', sequenceLength: 393, sourceName: 'UniProt (demo)', fetchedAt: new Date().toISOString(), description: 'Cellular tumor antigen p53 — transcription factor, cell cycle & apoptosis master regulator.' },
+        { accession: 'P38398', sequenceType: 'protein', name: 'BRCA1', organism: 'Homo sapiens', sequenceLength: 1863, sourceName: 'UniProt (demo)', fetchedAt: new Date().toISOString(), description: 'Breast cancer type 1 susceptibility protein — DNA double-strand break repair.' },
+        { accession: 'P00533', sequenceType: 'protein', name: 'EGFR', organism: 'Homo sapiens', sequenceLength: 1210, sourceName: 'UniProt (demo)', fetchedAt: new Date().toISOString(), description: 'Epidermal growth factor receptor — receptor tyrosine kinase; oncology target.' },
+        { accession: 'P02649', sequenceType: 'protein', name: 'APOE', organism: 'Homo sapiens', sequenceLength: 317, sourceName: 'UniProt (demo)', fetchedAt: new Date().toISOString(), description: 'Apolipoprotein E — lipid transport; ApoE4 allele linked to Alzheimer risk.' }
+    ];
+    const geneRecords = [
+        { accession: 'ENSG00000141510', sequenceType: 'gene', name: 'TP53', organism: 'Homo sapiens', sequenceLength: 19149, sourceName: 'Ensembl (demo)', fetchedAt: new Date().toISOString(), description: 'Tumor protein p53, chromosome 17p13.1.' },
+        { accession: 'ENSG00000012048', sequenceType: 'gene', name: 'BRCA1', organism: 'Homo sapiens', sequenceLength: 81189, sourceName: 'Ensembl (demo)', fetchedAt: new Date().toISOString(), description: 'BRCA1 DNA repair associated, chromosome 17q21.31.' },
+        { accession: 'ENSG00000146648', sequenceType: 'gene', name: 'EGFR', organism: 'Homo sapiens', sequenceLength: 188307, sourceName: 'Ensembl (demo)', fetchedAt: new Date().toISOString(), description: 'Epidermal growth factor receptor, chromosome 7p11.2.' },
+        { accession: 'ENSG00000130203', sequenceType: 'gene', name: 'APOE', organism: 'Homo sapiens', sequenceLength: 3611, sourceName: 'Ensembl (demo)', fetchedAt: new Date().toISOString(), description: 'Apolipoprotein E, chromosome 19q13.32.' }
+    ];
+    updateSequenceStateFromPayload({
+        proteinRecords, geneRecords,
+        proteinCount: proteinRecords.length,
+        geneCount: geneRecords.length,
+        latestFetchedAt: new Date().toISOString()
+    });
+    renderSequenceSummary();
+    renderSequenceTabs();
+    renderSequenceFilterOptions();
+    renderSequenceFeed();
+    setSequenceStatus('展示模式：已載入 4 筆 protein + 4 筆 gene 示範資料（非真實同步）。', 'info');
 }
 
 async function _syncKnowledgeDirect() {
