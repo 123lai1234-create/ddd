@@ -229,26 +229,15 @@
                 </div>
                 <div class="stock-meta" id="selectedStockMeta"></div>
                 <div class="ga-cfg-actions">
-                    <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 重新運算</button>
-                    <button class="btn btn-primary" onclick="document.getElementById('pyodide-run').click();">🐍 Python 產生 GAPPTS 策略</button>
+                    <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 產生 GAPPTS 策略</button>
                     <button class="btn btn-ghost" onclick="resetGaCfg()">↩ 重置論文預設</button>
                     <button class="btn btn-ghost" id="btnSyncStocks" style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步真實股價</button>
                     <span class="ga-cfg-status" id="cfgStatus"></span>
                 </div>
             </div>
 
-            <!-- ════════ PYTHON RUNNER（使用上方「選股與 GAPPTS 參數」整合參數） ════════ -->
-            <div id="pyodide-runner-card" style="margin-top:24px;">
-                <h3 style="margin-bottom:8px;font-size:1.1rem">以選股與 GAPPTS 參數產生 GAPPTS 策略 (Python in Browser)</h3>
-                <p style="color:var(--muted);font-size:.86rem;margin-bottom:14px;line-height:1.6">
-                    直接讀取上方 <b style="color:var(--teal)">「選股與 GAPPTS 參數產生 GAPPTS 策略」</b> 面板的所有欄位：選到的股票、POP / GENS / CR / MR、以及 m / hold / target。按執行會將真實價格序列注入 Python runtime。
-                </p>
-                <div class="pyodide-runner">
-                    <div class="runner-header">
-                        <span>Python 3.11 (Pyodide) · GUI 參數會覆蓋程式中的預設值</span>
-                        <button id="pyodide-run">▶ 執行 Python</button>
-                    </div>
-                    <textarea id="pyodide-code">import numpy as np
+            <div id="pyodide-runner-card" style="display:none">
+                <textarea id="pyodide-code">import numpy as np
 
 # 變數由上方 GUI 自動注入：
 #   個股: stock_code, stock_name, prices (list[float])
