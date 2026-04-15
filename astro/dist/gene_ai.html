@@ -167,7 +167,7 @@
             <div class="interface-group-card interface-group-card-live">
                 <div>
                     <div class="section-label">Live Modules</div>
-                    <h2 class="section-title">資料同步、證據檢索與 RAG 輸出</h2>
+                    <h2 class="section-title">三個資料層總覽</h2>
                     <p class="section-sub">
                         Sequence Vault 與 Knowledge Vault 負責建庫，RAG preview 負責把後端文件輸出直接攤在 UI 上檢查。
                     </p>
@@ -184,7 +184,7 @@
             <div class="section-head">
                 <div>
                     <div class="section-label">Live Interface · Data Cache</div>
-                    <h2 class="section-title">把公開蛋白質與基因序列爬進 DB，直接在平台內動態展示</h2>
+                    <h2 class="section-title">Sequence Vault · 序列資料庫快取</h2>
                     <p class="section-sub">
                         這個模組會從 UniProt 與 Ensembl 抓取 protein / gene sequence，寫進 Render PostgreSQL，之後頁面就直接從 DB
                         讀快取，不再只是靜態示範卡片。
@@ -380,7 +380,7 @@
             <div class="section-head">
                 <div>
                     <div class="section-label">Live Interface · ENA Metadata Cache</div>
-                    <h2 class="section-title">把 ENA sequencing run metadata 收進 DB，直接查 study / sample / instrument</h2>
+                    <h2 class="section-title">Sequencing Run Vault · ENA metadata</h2>
                     <p class="section-sub">
                         這個模組會從 ENA Portal API 抓取 sequencing run metadata，寫進 Render PostgreSQL，之後頁面就能直接查詢 study accession、sample accession、library strategy、instrument model 與 FASTQ metadata。
                     </p>
@@ -455,7 +455,7 @@
             <div class="section-head">
                 <div>
                     <div class="section-label">Live Interface · Evidence Cache</div>
-                    <h2 class="section-title">把 UniProt 註釋與 PubMed 摘要整理成可查詢、可匯出的知識庫</h2>
+                    <h2 class="section-title">Knowledge Vault · UniProt + PubMed</h2>
                     <p class="section-sub">
                         這個模組把蛋白質功能註釋和 NCBI 文獻摘要存進 Render PostgreSQL，再整理成 RAG-ready documents。前端可直接搜尋證據，後端可直接輸出 chunk 與
                         metadata 給檢索流程。
@@ -563,17 +563,6 @@
                 <a href="#knowledge-vault" class="btn btn-secondary">查看 Knowledge Vault</a>
                 <a href="#rag-layer" class="btn btn-secondary">查看 RAG Documents</a>
             </div>
-        </section>
-        <!-- ════════ PROTEIN INTERACTION NETWORK ════════ -->
-        <section class="section">
-            <div class="section-head">
-                <div>
-                    <div class="section-label">Protein Network</div>
-                    <h2 class="section-title">蛋白質交互作用網路</h2>
-                    <p class="section-sub">STRING DB 真實數據，可拖曳、縮放。</p>
-                </div>
-            </div>
-            <div id="cytoscape-network"></div>
         </section>
     </main>
 
