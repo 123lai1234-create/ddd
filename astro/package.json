@@ -7,6 +7,8 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "sync-frontend": "node scripts/sync_frontend.mjs",
+    "prebuild": "npm run sync-frontend && node scripts/convert_pages.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
