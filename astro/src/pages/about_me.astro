@@ -83,4 +83,58 @@ import Base from '../layouts/Base.astro';
             <div class="section-label">Education</div>
             <h2 class="section-title">教育背景</h2>
             <div class="card-grid">
-                <div class="card"><div class="tiny">2022 / 09 — 2025 / 08</div><h3>Electronic Engineering</h3><p>National Taipei University of Technology, Taipei Tech。補足系統、電子與工程開發邏輯。</p>
+                <div class="card"><div class="tiny">2022 / 09 — 2025 / 08</div><h3>Electronic Engineering</h3><p>National Taipei University of Technology, Taipei Tech。補足系統、電子與工程開發邏輯。</p></div>
+                <div class="card"><div class="tiny">2015 / 09 — 2017 / 08</div><h3>Anatomy and Cell Biology</h3><p>National Yang-Ming University。本站所有生醫與基因體頁面的研究基礎。</p></div>
+                <div class="card"><div class="tiny">Cross-training</div><h3>持續進修與工具訓練</h3><p>涵蓋程式、APP、音訊與相關工具的多種職訓與在職訓練。</p></div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-label">Skills</div>
+            <h2 class="section-title">技能組合</h2>
+            <div class="skills-grid">
+                <div class="skill-card"><div class="tiny">Software</div><h3>程式與開發</h3><p>Java、Python、C，以及前後端網站與應用程式實作能力。</p><div class="tag-row"><span class="tag">Java</span><span class="tag">Python</span><span class="tag">C</span><span class="tag">Frontend</span><span class="tag">App</span></div></div>
+                <div class="skill-card"><div class="tiny">Biomedical</div><h3>生醫與基因體應用</h3><p>生物醫學研究、NGS、變異分析與研究工作流理解。</p><div class="tag-row"><span class="tag">NGS</span><span class="tag">Variant Interpretation</span><span class="tag">Biomedical Research</span><span class="tag">Genomics</span></div></div>
+                <div class="skill-card"><div class="tiny">Translation</div><h3>產品與敘事轉譯</h3><p>醫藥、臨床與智財相關訓練，擅長把技術成果轉譯成產品故事。</p><div class="tag-row"><span class="tag">Product Framing</span><span class="tag">Research Translation</span><span class="tag">Clinical Context</span><span class="tag">IP Awareness</span></div></div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-label">Connect</div>
+            <h2 class="section-title">聯絡我</h2>
+            <div class="contact-layout">
+                <div class="contact-panel">
+                    <div class="tiny">Get in touch</div>
+                    <h3>合作洽詢</h3>
+                    <p>研究合作、產品開發、平台整合，歡迎留言。</p>
+                </div>
+                <form id="contactForm" class="contact-form" novalidate>
+                    <div class="tiny">Leave a message</div>
+                    <h3 style="margin-bottom:8px">合作洽詢 / 聯絡表單</h3>
+                    <div class="form-grid">
+                        <div class="field"><label for="contact-name">姓名</label><input id="contact-name" name="name" type="text" maxlength="120" placeholder="Your name" required></div>
+                        <div class="field"><label for="contact-email">Email</label><input id="contact-email" name="email" type="email" maxlength="255" placeholder="you@example.com" required></div>
+                        <div class="field full"><label for="contact-organization">公司 / 單位</label><input id="contact-organization" name="organization" type="text" maxlength="160" placeholder="Lab, company, hospital, startup..."></div>
+                        <div class="field full"><label for="contact-message">訊息內容</label><textarea id="contact-message" name="message" maxlength="4000" placeholder="想聊的主題、合作方向、研究需求或平台想法" required></textarea></div>
+                        <input class="hp-field" name="website" type="text" tabindex="-1" autocomplete="off">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="contactSubmitBtn">送出留言</button>
+                    <div id="contactStatus" class="form-status" data-state="idle" role="status" aria-live="polite">連線確認中…</div>
+                </form>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-label">Links</div>
+            <h2 class="section-title">延伸入口</h2>
+            <div class="link-grid">
+                <div class="link-card"><div class="tiny">External</div><h3>個人網站首頁</h3><p>Wix 原始個人站，包含 About Me、Research Blog 與作品入口。</p><a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer">前往網站</a></div>
+                <div class="link-card"><div class="tiny">External</div><h3>About Me 原頁</h3><p>保留原始 About Me 版面，方便比對本站本地化整理後的版本。</p><a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer">開啟 About Me</a></div>
+                <div class="link-card"><div class="tiny">External</div><h3>LinkedIn</h3><p>補充履歷與社群身份入口。</p><a href="https://www.linkedin.com/in/ctlai" target="_blank" rel="noreferrer">前往 LinkedIn</a></div>
+            </div>
+        </section>
+    </main>
+
+    <div data-site-footer></div>
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+</Base>
