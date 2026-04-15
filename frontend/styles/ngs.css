@@ -661,7 +661,7 @@ footer {
 }
 
 /* ── Scroll reveal ── */
-.reveal {
+.js-reveal .reveal:not(.visible) {
   opacity: 0;
   transform: translateY(20px);
   transition:

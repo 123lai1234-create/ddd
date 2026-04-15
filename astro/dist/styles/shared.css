@@ -191,7 +191,7 @@ nav {
 }
 
 /* ─── Scroll reveal ───────────────────────────────────────── */
-.reveal {
+.js-reveal .reveal:not(.visible) {
   opacity: 0;
   transform: translateY(22px);
   transition:

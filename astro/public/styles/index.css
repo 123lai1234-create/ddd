@@ -728,7 +728,7 @@ footer {
 }
 
 /* ─── Fade-in on scroll ──────────────────────────────────────────── */
-.reveal {
+.js-reveal .reveal:not(.visible) {
   opacity: 0;
   transform: translateY(24px);
   transition:
