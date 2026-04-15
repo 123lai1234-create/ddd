@@ -470,19 +470,13 @@ async function loadSequenceCache(autoSyncIfEmpty = true) {
 
         setSequenceStatus(`已載入 ${sequenceVaultState.records.protein.length} 筆 protein 與 ${sequenceVaultState.records.gene.length} 筆 gene 快取。`, 'success');
     } catch (error) {
-        // backend unavailable — try localStorage cache, then direct API sync
+        // backend unavailable — try localStorage cache, then direct API sync, then demo fallback
         const hasCached = _loadSequenceDirectCache();
         if (!hasCached) {
             if (autoSyncIfEmpty) {
-                await _syncSequenceDirect().catch((e2) =>
-                    setSequenceStatus(`後端與直接抓取均失敗：${e2.message}`, 'error')
-                );
+                await _syncSequenceDirect().catch(() => _seedSequenceDemo());
             } else {
-                renderSequenceSummary();
-                renderSequenceTabs();
-                renderSequenceFilterOptions();
-                renderSequenceFeed();
-                setSequenceStatus(`後端不可用（${error.message}）。可按「同步」從 UniProt / Ensembl 直接抓取。`, 'error');
+                _seedSequenceDemo();
             }
         }
     } finally {
