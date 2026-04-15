@@ -1,8 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "mkdir -p public && cp -r frontend/. public/",
-  "outputDirectory": "public",
+  "outputDirectory": "frontend",
   "env": {
     "API_PROXY_TARGET": "https://donttalk-api-production.up.railway.app"
   },
