@@ -164,7 +164,7 @@ jobs:
       - name: Prepare Vercel output directory
         run: |
           mkdir -p .vercel/output/static
-          cp -r dist/. .vercel/output/static/
+          cp -r astro/dist/. .vercel/output/static/
           node ./scripts/write_vercel_output_config.mjs
 
       - name: Check Vercel credentials
