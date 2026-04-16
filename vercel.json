@@ -1,3 +1,4 @@
+
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd astro && npm ci",
@@ -14,48 +15,28 @@
     {
       "source": "/api/:path*",
       "destination": "https://donttalk-api-production.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/interview",
+      "destination": "/interview_prep"
     }
   ],
   "redirects": [
-    {
-      "source": "/about",
-      "destination": "/about_me.html",
-      "permanent": true
-    },
-    {
-      "source": "/works",
-      "destination": "/works.html",
-      "permanent": true
-    },
-    {
-      "source": "/gene-ai",
-      "destination": "/gene_ai.html",
-      "permanent": true
-    },
-    {
-      "source": "/ngs",
-      "destination": "/ngs.html",
-      "permanent": true
-    },
-    {
-      "source": "/report",
-      "destination": "/report.html",
-      "permanent": true
-    },
-    {
-      "source": "/thesis",
-      "destination": "/thesis.html",
-      "permanent": true
-    },
-    {
-      "source": "/game.html",
-      "destination": "/games/breakout.html",
-      "permanent": true
-    },
-    {
-      "source": "/games",
-      "destination": "/games/",
-      "permanent": false
-    }
+    { "source": "/about_me.html",       "destination": "/about",        "permanent": true },
+    { "source": "/about_me",            "destination": "/about",        "permanent": true },
+    { "source": "/works.html",          "destination": "/works",        "permanent": true },
+    { "source": "/gene_ai.html",        "destination": "/gene-ai",      "permanent": true },
+    { "source": "/gene_ai",             "destination": "/gene-ai",      "permanent": true },
+    { "source": "/ngs.html",            "destination": "/ngs",          "permanent": true },
+    { "source": "/report.html",         "destination": "/report",       "permanent": true },
+    { "source": "/thesis.html",         "destination": "/thesis",       "permanent": true },
+    { "source": "/protein_mpnn.html",   "destination": "/protein-mpnn", "permanent": true },
+    { "source": "/protein_mpnn",        "destination": "/protein-mpnn", "permanent": true },
+    { "source": "/interview_prep.html", "destination": "/interview",    "permanent": true },
+    { "source": "/interview_prep",      "destination": "/interview",    "permanent": true },
+    { "source": "/index.html",          "destination": "/",             "permanent": true },
+    { "source": "/game.html",           "destination": "/games/breakout.html", "permanent": true },
+    { "source": "/games",               "destination": "/games/",       "permanent": false }
   ]
 }
+

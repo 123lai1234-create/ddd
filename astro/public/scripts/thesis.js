@@ -1255,7 +1255,7 @@ async function rerunGA() {
     }
 
     // Try real TWSE price data; fall back to synthetic if unavailable.
-    const realData = await fetchRealPriceSeries(stock.code);
+    const realData = await Promise.race([     fetchRealPriceSeries(stock.code),     new Promise((resolve) => setTimeout(() => resolve(null), 4000)), ]);
     if (!realData || realData.closes.length < 50) {
         if (SERIES_CACHE.get(stock.code)?.isReal) {
             SERIES_CACHE.delete(stock.code);
@@ -1411,7 +1411,7 @@ async function fetchRealPriceSeries(symbol) {
         // Try DB bars first
         const params = new URLSearchParams({ symbol, limit: 2000, asset_type: 'stock' });
         const res = await fetch(`${apiBase}/api/market/bars?${params}`, {
-            signal: AbortSignal.timeout(10000),
+           signal: AbortSignal.timeout(3000),
         });
         if (res.ok) {
             const payload = await res.json();
@@ -1437,7 +1437,7 @@ async function fetchYahooDirect(apiBase, symbol) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ symbols: [symbol], range: '2y' }),
-            signal: AbortSignal.timeout(15000),
+            signal: AbortSignal.timeout(5000),
         });
         if (!res.ok) return null;
         const data = await res.json();
@@ -1517,7 +1517,7 @@ async function resolveMarketApiBase() {
     const candidates = deriveMarketApiCandidates();
     for (const candidate of candidates) {
         try {
-            const response = await fetch(`${candidate}/healthz`);
+           const response = await fetch(`${candidate}/healthz`, { signal: AbortSignal.timeout(2500) });
             if (!response.ok) {
                 continue;
             }
