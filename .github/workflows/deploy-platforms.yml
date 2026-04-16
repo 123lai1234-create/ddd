@@ -259,7 +259,7 @@ jobs:
         if: steps.vercel_preflight.outputs.enabled == 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: npx --yes vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
+        run: npx --yes vercel deploy --prod --yes --token="$VERCEL_TOKEN"
 
       - name: Warn about Vercel permissions
         if: steps.vercel_preflight.outputs.enabled == 'true' && failure()

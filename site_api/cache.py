@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -51,10 +52,8 @@ def cache_set(namespace: str, key: str, value: str, ttl: int = 3600) -> None:
     r = get_redis_client()
     if not r:
         return
-    try:
+    with contextlib.suppress(Exception):
         r.set(f"{namespace}:{key}", value, ex=ttl)
-    except Exception:
-        pass
 
 
 def cached_json_get(namespace: str, key: str) -> dict | list | None:
@@ -68,7 +67,5 @@ def cached_json_get(namespace: str, key: str) -> dict | list | None:
 
 
 def cached_json_set(namespace: str, key: str, data: Any, ttl: int = 3600) -> None:
-    try:
+    with contextlib.suppress(Exception):
         cache_set(namespace, key, json.dumps(data, default=str), ttl)
-    except Exception:
-        pass

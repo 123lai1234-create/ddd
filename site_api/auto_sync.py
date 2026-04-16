@@ -50,7 +50,7 @@ def _table_is_empty(table_name: str) -> bool:
             exists = cur.fetchone()[0]
             if not exists:
                 return True
-            cur.execute(f"SELECT 1 FROM {table_name} LIMIT 1")  # noqa: S608
+            cur.execute(f"SELECT 1 FROM {table_name} LIMIT 1")
             return cur.fetchone() is None
     except Exception:
         return True

@@ -6,7 +6,7 @@ import json
 import logging
 
 from site_api.cache import cached_json_get, cached_json_set
-from site_api.http_client import get as http_get, post as http_post
+from site_api.http_client import get as http_get
 from site_api.knowledge_sources import KnowledgeRecordPayload
 
 logger = logging.getLogger(__name__)
@@ -134,7 +134,7 @@ def fetch_expression_atlas(gene_symbol: str, limit: int = 8) -> list[KnowledgeRe
 
     try:
         resp = http_get(
-            f"https://www.ebi.ac.uk/gxa/json/experiments",
+            "https://www.ebi.ac.uk/gxa/json/experiments",
             params={"geneQuery": gene_symbol, "species": "Homo sapiens"},
             timeout=REQUEST_TIMEOUT,
         )
