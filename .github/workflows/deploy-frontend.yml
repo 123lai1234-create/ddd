@@ -109,15 +109,18 @@ jobs:
             -H "Authorization: Bearer $VERCEL_TOKEN" \
             | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); ['status','readyState','errorCode','errorMessage','errorStep','buildSkipped','source','meta'].forEach(k=>{ if(d[k]!=null) console.log(k+':',JSON.stringify(d[k]).slice(0,300)) })" 2>/dev/null || echo "detail failed"
           # Get build event logs
-          echo "=== Build logs ==="
-          curl -sf "https://api.vercel.com/v2/deployments/$DEPLOY_ID/events?teamId=$VERCEL_ORG_ID&direction=forward&limit=100" \
-            -H "Authorization: Bearer $VERCEL_TOKEN" -o /tmp/ev.json 2>/dev/null && \
-          node -e "
-            const raw=require('fs').readFileSync('/tmp/ev.json','utf8');
-            const d=JSON.parse(raw);
-            const arr=Array.isArray(d)?d:(d.events||[]);
-            arr.forEach(e=>{const t=e.payload?.text||e.text||'';if(t)console.log(e.type,t.slice(0,300))});
-          " 2>/dev/null | tail -40 || echo "no build logs"
+          echo "=== All recent deployments (all sources) ==="
+          curl -sf "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&limit=5" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); (d.deployments||[]).forEach(x=>console.log(x.uid,x.state,x.source||'?',x.url))"
+          echo "=== Build events for latest git deployment ==="
+          GIT_DEP=$(curl -sf "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&limit=10" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); const g=(d.deployments||[]).find(x=>x.source==='git'); process.stdout.write(g?.uid??'')")
+          echo "Git deploy: $GIT_DEP"
+          [ -n "$GIT_DEP" ] && curl -sf "https://api.vercel.com/v2/deployments/$GIT_DEP/events?teamId=$VERCEL_ORG_ID&direction=forward&limit=200&follow=1" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); const a=Array.isArray(d)?d:(d.events||[]); a.forEach(e=>{const t=e.payload?.text||e.text||''; if(t) console.log(e.type,t.slice(0,400))})" | tail -50 || echo "no git logs"
 
       - name: Deploy to Netlify
         continue-on-error: true
