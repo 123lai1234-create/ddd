@@ -54,13 +54,27 @@ jobs:
       - name: Build
         run: cd astro && npm run build
 
+      - name: Vercel diagnostics
+        continue-on-error: true
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          [ -z "$VERCEL_TOKEN" ] && exit 0
+          echo "=== Project domains ==="
+          curl -sf "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID/domains?teamId=$VERCEL_ORG_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); (d.domains||[]).forEach(x=>console.log(x.name,x.verified,x.target||''))" 2>/dev/null || echo "domains API failed"
+          echo "=== Latest production deployments ==="
+          curl -sf "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&limit=3&target=production" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); (d.deployments||[]).forEach(x=>console.log(x.uid,x.state,x.url,x.created))" 2>/dev/null || echo "deployments API failed"
+
       - name: Deploy to Vercel
         continue-on-error: true
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           [ -z "$VERCEL_TOKEN" ] && echo "::warning::VERCEL_TOKEN not set" && exit 0
-          # Deploy source with --prod --no-wait: Vercel builds async and sets production alias automatically
           npx --yes vercel deploy --prod --yes --no-wait --token="$VERCEL_TOKEN" && echo "Deployment queued for production"
 
       - name: Deploy to Netlify
