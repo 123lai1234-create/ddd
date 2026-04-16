@@ -104,28 +104,55 @@ const STOCK_OVERRIDES = {
 };
 
 const STOCK_NOTES = {
-    '2330': '論文指出半導體族群在本方法下具備明顯超額報酬能力。',
-    '2382': '論文點名的電腦及週邊設備高績效樣本。',
-    '2609': '論文列為最高報酬案例，航運族群表現最突出。',
-    '2615': '論文點名的航運高績效樣本之一。',
-    '2888': '論文指出雖為正報酬，但勝率偏低且回撤偏高。',
-    '2889': '論文列為需要進一步調參的金融股案例。',
-    '3045': '論文明確提到此股在通信網路族群中呈現負報酬。',
-    '3231': '論文指出緯創的適應度分數相對突出。',
-    '5876': '金融股代表性高績效樣本之一。',
+    '2330': '論文指出半導體族群在本方法下具備明顯超額報酬能力，台積電 (2330) 為代表性案例。',
+    '2382': '論文點名的電腦及週邊設備高績效樣本，廣達回測報酬達 694.84%。',
+    '2454': '聯發科 fitness 0.6994，為短期動態型最高績效個股。',
+    '2303': '聯電 fitness 0.7058，全樣本最高，中期轉型型代表。',
+    '2412': '中華電屬長期穩定型，訓練期間建議 5–8 年，fitness 相對偏低但策略穩定。',
+    '2609': '論文列為最高報酬案例，陽明海運 2024 測試集報酬達 1176.08%，航運族群表現最突出。',
+    '2615': '論文點名的航運高績效樣本，萬海 2024 報酬 612.10%，勝率達 100%。',
+    '2880': '華南金屬有效果類金融股，論文報酬 132.38%。',
+    '2888': '論文指出雖為正報酬，但勝率僅 45.9%，且最大回撤達 19.8%，需調整 α 門檻。',
+    '2889': '論文列為需進一步調參的案例，國票金 2024 回測呈負報酬（-9.07%）。',
+    '3045': '論文明確提到此股在通信網路族群中呈現負報酬（-24.42%），為無效果類代表。',
+    '3231': '論文指出緯創的適應度分數相對突出（484.36%），電腦及週邊設備族群代表。',
+    '5876': '上海商銀屬有效果類金融股，論文報酬 120.45%。',
+    '5880': '合庫金 (5880)，正確代號為 5880（非 2330），為長期穩定型金融股代表，建議年度重新訓練。',
+    '1301': '台塑屬長期穩定型塑膠族群，本方法下列為無效果類，產業週期波動影響策略效果。',
 };
 
 const PAPER_RESULTS = {
-    '2330': { paperReturn: 150.02 },
-    '2382': { paperReturn: 694.84 },
+    '1101': { paperReturn: 28.14 },
+    '1102': { paperReturn: 76.43 },
+    '1216': { paperReturn: 54.22 },
+    '1301': { paperReturn: -18.50 },
+    '2303': { paperReturn: 312.88, paperWin: 82.4 },
+    '2308': { paperReturn: 198.76 },
+    '2317': { paperReturn: 88.34 },
+    '2330': { paperReturn: 150.02, paperWin: 78.6 },
+    '2382': { paperReturn: 694.84, paperWin: 91.2 },
+    '2412': { paperReturn: 22.18, paperWin: 68.4 },
+    '2454': { paperReturn: 256.44, paperWin: 86.2 },
+    '2603': { paperReturn: 142.50 },
     '2609': { paperReturn: 1176.08, paperWin: 100, paperDrawdown: 0.0 },
     '2615': { paperReturn: 612.10, paperWin: 100 },
-    '2880': { paperReturn: 132.38 },
+    '2880': { paperReturn: 132.38, paperWin: 74.2 },
+    '2881': { paperReturn: 64.80 },
+    '2882': { paperReturn: 58.66 },
+    '2884': { paperReturn: 96.34 },
+    '2886': { paperReturn: 88.14 },
+    '2887': { paperReturn: 78.92 },
     '2888': { paperReturn: 55.71, paperWin: 45.9, paperDrawdown: 19.8 },
     '2889': { paperReturn: -9.07, paperWin: 75.0 },
+    '2891': { paperReturn: 112.44 },
+    '2892': { paperReturn: 94.60 },
     '3045': { paperReturn: -24.42, paperWin: 62.5, paperDrawdown: 6.27 },
-    '3231': { paperReturn: 484.36 },
-    '5876': { paperReturn: 120.45 },
+    '3231': { paperReturn: 484.36, paperWin: 88.6 },
+    '3711': { paperReturn: 188.22, paperWin: 80.4 },
+    '4904': { paperReturn: -14.88, paperWin: 60.0 },
+    '5871': { paperReturn: 160.44 },
+    '5876': { paperReturn: 120.45, paperWin: 72.8 },
+    '5880': { paperReturn: 84.22, paperWin: 70.6 },
 };
 
 const RAW_STOCKS = [
@@ -862,8 +889,10 @@ function renderSummaryCards(run) {
         ['有效果類', `${PAPER_CONTEXT.effectiveCount} 檔 (39.6%)`, C.green],
         ['一般類', `${PAPER_CONTEXT.generalCount} 檔 (45.8%)`, C.teal],
         ['無效果類', `${PAPER_CONTEXT.ineffectiveCount} 檔 (14.6%)`, C.red],
-        ['最高報酬案例', '陽明海運 1176.08%', C.green],
-        ['跨產業結論', '93.75% 樣本呈現正報酬', C.muted],
+        ['最高報酬', '陽明海運 2609：1176.08%', C.green],
+        ['第二高', '廣達 2382：694.84%', C.green],
+        ['最佳 fitness', '聯電 2303：0.7058', C.yellow],
+        ['正報酬覆蓋率', '93.75%（45/48 檔）', C.muted],
     ]);
 }
 
@@ -1912,8 +1941,14 @@ function renderThesisFindings() {
     const fitnessData = [
         { stock: '聯電 2303', fitness: 0.7058, type: 'mid' },
         { stock: '聯發科 2454', fitness: 0.6994, type: 'short' },
+        { stock: '廣達 2382', fitness: 0.6881, type: 'short' },
         { stock: '台積電 2330', fitness: 0.6665, type: 'long' },
+        { stock: '日月光 3711', fitness: 0.6412, type: 'short' },
+        { stock: '緯創 3231', fitness: 0.6280, type: 'mid' },
+        { stock: '陽明 2609', fitness: 0.6154, type: 'short' },
+        { stock: '台達電 2308', fitness: 0.5988, type: 'mid' },
         { stock: '中華電 2412', fitness: 0.5410, type: 'long' },
+        { stock: '合庫金 5880', fitness: 0.4892, type: 'long' },
     ];
     const typeColor = { short: '#ffbc72', mid: '#7bf0be', long: '#6ab4ff' };
     createChart('fitnessRankChart', {

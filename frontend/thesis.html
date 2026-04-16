@@ -322,6 +322,34 @@ for i in range(bm):
 
     <div class="section reveal">
         <div class="section-inner">
+            <div class="section-label">回測結果</div>
+            <h2 class="section-title">最佳策略的測試集表現與交易明細</h2>
+            <p class="section-sub">依 GA 搜尋得到的最佳參數（m / hold / target）回到 2024+ 測試集重跑，疊上買賣訊號、淨值曲線、績效統計與最近 8 筆交易。</p>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title">測試集價格 + 買賣訊號</div>
+                    <div class="chart-box"><canvas id="priceChart"></canvas></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">策略淨值曲線</div>
+                    <div class="chart-box"><canvas id="equityChart"></canvas></div>
+                </div>
+            </div>
+            <div class="grid-2" style="margin-top:18px">
+                <div class="card">
+                    <div class="card-title">績效統計</div>
+                    <div id="perfStats" class="kv-rows"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">近 8 筆交易</div>
+                    <div id="tradeList" class="trade-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section reveal">
+        <div class="section-inner">
             <div class="section-label">演算法模擬</div>
             <h2 class="section-title">GAPPTS 互動模擬器</h2>
             <p class="section-sub">逐代觀察族群適應度如何收斂，以及最優染色體如何在 4 維參數空間中逼近所選個股的最佳策略設定。</p>
@@ -379,7 +407,7 @@ for i in range(bm):
                 <div class="card" style="border-top:3px solid var(--blue)">
                     <div class="card-title" style="color:var(--blue)">長期穩定型 · 5–8 年</div>
                     <div style="font-size:.82rem;line-height:1.9;color:var(--muted);margin-top:6px">
-                        中華電 (2412) · 台塑 (1301) · 合庫金 (2330)<br>
+                        中華電 (2412) · 台塑 (1301) · 合庫金 (5880)<br>
                         <span style="color:var(--dim)">產業特性穩定、現金流可預期</span><br>
                         <span style="color:var(--green);font-weight:600">建議：</span>年度重新訓練
                     </div>
