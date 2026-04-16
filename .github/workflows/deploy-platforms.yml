@@ -25,6 +25,24 @@ env:
   VERCEL_PROJECT_ID: prj_Knbnl6axKI8AQJApFYlIx2sQ4aXV
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check backend paths
+        id: filter
+        run: |
+          git fetch origin main --depth=2 2>/dev/null || true
+          changed=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          if echo "$changed" | grep -qE '^(site_api/|Dockerfile|src/)'; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend=false" >> "$GITHUB_OUTPUT"
+          fi
+
   lint-and-test:
     name: Lint & Tests
     runs-on: ubuntu-latest
@@ -47,9 +65,10 @@ jobs:
 
   deploy-railway:
     name: Deploy Railway API
-    needs: lint-and-test
+    needs: [lint-and-test, changes]
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     continue-on-error: true
     steps:
       - name: Checkout
@@ -133,12 +152,12 @@ jobs:
           API_BASE_URL: ${{ steps.railway_domain.outputs.domain }}
         run: |
           base_url="${API_BASE_URL:-https://donttalk-api-production.up.railway.app}"
-          for attempt in 1 2 3 4 5 6; do
+          for attempt in 1 2 3; do
             if curl -fsS "$base_url/healthz" >/dev/null; then
               echo "Railway health check passed at $base_url"
               exit 0
             fi
-            echo "Waiting for Railway health check ($attempt/6) ..."
+            echo "Waiting for Railway health check ($attempt/3) ..."
             sleep 10
           done
           echo "::warning::Railway health did not return 200 before timeout"

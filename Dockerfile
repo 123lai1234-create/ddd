@@ -3,8 +3,10 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
+RUN pip install --no-cache-dir uv
+
 COPY site_api/requirements.txt ./
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN uv pip install --no-cache --system --prefix=/install -r requirements.txt
 
 # ---------- runtime stage ----------
 FROM python:3.11-slim
