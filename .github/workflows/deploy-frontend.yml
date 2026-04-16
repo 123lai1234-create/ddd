@@ -66,7 +66,19 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           [ -z "$VERCEL_TOKEN" ] && echo "::warning::VERCEL_TOKEN not set" && exit 0
-          npx --yes vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
+          # Deploy prebuilt output (no remote build); capture URL; promote via API
+          DEPLOY_URL=$(npx --yes vercel deploy --prebuilt --yes --token="$VERCEL_TOKEN" 2>&1 | grep -E '^https://' | tail -1)
+          echo "Deployed: $DEPLOY_URL"
+          [ -z "$DEPLOY_URL" ] && echo "::warning::Could not get deployment URL" && exit 0
+          # Get deployment ID and promote to production
+          DEPLOY_ID=$(curl -sf "https://api.vercel.com/v13/deployments?url=${DEPLOY_URL#https://}&teamId=$VERCEL_ORG_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" | node -e "process.stdout.write(require('fs').readFileSync(0,'utf8'))" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(d.deployments?.[0]?.uid ?? '')" 2>/dev/null || true)
+          if [ -n "$DEPLOY_ID" ]; then
+            curl -sf -X POST "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/promote/$DEPLOY_ID?teamId=$VERCEL_ORG_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" && echo "Promoted $DEPLOY_ID to production"
+          else
+            echo "::warning::Could not resolve deployment ID; skipping promote"
+          fi
 
       - name: Deploy to Netlify
         continue-on-error: true
