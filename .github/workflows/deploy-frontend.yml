@@ -103,11 +103,19 @@ jobs:
             [ "$STATE" = "READY" ] || [ "$STATE" = "ERROR" ] || [ "$STATE" = "CANCELED" ] && break
             sleep 10
           done
-          # Full deployment details + error message
+          # Full deployment details
           echo "=== Full deploy detail ==="
           curl -sf "https://api.vercel.com/v13/deployments/$DEPLOY_ID?teamId=$VERCEL_ORG_ID" \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); ['status','readyState','errorCode','errorMessage','errorStep','buildSkipped','source','meta'].forEach(k=>{ if(d[k]!=null) console.log(k+':',JSON.stringify(d[k]).slice(0,300)) })" 2>/dev/null || echo "detail failed"
+            -H "Authorization: Bearer $VERCEL_TOKEN" -o /tmp/dep.json 2>/dev/null && \
+          node -e "
+            const d=require('/tmp/dep.json');
+            // Print all scalar/simple fields
+            Object.entries(d).forEach(([k,v])=>{
+              if(v==null) return;
+              if(typeof v==='object') console.log(k+':',JSON.stringify(v).slice(0,500));
+              else console.log(k+':',String(v).slice(0,300));
+            });
+          " 2>/dev/null | head -60 || echo "detail failed"
           # Get build event logs
           echo "=== All recent deployments (all sources) ==="
           curl -sf "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&limit=5" \
