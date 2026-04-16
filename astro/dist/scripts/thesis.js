@@ -219,6 +219,18 @@ function createRng(seed) {
     };
 }
 
+function countUp(el, endValue, format, duration = 700) {
+    if (!el) return;
+    const t0 = performance.now();
+    const tick = (now) => {
+        const p = Math.min((now - t0) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = format(endValue * eased);
+        if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+}
+
 function formatPercent(value, digits = 1) {
     return `${roundTo(value, digits).toFixed(digits)}%`;
 }
@@ -1254,14 +1266,34 @@ async function rerunGA() {
         document.getElementById('btnPlay').textContent = '▶ 自動播放';
     }
 
-    // Require real TWSE price data — do not fall back to synthetic.
-    const realData = await fetchRealPriceSeries(stock.code);
+    // Use pre-cached real data only (populated by "同步真實股價" button).
+    // Skip blocking API call so strategy renders immediately with synthetic data.
+    const realData = REAL_PRICE_CACHE.get(stock.code) || null;
     if (!realData || realData.closes.length < 50) {
         if (SERIES_CACHE.get(stock.code)?.isReal) {
             SERIES_CACHE.delete(stock.code);
         }
-        status.textContent = `⚠ ${stock.name} 尚未取得真實股價，請點「📡 同步真實股價」後重試`;
-        button.disabled = false;
+        // Use synthetic data so charts always render
+        const synth = getStockSeries(stock);
+        if (!SERIES_CACHE.has(stock.code)) SERIES_CACHE.set(stock.code, synth);
+        const dataSource = '模擬數據（點「📡 同步真實股價」可改用真實 TWSE）';
+        status.textContent = `⏳ ${stock.name} · ${dataSource} · POP=${config.POP} · GENS=${config.GENS} 計算中…`;
+        setTimeout(() => {
+            try {
+                const run = runSimulation(stock, config);
+                uiState.currentRun = run;
+                renderAll(run);
+                status.textContent = `✓ 完成 [${dataSource}]：${stock.name} 最佳 fitness ${formatValue(run.best.bestFit, 3)}`;
+                const priceCanvas = document.getElementById('priceChart');
+                if (priceCanvas) {
+                    const target = priceCanvas.closest('.section') || priceCanvas;
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            } catch (err) {
+                status.textContent = `⚠ 計算錯誤：${err.message}`;
+            }
+            button.disabled = false;
+        }, 20);
         return;
     }
 
@@ -1858,6 +1890,11 @@ function initMarketOps() {
 
 function initialisePage() {
     renderHeroStats();
+    // Count-up animation for numeric hero stats
+    countUp(document.getElementById('statSharpe'), PAPER_CONTEXT.positiveRate,
+        (v) => `${v.toFixed(2)}%`, 900);
+    countUp(document.getElementById('statReturn'), PAPER_CONTEXT.universeSize,
+        (v) => String(Math.round(v)), 700);
     renderStaticCards();
     try { renderThesisFindings(); } catch (err) { console.warn('renderThesisFindings failed:', err); }
     populateFilters();
@@ -2080,4 +2117,8 @@ window.getThesisPyodideContext = function () {
     };
 };
 
-initialisePage();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialisePage);
+} else {
+    initialisePage();
+}

@@ -1,0 +1,406 @@
+import { c as createComponent } from './astro-component_DIKdwFAr.mjs';
+import 'piccolore';
+import { a as renderTemplate } from './prerender_OQTAnlvW.mjs';
+import 'clsx';
+
+var __freeze = Object.freeze;
+var __defProp = Object.defineProperty;
+var __template = (cooked, raw) => __freeze(__defProp(cooked, "raw", { value: __freeze(raw || cooked.slice()) }));
+var _a;
+const $$Index = createComponent(async ($$result, $$props, $$slots) => {
+  const Astro2 = $$result.createAstro($$props, $$slots);
+  Astro2.self = $$Index;
+  return renderTemplate(_a || (_a = __template([`\`\`\`astro
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+    title="工程 × 生醫 × AI 平台作品集"
+    description="工程與生醫雙碩士背景，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。"
+    bodyPage="index"
+    pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css"]}
+    pageScripts={["/scripts/app-config.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js"]}
+>
+    <div data-site-nav></div>
+    <section id="hero" style="padding:0;max-width:none">
+        <div class="hero-canvas"></div>
+        <div class="grid-bg"></div>
+        <div class="hero-content">
+            <div class="hero-eyebrow"><span class="live-dot"></span>Engineer · Biomedical · AI Platforms</div>
+            <h1 class="hero-title">工程、生醫與<br /><span class="grad">AI 平台作品集</span></h1>
+            <p class="hero-sub">雙碩士跨域背景，把生醫研究轉成可操作的 AI 系統。</p>
+            <div class="hero-tags">
+                <span class="htag">Python</span>
+                <span class="htag">FastAPI</span>
+                <span class="htag htag-green">Protein AI</span>
+                <span class="htag htag-green">NGS</span>
+                <span class="htag htag-purple">ESM-2</span>
+                <span class="htag">React</span>
+            </div>
+            <div class="hero-ctas"><a href="/about" class="btn btn-primary">認識我</a><a href="/works" class="btn btn-outline">作品總覽</a><a href="/gene-ai" class="btn btn-ghost">基因 AI 平台 →</a></div>
+            <div class="hero-stats">
+                <div class="hero-stat"><div class="val">雙碩士</div><div class="lbl">電資 × 生醫</div></div>
+                <div class="hero-stat"><div class="val">3 AI 平台</div><div class="lbl">Protein · Gene · NGS</div></div>
+                <div class="hero-stat"><div class="val">全端輸出</div><div class="lbl">研究 → 介面 → 系統</div></div>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>向下滑動</span><div class="scroll-arrow"></div></div>
+    </section>
+    <hr class="divider" />
+    <section id="creator">
+        <div class="reveal">
+            <div class="section-label">關於我</div>
+            <h2 class="section-title">工程與生醫的跨域能力線</h2>
+            <p class="section-sub">電資工程與生物醫學的雙碩士訓練，加上研究與產品實作的第一線經驗，讓這裡展示的每個作品都有真實意義的背景支撐。</p>
+        </div>
+        <div class="metrics-grid reveal">
+            <div class="metric-card"><div class="mval">雙碩士</div><div class="mlabel">電資 × 生醫跨域背景</div><div class="mdetail">同時具備工程設計與生物醫學研究的訓練，站在研究與產品交界上進行有深度的跨域設計。</div></div>
+            <div class="metric-card"><div class="mval">2020–Now</div><div class="mlabel">前後端介面與應用開發</div><div class="mdetail">持續投入網站、應用程式與互動介面開發，能把研究模型轉成可操作的平台。</div></div>
+            <div class="metric-card"><div class="mval">2014–2019</div><div class="mlabel">生物醫學研究工作</div><div class="mdetail">涵蓋臨床與研究場景的第一手經驗，直接支撐 NGS、變異解讀與生物資料流程的設計判斷。</div></div>
+        </div>
+        <div class="charts-grid reveal">
+            <div class="chart-card">
+                <h3>背景與能力摘要</h3>
+                <div class="card-heading">工程 × 生醫 × 產品實作</div>
+                <p class="card-body">具備電資與生醫雙碩士學位，擁有醫藥行銷與臨床訓練的第一手經歷，曾協助團隊取得國家新創獎與 2 項發明專利。站內的蛋白質 AI、NGS 與基因 AI 頁面，是同一條跨域能力線上的不同實作，而非零散單點展示。</p>
+                <div class="card-ctas">
+                    <a href="/about" class="btn btn-outline btn-sm">本地 About Me</a>
+                    <a href="/works" class="btn btn-outline btn-sm">本地作品總覽</a>
+                    <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer" class="btn btn-outline btn-sm">個人網站</a>
+                    <a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer" class="btn btn-outline btn-sm">About Me</a>
+                    <a href="https://jtlai0921.wixsite.com/mysite/research-blog" target="_blank" rel="noreferrer" class="btn btn-outline btn-sm">Research Blog</a>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>代表作品脈絡</h3>
+                <div class="mini-list">
+                    <div class="mini-item"><div class="mini-item-title">NGS 工作站</div><div class="mini-item-desc">和本站的 NGS 頁面直接對接，能自然延伸成同一套生物資訊與臨床分析敘事。</div></div>
+                    <div class="mini-item"><div class="mini-item-title">自動化機器手臂操作介面</div><div class="mini-item-desc">涵蓋實驗設備與操作流程 UI 的第一線經驗，讓平台同時兼顧資料分析與 lab workflow 整合。</div></div>
+                    <div class="mini-item"><div class="mini-item-title">簡易健康檢測 APP</div><div class="mini-item-desc">將醫療場景轉化為可用的產品介面，與作品集整體的互動平台方向一致。</div></div>
+                    <div class="mini-item"><div class="mini-item-title">資料管理系統</div><div class="mini-item-desc">補齊平台化所需的資料組織、查詢與流程管理能力，將作品集推進到真實系統層級。</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <hr class="divider" />
+    <section id="explore">
+        <div class="reveal">
+            <div class="section-label">深入探索</div>
+            <h2 class="section-title">各主題專頁</h2>
+            <p class="section-sub">每個主題都有獨立頁面，包含完整技術細節、互動圖表與操作介面。</p>
+        </div>
+        <div class="explore-groups reveal">
+            <div class="explore-group">
+                <div class="explore-group-head">
+                    <span class="explore-group-label">Protein</span>
+                    <span class="explore-group-title">蛋白質設計與分析</span>
+                    <span class="explore-group-sub">技術報告 + 可操作工作台兩頁互補</span>
+                </div>
+                <div class="explore-grid explore-grid-2">
+                    <a href="/report" class="explore-card ec-bio"><div class="explore-icon">🧬</div><h3>蛋白質 AI 專案報告</h3><p>端到端 Pipeline 架構、實驗結果圖表、核心演算法數學推導、程式碼庫結構一覽。</p><div class="explore-footer"><span class="explore-tag">Protein AI</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/protein-mpnn" class="explore-card ec-bio"><div class="explore-icon">🧪</div><h3>ProteinMPNN 互動展示</h3><p>獨立工作台頁面，直接操作序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</p><div class="explore-footer"><span class="explore-tag">Interactive</span><span class="explore-arrow">→</span></div></a>
+                </div>
+            </div>
+            <div class="explore-group">
+                <div class="explore-group-head">
+                    <span class="explore-group-label">Genomics</span>
+                    <span class="explore-group-title">基因 AI 與 NGS 定序</span>
+                    <span class="explore-group-sub">從序列快取到實驗設計的完整工作流</span>
+                </div>
+                <div class="explore-grid explore-grid-2">
+                    <a href="/gene-ai" class="explore-card ec-gene"><div class="explore-icon">🔬</div><h3>基因 AI 平台</h3><p>序列資料庫、知識庫、RAG 文件搜尋、啟動子設計、CRISPR 導引排序、變異效應評估。</p><div class="explore-footer"><span class="explore-tag">Gene AI</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/ngs" class="explore-card ec-gene"><div class="explore-icon">📊</div><h3>NGS 次世代定序</h3><p>實驗設計計算器、定序深度估算、QC 到功能分析的完整結果圖表集。</p><div class="explore-footer"><span class="explore-tag">NGS</span><span class="explore-arrow">→</span></div></a>
+                </div>
+            </div>
+            <div class="explore-group">
+                <div class="explore-group-head">
+                    <span class="explore-group-label">Other</span>
+                    <span class="explore-group-title">其他資源</span>
+                    <span class="explore-group-sub">面試準備、作品集總覽、研究論文</span>
+                </div>
+                <div class="explore-grid explore-grid-3">
+                    <a href="/interview" class="explore-card ec-study"><div class="explore-icon">🎯</div><h3>面試準備手冊</h3><p>模擬面試問答、數學推導筆記、Mini Project 完整程式碼、六週衝刺計劃。</p><div class="explore-footer"><span class="explore-tag">Study</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/works" class="explore-card ec-study"><div class="explore-icon">💼</div><h3>作品總覽</h3><p>所有專案卡片篩選、即時 API 統計、跨域作品集一覽。</p><div class="explore-footer"><span class="explore-tag">Portfolio</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/thesis" class="explore-card ec-research"><div class="explore-icon">📝</div><h3>論文 · 遺傳演算法</h3><p>以 48 檔 ETF50 股票池重建 PPTS × GAPPTS，逐檔觀察族群演化、逐檔回測與方法比較。</p><div class="explore-footer"><span class="explore-tag">Research</span><span class="explore-arrow">→</span></div></a>
+                </div>
+            </div>
+        </div>
+    </section>
+    <hr class="divider" />
+    <div data-site-footer></div>
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+    <div id="tsparticles"></div>
+
+    <button id="chatbot-toggle" aria-label="AI 助手">💬</button>
+    <div id="chatbot-panel">
+        <div class="chatbot-header">
+            <h4>AI 助手</h4>
+            <button class="chatbot-close" aria-label="關閉">✕</button>
+        </div>
+        <div id="chatbot-messages">
+            <div class="chat-msg chat-bot">你好！有什麼關於這個作品集的問題嗎？</div>
+        </div>
+        <div class="chatbot-input-row">
+            <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off" />
+            <button id="chatbot-send">送出</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const SYSTEM = \`你是這個作品集網站的 AI 助手。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師。
+專長：ESM-2 蛋白質語言模型、ProteinMPNN、Bayesian Optimization（BoTorch/qLogEI）、REINFORCE RL、
+FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場資料平台。
+請用繁體中文回答，保持專業友善，回答不超過 200 字。只回答與作品集相關的問題。\`;
+
+        let history = [];
+        let busy = false;
+
+        const toggle = document.getElementById('chatbot-toggle');
+        const panel  = document.getElementById('chatbot-panel');
+        const close  = document.querySelector('.chatbot-close');
+        const msgs   = document.getElementById('chatbot-messages');
+        const input  = document.getElementById('chatbot-input');
+        const send   = document.getElementById('chatbot-send');
+
+        toggle.addEventListener('click', () => panel.classList.toggle('open'));
+        close.addEventListener('click',  () => panel.classList.remove('open'));
+        send.addEventListener('click', submit);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) submit(); });
+
+        async function submit() {
+            const text = input.value.trim();
+            if (!text || busy) return;
+            input.value = '';
+            addMsg('user', text);
+            history.push({ role: 'user', content: text });
+            setBusy(true);
+            try {
+                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 1000,
+                        system: SYSTEM,
+                        messages: history.slice(-10)
+                    })
+                });
+                const data = await res.json();
+                const reply = data.content?.[0]?.text ?? '抱歉，暫時無法回應。';
+                history.push({ role: 'assistant', content: reply });
+                addMsg('bot', reply);
+            } catch {
+                addMsg('bot', '⚠️ 連線失敗，請稍後再試。');
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        function addMsg(role, text) {
+            const d = document.createElement('div');
+            d.className = \`chat-msg chat-$`, "`;\n            d.textContent = text;\n            msgs.appendChild(d);\n            msgs.scrollTop = msgs.scrollHeight;\n        }\n\n        function setBusy(v) {\n            busy = v; send.disabled = v; input.disabled = v;\n            document.getElementById('chat-typing')?.remove();\n            if (v) {\n                const t = document.createElement('div');\n                t.id = 'chat-typing';\n                t.className = 'chat-msg chat-bot chat-typing';\n                t.innerHTML = '<span></span><span></span><span></span>';\n                msgs.appendChild(t);\n                msgs.scrollTop = msgs.scrollHeight;\n            }\n        }\n    })();\n    <\/script>\n</Base>"], [`\\\`\\\`\\\`astro
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+    title="工程 × 生醫 × AI 平台作品集"
+    description="工程與生醫雙碩士背景，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。"
+    bodyPage="index"
+    pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css"]}
+    pageScripts={["/scripts/app-config.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js"]}
+>
+    <div data-site-nav></div>
+    <section id="hero" style="padding:0;max-width:none">
+        <div class="hero-canvas"></div>
+        <div class="grid-bg"></div>
+        <div class="hero-content">
+            <div class="hero-eyebrow"><span class="live-dot"></span>Engineer · Biomedical · AI Platforms</div>
+            <h1 class="hero-title">工程、生醫與<br /><span class="grad">AI 平台作品集</span></h1>
+            <p class="hero-sub">雙碩士跨域背景，把生醫研究轉成可操作的 AI 系統。</p>
+            <div class="hero-tags">
+                <span class="htag">Python</span>
+                <span class="htag">FastAPI</span>
+                <span class="htag htag-green">Protein AI</span>
+                <span class="htag htag-green">NGS</span>
+                <span class="htag htag-purple">ESM-2</span>
+                <span class="htag">React</span>
+            </div>
+            <div class="hero-ctas"><a href="/about" class="btn btn-primary">認識我</a><a href="/works" class="btn btn-outline">作品總覽</a><a href="/gene-ai" class="btn btn-ghost">基因 AI 平台 →</a></div>
+            <div class="hero-stats">
+                <div class="hero-stat"><div class="val">雙碩士</div><div class="lbl">電資 × 生醫</div></div>
+                <div class="hero-stat"><div class="val">3 AI 平台</div><div class="lbl">Protein · Gene · NGS</div></div>
+                <div class="hero-stat"><div class="val">全端輸出</div><div class="lbl">研究 → 介面 → 系統</div></div>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>向下滑動</span><div class="scroll-arrow"></div></div>
+    </section>
+    <hr class="divider" />
+    <section id="creator">
+        <div class="reveal">
+            <div class="section-label">關於我</div>
+            <h2 class="section-title">工程與生醫的跨域能力線</h2>
+            <p class="section-sub">電資工程與生物醫學的雙碩士訓練，加上研究與產品實作的第一線經驗，讓這裡展示的每個作品都有真實意義的背景支撐。</p>
+        </div>
+        <div class="metrics-grid reveal">
+            <div class="metric-card"><div class="mval">雙碩士</div><div class="mlabel">電資 × 生醫跨域背景</div><div class="mdetail">同時具備工程設計與生物醫學研究的訓練，站在研究與產品交界上進行有深度的跨域設計。</div></div>
+            <div class="metric-card"><div class="mval">2020–Now</div><div class="mlabel">前後端介面與應用開發</div><div class="mdetail">持續投入網站、應用程式與互動介面開發，能把研究模型轉成可操作的平台。</div></div>
+            <div class="metric-card"><div class="mval">2014–2019</div><div class="mlabel">生物醫學研究工作</div><div class="mdetail">涵蓋臨床與研究場景的第一手經驗，直接支撐 NGS、變異解讀與生物資料流程的設計判斷。</div></div>
+        </div>
+        <div class="charts-grid reveal">
+            <div class="chart-card">
+                <h3>背景與能力摘要</h3>
+                <div class="card-heading">工程 × 生醫 × 產品實作</div>
+                <p class="card-body">具備電資與生醫雙碩士學位，擁有醫藥行銷與臨床訓練的第一手經歷，曾協助團隊取得國家新創獎與 2 項發明專利。站內的蛋白質 AI、NGS 與基因 AI 頁面，是同一條跨域能力線上的不同實作，而非零散單點展示。</p>
+                <div class="card-ctas">
+                    <a href="/about" class="btn btn-outline btn-sm">本地 About Me</a>
+                    <a href="/works" class="btn btn-outline btn-sm">本地作品總覽</a>
+                    <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer" class="btn btn-outline btn-sm">個人網站</a>
+                    <a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer" class="btn btn-outline btn-sm">About Me</a>
+                    <a href="https://jtlai0921.wixsite.com/mysite/research-blog" target="_blank" rel="noreferrer" class="btn btn-outline btn-sm">Research Blog</a>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>代表作品脈絡</h3>
+                <div class="mini-list">
+                    <div class="mini-item"><div class="mini-item-title">NGS 工作站</div><div class="mini-item-desc">和本站的 NGS 頁面直接對接，能自然延伸成同一套生物資訊與臨床分析敘事。</div></div>
+                    <div class="mini-item"><div class="mini-item-title">自動化機器手臂操作介面</div><div class="mini-item-desc">涵蓋實驗設備與操作流程 UI 的第一線經驗，讓平台同時兼顧資料分析與 lab workflow 整合。</div></div>
+                    <div class="mini-item"><div class="mini-item-title">簡易健康檢測 APP</div><div class="mini-item-desc">將醫療場景轉化為可用的產品介面，與作品集整體的互動平台方向一致。</div></div>
+                    <div class="mini-item"><div class="mini-item-title">資料管理系統</div><div class="mini-item-desc">補齊平台化所需的資料組織、查詢與流程管理能力，將作品集推進到真實系統層級。</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <hr class="divider" />
+    <section id="explore">
+        <div class="reveal">
+            <div class="section-label">深入探索</div>
+            <h2 class="section-title">各主題專頁</h2>
+            <p class="section-sub">每個主題都有獨立頁面，包含完整技術細節、互動圖表與操作介面。</p>
+        </div>
+        <div class="explore-groups reveal">
+            <div class="explore-group">
+                <div class="explore-group-head">
+                    <span class="explore-group-label">Protein</span>
+                    <span class="explore-group-title">蛋白質設計與分析</span>
+                    <span class="explore-group-sub">技術報告 + 可操作工作台兩頁互補</span>
+                </div>
+                <div class="explore-grid explore-grid-2">
+                    <a href="/report" class="explore-card ec-bio"><div class="explore-icon">🧬</div><h3>蛋白質 AI 專案報告</h3><p>端到端 Pipeline 架構、實驗結果圖表、核心演算法數學推導、程式碼庫結構一覽。</p><div class="explore-footer"><span class="explore-tag">Protein AI</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/protein-mpnn" class="explore-card ec-bio"><div class="explore-icon">🧪</div><h3>ProteinMPNN 互動展示</h3><p>獨立工作台頁面，直接操作序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</p><div class="explore-footer"><span class="explore-tag">Interactive</span><span class="explore-arrow">→</span></div></a>
+                </div>
+            </div>
+            <div class="explore-group">
+                <div class="explore-group-head">
+                    <span class="explore-group-label">Genomics</span>
+                    <span class="explore-group-title">基因 AI 與 NGS 定序</span>
+                    <span class="explore-group-sub">從序列快取到實驗設計的完整工作流</span>
+                </div>
+                <div class="explore-grid explore-grid-2">
+                    <a href="/gene-ai" class="explore-card ec-gene"><div class="explore-icon">🔬</div><h3>基因 AI 平台</h3><p>序列資料庫、知識庫、RAG 文件搜尋、啟動子設計、CRISPR 導引排序、變異效應評估。</p><div class="explore-footer"><span class="explore-tag">Gene AI</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/ngs" class="explore-card ec-gene"><div class="explore-icon">📊</div><h3>NGS 次世代定序</h3><p>實驗設計計算器、定序深度估算、QC 到功能分析的完整結果圖表集。</p><div class="explore-footer"><span class="explore-tag">NGS</span><span class="explore-arrow">→</span></div></a>
+                </div>
+            </div>
+            <div class="explore-group">
+                <div class="explore-group-head">
+                    <span class="explore-group-label">Other</span>
+                    <span class="explore-group-title">其他資源</span>
+                    <span class="explore-group-sub">面試準備、作品集總覽、研究論文</span>
+                </div>
+                <div class="explore-grid explore-grid-3">
+                    <a href="/interview" class="explore-card ec-study"><div class="explore-icon">🎯</div><h3>面試準備手冊</h3><p>模擬面試問答、數學推導筆記、Mini Project 完整程式碼、六週衝刺計劃。</p><div class="explore-footer"><span class="explore-tag">Study</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/works" class="explore-card ec-study"><div class="explore-icon">💼</div><h3>作品總覽</h3><p>所有專案卡片篩選、即時 API 統計、跨域作品集一覽。</p><div class="explore-footer"><span class="explore-tag">Portfolio</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/thesis" class="explore-card ec-research"><div class="explore-icon">📝</div><h3>論文 · 遺傳演算法</h3><p>以 48 檔 ETF50 股票池重建 PPTS × GAPPTS，逐檔觀察族群演化、逐檔回測與方法比較。</p><div class="explore-footer"><span class="explore-tag">Research</span><span class="explore-arrow">→</span></div></a>
+                </div>
+            </div>
+        </div>
+    </section>
+    <hr class="divider" />
+    <div data-site-footer></div>
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+    <div id="tsparticles"></div>
+
+    <button id="chatbot-toggle" aria-label="AI 助手">💬</button>
+    <div id="chatbot-panel">
+        <div class="chatbot-header">
+            <h4>AI 助手</h4>
+            <button class="chatbot-close" aria-label="關閉">✕</button>
+        </div>
+        <div id="chatbot-messages">
+            <div class="chat-msg chat-bot">你好！有什麼關於這個作品集的問題嗎？</div>
+        </div>
+        <div class="chatbot-input-row">
+            <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off" />
+            <button id="chatbot-send">送出</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const SYSTEM = \\\`你是這個作品集網站的 AI 助手。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師。
+專長：ESM-2 蛋白質語言模型、ProteinMPNN、Bayesian Optimization（BoTorch/qLogEI）、REINFORCE RL、
+FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場資料平台。
+請用繁體中文回答，保持專業友善，回答不超過 200 字。只回答與作品集相關的問題。\\\`;
+
+        let history = [];
+        let busy = false;
+
+        const toggle = document.getElementById('chatbot-toggle');
+        const panel  = document.getElementById('chatbot-panel');
+        const close  = document.querySelector('.chatbot-close');
+        const msgs   = document.getElementById('chatbot-messages');
+        const input  = document.getElementById('chatbot-input');
+        const send   = document.getElementById('chatbot-send');
+
+        toggle.addEventListener('click', () => panel.classList.toggle('open'));
+        close.addEventListener('click',  () => panel.classList.remove('open'));
+        send.addEventListener('click', submit);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) submit(); });
+
+        async function submit() {
+            const text = input.value.trim();
+            if (!text || busy) return;
+            input.value = '';
+            addMsg('user', text);
+            history.push({ role: 'user', content: text });
+            setBusy(true);
+            try {
+                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 1000,
+                        system: SYSTEM,
+                        messages: history.slice(-10)
+                    })
+                });
+                const data = await res.json();
+                const reply = data.content?.[0]?.text ?? '抱歉，暫時無法回應。';
+                history.push({ role: 'assistant', content: reply });
+                addMsg('bot', reply);
+            } catch {
+                addMsg('bot', '⚠️ 連線失敗，請稍後再試。');
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        function addMsg(role, text) {
+            const d = document.createElement('div');
+            d.className = \\\`chat-msg chat-$`, "\\`;\n            d.textContent = text;\n            msgs.appendChild(d);\n            msgs.scrollTop = msgs.scrollHeight;\n        }\n\n        function setBusy(v) {\n            busy = v; send.disabled = v; input.disabled = v;\n            document.getElementById('chat-typing')?.remove();\n            if (v) {\n                const t = document.createElement('div');\n                t.id = 'chat-typing';\n                t.className = 'chat-msg chat-bot chat-typing';\n                t.innerHTML = '<span></span><span></span><span></span>';\n                msgs.appendChild(t);\n                msgs.scrollTop = msgs.scrollHeight;\n            }\n        }\n    })();\n    <\/script>\n</Base>"])), role);
+}, "D:/project/astro/src/pages/index.astro", void 0);
+
+const $$file = "D:/project/astro/src/pages/index.astro";
+const $$url = "";
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+    __proto__: null,
+    default: $$Index,
+    file: $$file,
+    url: $$url
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

@@ -1,4 +1,10 @@
-<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><title>資料抓取 · Ingest Console</title><meta name="description" content="後台資料抓取：蛋白質 / 基因序列 (UniProt / Ensembl)、股票 / ETF / 期貨 (TWSE / Yahoo / TAIFEX)，直接 upsert 到 PostgreSQL。需 X-Sync-Secret。"><meta property="og:title" content="資料抓取 · Ingest Console"><meta property="og:description" content="後台資料抓取：蛋白質 / 基因序列 (UniProt / Ensembl)、股票 / ETF / 期貨 (TWSE / Yahoo / TAIFEX)，直接 upsert 到 PostgreSQL。需 X-Sync-Secret。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og-image.svg"><meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script></head> <body data-page="ingest">  
+import { c as createComponent } from './astro-component_DIKdwFAr.mjs';
+import 'piccolore';
+import { r as renderComponent, a as renderTemplate, F as Fragment, u as unescapeHTML } from './prerender_OQTAnlvW.mjs';
+import { $ as $$Base } from './Base_msUDbCzB.mjs';
+
+const $$Ingest = createComponent(async ($$result, $$props, $$slots) => {
+  const bodyHtml = `
     <div data-site-nav></div>
 
     <section class="ig-hero">
@@ -107,7 +113,7 @@
                     const b = await resolvePortfolioApiBase(); if (b) return b;
                 }
             } catch(e) {}
-            return (window.APP_CONFIG?.API_BASE_URL || '').replace(/\/+$/, '');
+            return (window.APP_CONFIG?.API_BASE_URL || '').replace(/\\/+$/, '');
         }
 
         async function post(path, body) {
@@ -121,7 +127,7 @@
             });
             const text = await res.text();
             let data; try { data = JSON.parse(text); } catch { data = text; }
-            if (!res.ok) { const msg = data?.detail || res.statusText; throw new Error(`HTTP ${res.status}: ${msg}`); }
+            if (!res.ok) { const msg = data?.detail || res.statusText; throw new Error(\`HTTP \${res.status}: \${msg}\`); }
             return data;
         }
 
@@ -136,10 +142,10 @@
                     limit: Number(document.getElementById('igLimit').value) || 4,
                 });
                 const n = (data.stored?.protein || 0) + (data.stored?.gene || 0);
-                setStatus('igSeqStatus', `✓ 寫入 ${n} 筆（蛋白 ${data.stored?.protein || 0} · 基因 ${data.stored?.gene || 0}）`, 'ok');
+                setStatus('igSeqStatus', \`✓ 寫入 \${n} 筆（蛋白 \${data.stored?.protein || 0} · 基因 \${data.stored?.gene || 0}）\`, 'ok');
                 showOut(data);
             } catch (err) {
-                setStatus('igSeqStatus', `✗ ${err.message}`, 'err');
+                setStatus('igSeqStatus', \`✗ \${err.message}\`, 'err');
                 showOut(err.message);
             } finally { btn.disabled = false; }
         }
@@ -158,13 +164,30 @@
                 });
                 const s = data.stored || {};
                 const total = Object.values(s).reduce((a,b) => a + (b.bars || 0), 0);
-                setStatus('igMktStatus', `✓ 寫入 ${total} 筆 bars（stock ${s.stock?.bars||0} · etf ${s.etf?.bars||0} · fut ${s.futures?.bars||0}）`, 'ok');
+                setStatus('igMktStatus', \`✓ 寫入 \${total} 筆 bars（stock \${s.stock?.bars||0} · etf \${s.etf?.bars||0} · fut \${s.futures?.bars||0}）\`, 'ok');
                 showOut(data);
             } catch (err) {
-                setStatus('igMktStatus', `✗ ${err.message}`, 'err');
+                setStatus('igMktStatus', \`✗ \${err.message}\`, 'err');
                 showOut(err.message);
             } finally { btn.disabled = false; }
         }
         window.syncMarket = syncMarket;
-    </script>
-   </body> </html>
+    <\/script>
+`;
+  const headInline = "";
+  return renderTemplate`${renderComponent($$result, "Base", $$Base, { "title": "資料抓取 · Ingest Console", "description": "後台資料抓取：蛋白質 / 基因序列 (UniProt / Ensembl)、股票 / ETF / 期貨 (TWSE / Yahoo / TAIFEX)，直接 upsert 到 PostgreSQL。需 X-Sync-Secret。", "bodyPage": "ingest", "pageStyles": [], "pageScripts": [], "headInline": headInline }, { "default": async ($$result2) => renderTemplate` ${renderComponent($$result2, "Fragment", Fragment, {}, { "default": async ($$result3) => renderTemplate`${unescapeHTML(bodyHtml)}` })} ` })}`;
+}, "D:/project/astro/src/pages/ingest.astro", void 0);
+
+const $$file = "D:/project/astro/src/pages/ingest.astro";
+const $$url = "/ingest.html";
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+    __proto__: null,
+    default: $$Ingest,
+    file: $$file,
+    url: $$url
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

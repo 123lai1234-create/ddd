@@ -1,7 +1,7 @@
 window.SITE_SHELL_CONFIG = {
     index: {
         brandHref: 'index.html',
-        brandHtml: '<span class="dot"></span>工程 × 生醫 AI',
+        brandHtml: '<span class="nav-dot"></span>工程 × 生醫 AI',
         navLinks: [
             { href: 'about_me.html', label: 'About Me' },
             { href: 'works.html', label: '作品總覽' },
@@ -40,7 +40,7 @@ window.SITE_SHELL_CONFIG = {
     },
     about_me: {
         brandHref: 'index.html',
-        brandHtml: '<span class="mark"></span>About Me',
+        brandHtml: '<span class="nav-dot"></span>About Me',
         navLinks: [
             { href: 'works.html', label: '作品總覽' },
             { href: 'gene_ai.html', label: '基因 AI' },
@@ -96,7 +96,7 @@ window.SITE_SHELL_CONFIG = {
     },
     gene_ai: {
         brandHref: 'index.html',
-        brandHtml: '<span class="mark"></span>Genome Data Platform',
+        brandHtml: '<span class="nav-dot"></span>Genome Data Platform',
         navLinks: [
             { href: 'index.html', label: '首頁' },
             { href: 'about_me.html', label: 'About Me' },
@@ -128,7 +128,7 @@ window.SITE_SHELL_CONFIG = {
     },
     ngs: {
         brandHref: 'index.html',
-        brandHtml: '<span class="dot"></span>NGS 定序',
+        brandHtml: '<span class="nav-dot"></span>NGS 定序',
         navLinks: [
             { href: 'about_me.html', label: 'About Me' },
             { href: 'works.html', label: '作品總覽' },
@@ -156,7 +156,7 @@ window.SITE_SHELL_CONFIG = {
     },
     protein_mpnn: {
         brandHref: 'index.html',
-        brandHtml: '<span class="dot"></span>ProteinMPNN Demo',
+        brandHtml: '<span class="nav-dot"></span>ProteinMPNN Demo',
         navLinks: [
             { href: 'index.html', label: '首頁' },
             { href: 'works.html', label: '作品總覽' },

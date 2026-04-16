@@ -182,60 +182,297 @@ async function initGitHubFeed() {
 async function initCytoscape() {
   const container = document.getElementById('cytoscape-network');
   if (!container) return;
+
+  const PATHWAYS = {
+    tp53: {
+      nodes: [
+        {id:'TP53',role:'tumor_suppressor'},{id:'MDM2',role:'e3_ligase'},{id:'BRCA1',role:'dna_repair'},
+        {id:'BARD1',role:'dna_repair'},{id:'ATM',role:'kinase'},{id:'CHEK2',role:'kinase'},
+        {id:'RAD51',role:'dna_repair'},{id:'CDKN2A',role:'tumor_suppressor'},{id:'EP300',role:'tf'},
+        {id:'PTEN',role:'tumor_suppressor'},{id:'RB1',role:'tumor_suppressor'},
+        {id:'PUMA',role:'apoptosis'},{id:'BAX',role:'apoptosis'},{id:'BCL2',role:'apoptosis'},
+        {id:'CASP3',role:'apoptosis'},
+      ],
+      edges: [
+        {s:'TP53',t:'MDM2',score:980},{s:'TP53',t:'BRCA1',score:750},{s:'BRCA1',t:'BARD1',score:970},
+        {s:'MDM2',t:'CDKN2A',score:700},{s:'TP53',t:'ATM',score:850},{s:'BRCA1',t:'RAD51',score:890},
+        {s:'ATM',t:'CHEK2',score:920},{s:'TP53',t:'EP300',score:800},{s:'TP53',t:'PTEN',score:650},
+        {s:'PTEN',t:'RB1',score:600},{s:'TP53',t:'PUMA',score:870},{s:'PUMA',t:'BAX',score:810},
+        {s:'BAX',t:'BCL2',score:750},{s:'BAX',t:'CASP3',score:700},{s:'MDM2',t:'RB1',score:580},
+        {s:'CHEK2',t:'BRCA1',score:720},
+      ]
+    },
+    egfr: {
+      nodes: [
+        {id:'EGFR',role:'kinase'},{id:'GRB2',role:'signaling'},{id:'SOS1',role:'signaling'},
+        {id:'KRAS',role:'signaling'},{id:'BRAF',role:'kinase'},{id:'RAF1',role:'kinase'},
+        {id:'MAP2K1',role:'kinase'},{id:'MAPK1',role:'kinase'},{id:'MAPK3',role:'kinase'},
+        {id:'MYC',role:'tf'},{id:'FOS',role:'tf'},{id:'PIK3CA',role:'kinase'},
+        {id:'AKT1',role:'kinase'},{id:'MTOR',role:'kinase'},
+      ],
+      edges: [
+        {s:'EGFR',t:'GRB2',score:950},{s:'GRB2',t:'SOS1',score:930},{s:'SOS1',t:'KRAS',score:880},
+        {s:'KRAS',t:'BRAF',score:840},{s:'KRAS',t:'RAF1',score:780},{s:'BRAF',t:'MAP2K1',score:900},
+        {s:'RAF1',t:'MAP2K1',score:870},{s:'MAP2K1',t:'MAPK1',score:970},{s:'MAP2K1',t:'MAPK3',score:960},
+        {s:'MAPK1',t:'MYC',score:650},{s:'MAPK1',t:'FOS',score:700},{s:'EGFR',t:'PIK3CA',score:810},
+        {s:'PIK3CA',t:'AKT1',score:890},{s:'AKT1',t:'MTOR',score:820},
+      ]
+    },
+    brca: {
+      nodes: [
+        {id:'BRCA1',role:'dna_repair'},{id:'BRCA2',role:'dna_repair'},{id:'PALB2',role:'dna_repair'},
+        {id:'RAD51',role:'dna_repair'},{id:'RAD52',role:'dna_repair'},{id:'ATM',role:'kinase'},
+        {id:'ATR',role:'kinase'},{id:'CHEK1',role:'kinase'},{id:'CHEK2',role:'kinase'},
+        {id:'FANCD2',role:'dna_repair'},{id:'BARD1',role:'dna_repair'},{id:'TP53',role:'tumor_suppressor'},
+        {id:'RPA1',role:'dna_repair'},
+      ],
+      edges: [
+        {s:'BRCA1',t:'BARD1',score:970},{s:'BRCA1',t:'BRCA2',score:760},{s:'BRCA2',t:'PALB2',score:940},
+        {s:'BRCA2',t:'RAD51',score:920},{s:'PALB2',t:'BRCA1',score:890},{s:'RAD51',t:'RAD52',score:780},
+        {s:'ATM',t:'BRCA1',score:850},{s:'ATM',t:'CHEK2',score:920},{s:'ATR',t:'CHEK1',score:940},
+        {s:'CHEK1',t:'BRCA1',score:720},{s:'FANCD2',t:'BRCA1',score:700},{s:'BRCA1',t:'TP53',score:750},
+        {s:'RAD51',t:'RPA1',score:810},{s:'ATM',t:'TP53',score:850},
+      ]
+    },
+    pi3k: {
+      nodes: [
+        {id:'PIK3CA',role:'kinase'},{id:'PIK3R1',role:'signaling'},{id:'PTEN',role:'tumor_suppressor'},
+        {id:'AKT1',role:'kinase'},{id:'AKT2',role:'kinase'},{id:'MTOR',role:'kinase'},
+        {id:'RPTOR',role:'signaling'},{id:'TSC1',role:'signaling'},{id:'TSC2',role:'signaling'},
+        {id:'RHEB',role:'signaling'},{id:'RPS6KB1',role:'kinase'},{id:'GSK3B',role:'kinase'},
+        {id:'FOXO1',role:'tf'},
+      ],
+      edges: [
+        {s:'PIK3CA',t:'PIK3R1',score:970},{s:'PIK3CA',t:'AKT1',score:890},{s:'PIK3CA',t:'AKT2',score:820},
+        {s:'PTEN',t:'PIK3CA',score:700},{s:'AKT1',t:'MTOR',score:850},{s:'AKT1',t:'TSC2',score:810},
+        {s:'AKT1',t:'GSK3B',score:870},{s:'AKT1',t:'FOXO1',score:790},{s:'MTOR',t:'RPTOR',score:940},
+        {s:'MTOR',t:'RPS6KB1',score:880},{s:'TSC1',t:'TSC2',score:970},{s:'TSC2',t:'RHEB',score:830},
+        {s:'RHEB',t:'MTOR',score:800},
+      ]
+    }
+  };
+
+  const PROTEIN_INFO = {
+    TP53:{en:'Tumor protein p53',role:'轉錄因子，細胞週期與凋亡的中心調節子',note:'~50% 人類癌症帶有 TP53 突變，是最常被研究的抑癌基因。'},
+    MDM2:{en:'E3 ubiquitin ligase MDM2',role:'負向調節 TP53',note:'結合 TP53 並促其降解；MDM2 過表達是 TP53 失活的常見途徑。'},
+    BRCA1:{en:'Breast cancer type 1',role:'DNA 雙股斷裂修復',note:'與 BARD1 形成 E3 ligase 複合體；胚系突變顯著提高乳癌/卵巢癌風險。'},
+    BARD1:{en:'BRCA1-associated RING domain 1',role:'BRCA1 夥伴',note:'與 BRCA1 形成穩定異源二聚體，為其泛素連接酶活性所需。'},
+    ATM:{en:'Ataxia Telangiectasia Mutated',role:'DNA 損傷感測激酶',note:'雙股斷裂後啟動；磷酸化 TP53、CHEK2 等下游效應子。'},
+    ATR:{en:'ATR serine/threonine kinase',role:'DNA 複製壓力感測激酶',note:'感測單鏈 DNA；CHEK1 的上游激活激酶。'},
+    CHEK1:{en:'Checkpoint kinase 1',role:'ATR 下游激酶',note:'磷酸化 CDC25，阻止有絲分裂進入受損細胞。'},
+    CHEK2:{en:'Checkpoint kinase 2',role:'細胞週期檢查點激酶',note:'ATM 下游；穩定 TP53，觸發 G1/S 阻滯。'},
+    RAD51:{en:'DNA repair protein RAD51',role:'同源重組核心',note:'催化 ssDNA 與同源模板配對；BRCA2 負責將其裝載到 DNA 上。'},
+    RAD52:{en:'DNA repair protein RAD52',role:'同源重組輔助蛋白',note:'RAD51 旁路途徑；協助單鏈退火。'},
+    CDKN2A:{en:'Cyclin-dependent kinase inhibitor 2A',role:'抑癌蛋白 p16/p14ARF',note:'p14ARF 透過抑制 MDM2 穩定 TP53；p16 抑制 CDK4/6。'},
+    EP300:{en:'E1A binding protein p300',role:'組蛋白乙醯轉移酶',note:'作為 TP53 的轉錄共激活子，以乙醯化方式強化其 DNA 結合。'},
+    PTEN:{en:'Phosphatase and tensin homolog',role:'磷脂磷酸酶，PI3K 拮抗子',note:'去磷酸化 PIP3，拮抗 PI3K 訊號；最常被缺失的抑癌基因之一。'},
+    RB1:{en:'Retinoblastoma protein',role:'細胞週期阻斷',note:'非磷酸化時抑制 E2F 轉錄因子；CDK4/6 磷酸化使其釋放 E2F 啟動 S 期。'},
+    PUMA:{en:'p53 upregulated modulator of apoptosis',role:'BCL-2 家族促凋亡因子',note:'TP53 轉錄靶標；結合並拮抗 BCL-2/BCL-XL，促進粒線體外膜通透化。'},
+    BAX:{en:'BCL-2-associated X protein',role:'促凋亡 BCL-2 家族成員',note:'在細胞壓力下插入粒線體膜，形成孔洞釋放 cytochrome c。'},
+    BCL2:{en:'B-cell lymphoma 2',role:'抗凋亡蛋白',note:'阻止粒線體外膜通透化；在許多 B 細胞淋巴瘤中高表達。'},
+    CASP3:{en:'Caspase-3',role:'執行凋亡的半胱天冬酶',note:'被 CASP8/CASP9 切割活化；裂解多種底物導致凋亡表現型。'},
+    EGFR:{en:'Epidermal growth factor receptor',role:'受體酪胺酸激酶',note:'配體結合觸發二聚化與自體磷酸化；啟動 RAS-MAPK 與 PI3K-AKT 路徑。'},
+    GRB2:{en:'Growth factor receptor-bound protein 2',role:'接合蛋白',note:'SH2 結合磷酸化 EGFR，SH3 招募 SOS1 至膜上；EGFR→RAS 訊號橋梁。'},
+    SOS1:{en:'SOS Ras guanine nucleotide exchange factor 1',role:'RAS 鳥苷核苷酸交換因子',note:'催化 RAS 的 GDP→GTP 交換，啟動 RAS 訊號。'},
+    KRAS:{en:'KRAS proto-oncogene',role:'RAS GTPase 致癌基因',note:'最常見的人類致癌基因；G12D/V 突變致 GTP 鎖定狀態，持續啟動下游路徑。'},
+    BRAF:{en:'B-Raf proto-oncogene',role:'MAP 激酶激酶激酶',note:'KRAS 下游；V600E 突變見於黑色素瘤，vemurafenib 靶向此突變。'},
+    RAF1:{en:'Raf-1 proto-oncogene',role:'絲氨酸/蘇氨酸激酶',note:'RAS 效應子；磷酸化 MEK1/2（MAP2K1/2）。'},
+    MAP2K1:{en:'Mitogen-activated protein kinase kinase 1',role:'MEK1，MAPK 激酶',note:'磷酸化 ERK1/2；MEK 抑制劑（trametinib）用於 BRAF/RAS 突變癌症。'},
+    MAPK1:{en:'Mitogen-activated protein kinase 1',role:'ERK2，MAPK 家族',note:'調控增殖、存活與分化；許多轉錄因子的磷酸化底物。'},
+    MAPK3:{en:'Mitogen-activated protein kinase 3',role:'ERK1，MAPK 家族',note:'ERK2 旁系同源物；與 MAPK1 共享多數底物。'},
+    MYC:{en:'MYC proto-oncogene',role:'轉錄因子，細胞增殖主控',note:'與 MAX 形成異源二聚體；調控數千個靶基因，廣泛過表達於人類癌症。'},
+    FOS:{en:'Fos proto-oncogene',role:'AP-1 轉錄因子',note:'與 JUN 形成 AP-1 複合體；調控增殖、分化與炎症反應。'},
+    PIK3CA:{en:'PI3-kinase catalytic subunit alpha',role:'PI3 激酶催化亞基',note:'催化 PIP2→PIP3；H1047R 等突變見於多種癌症。'},
+    PIK3R1:{en:'PI3-kinase regulatory subunit 1',role:'p85α，PI3K 調節亞基',note:'抑制 PIK3CA 基礎活性；招募 PI3K 複合體到磷酸化受體。'},
+    AKT1:{en:'AKT serine/threonine kinase 1',role:'PKB，PI3K 下游效應子',note:'PDK1 在 PIP3 富集膜上磷酸化激活；調控存活、生長與代謝。'},
+    AKT2:{en:'AKT serine/threonine kinase 2',role:'PKBβ，胰島素訊號',note:'肝臟與脂肪組織的胰島素效應子；AKT2 突變與 2 型糖尿病相關。'},
+    MTOR:{en:'Mechanistic target of rapamycin',role:'PI3K 相關激酶，生長整合子',note:'整合營養、能量與生長因子訊號；mTORC1/2 分別調控 S6K1 和 AKT。'},
+    RPTOR:{en:'Regulatory-associated protein of mTOR',role:'mTORC1 支架蛋白',note:'組成 mTORC1 必需組件；招募 S6K1 與 4EBP1 至 mTOR 複合體。'},
+    TSC1:{en:'TSC complex subunit 1',role:'錯構瘤蛋白，mTOR 調節子',note:'與 TSC2 形成異源二聚體；突變導致結節性硬化症。'},
+    TSC2:{en:'TSC complex subunit 2',role:'tuberin，Rheb GAP',note:'抑制 Rheb 的 GTP 酶活性；AKT 磷酸化使其失活，解除對 mTOR 的抑制。'},
+    RHEB:{en:'Ras homolog enriched in brain',role:'mTOR 上游 GTPase',note:'GTP 結合態直接激活 mTORC1；TSC2 是其 GAP。'},
+    RPS6KB1:{en:'Ribosomal protein S6 kinase B1',role:'S6K1，mTORC1 底物',note:'mTOR 磷酸化激活；促進核糖體生物合成與蛋白質翻譯。'},
+    GSK3B:{en:'Glycogen synthase kinase 3 beta',role:'多效絲氨酸/蘇氨酸激酶',note:'AKT 磷酸化抑制 GSK3B；活性時磷酸化 glycogen synthase 及 β-catenin 降解。'},
+    FOXO1:{en:'Forkhead box O1',role:'叉頭框轉錄因子',note:'AKT 磷酸化使其滯留細胞質；核內活性調控 apoptosis 與代謝基因。'},
+    BRCA2:{en:'Breast cancer type 2',role:'RAD51 載入蛋白',note:'直接與 RAD51 結合，協助其裝載到 ssDNA；BRCA2 截斷突變高度致癌。'},
+    PALB2:{en:'Partner and localizer of BRCA2',role:'BRCA1-BRCA2 橋梁蛋白',note:'連接 BRCA1 與 BRCA2；PALB2 突變是中等風險乳癌易感基因。'},
+    FANCD2:{en:'FA complementation group D2',role:'Fanconi 貧血路徑核心',note:'BRCA1/ATM 磷酸化後單泛素化；標記 DNA 跨損傷修復位點。'},
+    RPA1:{en:'Replication protein A1',role:'ssDNA 結合蛋白',note:'穩定 DNA 修復中產生的單鏈 DNA；招募 ATR 至 ssDNA 損傷位點。'},
+  };
+
+  const ROLE_COLORS = {
+    tumor_suppressor:'#ff6b9d', kinase:'#58d7ff', e3_ligase:'#f0883e',
+    tf:'#7ef7c0', dna_repair:'#b59cff', apoptosis:'#ff7675', signaling:'#ffd32a',
+  };
+  const ROLE_LABELS = {
+    tumor_suppressor:'抑癌', kinase:'激酶', e3_ligase:'E3連接酶',
+    tf:'轉錄因子', dna_repair:'DNA修復', apoptosis:'凋亡', signaling:'訊號傳遞',
+  };
+
   try {
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.29.2/cytoscape.min.js', 'cytoscape');
     if (!window.cytoscape) return;
 
-    // Fetch interaction data from our API
-    const apiBase = typeof window.APP_CONFIG_UTILS?.resolveApiBase === 'function'
-      ? await window.APP_CONFIG_UTILS.resolveApiBase({ cacheKey: 'cytoscape' })
-      : '';
-    let interactions = [];
-    if (apiBase) {
-      try {
-        const resp = await fetch(`${apiBase}/api/interactions?limit=30`, { signal: AbortSignal.timeout(8000) });
-        if (resp.ok) interactions = (await resp.json()).records || [];
-      } catch { /* use demo data */ }
+    let currentPathway = 'tp53';
+    let cy = null;
+
+    function buildElements(pathwayKey) {
+      const pw = PATHWAYS[pathwayKey];
+      const degree = {};
+      pw.nodes.forEach(n => { degree[n.id] = 0; });
+      pw.edges.forEach(e => { degree[e.s] = (degree[e.s]||0)+1; degree[e.t] = (degree[e.t]||0)+1; });
+      const maxDeg = Math.max(...Object.values(degree), 1);
+      return [
+        ...pw.nodes.map(n => ({ data: {
+          id: n.id, label: n.id, role: n.role,
+          degree: degree[n.id]||0,
+          size: 22 + ((degree[n.id]||0)/maxDeg)*22,
+          color: ROLE_COLORS[n.role]||'#58d7ff'
+        }})),
+        ...pw.edges.map((e,i) => ({ data: {
+          id:'e'+i, source:e.s, target:e.t, score:e.score,
+          width: 1 + (e.score/1000)*3
+        }}))
+      ];
     }
 
-    // Build graph elements
-    const nodes = new Set();
-    const edges = [];
-    if (interactions.length > 0) {
-      interactions.forEach(i => {
-        nodes.add(i.proteinA);
-        nodes.add(i.proteinB);
-        edges.push({ data: { source: i.proteinA, target: i.proteinB, score: i.combinedScore } });
+    function renderNodeInfo(id) {
+      const body = document.getElementById('ppi-side-body');
+      if (!body || !cy) return;
+      const node = cy.$('#'+id);
+      const d = PROTEIN_INFO[id];
+      const roleKey = node.data('role')||'';
+      const roleLabel = ROLE_LABELS[roleKey]||roleKey;
+      const roleColor = ROLE_COLORS[roleKey]||'#58d7ff';
+      const deg = node.data('degree')||0;
+      const neighbors = node.neighborhood('node').map(n=>n.id());
+      body.innerHTML = `
+        <div class="ppi-sym">${id}</div>
+        <span class="ppi-role-badge" style="background:${roleColor}22;color:${roleColor};border:1px solid ${roleColor}55;border-radius:4px;font-size:.72rem;padding:2px 8px;display:inline-block;margin:4px 0 8px">${roleLabel}</span>
+        ${d?`<div class="ppi-en" style="font-size:.78rem;color:var(--muted);margin-bottom:4px">${d.en}</div>
+        <div class="ppi-role" style="font-size:.82rem;color:var(--fg);margin-bottom:8px">${d.role}</div>
+        <p class="ppi-note" style="font-size:.8rem;color:var(--dim);line-height:1.5;margin-bottom:10px">${d.note}</p>`:''}
+        <div style="font-size:.75rem;color:var(--muted);margin-bottom:6px"><strong>${deg}</strong> 個交互夥伴</div>
+        ${neighbors.length?`<div style="display:flex;flex-wrap:wrap;gap:4px">${neighbors.map(n=>`<span style="font-size:.7rem;padding:2px 7px;border-radius:20px;background:rgba(88,215,255,.1);border:1px solid rgba(88,215,255,.25);color:#58d7ff">${n}</span>`).join('')}</div>`:''}
+      `;
+    }
+
+    function updateStatsBar(selectedId) {
+      const bar = document.getElementById('ppi-stats-bar');
+      if (!bar) return;
+      const pw = PATHWAYS[currentPathway];
+      if (selectedId) {
+        const deg = cy && cy.$('#'+selectedId).data('degree')||0;
+        bar.innerHTML = `<span>選中：<strong>${selectedId}</strong></span><span>交互夥伴數：<strong>${deg}</strong></span><span style="margin-left:auto;font-size:.7rem;opacity:.5">點空白取消選擇</span>`;
+      } else {
+        bar.innerHTML = `<span>節點：<strong>${pw.nodes.length}</strong></span><span>邊：<strong>${pw.edges.length}</strong></span><span style="margin-left:auto;font-size:.7rem;opacity:.5">點選節點探索</span>`;
+      }
+    }
+
+    function initCy(pathwayKey) {
+      if (cy) { cy.destroy(); cy = null; }
+      cy = window.cytoscape({
+        container,
+        elements: buildElements(pathwayKey),
+        style: [
+          { selector:'node', style:{
+            'background-color':'data(color)', 'label':'data(label)',
+            'color':'#e9f0ec', 'font-size':'11px', 'text-valign':'bottom', 'text-margin-y':5,
+            'width':'data(size)', 'height':'data(size)',
+            'border-width':2, 'border-color':'data(color)', 'border-opacity':0.4,
+            'text-outline-color':'#0a1116', 'text-outline-width':2,
+          }},
+          { selector:'node:selected', style:{'border-width':3,'border-opacity':1,'border-color':'#fff'}},
+          { selector:'node.dimmed', style:{'opacity':0.15}},
+          { selector:'node.highlighted', style:{'border-width':3,'border-opacity':1,'border-color':'#fff','opacity':1}},
+          { selector:'edge', style:{
+            'width':'data(width)', 'line-color':'rgba(88,215,255,0.2)',
+            'curve-style':'bezier', 'opacity':0.8,
+          }},
+          { selector:'edge.dimmed', style:{'opacity':0.04}},
+          { selector:'edge.highlighted', style:{'line-color':'rgba(88,215,255,0.6)','opacity':1,'width':3}},
+        ],
+        layout:{ name:'cose', animate:true, animationDuration:600, nodeRepulsion:8000, idealEdgeLength:80, gravity:0.8 },
+        userZoomingEnabled:true, userPanningEnabled:true,
       });
-    } else {
-      // Demo data
-      const demo = [['TP53', 'MDM2'], ['TP53', 'BRCA1'], ['BRCA1', 'BARD1'], ['MDM2', 'CDKN2A'],
-        ['TP53', 'ATM'], ['BRCA1', 'RAD51'], ['ATM', 'CHEK2'], ['TP53', 'EP300']];
-      demo.forEach(([a, b]) => { nodes.add(a); nodes.add(b); edges.push({ data: { source: a, target: b, score: 800 } }); });
+
+      cy.on('tap','node', e => {
+        const id = e.target.id();
+        cy.elements().removeClass('highlighted dimmed');
+        const nbhd = cy.$('#'+id).closedNeighborhood();
+        cy.elements().not(nbhd).addClass('dimmed');
+        nbhd.addClass('highlighted');
+        renderNodeInfo(id);
+        updateStatsBar(id);
+      });
+      cy.on('tap', e => {
+        if (e.target === cy) {
+          cy.elements().removeClass('highlighted dimmed');
+          const body = document.getElementById('ppi-side-body');
+          if (body) body.innerHTML = '<p class="ppi-placeholder">點擊任一節點查看該蛋白質的功能摘要。</p>';
+          updateStatsBar(null);
+        }
+      });
+      updateStatsBar(null);
+      window.__ppiCy = cy;
     }
 
-    const cy = cytoscape({
-      container,
-      elements: [
-        ...[...nodes].map(id => ({ data: { id } })),
-        ...edges,
-      ],
-      style: [
-        { selector: 'node', style: {
-          'background-color': '#58d7ff', 'label': 'data(id)', 'color': '#e9f0ec',
-          'font-size': '11px', 'text-valign': 'bottom', 'text-margin-y': 6,
-          'width': 28, 'height': 28, 'border-width': 2, 'border-color': 'rgba(88,215,255,0.3)',
-        }},
-        { selector: 'edge', style: {
-          'width': 2, 'line-color': 'rgba(88,215,255,0.25)',
-          'curve-style': 'bezier',
-        }},
-      ],
-      layout: { name: 'cose', animate: true, animationDuration: 800, nodeRepulsion: 6000 },
-      userZoomingEnabled: true,
-      userPanningEnabled: true,
+    // Pathway tabs
+    document.querySelectorAll('.ppi-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.ppi-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPathway = btn.dataset.pathway;
+        const body = document.getElementById('ppi-side-body');
+        if (body) body.innerHTML = '<p class="ppi-placeholder">點擊任一節點查看該蛋白質的功能摘要。</p>';
+        document.querySelectorAll('.ppi-role-filter').forEach(b => b.classList.remove('active'));
+        initCy(currentPathway);
+      });
     });
-  } catch { /* Cytoscape unavailable */ }
+
+    // Layout selector
+    const layoutSel = document.getElementById('ppi-layout-sel');
+    if (layoutSel) layoutSel.addEventListener('change', () => {
+      if (!cy) return;
+      cy.layout({ name:layoutSel.value, animate:true, animationDuration:500,
+        nodeRepulsion:8000, idealEdgeLength:80 }).run();
+    });
+
+    // Search
+    const searchInput = document.getElementById('ppi-search');
+    if (searchInput) searchInput.addEventListener('input', () => {
+      if (!cy) return;
+      const q = searchInput.value.trim().toUpperCase();
+      cy.elements().removeClass('highlighted dimmed');
+      if (!q) return;
+      const match = cy.nodes().filter(n => n.id().toUpperCase().includes(q));
+      if (match.length) {
+        cy.elements().not(match.closedNeighborhood()).addClass('dimmed');
+        match.addClass('highlighted');
+      }
+    });
+
+    // Fit button
+    const fitBtn = document.getElementById('ppi-fit-btn');
+    if (fitBtn) fitBtn.addEventListener('click', () => { if (cy) cy.fit(undefined, 30); });
+
+    // Role filters
+    document.querySelectorAll('.ppi-role-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!cy) return;
+        btn.classList.toggle('active');
+        const activeRoles = [...document.querySelectorAll('.ppi-role-filter.active')].map(b => b.dataset.role);
+        cy.elements().removeClass('highlighted dimmed');
+        if (activeRoles.length) {
+          const match = cy.nodes().filter(n => activeRoles.includes(n.data('role')));
+          cy.elements().not(match.closedNeighborhood()).addClass('dimmed');
+          match.addClass('highlighted');
+        }
+      });
+    });
+
+    initCy(currentPathway);
+  } catch(e) { /* Cytoscape unavailable */ }
 }
 
 /* ── 7. Plotly.js interactive charts ──────────────────────────────────────── */
@@ -396,6 +633,18 @@ function escapeHtml(text) {
 
 /* ── Init all ─────────────────────────────────────────────────────────────── */
 
+/* ── Global card cursor-tracking glow ────────────────────────────────────── */
+function initCardGlow() {
+  const CARD_SELECTORS = '.card, .metric-card, .explore-card, .chart-card, .work-card, .service-card, .platform-card';
+  document.querySelectorAll(CARD_SELECTORS).forEach((card) => {
+    card.addEventListener('mousemove', (e) => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--cx', `${e.clientX - r.left}px`);
+      card.style.setProperty('--cy', `${e.clientY - r.top}px`);
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initVantaDNA();
   initGSAP();
@@ -406,4 +655,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initPlotly();
   initPyodide();
   initChatbot();
+  initCardGlow();
 });

@@ -19,6 +19,17 @@
 
         .fw { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 
+        /* Dark backdrop so text stays readable on any shader theme */
+        body[data-page="firmware"]::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 13, 20, 0.72);
+            z-index: 0;
+            pointer-events: none;
+        }
+        body[data-page="firmware"] > * { position: relative; z-index: 1; }
+
         .fw-hero { padding: 80px 24px 48px; max-width: 960px; margin: 0 auto; }
         .fw-hero-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
         @media (max-width: 860px) { .fw-hero-inner { grid-template-columns: 1fr; } }
@@ -34,10 +45,12 @@
             font-size: clamp(1.8rem, 3.5vw, 2.4rem); font-weight: 700;
             letter-spacing: -0.015em; line-height: 1.2; margin-bottom: 16px;
             color: var(--fw-ink);
+            text-shadow: 0 1px 4px rgba(0,0,0,0.7), 0 0 24px rgba(0,0,0,0.4);
         }
         .fw-hero .sub {
             color: var(--fw-ink-2); line-height: 1.75; font-size: 0.95rem;
             margin-bottom: 24px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
         }
         .fw-hero-tags { display: flex; flex-wrap: wrap; gap: 6px; }
         .fw-tag {
