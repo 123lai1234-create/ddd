@@ -1266,8 +1266,9 @@ async function rerunGA() {
         document.getElementById('btnPlay').textContent = '▶ 自動播放';
     }
 
-    // Try real TWSE price data; fall back to synthetic if unavailable.
-    const realData = await fetchRealPriceSeries(stock.code);
+    // Use pre-cached real data only (populated by "同步真實股價" button).
+    // Skip blocking API call so strategy renders immediately with synthetic data.
+    const realData = REAL_PRICE_CACHE.get(stock.code) || null;
     if (!realData || realData.closes.length < 50) {
         if (SERIES_CACHE.get(stock.code)?.isReal) {
             SERIES_CACHE.delete(stock.code);
