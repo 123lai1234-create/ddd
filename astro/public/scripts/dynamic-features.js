@@ -633,6 +633,18 @@ function escapeHtml(text) {
 
 /* ── Init all ─────────────────────────────────────────────────────────────── */
 
+/* ── Global card cursor-tracking glow ────────────────────────────────────── */
+function initCardGlow() {
+  const CARD_SELECTORS = '.card, .metric-card, .explore-card, .chart-card, .work-card, .service-card, .platform-card';
+  document.querySelectorAll(CARD_SELECTORS).forEach((card) => {
+    card.addEventListener('mousemove', (e) => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--cx', `${e.clientX - r.left}px`);
+      card.style.setProperty('--cy', `${e.clientY - r.top}px`);
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initVantaDNA();
   initGSAP();
@@ -643,4 +655,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initPlotly();
   initPyodide();
   initChatbot();
+  initCardGlow();
 });

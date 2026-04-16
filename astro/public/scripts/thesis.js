@@ -219,6 +219,18 @@ function createRng(seed) {
     };
 }
 
+function countUp(el, endValue, format, duration = 700) {
+    if (!el) return;
+    const t0 = performance.now();
+    const tick = (now) => {
+        const p = Math.min((now - t0) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = format(endValue * eased);
+        if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+}
+
 function formatPercent(value, digits = 1) {
     return `${roundTo(value, digits).toFixed(digits)}%`;
 }
@@ -1255,7 +1267,7 @@ async function rerunGA() {
     }
 
     // Try real TWSE price data; fall back to synthetic if unavailable.
-    const realData = await Promise.race([     fetchRealPriceSeries(stock.code),     new Promise((resolve) => setTimeout(() => resolve(null), 4000)), ]);
+    const realData = await fetchRealPriceSeries(stock.code);
     if (!realData || realData.closes.length < 50) {
         if (SERIES_CACHE.get(stock.code)?.isReal) {
             SERIES_CACHE.delete(stock.code);
@@ -1411,7 +1423,7 @@ async function fetchRealPriceSeries(symbol) {
         // Try DB bars first
         const params = new URLSearchParams({ symbol, limit: 2000, asset_type: 'stock' });
         const res = await fetch(`${apiBase}/api/market/bars?${params}`, {
-           signal: AbortSignal.timeout(3000),
+            signal: AbortSignal.timeout(10000),
         });
         if (res.ok) {
             const payload = await res.json();
@@ -1437,7 +1449,7 @@ async function fetchYahooDirect(apiBase, symbol) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ symbols: [symbol], range: '2y' }),
-            signal: AbortSignal.timeout(5000),
+            signal: AbortSignal.timeout(15000),
         });
         if (!res.ok) return null;
         const data = await res.json();
@@ -1517,7 +1529,7 @@ async function resolveMarketApiBase() {
     const candidates = deriveMarketApiCandidates();
     for (const candidate of candidates) {
         try {
-           const response = await fetch(`${candidate}/healthz`, { signal: AbortSignal.timeout(2500) });
+            const response = await fetch(`${candidate}/healthz`);
             if (!response.ok) {
                 continue;
             }
@@ -1877,6 +1889,11 @@ function initMarketOps() {
 
 function initialisePage() {
     renderHeroStats();
+    // Count-up animation for numeric hero stats
+    countUp(document.getElementById('statSharpe'), PAPER_CONTEXT.positiveRate,
+        (v) => `${v.toFixed(2)}%`, 900);
+    countUp(document.getElementById('statReturn'), PAPER_CONTEXT.universeSize,
+        (v) => String(Math.round(v)), 700);
     renderStaticCards();
     try { renderThesisFindings(); } catch (err) { console.warn('renderThesisFindings failed:', err); }
     populateFilters();
@@ -2099,4 +2116,8 @@ window.getThesisPyodideContext = function () {
     };
 };
 
-initialisePage();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialisePage);
+} else {
+    initialisePage();
+}

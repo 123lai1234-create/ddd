@@ -1,4 +1,17 @@
 {
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /d/project && git add -A && git diff --cached --quiet || (git commit -m \"auto: sync changes\" && git push) 2>/dev/null || true",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(git add:*)",
