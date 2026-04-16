@@ -25,8 +25,44 @@ env:
   VERCEL_PROJECT_ID: prj_Knbnl6axKI8AQJApFYlIx2sQ4aXV
 
 jobs:
+  lint-and-test:
+    name: Lint & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r site_api/requirements.txt
+          pip install pytest ruff httpx requests
+
+      - name: Lint with ruff
+        run: ruff check site_api/ src/ tests/ --output-format=github
+
+      - name: Syntax check
+        run: |
+          python -m py_compile site_api/main.py
+          python -m py_compile site_api/db.py
+          python -m py_compile site_api/models.py
+          python -m py_compile site_api/services.py
+          python -m py_compile site_api/routes.py
+          python -m py_compile site_api/schemas.py
+          python -m py_compile site_api/shared_utils.py
+          python -m py_compile src/constants.py
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+
   deploy-railway:
     name: Deploy Railway API
+    needs: lint-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
@@ -148,7 +184,7 @@ jobs:
 
   deploy-vercel:
     name: Deploy Vercel Frontend
-    if: always()
+    needs: lint-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -198,7 +234,7 @@ jobs:
 
   deploy-netlify:
     name: Deploy Netlify Frontend
-    if: always()
+    needs: lint-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
