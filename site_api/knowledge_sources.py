@@ -7,11 +7,11 @@ from dataclasses import asdict, dataclass
 from typing import Any
 from xml.etree import ElementTree as ET
 
-logger = logging.getLogger(__name__)
-
 from site_api.cache import cached_json_get, cached_json_set
 from site_api.http_client import get as http_get
 from site_api.shared_utils import protein_name as _protein_name
+
+logger = logging.getLogger(__name__)
 
 
 UNIPROT_SEARCH_URL = "https://rest.uniprot.org/uniprotkb/search"

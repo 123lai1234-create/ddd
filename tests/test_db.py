@@ -380,9 +380,8 @@ class TestGetConnection(unittest.TestCase):
         mock_connection = MagicMock()
         mock_pool.getconn.return_value = mock_connection
 
-        with patch("site_api.db._DB_POOL", mock_pool):
-            with get_connection() as connection:
-                self.assertIs(connection, mock_connection)
+        with patch("site_api.db._DB_POOL", mock_pool), get_connection() as connection:
+            self.assertIs(connection, mock_connection)
 
         mock_pool.getconn.assert_called_once_with()
         mock_pool.putconn.assert_called_once_with(mock_connection)
@@ -393,10 +392,9 @@ class TestGetConnection(unittest.TestCase):
         mock_connection = MagicMock()
         mock_pool.getconn.return_value = mock_connection
 
-        with patch("site_api.db._DB_POOL", mock_pool):
-            with self.assertRaisesRegex(RuntimeError, "boom"):
-                with get_connection():
-                    raise RuntimeError("boom")
+        with patch("site_api.db._DB_POOL", mock_pool), self.assertRaisesRegex(RuntimeError, "boom"):
+            with get_connection():
+                raise RuntimeError("boom")
 
         mock_connection.rollback.assert_called_once_with()
         mock_pool.putconn.assert_called_once_with(mock_connection)
@@ -406,11 +404,13 @@ class TestGetConnection(unittest.TestCase):
         mock_pool.getconn.side_effect = RuntimeError("pool unavailable")
         fallback_connection = MagicMock()
 
-        with patch("site_api.db._DB_POOL", mock_pool), \
-             patch("site_api.db.get_database_url_candidates", return_value=["postgres://fallback"]), \
-             patch("site_api.db.psycopg.connect", return_value=fallback_connection) as mock_connect:
-            with get_connection() as connection:
-                self.assertIs(connection, fallback_connection)
+        with (
+            patch("site_api.db._DB_POOL", mock_pool),
+            patch("site_api.db.get_database_url_candidates", return_value=["postgres://fallback"]),
+            patch("site_api.db.psycopg.connect", return_value=fallback_connection) as mock_connect,
+            get_connection() as connection,
+        ):
+            self.assertIs(connection, fallback_connection)
 
         mock_connect.assert_called_once_with("postgres://fallback")
         fallback_connection.close.assert_called_once_with()
@@ -418,12 +418,14 @@ class TestGetConnection(unittest.TestCase):
     def test_direct_connection_reraises_caller_error_and_closes(self):
         mock_connection = MagicMock()
 
-        with patch("site_api.db._DB_POOL", None), \
-             patch("site_api.db.get_database_url_candidates", return_value=["postgres://direct"]), \
-             patch("site_api.db.psycopg.connect", return_value=mock_connection):
-            with self.assertRaisesRegex(RuntimeError, "boom"):
-                with get_connection():
-                    raise RuntimeError("boom")
+        with (
+            patch("site_api.db._DB_POOL", None),
+            patch("site_api.db.get_database_url_candidates", return_value=["postgres://direct"]),
+            patch("site_api.db.psycopg.connect", return_value=mock_connection),
+            self.assertRaisesRegex(RuntimeError, "boom"),
+        ):
+            with get_connection():
+                raise RuntimeError("boom")
 
         mock_connection.rollback.assert_called_once_with()
         mock_connection.close.assert_called_once_with()
