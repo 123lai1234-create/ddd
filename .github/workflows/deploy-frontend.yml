@@ -79,13 +79,39 @@ jobs:
             -H "Authorization: Bearer $VERCEL_TOKEN" -o /tmp/events.json && \
             node -e "const d=require('/tmp/events.json'); (Array.isArray(d)?d:[]).forEach(e=>{ const t=e.payload?.text||e.text||''; if(t) console.log(e.type,t.slice(0,300)) })" | head -40 || echo "no build logs"
 
-      - name: Deploy to Vercel
+      - name: Deploy to Vercel + get build logs
         continue-on-error: true
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           [ -z "$VERCEL_TOKEN" ] && echo "::warning::VERCEL_TOKEN not set" && exit 0
-          npx --yes vercel deploy --prod --yes --no-wait --token="$VERCEL_TOKEN" && echo "Deployment queued for production"
+          CLI_OUT=$(npx --yes vercel deploy --prod --yes --no-wait --token="$VERCEL_TOKEN" 2>&1 || true)
+          echo "$CLI_OUT"
+          DEPLOY_URL=$(echo "$CLI_OUT" | grep -oE 'https://[a-zA-Z0-9._-]+-jtlai0921-8797s-projects\.vercel\.app' | tail -1)
+          echo "Deploy URL: $DEPLOY_URL"
+          # Wait for build to complete (poll up to 6 min)
+          DEPLOY_ID=$(curl -sf "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&limit=1&target=production" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); process.stdout.write(d.deployments?.[0]?.uid??'')")
+          echo "Deploy ID: $DEPLOY_ID"
+          for i in $(seq 1 36); do
+            STATE=$(curl -sf "https://api.vercel.com/v13/deployments/$DEPLOY_ID?teamId=$VERCEL_ORG_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); process.stdout.write(d.status??d.readyState??'')" 2>/dev/null || echo "")
+            echo "state ($i): $STATE"
+            [ "$STATE" = "READY" ] || [ "$STATE" = "ERROR" ] || [ "$STATE" = "CANCELED" ] && break
+            sleep 10
+          done
+          # Get build event logs
+          echo "=== Build logs ==="
+          curl -sf "https://api.vercel.com/v2/deployments/$DEPLOY_ID/events?teamId=$VERCEL_ORG_ID&direction=forward&limit=100" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" -o /tmp/ev.json 2>/dev/null && \
+          node -e "
+            const raw=require('fs').readFileSync('/tmp/ev.json','utf8');
+            const d=JSON.parse(raw);
+            const arr=Array.isArray(d)?d:(d.events||[]);
+            arr.forEach(e=>{const t=e.payload?.text||e.text||'';if(t)console.log(e.type,t.slice(0,300))});
+          " 2>/dev/null | tail -40 || echo "no build logs"
 
       - name: Deploy to Netlify
         continue-on-error: true
