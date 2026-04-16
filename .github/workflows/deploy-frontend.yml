@@ -65,9 +65,13 @@ jobs:
             -H "Authorization: Bearer $VERCEL_TOKEN" \
             | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); (d.domains||[]).forEach(x=>console.log(x.name,x.verified,x.target||''))" 2>/dev/null || echo "domains API failed"
           echo "=== Latest production deployments ==="
-          curl -sf "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&limit=3&target=production" \
+          LATEST_ID=$(curl -sf "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&limit=3&target=production" \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
-            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); (d.deployments||[]).forEach(x=>console.log(x.uid,x.state,x.url,x.created))" 2>/dev/null || echo "deployments API failed"
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); (d.deployments||[]).forEach(x=>console.log(x.uid,x.state,x.url)); process.stdout.write(d.deployments?.[0]?.uid??'')" 2>/dev/null)
+          echo "=== Build logs for latest deployment ==="
+          [ -n "$LATEST_ID" ] && curl -sf "https://api.vercel.com/v2/deployments/$LATEST_ID/events?teamId=$VERCEL_ORG_ID&types=stdout,stderr,error" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); d.forEach?.(e=>{ if(e.type==='error'||e.payload?.text?.includes('error')||e.payload?.text?.includes('Error')) console.log(e.type,e.payload?.text||'') })" 2>/dev/null | head -30 || echo "no logs"
 
       - name: Deploy to Vercel
         continue-on-error: true
