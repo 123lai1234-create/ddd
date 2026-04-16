@@ -1,0 +1,77 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'astro/**'
+      - 'frontend/**'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NETLIFY_SITE_ID: 65af318c-45c6-413e-837b-685a4fc01444
+  VERCEL_ORG_ID: team_a3kKe1wDrxqQfuXTUnw4SUxw
+  VERCEL_PROJECT_ID: prj_Knbnl6axKI8AQJApFYlIx2sQ4aXV
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache node_modules
+        id: cache-node
+        uses: actions/cache@v4
+        with:
+          path: astro/node_modules
+          key: node-${{ hashFiles('astro/package-lock.json') }}
+
+      - name: Cache Astro build
+        uses: actions/cache@v4
+        with:
+          path: astro/.astro
+          key: astro-${{ hashFiles('astro/src/**', 'astro/public/**') }}
+          restore-keys: astro-
+
+      - name: Install (cache miss only)
+        if: steps.cache-node.outputs.cache-hit != 'true'
+        run: cd astro && npm ci
+
+      - name: Build
+        run: cd astro && npm run build
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          [ -z "$VERCEL_TOKEN" ] && echo "::warning::VERCEL_TOKEN not set" && exit 0
+          mkdir -p .vercel/output/static
+          cp -r astro/dist/. .vercel/output/static/
+          node ./scripts/write_vercel_output_config.mjs
+          npx --yes vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
+
+      - name: Deploy to Netlify
+        continue-on-error: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          [ -z "$NETLIFY_AUTH_TOKEN" ] && echo "::warning::NETLIFY_AUTH_TOKEN not set" && exit 0
+          npx --yes netlify-cli deploy \
+            --dir=astro/dist \
+            --prod \
+            --site="$NETLIFY_SITE_ID" \
+            --auth="$NETLIFY_AUTH_TOKEN"

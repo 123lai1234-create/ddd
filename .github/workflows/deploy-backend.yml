@@ -1,0 +1,105 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site_api/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'Dockerfile'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  RAILWAY_PROJECT_ID: 098c670f-4a87-475e-b934-ca8b7dc74f4e
+  RAILWAY_ENVIRONMENT_ID: ea437d7d-5e2d-4a84-92e5-afd344389170
+  RAILWAY_SERVICE_ID: 29c6f948-a536-4f11-a317-dad1293a66ac
+
+jobs:
+  lint-and-test:
+    name: Lint & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv pip install --system -r site_api/requirements.txt pytest ruff httpx requests
+
+      - name: Lint
+        run: ruff check site_api/ src/ tests/ --output-format=github
+
+      - name: Test
+        run: pytest tests/ -q --tb=short
+
+  deploy-railway:
+    name: Deploy Railway
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: |
+          [ -z "$RAILWAY_API_TOKEN" ] && echo "::warning::RAILWAY_API_TOKEN not set" && exit 0
+          npx --yes @railway/cli up --ci \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID"
+
+      - name: Sync env vars
+        continue-on-error: true
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          DB_NEON: ${{ secrets.DATABASE_URL_NEON }}
+          DB_SUPABASE: ${{ secrets.DATABASE_URL_SUPABASE }}
+          DB_COCKROACH: ${{ secrets.DATABASE_URL_COCKROACH }}
+          DB_AIVEN: ${{ secrets.DATABASE_URL_AIVEN }}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          [ -z "$RAILWAY_API_TOKEN" ] && exit 0
+          npx --yes @railway/cli link \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID"
+          vars=""
+          [ -n "$DB_NEON" ]             && vars="$vars DATABASE_URL_NEON=$DB_NEON"
+          [ -n "$DB_SUPABASE" ]         && vars="$vars DATABASE_URL_SUPABASE=$DB_SUPABASE"
+          [ -n "$DB_COCKROACH" ]        && vars="$vars DATABASE_URL_COCKROACH=$DB_COCKROACH"
+          [ -n "$DB_AIVEN" ]            && vars="$vars DATABASE_URL_AIVEN=$DB_AIVEN"
+          [ -n "$SYNC_SECRET" ]         && vars="$vars SYNC_SECRET=$SYNC_SECRET"
+          [ -n "$GEMINI_API_KEY" ]      && vars="$vars GEMINI_API_KEY=$GEMINI_API_KEY"
+          [ -n "$DEEPSEEK_API_KEY" ]    && vars="$vars DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY"
+          [ -n "$OPENROUTER_API_KEY" ]  && vars="$vars OPENROUTER_API_KEY=$OPENROUTER_API_KEY"
+          [ -n "$vars" ] && npx --yes @railway/cli variables set $vars --skip-deploys || true
+
+      - name: Health check
+        continue-on-error: true
+        run: |
+          base="https://donttalk-api-production.up.railway.app"
+          for i in 1 2 3; do
+            curl -fsS "$base/healthz" && echo "healthy" && exit 0
+            echo "attempt $i/3..." && sleep 10
+          done
