@@ -16,12 +16,13 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+          python-version: "3.11"
 
       - name: Install dependencies
-        run: uv pip install --system --break-system-packages -r site_api/requirements.txt pytest ruff httpx requests
+        run: uv pip install -r site_api/requirements.txt pytest ruff httpx requests
 
       - name: Lint with ruff
-        run: ruff check site_api/ src/ tests/ --output-format=github
+        run: uv run ruff check site_api/ src/ tests/ --output-format=github
 
       - name: Run tests
-        run: pytest tests/ -q --tb=short
+        run: uv run pytest tests/ -q --tb=short
