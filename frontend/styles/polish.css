@@ -452,6 +452,14 @@ html {
   --r-pill: 9999px;
 }
 
+body {
+  color: var(--ink-1, #edf1ff);
+  background: var(--bg-0, #04020c);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body::before {
   content: "";
   position: fixed;
