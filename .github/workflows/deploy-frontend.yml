@@ -54,47 +54,14 @@ jobs:
       - name: Build
         run: cd astro && npm run build
 
-      - name: Prepare Vercel output
-        run: |
-          mkdir -p .vercel/output/static
-          cp -r astro/dist/. .vercel/output/static/
-          node ./scripts/write_vercel_output_config.mjs
-
       - name: Deploy to Vercel
         continue-on-error: true
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           [ -z "$VERCEL_TOKEN" ] && echo "::warning::VERCEL_TOKEN not set" && exit 0
-          # Deploy prebuilt output with --no-wait (returns URL immediately, no 5-min block)
-          CLI_OUT=$(npx --yes vercel deploy --prebuilt --yes --no-wait --token="$VERCEL_TOKEN" 2>&1 || true)
-          DEPLOY_URL=$(echo "$CLI_OUT" | grep -oE 'https://[a-zA-Z0-9._-]+-jtlai0921-8797s-projects\.vercel\.app' | tail -1)
-          echo "Deployed: $DEPLOY_URL"
-          [ -z "$DEPLOY_URL" ] && echo "::warning::Could not get deployment URL" && exit 0
-          # Look up deployment ID from latest deployment on this project
-          DEPLOY_ID=$(curl -sf "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID&limit=1" \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); process.stdout.write(d.deployments?.[0]?.uid ?? '')" 2>/dev/null || true)
-          echo "Deploy ID: $DEPLOY_ID"
-          if [ -n "$DEPLOY_ID" ]; then
-            # Wait for deployment to reach READY state (max 5 min)
-            for i in $(seq 1 30); do
-              STATE=$(curl -sf "https://api.vercel.com/v13/deployments/$DEPLOY_ID?teamId=$VERCEL_ORG_ID" \
-                -H "Authorization: Bearer $VERCEL_TOKEN" \
-                | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); process.stdout.write(d.status ?? d.readyState ?? '')" 2>/dev/null || echo "")
-              echo "Deployment state ($i/30): $STATE"
-              [ "$STATE" = "READY" ] && break
-              [ "$STATE" = "ERROR" ] || [ "$STATE" = "CANCELED" ] && echo "::warning::Deployment failed: $STATE" && exit 0
-              sleep 10
-            done
-            # Promote to production
-            PROMOTE_RESP=$(curl -s -o /tmp/promote_resp.txt -w "%{http_code}" -X POST \
-              "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/promote/$DEPLOY_ID?teamId=$VERCEL_ORG_ID" \
-              -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" -d '{}')
-            echo "Promote HTTP $PROMOTE_RESP: $(cat /tmp/promote_resp.txt)"
-          else
-            echo "::warning::Could not resolve deployment ID; skipping promote"
-          fi
+          # Deploy source with --prod --no-wait: Vercel builds async and sets production alias automatically
+          npx --yes vercel deploy --prod --yes --no-wait --token="$VERCEL_TOKEN" && echo "Deployment queued for production"
 
       - name: Deploy to Netlify
         continue-on-error: true
