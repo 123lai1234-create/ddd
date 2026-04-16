@@ -77,9 +77,11 @@ jobs:
             | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); process.stdout.write(d.deployments?.[0]?.uid ?? '')" 2>/dev/null || true)
           echo "Deploy ID: $DEPLOY_ID"
           if [ -n "$DEPLOY_ID" ]; then
-            curl -sf -X POST "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/promote/$DEPLOY_ID?teamId=$VERCEL_ORG_ID" \
-              -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" \
-              && echo "Promoted $DEPLOY_ID to production" || echo "::warning::Promote API call failed"
+            PROMOTE_RESP=$(curl -s -o /tmp/promote_resp.txt -w "%{http_code}" -X POST \
+              "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/promote/$DEPLOY_ID?teamId=$VERCEL_ORG_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" -d '{}')
+            echo "Promote HTTP $PROMOTE_RESP: $(cat /tmp/promote_resp.txt)"
+            [ "$PROMOTE_RESP" = "200" ] || [ "$PROMOTE_RESP" = "204" ] && echo "Promoted $DEPLOY_ID to production" || echo "::warning::Promote API returned $PROMOTE_RESP"
           else
             echo "::warning::Could not resolve deployment ID; skipping promote"
           fi
