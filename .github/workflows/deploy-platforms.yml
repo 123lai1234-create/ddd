@@ -167,14 +167,11 @@ jobs:
           base_url="${API_BASE_URL:-https://donttalk-api-production.up.railway.app}"
           curl -fsS "$base_url/api/opentargets/summary"
 
-  deploy-vercel:
-    name: Deploy Vercel Frontend
-    needs: lint-and-test
+  build-frontend:
+    name: Build Frontend
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -183,9 +180,29 @@ jobs:
           cache: npm
           cache-dependency-path: astro/package-lock.json
 
-      - name: Build static site
-        run: |
-          bash ./scripts/build_static_site.sh
+      - name: Install & build
+        run: cd astro && npm ci && npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: astro-dist
+          path: astro/dist/
+          retention-days: 1
+
+  deploy-vercel:
+    name: Deploy Vercel Frontend
+    needs: [lint-and-test, build-frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: astro-dist
+          path: astro/dist/
 
       - name: Prepare Vercel output directory
         run: |
@@ -209,33 +226,23 @@ jobs:
         if: steps.vercel_preflight.outputs.enabled == 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          npx --yes vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
+        run: npx --yes vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
 
       - name: Warn about Vercel permissions
         if: steps.vercel_preflight.outputs.enabled == 'true' && failure()
-        run: |
-          echo "::warning::Vercel deploy failed. Verify VERCEL_TOKEN can access project $VERCEL_PROJECT_ID in org $VERCEL_ORG_ID and can create production deployments."
+        run: echo "::warning::Vercel deploy failed. Verify VERCEL_TOKEN can access project $VERCEL_PROJECT_ID in org $VERCEL_ORG_ID."
 
   deploy-netlify:
     name: Deploy Netlify Frontend
-    needs: lint-and-test
+    needs: [lint-and-test, build-frontend]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: astro/package-lock.json
-
-      - name: Build static site
-        run: |
-          bash ./scripts/build_static_site.sh
+          name: astro-dist
+          path: astro/dist/
 
       - name: Deploy frontend to Netlify
         id: netlify_deploy
@@ -248,7 +255,7 @@ jobs:
             exit 0
           fi
           npx --yes netlify-cli deploy \
-            --dir=dist \
+            --dir=astro/dist \
             --prod \
             --site="$NETLIFY_SITE_ID" \
             --auth="$NETLIFY_AUTH_TOKEN"
