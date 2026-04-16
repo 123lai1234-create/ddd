@@ -219,6 +219,18 @@ function createRng(seed) {
     };
 }
 
+function countUp(el, endValue, format, duration = 700) {
+    if (!el) return;
+    const t0 = performance.now();
+    const tick = (now) => {
+        const p = Math.min((now - t0) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = format(endValue * eased);
+        if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+}
+
 function formatPercent(value, digits = 1) {
     return `${roundTo(value, digits).toFixed(digits)}%`;
 }
@@ -1877,6 +1889,11 @@ function initMarketOps() {
 
 function initialisePage() {
     renderHeroStats();
+    // Count-up animation for numeric hero stats
+    countUp(document.getElementById('statSharpe'), PAPER_CONTEXT.positiveRate,
+        (v) => `${v.toFixed(2)}%`, 900);
+    countUp(document.getElementById('statReturn'), PAPER_CONTEXT.universeSize,
+        (v) => String(Math.round(v)), 700);
     renderStaticCards();
     try { renderThesisFindings(); } catch (err) { console.warn('renderThesisFindings failed:', err); }
     populateFilters();
@@ -2099,4 +2116,8 @@ window.getThesisPyodideContext = function () {
     };
 };
 
-initialisePage();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialisePage);
+} else {
+    initialisePage();
+}

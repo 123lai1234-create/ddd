@@ -1,4 +1,5 @@
 :root {
+  --display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
   --bg: #0a1116;
   --bg2: #111922;
   --surface: rgba(18, 26, 33, 0.92);
@@ -921,4 +922,248 @@ footer a {
 }
 .trade-row:hover {
   background: rgba(88, 215, 255, 0.03);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Frontend-Design Skill Enhancement Layer
+   Principles: distinctive typography · ambient motion · atmospheric depth
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Display font for high-impact text ── */
+.hero h1,
+.section-title {
+  font-family: var(--display);
+  letter-spacing: -0.045em;
+}
+
+.stat-val {
+  font-family: var(--display);
+  font-size: 2rem;
+  letter-spacing: -0.03em;
+}
+
+.card-title {
+  font-family: var(--display);
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  font-weight: 700;
+}
+
+/* ── 2. Section label: left gradient accent bar ── */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--green), var(--teal));
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+/* ── 3. Hero: atmospheric SVG noise grain overlay ── */
+.hero {
+  isolation: isolate;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
+  opacity: 0.45;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  z-index: 0;
+}
+.hero-inner {
+  z-index: 1;
+}
+
+/* ── 4. Eyebrow: sweep shimmer ── */
+@keyframes eyebrowSweep {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.eyebrow {
+  background-image: linear-gradient(
+    110deg,
+    rgba(123, 240, 190, 0.08) 42%,
+    rgba(123, 240, 190, 0.22) 50%,
+    rgba(123, 240, 190, 0.08) 58%
+  );
+  background-size: 300% 100%;
+  animation: eyebrowSweep 5s linear infinite;
+  border-color: rgba(123, 240, 190, 0.22);
+}
+
+/* ── 5. Hero stat cells: staggered entrance ── */
+@keyframes statReveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.stat-cell {
+  opacity: 0;
+  animation: statReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stat-cell:nth-child(1) { animation-delay: 0.08s; }
+.stat-cell:nth-child(2) { animation-delay: 0.18s; }
+.stat-cell:nth-child(3) { animation-delay: 0.28s; }
+.stat-cell:nth-child(4) { animation-delay: 0.38s; }
+
+/* ── 6. Card: cursor-tracking ambient glow ── */
+.card {
+  position: relative;
+  overflow: hidden;
+}
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    280px circle at var(--cx, 50%) var(--cy, 50%),
+    rgba(123, 240, 190, 0.055),
+    transparent 65%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  border-radius: inherit;
+  z-index: 0;
+}
+.card:hover::after {
+  opacity: 1;
+}
+.card:hover {
+  border-color: rgba(123, 240, 190, 0.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(123, 240, 190, 0.07);
+}
+
+/* ── 7. Algo flow: animated arrows + icon hover ── */
+@keyframes arrowPulse {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.85; }
+}
+.algo-arrow {
+  animation: arrowPulse 2.2s ease infinite;
+}
+.algo-step .icon {
+  display: block;
+  transition: text-shadow 0.3s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.algo-step:hover .icon {
+  text-shadow: 0 0 22px rgba(88, 215, 255, 0.55);
+  transform: scale(1.18) translateY(-2px);
+}
+.algo-step:hover .lbl {
+  color: var(--green);
+}
+
+/* ── 8. Param cells: data glow on value ── */
+.param-val {
+  text-shadow: 0 0 12px rgba(123, 240, 190, 0.28);
+  transition: text-shadow 0.3s ease;
+}
+.param-cell:hover .param-val {
+  text-shadow: 0 0 22px rgba(123, 240, 190, 0.55);
+}
+.param-bar-fill {
+  background: linear-gradient(90deg, var(--green), var(--teal));
+}
+
+/* ── 9. Fitness badge: ambient pulse glow ── */
+@keyframes fitnessPulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(60, 185, 90, 0.12); }
+  50%       { box-shadow: 0 0 18px rgba(60, 185, 90, 0.32); }
+}
+.fitness-badge {
+  animation: fitnessPulse 3s ease infinite;
+}
+
+/* ── 10. Chart box: CRT scan-line atmosphere ── */
+.chart-box::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.022) 3px,
+    rgba(0, 0, 0, 0.022) 4px
+  );
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* ── 11. Btn primary: shimmer sweep on hover ── */
+@keyframes btnSweep {
+  from { background-position: -150% center; }
+  to   { background-position:  250% center; }
+}
+.btn-primary {
+  background: var(--green);
+  background-image: linear-gradient(
+    110deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 60%
+  );
+  background-size: 300% 100%;
+  background-position: -150% center;
+  transition: background-position 0s, background-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.btn-primary:hover:not(:disabled) {
+  animation: btnSweep 0.55s ease forwards;
+  box-shadow: 0 4px 18px rgba(123, 240, 190, 0.3);
+}
+
+/* ── 12. Section divider: gradient rule ── */
+.section {
+  border-top-color: transparent;
+  border-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(151, 190, 181, 0.12) 18%,
+    rgba(151, 190, 181, 0.12) 82%,
+    transparent 100%
+  ) 1;
+}
+
+/* ── 13. Hero h1 span: animated gradient ── */
+@keyframes heroGrad {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.hero h1 span {
+  background: linear-gradient(
+    135deg,
+    #7bf0be 0%,
+    #58d7ff 35%,
+    #b59cff 65%,
+    #7bf0be 100%
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: heroGrad 7s ease infinite;
+}
+
+/* ── 14. Badge hover glow ── */
+.badge {
+  transition: border-color 0.2s, box-shadow 0.2s, color 0.2s;
+}
+.badge:hover {
+  border-color: rgba(88, 215, 255, 0.38);
+  box-shadow: 0 0 12px rgba(88, 215, 255, 0.18);
+  color: var(--teal);
 }
