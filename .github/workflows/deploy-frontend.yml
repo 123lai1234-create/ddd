@@ -70,10 +70,14 @@ jobs:
           echo "$RESP" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); (d.deployments||[]).forEach(x=>console.log(x.uid,x.state,x.url))"
           LATEST_ID=$(echo "$RESP" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); process.stdout.write(d.deployments?.[0]?.uid??'')")
           echo "Latest ID: $LATEST_ID"
-          echo "=== Build events ==="
-          [ -n "$LATEST_ID" ] && curl -sf "https://api.vercel.com/v2/deployments/$LATEST_ID/events?teamId=$VERCEL_ORG_ID" \
+          echo "=== Deployment detail ==="
+          [ -n "$LATEST_ID" ] && curl -sf "https://api.vercel.com/v13/deployments/$LATEST_ID?teamId=$VERCEL_ORG_ID" \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
-            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); (Array.isArray(d)?d:[]).slice(-20).forEach(e=>console.log(e.type,JSON.stringify(e.payload).slice(0,200)))" || echo "events failed"
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log('state:',d.status||d.readyState); console.log('error:',JSON.stringify(d.errorMessage||d.errorCode||d.error||'none')); console.log('buildSkipped:',d.buildSkipped); (d.builds||[]).forEach(b=>console.log('build:',b.use,b.src,b.config?.distDir))" || echo "detail failed"
+          echo "=== Build output logs ==="
+          [ -n "$LATEST_ID" ] && curl -sf "https://api.vercel.com/v2/deployments/$LATEST_ID/events?teamId=$VERCEL_ORG_ID&direction=forward&limit=50" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" -o /tmp/events.json && \
+            node -e "const d=require('/tmp/events.json'); (Array.isArray(d)?d:[]).forEach(e=>{ const t=e.payload?.text||e.text||''; if(t) console.log(e.type,t.slice(0,300)) })" | head -40 || echo "no build logs"
 
       - name: Deploy to Vercel
         continue-on-error: true
