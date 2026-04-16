@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -86,10 +87,8 @@ def fetch_fred_series(series_ids: list[str] | None = None, limit: int = 120) -> 
             val_str = obs.get("value", ".")
             value = None
             if val_str and val_str != ".":
-                try:
+                with contextlib.suppress(ValueError):
                     value = float(val_str)
-                except ValueError:
-                    pass
 
             batch.append(EconomicIndicatorPayload(
                 source_name="FRED",

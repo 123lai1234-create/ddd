@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import math
 import os
@@ -10,9 +11,9 @@ from urllib.parse import urlparse
 
 import dotenv
 import httpx
-
-dotenv.load_dotenv()
 import psycopg
+import time as _time
+from threading import Lock as _Lock
 from fastapi import APIRouter, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
@@ -117,6 +118,8 @@ from site_api.sequence_sources import SequenceRecordPayload, fetch_gene_sequence
 from site_api.sequencing_run_sources import fetch_ena_sequencing_runs
 from site_api.structure_sources import fetch_alphafold_predictions
 from site_api.variant_sources import fetch_clinvar_variants, fetch_cosmic_mutations
+
+dotenv.load_dotenv()
 
 router = APIRouter()
 
@@ -1404,10 +1407,8 @@ def sync_pathways(payload: PathwaySyncRequest, x_sync_secret: str | None = Heade
 def search_europe_pmc(query: str = "protein engineering", limit: int = 8) -> dict[str, Any]:
     records = fetch_europe_pmc(query, min(limit, 25))
     if ensure_schema():
-        try:
+        with contextlib.suppress(Exception):
             upsert_knowledge_records(records)
-        except Exception:
-            pass
     return {"records": [r.__dict__ for r in records], "count": len(records), "query": query}
 
 
@@ -1417,10 +1418,8 @@ def search_europe_pmc(query: str = "protein engineering", limit: int = 8) -> dic
 def search_expression_atlas(gene_symbol: str = "TP53", limit: int = 8) -> dict[str, Any]:
     records = fetch_expression_atlas(gene_symbol, min(limit, 20))
     if ensure_schema():
-        try:
+        with contextlib.suppress(Exception):
             upsert_knowledge_records(records)
-        except Exception:
-            pass
     return {"records": [r.__dict__ for r in records], "count": len(records), "geneSymbol": gene_symbol}
 
 
@@ -1582,9 +1581,6 @@ def yahoo_prices_proxy(payload: YahooPriceRequest) -> dict[str, Any]:
 # ──────────────────────────────────────────────────────────────────────
 # Games API — lightweight in-memory leaderboard
 # ──────────────────────────────────────────────────────────────────────
-
-import time as _time
-from threading import Lock as _Lock
 
 _GAME_SCORES: dict[str, list[dict[str, Any]]] = {}
 _GAME_LOCK = _Lock()

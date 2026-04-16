@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 
 from site_api.cache import cached_json_get, cached_json_set
 from site_api.http_client import get as http_get

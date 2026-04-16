@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import asdict, dataclass
 from typing import Any
 from xml.etree import ElementTree as ET
+
+logger = logging.getLogger(__name__)
 
 from site_api.cache import cached_json_get, cached_json_set
 from site_api.http_client import get as http_get

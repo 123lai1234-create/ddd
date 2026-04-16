@@ -6,7 +6,6 @@ import json
 import logging
 import os
 from dataclasses import asdict, dataclass
-from xml.etree import ElementTree as ET
 
 from site_api.cache import cached_json_get, cached_json_set
 from site_api.http_client import get as http_get
