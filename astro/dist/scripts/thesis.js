@@ -1075,7 +1075,7 @@ function renderBacktestCharts(run) {
                 return evaluation.priceSeries.map((_, index) => index + 1);
             })(),
             datasets: [
-                { label: '測試價格', data: evaluation.priceSeries, borderColor: C.teal, backgroundColor: 'rgba(48,200,232,.05)', fill: true, tension: 0.14, pointRadius: 0, borderWidth: 1.6 },
+                { label: '測試價格', data: evaluation.priceSeries.map((y, i) => ({ x: i + 1, y })), borderColor: C.teal, backgroundColor: 'rgba(48,200,232,.05)', fill: true, tension: 0.14, pointRadius: 0, borderWidth: 1.6 },
                 { label: '買入', data: priceScatterBuy, type: 'scatter', pointRadius: 6, pointStyle: 'triangle', pointBackgroundColor: C.green, pointBorderColor: '#fff', pointBorderWidth: 1, showLine: false },
                 { label: '賣出', data: priceScatterSell, type: 'scatter', pointRadius: 6, pointStyle: 'triangle', rotation: 180, pointBackgroundColor: C.red, pointBorderColor: '#fff', pointBorderWidth: 1, showLine: false },
             ],
