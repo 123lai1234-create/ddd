@@ -35,7 +35,7 @@ jobs:
           enable-cache: true
 
       - name: Install
-        run: uv pip install --system -r site_api/requirements.txt pytest ruff httpx requests
+        run: uv pip install --system --break-system-packages -r site_api/requirements.txt pytest ruff httpx requests
 
       - name: Lint
         run: ruff check site_api/ src/ tests/ --output-format=github
