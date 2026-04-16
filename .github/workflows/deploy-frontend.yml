@@ -94,6 +94,7 @@ jobs:
             -H "Authorization: Bearer $VERCEL_TOKEN" \
             | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); process.stdout.write(d.deployments?.[0]?.uid??'')")
           echo "Deploy ID: $DEPLOY_ID"
+          sleep 3  # brief pause before first check
           for i in $(seq 1 36); do
             STATE=$(curl -sf "https://api.vercel.com/v13/deployments/$DEPLOY_ID?teamId=$VERCEL_ORG_ID" \
               -H "Authorization: Bearer $VERCEL_TOKEN" \
@@ -102,6 +103,11 @@ jobs:
             [ "$STATE" = "READY" ] || [ "$STATE" = "ERROR" ] || [ "$STATE" = "CANCELED" ] && break
             sleep 10
           done
+          # Full deployment details + error message
+          echo "=== Full deploy detail ==="
+          curl -sf "https://api.vercel.com/v13/deployments/$DEPLOY_ID?teamId=$VERCEL_ORG_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); ['status','readyState','errorCode','errorMessage','errorStep','buildSkipped','source','meta'].forEach(k=>{ if(d[k]!=null) console.log(k+':',JSON.stringify(d[k]).slice(0,300)) })" 2>/dev/null || echo "detail failed"
           # Get build event logs
           echo "=== Build logs ==="
           curl -sf "https://api.vercel.com/v2/deployments/$DEPLOY_ID/events?teamId=$VERCEL_ORG_ID&direction=forward&limit=100" \
