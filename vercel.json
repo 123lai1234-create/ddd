@@ -18,6 +18,34 @@
     {
       "source": "/interview",
       "destination": "/interview_prep"
+    },
+    {
+      "source": "/protein-mpnn",
+      "destination": "/protein_mpnn"
+    },
+    {
+      "source": "/gene-ai",
+      "destination": "/gene_ai"
+    },
+    {
+      "source": "/about",
+      "destination": "/about_me"
+    },
+    {
+      "source": "/works",
+      "destination": "/works"
+    },
+    {
+      "source": "/ngs",
+      "destination": "/ngs"
+    },
+    {
+      "source": "/report",
+      "destination": "/report"
+    },
+    {
+      "source": "/thesis",
+      "destination": "/thesis"
     }
   ],
   "redirects": [
