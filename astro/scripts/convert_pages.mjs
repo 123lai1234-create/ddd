@@ -5,6 +5,13 @@ const frontendDir = path.resolve('../frontend');
 const pagesDir = path.resolve('src/pages');
 const skip = new Set(['index.html', 'game.html']);
 
+const cleanSlug = {
+    about_me: 'about',
+    gene_ai: 'gene-ai',
+    protein_mpnn: 'protein-mpnn',
+    interview_prep: 'interview',
+};
+
 function extract(re, src, group = 1) {
     const m = src.match(re);
     return m ? m[group] : '';
@@ -55,7 +62,8 @@ async function convert(file) {
     }
     const headInlineRaw = headInlineBlocks.map(b => `<script is:inline>${b}</script>`).join('\n');
 
-    const slug = file.replace(/\.html$/, '');
+    const rawSlug = file.replace(/\.html$/, '');
+    const slug = cleanSlug[rawSlug] ?? rawSlug;
     const astroName = slug + '.astro';
 
     const content = `---
