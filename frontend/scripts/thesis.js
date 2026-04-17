@@ -2042,12 +2042,12 @@ function renderThesisFindings() {
     ];
     const table = document.getElementById('algoCompareTable');
     if (table) {
-        table.innerHTML = algoRows.map((row) => {
+        table.innerHTML = algoRows.map((row, idx) => {
             const highlight = row[0].startsWith('GAPPTS');
             const bg = highlight ? 'background:rgba(123,240,190,0.08)' : '';
             const weight = highlight ? 'font-weight:700;color:var(--green)' : '';
-            return `<tr style="border-bottom:1px solid var(--border);${bg}">
-                <td style="padding:10px 12px;${weight}">${row[0]}</td>
+            return `<tr data-algo-idx="${idx}" style="border-bottom:1px solid var(--border);${bg};cursor:pointer;transition:background .15s" onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='${highlight ? 'rgba(123,240,190,0.08)' : ''}'" onclick="showAlgoStrategy(${idx})">
+                <td style="padding:10px 12px;${weight}">${row[0]} <span style="font-size:.72rem;color:var(--teal);vertical-align:middle">›</span></td>
                 <td style="padding:10px 12px;color:var(--muted)">${row[1]}</td>
                 <td style="padding:10px 12px;color:var(--muted)">${row[2]}</td>
                 <td style="padding:10px 12px;color:var(--muted)">${row[3]}</td>
@@ -2056,6 +2056,223 @@ function renderThesisFindings() {
             </tr>`;
         }).join('');
     }
+}
+
+const ALGO_STRATEGIES = [
+    {
+        name: 'ARIMA 時序預測策略',
+        color: 'var(--teal)',
+        type: '線性時序模型',
+        entry: '當 ARIMA(p,d,q) 預測值高於當前價格超過 1σ 時觸發買入訊號',
+        exit: '預測值轉為下降或持有達設定天數 d',
+        params: [
+            { k: 'AR 階數 p', v: '自回歸項數，捕捉趨勢慣性' },
+            { k: '差分階數 d', v: '使序列平穩，通常 d=1 或 2' },
+            { k: 'MA 階數 q', v: '移動平均修正殘差誤差' },
+            { k: '進場門檻 σ', v: '預測偏差超過 1–1.5σ 才進場' },
+        ],
+        note: '優點：可解釋、計算快速。限制：假設線性平穩，對台股大幅波動或突發事件反應遲滯。',
+        fit: '適合電信、公用事業等趨勢穩定個股，不適合高波動半導體股。',
+    },
+    {
+        name: '指數平滑法 (ETS) 策略',
+        color: 'var(--blue)',
+        type: '加權移動平均',
+        entry: '短期 ETS 預測均值上穿長期 ETS 時做多（均線交叉）',
+        exit: '短期均值下穿或達停損線',
+        params: [
+            { k: '平滑係數 α', v: '近期資料權重，α 越大反應越靈敏' },
+            { k: '趨勢係數 β', v: 'Holt 方法加入趨勢修正' },
+            { k: '季節週期 s', v: 'Holt-Winters 捕捉週期性波動' },
+            { k: '短/長周期', v: '典型設定 5/20 日或 10/50 日' },
+        ],
+        note: '優點：極低計算成本、容易實作。限制：只能捕捉平滑趨勢，無法處理非線性結構。',
+        fit: '適合作為基準策略或作為集成方法的子模型輸入。',
+    },
+    {
+        name: 'GARCH 波動率目標策略',
+        color: 'var(--orange)',
+        type: '波動率預測模型',
+        entry: '預測波動率低於歷史 20 百分位時做多，視為低風險進場視窗',
+        exit: '波動率急升超過閾值或達目標報酬',
+        params: [
+            { k: 'GARCH(p,q)', v: '條件異方差，捕捉波動聚集效應' },
+            { k: '波動率閾值', v: '低波動率分位數進場條件' },
+            { k: '部位槓桿', v: '依當前波動率動態調整倉位大小' },
+            { k: '風險預算', v: '每日最大虧損 = 目標波動 × 持有部位' },
+        ],
+        note: '優點：波動率預測精準、適合風控導向交易。限制：對價格方向預測能力有限。',
+        fit: '台股外資大量進出時波動聚集明顯，GARCH 在金融股和電子龍頭股效果較佳。',
+    },
+    {
+        name: 'SVM 分類訊號策略',
+        color: 'var(--purple)',
+        type: '支持向量機分類',
+        entry: 'SVM 分類器輸出「上漲」類別且信心分數 > 0.65 時做多',
+        exit: '分類器輸出「下跌」或信心分數反轉',
+        params: [
+            { k: '核函數', v: 'RBF 或多項式核，依個股特性選擇' },
+            { k: '正規化 C', v: '控制分類邊界鬆緊度' },
+            { k: '特徵工程', v: 'RSI / MACD / 布林帶 / 成交量比' },
+            { k: '信心閾值', v: '決策函數分數轉換為進場門檻' },
+        ],
+        note: '優點：小樣本下仍有效、可處理非線性。限制：特徵工程耗時、超參敏感度高。',
+        fit: '在 48 檔樣本中，中型流動性股票（廣達、技嘉等）適合 SVM 分類框架。',
+    },
+    {
+        name: '隨機森林多因子策略',
+        color: 'var(--green)',
+        type: '集成決策樹',
+        entry: '隨機森林預測漲幅 > 1.5% 且特徵重要度最高的技術指標同向時進場',
+        exit: '多數決策樹投票轉為持平或空頭',
+        params: [
+            { k: '樹的數量', v: '通常 200–500 棵決策樹' },
+            { k: '最大深度', v: '限制過擬合，通常 5–12 層' },
+            { k: '特徵子集 m', v: '每次分裂隨機選取 √n 個特徵' },
+            { k: '訓練窗口', v: '滾動重訓，通常 6–12 個月' },
+        ],
+        note: '優點：穩定、不易過擬合、特徵重要度可解釋。限制：預測連續值能力不如 LSTM。',
+        fit: '台灣中大型股基本面因子（本益比、月營收）+ 技術指標的組合在隨機森林下效果良好。',
+    },
+    {
+        name: 'XGBoost 梯度提升策略',
+        color: 'var(--orange)',
+        type: '梯度提升樹',
+        entry: 'XGBoost 輸出 5 日預測漲幅 > 2% 且特徵值未觸發異常警示時進場',
+        exit: '預測值轉負或觸發動態止損',
+        params: [
+            { k: '學習率 η', v: '通常 0.01–0.1，配合 early stopping' },
+            { k: '樹的數量', v: '100–500 棵，依驗證集決定' },
+            { k: '子採樣率', v: 'colsample / subsample 防過擬合' },
+            { k: '正規化 λ', v: 'L1 / L2 正規化減少特徵冗餘' },
+        ],
+        note: '優點：精度高、訓練快速、Kaggle 競賽常勝軍。限制：需要大量特徵工程，黑箱程度比隨機森林高。',
+        fit: '台股高頻多因子策略的首選，在 48 檔樣本上整體精度最高的傳統 ML 方法。',
+    },
+    {
+        name: 'RNN / LSTM 序列預測策略',
+        color: 'var(--blue)',
+        type: '循環神經網路',
+        entry: 'LSTM 預測未來 t+5 收盤價高於當前 2% 且 Attention 權重集中在近期 K 線時進場',
+        exit: '預測序列轉向或持有達上限天數',
+        params: [
+            { k: '序列長度', v: '輸入視窗 20–60 個交易日' },
+            { k: '隱藏單元數', v: '128–256 個 LSTM 單元' },
+            { k: 'Dropout', v: '0.2–0.4 防序列過擬合' },
+            { k: '批次大小', v: '32–64，搭配 Adam 優化器' },
+        ],
+        note: '優點：捕捉長期依賴、序列模式建模能力強。限制：需要大量數據，訓練時間長，台股 48 檔樣本量不足。',
+        fit: '適合資料量大的指數或 ETF 預測，在個股層面容易過擬合。本研究 GAPPTS 以可解釋規則彌補此不足。',
+    },
+    {
+        name: 'CNN 型態識別策略',
+        color: 'var(--purple)',
+        type: '卷積神經網路',
+        entry: 'CNN 辨識 K 線型態（頭肩底、雙底、旗形突破）分類為「買入訊號」時進場',
+        exit: 'CNN 輸出型態反轉訊號或達目標漲幅',
+        params: [
+            { k: '輸入格式', v: '將 K 線 OHLCV 編碼為 2D 影像或 1D 序列' },
+            { k: '濾波器數量', v: '32–128 個卷積核捕捉不同型態' },
+            { k: '池化方式', v: 'MaxPooling 保留最強型態特徵' },
+            { k: '分類頭', v: '輸出漲跌二分類或多類型態標籤' },
+        ],
+        note: '優點：自動學習圖形型態、不需人工定義型態規則。限制：標籤資料難以取得，解釋性差。',
+        fit: '本研究 48 檔樣本量偏小，CNN 訓練效果受限；適合資料量大且成交量充足的主流股。',
+    },
+    {
+        name: 'Transformer 注意力策略',
+        color: 'var(--teal)',
+        type: '自注意力機制',
+        entry: 'Transformer Encoder 輸出的全域注意力加權預測值超過進場門檻時做多',
+        exit: '注意力分布轉移至負向特徵或達停損線',
+        params: [
+            { k: '注意力頭數', v: '4–8 個 Multi-head Attention' },
+            { k: 'Positional Encoding', v: '編碼時間位置資訊' },
+            { k: '序列長度', v: '60–120 個交易日輸入視窗' },
+            { k: '預訓練', v: '可用更大市場資料做遷移學習' },
+        ],
+        note: '優點：全域依賴建模、注意力可視化提供部分解釋性。限制：計算量大、台股小樣本容易過擬合。',
+        fit: '更適合多市場、多股票聯合預訓練場景。本研究 48 檔個股使用 GAPPTS 反而更具優勢。',
+    },
+    {
+        name: '集成方法多模型投票策略',
+        color: 'var(--green)',
+        type: '多模型集成',
+        entry: '超過半數子模型（ARIMA + RF + LSTM + XGBoost）同時輸出買入訊號時進場',
+        exit: '多數模型投票轉為中性或任一模型觸發強烈空頭警示',
+        params: [
+            { k: '子模型組合', v: '時序 + 傳統ML + 深度學習 三類混合' },
+            { k: '投票權重', v: '依歷史績效動態調整各模型權重' },
+            { k: '異議處理', v: '分歧超過 40% 時降低倉位或跳過訊號' },
+            { k: '再訓練週期', v: '每季依最新績效重新標定權重' },
+        ],
+        note: '優點：整體精度最高、降低單一模型失效風險。限制：系統複雜、維護成本高，實際交易中部署困難。',
+        fit: '機構級量化系統的標準做法，適合有完整基礎設施支撐的操作環境。',
+    },
+    {
+        name: 'GAPPTS 遺傳演算法區間策略（本研究）',
+        color: 'var(--green)',
+        type: '遺傳演算法 × 價格區間',
+        entry: '當買入價落在 PPTS 高 α 機率區間且平均利潤為正時觸發，不依賴預測模型',
+        exit: '持有 hold_days 天後自動出場，或達到 target_profit 提前離場',
+        params: [
+            { k: '區間數 m', v: '將個股歷史價格切成 m 個等距區間（GA 優化）' },
+            { k: '持有天數 hold', v: '買入後固定持有期間（GA 優化，典型 18–29 天）' },
+            { k: '目標利潤 target', v: '區間達標門檻（GA 優化，低水位高頻交易）' },
+            { k: 'α 進場係數', v: '機率門檻 0.4–0.8，過濾低品質區間' },
+        ],
+        note: '優點：全域搜尋避免局部最優、可解釋交易規則、不需大量訓練資料。限制：每個個股需獨立優化。',
+        fit: '本研究實證：在台灣 48 檔 ETF50 樣本股上，GAPPTS 顯著優於固定參數 PPTS 與 Buy & Hold 基準。',
+    },
+];
+
+function showAlgoStrategy(idx) {
+    const s = ALGO_STRATEGIES[idx];
+    const panel = document.getElementById('algoStrategyPanel');
+    const content = document.getElementById('algoStrategyContent');
+    if (!panel || !content || !s) return;
+
+    const paramsHtml = s.params.map(p =>
+        `<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="min-width:130px;font-size:.78rem;color:${s.color};font-weight:600">${p.k}</div>
+            <div style="font-size:.78rem;color:var(--muted);line-height:1.6">${p.v}</div>
+        </div>`
+    ).join('');
+
+    content.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;gap:20px">
+            <div style="flex:1;min-width:280px">
+                <div style="font-size:1.05rem;font-weight:700;color:${s.color};margin-bottom:4px">${s.name}</div>
+                <div style="font-size:.75rem;letter-spacing:.06em;color:var(--dim);margin-bottom:14px;text-transform:uppercase">${s.type}</div>
+                <div style="margin-bottom:10px">
+                    <div style="font-size:.75rem;color:var(--muted);margin-bottom:3px">進場條件</div>
+                    <div style="font-size:.82rem;line-height:1.7;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;border-left:3px solid ${s.color}">${s.entry}</div>
+                </div>
+                <div style="margin-bottom:10px">
+                    <div style="font-size:.75rem;color:var(--muted);margin-bottom:3px">出場條件</div>
+                    <div style="font-size:.82rem;line-height:1.7;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;border-left:3px solid rgba(255,255,255,0.15)">${s.exit}</div>
+                </div>
+                <div style="font-size:.78rem;line-height:1.7;color:var(--dim);padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:8px">${s.note}</div>
+                <div style="font-size:.78rem;line-height:1.7;color:${s.color};opacity:.85">${s.fit}</div>
+            </div>
+            <div style="min-width:240px;max-width:320px">
+                <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">關鍵參數</div>
+                ${paramsHtml}
+            </div>
+        </div>`;
+
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    document.querySelectorAll('#algoCompareTable tr').forEach((tr, i) => {
+        tr.style.outline = i === idx ? `2px solid ${s.color}` : '';
+    });
+}
+
+function closeAlgoStrategy() {
+    const panel = document.getElementById('algoStrategyPanel');
+    if (panel) panel.style.display = 'none';
+    document.querySelectorAll('#algoCompareTable tr').forEach(tr => { tr.style.outline = ''; });
 }
 
 async function autoSyncAndPreload() {
@@ -2122,6 +2339,8 @@ window.resetGaCfg = resetGaCfg;
 window.lastGenIndex = lastGenIndex;
 window.curGen = curGen;
 window.syncThesisStocks = syncThesisStocks;
+window.showAlgoStrategy = showAlgoStrategy;
+window.closeAlgoStrategy = closeAlgoStrategy;
 
 window.getThesisPyodideContext = function () {
     const code = uiState.currentStockCode;

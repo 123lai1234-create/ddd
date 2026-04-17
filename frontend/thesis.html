@@ -497,6 +497,13 @@ for i in range(bm):
                     <span style="color:var(--green);font-weight:600">GAPPTS 定位：</span>
                     結合基因演算法的全域搜索能力與 PPTS 的可解釋交易規則，在中型資料規模下取得高解釋性與高非線性捕捉的平衡 — 相較 LSTM/Transformer 不需海量資料，相較 ARIMA 能處理非線性區間結構。
                 </div>
+                <div id="algoStrategyPanel" style="display:none;margin-top:20px;padding:18px;border-radius:12px;border:1px solid rgba(123,240,190,0.2);background:rgba(123,240,190,0.04)">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                        <div style="font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">選取演算法的交易策略</div>
+                        <button onclick="closeAlgoStrategy()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:0 4px">✕</button>
+                    </div>
+                    <div id="algoStrategyContent"></div>
+                </div>
             </div>
         </div>
     </div>
