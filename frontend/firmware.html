@@ -112,9 +112,50 @@
         .fw-diff-card.solve { border-left-color: var(--accent-mint, #22ffa7); }
         .fw-diff-card.solve .title { color: var(--accent-mint, #22ffa7); }
 
+        /* RGB565 calculator */
+        .fw-rgb-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .fw-rgb-sliders { display: grid; gap: 14px; }
+        .fw-rgb-field label { display: block; font-family:'JetBrains Mono',monospace; font-size:.78rem; color:var(--fw-ink-3); letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px; }
+        .fw-rgb-field { background:var(--fw-panel); border:1px solid var(--fw-border); border-radius:12px; padding:14px 16px; }
+        .fw-rgb-slider-row { display:flex; align-items:center; gap:10px; }
+        .fw-rgb-field input[type=range] { flex:1; -webkit-appearance:none; height:6px; border-radius:999px; border:none; padding:0; background:rgba(255,255,255,.08); cursor:pointer; }
+        .fw-rgb-field input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#00e5ff; cursor:pointer; }
+        .fw-rgb-field input[type=number] { width:56px; background:rgba(255,255,255,.06); border:1px solid var(--fw-border); border-radius:8px; color:#edf1ff; font-family:'JetBrains Mono',monospace; font-size:.86rem; padding:4px 8px; text-align:right; }
+        .fw-rgb-out { display:flex; flex-direction:column; gap:12px; }
+        .fw-rgb-preview { width:100%; height:80px; border-radius:12px; border:1px solid var(--fw-border); transition:background .1s; margin-bottom:4px; }
+        .fw-rgb-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 14px; border-radius:10px; background:rgba(255,255,255,.03); border:1px solid var(--fw-border); }
+        .fw-rgb-row span { font-family:'JetBrains Mono',monospace; font-size:.74rem; color:var(--fw-ink-3); letter-spacing:.06em; text-transform:uppercase; }
+        .fw-rgb-row code { font-family:'JetBrains Mono',monospace; font-size:.88rem; color:#22ffa7; background:transparent; }
+        .fw-rgb-bits { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
+        .fw-bit { width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; border-radius:5px; font-family:'JetBrains Mono',monospace; font-size:.7rem; font-weight:700; border:1px solid rgba(255,255,255,.08); transition:background .1s,color .1s; }
+        .fw-bit.r1 { background:rgba(255,80,80,.25); color:#ff9090; border-color:rgba(255,80,80,.35); }
+        .fw-bit.g1 { background:rgba(80,255,120,.2); color:#80ff90; border-color:rgba(80,255,120,.32); }
+        .fw-bit.b1 { background:rgba(80,160,255,.22); color:#90c8ff; border-color:rgba(80,160,255,.35); }
+        .fw-bit.off { background:rgba(255,255,255,.04); color:rgba(255,255,255,.3); }
+        .fw-bit-legend { display:flex; gap:12px; margin-top:6px; font-family:'JetBrains Mono',monospace; font-size:.72rem; color:var(--fw-ink-3); }
+        .fw-bit-legend span::before { content:'■ '; }
+        .fw-bit-legend .lr::before { color:#ff9090; }
+        .fw-bit-legend .lg::before { color:#80ff90; }
+        .fw-bit-legend .lb::before { color:#90c8ff; }
+
+        /* EBI timing waveform */
+        .fw-wave { background:#07091a; border:1px solid var(--fw-border); border-radius:14px; padding:20px 16px; overflow-x:auto; }
+        .fw-wave svg { min-width:580px; }
+
+        /* Register table */
+        .fw-reg-table { width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:.82rem; }
+        .fw-reg-table th { text-align:left; padding:9px 14px; background:rgba(255,255,255,.04); color:var(--fw-ink-3); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; border-bottom:1px solid var(--fw-border); }
+        .fw-reg-table td { padding:9px 14px; border-bottom:1px solid rgba(255,255,255,.05); color:var(--fw-ink-2); vertical-align:top; }
+        .fw-reg-table tr:last-child td { border:none; }
+        .fw-reg-table .rname { color:#00e5ff; font-weight:700; white-space:nowrap; }
+        .fw-reg-table .rval { color:#22ffa7; }
+        .fw-reg-table .rdesc { font-size:.78rem; line-height:1.6; }
+        .fw-reg-wrap { background:var(--fw-panel); border:1px solid var(--fw-border); border-radius:14px; overflow:hidden; }
+
         @media (max-width: 640px) {
           .fw-section-head .note { display: none; }
           .fw-mem-row .name { min-width: 110px; font-size: .78rem; }
+          .fw-rgb-wrap { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -286,14 +327,111 @@
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">06</span><h2>完整教學播放清單</h2><span class="note">YouTube · Nano MCU series</span></div>
+            <div class="fw-section-head"><span class="fw-section-num">06</span><h2>RGB565 互動計算機</h2><span class="note">即時轉換 · 位元視覺化</span></div>
+            <div class="fw-rgb-wrap">
+                <div class="fw-rgb-sliders">
+                    <div class="fw-rgb-field">
+                        <label>R（5-bit · bits [15:11]）</label>
+                        <div class="fw-rgb-slider-row">
+                            <input type="range" id="rgbR" min="0" max="31" value="15">
+                            <input type="number" id="rgbRn" min="0" max="31" value="15">
+                        </div>
+                    </div>
+                    <div class="fw-rgb-field">
+                        <label>G（6-bit · bits [10:5]）</label>
+                        <div class="fw-rgb-slider-row">
+                            <input type="range" id="rgbG" min="0" max="63" value="32">
+                            <input type="number" id="rgbGn" min="0" max="63" value="32">
+                        </div>
+                    </div>
+                    <div class="fw-rgb-field">
+                        <label>B（5-bit · bits [4:0]）</label>
+                        <div class="fw-rgb-slider-row">
+                            <input type="range" id="rgbB" min="0" max="31" value="15">
+                            <input type="number" id="rgbBn" min="0" max="31" value="15">
+                        </div>
+                    </div>
+                </div>
+                <div class="fw-rgb-out">
+                    <div class="fw-rgb-preview" id="rgbPreview"></div>
+                    <div class="fw-rgb-row"><span>HEX 16-bit</span><code id="rgbHex">0x7BEF</code></div>
+                    <div class="fw-rgb-row"><span>C literal</span><code id="rgbC">0x7BEFU</code></div>
+                    <div class="fw-rgb-row"><span>RGB888</span><code id="rgb888">#787878</code></div>
+                    <div class="fw-rgb-bits" id="rgbBits"></div>
+                    <div class="fw-bit-legend">
+                        <span class="lr">R[4:0]</span><span class="lg">G[5:0]</span><span class="lb">B[4:0]</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">07</span><h2>EBI 時序波形</h2><span class="note">write cycle · tAS / tAH</span></div>
+            <div class="fw-wave">
+                <svg viewBox="0 0 580 270" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                            <path d="M0,0 L6,3 L0,6 Z" fill="#6b7399"/>
+                        </marker>
+                        <marker id="arrl" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
+                            <path d="M0,0 L6,3 L0,6 Z" fill="#6b7399"/>
+                        </marker>
+                    </defs>
+                    <!-- grid -->
+                    <line x1="88" y1="10" x2="88" y2="250" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
+                    <line x1="560" y1="10" x2="560" y2="250" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
+                    <!-- labels -->
+                    <text x="78" y="42" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">CS_n</text>
+                    <text x="78" y="102" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">WR_n</text>
+                    <text x="78" y="162" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">RS</text>
+                    <text x="78" y="222" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">D[15:0]</text>
+                    <!-- CS_n: HIGH→LOW→HIGH -->
+                    <polyline points="88,24 130,24 130,56 430,56 430,24 560,24" fill="none" stroke="#00e5ff" stroke-width="1.8"/>
+                    <!-- WR_n: HIGH→LOW→HIGH -->
+                    <polyline points="88,84 200,84 200,116 340,116 340,84 560,84" fill="none" stroke="#22ffa7" stroke-width="1.8"/>
+                    <!-- RS: stays HIGH (data mode) -->
+                    <line x1="88" y1="144" x2="560" y2="144" stroke="#a855f7" stroke-width="1.8"/>
+                    <!-- DATA: undefined before 200, valid 200-340, undefined after 390 -->
+                    <polyline points="88,214 88,230 200,230" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                    <rect x="200" y="206" width="140" height="32" rx="4" fill="rgba(253,224,71,.08)" stroke="#fde047" stroke-width="1.8"/>
+                    <text x="270" y="226" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#fde047">RGB565 DATA VALID</text>
+                    <polyline points="340,230 390,230 390,214" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                    <line x1="390" y1="222" x2="560" y2="222" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                    <!-- tAS annotation: x130 to x200 -->
+                    <line x1="130" y1="245" x2="200" y2="245" stroke="#6b7399" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)"/>
+                    <text x="165" y="258" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#6b7399">tAS</text>
+                    <!-- tAH annotation: x340 to x390 -->
+                    <line x1="340" y1="245" x2="390" y2="245" stroke="#6b7399" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)"/>
+                    <text x="365" y="258" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#6b7399">tAH</text>
+                    <!-- WR width annotation -->
+                    <line x1="200" y1="132" x2="340" y2="132" stroke="#22ffa7" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)" opacity=".6"/>
+                    <text x="270" y="144" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#22ffa7" opacity=".8">W_DLY</text>
+                </svg>
+            </div>
+            <div class="fw-reg-wrap" style="margin-top:16px">
+                <table class="fw-reg-table">
+                    <thead>
+                        <tr><th>Register</th><th>Offset</th><th>Reset</th><th>Key Fields</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="rname">EBI_CTL</td><td class="rval">0x00</td><td class="rval">0x0000_0000</td><td class="rdesc">ENABLE[0]：EBI 致能；DATA_WIDTH[17:16]：匯流排寬度（00=8b, 01=16b）</td></tr>
+                        <tr><td class="rname">EBI_TCTL0</td><td class="rval">0x04</td><td class="rval">0x03FF_FFFF</td><td class="rdesc">tAS[27:24]：address setup；tAH[19:16]：address hold；W_DLY[11:8]：WR 脈寬（× HCLK）</td></tr>
+                        <tr><td class="rname">SYS_GPA_MFP</td><td class="rval">SYS+0x30</td><td class="rval">0x0000_0000</td><td class="rdesc">PA[15:0] multifunction：設為 EBI bus，覆蓋 GPIO 預設值</td></tr>
+                        <tr><td class="rname">SYS_GPB_MFP</td><td class="rval">SYS+0x34</td><td class="rval">0x0000_0000</td><td class="rdesc">PB[10:8] → EBI_ALE / CS0 / WR；PB[7] → EBI_RD</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">08</span><h2>完整教學播放清單</h2><span class="note">YouTube · Nano MCU series</span></div>
             <div class="fw-yt">
                 <iframe src="https://www.youtube.com/embed/videoseries?list=PLUl_fzAL8tWIqU_zk0u1_18sf1LF-ym91" title="Nuvoton Firmware Playlist" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">07</span><h2>技術文章</h2><span class="note">blog</span></div>
+            <div class="fw-section-head"><span class="fw-section-num">09</span><h2>技術文章</h2><span class="note">blog</span></div>
             <div class="fw-articles">
                 <a href="https://jtlai0921.wixsite.com/mysite/post/%E7%8C%B4%E5%AD%90%E9%83%BD%E8%83%BD%E8%AE%80%E6%87%82%E7%9A%84%E7%94%A8tft%E9%A1%AF%E7%A4%BA%E5%9C%96%E7%89%87" target="_blank" rel="noopener"><span class="bullet">01 ▸</span><span class="title">猴子都能讀懂：用 TFT 顯示圖片（EBI + RGB565 完整教學）</span><span class="arrow">↗</span></a>
                 <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noopener"><span class="bullet">02 ▸</span><span class="title">更多韌體與工程筆記 · 個人部落格</span><span class="arrow">↗</span></a>
@@ -301,7 +439,7 @@
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">08</span><h2>跨域延伸</h2><span class="note">DSP × biomed</span></div>
+            <div class="fw-section-head"><span class="fw-section-num">10</span><h2>跨域延伸</h2><span class="note">DSP × biomed</span></div>
             <div class="fw-callout">
                 <h3>從 Bit 到分子：一條完整的工程線</h3>
                 <p>以韌體底層為基礎，整合生醫研究專業：MCU 上實作 ECG / PPG 訊號 FIR / IIR 濾波、心率擷取演算法，結合站內已展示的 <a href="report.html">蛋白質 AI</a>、<a href="ngs.html">NGS</a>、<a href="gene_ai.html">基因 AI</a> 平台，形成「硬體 ↔ 韌體 ↔ 演算法 ↔ 系統」同一條技術線。</p>
@@ -312,6 +450,43 @@
     <hr class="divider" style="margin-top:60px">
     <div data-site-footer></div>
     <button class="scroll-top" aria-label="返回頂部">↑</button>
+    <script>
+    (function () {
+        const r = document.getElementById('rgbR'), rn = document.getElementById('rgbRn');
+        const g = document.getElementById('rgbG'), gn = document.getElementById('rgbGn');
+        const b = document.getElementById('rgbB'), bn = document.getElementById('rgbBn');
+        if (!r) return;
+        function update() {
+            const rv = +r.value, gv = +g.value, bv = +b.value;
+            const val = (rv << 11) | (gv << 5) | bv;
+            const hex = '0x' + val.toString(16).toUpperCase().padStart(4, '0');
+            const r8 = Math.round(rv * 255 / 31);
+            const g8 = Math.round(gv * 255 / 63);
+            const b8 = Math.round(bv * 255 / 31);
+            document.getElementById('rgbPreview').style.background = `rgb(${r8},${g8},${b8})`;
+            document.getElementById('rgbHex').textContent = hex;
+            document.getElementById('rgbC').textContent = hex + 'U';
+            document.getElementById('rgb888').textContent = '#' + [r8, g8, b8].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+            const bits = document.getElementById('rgbBits');
+            bits.innerHTML = '';
+            for (let i = 15; i >= 0; i--) {
+                const span = document.createElement('span');
+                span.className = 'fw-bit';
+                const on = (val >> i) & 1;
+                span.textContent = on;
+                if (i >= 11) span.classList.add(on ? 'r1' : 'off');
+                else if (i >= 5) span.classList.add(on ? 'g1' : 'off');
+                else span.classList.add(on ? 'b1' : 'off');
+                bits.appendChild(span);
+            }
+        }
+        [[r, rn], [g, gn], [b, bn]].forEach(([sl, num]) => {
+            sl.addEventListener('input', () => { num.value = sl.value; update(); });
+            num.addEventListener('input', () => { sl.value = num.value; update(); });
+        });
+        update();
+    })();
+    </script>
 </body>
 
 </html>
