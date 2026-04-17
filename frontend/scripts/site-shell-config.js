@@ -5,6 +5,7 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/ngs',          label: 'NGS 定序' },
         { href: '/gene-ai',      label: '基因 AI' },
         { href: '/firmware',     label: '🔌 韌體' },
+        { href: '/stem-cell',    label: '🧫 幹細胞' },
         { href: '/games/',       label: '🎮 遊戲中心' },
         { href: '/protein-mpnn', label: '互動展示', classes: 'nav-cta' }
     ];
@@ -19,6 +20,7 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/protein-mpnn', label: '互動展示' },
         { href: '/firmware',     label: '🔌 韌體 MCU' },
         { href: '/interview',    label: '面試準備' },
+        { href: '/stem-cell',    label: '🧫 幹細胞研究' },
         { href: '/games/',       label: '🎮 遊戲中心' }
     ];
 
@@ -31,6 +33,7 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/protein-mpnn', label: '互動展示' },
         { href: '/report',       label: '專案報告' },
         { href: '/firmware',     label: '韌體' },
+        { href: '/stem-cell',    label: '幹細胞研究' },
         { href: '/games/',       label: '🎮 遊戲中心' },
         { href: 'https://jtlai0921.wixsite.com/mysite', label: '個人網站', target: '_blank', rel: 'noreferrer' }
     ];
@@ -122,6 +125,13 @@ window.SITE_SHELL_CONFIG = (function () {
             navLinks: STD_NAV,
             drawerLinks: STD_DRAWER,
             footer: stdFooter('韌體工程 · MCU Firmware', 'Nuvoton Cortex-M0 · EBI · RGB565 · Keil + J-Link · 2026')
+        },
+        stem_cell: {
+            brandHref: '/',
+            brandHtml: '<span class="nav-dot"></span>幹細胞研究',
+            navLinks: STD_NAV,
+            drawerLinks: STD_DRAWER,
+            footer: stdFooter('幹細胞研究 · 國防醫學院', '神經血管再生修復 · MSC · NSC · Cell Sheet · 2018 精準醫療創新獎')
         },
         ingest: {
             brandHref: '/',

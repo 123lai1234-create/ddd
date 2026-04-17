@@ -10,6 +10,7 @@ const cleanSlug = {
     gene_ai: 'gene-ai',
     protein_mpnn: 'protein-mpnn',
     interview_prep: 'interview',
+    'stem-cell': 'stem-cell',
 };
 
 function extract(re, src, group = 1) {

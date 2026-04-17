@@ -90,6 +90,16 @@
       "permanent": true
     },
     {
+      "source": "/stem_cell.html",
+      "destination": "/stem-cell",
+      "permanent": true
+    },
+    {
+      "source": "/stem_cell",
+      "destination": "/stem-cell",
+      "permanent": true
+    },
+    {
       "source": "/games",
       "destination": "/games/",
       "permanent": false
