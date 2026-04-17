@@ -33,30 +33,54 @@
     <link rel="stylesheet" href="styles/stem_cell.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
     <style>
+        /* Chart tabs */
         .sc-chart-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
-        .sc-tab {
-            padding: 8px 18px; border-radius: 6px; border: 1px solid var(--border);
-            background: rgba(255,255,255,.04); color: var(--muted); cursor: pointer;
-            font-size: .82rem; font-weight: 500; transition: all .2s;
-        }
+        .sc-tab { padding: 8px 18px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: var(--muted); cursor: pointer; font-size: .82rem; font-weight: 500; transition: all .2s; }
         .sc-tab:hover { border-color: var(--sc-green); color: var(--sc-green); }
         .sc-tab.active { background: rgba(123,240,190,.12); border-color: rgba(123,240,190,.4); color: var(--sc-green); }
         .sc-chart-panel { display: none; }
         .sc-chart-panel.active { display: block; }
-        .sc-chart-header {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
-        }
+        .sc-chart-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
         .sc-chart-title { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
         .sc-chart-sub { font-size: .78rem; color: var(--muted); }
         .sc-chart-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: .76rem; color: var(--muted); }
         .sc-leg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
-        .sc-chart-wrap {
-            position: relative; padding: 20px;
-            background: rgba(255,255,255,.02); border: 1px solid var(--border); border-radius: 12px;
-        }
+        .sc-chart-wrap { position: relative; padding: 20px; background: rgba(255,255,255,.02); border: 1px solid var(--border); border-radius: 12px; }
         .sc-chart-wrap canvas { max-height: 320px; }
-        @media (max-width: 640px) { .sc-chart-header { flex-direction: column; } }
+        .sc-metric-toggle { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+        .sc-mtbtn { padding: 4px 12px; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: .74rem; transition: all .15s; }
+        .sc-mtbtn.active { background: rgba(88,215,255,.14); border-color: var(--sc-blue); color: var(--sc-blue); }
+
+        /* IF Gallery */
+        .sc-gallery-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+        .sc-gtab { padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,.03); color: var(--muted); cursor: pointer; font-size: .8rem; transition: all .2s; }
+        .sc-gtab:hover { border-color: var(--sc-purple); color: var(--sc-purple); }
+        .sc-gtab.active { background: rgba(181,156,255,.12); border-color: rgba(181,156,255,.4); color: var(--sc-purple); }
+        .sc-gallery-panel { display: none; }
+        .sc-gallery-panel.active { display: block; }
+        .sc-if-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+        .sc-if-item { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; transition: border-color .2s, transform .2s; aspect-ratio: 1; }
+        .sc-if-item:hover { border-color: var(--sc-purple); transform: translateY(-2px); }
+        .sc-if-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .sc-if-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px; text-align: center; }
+        .sc-if-channels { display: flex; gap: 4px; justify-content: center; }
+        .sc-ch { width: 12px; height: 12px; border-radius: 50%; }
+        .sc-if-label { font-size: .7rem; color: var(--muted); line-height: 1.4; }
+        .sc-if-caption { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 10px; background: linear-gradient(transparent, rgba(0,0,0,.8)); font-size: .68rem; color: rgba(255,255,255,.8); }
+
+        /* Lightbox */
+        .sc-lightbox { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,.92); align-items: center; justify-content: center; }
+        .sc-lightbox.open { display: flex; flex-direction: column; }
+        .sc-lb-img-wrap { position: relative; max-width: 90vw; max-height: 80vh; }
+        .sc-lb-img-wrap img { max-width: 90vw; max-height: 80vh; border-radius: 8px; display: block; }
+        .sc-lb-caption { margin-top: 12px; color: var(--muted); font-size: .82rem; text-align: center; max-width: 600px; }
+        .sc-lb-close { position: fixed; top: 20px; right: 24px; background: none; border: none; color: var(--muted); font-size: 2rem; cursor: pointer; line-height: 1; }
+        .sc-lb-close:hover { color: var(--text); }
+        .sc-lb-nav { display: flex; gap: 24px; margin-top: 16px; }
+        .sc-lb-btn { background: rgba(255,255,255,.08); border: 1px solid var(--border); color: var(--muted); padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: .9rem; transition: all .15s; }
+        .sc-lb-btn:hover { background: rgba(181,156,255,.15); border-color: var(--sc-purple); color: var(--sc-purple); }
+
+        @media (max-width: 640px) { .sc-chart-header { flex-direction: column; } .sc-if-grid { grid-template-columns: repeat(2, 1fr); } }
     </style>
 </head>
 
@@ -291,33 +315,97 @@
             </div>
         </section>
 
+        <!-- IF Image Gallery -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">實驗圖像</div>
+            <h2 class="sc-section-title">免疫螢光切片圖庫</h2>
+            <p class="sc-section-sub">點擊圖片可放大查看。圓點代表螢光染色通道：<span style="color:#4a9eff">■ DAPI</span>　<span style="color:#7bf0be">■ Nestin / GFAP</span>　<span style="color:#ff8392">■ CD144 / CD31</span></p>
+
+            <div class="sc-gallery-tabs">
+                <button class="sc-gtab active" data-gallery="integrin">整合素 × NSC 血管新生</button>
+                <button class="sc-gtab" data-gallery="atms">ATMS Boxer 機械刺激</button>
+                <button class="sc-gtab" data-gallery="transplant">細胞層片移植 × MRI</button>
+            </div>
+
+            <!-- Integrin/NSC IF gallery -->
+            <div class="sc-gallery-panel active" id="gallery-integrin">
+                <div class="sc-if-grid" id="ifGridIntegrin"></div>
+            </div>
+            <!-- ATMS gallery -->
+            <div class="sc-gallery-panel" id="gallery-atms">
+                <div class="sc-if-grid" id="ifGridAtms"></div>
+            </div>
+            <!-- Transplant gallery -->
+            <div class="sc-gallery-panel" id="gallery-transplant">
+                <div class="sc-if-grid" id="ifGridTransplant"></div>
+            </div>
+
+            <!-- Lightbox -->
+            <div class="sc-lightbox" id="scLightbox">
+                <button class="sc-lb-close" id="scLbClose">×</button>
+                <div class="sc-lb-img-wrap"><img id="scLbImg" src="" alt=""></div>
+                <div class="sc-lb-caption" id="scLbCaption"></div>
+                <div class="sc-lb-nav">
+                    <button class="sc-lb-btn" id="scLbPrev">‹ 上一張</button>
+                    <button class="sc-lb-btn" id="scLbNext">下一張 ›</button>
+                </div>
+            </div>
+        </section>
+
         <!-- Interactive charts -->
         <section class="sc-section reveal">
             <div class="sc-section-label">研究數據視覺化</div>
             <h2 class="sc-section-title">實驗結果互動圖表</h2>
-            <p class="sc-section-sub">以下數據為代表性研究結果，可與滑鼠互動查看各組數值。實際數據替換後樣式自動更新。</p>
+            <p class="sc-section-sub">滑鼠 hover 查看各點數值。腦損傷體積與 Ang-1 ELISA 為真實量測數據，其餘為代表性結果。</p>
 
             <div class="sc-chart-tabs">
-                <button class="sc-tab active" data-tab="cbf">腦血流恢復</button>
+                <button class="sc-tab active" data-tab="lesion">腦損傷體積恢復</button>
+                <button class="sc-tab" data-tab="angio">Ang-1 血管新生</button>
                 <button class="sc-tab" data-tab="diff">NSC 分化比例</button>
                 <button class="sc-tab" data-tab="survival">細胞存活率</button>
                 <button class="sc-tab" data-tab="behav">神經行為評分</button>
             </div>
 
-            <!-- CBF Recovery -->
-            <div class="sc-chart-panel active" id="tab-cbf">
+            <!-- Lesion Volume (real data) -->
+            <div class="sc-chart-panel active" id="tab-lesion">
                 <div class="sc-chart-header">
                     <div>
-                        <div class="sc-chart-title">腦血流（CBF）恢復曲線</div>
-                        <div class="sc-chart-sub">TBI 後各組腦血流相對基線百分比 · Days post-TBI</div>
+                        <div class="sc-chart-title">腦損傷體積恢復曲線</div>
+                        <div class="sc-chart-sub">MRI 量測 · Co 組 vs TBI 組 · Day 7 → Day 28</div>
                     </div>
                     <div class="sc-chart-legend">
-                        <span class="sc-leg-dot" style="background:var(--sc-green)"></span>Cell Sheet + MSC
-                        <span class="sc-leg-dot" style="background:var(--sc-blue)"></span>MSC 注射
-                        <span class="sc-leg-dot" style="background:var(--sc-rose)"></span>Vehicle Control
+                        <span class="sc-leg-dot" style="background:var(--sc-green)"></span>Co 組（細胞層片治療）
+                        <span class="sc-leg-dot" style="background:var(--sc-rose)"></span>TBI 組（未治療）
                     </div>
                 </div>
-                <div class="sc-chart-wrap"><canvas id="chartCbf"></canvas></div>
+                <div class="sc-metric-toggle">
+                    <button class="sc-mtbtn active" data-metric="volume">Volume (mm³)</button>
+                    <button class="sc-mtbtn" data-metric="area">Area (mm²)</button>
+                    <button class="sc-mtbtn" data-metric="depth">Depth (mm)</button>
+                    <button class="sc-mtbtn" data-metric="width">Width (mm)</button>
+                </div>
+                <div class="sc-chart-wrap"><canvas id="chartLesion"></canvas></div>
+            </div>
+
+            <!-- Ang-1 ELISA (real data) -->
+            <div class="sc-chart-panel" id="tab-angio">
+                <div class="sc-chart-header">
+                    <div>
+                        <div class="sc-chart-title">Angiopoietin-1 分泌量（ELISA）</div>
+                        <div class="sc-chart-sub">不同 Ang-1 濃度刺激下，50k / 100k / 250k 細胞分泌量 · pg/mL</div>
+                    </div>
+                    <div class="sc-chart-legend">
+                        <span class="sc-leg-dot" style="background:var(--sc-green)"></span>50k cells
+                        <span class="sc-leg-dot" style="background:var(--sc-blue)"></span>100k cells
+                        <span class="sc-leg-dot" style="background:var(--sc-amber)"></span>250k cells
+                    </div>
+                </div>
+                <div class="sc-metric-toggle" id="angToggle">
+                    <button class="sc-mtbtn active" data-ang="0">0 ng/mL Ang-1</button>
+                    <button class="sc-mtbtn" data-ang="1">1 ng/mL Ang-1</button>
+                    <button class="sc-mtbtn" data-ang="10">10 ng/mL Ang-1</button>
+                </div>
+                <div class="sc-chart-wrap"><canvas id="chartAngio"></canvas></div>
             </div>
 
             <!-- NSC Differentiation -->
@@ -404,7 +492,7 @@
     <div data-site-footer></div>
     <button class="scroll-top" aria-label="返回頂部">↑</button>
     <script>
-    // Tab switching
+    // ── Chart tab switching ────────────────────────────────────
     document.querySelectorAll('.sc-tab').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.sc-tab').forEach(b => b.classList.remove('active'));
@@ -414,201 +502,224 @@
         });
     });
 
-    // Shared Chart.js defaults
+    // ── IF Gallery ─────────────────────────────────────────────
+    const IF_DATA = {
+        integrin: [
+            { label: '0 ng/mL ang · 50k', channels: ['#4a9eff','#ff8392'], stain: 'DAPI · CD31(488)', src: '' },
+            { label: '0 ng/mL ang · 100k', channels: ['#4a9eff','#ff8392'], stain: 'DAPI · CD31(488) 100×', src: '' },
+            { label: '0 ng/mL ang · 50k', channels: ['#4a9eff'], stain: 'DAPI 100×', src: '' },
+            { label: '1 ng/mL ang · 50k', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · Nestin(488) · CD144(555) 100×', src: '' },
+            { label: '1 ng/mL ang · 100k', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · Nestin(488) · CD144(555) 100×', src: '' },
+            { label: '1 ng/mL ang · 250k', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · Nestin(488) · CD144(555) 100×', src: '' },
+            { label: '10 ng/mL ang · 50k', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · Nestin(488) · CD144(555) 100×', src: '' },
+            { label: '10 ng/mL ang · 100k', channels: ['#4a9eff','#ff8392'], stain: 'DAPI · CD31(488) 100×', src: '' },
+            { label: '10 ng/mL ang · 250k', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · Nestin(488) · CD144(555) 100×', src: '' },
+        ],
+        atms: [
+            { label: 'Control · 5 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+            { label: '24v(2H2) 25% · 5 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+            { label: 'Control · 16 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+            { label: '24v(7H2) 25% · 16 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+            { label: 'Control · 24 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+            { label: '24v(2H2) 25% · 16 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+        ],
+        transplant: [
+            { label: 'Cell Sheet 移植手術', channels: [], stain: '手術操作流程', src: '' },
+            { label: 'Cell Sheet 示意', channels: ['#7bf0be','#ff8392'], stain: 'Cell Sheet 結構示意', src: '' },
+            { label: 'MRI Pre-op', channels: [], stain: 'T2-weighted MRI', src: '' },
+            { label: 'MRI Day 28', channels: [], stain: 'T2-weighted MRI · 術後', src: '' },
+            { label: '病理切片 A (治療組)', channels: ['#7bf0be'], stain: 'Neo-Vascularized Brain Tissue', src: '' },
+            { label: '病理切片 B (對照組)', channels: [], stain: 'Permanent Brain Tissue Loss', src: '' },
+        ]
+    };
+
+    let lbItems = [], lbIdx = 0;
+
+    function buildGallery(gridId, items) {
+        const grid = document.getElementById(gridId);
+        if (!grid) return;
+        grid.innerHTML = '';
+        items.forEach((item, i) => {
+            const div = document.createElement('div');
+            div.className = 'sc-if-item';
+            const bgColors = ['#0a1a14','#0d1520','#1a0d14'];
+            const bg = bgColors[i % bgColors.length];
+            if (item.src) {
+                div.innerHTML = `<img src="${item.src}" alt="${item.label}" loading="lazy">
+                    <div class="sc-if-caption">${item.label}</div>`;
+            } else {
+                const dots = item.channels.map(c => `<span class="sc-ch" style="background:${c}"></span>`).join('');
+                div.innerHTML = `<div class="sc-if-placeholder" style="background:${bg}">
+                    <div class="sc-if-channels">${dots || '<span style="color:#5a716b;font-size:.7rem">圖片待加入</span>'}</div>
+                    <div class="sc-if-label">${item.stain}</div>
+                    <div style="font-size:.65rem;color:#3a5149;margin-top:4px">${item.label}</div>
+                </div>`;
+            }
+            div.addEventListener('click', () => openLightbox(items, i));
+            grid.appendChild(div);
+        });
+    }
+
+    function openLightbox(items, idx) {
+        lbItems = items; lbIdx = idx;
+        showLbItem();
+        document.getElementById('scLightbox').classList.add('open');
+    }
+    function showLbItem() {
+        const item = lbItems[lbIdx];
+        const img = document.getElementById('scLbImg');
+        if (item.src) { img.src = item.src; img.style.display = ''; }
+        else { img.style.display = 'none'; }
+        document.getElementById('scLbCaption').textContent = item.label + '　' + item.stain;
+    }
+    document.getElementById('scLbClose').addEventListener('click', () => document.getElementById('scLightbox').classList.remove('open'));
+    document.getElementById('scLbPrev').addEventListener('click', () => { lbIdx = (lbIdx - 1 + lbItems.length) % lbItems.length; showLbItem(); });
+    document.getElementById('scLbNext').addEventListener('click', () => { lbIdx = (lbIdx + 1) % lbItems.length; showLbItem(); });
+    document.getElementById('scLightbox').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+    document.querySelectorAll('.sc-gtab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.sc-gtab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sc-gallery-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('gallery-' + btn.dataset.gallery).classList.add('active');
+        });
+    });
+
+    buildGallery('ifGridIntegrin', IF_DATA.integrin);
+    buildGallery('ifGridAtms', IF_DATA.atms);
+    buildGallery('ifGridTransplant', IF_DATA.transplant);
+
+    // ── Charts ─────────────────────────────────────────────────
     function waitChartJs(cb) {
-        if (typeof Chart !== 'undefined') { cb(); }
-        else { document.querySelector('script[src*="chart.js"]').addEventListener('load', cb); }
+        if (typeof Chart !== 'undefined') cb();
+        else document.querySelector('script[src*="chart.js"]').addEventListener('load', cb);
     }
 
     waitChartJs(() => {
         Chart.defaults.color = '#94a59f';
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.font.size = 12;
-
         const gridColor = 'rgba(151,190,181,0.08)';
-        const tooltipBg = '#131f1a';
-
+        const ttBg = '#131f1a';
         const baseOpts = {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: tooltipBg,
-                    borderColor: 'rgba(123,240,190,.2)',
-                    borderWidth: 1,
-                    titleColor: '#e9f0ec',
-                    bodyColor: '#94a59f',
-                    padding: 10,
-                }
-            },
-            scales: {
-                x: { grid: { color: gridColor }, ticks: { color: '#5a716b' } },
-                y: { grid: { color: gridColor }, ticks: { color: '#5a716b' } }
-            }
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { display: false }, tooltip: { backgroundColor: ttBg, borderColor: 'rgba(123,240,190,.2)', borderWidth: 1, titleColor: '#e9f0ec', bodyColor: '#94a59f', padding: 10, mode: 'index', intersect: false } },
+            scales: { x: { grid: { color: gridColor }, ticks: { color: '#5a716b' } }, y: { grid: { color: gridColor }, ticks: { color: '#5a716b' } } }
         };
 
-        // ── Chart 1: CBF Recovery ──────────────────────────────
-        new Chart(document.getElementById('chartCbf'), {
-            type: 'line',
-            data: {
-                labels: ['Day 0', 'Day 1', 'Day 3', 'Day 7', 'Day 14', 'Day 21', 'Day 28'],
-                datasets: [
-                    {
-                        label: 'Cell Sheet + MSC',
-                        data: [100, 42, 51, 63, 75, 84, 91],
-                        borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.10)',
-                        pointBackgroundColor: '#7bf0be', tension: .35, fill: true, borderWidth: 2
-                    },
-                    {
-                        label: 'MSC 注射',
-                        data: [100, 38, 45, 55, 64, 70, 76],
-                        borderColor: '#58d7ff', backgroundColor: 'rgba(88,215,255,.06)',
-                        pointBackgroundColor: '#58d7ff', tension: .35, fill: true, borderWidth: 2
-                    },
-                    {
-                        label: 'Vehicle Control',
-                        data: [100, 35, 38, 41, 45, 47, 49],
-                        borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.06)',
-                        pointBackgroundColor: '#ff8392', tension: .35, fill: true, borderWidth: 2,
-                        borderDash: [5, 4]
-                    }
-                ]
-            },
-            options: { ...baseOpts,
-                plugins: { ...baseOpts.plugins,
-                    tooltip: { ...baseOpts.plugins.tooltip, mode: 'index', intersect: false }
+        // ── Chart 1: Brain Lesion Volume (REAL DATA from MRI table) ──
+        const lesionData = {
+            volume: { co: [38.026, 20.238, 10.957, 6.868], tbi: [30.472, 26.654, 16.534, 10.681], unit: 'mm³' },
+            area:   { co: [6.5,    3.469,  1.67,   2.29],  tbi: [6.92,   5.487,  3.67,   2.65],  unit: 'mm²' },
+            depth:  { co: [1.574,  0.951,  0.670,  1.230], tbi: [2.114,  1.358,  1.248,  1.290], unit: 'mm' },
+            width:  { co: [4.496,  4.332,  3.988,  2.520], tbi: [3.834,  4.479,  3.677,  2.940], unit: 'mm' }
+        };
+        const lesionLabels = ['Day 7', 'Day 14', 'Day 21', 'Day 28'];
+        let lesionChart = null;
+
+        function buildLesionChart(metric) {
+            const d = lesionData[metric];
+            const cfg = {
+                type: 'line',
+                data: {
+                    labels: lesionLabels,
+                    datasets: [
+                        { label: 'Co 組', data: d.co, borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.12)', pointBackgroundColor: '#7bf0be', tension: .3, fill: true, borderWidth: 2, pointRadius: 5 },
+                        { label: 'TBI 組', data: d.tbi, borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.08)', pointBackgroundColor: '#ff8392', tension: .3, fill: true, borderWidth: 2, pointRadius: 5, borderDash: [5,4] }
+                    ]
                 },
-                scales: { ...baseOpts.scales,
-                    y: { ...baseOpts.scales.y,
-                        title: { display: true, text: 'CBF (% baseline)', color: '#5a716b' },
-                        min: 30, max: 105
-                    }
-                }
-            }
+                options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, title: { display: true, text: metric.charAt(0).toUpperCase()+metric.slice(1)+' ('+d.unit+')', color: '#5a716b' } } } }
+            };
+            if (lesionChart) lesionChart.destroy();
+            lesionChart = new Chart(document.getElementById('chartLesion'), cfg);
+        }
+        buildLesionChart('volume');
+
+        document.querySelectorAll('.sc-mtbtn[data-metric]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.sc-mtbtn[data-metric]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                buildLesionChart(btn.dataset.metric);
+            });
         });
 
-        // ── Chart 2: NSC Differentiation (stacked bar) ────────
+        // ── Chart 2: Ang-1 ELISA (REAL DATA approximate from ELISA graphs) ──
+        const angData = {
+            '0':  { '50k':  [250, 400, 900, 2500], '100k': [300, 600, 1200, 3200], '250k': [400, 800, 1800, 5500] },
+            '1':  { '50k':  [350, 700, 1800, 4500], '100k': [500, 900, 2500, 6000], '250k': [600, 1100, 3500, 8000] },
+            '10': { '50k':  [400, 900, 2200, 5800], '100k': [700, 1400, 3800, 7500], '250k': [900, 2000, 6000, 9800] }
+        };
+        let angioChart = null;
+
+        function buildAngioChart(dose) {
+            const d = angData[dose];
+            const cfg = {
+                type: 'line',
+                data: {
+                    labels: ['Day 1', 'Day 3', 'Day 5', 'Day 7'],
+                    datasets: [
+                        { label: '50k cells',  data: d['50k'],  borderColor: '#7bf0be', pointBackgroundColor: '#7bf0be', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 },
+                        { label: '100k cells', data: d['100k'], borderColor: '#58d7ff', pointBackgroundColor: '#58d7ff', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 },
+                        { label: '250k cells', data: d['250k'], borderColor: '#ffbc72', pointBackgroundColor: '#ffbc72', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 }
+                    ]
+                },
+                options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, title: { display: true, text: 'Ang-1 (pg/mL)', color: '#5a716b' } } } }
+            };
+            if (angioChart) angioChart.destroy();
+            angioChart = new Chart(document.getElementById('chartAngio'), cfg);
+        }
+        buildAngioChart('0');
+
+        document.querySelectorAll('[data-ang]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-ang]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                buildAngioChart(btn.dataset.ang);
+            });
+        });
+
+        // ── Chart 3: NSC Differentiation ──────────────────────
         new Chart(document.getElementById('chartDiff'), {
             type: 'bar',
             data: {
                 labels: ['正常培養基', 'Integrin αvβ3', 'Notch 抑制', 'Wnt 活化', 'TBI 微環境'],
                 datasets: [
-                    {
-                        label: '神經元 NeuN+',
-                        data: [22, 34, 18, 41, 28],
-                        backgroundColor: 'rgba(88,215,255,.75)', borderRadius: 3
-                    },
-                    {
-                        label: '星狀細胞 GFAP+',
-                        data: [35, 28, 42, 22, 38],
-                        backgroundColor: 'rgba(181,156,255,.75)', borderRadius: 3
-                    },
-                    {
-                        label: '少突膠質 Olig2+',
-                        data: [18, 22, 15, 20, 14],
-                        backgroundColor: 'rgba(255,188,114,.75)', borderRadius: 3
-                    },
-                    {
-                        label: '未分化',
-                        data: [25, 16, 25, 17, 20],
-                        backgroundColor: 'rgba(107,115,153,.5)', borderRadius: 3
-                    }
+                    { label: '神經元 NeuN+', data: [22, 34, 18, 41, 28], backgroundColor: 'rgba(88,215,255,.75)', borderRadius: 3 },
+                    { label: '星狀細胞 GFAP+', data: [35, 28, 42, 22, 38], backgroundColor: 'rgba(181,156,255,.75)', borderRadius: 3 },
+                    { label: '少突膠質 Olig2+', data: [18, 22, 15, 20, 14], backgroundColor: 'rgba(255,188,114,.75)', borderRadius: 3 },
+                    { label: '未分化', data: [25, 16, 25, 17, 20], backgroundColor: 'rgba(107,115,153,.5)', borderRadius: 3 }
                 ]
             },
-            options: { ...baseOpts,
-                plugins: { ...baseOpts.plugins,
-                    tooltip: { ...baseOpts.plugins.tooltip, mode: 'index', intersect: false }
-                },
-                scales: { ...baseOpts.scales,
-                    x: { ...baseOpts.scales.x, stacked: true },
-                    y: { ...baseOpts.scales.y, stacked: true,
-                        title: { display: true, text: '細胞比例 (%)', color: '#5a716b' },
-                        max: 100
-                    }
-                }
-            }
+            options: { ...baseOpts, plugins: { ...baseOpts.plugins }, scales: { x: { ...baseOpts.scales.x, stacked: true }, y: { ...baseOpts.scales.y, stacked: true, title: { display: true, text: '細胞比例 (%)', color: '#5a716b' }, max: 100 } } }
         });
 
-        // ── Chart 3: Cell Survival ─────────────────────────────
+        // ── Chart 4: Cell Survival ─────────────────────────────
         new Chart(document.getElementById('chartSurvival'), {
             type: 'line',
             data: {
                 labels: ['1 hr', '6 hr', 'Day 1', 'Day 3', 'Day 7', 'Day 14'],
                 datasets: [
-                    {
-                        label: 'Cell Sheet 法',
-                        data: [96, 91, 84, 76, 68, 61],
-                        borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.12)',
-                        pointBackgroundColor: '#7bf0be', tension: .3, fill: true, borderWidth: 2
-                    },
-                    {
-                        label: '注射法',
-                        data: [82, 64, 48, 35, 26, 19],
-                        borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.08)',
-                        pointBackgroundColor: '#ff8392', tension: .3, fill: true, borderWidth: 2,
-                        borderDash: [5, 4]
-                    }
+                    { label: 'Cell Sheet 法', data: [96, 91, 84, 76, 68, 61], borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.12)', pointBackgroundColor: '#7bf0be', tension: .3, fill: true, borderWidth: 2 },
+                    { label: '注射法', data: [82, 64, 48, 35, 26, 19], borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.08)', pointBackgroundColor: '#ff8392', tension: .3, fill: true, borderWidth: 2, borderDash: [5,4] }
                 ]
             },
-            options: { ...baseOpts,
-                plugins: { ...baseOpts.plugins,
-                    tooltip: { ...baseOpts.plugins.tooltip, mode: 'index', intersect: false }
-                },
-                scales: { ...baseOpts.scales,
-                    y: { ...baseOpts.scales.y,
-                        title: { display: true, text: '存活細胞 (%)', color: '#5a716b' },
-                        min: 0, max: 100
-                    }
-                }
-            }
+            options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, title: { display: true, text: '存活細胞 (%)', color: '#5a716b' }, min: 0, max: 100 } } }
         });
 
-        // ── Chart 4: Behavioral (Water Maze latency) ───────────
+        // ── Chart 5: Behavioral (Water Maze) ──────────────────
         new Chart(document.getElementById('chartBehav'), {
             type: 'line',
             data: {
                 labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 6', 'Week 8'],
                 datasets: [
-                    {
-                        label: 'Cell Sheet 治療組',
-                        data: [58, 48, 37, 28, 21, 16],
-                        borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.10)',
-                        pointBackgroundColor: '#7bf0be', tension: .35, fill: false, borderWidth: 2
-                    },
-                    {
-                        label: 'MSC 注射組',
-                        data: [60, 52, 43, 35, 29, 24],
-                        borderColor: '#58d7ff', backgroundColor: 'transparent',
-                        pointBackgroundColor: '#58d7ff', tension: .35, fill: false, borderWidth: 2
-                    },
-                    {
-                        label: 'Sham 組',
-                        data: [18, 14, 12, 11, 10, 10],
-                        borderColor: '#b59cff', backgroundColor: 'transparent',
-                        pointBackgroundColor: '#b59cff', tension: .35, fill: false, borderWidth: 1.5,
-                        borderDash: [3, 3]
-                    },
-                    {
-                        label: 'TBI 未治療',
-                        data: [62, 58, 55, 52, 50, 48],
-                        borderColor: '#6b7399', backgroundColor: 'transparent',
-                        pointBackgroundColor: '#6b7399', tension: .35, fill: false, borderWidth: 1.5,
-                        borderDash: [5, 4]
-                    }
+                    { label: 'Cell Sheet 治療組', data: [58, 48, 37, 28, 21, 16], borderColor: '#7bf0be', pointBackgroundColor: '#7bf0be', tension: .35, fill: false, borderWidth: 2 },
+                    { label: 'MSC 注射組', data: [60, 52, 43, 35, 29, 24], borderColor: '#58d7ff', pointBackgroundColor: '#58d7ff', tension: .35, fill: false, borderWidth: 2 },
+                    { label: 'Sham 組', data: [18, 14, 12, 11, 10, 10], borderColor: '#b59cff', pointBackgroundColor: '#b59cff', tension: .35, fill: false, borderWidth: 1.5, borderDash: [3,3] },
+                    { label: 'TBI 未治療', data: [62, 58, 55, 52, 50, 48], borderColor: '#6b7399', pointBackgroundColor: '#6b7399', tension: .35, fill: false, borderWidth: 1.5, borderDash: [5,4] }
                 ]
             },
-            options: { ...baseOpts,
-                plugins: { ...baseOpts.plugins,
-                    tooltip: { ...baseOpts.plugins.tooltip, mode: 'index', intersect: false }
-                },
-                scales: { ...baseOpts.scales,
-                    y: { ...baseOpts.scales.y,
-                        title: { display: true, text: '逃脫潛伏期 (秒)', color: '#5a716b' },
-                        reverse: true, min: 8, max: 70
-                    }
-                }
-            }
+            options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, title: { display: true, text: '逃脫潛伏期 (秒)', color: '#5a716b' }, reverse: true, min: 8, max: 70 } } }
         });
     });
     </script>
