@@ -10,3 +10,4 @@ Dockerfile
 netlify.toml
 wrangler.toml
 frontend/
+api/
