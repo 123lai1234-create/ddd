@@ -9,5 +9,4 @@ fly.toml
 Dockerfile
 netlify.toml
 wrangler.toml
-frontend/
-api/
+go-proxy/
