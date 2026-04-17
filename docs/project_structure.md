@@ -1,136 +1,130 @@
 # Project Structure
 
-## Root Directory
+## Root
 
-- `.dockerignore`
-- `.env.example`
-- `.gitignore`
-- `.vercelignore`
-- `alembic.ini`
-- `code_review_report.docx`
-- `demo_notebook.ipynb`
-- `docker-compose.yml`
-- `Dockerfile`
-- `Dockerfile.web`
-- `fly.toml`
-- `netlify.toml`
-- `nginx.conf`
-- `package.json`
-- `README.md`
-- `render.yaml`
-- `requirements.txt`
-- `ruff.toml`
-- `vercel.json`
-- `wrangler.toml`
+| File | Purpose |
+|------|---------|
+| `Dockerfile` / `Dockerfile.web` | Backend and frontend containers |
+| `docker-compose.yml` | Local dev orchestration |
+| `requirements.txt` | Root-level ML Python deps |
+| `vercel.json` | Vercel frontend deployment |
+| `netlify.toml` | Netlify alternative deployment |
+| `render.yaml` | Render backend deployment |
+| `fly.toml` | Fly.io backend deployment |
+| `wrangler.toml` | Cloudflare Workers config |
+| `alembic.ini` | Database migration config |
+| `ruff.toml` | Python linter config |
 
-## Directories
+## `frontend/`
 
-- `.claude/`
-- `.git/`
-- `.github/`
-- `.netlify/`
-- `.pytest_cache/`
-- `.venv/`
-- `.vercel/`
-- `.wrangler/`
-- `api/`
-- `astro/`
-- `docs/`
-- `fly-supabase-proxy/`
-- `frontend/`
-- `migrations/`
-- `outputs/`
-- `scripts/`
-- `site_api/`
-- `src/`
-- `tests/`
+Static HTML portfolio pages served directly or via Vercel/Netlify.
 
-## Files within Directories
+| File | Page |
+|------|------|
+| `index.html` | Home / landing |
+| `about_me.html` | Bio and CV |
+| `works.html` | Projects portfolio |
+| `gene_ai.html` | AI gene analysis tool |
+| `protein_mpnn.html` | Protein sequence generation |
+| `ngs.html` | Next-gen sequencing analysis |
+| `interview_prep.html` | Interview prep tool |
+| `game.html` | Interactive demo/game |
+| `report.html` | Research report |
+| `thesis.html` | Thesis summary |
+| `ingest.html` | Data ingestion interface |
+| `firmware.html` | Firmware/embedded systems page |
 
-- `api/go.mod`
-- `api/index.go`
-- `astro/.gitignore`
-- `astro/astro.config.mjs`
-- `astro/package-lock.json`
-- `astro/package.json`
-- `astro/README.md`
-- `astro/tsconfig.json`
-- `docs/DATABASE_SETUP.md`
-- `docs/DEPLOY_AUTOMATION.md`
-- `docs/DEPLOY_FLY.md`
-- `docs/DEPLOY_RENDER.md`
-- `fly-supabase-proxy/Dockerfile`
-- `fly-supabase-proxy/fly.toml`
-- `frontend/about_me.html`
-- `frontend/favicon.ico`
-- `frontend/favicon.svg`
-- `frontend/firmware.html`
-- `frontend/game.html`
-- `frontend/gene_ai.html`
-- `frontend/index.html`
-- `frontend/ingest.html`
-- `frontend/interview_prep.html`
-- `frontend/ngs.html`
-- `frontend/og-image.svg`
-- `frontend/protein_mpnn.html`
-- `frontend/report.html`
-- `frontend/thesis.html`
-- `frontend/works.html`
-- `migrations/README.md`
-- `outputs/mpnn_loss.png`
-- `outputs/results_esm2.png`
-- `outputs/results.png`
-- `outputs/rl_training.png`
-- `outputs/test_results.png`
-- `scripts/build_static_site.sh`
-- `scripts/check_api_db.py`
-- `scripts/run_pipeline.py`
-- `scripts/sync_frontend_heads.mjs`
-- `scripts/use_neon.ps1`
-- `scripts/write_vercel_output_config.mjs`
-- `site_api/auto_sync.py`
-- `site_api/bioinfo_utils.py`
-- `site_api/cache.py`
-- `site_api/chembl_sources.py`
-- `site_api/db.py`
-- `site_api/economic_sources.py`
-- `site_api/http_client.py`
-- `site_api/interaction_sources.py`
-- `site_api/knowledge_sources.py`
-- `site_api/main.py`
-- `site_api/market_sources.py`
-- `site_api/models.py`
-- `site_api/opentargets_sources.py`
-- `site_api/pathway_sources.py`
-- `site_api/population_sources.py`
-- `site_api/requirements.txt`
-- `site_api/routes.py`
-- `site_api/schemas.py`
-- `site_api/sequence_sources.py`
-- `site_api/sequencing_run_sources.py`
-- `site_api/services.py`
-- `site_api/shared_utils.py`
-- `site_api/structure_sources.py`
-- `site_api/variant_sources.py`
-- `src/__init__.py`
-- `src/alphafold.py`
-- `src/bayes_opt.py`
-- `src/constants.py`
-- `src/data_prep.py`
-- `src/embeddings.py`
-- `src/esm_fold.py`
-- `src/predictor.py`
-- `src/protein_mpnn.py`
-- `src/rl_reinforce.py`
-- `src/rosetta_score.py`
-- `src/structure_utils.py`
-- `src/visualize.py`
-- `tests/__init__.py`
-- `tests/test_constants.py`
-- `tests/test_db.py`
-- `tests/test_knowledge_sources.py`
-- `tests/test_market_sources.py`
-- `tests/test_models.py`
-- `tests/test_routes_unit.py`
-- `tests/test_services.py`
-- `tests/test_shared_utils.py`
+## `site_api/`
+
+FastAPI backend. Entry point: `main.py`.
+
+| File | Role |
+|------|------|
+| `main.py` | App factory, startup, middleware |
+| `routes.py` | All API endpoints |
+| `models.py` | SQLAlchemy ORM models |
+| `schemas.py` | Pydantic request/response schemas |
+| `services.py` | Business logic |
+| `db.py` | Database connection and pooling |
+| `cache.py` | Redis caching layer |
+| `http_client.py` | Shared HTTP client utilities |
+| `shared_utils.py` | Common helpers |
+| `bioinfo_utils.py` | Bioinformatics helpers |
+| `auto_sync.py` | Scheduled background sync |
+| `*_sources.py` | Data source modules (see below) |
+
+### Data Source Modules
+
+| Module | Source |
+|--------|--------|
+| `sequence_sources.py` | UniProt, Ensembl |
+| `sequencing_run_sources.py` | Sequencing run data |
+| `knowledge_sources.py` | NCBI PubMed, Semantic Scholar |
+| `opentargets_sources.py` | OpenTargets drug-disease |
+| `chembl_sources.py` | ChEMBL chemical biology |
+| `pathway_sources.py` | Reactome, QuickGO |
+| `structure_sources.py` | Protein structures |
+| `variant_sources.py` | Genetic variants (NCBI, COSMIC) |
+| `interaction_sources.py` | Protein interactions |
+| `population_sources.py` | Population genetics |
+| `market_sources.py` | TWSE, TAIFEX, Yahoo Finance |
+| `economic_sources.py` | FRED macroeconomic data |
+
+## `src/`
+
+ML pipeline modules. Entry point: `predictor.py`.
+
+| File | Algorithm |
+|------|-----------|
+| `embeddings.py` | ESM-2 protein embeddings |
+| `protein_mpnn.py` | ProteinMPNN graph neural network |
+| `bayes_opt.py` | Bayesian Optimisation (Botorch) |
+| `rl_reinforce.py` | REINFORCE policy gradient |
+| `alphafold.py` | AlphaFold 2 integration |
+| `esm_fold.py` | ESMFold structure prediction |
+| `rosetta_score.py` | Rosetta energy scoring |
+| `predictor.py` | Unified prediction interface |
+| `data_prep.py` | Data preprocessing |
+| `structure_utils.py` | Structure manipulation |
+| `visualize.py` | UMAP and result visualisation |
+| `config.py` | Environment-based configuration |
+| `constants.py` | Model constants |
+
+## `scripts/`
+
+| Script | Purpose |
+|--------|---------|
+| `run_pipeline.py` | Run the full ML pipeline |
+| `build_static_site.sh` | Build and publish the Astro site |
+| `sync_frontend_heads.mjs` | Sync frontend HTML head tags |
+| `write_vercel_output_config.mjs` | Write Vercel output config |
+| `check_api_db.py` | Validate database connectivity |
+| `use_neon.ps1` | PowerShell helper to switch to Neon |
+
+## `tests/`
+
+Pytest unit tests for backend modules. Run with `pytest tests/`.
+
+## `migrations/`
+
+Alembic database migrations. Run with `alembic upgrade head`.
+
+## `outputs/`
+
+ML training plots: loss curves, UMAP embeddings, evaluation results.
+
+## `docs/`
+
+Deployment and setup guides.
+
+## `astro/`
+
+Astro SSG sub-project (alternative frontend build). See `astro/README.md`.
+
+## `api/`
+
+Minimal Go service (experimental). Not part of the primary deployment.
+
+## `fly-supabase-proxy/`
+
+Fly.io-hosted Supabase connection proxy for pooled connections.
