@@ -3,6 +3,8 @@
   "installCommand": "cd astro && npm ci",
   "buildCommand": "cd astro && npm run build",
   "outputDirectory": "astro/dist",
+  "cleanUrls": true,
+  "trailingSlash": false,
   "env": {
     "API_PROXY_TARGET": "https://donttalk-api-production.up.railway.app"
   },
