@@ -13,6 +13,8 @@ html {
 
 body {
   overflow-x: hidden;
+  background: var(--bg, #0a1116);
+  color: var(--text, #e6edf3);
 }
 
 /* ─── Scrollbar ───────────────────────────────────────────── */
