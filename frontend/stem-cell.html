@@ -31,6 +31,33 @@
     <script src="scripts/dynamic-features.js" defer></script>
     <!-- END COMMON_HEAD -->
     <link rel="stylesheet" href="styles/stem_cell.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+    <style>
+        .sc-chart-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+        .sc-tab {
+            padding: 8px 18px; border-radius: 6px; border: 1px solid var(--border);
+            background: rgba(255,255,255,.04); color: var(--muted); cursor: pointer;
+            font-size: .82rem; font-weight: 500; transition: all .2s;
+        }
+        .sc-tab:hover { border-color: var(--sc-green); color: var(--sc-green); }
+        .sc-tab.active { background: rgba(123,240,190,.12); border-color: rgba(123,240,190,.4); color: var(--sc-green); }
+        .sc-chart-panel { display: none; }
+        .sc-chart-panel.active { display: block; }
+        .sc-chart-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
+        }
+        .sc-chart-title { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+        .sc-chart-sub { font-size: .78rem; color: var(--muted); }
+        .sc-chart-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: .76rem; color: var(--muted); }
+        .sc-leg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+        .sc-chart-wrap {
+            position: relative; padding: 20px;
+            background: rgba(255,255,255,.02); border: 1px solid var(--border); border-radius: 12px;
+        }
+        .sc-chart-wrap canvas { max-height: 320px; }
+        @media (max-width: 640px) { .sc-chart-header { flex-direction: column; } }
+    </style>
 </head>
 
 <body data-page="stem_cell">
@@ -264,6 +291,85 @@
             </div>
         </section>
 
+        <!-- Interactive charts -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">研究數據視覺化</div>
+            <h2 class="sc-section-title">實驗結果互動圖表</h2>
+            <p class="sc-section-sub">以下數據為代表性研究結果，可與滑鼠互動查看各組數值。實際數據替換後樣式自動更新。</p>
+
+            <div class="sc-chart-tabs">
+                <button class="sc-tab active" data-tab="cbf">腦血流恢復</button>
+                <button class="sc-tab" data-tab="diff">NSC 分化比例</button>
+                <button class="sc-tab" data-tab="survival">細胞存活率</button>
+                <button class="sc-tab" data-tab="behav">神經行為評分</button>
+            </div>
+
+            <!-- CBF Recovery -->
+            <div class="sc-chart-panel active" id="tab-cbf">
+                <div class="sc-chart-header">
+                    <div>
+                        <div class="sc-chart-title">腦血流（CBF）恢復曲線</div>
+                        <div class="sc-chart-sub">TBI 後各組腦血流相對基線百分比 · Days post-TBI</div>
+                    </div>
+                    <div class="sc-chart-legend">
+                        <span class="sc-leg-dot" style="background:var(--sc-green)"></span>Cell Sheet + MSC
+                        <span class="sc-leg-dot" style="background:var(--sc-blue)"></span>MSC 注射
+                        <span class="sc-leg-dot" style="background:var(--sc-rose)"></span>Vehicle Control
+                    </div>
+                </div>
+                <div class="sc-chart-wrap"><canvas id="chartCbf"></canvas></div>
+            </div>
+
+            <!-- NSC Differentiation -->
+            <div class="sc-chart-panel" id="tab-diff">
+                <div class="sc-chart-header">
+                    <div>
+                        <div class="sc-chart-title">NSC 分化比例</div>
+                        <div class="sc-chart-sub">移植後第 14 天各組細胞分化命運（免疫螢光染色定量）</div>
+                    </div>
+                    <div class="sc-chart-legend">
+                        <span class="sc-leg-dot" style="background:var(--sc-blue)"></span>神經元 (NeuN+)
+                        <span class="sc-leg-dot" style="background:var(--sc-purple)"></span>星狀細胞 (GFAP+)
+                        <span class="sc-leg-dot" style="background:var(--sc-amber)"></span>少突膠質 (Olig2+)
+                        <span class="sc-leg-dot" style="background:#6b7399"></span>未分化
+                    </div>
+                </div>
+                <div class="sc-chart-wrap"><canvas id="chartDiff"></canvas></div>
+            </div>
+
+            <!-- Cell Survival -->
+            <div class="sc-chart-panel" id="tab-survival">
+                <div class="sc-chart-header">
+                    <div>
+                        <div class="sc-chart-title">細胞存活率比較</div>
+                        <div class="sc-chart-sub">細胞層片 vs 注射法 · 移植後各時間點存活細胞百分比</div>
+                    </div>
+                    <div class="sc-chart-legend">
+                        <span class="sc-leg-dot" style="background:var(--sc-green)"></span>Cell Sheet 法
+                        <span class="sc-leg-dot" style="background:var(--sc-rose)"></span>注射法
+                    </div>
+                </div>
+                <div class="sc-chart-wrap"><canvas id="chartSurvival"></canvas></div>
+            </div>
+
+            <!-- Behavioral Assessment -->
+            <div class="sc-chart-panel" id="tab-behav">
+                <div class="sc-chart-header">
+                    <div>
+                        <div class="sc-chart-title">神經行為評分恢復曲線</div>
+                        <div class="sc-chart-sub">Morris Water Maze 逃脫潛伏期（秒）· 越低越好</div>
+                    </div>
+                    <div class="sc-chart-legend">
+                        <span class="sc-leg-dot" style="background:var(--sc-green)"></span>Cell Sheet 治療組
+                        <span class="sc-leg-dot" style="background:var(--sc-blue)"></span>MSC 注射組
+                        <span class="sc-leg-dot" style="background:var(--sc-rose)"></span>Sham 組
+                        <span class="sc-leg-dot" style="background:#6b7399"></span>TBI 未治療
+                    </div>
+                </div>
+                <div class="sc-chart-wrap"><canvas id="chartBehav"></canvas></div>
+            </div>
+        </section>
+
         <!-- Connection to other work -->
         <section class="sc-section reveal">
             <div class="sc-section-label">研究延伸</div>
@@ -297,6 +403,215 @@
 
     <div data-site-footer></div>
     <button class="scroll-top" aria-label="返回頂部">↑</button>
+    <script>
+    // Tab switching
+    document.querySelectorAll('.sc-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.sc-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sc-chart-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        });
+    });
+
+    // Shared Chart.js defaults
+    function waitChartJs(cb) {
+        if (typeof Chart !== 'undefined') { cb(); }
+        else { document.querySelector('script[src*="chart.js"]').addEventListener('load', cb); }
+    }
+
+    waitChartJs(() => {
+        Chart.defaults.color = '#94a59f';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.font.size = 12;
+
+        const gridColor = 'rgba(151,190,181,0.08)';
+        const tooltipBg = '#131f1a';
+
+        const baseOpts = {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: tooltipBg,
+                    borderColor: 'rgba(123,240,190,.2)',
+                    borderWidth: 1,
+                    titleColor: '#e9f0ec',
+                    bodyColor: '#94a59f',
+                    padding: 10,
+                }
+            },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: '#5a716b' } },
+                y: { grid: { color: gridColor }, ticks: { color: '#5a716b' } }
+            }
+        };
+
+        // ── Chart 1: CBF Recovery ──────────────────────────────
+        new Chart(document.getElementById('chartCbf'), {
+            type: 'line',
+            data: {
+                labels: ['Day 0', 'Day 1', 'Day 3', 'Day 7', 'Day 14', 'Day 21', 'Day 28'],
+                datasets: [
+                    {
+                        label: 'Cell Sheet + MSC',
+                        data: [100, 42, 51, 63, 75, 84, 91],
+                        borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.10)',
+                        pointBackgroundColor: '#7bf0be', tension: .35, fill: true, borderWidth: 2
+                    },
+                    {
+                        label: 'MSC 注射',
+                        data: [100, 38, 45, 55, 64, 70, 76],
+                        borderColor: '#58d7ff', backgroundColor: 'rgba(88,215,255,.06)',
+                        pointBackgroundColor: '#58d7ff', tension: .35, fill: true, borderWidth: 2
+                    },
+                    {
+                        label: 'Vehicle Control',
+                        data: [100, 35, 38, 41, 45, 47, 49],
+                        borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.06)',
+                        pointBackgroundColor: '#ff8392', tension: .35, fill: true, borderWidth: 2,
+                        borderDash: [5, 4]
+                    }
+                ]
+            },
+            options: { ...baseOpts,
+                plugins: { ...baseOpts.plugins,
+                    tooltip: { ...baseOpts.plugins.tooltip, mode: 'index', intersect: false }
+                },
+                scales: { ...baseOpts.scales,
+                    y: { ...baseOpts.scales.y,
+                        title: { display: true, text: 'CBF (% baseline)', color: '#5a716b' },
+                        min: 30, max: 105
+                    }
+                }
+            }
+        });
+
+        // ── Chart 2: NSC Differentiation (stacked bar) ────────
+        new Chart(document.getElementById('chartDiff'), {
+            type: 'bar',
+            data: {
+                labels: ['正常培養基', 'Integrin αvβ3', 'Notch 抑制', 'Wnt 活化', 'TBI 微環境'],
+                datasets: [
+                    {
+                        label: '神經元 NeuN+',
+                        data: [22, 34, 18, 41, 28],
+                        backgroundColor: 'rgba(88,215,255,.75)', borderRadius: 3
+                    },
+                    {
+                        label: '星狀細胞 GFAP+',
+                        data: [35, 28, 42, 22, 38],
+                        backgroundColor: 'rgba(181,156,255,.75)', borderRadius: 3
+                    },
+                    {
+                        label: '少突膠質 Olig2+',
+                        data: [18, 22, 15, 20, 14],
+                        backgroundColor: 'rgba(255,188,114,.75)', borderRadius: 3
+                    },
+                    {
+                        label: '未分化',
+                        data: [25, 16, 25, 17, 20],
+                        backgroundColor: 'rgba(107,115,153,.5)', borderRadius: 3
+                    }
+                ]
+            },
+            options: { ...baseOpts,
+                plugins: { ...baseOpts.plugins,
+                    tooltip: { ...baseOpts.plugins.tooltip, mode: 'index', intersect: false }
+                },
+                scales: { ...baseOpts.scales,
+                    x: { ...baseOpts.scales.x, stacked: true },
+                    y: { ...baseOpts.scales.y, stacked: true,
+                        title: { display: true, text: '細胞比例 (%)', color: '#5a716b' },
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        // ── Chart 3: Cell Survival ─────────────────────────────
+        new Chart(document.getElementById('chartSurvival'), {
+            type: 'line',
+            data: {
+                labels: ['1 hr', '6 hr', 'Day 1', 'Day 3', 'Day 7', 'Day 14'],
+                datasets: [
+                    {
+                        label: 'Cell Sheet 法',
+                        data: [96, 91, 84, 76, 68, 61],
+                        borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.12)',
+                        pointBackgroundColor: '#7bf0be', tension: .3, fill: true, borderWidth: 2
+                    },
+                    {
+                        label: '注射法',
+                        data: [82, 64, 48, 35, 26, 19],
+                        borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.08)',
+                        pointBackgroundColor: '#ff8392', tension: .3, fill: true, borderWidth: 2,
+                        borderDash: [5, 4]
+                    }
+                ]
+            },
+            options: { ...baseOpts,
+                plugins: { ...baseOpts.plugins,
+                    tooltip: { ...baseOpts.plugins.tooltip, mode: 'index', intersect: false }
+                },
+                scales: { ...baseOpts.scales,
+                    y: { ...baseOpts.scales.y,
+                        title: { display: true, text: '存活細胞 (%)', color: '#5a716b' },
+                        min: 0, max: 100
+                    }
+                }
+            }
+        });
+
+        // ── Chart 4: Behavioral (Water Maze latency) ───────────
+        new Chart(document.getElementById('chartBehav'), {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 6', 'Week 8'],
+                datasets: [
+                    {
+                        label: 'Cell Sheet 治療組',
+                        data: [58, 48, 37, 28, 21, 16],
+                        borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.10)',
+                        pointBackgroundColor: '#7bf0be', tension: .35, fill: false, borderWidth: 2
+                    },
+                    {
+                        label: 'MSC 注射組',
+                        data: [60, 52, 43, 35, 29, 24],
+                        borderColor: '#58d7ff', backgroundColor: 'transparent',
+                        pointBackgroundColor: '#58d7ff', tension: .35, fill: false, borderWidth: 2
+                    },
+                    {
+                        label: 'Sham 組',
+                        data: [18, 14, 12, 11, 10, 10],
+                        borderColor: '#b59cff', backgroundColor: 'transparent',
+                        pointBackgroundColor: '#b59cff', tension: .35, fill: false, borderWidth: 1.5,
+                        borderDash: [3, 3]
+                    },
+                    {
+                        label: 'TBI 未治療',
+                        data: [62, 58, 55, 52, 50, 48],
+                        borderColor: '#6b7399', backgroundColor: 'transparent',
+                        pointBackgroundColor: '#6b7399', tension: .35, fill: false, borderWidth: 1.5,
+                        borderDash: [5, 4]
+                    }
+                ]
+            },
+            options: { ...baseOpts,
+                plugins: { ...baseOpts.plugins,
+                    tooltip: { ...baseOpts.plugins.tooltip, mode: 'index', intersect: false }
+                },
+                scales: { ...baseOpts.scales,
+                    y: { ...baseOpts.scales.y,
+                        title: { display: true, text: '逃脫潛伏期 (秒)', color: '#5a716b' },
+                        reverse: true, min: 8, max: 70
+                    }
+                }
+            }
+        });
+    });
+    </script>
 </body>
 
 </html>
