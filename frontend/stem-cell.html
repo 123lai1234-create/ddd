@@ -539,23 +539,14 @@
         const grid = document.getElementById(gridId);
         if (!grid) return;
         grid.innerHTML = '';
-        items.forEach((item, i) => {
+        const withImg = items.filter(it => it.src);
+        if (!withImg.length) return;
+        withImg.forEach((item, i) => {
             const div = document.createElement('div');
             div.className = 'sc-if-item';
-            const bgColors = ['#0a1a14','#0d1520','#1a0d14'];
-            const bg = bgColors[i % bgColors.length];
-            if (item.src) {
-                div.innerHTML = `<img src="${item.src}" alt="${item.label}" loading="lazy">
-                    <div class="sc-if-caption">${item.label}</div>`;
-            } else {
-                const dots = item.channels.map(c => `<span class="sc-ch" style="background:${c}"></span>`).join('');
-                div.innerHTML = `<div class="sc-if-placeholder" style="background:${bg}">
-                    <div class="sc-if-channels">${dots || '<span style="color:#5a716b;font-size:.7rem">圖片待加入</span>'}</div>
-                    <div class="sc-if-label">${item.stain}</div>
-                    <div style="font-size:.65rem;color:#3a5149;margin-top:4px">${item.label}</div>
-                </div>`;
-            }
-            div.addEventListener('click', () => openLightbox(items, i));
+            div.innerHTML = `<img src="${item.src}" alt="${item.label}" loading="lazy">
+                <div class="sc-if-caption">${item.label}</div>`;
+            div.addEventListener('click', () => openLightbox(withImg, i));
             grid.appendChild(div);
         });
     }
@@ -586,9 +577,15 @@
         });
     });
 
-    buildGallery('ifGridIntegrin', IF_DATA.integrin);
-    buildGallery('ifGridAtms', IF_DATA.atms);
-    buildGallery('ifGridTransplant', IF_DATA.transplant);
+    ['integrin','atms','transplant'].forEach(key => {
+        buildGallery('ifGrid' + key.charAt(0).toUpperCase() + key.slice(1), IF_DATA[key]);
+        if (!IF_DATA[key].some(it => it.src)) {
+            const btn = document.querySelector(`.sc-gtab[data-gallery="${key}"]`);
+            const panel = document.getElementById('gallery-' + key);
+            if (btn) btn.style.display = 'none';
+            if (panel) panel.style.display = 'none';
+        }
+    });
 
     // ── Charts ─────────────────────────────────────────────────
     function waitChartJs(cb) {
