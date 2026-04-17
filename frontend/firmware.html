@@ -152,9 +152,47 @@
         .fw-reg-table .rdesc { font-size:.78rem; line-height:1.6; }
         .fw-reg-wrap { background:var(--fw-panel); border:1px solid var(--fw-border); border-radius:14px; overflow:hidden; }
 
+        /* Interactive Flash budget calculator */
+        .fw-calc { padding: 24px 28px; border-radius: 14px; background: var(--fw-panel); border: 1px solid var(--fw-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .fw-calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+        .fw-calc-inputs { display: flex; flex-direction: column; gap: 18px; }
+        .fw-calc-field label { display: flex; justify-content: space-between; align-items: baseline; font-family: 'JetBrains Mono', monospace; font-size: .76rem; color: var(--fw-ink-2); margin-bottom: 6px; }
+        .fw-calc-field label b { color: var(--accent-cyan, #00e5ff); font-weight: 600; }
+        .fw-calc-field input[type="range"] { width: 100%; accent-color: var(--accent-cyan, #00e5ff); background: transparent; cursor: pointer; }
+        .fw-calc-toggle { display: inline-flex; border: 1px solid var(--fw-border); border-radius: 6px; overflow: hidden; }
+        .fw-calc-toggle button { padding: 5px 13px; background: rgba(255,255,255,.04); border: none; color: var(--fw-ink-2); cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: .74rem; transition: background .15s, color .15s; }
+        .fw-calc-toggle button:not(:last-child) { border-right: 1px solid var(--fw-border); }
+        .fw-calc-toggle button.active { background: rgba(0,229,255,.14); color: var(--accent-cyan, #00e5ff); }
+        .fw-calc-output { display: flex; flex-direction: column; gap: 10px; }
+        .fw-calc-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px dashed rgba(255,255,255,.06); }
+        .fw-calc-row:last-of-type { border: none; }
+        .fw-calc-row .name { min-width: 130px; font-family: 'JetBrains Mono', monospace; font-size: .78rem; color: var(--fw-ink-2); }
+        .fw-calc-row .bar { flex: 1; height: 8px; background: rgba(255,255,255,.04); border-radius: 3px; overflow: hidden; border: 1px solid var(--fw-border); }
+        .fw-calc-row .fill { display: block; height: 100%; background: var(--accent-cyan, #00e5ff); transition: width .28s ease, background .28s ease; }
+        .fw-calc-row .pct { min-width: 120px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: .78rem; color: #edf1ff; }
+        .fw-calc-verdict { margin-top: 16px; padding: 12px 16px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: .82rem; border-left: 2px solid; }
+        .fw-calc-verdict.ok  { background: rgba(34,255,167,.08);  border-left-color: var(--accent-mint, #22ffa7); color: var(--accent-mint, #22ffa7); }
+        .fw-calc-verdict.warn{ background: rgba(253,224,71,.08); border-left-color: var(--accent-amber, #fde047); color: var(--accent-amber, #fde047); }
+        .fw-calc-verdict.bad { background: rgba(255,45,149,.08);  border-left-color: var(--accent-pink, #ff2d95);  color: var(--accent-pink, #ff2d95); }
+
+        /* EBI timing toggle viewer */
+        .fw-timing { padding: 24px 28px; border-radius: 14px; background: var(--fw-panel); border: 1px solid var(--fw-border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .fw-timing-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+        .fw-timing-title { font-family: 'JetBrains Mono', monospace; font-size: .82rem; color: var(--fw-ink-2); }
+        .fw-timing-toggle { display: inline-flex; border: 1px solid var(--fw-border); border-radius: 6px; overflow: hidden; }
+        .fw-timing-toggle button { padding: 6px 18px; background: rgba(255,255,255,.04); border: none; color: var(--fw-ink-2); cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: .76rem; transition: background .15s, color .15s; }
+        .fw-timing-toggle button:not(:last-child) { border-right: 1px solid var(--fw-border); }
+        .fw-timing-toggle button.active { background: rgba(0,229,255,.12); color: var(--accent-cyan, #00e5ff); }
+        .fw-timing-toggle button:not(.active):hover { color: #edf1ff; }
+        #fwTimingSvg { width: 100%; height: auto; display: block; }
+        .fw-timing-readout { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 16px; font-family: 'JetBrains Mono', monospace; font-size: .78rem; }
+        .fw-timing-readout .k { color: var(--fw-ink-3); }
+        .fw-timing-readout .v { color: #edf1ff; }
+        .fw-timing-readout .v.good { color: var(--accent-mint, #22ffa7); }
+
+        @media (max-width: 760px) { .fw-calc-grid { grid-template-columns: 1fr; } }
         @media (max-width: 640px) {
           .fw-section-head .note { display: none; }
-          .fw-mem-row .name { min-width: 110px; font-size: .78rem; }
           .fw-rgb-wrap { grid-template-columns: 1fr; }
         }
     </style>
@@ -245,30 +283,35 @@
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">02</span><h2>記憶體預算</h2><span class="note">flash budget visualization</span></div>
-            <div class="fw-mem-card">
-                <h3>// flash_usage = width × height × 2</h3>
-                <div class="fw-mem-row">
-                    <span class="name">Code / Data</span>
-                    <div class="bar"><span class="fill" style="animation-delay:.1s;width:23%"></span></div>
-                    <span class="pct"><b>30</b> / 128 KB</span>
+            <div class="fw-section-head"><span class="fw-section-num">02</span><h2>記憶體預算計算機</h2><span class="note">flash budget · interactive</span></div>
+            <div class="fw-calc">
+                <div class="fw-calc-grid">
+                    <div class="fw-calc-inputs">
+                        <div class="fw-calc-field">
+                            <label>Width (px) <b id="calcWV">200</b></label>
+                            <input type="range" id="calcW" min="80" max="320" value="200">
+                        </div>
+                        <div class="fw-calc-field">
+                            <label>Height (px) <b id="calcHV">220</b></label>
+                            <input type="range" id="calcH" min="60" max="320" value="220">
+                        </div>
+                        <div class="fw-calc-field">
+                            <label style="margin-bottom:8px">Color depth</label>
+                            <div class="fw-calc-toggle">
+                                <button data-bpp="8">8-bit</button>
+                                <button data-bpp="16" class="active">16-bit RGB565</button>
+                                <button data-bpp="24">24-bit</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="fw-calc-output">
+                        <div class="fw-calc-row"><span class="name">Code / Data</span><div class="bar"><span class="fill" id="calcFillCode"></span></div><span class="pct" id="calcValCode"></span></div>
+                        <div class="fw-calc-row"><span class="name">Image</span><div class="bar"><span class="fill" id="calcFillImg"></span></div><span class="pct" id="calcValImg"></span></div>
+                        <div class="fw-calc-row"><span class="name">Total</span><div class="bar"><span class="fill" id="calcFillTotal"></span></div><span class="pct" id="calcValTotal"></span></div>
+                        <div class="fw-calc-row"><span class="name">剩餘 Flash</span><div class="bar"><span class="fill" id="calcFillRemain"></span></div><span class="pct" id="calcValRemain"></span></div>
+                        <div class="fw-calc-verdict ok" id="calcVerdict"></div>
+                    </div>
                 </div>
-                <div class="fw-mem-row">
-                    <span class="name">200×220 image</span>
-                    <div class="bar"><span class="fill" style="animation-delay:.3s;width:67%"></span></div>
-                    <span class="pct"><b>86</b> / 128 KB</span>
-                </div>
-                <div class="fw-mem-row warn">
-                    <span class="name">total (upper bound)</span>
-                    <div class="bar"><span class="fill" style="animation-delay:.5s;width:91%"></span></div>
-                    <span class="pct"><b>116</b> / 128 KB</span>
-                </div>
-                <div class="fw-mem-row">
-                    <span class="name">剩餘 Flash</span>
-                    <div class="bar"><span class="fill" style="animation-delay:.7s;width:9%;background:linear-gradient(90deg,#22ffa7,#00e5ff)"></span></div>
-                    <span class="pct"><b>12</b> KB</span>
-                </div>
-                <p style="color:var(--fw-ink-2);font-size:.86rem;font-family:'JetBrains Mono',monospace;margin-top:14px;line-height:1.7">※ 一張大圖幾乎吃掉整個 Flash。多張需降解析度或外掛 SPI Flash。</p>
             </div>
         </section>
 
@@ -366,47 +409,62 @@
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">07</span><h2>EBI 時序波形</h2><span class="note">write cycle · tAS / tAH</span></div>
-            <div class="fw-wave">
-                <svg viewBox="0 0 580 270" xmlns="http://www.w3.org/2000/svg">
+            <div class="fw-section-head"><span class="fw-section-num">07</span><h2>EBI 時序波形</h2><span class="note">WRITE / READ cycle · tAS / tAH</span></div>
+            <div class="fw-timing">
+                <div class="fw-timing-head">
+                    <span class="fw-timing-title">// EBI bus cycle @ 42 MHz HCLK (23.8 ns/cycle)</span>
+                    <div class="fw-timing-toggle">
+                        <button data-cycle="write" class="active">WRITE</button>
+                        <button data-cycle="read">READ</button>
+                    </div>
+                </div>
+                <svg id="fwTimingSvg" viewBox="0 0 580 270" xmlns="http://www.w3.org/2000/svg" style="background:#07091a;border-radius:8px">
                     <defs>
-                        <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-                            <path d="M0,0 L6,3 L0,6 Z" fill="#6b7399"/>
-                        </marker>
-                        <marker id="arrl" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
-                            <path d="M0,0 L6,3 L0,6 Z" fill="#6b7399"/>
-                        </marker>
+                        <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6b7399"/></marker>
+                        <marker id="arrl" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse"><path d="M0,0 L6,3 L0,6 Z" fill="#6b7399"/></marker>
                     </defs>
-                    <!-- grid -->
-                    <line x1="88" y1="10" x2="88" y2="250" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
-                    <line x1="560" y1="10" x2="560" y2="250" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
                     <!-- labels -->
-                    <text x="78" y="42" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">CS_n</text>
-                    <text x="78" y="102" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">WR_n</text>
+                    <text x="78" y="42"  text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">CS_n</text>
+                    <text x="78" y="102" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3" id="fwSig2Lbl">WR_n</text>
                     <text x="78" y="162" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">RS</text>
                     <text x="78" y="222" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">D[15:0]</text>
-                    <!-- CS_n: HIGH→LOW→HIGH -->
+                    <!-- CS_n (shared) -->
                     <polyline points="88,24 130,24 130,56 430,56 430,24 560,24" fill="none" stroke="#00e5ff" stroke-width="1.8"/>
-                    <!-- WR_n: HIGH→LOW→HIGH -->
-                    <polyline points="88,84 200,84 200,116 340,116 340,84 560,84" fill="none" stroke="#22ffa7" stroke-width="1.8"/>
-                    <!-- RS: stays HIGH (data mode) -->
+                    <!-- Strobe signal (WR_n / RD_n): toggled by JS -->
+                    <polyline id="fwStrobeLine" points="88,84 200,84 200,116 340,116 340,84 560,84" fill="none" stroke="#22ffa7" stroke-width="1.8"/>
+                    <!-- RS: stays HIGH -->
                     <line x1="88" y1="144" x2="560" y2="144" stroke="#a855f7" stroke-width="1.8"/>
-                    <!-- DATA: undefined before 200, valid 200-340, undefined after 390 -->
-                    <polyline points="88,214 88,230 200,230" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
-                    <rect x="200" y="206" width="140" height="32" rx="4" fill="rgba(253,224,71,.08)" stroke="#fde047" stroke-width="1.8"/>
-                    <text x="270" y="226" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#fde047">RGB565 DATA VALID</text>
-                    <polyline points="340,230 390,230 390,214" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
-                    <line x1="390" y1="222" x2="560" y2="222" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
-                    <!-- tAS annotation: x130 to x200 -->
+                    <!-- DATA group: write vs read swapped by JS -->
+                    <g id="fwDataWrite">
+                        <polyline points="88,214 88,230 200,230" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <rect x="200" y="206" width="140" height="32" rx="4" fill="rgba(253,224,71,.08)" stroke="#fde047" stroke-width="1.8"/>
+                        <text x="270" y="226" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#fde047">DATA VALID (output)</text>
+                        <polyline points="340,230 390,230 390,214" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <line x1="390" y1="222" x2="560" y2="222" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                    </g>
+                    <g id="fwDataRead" style="display:none">
+                        <line x1="88" y1="222" x2="230" y2="222" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <rect x="230" y="206" width="130" height="32" rx="4" fill="rgba(253,224,71,.08)" stroke="#fde047" stroke-width="1.8"/>
+                        <text x="295" y="226" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#fde047">DATA VALID (input)</text>
+                        <polyline points="360,230 400,230 400,214" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <line x1="400" y1="222" x2="560" y2="222" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                    </g>
+                    <!-- tAS -->
                     <line x1="130" y1="245" x2="200" y2="245" stroke="#6b7399" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)"/>
                     <text x="165" y="258" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#6b7399">tAS</text>
-                    <!-- tAH annotation: x340 to x390 -->
-                    <line x1="340" y1="245" x2="390" y2="245" stroke="#6b7399" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)"/>
+                    <!-- tAH -->
+                    <line x1="340" y1="245" x2="390" y2="245" stroke="#6b7399" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)" id="fwTahLine"/>
                     <text x="365" y="258" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#6b7399">tAH</text>
-                    <!-- WR width annotation -->
-                    <line x1="200" y1="132" x2="340" y2="132" stroke="#22ffa7" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)" opacity=".6"/>
-                    <text x="270" y="144" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#22ffa7" opacity=".8">W_DLY</text>
+                    <!-- strobe width -->
+                    <line x1="200" y1="132" x2="340" y2="132" stroke="#22ffa7" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)" opacity=".6" id="fwDlyLine"/>
+                    <text x="270" y="143" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#22ffa7" opacity=".8" id="fwDlyLbl">W_DLY</text>
                 </svg>
+                <div class="fw-timing-readout" id="fwTimingReadout">
+                    <div><span class="k">tAS</span> — <span class="v good" id="fwRtAs">2 × HCLK = 47.6 ns</span></div>
+                    <div><span class="k" id="fwRtDlyK">W_DLY</span> — <span class="v good" id="fwRtDly">6 × HCLK = 142.8 ns</span></div>
+                    <div><span class="k">tAH</span> — <span class="v good" id="fwRtAh">2 × HCLK = 47.6 ns</span></div>
+                    <div><span class="k">cycle</span> — <span class="v" id="fwRtCycle">~10 × HCLK = 238 ns</span></div>
+                </div>
             </div>
             <div class="fw-reg-wrap" style="margin-top:16px">
                 <table class="fw-reg-table">
@@ -451,6 +509,49 @@
     <div data-site-footer></div>
     <button class="scroll-top" aria-label="返回頂部">↑</button>
     <script>
+    // Flash budget calculator
+    (function () {
+        const w = document.getElementById('calcW'), wv = document.getElementById('calcWV');
+        const h = document.getElementById('calcH'), hv = document.getElementById('calcHV');
+        const btns = document.querySelectorAll('[data-bpp]');
+        if (!w) return;
+        let bpp = 16;
+        const CODE = 30, FLASH = 128;
+        function bar(id, ratio, warn) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.style.width = Math.min(100, ratio * 100).toFixed(1) + '%';
+            el.style.background = warn ? 'var(--accent-amber,#fde047)' : 'var(--accent-cyan,#00e5ff)';
+        }
+        function run() {
+            const wd = +w.value, ht = +h.value;
+            const imgKB = Math.ceil(wd * ht * bpp / 8 / 1024);
+            const tot = CODE + imgKB, rem = FLASH - tot;
+            wv.textContent = wd; hv.textContent = ht;
+            bar('calcFillCode',   CODE / FLASH, false);
+            bar('calcFillImg',    imgKB / FLASH, imgKB > 90);
+            bar('calcFillTotal',  tot / FLASH,   tot > FLASH * 0.88);
+            bar('calcFillRemain', Math.max(0, rem) / FLASH, rem < 10);
+            document.getElementById('calcValCode').textContent   = CODE   + ' / ' + FLASH + ' KB';
+            document.getElementById('calcValImg').textContent    = imgKB  + ' / ' + FLASH + ' KB';
+            document.getElementById('calcValTotal').textContent  = tot    + ' / ' + FLASH + ' KB';
+            document.getElementById('calcValRemain').textContent = rem    + ' KB';
+            const v = document.getElementById('calcVerdict');
+            if (rem < 0)   { v.className = 'fw-calc-verdict bad';  v.textContent = '✕ 超出 Flash ' + (-rem) + ' KB — 需外掛 SPI Flash 或降低解析度'; }
+            else if (rem < 10) { v.className = 'fw-calc-verdict warn'; v.textContent = '⚠ 僅剩 ' + rem + ' KB — 建議保留 ≥ 12 KB 供 ISR + heap'; }
+            else               { v.className = 'fw-calc-verdict ok';   v.textContent = '✓ 餘裕 ' + rem + ' KB — Flash 規劃合理'; }
+        }
+        [w, h].forEach(el => el.addEventListener('input', run));
+        btns.forEach(btn => btn.addEventListener('click', () => {
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            bpp = +btn.dataset.bpp;
+            run();
+        }));
+        run();
+    })();
+
+    // RGB565 calculator
     (function () {
         const r = document.getElementById('rgbR'), rn = document.getElementById('rgbRn');
         const g = document.getElementById('rgbG'), gn = document.getElementById('rgbGn');
@@ -460,9 +561,7 @@
             const rv = +r.value, gv = +g.value, bv = +b.value;
             const val = (rv << 11) | (gv << 5) | bv;
             const hex = '0x' + val.toString(16).toUpperCase().padStart(4, '0');
-            const r8 = Math.round(rv * 255 / 31);
-            const g8 = Math.round(gv * 255 / 63);
-            const b8 = Math.round(bv * 255 / 31);
+            const r8 = Math.round(rv * 255 / 31), g8 = Math.round(gv * 255 / 63), b8 = Math.round(bv * 255 / 31);
             document.getElementById('rgbPreview').style.background = `rgb(${r8},${g8},${b8})`;
             document.getElementById('rgbHex').textContent = hex;
             document.getElementById('rgbC').textContent = hex + 'U';
@@ -485,6 +584,51 @@
             num.addEventListener('input', () => { sl.value = num.value; update(); });
         });
         update();
+    })();
+
+    // EBI timing toggle
+    (function () {
+        const btns = document.querySelectorAll('[data-cycle]');
+        if (!btns.length) return;
+        const CYCLES = {
+            write: {
+                strobePts: '88,84 200,84 200,116 340,116 340,84 560,84',
+                strobeLabel: 'WR_n',
+                dlyLabel: 'W_DLY',
+                tahX1: 340, tahX2: 390,
+                dlyX1: 200, dlyX2: 340,
+                readout: { dlyK: 'W_DLY', dly: '6 × HCLK = 142.8 ns', cycle: '~10 × HCLK = 238 ns' }
+            },
+            read: {
+                strobePts: '88,84 200,84 200,116 360,116 360,84 560,84',
+                strobeLabel: 'RD_n',
+                dlyLabel: 'R_DLY',
+                tahX1: 360, tahX2: 410,
+                dlyX1: 200, dlyX2: 360,
+                readout: { dlyK: 'R_DLY', dly: '6 × HCLK = 142.8 ns', cycle: '~11 × HCLK = 262 ns' }
+            }
+        };
+        function apply(mode) {
+            const c = CYCLES[mode];
+            document.getElementById('fwStrobeLine').setAttribute('points', c.strobePts);
+            document.getElementById('fwSig2Lbl').textContent = c.strobeLabel;
+            document.getElementById('fwDlyLbl').textContent = c.dlyLabel;
+            document.getElementById('fwDlyLine').setAttribute('x1', c.dlyX1);
+            document.getElementById('fwDlyLine').setAttribute('x2', c.dlyX2);
+            document.getElementById('fwTahLine').setAttribute('x1', c.tahX1);
+            document.getElementById('fwTahLine').setAttribute('x2', c.tahX2);
+            document.getElementById('fwDataWrite').style.display = mode === 'write' ? '' : 'none';
+            document.getElementById('fwDataRead').style.display  = mode === 'read'  ? '' : 'none';
+            document.getElementById('fwRtDlyK').textContent  = c.readout.dlyK;
+            document.getElementById('fwRtDly').textContent   = c.readout.dly;
+            document.getElementById('fwRtCycle').textContent = c.readout.cycle;
+        }
+        btns.forEach(btn => btn.addEventListener('click', () => {
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            apply(btn.dataset.cycle);
+        }));
+        apply('write');
     })();
     </script>
 </body>
