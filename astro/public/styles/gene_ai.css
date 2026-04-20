@@ -1811,6 +1811,13 @@ footer {
 
 /* ── Module Nav ─────────────────────────────────────────────── */
 .module-nav {
+  /* reset: shared.css nav{position:fixed} would otherwise pin this to viewport */
+  position: static;
+  height: auto;
+  left: auto;
+  right: auto;
+  backdrop-filter: none;
+  z-index: auto;
   display: flex;
   align-items: center;
   gap: 0;
