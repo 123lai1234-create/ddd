@@ -742,11 +742,152 @@ gatk VariantFiltration \
         </div>
     </section>
 
+    <!-- ════ Canvas Pipeline Animation ════ -->
+    <section class="reveal" style="padding:60px 40px;max-width:1100px;margin:0 auto">
+        <div class="section-label">Pipeline Flow</div>
+        <h2 class="section-title">NGS 分析流程 · 動態視覺化</h2>
+        <p class="section-sub" style="margin-bottom:24px">Canvas 2D 繪製的完整 NGS pipeline，點擊各節點查看詳情。</p>
+        <canvas id="ngs-pipeline-canvas" style="width:100%;height:240px;border-radius:12px;background:rgba(0,0,0,0.2);border:1px solid rgba(88,215,255,0.1);display:block;cursor:pointer"></canvas>
+        <div id="ngs-pipeline-detail" style="margin-top:12px;padding:14px 18px;background:rgba(88,215,255,0.06);border:1px solid rgba(88,215,255,0.15);border-radius:10px;font-size:0.85rem;color:var(--muted);min-height:44px;transition:all 0.3s">
+            點擊流程節點查看詳情
+        </div>
+    </section>
+
     <button class="scroll-top" aria-label="返回頂部">↑</button>
 
     <script src="scripts/app-config.js"></script>
     <script src="scripts/ngs.js"></script>
 
+<script>
+(function() {
+  const canvas = document.getElementById('ngs-pipeline-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const detail = document.getElementById('ngs-pipeline-detail');
+
+  const STEPS = [
+    { id:'raw',    label:'FastQ\n原始讀取', color:'#58d7ff', info:'Illumina/Nanopore 測序產生 FastQ 格式原始讀取，包含鹼基質量分數 (Phred)。覆蓋深度目標 ≥ 30×。' },
+    { id:'qc',     label:'FastQC\nQC 評估', color:'#7bf0be', info:'FastQC 評估每鹼基質量、GC 含量、adapter 汙染。MultiQC 匯整多樣本報告。' },
+    { id:'trim',   label:'Trimmomatic\n品質修剪', color:'#ffd080', info:'移除低品質鹼基（Q<20）和 adapter 序列，保留有效讀取。SLIDINGWINDOW:4:20 MINLEN:36。' },
+    { id:'align',  label:'BWA-MEM\n序列比對', color:'#b59cff', info:'BWA-MEM 將讀取比對至 hg38 參考基因組。Picard MarkDuplicates 標記重複序列。' },
+    { id:'gatk',   label:'GATK\n變異偵測', color:'#ff8080', info:'HaplotypeCaller 呼叫 SNV/InDel。VQSR 變異品質校正。gVCF 模式支援多樣本分析。' },
+    { id:'annot',  label:'ANNOVAR\n功能注釋', color:'#58d7ff', info:'ANNOVAR/VEP 注釋變異功能影響：RefSeq 轉錄本、ClinVar 臨床意義、gnomAD 族群頻率。' },
+    { id:'report', label:'報告\n輸出', color:'#7bf0be', info:'整合 QC 指標、變異表、臨床注釋，輸出 HTML 報告與 VCF/TSV 格式結果供下游分析。' },
+  ];
+
+  let activeStep = -1;
+  let animProgress = 0;
+
+  function resize() {
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = 240;
+    draw(animProgress);
+  }
+
+  function stepPos(i) {
+    const W = canvas.width;
+    const pad = 60;
+    const x = pad + (i / (STEPS.length - 1)) * (W - pad * 2);
+    const y = canvas.height / 2;
+    return { x, y };
+  }
+
+  function draw(p) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw connecting lines
+    for (let i = 0; i < STEPS.length - 1; i++) {
+      const a = stepPos(i), b = stepPos(i + 1);
+      const progress = Math.min(1, Math.max(0, p * STEPS.length - i));
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(a.x + (b.x - a.x) * progress, a.y);
+      ctx.strokeStyle = 'rgba(88,215,255,0.3)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Draw nodes
+    STEPS.forEach((step, i) => {
+      const { x, y } = stepPos(i);
+      const appear = Math.min(1, Math.max(0, p * STEPS.length - i + 0.5));
+      if (appear <= 0) return;
+
+      const r = 26;
+      const isActive = i === activeStep;
+
+      // Glow
+      if (isActive) {
+        ctx.beginPath();
+        ctx.arc(x, y, r + 10, 0, Math.PI * 2);
+        const g = ctx.createRadialGradient(x, y, r, x, y, r + 10);
+        g.addColorStop(0, 'rgba(88,215,255,0.3)');
+        g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = appear;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = isActive ? step.color : 'rgba(16,22,30,0.9)';
+      ctx.fill();
+      ctx.strokeStyle = step.color;
+      ctx.lineWidth = isActive ? 3 : 1.5;
+      ctx.stroke();
+
+      // Label
+      ctx.fillStyle = isActive ? '#0a1116' : step.color;
+      ctx.font = `bold 9px Inter, sans-serif`;
+      ctx.textAlign = 'center';
+      const lines = step.label.split('\n');
+      lines.forEach((line, li) => {
+        ctx.fillText(line, x, y + (li - (lines.length-1)/2) * 11 + 1);
+      });
+
+      // Step number
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.fillText(`0${i+1}`, x, y + r + 14);
+
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  // Animate in
+  const start = performance.now();
+  const animLoop = now => {
+    animProgress = Math.min((now - start) / 1200, 1);
+    draw(animProgress);
+    if (animProgress < 1) requestAnimationFrame(animLoop);
+  };
+
+  new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) requestAnimationFrame(animLoop);
+  }, { threshold: 0.3 }).observe(canvas);
+
+  // Click interaction
+  canvas.addEventListener('click', e => {
+    const r = canvas.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    let hit = -1;
+    STEPS.forEach((_, i) => {
+      const { x, y } = stepPos(i);
+      if (Math.hypot(mx - x, my - y) < 30) hit = i;
+    });
+    activeStep = hit;
+    draw(1);
+    if (detail && hit >= 0) detail.textContent = STEPS[hit].info;
+    else if (detail) detail.textContent = '點擊流程節點查看詳情';
+  });
+
+  window.addEventListener('resize', resize);
+  resize();
+})();
+</script>
 </body>
 
 </html>

@@ -588,37 +588,69 @@ function initChatbot() {
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
+    send.disabled = true;
+    input.disabled = true;
 
-    messages.innerHTML += `<div class="chat-msg chat-user">${escapeHtml(text)}</div>`;
-    messages.innerHTML += `<div class="chat-msg chat-bot chat-typing">思考中...</div>`;
+    const userDiv = document.createElement('div');
+    userDiv.className = 'chat-msg chat-user';
+    userDiv.textContent = text;
+    messages.appendChild(userDiv);
+
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'chat-msg chat-bot chat-typing';
+    typingDiv.textContent = '思考中...';
+    messages.appendChild(typingDiv);
     messages.scrollTop = messages.scrollHeight;
 
     try {
       const apiBase = typeof window.APP_CONFIG_UTILS?.resolveApiBase === 'function'
         ? await window.APP_CONFIG_UTILS.resolveApiBase({ cacheKey: 'chatbot' })
         : '';
-      // Proxy through our backend to avoid exposing API key
       const resp = await fetch(`${apiBase}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
         signal: AbortSignal.timeout(30000),
       });
-      const typing = messages.querySelector('.chat-typing');
-      if (typing) typing.remove();
+      typingDiv.remove();
 
       if (resp.ok) {
         const data = await resp.json();
-        messages.innerHTML += `<div class="chat-msg chat-bot">${escapeHtml(data.reply || '...')}</div>`;
+        const reply = data.reply || '...';
+        const botDiv = document.createElement('div');
+        botDiv.className = 'chat-msg chat-bot';
+        messages.appendChild(botDiv);
+        messages.scrollTop = messages.scrollHeight;
+        let i = 0;
+        const tick = () => {
+          if (i < reply.length) {
+            botDiv.textContent += reply[i++];
+            messages.scrollTop = messages.scrollHeight;
+            setTimeout(tick, 15);
+          } else {
+            send.disabled = false;
+            input.disabled = false;
+            input.focus();
+          }
+        };
+        tick();
+        return;
       } else {
-        messages.innerHTML += `<div class="chat-msg chat-bot">目前無法回應，請稍後再試。</div>`;
+        const errDiv = document.createElement('div');
+        errDiv.className = 'chat-msg chat-bot';
+        errDiv.textContent = '目前無法回應，請稍後再試。';
+        messages.appendChild(errDiv);
       }
     } catch {
-      const typing = messages.querySelector('.chat-typing');
-      if (typing) typing.remove();
-      messages.innerHTML += `<div class="chat-msg chat-bot">連線失敗，請確認後端已啟動。</div>`;
+      typingDiv.remove();
+      const errDiv = document.createElement('div');
+      errDiv.className = 'chat-msg chat-bot';
+      errDiv.textContent = '連線失敗，請確認後端已啟動。';
+      messages.appendChild(errDiv);
     }
     messages.scrollTop = messages.scrollHeight;
+    send.disabled = false;
+    input.disabled = false;
   }
 
   send.addEventListener('click', sendMessage);
@@ -1032,6 +1064,264 @@ function initSkillBars() {
   bars.forEach(el => obs.observe(el));
 }
 
+/* ── Card Tilt 3D ─────────────────────────────────────────────────────────── */
+function initCardTilt() {
+  const SEL = '.card, .work-card, .explore-card, .algo-card, .metric-card, .skill-card, .surface-card, .runtime-card, .chart-card, .sc-if-item';
+  const MAX = 8; // max tilt degrees
+
+  document.querySelectorAll(SEL).forEach(card => {
+    card.style.transformStyle = 'preserve-3d';
+    card.style.transition = 'transform 0.15s ease, box-shadow 0.15s ease';
+
+    card.addEventListener('mousemove', function(e) {
+      const r = this.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width  - 0.5; // -0.5 ~ 0.5
+      const y = (e.clientY - r.top)  / r.height - 0.5;
+      const rotY =  x * MAX;
+      const rotX = -y * MAX;
+      this.style.transform = `perspective(600px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(4px)`;
+      this.style.boxShadow = `${-rotY * 1.5}px ${rotX * 1.5}px 24px rgba(88,215,255,0.12)`;
+    });
+    card.addEventListener('mouseleave', function() {
+      this.style.transform = 'perspective(600px) rotateX(0) rotateY(0) translateZ(0)';
+      this.style.boxShadow = '';
+    });
+  });
+}
+
+/* ── Custom Cursor ────────────────────────────────────────────────────────── */
+function initCustomCursor() {
+  // Skip touch-only devices
+  if (window.matchMedia('(hover: none)').matches) return;
+
+  const dot  = document.createElement('div');
+  const ring = document.createElement('div');
+  dot.id  = 'cursor-dot';
+  ring.id = 'cursor-ring';
+  document.body.append(dot, ring);
+
+  let mx = -100, my = -100, rx = -100, ry = -100;
+  let clicking = false;
+
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  document.addEventListener('mousedown', () => { clicking = true; ring.classList.add('cursor-click'); });
+  document.addEventListener('mouseup',   () => { clicking = false; ring.classList.remove('cursor-click'); });
+
+  document.addEventListener('mouseover', e => {
+    const target = e.target.closest('a, button, .btn, [role="button"], input, textarea, select, .card, .work-card, .explore-card');
+    dot.classList.toggle('cursor-hover', !!target);
+    ring.classList.toggle('cursor-hover', !!target);
+  });
+
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const loop = () => {
+    rx = lerp(rx, mx, 0.12);
+    ry = lerp(ry, my, 0.12);
+    dot.style.transform  = `translate(${mx}px, ${my}px)`;
+    ring.style.transform = `translate(${rx}px, ${ry}px)`;
+    requestAnimationFrame(loop);
+  };
+  loop();
+}
+
+/* ── Page Transition ──────────────────────────────────────────────────────── */
+function initPageTransition() {
+  // Inject overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'page-transition-overlay';
+  document.body.appendChild(overlay);
+
+  // Fade in on load
+  document.body.classList.add('page-entering');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.body.classList.remove('page-entering');
+      document.body.classList.add('page-entered');
+    });
+  });
+
+  // Intercept internal links
+  document.addEventListener('click', e => {
+    const link = e.target.closest('a[href]');
+    if (!link) return;
+    const href = link.getAttribute('href');
+    // Only internal same-origin non-hash links
+    if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto') || link.target === '_blank') return;
+    e.preventDefault();
+    document.body.classList.add('page-leaving');
+    setTimeout(() => { window.location.href = href; }, 280);
+  });
+}
+
+/* ── Section Title Split Animation ───────────────────────────────────────── */
+function initSectionTitleAnim() {
+  if (!document.getElementById('title-anim-style')) {
+    const s = document.createElement('style');
+    s.id = 'title-anim-style';
+    s.textContent = `
+      .section-title.ta-init span.ta-word {
+        display:inline-block;
+        opacity:0;
+        transform:translateY(28px);
+        transition:opacity 0.5s ease, transform 0.5s ease;
+      }
+      .section-title.ta-init.ta-visible span.ta-word { opacity:1; transform:translateY(0); }
+      @media (prefers-reduced-motion:reduce) {
+        .section-title.ta-init span.ta-word { opacity:1; transform:none; transition:none; }
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
+  const titles = document.querySelectorAll('.section-title, .sc-section-title, h2.section-title');
+  const obs = new IntersectionObserver((entries, o) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      o.unobserve(e.target);
+      e.target.classList.add('ta-visible');
+    });
+  }, { threshold: 0.3 });
+
+  titles.forEach(el => {
+    if (el.dataset.taInit) return;
+    el.dataset.taInit = '1';
+    // Wrap each word in a span
+    const words = el.innerHTML.split(/(\s+|<br\s*\/?>)/gi);
+    el.innerHTML = words.map(w =>
+      /^\s+$/.test(w) || /^<br/i.test(w) ? w : `<span class="ta-word" style="transition-delay:${Math.random()*0.15}s">${w}</span>`
+    ).join('');
+    el.classList.add('ta-init');
+    obs.observe(el);
+  });
+}
+
+/* ── Keyboard Shortcuts ───────────────────────────────────────────────────── */
+function initKeyboardShortcuts() {
+  // Show help overlay on '?'
+  if (!document.getElementById('kb-overlay')) {
+    const overlay = document.createElement('div');
+    overlay.id = 'kb-overlay';
+    overlay.innerHTML = `
+      <div class="kb-modal">
+        <div class="kb-header"><h3>⌨️ 鍵盤快捷鍵</h3><button class="kb-close">✕</button></div>
+        <div class="kb-list">
+          <div class="kb-row"><kbd>/</kbd><span>聚焦搜尋欄</span></div>
+          <div class="kb-row"><kbd>?</kbd><span>顯示此說明</span></div>
+          <div class="kb-row"><kbd>Esc</kbd><span>關閉彈窗 / 清除聚焦</span></div>
+          <div class="kb-row"><kbd>G H</kbd><span>前往首頁</span></div>
+          <div class="kb-row"><kbd>G W</kbd><span>前往作品總覽</span></div>
+          <div class="kb-row"><kbd>G A</kbd><span>前往 About Me</span></div>
+          <div class="kb-row"><kbd>G G</kbd><span>前往基因 AI</span></div>
+          <div class="kb-row"><kbd>↑ ↑ ↓ ↓</kbd><span>回到頁面頂部 (彩蛋)</span></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('.kb-close').addEventListener('click', () => overlay.classList.remove('kb-visible'));
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('kb-visible'); });
+  }
+
+  let keyBuffer = '';
+  let konamiSeq = '';
+  const KONAMI = 'ArrowUpArrowUpArrowDownArrowDown';
+
+  document.addEventListener('keydown', e => {
+    // Skip when typing in inputs
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+      if (e.key === 'Escape') e.target.blur();
+      return;
+    }
+
+    const overlay = document.getElementById('kb-overlay');
+
+    // '?' → show help
+    if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+      overlay?.classList.toggle('kb-visible');
+      return;
+    }
+
+    // 'Escape' → close
+    if (e.key === 'Escape') { overlay?.classList.remove('kb-visible'); return; }
+
+    // '/' → focus first search input
+    if (e.key === '/') {
+      e.preventDefault();
+      const inp = document.querySelector('input[type="text"], input[type="search"]');
+      inp?.focus();
+      return;
+    }
+
+    // G + letter navigation
+    keyBuffer += e.key.toUpperCase();
+    if (keyBuffer.length > 2) keyBuffer = keyBuffer.slice(-2);
+    if (keyBuffer === 'GH') { window.location.href = '/'; keyBuffer = ''; }
+    if (keyBuffer === 'GW') { window.location.href = '/works'; keyBuffer = ''; }
+    if (keyBuffer === 'GA') { window.location.href = '/about'; keyBuffer = ''; }
+    if (keyBuffer === 'GG') { window.location.href = '/gene-ai'; keyBuffer = ''; }
+
+    // Konami-style: scroll to top
+    konamiSeq += e.key;
+    if (konamiSeq.length > KONAMI.length) konamiSeq = konamiSeq.slice(-KONAMI.length);
+    if (konamiSeq === KONAMI) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      konamiSeq = '';
+      // Show a small toast
+      showToast('⬆️ 回到頂部！');
+    }
+  });
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'global-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('toast-show'));
+  setTimeout(() => { t.classList.remove('toast-show'); setTimeout(() => t.remove(), 300); }, 2200);
+}
+
+/* ── Theme Toggle with Animation ─────────────────────────────────────────── */
+function initThemeToggle() {
+  // Add toggle button to nav
+  const nav = document.querySelector('nav');
+  if (!nav || document.getElementById('theme-toggle-btn')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'theme-toggle-btn';
+  btn.setAttribute('aria-label', '切換主題');
+  btn.innerHTML = '🎨';
+  nav.appendChild(btn);
+
+  const THEMES_ORDER = ['neon-tokyo', 'bio-lab', 'cyber-rose', 'deep-space'];
+  const root = document.documentElement;
+
+  btn.addEventListener('click', () => {
+    const current = root.dataset.theme || 'deep-space';
+    const idx = THEMES_ORDER.indexOf(current);
+    const next = THEMES_ORDER[(idx + 1) % THEMES_ORDER.length];
+
+    // Ripple flash transition
+    const flash = document.createElement('div');
+    flash.style.cssText = `
+      position:fixed;inset:0;z-index:10000;pointer-events:none;
+      background:radial-gradient(circle at center, rgba(88,215,255,0.2), transparent 70%);
+      opacity:0;transition:opacity 0.25s;
+    `;
+    document.body.appendChild(flash);
+    requestAnimationFrame(() => { flash.style.opacity = '1'; });
+    setTimeout(() => {
+      flash.style.opacity = '0';
+      setTimeout(() => flash.remove(), 260);
+    }, 200);
+
+    // Apply next theme (re-trigger randomizer logic)
+    root.dataset.theme = next;
+    try { sessionStorage.setItem('portfolio_theme_v1', next); } catch(_) {}
+    // Force reload to get proper theme vars (simpler than reimplementing all theme logic)
+    window.location.reload();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initVantaDNA();
   initGSAP();
@@ -1057,4 +1347,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initSkillRadar();
   initSkillBars();
   initVoiceInput();
+  initCardTilt();
+  initCustomCursor();
+  initPageTransition();
+  initSectionTitleAnim();
+  initKeyboardShortcuts();
+  initThemeToggle();
 });

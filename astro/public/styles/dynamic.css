@@ -380,3 +380,161 @@
   }
   #global-scroll-bar { transition: none !important; }
 }
+
+/* ── Custom Cursor ──────────────────────────────────────────────────────── */
+body { cursor: none; }
+a, button, [role="button"], input, textarea, select, .card, .work-card { cursor: none; }
+
+#cursor-dot {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  background: var(--cyan, #58d7ff);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  top: -4px;
+  left: -4px;
+  transition: transform 0.05s;
+}
+
+#cursor-ring {
+  position: fixed;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid rgba(88,215,255,0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99998;
+  top: -16px;
+  left: -16px;
+  transition: width 0.2s, height 0.2s, border-color 0.2s;
+}
+
+#cursor-dot.cursor-hover  { transform: translate(0,0) scale(2.5); background: var(--purple,#b59cff); }
+#cursor-ring.cursor-hover { width: 48px; height: 48px; top: -24px; left: -24px; border-color: rgba(181,156,255,0.6); }
+#cursor-ring.cursor-click { transform: translate(var(--rx,0),var(--ry,0)) scale(0.85); }
+
+@media (hover: none) { #cursor-dot, #cursor-ring { display: none; } body { cursor: auto; } }
+
+/* ── Page Transition ──────────────────────────────────────────────────────── */
+body.page-entering { opacity: 0; }
+body.page-entered  { opacity: 1; transition: opacity 0.35s ease; }
+body.page-leaving  { opacity: 0; transition: opacity 0.28s ease; pointer-events: none; }
+
+#page-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  background: var(--bg, #0a1116);
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* ── Keyboard Shortcuts Overlay ─────────────────────────────────────────── */
+#kb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9995;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+#kb-overlay.kb-visible { opacity: 1; pointer-events: all; }
+
+.kb-modal {
+  background: var(--bg-card, rgba(16,22,30,0.98));
+  border: 1px solid rgba(88,215,255,0.2);
+  border-radius: 16px;
+  padding: 28px;
+  min-width: 320px;
+  max-width: 480px;
+  box-shadow: 0 16px 60px rgba(0,0,0,0.6);
+}
+
+.kb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.kb-header h3 { font-size: 1rem; font-weight: 600; }
+
+.kb-close {
+  background: none;
+  border: none;
+  color: var(--muted, #8b949e);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px;
+}
+
+.kb-list { display: flex; flex-direction: column; gap: 10px; }
+
+.kb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--muted, #8b949e);
+}
+
+kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  padding: 3px 8px;
+  color: var(--text, #e6edf3);
+  white-space: nowrap;
+}
+
+/* ── Theme Toggle Button ────────────────────────────────────────────────── */
+#theme-toggle-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: var(--text, #e6edf3);
+  cursor: none;
+  font-size: 1rem;
+  padding: 6px 10px;
+  transition: background 0.2s, border-color 0.2s;
+  margin-left: 8px;
+}
+
+#theme-toggle-btn:hover {
+  background: rgba(88,215,255,0.1);
+  border-color: rgba(88,215,255,0.3);
+}
+
+/* ── Global Toast ───────────────────────────────────────────────────────── */
+.global-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: rgba(16,22,30,0.96);
+  border: 1px solid rgba(88,215,255,0.3);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 0.88rem;
+  color: var(--text, #e6edf3);
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
+.global-toast.toast-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
