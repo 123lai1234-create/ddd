@@ -1641,13 +1641,12 @@ def game_random_seed(game: str) -> dict[str, Any]:
 
 # ── Seedance Video Generation (fal.ai proxy) ─────────────────────────────────
 
-# fal.ai model endpoint for Seedance 2.0 (fast tier).
-# If fal.ai changes the model slug, only this constant needs updating.
-_FAL_BASE = "https://queue.fal.run/bytedance/seedance-2.0/fast/text-to-video"
+# PiAPI proxy for Seedance 2.0 video generation.
+_PIAPI_BASE = "https://api.piapi.ai/api/v1/task"
 _VIDEO_RATE: dict[str, tuple[int, float]] = {}
 _VIDEO_RATE_LOCK = _Lock()
 _VIDEO_MAX_PER_DAY = 3
-_REQUEST_ID_RE = re.compile(r"^[a-zA-Z0-9_\-]{8,128}$")
+_TASK_ID_RE = re.compile(r"^[a-zA-Z0-9_\-]{8,128}$")
 
 
 class VideoGenerateRequest(BaseModel):
@@ -1672,52 +1671,57 @@ def _check_video_rate(ip: str) -> None:
 
 @router.post("/api/video/generate")
 async def video_generate(body: VideoGenerateRequest, request: Request) -> dict[str, Any]:
-    fal_key = os.getenv("FAL_KEY", "").strip()
-    if not fal_key:
-        raise HTTPException(status_code=503, detail="FAL_KEY not configured on this server.")
+    piapi_key = os.getenv("PIAPI_KEY", "").strip()
+    if not piapi_key:
+        raise HTTPException(status_code=503, detail="PIAPI_KEY not configured on this server.")
     ip = request.client.host if request.client else "unknown"
     _check_video_rate(ip)
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(
-            _FAL_BASE,
-            headers={"Authorization": f"Key {fal_key}", "Content-Type": "application/json"},
+            _PIAPI_BASE,
+            headers={"x-api-key": piapi_key, "Content-Type": "application/json"},
             json={
-                "prompt": body.prompt,
-                "resolution": body.resolution,
-                "duration": body.duration,
-                "aspect_ratio": "16:9",
-                "generate_audio": True,
+                "model": "seedance-v1-pro",
+                "task_type": "txt2video",
+                "input": {
+                    "prompt": body.prompt,
+                    "resolution": body.resolution,
+                    "duration": int(body.duration),
+                    "aspect_ratio": "16:9",
+                },
             },
         )
     if r.status_code not in (200, 201):
-        raise HTTPException(status_code=502, detail=f"fal.ai error {r.status_code}: {r.text[:200]}")
-    return {"request_id": r.json().get("request_id", "")}
+        raise HTTPException(status_code=502, detail=f"PiAPI error {r.status_code}: {r.text[:200]}")
+    data = r.json()
+    task_id = (data.get("data") or {}).get("task_id", "")
+    if not task_id:
+        raise HTTPException(status_code=502, detail=f"PiAPI did not return task_id: {r.text[:200]}")
+    return {"request_id": task_id}
 
 
 @router.get("/api/video/status/{request_id}")
 async def video_status(request_id: str) -> dict[str, Any]:
-    fal_key = os.getenv("FAL_KEY", "").strip()
-    if not fal_key:
-        raise HTTPException(status_code=503, detail="FAL_KEY not configured on this server.")
-    if not _REQUEST_ID_RE.match(request_id):
+    piapi_key = os.getenv("PIAPI_KEY", "").strip()
+    if not piapi_key:
+        raise HTTPException(status_code=503, detail="PIAPI_KEY not configured on this server.")
+    if not _TASK_ID_RE.match(request_id):
         raise HTTPException(status_code=400, detail="Invalid request_id.")
-    headers = {"Authorization": f"Key {fal_key}"}
     async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.get(f"{_FAL_BASE}/requests/{request_id}/status", headers=headers)
-        if r.status_code == 404:
-            raise HTTPException(status_code=404, detail="Request not found.")
-        if r.status_code != 200:
-            raise HTTPException(status_code=502, detail=f"fal.ai status error {r.status_code}")
-        data = r.json()
-        fal_status = data.get("status", "")
-        if fal_status == "COMPLETED":
-            rr = await client.get(f"{_FAL_BASE}/requests/{request_id}", headers=headers)
-            if rr.status_code != 200:
-                raise HTTPException(status_code=502, detail="Failed to fetch video result.")
-            result = rr.json()
-            video_url = (result.get("video") or {}).get("url") or result.get("video_url", "")
-            return {"status": "done", "video_url": video_url}
-    if fal_status == "FAILED":
-        return {"status": "failed", "error": data.get("error", "Generation failed.")}
+        r = await client.get(
+            f"{_PIAPI_BASE}/{request_id}",
+            headers={"x-api-key": piapi_key},
+        )
+    if r.status_code == 404:
+        raise HTTPException(status_code=404, detail="Task not found.")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"PiAPI status error {r.status_code}")
+    data = (r.json().get("data") or {})
+    status = data.get("status", "")
+    if status == "completed":
+        video_url = (data.get("output") or {}).get("video_url", "")
+        return {"status": "done", "video_url": video_url}
+    if status == "failed":
+        return {"status": "failed", "error": (data.get("error") or {}).get("message", "Generation failed.")}
     return {"status": "pending"}
 
