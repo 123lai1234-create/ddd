@@ -1,17 +1,4 @@
 {
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd /d/project/astro && node scripts/sync_frontend.mjs && node scripts/convert_pages.mjs && cd /d/project && git add -A && git diff --cached --quiet || (git commit -m \"auto: sync changes\" && git push) 2>/dev/null || true",
-            "timeout": 90
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "Bash(git add:*)",
@@ -43,7 +30,22 @@
       "Bash(curl -s \"https://donttalk.vercel.app/api/market/instruments?limit=200\")",
       "Bash(curl -s \"https://donttalk.vercel.app/api/market/instruments?limit=200\" -o /tmp/inst.json)",
       "Bash(curl -s \"https://donttalk.vercel.app/api/market/instruments?limit=200\" -o inst.json)",
-      "Bash(curl -s https://donttalk.vercel.app/scripts/thesis.js)"
+      "Bash(curl -s https://donttalk.vercel.app/scripts/thesis.js)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('d:/project/site_api/routes.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('d:/project/site_api/routes.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax OK'\\)\")"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /d/project/astro && node scripts/sync_frontend.mjs && node scripts/convert_pages.mjs && cd /d/project && git add -A && git diff --cached --quiet || (git commit -m \"auto: sync changes\" && git push) 2>/dev/null || true",
+            "timeout": 90
+          }
+        ]
+      }
     ]
   }
 }

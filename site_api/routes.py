@@ -4,6 +4,7 @@ import contextlib
 import logging
 import math
 import os
+import re
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
@@ -1636,4 +1637,80 @@ def game_random_seed(game: str) -> dict[str, Any]:
     import random as _rand
     seed = _rand.getrandbits(32)
     return {"game": g, "seed": seed, "ts": int(_time.time())}
+
+
+# ── Seedance Video Generation (fal.ai proxy) ─────────────────────────────────
+
+_FAL_BASE = "https://queue.fal.run/fal-ai/bytedance/seedance/v2"
+_VIDEO_RATE: dict[str, tuple[int, float]] = {}
+_VIDEO_RATE_LOCK = _Lock()
+_VIDEO_MAX_PER_DAY = 3
+_REQUEST_ID_RE = re.compile(r"^[a-zA-Z0-9_\-]{8,128}$")
+
+
+class VideoGenerateRequest(BaseModel):
+    prompt: str = Field(..., min_length=3, max_length=500)
+    resolution: str = Field("720p", pattern=r"^(480p|720p|1080p)$")
+    duration: int = Field(5, ge=3, le=10)
+
+
+def _check_video_rate(ip: str) -> None:
+    now = _time.time()
+    with _VIDEO_RATE_LOCK:
+        count, window_start = _VIDEO_RATE.get(ip, (0, now))
+        if now - window_start > 86400:
+            count, window_start = 0, now
+        if count >= _VIDEO_MAX_PER_DAY:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Video generation limit: {_VIDEO_MAX_PER_DAY} per day per IP.",
+            )
+        _VIDEO_RATE[ip] = (count + 1, window_start)
+
+
+@router.post("/api/video/generate")
+def video_generate(body: VideoGenerateRequest, request: Request) -> dict[str, Any]:
+    fal_key = os.getenv("FAL_KEY", "").strip()
+    if not fal_key:
+        raise HTTPException(status_code=503, detail="FAL_KEY not configured on this server.")
+    ip = request.client.host if request.client else "unknown"
+    _check_video_rate(ip)
+    with httpx.Client(timeout=30) as client:
+        r = client.post(
+            f"{_FAL_BASE}/text-to-video",
+            headers={"Authorization": f"Key {fal_key}"},
+            json={"prompt": body.prompt, "resolution": body.resolution, "duration": body.duration},
+        )
+    if r.status_code not in (200, 201):
+        raise HTTPException(status_code=502, detail=f"fal.ai error {r.status_code}: {r.text[:200]}")
+    return {"request_id": r.json().get("request_id", "")}
+
+
+@router.get("/api/video/status/{request_id}")
+def video_status(request_id: str) -> dict[str, Any]:
+    fal_key = os.getenv("FAL_KEY", "").strip()
+    if not fal_key:
+        raise HTTPException(status_code=503, detail="FAL_KEY not configured on this server.")
+    if not _REQUEST_ID_RE.match(request_id):
+        raise HTTPException(status_code=400, detail="Invalid request_id.")
+    headers = {"Authorization": f"Key {fal_key}"}
+    with httpx.Client(timeout=30) as client:
+        r = client.get(f"{_FAL_BASE}/requests/{request_id}/status", headers=headers)
+    if r.status_code == 404:
+        raise HTTPException(status_code=404, detail="Request not found.")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"fal.ai status error {r.status_code}")
+    data = r.json()
+    fal_status = data.get("status", "")
+    if fal_status == "COMPLETED":
+        with httpx.Client(timeout=30) as client:
+            rr = client.get(f"{_FAL_BASE}/requests/{request_id}", headers=headers)
+        if rr.status_code != 200:
+            raise HTTPException(status_code=502, detail="Failed to fetch video result.")
+        result = rr.json()
+        video_url = (result.get("video") or {}).get("url") or result.get("video_url", "")
+        return {"status": "done", "video_url": video_url}
+    if fal_status == "FAILED":
+        return {"status": "failed", "error": data.get("error", "Generation failed.")}
+    return {"status": "pending"}
 

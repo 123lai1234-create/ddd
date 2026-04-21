@@ -1,0 +1,184 @@
+---
+import Base from '../layouts/Base.astro';
+const bodyHtml = `
+    <div data-site-nav></div>
+
+    <header class="hero">
+        <div class="eyebrow"><span class="live-dot"></span>AI Video Generation · Seedance 2.0 · fal.ai Proxy</div>
+        <h1>文字生成影片<br><span>Seedance 2.0 via FastAPI</span></h1>
+        <p class="hero-sub">
+            輸入 prompt，後端 FastAPI（Railway）作為安全代理把請求送到 fal.ai Seedance 2.0，
+            非同步輪詢完成後直接在頁面播放。API key 全程藏在後端，前端零洩漏。
+        </p>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <div class="value">Seedance 2.0</div>
+                <div class="label">ByteDance · fal.ai queue</div>
+            </div>
+            <div class="hero-stat">
+                <div class="value">Async Poll</div>
+                <div class="label">submit → 5s poll → 播放</div>
+            </div>
+            <div class="hero-stat">
+                <div class="value">Rate Limited</div>
+                <div class="label">後端 3 次 / IP / 天</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="video-grid">
+
+            <!-- ── Control Panel ── -->
+            <aside class="panel">
+                <div class="panel-title">影片設定</div>
+                <div class="panel-sub">填入 prompt 後按「生成影片」，等待約 30–120 秒。</div>
+
+                <div class="field">
+                    <label for="videoPrompt">Prompt（英文效果最佳）</label>
+                    <textarea id="videoPrompt" rows="5" placeholder="A timelapse of a protein folding in a glowing blue environment, cinematic, 4K..."></textarea>
+                    <div class="field-hint">3–500 字元 · 建議用英文 · 避免敏感內容</div>
+                </div>
+
+                <div class="field">
+                    <label for="videoResolution">解析度</label>
+                    <select id="videoResolution">
+                        <option value="480p">480p（快速測試）</option>
+                        <option value="720p" selected>720p（建議）</option>
+                        <option value="1080p">1080p（較慢）</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="videoDuration">時長（秒）</label>
+                    <select id="videoDuration">
+                        <option value="3">3 秒</option>
+                        <option value="5" selected>5 秒</option>
+                        <option value="8">8 秒</option>
+                        <option value="10">10 秒</option>
+                    </select>
+                </div>
+
+                <button id="videoGenBtn" class="btn btn-primary" type="button">
+                    <span id="videoSpinner" hidden></span>
+                    生成影片
+                </button>
+
+                <div id="videoStatus" class="status-banner" data-state="info">尚未送出請求。</div>
+                <div class="small-note">API: <span id="videoApiLabel" class="mono">detecting...</span></div>
+
+                <!-- Example prompts -->
+                <div style="margin-top: 24px;">
+                    <div class="panel-title" style="font-size: 0.82rem; margin-bottom: 10px;">範例 Prompts</div>
+                    <div class="example-list">
+                        <button class="example-btn" type="button" data-example-prompt="A glowing DNA double helix rotating slowly in deep blue space, cinematic lighting, ultra-detailed">
+                            DNA double helix rotating in space
+                        </button>
+                        <button class="example-btn" type="button" data-example-prompt="Timelapse of a protein folding from a disordered chain into a structured 3D form, bioluminescent glow, black background">
+                            Protein folding timelapse
+                        </button>
+                        <button class="example-btn" type="button" data-example-prompt="Aerial drone shot of Taiwan mountains at sunrise with golden rays piercing through clouds, cinematic 4K">
+                            Taiwan mountain sunrise aerial
+                        </button>
+                        <button class="example-btn" type="button" data-example-prompt="A futuristic biotech lab with holographic displays showing gene sequences, scientists working, photorealistic">
+                            Futuristic biotech lab
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- ── Result Panel ── -->
+            <div class="panel">
+                <div class="result-top">
+                    <div>
+                        <h3>影片輸出</h3>
+                        <p>生成完成後可在此播放與下載。供應商 URL 有時效性，請及時儲存。</p>
+                    </div>
+                    <div class="section-badge">Seedance 2.0 Output</div>
+                </div>
+
+                <div id="videoResultWrap" class="video-wrap">
+                    <div id="videoPlaceholder" class="video-placeholder">
+                        <div class="icon">🎬</div>
+                        <p>送出 prompt 後，影片將在此處顯示。生成通常需要 30–120 秒。</p>
+                    </div>
+                    <video id="videoResult" controls hidden preload="metadata"></video>
+                </div>
+
+                <!-- Architecture flow -->
+                <div class="arch-note">
+                    <div class="arch-note-title">架構說明</div>
+                    <div class="arch-flow">
+                        <span class="arch-node">Astro (Vercel)</span>
+                        <span class="arch-arrow">→</span>
+                        <span class="arch-node">POST /api/video/generate</span>
+                        <span class="arch-arrow">→</span>
+                        <span class="arch-node">FastAPI (Railway)</span>
+                        <span class="arch-arrow">→</span>
+                        <span class="arch-node">fal.ai queue</span>
+                        <span class="arch-arrow">→</span>
+                        <span class="arch-node">Seedance 2.0</span>
+                    </div>
+                    <div style="margin-top: 12px; font-size: 0.8rem; color: var(--dim);">
+                        前端每 5 秒 poll <code style="font-family: var(--mono); color: var(--muted);">GET /api/video/status/{request_id}</code>，直到 COMPLETED。
+                        FAL_KEY 僅存在 Railway 環境變數，不暴露給瀏覽器。
+                    </div>
+                </div>
+
+                <!-- FAQ -->
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <div class="faq-header">
+                            <span>為什麼要用 FastAPI 當 proxy？</span>
+                            <span class="faq-arrow">▼</span>
+                        </div>
+                        <div class="faq-body" hidden>
+                            API key 放在後端環境變數，前端只拿到 request_id 和影片 URL。
+                            若直接在前端呼叫 fal.ai，任何人都可以從 DevTools 偷走你的 key。
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-header">
+                            <span>為什麼不同步等待回應？</span>
+                            <span class="faq-arrow">▼</span>
+                        </div>
+                        <div class="faq-body" hidden>
+                            Seedance 生成時間 30–120 秒，Railway 的 HTTP request timeout 遠小於這個值。
+                            非同步架構（submit → poll）可以避免 timeout，也讓前端可以顯示進度。
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <div class="faq-header">
+                            <span>Rate limit 是怎麼運作的？</span>
+                            <span class="faq-arrow">▼</span>
+                        </div>
+                        <div class="faq-body" hidden>
+                            後端在記憶體中追蹤每個 IP 每 24 小時的請求次數（上限 3 次）。
+                            這是為了控制 API 費用，避免被惡意用戶耗盡額度。
+                            生產環境建議改用 Redis 持久化計數器。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div data-site-footer></div>
+
+    <script src="scripts/app-config.js"></script>
+    <script src="scripts/video_gen.js"></script>
+
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+`;
+const headInline = "";
+---
+<Base
+    title="AI Video Generation | Seedance 2.0 · FastAPI Proxy"
+    description="文字生成影片示範：Seedance 2.0 via fal.ai，FastAPI 後端 proxy，非同步 submit/poll 架構，API key 零前端洩漏。"
+    bodyPage="video_gen"
+    pageStyles={["/styles/video_gen.css"]}
+    pageScripts={["/scripts/app-config.js", "/scripts/video_gen.js"]}
+    headInline={headInline}
+>
+    <Fragment set:html={bodyHtml} />
+</Base>
