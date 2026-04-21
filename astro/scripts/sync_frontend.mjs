@@ -47,7 +47,7 @@ for (const dir of dirs) {
     }
 }
 
-const files = ['favicon.ico', 'favicon.svg', 'og-image.svg'];
+const files = ['favicon.ico', 'favicon.svg', 'og-image.svg', 'manifest.json', 'sw.js'];
 for (const file of files) {
     await copyFileIfExists(path.join(frontendDir, file), path.join(publicDir, file));
     console.log(`synced ${file}`);
