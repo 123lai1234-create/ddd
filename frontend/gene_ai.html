@@ -271,7 +271,10 @@
                     <div class="sequence-toolbar">
                         <div class="field">
                             <label for="sequenceSearch">搜尋名稱 / accession / query</label>
-                            <input id="sequenceSearch" type="text" placeholder="例如 TP53, kinase, P24941">
+                            <div class="voice-input-wrap">
+                                <input id="sequenceSearch" type="text" placeholder="例如 TP53, kinase, P24941">
+                                <button class="voice-btn" data-voice-target="sequenceSearch" title="語音輸入">🎙️</button>
+                            </div>
                         </div>
                         <div class="field">
                             <label for="sequenceOrganismFilter">物種篩選</label>
@@ -466,7 +469,10 @@
                     <div class="sequence-toolbar">
                         <div class="field">
                             <label for="knowledgeSearch">搜尋 title / source / keyword / query</label>
-                            <input id="knowledgeSearch" type="text" placeholder="例如 kinase, TP53, cancer fusion">
+                            <div class="voice-input-wrap">
+                                <input id="knowledgeSearch" type="text" placeholder="例如 kinase, TP53, cancer fusion">
+                                <button class="voice-btn" data-voice-target="knowledgeSearch" title="語音輸入">🎙️</button>
+                            </div>
                         </div>
                         <div class="field">
                             <label for="knowledgeSourceFilter">來源篩選</label>
@@ -531,7 +537,10 @@
         <div class="chatbot-header"><h4>AI 助手</h4><button class="chatbot-close" aria-label="關閉">✕</button></div>
         <div id="chatbot-messages"><div class="chat-msg chat-bot">你好！有什麼關於基因 AI 平台的問題嗎？</div></div>
         <div class="chatbot-input-row">
-            <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off">
+            <div class="voice-input-wrap" style="flex:1">
+                <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off" style="width:100%">
+                <button class="voice-btn" data-voice-target="chatbot-input" title="語音輸入">🎙️</button>
+            </div>
             <button id="chatbot-send">送出</button>
         </div>
     </div>
