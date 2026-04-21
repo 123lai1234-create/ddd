@@ -27,7 +27,19 @@
       "Bash(python -c ' *)",
       "Bash(git -C \"d:/project\" add astro/src/pages/video-gen.astro astro/public/scripts/video_gen.js astro/public/styles/video_gen.css)",
       "Bash(git -C \"d:/project\" commit -m \"feat: add video generation frontend \\(JS + CSS\\)\")",
-      "Bash(git -C \"d:/project\" push)"
+      "Bash(git -C \"d:/project\" push)",
+      "Bash(git -C \"d:/project\" log --oneline -3)",
+      "Bash(curl -s \"https://donttalk-api-production.up.railway.app/healthz\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://donttalk-api-production.up.railway.app/api/video/generate\" -X POST -H \"Content-Type: application/json\" -d \"{\\\\\"prompt\\\\\":\\\\\"test\\\\\",\\\\\"resolution\\\\\":\\\\\"720p\\\\\",\\\\\"duration\\\\\":\\\\\"5\\\\\"}\")",
+      "Bash(curl -s \"https://donttalk-api-production.up.railway.app/openapi.json\")",
+      "Bash(python -c \"import json,sys; routes=[r for r in json.load\\(sys.stdin\\)['paths'] if 'video' in r]; print\\(routes\\)\")",
+      "Bash(git -C \"d:/project\" show 97c1a99 --stat)",
+      "Bash(git -C \"d:/project\" diff 461d6fe 97c1a99 -- site_api/routes.py)",
+      "Bash(python -c \"import os; print\\(os.path.exists\\('d:/project/astro/public/scripts/video_gen.js'\\), os.path.exists\\('d:/project/astro/public/styles/video_gen.css'\\)\\)\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(k,':',v\\) for k,v in d.items\\(\\) if 'hook' in k.lower\\(\\) or 'sync' in k.lower\\(\\) or 'auto' in k.lower\\(\\)]\")",
+      "Bash(git -C \"d:/project\" add frontend/video-gen.html frontend/scripts/video_gen.js frontend/styles/video_gen.css)",
+      "Bash(git -C \"d:/project\" status --short -- frontend/)",
+      "Bash(git -C \"d:/project\" commit -m \"feat: add Seedance video gen page to frontend source\")"
     ]
   }
 }
