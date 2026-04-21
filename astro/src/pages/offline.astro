@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+const bodyHtml = "\n    <canvas id=\"c\"></canvas>\n    <div class=\"icon\">📡</div>\n    <h1>目前離線中</h1>\n    <p>無法連線至網路。請確認網路連線後重試，或等待系統自動重新連線。</p>\n    <button class=\"retry-btn\" onclick=\"location.reload()\">重新嘗試連線</button>\n    <div class=\"wave\"></div>\n    <script>\n    (function(){\n        const c = document.getElementById('c');\n        const ctx = c.getContext('2d');\n        let W, H, pts = [];\n        function resize(){ W = c.width = window.innerWidth; H = c.height = window.innerHeight; pts = Array.from({length:40},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3})); }\n        resize();\n        window.addEventListener('resize', resize);\n        function draw(){\n            ctx.clearRect(0,0,W,H);\n            pts.forEach(p=>{\n                p.x=(p.x+p.vx+W)%W; p.y=(p.y+p.vy+H)%H;\n                ctx.beginPath(); ctx.arc(p.x,p.y,1.5,0,Math.PI*2);\n                ctx.fillStyle='rgba(88,215,255,.25)'; ctx.fill();\n            });\n            for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){\n                const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);\n                if(d<120){ ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.strokeStyle=`rgba(88,215,255,${.12*(1-d/120)})`; ctx.lineWidth=.5; ctx.stroke(); }\n            }\n            requestAnimationFrame(draw);\n        }\n        draw();\n    })();\n    </script>\n";
+const headInline = "";
+---
+<Base
+    title="離線中 · 工程 × 生醫 × AI"
+    description=""
+    bodyPage=""
+    pageStyles={[]}
+    pageScripts={[]}
+    headInline={headInline}
+>
+    <Fragment set:html={bodyHtml} />
+</Base>

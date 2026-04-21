@@ -14,7 +14,10 @@ const STATIC_ASSETS = [
   '/scripts/nav.js',
   '/scripts/app-config.js',
   '/manifest.json',
+  '/offline.html',
 ];
+
+const PREFETCH_PAGES = ['/', '/about_me', '/works', '/gene_ai'];
 
 /* ── Install: cache static assets ── */
 self.addEventListener('install', event => {
@@ -24,12 +27,18 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-/* ── Activate: clean old caches ── */
+/* ── Activate: clean old caches + prefetch key pages ── */
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    caches.keys()
+      .then(keys =>
+        Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      )
+      .then(() =>
+        caches.open(CACHE_NAME).then(cache =>
+          Promise.allSettled(PREFETCH_PAGES.map(url => cache.add(url)))
+        )
+      )
   );
   self.clients.claim();
 });
@@ -49,6 +58,14 @@ self.addEventListener('fetch', event => {
       fetch(request).catch(() => new Response('{"error":"offline"}', {
         headers: { 'Content-Type': 'application/json' }
       }))
+    );
+    return;
+  }
+
+  // Navigation requests — network-first with offline.html fallback
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(() => caches.match('/offline.html'))
     );
     return;
   }

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>離線中 · 工程 × 生醫 × AI</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0a1116; --text: #e8eef4; --muted: #8892a4;
+            --cyan: #58d7ff; --purple: #b59cff; --border: rgba(255,255,255,.08);
+        }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            min-height: 100vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 24px;
+            padding: 24px; text-align: center;
+        }
+        .icon { font-size: 4rem; animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+        h1 { font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 700; }
+        p { color: var(--muted); font-size: .9rem; line-height: 1.6; max-width: 360px; }
+        .retry-btn {
+            padding: 12px 28px; border-radius: 8px; border: 1px solid var(--cyan);
+            background: rgba(88,215,255,.1); color: var(--cyan); cursor: pointer;
+            font-size: .95rem; font-family: inherit; transition: background .2s;
+        }
+        .retry-btn:hover { background: rgba(88,215,255,.2); }
+        .wave {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 120px;
+            background: linear-gradient(to top, rgba(88,215,255,.04), transparent);
+            pointer-events: none;
+        }
+        canvas { position: fixed; inset: 0; pointer-events: none; z-index: -1; }
+    </style>
+</head>
+<body>
+    <canvas id="c"></canvas>
+    <div class="icon">📡</div>
+    <h1>目前離線中</h1>
+    <p>無法連線至網路。請確認網路連線後重試，或等待系統自動重新連線。</p>
+    <button class="retry-btn" onclick="location.reload()">重新嘗試連線</button>
+    <div class="wave"></div>
+    <script>
+    (function(){
+        const c = document.getElementById('c');
+        const ctx = c.getContext('2d');
+        let W, H, pts = [];
+        function resize(){ W = c.width = window.innerWidth; H = c.height = window.innerHeight; pts = Array.from({length:40},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3})); }
+        resize();
+        window.addEventListener('resize', resize);
+        function draw(){
+            ctx.clearRect(0,0,W,H);
+            pts.forEach(p=>{
+                p.x=(p.x+p.vx+W)%W; p.y=(p.y+p.vy+H)%H;
+                ctx.beginPath(); ctx.arc(p.x,p.y,1.5,0,Math.PI*2);
+                ctx.fillStyle='rgba(88,215,255,.25)'; ctx.fill();
+            });
+            for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+                const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+                if(d<120){ ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.strokeStyle=`rgba(88,215,255,${.12*(1-d/120)})`; ctx.lineWidth=.5; ctx.stroke(); }
+            }
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+    </script>
+</body>
+</html>

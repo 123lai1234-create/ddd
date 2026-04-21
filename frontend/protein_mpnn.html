@@ -377,6 +377,61 @@
         </section>
     </main>
 
+    <!-- A-Frame VR Molecular Scene -->
+    <section class="reveal" style="padding:60px 0;max-width:960px;margin:0 auto;padding-inline:clamp(16px,5vw,48px)">
+        <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:8px">VR 分子空間展示</h2>
+        <p style="color:var(--muted,#8892a4);font-size:.85rem;margin-bottom:20px">點擊下方區域進入 WebXR 沉浸式分子結構場景（支援 VR 頭顯與滑鼠拖曳瀏覽）</p>
+        <div style="border:1px solid var(--border,rgba(255,255,255,.08));border-radius:16px;overflow:hidden;position:relative">
+            <a-scene id="vr-scene" embedded style="height:420px;display:block"
+                vr-mode-ui="enabled:true"
+                renderer="antialias:true;colorManagement:true"
+                loading-screen="enabled:false">
+                <a-sky color="#060d14"></a-sky>
+                <!-- Rotating protein backbone wireframe via torus knots -->
+                <a-entity id="mol-root" position="0 1.6 -4" rotation="0 0 0"
+                    animation="property:rotation;to:0 360 0;dur:18000;loop:true;easing:linear">
+                    <!-- Alpha helix approximation: stack of circles -->
+                    <a-torus-knot radius="0.6" radius-tubular="0.035" p="2" q="3"
+                        color="#58d7ff" opacity="0.85" wireframe="true"
+                        animation="property:rotation;to:360 0 360;dur:9000;loop:true;easing:linear">
+                    </a-torus-knot>
+                    <a-torus-knot radius="0.42" radius-tubular="0.022" p="3" q="5"
+                        color="#b59cff" opacity="0.6" wireframe="true" position="0 0.05 0"
+                        animation="property:rotation;to:-180 360 180;dur:12000;loop:true;easing:linear">
+                    </a-torus-knot>
+                    <!-- Amino acid residue spheres -->
+                    <a-sphere radius="0.07" color="#ff6b9d" position="0.6 0 0"></a-sphere>
+                    <a-sphere radius="0.07" color="#58d7ff" position="-0.6 0 0"></a-sphere>
+                    <a-sphere radius="0.07" color="#7bf0be" position="0 0 0.6"></a-sphere>
+                    <a-sphere radius="0.07" color="#ffd166" position="0 0.6 0"></a-sphere>
+                    <a-sphere radius="0.07" color="#ff6b9d" position="0 -0.6 0"></a-sphere>
+                    <a-sphere radius="0.07" color="#b59cff" position="0 0 -0.6"></a-sphere>
+                </a-entity>
+                <!-- Grid floor -->
+                <a-grid-helper args="20,20,#1a2a3a,#0d1a26" position="0 0 -4" rotation="-90 0 0" opacity="0.3"></a-grid-helper>
+                <!-- Orbit controls via mouse drag -->
+                <a-camera position="0 1.6 0" look-controls wasd-controls>
+                    <a-cursor color="#58d7ff" fuse="false"></a-cursor>
+                </a-camera>
+                <!-- Ambient + directional lighting -->
+                <a-light type="ambient" color="#112233" intensity="0.8"></a-light>
+                <a-light type="directional" position="2 4 -2" color="#58d7ff" intensity="0.6"></a-light>
+                <a-light type="point" position="-2 2 -4" color="#b59cff" intensity="0.5"></a-light>
+            </a-scene>
+            <div style="position:absolute;bottom:12px;right:14px;font-size:.72rem;color:rgba(255,255,255,.3);pointer-events:none">🥽 拖曳旋轉 · 滾輪縮放</div>
+        </div>
+    </section>
+    <script>
+    (function(){
+        if (document.querySelector('a-scene')) {
+            const aframeScript = document.createElement('script');
+            aframeScript.src = 'https://aframe.io/releases/1.6.0/aframe.min.js';
+            aframeScript.onload = function() { console.log('A-Frame loaded'); };
+            document.head.appendChild(aframeScript);
+        }
+    })();
+    </script>
+
     <div data-site-footer></div>
 
     <script src="scripts/app-config.js"></script>
