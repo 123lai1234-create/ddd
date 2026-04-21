@@ -23,7 +23,11 @@
       "Bash(curl -sSI \"https://models.rcsb.org/v1/5P21/full?format=cif\")",
       "Bash(curl -sSI -H \"Origin: https://donttalk.vercel.app\" \"https://files.rcsb.org/download/5P21.pdb\")",
       "Bash(curl -s \"https://files.rcsb.org/download/5P21.pdb\")",
-      "Bash(curl -sS \"https://donttalk.vercel.app/api/structures/pdb/5P21\")"
+      "Bash(curl -sS \"https://donttalk.vercel.app/api/structures/pdb/5P21\")",
+      "Bash(python -c ' *)",
+      "Bash(git -C \"d:/project\" add astro/src/pages/video-gen.astro astro/public/scripts/video_gen.js astro/public/styles/video_gen.css)",
+      "Bash(git -C \"d:/project\" commit -m \"feat: add video generation frontend \\(JS + CSS\\)\")",
+      "Bash(git -C \"d:/project\" push)"
     ]
   }
 }

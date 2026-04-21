@@ -35,7 +35,13 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\('d:/project/site_api/routes.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
       "Bash(git -C \"d:/project\" status --short)",
       "Bash(python -c ' *)",
-      "Bash(python -)"
+      "Bash(python -)",
+      "Bash(git -C \"d:/project\" diff --stat HEAD)",
+      "Bash(git -C \"d:/project\" status)",
+      "Bash(git -C \"d:/project\" diff site_api/routes.py)",
+      "Bash(git -C \"d:/project\" worktree list)",
+      "Bash(git -C \"d:/project/.claude/worktrees/gracious-poincare-899bd1\" status --short)",
+      "Bash(git -C \"d:/project/.claude/worktrees/gracious-poincare-899bd1\" diff --stat HEAD)"
     ]
   },
   "hooks": {
