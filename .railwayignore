@@ -1,0 +1,11 @@
+astro/
+frontend/
+docs/
+tests/
+.claude/
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+outputs/
+.git/
