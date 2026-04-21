@@ -1,0 +1,34 @@
+{
+  "name": "互動技術展示館 · Interactive Tech Lab",
+  "short_name": "TechLab",
+  "description": "現代前端互動技術全景展示：Three.js、Canvas、WebAssembly、A-Frame VR、PWA",
+  "start_url": "/interactive-showcase.html",
+  "display": "standalone",
+  "background_color": "#0a1116",
+  "theme_color": "#0a1116",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "zh-TW",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%230a1116'/><text y='380' x='56' font-size='360'>⚡</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Three.js Demo",
+      "url": "/interactive-showcase.html#hero-3d",
+      "description": "3D DNA 雙螺旋展示"
+    },
+    {
+      "name": "Canvas 繪圖",
+      "url": "/interactive-showcase.html#canvas-2d",
+      "description": "互動繪圖板"
+    }
+  ],
+  "categories": ["education", "utilities"],
+  "screenshots": []
+}
