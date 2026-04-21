@@ -635,7 +635,7 @@ function escapeHtml(text) {
 
 /* ── Global card cursor-tracking glow ────────────────────────────────────── */
 function initCardGlow() {
-  const CARD_SELECTORS = '.card, .metric-card, .explore-card, .chart-card, .work-card, .service-card, .platform-card';
+  const CARD_SELECTORS = '.card, .metric-card, .explore-card, .chart-card, .work-card, .service-card, .platform-card, .skill-card, .timeline-card, .signal-card';
   document.querySelectorAll(CARD_SELECTORS).forEach((card) => {
     card.addEventListener('mousemove', (e) => {
       const r = card.getBoundingClientRect();
@@ -643,6 +643,393 @@ function initCardGlow() {
       card.style.setProperty('--cy', `${e.clientY - r.top}px`);
     });
   });
+}
+
+/* ── Scroll Progress Bar ─────────────────────────────────────────────────── */
+function initScrollProgress() {
+  const bar = document.createElement('div');
+  bar.id = 'global-scroll-bar';
+  bar.style.cssText = `
+    position:fixed; top:0; left:0; height:2px; width:0%; z-index:9999;
+    background:linear-gradient(90deg,var(--cyan,#58d7ff),var(--purple,#b59cff));
+    transition:width 0.1s; pointer-events:none;
+  `;
+  document.body.appendChild(bar);
+  window.addEventListener('scroll', () => {
+    const pct = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight) * 100;
+    bar.style.width = `${Math.min(pct, 100).toFixed(2)}%`;
+  }, { passive: true });
+}
+
+/* ── Ripple on all .btn ──────────────────────────────────────────────────── */
+function initGlobalRipple() {
+  // Inject keyframe once
+  if (!document.getElementById('ripple-kf')) {
+    const s = document.createElement('style');
+    s.id = 'ripple-kf';
+    s.textContent = `
+      @keyframes _ripple { to { transform:scale(4); opacity:0; } }
+      .btn { position:relative; overflow:hidden; }
+      ._ripple-wave {
+        position:absolute; border-radius:50%;
+        background:rgba(255,255,255,0.2);
+        transform:scale(0); pointer-events:none;
+        animation:_ripple 0.55s ease-out forwards;
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const size = Math.max(r.width, r.height) * 2;
+    const wave = document.createElement('span');
+    wave.className = '_ripple-wave';
+    wave.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${e.clientX - r.left - size/2}px;
+      top:${e.clientY - r.top - size/2}px;
+    `;
+    btn.appendChild(wave);
+    wave.addEventListener('animationend', () => wave.remove());
+  });
+}
+
+/* ── Magnetic hover on primary CTAs ─────────────────────────────────────── */
+function initMagneticCTAs() {
+  const sel = '.btn-primary, .hero-ctas .btn, .cta-row .btn';
+  document.querySelectorAll(sel).forEach(btn => {
+    btn.addEventListener('mousemove', function(e) {
+      const r = this.getBoundingClientRect();
+      const dx = (e.clientX - r.left - r.width/2) * 0.22;
+      const dy = (e.clientY - r.top - r.height/2) * 0.22;
+      this.style.transform = `translate(${dx}px,${dy}px)`;
+    });
+    btn.addEventListener('mouseleave', function() {
+      this.style.transform = '';
+    });
+  });
+}
+
+/* ── Parallax hero sections ──────────────────────────────────────────────── */
+function initHeroParallax() {
+  const heroes = document.querySelectorAll('.hero-canvas, .hero-wrap, .sc-hero .hero-bg, .page-hero-bg');
+  if (!heroes.length) return;
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    heroes.forEach(el => {
+      el.style.transform = `translateY(${y * 0.25}px)`;
+    });
+  }, { passive: true });
+}
+
+/* ── Count-up for stat numbers via Intersection Observer ─────────────────── */
+function initCountUp() {
+  const SEL = '.val, .mval, .hero-stat .val, .live-stat-val, [data-countup]';
+  const NUMERIC = /^[\d.,]+$/;
+
+  document.querySelectorAll(SEL).forEach(el => {
+    if (el.dataset.countupDone) return;
+    const raw = el.textContent.trim();
+    const num = parseFloat(raw.replace(/,/g, ''));
+    if (!isFinite(num) || !NUMERIC.test(raw.replace(/[^0-9.,]/g, ''))) return;
+    el.dataset.countupDone = '1';
+    el.dataset.countupTarget = num;
+    el.dataset.countupOrig = raw;
+  });
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      obs.unobserve(entry.target);
+      const el = entry.target;
+      const target = parseFloat(el.dataset.countupTarget);
+      const orig   = el.dataset.countupOrig;
+      const isFloat = orig.includes('.');
+      const duration = 1400;
+      const start = performance.now();
+      const tick = now => {
+        const p = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3);
+        const v = target * ease;
+        el.textContent = isFloat ? v.toFixed(1) : Math.round(v).toLocaleString();
+        if (p < 1) requestAnimationFrame(tick);
+        else el.textContent = orig; // restore original text (e.g. "雙碩士" stays)
+      };
+      // Only animate numeric-only values
+      if (/^\d+(\.\d+)?$/.test(el.dataset.countupOrig)) {
+        requestAnimationFrame(tick);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  document.querySelectorAll('[data-countup-done]').forEach(el => obs.observe(el));
+  // Re-scan after lazy render
+  setTimeout(() => {
+    document.querySelectorAll(SEL).forEach(el => {
+      if (el.dataset.countupDone) obs.observe(el);
+    });
+  }, 300);
+}
+
+/* ── Lazy Loading all images ─────────────────────────────────────────────── */
+function initLazyImages() {
+  const imgs = document.querySelectorAll('img:not([loading]):not([data-lazy-done])');
+  if (!imgs.length) return;
+
+  const obs = new IntersectionObserver((entries, o) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      o.unobserve(e.target);
+      const img = e.target;
+      img.loading = 'lazy';
+      img.style.transition = 'opacity 0.4s';
+      img.style.opacity = '0';
+      img.onload = () => { img.style.opacity = '1'; };
+      if (img.src) img.src = img.src; // trigger reload with lazy
+      img.dataset.lazyDone = '1';
+    });
+  }, { rootMargin: '120px' });
+
+  imgs.forEach(img => { img.dataset.lazyDone = '1'; obs.observe(img); });
+}
+
+/* ── Typing animation on hero h1 ─────────────────────────────────────────── */
+function initTypingAnimation() {
+  // Only run on pages that don't already have a canvas/heavy hero
+  if (document.querySelector('.hero-canvas, #tsparticles')) return;
+
+  const target = document.querySelector('header.hero h1, .page-hero h1, section#hero h1');
+  if (!target || target.dataset.typed) return;
+  target.dataset.typed = '1';
+
+  const spans = target.querySelectorAll('span');
+  if (!spans.length) return;
+  const span = spans[spans.length - 1];
+  const original = span.textContent;
+  span.textContent = '';
+
+  let i = 0;
+  const timer = setInterval(() => {
+    span.textContent += original[i++];
+    if (i >= original.length) clearInterval(timer);
+  }, 55);
+}
+
+/* ── Scroll-reveal for timeline-card elements ────────────────────────────── */
+function initTimelineReveal() {
+  if (!document.getElementById('timeline-reveal-style')) {
+    const s = document.createElement('style');
+    s.id = 'timeline-reveal-style';
+    s.textContent = `
+      .timeline-card { opacity:0; transform:translateX(-24px); transition:opacity 0.6s ease, transform 0.6s ease; }
+      .timeline-card.tl-visible { opacity:1; transform:translateX(0); }
+      .timeline-card:nth-child(even) { transform:translateX(24px); }
+      .timeline-card:nth-child(even).tl-visible { transform:translateX(0); }
+      @media (prefers-reduced-motion:reduce) { .timeline-card { opacity:1; transform:none; } }
+    `;
+    document.head.appendChild(s);
+  }
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('tl-visible'); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.2 });
+
+  document.querySelectorAll('.timeline-card').forEach(el => obs.observe(el));
+}
+
+/* ── Staggered card entrance ─────────────────────────────────────────────── */
+function initCardEntrance() {
+  if (!document.getElementById('card-entrance-style')) {
+    const s = document.createElement('style');
+    s.id = 'card-entrance-style';
+    s.textContent = `
+      .card-grid .card, .skills-grid .skill-card, .explore-grid .explore-card {
+        opacity:0; transform:translateY(20px);
+        transition:opacity 0.5s ease, transform 0.5s ease;
+      }
+      .card-grid .card.ce-visible, .skills-grid .skill-card.ce-visible, .explore-grid .explore-card.ce-visible {
+        opacity:1; transform:translateY(0);
+      }
+      @media (prefers-reduced-motion:reduce) {
+        .card-grid .card, .skills-grid .skill-card, .explore-grid .explore-card { opacity:1; transform:none; }
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
+  const obs = new IntersectionObserver((entries, o) => {
+    entries.forEach((e, idx) => {
+      if (!e.isIntersecting) return;
+      o.unobserve(e.target);
+      const siblings = [...e.target.parentElement.children];
+      const i = siblings.indexOf(e.target);
+      setTimeout(() => e.target.classList.add('ce-visible'), i * 80);
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.card-grid .card, .skills-grid .skill-card, .explore-grid .explore-card')
+    .forEach(el => obs.observe(el));
+}
+
+/* ── Canvas Skill Radar (about_me page) ──────────────────────────────────── */
+function initSkillRadar() {
+  const canvas = document.getElementById('skill-radar-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth;
+  const H = canvas.height = 260;
+  const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 32;
+
+  const skills = [
+    { label: 'Frontend',  value: 0.88 },
+    { label: 'Python/AI', value: 0.85 },
+    { label: 'Biomedical',value: 0.92 },
+    { label: 'NGS/Genomics',value: 0.80 },
+    { label: 'DevOps',    value: 0.68 },
+    { label: 'Research',  value: 0.90 },
+  ];
+
+  const N = skills.length;
+  const step = (Math.PI * 2) / N;
+  let progress = 0;
+
+  function draw(p) {
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid rings
+    [0.25, 0.5, 0.75, 1].forEach(r => {
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const a = i * step - Math.PI / 2;
+        const x = cx + Math.cos(a) * R * r;
+        const y = cy + Math.sin(a) * R * r;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = 'rgba(88,215,255,0.12)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // Spokes
+    for (let i = 0; i < N; i++) {
+      const a = i * step - Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+      ctx.strokeStyle = 'rgba(88,215,255,0.15)';
+      ctx.stroke();
+    }
+
+    // Filled polygon
+    ctx.beginPath();
+    skills.forEach((s, i) => {
+      const a = i * step - Math.PI / 2;
+      const v = s.value * p;
+      const x = cx + Math.cos(a) * R * v;
+      const y = cy + Math.sin(a) * R * v;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(88,215,255,0.12)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(88,215,255,0.6)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Dots + Labels
+    skills.forEach((s, i) => {
+      const a = i * step - Math.PI / 2;
+      const v = s.value * p;
+      const x = cx + Math.cos(a) * R * v;
+      const y = cy + Math.sin(a) * R * v;
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#58d7ff';
+      ctx.fill();
+
+      const lx = cx + Math.cos(a) * (R + 22);
+      const ly = cy + Math.sin(a) * (R + 22);
+      ctx.fillStyle = 'rgba(230,237,243,0.75)';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.textAlign = Math.cos(a) > 0.1 ? 'left' : Math.cos(a) < -0.1 ? 'right' : 'center';
+      ctx.fillText(s.label, lx, ly + 4);
+    });
+  }
+
+  // Animate in when visible
+  const obs = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) return;
+    obs.disconnect();
+    const start = performance.now();
+    const animate = now => {
+      progress = Math.min((now - start) / 900, 1);
+      draw(1 - Math.pow(1 - progress, 3));
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, { threshold: 0.3 });
+  obs.observe(canvas);
+}
+
+/* ── Web Speech voice input on gene_ai page ──────────────────────────────── */
+function initVoiceInput() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return;
+
+  // Attach to each .voice-input-btn created in HTML
+  document.querySelectorAll('[data-voice-target]').forEach(btn => {
+    const targetId = btn.dataset.voiceTarget;
+    const input = document.getElementById(targetId);
+    if (!input) return;
+
+    const rec = new SpeechRecognition();
+    rec.lang = 'zh-TW';
+    rec.interimResults = false;
+
+    rec.onresult = e => {
+      const text = e.results[0][0].transcript;
+      input.value = text;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      btn.classList.remove('voice-listening');
+      btn.textContent = '🎙️';
+    };
+    rec.onend = () => { btn.classList.remove('voice-listening'); btn.textContent = '🎙️'; };
+    rec.onerror = () => { btn.classList.remove('voice-listening'); btn.textContent = '🎙️'; };
+
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('voice-listening')) { rec.stop(); return; }
+      btn.classList.add('voice-listening');
+      btn.textContent = '⏹';
+      rec.start();
+    });
+  });
+}
+
+/* ── WAA Skill Bars (about_me page) ─────────────────────────────────────── */
+function initSkillBars() {
+  const bars = document.querySelectorAll('[data-skill-bar]');
+  if (!bars.length) return;
+
+  const obs = new IntersectionObserver((entries, o) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      o.unobserve(e.target);
+      const fill = e.target.querySelector('.skill-bar-fill');
+      const pct  = parseFloat(e.target.dataset.skillBar) / 100;
+      if (!fill) return;
+      fill.animate(
+        [{ width: '0%' }, { width: `${pct * 100}%` }],
+        { duration: 900, easing: 'cubic-bezier(0.4,0,0.2,1)', fill: 'forwards' }
+      );
+    });
+  }, { threshold: 0.3 });
+
+  bars.forEach(el => obs.observe(el));
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -656,4 +1043,18 @@ document.addEventListener('DOMContentLoaded', () => {
   initPyodide();
   initChatbot();
   initCardGlow();
+  // Global enhancements
+  initScrollProgress();
+  initGlobalRipple();
+  initMagneticCTAs();
+  initHeroParallax();
+  initCountUp();
+  initLazyImages();
+  initTypingAnimation();
+  initTimelineReveal();
+  initCardEntrance();
+  // Page-specific
+  initSkillRadar();
+  initSkillBars();
+  initVoiceInput();
 });
