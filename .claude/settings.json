@@ -41,7 +41,8 @@
       "Bash(git -C \"d:/project\" diff site_api/routes.py)",
       "Bash(git -C \"d:/project\" worktree list)",
       "Bash(git -C \"d:/project/.claude/worktrees/gracious-poincare-899bd1\" status --short)",
-      "Bash(git -C \"d:/project/.claude/worktrees/gracious-poincare-899bd1\" diff --stat HEAD)"
+      "Bash(git -C \"d:/project/.claude/worktrees/gracious-poincare-899bd1\" diff --stat HEAD)",
+      "Bash(curl -sf \"https://donttalk-api-production.up.railway.app/api/video/generate\" -X POST -H \"Content-Type: application/json\" -d '{\"prompt\":\"A glowing DNA helix rotating in space\",\"resolution\":\"720p\",\"duration\":\"5\"}' -o /tmp/vgen_test.json)"
     ]
   },
   "hooks": {
