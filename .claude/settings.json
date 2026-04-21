@@ -32,7 +32,10 @@
       "Bash(curl -s \"https://donttalk.vercel.app/api/market/instruments?limit=200\" -o inst.json)",
       "Bash(curl -s https://donttalk.vercel.app/scripts/thesis.js)",
       "Bash(python -c \"import ast; ast.parse\\(open\\('d:/project/site_api/routes.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('d:/project/site_api/routes.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('d:/project/site_api/routes.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
+      "Bash(git -C \"d:/project\" status --short)",
+      "Bash(python -c ' *)",
+      "Bash(python -)"
     ]
   },
   "hooks": {
