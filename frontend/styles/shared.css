@@ -67,7 +67,7 @@ nav {
 }
 
 .nav-links a {
-  color: var(--muted);
+  color: var(--text);
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 500;
@@ -145,7 +145,7 @@ nav {
 }
 
 .nav-drawer a {
-  color: var(--muted);
+  color: var(--text);
   text-decoration: none;
   font-size: 0.95rem;
   font-weight: 500;
@@ -275,7 +275,7 @@ html.is-admin .admin-only {
   color: #ffbc72;
   padding: 4px 12px;
   border-radius: 8px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 600;
   font-family: "JetBrains Mono", monospace;
   backdrop-filter: blur(8px);

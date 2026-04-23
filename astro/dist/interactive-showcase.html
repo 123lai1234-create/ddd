@@ -1,0 +1,653 @@
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><title>互動技術展示館 · Interactive Tech Lab</title><meta name="description" content="完整展示現代前端互動技術：Three.js、Canvas、Web Animations API、Speech API、WebAssembly、A-Frame VR、PWA 等。"><meta property="og:title" content="互動技術展示館 · Interactive Tech Lab"><meta property="og:description" content="完整展示現代前端互動技術：Three.js、Canvas、Web Animations API、Speech API、WebAssembly、A-Frame VR、PWA 等。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og-image.svg"><meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/interactive-showcase.css"><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script></head> <body data-page="interactive-showcase">  
+  <div data-site-nav></div>
+
+  <!-- ══════════════════════════════════════════════════════
+       HERO: Three.js 3D DNA Double Helix
+  ══════════════════════════════════════════════════════ -->
+  <section id="hero-3d" class="showcase-hero">
+    <canvas id="threejs-canvas"></canvas>
+    <div class="hero-overlay">
+      <div class="hero-badge"><span class="live-dot"></span>互動技術展示館</div>
+      <h1 class="hero-title">前端互動技術<br><span class="grad">全景展示</span></h1>
+      <p class="hero-sub">Three.js · Canvas · Web Animations API · GSAP · Speech API<br>WebAssembly · A-Frame VR · PWA · WebSocket · Intersection Observer</p>
+      <div class="hero-scroll-hint">
+        <span>向下捲動探索</span>
+        <div class="scroll-arrow"></div>
+      </div>
+    </div>
+    <div id="pwa-install-bar" class="pwa-install-bar hidden">
+      <span>⚡ 可安裝為桌面應用</span>
+      <button id="pwa-install-btn" class="btn btn-primary btn-sm">立即安裝</button>
+      <button id="pwa-dismiss-btn" class="btn btn-ghost btn-sm">稍後</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       TECH NAV
+  ══════════════════════════════════════════════════════ -->
+  <nav class="tech-nav" id="tech-nav">
+    <div class="tech-nav-inner">
+      <a href="#css-animations" class="tech-pill">CSS 動畫</a>
+      <a href="#web-animations-api" class="tech-pill">Web Animations API</a>
+      <a href="#canvas-2d" class="tech-pill">Canvas 2D</a>
+      <a href="#scroll-effects" class="tech-pill">捲軸效果</a>
+      <a href="#parallax" class="tech-pill">視差</a>
+      <a href="#micro-interactions" class="tech-pill">微互動</a>
+      <a href="#intersection-observer" class="tech-pill">Intersection Observer</a>
+      <a href="#speech-api" class="tech-pill">語音 API</a>
+      <a href="#realtime" class="tech-pill">即時資料</a>
+      <a href="#vr-ar" class="tech-pill">VR/AR</a>
+      <a href="#wasm" class="tech-pill">WebAssembly</a>
+      <a href="#pwa-section" class="tech-pill">PWA</a>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════
+       1. CSS Transitions & Animations
+  ══════════════════════════════════════════════════════ -->
+  <section id="css-animations" class="showcase-section">
+    <div class="section-header">
+      <div class="section-tag">01</div>
+      <h2>CSS Transition / Animation</h2>
+      <p>原生瀏覽器動畫，零 JS 依賴，適合按鈕、卡片、懸浮效果。</p>
+    </div>
+    <div class="demo-grid">
+      <!-- Card Flip -->
+      <div class="demo-card">
+        <h3 class="demo-title">Card Flip 3D</h3>
+        <div class="flip-card-scene">
+          <div class="flip-card">
+            <div class="flip-front">
+              <div class="flip-icon">🧬</div>
+              <span>懸浮翻轉</span>
+            </div>
+            <div class="flip-back">
+              <code>transform: rotateY(180deg)</code>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Morphing Button -->
+      <div class="demo-card">
+        <h3 class="demo-title">形狀變形</h3>
+        <div class="morph-demo">
+          <button class="morph-btn" id="morph-btn">
+            <span>點擊變形</span>
+          </button>
+        </div>
+      </div>
+      <!-- Keyframe Spinner -->
+      <div class="demo-card">
+        <h3 class="demo-title">@keyframes 動畫</h3>
+        <div class="spinner-showcase">
+          <div class="spinner-dna"></div>
+          <div class="spinner-ring"></div>
+          <div class="spinner-pulse"></div>
+        </div>
+      </div>
+      <!-- Hover Glitch -->
+      <div class="demo-card">
+        <h3 class="demo-title">Glitch 文字效果</h3>
+        <div class="glitch-wrap">
+          <span class="glitch-text" data-text="BIOMEDICAL AI">BIOMEDICAL AI</span>
+        </div>
+      </div>
+      <!-- CSS Counter -->
+      <div class="demo-card">
+        <h3 class="demo-title">純 CSS 進度條</h3>
+        <div class="css-progress-list">
+          <div class="css-progress-item">
+            <span>Python</span>
+            <div class="css-bar" style="--pct:92%"><div class="css-bar-fill"></div></div>
+          </div>
+          <div class="css-progress-item">
+            <span>Three.js</span>
+            <div class="css-bar" style="--pct:78%"><div class="css-bar-fill"></div></div>
+          </div>
+          <div class="css-progress-item">
+            <span>WebGL</span>
+            <div class="css-bar" style="--pct:65%"><div class="css-bar-fill"></div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Neon Glow -->
+      <div class="demo-card">
+        <h3 class="demo-title">Neon Glow 效果</h3>
+        <div class="neon-demo">
+          <span class="neon-text">NEON</span>
+          <span class="neon-text neon-green">DNA</span>
+          <span class="neon-text neon-purple">AI</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       2. Web Animations API
+  ══════════════════════════════════════════════════════ -->
+  <section id="web-animations-api" class="showcase-section alt-bg">
+    <div class="section-header">
+      <div class="section-tag">02</div>
+      <h2>Web Animations API</h2>
+      <p>以 JavaScript 控制動畫時間線，支援播放、暫停、倒轉、速率調節。</p>
+    </div>
+    <div class="waa-demo">
+      <div class="waa-stage">
+        <div id="waa-molecule" class="waa-molecule">
+          <div class="atom atom-c"></div>
+          <div class="atom atom-n"></div>
+          <div class="atom atom-o"></div>
+          <div class="atom atom-h1"></div>
+          <div class="atom atom-h2"></div>
+          <div class="bond bond-1"></div>
+          <div class="bond bond-2"></div>
+        </div>
+      </div>
+      <div class="waa-controls">
+        <button class="ctrl-btn" id="waa-play">▶ 播放</button>
+        <button class="ctrl-btn" id="waa-pause">⏸ 暫停</button>
+        <button class="ctrl-btn" id="waa-reverse">⏮ 倒轉</button>
+        <button class="ctrl-btn" id="waa-slow">🐢 慢速</button>
+        <button class="ctrl-btn" id="waa-fast">🚀 快速</button>
+      </div>
+      <div class="waa-info">
+        <code id="waa-state">狀態：running</code>
+        <code id="waa-rate">速率：1×</code>
+        <code id="waa-time">進度：0ms</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       3. Canvas 2D 繪圖板
+  ══════════════════════════════════════════════════════ -->
+  <section id="canvas-2d" class="showcase-section">
+    <div class="section-header">
+      <div class="section-tag">03</div>
+      <h2>HTML5 Canvas 2D</h2>
+      <p>即時繪圖、粒子物理、資料視覺化，全由 Canvas API 驅動。</p>
+    </div>
+    <div class="canvas-tabs">
+      <button class="tab-btn active" data-canvas-tab="draw">✏️ 繪圖板</button>
+      <button class="tab-btn" data-canvas-tab="particles">⚛️ 粒子物理</button>
+      <button class="tab-btn" data-canvas-tab="fractal">🌀 碎形</button>
+    </div>
+    <div class="canvas-wrapper" id="canvas-tab-draw">
+      <div class="draw-toolbar">
+        <label class="tool-label">筆刷：
+          <input type="color" id="brush-color" value="#58d7ff">
+        </label>
+        <label class="tool-label">大小：
+          <input type="range" id="brush-size" min="1" max="40" value="6">
+          <span id="brush-size-val">6</span>
+        </label>
+        <button class="tool-btn" id="draw-mode-pen">✏️ 筆</button>
+        <button class="tool-btn" id="draw-mode-eraser">🧹 橡皮</button>
+        <button class="tool-btn" id="draw-clear">🗑️ 清除</button>
+        <button class="tool-btn" id="draw-save">💾 下載</button>
+      </div>
+      <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
+    </div>
+    <div class="canvas-wrapper hidden" id="canvas-tab-particles">
+      <div class="draw-toolbar">
+        <span class="tool-label">點擊畫布投放粒子</span>
+        <button class="tool-btn" id="particles-clear">🗑️ 清除</button>
+        <button class="tool-btn" id="particles-gravity-toggle">重力：開</button>
+      </div>
+      <canvas id="physics-canvas" class="drawing-canvas"></canvas>
+    </div>
+    <div class="canvas-wrapper hidden" id="canvas-tab-fractal">
+      <div class="draw-toolbar">
+        <label class="tool-label">深度：
+          <input type="range" id="fractal-depth" min="3" max="12" value="7">
+          <span id="fractal-depth-val">7</span>
+        </label>
+        <label class="tool-label">顏色：
+          <input type="color" id="fractal-color" value="#58d7ff">
+        </label>
+        <button class="tool-btn" id="fractal-render">重新繪製</button>
+      </div>
+      <canvas id="fractal-canvas" class="drawing-canvas"></canvas>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       4. GSAP ScrollTrigger + 視差
+  ══════════════════════════════════════════════════════ -->
+  <section id="scroll-effects" class="showcase-section alt-bg">
+    <div class="section-header">
+      <div class="section-tag">04</div>
+      <h2>GSAP ScrollTrigger</h2>
+      <p>捲軸觸發時間線動畫，配合 Pin 固定視口製作敘事式體驗。</p>
+    </div>
+    <div class="scroll-demo-wrap">
+      <div class="scroll-timeline" id="scroll-timeline">
+        <div class="tl-step" data-step="1">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <h3>資料採集</h3>
+            <p>NGS 定序 → FastQ 原始數據，覆蓋深度 ≥ 30×</p>
+          </div>
+        </div>
+        <div class="tl-step" data-step="2">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <h3>序列比對</h3>
+            <p>BWA-MEM 比對至 hg38 參考基因組</p>
+          </div>
+        </div>
+        <div class="tl-step" data-step="3">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <h3>變異偵測</h3>
+            <p>GATK HaplotypeCaller 識別 SNV / InDel</p>
+          </div>
+        </div>
+        <div class="tl-step" data-step="4">
+          <div class="tl-dot"></div>
+          <div class="tl-content">
+            <h3>AI 分析</h3>
+            <p>ESM-2 蛋白質語言模型預測功能影響</p>
+          </div>
+        </div>
+      </div>
+      <div class="scroll-progress-bar" id="scroll-progress-bar"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       5. Parallax 視差
+  ══════════════════════════════════════════════════════ -->
+  <section id="parallax" class="showcase-section parallax-section">
+    <div class="parallax-layer parallax-bg" data-speed="0.2">
+      <div class="stars-field" id="stars-field"></div>
+    </div>
+    <div class="parallax-layer parallax-mid" data-speed="0.5">
+      <div class="floating-dna" id="floating-dna">
+        <div class="dna-rung"></div><div class="dna-rung"></div><div class="dna-rung"></div>
+        <div class="dna-rung"></div><div class="dna-rung"></div><div class="dna-rung"></div>
+      </div>
+    </div>
+    <div class="parallax-layer parallax-fg" data-speed="0.8">
+      <div class="section-header">
+        <div class="section-tag">05</div>
+        <h2>視差捲動效果</h2>
+        <p>不同層次以不同速率移動，製造深度感與沉浸感。<br>各層 speed 值：背景 0.2 × 中景 0.5 × 前景 0.8</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       6. Micro-interactions 微互動
+  ══════════════════════════════════════════════════════ -->
+  <section id="micro-interactions" class="showcase-section">
+    <div class="section-header">
+      <div class="section-tag">06</div>
+      <h2>微互動 (Micro‑Interactions)</h2>
+      <p>細膩的點擊、懸浮、狀態回饋動畫，讓操作更有溫度。</p>
+    </div>
+    <div class="demo-grid micro-grid">
+      <!-- Ripple Button -->
+      <div class="demo-card">
+        <h3 class="demo-title">Ripple 漣漪效果</h3>
+        <div class="micro-center">
+          <button class="ripple-btn" id="ripple-btn">點擊我</button>
+          <button class="ripple-btn ripple-green">成功</button>
+          <button class="ripple-btn ripple-red">警告</button>
+        </div>
+      </div>
+      <!-- Heart Like -->
+      <div class="demo-card">
+        <h3 class="demo-title">Like 互動</h3>
+        <div class="micro-center like-row">
+          <button class="like-btn" id="like-btn-1">
+            <span class="heart-icon">♡</span>
+            <span class="like-count">42</span>
+          </button>
+          <button class="like-btn" id="like-btn-2">
+            <span class="heart-icon">♡</span>
+            <span class="like-count">128</span>
+          </button>
+          <button class="like-btn" id="like-btn-3">
+            <span class="heart-icon">♡</span>
+            <span class="like-count">7</span>
+          </button>
+        </div>
+      </div>
+      <!-- Toggle Switch -->
+      <div class="demo-card">
+        <h3 class="demo-title">精緻 Toggle</h3>
+        <div class="micro-center toggle-list">
+          <label class="toggle-item">
+            <input type="checkbox" class="toggle-input" checked>
+            <span class="toggle-slider"></span>
+            <span>深色模式</span>
+          </label>
+          <label class="toggle-item">
+            <input type="checkbox" class="toggle-input">
+            <span class="toggle-slider toggle-cyan"></span>
+            <span>自動播放</span>
+          </label>
+          <label class="toggle-item">
+            <input type="checkbox" class="toggle-input" checked>
+            <span class="toggle-slider toggle-purple"></span>
+            <span>動畫效果</span>
+          </label>
+        </div>
+      </div>
+      <!-- Skeleton Loader -->
+      <div class="demo-card">
+        <h3 class="demo-title">Skeleton 載入骨架</h3>
+        <div class="skeleton-demo">
+          <div class="sk-avatar"></div>
+          <div class="sk-lines">
+            <div class="sk-line sk-w80"></div>
+            <div class="sk-line sk-w60"></div>
+            <div class="sk-line sk-w90"></div>
+          </div>
+        </div>
+        <button class="tool-btn mt-8" id="skeleton-toggle">模擬載入</button>
+      </div>
+      <!-- Magnetic Button -->
+      <div class="demo-card">
+        <h3 class="demo-title">磁力按鈕</h3>
+        <div class="micro-center">
+          <button class="magnetic-btn" id="magnetic-btn">
+            <span>磁吸追蹤</span>
+          </button>
+        </div>
+      </div>
+      <!-- Cursor Trail -->
+      <div class="demo-card">
+        <h3 class="demo-title">游標粒子軌跡</h3>
+        <div class="cursor-trail-demo" id="cursor-trail-demo">
+          <p class="muted-text">在此移動游標</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       7. Intersection Observer
+  ══════════════════════════════════════════════════════ -->
+  <section id="intersection-observer" class="showcase-section alt-bg">
+    <div class="section-header">
+      <div class="section-tag">07</div>
+      <h2>Intersection Observer</h2>
+      <p>偵測元素進入視窗，觸發數字動畫或懶加載，無需輪詢。</p>
+    </div>
+    <div class="demo-grid">
+      <div class="stat-card io-animate" data-target="3847" data-suffix="">
+        <div class="stat-val" data-count>0</div>
+        <div class="stat-label">蛋白質序列分析</div>
+      </div>
+      <div class="stat-card io-animate" data-target="98.6" data-suffix="%">
+        <div class="stat-val" data-count>0</div>
+        <div class="stat-label">預測精準度</div>
+      </div>
+      <div class="stat-card io-animate" data-target="142" data-suffix="ms">
+        <div class="stat-val" data-count>0</div>
+        <div class="stat-label">平均推論時間</div>
+      </div>
+      <div class="stat-card io-animate" data-target="24" data-suffix="/7">
+        <div class="stat-val" data-count>0</div>
+        <div class="stat-label">系統可用性</div>
+      </div>
+    </div>
+    <div class="lazy-images-row">
+      <p class="demo-hint">↓ 懶加載圖片（以 Intersection Observer 偵測）</p>
+      <div class="lazy-grid">
+        <div class="lazy-img-wrapper io-lazy" data-src="https://picsum.photos/seed/dna1/400/240">
+          <div class="lazy-placeholder"><div class="sk-shimmer"></div></div>
+          <img class="lazy-img" alt="隨機圖 1">
+        </div>
+        <div class="lazy-img-wrapper io-lazy" data-src="https://picsum.photos/seed/bio2/400/240">
+          <div class="lazy-placeholder"><div class="sk-shimmer"></div></div>
+          <img class="lazy-img" alt="隨機圖 2">
+        </div>
+        <div class="lazy-img-wrapper io-lazy" data-src="https://picsum.photos/seed/ai3/400/240">
+          <div class="lazy-placeholder"><div class="sk-shimmer"></div></div>
+          <img class="lazy-img" alt="隨機圖 3">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       8. Web Speech API
+  ══════════════════════════════════════════════════════ -->
+  <section id="speech-api" class="showcase-section">
+    <div class="section-header">
+      <div class="section-tag">08</div>
+      <h2>Web Speech API</h2>
+      <p>語音辨識（Speech Recognition）＋語音合成（Speech Synthesis），無需任何外部服務。</p>
+    </div>
+    <div class="speech-demo">
+      <div class="speech-panel" id="speech-recognition-panel">
+        <h3>🎙️ 語音辨識</h3>
+        <p class="muted-text">按下按鈕後對麥克風說話</p>
+        <button class="btn btn-primary" id="speech-start-btn">開始錄音</button>
+        <div class="speech-output" id="speech-output">
+          <div class="speech-interim" id="speech-interim">...</div>
+          <div class="speech-final" id="speech-final"></div>
+        </div>
+        <div class="speech-status" id="speech-status">等待中</div>
+      </div>
+      <div class="speech-panel" id="speech-synthesis-panel">
+        <h3>🔊 語音合成</h3>
+        <textarea id="tts-input" class="tts-textarea" placeholder="輸入要朗讀的文字...">生物醫學人工智慧是將機器學習技術應用於蛋白質序列分析的前沿領域。</textarea>
+        <div class="tts-controls">
+          <label class="tool-label">語速：<input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1"><span id="tts-rate-val">1.0</span></label>
+          <label class="tool-label">音調：<input type="range" id="tts-pitch" min="0.5" max="2" step="0.1" value="1"><span id="tts-pitch-val">1.0</span></label>
+          <select id="tts-voice" class="tts-select"></select>
+        </div>
+        <div class="tts-btn-row">
+          <button class="btn btn-primary" id="tts-speak-btn">▶ 朗讀</button>
+          <button class="btn btn-ghost" id="tts-stop-btn">⏹ 停止</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       9. 即時資料 (SSE / WebSocket)
+  ══════════════════════════════════════════════════════ -->
+  <section id="realtime" class="showcase-section alt-bg">
+    <div class="section-header">
+      <div class="section-tag">09</div>
+      <h2>即時資料串流</h2>
+      <p>Server-Sent Events (SSE) 與 WebSocket 示範，雙向即時通訊。</p>
+    </div>
+    <div class="realtime-demo">
+      <div class="rt-panel">
+        <h3>📡 SSE 模擬串流</h3>
+        <div class="rt-controls">
+          <button class="btn btn-primary btn-sm" id="sse-start">連線</button>
+          <button class="btn btn-ghost btn-sm" id="sse-stop">斷線</button>
+          <span class="rt-badge" id="sse-badge">離線</span>
+        </div>
+        <div class="rt-ticker" id="sse-ticker">
+          <div class="ticker-row ticker-header">
+            <span>基因</span><span>表現量</span><span>倍數</span><span>狀態</span>
+          </div>
+        </div>
+      </div>
+      <div class="rt-panel">
+        <h3>🔄 WebSocket Echo</h3>
+        <div class="rt-controls">
+          <button class="btn btn-primary btn-sm" id="ws-connect">連線</button>
+          <span class="rt-badge" id="ws-badge">離線</span>
+        </div>
+        <div class="ws-chat" id="ws-chat">
+          <div class="ws-msg ws-system">WebSocket Echo 示範（本地模擬）</div>
+        </div>
+        <div class="ws-input-row">
+          <input type="text" class="ws-input" id="ws-input" placeholder="輸入訊息..." maxlength="200">
+          <button class="btn btn-primary btn-sm" id="ws-send">發送</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       10. VR / AR (A-Frame)
+  ══════════════════════════════════════════════════════ -->
+  <section id="vr-ar" class="showcase-section">
+    <div class="section-header">
+      <div class="section-tag">10</div>
+      <h2>VR / AR · A-Frame</h2>
+      <p>以 HTML 標籤建立 WebXR 場景，支援滑鼠拖拉環視，VR 頭盔可進入沉浸模式。</p>
+    </div>
+    <div class="aframe-wrapper">
+      <div class="aframe-controls">
+        <span class="muted-text">滑鼠拖拉旋轉視角 · 滾輪縮放</span>
+        <button class="tool-btn" id="aframe-toggle">載入 A-Frame 場景</button>
+      </div>
+      <div id="aframe-container" class="aframe-container">
+        <div class="aframe-placeholder">
+          <div class="aframe-icon">🥽</div>
+          <p>點擊「載入 A-Frame 場景」開始</p>
+          <p class="muted-text">支援 WebXR · 桌面 · 手機</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       11. WebAssembly
+  ══════════════════════════════════════════════════════ -->
+  <section id="wasm" class="showcase-section alt-bg">
+    <div class="section-header">
+      <div class="section-tag">11</div>
+      <h2>WebAssembly (Wasm)</h2>
+      <p>在瀏覽器中執行接近原生速度的二進位模組，適合高效能計算。</p>
+    </div>
+    <div class="wasm-demo">
+      <div class="wasm-panel">
+        <h3>⚡ 效能對比：Fibonacci(40)</h3>
+        <div class="wasm-controls">
+          <button class="btn btn-primary" id="wasm-run-js">執行 JavaScript</button>
+          <button class="btn btn-primary" id="wasm-run-wasm">執行 WebAssembly</button>
+        </div>
+        <div class="wasm-results">
+          <div class="wasm-result-card" id="wasm-js-result">
+            <div class="result-lang">JavaScript</div>
+            <div class="result-time" id="js-time">— ms</div>
+            <div class="result-val" id="js-val">—</div>
+            <div class="result-bar-wrap"><div class="result-bar" id="js-bar" style="width:0%"></div></div>
+          </div>
+          <div class="wasm-result-card" id="wasm-wasm-result">
+            <div class="result-lang">WebAssembly</div>
+            <div class="result-time" id="wasm-time">— ms</div>
+            <div class="result-val" id="wasm-val">—</div>
+            <div class="result-bar-wrap"><div class="result-bar result-bar-cyan" id="wasm-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+        <p class="muted-text wasm-note" id="wasm-speedup"></p>
+      </div>
+      <div class="wasm-panel">
+        <h3>🧮 即時圖像處理</h3>
+        <p class="muted-text">上傳圖片後用 Wasm 風格的 Canvas 處理器套用濾鏡</p>
+        <div class="wasm-filter-controls">
+          <input type="file" id="wasm-img-upload" accept="image/*" class="file-input">
+          <div class="filter-btns">
+            <button class="filter-btn active" data-filter="none">原始</button>
+            <button class="filter-btn" data-filter="grayscale">灰階</button>
+            <button class="filter-btn" data-filter="sepia">懷舊</button>
+            <button class="filter-btn" data-filter="invert">反轉</button>
+            <button class="filter-btn" data-filter="blur">模糊</button>
+          </div>
+        </div>
+        <div class="wasm-canvases">
+          <div class="wasm-cv-wrap">
+            <p>原始</p>
+            <canvas id="wasm-original-canvas" class="wasm-canvas"></canvas>
+          </div>
+          <div class="wasm-cv-wrap">
+            <p>處理後</p>
+            <canvas id="wasm-output-canvas" class="wasm-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       12. PWA
+  ══════════════════════════════════════════════════════ -->
+  <section id="pwa-section" class="showcase-section">
+    <div class="section-header">
+      <div class="section-tag">12</div>
+      <h2>Progressive Web App (PWA)</h2>
+      <p>離線快取、安裝至桌面、推播通知，讓網頁擁有原生 App 體驗。</p>
+    </div>
+    <div class="pwa-demo">
+      <div class="pwa-card">
+        <div class="pwa-icon">📦</div>
+        <h3>Service Worker 狀態</h3>
+        <div class="pwa-status" id="sw-status">檢測中...</div>
+        <div class="pwa-detail" id="sw-detail"></div>
+      </div>
+      <div class="pwa-card">
+        <div class="pwa-icon">📵</div>
+        <h3>離線快取</h3>
+        <div class="pwa-status" id="cache-status">檢測中...</div>
+        <button class="btn btn-primary btn-sm mt-8" id="cache-test-btn">測試離線能力</button>
+      </div>
+      <div class="pwa-card">
+        <div class="pwa-icon">🔔</div>
+        <h3>推播通知</h3>
+        <div class="pwa-status" id="notif-status">未申請</div>
+        <button class="btn btn-primary btn-sm mt-8" id="notif-request-btn">申請通知權限</button>
+      </div>
+      <div class="pwa-card">
+        <div class="pwa-icon">📲</div>
+        <h3>安裝應用</h3>
+        <div class="pwa-status" id="install-status">檢測中...</div>
+        <button class="btn btn-primary btn-sm mt-8" id="pwa-install-btn-2">安裝為 App</button>
+      </div>
+    </div>
+    <div class="pwa-checklist">
+      <h3>PWA 檢查清單</h3>
+      <ul id="pwa-checklist"></ul>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       prefers-reduced-motion 無障礙提示
+  ══════════════════════════════════════════════════════ -->
+  <section id="accessibility" class="showcase-section alt-bg">
+    <div class="section-header">
+      <div class="section-tag">♿</div>
+      <h2>可存取性 · 動畫偏好</h2>
+      <p>偵測 <code>prefers-reduced-motion</code>，自動關閉對前庭障礙者有害的動畫。</p>
+    </div>
+    <div class="a11y-demo">
+      <div class="a11y-status" id="motion-status">
+        <div class="a11y-icon">⚙️</div>
+        <div>
+          <strong id="motion-label">偵測系統動畫偏好...</strong>
+          <p class="muted-text" id="motion-detail"></p>
+        </div>
+      </div>
+      <div class="a11y-controls">
+        <label class="toggle-item">
+          <input type="checkbox" class="toggle-input" id="force-reduce-motion">
+          <span class="toggle-slider toggle-red"></span>
+          <span>強制關閉所有動畫（模擬 prefers-reduced-motion）</span>
+        </label>
+      </div>
+      <div class="a11y-demo-box" id="a11y-demo-box">
+        <div class="a11y-ball" id="a11y-ball"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="showcase-footer">
+    <p>互動技術展示館 · 以 Vanilla JS + Astro + GSAP 構建</p>
+    <p class="muted-text">Three.js · Canvas · Web Animations API · A-Frame · WebAssembly · Web Speech API · Intersection Observer · PWA</p>
+  </footer>
+
+  <script src="scripts/interactive-showcase.js" defer></script>
+  <script src="/scripts/interactive-showcase.js"></script> </body> </html>

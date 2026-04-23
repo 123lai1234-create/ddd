@@ -2,6 +2,8 @@
     <div data-site-nav></div>
 
     <header class="sc-hero">
+    <!-- Parallax layers -->
+    <canvas class="sc-parallax-canvas" id="sc-parallax-canvas" aria-hidden="true"></canvas>
         <div class="sc-hero-inner">
             <div class="sc-eyebrow"><span class="live-dot"></span>國防醫學院 · 生物及解剖學科 · Stem Cell Lab</div>
             <h1>幹細胞研究<br><span>神經血管再生 × 腦創傷修復</span></h1>
@@ -634,4 +636,62 @@
         });
     });
     </script>
+<script>
+(function(){
+  const canvas = document.getElementById('sc-parallax-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, cells = [];
+
+  function resize() {
+    const hdr = canvas.parentElement;
+    W = canvas.width = hdr.offsetWidth;
+    H = canvas.height = hdr.offsetHeight;
+    spawnCells();
+  }
+
+  function spawnCells() {
+    cells = Array.from({length: 22}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: 18 + Math.random() * 32,
+      speed: 0.15 + Math.random() * 0.35,
+      opacity: 0.04 + Math.random() * 0.07,
+      phase: Math.random() * Math.PI * 2,
+      color: Math.random() > 0.5 ? '#7bf0be' : '#b59cff',
+    }));
+  }
+
+  let scrollY = 0;
+  window.addEventListener('scroll', () => { scrollY = window.scrollY; }, {passive:true});
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const t = performance.now() / 1000;
+    cells.forEach((c, i) => {
+      const py = ((c.y - scrollY * c.speed * 0.6) % H + H) % H;
+      const px = c.x + Math.sin(t * 0.4 + c.phase) * 12;
+      ctx.save();
+      ctx.globalAlpha = c.opacity + Math.sin(t * 0.7 + c.phase) * 0.015;
+      ctx.strokeStyle = c.color;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(px, py, c.r, 0, Math.PI * 2);
+      ctx.stroke();
+      // nucleus
+      ctx.globalAlpha = (c.opacity + 0.02) * 0.7;
+      ctx.fillStyle = c.color;
+      ctx.beginPath();
+      ctx.arc(px, py, c.r * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+})();
+</script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script> </body> </html>

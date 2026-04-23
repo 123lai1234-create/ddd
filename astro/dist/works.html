@@ -51,6 +51,10 @@
                 <h2>作品篩選</h2>
                 <p>用分類篩選，快速掌握工程介面、生醫研究、資料平台與互動展示的作品分布。</p>
             </div>
+            <div class="works-search-wrap">
+                <input type="text" id="works-search" class="works-search-input" placeholder="🔍 搜尋作品名稱、技術、關鍵詞...">
+                <span class="works-search-count" id="works-search-count"></span>
+            </div>
             <div class="filters">
                 <button class="filter-btn active" data-filter="all" type="button">全部</button>
                 <button class="filter-btn" data-filter="biomed" type="button">生醫 / NGS</button>
@@ -361,4 +365,116 @@
 
     <script src="scripts/app-config.js"></script>
     <script src="scripts/works.js"></script>
+<script>
+(function() {
+  /* Works: real-time search highlight + filter animation */
+  const searchEl = document.getElementById('works-search');
+  const countEl  = document.getElementById('works-search-count');
+  const cards    = document.querySelectorAll('.work-card');
+
+  function highlight(el, term) {
+    if (!term) { el.querySelectorAll('mark.wh').forEach(m => { m.replaceWith(m.textContent); }); return; }
+    const walk = (node) => {
+      if (node.nodeType === 3) {
+        const idx = node.textContent.toLowerCase().indexOf(term.toLowerCase());
+        if (idx < 0) return;
+        const before = document.createTextNode(node.textContent.slice(0, idx));
+        const mark   = document.createElement('mark');
+        mark.className = 'wh';
+        mark.textContent = node.textContent.slice(idx, idx + term.length);
+        const after  = document.createTextNode(node.textContent.slice(idx + term.length));
+        node.parentNode.replaceChild(after, node);
+        node.parentNode.insertBefore(mark, after);
+        node.parentNode.insertBefore(before, mark);
+      } else if (node.nodeType === 1 && !['SCRIPT','STYLE','A'].includes(node.tagName)) {
+        [...node.childNodes].forEach(walk);
+      }
+    };
+    // Clear old marks first
+    el.querySelectorAll('mark.wh').forEach(m => m.replaceWith(m.textContent));
+    walk(el);
+  }
+
+  function filterAndSearch() {
+    const term    = searchEl.value.trim();
+    const active  = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+    let visible   = 0;
+
+    cards.forEach((card, i) => {
+      const cat   = card.dataset.cat || '';
+      const text  = card.textContent.toLowerCase();
+      const matchCat  = active === 'all' || cat.includes(active);
+      const matchTerm = !term || text.includes(term.toLowerCase());
+      const show  = matchCat && matchTerm;
+
+      if (show) {
+        card.style.display = '';
+        card.style.animationDelay = `${(visible % 4) * 60}ms`;
+        card.classList.add('card-flip-in');
+        highlight(card, term);
+        visible++;
+      } else {
+        card.style.display = 'none';
+        highlight(card, '');
+      }
+    });
+
+    if (countEl) countEl.textContent = term ? `${visible} 筆結果` : '';
+  }
+
+  // Inject styles
+  const s = document.createElement('style');
+  s.textContent = `
+    .works-search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .works-search-input {
+      width: 100%;
+      max-width: 480px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: var(--text, #e6edf3);
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .works-search-input:focus {
+      border-color: rgba(88,215,255,0.4);
+      box-shadow: 0 0 0 3px rgba(88,215,255,0.08);
+    }
+    .works-search-count {
+      font-size: 0.78rem;
+      color: var(--cyan, #58d7ff);
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+    mark.wh {
+      background: rgba(88,215,255,0.25);
+      color: inherit;
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+    @keyframes cardFlipIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .card-flip-in {
+      animation: cardFlipIn 0.35s ease both;
+    }
+  `;
+  document.head.appendChild(s);
+
+  searchEl.addEventListener('input', filterAndSearch);
+
+  // Hook into existing filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => setTimeout(filterAndSearch, 10));
+  });
+})();
+</script>
   <script src="/scripts/app-config.js"></script><script src="/scripts/works.js"></script> </body> </html>

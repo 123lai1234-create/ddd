@@ -122,6 +122,84 @@
             </div>
         </section>
 
+        <!-- Interactive Scroll Timeline -->
+        <section class="reveal" id="report-timeline-section">
+            <h2>研究進程時間線</h2>
+            <div id="report-timeline" style="position:relative;padding:0 0 40px 0">
+                <div class="rpt-line"></div>
+                <div class="rpt-item" data-rpt-idx="0">
+                    <div class="rpt-dot"></div>
+                    <div class="rpt-card">
+                        <div class="rpt-date">Phase 1</div>
+                        <h4>資料準備 &amp; ESM-2 嵌入</h4>
+                        <p>載入 ProteinGym 基準資料集，以 ESM-2 8M 產生 320 維序列嵌入，透過 PCA 降至 8 維以穩定後續 GP 協方差矩陣。</p>
+                    </div>
+                </div>
+                <div class="rpt-item rpt-right" data-rpt-idx="1">
+                    <div class="rpt-dot"></div>
+                    <div class="rpt-card">
+                        <div class="rpt-date">Phase 2</div>
+                        <h4>MLP 代理模型訓練</h4>
+                        <p>以多層感知器擬合 ESM-2 嵌入→適應度映射，作為貝葉斯最佳化的代理評分函數，訓練損失穩定收斂。</p>
+                    </div>
+                </div>
+                <div class="rpt-item" data-rpt-idx="2">
+                    <div class="rpt-dot"></div>
+                    <div class="rpt-card">
+                        <div class="rpt-date">Phase 3</div>
+                        <h4>貝葉斯最佳化（GP + LogEI）</h4>
+                        <p>使用 BoTorch qLogEI 採集函數，於 15 次迭代內將適應度從 0.209 提升至 0.243（+16.6%）。</p>
+                    </div>
+                </div>
+                <div class="rpt-item rpt-right" data-rpt-idx="3">
+                    <div class="rpt-dot"></div>
+                    <div class="rpt-card">
+                        <div class="rpt-date">Phase 4</div>
+                        <h4>ProteinMPNN 圖神經網路</h4>
+                        <p>基於 k-NN Cα 圖的訊息傳遞網路，以交叉熵損失訓練序列設計任務，損失曲線收斂確認模型學習。</p>
+                    </div>
+                </div>
+                <div class="rpt-item" data-rpt-idx="4">
+                    <div class="rpt-dot"></div>
+                    <div class="rpt-card">
+                        <div class="rpt-date">Phase 5</div>
+                        <h4>REINFORCE 強化學習</h4>
+                        <p>LSTM 策略網路以多目標獎勵（適應度 + 多樣性）訓練，配合教師強制加速收斂，20 回合達到穩定策略。</p>
+                    </div>
+                </div>
+            </div>
+            <style>
+                #report-timeline { --rpt-accent: var(--cyan, #58d7ff); }
+                .rpt-line { position:absolute; left:50%; top:0; bottom:0; width:2px; background:linear-gradient(to bottom, transparent, var(--rpt-accent), transparent); transform:translateX(-50%); }
+                .rpt-item { display:flex; align-items:flex-start; gap:20px; margin-bottom:48px; position:relative; padding-left:calc(50% + 24px); opacity:0; transform:translateX(-40px); transition:opacity .6s ease, transform .6s ease; }
+                .rpt-item.rpt-right { flex-direction:row-reverse; padding-left:0; padding-right:calc(50% + 24px); transform:translateX(40px); }
+                .rpt-item.rpt-visible { opacity:1; transform:translateX(0); }
+                .rpt-dot { position:absolute; left:50%; top:8px; width:14px; height:14px; border-radius:50%; border:2px solid var(--rpt-accent); background:var(--bg,#0a1116); transform:translateX(-50%); box-shadow:0 0 8px var(--rpt-accent); transition:transform .3s; }
+                .rpt-item.rpt-visible .rpt-dot { transform:translateX(-50%) scale(1.3); }
+                .rpt-card { background:rgba(255,255,255,.04); border:1px solid var(--border,rgba(255,255,255,.08)); border-radius:12px; padding:18px 20px; max-width:340px; }
+                .rpt-date { font-size:.72rem; color:var(--rpt-accent); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }
+                .rpt-card h4 { font-size:.95rem; margin:0 0 8px; color:var(--text); }
+                .rpt-card p { font-size:.82rem; color:var(--muted); line-height:1.6; margin:0; }
+                @media(max-width:640px) {
+                    .rpt-line { left:18px; }
+                    .rpt-item, .rpt-item.rpt-right { padding-left:48px; padding-right:0; flex-direction:row; }
+                    .rpt-dot { left:18px; }
+                }
+            </style>
+            <script>
+            (function(){
+                const items = document.querySelectorAll('.rpt-item');
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('rpt-visible'); io.unobserve(e.target); } });
+                }, { threshold: 0.2 });
+                items.forEach((el, i) => {
+                    el.style.transitionDelay = (i * 0.12) + 's';
+                    io.observe(el);
+                });
+            })();
+            </script>
+        </section>
+
         <!-- Core Algorithms -->
         <section class="reveal">
             <h2>核心演算法</h2>

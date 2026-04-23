@@ -7,21 +7,23 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/firmware',     label: '🔌 韌體' },
         { href: '/stem-cell',    label: '🧫 幹細胞' },
         { href: '/games/',       label: '🎮 遊戲中心' },
-        { href: '/protein-mpnn', label: '互動展示', classes: 'nav-cta' }
+        { href: '/protein-mpnn',           label: '互動展示' },
+        { href: '/interactive-showcase',   label: '⚡ Tech Lab', classes: 'nav-cta' }
     ];
 
     var STD_DRAWER = [
-        { href: '/',             label: '首頁' },
-        { href: '/about',        label: 'About Me' },
-        { href: '/works',        label: '作品總覽' },
-        { href: '/ngs',          label: 'NGS 定序' },
-        { href: '/gene-ai',      label: '基因 AI' },
-        { href: '/report',       label: '專案報告' },
-        { href: '/protein-mpnn', label: '互動展示' },
-        { href: '/firmware',     label: '🔌 韌體 MCU' },
-        { href: '/interview',    label: '面試準備' },
-        { href: '/stem-cell',    label: '🧫 幹細胞研究' },
-        { href: '/games/',       label: '🎮 遊戲中心' }
+        { href: '/',                       label: '首頁' },
+        { href: '/about',                  label: 'About Me' },
+        { href: '/works',                  label: '作品總覽' },
+        { href: '/ngs',                    label: 'NGS 定序' },
+        { href: '/gene-ai',                label: '基因 AI' },
+        { href: '/report',                 label: '專案報告' },
+        { href: '/protein-mpnn',           label: '互動展示' },
+        { href: '/interactive-showcase',   label: '⚡ 互動技術展示館' },
+        { href: '/firmware',               label: '🔌 韌體 MCU' },
+        { href: '/interview',              label: '面試準備' },
+        { href: '/stem-cell',              label: '🧫 幹細胞研究' },
+        { href: '/games/',                 label: '🎮 遊戲中心' }
     ];
 
     var STD_FOOTER_LINKS = [
@@ -34,7 +36,8 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/report',       label: '專案報告' },
         { href: '/firmware',     label: '韌體' },
         { href: '/stem-cell',    label: '幹細胞研究' },
-        { href: '/games/',       label: '🎮 遊戲中心' },
+        { href: '/games/',               label: '🎮 遊戲中心' },
+        { href: '/interactive-showcase', label: '⚡ Tech Lab' },
         { href: 'https://jtlai0921.wixsite.com/mysite', label: '個人網站', target: '_blank', rel: 'noreferrer' }
     ];
 
@@ -139,6 +142,13 @@ window.SITE_SHELL_CONFIG = (function () {
             navLinks: STD_NAV,
             drawerLinks: STD_DRAWER,
             footer: stdFooter('資料擷取平台', '自動化資料同步 · API 整合 · 2026')
+        },
+        interactive_showcase: {
+            brandHref: '/',
+            brandHtml: '<span class="nav-dot"></span>⚡ Tech Lab',
+            navLinks: STD_NAV,
+            drawerLinks: STD_DRAWER,
+            footer: stdFooter('互動技術展示館', 'Three.js · Canvas · Web Animations API · A-Frame VR · WebAssembly · PWA · 2026')
         }
     };
 })();
