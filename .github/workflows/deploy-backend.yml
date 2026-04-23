@@ -44,8 +44,35 @@ jobs:
       - name: Test
         run: uv run pytest tests/ -q --tb=short
 
+  deploy-fly:
+    name: Deploy Fly.io
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          [ -z "$FLY_API_TOKEN" ] && echo "::warning::FLY_API_TOKEN not set — skipping" && exit 0
+          flyctl deploy --remote-only --strategy rolling
+
+      - name: Health check
+        continue-on-error: true
+        run: |
+          base="https://donttalk-api.fly.dev"
+          for i in 1 2 3 4; do
+            curl -fsS "$base/healthz" && echo "healthy" && exit 0
+            echo "attempt $i/4 — waiting 15s..." && sleep 15
+          done
+          echo "::warning::health check timed out"
+
   deploy-railway:
-    name: Deploy Railway
+    name: Deploy Railway (legacy)
     needs: lint-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 10
