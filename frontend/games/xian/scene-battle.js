@@ -713,7 +713,27 @@ class BattleScene extends Phaser.Scene {
     if (levelUps.length) msg += ` ${levelUps.join('、')} 升級！`;
     this._addLog(msg);
     this._rebuildStatus();
+
+    if (GS.battleData?.isBoss) { this._submitLeaderboard(); }
+
     this.time.delayedCall(2000, () => this.scene.start('WorldScene'));
+  }
+
+  _submitLeaderboard() {
+    const leader = GS.party.find(m => !m.dead) || GS.party[0];
+    const maxLv  = GS.party.reduce((mx, m) => Math.max(mx, m.lv || 1), 1);
+    const SUPA_URL = 'https://wbamdjgcoezevimohlcb.supabase.co';
+    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiYW1kamdjb2V6ZXZpbW9obGNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1Mzk1NDQsImV4cCI6MjA5MTExNTU0NH0.0YZUVDiCFYVDMDo20aG4sSBcON8SXoET6vEiX5NCEbs';
+    fetch(`${SUPA_URL}/rest/v1/leaderboard`, {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:  leader?.name || '勇者',
+        level: maxLv,
+        gold:  GS.gold || 0,
+        kills: 1,
+      }),
+    }).catch(() => {});
   }
 
   _loseBattle() {

@@ -14,6 +14,9 @@
     <meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg">
     <!-- BEGIN COMMON_HEAD -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#08060e">
+    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -215,6 +218,18 @@
     </section>
 
     <hr class="divider">
+
+    <!-- ════════ GAME LEADERBOARD ════════ -->
+    <section id="leaderboard" style="max-width:640px;margin:0 auto;padding:48px 24px">
+        <div class="section-label">仙俠傳 · Live</div>
+        <h2 class="section-title" style="margin-bottom:8px">勇者排行榜</h2>
+        <p class="section-sub" style="margin-bottom:28px">擊敗魔王的勇者紀錄，即時更新。<a href="games/xian/" style="color:var(--accent)">→ 進入遊戲</a></p>
+        <div id="lb-list" style="display:flex;flex-direction:column;gap:8px;min-height:80px">
+            <div id="lb-loading" style="color:var(--muted);font-size:.9rem;text-align:center;padding:24px 0">載入中…</div>
+        </div>
+    </section>
+
+    <hr class="divider">
     <!-- ════════ FOOTER ════════ -->
     <div data-site-footer></div>
     <!-- ════════ JS ════════ -->
@@ -222,6 +237,7 @@
     <script src="scripts/index-ui.js"></script>
     <script src="scripts/index-live.js"></script>
     <script src="scripts/index-charts.js"></script>
+    <script src="scripts/leaderboard.js"></script>
     <button class="scroll-top" aria-label="返回頂部">↑</button>
 
     <!-- tsParticles ambient background -->

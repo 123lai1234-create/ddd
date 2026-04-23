@@ -93,6 +93,18 @@
         setStatus('正在送出留言…', 'idle');
 
         try {
+            const rlRes = await fetch(`${SUPA_URL}/rest/v1/rpc/check_contact_rate_limit`, {
+                method: 'POST', headers: SUPA_HEADERS,
+                body: JSON.stringify({ p_email: payload.email }),
+            });
+            const allowed = await rlRes.json();
+            if (!allowed) {
+                setStatus('同一 Email 每天最多送出 3 次，請明天再試。', 'warning');
+                submitBtn.disabled    = false;
+                submitBtn.textContent = '送出留言';
+                return;
+            }
+
             const r = await fetch(`${SUPA_URL}/rest/v1/contact_inquiries`, {
                 method:  'POST',
                 headers: { ...SUPA_HEADERS, 'Prefer': 'return=representation' },
