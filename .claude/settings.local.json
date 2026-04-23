@@ -59,7 +59,10 @@
       "Bash(ls vercel.json)",
       "Bash(ls astro/vercel.json)",
       "Bash(cat vercel.json)",
-      "Bash(cat astro/vercel.json)"
+      "Bash(cat astro/vercel.json)",
+      "Bash(curl -sI \"https://donttalk.vercel.app/games/xian/\")",
+      "Bash(curl -s \"https://donttalk.vercel.app/games/xian/game.js\")",
+      "Bash(curl -s \"https://donttalk.vercel.app/games/xian\")"
     ]
   }
 }

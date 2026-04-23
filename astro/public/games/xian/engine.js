@@ -2,6 +2,24 @@
 //  Part 2: Core Engine (Input, Save, Draw, State)
 // ═══════════════════════════════════════════════════════
 
+// ── roundRect polyfill (Chrome 99+, Firefox 112+) ───────
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    const rad = Array.isArray(r) ? r : [r||0];
+    const [tl=0, tr=tl, br=tl, bl=tr] = [rad[0]||0, rad[1]||rad[0]||0, rad[2]||rad[0]||0, rad[3]||rad[1]||rad[0]||0];
+    this.moveTo(x + tl, y);
+    this.lineTo(x + w - tr, y);
+    this.arcTo(x + w, y, x + w, y + tr, tr);
+    this.lineTo(x + w, y + h - br);
+    this.arcTo(x + w, y + h, x + w - br, y + h, br);
+    this.lineTo(x + bl, y + h);
+    this.arcTo(x, y + h, x, y + h - bl, bl);
+    this.lineTo(x, y + tl);
+    this.arcTo(x, y, x + tl, y, tl);
+    return this;
+  };
+}
+
 const Input = {
   keys:{}, prev:{},
   init(){
