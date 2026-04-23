@@ -191,6 +191,30 @@
         </div>
     </section>
     <hr class="divider">
+
+    <!-- ════════ ESM-2 DEMO ════════ -->
+    <section id="esm-demo" style="max-width:800px;margin:0 auto;padding:48px 24px">
+        <div class="section-label">Live Demo · ESM-2</div>
+        <h2 class="section-title">蛋白質序列相似度分析</h2>
+        <p class="section-sub" style="margin-bottom:28px">輸入兩段胺基酸序列，透過 ESM-2（8M）embedding 計算語意相似度。由 <a href="https://huggingface.co/spaces/Donttalk123/web" target="_blank" rel="noreferrer" style="color:var(--accent)">HuggingFace Space</a> 即時推論。</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+            <label style="font-size:.85rem;color:var(--muted)">序列 A</label>
+            <input id="esm-seq-a" type="text" value="MKTIIALSYIFCLVFA"
+                placeholder="MKTIIALSYIFCLVFA"
+                style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:.9rem">
+            <label style="font-size:.85rem;color:var(--muted)">序列 B</label>
+            <input id="esm-seq-b" type="text" value="MKTIIALSYIFCLVFAFF"
+                placeholder="MKTIIALSYIFCLVFAFF"
+                style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:.9rem">
+            <button id="esm-run-btn"
+                style="align-self:flex-start;padding:10px 28px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.95rem">
+                計算相似度
+            </button>
+        </div>
+        <div id="esm-result" style="margin-top:20px;min-height:60px"></div>
+    </section>
+
+    <hr class="divider">
     <!-- ════════ FOOTER ════════ -->
     <div data-site-footer></div>
     <!-- ════════ JS ════════ -->
