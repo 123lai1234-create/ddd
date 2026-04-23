@@ -85,11 +85,6 @@
       "permanent": true
     },
     {
-      "source": "/game.html",
-      "destination": "/games/breakout.html",
-      "permanent": true
-    },
-    {
       "source": "/stem_cell.html",
       "destination": "/stem-cell",
       "permanent": true
