@@ -238,6 +238,8 @@ class AboutScene extends Phaser.Scene {
 class LoadScene extends Phaser.Scene {
   constructor() { super('LoadScene'); }
 
+  init(data) { this.synced = data?.synced || false; }
+
   create() {
     const W = this.scale.width, H = this.scale.height;
     this.cursor = 0;
@@ -275,6 +277,14 @@ class LoadScene extends Phaser.Scene {
       esc: Phaser.Input.Keyboard.KeyCodes.ESC,
     });
     this._draw();
+
+    if (!this.synced) {
+      this.msgText.setText('☁ 雲端同步中…');
+      Save.syncFromCloud().then(ok => {
+        if (ok) this.scene.restart({ synced: true });
+        else this.msgText.setText('');
+      });
+    }
   }
 
   _draw() {
