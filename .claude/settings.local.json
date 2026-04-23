@@ -53,7 +53,9 @@
       "Bash(node --input-type=module --eval ' *)",
       "mcp__claude_ai_Hugging_Face__hf_whoami",
       "Bash(python -c \"import huggingface_hub; print\\(huggingface_hub.__version__\\)\")",
-      "Bash(pip install *)"
+      "Bash(pip install *)",
+      "Bash(ls astro/src/pages/)",
+      "Bash(ls astro/)"
     ]
   }
 }
