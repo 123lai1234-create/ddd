@@ -45,7 +45,7 @@ class TitleScene extends Phaser.Scene {
     // Auth-aware menu: when logged in show name; always show login/logout option
     const authLabel = Auth?.isLoggedIn()
       ? `登出 (${(Auth.displayName() || Auth.email() || '').slice(0,8)})`
-      : 'Google 登入';
+      : '帳號登入';
     this.opts = ['開始新遊戲', '繼續遊戲', '關　於', authLabel];
 
     // Re-draw when auth state changes (sign-in redirect returns here)
@@ -212,7 +212,7 @@ class TitleScene extends Phaser.Scene {
           window.dispatchEvent(new CustomEvent('xian:authchange'));
         });
       } else {
-        Auth?.signInWithGoogle();
+        document.getElementById('auth-open-btn')?.click();
       }
     }
   }
