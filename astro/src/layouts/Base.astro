@@ -1,10 +1,13 @@
 ---
 import { Analytics } from '@vercel/analytics/astro';
 
+const SITE = 'https://donttalk.vercel.app';
+
 interface Props {
     title: string;
     description?: string;
     ogImage?: string;
+    ogTag?: string;
     bodyPage?: string;
     pageStyles?: string[];
     pageScripts?: string[];
@@ -14,12 +17,16 @@ interface Props {
 const {
     title,
     description = '',
-    ogImage = 'https://donttalk.vercel.app/og-image.svg',
+    ogImage,
+    ogTag = '',
     bodyPage,
     pageStyles = [],
     pageScripts = [],
     headInline = '',
 } = Astro.props;
+
+const ogImageUrl = ogImage
+    ?? `${SITE}/og?t=${encodeURIComponent(title)}&s=${encodeURIComponent(description || 'JT Lai 作品集')}&tag=${encodeURIComponent(ogTag)}`;
 ---
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -33,8 +40,8 @@ const {
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta property="og:image" content={ogImage} />
-    <meta name="twitter:image" content={ogImage} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta name="twitter:image" content={ogImageUrl} />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#08060e" />

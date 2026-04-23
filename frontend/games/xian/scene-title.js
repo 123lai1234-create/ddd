@@ -41,7 +41,16 @@ class TitleScene extends Phaser.Scene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     this.cursor = 0;
-    this.opts = ['開始新遊戲', '繼續遊戲', '關　於'];
+
+    // Auth-aware menu: when logged in show name; always show login/logout option
+    const authLabel = Auth?.isLoggedIn()
+      ? `登出 (${(Auth.displayName() || Auth.email() || '').slice(0,8)})`
+      : 'Google 登入';
+    this.opts = ['開始新遊戲', '繼續遊戲', '關　於', authLabel];
+
+    // Re-draw when auth state changes (sign-in redirect returns here)
+    this._authListener = () => this.scene.restart();
+    window.addEventListener('xian:authchange', this._authListener);
 
     // Full-screen gradient background
     const bg = this.add.graphics();
@@ -130,6 +139,14 @@ class TitleScene extends Phaser.Scene {
       z: Phaser.Input.Keyboard.KeyCodes.Z, enter: Phaser.Input.Keyboard.KeyCodes.ENTER,
     });
 
+    // Show login status near subtitle
+    if (Auth?.isLoggedIn()) {
+      this.add.text(W/2, H * 0.28 + 120, `☁ ${Auth.displayName() || Auth.email()}`, {
+        fontSize: '13px', fontFamily: '"Noto Serif TC","SimSun",serif',
+        color: '#50c878', stroke: '#000', strokeThickness: 2,
+      }).setOrigin(0.5, 0.5);
+    }
+
     this._updateMenu();
     this.t = 0;
   }
@@ -179,15 +196,29 @@ class TitleScene extends Phaser.Scene {
     const down = Phaser.Input.Keyboard.JustDown(this.keys.down) || Phaser.Input.Keyboard.JustDown(this.keys.s);
     const ok   = Phaser.Input.Keyboard.JustDown(this.keys.z)    || Phaser.Input.Keyboard.JustDown(this.keys.enter);
 
-    if (up)   { this.cursor = Math.max(0, this.cursor-1);       this._updateMenu(); }
-    if (down) { this.cursor = Math.min(2, this.cursor+1);       this._updateMenu(); }
+    if (up)   { this.cursor = Math.max(0, this.cursor-1);                    this._updateMenu(); }
+    if (down) { this.cursor = Math.min(this.opts.length-1, this.cursor+1);  this._updateMenu(); }
     if (ok)   { this._select(); }
   }
 
   _select() {
     if (this.cursor === 0) { GS.init(); this.scene.start('WorldScene'); }
     else if (this.cursor === 1) { this.scene.start('LoadScene'); }
-    else { this.scene.start('AboutScene'); }
+    else if (this.cursor === 2) { this.scene.start('AboutScene'); }
+    else {
+      // Auth toggle — let the overlay button handle sign-in/out; just dispatch event
+      if (Auth?.isLoggedIn()) {
+        Auth.signOut().then(() => {
+          window.dispatchEvent(new CustomEvent('xian:authchange'));
+        });
+      } else {
+        Auth?.signInWithGoogle();
+      }
+    }
+  }
+
+  shutdown() {
+    if (this._authListener) window.removeEventListener('xian:authchange', this._authListener);
   }
 }
 

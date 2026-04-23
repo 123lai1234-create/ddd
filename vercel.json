@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd astro && npm ci",
+  "installCommand": "npm install && cd astro && npm ci",
   "buildCommand": "cd astro && npm run build",
   "outputDirectory": "astro/dist",
   "cleanUrls": true,
@@ -10,11 +10,15 @@
   },
   "rewrites": [
     {
+      "source": "/og",
+      "destination": "/api/og"
+    },
+    {
       "source": "/healthz",
       "destination": "https://donttalk-api-production.up.railway.app/healthz"
     },
     {
-      "source": "/api/:path*",
+      "source": "/api/(?!og$):path*",
       "destination": "https://donttalk-api-production.up.railway.app/api/:path*"
     }
   ],
