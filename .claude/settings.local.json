@@ -48,7 +48,8 @@
       "Bash(git -C \"d:/project\" show 0c9130a --stat)",
       "Bash(curl -s -X POST \"https://donttalk-api-production.up.railway.app/api/video/generate\" -H \"Content-Type: application/json\" -d \"{\\\\\"prompt\\\\\":\\\\\"test DNA helix\\\\\",\\\\\"resolution\\\\\":\\\\\"720p\\\\\",\\\\\"duration\\\\\":\\\\\"5\\\\\"}\")",
       "Bash(curl -s -X POST \"https://donttalk-api-production.up.railway.app/api/video/generate\" -H \"Content-Type: application/json\" -d \"{\\\\\"prompt\\\\\":\\\\\"A glowing DNA helix rotating in space, cinematic\\\\\",\\\\\"resolution\\\\\":\\\\\"720p\\\\\",\\\\\"duration\\\\\":\\\\\"5\\\\\"}\")",
-      "Bash(railway up *)"
+      "Bash(railway up *)",
+      "Bash(git rm *)"
     ]
   }
 }
