@@ -293,9 +293,32 @@ const Auth = {
     } catch { this._session = null; }
   },
 
-  signInWithGoogle() {
-    const redirectTo = encodeURIComponent(window.location.href.split('#')[0]);
-    window.location.href = `${_SUPA_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
+  // Send 6-digit OTP to email (no redirect needed)
+  async sendOtp(email) {
+    try {
+      const r = await fetch(`${_SUPA_URL}/auth/v1/otp`, {
+        method: 'POST',
+        headers: { 'apikey': _SUPA_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, create_user: true }),
+      });
+      return r.ok || r.status === 429;  // 429 = already sent recently, still ok UX-wise
+    } catch { return false; }
+  },
+
+  // Verify the 6-digit code → returns true and sets session on success
+  async verifyOtp(email, token) {
+    try {
+      const r = await fetch(`${_SUPA_URL}/auth/v1/verify`, {
+        method: 'POST',
+        headers: { 'apikey': _SUPA_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, token, type: 'email' }),
+      });
+      if (!r.ok) return false;
+      const d = await r.json();
+      if (!d.access_token) return false;
+      await this._setToken(d.access_token, d.refresh_token);
+      return true;
+    } catch { return false; }
   },
 
   async signOut() {
