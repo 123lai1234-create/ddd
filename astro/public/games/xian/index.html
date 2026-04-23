@@ -10,11 +10,66 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 canvas { display: block; max-width: 100vw; max-height: 100vh; }
+
+/* ── Auth overlay ── */
+#auth-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 6px 14px;
+  background: linear-gradient(to bottom, rgba(7,5,13,0.92), transparent);
+  font-family: "Noto Serif TC","SimSun",serif;
+  font-size: 13px; color: #9a8060;
+  pointer-events: none;
+}
+#auth-bar > * { pointer-events: auto; }
+#auth-user { color: #e8c060; font-size: 12px; }
+#auth-btn {
+  background: rgba(26,20,40,0.9); border: 1px solid #7a5c1e;
+  color: #c8a060; border-radius: 4px; padding: 4px 12px;
+  cursor: pointer; font-size: 12px; font-family: inherit;
+  transition: background .15s;
+}
+#auth-btn:hover { background: rgba(58,40,8,0.9); color: #e8c060; }
 </style>
 </head>
 <body>
+
+<!-- Auth status bar (top-right overlay) -->
+<div id="auth-bar">
+  <span id="auth-user"></span>
+  <button id="auth-btn">Google 登入</button>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 <script src="/games/xian/data.js"></script>
+<script>
+// Init Auth before Phaser boots, then wire up the UI
+(async () => {
+  await Auth.init();
+  const userEl = document.getElementById('auth-user');
+  const btnEl  = document.getElementById('auth-btn');
+  const update = () => {
+    if (Auth.isLoggedIn()) {
+      userEl.textContent = Auth.displayName() || Auth.email() || '已登入';
+      btnEl.textContent  = '登出';
+    } else {
+      userEl.textContent = '';
+      btnEl.textContent  = 'Google 登入';
+    }
+  };
+  update();
+  btnEl.addEventListener('click', async () => {
+    if (Auth.isLoggedIn()) {
+      await Auth.signOut();
+      update();
+      // Notify game that auth changed
+      window.dispatchEvent(new CustomEvent('xian:authchange'));
+    } else {
+      Auth.signInWithGoogle();
+    }
+  });
+})();
+</script>
 <script src="/games/xian/scene-title.js"></script>
 <script src="/games/xian/scene-world.js"></script>
 <script src="/games/xian/scene-battle.js"></script>

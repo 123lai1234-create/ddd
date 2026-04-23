@@ -229,15 +229,114 @@ function makePartyMember(id) {
 const _SUPA_URL = 'https://wbamdjgcoezevimohlcb.supabase.co';
 const _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiYW1kamdjb2V6ZXZpbW9obGNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1Mzk1NDQsImV4cCI6MjA5MTExNTU0NH0.0YZUVDiCFYVDMDo20aG4sSBcON8SXoET6vEiX5NCEbs';
 
+// ── Auth (Supabase Google OAuth) ───────────────────────────
+const Auth = {
+  AUTH_KEY: 'xianxia_auth_v1',
+  _session: null,
+
+  async init() {
+    // Check URL hash for OAuth callback tokens (#access_token=...&type=signup)
+    const hash = window.location.hash;
+    if (hash.includes('access_token')) {
+      const p = new URLSearchParams(hash.slice(1));
+      const token = p.get('access_token');
+      const refresh = p.get('refresh_token');
+      if (token) {
+        history.replaceState(null, '', window.location.pathname);
+        await this._setToken(token, refresh);
+        return;
+      }
+    }
+    // Restore from localStorage
+    try {
+      const raw = localStorage.getItem(this.AUTH_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        // Verify token is still valid (not expired)
+        if (s?.access_token && s?.expires_at && Date.now() < s.expires_at * 1000) {
+          this._session = s;
+          return;
+        }
+        // Try refresh token
+        if (s?.refresh_token) {
+          await this._refresh(s.refresh_token);
+          return;
+        }
+      }
+    } catch {}
+    this._session = null;
+  },
+
+  async _setToken(token, refresh) {
+    try {
+      const r = await fetch(`${_SUPA_URL}/auth/v1/user`, {
+        headers: { 'apikey': _SUPA_KEY, 'Authorization': `Bearer ${token}` },
+      });
+      if (!r.ok) { this._session = null; return; }
+      const user = await r.json();
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+      this._session = { access_token: token, refresh_token: refresh, user, expires_at: payload.exp };
+      localStorage.setItem(this.AUTH_KEY, JSON.stringify(this._session));
+    } catch { this._session = null; }
+  },
+
+  async _refresh(refreshToken) {
+    try {
+      const r = await fetch(`${_SUPA_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { 'apikey': _SUPA_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!r.ok) { this._session = null; localStorage.removeItem(this.AUTH_KEY); return; }
+      const d = await r.json();
+      await this._setToken(d.access_token, d.refresh_token);
+    } catch { this._session = null; }
+  },
+
+  signInWithGoogle() {
+    const redirectTo = encodeURIComponent(window.location.href.split('#')[0]);
+    window.location.href = `${_SUPA_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
+  },
+
+  async signOut() {
+    if (this._session?.access_token) {
+      await fetch(`${_SUPA_URL}/auth/v1/logout`, {
+        method: 'POST',
+        headers: { 'apikey': _SUPA_KEY, 'Authorization': `Bearer ${this._session.access_token}` },
+      }).catch(() => {});
+    }
+    this._session = null;
+    localStorage.removeItem(this.AUTH_KEY);
+  },
+
+  isLoggedIn() { return !!(this._session?.user?.id); },
+  userId()    { return this._session?.user?.id || null; },
+  email()     { return this._session?.user?.email || null; },
+  displayName() {
+    const m = this._session?.user?.user_metadata;
+    return m?.full_name || m?.name || this.email() || null;
+  },
+  token()     { return this._session?.access_token || _SUPA_KEY; },
+};
+
 // ── Save ───────────────────────────────────────────────────
 const Save = {
   LOCAL_KEY:   'xianxia_rpg_v2',
   SESSION_KEY: 'xianxia_session_id',
 
+  // When logged in use Google user ID; otherwise use anonymous UUID
   _sid() {
+    if (Auth.isLoggedIn()) return Auth.userId();
     let id = localStorage.getItem(this.SESSION_KEY);
     if (!id) { id = crypto.randomUUID(); localStorage.setItem(this.SESSION_KEY, id); }
     return id;
+  },
+  _headers() {
+    return {
+      'apikey':        _SUPA_KEY,
+      'Authorization': `Bearer ${Auth.token()}`,
+      'Content-Type':  'application/json',
+    };
   },
   _local() {
     try { return JSON.parse(localStorage.getItem(this.LOCAL_KEY)) || [null,null,null]; }
@@ -251,15 +350,9 @@ const Save = {
     const slots = this._local();
     slots[slot] = data;
     this._saveLocal(slots);
-    // Fire-and-forget upsert to Supabase
     fetch(`${_SUPA_URL}/rest/v1/game_saves?on_conflict=session_id,slot`, {
       method:  'POST',
-      headers: {
-        'apikey':        _SUPA_KEY,
-        'Authorization': `Bearer ${_SUPA_KEY}`,
-        'Content-Type':  'application/json',
-        'Prefer':        'resolution=merge-duplicates',
-      },
+      headers: { ...this._headers(), 'Prefer': 'resolution=merge-duplicates' },
       body: JSON.stringify({ session_id: this._sid(), slot, data, updated_at: new Date().toISOString() }),
     }).catch(() => {});
   },
@@ -268,7 +361,7 @@ const Save = {
     try {
       const r = await fetch(
         `${_SUPA_URL}/rest/v1/game_saves?session_id=eq.${this._sid()}&select=slot,data&order=slot`,
-        { headers: { 'apikey': _SUPA_KEY, 'Authorization': `Bearer ${_SUPA_KEY}` } }
+        { headers: this._headers() }
       );
       if (!r.ok) return false;
       const rows = await r.json();
