@@ -4,68 +4,128 @@ class BattleScene extends Phaser.Scene {
   constructor() { super('BattleScene'); }
 
   create() {
-    const W=800, H=600;
-    this.phase = 'playerTurn'; // playerTurn | enemyTurn | win | lose
+    const W = this.scale.width, H = this.scale.height;
+    this.W = W; this.H = H;
+    this.phase = 'playerTurn';
     this.actorIdx = 0;
     this.cursor = 0;
     this.subCursor = 0;
-    this.subMode = null; // null | 'skill' | 'item' | 'target'
+    this.subMode = null;
     this.targetList = [];
     this.log = [];
-    this.logTimer = 0;
-    this.animQueue = [];
+    this.waiting = false;
 
-    // Copy party & enemies
-    this.party = GS.party.map(m => ({ ...m, status:[...m.status] }));
+    this.party   = GS.party.map(m => ({ ...m, status:[...m.status] }));
     this.enemies = GS.battleData.enemies.map(e => ({ ...e, status:[...e.status] }));
 
-    // BG
-    const bg = this.add.graphics();
-    bg.fillGradientStyle(0x1a0814, 0x1a0814, 0x08040e, 0x08040e, 1);
-    bg.fillRect(0, 0, W, H);
-    // Ground line
-    bg.fillStyle(0x2a1e12, 1); bg.fillRect(0, 360, W, 40);
-    bg.lineStyle(1, 0x7a5c1e, 0.5); bg.lineBetween(0, 360, W, 360);
+    this.groundY = Math.floor(H * 0.56);
 
-    // Render sprites
+    // ── Background ──────────────────────────────────────
+    const bg = this.add.graphics();
+    bg.fillGradientStyle(0x0c0418, 0x100820, 0x040210, 0x060316, 1);
+    bg.fillRect(0, 0, W, H);
+
+    // Moon
+    const moonG = this.add.graphics();
+    moonG.fillStyle(0xfff4d0, 1);
+    moonG.fillCircle(W*0.82, H*0.13, H*0.048);
+    moonG.fillStyle(0xffffff, 0.2);
+    moonG.fillCircle(W*0.808, H*0.118, H*0.02);
+    moonG.fillStyle(0x0c0418, 1);
+    moonG.fillCircle(W*0.836, H*0.12, H*0.042);
+
+    // Stars
+    const starG = this.add.graphics();
+    for (let i = 0; i < 80; i++) {
+      const sx = Math.random()*W, sy = Math.random()*this.groundY*0.92;
+      starG.fillStyle(0xfff8e0, 0.2 + Math.random()*0.7);
+      starG.fillCircle(sx, sy, 0.3 + Math.random()*1.1);
+    }
+
+    // Mountains (back layer)
+    const mtn1 = this.add.graphics();
+    mtn1.fillStyle(0x180c2a, 1);
+    const pts1 = [[0,0.68],[0.08,0.42],[0.16,0.58],[0.24,0.36],[0.34,0.52],[0.44,0.30],[0.54,0.46],[0.62,0.32],[0.72,0.50],[0.80,0.28],[0.90,0.44],[1.0,0.38]];
+    mtn1.beginPath();
+    pts1.forEach(([rx,ry],i) => { const px=rx*W, py=ry*this.groundY; i===0?mtn1.moveTo(px,py):mtn1.lineTo(px,py); });
+    mtn1.lineTo(W,this.groundY); mtn1.lineTo(0,this.groundY); mtn1.closePath(); mtn1.fillPath();
+
+    // Mountains (front layer)
+    const mtn2 = this.add.graphics();
+    mtn2.fillStyle(0x1e1030, 1);
+    const pts2 = [[0,0.80],[0.1,0.55],[0.22,0.70],[0.32,0.50],[0.50,0.65],[0.68,0.48],[0.84,0.60],[1.0,0.52]];
+    mtn2.beginPath();
+    pts2.forEach(([rx,ry],i) => { const px=rx*W, py=ry*this.groundY; i===0?mtn2.moveTo(px,py):mtn2.lineTo(px,py); });
+    mtn2.lineTo(W,this.groundY); mtn2.lineTo(0,this.groundY); mtn2.closePath(); mtn2.fillPath();
+
+    // Ground
+    const gndG = this.add.graphics();
+    gndG.fillGradientStyle(0x1c1008, 0x1c1008, 0x080604, 0x080604, 1);
+    gndG.fillRect(0, this.groundY, W, H - this.groundY);
+    gndG.lineStyle(2, 0xb07828, 0.65);
+    gndG.lineBetween(0, this.groundY, W, this.groundY);
+    gndG.lineStyle(1, 0x3a2606, 0.4);
+    for (let i = 1; i < 6; i++) gndG.lineBetween(0, this.groundY+i*7, W, this.groundY+i*7);
+
+    // Arena glow
+    const arenaG = this.add.graphics();
+    arenaG.fillStyle(0x280840, 0.2);
+    arenaG.fillEllipse(W*0.38, this.groundY+3, W*0.65, 28);
+
+    // ── Enemy sprites ────────────────────────────────────
     this.enemySprites = [];
+    const eCount = this.enemies.length;
     this.enemies.forEach((e, i) => {
-      const x = 200 + i * 260;
+      const ex = eCount === 1 ? W*0.22 : W*(0.13 + i*0.18);
+      const sz = e.sz || 28;
       const g = this.add.graphics();
-      this._drawEnemy(g, e, x, 300);
-      const hp = mkBar(this, x - e.sz, 370, e.sz*2, 8, e.hp, e.maxHp, 0xe05050);
-      const lbl = this.add.text(x, 390, e.name, {
-        fontSize:'12px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      this._drawEnemy(g, e, ex, this.groundY);
+      const hp  = mkBar(this, ex-sz, this.groundY+6, sz*2, 7, e.hp, e.maxHp, 0xe04040);
+      const lbl = this.add.text(ex, this.groundY+20, e.name, {
+        fontSize: Math.max(11,Math.floor(H*0.02))+'px',
+        fontFamily:'"Noto Serif TC","SimSun",serif',
         color:'#c8a060', stroke:'#000', strokeThickness:2,
-      }).setOrigin(0.5, 0.5);
-      this.enemySprites.push({ g, hp, lbl, x, y:300, e });
+      }).setOrigin(0.5,0.5);
+      this.enemySprites.push({ g, hp, lbl, x:ex, y:this.groundY, e });
     });
 
+    // ── Hero sprites ─────────────────────────────────────
     this.partySprites = [];
     this.party.forEach((m, i) => {
-      const x = 520 + i * 100;
+      const hx = W*(0.62 + i*0.13);
       const g = this.add.graphics();
-      this._drawHero(g, m, x, 340);
-      this.partySprites.push({ g, x, y:340, m });
+      this._drawHero(g, m, hx, this.groundY);
+      this.partySprites.push({ g, x:hx, y:this.groundY, m });
     });
 
-    // Status panel
+    // ── Log strip ────────────────────────────────────────
+    const logY = this.groundY + 34;
+    const logH = Math.max(32, Math.floor(H*0.065));
+    const logBg = this.add.graphics();
+    logBg.fillStyle(0x050410, 0.93);
+    logBg.fillRect(0, logY, W, logH);
+    logBg.lineStyle(1, 0x5a3e10, 0.8);
+    logBg.lineBetween(0, logY, W, logY);
+    logBg.lineBetween(0, logY+logH, W, logY+logH);
+    this.logText = this.add.text(14, logY+logH/2, '', {
+      fontSize: Math.max(12,Math.floor(H*0.023))+'px',
+      fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#f0e6c8', stroke:'#000', strokeThickness:2,
+      wordWrap:{ width: W-28 },
+    }).setOrigin(0,0.5).setDepth(5);
+
+    // ── UI panels ────────────────────────────────────────
+    this.uiY     = logY + logH + 2;
+    this.uiH     = H - this.uiY;
+    this.splitX  = Math.floor(W*0.44);
+
     this.statusPanel = this.add.graphics();
     this.statusTexts = [];
     this._rebuildStatus();
 
-    // Menu panel
     this.menuPanel = this.add.graphics();
     this.menuTexts = [];
     this._rebuildMenu();
-
-    // Log
-    this.logGfx = this.add.graphics();
-    this.logText = this.add.text(20, 412, '', {
-      fontSize:'13px', fontFamily:'"Noto Serif TC","SimSun",serif',
-      color:'#f0e6c8', stroke:'#000', strokeThickness:2,
-      wordWrap:{ width:760 },
-    }).setDepth(5);
 
     this.keys = this.input.keyboard.addKeys({
       up:   Phaser.Input.Keyboard.KeyCodes.UP,
@@ -78,195 +138,358 @@ class BattleScene extends Phaser.Scene {
       esc:  Phaser.Input.Keyboard.KeyCodes.ESC,
     });
 
-    this.waiting = false;
     this._addLog(this.enemies.length > 1
       ? `遭遇了 ${this.enemies.map(e=>e.name).join('、')}！`
       : `遭遇了 ${this.enemies[0].name}！`);
   }
 
-  // ── Drawing ────────────────────────────────────────────
+  // ── Sprite drawing ────────────────────────────────────
   _drawEnemy(g, e, x, y) {
     g.clear();
     if (e.dead) return;
-    const r = e.sz || 28;
-    g.fillStyle(e.color || 0x888888, 1);
-    g.lineStyle(2, 0xffffff, 0.2);
-    // Simple monster blob
-    g.fillEllipse(x, y+8, r*1.1*2, r*0.7*2);
-    g.fillCircle(x + r*0.5, y - r*0.3, r*0.7);
-    g.strokeCircle(x + r*0.5, y - r*0.3, r*0.7);
-    // Eyes
-    g.fillStyle(0xff0000, 1);
-    g.fillCircle(x + r*0.3, y - r*0.4, r*0.12);
-    g.fillCircle(x + r*0.7, y - r*0.4, r*0.12);
-    g.fillStyle(0x000000, 1);
-    g.fillCircle(x + r*0.32, y - r*0.41, r*0.06);
-    g.fillCircle(x + r*0.72, y - r*0.41, r*0.06);
+    const sz  = e.sz || 28;
+    const col = e.color || 0x884422;
+    const cy  = y - sz * 0.85;
+    const hy  = y - sz * 1.8;
+    const hr  = sz * 0.62;
+
+    // Shadow
+    g.fillStyle(0x000000, 0.28);
+    g.fillEllipse(x, y+3, sz*2.4, sz*0.3);
+
+    // Body
+    g.fillStyle(col, 1);
+    g.fillEllipse(x, cy, sz*2.0, sz*1.4);
+    g.fillStyle(0xffffff, 0.07);
+    g.fillEllipse(x-sz*0.15, cy-sz*0.18, sz*0.9, sz*0.5);
+    g.lineStyle(1, 0x000000, 0.35);
+    g.strokeEllipse(x, cy, sz*2.0, sz*1.4);
+
+    // Head
+    g.fillStyle(col, 1);
+    g.fillCircle(x, hy, hr);
+    g.fillStyle(0xffffff, 0.06);
+    g.fillCircle(x-hr*0.3, hy-hr*0.3, hr*0.45);
+    g.lineStyle(1, 0x000000, 0.35);
+    g.strokeCircle(x, hy, hr);
+
+    // Horns
+    if (!e.boss) {
+      g.fillStyle(0x604820, 1);
+      g.fillTriangle(x-sz*0.27, hy-hr*0.82, x-sz*0.52, hy-hr*1.55, x-sz*0.02, hy-hr*0.72);
+      g.fillTriangle(x+sz*0.27, hy-hr*0.82, x+sz*0.52, hy-hr*1.55, x+sz*0.02, hy-hr*0.72);
+    }
+
+    // Eyes (glowing)
+    const er = sz*0.11;
+    g.fillStyle(0xff0000, 0.28);
+    g.fillCircle(x-sz*0.24, hy-sz*0.06, er*2.0);
+    g.fillCircle(x+sz*0.24, hy-sz*0.06, er*2.0);
+    g.fillStyle(0xff2020, 1);
+    g.fillCircle(x-sz*0.24, hy-sz*0.06, er);
+    g.fillCircle(x+sz*0.24, hy-sz*0.06, er);
+    g.fillStyle(0x080000, 1);
+    g.fillCircle(x-sz*0.22, hy-sz*0.05, er*0.5);
+    g.fillCircle(x+sz*0.26, hy-sz*0.05, er*0.5);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(x-sz*0.28, hy-sz*0.08, er*0.28);
+    g.fillCircle(x+sz*0.20, hy-sz*0.08, er*0.28);
+
+    // Mouth + fangs
+    g.fillStyle(0x180000, 1);
+    g.fillEllipse(x, hy+sz*0.28, sz*0.55, sz*0.2);
+    g.fillStyle(0xeeeeee, 1);
+    g.fillTriangle(x-sz*0.16, hy+sz*0.20, x-sz*0.06, hy+sz*0.38, x+sz*0.04, hy+sz*0.20);
+    g.fillTriangle(x+sz*0.05, hy+sz*0.20, x+sz*0.15, hy+sz*0.38, x+sz*0.25, hy+sz*0.20);
+
+    // Arms
+    g.fillStyle(col, 1);
+    g.fillEllipse(x-sz*1.1, cy+sz*0.08, sz*0.55, sz*0.75);
+    g.fillEllipse(x+sz*1.1, cy+sz*0.08, sz*0.55, sz*0.75);
+    const cly = cy + sz*0.42;
+    g.fillStyle(0x604820, 1);
+    g.fillTriangle(x-sz*1.28, cly-sz*0.05, x-sz*1.08, cly+sz*0.22, x-sz*0.88, cly-sz*0.05);
+    g.fillTriangle(x+sz*0.88, cly-sz*0.05, x+sz*1.08, cly+sz*0.22, x+sz*1.28, cly-sz*0.05);
+
     // Boss crown
     if (e.boss) {
       g.fillStyle(0xffd700, 1);
-      g.fillTriangle(x+r*0.2, y-r*1.1, x+r*0.5, y-r*1.5, x+r*0.8, y-r*1.1);
+      g.fillRect(x-sz*0.56, hy-hr*1.08, sz*1.12, sz*0.22);
+      g.fillTriangle(x-sz*0.5, hy-hr*1.08, x-sz*0.3, hy-hr*1.72, x-sz*0.1, hy-hr*1.08);
+      g.fillTriangle(x-sz*0.1, hy-hr*1.08, x+sz*0.10, hy-hr*1.95, x+sz*0.3, hy-hr*1.08);
+      g.fillTriangle(x+sz*0.1, hy-hr*1.08, x+sz*0.34, hy-hr*1.68, x+sz*0.56, hy-hr*1.08);
+      g.fillStyle(0xff4040, 1);
+      g.fillCircle(x, hy-hr*1.2, sz*0.12);
     }
   }
 
   _drawHero(g, m, x, y) {
     g.clear();
-    const col = m.dead ? 0x444444 : (m.color || 0x4a9eff);
-    const s = 14;
-    g.fillStyle(col, 1);
-    g.fillCircle(x, y-s*1.15, s*0.6);
-    g.fillRect(x-s*0.5, y-s*0.8, s, s*1.1);
-    g.fillRect(x-s*0.5, y+s*0.3, s*0.4, s*0.7);
-    g.fillRect(x+s*0.1, y+s*0.3, s*0.4, s*0.7);
-    if (m.shape === 'sword') {
-      g.fillStyle(0xcccccc, 1);
-      g.fillRect(x+s*0.5, y-s*0.8, 3, s*1.1);
-      g.fillRect(x+s*0.2, y-s*0.9, s*0.6, 3);
-    } else if (m.shape === 'mage') {
-      g.fillStyle(0xcccccc, 1);
-      g.fillCircle(x, y-s*2.3, s*0.25);
-      g.fillRect(x-2, y-s*2.3, 4, s);
-    } else if (m.shape === 'archer') {
-      g.lineStyle(2, 0xcccccc, 1);
-      g.beginPath();
-      g.arc(x-s*0.8, y-s*0.3, s*0.85, Math.PI*0.3, Math.PI*1.7);
-      g.strokePath();
-    }
+    const s   = 14;
+    const col = m.dead ? 0x282828 : (m.color || 0x4a9eff);
+
+    g.fillStyle(0x000000, 0.22);
+    g.fillEllipse(x, y+2, s*2.2, s*0.45);
+
     if (m.dead) {
-      g.lineStyle(2, 0xff4444, 0.8);
-      g.lineBetween(x-10, y-10, x+10, y+10);
-      g.lineBetween(x+10, y-10, x-10, y+10);
+      g.fillStyle(0x282828, 0.75);
+      g.fillEllipse(x-s*0.4, y-s*0.35, s*2.6, s*0.85);
+      g.lineStyle(1, 0xff4040, 0.75);
+      g.lineBetween(x-11, y-8, x+11, y+8);
+      g.lineBetween(x+11, y-8, x-11, y+8);
+      return;
+    }
+
+    // Legs
+    g.fillStyle(col, 0.65);
+    g.fillRect(x-s*0.5, y-s*0.85, s*0.42, s*0.85);
+    g.fillRect(x+s*0.08, y-s*0.85, s*0.42, s*0.85);
+
+    // Robe
+    g.fillStyle(col, 1);
+    g.fillTriangle(x-s*0.65, y-s*0.85, x+s*0.65, y-s*0.85, x+s*0.48, y-s*2.25);
+    g.fillTriangle(x-s*0.65, y-s*0.85, x-s*0.48, y-s*2.25, x+s*0.48, y-s*2.25);
+    g.fillStyle(0xffffff, 0.1);
+    g.fillTriangle(x-s*0.22, y-s*0.95, x+s*0.22, y-s*0.95, x, y-s*2.1);
+    // Trim
+    g.lineStyle(1.5, 0xffd700, 0.4);
+    g.lineBetween(x-s*0.48, y-s*2.25, x, y-s*2.42);
+    g.lineBetween(x+s*0.48, y-s*2.25, x, y-s*2.42);
+    // Belt
+    g.fillStyle(0x906030, 1);
+    g.fillRect(x-s*0.65, y-s*1.05, s*1.3, s*0.2);
+
+    // Arms
+    g.fillStyle(col, 0.8);
+    g.fillRect(x-s*0.95, y-s*2.2, s*0.33, s*0.85);
+    g.fillRect(x+s*0.62, y-s*2.2, s*0.33, s*0.85);
+
+    // Neck
+    g.fillStyle(0xd4a078, 1);
+    g.fillRect(x-s*0.18, y-s*2.38, s*0.36, s*0.18);
+
+    // Head
+    g.fillStyle(0xd4a078, 1);
+    g.fillCircle(x, y-s*2.82, s*0.65);
+    g.lineStyle(0.8, 0xa07050, 0.4);
+    g.strokeCircle(x, y-s*2.82, s*0.65);
+
+    // Hair
+    g.fillStyle(0x1c0c08, 1);
+    g.fillCircle(x, y-s*3.15, s*0.65);
+    g.fillRect(x-s*0.66, y-s*3.0, s*1.32, s*0.32);
+    g.fillRect(x-s*0.70, y-s*2.98, s*0.19, s*0.48);
+    g.fillRect(x+s*0.51, y-s*2.98, s*0.19, s*0.48);
+
+    // Eyes
+    g.fillStyle(0x0c0808, 1);
+    g.fillCircle(x-s*0.26, y-s*2.80, s*0.12);
+    g.fillCircle(x+s*0.26, y-s*2.80, s*0.12);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(x-s*0.29, y-s*2.83, s*0.05);
+    g.fillCircle(x+s*0.23, y-s*2.83, s*0.05);
+
+    // Weapon
+    if (m.shape === 'sword') {
+      g.lineStyle(2.5, 0xd8d8d8, 1);
+      g.lineBetween(x+s*0.98, y-s*3.25, x+s*0.98, y-s*0.95);
+      g.lineStyle(2, 0xffd700, 1);
+      g.lineBetween(x+s*0.64, y-s*2.65, x+s*1.32, y-s*2.65);
+      g.fillStyle(0xa08030, 1);
+      g.fillRect(x+s*0.88, y-s*1.08, s*0.2, s*0.2);
+    } else if (m.shape === 'mage') {
+      g.lineStyle(2, 0xb09050, 1);
+      g.lineBetween(x-s*1.18, y, x-s*1.18, y-s*3.4);
+      g.fillStyle(0x7888ff, 0.85);
+      g.fillCircle(x-s*1.18, y-s*3.62, s*0.38);
+      g.fillStyle(0xaabbff, 0.6);
+      g.fillCircle(x-s*1.28, y-s*3.78, s*0.18);
+      g.fillStyle(0x4455ff, 0.15);
+      g.fillCircle(x-s*1.18, y-s*3.62, s*0.72);
+    } else if (m.shape === 'archer') {
+      g.lineStyle(2, 0x9a6830, 1);
+      g.beginPath();
+      g.arc(x+s*1.22, y-s*1.8, s*0.98, -Math.PI*0.55, Math.PI*0.55);
+      g.strokePath();
+      g.lineStyle(1, 0xd8c8a0, 0.75);
+      g.lineBetween(x+s*1.22, y-s*2.6, x+s*1.22, y-s*1.0);
     }
   }
 
+  // ── Status panel ──────────────────────────────────────
   _rebuildStatus() {
     this.statusPanel.clear();
     this.statusTexts.forEach(t => t.destroy());
     this.statusTexts = [];
-    const panelX = 0, panelY = 440, panelW = 360, panelH = 160;
-    this.statusPanel.fillStyle(0x100c1e, 0.92);
-    this.statusPanel.fillRect(panelX, panelY, panelW, panelH);
+
+    const px = 0, py = this.uiY, pw = this.splitX, ph = this.uiH;
+    this.statusPanel.fillStyle(0x080612, 0.97);
+    this.statusPanel.fillRect(px, py, pw, ph);
     this.statusPanel.lineStyle(1, 0x7a5c1e, 0.8);
-    this.statusPanel.strokeRect(panelX, panelY, panelW, panelH);
+    this.statusPanel.strokeRect(px, py, pw, ph);
+    this.statusPanel.lineStyle(1, 0x3a2a0c, 0.5);
+    this.statusPanel.strokeRect(px+2, py+2, pw-4, ph-4);
+
+    const rowH = Math.floor(ph / this.party.length);
+    const fs   = Math.max(11, Math.floor(rowH * 0.28));
+    const fsS  = Math.max(9, fs - 3);
 
     this.party.forEach((m, i) => {
-      const y = panelY + 20 + i * 44;
+      const ry   = py + i * rowH;
       const dead = m.dead;
-      const sel = i === this.actorIdx && this.phase === 'playerTurn';
-      // Name
-      const nameT = this.add.text(14, y, (sel ? '▶ ' : '  ') + m.name, {
-        fontSize:'13px', fontFamily:'"Noto Serif TC","SimSun",serif',
-        color: dead ? '#555' : sel ? '#ffd700' : '#e8c060',
-        stroke:'#000', strokeThickness:2,
+      const sel  = (i === this.actorIdx) && (this.phase === 'playerTurn');
+
+      if (sel) {
+        this.statusPanel.fillStyle(0x9a7828, 0.14);
+        this.statusPanel.fillRect(px+2, ry, pw-4, rowH);
+      }
+      if (i > 0) {
+        this.statusPanel.lineStyle(1, 0x3a2808, 0.5);
+        this.statusPanel.lineBetween(px+6, ry, px+pw-6, ry);
+      }
+
+      const ty = ry + rowH * 0.18;
+      const nameT = this.add.text(px+10, ty, (sel ? '▶ ' : '  ') + m.name, {
+        fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color: dead ? '#484040' : sel ? '#ffd700' : '#e8c060',
+        stroke:'#000', strokeThickness: fs > 13 ? 2 : 1,
       }).setDepth(5);
       this.statusTexts.push(nameT);
-      // HP
-      const stats = calcStats(m);
-      mkBar(this, 90, y-6, 100, 8, m.hp, m.maxHp, 0xe05050).setDepth(5);
-      this.statusTexts.push(this.add.text(90, y+8, `HP ${m.hp}/${m.maxHp}`, {
-        fontSize:'9px', fontFamily:'monospace', color:'#e05050', stroke:'#000', strokeThickness:1,
-      }).setDepth(5));
-      // MP
-      mkBar(this, 200, y-6, 80, 8, m.mp, stats.maxMp, 0x5080e8).setDepth(5);
-      this.statusTexts.push(this.add.text(200, y+8, `MP ${m.mp}/${stats.maxMp}`, {
-        fontSize:'9px', fontFamily:'monospace', color:'#5080e8', stroke:'#000', strokeThickness:1,
-      }).setDepth(5));
-      // Status effects
+
+      const barW = Math.floor(pw * 0.52);
+      const bx   = px + 10;
+      const by1  = ry + rowH * 0.46;
+      const by2  = ry + rowH * 0.70;
+      const bh2  = Math.max(5, Math.floor(rowH * 0.13));
+      const st   = calcStats(m);
+
+      const hpBar = mkBar(this, bx, by1, barW, bh2, m.hp, m.maxHp, 0xe04040);
+      hpBar.setDepth(5);
+      this.statusTexts.push(hpBar);
+      const mpBar = mkBar(this, bx, by2, barW, bh2, m.mp, st.maxMp, 0x4060e0);
+      mpBar.setDepth(5);
+      this.statusTexts.push(mpBar);
+
+      const hpT = this.add.text(bx+barW+5, by1+bh2/2, `${m.hp}`, {
+        fontSize: fsS+'px', fontFamily:'monospace', color:'#e05050', stroke:'#000', strokeThickness:1,
+      }).setOrigin(0, 0.5).setDepth(5);
+      const mpT = this.add.text(bx+barW+5, by2+bh2/2, `${m.mp}`, {
+        fontSize: fsS+'px', fontFamily:'monospace', color:'#5070e0', stroke:'#000', strokeThickness:1,
+      }).setOrigin(0, 0.5).setDepth(5);
+      this.statusTexts.push(hpT, mpT);
+
       if (m.status.length > 0) {
-        this.statusTexts.push(this.add.text(290, y, m.status.join(' '), {
-          fontSize:'9px', fontFamily:'serif', color:'#c050e8', stroke:'#000', strokeThickness:1,
-        }).setDepth(5));
+        const stT = this.add.text(px+pw-8, ty, m.status.slice(0,2).join(' '), {
+          fontSize: fsS+'px', fontFamily:'serif', color:'#c050e8', stroke:'#000', strokeThickness:1,
+        }).setOrigin(1, 0).setDepth(5);
+        this.statusTexts.push(stT);
       }
     });
   }
 
+  // ── Menu panel ────────────────────────────────────────
   _rebuildMenu() {
     this.menuPanel.clear();
     this.menuTexts.forEach(t => t.destroy());
     this.menuTexts = [];
     if (this.phase !== 'playerTurn') return;
 
-    const px = 362, py = 440, pw = 438, ph = 160;
-    this.menuPanel.fillStyle(0x100c1e, 0.92);
+    const px = this.splitX+2, py = this.uiY, pw = this.W-this.splitX-2, ph = this.uiH;
+    this.menuPanel.fillStyle(0x080612, 0.97);
     this.menuPanel.fillRect(px, py, pw, ph);
     this.menuPanel.lineStyle(1, 0x7a5c1e, 0.8);
     this.menuPanel.strokeRect(px, py, pw, ph);
+    this.menuPanel.lineStyle(1, 0x3a2a0c, 0.5);
+    this.menuPanel.strokeRect(px+2, py+2, pw-4, ph-4);
 
     const actor = this.party[this.actorIdx];
     if (!actor || actor.dead) return;
 
+    const fs = Math.max(13, Math.floor(ph * 0.18));
+
     if (!this.subMode) {
       const cmds = ['攻擊','技能','道具','防禦','逃跑'];
+      const colW = Math.floor(pw / 2);
+      const rowH = Math.floor(ph / 3);
       cmds.forEach((cmd, i) => {
         const col = Math.floor(i/3), row = i%3;
-        const x = px+20 + col*150;
-        const y = py+30 + row*40;
+        const tx = px + col*colW + 20;
+        const ty = py + row*rowH + rowH*0.5;
         const sel = i === this.cursor;
         if (sel) {
-          this.menuPanel.fillStyle(0x7a5c1e, 0.3);
-          this.menuPanel.fillRoundedRect(x-8, y-14, 130, 30, 4);
+          this.menuPanel.fillStyle(0x9a7828, 0.25);
+          this.menuPanel.fillRoundedRect(px+col*colW+4, py+row*rowH+4, colW-8, rowH-8, 5);
+          this.menuPanel.lineStyle(1, 0xb09030, 0.6);
+          this.menuPanel.strokeRoundedRect(px+col*colW+4, py+row*rowH+4, colW-8, rowH-8, 5);
         }
-        const t = this.add.text(x, y, (sel?'▶ ':'')+cmd, {
-          fontSize:'15px', fontFamily:'"Noto Serif TC","SimSun",serif',
-          color: sel ? '#ffd700' : '#c8a060', stroke:'#000', strokeThickness:2,
+        const t = this.add.text(tx, ty, (sel?'▶ ':'')+cmd, {
+          fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+          color: sel?'#ffd700':'#c8a060', stroke:'#000', strokeThickness: sel?3:2,
         }).setDepth(5);
+        if (sel) t.setShadow(0, 0, '#ffd700', 8, true, true);
         this.menuTexts.push(t);
       });
+
     } else if (this.subMode === 'skill') {
       const skills = actor.skills.map(sk => SKILLS[sk]).filter(Boolean);
+      const rowH = Math.max(30, Math.floor(ph / Math.max(4, skills.length)));
       skills.forEach((sk, i) => {
-        const y = py+18 + i*34;
+        const ty = py + i*rowH + rowH*0.5;
         const sel = i === this.subCursor;
         const mpOk = actor.mp >= sk.mp;
         if (sel) {
-          this.menuPanel.fillStyle(0x7a5c1e, 0.3);
-          this.menuPanel.fillRoundedRect(px+8, y-14, pw-16, 30, 4);
+          this.menuPanel.fillStyle(0x9a7828, 0.25);
+          this.menuPanel.fillRoundedRect(px+4, py+i*rowH+4, pw-8, rowH-8, 5);
         }
-        const t = this.add.text(px+20, y, (sel?'▶ ':'')+sk.name, {
-          fontSize:'14px', fontFamily:'"Noto Serif TC","SimSun",serif',
-          color: mpOk ? (sel?'#ffd700':'#c8a060') : '#555', stroke:'#000', strokeThickness:2,
+        const t = this.add.text(px+18, ty, (sel?'▶ ':'')+sk.name, {
+          fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+          color: mpOk?(sel?'#ffd700':'#c8a060'):'#555', stroke:'#000', strokeThickness:2,
         }).setDepth(5);
-        this.menuTexts.push(t);
-        const mpT = this.add.text(px+pw-60, y, `MP:${sk.mp}`, {
-          fontSize:'12px', fontFamily:'monospace', color:'#5080e8', stroke:'#000', strokeThickness:1,
-        }).setDepth(5);
-        this.menuTexts.push(mpT);
+        const mpT = this.add.text(px+pw-14, ty, `MP:${sk.mp}`, {
+          fontSize: Math.max(10,fs-3)+'px', fontFamily:'monospace',
+          color:'#5080e8', stroke:'#000', strokeThickness:1,
+        }).setOrigin(1, 0.5).setDepth(5);
+        this.menuTexts.push(t, mpT);
       });
+
     } else if (this.subMode === 'item') {
       const items = Object.entries(GS.inventory).filter(([id,n]) => n>0 && ITEMS[id]?.cat==='use');
       if (items.length === 0) {
         const t = this.add.text(px+pw/2, py+ph/2, '── 無道具 ──', {
-          fontSize:'14px', fontFamily:'"Noto Serif TC","SimSun",serif', color:'#555',
-          stroke:'#000', strokeThickness:1,
-        }).setOrigin(0.5,0.5).setDepth(5);
+          fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+          color:'#555', stroke:'#000', strokeThickness:1,
+        }).setOrigin(0.5, 0.5).setDepth(5);
         this.menuTexts.push(t);
       } else {
+        const rowH = Math.max(30, Math.floor(ph / Math.max(4, items.length)));
         items.forEach(([id, n], i) => {
-          const y = py+18 + i*34;
+          const ty = py + i*rowH + rowH*0.5;
           const sel = i === this.subCursor;
           if (sel) {
-            this.menuPanel.fillStyle(0x7a5c1e, 0.3);
-            this.menuPanel.fillRoundedRect(px+8, y-14, pw-16, 30, 4);
+            this.menuPanel.fillStyle(0x9a7828, 0.25);
+            this.menuPanel.fillRoundedRect(px+4, py+i*rowH+4, pw-8, rowH-8, 5);
           }
           const it = ITEMS[id];
-          const t = this.add.text(px+20, y, (sel?'▶ ':'')+it.name+` ×${n}`, {
-            fontSize:'14px', fontFamily:'"Noto Serif TC","SimSun",serif',
+          const t = this.add.text(px+18, ty, (sel?'▶ ':'')+it.name+` ×${n}`, {
+            fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
             color: sel?'#ffd700':'#c8a060', stroke:'#000', strokeThickness:2,
           }).setDepth(5);
           this.menuTexts.push(t);
         });
       }
+
     } else if (this.subMode === 'target') {
+      const rowH = Math.max(30, Math.floor(ph / Math.max(3, this.targetList.length)));
       this.targetList.forEach((tgt, i) => {
-        const y = py+20 + i*36;
+        const ty = py + i*rowH + rowH*0.5;
         const sel = i === this.subCursor;
         if (sel) {
-          this.menuPanel.fillStyle(0x7a5c1e, 0.3);
-          this.menuPanel.fillRoundedRect(px+8, y-14, pw-16, 30, 4);
+          this.menuPanel.fillStyle(0x9a7828, 0.25);
+          this.menuPanel.fillRoundedRect(px+4, py+i*rowH+4, pw-8, rowH-8, 5);
         }
         const label = tgt.isEnemy ? tgt.e.name : tgt.m.name;
-        const t = this.add.text(px+20, y, (sel?'▶ ':'')+label, {
-          fontSize:'15px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        const t = this.add.text(px+18, ty, (sel?'▶ ':'')+label, {
+          fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
           color: sel?'#ffd700':'#c8a060', stroke:'#000', strokeThickness:2,
         }).setDepth(5);
         this.menuTexts.push(t);
@@ -276,28 +499,36 @@ class BattleScene extends Phaser.Scene {
 
   _addLog(msg) {
     this.log.unshift(msg);
-    if (this.log.length > 3) this.log.pop();
-    this.logGfx.clear();
-    this.logGfx.fillStyle(0x08060e, 0.7);
-    this.logGfx.fillRect(0, 408, 800, 30);
+    if (this.log.length > 2) this.log.pop();
     this.logText.setText(this.log[0] || '');
   }
 
-  // ── Battle logic ───────────────────────────────────────
-  _calcDmg(atk, def, pow, pierce=0, elem='none') {
+  // ── Battle logic ──────────────────────────────────────
+  _calcDmg(atk, def, pow, pierce=0) {
     const effDef = Math.floor(def * (1 - pierce));
     let dmg = Math.max(1, Math.floor(atk * pow - effDef * 0.7));
-    dmg = Math.max(1, Math.floor(dmg * (0.85 + Math.random() * 0.3)));
-    return dmg;
+    return Math.max(1, Math.floor(dmg * (0.85 + Math.random()*0.3)));
   }
 
-  _flashSprite(sprite, color=0xffffff, times=3) {
-    let count = 0;
-    const timer = this.time.addEvent({ delay:80, repeat:times*2-1, callback:() => {
-      count++;
-      sprite.setAlpha(count%2===0 ? 1 : 0.3);
-      if (count >= times*2) sprite.setAlpha(1);
+  _flashEnemy(idx) {
+    const sp = this.enemySprites[idx];
+    if (!sp) return;
+    let c = 0;
+    this.time.addEvent({ delay:80, repeat:5, callback:() => {
+      c++; sp.g.setAlpha(c%2===0?1:0.3);
+      if (c>=6) sp.g.setAlpha(sp.e.dead?0:1);
     }});
+  }
+
+  _refreshEnemyHp(idx) {
+    const sp = this.enemySprites[idx];
+    if (!sp) return;
+    sp.hp.destroy();
+    const e  = sp.e;
+    const sz = e.sz || 28;
+    sp.hp = mkBar(this, sp.x-sz, this.groundY+6, sz*2, 7, e.hp, e.maxHp, 0xe04040);
+    if (e.dead) { sp.g.setAlpha(0); sp.lbl.setAlpha(0.3); }
+    this._drawEnemy(sp.g, e, sp.x, sp.y);
   }
 
   _heroAct(cmd, skillId=null, itemId=null, targetIdx=null) {
@@ -311,23 +542,15 @@ class BattleScene extends Phaser.Scene {
       this.time.delayedCall(600, () => { this.waiting = false; this._nextActor(); });
     };
 
-    if (cmd === 'defend') {
-      actor.status.push('defend');
-      doAfter(`${actor.name} 防禦！`);
-      return;
-    }
+    if (cmd === 'defend') { actor.status.push('defend'); doAfter(`${actor.name} 防禦！`); return; }
     if (cmd === 'flee') {
-      if (Math.random() < 0.5) {
-        this.time.delayedCall(500, () => { this.scene.start('WorldScene'); });
-        this._addLog('成功逃跑！');
-      } else {
-        doAfter('逃跑失敗！');
-      }
+      if (Math.random() < 0.5) { this._addLog('成功逃跑！'); this.time.delayedCall(500, () => this.scene.start('WorldScene')); }
+      else doAfter('逃跑失敗！');
       return;
     }
     if (cmd === 'attack') {
       const tgt = this.enemies[targetIdx];
-      const st = calcStats(actor);
+      const st  = calcStats(actor);
       const dmg = this._calcDmg(st.atk, tgt.def, 1.0);
       tgt.hp = Math.max(0, tgt.hp - dmg);
       if (tgt.hp === 0) tgt.dead = true;
@@ -346,24 +569,24 @@ class BattleScene extends Phaser.Scene {
       if (sk.type === 'atk') {
         const targets = sk.tgt==='all' ? this.enemies.filter(e=>!e.dead) : [this.enemies[targetIdx]];
         const dmgs = targets.map(tgt => {
-          const dmg = this._calcDmg(st.atk, tgt.def, sk.pow, sk.pierce||0, sk.elem||'none');
+          const dmg = this._calcDmg(st.atk, tgt.def, sk.pow, sk.pierce||0);
           tgt.hp = Math.max(0, tgt.hp - dmg);
           if (tgt.hp === 0) tgt.dead = true;
-          if (sk.debuff) Object.entries(sk.debuff).forEach(([k,v]) => { if (!tgt.status.includes(k)) { for(let i=0;i<v;i++) tgt.status.push(k); } });
+          if (sk.debuff) Object.entries(sk.debuff).forEach(([k,v]) => { for(let j=0;j<v;j++) tgt.status.push(k); });
           return dmg;
         });
-        targets.forEach((_,i) => { this._refreshEnemyHp(this.enemies.indexOf(targets[i])); });
+        targets.forEach(tgt => this._refreshEnemyHp(this.enemies.indexOf(tgt)));
         this.enemies.forEach((_,i) => this._flashEnemy(i));
-        msg = `${actor.name} 施展 ${sk.name}，造成 ${dmgs.map(d=>d+'').join('/')} 點傷害！`;
+        msg = `${actor.name} 施展 ${sk.name}，造成 ${dmgs.join('/')} 點傷害！`;
       } else if (sk.type === 'heal') {
         const targets = sk.tgt==='all' ? this.party.filter(m=>!m.dead) : [this.party[targetIdx]];
         const heals = targets.map(tgt => {
-          const s = calcStats(tgt);
-          const h = Math.floor(s.atk * sk.pow * (0.9 + Math.random()*0.2));
+          const s2 = calcStats(tgt);
+          const h = Math.floor(s2.atk * sk.pow * (0.9 + Math.random()*0.2));
           tgt.hp = Math.min(tgt.maxHp, tgt.hp + h);
           return h;
         });
-        msg = `${actor.name} 施展 ${sk.name}，恢復 ${heals.map(h=>h+'').join('/')} 點生命值！`;
+        msg = `${actor.name} 施展 ${sk.name}，恢復 ${heals.join('/')} 點生命值！`;
       }
       this._rebuildStatus();
       this._addLog(msg);
@@ -371,45 +594,20 @@ class BattleScene extends Phaser.Scene {
       return;
     }
     if (cmd === 'item') {
-      const it = ITEMS[itemId];
+      const it  = ITEMS[itemId];
       if (!it) { doAfter('…'); return; }
       const tgt = this.party[targetIdx];
       GS.removeItem(itemId);
       let msg = '';
-      if (it.hp) { tgt.hp = Math.min(tgt.maxHp, tgt.hp + it.hp); msg = `${tgt.name} 恢復了 ${it.hp} HP！`; }
-      if (it.mp) { const s=calcStats(tgt); tgt.mp = Math.min(s.maxMp, tgt.mp + it.mp); msg += ` MP +${it.mp}`; }
-      if (it.revive && tgt.dead) { tgt.dead = false; tgt.hp = Math.floor(tgt.maxHp * it.revive/100); msg = `${tgt.name} 復活了！`; }
+      if (it.hp)     { tgt.hp = Math.min(tgt.maxHp, tgt.hp + it.hp); msg = `${tgt.name} 恢復了 ${it.hp} HP！`; }
+      if (it.mp)     { const s2=calcStats(tgt); tgt.mp = Math.min(s2.maxMp, tgt.mp + it.mp); msg += ` MP+${it.mp}`; }
+      if (it.revive && tgt.dead) { tgt.dead=false; tgt.hp=Math.floor(tgt.maxHp*it.revive/100); msg=`${tgt.name} 復活了！`; }
       doAfter(msg || `使用了 ${it.name}！`);
       return;
     }
   }
 
-  _flashEnemy(idx) {
-    const sp = this.enemySprites[idx];
-    if (!sp) return;
-    let count = 0;
-    const t = this.time.addEvent({ delay:80, repeat:5, callback:() => {
-      count++;
-      sp.g.setAlpha(count%2===0?1:0.3);
-      if (count>=6) sp.g.setAlpha(sp.e.dead?0:1);
-    }});
-  }
-
-  _refreshEnemyHp(idx) {
-    const sp = this.enemySprites[idx];
-    if (!sp) return;
-    sp.hp.destroy();
-    const e = sp.e;
-    sp.hp = mkBar(this, sp.x - (e.sz||28), 370, (e.sz||28)*2, 8, e.hp, e.maxHp, 0xe05050);
-    if (e.dead) {
-      sp.g.setAlpha(0);
-      sp.lbl.setAlpha(0.3);
-    }
-    this._drawEnemy(sp.g, e, sp.x, sp.y);
-  }
-
   _nextActor() {
-    // Check win/lose
     const allEnemiesDead = this.enemies.every(e => e.dead);
     const allHeroesDead  = this.party.every(m => m.dead);
     if (allEnemiesDead) { this._winBattle(); return; }
@@ -439,21 +637,16 @@ class BattleScene extends Phaser.Scene {
       delay += 800;
     });
     this.time.delayedCall(delay + 200, () => {
-      // Tick status effects on party
       this.party.forEach(m => {
         if (m.dead) return;
         if (m.status.includes('poison')) {
-          const dmg = Math.max(1, Math.floor(m.maxHp * 0.05));
+          const dmg = Math.max(1, Math.floor(m.maxHp*0.05));
           m.hp = Math.max(1, m.hp - dmg);
           this._addLog(`${m.name} 中毒，損失 ${dmg} HP！`);
         }
-        m.status = m.status.filter(s => s !== 'defend' && s !== 'atkUp');
-        // Reduce countdown statuses
-        const poison = m.status.filter(s => s==='poison').length;
-        if (poison > 0) {
-          m.status = m.status.filter(s=>s!=='poison');
-          for (let i=0;i<poison-1;i++) m.status.push('poison');
-        }
+        const poisonCount = m.status.filter(s=>s==='poison').length;
+        m.status = m.status.filter(s => s!=='defend' && s!=='atkUp' && s!=='poison');
+        for (let i = 0; i < poisonCount-1; i++) m.status.push('poison');
       });
       this._rebuildStatus();
       if (this.party.every(m=>m.dead)) { this._loseBattle(); return; }
@@ -470,24 +663,24 @@ class BattleScene extends Phaser.Scene {
     if (!act) return;
     const living = this.party.filter(m => !m.dead);
     if (living.length === 0) return;
-    const tgt = living[Math.floor(Math.random()*living.length)];
+    const tgt  = living[Math.floor(Math.random()*living.length)];
     const pIdx = this.party.indexOf(tgt);
 
     if (act.type === 'atk' || act.type === 'drain') {
       let def = tgt.baseDef;
-      if (tgt.status.includes('defend')) def = Math.floor(def * 1.5);
+      if (tgt.status.includes('defend')) def = Math.floor(def*1.5);
       const dmg = this._calcDmg(e.atk, def, act.pow||1);
       tgt.hp = Math.max(0, tgt.hp - dmg);
-      if (tgt.hp === 0) { tgt.dead = true; }
+      if (tgt.hp === 0) tgt.dead = true;
       if (act.debuff) Object.entries(act.debuff).forEach(([k,v]) => { for(let i=0;i<v;i++) tgt.status.push(k); });
       if (act.type === 'drain') e.hp = Math.min(e.maxHp, e.hp + Math.floor(dmg*0.5));
       this._addLog(`${e.name} 使用 ${act.name}，${tgt.name} 受到 ${dmg} 點傷害！`);
-      // Flash hero
       const sp = this.partySprites[pIdx];
       if (sp) {
-        let c=0;
+        let c = 0;
         this.time.addEvent({ delay:80, repeat:5, callback:() => {
-          c++; sp.g.setAlpha(c%2===0?1:0.3); if(c>=6){sp.g.setAlpha(1);this._drawHero(sp.g,tgt,sp.x,sp.y);}
+          c++; sp.g.setAlpha(c%2===0?1:0.3);
+          if (c>=6) { sp.g.setAlpha(1); this._drawHero(sp.g, tgt, sp.x, sp.y); }
         }});
       }
     } else if (act.type === 'buff') {
@@ -499,44 +692,37 @@ class BattleScene extends Phaser.Scene {
 
   _winBattle() {
     this.phase = 'win';
-    let expGain = this.enemies.reduce((s,e) => s + (ENEMIES[e.id]?.exp||0), 0);
-    let goldGain = this.enemies.reduce((s,e) => s + (ENEMIES[e.id]?.gold||0), 0);
+    const expGain  = this.enemies.reduce((s,e) => s+(ENEMIES[e.id]?.exp||0), 0);
+    const goldGain = this.enemies.reduce((s,e) => s+(ENEMIES[e.id]?.gold||0), 0);
     GS.gold += goldGain;
-    // Drops
     const drops = [];
     this.enemies.forEach(e => {
       (e.drops||[]).forEach(drop => {
         if (Math.random() < drop.r) { GS.addItem(drop.id); drops.push(ITEMS[drop.id]?.name||drop.id); }
       });
     });
-    // Level up
     const levelUps = [];
     GS.party.forEach(m => {
       if (m.dead) return;
       m.exp += expGain;
       while (m.exp >= expForLevel(m.lv)) { GS.levelUp(m); levelUps.push(m.name); }
     });
-    // Sync back
     GS.party.forEach((gm, i) => { if (this.party[i]) Object.assign(gm, this.party[i]); });
-
     let msg = `戰鬥勝利！獲得 ${expGain} EXP、${goldGain} 靈石。`;
-    if (drops.length) msg += ` 獲得：${drops.join('、')}。`;
+    if (drops.length)    msg += ` 獲得：${drops.join('、')}。`;
     if (levelUps.length) msg += ` ${levelUps.join('、')} 升級！`;
     this._addLog(msg);
     this._rebuildStatus();
-    this.time.delayedCall(2000, () => { this.scene.start('WorldScene'); });
+    this.time.delayedCall(2000, () => this.scene.start('WorldScene'));
   }
 
   _loseBattle() {
     this.phase = 'lose';
     this._addLog('全員陣亡…');
-    this.time.delayedCall(2000, () => {
-      GS.init();
-      this.scene.start('TitleScene');
-    });
+    this.time.delayedCall(2000, () => { GS.init(); this.scene.start('TitleScene'); });
   }
 
-  // ── Input handling ─────────────────────────────────────
+  // ── Input ─────────────────────────────────────────────
   update() {
     if (this.waiting || this.phase !== 'playerTurn') return;
     const actor = this.party[this.actorIdx];
@@ -544,27 +730,21 @@ class BattleScene extends Phaser.Scene {
 
     const up   = Phaser.Input.Keyboard.JustDown(this.keys.up);
     const down = Phaser.Input.Keyboard.JustDown(this.keys.down);
-    const ok   = Phaser.Input.Keyboard.JustDown(this.keys.z) || Phaser.Input.Keyboard.JustDown(this.keys.enter);
-    const back = Phaser.Input.Keyboard.JustDown(this.keys.x) || Phaser.Input.Keyboard.JustDown(this.keys.esc);
+    const ok   = Phaser.Input.Keyboard.JustDown(this.keys.z)   || Phaser.Input.Keyboard.JustDown(this.keys.enter);
+    const back = Phaser.Input.Keyboard.JustDown(this.keys.x)   || Phaser.Input.Keyboard.JustDown(this.keys.esc);
 
     if (!this.subMode) {
-      const cmdCount = 5;
-      if (up)   { this.cursor = (this.cursor - 1 + cmdCount) % cmdCount; this._rebuildMenu(); }
-      if (down) { this.cursor = (this.cursor + 1) % cmdCount; this._rebuildMenu(); }
+      if (up)   { this.cursor=(this.cursor-1+5)%5; this._rebuildMenu(); }
+      if (down) { this.cursor=(this.cursor+1)%5;   this._rebuildMenu(); }
       if (ok) {
-        if (this.cursor === 0) { // Attack
+        if (this.cursor===0) {
           const alive = this.enemies.filter(e=>!e.dead);
-          if (alive.length === 1) { this._heroAct('attack',null,null,this.enemies.indexOf(alive[0])); }
+          if (alive.length===1) { this._heroAct('attack',null,null,this.enemies.indexOf(alive[0])); }
           else { this.subMode='target'; this.subCursor=0; this.targetList=alive.map(e=>({isEnemy:true,e})); this._rebuildMenu(); }
-        } else if (this.cursor === 1) { // Skill
-          this.subMode='skill'; this.subCursor=0; this._rebuildMenu();
-        } else if (this.cursor === 2) { // Item
-          this.subMode='item'; this.subCursor=0; this._rebuildMenu();
-        } else if (this.cursor === 3) { // Defend
-          this._heroAct('defend');
-        } else if (this.cursor === 4) { // Flee
-          this._heroAct('flee');
-        }
+        } else if (this.cursor===1) { this.subMode='skill'; this.subCursor=0; this._rebuildMenu(); }
+        else if (this.cursor===2)   { this.subMode='item';  this.subCursor=0; this._rebuildMenu(); }
+        else if (this.cursor===3)   { this._heroAct('defend'); }
+        else if (this.cursor===4)   { this._heroAct('flee'); }
       }
     } else if (this.subMode === 'skill') {
       const skills = actor.skills.map(sk=>SKILLS[sk]).filter(Boolean);
@@ -572,15 +752,15 @@ class BattleScene extends Phaser.Scene {
       if (down) { this.subCursor=(this.subCursor+1)%skills.length; this._rebuildMenu(); }
       if (back) { this.subMode=null; this._rebuildMenu(); }
       if (ok) {
-        const sk = skills[this.subCursor];
-        if (!sk || actor.mp < sk.mp) { this._addLog('靈力不足！'); return; }
+        const sk   = skills[this.subCursor];
         const skId = actor.skills[this.subCursor];
-        if (sk.tgt === 'all') { this._heroAct('skill',skId,null,0); this.subMode=null; }
-        else if (sk.type === 'heal') {
-          this.targetList = this.party.filter(m=>!m.dead).map(m=>({isEnemy:false,m}));
+        if (!sk || actor.mp < sk.mp) { this._addLog('靈力不足！'); return; }
+        if (sk.tgt==='all') { this._heroAct('skill',skId,null,0); this.subMode=null; }
+        else if (sk.type==='heal') {
+          this.targetList=this.party.filter(m=>!m.dead).map(m=>({isEnemy:false,m}));
           this.subMode='target'; this.subCursor=0; this._pendingSkill=skId; this._rebuildMenu();
         } else {
-          const alive = this.enemies.filter(e=>!e.dead);
+          const alive=this.enemies.filter(e=>!e.dead);
           if (alive.length===1) { this._heroAct('skill',skId,null,this.enemies.indexOf(alive[0])); this.subMode=null; }
           else { this.targetList=alive.map(e=>({isEnemy:true,e})); this.subMode='target'; this.subCursor=0; this._pendingSkill=skId; this._rebuildMenu(); }
         }
@@ -590,9 +770,9 @@ class BattleScene extends Phaser.Scene {
       if (up)   { this.subCursor=(this.subCursor-1+Math.max(1,items.length))%Math.max(1,items.length); this._rebuildMenu(); }
       if (down) { this.subCursor=(this.subCursor+1)%Math.max(1,items.length); this._rebuildMenu(); }
       if (back) { this.subMode=null; this._rebuildMenu(); }
-      if (ok && items.length > 0) {
-        const [itemId] = items[this.subCursor];
-        this.targetList = this.party.filter(m=>!m.dead).map(m=>({isEnemy:false,m}));
+      if (ok && items.length>0) {
+        const [itemId]=items[this.subCursor];
+        this.targetList=this.party.filter(m=>!m.dead).map(m=>({isEnemy:false,m}));
         this.subMode='target'; this.subCursor=0; this._pendingItem=itemId; this._rebuildMenu();
       }
     } else if (this.subMode === 'target') {
@@ -600,19 +780,15 @@ class BattleScene extends Phaser.Scene {
       if (down) { this.subCursor=(this.subCursor+1)%this.targetList.length; this._rebuildMenu(); }
       if (back) { this.subMode=this._pendingItem?'item':this._pendingSkill?'skill':null; this._rebuildMenu(); }
       if (ok) {
-        const tgt = this.targetList[this.subCursor];
+        const tgt=this.targetList[this.subCursor];
         if (this._pendingSkill) {
-          const idx = tgt.isEnemy ? this.enemies.indexOf(tgt.e) : this.party.indexOf(tgt.m);
-          this._heroAct('skill',this._pendingSkill,null,idx);
-          this._pendingSkill=null; this.subMode=null;
+          const idx=tgt.isEnemy?this.enemies.indexOf(tgt.e):this.party.indexOf(tgt.m);
+          this._heroAct('skill',this._pendingSkill,null,idx); this._pendingSkill=null; this.subMode=null;
         } else if (this._pendingItem) {
-          const idx = this.party.indexOf(tgt.m);
-          this._heroAct('item',null,this._pendingItem,idx);
-          this._pendingItem=null; this.subMode=null;
+          const idx=this.party.indexOf(tgt.m);
+          this._heroAct('item',null,this._pendingItem,idx); this._pendingItem=null; this.subMode=null;
         } else {
-          const idx = this.enemies.indexOf(tgt.e);
-          this._heroAct('attack',null,null,idx);
-          this.subMode=null;
+          this._heroAct('attack',null,null,this.enemies.indexOf(tgt.e)); this.subMode=null;
         }
       }
     }

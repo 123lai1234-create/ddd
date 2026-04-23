@@ -1,10 +1,14 @@
 'use strict';
-// ── Phaser 3 Game Config ───────────────────────────────────
+
 const config = {
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
   backgroundColor: '#08060e',
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: window.innerWidth,
+    height: window.innerHeight,
+  },
   scene: [
     TitleScene,
     AboutScene,
@@ -14,14 +18,7 @@ const config = {
     MenuScene,
     ShopScene,
   ],
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-  },
-  render: {
-    antialias: false,
-    pixelArt: false,
-  },
+  render: { antialias: true, pixelArt: false },
 };
 
 GS.init();
