@@ -45,7 +45,8 @@
       "Bash(curl -sf \"https://donttalk-api-production.up.railway.app/api/video/generate\" -X POST -H \"Content-Type: application/json\" -d '{\"prompt\":\"A glowing DNA helix rotating in space\",\"resolution\":\"720p\",\"duration\":\"5\"}' -o /tmp/vgen_test.json)",
       "Bash(curl -s -X POST https://donttalk-api-production.up.railway.app/api/video/generate -H 'Content-Type: application/json' -d '{\"prompt\":\"A glowing DNA helix rotating in space\",\"resolution\":\"720p\",\"duration\":\"5\"}')",
       "Bash(python3 -c \"import sys,json; d=sys.stdin.read\\(\\); print\\(d\\)\")",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm run *)"
     ]
   },
   "hooks": {
