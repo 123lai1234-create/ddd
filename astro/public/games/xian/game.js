@@ -256,12 +256,3 @@ const DLGS = {
     {sp:'雲逸',t:'（我們三個人的冒險，就在此刻劃下了完美的句點。）',isEnd:true},
   ],
 };
-
-// Level up table (EXP needed per level)
-function expForLevel(lv){ return Math.floor(100 * Math.pow(lv, 1.5)); }
-// Stat growth per level
-const GROWTH = {
-  yunyi:  {hp:12,mp:3, atk:2,def:2,spd:1,luk:1},
-  linger: {hp:6, mp:12,atk:1,def:1,spd:1,luk:2},
-  yuehua: {hp:8, mp:5, atk:2,def:1,spd:2,luk:2},
-};

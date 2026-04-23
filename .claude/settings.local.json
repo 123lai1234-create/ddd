@@ -65,7 +65,9 @@
       "Bash(curl -s \"https://donttalk.vercel.app/games/xian\")",
       "Bash(curl -s \"https://donttalk.vercel.app/games/xian/engine.js\")",
       "Bash(curl -s \"https://donttalk.vercel.app/games/xian/main.js\")",
-      "Bash(curl -sI \"https://donttalk.vercel.app/games/game.js\")"
+      "Bash(curl -sI \"https://donttalk.vercel.app/games/game.js\")",
+      "Bash(curl -sI \"https://donttalk.vercel.app/games/xian/game.js\")",
+      "Bash(node -e ' *)"
     ]
   }
 }
