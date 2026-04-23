@@ -101,6 +101,12 @@ class WorldScene extends Phaser.Scene {
   constructor() { super('WorldScene'); }
 
   create() {
+    Sound?.bgm(MAPS[GS.map]?.music || 'village');
+    // Track maps visited
+    if (!GS.flags._mapsVis) GS.flags._mapsVis = {};
+    GS.flags._mapsVis[GS.map] = true;
+    if (Object.keys(GS.flags._mapsVis).length >= 5) Achieve?.unlock('all_maps');
+    if (GS.party.length >= 3) Achieve?.unlock('full_party');
     const map = MAPS[GS.map];
     const MAP_W = map.w * TILE_SZ;
     const MAP_H = map.h * TILE_SZ;
@@ -428,6 +434,10 @@ class WorldScene extends Phaser.Scene {
     // Blink hint
     const blinker = this.time.addEvent({ delay:500, loop:true, callback:() => { hint.setAlpha(hint.alpha > 0.5 ? 0.3 : 1); }});
 
+    const padTimer = this.time.addEvent({ delay:80, loop:true, callback:() => {
+      if (window.PAD?.ok) { window.PAD.ok = false; handler({ code:'KeyZ' }); }
+    }});
+
     const handler = (evt) => {
       if (evt.code === 'KeyZ' || evt.code === 'Enter') {
         idx++;
@@ -435,6 +445,7 @@ class WorldScene extends Phaser.Scene {
           txt.setText(lines[idx]);
         } else {
           blinker.destroy(); box.destroy(); txt.destroy(); hint.destroy();
+          padTimer.destroy();
           this.inDialog = false;
           this.input.keyboard.off('keydown', handler);
           if (onDone) onDone();
@@ -456,12 +467,14 @@ class WorldScene extends Phaser.Scene {
     this.moveDelay = Math.max(0, this.moveDelay - 1);
     if (this.moveDelay > 0) { this._drawPlayer(); return; }
 
-    const up    = this.keys.up.isDown    || this.keys.w.isDown;
-    const down  = this.keys.down.isDown  || this.keys.s.isDown;
-    const left  = this.keys.left.isDown  || this.keys.a.isDown;
-    const right = this.keys.right.isDown || this.keys.d.isDown;
-    const ok    = Phaser.Input.Keyboard.JustDown(this.keys.z)   || Phaser.Input.Keyboard.JustDown(this.keys.enter);
-    const menu  = Phaser.Input.Keyboard.JustDown(this.keys.x)   || Phaser.Input.Keyboard.JustDown(this.keys.esc);
+    const up    = this.keys.up.isDown    || this.keys.w.isDown    || !!window.PAD?.up;
+    const down  = this.keys.down.isDown  || this.keys.s.isDown   || !!window.PAD?.down;
+    const left  = this.keys.left.isDown  || this.keys.a.isDown   || !!window.PAD?.left;
+    const right = this.keys.right.isDown || this.keys.d.isDown   || !!window.PAD?.right;
+    const okPad = !!window.PAD?.ok;  if (okPad && window.PAD) window.PAD.ok   = false;
+    const mnPad = !!window.PAD?.menu; if (mnPad && window.PAD) window.PAD.menu = false;
+    const ok    = Phaser.Input.Keyboard.JustDown(this.keys.z)   || Phaser.Input.Keyboard.JustDown(this.keys.enter) || okPad;
+    const menu  = Phaser.Input.Keyboard.JustDown(this.keys.x)   || Phaser.Input.Keyboard.JustDown(this.keys.esc)  || mnPad;
 
     if (menu) {
       this.scene.launch('MenuScene', { caller:'WorldScene' });
@@ -477,6 +490,7 @@ class WorldScene extends Phaser.Scene {
 
     if (moved) {
       this.moveDelay = 7;
+      if (this.bobTimer % 12 === 0) Sound?.play('step');
       this._drawPlayer();
       this._checkAutoExit();
       if (!this.inDialog) this._checkEnc();

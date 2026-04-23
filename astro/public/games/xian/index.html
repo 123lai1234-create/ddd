@@ -72,6 +72,32 @@ canvas { display: block; max-width: 100vw; max-height: 100vh; }
 #auth-status[data-s="ok"]   { color: #50c878; }
 #auth-status[data-s="err"]  { color: #e05050; }
 #auth-status[data-s="info"] { color: #9a8060; }
+
+/* ── Touch gamepad overlay ── */
+#touch-pad {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
+  height: 190px;
+  align-items: flex-end; justify-content: space-between;
+  padding: 0 24px 64px;
+  pointer-events: none;
+}
+#touch-pad.visible { display: flex; }
+#touch-pad > * { pointer-events: auto; }
+.tp-dpad { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tp-row  { display: flex; align-items: center; gap: 2px; }
+.tp-center { width: 48px; height: 48px; }
+.tp-btn {
+  width: 52px; height: 52px;
+  background: rgba(10,6,20,0.65); border: 1.5px solid rgba(154,120,40,0.5);
+  border-radius: 10px; color: rgba(232,192,96,0.85);
+  font-size: 20px; display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent; user-select: none;
+  touch-action: manipulation; cursor: pointer;
+  transition: background .08s;
+}
+.tp-btn:active, .tp-btn.pressed { background: rgba(232,192,96,0.25); border-color: rgba(232,192,96,0.8); }
+.tp-actions { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.tp-act { width: 68px; height: 46px; font-size: 13px; font-family: "Noto Serif TC","SimSun",serif; border-radius: 23px; }
 </style>
 </head>
 <body>
@@ -118,8 +144,51 @@ canvas { display: block; max-width: 100vw; max-height: 100vh; }
   </div>
 </div>
 
+<!-- Achievement toast -->
+<div id="ach-toast" style="
+  display:none; position:fixed; bottom:80px; right:16px; z-index:150;
+  background:#0e0a1c; border:1.5px solid #9a7828; border-radius:10px;
+  padding:12px 18px; font-family:'Noto Serif TC','SimSun',serif;
+  color:#f0e6c8; font-size:13px; min-width:200px; max-width:260px;
+  box-shadow:0 0 24px rgba(232,192,96,0.2);
+  animation:achSlide .35s ease;
+">
+  <div id="ach-icon" style="font-size:22px;margin-bottom:4px"></div>
+  <div style="color:#e8c060;font-size:11px;margin-bottom:3px">🏆 成就解鎖！</div>
+  <div id="ach-name" style="font-weight:bold;font-size:14px"></div>
+  <div id="ach-desc" style="color:#9a8060;font-size:11px;margin-top:2px"></div>
+</div>
+<style>
+@keyframes achSlide { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
+</style>
+
+<!-- Virtual gamepad (mobile) -->
+<div id="touch-pad">
+  <div class="tp-dpad">
+    <button class="tp-btn" id="tp-up">▲</button>
+    <div class="tp-row">
+      <button class="tp-btn" id="tp-left">◀</button>
+      <div class="tp-center"></div>
+      <button class="tp-btn" id="tp-right">▶</button>
+    </div>
+    <button class="tp-btn" id="tp-down">▼</button>
+  </div>
+  <div class="tp-actions">
+    <button class="tp-btn tp-act" id="tp-b">選單</button>
+    <button class="tp-btn tp-act" id="tp-a">確認</button>
+  </div>
+</div>
+
+<script>
+if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+  import('https://browser.sentry-cdn.com/8.0.0/bundle.min.js').then(() => {
+    Sentry.init({ dsn: __SENTRY_DSN__, environment: location.hostname==='localhost'?'development':'production' });
+  }).catch(()=>{});
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 <script src="/games/xian/data.js"></script>
+<script src="/games/xian/sound.js"></script>
 <script>
 (async () => {
   await Auth.init();
@@ -221,6 +290,59 @@ canvas { display: block; max-width: 100vw; max-height: 100vh; }
     window.dispatchEvent(new CustomEvent('xian:authchange'));
     modal.classList.remove('open');
   });
+})();
+</script>
+<script>
+// ── Achievement Toast ─────────────────────────────────────
+(function() {
+  const toast = document.getElementById('ach-toast');
+  const iconEl = document.getElementById('ach-icon');
+  const nameEl = document.getElementById('ach-name');
+  const descEl = document.getElementById('ach-desc');
+  let _timer = null;
+  window.addEventListener('xian:achievement', e => {
+    const { name, icon, desc } = e.detail;
+    iconEl.textContent = icon;
+    nameEl.textContent = name;
+    descEl.textContent = desc;
+    toast.style.display = 'block';
+    toast.style.animation = 'none';
+    requestAnimationFrame(() => { toast.style.animation = ''; toast.style.animation = 'achSlide .35s ease'; });
+    Sound?.play('levelUp');
+    if (_timer) clearTimeout(_timer);
+    _timer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+  });
+})();
+
+// ── Virtual Gamepad (PAD) ──────────────────────────────────
+window.PAD = { up:false, down:false, left:false, right:false, ok:false, menu:false };
+(function() {
+  const overlay = document.getElementById('touch-pad');
+  const show = () => overlay.classList.add('visible');
+  if (window.matchMedia?.('(pointer: coarse)').matches) show();
+  window.addEventListener('touchstart', show, { once: true, passive: true });
+
+  function bind(id, key, pulse) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('touchstart', e => {
+      e.preventDefault(); PAD[key] = true; el.classList.add('pressed');
+    }, { passive: false });
+    el.addEventListener('touchend', e => {
+      e.preventDefault(); el.classList.remove('pressed');
+      if (!pulse) PAD[key] = false;
+    }, { passive: false });
+    el.addEventListener('touchcancel', () => {
+      el.classList.remove('pressed');
+      if (!pulse) PAD[key] = false;
+    });
+  }
+  bind('tp-up',    'up',   false);
+  bind('tp-down',  'down', false);
+  bind('tp-left',  'left', false);
+  bind('tp-right', 'right',false);
+  bind('tp-a',     'ok',   true);   // pulse: game reads & clears each frame
+  bind('tp-b',     'menu', true);
 })();
 </script>
 <script src="/games/xian/scene-title.js"></script>

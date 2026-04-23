@@ -39,6 +39,7 @@ class TitleScene extends Phaser.Scene {
   constructor() { super('TitleScene'); }
 
   create() {
+    Sound?.init(); Sound?.bgm('village');
     const W = this.scale.width, H = this.scale.height;
     this.cursor = 0;
 
@@ -196,9 +197,13 @@ class TitleScene extends Phaser.Scene {
     const down = Phaser.Input.Keyboard.JustDown(this.keys.down) || Phaser.Input.Keyboard.JustDown(this.keys.s);
     const ok   = Phaser.Input.Keyboard.JustDown(this.keys.z)    || Phaser.Input.Keyboard.JustDown(this.keys.enter);
 
-    if (up)   { this.cursor = Math.max(0, this.cursor-1);                    this._updateMenu(); }
-    if (down) { this.cursor = Math.min(this.opts.length-1, this.cursor+1);  this._updateMenu(); }
-    if (ok)   { this._select(); }
+    const okPad = !!window.PAD?.ok;  if (okPad && window.PAD) window.PAD.ok   = false;
+    const upPad = !!window.PAD?.up;  if (upPad && window.PAD) window.PAD.up   = false;
+    const dnPad = !!window.PAD?.down;if (dnPad && window.PAD) window.PAD.down = false;
+
+    if (up || upPad) { this.cursor = Math.max(0, this.cursor-1);                    this._updateMenu(); Sound?.play('menuMove'); }
+    if (down || dnPad){ this.cursor = Math.min(this.opts.length-1, this.cursor+1);  this._updateMenu(); Sound?.play('menuMove'); }
+    if (ok || okPad) { Sound?.play('menuSelect'); this._select(); }
   }
 
   _select() {
