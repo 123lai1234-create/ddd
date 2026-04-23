@@ -57,12 +57,19 @@ const ITEMS = {
   ironArmor:   { name:'鐵甲',        cat:'eq',  slot:'ar', def:18, price:200, desc:'+18防禦力。' },
   silkRobe:    { name:'靈絲袍',      cat:'eq',  slot:'ar', def:10, mp:30, price:180, desc:'+10防禦，+30靈力上限。' },
   jade:        { name:'翡翠玉佩',    cat:'eq',  slot:'ac', def:5,  luk:10, price:150, desc:'+5防禦，+10幸運。' },
+  spiritBlade: { name:'靈魂神劍',   cat:'eq',  slot:'wp', who:'yunyi',  atk:65, price:1200, desc:'+65攻擊力，封印魔力。' },
+  moonStaff:   { name:'月靈法杖',   cat:'eq',  slot:'wp', who:'linger', atk:30, mp:80, price:1200, desc:'+30攻擊，+80靈力上限。' },
+  starBow:     { name:'星辰弓',     cat:'eq',  slot:'wp', who:'yuehua', atk:50, price:1200, desc:'+50攻擊力，暴擊率大增。' },
+  dragonArmor: { name:'蛟龍鱗甲',  cat:'eq',  slot:'ar', def:35, price:1000, desc:'+35防禦力，龍鱗護體。' },
+  ancientJade: { name:'上古玉璽',   cat:'eq',  slot:'ac', def:12, luk:20, price:800, desc:'+12防禦，+20幸運，古代神器。' },
 };
 
 const SHOP_STOCK = {
   village: ['herb','elixir','ironSword','ironBow','woodStaff','leatherArmor'],
   forest:  ['herb','elixir','redPotion','steelSword','ironArmor'],
   castle:  ['redPotion','fullElixir','revive','jadeSword','moonBow','crystalStaff','silkRobe','jade'],
+  cave:    ['redPotion','fullElixir','revive','elixir','ironArmor'],
+  shrine:  ['fullElixir','revive','spiritBlade','moonStaff','starBow','dragonArmor','ancientJade'],
 };
 
 const ENEMIES = {
@@ -131,6 +138,7 @@ const MAPS = {
     name:'幽林森林', music:'forest',
     exits:[
       { x:9,y:14, to:'village', toX:9, toY:1, msg:'返回青雲村' },
+      { x:0, y:7, to:'cave',    toX:18, toY:7, msg:'進入深淵秘窟' },
     ],
     enc:{ rate:0.15, enemies:['wolf','bandit','snake','ghost'] },
     w:20, h:15,
@@ -142,7 +150,7 @@ const MAPS = {
       [3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3],
       [3,2,3,0,3,0,3,0,0,0,0,0,0,3,0,3,0,3,2,3],
       [3,0,0,0,0,0,0,0,3,0,0,3,0,0,0,0,0,0,0,3],
-      [0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0],
+      [6,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0],
       [3,0,0,0,0,3,0,0,0,0,0,0,0,0,3,0,0,0,0,3],
       [3,2,0,3,0,0,0,3,0,0,0,0,3,0,0,0,3,0,2,3],
       [3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3],
@@ -188,6 +196,69 @@ const MAPS = {
       { x:10,y:1,  name:'魔君', dlg:['哼！終於有人敢來送死！','我乃千年魔君，爾等螻蟻！'], boss:'boss', trigger:'flags.defeatedDragon' },
     ],
     startX:2, startY:7,
+  },
+  cave: {
+    name:'深淵秘窟', music:'castle',
+    exits:[
+      { x:19,y:7, to:'forest',  toX:1,  toY:7, msg:'返回幽林森林' },
+      { x:9, y:14,to:'shrine',  toX:9,  toY:1, msg:'進入上古神殿' },
+    ],
+    enc:{ rate:0.25, enemies:['ghost','demon','dragon'] },
+    w:20, h:15,
+    tiles:[
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,5,5,5,5,1,5,5,5,5,5,5,5,5,1,5,5,5,5,1],
+      [1,5,4,4,5,5,5,1,5,5,5,5,1,5,5,5,4,4,5,1],
+      [1,5,4,4,5,1,5,5,5,1,1,5,5,5,1,5,4,4,5,1],
+      [1,5,5,5,5,1,5,5,5,5,5,5,5,5,1,5,5,5,5,1],
+      [1,1,5,1,1,1,5,1,1,5,5,1,1,5,1,1,1,5,1,1],
+      [1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1],
+      [1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6],
+      [1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1],
+      [1,1,5,1,1,1,5,1,1,5,5,1,1,5,1,1,1,5,1,1],
+      [1,5,5,5,5,1,5,5,5,5,5,5,5,5,1,5,5,5,5,1],
+      [1,5,4,4,5,1,5,5,5,1,1,5,5,5,1,5,4,4,5,1],
+      [1,5,4,4,5,5,5,1,5,5,5,5,1,5,5,5,4,4,5,1],
+      [1,5,5,5,5,1,5,5,5,5,5,5,5,5,1,5,5,5,5,1],
+      [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1],
+    ],
+    npcs:[
+      { x:5, y:7, name:'迷路探險家', dlg:['這洞穴深不見底…','往南方的古殿裡有傳說中的寶物！'] },
+      { x:14,y:7, name:'石像',       dlg:['〔石像上刻著〕', '此窟乃上古戰場，萬鬼困於此。', '勇者可從南門通往神殿。'] },
+      { x:9, y:3, name:'商人',       dlg:['沒想到還有人能活著進來！', '我這有最後的存貨，你要嗎？'], shop:'cave' },
+    ],
+    startX:18, startY:7,
+  },
+  shrine: {
+    name:'上古神殿', music:'forest',
+    exits:[
+      { x:9, y:0, to:'cave', toX:9, toY:13, msg:'返回深淵秘窟' },
+    ],
+    enc:{ rate:0.22, enemies:['demon','dragon','skeleton'] },
+    w:20, h:15,
+    tiles:[
+      [3,3,3,3,3,3,3,3,3,0,0,3,3,3,3,3,3,3,3,3],
+      [3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3],
+      [3,5,1,1,5,5,1,1,5,5,5,5,1,1,5,5,1,1,5,3],
+      [3,5,1,5,5,5,5,1,5,5,5,5,1,5,5,5,5,1,5,3],
+      [3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3],
+      [3,5,5,1,5,5,5,5,5,5,5,5,5,5,5,1,5,5,5,3],
+      [3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3],
+      [3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3],
+      [3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3],
+      [3,5,5,1,5,5,5,5,5,5,5,5,5,5,5,1,5,5,5,3],
+      [3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3],
+      [3,5,1,5,5,5,5,1,5,5,5,5,1,5,5,5,5,1,5,3],
+      [3,5,1,1,5,5,1,1,5,5,5,5,1,1,5,5,1,1,5,3],
+      [3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3],
+      [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    ],
+    npcs:[
+      { x:9, y:7,  name:'神殿守護者', dlg:['此乃上古封印之地。', '汝若有足夠的力量，可取走神殿珍寶。', '小心妖魔守衛！'] },
+      { x:5, y:7,  name:'古代祭司',   dlg:['千年前，仙魔在此決戰。', '封印已漸鬆動，魔君之力正在復甦。', '千魔城的魔君是這股邪氣的源頭！'] },
+      { x:14,y:7,  name:'寶物守護',   dlg:['你已有足夠的力量！','贈你此神器，可助你斬妖除魔！'], shop:'shrine' },
+    ],
+    startX:9, startY:1,
   },
 };
 
@@ -394,6 +465,76 @@ const Save = {
       this._saveLocal(slots);
       return true;
     } catch(e) { return false; }
+  },
+};
+
+// ── Achievements ──────────────────────────────────────────
+const ACHIEVEMENTS = {
+  first_blood:  { name:'初見殺',     icon:'⚔️',  desc:'贏得第一場戰鬥。' },
+  boss_slayer:  { name:'斬妖除魔',   icon:'👑',  desc:'擊敗千魔城魔君。' },
+  full_party:   { name:'三人成眾',   icon:'🧙',  desc:'召集全部三名夥伴。' },
+  gold_100:     { name:'小富翁',     icon:'💰',  desc:'持有 100 靈石。' },
+  gold_1000:    { name:'財神降臨',   icon:'💎',  desc:'持有 1000 靈石。' },
+  level_5:      { name:'初窺門道',   icon:'⭐',  desc:'任意角色升到 5 級。' },
+  level_10:     { name:'宗師境界',   icon:'🌟',  desc:'任意角色升到 10 級。' },
+  all_maps:     { name:'踏遍天下',   icon:'🗺️',  desc:'探訪三張地圖。' },
+  survivor:     { name:'九死一生',   icon:'❤️',  desc:'以 1 HP 存活贏得戰鬥。' },
+  shop_addict:  { name:'購物達人',   icon:'🛒',  desc:'累計購物 5 次。' },
+  healer:       { name:'神醫妙手',   icon:'💚',  desc:'使用 10 次治療技能。' },
+};
+
+const Achieve = {
+  KEY: 'xianxia_ach_v1',
+
+  _load() {
+    try { return JSON.parse(localStorage.getItem(this.KEY)) || {}; }
+    catch(e) { return {}; }
+  },
+  _save(data) { localStorage.setItem(this.KEY, JSON.stringify(data)); },
+
+  isUnlocked(id) { return !!this._load()[id]; },
+
+  unlock(id) {
+    if (!ACHIEVEMENTS[id]) return;
+    const data = this._load();
+    if (data[id]) return;
+    data[id] = new Date().toISOString();
+    this._save(data);
+    // Push to Supabase if logged in
+    if (Auth.isLoggedIn()) {
+      fetch(`${_SUPA_URL}/rest/v1/achievements`, {
+        method: 'POST',
+        headers: {
+          'apikey': _SUPA_KEY, 'Authorization': `Bearer ${Auth.token()}`,
+          'Content-Type': 'application/json', 'Prefer': 'resolution=ignore-duplicates',
+        },
+        body: JSON.stringify({ user_id: Auth.userId(), achievement_id: id, unlocked_at: data[id] }),
+      }).catch(() => {});
+    }
+    // Fire notification event
+    window.dispatchEvent(new CustomEvent('xian:achievement', { detail: ACHIEVEMENTS[id] }));
+  },
+
+  getAll() {
+    const unlocked = this._load();
+    return Object.entries(ACHIEVEMENTS).map(([id, ach]) => ({
+      id, ...ach, unlocked: !!unlocked[id], at: unlocked[id] || null,
+    }));
+  },
+
+  async syncFromCloud() {
+    if (!Auth.isLoggedIn()) return;
+    try {
+      const r = await fetch(
+        `${_SUPA_URL}/rest/v1/achievements?user_id=eq.${Auth.userId()}&select=achievement_id`,
+        { headers: { 'apikey': _SUPA_KEY, 'Authorization': `Bearer ${Auth.token()}` } }
+      );
+      if (!r.ok) return;
+      const rows = await r.json();
+      const data = this._load();
+      rows.forEach(({ achievement_id }) => { if (!data[achievement_id]) data[achievement_id] = true; });
+      this._save(data);
+    } catch(e) {}
   },
 };
 

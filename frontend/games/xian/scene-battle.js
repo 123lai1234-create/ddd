@@ -4,6 +4,7 @@ class BattleScene extends Phaser.Scene {
   constructor() { super('BattleScene'); }
 
   create() {
+    Sound?.bgm('battle');
     const W = this.scale.width, H = this.scale.height;
     this.W = W; this.H = H;
     this.phase = 'playerTurn';
@@ -553,7 +554,7 @@ class BattleScene extends Phaser.Scene {
       const st  = calcStats(actor);
       const dmg = this._calcDmg(st.atk, tgt.def, 1.0);
       tgt.hp = Math.max(0, tgt.hp - dmg);
-      if (tgt.hp === 0) tgt.dead = true;
+      if (tgt.hp === 0) { tgt.dead = true; Sound?.play('enemyDead'); } else Sound?.play('hit');
       this._flashEnemy(targetIdx);
       this._refreshEnemyHp(targetIdx);
       doAfter(`${actor.name} 攻擊 ${tgt.name}，造成 ${dmg} 點傷害！`);
@@ -567,6 +568,7 @@ class BattleScene extends Phaser.Scene {
       const st = calcStats(actor);
       let msg = '';
       if (sk.type === 'atk') {
+        Sound?.play('magic');
         const targets = sk.tgt==='all' ? this.enemies.filter(e=>!e.dead) : [this.enemies[targetIdx]];
         const dmgs = targets.map(tgt => {
           const dmg = this._calcDmg(st.atk, tgt.def, sk.pow, sk.pierce||0);
@@ -579,6 +581,7 @@ class BattleScene extends Phaser.Scene {
         this.enemies.forEach((_,i) => this._flashEnemy(i));
         msg = `${actor.name} 施展 ${sk.name}，造成 ${dmgs.join('/')} 點傷害！`;
       } else if (sk.type === 'heal') {
+        Sound?.play('heal');
         const targets = sk.tgt==='all' ? this.party.filter(m=>!m.dead) : [this.party[targetIdx]];
         const heals = targets.map(tgt => {
           const s2 = calcStats(tgt);
@@ -674,6 +677,7 @@ class BattleScene extends Phaser.Scene {
       if (tgt.hp === 0) tgt.dead = true;
       if (act.debuff) Object.entries(act.debuff).forEach(([k,v]) => { for(let i=0;i<v;i++) tgt.status.push(k); });
       if (act.type === 'drain') e.hp = Math.min(e.maxHp, e.hp + Math.floor(dmg*0.5));
+      Sound?.play('damage');
       this._addLog(`${e.name} 使用 ${act.name}，${tgt.name} 受到 ${dmg} 點傷害！`);
       const sp = this.partySprites[pIdx];
       if (sp) {
@@ -692,6 +696,7 @@ class BattleScene extends Phaser.Scene {
 
   _winBattle() {
     this.phase = 'win';
+    Sound?.play('victory'); Sound?.stopBgm();
     const expGain  = this.enemies.reduce((s,e) => s+(ENEMIES[e.id]?.exp||0), 0);
     const goldGain = this.enemies.reduce((s,e) => s+(ENEMIES[e.id]?.gold||0), 0);
     GS.gold += goldGain;
@@ -705,7 +710,12 @@ class BattleScene extends Phaser.Scene {
     GS.party.forEach(m => {
       if (m.dead) return;
       m.exp += expGain;
-      while (m.exp >= expForLevel(m.lv)) { GS.levelUp(m); levelUps.push(m.name); }
+      while (m.exp >= expForLevel(m.lv)) {
+        GS.levelUp(m); levelUps.push(m.name);
+        Sound?.play('levelUp');
+        if (m.lv >= 5)  Achieve?.unlock('level_5');
+        if (m.lv >= 10) Achieve?.unlock('level_10');
+      }
     });
     GS.party.forEach((gm, i) => { if (this.party[i]) Object.assign(gm, this.party[i]); });
     let msg = `戰鬥勝利！獲得 ${expGain} EXP、${goldGain} 靈石。`;
@@ -714,7 +724,12 @@ class BattleScene extends Phaser.Scene {
     this._addLog(msg);
     this._rebuildStatus();
 
-    if (GS.battleData?.isBoss) { this._submitLeaderboard(); }
+    // Achievements
+    Achieve?.unlock('first_blood');
+    if (GS.gold >= 100)  Achieve?.unlock('gold_100');
+    if (GS.gold >= 1000) Achieve?.unlock('gold_1000');
+    if (GS.battleData?.isBoss) { Achieve?.unlock('boss_slayer'); this._submitLeaderboard(); }
+    if (this.party.some(m => m.hp === 1 && !m.dead)) Achieve?.unlock('survivor');
 
     this.time.delayedCall(2000, () => this.scene.start('WorldScene'));
   }
@@ -738,6 +753,7 @@ class BattleScene extends Phaser.Scene {
 
   _loseBattle() {
     this.phase = 'lose';
+    Sound?.play('dead'); Sound?.stopBgm();
     this._addLog('全員陣亡…');
     this.time.delayedCall(2000, () => { GS.init(); this.scene.start('TitleScene'); });
   }
@@ -748,10 +764,14 @@ class BattleScene extends Phaser.Scene {
     const actor = this.party[this.actorIdx];
     if (!actor || actor.dead) { this._nextActor(); return; }
 
-    const up   = Phaser.Input.Keyboard.JustDown(this.keys.up);
-    const down = Phaser.Input.Keyboard.JustDown(this.keys.down);
-    const ok   = Phaser.Input.Keyboard.JustDown(this.keys.z)   || Phaser.Input.Keyboard.JustDown(this.keys.enter);
-    const back = Phaser.Input.Keyboard.JustDown(this.keys.x)   || Phaser.Input.Keyboard.JustDown(this.keys.esc);
+    const okPad   = !!window.PAD?.ok;   if (okPad   && window.PAD) window.PAD.ok   = false;
+    const backPad = !!window.PAD?.menu; if (backPad && window.PAD) window.PAD.menu = false;
+    const upPad   = !!window.PAD?.up;   if (upPad   && window.PAD) window.PAD.up   = false;
+    const dnPad   = !!window.PAD?.down; if (dnPad   && window.PAD) window.PAD.down = false;
+    const up   = Phaser.Input.Keyboard.JustDown(this.keys.up)   || upPad;
+    const down = Phaser.Input.Keyboard.JustDown(this.keys.down) || dnPad;
+    const ok   = Phaser.Input.Keyboard.JustDown(this.keys.z)   || Phaser.Input.Keyboard.JustDown(this.keys.enter) || okPad;
+    const back = Phaser.Input.Keyboard.JustDown(this.keys.x)   || Phaser.Input.Keyboard.JustDown(this.keys.esc)  || backPad;
 
     if (!this.subMode) {
       if (up)   { this.cursor=(this.cursor-1+5)%5; this._rebuildMenu(); }

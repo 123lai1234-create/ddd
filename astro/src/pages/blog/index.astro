@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog', p => !p.data.draft))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+<Base
+  title="技術文章 | JT Lai"
+  description="蛋白質 AI、NGS 定序、演算法研究的技術筆記與研究心得。"
+  ogTag="Portfolio"
+  bodyPage="blog"
+>
+  <div data-site-nav></div>
+  <main style="max-width:720px;margin:0 auto;padding:60px 24px">
+    <div style="margin-bottom:40px">
+      <div class="section-label">Blog</div>
+      <h1 style="font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;margin:8px 0 12px;color:var(--text)">技術文章</h1>
+      <p style="color:var(--muted);font-size:.95rem">研究筆記、技術解析、工程心得。</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0">
+      {posts.map(post => (
+        <a href={`/blog/${post.slug}`} style="display:block;padding:20px 0;border-bottom:1px solid var(--border,rgba(255,255,255,.07));text-decoration:none;color:inherit;transition:opacity .15s" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <h2 style="font-size:1.05rem;font-weight:600;color:var(--text);margin:0 0 6px">{post.data.title}</h2>
+            <time style="font-size:.78rem;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">
+              {post.data.date.toLocaleDateString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit' })}
+            </time>
+          </div>
+          <p style="font-size:.875rem;color:var(--muted);margin:0 0 10px;line-height:1.6">{post.data.description}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            {post.data.tags.map(t => (
+              <span style="font-size:.72rem;padding:2px 8px;background:rgba(88,215,255,.08);border:1px solid rgba(88,215,255,.2);border-radius:99px;color:var(--cyan,#58d7ff)">{t}</span>
+            ))}
+          </div>
+        </a>
+      ))}
+    </div>
+  </main>
+  <div data-site-footer></div>
+</Base>
