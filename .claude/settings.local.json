@@ -68,7 +68,10 @@
       "Bash(curl -sI \"https://donttalk.vercel.app/games/game.js\")",
       "Bash(curl -sI \"https://donttalk.vercel.app/games/xian/game.js\")",
       "Bash(node -e ' *)",
-      "Bash(gh repo *)"
+      "Bash(gh repo *)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__restore_project",
+      "mcp__claude_ai_Supabase__get_project"
     ]
   }
 }
