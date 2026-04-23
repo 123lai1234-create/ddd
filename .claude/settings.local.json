@@ -50,7 +50,10 @@
       "Bash(curl -s -X POST \"https://donttalk-api-production.up.railway.app/api/video/generate\" -H \"Content-Type: application/json\" -d \"{\\\\\"prompt\\\\\":\\\\\"A glowing DNA helix rotating in space, cinematic\\\\\",\\\\\"resolution\\\\\":\\\\\"720p\\\\\",\\\\\"duration\\\\\":\\\\\"5\\\\\"}\")",
       "Bash(railway up *)",
       "Bash(git rm *)",
-      "Bash(node --input-type=module --eval ' *)"
+      "Bash(node --input-type=module --eval ' *)",
+      "mcp__claude_ai_Hugging_Face__hf_whoami",
+      "Bash(python -c \"import huggingface_hub; print\\(huggingface_hub.__version__\\)\")",
+      "Bash(pip install *)"
     ]
   }
 }
