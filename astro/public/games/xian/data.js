@@ -225,12 +225,60 @@ function makePartyMember(id) {
   };
 }
 
+// ── Supabase config ────────────────────────────────────────
+const _SUPA_URL = 'https://wbamdjgcoezevimohlcb.supabase.co';
+const _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiYW1kamdjb2V6ZXZpbW9obGNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1Mzk1NDQsImV4cCI6MjA5MTExNTU0NH0.0YZUVDiCFYVDMDo20aG4sSBcON8SXoET6vEiX5NCEbs';
+
 // ── Save ───────────────────────────────────────────────────
 const Save = {
-  KEY: 'xianxia_rpg_v2',
-  slots() { try { return JSON.parse(localStorage.getItem(this.KEY)) || [null,null,null]; } catch(e) { return [null,null,null]; } },
-  write(slot, data) { const s = this.slots(); s[slot] = data; localStorage.setItem(this.KEY, JSON.stringify(s)); },
-  read(slot) { return this.slots()[slot]; },
+  LOCAL_KEY:   'xianxia_rpg_v2',
+  SESSION_KEY: 'xianxia_session_id',
+
+  _sid() {
+    let id = localStorage.getItem(this.SESSION_KEY);
+    if (!id) { id = crypto.randomUUID(); localStorage.setItem(this.SESSION_KEY, id); }
+    return id;
+  },
+  _local() {
+    try { return JSON.parse(localStorage.getItem(this.LOCAL_KEY)) || [null,null,null]; }
+    catch(e) { return [null,null,null]; }
+  },
+  _saveLocal(slots) { localStorage.setItem(this.LOCAL_KEY, JSON.stringify(slots)); },
+
+  read(slot)  { return this._local()[slot]; },
+
+  write(slot, data) {
+    const slots = this._local();
+    slots[slot] = data;
+    this._saveLocal(slots);
+    // Fire-and-forget upsert to Supabase
+    fetch(`${_SUPA_URL}/rest/v1/game_saves?on_conflict=session_id,slot`, {
+      method:  'POST',
+      headers: {
+        'apikey':        _SUPA_KEY,
+        'Authorization': `Bearer ${_SUPA_KEY}`,
+        'Content-Type':  'application/json',
+        'Prefer':        'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({ session_id: this._sid(), slot, data, updated_at: new Date().toISOString() }),
+    }).catch(() => {});
+  },
+
+  async syncFromCloud() {
+    try {
+      const r = await fetch(
+        `${_SUPA_URL}/rest/v1/game_saves?session_id=eq.${this._sid()}&select=slot,data&order=slot`,
+        { headers: { 'apikey': _SUPA_KEY, 'Authorization': `Bearer ${_SUPA_KEY}` } }
+      );
+      if (!r.ok) return false;
+      const rows = await r.json();
+      if (!rows.length) return false;
+      const slots = this._local();
+      rows.forEach(({ slot, data }) => { slots[slot] = data; });
+      this._saveLocal(slots);
+      return true;
+    } catch(e) { return false; }
+  },
 };
 
 // ── Global State ───────────────────────────────────────────
