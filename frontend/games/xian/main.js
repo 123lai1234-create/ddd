@@ -41,9 +41,19 @@ const Game = {
   GS.init();
   Game.goScene('title');
   function loop(){
-    ctx.clearRect(0,0,800,600);
-    Game.update();
-    Game.draw(ctx);
+    try {
+      ctx.clearRect(0,0,800,600);
+      Game.update();
+      Game.draw(ctx);
+    } catch(e) {
+      console.error('[仙俠傳] loop error:', e);
+      ctx.fillStyle='#08060e'; ctx.fillRect(0,0,800,600);
+      ctx.fillStyle='#e05050'; ctx.font='bold 16px serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('載入錯誤，請重新整理頁面', 400, 300);
+      ctx.fillStyle='#9a8060'; ctx.font='12px monospace';
+      ctx.fillText(String(e).slice(0,80), 400, 330);
+    }
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
