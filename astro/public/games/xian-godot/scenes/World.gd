@@ -25,6 +25,13 @@ var _menu_items: Array = []
 var _message := ""
 var _message_timer := 0.0
 
+# Sub-menu state
+var _sub_phase := ""   # "item"/"item_tgt"/"equip"/"equip_tgt"/"status"/"status_detail"
+var _sub_cursor := 0
+var _sub_cursor2 := 0
+var _sub_list: Array = []
+var _sub_pending := ""
+
 # Walk animation
 var _walk_frame := 0
 var _walk_anim := 0.0
@@ -262,12 +269,15 @@ func _try_buy() -> void:
 
 func _open_menu() -> void:
 	_phase = "menu"
+	_sub_phase = ""
 	_menu_cursor = 0
 	_menu_items = ["道具", "裝備", "狀態", "存檔", "返回"]
 	Sound.play("openMenu")
 	queue_redraw()
 
 func _handle_menu_input(event: InputEvent) -> void:
+	if _sub_phase != "":
+		_handle_sub_input(event); return
 	if event.is_action_pressed("ui_up"):
 		_menu_cursor = max(0, _menu_cursor - 1); Sound.play("menuMove"); queue_redraw()
 	elif event.is_action_pressed("ui_down"):
@@ -275,17 +285,104 @@ func _handle_menu_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_accept"):
 		Sound.play("menuSelect")
 		match _menu_cursor:
-			3:  # Save
-				GS.save_game(0)
-				_show_message("遊戲已存檔。")
-				_phase = "world"
-				queue_redraw()
-			4:  # Close menu
-				_phase = "world"; queue_redraw()
-			_:
-				_phase = "world"; queue_redraw()
+			0: _open_item_sub()
+			1: _open_equip_sub()
+			2: _open_status_sub()
+			3: GS.save_game(0); _show_message("遊戲已存檔。"); _phase = "world"; queue_redraw()
+			4: _phase = "world"; queue_redraw()
 	elif event.is_action_pressed("ui_cancel"):
 		_phase = "world"; Sound.play("menuMove"); queue_redraw()
+
+func _open_item_sub() -> void:
+	_sub_list = []
+	for id in GS.inventory:
+		if GS.inventory[id] > 0 and Data.ITEMS.get(id, {}).get("cat", "") == "use":
+			_sub_list.append(id)
+	_sub_cursor = 0; _sub_phase = "item"; queue_redraw()
+
+func _open_equip_sub() -> void:
+	_sub_list = []
+	for id in GS.inventory:
+		if GS.inventory[id] > 0 and Data.ITEMS.get(id, {}).get("cat", "") == "eq":
+			_sub_list.append(id)
+	_sub_cursor = 0; _sub_phase = "equip"; queue_redraw()
+
+func _open_status_sub() -> void:
+	_sub_cursor = 0; _sub_phase = "status"; queue_redraw()
+
+func _handle_sub_input(event: InputEvent) -> void:
+	match _sub_phase:
+		"item":
+			var n := max(1, _sub_list.size())
+			if event.is_action_pressed("ui_up"):   _sub_cursor = (_sub_cursor-1+n)%n; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_down"): _sub_cursor = (_sub_cursor+1)%n; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_cancel"): _sub_phase = ""; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_accept") and not _sub_list.is_empty():
+				Sound.play("menuSelect"); _sub_pending = _sub_list[_sub_cursor]; _sub_cursor2 = 0; _sub_phase = "item_tgt"; queue_redraw()
+		"item_tgt":
+			var n := max(1, GS.party.size())
+			if event.is_action_pressed("ui_up"):   _sub_cursor2 = (_sub_cursor2-1+n)%n; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_down"): _sub_cursor2 = (_sub_cursor2+1)%n; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_cancel"): _sub_phase = "item"; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_accept"):
+				Sound.play("menuSelect"); _use_item_on(_sub_pending, _sub_cursor2); _sub_phase = ""; _phase = "world"; queue_redraw()
+		"equip":
+			var n := max(1, _sub_list.size())
+			if event.is_action_pressed("ui_up"):   _sub_cursor = (_sub_cursor-1+n)%n; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_down"): _sub_cursor = (_sub_cursor+1)%n; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_cancel"): _sub_phase = ""; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_accept") and not _sub_list.is_empty():
+				Sound.play("menuSelect"); _sub_pending = _sub_list[_sub_cursor]; _sub_cursor2 = 0; _sub_phase = "equip_tgt"; queue_redraw()
+		"equip_tgt":
+			var it := Data.ITEMS.get(_sub_pending, {})
+			var who: String = it.get("who", "")
+			var targets := GS.party.filter(func(m): return who == "" or m.id == who)
+			var n := max(1, targets.size())
+			if event.is_action_pressed("ui_up"):   _sub_cursor2 = (_sub_cursor2-1+n)%n; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_down"): _sub_cursor2 = (_sub_cursor2+1)%n; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_cancel"): _sub_phase = "equip"; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_accept") and not targets.is_empty():
+				Sound.play("menuSelect")
+				_equip_item(_sub_pending, GS.party.find(targets[_sub_cursor2]))
+				_sub_phase = ""; _phase = "world"; queue_redraw()
+		"status":
+			var n := max(1, GS.party.size())
+			if event.is_action_pressed("ui_up"):   _sub_cursor = (_sub_cursor-1+n)%n; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_down"): _sub_cursor = (_sub_cursor+1)%n; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_cancel"): _sub_phase = ""; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_accept"): Sound.play("menuSelect"); _sub_phase = "status_detail"; queue_redraw()
+		"status_detail":
+			if event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_accept"):
+				_sub_phase = "status"; Sound.play("menuMove"); queue_redraw()
+
+func _use_item_on(item_id: String, mi: int) -> void:
+	var it := Data.ITEMS.get(item_id, {})
+	if it.is_empty() or mi >= GS.party.size(): return
+	var m := GS.party[mi]
+	var msg := ""
+	if it.has("hp") and not m.get("dead", false):
+		m.hp = min(m.max_hp, m.hp + it.hp); msg = m.name + " 恢復了 " + str(it.hp) + " HP！"
+	if it.has("mp") and not m.get("dead", false):
+		var st := Data.calc_stats(m); m.mp = min(st.max_mp, m.mp + it.mp)
+		if msg == "": msg = m.name + " 恢復了靈力！"
+	if it.has("revive") and m.get("dead", false):
+		m.dead = false; m.hp = int(m.max_hp * it.revive / 100.0); msg = m.name + " 復活了！"
+	GS.remove_item(item_id)
+	_show_message(msg if msg != "" else "使用了 " + it.get("name", "?") + "！")
+	Sound.play("heal")
+
+func _equip_item(item_id: String, mi: int) -> void:
+	var it := Data.ITEMS.get(item_id, {})
+	if it.is_empty() or mi >= GS.party.size(): return
+	var m := GS.party[mi]
+	var slot: String = it.get("slot", "")
+	if slot == "": return
+	var old: String = m.equip.get(slot, "")
+	if old != "": GS.add_item(old)
+	m.equip[slot] = item_id
+	GS.remove_item(item_id)
+	_show_message(m.name + " 裝備了 " + it.get("name", "?") + "！")
+	Sound.play("shopBuy")
 
 func _fade_to_scene(path: String) -> void:
 	var tw := create_tween()
@@ -491,6 +588,12 @@ func _draw_game_menu() -> void:
 	var vp := get_viewport_rect()
 	var W := vp.size.x
 	var H := vp.size.y
+	if _sub_phase in ["item", "item_tgt"]:
+		_draw_item_panel(W, H); return
+	if _sub_phase in ["equip", "equip_tgt"]:
+		_draw_equip_panel(W, H); return
+	if _sub_phase in ["status", "status_detail"]:
+		_draw_status_screen(W, H); return
 	var pw := W * 0.55
 	var ph := H * 0.48
 	var mx := W - pw - 8
@@ -506,6 +609,153 @@ func _draw_game_menu() -> void:
 			draw_rect(Rect2(mx + 4, iy - 4, pw - 8, row_h - 2), Color("#9a7828", 0.25))
 		var col := Color("#ffd700") if sel else Color("#c8a060")
 		_draw_text(("▶ " if sel else "  ") + _menu_items[i], Vector2(mx + 18, iy + 16), 15, col)
+
+func _draw_item_panel(W: float, H: float) -> void:
+	var pw := W * 0.88; var ph := H * 0.72
+	var px := (W - pw) * 0.5; var py := (H - ph) * 0.5
+	draw_rect(Rect2(px, py, pw, ph), Color("#080612", 0.97))
+	draw_rect(Rect2(px, py, pw, ph), Color("#7a5c1e", 0.8), false)
+	_draw_text_centered("道具", Vector2(px + pw * 0.5, py + 24), 17, Color("#ffd700"))
+	if _sub_list.is_empty():
+		_draw_text_centered("── 無道具 ──", Vector2(px + pw*0.5, py + ph*0.5), 15, Color("#555"))
+	else:
+		var rh := min(38.0, (ph - 48) / _sub_list.size())
+		for i in _sub_list.size():
+			var id: String = _sub_list[i]
+			var it := Data.ITEMS.get(id, {})
+			var sel := i == _sub_cursor and _sub_phase == "item"
+			var iy := py + 40 + i * rh
+			if sel: draw_rect(Rect2(px + 4, iy, pw - 8, rh - 3), Color("#9a7828", 0.22))
+			_draw_text(("▶ " if sel else "  ") + it.get("name", "?"), Vector2(px + 18, iy + rh * 0.68), 15, Color("#ffd700") if sel else Color("#c8a060"))
+			var desc := ""
+			if it.has("hp"): desc = "HP+%d" % it.hp
+			if it.has("mp"): desc += ("  " if desc else "") + "MP+%d" % it.mp
+			if it.has("revive"): desc = "復活%d%%" % it.revive
+			_draw_text_right(desc + "  ×%d" % GS.inventory.get(id, 0), Vector2(px + pw - 12, iy + rh * 0.68), 13, Color("#a0c8ff"))
+	if _sub_phase == "item_tgt":
+		_draw_member_picker(W, H, false)
+	else:
+		_draw_text_centered("Z 使用   X 返回", Vector2(px + pw * 0.5, py + ph - 14), 12, Color("#9a8060", 0.8))
+
+func _draw_equip_panel(W: float, H: float) -> void:
+	var pw := W * 0.88; var ph := H * 0.72
+	var px := (W - pw) * 0.5; var py := (H - ph) * 0.5
+	draw_rect(Rect2(px, py, pw, ph), Color("#080612", 0.97))
+	draw_rect(Rect2(px, py, pw, ph), Color("#7a5c1e", 0.8), false)
+	_draw_text_centered("裝備", Vector2(px + pw * 0.5, py + 24), 17, Color("#ffd700"))
+	if _sub_list.is_empty():
+		_draw_text_centered("── 無裝備道具 ──", Vector2(px + pw*0.5, py + ph*0.5), 15, Color("#555"))
+	else:
+		var rh := min(38.0, (ph - 48) / _sub_list.size())
+		for i in _sub_list.size():
+			var id: String = _sub_list[i]
+			var it := Data.ITEMS.get(id, {})
+			var sel := i == _sub_cursor and _sub_phase == "equip"
+			var iy := py + 40 + i * rh
+			if sel: draw_rect(Rect2(px + 4, iy, pw - 8, rh - 3), Color("#9a7828", 0.22))
+			var label := it.get("name", "?")
+			if it.has("who"): label += "  [%s]" % Data.CHARS.get(it.who, {}).get("name", it.who)
+			_draw_text(("▶ " if sel else "  ") + label, Vector2(px + 18, iy + rh * 0.68), 15, Color("#ffd700") if sel else Color("#c8a060"))
+			var stat := ""
+			if it.has("atk"): stat += "ATK+%d " % it.atk
+			if it.has("def"): stat += "DEF+%d " % it.def
+			if it.has("mp"):  stat += "MP+%d" % it.mp
+			_draw_text_right(stat.strip_edges(), Vector2(px + pw - 12, iy + rh * 0.68), 12, Color("#88ccff"))
+	if _sub_phase == "equip_tgt":
+		var it := Data.ITEMS.get(_sub_pending, {})
+		var who: String = it.get("who", "")
+		var targets := GS.party.filter(func(m): return who == "" or m.id == who)
+		_draw_member_picker_list(W, H, targets, false)
+	else:
+		_draw_text_centered("Z 裝備   X 返回", Vector2(px + pw * 0.5, py + ph - 14), 12, Color("#9a8060", 0.8))
+
+func _draw_member_picker(W: float, H: float, equip_mode: bool) -> void:
+	_draw_member_picker_list(W, H, GS.party, equip_mode)
+
+func _draw_member_picker_list(W: float, H: float, members: Array, _equip_mode: bool) -> void:
+	var pw := W * 0.6; var ph := members.size() * 48 + 36
+	var px := (W - pw) * 0.5; var py := (H - ph) * 0.5
+	draw_rect(Rect2(px, py, pw, ph), Color("#0a0818", 0.98))
+	draw_rect(Rect2(px, py, pw, ph), Color("#7a5c1e", 0.9), false)
+	_draw_text_centered("選擇對象", Vector2(px + pw * 0.5, py + 22), 14, Color("#ffd700"))
+	for i in members.size():
+		var m := members[i]
+		var sel := i == _sub_cursor2
+		var iy := py + 32 + i * 48
+		if sel: draw_rect(Rect2(px + 4, iy, pw - 8, 44), Color("#9a7828", 0.25))
+		var col := Color("#ffd700") if sel else Color("#c8a060")
+		var dead_tag := "  [陣亡]" if m.get("dead", false) else ""
+		_draw_text(("▶ " if sel else "  ") + m.name + dead_tag, Vector2(px + 18, iy + 18), 15, col)
+		_draw_text("HP %d/%d  MP %d" % [m.hp, m.max_hp, m.mp], Vector2(px + 18, iy + 36), 11, Color("#a0a0c0"))
+
+func _draw_status_screen(W: float, H: float) -> void:
+	if _sub_phase == "status_detail":
+		_draw_status_detail(W, H); return
+	var pw := W * 0.88; var ph := H * 0.72
+	var px := (W - pw) * 0.5; var py := (H - ph) * 0.5
+	draw_rect(Rect2(px, py, pw, ph), Color("#080612", 0.97))
+	draw_rect(Rect2(px, py, pw, ph), Color("#7a5c1e", 0.8), false)
+	_draw_text_centered("隊伍狀態", Vector2(px + pw * 0.5, py + 24), 17, Color("#ffd700"))
+	var rh := (ph - 48.0) / max(1, GS.party.size())
+	for i in GS.party.size():
+		var m := GS.party[i]
+		var st := Data.calc_stats(m)
+		var sel := i == _sub_cursor
+		var iy := py + 40 + i * rh
+		if sel: draw_rect(Rect2(px + 4, iy, pw - 8, rh - 3), Color("#9a7828", 0.22))
+		var col := Color("#ffd700") if sel else (Color("#555") if m.get("dead", false) else Color("#c8a060"))
+		_draw_text(("▶ " if sel else "  ") + m.name + "  Lv." + str(m.lv) + "  " + m.title, Vector2(px + 18, iy + rh * 0.3), 15, col)
+		_draw_text("HP %d/%d   MP %d/%d   ATK %d   DEF %d" % [m.hp, m.max_hp, m.mp, st.max_mp, st.atk, st.def], Vector2(px + 28, iy + rh * 0.65), 12, Color("#a0c0e0"))
+	_draw_text_centered("Z 詳細   X 返回", Vector2(px + pw * 0.5, py + ph - 14), 12, Color("#9a8060", 0.8))
+
+func _draw_status_detail(W: float, H: float) -> void:
+	if _sub_cursor >= GS.party.size(): return
+	var m := GS.party[_sub_cursor]
+	var st := Data.calc_stats(m)
+	var exp_next := Data.exp_for_level(m.lv)
+	var pw := W * 0.92; var ph := H * 0.88
+	var px := (W - pw) * 0.5; var py := (H - ph) * 0.5
+	draw_rect(Rect2(px, py, pw, ph), Color("#080612", 0.97))
+	draw_rect(Rect2(px, py, pw, ph), Color("#7a5c1e", 0.8), false)
+	# Header
+	_draw_text_centered(m.name + "  " + m.title, Vector2(px + pw * 0.5, py + 26), 16, Color("#ffd700"))
+	draw_line(Vector2(px + 8, py + 34), Vector2(px + pw - 8, py + 34), Color("#5a3e10", 0.7), 1.0)
+	# Level & EXP
+	_draw_text("Lv.%d    EXP %d / %d" % [m.lv, m.exp, exp_next], Vector2(px + 16, py + 54), 14, Color("#c8e0f0"))
+	var exp_bar_w := (pw - 32) * clampf(float(m.exp) / max(1, exp_next), 0.0, 1.0)
+	draw_rect(Rect2(px + 16, py + 60, pw - 32, 6), Color(0, 0, 0, 0.5))
+	draw_rect(Rect2(px + 16, py + 60, exp_bar_w, 6), Color("#40c070"))
+	# Stats
+	var col_w := pw * 0.5
+	var stats_y := py + 80.0
+	var stats := [["HP", str(m.hp)+"/"+str(m.max_hp)], ["MP", str(m.mp)+"/"+str(st.max_mp)], ["ATK", str(st.atk)], ["DEF", str(st.def)], ["SPD", str(st.spd)], ["LUK", str(st.luk)]]
+	for i in stats.size():
+		var sx := px + 16 + (i % 2) * col_w
+		var sy := stats_y + int(i / 2) * 28
+		_draw_text(stats[i][0], Vector2(sx, sy), 13, Color("#a0c0e0"))
+		_draw_text_right(stats[i][1], Vector2(sx + col_w * 0.4, sy), 13, Color("#f0e8c0"))
+	# Equipment
+	var eq_y := stats_y + 86.0
+	draw_line(Vector2(px + 8, eq_y - 8), Vector2(px + pw - 8, eq_y - 8), Color("#5a3e10", 0.5), 1.0)
+	_draw_text("裝備", Vector2(px + 16, eq_y + 4), 13, Color("#ffd700"))
+	var slots := [["wp","武器"], ["ar","防具"], ["ac","飾品"]]
+	for i in slots.size():
+		var slot_id: String = slots[i][0]; var slot_name: String = slots[i][1]
+		var eq_id: String = m.equip.get(slot_id, "")
+		var eq_name := Data.ITEMS.get(eq_id, {}).get("name", "── 未裝備 ──") if eq_id != "" else "── 未裝備 ──"
+		_draw_text(slot_name + "：" + eq_name, Vector2(px + 16, eq_y + 22 + i * 24), 13, Color("#c8b080") if eq_id != "" else Color("#555"))
+	# Skills
+	var sk_y := eq_y + 100.0
+	draw_line(Vector2(px + 8, sk_y - 8), Vector2(px + pw - 8, sk_y - 8), Color("#5a3e10", 0.5), 1.0)
+	_draw_text("技能", Vector2(px + 16, sk_y + 4), 13, Color("#ffd700"))
+	var skills: Array = m.get("skills", [])
+	for i in skills.size():
+		var sk := Data.SKILLS.get(skills[i], {})
+		if sk.is_empty(): continue
+		var sx2 := px + 16 + (i % 2) * col_w
+		var sy2 := sk_y + 22 + int(i / 2) * 22
+		_draw_text(sk.name + "  MP:" + str(sk.get("mp", 0)), Vector2(sx2, sy2), 12, Color("#a0b8e0"))
+	_draw_text_centered("Z/X 返回", Vector2(px + pw * 0.5, py + ph - 14), 12, Color("#9a8060", 0.8))
 
 func _draw_minimap(W: float, H: float, cam_x: float, cam_y: float) -> void:
 	var tiles: Array = _map.get("tiles", [])
