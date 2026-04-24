@@ -132,7 +132,7 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if _waiting or _phase != "playerTurn": return
-	var actor := _party[_actor_idx] if _actor_idx < _party.size() else {}
+	var actor = _party[_actor_idx] if _actor_idx < _party.size() else {}
 	if actor.is_empty() or actor.get("dead", false): return
 
 	var up    := event.is_action_pressed("ui_up")
@@ -147,7 +147,7 @@ func _input(event: InputEvent) -> void:
 			Sound.play("menuSelect")
 			match _cursor:
 				0:  # Attack
-					var alive := _enemies.filter(func(e): return not e.get("dead",false))
+					var alive = _enemies.filter(func(e): return not e.get("dead",false))
 					if alive.size() == 1:
 						_hero_act("attack", "", "", _enemies.find(alive[0]))
 					else:
@@ -159,12 +159,12 @@ func _input(event: InputEvent) -> void:
 				3:  _hero_act("defend")
 				4:  _hero_act("flee")
 	elif _sub_mode == "skill":
-		var skills := actor.get("skills",[]).map(func(sk): return Data.SKILLS.get(sk,{})).filter(func(s): return not s.is_empty())
+		var skills = actor.get("skills",[]).map(func(sk): return Data.SKILLS.get(sk,{})).filter(func(s): return not s.is_empty())
 		if up:   _sub_cursor=(_sub_cursor-1+skills.size())%skills.size(); Sound.play("menuMove"); queue_redraw()
 		elif down: _sub_cursor=(_sub_cursor+1)%skills.size(); Sound.play("menuMove"); queue_redraw()
 		elif back: _sub_mode=""; queue_redraw()
 		elif ok:
-			var sk := skills[_sub_cursor]
+			var sk = skills[_sub_cursor]
 			var sk_id: String = actor.skills[_sub_cursor]
 			if actor.get("mp",0) < sk.get("mp",0): _add_log("靈力不足！"); return
 			Sound.play("menuSelect")
@@ -174,7 +174,7 @@ func _input(event: InputEvent) -> void:
 				_target_list = _party.filter(func(m): return not m.get("dead",false)).map(func(m): return {"is_enemy":false,"m":m})
 				_sub_mode = "target"; _sub_cursor = 0; _pending_skill = sk_id; queue_redraw()
 			else:
-				var alive := _enemies.filter(func(e): return not e.get("dead",false))
+				var alive = _enemies.filter(func(e): return not e.get("dead",false))
 				if alive.size() == 1:
 					_hero_act("skill", sk_id, "", _enemies.find(alive[0])); _sub_mode = ""
 				else:
@@ -203,7 +203,7 @@ func _input(event: InputEvent) -> void:
 			queue_redraw()
 		elif ok:
 			Sound.play("menuSelect")
-			var tgt := _target_list[_sub_cursor]
+			var tgt = _target_list[_sub_cursor]
 			if _pending_skill != "":
 				var idx := _enemies.find(tgt.e) if tgt.get("is_enemy",false) else _party.find(tgt.get("m",{}))
 				_hero_act("skill", _pending_skill, "", idx); _pending_skill = ""; _sub_mode = ""
@@ -220,7 +220,7 @@ func _calc_dmg(atk: int, def_val: int, pow_val: float, pierce: float = 0.0) -> i
 	return max(1, int(dmg * randf_range(0.85, 1.15)))
 
 func _hero_act(cmd: String, skill_id: String = "", item_id: String = "", target_idx: int = 0) -> void:
-	var actor := _party[_actor_idx]
+	var actor = _party[_actor_idx]
 	_waiting = true
 
 	var do_after := func(msg: String):
@@ -240,19 +240,19 @@ func _hero_act(cmd: String, skill_id: String = "", item_id: String = "", target_
 			else:
 				do_after.call("逃跑失敗！")
 		"attack":
-			var tgt := _enemies[target_idx]
-			var st := Data.calc_stats(actor)
+			var tgt = _enemies[target_idx]
+			var st = Data.calc_stats(actor)
 			var crit := randf() < 0.08
 			var dmg := _calc_dmg(st.atk, tgt.get("def",0), 1.0)
 			if crit: dmg = int(dmg * 1.5)
-			var h_sp := _hero_pos[_actor_idx] if _actor_idx < _hero_pos.size() else Vector2(W*0.65, _ground_y)
-			var e_sp := _enemy_pos[target_idx] if target_idx < _enemy_pos.size() else Vector2(W*0.22, _ground_y)
+			var h_sp = _hero_pos[_actor_idx] if _actor_idx < _hero_pos.size() else Vector2(W*0.65, _ground_y)
+			var e_sp = _enemy_pos[target_idx] if target_idx < _enemy_pos.size() else Vector2(W*0.22, _ground_y)
 			_anim_hero_attack(_actor_idx, target_idx, func():
 				tgt.hp = max(0, tgt.hp - dmg)
 				if tgt.hp == 0: tgt.dead = true; Sound.play("enemyDead")
 				else: Sound.play("hit")
 				_shake(0.010 if crit else 0.005)
-				var ey := e_sp.y - tgt.get("sz", 28) * 1.4
+				var ey = e_sp.y - tgt.get("sz", 28) * 1.4
 				if crit:
 					_float_text("CRIT! %d" % dmg, Vector2(e_sp.x, ey), Color("#ffd700"), 22)
 					_spawn_particles(Vector2(e_sp.x, ey + 20), Color("#ffd700"), 10, 55)
@@ -263,19 +263,19 @@ func _hero_act(cmd: String, skill_id: String = "", item_id: String = "", target_
 					get_tree().create_timer(0.35).timeout.connect(func(): _spawn_particles(Vector2(e_sp.x, ey + 20), tgt.get("color", Color("#884422")), 14, 65))
 				queue_redraw(),
 			func():
-				var msg := "會心一擊！對 %s 造成 %d 點傷害！" % [tgt.name, dmg] if crit else "%s 攻擊 %s，造成 %d 點傷害！" % [actor.name, tgt.name, dmg]
+				var msg = "會心一擊！對 %s 造成 %d 點傷害！" % [tgt.name, dmg] if crit else "%s 攻擊 %s，造成 %d 點傷害！" % [actor.name, tgt.name, dmg]
 				do_after.call(msg))
 		"skill":
-			var sk := Data.SKILLS.get(skill_id, {})
+			var sk = Data.SKILLS.get(skill_id, {})
 			if sk.is_empty(): do_after.call("…"); return
 			if actor.mp < sk.get("mp",0): _add_log("靈力不足！"); _waiting = false; return
 			actor.mp = max(0, actor.mp - sk.get("mp",0))
-			var st := Data.calc_stats(actor)
+			var st = Data.calc_stats(actor)
 			var msg := ""
 			if sk.get("type","") == "atk":
 				Sound.play("magic")
-				var is_aoe := sk.get("tgt","single") == "all"
-				var targets := _enemies.filter(func(e): return not e.get("dead",false)) if is_aoe else [_enemies[target_idx]]
+				var is_aoe = sk.get("tgt","single") == "all"
+				var targets = _enemies.filter(func(e): return not e.get("dead",false)) if is_aoe else [_enemies[target_idx]]
 				if is_aoe:
 					_screen_flash(Color("#6688ff"), 0.35, 0.28)
 				var dmgs := []
@@ -288,24 +288,24 @@ func _hero_act(cmd: String, skill_id: String = "", item_id: String = "", target_
 							for _j in sk.debuff[k]: tgt.status.append(k)
 					dmgs.append(d)
 					var ei := _enemies.find(tgt)
-					var epos := _enemy_pos[ei] if ei < _enemy_pos.size() else Vector2(W*0.22, _ground_y)
-					var ey := epos.y - tgt.get("sz",28)*1.4
-					var ptcol := Color("#ffcc44") if is_aoe else Color("#8888ff")
-					var ptcount := 12 if is_aoe else 7
+					var epos = _enemy_pos[ei] if ei < _enemy_pos.size() else Vector2(W*0.22, _ground_y)
+					var ey = epos.y - tgt.get("sz",28)*1.4
+					var ptcol = Color("#ffcc44") if is_aoe else Color("#8888ff")
+					var ptcount = 12 if is_aoe else 7
 					_float_text(str(d), Vector2(epos.x, ey), Color("#88aaff"), 18)
 					_spawn_particles(Vector2(epos.x, ey+20), ptcol, ptcount, 50 if is_aoe else 40)
 				_shake(0.008 if is_aoe else 0.006)
 				msg = "%s 施展 %s，造成 %s 點傷害！" % [actor.name, sk.name, "/".join(dmgs.map(func(d): return str(d)))]
 			elif sk.get("type","") == "heal":
 				Sound.play("heal")
-				var targets := _party.filter(func(m): return not m.get("dead",false)) if sk.get("tgt","single") == "all" else [_party[target_idx]]
+				var targets = _party.filter(func(m): return not m.get("dead",false)) if sk.get("tgt","single") == "all" else [_party[target_idx]]
 				var heals := []
 				for tgt in targets:
-					var s2 := Data.calc_stats(tgt)
+					var s2 = Data.calc_stats(tgt)
 					var h := int(s2.atk * sk.get("pow",1.0) * randf_range(0.9,1.1))
 					tgt.hp = min(tgt.max_hp, tgt.hp + h)
 					var pi := _party.find(tgt)
-					var hpos := _hero_pos[pi] if pi < _hero_pos.size() else Vector2(W*0.65, _ground_y)
+					var hpos = _hero_pos[pi] if pi < _hero_pos.size() else Vector2(W*0.65, _ground_y)
 					_float_text("+%d" % h, hpos + Vector2(0,-50), Color("#88ff88"), 18)
 					_spawn_particles(hpos + Vector2(0,-20), Color("#44ff88"), 8, 35)
 					heals.append(h)
@@ -313,18 +313,18 @@ func _hero_act(cmd: String, skill_id: String = "", item_id: String = "", target_
 			get_tree().create_timer(0.48).timeout.connect(func(): _waiting = false; _next_actor(); queue_redraw())
 			_add_log(msg); queue_redraw()
 		"item":
-			var it := Data.ITEMS.get(item_id, {})
+			var it = Data.ITEMS.get(item_id, {})
 			if it.is_empty(): do_after.call("…"); return
-			var tgt := _party[target_idx]
+			var tgt = _party[target_idx]
 			GS.remove_item(item_id)
 			var msg := ""
 			if it.has("hp"):
 				tgt.hp = min(tgt.max_hp, tgt.hp + it.hp); msg = "%s 恢復了 %d HP！" % [tgt.name, it.hp]
 			if it.has("mp"):
-				var s2 := Data.calc_stats(tgt); tgt.mp = min(s2.max_mp, tgt.mp + it.mp); msg += " MP+%d" % it.mp
+				var s2 = Data.calc_stats(tgt); tgt.mp = min(s2.max_mp, tgt.mp + it.mp); msg += " MP+%d" % it.mp
 			if it.has("revive") and tgt.get("dead",false):
 				tgt.dead = false; tgt.hp = int(tgt.max_hp * it.revive / 100.0); msg = tgt.name + " 復活了！"
-			var hpos := _hero_pos[target_idx] if target_idx < _hero_pos.size() else Vector2(W*0.65, _ground_y)
+			var hpos = _hero_pos[target_idx] if target_idx < _hero_pos.size() else Vector2(W*0.65, _ground_y)
 			if it.has("hp"):
 				_float_text("+%d" % it.hp, hpos + Vector2(0,-50), Color("#88ff88"), 18)
 				_spawn_particles(hpos + Vector2(0,-20), Color("#44ff88"), 6, 30)
@@ -344,7 +344,7 @@ func _next_actor() -> void:
 
 func _enemy_phase() -> void:
 	_phase = "enemyTurn"
-	var living := _enemies.filter(func(e): return not e.get("dead",false))
+	var living = _enemies.filter(func(e): return not e.get("dead",false))
 	var idx := 0
 	var next_enemy : Callable
 	next_enemy = func():
@@ -361,10 +361,10 @@ func _enemy_phase() -> void:
 					_add_log("%s 中毒，損失 %d HP！" % [m.name, dmg])
 					Sound.play("poison")
 					var pi := _party.find(m)
-					var hpos := _hero_pos[pi] if pi < _hero_pos.size() else Vector2(W*0.65, _ground_y)
+					var hpos = _hero_pos[pi] if pi < _hero_pos.size() else Vector2(W*0.65, _ground_y)
 					_float_text(str(dmg), hpos+Vector2(0,-40), Color("#c050e8"), 15)
 					_spawn_particles(hpos+Vector2(0,-10), Color("#9030c0"), 5, 25)
-				var pc := m.status.filter(func(s): return s=="poison").size()
+				var pc = m.status.filter(func(s): return s=="poison").size()
 				m.status = m.status.filter(func(s): return s != "defend" and s != "atkUp" and s != "poison")
 				for _j in range(pc - 1): m.status.append("poison")
 			if _party.all(func(m): return m.get("dead",false)):
@@ -373,7 +373,7 @@ func _enemy_phase() -> void:
 			while _actor_idx < _party.size() and _party[_actor_idx].get("dead",false): _actor_idx += 1
 			_cursor = 0; _sub_mode = ""; queue_redraw()
 			return
-		var e := living[idx]
+		var e = living[idx]
 		idx += 1
 		await _do_enemy_act(e)
 		await get_tree().create_timer(0.1).timeout
@@ -385,7 +385,7 @@ func _do_enemy_act(e: Dictionary) -> void:
 	var act_id: String = e.acts[randi() % e.acts.size()]
 	var act: Dictionary = Data.ENEMY_ACTS.get(act_id, {})
 	if act.is_empty(): await get_tree().create_timer(0.4).timeout; return
-	var living_heroes := _party.filter(func(m): return not m.get("dead",false))
+	var living_heroes = _party.filter(func(m): return not m.get("dead",false))
 	if living_heroes.is_empty(): return
 	var e_idx := _enemies.find(e)
 
@@ -395,7 +395,7 @@ func _do_enemy_act(e: Dictionary) -> void:
 			_add_log("%s 使用 %s！" % [e.name, act.name])
 			_shake(0.007, 0.35)
 			for hero in living_heroes:
-				var def_val := hero.get("base_def", 5)
+				var def_val = hero.get("base_def", 5)
 				if "defend" in hero.status: def_val = int(def_val * 1.5)
 				var dmg := _calc_dmg(e.get("atk",10), def_val, act.get("pow",1.0))
 				hero.hp = max(0, hero.hp - dmg)
@@ -404,16 +404,16 @@ func _do_enemy_act(e: Dictionary) -> void:
 					for k in act.debuff:
 						for _j in act.debuff[k]: hero.status.append(k)
 				var pi := _party.find(hero)
-				var hpos := _hero_pos[pi] if pi < _hero_pos.size() else Vector2(W*0.65, _ground_y)
+				var hpos = _hero_pos[pi] if pi < _hero_pos.size() else Vector2(W*0.65, _ground_y)
 				_float_text(str(dmg), hpos+Vector2(0,-30), Color("#ff8888"), 17)
 				_spawn_particles(hpos+Vector2(0,10), Color("#ff6644"), 6, 32)
 			Sound.play("damage"); queue_redraw()
 			await get_tree().create_timer(0.5).timeout
 		else:
-			var tgt := living_heroes[randi() % living_heroes.size()]
+			var tgt = living_heroes[randi() % living_heroes.size()]
 			var p_idx := _party.find(tgt)
 			await _anim_enemy_attack_async(e_idx, p_idx, func():
-				var def_val := tgt.get("base_def", 5)
+				var def_val = tgt.get("base_def", 5)
 				if "defend" in tgt.status: def_val = int(def_val * 1.5)
 				var dmg := _calc_dmg(e.get("atk",10), def_val, act.get("pow",1.0))
 				tgt.hp = max(0, tgt.hp - dmg)
@@ -424,7 +424,7 @@ func _do_enemy_act(e: Dictionary) -> void:
 				if act.get("type","") == "drain":
 					e.hp = min(e.get("max_hp",e.hp), e.hp + int(dmg * 0.5))
 				Sound.play("damage"); _shake(0.004, 0.24)
-				var hpos := _hero_pos[p_idx] if p_idx < _hero_pos.size() else Vector2(W*0.65, _ground_y)
+				var hpos = _hero_pos[p_idx] if p_idx < _hero_pos.size() else Vector2(W*0.65, _ground_y)
 				_float_text(str(dmg), hpos+Vector2(0,-30), Color("#ff8888"), 17)
 				_spawn_particles(hpos+Vector2(0,10), Color("#ff4444"), 5, 28)
 				_add_log("%s 使用 %s，%s 受到 %d 點傷害！" % [e.name, act.name, tgt.name, dmg])
@@ -460,7 +460,7 @@ func _win_battle() -> void:
 				drops.append(Data.ITEMS.get(d.id, {}).get("name", d.id))
 	var level_ups := []
 	for i in GS.party.size():
-		var m := GS.party[i]
+		var m = GS.party[i]
 		if _party[i].get("dead",false): continue
 		m.exp += exp_gain
 		while m.exp >= Data.exp_for_level(m.lv):
@@ -506,8 +506,8 @@ func _fade_out(path: String) -> void:
 
 # ── Animations ────────────────────────────────────────────────
 func _anim_hero_attack(h_idx: int, e_idx: int, on_hit: Callable, on_done: Callable) -> void:
-	var orig_x := _hero_pos[h_idx].x if h_idx < _hero_pos.size() else W*0.65
-	var tgt_x  := (_enemy_pos[e_idx].x if e_idx < _enemy_pos.size() else W*0.22) + 60.0
+	var orig_x = _hero_pos[h_idx].x if h_idx < _hero_pos.size() else W*0.65
+	var tgt_x = (_enemy_pos[e_idx].x if e_idx < _enemy_pos.size() else W*0.22) + 60.0
 	var tw := create_tween()
 	tw.tween_method(
 		func(v): if h_idx < _hero_offsets.size(): _hero_offsets[h_idx].x = v; queue_redraw(),
@@ -524,8 +524,8 @@ func _anim_hero_attack(h_idx: int, e_idx: int, on_hit: Callable, on_done: Callab
 	)
 
 func _anim_enemy_attack_async(e_idx: int, h_idx: int, on_hit: Callable) -> void:
-	var orig_x := _enemy_pos[e_idx].x if e_idx < _enemy_pos.size() else W*0.22
-	var tgt_x  := (_hero_pos[h_idx].x if h_idx < _hero_pos.size() else W*0.65) - 60.0
+	var orig_x = _enemy_pos[e_idx].x if e_idx < _enemy_pos.size() else W*0.22
+	var tgt_x = (_hero_pos[h_idx].x if h_idx < _hero_pos.size() else W*0.65) - 60.0
 	var tw := create_tween()
 	tw.tween_method(
 		func(v): if e_idx < _enemy_offsets.size(): _enemy_offsets[e_idx].x = v; queue_redraw(),
@@ -603,20 +603,20 @@ func _draw() -> void:
 
 	# Enemy sprites
 	for i in _enemies.size():
-		var e := _enemies[i]
-		var rp := _enemy_pos[i] + _enemy_offsets[i]
+		var e = _enemies[i]
+		var rp = _enemy_pos[i] + _enemy_offsets[i]
 		rp.y += sin(_t * 0.045 + i * 1.3) * 2.5  # idle bob
 		_draw_enemy(rp, e)
 		# HP bar
-		var sz := e.get("sz", 28)
+		var sz = e.get("sz", 28)
 		_draw_hp_bar(Vector2(rp.x - sz, _ground_y + 6), sz*2, 7, e.hp, e.get("max_hp", e.hp), Color("#e04040"))
 		# Name
 		_draw_text_centered(e.name, rp + Vector2(0, 20), 11, Color("#c8a060"))
 
 	# Hero sprites
 	for i in _party.size():
-		var m := _party[i]
-		var rp := _hero_pos[i] + _hero_offsets[i]
+		var m = _party[i]
+		var rp = _hero_pos[i] + _hero_offsets[i]
 		_draw_hero(rp, m)
 
 	# Log strip
@@ -642,16 +642,16 @@ func _draw() -> void:
 	# Float texts & particles
 	for f in _floats:
 		if f.has("type") and f.type == "particle":
-			var pd := f.data
-			var prog := f.age / f.max_age
-			var pp := pd.start.lerp(pd.end, prog)
-			var alpha := 1.0 - prog
+			var pd = f.data
+			var prog = f.age / f.max_age
+			var pp = pd.start.lerp(pd.end, prog)
+			var alpha = 1.0 - prog
 			draw_circle(pp, pd.r * (1.0 - prog*0.8), Color(pd.color.r, pd.color.g, pd.color.b, alpha))
 		else:
-			var prog := f.age / f.max_age
-			var fp := f.pos - Vector2(0, 65.0 * prog)
-			var alpha := 1.0 - prog
-			var sc := 1.0 + prog * 0.3
+			var prog = f.age / f.max_age
+			var fp = f.pos - Vector2(0, 65.0 * prog)
+			var alpha = 1.0 - prog
+			var sc = 1.0 + prog * 0.3
 			_draw_text_centered(f.text, fp, int(f.size * sc), Color(f.color.r, f.color.g, f.color.b, alpha))
 
 	# Screen flash overlay
@@ -668,18 +668,18 @@ func _draw_status_panel() -> void:
 	var fs := int(max(11, row_h * 0.28))
 	var fs_s := max(9, fs-3)
 	for i in _party.size():
-		var m := _party[i]
+		var m = _party[i]
 		var ry := py + i * row_h
 		var sel := i == _actor_idx and _phase == "playerTurn"
 		if sel:
 			draw_rect(Rect2(px+2, ry, pw-4, row_h), Color("#9a7828",0.14))
 		if i > 0:
 			draw_line(Vector2(px+6,ry), Vector2(px+pw-6,ry), Color("#3a2808",0.5), 1.0)
-		var col := Color("#ffd700") if sel else (Color("#484040") if m.get("dead",false) else Color("#e8c060"))
+		var col = Color("#ffd700") if sel else (Color("#484040") if m.get("dead",false) else Color("#e8c060"))
 		_draw_text(("▶ " if sel else "  ") + m.name, Vector2(px+10, ry+row_h*0.28), fs, col)
 		var bar_w := pw * 0.52; var bx := px+10
 		var bh := max(5.0, row_h*0.13)
-		var st := Data.calc_stats(m)
+		var st = Data.calc_stats(m)
 		_draw_hp_bar(Vector2(bx, ry+row_h*0.46), bar_w, bh, m.hp, m.max_hp, Color("#e04040"))
 		_draw_hp_bar(Vector2(bx, ry+row_h*0.70), bar_w, bh, m.mp, st.max_mp, Color("#4060e0"))
 		_draw_text(str(m.hp), Vector2(bx+bar_w+5, ry+row_h*0.52), fs_s, Color("#e05050"))
@@ -687,7 +687,7 @@ func _draw_status_panel() -> void:
 
 func _draw_menu_panel() -> void:
 	if _actor_idx >= _party.size(): return
-	var actor := _party[_actor_idx]
+	var actor = _party[_actor_idx]
 	if actor.get("dead",false): return
 	var px := _split_x+2; var py := _ui_y; var pw := W-_split_x-2; var ph := _ui_h
 	draw_rect(Rect2(px,py,pw,ph), Color("#080612",0.97))
@@ -705,13 +705,13 @@ func _draw_menu_panel() -> void:
 				draw_rect(Rect2(px+c*col_w+4, py+r*rh+4, col_w-8, rh-8), Color("#b09030",0.6), false)
 			_draw_text(("▶ " if sel else "")+cmds[i], Vector2(tx,ty+fs*0.4), fs, Color("#ffd700") if sel else Color("#c8a060"))
 	elif _sub_mode == "skill":
-		var skills := actor.get("skills",[]).map(func(sk): return Data.SKILLS.get(sk,{})).filter(func(s): return not s.is_empty())
+		var skills = actor.get("skills",[]).map(func(sk): return Data.SKILLS.get(sk,{})).filter(func(s): return not s.is_empty())
 		var rh := max(30.0, ph/max(4,skills.size()))
 		for i in skills.size():
-			var sk := skills[i]; var sel := i == _sub_cursor
+			var sk = skills[i]; var sel := i == _sub_cursor
 			var ty := py + i*rh
 			if sel: draw_rect(Rect2(px+4, ty+2, pw-8, rh-4), Color("#9a7828",0.25))
-			var mp_ok := actor.get("mp",0) >= sk.get("mp",0)
+			var mp_ok = actor.get("mp",0) >= sk.get("mp",0)
 			_draw_text(("▶ " if sel else "  ")+sk.name, Vector2(px+18, ty+rh*0.62), fs, (Color("#ffd700") if sel else Color("#c8a060")) if mp_ok else Color("#555"))
 			_draw_text_right("MP:%d" % sk.get("mp",0), Vector2(px+pw-10, ty+rh*0.62), fs-3, Color("#5080e8"))
 	elif _sub_mode == "item":
@@ -724,17 +724,17 @@ func _draw_menu_panel() -> void:
 		else:
 			var rh := max(30.0, ph/max(4,items.size()))
 			for i in items.size():
-				var it := Data.ITEMS.get(items[i],{}); var sel := i == _sub_cursor
+				var it = Data.ITEMS.get(items[i],{}); var sel := i == _sub_cursor
 				var ty := py + i*rh
 				if sel: draw_rect(Rect2(px+4, ty+2, pw-8, rh-4), Color("#9a7828",0.25))
 				_draw_text(("▶ " if sel else "  ")+it.get("name","?")+(" ×%d" % GS.inventory.get(items[i],0)), Vector2(px+18, ty+rh*0.62), fs, Color("#ffd700") if sel else Color("#c8a060"))
 	elif _sub_mode == "target":
 		var rh := max(30.0, ph/max(3,_target_list.size()))
 		for i in _target_list.size():
-			var tgt := _target_list[i]; var sel := i == _sub_cursor
+			var tgt = _target_list[i]; var sel := i == _sub_cursor
 			var ty := py + i*rh
 			if sel: draw_rect(Rect2(px+4, ty+2, pw-8, rh-4), Color("#9a7828",0.25))
-			var label := tgt.e.get("name","?") if tgt.get("is_enemy",false) else tgt.get("m",{}).get("name","?")
+			var label = tgt.e.get("name","?") if tgt.get("is_enemy",false) else tgt.get("m",{}).get("name","?")
 			_draw_text(("▶ " if sel else "  ")+label, Vector2(px+18, ty+rh*0.62), fs, Color("#ffd700") if sel else Color("#c8a060"))
 
 # ── Sprite drawing ────────────────────────────────────────────

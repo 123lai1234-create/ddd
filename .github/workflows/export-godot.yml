@@ -19,7 +19,7 @@ env:
   GODOT_RELEASE: "stable"
   NETLIFY_SITE_ID: 65af318c-45c6-413e-837b-685a4fc01444
   VERCEL_ORG_ID: team_a3kKe1wDrxqQfuXTUnw4SUxw
-  VERCEL_PROJECT_ID: prj_Knbnl6axKI8AQJApFYlIx2sQ4aXV
+  VERCEL_PROJECT_ID: prj_wQljgcHZu1IhJ0CBloPc4yiWJlcb
 
 jobs:
   export-and-deploy:
@@ -89,13 +89,16 @@ jobs:
         run: cd astro && npm run build
 
       # ── Deploy ───────────────────────────────────────────────
-      - name: Deploy to Vercel
+      - name: Deploy to Vercel (prebuilt)
         continue-on-error: true
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           [ -z "$VERCEL_TOKEN" ] && echo "::warning::VERCEL_TOKEN not set" && exit 0
-          npx --yes vercel deploy --prod --yes --token="$VERCEL_TOKEN" 2>&1 | tail -5
+          mkdir -p .vercel/output/static
+          cp -r astro/dist/. .vercel/output/static/
+          echo '{"version":3}' > .vercel/output/config.json
+          npx --yes vercel deploy --prod --prebuilt --token="$VERCEL_TOKEN" 2>&1 | tail -10
 
       - name: Deploy to Netlify
         continue-on-error: true
