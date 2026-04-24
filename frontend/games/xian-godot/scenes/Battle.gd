@@ -111,7 +111,7 @@ func _ready() -> void:
 	# Start player turn after intro
 	get_tree().create_timer(0.9).timeout.connect(func():
 		_phase = "playerTurn"
-		_add_log("遭遇了 " + _enemies.map(func(e): return e.name).join("、") + "！")
+		_add_log("遭遇了 " + "、".join(_enemies.map(func(e): return e.name)) + "！")
 		queue_redraw()
 	)
 

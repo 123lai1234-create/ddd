@@ -60,7 +60,7 @@ func bgm(theme: String) -> void:
 		return
 	stop_bgm()
 	_bgm_theme = theme
-	var t := BGM_THEMES.get(theme, {})
+	var t: Variant = BGM_THEMES.get(theme, {})
 	if t.is_empty():
 		return
 	var bpm: float = t.get("bpm", 120)

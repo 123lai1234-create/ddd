@@ -46,7 +46,7 @@ func add_member(id: String) -> void:
 	if not get_member(id).is_empty():
 		return
 	var m := Data.make_party_member(id)
-	var lv := max(1, party[0].lv if not party.is_empty() else 1)
+	var lv: int = max(1, party[0].lv if not party.is_empty() else 1)
 	for _i in range(1, lv):
 		level_up(m)
 	party.append(m)
