@@ -94,6 +94,7 @@ func play(name: String) -> void:
 		"heal":       _play_tone(523.0, 0.12, 0.3, "sine"); _play_tone(659.0, 0.15, 0.25, "sine")
 		"victory":    _play_victory()
 		"levelUp":    _play_level_up()
+		"openMenu":   _play_tone(392.0, 0.06, 0.2, "square"); _play_tone(523.0, 0.08, 0.18, "square")
 		"menuMove":   _play_tone(440.0, 0.06, 0.25, "square")
 		"menuSelect": _play_tone(523.0, 0.08, 0.3, "square"); _play_tone(659.0, 0.10, 0.25, "square")
 		"damage":     _play_tone(110.0, 0.10, 0.45, "noise")

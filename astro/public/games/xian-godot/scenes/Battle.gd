@@ -378,30 +378,50 @@ func _do_enemy_act(e: Dictionary) -> void:
 	if act.is_empty(): await get_tree().create_timer(0.4).timeout; return
 	var living_heroes := _party.filter(func(m): return not m.get("dead",false))
 	if living_heroes.is_empty(): return
-	var tgt := living_heroes[randi() % living_heroes.size()]
-	var p_idx := _party.find(tgt)
 	var e_idx := _enemies.find(e)
 
 	if act.get("type","") in ["atk","drain"]:
-		await _anim_enemy_attack_async(e_idx, p_idx, func():
-			var def_val := tgt.get("base_def", 5)
-			if "defend" in tgt.status: def_val = int(def_val * 1.5)
-			var dmg := _calc_dmg(e.get("atk",10), def_val, act.get("pow",1.0))
-			tgt.hp = max(0, tgt.hp - dmg)
-			if tgt.hp == 0: tgt.dead = true
-			if act.has("debuff"):
-				for k in act.debuff:
-					for _j in act.debuff[k]: tgt.status.append(k)
-			if act.get("type","") == "drain":
-				e.hp = min(e.get("max_hp",e.hp), e.hp + int(dmg * 0.5))
-			Sound.play("damage"); _shake(0.004, 0.24)
-			var hpos := _hero_pos[p_idx] if p_idx < _hero_pos.size() else Vector2(W*0.65, _ground_y)
-			_float_text(str(dmg), hpos+Vector2(0,-30), Color("#ff8888"), 17)
-			_spawn_particles(hpos+Vector2(0,10), Color("#ff4444"), 5, 28)
-			_add_log("%s 使用 %s，%s 受到 %d 點傷害！" % [e.name, act.name, tgt.name, dmg])
-			queue_redraw()
-		)
-		await get_tree().create_timer(0.38).timeout
+		if act.get("tgt","single") == "all":
+			# AOE — no dash, hit every living hero at once
+			_add_log("%s 使用 %s！" % [e.name, act.name])
+			_shake(0.007, 0.35)
+			for hero in living_heroes:
+				var def_val := hero.get("base_def", 5)
+				if "defend" in hero.status: def_val = int(def_val * 1.5)
+				var dmg := _calc_dmg(e.get("atk",10), def_val, act.get("pow",1.0))
+				hero.hp = max(0, hero.hp - dmg)
+				if hero.hp == 0: hero.dead = true
+				if act.has("debuff"):
+					for k in act.debuff:
+						for _j in act.debuff[k]: hero.status.append(k)
+				var pi := _party.find(hero)
+				var hpos := _hero_pos[pi] if pi < _hero_pos.size() else Vector2(W*0.65, _ground_y)
+				_float_text(str(dmg), hpos+Vector2(0,-30), Color("#ff8888"), 17)
+				_spawn_particles(hpos+Vector2(0,10), Color("#ff6644"), 6, 32)
+			Sound.play("damage"); queue_redraw()
+			await get_tree().create_timer(0.5).timeout
+		else:
+			var tgt := living_heroes[randi() % living_heroes.size()]
+			var p_idx := _party.find(tgt)
+			await _anim_enemy_attack_async(e_idx, p_idx, func():
+				var def_val := tgt.get("base_def", 5)
+				if "defend" in tgt.status: def_val = int(def_val * 1.5)
+				var dmg := _calc_dmg(e.get("atk",10), def_val, act.get("pow",1.0))
+				tgt.hp = max(0, tgt.hp - dmg)
+				if tgt.hp == 0: tgt.dead = true
+				if act.has("debuff"):
+					for k in act.debuff:
+						for _j in act.debuff[k]: tgt.status.append(k)
+				if act.get("type","") == "drain":
+					e.hp = min(e.get("max_hp",e.hp), e.hp + int(dmg * 0.5))
+				Sound.play("damage"); _shake(0.004, 0.24)
+				var hpos := _hero_pos[p_idx] if p_idx < _hero_pos.size() else Vector2(W*0.65, _ground_y)
+				_float_text(str(dmg), hpos+Vector2(0,-30), Color("#ff8888"), 17)
+				_spawn_particles(hpos+Vector2(0,10), Color("#ff4444"), 5, 28)
+				_add_log("%s 使用 %s，%s 受到 %d 點傷害！" % [e.name, act.name, tgt.name, dmg])
+				queue_redraw()
+			)
+			await get_tree().create_timer(0.38).timeout
 	elif act.get("type","") == "buff":
 		e.status.append(act.get("buff","atkUp"))
 		_add_log("%s 使用 %s！" % [e.name, act.name])
@@ -412,6 +432,12 @@ func _do_enemy_act(e: Dictionary) -> void:
 func _win_battle() -> void:
 	_phase = "win"; _waiting = true
 	Sound.play("victory"); Sound.stop_bgm()
+	# Mark boss(es) defeated so World NPC won't re-trigger
+	var is_boss_battle := false
+	for e in _enemies:
+		if e.get("boss", false):
+			GS.flags["defeated_" + e.get("id","")] = true
+			is_boss_battle = true
 	var exp_gain := 0; var gold_gain := 0
 	for e in _enemies:
 		exp_gain += Data.ENEMIES.get(e.get("id",""), {}).get("exp", 0)
@@ -431,22 +457,28 @@ func _win_battle() -> void:
 		while m.exp >= Data.exp_for_level(m.lv):
 			GS.level_up(m); level_ups.append(m.name)
 			Sound.play("levelUp")
-	GS.party = GS.party  # unchanged reference
 	for i in _party.size():
 		if i < GS.party.size():
 			GS.party[i].merge(_party[i], true)
-	var msg := "戰鬥勝利！獲得 %d EXP、%d 靈石。" % [exp_gain, gold_gain]
-	if not drops.is_empty(): msg += " 獲得：" + "、".join(drops) + "。"
-	if not level_ups.is_empty(): msg += " " + "、".join(level_ups) + " 升級！"
-	_add_log(msg)
 	# Victory flash
 	var tw := create_tween()
 	tw.tween_property(self, "modulate", Color(2,2,2,1), 0.1).set_trans(Tween.TRANS_LINEAR)
 	tw.tween_property(self, "modulate", Color.WHITE, 0.15)
-	_float_text("+%d EXP" % exp_gain, Vector2(W*0.5, H*0.46), Color("#88ffcc"), 18)
-	_float_text("+%d 靈石" % gold_gain, Vector2(W*0.5, H*0.53), Color("#ffd700"), 18)
-	await get_tree().create_timer(2.2).timeout
-	_fade_out("res://scenes/World.tscn")
+	if is_boss_battle:
+		_add_log("魔君已被消滅！天下從此太平！")
+		_float_text("勝利！", Vector2(W*0.5, H*0.40), Color("#ffd700"), 28)
+		_float_text("魔君已倒！", Vector2(W*0.5, H*0.50), Color("#ff88ff"), 20)
+		await get_tree().create_timer(3.8).timeout
+		_fade_out("res://scenes/World.tscn")
+	else:
+		var msg := "戰鬥勝利！獲得 %d EXP、%d 靈石。" % [exp_gain, gold_gain]
+		if not drops.is_empty(): msg += " 獲得：" + "、".join(drops) + "。"
+		if not level_ups.is_empty(): msg += " " + "、".join(level_ups) + " 升級！"
+		_add_log(msg)
+		_float_text("+%d EXP" % exp_gain, Vector2(W*0.5, H*0.46), Color("#88ffcc"), 18)
+		_float_text("+%d 靈石" % gold_gain, Vector2(W*0.5, H*0.53), Color("#ffd700"), 18)
+		await get_tree().create_timer(2.2).timeout
+		_fade_out("res://scenes/World.tscn")
 
 func _lose_battle() -> void:
 	_phase = "lose"; _waiting = true

@@ -561,15 +561,15 @@ func _draw_shop() -> void:
 	var vp := get_viewport_rect()
 	var W := vp.size.x
 	var H := vp.size.y
-	var panel_w := W * 0.82
-	var panel_h := H * 0.6
+	var panel_w := W * 0.88
+	var panel_h := H * 0.72
 	var px := (W - panel_w) * 0.5
 	var py := (H - panel_h) * 0.5
 	draw_rect(Rect2(px, py, panel_w, panel_h), Color("#080612", 0.97))
 	draw_rect(Rect2(px, py, panel_w, panel_h), Color("#7a5c1e", 0.8), false)
 	_draw_text_centered("商店", Vector2(W * 0.5, py + 24), 18, Color("#ffd700"))
 	_draw_text("💰 " + str(GS.gold), Vector2(px + 12, py + 24), 14, Color("#ffd700"))
-	var row_h := 36.0
+	var row_h := min(44.0, (panel_h - 48) / max(1, _shop_items.size()))
 	var list_y := py + 42.0
 	for i in _shop_items.size():
 		var item_id: String = _shop_items[i]
@@ -577,11 +577,26 @@ func _draw_shop() -> void:
 		var sel := i == _shop_cursor
 		var iy := list_y + i * row_h
 		if sel:
-			draw_rect(Rect2(px + 4, iy, panel_w - 8, row_h - 4), Color("#9a7828", 0.25))
+			draw_rect(Rect2(px + 4, iy, panel_w - 8, row_h - 3), Color("#9a7828", 0.25))
 		var col := Color("#ffd700") if sel else Color("#c8a060")
 		var prefix := "▶ " if sel else "  "
-		_draw_text(prefix + item.get("name", "?"), Vector2(px + 18, iy + 24), 15, col)
-		_draw_text_right("%d 靈石" % item.get("price", 0), Vector2(px + panel_w - 12, iy + 24), 14, Color("#a0c8ff"))
+		_draw_text(prefix + item.get("name", "?"), Vector2(px + 18, iy + row_h * 0.52), 15, col)
+		_draw_text_right("%d 靈石" % item.get("price", 0), Vector2(px + panel_w - 12, iy + row_h * 0.52), 14, Color("#a0c8ff"))
+		# Stat hint for equipment
+		if item.get("cat","") == "eq":
+			var hint := ""
+			if item.has("atk"): hint += "ATK+%d " % item.atk
+			if item.has("def"): hint += "DEF+%d " % item.def
+			if item.has("mp"):  hint += "MP+%d " % item.mp
+			if item.has("luk"): hint += "LUK+%d" % item.luk
+			if item.has("who"): hint += " [%s]" % Data.CHARS.get(item.who, {}).get("name", item.who)
+			_draw_text(hint.strip_edges(), Vector2(px + 30, iy + row_h * 0.85), 11, Color("#88aacc", 0.85))
+		elif item.has("hp") or item.has("mp"):
+			var hint := ""
+			if item.has("hp"): hint += "HP+%d " % item.hp
+			if item.has("mp"): hint += "MP+%d" % item.mp
+			if item.has("revive"): hint = "復活%d%%" % item.revive
+			_draw_text(hint.strip_edges(), Vector2(px + 30, iy + row_h * 0.85), 11, Color("#88cc88", 0.85))
 	_draw_text_centered("Z/Enter 購買   X/Esc 離開", Vector2(W * 0.5, py + panel_h - 14), 12, Color("#9a8060", 0.8))
 
 func _draw_game_menu() -> void:
