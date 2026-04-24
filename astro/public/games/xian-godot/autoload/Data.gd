@@ -289,11 +289,11 @@ func exp_for_level(lv: int) -> int:
 	return int(100.0 * pow(lv, 1.5))
 
 func calc_stats(m: Dictionary) -> Dictionary:
-	var atk := m.base_atk
-	var def := m.base_def
-	var spd := m.base_spd
-	var luk := m.base_luk
-	var max_mp := m.max_mp
+	var atk: Variant = m.base_atk
+	var def: Variant = m.base_def
+	var spd: Variant = m.base_spd
+	var luk: Variant = m.base_luk
+	var max_mp: Variant = m.max_mp
 	for slot in ["wp", "ar", "ac"]:
 		var eq_id: String = m.equip.get(slot, "")
 		if eq_id == "":
