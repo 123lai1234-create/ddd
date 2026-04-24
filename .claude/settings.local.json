@@ -78,7 +78,8 @@
       "mcp__claude_ai_Supabase__deploy_edge_function",
       "mcp__claude_ai_Supabase__list_tables",
       "mcp__claude_ai_Supabase__execute_sql",
-      "Bash(cat ../vercel.json)"
+      "Bash(cat ../vercel.json)",
+      "Bash(git status *)"
     ]
   }
 }
