@@ -24,7 +24,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   NETLIFY_SITE_ID: 65af318c-45c6-413e-837b-685a4fc01444
   VERCEL_ORG_ID: team_a3kKe1wDrxqQfuXTUnw4SUxw
-  VERCEL_PROJECT_ID: prj_Knbnl6axKI8AQJApFYlIx2sQ4aXV
+  VERCEL_PROJECT_ID: prj_wQljgcHZu1IhJ0CBloPc4yiWJlcb
 
 jobs:
   build-and-deploy:
