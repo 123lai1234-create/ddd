@@ -288,7 +288,7 @@ func _handle_menu_input(event: InputEvent) -> void:
 			0: _open_item_sub()
 			1: _open_equip_sub()
 			2: _open_status_sub()
-			3: GS.save_game(0); _show_message("遊戲已存檔。"); _phase = "world"; queue_redraw()
+			3: _sub_phase = "save_slot"; _sub_cursor2 = 0; queue_redraw()
 			4: _phase = "world"; queue_redraw()
 	elif event.is_action_pressed("ui_cancel"):
 		_phase = "world"; Sound.play("menuMove"); queue_redraw()
@@ -354,6 +354,14 @@ func _handle_sub_input(event: InputEvent) -> void:
 		"status_detail":
 			if event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_accept"):
 				_sub_phase = "status"; Sound.play("menuMove"); queue_redraw()
+		"save_slot":
+			if event.is_action_pressed("ui_up"):   _sub_cursor2 = (_sub_cursor2-1+3)%3; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_down"): _sub_cursor2 = (_sub_cursor2+1)%3; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_cancel"): _sub_phase = ""; Sound.play("menuMove"); queue_redraw()
+			elif event.is_action_pressed("ui_accept"):
+				Sound.play("menuSelect"); GS.save_game(_sub_cursor2)
+				_show_message("遊戲已存檔至槽 %d！" % (_sub_cursor2+1))
+				_sub_phase = ""; _phase = "world"; queue_redraw()
 
 func _use_item_on(item_id: String, mi: int) -> void:
 	var it := Data.ITEMS.get(item_id, {})
@@ -609,6 +617,8 @@ func _draw_game_menu() -> void:
 		_draw_equip_panel(W, H); return
 	if _sub_phase in ["status", "status_detail"]:
 		_draw_status_screen(W, H); return
+	if _sub_phase == "save_slot":
+		_draw_save_slot_panel(W, H); return
 	var pw := W * 0.55
 	var ph := H * 0.48
 	var mx := W - pw - 8
@@ -771,6 +781,36 @@ func _draw_status_detail(W: float, H: float) -> void:
 		var sy2 := sk_y + 22 + int(i / 2) * 22
 		_draw_text(sk.name + "  MP:" + str(sk.get("mp", 0)), Vector2(sx2, sy2), 12, Color("#a0b8e0"))
 	_draw_text_centered("Z/X 返回", Vector2(px + pw * 0.5, py + ph - 14), 12, Color("#9a8060", 0.8))
+
+func _draw_save_slot_panel(W: float, H: float) -> void:
+	var pw := W * 0.82; var ph := 3 * 52.0 + 56
+	var px := (W-pw)*0.5; var py := (H-ph)*0.5
+	draw_rect(Rect2(px,py,pw,ph), Color("#080612",0.97))
+	draw_rect(Rect2(px,py,pw,ph), Color("#7a5c1e",0.8), false)
+	_draw_text_centered("選擇存檔槽", Vector2(W*0.5, py+26), 15, Color("#ffd700"))
+	for i in 3:
+		var sel := i == _sub_cursor2
+		var iy := py + 44 + i * 52
+		if sel: draw_rect(Rect2(px+4, iy, pw-8, 48), Color("#9a7828",0.25))
+		var info := _get_slot_info(i)
+		var col := Color("#ffd700") if sel else Color("#c8a060")
+		_draw_text(("▶ " if sel else "  ") + "存檔 %d" % (i+1), Vector2(px+18, iy+20), 15, col)
+		_draw_text(info, Vector2(px+28, iy+40), 12, Color("#a0b8d0") if GS.has_save(i) else Color("#555"))
+	_draw_text_centered("X/Esc 取消", Vector2(W*0.5, py+ph-12), 12, Color("#9a8060",0.8))
+
+func _get_slot_info(slot: int) -> String:
+	if not GS.has_save(slot): return "── 空存檔 ──"
+	var path := "user://save_%d.json" % slot
+	var file := FileAccess.open(path, FileAccess.READ)
+	if not file: return "── 空存檔 ──"
+	var data = JSON.parse_string(file.get_as_text())
+	if not data is Dictionary: return "── 空存檔 ──"
+	var map_name: String = Data.MAPS.get(data.get("map_id",""), {}).get("name","?")
+	var party: Array = data.get("party", [])
+	var lv: int = party[0].get("lv", 1) if not party.is_empty() else 1
+	var gold: int = data.get("gold", 0)
+	var cleared: bool = data.get("flags", {}).get("game_cleared", false)
+	return "%s  Lv.%d  %d靈石%s" % [map_name, lv, gold, "  ★通關" if cleared else ""]
 
 func _draw_minimap(W: float, H: float, cam_x: float, cam_y: float) -> void:
 	var tiles: Array = _map.get("tiles", [])

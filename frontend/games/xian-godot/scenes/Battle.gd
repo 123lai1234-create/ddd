@@ -42,6 +42,10 @@ var _shake_y := 0.0
 var _shake_dur := 0.0
 var _shake_int := 0.0
 
+# Screen flash
+var _flash_alpha := 0.0
+var _flash_col := Color.WHITE
+
 # UI dims
 var _log_y := 0.0
 var _log_h := 0.0
@@ -270,7 +274,10 @@ func _hero_act(cmd: String, skill_id: String = "", item_id: String = "", target_
 			var msg := ""
 			if sk.get("type","") == "atk":
 				Sound.play("magic")
-				var targets := _enemies.filter(func(e): return not e.get("dead",false)) if sk.get("tgt","single") == "all" else [_enemies[target_idx]]
+				var is_aoe := sk.get("tgt","single") == "all"
+				var targets := _enemies.filter(func(e): return not e.get("dead",false)) if is_aoe else [_enemies[target_idx]]
+				if is_aoe:
+					_screen_flash(Color("#6688ff"), 0.35, 0.28)
 				var dmgs := []
 				for tgt in targets:
 					var d := _calc_dmg(st.atk, tgt.get("def",0), sk.get("pow",1.0), sk.get("pierce",0.0))
@@ -283,9 +290,11 @@ func _hero_act(cmd: String, skill_id: String = "", item_id: String = "", target_
 					var ei := _enemies.find(tgt)
 					var epos := _enemy_pos[ei] if ei < _enemy_pos.size() else Vector2(W*0.22, _ground_y)
 					var ey := epos.y - tgt.get("sz",28)*1.4
+					var ptcol := Color("#ffcc44") if is_aoe else Color("#8888ff")
+					var ptcount := 12 if is_aoe else 7
 					_float_text(str(d), Vector2(epos.x, ey), Color("#88aaff"), 18)
-					_spawn_particles(Vector2(epos.x, ey+20), Color("#8888ff"), 7, 40)
-				_shake(0.006)
+					_spawn_particles(Vector2(epos.x, ey+20), ptcol, ptcount, 50 if is_aoe else 40)
+				_shake(0.008 if is_aoe else 0.006)
 				msg = "%s 施展 %s，造成 %s 點傷害！" % [actor.name, sk.name, "/".join(dmgs.map(func(d): return str(d)))]
 			elif sk.get("type","") == "heal":
 				Sound.play("heal")
@@ -466,10 +475,12 @@ func _win_battle() -> void:
 	tw.tween_property(self, "modulate", Color.WHITE, 0.15)
 	if is_boss_battle:
 		_add_log("魔君已被消滅！天下從此太平！")
-		_float_text("勝利！", Vector2(W*0.5, H*0.40), Color("#ffd700"), 28)
-		_float_text("魔君已倒！", Vector2(W*0.5, H*0.50), Color("#ff88ff"), 20)
+		_float_text("勝利！", Vector2(W*0.5, H*0.38), Color("#ffd700"), 32)
+		_float_text("魔君已倒！", Vector2(W*0.5, H*0.50), Color("#ff88ff"), 22)
+		_screen_flash(Color("#ffe080"), 0.6, 0.8)
+		GS.flags["game_cleared"] = true
 		await get_tree().create_timer(3.8).timeout
-		_fade_out("res://scenes/World.tscn")
+		_fade_out("res://scenes/Ending.tscn")
 	else:
 		var msg := "戰鬥勝利！獲得 %d EXP、%d 靈石。" % [exp_gain, gold_gain]
 		if not drops.is_empty(): msg += " 獲得：" + "、".join(drops) + "。"
@@ -535,6 +546,11 @@ func _float_text(text: String, pos: Vector2, color: Color, size: float = 18.0) -
 func _shake(intensity: float = 0.005, duration: float = 0.26) -> void:
 	_shake_int = intensity * W
 	_shake_dur = duration
+
+func _screen_flash(col: Color, alpha: float = 0.45, dur: float = 0.22) -> void:
+	_flash_col = col; _flash_alpha = alpha
+	var tw := create_tween()
+	tw.tween_method(func(v): _flash_alpha = v; queue_redraw(), alpha, 0.0, dur)
 
 func _spawn_particles(pos: Vector2, color: Color, count: int = 8, spread: float = 40.0) -> void:
 	for i in count:
@@ -638,6 +654,10 @@ func _draw() -> void:
 			var sc := 1.0 + prog * 0.3
 			_draw_text_centered(f.text, fp, int(f.size * sc), Color(f.color.r, f.color.g, f.color.b, alpha))
 
+	# Screen flash overlay
+	if _flash_alpha > 0.0:
+		draw_rect(Rect2(0,0,W,H), Color(_flash_col.r,_flash_col.g,_flash_col.b,_flash_alpha))
+
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 func _draw_status_panel() -> void:
@@ -723,6 +743,17 @@ func _draw_enemy(pos: Vector2, e: Dictionary) -> void:
 	var sz := float(e.get("sz", 28))
 	var col: Color = e.get("color", Color("#884422"))
 	var cy := pos.y - sz*0.85; var hy := pos.y - sz*1.8; var hr := sz*0.62
+	# Status aura
+	var pulse := 0.5 + sin(_t * 4.2) * 0.5
+	if "atkUp" in e.status:
+		draw_ellipse_filled(Vector2(pos.x,cy), sz*1.25, sz*0.9, Color(1.0,0.15,0.05,0.18*pulse))
+		_draw_text_centered("ATK↑", pos+Vector2(0,-sz*2.5), 11, Color("#ff5533",pulse))
+	if "poison" in e.status:
+		draw_ellipse_filled(Vector2(pos.x,cy), sz*1.2, sz*0.85, Color(0.2,0.9,0.1,0.14*pulse))
+		_draw_text_centered("毒", pos+Vector2(sz*0.9,-sz*1.2), 10, Color("#44ee22",pulse))
+	if "slow" in e.status:
+		draw_ellipse_filled(Vector2(pos.x,cy), sz*1.2, sz*0.85, Color(0.1,0.4,0.9,0.14*pulse))
+		_draw_text_centered("緩", pos+Vector2(sz*0.9,-sz*1.2), 10, Color("#44aaff",pulse))
 	# Shadow
 	draw_ellipse_filled(pos + Vector2(0,3), sz*1.2, sz*0.15, Color(0,0,0,0.28))
 	# Body
