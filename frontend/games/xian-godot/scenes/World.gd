@@ -75,8 +75,8 @@ func _handle_world_input(delta: float) -> void:
 	elif Input.is_action_pressed("ui_right"):dx = 1;  _facing = "right"
 
 	if dx != 0 or dy != 0:
-		var nx := _px + dx
-		var ny := _py + dy
+		var nx = _px + dx
+		var ny = _py + dy
 		if _can_move(nx, ny):
 			_px = nx; _py = ny
 			GS.player_pos = Vector2i(_px, _py)
@@ -366,7 +366,7 @@ func _handle_sub_input(event: InputEvent) -> void:
 func _use_item_on(item_id: String, mi: int) -> void:
 	var it := Data.ITEMS.get(item_id, {})
 	if it.is_empty() or mi >= GS.party.size(): return
-	var m := GS.party[mi]
+	var m = GS.party[mi]
 	var msg := ""
 	if it.has("hp") and not m.get("dead", false):
 		m.hp = min(m.max_hp, m.hp + it.hp); msg = m.name + " 恢復了 " + str(it.hp) + " HP！"
@@ -382,7 +382,7 @@ func _use_item_on(item_id: String, mi: int) -> void:
 func _equip_item(item_id: String, mi: int) -> void:
 	var it := Data.ITEMS.get(item_id, {})
 	if it.is_empty() or mi >= GS.party.size(): return
-	var m := GS.party[mi]
+	var m = GS.party[mi]
 	var slot: String = it.get("slot", "")
 	if slot == "": return
 	var old: String = m.equip.get(slot, "")
@@ -421,8 +421,8 @@ func _draw() -> void:
 	for row in tiles.size():
 		for col in tiles[row].size():
 			var tile: int = tiles[row][col]
-			var tx := col * TS - cam_x
-			var ty := row * TS - cam_y
+			var tx = col * TS - cam_x
+			var ty = row * TS - cam_y
 			if tx + TS < 0 or tx > W or ty + TS < 0 or ty > H:
 				continue
 			var col_val: Color = Data.TILE_COLORS.get(tile, Color("#333"))
@@ -442,16 +442,16 @@ func _draw() -> void:
 
 	# Grid lines (subtle)
 	for row in range(int(cam_y / TS), int((cam_y + H) / TS) + 2):
-		var ty := row * TS - cam_y
+		var ty = row * TS - cam_y
 		draw_line(Vector2(0, ty), Vector2(W, ty), Color(0, 0, 0, 0.08), 0.5)
 	for col in range(int(cam_x / TS), int((cam_x + W) / TS) + 2):
-		var tx := col * TS - cam_x
+		var tx = col * TS - cam_x
 		draw_line(Vector2(tx, 0), Vector2(tx, H), Color(0, 0, 0, 0.08), 0.5)
 
 	# NPCs
 	for npc in _map.get("npcs", []):
-		var nx := npc.x * TS - cam_x + TS * 0.5
-		var ny := npc.y * TS - cam_y + TS * 0.5
+		var nx = npc.x * TS - cam_x + TS * 0.5
+		var ny = npc.y * TS - cam_y + TS * 0.5
 		if nx < -TS or nx > W + TS or ny < -TS or ny > H + TS:
 			continue
 		_draw_npc(Vector2(nx, ny), npc)
@@ -582,8 +582,8 @@ func _draw_shop() -> void:
 	for i in _shop_items.size():
 		var item_id: String = _shop_items[i]
 		var item: Dictionary = Data.ITEMS.get(item_id, {})
-		var sel := i == _shop_cursor
-		var iy := list_y + i * row_h
+		var sel = i == _shop_cursor
+		var iy = list_y + i * row_h
 		if sel:
 			draw_rect(Rect2(px + 4, iy, panel_w - 8, row_h - 3), Color("#9a7828", 0.25))
 		var col := Color("#ffd700") if sel else Color("#c8a060")
@@ -628,8 +628,8 @@ func _draw_game_menu() -> void:
 	_draw_text_centered("選單", Vector2(mx + pw * 0.5, my + 24), 16, Color("#ffd700"))
 	var row_h := ph / (_menu_items.size() + 0.5)
 	for i in _menu_items.size():
-		var sel := i == _menu_cursor
-		var iy := my + 36 + i * row_h
+		var sel = i == _menu_cursor
+		var iy = my + 36 + i * row_h
 		if sel:
 			draw_rect(Rect2(mx + 4, iy - 4, pw - 8, row_h - 2), Color("#9a7828", 0.25))
 		var col := Color("#ffd700") if sel else Color("#c8a060")
@@ -644,12 +644,12 @@ func _draw_item_panel(W: float, H: float) -> void:
 	if _sub_list.is_empty():
 		_draw_text_centered("── 無道具 ──", Vector2(px + pw*0.5, py + ph*0.5), 15, Color("#555"))
 	else:
-		var rh := min(38.0, (ph - 48) / _sub_list.size())
+		var rh = min(38.0, (ph - 48) / _sub_list.size())
 		for i in _sub_list.size():
 			var id: String = _sub_list[i]
 			var it := Data.ITEMS.get(id, {})
-			var sel := i == _sub_cursor and _sub_phase == "item"
-			var iy := py + 40 + i * rh
+			var sel = i == _sub_cursor and _sub_phase == "item"
+			var iy = py + 40 + i * rh
 			if sel: draw_rect(Rect2(px + 4, iy, pw - 8, rh - 3), Color("#9a7828", 0.22))
 			_draw_text(("▶ " if sel else "  ") + it.get("name", "?"), Vector2(px + 18, iy + rh * 0.68), 15, Color("#ffd700") if sel else Color("#c8a060"))
 			var desc := ""
@@ -671,14 +671,14 @@ func _draw_equip_panel(W: float, H: float) -> void:
 	if _sub_list.is_empty():
 		_draw_text_centered("── 無裝備道具 ──", Vector2(px + pw*0.5, py + ph*0.5), 15, Color("#555"))
 	else:
-		var rh := min(38.0, (ph - 48) / _sub_list.size())
+		var rh = min(38.0, (ph - 48) / _sub_list.size())
 		for i in _sub_list.size():
 			var id: String = _sub_list[i]
 			var it := Data.ITEMS.get(id, {})
-			var sel := i == _sub_cursor and _sub_phase == "equip"
-			var iy := py + 40 + i * rh
+			var sel = i == _sub_cursor and _sub_phase == "equip"
+			var iy = py + 40 + i * rh
 			if sel: draw_rect(Rect2(px + 4, iy, pw - 8, rh - 3), Color("#9a7828", 0.22))
-			var label := it.get("name", "?")
+			var label = it.get("name", "?")
 			if it.has("who"): label += "  [%s]" % Data.CHARS.get(it.who, {}).get("name", it.who)
 			_draw_text(("▶ " if sel else "  ") + label, Vector2(px + 18, iy + rh * 0.68), 15, Color("#ffd700") if sel else Color("#c8a060"))
 			var stat := ""
@@ -704,9 +704,9 @@ func _draw_member_picker_list(W: float, H: float, members: Array, _equip_mode: b
 	draw_rect(Rect2(px, py, pw, ph), Color("#7a5c1e", 0.9), false)
 	_draw_text_centered("選擇對象", Vector2(px + pw * 0.5, py + 22), 14, Color("#ffd700"))
 	for i in members.size():
-		var m := members[i]
-		var sel := i == _sub_cursor2
-		var iy := py + 32 + i * 48
+		var m = members[i]
+		var sel = i == _sub_cursor2
+		var iy = py + 32 + i * 48
 		if sel: draw_rect(Rect2(px + 4, iy, pw - 8, 44), Color("#9a7828", 0.25))
 		var col := Color("#ffd700") if sel else Color("#c8a060")
 		var dead_tag := "  [陣亡]" if m.get("dead", false) else ""
@@ -721,12 +721,12 @@ func _draw_status_screen(W: float, H: float) -> void:
 	draw_rect(Rect2(px, py, pw, ph), Color("#080612", 0.97))
 	draw_rect(Rect2(px, py, pw, ph), Color("#7a5c1e", 0.8), false)
 	_draw_text_centered("隊伍狀態", Vector2(px + pw * 0.5, py + 24), 17, Color("#ffd700"))
-	var rh := (ph - 48.0) / max(1, GS.party.size())
+	var rh = (ph - 48.0) / max(1, GS.party.size())
 	for i in GS.party.size():
-		var m := GS.party[i]
-		var st := Data.calc_stats(m)
-		var sel := i == _sub_cursor
-		var iy := py + 40 + i * rh
+		var m = GS.party[i]
+		var st = Data.calc_stats(m)
+		var sel = i == _sub_cursor
+		var iy = py + 40 + i * rh
 		if sel: draw_rect(Rect2(px + 4, iy, pw - 8, rh - 3), Color("#9a7828", 0.22))
 		var col := Color("#ffd700") if sel else (Color("#555") if m.get("dead", false) else Color("#c8a060"))
 		_draw_text(("▶ " if sel else "  ") + m.name + "  Lv." + str(m.lv) + "  " + m.title, Vector2(px + 18, iy + rh * 0.3), 15, col)
@@ -735,8 +735,8 @@ func _draw_status_screen(W: float, H: float) -> void:
 
 func _draw_status_detail(W: float, H: float) -> void:
 	if _sub_cursor >= GS.party.size(): return
-	var m := GS.party[_sub_cursor]
-	var st := Data.calc_stats(m)
+	var m = GS.party[_sub_cursor]
+	var st = Data.calc_stats(m)
 	var exp_next := Data.exp_for_level(m.lv)
 	var pw := W * 0.92; var ph := H * 0.88
 	var px := (W - pw) * 0.5; var py := (H - ph) * 0.5
@@ -767,7 +767,7 @@ func _draw_status_detail(W: float, H: float) -> void:
 	for i in slots.size():
 		var slot_id: String = slots[i][0]; var slot_name: String = slots[i][1]
 		var eq_id: String = m.equip.get(slot_id, "")
-		var eq_name := Data.ITEMS.get(eq_id, {}).get("name", "── 未裝備 ──") if eq_id != "" else "── 未裝備 ──"
+		var eq_name = Data.ITEMS.get(eq_id, {}).get("name", "── 未裝備 ──") if eq_id != "" else "── 未裝備 ──"
 		_draw_text(slot_name + "：" + eq_name, Vector2(px + 16, eq_y + 22 + i * 24), 13, Color("#c8b080") if eq_id != "" else Color("#555"))
 	# Skills
 	var sk_y := eq_y + 100.0
@@ -789,8 +789,8 @@ func _draw_save_slot_panel(W: float, H: float) -> void:
 	draw_rect(Rect2(px,py,pw,ph), Color("#7a5c1e",0.8), false)
 	_draw_text_centered("選擇存檔槽", Vector2(W*0.5, py+26), 15, Color("#ffd700"))
 	for i in 3:
-		var sel := i == _sub_cursor2
-		var iy := py + 44 + i * 52
+		var sel = i == _sub_cursor2
+		var iy = py + 44 + i * 52
 		if sel: draw_rect(Rect2(px+4, iy, pw-8, 48), Color("#9a7828",0.25))
 		var info := _get_slot_info(i)
 		var col := Color("#ffd700") if sel else Color("#c8a060")
@@ -816,12 +816,12 @@ func _draw_minimap(W: float, H: float, cam_x: float, cam_y: float) -> void:
 	var tiles: Array = _map.get("tiles", [])
 	if tiles.is_empty():
 		return
-	var mw := tiles[0].size()
-	var mh := tiles.size()
+	var mw = tiles[0].size()
+	var mh = tiles.size()
 	var cell := 4.0
-	var mm_w := mw * cell
-	var mm_h := mh * cell
-	var mm_x := W - mm_w - 6
+	var mm_w = mw * cell
+	var mm_h = mh * cell
+	var mm_x = W - mm_w - 6
 	var mm_y := H - mm_h - 6
 	draw_rect(Rect2(mm_x - 2, mm_y - 2, mm_w + 4, mm_h + 4), Color(0,0,0,0.55))
 	for row in mh:

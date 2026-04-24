@@ -147,7 +147,7 @@ func _draw() -> void:
 		var menu_y := H * 0.48
 		var row_h := H * 0.072
 		for i in MENU_ITEMS.size():
-			var sel := i == _cursor and _sub_mode == ""
+			var sel = i == _cursor and _sub_mode == ""
 			var by := menu_y + i * row_h
 			if sel:
 				draw_rect(Rect2(W * 0.28, by - row_h * 0.45, W * 0.44, row_h * 0.9), Color(0.6, 0.47, 0.12, 0.22))
@@ -166,7 +166,7 @@ func _draw() -> void:
 
 	# Message
 	if _msg != "":
-		var mw := _font.get_string_size(_msg, HORIZONTAL_ALIGNMENT_LEFT,-1,14).x if _font else 100
+		var mw = _font.get_string_size(_msg, HORIZONTAL_ALIGNMENT_LEFT,-1,14).x if _font else 100
 		draw_rect(Rect2(W*0.5-mw*0.5-12, H*0.72, mw+24, 28), Color(0,0,0,0.82))
 		_draw_text_centered(_msg, Vector2(W*0.5, H*0.735), 14, Color("#ff8888"))
 
@@ -180,8 +180,8 @@ func _draw_slot_picker(W: float, H: float) -> void:
 	draw_rect(Rect2(px, py, pw, ph), Color("#7a5c1e", 0.8), false)
 	_draw_text_centered(title, Vector2(W*0.5, py+26), 15, Color("#ffd700"))
 	for i in 3:
-		var sel := i == _slot_cursor
-		var iy := py + 44 + i * 52
+		var sel = i == _slot_cursor
+		var iy = py + 44 + i * 52
 		if sel: draw_rect(Rect2(px+4, iy, pw-8, 48), Color("#9a7828", 0.25))
 		var info := _get_slot_info(i)
 		var col := Color("#ffd700") if sel else Color("#c8a060")
@@ -208,7 +208,7 @@ func _draw_help(W: float, H: float) -> void:
 	]
 	var lh := (ph - 56) / lines.size()
 	for i in lines.size():
-		var ln := lines[i]
+		var ln = lines[i]
 		if ln[0] == "": continue
 		_draw_text(ln[0], Vector2(px+20, py+50+i*lh), 13, Color("#ffd700"))
 		_draw_text_right(ln[1], Vector2(px+pw-16, py+50+i*lh), 13, Color("#c8e0f0"))
