@@ -18,7 +18,7 @@
       "destination": "https://donttalk-api-production.up.railway.app/healthz"
     },
     {
-      "source": "/api/(?!og$):path*",
+      "source": "/api/:path*",
       "destination": "https://donttalk-api-production.up.railway.app/api/:path*"
     }
   ],
