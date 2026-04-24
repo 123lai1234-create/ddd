@@ -392,9 +392,8 @@ class TestGetConnection(unittest.TestCase):
         mock_connection = MagicMock()
         mock_pool.getconn.return_value = mock_connection
 
-        with patch("site_api.db._DB_POOL", mock_pool), self.assertRaisesRegex(RuntimeError, "boom"):
-            with get_connection():
-                raise RuntimeError("boom")
+        with patch("site_api.db._DB_POOL", mock_pool), self.assertRaisesRegex(RuntimeError, "boom"), get_connection():
+            raise RuntimeError("boom")
 
         mock_connection.rollback.assert_called_once_with()
         mock_pool.putconn.assert_called_once_with(mock_connection)
@@ -423,9 +422,9 @@ class TestGetConnection(unittest.TestCase):
             patch("site_api.db.get_database_url_candidates", return_value=["postgres://direct"]),
             patch("site_api.db.psycopg.connect", return_value=mock_connection),
             self.assertRaisesRegex(RuntimeError, "boom"),
+            get_connection(),
         ):
-            with get_connection():
-                raise RuntimeError("boom")
+            raise RuntimeError("boom")
 
         mock_connection.rollback.assert_called_once_with()
         mock_connection.close.assert_called_once_with()
