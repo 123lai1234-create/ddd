@@ -334,7 +334,7 @@ func _handle_sub_input(event: InputEvent) -> void:
 			elif event.is_action_pressed("ui_accept") and not _sub_list.is_empty():
 				Sound.play("menuSelect"); _sub_pending = _sub_list[_sub_cursor]; _sub_cursor2 = 0; _sub_phase = "equip_tgt"; queue_redraw()
 		"equip_tgt":
-			var it := Data.ITEMS.get(_sub_pending, {})
+			var it = Data.ITEMS.get(_sub_pending, {})
 			var who: String = it.get("who", "")
 			var targets := GS.party.filter(func(m): return who == "" or m.id == who)
 			var n := max(1, targets.size())
@@ -364,7 +364,7 @@ func _handle_sub_input(event: InputEvent) -> void:
 				_sub_phase = ""; _phase = "world"; queue_redraw()
 
 func _use_item_on(item_id: String, mi: int) -> void:
-	var it := Data.ITEMS.get(item_id, {})
+	var it = Data.ITEMS.get(item_id, {})
 	if it.is_empty() or mi >= GS.party.size(): return
 	var m = GS.party[mi]
 	var msg := ""
@@ -380,7 +380,7 @@ func _use_item_on(item_id: String, mi: int) -> void:
 	Sound.play("heal")
 
 func _equip_item(item_id: String, mi: int) -> void:
-	var it := Data.ITEMS.get(item_id, {})
+	var it = Data.ITEMS.get(item_id, {})
 	if it.is_empty() or mi >= GS.party.size(): return
 	var m = GS.party[mi]
 	var slot: String = it.get("slot", "")
@@ -647,7 +647,7 @@ func _draw_item_panel(W: float, H: float) -> void:
 		var rh = min(38.0, (ph - 48) / _sub_list.size())
 		for i in _sub_list.size():
 			var id: String = _sub_list[i]
-			var it := Data.ITEMS.get(id, {})
+			var it = Data.ITEMS.get(id, {})
 			var sel = i == _sub_cursor and _sub_phase == "item"
 			var iy = py + 40 + i * rh
 			if sel: draw_rect(Rect2(px + 4, iy, pw - 8, rh - 3), Color("#9a7828", 0.22))
@@ -674,7 +674,7 @@ func _draw_equip_panel(W: float, H: float) -> void:
 		var rh = min(38.0, (ph - 48) / _sub_list.size())
 		for i in _sub_list.size():
 			var id: String = _sub_list[i]
-			var it := Data.ITEMS.get(id, {})
+			var it = Data.ITEMS.get(id, {})
 			var sel = i == _sub_cursor and _sub_phase == "equip"
 			var iy = py + 40 + i * rh
 			if sel: draw_rect(Rect2(px + 4, iy, pw - 8, rh - 3), Color("#9a7828", 0.22))
@@ -687,7 +687,7 @@ func _draw_equip_panel(W: float, H: float) -> void:
 			if it.has("mp"):  stat += "MP+%d" % it.mp
 			_draw_text_right(stat.strip_edges(), Vector2(px + pw - 12, iy + rh * 0.68), 12, Color("#88ccff"))
 	if _sub_phase == "equip_tgt":
-		var it := Data.ITEMS.get(_sub_pending, {})
+		var it = Data.ITEMS.get(_sub_pending, {})
 		var who: String = it.get("who", "")
 		var targets := GS.party.filter(func(m): return who == "" or m.id == who)
 		_draw_member_picker_list(W, H, targets, false)
@@ -775,7 +775,7 @@ func _draw_status_detail(W: float, H: float) -> void:
 	_draw_text("技能", Vector2(px + 16, sk_y + 4), 13, Color("#ffd700"))
 	var skills: Array = m.get("skills", [])
 	for i in skills.size():
-		var sk := Data.SKILLS.get(skills[i], {})
+		var sk = Data.SKILLS.get(skills[i], {})
 		if sk.is_empty(): continue
 		var sx2 := px + 16 + (i % 2) * col_w
 		var sy2 := sk_y + 22 + int(i / 2) * 22
