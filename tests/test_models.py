@@ -344,9 +344,9 @@ class TestMarketSyncRequest(unittest.TestCase):
             MarketSyncRequest(twse_months=0)
 
     def test_twse_months_above_maximum(self):
-        """Test that twse_months above 12 is rejected."""
+        """Test that twse_months above 120 is rejected."""
         with self.assertRaises(ValidationError):
-            MarketSyncRequest(twse_months=13)
+            MarketSyncRequest(twse_months=121)
 
     def test_stock_symbols_string_input(self):
         """Test that comma-separated string is split into list."""
