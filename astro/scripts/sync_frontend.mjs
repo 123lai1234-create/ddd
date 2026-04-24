@@ -39,7 +39,10 @@ for (const dir of dirs) {
         continue;
     }
     try {
-        await fs.rm(dest, { recursive: true, force: true });
+        // games/ uses merge mode to preserve Godot web exports alongside source
+        if (dir !== 'games') {
+            await fs.rm(dest, { recursive: true, force: true });
+        }
         await copyDir(src, dest);
         console.log(`synced ${dir}/`);
     } catch (err) {
