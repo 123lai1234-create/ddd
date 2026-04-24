@@ -822,7 +822,7 @@ func _draw_minimap(W: float, H: float, cam_x: float, cam_y: float) -> void:
 	var mm_w = mw * cell
 	var mm_h = mh * cell
 	var mm_x = W - mm_w - 6
-	var mm_y := H - mm_h - 6
+	var mm_y = H - mm_h - 6
 	draw_rect(Rect2(mm_x - 2, mm_y - 2, mm_w + 4, mm_h + 4), Color(0,0,0,0.55))
 	for row in mh:
 		for col in mw:

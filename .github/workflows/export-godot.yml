@@ -12,22 +12,21 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   GODOT_VERSION: "4.3"
   GODOT_RELEASE: "stable"
-  NETLIFY_SITE_ID: 65af318c-45c6-413e-837b-685a4fc01444
-  VERCEL_ORG_ID: team_a3kKe1wDrxqQfuXTUnw4SUxw
-  VERCEL_PROJECT_ID: prj_wQljgcHZu1IhJ0CBloPc4yiWJlcb
 
 jobs:
   export-and-deploy:
-    name: Export Godot → Deploy
+    name: Export Godot → Commit → Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # ── Godot install (cached) ───────────────────────────────
       - name: Cache Godot binary + export templates
@@ -69,6 +68,16 @@ jobs:
           echo "=== Exported files ==="
           ls -lh astro/public/games/xian-godot/
 
+      # ── Commit exported files so Deploy Frontend always has them ─
+      - name: Commit web export to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add astro/public/games/xian-godot/
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "auto: update Godot web export [skip export]"
+          git push
+
       # ── Build Astro ──────────────────────────────────────────
       - uses: actions/setup-node@v4
         with:
@@ -88,25 +97,16 @@ jobs:
       - name: Build Astro
         run: cd astro && npm run build
 
-      # ── Deploy ───────────────────────────────────────────────
+      # ── Deploy immediately (Deploy Frontend will also fire) ──
       - name: Deploy to Vercel (prebuilt)
         continue-on-error: true
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_a3kKe1wDrxqQfuXTUnw4SUxw
+          VERCEL_PROJECT_ID: prj_wQljgcHZu1IhJ0CBloPc4yiWJlcb
         run: |
           [ -z "$VERCEL_TOKEN" ] && echo "::warning::VERCEL_TOKEN not set" && exit 0
           mkdir -p .vercel/output/static
           cp -r astro/dist/. .vercel/output/static/
           echo '{"version":3}' > .vercel/output/config.json
           npx --yes vercel deploy --prod --prebuilt --token="$VERCEL_TOKEN" 2>&1 | tail -10
-
-      - name: Deploy to Netlify
-        continue-on-error: true
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        run: |
-          [ -z "$NETLIFY_AUTH_TOKEN" ] && echo "::warning::NETLIFY_AUTH_TOKEN not set" && exit 0
-          npx --yes netlify-cli deploy \
-            --dir=astro/dist --prod \
-            --site="$NETLIFY_SITE_ID" \
-            --auth="$NETLIFY_AUTH_TOKEN"
