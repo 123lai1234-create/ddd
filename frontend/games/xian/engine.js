@@ -79,22 +79,61 @@ function bar(ctx,x,y,w,h,val,max,color){
 function drawSprite(ctx,shape,x,y,sz,color){
   ctx.save(); ctx.translate(x,y);
   const s=sz;
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(0,s*1.42,s*0.62,s*0.2,0,0,Math.PI*2); ctx.fill();
+  // Robe skirt (tapered wider at bottom — xianxia style)
   ctx.fillStyle=color;
-  ctx.beginPath(); ctx.arc(0,-s*1.15,s*0.55,0,Math.PI*2); ctx.fill();
-  ctx.fillRect(-s*0.45,-s*0.9,s*0.9,s*1.1);
-  ctx.fillRect(-s*0.45,s*0.2,s*0.4,s*0.7);
-  ctx.fillRect(s*0.05,s*0.2,s*0.4,s*0.7);
-  ctx.fillStyle='rgba(255,255,255,0.75)';
+  ctx.beginPath();
+  ctx.moveTo(-s*0.52,s*0.25); ctx.lineTo(s*0.52,s*0.25);
+  ctx.lineTo(s*0.8,s*1.4); ctx.lineTo(-s*0.8,s*1.4);
+  ctx.closePath(); ctx.fill();
+  // Upper body / torso
+  ctx.fillRect(-s*0.45,-s*0.9,s*0.9,s*1.2);
+  // Sleeves / arms
+  ctx.fillRect(-s*0.97,-s*0.72,s*0.54,s*0.26);
+  ctx.fillRect( s*0.43,-s*0.72,s*0.54,s*0.26);
+  // Collar / sash center line
+  ctx.fillStyle='rgba(255,255,255,0.22)';
+  ctx.fillRect(-s*0.05,-s*0.9,s*0.1,s*1.18);
+  // Head
+  ctx.fillStyle=color;
+  ctx.beginPath(); ctx.arc(0,-s*1.18,s*0.55,0,Math.PI*2); ctx.fill();
+  // Topknot
+  ctx.fillStyle='rgba(20,10,0,0.92)';
+  ctx.fillRect(-s*0.1,-s*1.86,s*0.2,s*0.58);
+  ctx.beginPath(); ctx.arc(0,-s*1.88,s*0.16,0,Math.PI*2); ctx.fill();
+  // Eyes
+  ctx.fillStyle='rgba(10,4,0,0.9)';
+  ctx.beginPath(); ctx.arc(-s*0.2,-s*1.22,s*0.1,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc( s*0.2,-s*1.22,s*0.1,0,Math.PI*2); ctx.fill();
+  // Face highlight
+  ctx.fillStyle='rgba(255,255,255,0.2)';
+  ctx.beginPath(); ctx.arc(-s*0.15,-s*1.38,s*0.18,0,Math.PI*2); ctx.fill();
+  // Weapon
   if(shape==='sword'){
-    ctx.fillRect(s*0.48,-s*0.75,s*0.12,s*1.1);
-    ctx.fillRect(s*0.32,-s*0.8,s*0.44,s*0.1);
+    ctx.fillStyle='rgba(232,232,232,0.95)';
+    ctx.fillRect(s*0.48,-s*0.9,s*0.12,s*1.28);
+    ctx.fillRect(s*0.26,-s*0.92,s*0.56,s*0.1);
+    ctx.fillStyle='rgba(176,120,32,1)';
+    ctx.fillRect(s*0.49,s*0.36,s*0.1,s*0.4);
+    ctx.fillStyle='rgba(255,224,96,0.95)';
+    ctx.beginPath(); ctx.moveTo(s*0.48,-s*0.9); ctx.lineTo(s*0.6,-s*0.9); ctx.lineTo(s*0.54,-s*1.25); ctx.closePath(); ctx.fill();
   } else if(shape==='mage'){
-    ctx.beginPath(); ctx.arc(0,-s*2.1,s*0.28,0,Math.PI*2); ctx.fill();
-    ctx.fillRect(-s*0.04,-s*2.1,s*0.08,s*0.95);
+    ctx.fillStyle='rgba(96,48,176,1)';
+    ctx.fillRect(-s*0.04,-s*2.3,s*0.08,s*1.05);
+    ctx.fillStyle='rgba(192,96,255,1)';
+    ctx.beginPath(); ctx.arc(0,-s*2.3,s*0.3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.55)';
+    ctx.beginPath(); ctx.arc(-s*0.1,-s*2.44,s*0.12,0,Math.PI*2); ctx.fill();
   } else if(shape==='archer'){
-    ctx.strokeStyle='rgba(255,255,255,0.75)'; ctx.lineWidth=s*0.1;
-    ctx.beginPath(); ctx.arc(-s*0.7,-s*0.4,s*0.85,Math.PI*0.3,Math.PI*1.7); ctx.stroke();
-    ctx.fillRect(-s*0.76,-s*0.46,s*0.08,s*1.0);
+    ctx.strokeStyle='rgba(220,220,220,0.85)'; ctx.lineWidth=s*0.1;
+    ctx.beginPath(); ctx.arc(-s*0.75,-s*0.42,s*0.88,Math.PI*0.28,Math.PI*1.72); ctx.stroke();
+    ctx.lineWidth=s*0.05; ctx.strokeStyle='rgba(200,200,200,0.55)';
+    const bx=-s*0.75,by=-s*0.42,br=s*0.88,a1=Math.PI*0.28,a2=Math.PI*1.72;
+    ctx.beginPath(); ctx.moveTo(bx+br*Math.cos(a1),by+br*Math.sin(a1)); ctx.lineTo(bx+br*Math.cos(a2),by+br*Math.sin(a2)); ctx.stroke();
+    ctx.fillStyle='rgba(220,220,220,0.85)';
+    ctx.fillRect(-s*0.8,-s*0.48,s*0.1,s*1.06);
   }
   ctx.restore();
 }

@@ -44,32 +44,54 @@ function drawTile(g, type, x, y, sz) {
     g.fillStyle(0x5aa02a, 0.25);
     g.fillRect(x, y, s/2, 2); g.fillRect(x+s/2, y+s-2, s/2, 2);
   } else if (type === 3) { // Tree — dark forest
-    g.fillStyle(0x1a3c0a, 1); g.fillRect(x, y, s, s);
+    g.fillStyle(0x142e07, 1); g.fillRect(x, y, s, s);
+    // Root flare
+    g.fillStyle(0x3a2008, 0.6);
+    g.fillEllipse(x+hs, y+s*0.9, s*0.55, s*0.22);
     // Trunk
     g.fillStyle(0x5a3010, 1);
-    g.fillRect(x+hs-5, y+s*0.6, 10, s*0.4);
-    // Canopy layers
-    g.fillStyle(0x2d5a14, 1);
-    g.fillCircle(x+hs, y+hs-2, s*0.42);
-    g.fillStyle(0x3d7020, 0.8);
-    g.fillCircle(x+hs-4, y+hs-6, s*0.28);
-    g.fillStyle(0x4a8828, 0.6);
-    g.fillCircle(x+hs+3, y+hs-2, s*0.20);
-    // Top highlight
-    g.fillStyle(0x60aa32, 0.3);
-    g.fillCircle(x+hs-4, y+hs-10, s*0.12);
+    g.fillRect(x+hs-4, y+s*0.55, 8, s*0.45);
+    // Bark detail
+    g.fillStyle(0x3a1e08, 0.6);
+    g.fillRect(x+hs-2, y+s*0.6, 2, s*0.3);
+    g.fillRect(x+hs+1, y+s*0.65, 2, s*0.25);
+    // Canopy shadow
+    g.fillStyle(0x1a3c0a, 1);
+    g.fillCircle(x+hs, y+hs-4, s*0.44);
+    // Main canopy
+    g.fillStyle(0x2d6814, 1);
+    g.fillCircle(x+hs, y+hs-7, s*0.38);
+    // Secondary leaf clusters
+    g.fillStyle(0x3a8020, 0.85);
+    g.fillCircle(x+hs-8, y+hs-10, s*0.27);
+    g.fillCircle(x+hs+8, y+hs-5, s*0.23);
+    // Light-side highlight
+    g.fillStyle(0x50a030, 0.55);
+    g.fillCircle(x+hs-7, y+hs-15, s*0.2);
+    // Top glint
+    g.fillStyle(0x70c040, 0.3);
+    g.fillCircle(x+hs-7, y+hs-19, s*0.1);
   } else if (type === 4) { // Water — deep blue
-    g.fillStyle(0x162e6e, 1); g.fillRect(x, y, s, s);
-    g.fillStyle(0x2040a0, 0.5);
-    g.fillRect(x+3, y+hs-4, s-6, 7);
-    g.fillStyle(0x3060c0, 0.4);
-    g.fillRect(x+7, y+hs+6, s-16, 4);
-    g.fillStyle(0x90c8ff, 0.12);
-    g.fillRect(x+4, y+hs-6, s/3, 2);
-    g.fillRect(x+s/2, y+hs+4, s/4, 2);
-    // Shimmer
-    g.fillStyle(0xffffff, 0.06);
-    g.fillRect(x, y, s, 1);
+    g.fillStyle(0x0d2058, 1); g.fillRect(x, y, s, s);
+    // Depth wave layers
+    g.fillStyle(0x1838a8, 0.45);
+    g.fillEllipse(x+s*0.3, y+hs-3, s*0.7, 10);
+    g.fillStyle(0x2855b8, 0.35);
+    g.fillEllipse(x+s*0.65, y+hs+5, s*0.55, 8);
+    g.fillStyle(0x1a3898, 0.3);
+    g.fillEllipse(x+s*0.2, y+hs+10, s*0.45, 6);
+    // Foam / light ripples
+    g.fillStyle(0x80b8ff, 0.18);
+    g.fillEllipse(x+s*0.28, y+hs-4, s*0.35, 4);
+    g.fillEllipse(x+s*0.65, y+hs+4, s*0.28, 3);
+    // Shimmer highlights
+    g.fillStyle(0xffffff, 0.08);
+    g.fillEllipse(x+s*0.15, y+hs-9, s*0.18, 2);
+    g.fillEllipse(x+s*0.55, y+hs+8, s*0.14, 2);
+    // Edge shadow
+    g.fillStyle(0x000000, 0.15);
+    g.fillRect(x, y, s, 2);
+    g.fillRect(x, y+s-2, s, 2);
   } else if (type === 5) { // Floor — dungeon stone
     g.fillStyle(0x211610, 1); g.fillRect(x, y, s, s);
     g.fillStyle(0x2e1e14, 0.8);
@@ -176,19 +198,37 @@ class WorldScene extends Phaser.Scene {
   _drawNpc(g, x, y, color=0xd4b060) {
     g.clear();
     // Shadow
-    g.fillStyle(0x000000, 0.25); g.fillEllipse(x, y+18, 20, 7);
-    // Body
+    g.fillStyle(0x000000, 0.25); g.fillEllipse(x, y+21, 26, 7);
+    // Robe skirt (tapered wider at bottom — xianxia style)
     g.fillStyle(color, 1);
-    g.fillCircle(x, y-16, 10);
-    g.fillRect(x-8, y-7, 16, 18);
-    g.fillRect(x-8, y+11, 7, 9);
-    g.fillRect(x+1, y+11, 7, 9);
-    // Clothing highlight
-    g.fillStyle(0xffffff, 0.15);
-    g.fillCircle(x-2, y-19, 4);
+    g.fillTriangle(x-10, y+8, x+10, y+8, x-15, y+23);
+    g.fillTriangle(x-10, y+8, x+10, y+8, x+15, y+23);
+    g.fillRect(x-10, y+6, 20, 4);
+    // Upper body / torso
+    g.fillRect(x-9, y-8, 18, 16);
+    // Sleeves / arms
+    g.fillRect(x-19, y-5, 11, 6);
+    g.fillRect(x+8,  y-5, 11, 6);
+    // Collar / sash center line
+    g.fillStyle(0xffffff, 0.22);
+    g.fillRect(x-1, y-8, 2, 14);
+    // Head
+    g.fillStyle(color, 1);
+    g.fillCircle(x, y-18, 10);
+    // Topknot (xianxia hair bun)
+    g.fillStyle(0x1c1000, 1);
+    g.fillRect(x-2, y-31, 4, 11);
+    g.fillCircle(x, y-32, 3);
+    // Eyes
+    g.fillStyle(0x1a0800, 1);
+    g.fillCircle(x-3, y-18, 1.5);
+    g.fillCircle(x+3, y-18, 1.5);
+    // Face highlight
+    g.fillStyle(0xffffff, 0.18);
+    g.fillCircle(x-3, y-22, 3);
     // Glow indicator
-    g.lineStyle(1, color, 0.6);
-    g.strokeCircle(x, y-16, 11);
+    g.lineStyle(1, color, 0.5);
+    g.strokeCircle(x, y-18, 12);
   }
 
   _drawPlayer() {
@@ -202,42 +242,80 @@ class WorldScene extends Phaser.Scene {
 
     // Shadow
     this.playerGfx.fillStyle(0x000000, 0.3);
-    this.playerGfx.fillEllipse(sx, sy+20, 24, 8);
+    this.playerGfx.fillEllipse(sx, sy+23, 30, 8);
 
-    // Body
+    // Robe skirt (tapered wider at bottom — xianxia style)
     this.playerGfx.fillStyle(col, 1);
-    this.playerGfx.fillCircle(sx, sy-18+bob, 11);
-    this.playerGfx.fillRect(sx-9, sy-8+bob, 18, 20);
-    this.playerGfx.fillRect(sx-9, sy+12+bob, 8, 10);
-    this.playerGfx.fillRect(sx+1,  sy+12+bob, 8, 10);
+    this.playerGfx.fillTriangle(sx-11, sy+7+bob, sx+11, sy+7+bob, sx-17, sy+25+bob);
+    this.playerGfx.fillTriangle(sx-11, sy+7+bob, sx+11, sy+7+bob, sx+17, sy+25+bob);
+    this.playerGfx.fillRect(sx-11, sy+5+bob, 22, 4);
 
-    // Clothes detail
-    this.playerGfx.fillStyle(0xffffff, 0.15);
-    this.playerGfx.fillCircle(sx-2, sy-22+bob, 4);
+    // Upper body / torso
+    this.playerGfx.fillStyle(col, 1);
+    this.playerGfx.fillRect(sx-9, sy-8+bob, 18, 15);
+
+    // Sleeves / arms
+    this.playerGfx.fillRect(sx-21, sy-5+bob, 13, 6);
+    this.playerGfx.fillRect(sx+8,  sy-5+bob, 13, 6);
+
+    // Collar / sash center line
+    this.playerGfx.fillStyle(0xffffff, 0.22);
+    this.playerGfx.fillRect(sx-1, sy-8+bob, 2, 13);
+
+    // Head
+    this.playerGfx.fillStyle(col, 1);
+    this.playerGfx.fillCircle(sx, sy-19+bob, 11);
+
+    // Topknot (xianxia style)
+    this.playerGfx.fillStyle(0x1c1000, 1);
+    this.playerGfx.fillRect(sx-2, sy-33+bob, 4, 12);
+    this.playerGfx.fillCircle(sx, sy-34+bob, 3);
+
+    // Eyes
+    this.playerGfx.fillStyle(0x0d0600, 1);
+    this.playerGfx.fillCircle(sx-4, sy-19+bob, 2);
+    this.playerGfx.fillCircle(sx+4, sy-19+bob, 2);
+
+    // Face highlight
+    this.playerGfx.fillStyle(0xffffff, 0.2);
+    this.playerGfx.fillCircle(sx-3, sy-23+bob, 3.5);
 
     // Weapon
     if (!m || m.shape === 'sword') {
-      this.playerGfx.fillStyle(0xdddddd, 1);
-      this.playerGfx.fillRect(sx+10, sy-16+bob, 3, 22);
-      this.playerGfx.fillRect(sx+5,  sy-18+bob, 13, 3);
+      // Blade
+      this.playerGfx.fillStyle(0xe8e8e8, 1);
+      this.playerGfx.fillRect(sx+11, sy-22+bob, 3, 28);
+      // Guard
+      this.playerGfx.fillRect(sx+4,  sy-22+bob, 17, 3);
+      // Handle
+      this.playerGfx.fillStyle(0xb07820, 1);
+      this.playerGfx.fillRect(sx+11, sy+6+bob, 3, 8);
+      // Tip
       this.playerGfx.fillStyle(0xffe060, 1);
-      this.playerGfx.fillRect(sx+10, sy-20+bob, 3, 5);
+      this.playerGfx.fillTriangle(sx+11, sy-22+bob, sx+14, sy-22+bob, sx+12, sy-30+bob);
     } else if (m.shape === 'mage') {
-      this.playerGfx.fillStyle(0x9060ff, 1);
-      this.playerGfx.fillCircle(sx, sy-32+bob, 5);
-      this.playerGfx.fillRect(sx-1, sy-32+bob, 3, 16);
+      // Staff
+      this.playerGfx.fillStyle(0x6030aa, 1);
+      this.playerGfx.fillRect(sx-2, sy-36+bob, 3, 30);
+      // Orb
+      this.playerGfx.fillStyle(0xb060ff, 1);
+      this.playerGfx.fillCircle(sx-1, sy-38+bob, 7);
+      this.playerGfx.fillStyle(0xffffff, 0.5);
+      this.playerGfx.fillCircle(sx-3, sy-41+bob, 2.5);
     } else if (m.shape === 'archer') {
       this.playerGfx.lineStyle(2, 0xdddddd, 1);
       this.playerGfx.beginPath();
-      this.playerGfx.arc(sx-12, sy-6+bob, 14, Math.PI*0.25, Math.PI*1.75);
+      this.playerGfx.arc(sx-14, sy-6+bob, 16, Math.PI*0.22, Math.PI*1.78);
       this.playerGfx.strokePath();
+      this.playerGfx.lineStyle(1, 0xaaaaaa, 0.7);
+      this.playerGfx.lineBetween(sx-14, sy-22+bob, sx-14, sy+10+bob);
       this.playerGfx.fillStyle(0xdddddd, 1);
-      this.playerGfx.fillRect(sx-12, sy-20+bob, 2, 28);
+      this.playerGfx.fillRect(sx-15, sy-22+bob, 2, 32);
     }
 
     // Direction indicator
-    this.playerGfx.lineStyle(2, 0xffffff, 0.35);
-    this.playerGfx.strokeCircle(sx, sy-18+bob, 12);
+    this.playerGfx.lineStyle(2, 0xffffff, 0.28);
+    this.playerGfx.strokeCircle(sx, sy-19+bob, 14);
 
     // Move camera reference point to player center
     this.playerGfx.setPosition(0, 0);
