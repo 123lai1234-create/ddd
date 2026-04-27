@@ -55,7 +55,7 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-Sync-Secret", "X-Admin-Token"],
-    max_age=600,
+    max_age=86400,
 )
 
 

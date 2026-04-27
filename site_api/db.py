@@ -131,10 +131,11 @@ def _init_pool() -> None:
         try:
             pool = psycopg_pool.ConnectionPool(
                 candidate,
-                min_size=1,
-                max_size=4,          # safe for free-tier (Neon/Railway/Render)
+                min_size=0,          # no idle connections held (free-tier friendly)
+                max_size=10,         # more concurrency headroom
                 open=True,
                 reconnect_timeout=30,
+                max_waiting=30,      # queue requests instead of immediate failure
                 kwargs={"connect_timeout": 5},
             )
             _DB_POOL = pool

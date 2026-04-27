@@ -355,6 +355,36 @@ CREATE INDEX IF NOT EXISTS idx_market_price_bars_symbol
     ON market_price_bars (symbol);
 """
 
+CREATE_MARKET_PRICE_BARS_SYMBOL_DATE_IDX = """
+CREATE INDEX IF NOT EXISTS idx_market_price_bars_symbol_date
+    ON market_price_bars (symbol, trade_date DESC);
+"""
+
+CREATE_KNOWLEDGE_LIBRARY_FTS_IDX = """
+CREATE INDEX IF NOT EXISTS idx_knowledge_library_fts
+    ON knowledge_library
+    USING GIN (
+        to_tsvector('simple',
+            coalesce(title, '') || ' ' ||
+            coalesce(summary_text, '') || ' ' ||
+            coalesce(keywords, '') || ' ' ||
+            coalesce(query_term, ''))
+    );
+"""
+
+CREATE_SEQUENCE_LIBRARY_FTS_IDX = """
+CREATE INDEX IF NOT EXISTS idx_sequence_library_fts
+    ON sequence_library
+    USING GIN (
+        to_tsvector('simple',
+            coalesce(display_name, '') || ' ' ||
+            coalesce(organism, '') || ' ' ||
+            coalesce(source_id, '') || ' ' ||
+            coalesce(description, '') || ' ' ||
+            coalesce(query_term, ''))
+    );
+"""
+
 CORE_SCHEMA_STATEMENTS = (
     CREATE_INQUIRIES_TABLE_SQL,
     CREATE_SEQUENCE_LIBRARY_TABLE_SQL,
@@ -364,6 +394,8 @@ CORE_SCHEMA_STATEMENTS = (
     CREATE_KNOWLEDGE_LIBRARY_FETCHED_AT_IDX,
     CREATE_KNOWLEDGE_LIBRARY_RECORD_TYPE_IDX,
     CREATE_SEQUENCING_RUN_LIBRARY_FETCHED_AT_IDX,
+    CREATE_KNOWLEDGE_LIBRARY_FTS_IDX,
+    CREATE_SEQUENCE_LIBRARY_FTS_IDX,
 )
 
 MARKET_SCHEMA_STATEMENTS = (
@@ -374,6 +406,7 @@ MARKET_SCHEMA_STATEMENTS = (
     CREATE_MARKET_PRICE_BARS_UNIQUE_INDEX_SQL,
     CREATE_MARKET_PRICE_BARS_TRADE_DATE_IDX,
     CREATE_MARKET_PRICE_BARS_SYMBOL_IDX,
+    CREATE_MARKET_PRICE_BARS_SYMBOL_DATE_IDX,
 )
 
 # ── AlphaFold structure predictions ─────────────────────────────────────────

@@ -12,6 +12,7 @@ import logging
 import os
 import threading
 import time
+from typing import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -27,11 +28,29 @@ _DEFAULT_TWSE_MONTHS = 24  # 2 years on initial seed
 _DEFAULT_YAHOO_RANGE = "3mo"
 _DEFAULT_FETCH_LIMIT = 4
 
+_RETRY_MAX_ATTEMPTS = 3
+_RETRY_BASE_DELAY = 5  # seconds
+
 _DEFAULT_SEQUENCE_REFRESH_SECONDS = 24 * 60 * 60  # 24h
 _DEFAULT_MARKET_REFRESH_SECONDS = 6 * 60 * 60     # 6h
 _MARKET_REFRESH_TWSE_MONTHS = 2                   # pull last 2 months to fill gaps
 _MARKET_REFRESH_YAHOO_RANGE = "3mo"
 _TWSE_DISCOVERY_SECONDS = 24 * 60 * 60            # discover new listings daily
+
+
+def _with_retry(fn: Callable[[], None], label: str) -> None:
+    """Run *fn* with exponential backoff, up to _RETRY_MAX_ATTEMPTS attempts."""
+    for attempt in range(1, _RETRY_MAX_ATTEMPTS + 1):
+        try:
+            fn()
+            return
+        except Exception as exc:
+            if attempt == _RETRY_MAX_ATTEMPTS:
+                logger.error("auto-sync: %s failed after %d attempts: %s", label, attempt, exc)
+                return
+            delay = _RETRY_BASE_DELAY * (2 ** (attempt - 1))
+            logger.warning("auto-sync: %s attempt %d failed, retrying in %ds: %s", label, attempt, delay, exc)
+            time.sleep(delay)
 
 
 def _table_is_empty(table_name: str) -> bool:
@@ -212,10 +231,7 @@ def _periodic_sequence_refresh(interval_seconds: int) -> None:
             chunk = min(remaining, 60)
             time.sleep(chunk)
             remaining -= chunk
-        try:
-            _sync_sequences()
-        except Exception as exc:
-            logger.error("auto-sync: periodic sequence refresh crashed: %s", exc)
+        _with_retry(_sync_sequences, "periodic sequence refresh")
 
 
 def _market_refresh_interval() -> int:
@@ -237,10 +253,7 @@ def _periodic_market_refresh(interval_seconds: int) -> None:
             chunk = min(remaining, 60)
             time.sleep(chunk)
             remaining -= chunk
-        try:
-            _refresh_market_incremental()
-        except Exception as exc:
-            logger.error("auto-sync: periodic market refresh crashed: %s", exc)
+        _with_retry(_refresh_market_incremental, "periodic market refresh")
 
 
 def _months_since_last_bar(symbol: str) -> int:
@@ -340,10 +353,7 @@ def _periodic_twse_discovery(interval_seconds: int) -> None:
             chunk = min(remaining, 60)
             time.sleep(chunk)
             remaining -= chunk
-        try:
-            _sync_twse_discover_and_update()
-        except Exception as exc:
-            logger.error("auto-sync: TWSE discovery loop crashed: %s", exc)
+        _with_retry(_sync_twse_discover_and_update, "TWSE discovery")
 
 
 def run_auto_sync() -> None:
@@ -351,8 +361,8 @@ def run_auto_sync() -> None:
 
     def _worker() -> None:
         logger.info("auto-sync: background worker started")
-        _sync_sequences()
-        _sync_market()
+        _with_retry(_sync_sequences, "sequence sync")
+        _with_retry(_sync_market, "market sync")
         logger.info("auto-sync: initial pass finished")
 
     thread = threading.Thread(target=_worker, name="auto-sync", daemon=True)

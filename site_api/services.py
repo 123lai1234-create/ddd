@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -31,17 +32,20 @@ from site_api.sequencing_run_sources import SequencingRunPayload
 logger = logging.getLogger(__name__)
 
 _summary_cache: dict[str, tuple[float, Any]] = {}
-_CACHE_TTL = 60  # seconds
+_summary_cache_lock = threading.Lock()
+_CACHE_TTL = 300  # seconds
 
 
 def _cached_summary(key: str, fn):
     now = time.monotonic()
-    if key in _summary_cache:
-        ts, val = _summary_cache[key]
-        if now - ts < _CACHE_TTL:
-            return val
+    with _summary_cache_lock:
+        if key in _summary_cache:
+            ts, val = _summary_cache[key]
+            if now - ts < _CACHE_TTL:
+                return val
     val = fn()
-    _summary_cache[key] = (now, val)
+    with _summary_cache_lock:
+        _summary_cache[key] = (now, val)
     return val
 
 
