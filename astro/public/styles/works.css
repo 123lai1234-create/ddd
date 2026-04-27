@@ -50,7 +50,7 @@ a {
 }
 
 .hero {
-  padding: calc(var(--nav-h) + 32px) 30px 24px;
+  padding: calc(var(--nav-h) + 54px) 30px 42px;
 }
 
 .hero-inner {
@@ -211,7 +211,7 @@ h1 span {
 .container {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 0 30px 56px;
+  padding: 0 30px 92px;
 }
 
 .toolbar {
