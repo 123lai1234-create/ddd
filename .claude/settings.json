@@ -47,7 +47,8 @@
       "Bash(python3 -c \"import sys,json; d=sys.stdin.read\\(\\); print\\(d\\)\")",
       "WebSearch",
       "Bash(npm run *)",
-      "Bash(xargs wc *)"
+      "Bash(xargs wc *)",
+      "WebFetch(domain:www.nuvoton.com)"
     ]
   },
   "hooks": {
