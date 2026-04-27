@@ -14,7 +14,7 @@
 
 .sc-hero {
   position: relative;
-  padding: calc(var(--nav-h) + 60px) 40px 60px;
+  padding: calc(var(--nav-h) + 36px) 40px 28px;
   max-width: 1240px;
   margin: 0 auto;
   display: grid;
@@ -136,11 +136,11 @@
 .sc-container {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 0 40px 80px;
+  padding: 0 40px 48px;
 }
 
 .sc-section {
-  padding: 40px 0 0;
+  padding: 20px 0 0;
 }
 
 .sc-section-label {
@@ -446,4 +446,19 @@
   .sc-pipeline { gap: 16px; }
   .sc-pipe-arrow { transform: rotate(90deg); margin: 0 auto; }
   .sc-project { flex-direction: column; gap: 10px; }
+}
+
+/* ── Parallax canvas: must be absolute so it doesn't break the grid ── */
+.sc-parallax-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+.sc-hero-inner,
+.sc-meta-card {
+  position: relative;
+  z-index: 1;
 }
