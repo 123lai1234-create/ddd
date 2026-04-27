@@ -1563,16 +1563,22 @@ class YahooPriceRequest(BaseModel):
 
 @router.post("/api/market/yahoo-prices")
 def yahoo_prices_proxy(payload: YahooPriceRequest) -> dict[str, Any]:
-    """Fetch daily OHLC from Yahoo Finance directly — no auth or DB required."""
+    """Fetch daily OHLC from Yahoo Finance directly — no auth or DB required.
+
+    Taiwan TWSE stocks and ETFs (purely numeric 4-6 char codes) automatically get
+    the .TW suffix appended.  All other symbols (US stocks, futures like ES=F,
+    indices like ^TWII) are passed to Yahoo Finance as-is.
+    """
     results: dict[str, Any] = {}
     for symbol in payload.symbols:
-        tw_symbol = f"{symbol}.TW"
+        clean = str(symbol or "").strip().upper()
+        yahoo_symbol = f"{clean}.TW" if (clean.isdigit() and 4 <= len(clean) <= 6) else clean
         try:
-            _inst, bars = fetch_yahoo_daily_records(tw_symbol, "stock", payload.range)
+            _inst, bars = fetch_yahoo_daily_records(yahoo_symbol, "stock", payload.range)
             if bars:
                 results[symbol] = {
                     "dates": [b.trade_date for b in bars],
-                    "closes": [b.close for b in bars],
+                    "closes": [b.close_price for b in bars],
                 }
         except Exception:
             continue

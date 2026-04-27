@@ -1167,3 +1167,233 @@ footer a {
   box-shadow: 0 0 12px rgba(88, 215, 255, 0.18);
   color: var(--teal);
 }
+
+/* ── Full-Product Predictor (FPA) ─────────────────────────────────── */
+.fpa-search-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.fpa-input {
+  flex: 1;
+  min-width: 240px;
+  padding: 11px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: var(--mono);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fpa-input:focus {
+  border-color: rgba(123, 240, 190, 0.35);
+  box-shadow: 0 0 0 3px rgba(123, 240, 190, 0.08);
+}
+
+.fpa-input::placeholder {
+  color: var(--dim);
+}
+
+.fpa-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.fpa-chip-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.fpa-chip-sep {
+  display: block;
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.fpa-chip {
+  padding: 5px 13px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: var(--font);
+}
+
+.fpa-chip:hover {
+  transform: translateY(-1px);
+}
+
+.chip-stock {
+  border-color: rgba(123, 240, 190, 0.2);
+  color: var(--green);
+}
+
+.chip-stock:hover {
+  background: rgba(123, 240, 190, 0.1);
+  border-color: rgba(123, 240, 190, 0.45);
+  box-shadow: 0 4px 12px rgba(123, 240, 190, 0.14);
+}
+
+.chip-etf {
+  border-color: rgba(88, 215, 255, 0.2);
+  color: var(--teal);
+}
+
+.chip-etf:hover {
+  background: rgba(88, 215, 255, 0.1);
+  border-color: rgba(88, 215, 255, 0.45);
+  box-shadow: 0 4px 12px rgba(88, 215, 255, 0.14);
+}
+
+.chip-futures {
+  border-color: rgba(255, 188, 114, 0.2);
+  color: var(--orange);
+}
+
+.chip-futures:hover {
+  background: rgba(255, 188, 114, 0.1);
+  border-color: rgba(255, 188, 114, 0.45);
+  box-shadow: 0 4px 12px rgba(255, 188, 114, 0.14);
+}
+
+.chip-us {
+  border-color: rgba(181, 156, 255, 0.2);
+  color: var(--purple);
+}
+
+.chip-us:hover {
+  background: rgba(181, 156, 255, 0.1);
+  border-color: rgba(181, 156, 255, 0.45);
+  box-shadow: 0 4px 12px rgba(181, 156, 255, 0.14);
+}
+
+.fpa-status {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.84rem;
+  margin-bottom: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  transition: all 0.2s;
+}
+
+.fpa-status[data-state="success"] {
+  border-color: rgba(123, 240, 190, 0.28);
+  color: var(--green);
+  background: rgba(123, 240, 190, 0.05);
+}
+
+.fpa-status[data-state="error"] {
+  border-color: rgba(255, 131, 146, 0.28);
+  color: var(--red);
+  background: rgba(255, 131, 146, 0.05);
+}
+
+.fpa-signal-banner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 24px;
+  align-items: start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 4px;
+  box-shadow: var(--shadow);
+}
+
+.fpa-signal-left .fpa-signal-symbol {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.fpa-signal-left .fpa-signal-price {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.fpa-signal-center {
+  text-align: center;
+}
+
+.fpa-pill {
+  display: inline-block;
+  padding: 9px 22px;
+  border-radius: 20px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.fpa-pill-buy {
+  background: rgba(123, 240, 190, 0.12);
+  border: 1px solid rgba(123, 240, 190, 0.38);
+  color: var(--green);
+  box-shadow: 0 0 22px rgba(123, 240, 190, 0.14);
+}
+
+.fpa-pill-sell {
+  background: rgba(255, 131, 146, 0.1);
+  border: 1px solid rgba(255, 131, 146, 0.32);
+  color: var(--red);
+}
+
+.fpa-signal-zone {
+  margin-top: 8px;
+}
+
+.fpa-zone-meta {
+  font-size: 0.74rem;
+  color: var(--dim);
+  display: block;
+}
+
+.fpa-signal-right {
+  min-width: 220px;
+}
+
+.fpa-result {
+  animation: fpaFadeUp 0.38s ease;
+}
+
+@keyframes fpaFadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 820px) {
+  .fpa-signal-banner {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .fpa-signal-center {
+    text-align: left;
+  }
+
+  .fpa-chip-sep {
+    display: none;
+  }
+}

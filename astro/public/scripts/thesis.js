@@ -1934,6 +1934,7 @@ function initialisePage() {
     rerunGA();
     // Background: preload real price data, auto-sync if DB empty
     autoSyncAndPreload();
+    try { bindFPAEvents(); } catch (e) { /* FPA not ready */ }
 }
 
 function renderThesisFindings() {
@@ -2330,6 +2331,321 @@ async function autoSyncAndPreload() {
     } else {
         if (status) status.textContent = '⚠ 無法取得真實股價，使用模擬數據。請稍後重試。';
     }
+}
+
+// ── Full-Product Predictor (FPA) ─────────────────────────────────────────────
+
+const FPA_CACHE = new Map();
+
+function createEvaluatorFromPrices(trainPrices, testPrices) {
+    const cache = new Map();
+    return function fpEval(params) {
+        const key = `${params.intervals}|${params.holdDays}|${params.targetProfit.toFixed(1)}|${params.alpha.toFixed(3)}`;
+        if (cache.has(key)) { return cache.get(key); }
+        const intervalModel = createIntervalModel(trainPrices, params.intervals);
+        const profitPairs = generateProfitPairs(trainPrices, params.holdDays);
+        const intervalAnalysis = analyzeIntervals(intervalModel, profitPairs, params.targetProfit, params.alpha);
+        const metrics = runBacktest(testPrices, intervalModel, intervalAnalysis, params.holdDays, params.targetProfit);
+        let sumAvg = 0;
+        let sumProb = 0;
+        let bins = 0;
+        for (const zone of intervalAnalysis) {
+            if (zone.sampleSize > 0) {
+                sumAvg += zone.avgProfit / Math.max(params.targetProfit, 0.1);
+                sumProb += zone.successProb;
+                bins += 1;
+            }
+        }
+        const fitness = bins ? roundTo((sumAvg / bins) * (sumProb / bins), 4) : -1;
+        const result = { ...metrics, intervalModel, intervalAnalysis, params, fitness };
+        cache.set(key, result);
+        return result;
+    };
+}
+
+async function fetchFPAPrices(symbol, range) {
+    const cacheKey = `fpa:${symbol}:${range}`;
+    if (FPA_CACHE.has(cacheKey)) { return FPA_CACHE.get(cacheKey); }
+    const apiBase = await resolveMarketApiBase();
+    if (!apiBase) { return null; }
+    const res = await fetch(`${apiBase}/api/market/yahoo-prices`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbols: [symbol], range }),
+        signal: AbortSignal.timeout(25000),
+    });
+    if (!res.ok) { return null; }
+    const data = await res.json();
+    const entry = (data.results || {})[symbol];
+    if (!entry || !Array.isArray(entry.closes) || !entry.closes.length) { return null; }
+    const pairs = (entry.dates || [])
+        .map((d, i) => ({ date: d, close: entry.closes[i] }))
+        .filter((p) => p.close != null && Number.isFinite(Number(p.close)));
+    if (pairs.length < 60) { return null; }
+    const result = { dates: pairs.map((p) => p.date), closes: pairs.map((p) => Number(p.close)) };
+    FPA_CACHE.set(cacheKey, result);
+    return result;
+}
+
+function fpaSetStatus(message, state = 'info') {
+    const el = document.getElementById('fpaStatus');
+    if (!el) { return; }
+    el.textContent = message;
+    el.dataset.state = state;
+    el.style.display = message ? '' : 'none';
+}
+
+function runFPAGeneticAlgorithm(evaluator, seedKey) {
+    const cfg = { POP: 40, GENS: 40, MR: 0.1, ELITE: 1 };
+    const rng = createRng(hashString(seedKey));
+    let pop = Array.from({ length: cfg.POP }, () => PARAMS.map(() => rng.next()));
+    let bestRecord = null;
+
+    for (let gen = 0; gen < cfg.GENS; gen += 1) {
+        const evals = pop.map((gene) => evaluator(decodeGene(gene)));
+        const fits = evals.map((e) => e.fitness);
+        const order = [...fits.keys()].sort((a, b) => fits[b] - fits[a]);
+        const bestEval = evals[order[0]];
+        if (!bestRecord || fits[order[0]] > bestRecord.bestFit) {
+            bestRecord = { bestFit: fits[order[0]], bestParams: bestEval.params, bestEvaluation: bestEval };
+        }
+        const minF = Math.min(...fits);
+        const offset = minF < 0 ? Math.abs(minF) + 1 : 1;
+        const weights = fits.map((f) => f + offset);
+        const total = weights.reduce((s, w) => s + w, 0);
+        function select() {
+            let t = rng.next() * total;
+            for (let i = 0; i < weights.length; i += 1) { t -= weights[i]; if (t <= 0) { return pop[i]; } }
+            return pop[pop.length - 1];
+        }
+        const nextPop = order.slice(0, cfg.ELITE).map((i) => pop[i].slice());
+        while (nextPop.length < cfg.POP) {
+            const pA = select();
+            const pB = select();
+            let child;
+            if (rng.next() < 0.8) {
+                const pt = Math.floor(1 + rng.next() * (PARAMS.length - 1));
+                child = [...pA.slice(0, pt), ...pB.slice(pt)];
+            } else {
+                child = (rng.next() < 0.5 ? pA : pB).slice();
+            }
+            child = child.map((v, i) => {
+                if (rng.next() < cfg.MR) { return clamp(v + rng.gauss() * (0.16 - i * 0.015), 0, 1); }
+                return v;
+            });
+            nextPop.push(child);
+        }
+        pop = nextPop;
+    }
+    return bestRecord;
+}
+
+async function runFPAPredictor(symbol, displayName) {
+    const btnEl = document.getElementById('fpaRunBtn');
+    const resultEl = document.getElementById('fpaResult');
+    if (btnEl) { btnEl.disabled = true; }
+    if (resultEl) { resultEl.style.display = 'none'; }
+    fpaSetStatus(`⏳ 正在取得 ${displayName || symbol} 的價格資料…`);
+
+    let priceData;
+    try {
+        priceData = await fetchFPAPrices(symbol, '2y');
+    } catch (err) {
+        fpaSetStatus(`⚠ 資料取得失敗：${err.message}`, 'error');
+        if (btnEl) { btnEl.disabled = false; }
+        return;
+    }
+
+    if (!priceData) {
+        fpaSetStatus(`⚠ 無法取得 ${symbol} 的價格資料（Yahoo Finance 可能不支援此代號，或 API 服務暫時不可用）`, 'error');
+        if (btnEl) { btnEl.disabled = false; }
+        return;
+    }
+
+    const { dates, closes } = priceData;
+    fpaSetStatus(`⏳ 已取得 ${closes.length} 筆收盤資料，正在執行 GAPPTS 最佳化…`);
+
+    const cutoff = '2024-01-01';
+    let splitIdx = dates.findIndex((d) => d >= cutoff);
+    if (splitIdx < 20) { splitIdx = Math.max(20, Math.floor(closes.length * 0.75)); }
+    if (closes.length - splitIdx < 10) { splitIdx = Math.floor(closes.length * 0.8); }
+
+    const trainPrices = closes.slice(0, splitIdx);
+    const testPrices = closes.slice(splitIdx);
+    const testDates = dates.slice(splitIdx);
+
+    setTimeout(() => {
+        try {
+            const evaluator = createEvaluatorFromPrices(trainPrices, testPrices);
+            const best = runFPAGeneticAlgorithm(evaluator, `fpa-${symbol}-${closes.length}`);
+            const { bestEvaluation: ev, bestParams: params } = best;
+            const lastPrice = closes[closes.length - 1];
+            const currentZoneIdx = priceToIntervalIndex(ev.intervalModel, lastPrice);
+            const currentZone = ev.intervalAnalysis[currentZoneIdx];
+            const signal = currentZone?.signal || 'sell';
+
+            renderFPAResult({ symbol, displayName: displayName || symbol, dates, closes, testDates, testPrices, splitIdx, ev, params, lastPrice, currentZone, signal });
+
+            const trainRange = `${dates[0]} ~ ${dates[splitIdx - 1]}`;
+            const testRange = `${testDates[0]} ~ ${testDates[testDates.length - 1]}`;
+            fpaSetStatus(`✓ ${displayName || symbol} · 訓練 ${trainPrices.length} 筆 (${trainRange}) · 測試 ${testPrices.length} 筆 (${testRange}) · fitness ${formatValue(best.bestFit, 3)}`, 'success');
+        } catch (err) {
+            fpaSetStatus(`⚠ 計算錯誤：${err.message}`, 'error');
+        } finally {
+            if (btnEl) { btnEl.disabled = false; }
+        }
+    }, 20);
+}
+
+function renderFPAResult({ symbol, displayName, dates, closes, testDates, testPrices, splitIdx, ev, params, lastPrice, currentZone, signal }) {
+    const resultEl = document.getElementById('fpaResult');
+    if (!resultEl) { return; }
+    resultEl.style.display = '';
+
+    const isBuy = signal === 'buy';
+    const signalText = isBuy ? '✅ 進場區間' : '⛔ 觀望區間';
+    const signalClass = isBuy ? 'fpa-pill-buy' : 'fpa-pill-sell';
+
+    document.getElementById('fpaSignalSymbolLabel').innerHTML = `<strong>${escapeHtml(displayName)}</strong>&ensp;<span style="color:var(--muted);font-size:.85em">(${escapeHtml(symbol)})</span>`;
+    document.getElementById('fpaSignalPriceLabel').textContent = `最新收盤 ${lastPrice?.toFixed(2) ?? '—'}`;
+    document.getElementById('fpaSignalBadge').innerHTML = `<span class="fpa-pill ${signalClass}">${signalText}</span>`;
+    document.getElementById('fpaSignalZone').innerHTML = currentZone
+        ? `<span class="fpa-zone-meta">所在區間：${escapeHtml(currentZone.label)} · 達標機率 ${formatPercent(currentZone.successProb * 100, 1)} · 平均利潤 ${formatPercent(currentZone.avgProfit, 2)}</span>`
+        : '';
+
+    document.getElementById('fpaSignalStats').innerHTML = renderKVRows([
+        ['區間數 m', String(params.intervals), C.teal],
+        ['持有天數', `${params.holdDays} 天`, C.teal],
+        ['目標利潤', `${params.targetProfit.toFixed(1)}%`, C.green],
+        ['進場門檻 α', params.alpha.toFixed(3), C.purple],
+        ['測試總報酬', formatPercent(ev.totalReturn, 2), ev.totalReturn >= 0 ? C.green : C.red],
+        ['Fitness', formatValue(ev.fitness, 3), C.yellow],
+    ]);
+
+    document.getElementById('fpaParamStats').innerHTML = renderKVRows([
+        ['區間數 m', String(params.intervals), C.teal],
+        ['持有天數', `${params.holdDays} 天`, C.teal],
+        ['目標利潤', `${params.targetProfit.toFixed(1)}%`, C.green],
+        ['進場門檻 α', params.alpha.toFixed(3), C.purple],
+        ['最佳 Fitness', formatValue(ev.fitness, 3), C.yellow],
+        ['買入區間數', `${ev.intervalAnalysis.filter((z) => z.signal === 'buy').length} / ${ev.intervalAnalysis.length}`, C.teal],
+    ]);
+
+    document.getElementById('fpaBacktestStats').innerHTML = renderKVRows([
+        ['GAPPTS 總報酬', formatPercent(ev.totalReturn, 2), ev.totalReturn >= 0 ? C.green : C.red],
+        ['Buy & Hold', formatPercent(ev.buyHoldReturn, 2), C.blue],
+        ['勝率', formatPercent(ev.winRate, 1), C.green],
+        ['平均利潤', formatPercent(ev.avgTrade, 2), ev.avgTrade >= 0 ? C.green : C.red],
+        ['最大回撤', formatPercent(Math.abs(ev.maxDrawdown), 2), C.red],
+        ['交易筆數', `${ev.tradeCount} 筆`, C.muted],
+    ]);
+
+    document.getElementById('fpaTrades').innerHTML = ev.trades.slice(0, 6).map((t, i) => `
+        <div class="trade-row">
+            <span class="tn">#${String(i + 1).padStart(2, '0')}</span>
+            <span class="tr">${t.entry.toFixed(2)} → ${t.exit.toFixed(2)}</span>
+            <span style="font-size:.72rem;color:var(--dim)">${t.reason}</span>
+            <span class="${t.pnlPct >= 0 ? 'tp' : 'tl'}">${t.pnlPct >= 0 ? '+' : ''}${t.pnlPct.toFixed(2)}%</span>
+        </div>
+    `).join('') || '<div style="color:var(--muted);font-size:.85rem;text-align:center;padding:16px">沒有產生交易訊號</div>';
+
+    const priceLabels = testDates.map((d) => d.slice(5));
+    const priceScatterBuy = ev.buyMarkers.map((m) => ({ x: m.x + 1, y: m.y }));
+    const priceScatterSell = ev.sellMarkers.map((m) => ({ x: m.x + 1, y: m.y }));
+
+    createChart('fpaPriceChart', {
+        type: 'line',
+        data: {
+            labels: priceLabels,
+            datasets: [
+                { label: '收盤價', data: ev.priceSeries.map((y, i) => ({ x: i + 1, y })), borderColor: C.teal, backgroundColor: 'rgba(88,215,255,.05)', fill: true, tension: 0.14, pointRadius: 0, borderWidth: 1.6 },
+                { label: '買入', data: priceScatterBuy, type: 'scatter', pointRadius: 6, pointStyle: 'triangle', pointBackgroundColor: C.green, pointBorderColor: '#fff', pointBorderWidth: 1, showLine: false },
+                { label: '賣出', data: priceScatterSell, type: 'scatter', pointRadius: 6, pointStyle: 'triangle', rotation: 180, pointBackgroundColor: C.red, pointBorderColor: '#fff', pointBorderWidth: 1, showLine: false },
+            ],
+        },
+        options: {
+            ...BASE_OPTS,
+            parsing: false,
+            scales: {
+                x: { ...BASE_OPTS.scales.x, type: 'linear', ticks: { maxTicksLimit: 9, color: C.muted, font: { size: 9 } } },
+                y: { ...BASE_OPTS.scales.y, title: { display: true, text: '價格', color: C.muted } },
+            },
+        },
+    });
+
+    const zones = ev.intervalAnalysis;
+    createChart('fpaIntervalChart', {
+        type: 'bar',
+        data: {
+            labels: zones.map((_, i) => `#${i + 1}`),
+            datasets: [
+                {
+                    type: 'bar',
+                    label: '平均利潤 (%)',
+                    data: zones.map((z) => roundTo(z.avgProfit, 2)),
+                    backgroundColor: zones.map((z) => (z.signal === 'buy' ? 'rgba(60,185,90,.45)' : 'rgba(232,64,64,.18)')),
+                    borderColor: zones.map((z) => (z.signal === 'buy' ? C.green : C.red)),
+                    borderWidth: 1,
+                    borderRadius: 3,
+                    yAxisID: 'y',
+                },
+                {
+                    type: 'line',
+                    label: '達標機率 (%)',
+                    data: zones.map((z) => roundTo(z.successProb * 100, 1)),
+                    borderColor: C.teal,
+                    backgroundColor: 'rgba(48,200,232,.1)',
+                    tension: 0.25,
+                    pointRadius: 2,
+                    borderWidth: 2,
+                    yAxisID: 'y1',
+                },
+            ],
+        },
+        options: {
+            ...BASE_OPTS,
+            scales: {
+                x: { ...BASE_OPTS.scales.x, ticks: { color: C.muted, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+                y: { ...BASE_OPTS.scales.y, title: { display: true, text: '平均利潤 (%)', color: C.muted } },
+                y1: {
+                    position: 'right',
+                    min: 0,
+                    max: 100,
+                    grid: { drawOnChartArea: false, color: C.border },
+                    ticks: { color: C.muted, font: { size: 10 } },
+                    title: { display: true, text: '達標機率 (%)', color: C.muted },
+                },
+            },
+        },
+    });
+
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function bindFPAEvents() {
+    const runBtn = document.getElementById('fpaRunBtn');
+    const symbolInput = document.getElementById('fpaSymbol');
+    if (!runBtn || !symbolInput) { return; }
+
+    async function doRun() {
+        const rawSymbol = (symbolInput.value || '').trim().toUpperCase();
+        if (!rawSymbol) { fpaSetStatus('⚠ 請輸入股票、ETF 或期貨代號', 'error'); return; }
+        FPA_CACHE.delete(`fpa:${rawSymbol}:2y`);
+        await runFPAPredictor(rawSymbol, rawSymbol);
+    }
+
+    runBtn.addEventListener('click', doRun);
+    symbolInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { doRun(); } });
+
+    document.querySelectorAll('.fpa-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+            const sym = chip.dataset.symbol || '';
+            const name = chip.dataset.name || sym;
+            symbolInput.value = sym;
+            FPA_CACHE.delete(`fpa:${sym}:2y`);
+            runFPAPredictor(sym, name);
+        });
+    });
 }
 
 window.gotoGen = gotoGen;
