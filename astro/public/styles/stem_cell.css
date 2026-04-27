@@ -14,7 +14,7 @@
 
 .sc-hero {
   position: relative;
-  padding: calc(var(--nav-h) + 60px) 40px 60px;
+  padding: calc(var(--nav-h) + 36px) 40px 32px;
   max-width: 1240px;
   margin: 0 auto;
   display: grid;
@@ -136,11 +136,11 @@
 .sc-container {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 0 40px 80px;
+  padding: 0 40px 48px;
 }
 
 .sc-section {
-  padding: 40px 0 0;
+  padding: 24px 0 0;
 }
 
 .sc-section-label {

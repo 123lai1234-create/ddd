@@ -60,7 +60,7 @@ a {
 
 /* ─── Hamburger ────────────────────────────────────────── */
 .hero {
-  padding: calc(var(--nav-h) + 72px) 32px 56px;
+  padding: calc(var(--nav-h) + 40px) 32px 32px;
 }
 
 .hero-wrap {
@@ -342,7 +342,7 @@ h1 span {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 32px 100px;
+  padding: 0 32px 60px;
 }
 
 section {
