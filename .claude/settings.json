@@ -49,7 +49,9 @@
       "Bash(npm run *)",
       "Bash(xargs wc *)",
       "WebFetch(domain:www.nuvoton.com)",
-      "WebFetch(domain:dribbble.com)"
+      "WebFetch(domain:dribbble.com)",
+      "Bash(python tmp_patch_stemcell.py)",
+      "Bash(python tmp_patch_firmware.py)"
     ]
   },
   "hooks": {
