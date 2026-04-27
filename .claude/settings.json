@@ -48,7 +48,8 @@
       "WebSearch",
       "Bash(npm run *)",
       "Bash(xargs wc *)",
-      "WebFetch(domain:www.nuvoton.com)"
+      "WebFetch(domain:www.nuvoton.com)",
+      "WebFetch(domain:dribbble.com)"
     ]
   },
   "hooks": {
