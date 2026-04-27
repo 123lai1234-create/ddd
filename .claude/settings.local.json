@@ -80,7 +80,8 @@
       "mcp__claude_ai_Supabase__execute_sql",
       "Bash(cat ../vercel.json)",
       "Bash(git status *)",
-      "Bash(python astro/tmp_reduce_spacing.py)"
+      "Bash(python astro/tmp_reduce_spacing.py)",
+      "Bash(git show *)"
     ]
   }
 }

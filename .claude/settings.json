@@ -51,7 +51,11 @@
       "WebFetch(domain:www.nuvoton.com)",
       "WebFetch(domain:dribbble.com)",
       "Bash(python tmp_patch_stemcell.py)",
-      "Bash(python tmp_patch_firmware.py)"
+      "Bash(python tmp_patch_firmware.py)",
+      "Bash(node -e ' *)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(python3 -)",
+      "Bash(python3)"
     ]
   },
   "hooks": {
