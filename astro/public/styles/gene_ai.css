@@ -81,7 +81,7 @@ a {
 /* ─── Hamburger ────────────────────────────────────────────── */
 .hero {
   position: relative;
-  padding: calc(var(--nav-h) + 36px) 40px 32px;
+  padding: calc(var(--nav-h) + 56px) 40px 56px;
   overflow: hidden;
 }
 
@@ -384,7 +384,7 @@ a {
 .container {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 0 40px 56px;
+  padding: 0 40px 90px;
 }
 
 .section {

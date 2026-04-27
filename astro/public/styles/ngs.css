@@ -81,7 +81,7 @@ body {
 
 /* ── Hero ── */
 .page-hero {
-  padding: calc(var(--nav-h) + 36px) 40px 32px;
+  padding: calc(var(--nav-h) + 60px) 40px 60px;
   max-width: 1100px;
   margin: 0 auto;
   text-align: center;
@@ -140,7 +140,7 @@ body {
 .container {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 0 40px 48px;
+  padding: 0 40px 80px;
 }
 
 .service-overview {
@@ -702,7 +702,7 @@ footer {
 .gallery-section {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 40px 40px 0;
+  padding: 64px 40px 0;
 }
 
 .gallery-section h2 {
@@ -976,7 +976,7 @@ footer {
 /* ── RAG Search ── */
 .rag-section {
   max-width: 1100px;
-  margin: 40px auto 0;
+  margin: 64px auto 0;
   padding: 0 40px 80px;
 }
 

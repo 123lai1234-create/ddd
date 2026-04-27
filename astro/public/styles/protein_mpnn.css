@@ -5,7 +5,7 @@
 .demo-hero {
   position: relative;
   overflow: hidden;
-  padding: calc(var(--nav-h) + 32px) 24px 16px;
+  padding: calc(var(--nav-h) + 52px) 24px 28px;
 }
 
 .demo-hero::before {
