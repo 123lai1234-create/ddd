@@ -63,12 +63,16 @@ jobs:
         continue-on-error: true
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ env.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ env.VERCEL_PROJECT_ID }}
         run: |
           [ -z "$VERCEL_TOKEN" ] && echo "::warning::VERCEL_TOKEN not set" && exit 0
-          mkdir -p .vercel/output/static
-          cp -r astro/dist/. .vercel/output/static/
-          echo '{"version":3}' > .vercel/output/config.json
-          npx --yes vercel deploy --prod --prebuilt --token="$VERCEL_TOKEN" 2>&1 | tail -10
+          # Pull project settings so vercel build can read them
+          npx --yes vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          # vercel build reads vercel.json and generates .vercel/output/config.json with
+          # all redirects, rewrites, cleanUrls, and headers — fixing the 404 on /thesis.html
+          npx vercel build --prod --token="$VERCEL_TOKEN"
+          npx vercel deploy --prod --prebuilt --token="$VERCEL_TOKEN" 2>&1 | tail -10
 
       - name: Deploy to Netlify
         continue-on-error: true
