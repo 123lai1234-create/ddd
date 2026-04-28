@@ -126,6 +126,12 @@
     } else {
         allReveals.forEach(function (el) { el.classList.add('visible'); });
     }
+    /* fallback: 若 1s 後仍有未顯示的元素，強制顯示 */
+    setTimeout(function () {
+        document.querySelectorAll('.reveal:not(.visible)').forEach(function (el) {
+            el.classList.add('visible');
+        });
+    }, 1000);
 
     // ── SEO: canonical URL + JSON-LD structured data ──
     (function injectSEO() {
