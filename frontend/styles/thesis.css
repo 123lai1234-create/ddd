@@ -77,7 +77,7 @@ body {
 /* ── Hero ── */
 .hero {
   position: relative;
-  padding: calc(var(--nav-h) + 64px) 40px 64px;
+  padding: calc(var(--nav-h) + 40px) 40px 36px;
   overflow: hidden;
 }
 

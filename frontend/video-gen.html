@@ -109,6 +109,96 @@
             </div>
         </div>
     </main>
+    <section class="vg-detail-section">
+        <div class="vg-detail-inner">
+            <div class="vg-detail-head">
+                <div class="eyebrow" style="font-size:.72rem;letter-spacing:.14em">架構深度說明</div>
+                <h2>Submit / Poll 非同步設計</h2>
+                <p class="vg-detail-sub">生成任務通常需要 30–120 秒，遠超 HTTP timeout。FastAPI 代理採 submit-then-poll 模式，讓前端持續輪詢而不阻塞連線。</p>
+            </div>
+
+            <div class="vg-arch-timeline">
+                <div class="vg-arch-step">
+                    <div class="vg-arch-num">01</div>
+                    <div>
+                        <div class="vg-arch-title">前端送出 Prompt</div>
+                        <div class="vg-arch-desc">使用者在頁面填入 prompt、選擇解析度與時長，前端 POST 到 Railway FastAPI（不含 API key）。</div>
+                    </div>
+                </div>
+                <div class="vg-arch-step">
+                    <div class="vg-arch-num">02</div>
+                    <div>
+                        <div class="vg-arch-title">FastAPI 驗證 + 限速</div>
+                        <div class="vg-arch-desc">後端驗證 prompt 長度、IP 頻率限制（3 次/IP/天），通過後以 <code>FAL_KEY</code> 呼叫 fal.ai submit endpoint。</div>
+                    </div>
+                </div>
+                <div class="vg-arch-step">
+                    <div class="vg-arch-num">03</div>
+                    <div>
+                        <div class="vg-arch-title">fal.ai 非同步排隊</div>
+                        <div class="vg-arch-desc">fal.ai 接收請求後立即回傳 <code>request_id</code>，將任務排入 Seedance 2.0 推理佇列，FastAPI 回傳此 ID 給前端。</div>
+                    </div>
+                </div>
+                <div class="vg-arch-step">
+                    <div class="vg-arch-num">04</div>
+                    <div>
+                        <div class="vg-arch-title">前端輪詢狀態</div>
+                        <div class="vg-arch-desc">前端每 5 秒以 <code>request_id</code> 查詢 FastAPI status endpoint，後端轉發至 fal.ai 取得 <code>IN_QUEUE / IN_PROGRESS / COMPLETED</code>。</div>
+                    </div>
+                </div>
+                <div class="vg-arch-step">
+                    <div class="vg-arch-num">05</div>
+                    <div>
+                        <div class="vg-arch-title">取得影片 URL 並播放</div>
+                        <div class="vg-arch-desc">狀態為 <code>COMPLETED</code> 後，後端回傳 fal.ai CDN 影片 URL，前端直接以 <code>&lt;video&gt;</code> 播放，API key 全程不離開後端。</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vg-highlight-grid">
+                <div class="vg-highlight">
+                    <div class="vg-highlight-icon">🎬</div>
+                    <div class="vg-highlight-title">Seedance 2.0</div>
+                    <div class="vg-highlight-desc">ByteDance 開源影片生成模型，支援 480p / 720p / 1080p 輸出</div>
+                </div>
+                <div class="vg-highlight">
+                    <div class="vg-highlight-icon">🔐</div>
+                    <div class="vg-highlight-title">Zero Key Exposure</div>
+                    <div class="vg-highlight-desc">FAL_KEY 僅存在 Railway 環境變數，前端永不接觸 API 金鑰</div>
+                </div>
+                <div class="vg-highlight">
+                    <div class="vg-highlight-icon">⚡</div>
+                    <div class="vg-highlight-title">Async Poll</div>
+                    <div class="vg-highlight-desc">Submit → 5s 輪詢 → 完成播放，避免 Railway HTTP timeout 問題</div>
+                </div>
+                <div class="vg-highlight">
+                    <div class="vg-highlight-icon">🛡️</div>
+                    <div class="vg-highlight-title">Rate Limited</div>
+                    <div class="vg-highlight-desc">每 IP 每天限制 3 次請求，防止濫用與 API 配額耗盡</div>
+                </div>
+            </div>
+
+            <div class="vg-faq-grid" style="margin-top:32px">
+                <div class="vg-faq-card">
+                    <div class="vg-faq-q">為什麼要用 FastAPI 當 proxy？</div>
+                    <div class="vg-faq-a">API key 放後端環境變數，前端只拿到 request_id 和影片 URL，避免 key 暴露在 JavaScript 原始碼中被爬取。</div>
+                </div>
+                <div class="vg-faq-card">
+                    <div class="vg-faq-q">為什麼不同步等待回應？</div>
+                    <div class="vg-faq-a">生成時間 30–120 秒，Railway 的 HTTP timeout 遠小於此。非同步 submit/poll 讓連線立即返回，前端自行追蹤進度。</div>
+                </div>
+                <div class="vg-faq-card">
+                    <div class="vg-faq-q">為什麼選 fal.ai？</div>
+                    <div class="vg-faq-a">fal.ai 提供標準化的佇列 API（submit + status + result），免去自建 GPU 推理基礎設施，且支援 Seedance 2.0 等前沿模型。</div>
+                </div>
+                <div class="vg-faq-card">
+                    <div class="vg-faq-q">影片生成有哪些限制？</div>
+                    <div class="vg-faq-a">每 IP 每天 3 次，prompt 限 3–500 字元，建議英文。1080p 生成時間較長（可達 2 分鐘），且受 fal.ai 佇列負載影響。</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <div data-site-footer></div>
     <script src="scripts/video_gen.js"></script>
     <button class="scroll-top" aria-label="返回頂部">&uarr;</button>

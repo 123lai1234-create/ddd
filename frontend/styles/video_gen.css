@@ -59,3 +59,25 @@ video{width:100%;border-radius:13px;display:block}
 .faq-body{padding:0 18px 16px;font-size:.85rem;color:var(--muted);line-height:1.6}
 .scroll-top{position:fixed;bottom:32px;right:32px;width:40px;height:40px;border-radius:50%;background:rgba(18,26,33,.9);border:1px solid var(--border);color:var(--muted);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
 @media(max-width:840px){.hero{padding:calc(var(--nav-h) + 40px) 20px 40px}.container{padding:0 20px 60px}.video-grid{grid-template-columns:1fr}h1{font-size:1.9rem}}
+.vg-detail-section{padding:64px 40px;max-width:1100px;margin:0 auto}
+.vg-detail-inner{max-width:900px}
+.vg-detail-head{margin-bottom:40px}
+.vg-detail-head h2{font-size:1.7rem;font-weight:700;margin:12px 0 8px;letter-spacing:-.02em}
+.vg-detail-sub{color:var(--muted);font-size:.95rem;max-width:560px}
+.vg-arch-timeline{display:flex;flex-direction:column;gap:0;margin-bottom:40px}
+.vg-arch-step{display:flex;gap:24px;padding:20px 0;border-bottom:1px solid rgba(151,190,181,.08);align-items:flex-start}
+.vg-arch-step:last-child{border-bottom:none}
+.vg-arch-num{min-width:36px;height:36px;border-radius:50%;background:rgba(123,240,190,.1);border:1px solid rgba(123,240,190,.22);color:var(--mint);font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.vg-arch-title{font-weight:600;margin-bottom:5px;font-size:.92rem;font-family:var(--mono)}
+.vg-arch-desc{font-size:.85rem;color:var(--muted);line-height:1.6}
+.vg-arch-desc code{background:rgba(88,215,255,.1);color:var(--cyan);padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:.82em}
+.vg-highlight-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.vg-highlight{background:rgba(18,26,33,.7);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center}
+.vg-highlight-icon{font-size:1.8rem;margin-bottom:10px}
+.vg-highlight-title{font-size:.88rem;font-weight:700;margin-bottom:6px}
+.vg-highlight-desc{font-size:.78rem;color:var(--muted);line-height:1.5}
+.vg-faq-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.vg-faq-card{background:rgba(18,26,33,.7);border:1px solid var(--border);border-radius:14px;padding:20px}
+.vg-faq-q{font-size:.88rem;font-weight:700;color:var(--mint);margin-bottom:8px}
+.vg-faq-a{font-size:.83rem;color:var(--muted);line-height:1.6}
+@media(max-width:900px){.vg-highlight-grid{grid-template-columns:repeat(2,1fr)}.vg-faq-grid{grid-template-columns:1fr}.vg-detail-section{padding:40px 20px}}

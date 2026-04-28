@@ -82,10 +82,7 @@
 
         @media (max-width: 640px) { .sc-chart-header { flex-direction: column; } .sc-if-grid { grid-template-columns: repeat(2, 1fr); } }
 
-        /* Parallax canvas */
-        .sc-parallax-canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:0; }
-        header.sc-hero { position:relative; overflow:hidden; }
-        header.sc-hero .sc-hero-inner, header.sc-hero .sc-meta-card { position:relative; z-index:1; }
+        /* Parallax canvas — styles live in stem_cell.css */
     </style>
 </head>
 
@@ -535,6 +532,69 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Treatment comparison table -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">方法比較</div>
+            <h2 class="sc-section-title">細胞治療策略比較</h2>
+            <p class="sc-section-sub">Cell Sheet 法在細胞存活率、ECM 保留與侵入性三個關鍵維度上優於傳統 MSC 注射法。</p>
+            <div class="sc-table-wrap">
+                <table class="sc-compare-table">
+                    <thead>
+                        <tr>
+                            <th>指標</th>
+                            <th>Cell Sheet 法</th>
+                            <th>MSC 注射法</th>
+                            <th>TBI 未治療</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="sc-row-label">細胞存活率（Day 14）</td>
+                            <td class="sc-good">61%</td>
+                            <td class="sc-bad">19%</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">腦損傷體積（Day 28）</td>
+                            <td class="sc-good">6.9 mm³</td>
+                            <td class="sc-mid">~14 mm³</td>
+                            <td class="sc-bad">10.7 mm³ ↓</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">ECM / 細胞間連結保留</td>
+                            <td class="sc-good">完整</td>
+                            <td class="sc-bad">無</td>
+                            <td class="sc-bad">無</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">NVU 完整性恢復</td>
+                            <td class="sc-good">高</td>
+                            <td class="sc-mid">中等</td>
+                            <td class="sc-bad">低</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">神經行為恢復（Week 8）</td>
+                            <td class="sc-good">16 秒（Water Maze）</td>
+                            <td class="sc-mid">24 秒</td>
+                            <td class="sc-bad">48 秒</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">手術侵入性</td>
+                            <td class="sc-good">低（表面貼附）</td>
+                            <td class="sc-mid">中（顱骨穿刺）</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">旁分泌因子分泌</td>
+                            <td class="sc-good">持續高量</td>
+                            <td class="sc-mid">初期高、快速衰減</td>
+                            <td class="sc-bad">無</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 
