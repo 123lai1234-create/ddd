@@ -481,8 +481,9 @@ body[data-page="firmware"] > * { position: relative; z-index: 1; }
 .fw-callout a  { color: var(--fw-cyan); text-decoration: none; border-bottom: 1px dashed currentColor; }
 
 /* ── Scroll reveal ───────────────────────────── */
-.fw-section { opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s ease; }
-.fw-section.fw-visible { opacity: 1; transform: none; }
+.fw-section { opacity: 1; transform: none; }
+.fw-animate .fw-section { opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s ease; }
+.fw-animate .fw-section.fw-visible { opacity: 1; transform: none; }
 
 /* ── Responsive ──────────────────────────────── */
 @media (max-width: 640px) {

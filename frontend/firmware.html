@@ -663,6 +663,8 @@ TIMER_Start(TIMER2);</pre>
 
     // Scroll reveal
     (function () {
+        if (!('IntersectionObserver' in window)) return;
+        document.querySelector('.fw')?.classList.add('fw-animate');
         const io = new IntersectionObserver((entries) => {
             entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('fw-visible'); io.unobserve(e.target); } });
         }, { threshold: 0.08 });
