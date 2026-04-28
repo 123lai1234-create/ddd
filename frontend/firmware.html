@@ -419,6 +419,120 @@
                 <p>以韌體底層為基礎，整合生醫研究專業：MCU 上實作 ECG / PPG 訊號 FIR / IIR 濾波、心率擷取演算法，結合站內已展示的 <a href="report.html">蛋白質 AI</a>、<a href="ngs.html">NGS</a>、<a href="gene_ai.html">基因 AI</a> 平台，形成「硬體 ↔ 韌體 ↔ 演算法 ↔ 系統」同一條技術線。</p>
             </div>
         </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">13</span><h2>NVIC 向量中斷控制器</h2><span class="note">Nested Vectored Interrupt Controller · Cortex-M0</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">⚡</span><div class="lbl">中斷通道</div><div class="val">32 個外部 IRQ</div><div class="sub">+ 16 個系統例外（HardFault / SysTick …）</div></div>
+                <div class="fw-spec"><span class="ico">🎯</span><div class="lbl">優先級位元</div><div class="val">2-bit（4 級）</div><div class="sub">M0 最小化實作 · 低延遲搶佔</div></div>
+                <div class="fw-spec"><span class="ico">🕐</span><div class="lbl">進入延遲</div><div class="val">12 cycles</div><div class="sub">自動 push 8 個暫存器 → 無需 prologue</div></div>
+                <div class="fw-spec"><span class="ico">🔒</span><div class="lbl">Tail-chaining</div><div class="val">6 cycles</div><div class="sub">連續 ISR 切換省去 push/pop overhead</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>irq_setup.c — EBI / GPIO 中斷配置</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 啟用 EINT0（EBI 資料就緒信號）與 UART0 接收中斷 */</span>
+NVIC_SetPriority(EINT0_IRQn, <span class="c-num">0</span>);   <span class="c-cm">/* 最高優先 — 顯示撕裂修復 */</span>
+NVIC_SetPriority(UART0_IRQn, <span class="c-num">1</span>);
+NVIC_EnableIRQ(EINT0_IRQn);
+NVIC_EnableIRQ(UART0_IRQn);
+
+<span class="c-type">void</span> <span class="c-fn">EINT0_IRQHandler</span>(<span class="c-type">void</span>) {
+    GPIO_CLR_INT_FLAG(PB, BIT14);     <span class="c-cm">/* 清 pending bit */</span>
+    <span class="c-fn">tft_vsync_cb</span>();                   <span class="c-cm">/* 觸發下一幀 blit */</span>
+}</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">14</span><h2>PDMA 直接記憶體傳輸</h2><span class="note">Peripheral DMA · zero-CPU pixel blit</span></div>
+            <div class="fw-callout">
+                <h3>為什麼需要 PDMA？</h3>
+                <p>CPU 迴圈搬運 44,000 個像素（200×220）需要 ~88,000 個 load/store cycle，佔滿 2 ms。改用 PDMA burst-transfer 讓 CPU 在搬圖期間執行其他任務（ADC 採樣、UART 輸出），有效實現「軟性多工」。</p>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>pdma_blit.c — Flash → EBI 零 CPU 傳輸</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 設定 PDMA Ch0：Flash 圖陣 → EBI data 暫存器 */</span>
+PDMA_Open(<span class="c-num">1</span> &lt;&lt; <span class="c-num">0</span>);
+PDMA_SetTransferCnt(PDMA, <span class="c-num">0</span>, PDMA_WIDTH_16, <span class="c-num">44000</span>);
+PDMA_SetTransferAddr(PDMA, <span class="c-num">0</span>,
+    (<span class="c-type">uint32_t</span>)img2,          PDMA_SAR_INC,  <span class="c-cm">/* src: Flash array */</span>
+    EBI_BANK0_BASE_ADDR,    PDMA_DAR_FIX); <span class="c-cm">/* dst: TFT EBI 位址（固定） */</span>
+PDMA_SetBurstType(PDMA, <span class="c-num">0</span>, PDMA_REQ_BURST, PDMA_BURST_128);
+PDMA_EnableInt(PDMA, <span class="c-num">0</span>, PDMA_INT_TRANS_DONE);
+NVIC_EnableIRQ(PDMA_IRQn);
+PDMA_Trigger(PDMA, <span class="c-num">0</span>);  <span class="c-cm">/* 啟動 — CPU 可繼續跑其他邏輯 */</span></pre>
+            </div>
+            <div class="fw-diff">
+                <div class="fw-diff-card"><div class="title">✕ CPU 迴圈搬運</div><div class="desc">~88,000 cycle · CPU 100% 忙碌 · UART / ADC 延遲 2 ms 以上</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ PDMA Burst-128</div><div class="desc">~690 cycle 觸發後 CPU 釋放 · 傳完觸發 IRQ 通知主迴圈</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">15</span><h2>Timer / BPWM 多頻道配置</h2><span class="note">backlight · heartbeat LED · scan clock</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">🕐</span><div class="lbl">Timer 0 / 1</div><div class="val">系統節拍 1 ms</div><div class="sub">SysTick + 應用層軟體 timer 佇列</div></div>
+                <div class="fw-spec"><span class="ico">🔄</span><div class="lbl">Timer 2</div><div class="val">ADC 觸發 250 Hz</div><div class="sub">每 4 ms 啟動一次 ECG/PPG 採樣</div></div>
+                <div class="fw-spec"><span class="ico">💡</span><div class="lbl">BPWM0 Ch0</div><div class="val">LCD 背光 500 Hz</div><div class="sub">Duty 0–100% 調光 · 低頻閃爍避免感測雜訊</div></div>
+                <div class="fw-spec"><span class="ico">❤️</span><div class="lbl">BPWM0 Ch1</div><div class="val">心跳 LED 1 Hz</div><div class="sub">互補輸出 · dead-band 200 ns 防橋臂直通</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>pwm_init.c — 背光 + ADC 觸發配置</span></div>
+                <pre class="fw-code"><span class="c-cm">/* BPWM0 Ch0: LCD 背光 500 Hz，初始 duty 80% */</span>
+BPWM_ConfigOutputChannel(BPWM0, <span class="c-num">0</span>,
+    <span class="c-num">500</span>,   <span class="c-cm">/* freq Hz  */</span>
+    <span class="c-num">80</span>);   <span class="c-cm">/* duty %   */</span>
+BPWM_EnableOutput(BPWM0, BPWM_CH_0_MASK);
+BPWM_Start(BPWM0, BPWM_CH_0_MASK);
+
+<span class="c-cm">/* Timer2: 每 4 ms 觸發 ADC（250 SPS for ECG） */</span>
+TIMER_Open(TIMER2, TIMER_PERIODIC_MODE, <span class="c-num">250</span>);
+TIMER_SetTriggerSource(TIMER2, TIMER_TRGSRC_TIMEOUT_EVENT);
+TIMER_SetTriggerTarget(TIMER2, TIMER_TRG_TO_ADC);
+TIMER_Start(TIMER2);</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">16</span><h2>SPI Flash 外部影像儲存</h2><span class="note">W25Q64 · 64 Mbit · XIP-ready</span></div>
+            <div class="fw-diff">
+                <div class="fw-diff-card"><div class="title">✕ 影像鎖在 MCU Flash</div><div class="desc">128 KB 只能放 1 張 200×220（86 KB），程式碼加 heap 幾乎爆表，無法做多圖輪播。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ 外掛 W25Q64 SPI Flash</div><div class="desc">64 Mbit = 8 MB，可存 ~93 張全彩圖，透過 SPI0 以 32 MHz DMA 讀取，每幀 &lt;3 ms。</div></div>
+                <div class="fw-diff-card"><div class="title">✕ SPI 讀取阻塞 CPU</div><div class="desc">同步輪詢 64 KB Sector 讀取需 ~5 ms 忙等待，顯示幀率下降。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ SPI + PDMA double-buffer</div><div class="desc">前景顯示 buf[0] 時，PDMA 搬 buf[1]；切換時 swap pointer，CPU 始終零等待。</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>spi_flash.c — W25Q64 讀取啟動</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 發 Read Data (0x03) 指令，從 sector 0 讀 86 KB */</span>
+<span class="c-type">void</span> <span class="c-fn">spiflash_read</span>(<span class="c-type">uint32_t</span> addr, <span class="c-type">uint8_t</span> *dst, <span class="c-type">uint32_t</span> len) {
+    SPI_SET_SS_LOW(SPI0);
+    <span class="c-fn">SPI_WriteData</span>(SPI0, <span class="c-num">0x03</span>);           <span class="c-cm">/* Read cmd */</span>
+    <span class="c-fn">SPI_WriteData</span>(SPI0, (addr &gt;&gt; <span class="c-num">16</span>) &amp; <span class="c-num">0xFF</span>);
+    <span class="c-fn">SPI_WriteData</span>(SPI0, (addr &gt;&gt;  <span class="c-num">8</span>) &amp; <span class="c-num">0xFF</span>);
+    <span class="c-fn">SPI_WriteData</span>(SPI0,  addr        &amp; <span class="c-num">0xFF</span>);
+    PDMA_SetTransferAddr(PDMA, <span class="c-num">1</span>,
+        SPI0_BASE + <span class="c-num">0x20</span>, PDMA_SAR_FIX,  <span class="c-cm">/* SPI RX FIFO */</span>
+        (<span class="c-type">uint32_t</span>)dst,      PDMA_DAR_INC);
+    PDMA_SetTransferCnt(PDMA, <span class="c-num">1</span>, PDMA_WIDTH_8, len);
+    PDMA_Trigger(PDMA, <span class="c-num">1</span>);
+}</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">17</span><h2>完整系統主迴圈架構</h2><span class="note">boot → init → main loop · full picture</span></div>
+            <div class="fw-callout">
+                <h3>從上電到畫面：完整啟動流程</h3>
+                <p>NANO130 上電後執行 ROM Bootloader 自我測試，跳入使用者 Reset Handler，依序初始化時脈樹（PLL → HCLK 42 MHz）、周邊（EBI / SPI / ADC / BPWM / PDMA）、TFT 驅動 IC 初始化序列，最後進入主迴圈。</p>
+            </div>
+            <div class="fw-steps">
+                <div class="fw-step"><div class="t">Power-on Reset + ROM Bootloader</div><div class="d">自我測試 Flash CRC、讀取 Config0 Boot 設定（ISP / ICP / User Flash），決定跳轉目標。</div></div>
+                <div class="fw-step"><div class="t">CLK_SetCoreClock(42000000)</div><div class="d">外部 12 MHz XTAL → PLL × 3.5 → 42 MHz HCLK。PCLK = HCLK / 2 = 21 MHz 供 ADC / SPI。</div></div>
+                <div class="fw-step"><div class="t">周邊初始化</div><div class="d">EBI 時序（tAS=2, tAH=1, tACC=6）→ SPI0 32 MHz → BPWM0 500 Hz → Timer2 250 Hz ADC trigger → PDMA Ch0/1 → NVIC 優先級。</div></div>
+                <div class="fw-step"><div class="t">TFT ILI9225 驅動初始化</div><div class="d">透過 EBI 發送 ~20 條暫存器設定指令（電源、Gamma、掃描方向、色彩模式 RGB565），等待 120 ms Vcom 穩定。</div></div>
+                <div class="fw-step"><div class="t">主迴圈 — while(1)</div><div class="d">PDMA 搬圖（非阻塞）→ ADC 結果處理（ECG/PPG）→ UART 輸出數據 → 低功耗 Sleep 等 SysTick 喚醒（1 ms），迴圈週期 &lt; 4 ms。</div></div>
+            </div>
+        </section>
     </div>
 
     <hr class="divider" style="margin-top:60px">
