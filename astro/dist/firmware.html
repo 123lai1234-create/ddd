@@ -1,4 +1,15 @@
-<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><title>韌體工程 · MCU Firmware · 作品集</title><meta name="description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><meta property="og:title" content="韌體工程 · MCU Firmware · 作品集"><meta property="og:description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og-image.svg"><meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script></head> <body data-page="firmware">  
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><title>韌體工程 · MCU Firmware · 作品集</title><meta name="description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><meta property="og:title" content="韌體工程 · MCU Firmware · 作品集"><meta property="og:description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og?t=%E9%9F%8C%E9%AB%94%E5%B7%A5%E7%A8%8B%20%C2%B7%20MCU%20Firmware%20%C2%B7%20%E4%BD%9C%E5%93%81%E9%9B%86&#38;s=Nuvoton%20Nano130KE3BN%20Cortex-M0%20%E9%9F%8C%E9%AB%94%E9%96%8B%E7%99%BC%E5%AF%A6%E4%BD%9C%EF%BC%9ATFT%20EBI%20%E9%A9%85%E5%8B%95%E3%80%81RGB565%20%E9%A1%AF%E7%A4%BA%E3%80%81Keil%20%2B%20J-Link%20%E5%B7%A5%E4%BD%9C%E6%B5%81%EF%BC%8C%E5%90%AB%20YouTube%20%E5%AE%8C%E6%95%B4%E6%95%99%E5%AD%B8%E6%92%AD%E6%94%BE%E6%B8%85%E5%96%AE%E3%80%82&#38;tag="><meta name="twitter:image" content="https://donttalk.vercel.app/og?t=%E9%9F%8C%E9%AB%94%E5%B7%A5%E7%A8%8B%20%C2%B7%20MCU%20Firmware%20%C2%B7%20%E4%BD%9C%E5%93%81%E9%9B%86&#38;s=Nuvoton%20Nano130KE3BN%20Cortex-M0%20%E9%9F%8C%E9%AB%94%E9%96%8B%E7%99%BC%E5%AF%A6%E4%BD%9C%EF%BC%9ATFT%20EBI%20%E9%A9%85%E5%8B%95%E3%80%81RGB565%20%E9%A1%AF%E7%A4%BA%E3%80%81Keil%20%2B%20J-Link%20%E5%B7%A5%E4%BD%9C%E6%B5%81%EF%BC%8C%E5%90%AB%20YouTube%20%E5%AE%8C%E6%95%B4%E6%95%99%E5%AD%B8%E6%92%AD%E6%94%BE%E6%B8%85%E5%96%AE%E3%80%82&#38;tag="><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/firmware.css"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script></head> <body data-page="firmware">  
     <div data-site-nav></div>
 
     <section class="fw-hero fw">
@@ -74,11 +85,67 @@
             <div class="fw-section-head"><span class="fw-section-num">01</span><h2>核心技術規格</h2><span class="note">bill of materials / datasheet</span></div>
             <div class="fw-specgrid">
                 <div class="fw-spec"><span class="ico">🧠</span><div class="lbl">MCU Core</div><div class="val">Cortex-M0</div><div class="sub">42 MHz · Thumb-2 · NVIC</div></div>
-                <div class="fw-spec"><span class="ico">💾</span><div class="lbl">Flash / SRAM</div><div class="val">128 KB / 16 KB</div><div class="sub">on-chip ROM + RAM</div></div>
-                <div class="fw-spec"><span class="ico">🔌</span><div class="lbl">Display Bus</div><div class="val">EBI Parallel</div><div class="sub">memory-mapped I/O</div></div>
+                <div class="fw-spec"><span class="ico">💾</span><div class="lbl">Flash / SRAM</div><div class="val">128 KB / 16 KB</div><div class="sub">ISP · ICP · Data Flash</div></div>
+                <div class="fw-spec"><span class="ico">⚡</span><div class="lbl">Supply Voltage</div><div class="val">1.8 V – 3.6 V</div><div class="sub">-40°C to 85°C</div></div>
+                <div class="fw-spec"><span class="ico">🔌</span><div class="lbl">Display Bus</div><div class="val">EBI Parallel</div><div class="sub">memory-mapped I/O · 16/8-bit</div></div>
                 <div class="fw-spec"><span class="ico">🎨</span><div class="lbl">Pixel Format</div><div class="val">RGB565</div><div class="sub">16-bit · 2 B/px</div></div>
                 <div class="fw-spec"><span class="ico">📐</span><div class="lbl">Max Resolution</div><div class="val">200 × 220</div><div class="sub">~86 KB image payload</div></div>
                 <div class="fw-spec"><span class="ico">🛠</span><div class="lbl">Toolchain</div><div class="val">Keil + J-Link</div><div class="sub">ARMCC · ELF · SWD flash</div></div>
+                <div class="fw-spec"><span class="ico">📦</span><div class="lbl">Package</div><div class="val">LQFP 48/64/128</div><div class="sub">選 LQFP64 for EBI + LCD</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">02</span><h2>超低功耗模式</h2><span class="note">ultra-low power · wearable target</span></div>
+            <div class="fw-mem-card">
+                <h3>// NANO130 Power Profile — 設計目標：穿戴式 / 可攜式醫療量測</h3>
+                <div class="fw-mem-row">
+                    <span class="name">Normal Mode</span>
+                    <div class="bar"><div class="fill" style="animation-delay:0s;--w:100%"></div></div>
+                    <span class="pct"><b>200 μA/MHz</b></span>
+                </div>
+                <div class="fw-mem-row">
+                    <span class="name">Idle Mode</span>
+                    <div class="bar"><div class="fill" style="animation-delay:.15s"></div></div>
+                    <span class="pct"><b>75 μA/MHz</b></span>
+                </div>
+                <div class="fw-mem-row warn">
+                    <span class="name">Power-down + RTC</span>
+                    <div class="bar"><div class="fill warn" style="animation-delay:.3s"></div></div>
+                    <span class="pct"><b>2.5 μA</b></span>
+                </div>
+                <div class="fw-mem-row warn">
+                    <span class="name">Power-down + RAM</span>
+                    <div class="bar"><div class="fill warn" style="animation-delay:.45s"></div></div>
+                    <span class="pct"><b>1 μA</b></span>
+                </div>
+                <div class="fw-mem-row">
+                    <span class="name">Wake-up latency</span>
+                    <div class="bar"><div class="fill" style="animation-delay:.6s"></div></div>
+                    <span class="pct"><b>&lt; 7 μs</b></span>
+                </div>
+            </div>
+            <style>
+                .fw-mem-row .fill { animation: fwFill 1.2s cubic-bezier(.22,.61,.36,1) forwards; transform-origin: left; }
+                .fw-mem-row:nth-child(1) .fill { width: 100%; }
+                .fw-mem-row:nth-child(2) .fill { width: 37.5%; }
+                .fw-mem-row:nth-child(3) .fill { width: 1.25%; }
+                .fw-mem-row:nth-child(4) .fill { width: 0.5%; }
+                .fw-mem-row:nth-child(5) .fill { width: 8%; }
+            </style>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">03</span><h2>周邊矩陣</h2><span class="note">peripheral overview · datasheet §4</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">📡</span><div class="lbl">ADC</div><div class="val">12-ch · 12-bit</div><div class="sub">2 MSPS · 內建溫度感測器 ±1°C</div></div>
+                <div class="fw-spec"><span class="ico">🔁</span><div class="lbl">PWM</div><div class="val">4 × 16-bit</div><div class="sub">8 輸出 或 4 組互補對 · 死區控制</div></div>
+                <div class="fw-spec"><span class="ico">🖥</span><div class="lbl">LCD Controller</div><div class="val">4×40 / 6×38</div><div class="sub">COM/SEG 段碼顯示器驅動</div></div>
+                <div class="fw-spec"><span class="ico">🔗</span><div class="lbl">USB</div><div class="val">USB 2.0 FS</div><div class="sub">Full-Speed Device · 12 Mbps</div></div>
+                <div class="fw-spec"><span class="ico">🔄</span><div class="lbl">SPI</div><div class="val">× 3 ports</div><div class="sub">最高 32 MHz · Master/Slave</div></div>
+                <div class="fw-spec"><span class="ico">🔀</span><div class="lbl">I²C / UART</div><div class="val">2 / 5 ports</div><div class="sub">I²C 1 MHz · UART 1 Mbps × 2</div></div>
+                <div class="fw-spec"><span class="ico">🕐</span><div class="lbl">Oscillators</div><div class="val">4–24 MHz XTAL</div><div class="sub">12 MHz IRC (±1%) · 10 kHz IRC</div></div>
+                <div class="fw-spec"><span class="ico">🔒</span><div class="lbl">Programming</div><div class="val">ISP · ICP</div><div class="sub">Data Flash · Bootloader 支援</div></div>
             </div>
         </section>
 
@@ -116,7 +183,7 @@
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">03</span><h2>Flash-resident 影像 + EBI blit</h2><span class="note">img2.c · main.c</span></div>
+            <div class="fw-section-head"><span class="fw-section-num">04</span><h2>Flash-resident 影像 + EBI blit</h2><span class="note">img2.c · main.c</span></div>
             <div class="fw-code-wrap">
                 <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>img2.c — 200×220 RGB565 · Flash-resident</span></div>
                 <pre class="fw-code"><span class="c-cm">/* Generated from PNG via Rinky-Dink RGB565 converter
@@ -147,7 +214,7 @@
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">04</span><h2>PNG → MCU 流程</h2><span class="note">5-step toolchain</span></div>
+            <div class="fw-section-head"><span class="fw-section-num">05</span><h2>PNG → MCU 流程</h2><span class="note">5-step toolchain</span></div>
             <div class="fw-pipe">
                 <div class="fw-step"><div class="t">影像輸入</div><div class="d">PNG / JPG &lt; 300 KB，建議 200 × 220</div></div>
                 <div class="fw-step"><div class="t">RGB565 轉換</div><div class="d">Rinky-Dink converter 輸出 C header</div></div>
@@ -158,7 +225,7 @@
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">05</span><h2>技術難點 &amp; 解決</h2><span class="note">problem → mitigation</span></div>
+            <div class="fw-section-head"><span class="fw-section-num">06</span><h2>技術難點 &amp; 解決</h2><span class="note">problem → mitigation</span></div>
             <div class="fw-diff">
                 <div class="fw-diff-card"><div class="title">✕ Flash 空間爆表</div><div class="desc">一張 200×220 RGB565 約 86 KB，加上 code 只剩 12 KB 餘裕。</div></div>
                 <div class="fw-diff-card solve"><div class="title">✓ 外掛 SPI Flash</div><div class="desc">影像搬到外部 W25Q 系列，MCU 以 SPI DMA 逐行讀取。</div></div>
@@ -170,7 +237,7 @@
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">06</span><h2>RGB565 互動計算機</h2><span class="note">即時轉換 · 位元視覺化</span></div>
+            <div class="fw-section-head"><span class="fw-section-num">07</span><h2>RGB565 互動計算機</h2><span class="note">即時轉換 · 位元視覺化</span></div>
             <div class="fw-rgb-wrap">
                 <div class="fw-rgb-sliders">
                     <div class="fw-rgb-field">
@@ -209,7 +276,7 @@
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">07</span><h2>EBI 時序波形</h2><span class="note">WRITE / READ cycle · tAS / tAH</span></div>
+            <div class="fw-section-head"><span class="fw-section-num">08</span><h2>EBI 時序波形</h2><span class="note">WRITE / READ cycle · tAS / tAH</span></div>
             <div class="fw-timing">
                 <div class="fw-timing-head">
                     <span class="fw-timing-title">// EBI bus cycle @ 42 MHz HCLK (23.8 ns/cycle)</span>
@@ -282,14 +349,39 @@
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">08</span><h2>完整教學播放清單</h2><span class="note">YouTube · Nano MCU series</span></div>
+            <div class="fw-section-head"><span class="fw-section-num">09</span><h2>理論基礎 — MIT 6.004 計算機結構</h2><span class="note">Computation Structures · Cortex-M0 原理對應</span></div>
+            <div class="fw-callout" style="margin-bottom:20px">
+                <h3>為什麼看 6.004？</h3>
+                <p>
+                    MIT 6.004《Computation Structures》從數位邏輯、有限狀態機、到 Beta RISC 處理器的完整設計，
+                    正是理解 Cortex-M0 如何執行 Thumb-2 指令的理論骨架——
+                    Fetch → Decode → Execute 三級管線、暫存器檔案、ALU 設計、記憶體映射 I/O（MMIO）
+                    在 Nano130 的 EBI 實作中都有直接對應。
+                    第 13 講深入有限狀態機（FSM），
+                    是理解韌體 State Machine Pattern 的理論起點。
+                </p>
+            </div>
+            <div class="fw-yt" style="margin-bottom:16px">
+                <iframe src="https://www.youtube.com/embed/EvhITMTTl48?list=PLUl_fzAL8tWIqU_zk0u1_18sf1LF-ym91" title="MIT 6.004 Lecture 13 — Finite State Machines" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div class="fw-pipe" style="margin-top:16px">
+                <div class="fw-step"><div class="t">數位邏輯 → GPIO</div><div class="d">組合邏輯閘映射到 Nano130 的 PA/PB multifunction 腳位設定</div></div>
+                <div class="fw-step"><div class="t">FSM → 韌體狀態機</div><div class="d">6.004 FSM 模型直接對應 display init state machine（RESET → CMD → DATA → IDLE）</div></div>
+                <div class="fw-step"><div class="t">Beta ISA → Thumb-2</div><div class="d">Beta 32-bit RISC 與 Cortex-M0 Thumb-2 16/32-bit 混合 ISA 的結構對比</div></div>
+                <div class="fw-step"><div class="t">MMIO → EBI Write</div><div class="d">6.004 的 memory-mapped I/O 概念直接解釋 EBI_WRITE_DATA() 為何等同「送像素」</div></div>
+                <div class="fw-step"><div class="t">中斷 → NVIC</div><div class="d">Cortex-M0 NVIC 優先權仲裁對應 6.004 的中斷向量與 supervisor call</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">10</span><h2>完整韌體教學播放清單</h2><span class="note">YouTube · Nano MCU series</span></div>
             <div class="fw-yt">
                 <iframe src="https://www.youtube.com/embed/videoseries?list=PLUl_fzAL8tWIqU_zk0u1_18sf1LF-ym91" title="Nuvoton Firmware Playlist" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">09</span><h2>技術文章</h2><span class="note">blog</span></div>
+            <div class="fw-section-head"><span class="fw-section-num">11</span><h2>技術文章</h2><span class="note">blog</span></div>
             <div class="fw-articles">
                 <a href="https://jtlai0921.wixsite.com/mysite/post/%E7%8C%B4%E5%AD%90%E9%83%BD%E8%83%BD%E8%AE%80%E6%87%82%E7%9A%84%E7%94%A8tft%E9%A1%AF%E7%A4%BA%E5%9C%96%E7%89%87" target="_blank" rel="noopener"><span class="bullet">01 ▸</span><span class="title">猴子都能讀懂：用 TFT 顯示圖片（EBI + RGB565 完整教學）</span><span class="arrow">↗</span></a>
                 <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noopener"><span class="bullet">02 ▸</span><span class="title">更多韌體與工程筆記 · 個人部落格</span><span class="arrow">↗</span></a>
@@ -297,10 +389,124 @@
         </section>
 
         <section class="fw-section">
-            <div class="fw-section-head"><span class="fw-section-num">10</span><h2>跨域延伸</h2><span class="note">DSP × biomed</span></div>
+            <div class="fw-section-head"><span class="fw-section-num">12</span><h2>跨域延伸</h2><span class="note">DSP × biomed</span></div>
             <div class="fw-callout">
                 <h3>從 Bit 到分子：一條完整的工程線</h3>
                 <p>以韌體底層為基礎，整合生醫研究專業：MCU 上實作 ECG / PPG 訊號 FIR / IIR 濾波、心率擷取演算法，結合站內已展示的 <a href="report.html">蛋白質 AI</a>、<a href="ngs.html">NGS</a>、<a href="gene_ai.html">基因 AI</a> 平台，形成「硬體 ↔ 韌體 ↔ 演算法 ↔ 系統」同一條技術線。</p>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">13</span><h2>NVIC 向量中斷控制器</h2><span class="note">Nested Vectored Interrupt Controller · Cortex-M0</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">⚡</span><div class="lbl">中斷通道</div><div class="val">32 個外部 IRQ</div><div class="sub">+ 16 個系統例外（HardFault / SysTick …）</div></div>
+                <div class="fw-spec"><span class="ico">🎯</span><div class="lbl">優先級位元</div><div class="val">2-bit（4 級）</div><div class="sub">M0 最小化實作 · 低延遲搶佔</div></div>
+                <div class="fw-spec"><span class="ico">🕐</span><div class="lbl">進入延遲</div><div class="val">12 cycles</div><div class="sub">自動 push 8 個暫存器 → 無需 prologue</div></div>
+                <div class="fw-spec"><span class="ico">🔒</span><div class="lbl">Tail-chaining</div><div class="val">6 cycles</div><div class="sub">連續 ISR 切換省去 push/pop overhead</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>irq_setup.c — EBI / GPIO 中斷配置</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 啟用 EINT0（EBI 資料就緒信號）與 UART0 接收中斷 */</span>
+NVIC_SetPriority(EINT0_IRQn, <span class="c-num">0</span>);   <span class="c-cm">/* 最高優先 — 顯示撕裂修復 */</span>
+NVIC_SetPriority(UART0_IRQn, <span class="c-num">1</span>);
+NVIC_EnableIRQ(EINT0_IRQn);
+NVIC_EnableIRQ(UART0_IRQn);
+
+<span class="c-type">void</span> <span class="c-fn">EINT0_IRQHandler</span>(<span class="c-type">void</span>) {
+    GPIO_CLR_INT_FLAG(PB, BIT14);     <span class="c-cm">/* 清 pending bit */</span>
+    <span class="c-fn">tft_vsync_cb</span>();                   <span class="c-cm">/* 觸發下一幀 blit */</span>
+}</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">14</span><h2>PDMA 直接記憶體傳輸</h2><span class="note">Peripheral DMA · zero-CPU pixel blit</span></div>
+            <div class="fw-callout">
+                <h3>為什麼需要 PDMA？</h3>
+                <p>CPU 迴圈搬運 44,000 個像素（200×220）需要 ~88,000 個 load/store cycle，佔滿 2 ms。改用 PDMA burst-transfer 讓 CPU 在搬圖期間執行其他任務（ADC 採樣、UART 輸出），有效實現「軟性多工」。</p>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>pdma_blit.c — Flash → EBI 零 CPU 傳輸</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 設定 PDMA Ch0：Flash 圖陣 → EBI data 暫存器 */</span>
+PDMA_Open(<span class="c-num">1</span> &lt;&lt; <span class="c-num">0</span>);
+PDMA_SetTransferCnt(PDMA, <span class="c-num">0</span>, PDMA_WIDTH_16, <span class="c-num">44000</span>);
+PDMA_SetTransferAddr(PDMA, <span class="c-num">0</span>,
+    (<span class="c-type">uint32_t</span>)img2,          PDMA_SAR_INC,  <span class="c-cm">/* src: Flash array */</span>
+    EBI_BANK0_BASE_ADDR,    PDMA_DAR_FIX); <span class="c-cm">/* dst: TFT EBI 位址（固定） */</span>
+PDMA_SetBurstType(PDMA, <span class="c-num">0</span>, PDMA_REQ_BURST, PDMA_BURST_128);
+PDMA_EnableInt(PDMA, <span class="c-num">0</span>, PDMA_INT_TRANS_DONE);
+NVIC_EnableIRQ(PDMA_IRQn);
+PDMA_Trigger(PDMA, <span class="c-num">0</span>);  <span class="c-cm">/* 啟動 — CPU 可繼續跑其他邏輯 */</span></pre>
+            </div>
+            <div class="fw-diff">
+                <div class="fw-diff-card"><div class="title">✕ CPU 迴圈搬運</div><div class="desc">~88,000 cycle · CPU 100% 忙碌 · UART / ADC 延遲 2 ms 以上</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ PDMA Burst-128</div><div class="desc">~690 cycle 觸發後 CPU 釋放 · 傳完觸發 IRQ 通知主迴圈</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">15</span><h2>Timer / BPWM 多頻道配置</h2><span class="note">backlight · heartbeat LED · scan clock</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">🕐</span><div class="lbl">Timer 0 / 1</div><div class="val">系統節拍 1 ms</div><div class="sub">SysTick + 應用層軟體 timer 佇列</div></div>
+                <div class="fw-spec"><span class="ico">🔄</span><div class="lbl">Timer 2</div><div class="val">ADC 觸發 250 Hz</div><div class="sub">每 4 ms 啟動一次 ECG/PPG 採樣</div></div>
+                <div class="fw-spec"><span class="ico">💡</span><div class="lbl">BPWM0 Ch0</div><div class="val">LCD 背光 500 Hz</div><div class="sub">Duty 0–100% 調光 · 低頻閃爍避免感測雜訊</div></div>
+                <div class="fw-spec"><span class="ico">❤️</span><div class="lbl">BPWM0 Ch1</div><div class="val">心跳 LED 1 Hz</div><div class="sub">互補輸出 · dead-band 200 ns 防橋臂直通</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>pwm_init.c — 背光 + ADC 觸發配置</span></div>
+                <pre class="fw-code"><span class="c-cm">/* BPWM0 Ch0: LCD 背光 500 Hz，初始 duty 80% */</span>
+BPWM_ConfigOutputChannel(BPWM0, <span class="c-num">0</span>,
+    <span class="c-num">500</span>,   <span class="c-cm">/* freq Hz  */</span>
+    <span class="c-num">80</span>);   <span class="c-cm">/* duty %   */</span>
+BPWM_EnableOutput(BPWM0, BPWM_CH_0_MASK);
+BPWM_Start(BPWM0, BPWM_CH_0_MASK);
+
+<span class="c-cm">/* Timer2: 每 4 ms 觸發 ADC（250 SPS for ECG） */</span>
+TIMER_Open(TIMER2, TIMER_PERIODIC_MODE, <span class="c-num">250</span>);
+TIMER_SetTriggerSource(TIMER2, TIMER_TRGSRC_TIMEOUT_EVENT);
+TIMER_SetTriggerTarget(TIMER2, TIMER_TRG_TO_ADC);
+TIMER_Start(TIMER2);</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">16</span><h2>SPI Flash 外部影像儲存</h2><span class="note">W25Q64 · 64 Mbit · XIP-ready</span></div>
+            <div class="fw-diff">
+                <div class="fw-diff-card"><div class="title">✕ 影像鎖在 MCU Flash</div><div class="desc">128 KB 只能放 1 張 200×220（86 KB），程式碼加 heap 幾乎爆表，無法做多圖輪播。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ 外掛 W25Q64 SPI Flash</div><div class="desc">64 Mbit = 8 MB，可存 ~93 張全彩圖，透過 SPI0 以 32 MHz DMA 讀取，每幀 &lt;3 ms。</div></div>
+                <div class="fw-diff-card"><div class="title">✕ SPI 讀取阻塞 CPU</div><div class="desc">同步輪詢 64 KB Sector 讀取需 ~5 ms 忙等待，顯示幀率下降。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ SPI + PDMA double-buffer</div><div class="desc">前景顯示 buf[0] 時，PDMA 搬 buf[1]；切換時 swap pointer，CPU 始終零等待。</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>spi_flash.c — W25Q64 讀取啟動</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 發 Read Data (0x03) 指令，從 sector 0 讀 86 KB */</span>
+<span class="c-type">void</span> <span class="c-fn">spiflash_read</span>(<span class="c-type">uint32_t</span> addr, <span class="c-type">uint8_t</span> *dst, <span class="c-type">uint32_t</span> len) {
+    SPI_SET_SS_LOW(SPI0);
+    <span class="c-fn">SPI_WriteData</span>(SPI0, <span class="c-num">0x03</span>);           <span class="c-cm">/* Read cmd */</span>
+    <span class="c-fn">SPI_WriteData</span>(SPI0, (addr &gt;&gt; <span class="c-num">16</span>) &amp; <span class="c-num">0xFF</span>);
+    <span class="c-fn">SPI_WriteData</span>(SPI0, (addr &gt;&gt;  <span class="c-num">8</span>) &amp; <span class="c-num">0xFF</span>);
+    <span class="c-fn">SPI_WriteData</span>(SPI0,  addr        &amp; <span class="c-num">0xFF</span>);
+    PDMA_SetTransferAddr(PDMA, <span class="c-num">1</span>,
+        SPI0_BASE + <span class="c-num">0x20</span>, PDMA_SAR_FIX,  <span class="c-cm">/* SPI RX FIFO */</span>
+        (<span class="c-type">uint32_t</span>)dst,      PDMA_DAR_INC);
+    PDMA_SetTransferCnt(PDMA, <span class="c-num">1</span>, PDMA_WIDTH_8, len);
+    PDMA_Trigger(PDMA, <span class="c-num">1</span>);
+}</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">17</span><h2>完整系統主迴圈架構</h2><span class="note">boot → init → main loop · full picture</span></div>
+            <div class="fw-callout">
+                <h3>從上電到畫面：完整啟動流程</h3>
+                <p>NANO130 上電後執行 ROM Bootloader 自我測試，跳入使用者 Reset Handler，依序初始化時脈樹（PLL → HCLK 42 MHz）、周邊（EBI / SPI / ADC / BPWM / PDMA）、TFT 驅動 IC 初始化序列，最後進入主迴圈。</p>
+            </div>
+            <div class="fw-steps">
+                <div class="fw-step"><div class="t">Power-on Reset + ROM Bootloader</div><div class="d">自我測試 Flash CRC、讀取 Config0 Boot 設定（ISP / ICP / User Flash），決定跳轉目標。</div></div>
+                <div class="fw-step"><div class="t">CLK_SetCoreClock(42000000)</div><div class="d">外部 12 MHz XTAL → PLL × 3.5 → 42 MHz HCLK。PCLK = HCLK / 2 = 21 MHz 供 ADC / SPI。</div></div>
+                <div class="fw-step"><div class="t">周邊初始化</div><div class="d">EBI 時序（tAS=2, tAH=1, tACC=6）→ SPI0 32 MHz → BPWM0 500 Hz → Timer2 250 Hz ADC trigger → PDMA Ch0/1 → NVIC 優先級。</div></div>
+                <div class="fw-step"><div class="t">TFT ILI9225 驅動初始化</div><div class="d">透過 EBI 發送 ~20 條暫存器設定指令（電源、Gamma、掃描方向、色彩模式 RGB565），等待 120 ms Vcom 穩定。</div></div>
+                <div class="fw-step"><div class="t">主迴圈 — while(1)</div><div class="d">PDMA 搬圖（非阻塞）→ ADC 結果處理（ECG/PPG）→ UART 輸出數據 → 低功耗 Sleep 等 SysTick 喚醒（1 ms），迴圈週期 &lt; 4 ms。</div></div>
             </div>
         </section>
     </div>
@@ -430,5 +636,58 @@
         }));
         apply('write');
     })();
+
+    // Scroll reveal
+    (function () {
+        if (!('IntersectionObserver' in window)) return;
+        document.querySelector('.fw')?.classList.add('fw-animate');
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('fw-visible'); io.unobserve(e.target); } });
+        }, { threshold: 0.08 });
+        document.querySelectorAll('.fw-section').forEach(el => io.observe(el));
+    })();
     </script>
-   </body> </html>
+   <vercel-analytics data-props="{}" data-params="{}" data-pathname="/firmware.html"></vercel-analytics> <script type="module">var v=()=>{window.va||(window.va=function(...i){window.vaq||(window.vaq=[]),window.vaq.push(i)})},w="@vercel/analytics",h="2.0.1";function f(){return typeof window<"u"}function l(){try{const e="production"}catch{}return"production"}function m(e="auto"){if(e==="auto"){window.vam=l();return}window.vam=e}function y(){return(f()?window.vam:l())||"production"}function d(){return y()==="development"}function b(e,i){if(!e||!i)return e;let n=e;try{const t=Object.entries(i);for(const[r,s]of t)if(!Array.isArray(s)){const o=u(s);o.test(n)&&(n=n.replace(o,`/[${r}]`))}for(const[r,s]of t)if(Array.isArray(s)){const o=u(s.join("/"));o.test(n)&&(n=n.replace(o,`/[...${r}]`))}return n}catch{return e}}function u(e){return new RegExp(`/${g(e)}(?=[/?#]|$)`)}function g(e){return e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function E(e){return e.scriptSrc?a(e.scriptSrc):d()?"https://va.vercel-scripts.com/v1/script.debug.js":e.basePath?a(`${e.basePath}/insights/script.js`):"/_vercel/insights/script.js"}function k(e,i){var n;let t=e;if(i)try{t={...(n=JSON.parse(i))==null?void 0:n.analytics,...e}}catch{}m(t.mode);const r={sdkn:w+(t.framework?`/${t.framework}`:""),sdkv:h};return t.disableAutoTrack&&(r.disableAutoTrack="1"),t.viewEndpoint&&(r.viewEndpoint=a(t.viewEndpoint)),t.eventEndpoint&&(r.eventEndpoint=a(t.eventEndpoint)),t.sessionEndpoint&&(r.sessionEndpoint=a(t.sessionEndpoint)),d()&&t.debug===!1&&(r.debug="false"),t.dsn&&(r.dsn=t.dsn),t.endpoint?r.endpoint=t.endpoint:t.basePath&&(r.endpoint=a(`${t.basePath}/insights`)),{beforeSend:t.beforeSend,src:E(t),dataset:r}}function a(e){return e.startsWith("http://")||e.startsWith("https://")||e.startsWith("/")?e:`/${e}`}function S(e={debug:!0},i){var n;if(!f())return;const{beforeSend:t,src:r,dataset:s}=k(e,i);if(v(),t&&((n=window.va)==null||n.call(window,"beforeSend",t)),document.head.querySelector(`script[src*="${r}"]`))return;const o=document.createElement("script");o.src=r;for(const[c,p]of Object.entries(s))o.dataset[c]=p;o.defer=!0,o.onerror=()=>{const c=d()?"Please check if any ad blockers are enabled and try again.":"Be sure to enable Web Analytics for your project and deploy again. See https://vercel.com/docs/analytics/quickstart for more information.";console.log(`[Vercel Web Analytics] Failed to load script from ${r}. ${c}`)},document.head.appendChild(o)}function $({route:e,path:i}){var n;(n=window.va)==null||n.call(window,"pageview",{route:e,path:i})}function A(){try{return}catch{}}function j(){try{return}catch{}}customElements.define("vercel-analytics",class extends HTMLElement{constructor(){super();try{const i=JSON.parse(this.dataset.props??"{}"),n=JSON.parse(this.dataset.params??"{}");S({...i,disableAutoTrack:!0,framework:"astro",basePath:A(),beforeSend:window.webAnalyticsBeforeSend},j());const t=this.dataset.pathname;$({route:b(t??"",n),path:t})}catch(i){throw new Error(`Failed to parse WebAnalytics properties: ${i}`)}}});</script> <!-- ── Search modal (Pagefind) ── --> <div id="pf-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:10vh"> <div style="background:var(--bg,#0d1117);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;width:min(640px,90vw);max-height:70vh;overflow:hidden;display:flex;flex-direction:column"> <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border,rgba(255,255,255,.08))"> <span style="color:var(--muted,#8b949e);font-size:1.1rem">🔍</span> <input id="pf-input" placeholder="搜尋頁面內容…" autocomplete="off" spellcheck="false" style="flex:1;background:none;border:none;outline:none;font-size:1rem;color:var(--text,#e6edf3);font-family:inherit"> <kbd style="font-size:.75rem;color:var(--muted,#8b949e);border:1px solid var(--border,rgba(255,255,255,.12));border-radius:4px;padding:2px 6px">Esc</kbd> </div> <div id="pf-results" style="overflow-y:auto;padding:8px 0;flex:1"></div> </div> </div> <!-- Search trigger button (bottom-right) --> <button id="pf-btn" title="搜尋 (Ctrl+K)" aria-label="搜尋" style="position:fixed;bottom:24px;right:24px;z-index:500;background:var(--surface,rgba(255,255,255,.06));border:1px solid var(--border,rgba(255,255,255,.12));border-radius:50%;width:44px;height:44px;font-size:1.1rem;cursor:pointer;color:var(--muted,#8b949e);display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:0 4px 16px rgba(0,0,0,.3)">🔍</button> <script>
+    (function() {
+      const modal  = document.getElementById('pf-modal');
+      const input  = document.getElementById('pf-input');
+      const results= document.getElementById('pf-results');
+      const btn    = document.getElementById('pf-btn');
+      let pf = null, debounce = null;
+
+      async function openModal() {
+        modal.style.display = 'flex';
+        input.focus();
+        if (!pf) {
+          try {
+            pf = await import('/pagefind/pagefind.js');
+            await pf.init();
+          } catch(e) { results.innerHTML = '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">搜尋索引尚未建立（需要先 build）。</p>'; pf = null; }
+        }
+      }
+      function closeModal() { modal.style.display = 'none'; input.value = ''; results.innerHTML = ''; }
+
+      async function doSearch(q) {
+        if (!pf || !q.trim()) { results.innerHTML = ''; return; }
+        const sr = await pf.search(q);
+        const items = await Promise.all(sr.results.slice(0, 8).map(r => r.data()));
+        results.innerHTML = items.length
+          ? items.map(d => `<a href="${d.url}" style="display:block;padding:10px 18px;text-decoration:none;color:var(--text,#e6edf3);border-bottom:1px solid var(--border,rgba(255,255,255,.05));transition:background .1s" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
+              <div style="font-size:.9rem;font-weight:600;margin-bottom:3px">${d.meta?.title || d.url}</div>
+              <div style="font-size:.78rem;color:#8b949e">${d.excerpt}</div>
+            </a>`).join('')
+          : '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">找不到結果。</p>';
+      }
+
+      btn.addEventListener('click', openModal);
+      modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+      document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openModal(); }
+        if (e.key === 'Escape') closeModal();
+      });
+      input.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => doSearch(input.value), 250);
+      });
+    })();
+    </script> </body> </html>

@@ -17,9 +17,7 @@
     const defaultPortfolioServiceNames = ['donttalk'];
     const defaultApiServiceNames = ['donttalk-api'];
     const defaultApiCandidates = [
-        'https://donttalk-api.onrender.com',
         'https://donttalk-api.fly.dev',
-        'https://donttalk-api-production.up.railway.app'
     ];
     const resolvedPortfolioServiceNames = normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES).length
         ? normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES)

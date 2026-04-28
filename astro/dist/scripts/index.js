@@ -1176,13 +1176,37 @@ function parseMpnnFixed(str, len) {
 const _ESM2_MODEL = 'facebook/esm2_t6_8M_UR50D';
 
 // Returns profiles[i] = { AA: logProb } for each position i via the backend
-// ESM-2 proxy (server holds HF_TOKEN). Visitors never see a token.
-// Throws on any failure — caller decides whether to fall back to BLOSUM62.
+// ESM-2 scoring — tries HF Space first, falls back to Fly.io backend proxy.
+// Throws on total failure — caller decides whether to fall back to BLOSUM62.
+const _ESM2_SPACE_URL = 'https://donttalk123-web.hf.space';
+
 async function computeESM2Profiles(seq, fixedSet, onProgress) {
     const freePos = [];
     for (let i = 0; i < seq.length; i++) { if (!fixedSet.has(i)) freePos.push(i); }
     const profiles = new Array(seq.length).fill(null);
+    const body = JSON.stringify({ sequence: seq, positions: freePos });
 
+    // ── Try HF Space first ───────────────────────────────
+    onProgress(0, `ESM-2 → HF Space（${_ESM2_MODEL}）評分中...`);
+    try {
+        const resp = await fetch(`${_ESM2_SPACE_URL}/score`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            signal: AbortSignal.timeout(120_000),
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            for (const [posStr, dist] of Object.entries(data.profiles || {})) {
+                profiles[parseInt(posStr, 10)] = dist;
+            }
+            onProgress(1, `HF Space ESM-2 完成（${Object.keys(data.profiles || {}).length} 個位置）`);
+            return profiles;
+        }
+    } catch (_) { /* space asleep or network error — fall through */ }
+
+    // ── Fallback: Fly.io backend proxy ──────────────────
+    onProgress(0.1, `HF Space 冷啟動中，改用後端 proxy...`);
     let apiBase = '';
     if (typeof resolvePortfolioApiBase === 'function') {
         try { apiBase = await resolvePortfolioApiBase(); } catch (e) { /* ignore */ }
@@ -1190,18 +1214,17 @@ async function computeESM2Profiles(seq, fixedSet, onProgress) {
     if (!apiBase && typeof window.APP_CONFIG?.API_BASE_URL === 'string') {
         apiBase = window.APP_CONFIG.API_BASE_URL.trim().replace(/\/+$/, '');
     }
-    if (!apiBase) throw new Error('後端 API base 未設定，無法呼叫 ESM-2 代理。');
+    if (!apiBase) throw new Error('後端 API base 未設定，無法呼叫 ESM-2。');
 
-    onProgress(0, `ESM-2 → 後端 proxy（${_ESM2_MODEL}）批次評分中...`);
     const resp = await fetch(`${apiBase}/api/esm2/score`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sequence: seq, positions: freePos })
+        body,
     });
     if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
-        if (resp.status === 503) throw new Error('ESM-2 模型正在冷啟動或後端未設定 HF_TOKEN（503）。');
-        throw new Error(err.detail || `ESM-2 proxy HTTP ${resp.status}`);
+        if (resp.status === 503) throw new Error('ESM-2 模型冷啟動中（503），請稍後再試。');
+        throw new Error(err.detail || `ESM-2 HTTP ${resp.status}`);
     }
     const data = await resp.json();
     for (const [posStr, dist] of Object.entries(data.profiles || {})) {
