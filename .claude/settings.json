@@ -55,7 +55,9 @@
       "Bash(node -e ' *)",
       "Bash(echo \"Exit: $?\")",
       "Bash(python3 -)",
-      "Bash(python3)"
+      "Bash(python3)",
+      "Bash(agent-browser screenshot *)",
+      "Bash(agent-browser scroll *)"
     ]
   },
   "hooks": {
