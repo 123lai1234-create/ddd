@@ -9,7 +9,7 @@ class MenuScene extends Phaser.Scene {
 
   create() {
     const W = this.scale.width, H = this.scale.height;
-    this.tab = 0; this.tabs = ['狀態','裝備','道具','存檔','成就','任務'];
+    this.tab = 0; this.tabs = ['狀態','裝備','道具','存檔','成就','任務','圖鑑'];
     this.cursor = 0; this.member = 0;
     this.equipSlot = -1; this.equipList = []; this.equipCursor = 0;
     this.itemList = []; this.itemCursor = 0;
@@ -92,7 +92,8 @@ class MenuScene extends Phaser.Scene {
       case 2: this._drawItem();    break;
       case 3: this._drawSave();    break;
       case 4: this._drawAchieve(); break;
-      case 5: this._drawQuests();  break;
+      case 5: this._drawQuests();   break;
+      case 6: this._drawBestiary(); break;
     }
   }
 
@@ -322,7 +323,9 @@ class MenuScene extends Phaser.Scene {
         color: sel?'#ffe080':'#c8b080', fontStyle: sel?'bold':'normal', stroke:'#000', strokeThickness:2,
       });
       if (d) {
-        this.add.text(cx+cw/2, ry+6+fs+4, `Lv.${d.party?.[0]?.lv||'?'} · ${MAPS[d.map]?.name||d.map} · 靈石 ${d.gold||0}`, {
+        const _pt = d.flags?.playtime || 0;
+        const _ptStr = _pt > 0 ? `  ${Math.floor(_pt/3600)}h${String(Math.floor((_pt%3600)/60)).padStart(2,'0')}m` : '';
+        this.add.text(cx+cw/2, ry+6+fs+4, `Lv.${d.party?.[0]?.lv||'?'} · ${MAPS[d.map]?.name||d.map} · 靈石 ${d.gold||0}${_ptStr}`, {
           fontSize: fsS+'px', fontFamily:'monospace', color:'#9a8060', stroke:'#000', strokeThickness:1,
         }).setOrigin(0.5, 0);
         this.add.text(cx+cw/2, ry+6+fs+4+fsS+4, (d.party||[]).map(m=>m.name).join(' · '), {
@@ -424,6 +427,58 @@ class MenuScene extends Phaser.Scene {
           fontSize: fsS+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
           color:'#60c040', stroke:'#000', strokeThickness:1,
         }).setOrigin(1, 0);
+      }
+    });
+  }
+
+  _drawBestiary() {
+    const { _cx:cx, _cy:cy, _cw:cw, _ch:ch } = this;
+    const fs  = Math.max(12, Math.floor(cw * 0.020));
+    const fsS = Math.max(10, fs - 2);
+    const entries = Object.entries(typeof ENEMIES !== 'undefined' ? ENEMIES : {});
+    const seenCount = entries.filter(([id]) => !!GS.defeated?.[id]).length;
+
+    this.add.text(cx+cw/2, cy+6, `妖怪圖鑑　（${seenCount} / ${entries.length}）`, {
+      fontSize: Math.floor(fs*1.2)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#e8c060', fontStyle:'bold', stroke:'#000', strokeThickness:2,
+    }).setOrigin(0.5, 0);
+
+    const cols = 2;
+    const colW = Math.floor(cw / cols);
+    const rowH = Math.max(46, Math.floor((ch - 44) / Math.ceil(entries.length / cols)));
+
+    entries.forEach(([id, e], i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      const ax = cx + col * colW, ay = cy + 44 + row * rowH;
+      const seen = !!GS.defeated?.[id];
+
+      this.panelGfx.fillStyle(seen ? 0x1a1008 : 0x0e0c18, 0.75);
+      this.panelGfx.fillRoundedRect(ax+2, ay, colW-10, rowH-6, 5);
+      if (seen) {
+        this.panelGfx.lineStyle(1, 0x7a5c1e, 0.5);
+        this.panelGfx.strokeRoundedRect(ax+2, ay, colW-10, rowH-6, 5);
+      }
+
+      if (seen) {
+        // Color swatch
+        const swG = this.add.graphics();
+        swG.fillStyle(e.color, 0.85);
+        swG.fillCircle(ax+14, ay+rowH/2-2, 8);
+        this.add.text(ax+26, ay+4, e.name, {
+          fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+          color:'#f0c060', fontStyle:'bold', stroke:'#000', strokeThickness:2,
+        });
+        this.add.text(ax+26, ay+6+fs, `HP:${e.hp} ATK:${e.atk} DEF:${e.def} SPD:${e.spd}`, {
+          fontSize: (fsS-1)+'px', fontFamily:'monospace', color:'#9a8060', stroke:'#000', strokeThickness:1,
+        });
+        this.add.text(ax+colW-14, ay+4, `EXP:${e.exp}`, {
+          fontSize: (fsS-1)+'px', fontFamily:'monospace', color:'#70a050', stroke:'#000', strokeThickness:1,
+        }).setOrigin(1, 0);
+      } else {
+        this.add.text(ax+14, ay+rowH/2-fs/2, '？？？　未知妖怪', {
+          fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+          color:'#3a3030', stroke:'#000', strokeThickness:1,
+        });
       }
     });
   }
