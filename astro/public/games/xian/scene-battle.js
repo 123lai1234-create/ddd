@@ -93,7 +93,7 @@ class BattleScene extends Phaser.Scene {
         fontFamily:'"Noto Serif TC","SimSun",serif',
         color:'#c8a060', stroke:'#000', strokeThickness:2,
       }).setOrigin(0.5,0.5).setAlpha(0);
-      this.enemySprites.push({ g, hp, lbl, x:ex, y:this.groundY, e, statusTxt:null });
+      this.enemySprites.push({ g, hp, lbl, x:ex, y:this.groundY, e, statusTxt:null, hpText:null });
     });
 
     // ── Hero sprites (off-screen left for intro) ──────────
@@ -345,6 +345,7 @@ class BattleScene extends Phaser.Scene {
       const hpT=this.add.text(bx+barW+5,by1+bh2/2,`${m.hp}`,{fontSize:fsS+'px',fontFamily:'monospace',color:'#e05050',stroke:'#000',strokeThickness:1}).setOrigin(0,0.5).setDepth(5);
       const mpT=this.add.text(bx+barW+5,by2+bh2/2,`${m.mp}`,{fontSize:fsS+'px',fontFamily:'monospace',color:'#5070e0',stroke:'#000',strokeThickness:1}).setOrigin(0,0.5).setDepth(5);
       this.statusTexts.push(hpT,mpT);
+      const expBar=mkBar(this,bx,ry+rowH*0.88,barW,3,m.exp,expForLevel(m.lv),0x50c878); expBar.setDepth(5); this.statusTexts.push(expBar);
       if (m.status.length>0) {
         const stT=this.add.text(px+pw-8,ty,m.status.slice(0,2).join(' '),{fontSize:fsS+'px',fontFamily:'serif',color:'#c050e8',stroke:'#000',strokeThickness:1}).setOrigin(1,0).setDepth(5);
         this.statusTexts.push(stT);
@@ -432,8 +433,14 @@ class BattleScene extends Phaser.Scene {
     const sp=this.enemySprites[idx]; if (!sp) return;
     sp.hp.destroy();
     if (sp.statusTxt) { sp.statusTxt.destroy(); sp.statusTxt=null; }
+    if (sp.hpText) { sp.hpText.destroy(); sp.hpText=null; }
     const e=sp.e, sz=e.sz||28;
     sp.hp=mkBar(this,sp.x-sz,this.groundY+6,sz*2,7,e.hp,e.maxHp,0xe04040);
+    if (!e.dead) {
+      sp.hpText=this.add.text(sp.x,this.groundY+4,`${e.hp}/${e.maxHp}`,{
+        fontSize:'10px',fontFamily:'monospace',color:'#ff9090',stroke:'#000',strokeThickness:1,
+      }).setOrigin(0.5,1).setDepth(8);
+    }
     this._drawEnemy(sp.g, e);
     if (e.dead) { sp.g.setAlpha(0); sp.lbl.setAlpha(0.3); sp.g.setPosition(sp.x,sp.y); }
     const STATUS_LBL = { poison:'毒', atkUp:'強', slow:'緩', atkDown:'弱' };

@@ -230,7 +230,7 @@ const MAPS = {
     startX:18, startY:7,
   },
   shrine: {
-    name:'上古神殿', music:'forest',
+    name:'上古神殿', music:'shrine',
     exits:[
       { x:9, y:0, to:'cave', toX:9, toY:13, msg:'返回深淵秘窟' },
     ],
