@@ -621,3 +621,17 @@ const GS = {
     return true;
   },
 };
+
+// ── Quest definitions ────────────────────────────────────
+const QUESTS = [
+  { id:'q1', name:'黑山村的呼喚', desc:'到達黑山村，了解妖亂起源。',
+    done: () => true },
+  { id:'q2', name:'三人同行',     desc:'在幽竹林招募靈兒與月華。',
+    done: () => GS.party.length >= 3 },
+  { id:'q3', name:'穿越黃風嶺',   desc:'深入黃風嶺探查妖兵動向。',
+    done: () => ['castle','dungeon','shrine'].includes(GS.map) || !!GS.flags.visitedCastle },
+  { id:'q4', name:'降服虎先鋒',   desc:'擊敗守衛盤絲洞的虎先鋒。',
+    done: () => !!GS.flags.defeatedDragon },
+  { id:'q5', name:'討伐黃眉大王', desc:'前往小西天，終結黃眉大王之禍。',
+    done: () => !!GS.flags.defeated_boss },
+];

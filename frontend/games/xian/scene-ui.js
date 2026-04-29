@@ -9,7 +9,7 @@ class MenuScene extends Phaser.Scene {
 
   create() {
     const W = this.scale.width, H = this.scale.height;
-    this.tab = 0; this.tabs = ['狀態','裝備','道具','存檔','成就'];
+    this.tab = 0; this.tabs = ['狀態','裝備','道具','存檔','成就','任務'];
     this.cursor = 0; this.member = 0;
     this.equipSlot = -1; this.equipList = []; this.equipCursor = 0;
     this.itemList = []; this.itemCursor = 0;
@@ -92,6 +92,7 @@ class MenuScene extends Phaser.Scene {
       case 2: this._drawItem();    break;
       case 3: this._drawSave();    break;
       case 4: this._drawAchieve(); break;
+      case 5: this._drawQuests();  break;
     }
   }
 
@@ -380,6 +381,53 @@ class MenuScene extends Phaser.Scene {
     });
   }
 
+  _drawQuests() {
+    const { _cx:cx, _cy:cy, _cw:cw, _ch:ch } = this;
+    const fs  = Math.max(13, Math.floor(cw * 0.022));
+    const fsS = Math.max(10, fs - 3);
+    const list = (typeof QUESTS !== 'undefined') ? QUESTS : [];
+    const doneCount = list.filter(q => q.done()).length;
+
+    this.add.text(cx+cw/2, cy+6, `任務進度　（${doneCount} / ${list.length}）`, {
+      fontSize: Math.floor(fs*1.2)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#e8c060', fontStyle:'bold', stroke:'#000', strokeThickness:2,
+    }).setOrigin(0.5, 0);
+
+    if (list.length === 0) {
+      this.add.text(cx+cw/2, cy+ch/2, '── 無任務 ──', {
+        fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif', color:'#444',
+      }).setOrigin(0.5, 0.5);
+      return;
+    }
+
+    const rowH = Math.max(52, Math.floor((ch - 48) / list.length));
+    list.forEach((q, i) => {
+      const ry = cy + 48 + i * rowH;
+      const isDone = q.done();
+      this.panelGfx.fillStyle(isDone ? 0x0a2010 : 0x100c1a, 0.7);
+      this.panelGfx.fillRoundedRect(cx-4, ry, cw+8, rowH-6, 5);
+      if (isDone) {
+        this.panelGfx.lineStyle(1, 0x407030, 0.6);
+        this.panelGfx.strokeRoundedRect(cx-4, ry, cw+8, rowH-6, 5);
+      }
+      this.add.text(cx+12, ry+8, `${isDone ? '✓' : '○'}  ${q.name}`, {
+        fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color: isDone ? '#80e060' : '#e8c060', fontStyle:'bold',
+        stroke:'#000', strokeThickness:2,
+      });
+      this.add.text(cx+12, ry+10+fs, q.desc, {
+        fontSize: fsS+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color: isDone ? '#607050' : '#9a8060', stroke:'#000', strokeThickness:1,
+      });
+      if (isDone) {
+        this.add.text(cx+cw-6, ry+8, '已完成', {
+          fontSize: fsS+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+          color:'#60c040', stroke:'#000', strokeThickness:1,
+        }).setOrigin(1, 0);
+      }
+    });
+  }
+
   update() {
     const padUp   = !!window.PAD?.up;    if (padUp    && window.PAD) window.PAD.up    = false;
     const padDown = !!window.PAD?.down;  if (padDown  && window.PAD) window.PAD.down  = false;
@@ -400,7 +448,7 @@ class MenuScene extends Phaser.Scene {
       this.scene.resume(this.caller); this.scene.stop(); return;
     }
     if (left  && this.tab>0 && (this.tab!==1||this.equipSlot===-1)) { this.tab--; this.cursor=0; this.drawPanel(); return; }
-    if (right && this.tab<3 && (this.tab!==1||this.equipSlot===-1)) { this.tab++; this.cursor=0; this.drawPanel(); return; }
+    if (right && this.tab<this.tabs.length-1 && (this.tab!==1||this.equipSlot===-1)) { this.tab++; this.cursor=0; this.drawPanel(); return; }
 
     switch(this.tab) {
       case 0:

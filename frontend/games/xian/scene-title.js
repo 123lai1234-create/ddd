@@ -240,7 +240,7 @@ class TitleScene extends Phaser.Scene {
   }
 
   _select() {
-    if (this.cursor === 0) { GS.init(); this.scene.start('WorldScene'); }
+    if (this.cursor === 0) { GS.init(); this.scene.start('OpeningScene'); }
     else if (this.cursor === 1) { this.scene.start('LoadScene'); }
     else if (this.cursor === 2) { this.scene.start('AboutScene'); }
     else {
@@ -357,6 +357,136 @@ class AboutScene extends Phaser.Scene {
     this.input.keyboard.once('keydown-Z',     () => this.scene.start('TitleScene'));
     this.input.keyboard.once('keydown-ENTER', () => this.scene.start('TitleScene'));
     this.input.keyboard.once('keydown-ESC',   () => this.scene.start('TitleScene'));
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  OpeningScene — intro cinematic (4 slides, Z to advance)
+// ══════════════════════════════════════════════════════════
+class OpeningScene extends Phaser.Scene {
+  constructor() { super('OpeningScene'); }
+
+  create() {
+    const W = this.scale.width, H = this.scale.height;
+    this._slide = 0;
+    this._slides = [
+      {
+        bg: [0x000000, 0x060214, 0x000000, 0x040108],
+        lines: [
+          { t:'洪荒之時', c:'#f0e6c8', sz:28, bold:true, y:0.30 },
+          { t:'天地初開，妖氣漫天，', c:'#c8b090', sz:16, y:0.45 },
+          { t:'萬妖出沒，生靈塗炭。', c:'#c8b090', sz:16, y:0.53 },
+        ],
+      },
+      {
+        bg: [0x1a0600, 0x0e0200, 0x120400, 0x0a0300],
+        lines: [
+          { t:'黑山村告急', c:'#f0a010', sz:26, bold:true, y:0.28 },
+          { t:'妖兵橫行，村民流離，', c:'#c8b090', sz:16, y:0.43 },
+          { t:'無數百姓哭天喊地，求助無門。', c:'#c8b090', sz:16, y:0.51 },
+          { t:'── 救世主，何時降臨？ ──', c:'#9a6030', sz:14, y:0.63 },
+        ],
+      },
+      {
+        bg: [0x000820, 0x000618, 0x000412, 0x00060e],
+        lines: [
+          { t:'天命之人', c:'#60c8ff', sz:28, bold:true, y:0.28 },
+          { t:'傳說中，大聖悟空轉世，', c:'#c8d0e0', sz:16, y:0.43 },
+          { t:'天命加身，手持如意金箍棒，', c:'#c8d0e0', sz:16, y:0.51 },
+          { t:'能鎮壓妖亂，還世間清平。', c:'#c8d0e0', sz:16, y:0.59 },
+        ],
+      },
+      {
+        bg: [0x0e0820, 0x080414, 0x060210, 0x040108],
+        lines: [
+          { t:'征途啟程', c:'#ffd700', sz:30, bold:true, y:0.30 },
+          { t:'你，正是那天命之人。', c:'#f0e6c8', sz:18, y:0.46 },
+          { t:'命運，從此刻改變。', c:'#f0e6c8', sz:18, y:0.55 },
+        ],
+      },
+    ];
+
+    this._bgGfx = this.add.graphics();
+    this._textObjs = [];
+    this._hint = this.add.text(W/2, H*0.88, '按 Z 繼續', {
+      fontSize:'14px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#5a4a2a', stroke:'#000', strokeThickness:1,
+    }).setOrigin(0.5, 0.5).setAlpha(0);
+    this.tweens.add({ targets:this._hint, alpha:0.8, duration:900, delay:1200, yoyo:true, repeat:-1 });
+
+    this._showSlide(0);
+
+    this.keys = this.input.keyboard.addKeys({
+      z:     Phaser.Input.Keyboard.KeyCodes.Z,
+      enter: Phaser.Input.Keyboard.KeyCodes.ENTER,
+      esc:   Phaser.Input.Keyboard.KeyCodes.ESC,
+    });
+  }
+
+  _showSlide(idx) {
+    const W = this.scale.width, H = this.scale.height;
+    const s = this._slides[idx];
+
+    this._textObjs.forEach(o => o.destroy());
+    this._textObjs = [];
+
+    this._bgGfx.clear();
+    this._bgGfx.fillGradientStyle(...s.bg, 1);
+    this._bgGfx.fillRect(0, 0, W, H);
+
+    // Stars
+    const sg = this.add.graphics();
+    this._textObjs.push(sg);
+    for (let i = 0; i < 60; i++) {
+      sg.fillStyle(0xfff8e0, 0.1 + Math.random()*0.5);
+      sg.fillCircle(Math.random()*W, Math.random()*H, 0.3 + Math.random()*1.0);
+    }
+
+    // Divider lines
+    const dg = this.add.graphics();
+    this._textObjs.push(dg);
+    dg.lineStyle(1, 0x5a4a2a, 0.35);
+    dg.lineBetween(W*0.25, H*0.82, W*0.75, H*0.82);
+
+    // Progress dots
+    this._slides.forEach((_, i) => {
+      const dot = this.add.graphics();
+      dot.fillStyle(i===idx ? 0xffd700 : 0x3a3020, i===idx ? 0.9 : 0.5);
+      dot.fillCircle(W/2 + (i - (this._slides.length-1)/2)*22, H*0.86, i===idx ? 5 : 3);
+      this._textObjs.push(dot);
+    });
+
+    // Text lines with stagger
+    s.lines.forEach((l, li) => {
+      const fontSize = Math.min(l.sz, Math.floor(W * l.sz/560));
+      const t = this.add.text(W/2, H*l.y, l.t, {
+        fontSize: fontSize+'px',
+        fontFamily: '"Noto Serif TC","SimSun",serif',
+        color: l.c,
+        fontStyle: l.bold ? 'bold' : 'normal',
+        stroke: '#000', strokeThickness: l.bold ? 4 : 2,
+        shadow: l.bold ? { offsetX:0, offsetY:0, color:l.c, blur:20, fill:true } : undefined,
+      }).setOrigin(0.5, 0.5).setAlpha(0);
+      this._textObjs.push(t);
+      this.tweens.add({ targets:t, alpha:1, duration:600, delay:li*500 });
+    });
+  }
+
+  update() {
+    const ok  = Phaser.Input.Keyboard.JustDown(this.keys.z) || Phaser.Input.Keyboard.JustDown(this.keys.enter);
+    const esc = Phaser.Input.Keyboard.JustDown(this.keys.esc);
+    const padOk = !!window.PAD?.ok; if (padOk && window.PAD) window.PAD.ok = false;
+
+    if (esc) { this.scene.start('TitleScene'); return; }
+    if (ok || padOk) {
+      this._slide++;
+      if (this._slide >= this._slides.length) {
+        this.scene.start('WorldScene');
+      } else {
+        Sound?.play('menuSelect');
+        this._showSlide(this._slide);
+      }
+    }
   }
 }
 

@@ -11,6 +11,7 @@ const config = {
   },
   scene: [
     TitleScene,
+    OpeningScene,
     AboutScene,
     LoadScene,
     WorldScene,
