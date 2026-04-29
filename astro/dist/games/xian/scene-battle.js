@@ -607,7 +607,7 @@ class BattleScene extends Phaser.Scene {
               this._refreshEnemyHp(ei);
             }
             const epc=e.status.filter(s=>s==='poison').length;
-            e.status=e.status.filter(s=>s!=='atkUp'&&s!=='poison');
+            e.status=e.status.filter(s=>s!=='atkUp'&&s!=='atkDown'&&s!=='slow'&&s!=='poison');
             for(let i=0;i<epc-1;i++)e.status.push('poison');
           });
           this._rebuildStatus();
@@ -634,9 +634,21 @@ class BattleScene extends Phaser.Scene {
     const heroSp=this.partySprites[pIdx];
 
     if (act.type==='atk'||act.type==='drain') {
+      if (e.status.includes('slow') && Math.random()<0.4) {
+        this._addLog(`${e.name} 動作遲緩，無法行動！`);
+        this.time.delayedCall(600, onDone); return;
+      }
+      if (enemySp && !e.dead) {
+        const exclaim = this.add.text(enemySp.g.x, enemySp.g.y-(e.sz||28)*2-8, '！', {
+          fontSize:'22px', fontFamily:'serif', color:'#ffee20', stroke:'#000', strokeThickness:3,
+        }).setOrigin(0.5, 1).setDepth(15);
+        this.tweens.add({ targets:exclaim, y:exclaim.y-14, alpha:0, duration:480, onComplete:()=>exclaim.destroy() });
+      }
       this._animEnemyAttack(enemySp, heroSp, ()=>{
         let def=tgt.baseDef; if(tgt.status.includes('defend'))def=Math.floor(def*1.5);
-        let eAtk=e.atk; if(e.status.includes('atkUp'))eAtk=Math.floor(eAtk*1.5);
+        let eAtk=e.atk;
+        if(e.status.includes('atkUp'))   eAtk=Math.floor(eAtk*1.5);
+        if(e.status.includes('atkDown')) eAtk=Math.floor(eAtk*0.6);
         const dmg=this._calcDmg(eAtk,def,act.pow||1);
         tgt.hp=Math.max(0,tgt.hp-dmg); if(tgt.hp===0)tgt.dead=true;
         if(act.debuff)Object.entries(act.debuff).forEach(([k,v])=>{for(let i=0;i<v;i++)tgt.status.push(k);});
