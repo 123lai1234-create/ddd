@@ -578,6 +578,10 @@ class WorldScene extends Phaser.Scene {
 
   _doExit(exit) {
     if (this._exiting) return;
+    if (exit.to === 'shrine' && !GS.flags.defeatedDragon) {
+      this._showDialog(['【虎先鋒守護此路！須先擊敗虎先鋒，方可進入小西天。】']);
+      return;
+    }
     this._exiting = true;
     const W = this.scale.width;
     const banner = this.add.text(W/2, 56, exit.msg, {

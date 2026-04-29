@@ -53,9 +53,9 @@ class TitleScene extends Phaser.Scene {
     this._authListener = () => this.scene.restart();
     window.addEventListener('xian:authchange', this._authListener);
 
-    // Full-screen gradient background
+    // Full-screen gradient background — dark amber/black
     const bg = this.add.graphics();
-    bg.fillGradientStyle(0x16082e, 0x16082e, 0x060210, 0x060210, 1);
+    bg.fillGradientStyle(0x120800, 0x100600, 0x060200, 0x080400, 1);
     bg.fillRect(0, 0, W, H);
 
     // Star particles
@@ -70,6 +70,21 @@ class TitleScene extends Phaser.Scene {
       });
     }
     this.starGfx = this.add.graphics();
+
+    // Golden sparks
+    this.sparks = [];
+    this.sparkGfx = this.add.graphics();
+    for (let i = 0; i < 40; i++) {
+      this.sparks.push({
+        x: Math.random() * W,
+        y: H + Math.random() * H,
+        vy: -(0.5 + Math.random() * 1.8),
+        vx: (Math.random() - 0.5) * 0.6,
+        r: 0.8 + Math.random() * 1.8,
+        alpha: 0.6 + Math.random() * 0.4,
+        fade: 0.004 + Math.random() * 0.008,
+      });
+    }
 
     // Floating light orbs
     this.orbs = [];
@@ -191,6 +206,18 @@ class TitleScene extends Phaser.Scene {
       if (o.y > this.scale.height + 100) o.y = -100;
       this.orbGfx.fillStyle(o.color, o.alpha);
       this.orbGfx.fillCircle(o.x, o.y, o.r);
+    });
+    // Golden sparks
+    this.sparkGfx.clear();
+    const H = this.scale.height, Ws = this.scale.width;
+    this.sparks.forEach(s => {
+      s.x += s.vx; s.y += s.vy; s.alpha -= s.fade;
+      if (s.alpha <= 0 || s.y < -10) {
+        s.x = Math.random() * Ws; s.y = H + Math.random() * 40;
+        s.alpha = 0.6 + Math.random() * 0.4;
+      }
+      this.sparkGfx.fillStyle(0xf0c020, s.alpha * (0.6 + 0.4 * Math.sin(this.t * 0.12 + s.x)));
+      this.sparkGfx.fillCircle(s.x, s.y, s.r);
     });
 
     const up   = Phaser.Input.Keyboard.JustDown(this.keys.up)   || Phaser.Input.Keyboard.JustDown(this.keys.w);

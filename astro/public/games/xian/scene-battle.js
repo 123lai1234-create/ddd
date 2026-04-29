@@ -25,8 +25,15 @@ class BattleScene extends Phaser.Scene {
     this.groundY = Math.floor(H * 0.56);
 
     // ── Background ──────────────────────────────────────
+    const BG_MAP = {
+      forest: { sky:[0x041a04,0x040e02,0x020802,0x030a02], moon:0x0a1c08, mtn1:0x0c2008, mtn2:0x102a0c, gnd:[0x0c1808,0x0c1808,0x040804,0x040804], gndLine:0x508030, gndSub:0x142c0a, arena:0x103020 },
+      castle: { sky:[0x1a1002,0x160e02,0x080602,0x0c0a02], moon:0x1a1404, mtn1:0x2a1a04, mtn2:0x342008, gnd:[0x1e1402,0x1e1402,0x0c0a02,0x0c0a02], gndLine:0xb09020, gndSub:0x2e1e04, arena:0x302008 },
+      cave:   { sky:[0x0e0420,0x0a0218,0x04020e,0x06021a], moon:0x120630, mtn1:0x14063a, mtn2:0x1a0840, gnd:[0x0c0418,0x0c0418,0x060210,0x060210], gndLine:0x6040b0, gndSub:0x180630, arena:0x200840 },
+      shrine: { sky:[0x181208,0x140e04,0x080604,0x0c0a04], moon:0x1c1606, mtn1:0x241a04, mtn2:0x2e200a, gnd:[0x201608,0x201608,0x100c04,0x100c04], gndLine:0xc09020, gndSub:0x301e06, arena:0x302010 },
+    };
+    const bgc = BG_MAP[GS.map] || { sky:[0x180808,0x120410,0x060202,0x0a0208], moon:0x0c0418, mtn1:0x180c2a, mtn2:0x1e1030, gnd:[0x1c1008,0x1c1008,0x080604,0x080604], gndLine:0xb07828, gndSub:0x3a2606, arena:0x280840 };
     const bg = this.add.graphics();
-    bg.fillGradientStyle(0x180808, 0x120410, 0x060202, 0x0a0208, 1);
+    bg.fillGradientStyle(bgc.sky[0], bgc.sky[1], bgc.sky[2], bgc.sky[3], 1);
     bg.fillRect(0, 0, W, H);
 
     // Moon + glow
@@ -34,7 +41,7 @@ class BattleScene extends Phaser.Scene {
     moonG.fillStyle(0xfff4d0, 0.06); moonG.fillCircle(W*0.82, H*0.13, H*0.14);
     moonG.fillStyle(0xfff4d0, 1);    moonG.fillCircle(W*0.82, H*0.13, H*0.048);
     moonG.fillStyle(0xffffff, 0.2);  moonG.fillCircle(W*0.808, H*0.118, H*0.02);
-    moonG.fillStyle(0x0c0418, 1);    moonG.fillCircle(W*0.836, H*0.12, H*0.042);
+    moonG.fillStyle(bgc.moon, 1);    moonG.fillCircle(W*0.836, H*0.12, H*0.042);
 
     // Stars (twinkling via update)
     this._stars = [];
@@ -50,7 +57,7 @@ class BattleScene extends Phaser.Scene {
 
     // Mountains back
     const mtn1 = this.add.graphics();
-    mtn1.fillStyle(0x180c2a, 1);
+    mtn1.fillStyle(bgc.mtn1, 1);
     const pts1 = [[0,0.68],[0.08,0.42],[0.16,0.58],[0.24,0.36],[0.34,0.52],[0.44,0.30],[0.54,0.46],[0.62,0.32],[0.72,0.50],[0.80,0.28],[0.90,0.44],[1.0,0.38]];
     mtn1.beginPath();
     pts1.forEach(([rx,ry],i) => { const px=rx*W,py=ry*this.groundY; i===0?mtn1.moveTo(px,py):mtn1.lineTo(px,py); });
@@ -58,7 +65,7 @@ class BattleScene extends Phaser.Scene {
 
     // Mountains front
     const mtn2 = this.add.graphics();
-    mtn2.fillStyle(0x1e1030, 1);
+    mtn2.fillStyle(bgc.mtn2, 1);
     const pts2 = [[0,0.80],[0.1,0.55],[0.22,0.70],[0.32,0.50],[0.50,0.65],[0.68,0.48],[0.84,0.60],[1.0,0.52]];
     mtn2.beginPath();
     pts2.forEach(([rx,ry],i) => { const px=rx*W,py=ry*this.groundY; i===0?mtn2.moveTo(px,py):mtn2.lineTo(px,py); });
@@ -66,15 +73,15 @@ class BattleScene extends Phaser.Scene {
 
     // Ground
     const gndG = this.add.graphics();
-    gndG.fillGradientStyle(0x1c1008, 0x1c1008, 0x080604, 0x080604, 1);
+    gndG.fillGradientStyle(bgc.gnd[0], bgc.gnd[1], bgc.gnd[2], bgc.gnd[3], 1);
     gndG.fillRect(0, this.groundY, W, H - this.groundY);
-    gndG.lineStyle(2, 0xb07828, 0.65); gndG.lineBetween(0, this.groundY, W, this.groundY);
-    gndG.lineStyle(1, 0x3a2606, 0.4);
+    gndG.lineStyle(2, bgc.gndLine, 0.65); gndG.lineBetween(0, this.groundY, W, this.groundY);
+    gndG.lineStyle(1, bgc.gndSub, 0.4);
     for (let i = 1; i < 6; i++) gndG.lineBetween(0, this.groundY+i*7, W, this.groundY+i*7);
 
     // Arena glow
     const arenaG = this.add.graphics();
-    arenaG.fillStyle(0x280840, 0.25);
+    arenaG.fillStyle(bgc.arena, 0.25);
     arenaG.fillEllipse(W*0.38, this.groundY+3, W*0.65, 28);
 
     // ── Enemy sprites (off-screen right for intro) ────────
@@ -293,13 +300,23 @@ class BattleScene extends Phaser.Scene {
     }
   }
 
-  _animHeroAttack(sp, targetSp, onHit, onDone) {
+  _animHeroAttack(sp, targetSp, onHit, onDone, actorId) {
     if (!sp || !targetSp) { onHit&&onHit(); onDone&&onDone(); return; }
     const origX  = sp.g.x;
     const targetX = targetSp.g.x + 60;
     this.tweens.add({
       targets:sp.g, x:targetX, duration:180, ease:'Power3.easeIn',
       onComplete:() => {
+        if (actorId === 'yunyi') {
+          const sx = targetSp.g.x, sy = targetSp.g.y - 30;
+          const staffG = this.add.graphics().setDepth(8);
+          staffG.lineStyle(5, 0xf0c020, 1); staffG.lineBetween(-30, 0, 30, 0);
+          staffG.lineStyle(2, 0xffffa0, 0.7); staffG.lineBetween(-30, 0, 30, 0);
+          staffG.fillStyle(0xffd700, 1); staffG.fillCircle(-30,0,4); staffG.fillCircle(30,0,4);
+          staffG.setPosition(sx, sy);
+          this.tweens.add({ targets:staffG, angle:1080, alpha:0, duration:400, ease:'Linear', onComplete:()=>staffG.destroy() });
+          this._spawnParticles(sx, sy, 0xf0c020, 12, 48);
+        }
         onHit && onHit();
         this.tweens.add({ targets:sp.g, x:origX, duration:280, ease:'Back.easeOut', onComplete:onDone });
       },
@@ -509,7 +526,7 @@ class BattleScene extends Phaser.Scene {
       this._animHeroAttack(heroSp, enemySp, onHit, () => doAfter(
         crit ? `${actor.name} 會心一擊！對 ${tgt.name} 造成 ${dmg} 點傷害！`
              : `${actor.name} 攻擊 ${tgt.name}，造成 ${dmg} 點傷害！`
-      ));
+      ), actor.id);
       return;
     }
 
