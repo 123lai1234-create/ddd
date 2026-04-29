@@ -203,6 +203,7 @@ class WorldScene extends Phaser.Scene {
       right: Phaser.Input.Keyboard.KeyCodes.RIGHT, d: Phaser.Input.Keyboard.KeyCodes.D,
       z: Phaser.Input.Keyboard.KeyCodes.Z, enter: Phaser.Input.Keyboard.KeyCodes.ENTER,
       x: Phaser.Input.Keyboard.KeyCodes.X,  esc: Phaser.Input.Keyboard.KeyCodes.ESC,
+      m: Phaser.Input.Keyboard.KeyCodes.M,
     });
 
     this.moveDelay = 0;
@@ -369,7 +370,7 @@ class WorldScene extends Phaser.Scene {
       this.hudHpBars.push({ hpBar, mpBar, m });
     });
 
-    this.add.text(W-16, this.cameras.main.height - HUD_H + HUD_H/2, 'X = 選單', {
+    this.add.text(W-16, this.cameras.main.height - HUD_H + HUD_H/2, 'X=選單  M=靜音', {
       fontSize:'11px', fontFamily:'serif', color:'#5a4a2a', stroke:'#000', strokeThickness:1,
     }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(11);
   }
@@ -493,6 +494,10 @@ class WorldScene extends Phaser.Scene {
       return;
     }
     if (npc.join) {
+      if (GS.getMember(npc.join)) {
+        this._showDialog([...npc.dlg], null, npc.name);
+        return;
+      }
       this._showDialog([...npc.dlg], () => {
         GS.addMember(npc.join);
         this._showDialog([`${CHAR_BASE[npc.join].name} 加入了隊伍！`], () => this.scene.restart());
@@ -615,6 +620,18 @@ class WorldScene extends Phaser.Scene {
     const ok    = Phaser.Input.Keyboard.JustDown(this.keys.z)   || Phaser.Input.Keyboard.JustDown(this.keys.enter) || okPad;
     const menu  = Phaser.Input.Keyboard.JustDown(this.keys.x)   || Phaser.Input.Keyboard.JustDown(this.keys.esc)  || mnPad;
 
+    const muteKey = Phaser.Input.Keyboard.JustDown(this.keys.m);
+    if (muteKey) {
+      const muted = Sound?.toggleMute();
+      if (this._muteHint) this._muteHint.destroy();
+      this._muteHint = this.add.text(this.scale.width - 20, 20, muted ? '靜音 ON' : '音樂 ON', {
+        fontSize:'13px', fontFamily:'serif',
+        color: muted ? '#ff8888' : '#88ffcc',
+        stroke:'#000', strokeThickness:2,
+        backgroundColor:'#00000088', padding:{x:6, y:3},
+      }).setOrigin(1, 0).setScrollFactor(0).setDepth(20);
+      this.time.delayedCall(1500, () => { if (this._muteHint) { this._muteHint.destroy(); this._muteHint = null; } });
+    }
     if (menu) {
       this.scene.launch('MenuScene', { caller:'WorldScene' });
       this.scene.pause(); return;
