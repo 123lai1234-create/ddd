@@ -226,7 +226,7 @@ class WorldScene extends Phaser.Scene {
         if (isFinal) {
           Sound?.stopBgm();
           this.cameras.main.fadeOut(1200, 0, 0, 0);
-          this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('TitleScene'));
+          this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('EndingScene'));
         }
       }));
     }
@@ -604,8 +604,10 @@ class WorldScene extends Phaser.Scene {
       for (let i = 0; i < count; i++) {
         const id = pool[Math.floor(Math.random() * pool.length)];
         const base = ENEMIES[id];
-        enemies.push({ id, name:base.name, hp:base.hp, maxHp:base.hp,
-          atk:base.atk, def:base.def, spd:base.spd,
+        const ngS = GS.flags.ngplus ? 1.35 : 1.0;
+        enemies.push({ id, name:base.name,
+          hp:Math.floor(base.hp*ngS), maxHp:Math.floor(base.hp*ngS),
+          atk:Math.floor(base.atk*ngS), def:Math.floor(base.def*ngS), spd:base.spd,
           color:base.color, sz:base.sz, acts:base.acts, drops:base.drops,
           status:[], dead:false });
       }
@@ -694,9 +696,11 @@ class WorldScene extends Phaser.Scene {
       }
       this._showDialog([...npc.dlg], () => {
         const base = ENEMIES[npc.boss];
+        const ngS = GS.flags.ngplus ? 1.35 : 1.0;
         GS.battleData = { enemies:[{
-          id:npc.boss, name:base.name, hp:base.hp, maxHp:base.hp,
-          atk:base.atk, def:base.def, spd:base.spd,
+          id:npc.boss, name:base.name,
+          hp:Math.floor(base.hp*ngS), maxHp:Math.floor(base.hp*ngS),
+          atk:Math.floor(base.atk*ngS), def:Math.floor(base.def*ngS), spd:base.spd,
           color:base.color, sz:base.sz, acts:base.acts, drops:base.drops,
           status:[], dead:false, boss:true,
         }], isBoss:true };
