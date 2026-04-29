@@ -447,6 +447,7 @@ class ShopScene extends Phaser.Scene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     this.cursor = 0;
+    this.mode   = 'buy';
     this.msg    = '';
 
     this.add.graphics().fillStyle(0x000000, 0.65).fillRect(0, 0, W, H);
@@ -457,6 +458,8 @@ class ShopScene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys({
       up:   Phaser.Input.Keyboard.KeyCodes.UP,
       down: Phaser.Input.Keyboard.KeyCodes.DOWN,
+      left: Phaser.Input.Keyboard.KeyCodes.LEFT,
+      right:Phaser.Input.Keyboard.KeyCodes.RIGHT,
       z:    Phaser.Input.Keyboard.KeyCodes.Z,
       enter:Phaser.Input.Keyboard.KeyCodes.ENTER,
       x:    Phaser.Input.Keyboard.KeyCodes.X,
@@ -483,42 +486,87 @@ class ShopScene extends Phaser.Scene {
     this.panelGfx.lineStyle(1, 0x4a3a10, 0.7);
     this.panelGfx.strokeRoundedRect(px+3, py+3, pw-6, ph-6, 8);
 
-    // Header
-    const titleT = this.add.text(px+pw/2, py+28, '商　店', {
-      fontSize: Math.floor(fs*1.3)+'px', fontFamily:'"Noto Serif TC",serif',
-      color:'#e8c060', fontStyle:'bold', stroke:'#000', strokeThickness:2,
-    }).setOrigin(0.5, 0.5);
-    const goldT = this.add.text(px+pw-16, py+28, `靈石：${GS.gold}`, {
-      fontSize: fs+'px', fontFamily:'monospace', color:'#e8c060', stroke:'#000', strokeThickness:1,
+    // Mode tabs
+    const tabW = Math.floor(pw / 2);
+    ['購買', '賣出'].forEach((label, i) => {
+      const sel = (this.mode === 'buy') === (i === 0);
+      if (sel) {
+        this.panelGfx.fillStyle(0x9a7828, 0.22);
+        this.panelGfx.fillRoundedRect(px + i*tabW + 4, py+6, tabW-8, 40, 6);
+        this.panelGfx.lineStyle(1, 0x9a7828, 0.7);
+        this.panelGfx.strokeRoundedRect(px + i*tabW + 4, py+6, tabW-8, 40, 6);
+      }
+      const tt = this.add.text(px + i*tabW + tabW/2, py+28, label, {
+        fontSize: Math.floor(fs*1.1)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color: sel?'#ffd700':'#c8a060', fontStyle:sel?'bold':'normal', stroke:'#000', strokeThickness:2,
+      }).setOrigin(0.5, 0.5);
+      this.allTexts.push(tt);
+    });
+    const goldT = this.add.text(px+pw-8, py+28, `靈石：${GS.gold}`, {
+      fontSize: fsS+'px', fontFamily:'monospace', color:'#e8c060', stroke:'#000', strokeThickness:1,
     }).setOrigin(1, 0.5);
-    this.allTexts.push(titleT, goldT);
-
+    this.allTexts.push(goldT);
     this.panelGfx.lineStyle(1, 0x7a5c1e, 0.5);
     this.panelGfx.lineBetween(px+12, py+50, px+pw-12, py+50);
 
-    const rowH = Math.max(48, Math.floor((ph - 80) / Math.max(1, this.stock.length)));
-    this.stock.forEach((id, i) => {
-      const it = ITEMS[id]; if (!it) return;
-      const ry  = py + 58 + i * rowH;
-      const sel = i === this.cursor;
-      if (sel) {
-        this.panelGfx.fillStyle(0xe8c060, 0.1);
-        this.panelGfx.fillRoundedRect(px+8, ry-10, pw-16, rowH-4, 5);
-        this.panelGfx.lineStyle(1, 0x9a7a28, 0.5);
-        this.panelGfx.strokeRoundedRect(px+8, ry-10, pw-16, rowH-4, 5);
+    if (this.mode === 'buy') {
+      const rowH = Math.max(48, Math.floor((ph - 80) / Math.max(1, this.stock.length)));
+      this.stock.forEach((id, i) => {
+        const it = ITEMS[id]; if (!it) return;
+        const ry  = py + 58 + i * rowH;
+        const sel = i === this.cursor;
+        if (sel) {
+          this.panelGfx.fillStyle(0xe8c060, 0.1);
+          this.panelGfx.fillRoundedRect(px+8, ry-10, pw-16, rowH-4, 5);
+          this.panelGfx.lineStyle(1, 0x9a7a28, 0.5);
+          this.panelGfx.strokeRoundedRect(px+8, ry-10, pw-16, rowH-4, 5);
+        }
+        const nmT = this.add.text(px+24, ry+4, (sel?'▶ ':'')+it.name, {
+          fontSize: fs+'px', fontFamily:'"Noto Serif TC",serif',
+          color: sel?'#ffd700':'#c8a060', stroke:'#000', strokeThickness:2,
+        });
+        const prT = this.add.text(px+pw*0.65, ry+4, `${it.price} 靈石`, {
+          fontSize: fs+'px', fontFamily:'monospace', color:'#e8c060', stroke:'#000', strokeThickness:1,
+        });
+        const dcT = this.add.text(px+24, ry+4+fs+2, it.desc||'', {
+          fontSize: fsS+'px', fontFamily:'serif', color:'#7a7060', stroke:'#000', strokeThickness:1,
+        });
+        this.allTexts.push(nmT, prT, dcT);
+      });
+    } else {
+      const sellable = Object.entries(GS.inventory).filter(([id,n]) => n>0 && ITEMS[id]?.price);
+      if (sellable.length === 0) {
+        const et = this.add.text(px+pw/2, py+ph/2, '── 無可出售道具 ──', {
+          fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif', color:'#444',
+        }).setOrigin(0.5, 0.5);
+        this.allTexts.push(et);
+      } else {
+        const rowH = Math.max(48, Math.floor((ph - 80) / Math.max(1, sellable.length)));
+        sellable.forEach(([id, n], i) => {
+          const it = ITEMS[id]; if (!it) return;
+          const ry  = py + 58 + i * rowH;
+          const sel = i === this.cursor;
+          const sellPrice = Math.floor(it.price * 0.5);
+          if (sel) {
+            this.panelGfx.fillStyle(0xe8c060, 0.1);
+            this.panelGfx.fillRoundedRect(px+8, ry-10, pw-16, rowH-4, 5);
+            this.panelGfx.lineStyle(1, 0x9a7a28, 0.5);
+            this.panelGfx.strokeRoundedRect(px+8, ry-10, pw-16, rowH-4, 5);
+          }
+          const nmT = this.add.text(px+24, ry+4, (sel?'▶ ':'')+it.name+` ×${n}`, {
+            fontSize: fs+'px', fontFamily:'"Noto Serif TC",serif',
+            color: sel?'#ffd700':'#c8a060', stroke:'#000', strokeThickness:2,
+          });
+          const prT = this.add.text(px+pw*0.65, ry+4, `售 ${sellPrice} 靈石`, {
+            fontSize: fs+'px', fontFamily:'monospace', color:'#80e0d0', stroke:'#000', strokeThickness:1,
+          });
+          const dcT = this.add.text(px+24, ry+4+fs+2, it.desc||'', {
+            fontSize: fsS+'px', fontFamily:'serif', color:'#7a7060', stroke:'#000', strokeThickness:1,
+          });
+          this.allTexts.push(nmT, prT, dcT);
+        });
       }
-      const nmT = this.add.text(px+24, ry+4, (sel?'▶ ':'')+it.name, {
-        fontSize: fs+'px', fontFamily:'"Noto Serif TC",serif',
-        color: sel?'#ffd700':'#c8a060', stroke:'#000', strokeThickness:2,
-      });
-      const prT = this.add.text(px+pw*0.65, ry+4, `${it.price} 靈石`, {
-        fontSize: fs+'px', fontFamily:'monospace', color:'#e8c060', stroke:'#000', strokeThickness:1,
-      });
-      const dcT = this.add.text(px+24, ry+4+fs+2, it.desc||'', {
-        fontSize: fsS+'px', fontFamily:'serif', color:'#7a7060', stroke:'#000', strokeThickness:1,
-      });
-      this.allTexts.push(nmT, prT, dcT);
-    });
+    }
 
     if (this.msg) {
       const mt = this.add.text(px+pw/2, py+ph-38, this.msg, {
@@ -526,7 +574,8 @@ class ShopScene extends Phaser.Scene {
       }).setOrigin(0.5, 0.5);
       this.allTexts.push(mt);
     }
-    const ht = this.add.text(px+pw/2, py+ph-16, '↑↓ 選擇　Z 購買　X / Esc 離開', {
+    const footerHint = this.mode==='buy' ? '↑↓ 選擇　Z 購買　←→ 賣出' : '↑↓ 選擇　Z 賣出　←→ 購買';
+    const ht = this.add.text(px+pw/2, py+ph-16, footerHint+'　X 離開', {
       fontSize: fsS+'px', fontFamily:'serif', color:'#5a4a2a',
     }).setOrigin(0.5, 0.5);
     this.allTexts.push(ht);
@@ -543,22 +592,43 @@ class ShopScene extends Phaser.Scene {
     const ok   = Phaser.Input.Keyboard.JustDown(this.keys.z)   || Phaser.Input.Keyboard.JustDown(this.keys.enter) || padOk;
     const back = Phaser.Input.Keyboard.JustDown(this.keys.x)   || Phaser.Input.Keyboard.JustDown(this.keys.esc)  || padBack;
 
-    if (back)  { this.scene.resume(this.caller); this.scene.stop(); return; }
-    if (up)    { this.cursor=Math.max(0,this.cursor-1); this._draw(); }
-    if (down)  { this.cursor=Math.min(this.stock.length-1,this.cursor+1); this._draw(); }
-    if (ok) {
-      const id = this.stock[this.cursor];
-      const it = ITEMS[id];
-      if (!it) return;
-      if (GS.gold < it.price) { this.msg='靈石不足！'; }
-      else {
-        GS.gold -= it.price; GS.addItem(id); this.msg=`購得 ${it.name}！`;
-        GS.flags._shopBuys = (GS.flags._shopBuys||0) + 1;
-        if (GS.flags._shopBuys >= 5) Achieve?.unlock('shop_addict');
-        Sound?.play('shopBuy');
+    const left  = Phaser.Input.Keyboard.JustDown(this.keys.left);
+    const right = Phaser.Input.Keyboard.JustDown(this.keys.right);
+
+    if (back) { this.scene.resume(this.caller); this.scene.stop(); return; }
+    if (left || right) { this.mode = this.mode==='buy'?'sell':'buy'; this.cursor=0; this._draw(); return; }
+
+    if (this.mode === 'buy') {
+      if (up)   { this.cursor=Math.max(0,this.cursor-1); this._draw(); }
+      if (down) { this.cursor=Math.min(this.stock.length-1,this.cursor+1); this._draw(); }
+      if (ok) {
+        const id = this.stock[this.cursor];
+        const it = ITEMS[id]; if (!it) return;
+        if (GS.gold < it.price) { this.msg='靈石不足！'; }
+        else {
+          GS.gold -= it.price; GS.addItem(id); this.msg=`購得 ${it.name}！`;
+          GS.flags._shopBuys = (GS.flags._shopBuys||0) + 1;
+          if (GS.flags._shopBuys >= 5) Achieve?.unlock('shop_addict');
+          Sound?.play('shopBuy');
+        }
+        this._draw();
+        this.time.delayedCall(1200, () => { this.msg=''; this._draw(); });
       }
-      this._draw();
-      this.time.delayedCall(1200, () => { this.msg=''; this._draw(); });
+    } else {
+      const sellable = Object.entries(GS.inventory).filter(([id,n]) => n>0 && ITEMS[id]?.price);
+      if (up)   { this.cursor=Math.max(0,this.cursor-1); this._draw(); }
+      if (down) { this.cursor=Math.min(Math.max(0,sellable.length-1),this.cursor+1); this._draw(); }
+      if (ok && sellable.length > 0) {
+        const [id] = sellable[this.cursor];
+        const it = ITEMS[id]; if (!it) return;
+        const sellPrice = Math.floor(it.price * 0.5);
+        GS.gold += sellPrice; GS.removeItem(id);
+        this.msg = `售出 ${it.name}，獲得 ${sellPrice} 靈石！`;
+        Sound?.play('shopBuy');
+        if (this.cursor >= sellable.length - 1) this.cursor = Math.max(0, sellable.length - 2);
+        this._draw();
+        this.time.delayedCall(1200, () => { this.msg=''; this._draw(); });
+      }
     }
   }
 }
