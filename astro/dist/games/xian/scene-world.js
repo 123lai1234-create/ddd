@@ -433,10 +433,10 @@ class WorldScene extends Phaser.Scene {
       this.playerGfx.fillTriangle(sx+11, sy-22+bob, sx+14, sy-22+bob, sx+12, sy-30+bob);
     } else if (m.shape === 'mage') {
       // Staff
-      this.playerGfx.fillStyle(0x6030aa, 1);
+      this.playerGfx.fillStyle(0x806020, 1);
       this.playerGfx.fillRect(sx-2, sy-36+bob, 3, 30);
       // Orb
-      this.playerGfx.fillStyle(0xb060ff, 1);
+      this.playerGfx.fillStyle(col, 1);
       this.playerGfx.fillCircle(sx-1, sy-38+bob, 7);
       this.playerGfx.fillStyle(0xffffff, 0.5);
       this.playerGfx.fillCircle(sx-3, sy-41+bob, 2.5);
