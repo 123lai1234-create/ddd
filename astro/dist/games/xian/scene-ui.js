@@ -450,7 +450,7 @@ class MenuScene extends Phaser.Scene {
     entries.forEach(([id, e], i) => {
       const col = i % cols, row = Math.floor(i / cols);
       const ax = cx + col * colW, ay = cy + 44 + row * rowH;
-      const seen = !!GS.defeated?.[id];
+      const seen = !!(GS.flags?._enemySeen?.[id]);
 
       this.panelGfx.fillStyle(seen ? 0x1a1008 : 0x0e0c18, 0.75);
       this.panelGfx.fillRoundedRect(ax+2, ay, colW-10, rowH-6, 5);
@@ -460,10 +460,9 @@ class MenuScene extends Phaser.Scene {
       }
 
       if (seen) {
-        // Color swatch
-        const swG = this.add.graphics();
-        swG.fillStyle(e.color, 0.85);
-        swG.fillCircle(ax+14, ay+rowH/2-2, 8);
+        // Color swatch (drawn into panelGfx to avoid accumulation)
+        this.panelGfx.fillStyle(e.color, 0.85);
+        this.panelGfx.fillCircle(ax+14, ay+rowH/2-2, 8);
         this.add.text(ax+26, ay+4, e.name, {
           fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
           color:'#f0c060', fontStyle:'bold', stroke:'#000', strokeThickness:2,

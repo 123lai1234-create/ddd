@@ -503,6 +503,7 @@ const ACHIEVEMENTS = {
   survivor:     { name:'九死一生',   icon:'❤️',  desc:'以 1 HP 存活贏得戰鬥。' },
   shop_addict:  { name:'行商常客',   icon:'🛒',  desc:'累計購物 5 次。' },
   healer:       { name:'妙手回春',   icon:'💚',  desc:'使用 10 次治療技能。' },
+  ngplus:       { name:'二周目',     icon:'★',   desc:'開始新遊戲+，重踏征途。' },
 };
 
 const Achieve = {

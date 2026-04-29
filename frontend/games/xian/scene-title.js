@@ -660,6 +660,7 @@ class EndingScene extends Phaser.Scene {
         GS.gold = savedGold;
         GS.flags.ngplus = true;
         GS.flags.playtime = savedPlaytime;
+        Achieve?.unlock('ngplus');
         this.scene.start('OpeningScene');
       } else {
         this.scene.start('TitleScene');

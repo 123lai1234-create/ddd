@@ -149,9 +149,10 @@ class WorldScene extends Phaser.Scene {
     banner.fillRoundedRect(8, 8, 180, 36, 8);
     banner.lineStyle(1, 0x9a7828, 0.7);
     banner.strokeRoundedRect(8, 8, 180, 36, 8);
-    this.add.text(98, 26, map.name, {
+    const mapLabel = map.name + (GS.flags.ngplus ? '  ★' : '');
+    this.add.text(98, 26, mapLabel, {
       fontSize:'16px', fontFamily:'"Noto Serif TC","SimSun",serif',
-      color:'#e8c060', stroke:'#000', strokeThickness:2,
+      color: GS.flags.ngplus ? '#ffe080' : '#e8c060', stroke:'#000', strokeThickness:2,
     }).setOrigin(0.5, 0.5).setDepth(3);
 
     // NPCs

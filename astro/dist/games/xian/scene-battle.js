@@ -879,6 +879,9 @@ class BattleScene extends Phaser.Scene {
     if(GS.gold>=100) Achieve?.unlock('gold_100');
     if(GS.gold>=1000)Achieve?.unlock('gold_1000');
     if(this.party.some(m=>m.hp===1&&!m.dead))Achieve?.unlock('survivor');
+    // Track encountered enemies for bestiary
+    if (!GS.flags._enemySeen) GS.flags._enemySeen = {};
+    this.enemies.forEach(e => { GS.flags._enemySeen[e.id] = true; });
     // Track dragon kills (unlocks final boss NPC)
     this.enemies.forEach(e=>{ if(e.id==='dragon')GS.flags.defeatedDragon=true; });
     // Boss defeat handling
