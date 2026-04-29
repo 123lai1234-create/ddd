@@ -20,7 +20,7 @@ class BattleScene extends Phaser.Scene {
     this.waiting = false;
     this._t = 0;
 
-    this.party   = GS.party.map(m => ({ ...m, status:[...m.status] }));
+    this.party   = GS.party.map(m => ({ ...m, status:[...m.status], limitUsed:false }));
     this.enemies = GS.battleData.enemies.map(e => ({ ...e, status:[...e.status] }));
     this.groundY = Math.floor(H * 0.56);
 
@@ -316,6 +316,21 @@ class BattleScene extends Phaser.Scene {
           staffG.setPosition(sx, sy);
           this.tweens.add({ targets:staffG, angle:1080, alpha:0, duration:400, ease:'Linear', onComplete:()=>staffG.destroy() });
           this._spawnParticles(sx, sy, 0xf0c020, 12, 48);
+        } else if (actorId === 'linger') {
+          const sx=targetSp.g.x, sy=targetSp.g.y-20;
+          this._spawnParticles(sx, sy, 0x60d840, 14, 44);
+          const gf=this.add.graphics().setDepth(8);
+          gf.lineStyle(2, 0x80ff40, 0.7); gf.strokeCircle(sx, sy, 22);
+          this.tweens.add({targets:gf, alpha:0, scaleX:1.8, scaleY:1.8, duration:340, onComplete:()=>gf.destroy()});
+        } else if (actorId === 'yuehua') {
+          const ax=sp.g.x, ay=sp.g.y-28, bx=targetSp.g.x, by=targetSp.g.y-28;
+          const arr=this.add.graphics().setDepth(8);
+          arr.lineStyle(3, 0x60c8ff, 0.9); arr.lineBetween(ax, ay, ax, ay);
+          arr.fillStyle(0x60c8ff, 1); arr.fillTriangle(bx,by-6,bx-4,by+5,bx+4,by+5);
+          arr.setPosition(0, 0);
+          this.tweens.add({targets:arr, x:bx-ax, duration:160, ease:'Power3.easeIn',
+            onComplete:()=>this.tweens.add({targets:arr,alpha:0,duration:200,onComplete:()=>arr.destroy()})});
+          this._spawnParticles(bx, by, 0x60c8ff, 8, 36);
         }
         onHit && onHit();
         this.tweens.add({ targets:sp.g, x:origX, duration:280, ease:'Back.easeOut', onComplete:onDone });
@@ -383,15 +398,19 @@ class BattleScene extends Phaser.Scene {
     if (!actor||actor.dead) return;
     const fs=Math.max(13,Math.floor(ph*0.18));
     if (!this.subMode) {
-      const cmds=['攻擊','技能','道具','防禦','逃跑'], colW=Math.floor(pw/2), rowH=Math.floor(ph/3);
+      const cmds=['攻擊','技能','道具','防禦','逃跑'];
+      if (actor.hp<=Math.floor(actor.maxHp*0.2)&&!actor.limitUsed) cmds.push('必殺');
+      const colW=Math.floor(pw/2), rowH=Math.floor(ph/3);
       cmds.forEach((cmd,i) => {
         const col=Math.floor(i/3), row=i%3, tx=px+col*colW+20, ty=py+row*rowH+rowH*0.5, sel=i===this.cursor;
+        const isLimit=cmd==='必殺';
         if (sel) {
-          this.menuPanel.fillStyle(0x9a7828,0.25); this.menuPanel.fillRoundedRect(px+col*colW+4,py+row*rowH+4,colW-8,rowH-8,5);
-          this.menuPanel.lineStyle(1,0xb09030,0.6); this.menuPanel.strokeRoundedRect(px+col*colW+4,py+row*rowH+4,colW-8,rowH-8,5);
+          this.menuPanel.fillStyle(isLimit?0xa02020:0x9a7828,0.25); this.menuPanel.fillRoundedRect(px+col*colW+4,py+row*rowH+4,colW-8,rowH-8,5);
+          this.menuPanel.lineStyle(1,isLimit?0xff4040:0xb09030,0.6); this.menuPanel.strokeRoundedRect(px+col*colW+4,py+row*rowH+4,colW-8,rowH-8,5);
         }
-        const t=this.add.text(tx,ty,(sel?'▶ ':'')+cmd,{fontSize:fs+'px',fontFamily:'"Noto Serif TC","SimSun",serif',color:sel?'#ffd700':'#c8a060',stroke:'#000',strokeThickness:sel?3:2}).setDepth(5);
-        if (sel) t.setShadow(0,0,'#ffd700',8,true,true);
+        const t=this.add.text(tx,ty,(sel?'▶ ':'')+cmd,{fontSize:fs+'px',fontFamily:'"Noto Serif TC","SimSun",serif',color:isLimit?(sel?'#ff8040':'#cc3020'):(sel?'#ffd700':'#c8a060'),stroke:'#000',strokeThickness:sel?3:2}).setDepth(5);
+        if (sel) t.setShadow(0,0,isLimit?'#ff4020':'#ffd700',8,true,true);
+        else if(isLimit) t.setShadow(0,0,'#ff2020',5,true,true);
         this.menuTexts.push(t);
       });
     } else if (this.subMode==='skill') {
@@ -497,6 +516,38 @@ class BattleScene extends Phaser.Scene {
           this.cameras.main.once('camerafadeoutcomplete',()=>this.scene.start('WorldScene'));
         });
       } else doAfter('逃跑失敗！');
+      return;
+    }
+
+    if (cmd==='limit') {
+      actor.limitUsed=true;
+      const alive=this.enemies.filter(e=>!e.dead);
+      if (!alive.length) { doAfter('…'); return; }
+      const tgt=alive[0], tgtIdx=this.enemies.indexOf(tgt), st=calcStats(actor);
+      const dmg=this._calcDmg(st.atk, tgt.def, 4.0);
+      const heroSp=this.partySprites[this.actorIdx], enemySp=this.enemySprites[tgtIdx];
+      const flash=this.add.graphics().setDepth(45);
+      flash.fillStyle(0xff2020,0); flash.fillRect(0,0,this.W,this.H);
+      this.tweens.add({targets:flash,alpha:0.4,duration:80,yoyo:true,repeat:1,
+        onComplete:()=>{flash.clear();flash.fillStyle(0xffc020,0);flash.fillRect(0,0,this.W,this.H);
+          this.tweens.add({targets:flash,alpha:0.25,duration:200,yoyo:true,onComplete:()=>flash.destroy()});}
+      });
+      const bt=this.add.text(this.W/2,this.H*0.34,'必 殺！',{
+        fontSize:Math.floor(this.H*0.08)+'px',fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#ff4020',stroke:'#300000',strokeThickness:6,
+        shadow:{offsetX:0,offsetY:0,color:'#ff6020',blur:28,fill:true},
+      }).setOrigin(0.5).setDepth(50).setAlpha(0).setScale(1.8);
+      this.tweens.add({targets:bt,alpha:1,scaleX:1,scaleY:1,duration:260,ease:'Back.easeOut',
+        onComplete:()=>this.time.delayedCall(500,()=>this.tweens.add({targets:bt,alpha:0,y:bt.y-20,duration:280,onComplete:()=>bt.destroy()}))
+      });
+      this._animHeroAttack(heroSp, enemySp, ()=>{
+        tgt.hp=Math.max(0,tgt.hp-dmg); if(tgt.hp===0){tgt.dead=true;Sound?.play('enemyDead');}else Sound?.play('hit');
+        this._flashEnemy(tgtIdx); this._refreshEnemyHp(tgtIdx); this._shake(0.016,450);
+        const ex=enemySp?enemySp.g.x:0, ey=(enemySp?enemySp.g.y:this.groundY)-(tgt.sz||28)*1.4;
+        this._floatText(ex,ey,`必殺！${dmg}`,'#ff8020',30);
+        this._spawnParticles(ex,ey,0xffc020,20,70); this._spawnParticles(ex,ey,0xff4020,12,55);
+        if(tgt.dead)this.time.delayedCall(350,()=>this._spawnParticles(ex,ey+20,tgt.color||0x884422,14,65));
+      }, ()=>doAfter(`${actor.name} 發動必殺技！對 ${tgt.name} 造成 ${dmg} 點傷害！`), actor.id);
       return;
     }
 
@@ -656,7 +707,8 @@ class BattleScene extends Phaser.Scene {
   }
 
   _doEnemyAct(e, onDone) {
-    const act=ENEMY_ACTS[e.acts[Math.floor(Math.random()*e.acts.length)]];
+    const actId=e.acts[Math.floor(Math.random()*e.acts.length)];
+    const act=ENEMY_ACTS[actId];
     if (!act) { this.time.delayedCall(400,onDone); return; }
     const living=this.party.filter(m=>!m.dead);
     if (!living.length) { onDone&&onDone(); return; }
@@ -670,38 +722,54 @@ class BattleScene extends Phaser.Scene {
         this._addLog(`${e.name} 動作遲緩，無法行動！`);
         this.time.delayedCall(600, onDone); return;
       }
-      if (enemySp && !e.dead) {
-        const exclaim = this.add.text(enemySp.g.x, enemySp.g.y-(e.sz||28)*2-8, '！', {
-          fontSize:'22px', fontFamily:'serif', color:'#ffee20', stroke:'#000', strokeThickness:3,
-        }).setOrigin(0.5, 1).setDepth(15);
-        this.tweens.add({ targets:exclaim, y:exclaim.y-14, alpha:0, duration:480, onComplete:()=>exclaim.destroy() });
-      }
-      this._animEnemyAttack(enemySp, heroSp, ()=>{
-        let def=tgt.baseDef; if(tgt.status.includes('defend'))def=Math.floor(def*1.5);
-        let eAtk=e.atk;
-        if(e.status.includes('atkUp'))   eAtk=Math.floor(eAtk*1.5);
-        if(e.status.includes('atkDown')) eAtk=Math.floor(eAtk*0.6);
-        const dmg=this._calcDmg(eAtk,def,act.pow||1);
-        tgt.hp=Math.max(0,tgt.hp-dmg); if(tgt.hp===0)tgt.dead=true;
-        if(act.debuff)Object.entries(act.debuff).forEach(([k,v])=>{for(let i=0;i<v;i++)tgt.status.push(k);});
-        if(act.type==='drain'){
-          const heal=Math.floor(dmg*0.5); e.hp=Math.min(e.maxHp,e.hp+heal);
-          const ei=this.enemies.indexOf(e); this._refreshEnemyHp(ei);
-          if(enemySp) this._floatText(enemySp.g.x,enemySp.g.y-50,`+${heal}`,'#88ff88',16);
+      const isStrong=['slam','aoe','fireBreath','tail'].includes(actId);
+      const doAtk=()=>{
+        if (enemySp && !e.dead) {
+          const exStr=isStrong?'！！':'！';
+          const exc=this.add.text(enemySp.g.x,enemySp.g.y-(e.sz||28)*2-8,exStr,{
+            fontSize:isStrong?'30px':'22px',fontFamily:'serif',color:isStrong?'#ff2020':'#ffee20',stroke:'#000',strokeThickness:isStrong?4:3,
+          }).setOrigin(0.5,1).setDepth(15);
+          this.tweens.add({targets:exc,y:exc.y-14,alpha:0,duration:480,onComplete:()=>exc.destroy()});
         }
-        Sound?.play('damage'); this._shake(0.004,240);
-        if (heroSp) {
-          const hx=heroSp.g.x, hy=heroSp.g.y-30;
-          this._floatText(hx,hy,String(dmg),'#ff8888',18); this._spawnParticles(hx,hy+10,0xff4444,5,28);
-          let c=0;
-          this.time.addEvent({ delay:80, repeat:5, callback:()=>{
-            c++; heroSp.g.setAlpha(c%2===0?1:0.3);
-            if(c>=6){heroSp.g.setAlpha(1);this._drawHero(heroSp.g,tgt);heroSp.g.setPosition(heroSp.x,heroSp.y);}
-          }});
-        }
-        this._addLog(`${e.name} 使用 ${act.name}，${tgt.name} 受到 ${dmg} 點傷害！`);
-        this._rebuildStatus();
-      }, ()=>this.time.delayedCall(380,onDone));
+        this._animEnemyAttack(enemySp, heroSp, ()=>{
+          let def=tgt.baseDef; if(tgt.status.includes('defend'))def=Math.floor(def*1.5);
+          let eAtk=e.atk;
+          if(e.status.includes('atkUp'))   eAtk=Math.floor(eAtk*1.5);
+          if(e.status.includes('atkDown')) eAtk=Math.floor(eAtk*0.6);
+          const dmg=this._calcDmg(eAtk,def,act.pow||1);
+          tgt.hp=Math.max(0,tgt.hp-dmg); if(tgt.hp===0)tgt.dead=true;
+          if(act.debuff)Object.entries(act.debuff).forEach(([k,v])=>{for(let i=0;i<v;i++)tgt.status.push(k);});
+          if(act.type==='drain'){
+            const heal=Math.floor(dmg*0.5); e.hp=Math.min(e.maxHp,e.hp+heal);
+            const ei=this.enemies.indexOf(e); this._refreshEnemyHp(ei);
+            if(enemySp) this._floatText(enemySp.g.x,enemySp.g.y-50,`+${heal}`,'#88ff88',16);
+          }
+          Sound?.play('damage'); this._shake(isStrong?0.008:0.004,240);
+          if (heroSp) {
+            const hx=heroSp.g.x, hy=heroSp.g.y-30;
+            this._floatText(hx,hy,String(dmg),'#ff8888',18); this._spawnParticles(hx,hy+10,0xff4444,5,28);
+            let c=0;
+            this.time.addEvent({ delay:80, repeat:5, callback:()=>{
+              c++; heroSp.g.setAlpha(c%2===0?1:0.3);
+              if(c>=6){heroSp.g.setAlpha(1);this._drawHero(heroSp.g,tgt);heroSp.g.setPosition(heroSp.x,heroSp.y);}
+            }});
+          }
+          this._addLog(`${e.name} 使用 ${act.name}，${tgt.name} 受到 ${dmg} 點傷害！`);
+          this._rebuildStatus();
+        }, ()=>this.time.delayedCall(380,onDone));
+      };
+      if (isStrong && enemySp && !e.dead) {
+        const wt=this.add.text(enemySp.g.x,enemySp.g.y-(e.sz||28)*2-14,'！！',{
+          fontSize:'36px',fontFamily:'serif',color:'#ff1010',stroke:'#000',strokeThickness:5,
+          shadow:{offsetX:0,offsetY:0,color:'#ff4020',blur:16,fill:true},
+        }).setOrigin(0.5,1).setDepth(16).setAlpha(0).setScale(0.5);
+        this.tweens.add({targets:wt,alpha:1,scaleX:1.4,scaleY:1.4,duration:220,ease:'Back.easeOut',
+          onComplete:()=>this.time.delayedCall(320,()=>{
+            this.tweens.add({targets:wt,alpha:0,scaleX:2,scaleY:2,duration:180,onComplete:()=>wt.destroy()});
+            doAtk();
+          })
+        });
+      } else { doAtk(); }
     } else if (act.type==='buff') {
       e.status.push(act.buff||'atkUp');
       this._addLog(`${e.name} 使用 ${act.name}！`);
@@ -851,8 +919,10 @@ class BattleScene extends Phaser.Scene {
     const back=Phaser.Input.Keyboard.JustDown(this.keys.x)  ||Phaser.Input.Keyboard.JustDown(this.keys.esc) ||backPad;
 
     if (!this.subMode) {
-      if(up)  {this.cursor=(this.cursor-1+5)%5;this._rebuildMenu();Sound?.play('menuMove');}
-      if(down){this.cursor=(this.cursor+1)%5;  this._rebuildMenu();Sound?.play('menuMove');}
+      const actor0=this.party[this.actorIdx];
+      const mSz=(actor0&&!actor0.dead&&actor0.hp<=Math.floor(actor0.maxHp*0.2)&&!actor0.limitUsed)?6:5;
+      if(up)  {this.cursor=(this.cursor-1+mSz)%mSz;this._rebuildMenu();Sound?.play('menuMove');}
+      if(down){this.cursor=(this.cursor+1)%mSz;     this._rebuildMenu();Sound?.play('menuMove');}
       if(ok){
         Sound?.play('menuSelect');
         if(this.cursor===0){
@@ -863,6 +933,7 @@ class BattleScene extends Phaser.Scene {
           else if(this.cursor===2){this.subMode='item'; this.subCursor=0;this._rebuildMenu();}
           else if(this.cursor===3){this._heroAct('defend');}
           else if(this.cursor===4){this._heroAct('flee');}
+          else if(this.cursor===5){this._heroAct('limit');}
       }
     } else if (this.subMode==='skill') {
       const skills=actor.skills.map(sk=>SKILLS[sk]).filter(Boolean);

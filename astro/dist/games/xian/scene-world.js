@@ -245,6 +245,8 @@ class WorldScene extends Phaser.Scene {
     this.moveDelay = 0;
     this.inDialog = false;
     this.bobTimer = 0;
+    this._dayStep = 0;
+    this._skyOverlay = this.add.graphics().setScrollFactor(0).setDepth(9);
   }
 
   _drawNpc(g, x, y, color=0xd4b060) {
@@ -458,6 +460,16 @@ class WorldScene extends Phaser.Scene {
     // Move camera reference point to player center
     this.playerGfx.setPosition(0, 0);
     this._refreshMinimap();
+  }
+
+  _drawSky() {
+    this._skyOverlay.clear();
+    const t=(this._dayStep%400)/400;
+    const night=0.5-0.5*Math.cos(t*Math.PI*2);
+    if (night<0.03) return;
+    const isNight=night>0.5;
+    this._skyOverlay.fillStyle(isNight?0x1a3080:0xff7820, Math.min(0.16, isNight?(night-0.5)*0.26:night*0.14));
+    this._skyOverlay.fillRect(0,0,this.scale.width,this.scale.height);
   }
 
   _buildHud(W, HUD_H, MAP_W) {
@@ -787,6 +799,8 @@ class WorldScene extends Phaser.Scene {
 
     if (moved) {
       this.moveDelay = 7;
+      this._dayStep++;
+      if (this._dayStep % 4 === 0) this._drawSky();
       if (this.bobTimer % 12 === 0) Sound?.play('step');
       this._drawPlayer();
       this._checkAutoExit();
