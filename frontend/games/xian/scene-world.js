@@ -450,6 +450,7 @@ class WorldScene extends Phaser.Scene {
     this._exiting = true;
     GS.map = exit.to;
     GS.player.x = exit.toX; GS.player.y = exit.toY; GS.player.facing = 'down';
+    GS.save(0);
     this.cameras.main.fadeOut(300, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
   }
