@@ -135,6 +135,41 @@ class BattleScene extends Phaser.Scene {
     this.menuPanel   = this.add.graphics(); this.menuTexts   = []; this._rebuildMenu();
     this._tgtCursorG = this.add.graphics().setDepth(9);
 
+    // ── Boss HP bar ───────────────────────────────────────
+    this._bossBar=null; this._bossBg=null; this._bossBarText=null;
+    if (GS.battleData?.isBoss && this.enemies.length>0) {
+      const boss=this.enemies[0];
+      const bw=Math.floor(W*0.62), bh=13, bx=Math.floor((W-bw)/2), by=10;
+      this._bossBg=this.add.graphics().setDepth(22);
+      this._bossBg.fillStyle(0x0a0010,0.93); this._bossBg.fillRoundedRect(bx-10,by-4,bw+20,bh+22,6);
+      this._bossBg.lineStyle(1,0xb04040,0.9); this._bossBg.strokeRoundedRect(bx-10,by-4,bw+20,bh+22,6);
+      this._bossBarX=bx; this._bossBarY=by; this._bossBarW=bw; this._bossBarH=bh;
+      this._bossBar=mkBar(this,bx,by+12,bw,bh,boss.hp,boss.maxHp,0xd02020); this._bossBar.setDepth(23);
+      this._bossBarText=this.add.text(W/2,by+4,`${boss.name}　${boss.hp} / ${boss.maxHp}`,{
+        fontSize:'11px',fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#ff8888',stroke:'#000',strokeThickness:2,
+      }).setOrigin(0.5,0).setDepth(23);
+    }
+
+    // ── Ambient battle particles ──────────────────────────
+    this._ambients=[]; this._ambientG=this.add.graphics().setDepth(1);
+    const ABCFG={
+      forest:{count:18,clr:0x60d840,minR:1.5,maxR:3.5,vy:-0.40,vxS:0.3,a:0.50},
+      cave:  {count:14,clr:0xa060f0,minR:1.5,maxR:3.0,vy:-0.20,vxS:0.1,a:0.40},
+      castle:{count:22,clr:0xd4a040,minR:0.8,maxR:2.5,vy:-0.55,vxS:0.5,a:0.35},
+      shrine:{count:12,clr:0xffd060,minR:2.0,maxR:4.0,vy:-0.30,vxS:0.2,a:0.45},
+    };
+    this._ambientCfg=ABCFG[GS.map]||null;
+    if (this._ambientCfg) {
+      const ac=this._ambientCfg;
+      for (let i=0;i<ac.count;i++) this._ambients.push({
+        x:Math.random()*W, y:Math.random()*this.groundY,
+        vx:(Math.random()-0.5)*ac.vxS*2, vy:ac.vy*(0.5+Math.random()*0.5),
+        r:ac.minR+Math.random()*(ac.maxR-ac.minR),
+        alpha:ac.a*(0.5+Math.random()*0.5), phase:Math.random()*Math.PI*2,
+      });
+    }
+
     this.keys = this.input.keyboard.addKeys({
       up:   Phaser.Input.Keyboard.KeyCodes.UP,
       down: Phaser.Input.Keyboard.KeyCodes.DOWN,
@@ -480,6 +515,27 @@ class BattleScene extends Phaser.Scene {
     }
     this._drawEnemy(sp.g, e);
     if (e.dead) { sp.g.setAlpha(0); sp.lbl.setAlpha(0.3); sp.g.setPosition(sp.x,sp.y); }
+    // Boss HP bar refresh + rage mode
+    if (GS.battleData?.isBoss && idx===0 && this._bossBar) {
+      this._bossBar.destroy();
+      const bclr=e.hp<e.maxHp*0.3?0xff2020:e.hp<e.maxHp*0.6?0xff6020:0xd02020;
+      this._bossBar=mkBar(this,this._bossBarX,this._bossBarY+12,this._bossBarW,this._bossBarH,e.hp,e.maxHp,bclr);
+      this._bossBar.setDepth(23);
+      if(this._bossBarText) this._bossBarText.setText(`${e.name}　${e.hp} / ${e.maxHp}`);
+      if (e.hp<=e.maxHp*0.5&&!e._raged&&!e.dead) {
+        e._raged=true; e.atk=Math.floor(e.atk*1.35);
+        const rt=this.add.text(this.W/2,this.H*0.3,'狂　怒！',{
+          fontSize:Math.floor(this.H*0.08)+'px',fontFamily:'"Noto Serif TC","SimSun",serif',
+          color:'#ff2010',stroke:'#400000',strokeThickness:6,
+          shadow:{offsetX:0,offsetY:0,color:'#ff4020',blur:30,fill:true},
+        }).setOrigin(0.5).setDepth(55).setAlpha(0).setScale(2);
+        this.tweens.add({targets:rt,alpha:1,scaleX:1,scaleY:1,duration:300,ease:'Back.easeOut',
+          onComplete:()=>this.time.delayedCall(700,()=>this.tweens.add({targets:rt,alpha:0,duration:300,onComplete:()=>rt.destroy()}))
+        });
+        this._addLog(`${e.name} 進入狂怒！攻擊大幅提升！`);
+        this._spawnParticles(sp.g.x,sp.g.y-40,0xff2020,22,75); this._shake(0.014,700);
+      }
+    }
     const STATUS_LBL = { poison:'毒', atkUp:'強', slow:'緩', atkDown:'弱' };
     const badges = [...new Set(e.status)].filter(s=>STATUS_LBL[s]);
     if (badges.length>0 && !e.dead) {
@@ -786,7 +842,15 @@ class BattleScene extends Phaser.Scene {
     const goldGain=this.enemies.reduce((s,e)=>s+(ENEMIES[e.id]?.gold||0),0);
     GS.gold+=goldGain;
     const drops=[];
-    this.enemies.forEach(e=>{(e.drops||[]).forEach(d=>{if(Math.random()<d.r){GS.addItem(d.id);drops.push(ITEMS[d.id]?.name||d.id);}});});
+    this.enemies.forEach(e=>{(e.drops||[]).forEach(d=>{if(Math.random()<d.r){GS.addItem(d.id);drops.push({name:ITEMS[d.id]?.name||d.id,eid:this.enemies.indexOf(e)});}});});
+    drops.forEach(({name,eid},i)=>{
+      const sp=this.enemySprites[Math.min(eid,this.enemySprites.length-1)];
+      const fx=sp?sp.x:this.W/2, fy=sp?(sp.y-(sp.e?.sz||28)*2.6):this.groundY*0.4;
+      this.time.delayedCall(i*220,()=>{
+        this._floatText(fx,fy,`✦ ${name}`,'#ffc840',17);
+        this._spawnParticles(fx,fy+12,0xffd060,6,28);
+      });
+    });
     GS.party.forEach((gm,i)=>{if(this.party[i])Object.assign(gm,this.party[i]);});
     const levelUps=[];
     GS.party.forEach((m,mi)=>{
@@ -799,7 +863,7 @@ class BattleScene extends Phaser.Scene {
       }
     });
     let msg=`戰鬥勝利！獲得 ${expGain} EXP、${goldGain} 靈石。`;
-    if(drops.length)   msg+=` 獲得：${drops.join('、')}。`;
+    if(drops.length)   msg+=` 獲得：${drops.map(d=>d.name).join('、')}。`;
     if(levelUps.length)msg+=` ${levelUps.join('、')} 升級！`;
     this._addLog(msg); this._rebuildStatus();
 
@@ -869,6 +933,18 @@ class BattleScene extends Phaser.Scene {
         const a=0.25+Math.sin(this._t*s.speed+s.phase)*0.38+0.38;
         this._starG.fillStyle(0xfff8e0,Math.max(0.05,Math.min(1,a)));
         this._starG.fillCircle(s.x,s.y,s.r);
+      });
+    }
+
+    // Ambient particles
+    if (this._ambientCfg && this._ambients.length>0 && this._t%2===0) {
+      this._ambientG.clear();
+      const ac=this._ambientCfg;
+      this._ambients.forEach(p=>{
+        p.x+=p.vx; p.y+=p.vy;
+        if (p.y<-10||p.x<-20||p.x>this.W+20) { p.x=Math.random()*this.W; p.y=this.groundY+Math.random()*8; }
+        const a=p.alpha*(0.55+0.45*Math.sin(this._t*0.07+p.phase));
+        this._ambientG.fillStyle(ac.clr,a); this._ambientG.fillCircle(p.x,p.y,p.r);
       });
     }
 
