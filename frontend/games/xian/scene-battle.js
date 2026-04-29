@@ -126,6 +126,7 @@ class BattleScene extends Phaser.Scene {
     this.splitX = Math.floor(W*0.44);
     this.statusPanel = this.add.graphics(); this.statusTexts = []; this._rebuildStatus();
     this.menuPanel   = this.add.graphics(); this.menuTexts   = []; this._rebuildMenu();
+    this._tgtCursorG = this.add.graphics().setDepth(9);
 
     this.keys = this.input.keyboard.addKeys({
       up:   Phaser.Input.Keyboard.KeyCodes.UP,
@@ -460,7 +461,17 @@ class BattleScene extends Phaser.Scene {
       this.time.delayedCall(480, () => { this.waiting=false; this._nextActor(); });
     };
 
-    if (cmd==='defend') { actor.status.push('defend'); doAfter(`${actor.name} 防禦！`); return; }
+    if (cmd==='defend') {
+      actor.status.push('defend');
+      const hsp=this.partySprites[this.actorIdx];
+      if (hsp) {
+        const sh=this.add.graphics().setDepth(12);
+        sh.fillStyle(0x4080ff,0.45); sh.fillCircle(hsp.g.x, hsp.g.y-20, 24);
+        sh.lineStyle(2,0x80c0ff,0.8); sh.strokeCircle(hsp.g.x, hsp.g.y-20, 24);
+        this.tweens.add({targets:sh, alpha:0, duration:700, onComplete:()=>sh.destroy()});
+      }
+      doAfter(`${actor.name} 防禦！`); return;
+    }
     if (cmd==='flee') {
       if (Math.random()<0.5) {
         this._addLog('成功逃跑！');
@@ -776,6 +787,34 @@ class BattleScene extends Phaser.Scene {
     this.enemySprites.forEach((sp,i)=>{
       if (!sp.e.dead) sp.g.y = sp.y + Math.sin(this._t*0.045+i*1.3)*2.5;
     });
+
+    // Target cursor (pulsing ring + arrow)
+    this._tgtCursorG.clear();
+    if (this.phase==='playerTurn' && this.subMode==='target' && !this.waiting && this.targetList.length>0) {
+      const tgt=this.targetList[this.subCursor];
+      const pulse=0.55+Math.sin(this._t*0.18)*0.45;
+      if (tgt?.isEnemy) {
+        const sp=this.enemySprites[this.enemies.indexOf(tgt.e)];
+        if (sp) {
+          const sz=tgt.e.sz||28;
+          this._tgtCursorG.lineStyle(2,0xffd700,pulse);
+          this._tgtCursorG.strokeCircle(sp.g.x, sp.g.y-sz*0.85, sz*1.15);
+          const ay=sp.g.y-sz*2.4+Math.sin(this._t*0.14)*5;
+          this._tgtCursorG.fillStyle(0xffd700,pulse);
+          this._tgtCursorG.fillTriangle(sp.g.x,ay+9,sp.g.x-7,ay-5,sp.g.x+7,ay-5);
+        }
+      } else if (tgt && !tgt.isEnemy) {
+        const mi=this.party.indexOf(tgt.m);
+        const sp=this.partySprites[mi];
+        if (sp) {
+          this._tgtCursorG.lineStyle(2,0x88ff88,pulse);
+          this._tgtCursorG.strokeCircle(sp.g.x, sp.g.y-20, 20);
+          const ay=sp.g.y-55+Math.sin(this._t*0.14)*4;
+          this._tgtCursorG.fillStyle(0x88ff88,pulse);
+          this._tgtCursorG.fillTriangle(sp.g.x,ay+8,sp.g.x-6,ay-4,sp.g.x+6,ay-4);
+        }
+      }
+    }
 
     if (this.waiting||this.phase!=='playerTurn') return;
     const actor=this.party[this.actorIdx];

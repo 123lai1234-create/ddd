@@ -191,6 +191,9 @@ class WorldScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, MAP_W, MAP_H + HUD_H);
     this.cameras.main.startFollow(this.playerGfx, true, 0.12, 0.12);
 
+    // Atmosphere particles
+    this._spawnAtmosphere(MAP_W, MAP_H);
+
     // Post-battle pending dialogue (e.g. after boss)
     if (GS.flags._pendingLines) {
       const lines = [...GS.flags._pendingLines];
@@ -286,6 +289,37 @@ class WorldScene extends Phaser.Scene {
       g.fillStyle(0x000000, 0.7);
       g.fillRect(x-w/2+1, y-h/2-4, w-2, 4);
     }
+  }
+
+  _spawnAtmosphere(mapW, mapH) {
+    const cfgs = {
+      forest:  { color:0x80e840, alpha:0.55, size:2,   count:2, dy:-55, dx:30, dur:2200 },
+      cave:    { color:0xff8030, alpha:0.40, size:1.5,  count:1, dy:-70, dx:15, dur:2800 },
+      shrine:  { color:0xffe080, alpha:0.65, size:2.5,  count:1, dy:-90, dx:25, dur:3000 },
+      castle:  { color:0x9050c0, alpha:0.25, size:1.5,  count:1, dy:-60, dx:20, dur:2500 },
+    };
+    const cfg = cfgs[GS.map];
+    if (!cfg) return;
+    this.time.addEvent({
+      delay: 350, loop: true, callback: () => {
+        for (let i = 0; i < cfg.count; i++) {
+          const px = Math.random() * mapW;
+          const py = Math.random() * mapH;
+          const p = this.add.graphics().setDepth(3);
+          p.fillStyle(cfg.color, cfg.alpha);
+          p.fillCircle(0, 0, cfg.size + Math.random() * cfg.size * 0.5);
+          p.setPosition(px, py);
+          this.tweens.add({
+            targets: p,
+            x: px + (Math.random()-0.5) * cfg.dx,
+            y: py + cfg.dy * (0.6 + Math.random() * 0.7),
+            alpha: 0,
+            duration: cfg.dur * (0.7 + Math.random() * 0.6),
+            onComplete: () => p.destroy(),
+          });
+        }
+      },
+    });
   }
 
   _openChest(chest) {
@@ -509,10 +543,17 @@ class WorldScene extends Phaser.Scene {
   _doExit(exit) {
     if (this._exiting) return;
     this._exiting = true;
+    const W = this.scale.width;
+    const banner = this.add.text(W/2, 56, exit.msg, {
+      fontSize:'17px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#ffd700', stroke:'#000', strokeThickness:3,
+      backgroundColor:'#00000099', padding:{x:14, y:7},
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(25).setAlpha(0);
+    this.tweens.add({ targets:banner, alpha:1, duration:160 });
     GS.map = exit.to;
     GS.player.x = exit.toX; GS.player.y = exit.toY; GS.player.facing = 'down';
     GS.save(0);
-    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.cameras.main.fadeOut(380, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
   }
 
