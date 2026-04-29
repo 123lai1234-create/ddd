@@ -127,7 +127,7 @@ class WorldScene extends Phaser.Scene {
     // Track maps visited
     if (!GS.flags._mapsVis) GS.flags._mapsVis = {};
     GS.flags._mapsVis[GS.map] = true;
-    if (Object.keys(GS.flags._mapsVis).length >= 5) Achieve?.unlock('all_maps');
+    if (Object.keys(GS.flags._mapsVis).length >= 3) Achieve?.unlock('all_maps');
     if (GS.party.length >= 3) Achieve?.unlock('full_party');
     const map = MAPS[GS.map];
     const MAP_W = map.w * TILE_SZ;
@@ -446,9 +446,12 @@ class WorldScene extends Phaser.Scene {
   }
 
   _doExit(exit) {
+    if (this._exiting) return;
+    this._exiting = true;
     GS.map = exit.to;
     GS.player.x = exit.toX; GS.player.y = exit.toY; GS.player.facing = 'down';
-    this.scene.restart();
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
   }
 
   _talkNpc(npc) {
@@ -462,10 +465,11 @@ class WorldScene extends Phaser.Scene {
           if (GS.gold >= npc.inn) {
             GS.gold -= npc.inn;
             GS.party.forEach(m => { m.hp=m.maxHp; m.mp=m.maxMp; m.status=[]; m.dead=false; });
+            Sound?.play('inn');
             this._showDialog(['全員體力恢復！'], () => this._refreshHud());
           } else { this._showDialog(['靈石不足…']); }
         });
-      });
+      }, npc.name);
       return;
     }
     if (npc.boss) {
@@ -484,23 +488,25 @@ class WorldScene extends Phaser.Scene {
           status:[], dead:false, boss:true,
         }], isBoss:true };
         this.scene.start('BattleScene');
-      });
+      }, npc.name);
       return;
     }
     if (npc.join) {
       this._showDialog([...npc.dlg], () => {
         GS.addMember(npc.join);
         this._showDialog([`${CHAR_BASE[npc.join].name} 加入了隊伍！`], () => this.scene.restart());
-      });
+      }, npc.name);
       return;
     }
-    this._showDialog([...npc.dlg]);
+    this._showDialog([...npc.dlg], null, npc.name);
   }
 
-  _showDialog(lines, onDone=null) {
+  _showDialog(lines, onDone=null, speaker=null) {
     if (!lines.length) { if (onDone) onDone(); return; }
     this.inDialog = true;
     let idx = 0;
+    let typing = false;
+    let typeTimer = null;
 
     const W = this.scale.width;
     const boxH = 110;
@@ -514,7 +520,13 @@ class WorldScene extends Phaser.Scene {
     box.lineStyle(1, 0x4a3810, 0.6);
     box.strokeRoundedRect(24, boxY+4, W-48, boxH-8, 7);
 
-    const txt = this.add.text(40, boxY+20, lines[0], {
+    const speakerTxt = speaker ? this.add.text(36, boxY-22, speaker, {
+      fontSize:'13px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#ffd700', stroke:'#000', strokeThickness:3,
+      backgroundColor:'#0c0818cc', padding:{ x:8, y:3 },
+    }).setDepth(21) : null;
+
+    const txt = this.add.text(40, boxY+20, '', {
       fontSize:'15px', fontFamily:'"Noto Serif TC","SimSun",serif',
       color:'#f0e6c8', stroke:'#000', strokeThickness:2,
       wordWrap:{ width: W-80 },
@@ -522,25 +534,58 @@ class WorldScene extends Phaser.Scene {
 
     const hint = this.add.text(W-30, boxY+boxH-18, 'Z ▶', {
       fontSize:'11px', fontFamily:'serif', color:'#9a7040', stroke:'#000', strokeThickness:1,
-    }).setOrigin(1, 0.5).setDepth(21);
+    }).setOrigin(1, 0.5).setDepth(21).setAlpha(0);
 
-    // Blink hint
-    const blinker = this.time.addEvent({ delay:500, loop:true, callback:() => { hint.setAlpha(hint.alpha > 0.5 ? 0.3 : 1); }});
+    const blinker = this.time.addEvent({ delay:500, loop:true, callback:() => {
+      if (!typing) hint.setAlpha(hint.alpha > 0.5 ? 0.3 : 1);
+    }});
+
+    const startTyping = () => {
+      const full = lines[idx];
+      let ci = 0;
+      typing = true;
+      hint.setAlpha(0);
+      if (typeTimer) typeTimer.destroy();
+      typeTimer = this.time.addEvent({ delay:35, loop:true, callback:() => {
+        ci++;
+        txt.setText(full.slice(0, ci));
+        if (ci >= full.length) {
+          typeTimer.destroy(); typeTimer = null;
+          typing = false;
+          hint.setAlpha(1);
+        }
+      }});
+    };
+    startTyping();
 
     const padTimer = this.time.addEvent({ delay:80, loop:true, callback:() => {
       if (window.PAD?.ok) { window.PAD.ok = false; handler({ code:'KeyZ' }); }
     }});
 
+    const cleanup = () => {
+      if (typeTimer) { typeTimer.destroy(); typeTimer = null; }
+      blinker.destroy(); padTimer.destroy();
+      box.destroy(); txt.destroy(); hint.destroy();
+      if (speakerTxt) speakerTxt.destroy();
+      this.inDialog = false;
+      this.input.keyboard.off('keydown', handler);
+    };
+
     const handler = (evt) => {
       if (evt.code === 'KeyZ' || evt.code === 'Enter') {
+        if (typing) {
+          if (typeTimer) { typeTimer.destroy(); typeTimer = null; }
+          typing = false;
+          txt.setText(lines[idx]);
+          hint.setAlpha(1);
+          return;
+        }
         idx++;
         if (idx < lines.length) {
-          txt.setText(lines[idx]);
+          txt.setText('');
+          startTyping();
         } else {
-          blinker.destroy(); box.destroy(); txt.destroy(); hint.destroy();
-          padTimer.destroy();
-          this.inDialog = false;
-          this.input.keyboard.off('keydown', handler);
+          cleanup();
           if (onDone) onDone();
         }
       }
