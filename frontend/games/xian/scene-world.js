@@ -194,6 +194,28 @@ class WorldScene extends Phaser.Scene {
     // Atmosphere particles
     this._spawnAtmosphere(MAP_W, MAP_H);
 
+    // Mini-map
+    const mms = 5, mmX = W - map.w*mms - 12, mmY = 10;
+    this._mmapX = mmX; this._mmapY = mmY; this._mmapS = mms;
+    const mmBg = this.add.graphics().setScrollFactor(0).setDepth(18);
+    mmBg.fillStyle(0x000000, 0.72); mmBg.fillRect(mmX-2, mmY-2, map.w*mms+4, map.h*mms+4);
+    mmBg.lineStyle(1, 0x9a7828, 0.7); mmBg.strokeRect(mmX-2, mmY-2, map.w*mms+4, map.h*mms+4);
+    const MM_CLR = {0:0x7a6030, 1:0x141010, 2:0x2a5010, 3:0x0e2005, 4:0x0a1840, 5:0x1e1408, 6:0x9a7828};
+    for (let ty = 0; ty < map.h; ty++) {
+      for (let tx = 0; tx < map.w; tx++) {
+        mmBg.fillStyle(MM_CLR[map.tiles[ty][tx]] ?? 0x1a1010, 1);
+        mmBg.fillRect(mmX + tx*mms, mmY + ty*mms, mms-0.5, mms-0.5);
+      }
+    }
+    (map.exits||[]).forEach(e => { mmBg.fillStyle(0x40ff80, 0.85); mmBg.fillRect(mmX+e.x*mms, mmY+e.y*mms, mms, mms); });
+    (map.npcs||[]).forEach(n => { mmBg.fillStyle(0xe8c060, 0.7); mmBg.fillCircle(mmX+n.x*mms+mms/2, mmY+n.y*mms+mms/2, mms*0.45); });
+    (map.chests||[]).forEach(c => {
+      mmBg.fillStyle(GS.flags.chests?.[c.id] ? 0x555555 : 0xffd700, 0.9);
+      mmBg.fillRect(mmX+c.x*mms+1, mmY+c.y*mms+1, mms-2, mms-2);
+    });
+    this._mmapFg = this.add.graphics().setScrollFactor(0).setDepth(19);
+    this._refreshMinimap();
+
     // Post-battle pending dialogue (e.g. after boss)
     if (GS.flags._pendingLines) {
       const lines = [...GS.flags._pendingLines];
@@ -334,6 +356,19 @@ class WorldScene extends Phaser.Scene {
     this._showDialog(['打開了寶箱！', `獲得：${rewards.join('、')}！`], () => this._refreshHud());
   }
 
+  _refreshMinimap() {
+    if (!this._mmapFg) return;
+    this._mmapFg.clear();
+    const { x, y } = GS.player;
+    const mms = this._mmapS;
+    const mx = this._mmapX + x*mms + mms/2;
+    const my = this._mmapY + y*mms + mms/2;
+    this._mmapFg.fillStyle(0xffffff, 1);
+    this._mmapFg.fillCircle(mx, my, mms*0.75);
+    this._mmapFg.lineStyle(1, 0x000000, 0.4);
+    this._mmapFg.strokeCircle(mx, my, mms*0.75);
+  }
+
   _drawPlayer() {
     this.playerGfx.clear();
     const { x, y } = GS.player;
@@ -422,6 +457,7 @@ class WorldScene extends Phaser.Scene {
 
     // Move camera reference point to player center
     this.playerGfx.setPosition(0, 0);
+    this._refreshMinimap();
   }
 
   _buildHud(W, HUD_H, MAP_W) {

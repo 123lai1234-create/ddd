@@ -9,7 +9,7 @@ class MenuScene extends Phaser.Scene {
 
   create() {
     const W = this.scale.width, H = this.scale.height;
-    this.tab = 0; this.tabs = ['狀態','裝備','道具','存檔'];
+    this.tab = 0; this.tabs = ['狀態','裝備','道具','存檔','成就'];
     this.cursor = 0; this.member = 0;
     this.equipSlot = -1; this.equipList = []; this.equipCursor = 0;
     this.itemList = []; this.itemCursor = 0;
@@ -87,10 +87,11 @@ class MenuScene extends Phaser.Scene {
     this._ch = ph - 80;
 
     switch(this.tab) {
-      case 0: this._drawStatus(); break;
-      case 1: this._drawEquip();  break;
-      case 2: this._drawItem();   break;
-      case 3: this._drawSave();   break;
+      case 0: this._drawStatus();  break;
+      case 1: this._drawEquip();   break;
+      case 2: this._drawItem();    break;
+      case 3: this._drawSave();    break;
+      case 4: this._drawAchieve(); break;
     }
   }
 
@@ -342,6 +343,41 @@ class MenuScene extends Phaser.Scene {
         fontSize: fsS+'px', fontFamily:'serif', color:'#5a4a2a',
       }).setOrigin(0.5, 0);
     }
+  }
+
+  _drawAchieve() {
+    const { _cx:cx, _cy:cy, _cw:cw, _ch:ch } = this;
+    const fs  = Math.max(13, Math.floor(cw * 0.022));
+    const fsS = Math.max(10, fs - 3);
+    const list = Achieve?.getAll() || [];
+    const unlocked = list.filter(a => a.unlocked).length;
+
+    this.add.text(cx+cw/2, cy+6, `成　就　（${unlocked}/${list.length}）`, {
+      fontSize: Math.floor(fs*1.2)+'px', fontFamily:'"Noto Serif TC",serif',
+      color:'#e8c060', fontStyle:'bold', stroke:'#000', strokeThickness:2,
+    }).setOrigin(0.5, 0);
+
+    const cols = 2, rows = Math.ceil(list.length / cols);
+    const colW = Math.floor(cw / cols), rowH = Math.floor((ch - 44) / rows);
+    list.forEach((a, i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      const ax = cx + col * colW + 8, ay = cy + 44 + row * rowH;
+      const done = a.unlocked;
+      this.panelGfx.fillStyle(done ? 0x1a2a10 : 0x1a1010, 0.7);
+      this.panelGfx.fillRoundedRect(ax-4, ay, colW-12, rowH-6, 5);
+      if (done) {
+        this.panelGfx.lineStyle(1, 0x507030, 0.7);
+        this.panelGfx.strokeRoundedRect(ax-4, ay, colW-12, rowH-6, 5);
+      }
+      this.add.text(ax+4, ay+6, done ? `${a.icon} ${a.name}` : '？？？', {
+        fontSize: fs+'px', fontFamily:'"Noto Serif TC",serif',
+        color: done ? '#a0e060' : '#3a3030', stroke:'#000', strokeThickness: done?2:1,
+      });
+      this.add.text(ax+4, ay+6+fs+2, done ? a.desc : '尚未解鎖', {
+        fontSize: fsS+'px', fontFamily:'"Noto Serif TC",serif',
+        color: done ? '#708060' : '#2a2020', stroke:'#000', strokeThickness:1,
+      });
+    });
   }
 
   update() {
