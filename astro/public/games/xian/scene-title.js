@@ -240,7 +240,7 @@ class TitleScene extends Phaser.Scene {
   }
 
   _select() {
-    if (this.cursor === 0) { GS.init(); this.scene.start('WorldScene'); }
+    if (this.cursor === 0) { GS.init(); this.scene.start('OpeningScene'); }
     else if (this.cursor === 1) { this.scene.start('LoadScene'); }
     else if (this.cursor === 2) { this.scene.start('AboutScene'); }
     else {
@@ -357,6 +357,315 @@ class AboutScene extends Phaser.Scene {
     this.input.keyboard.once('keydown-Z',     () => this.scene.start('TitleScene'));
     this.input.keyboard.once('keydown-ENTER', () => this.scene.start('TitleScene'));
     this.input.keyboard.once('keydown-ESC',   () => this.scene.start('TitleScene'));
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  OpeningScene — intro cinematic (4 slides, Z to advance)
+// ══════════════════════════════════════════════════════════
+class OpeningScene extends Phaser.Scene {
+  constructor() { super('OpeningScene'); }
+
+  create() {
+    const W = this.scale.width, H = this.scale.height;
+    this._slide = 0;
+    this._slides = [
+      {
+        bg: [0x000000, 0x060214, 0x000000, 0x040108],
+        lines: [
+          { t:'洪荒之時', c:'#f0e6c8', sz:28, bold:true, y:0.30 },
+          { t:'天地初開，妖氣漫天，', c:'#c8b090', sz:16, y:0.45 },
+          { t:'萬妖出沒，生靈塗炭。', c:'#c8b090', sz:16, y:0.53 },
+        ],
+      },
+      {
+        bg: [0x1a0600, 0x0e0200, 0x120400, 0x0a0300],
+        lines: [
+          { t:'黑山村告急', c:'#f0a010', sz:26, bold:true, y:0.28 },
+          { t:'妖兵橫行，村民流離，', c:'#c8b090', sz:16, y:0.43 },
+          { t:'無數百姓哭天喊地，求助無門。', c:'#c8b090', sz:16, y:0.51 },
+          { t:'── 救世主，何時降臨？ ──', c:'#9a6030', sz:14, y:0.63 },
+        ],
+      },
+      {
+        bg: [0x000820, 0x000618, 0x000412, 0x00060e],
+        lines: [
+          { t:'天命之人', c:'#60c8ff', sz:28, bold:true, y:0.28 },
+          { t:'傳說中，大聖悟空轉世，', c:'#c8d0e0', sz:16, y:0.43 },
+          { t:'天命加身，手持如意金箍棒，', c:'#c8d0e0', sz:16, y:0.51 },
+          { t:'能鎮壓妖亂，還世間清平。', c:'#c8d0e0', sz:16, y:0.59 },
+        ],
+      },
+      {
+        bg: [0x0e0820, 0x080414, 0x060210, 0x040108],
+        lines: [
+          { t:'征途啟程', c:'#ffd700', sz:30, bold:true, y:0.30 },
+          { t:'你，正是那天命之人。', c:'#f0e6c8', sz:18, y:0.46 },
+          { t:'命運，從此刻改變。', c:'#f0e6c8', sz:18, y:0.55 },
+        ],
+      },
+    ];
+
+    this._bgGfx = this.add.graphics();
+    this._textObjs = [];
+    this._hint = this.add.text(W/2, H*0.88, '按 Z 繼續', {
+      fontSize:'14px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#5a4a2a', stroke:'#000', strokeThickness:1,
+    }).setOrigin(0.5, 0.5).setAlpha(0);
+    this.tweens.add({ targets:this._hint, alpha:0.8, duration:900, delay:1200, yoyo:true, repeat:-1 });
+
+    this._showSlide(0);
+
+    this.keys = this.input.keyboard.addKeys({
+      z:     Phaser.Input.Keyboard.KeyCodes.Z,
+      enter: Phaser.Input.Keyboard.KeyCodes.ENTER,
+      esc:   Phaser.Input.Keyboard.KeyCodes.ESC,
+    });
+  }
+
+  _showSlide(idx) {
+    const W = this.scale.width, H = this.scale.height;
+    const s = this._slides[idx];
+
+    this._textObjs.forEach(o => o.destroy());
+    this._textObjs = [];
+
+    this._bgGfx.clear();
+    this._bgGfx.fillGradientStyle(...s.bg, 1);
+    this._bgGfx.fillRect(0, 0, W, H);
+
+    // Stars
+    const sg = this.add.graphics();
+    this._textObjs.push(sg);
+    for (let i = 0; i < 60; i++) {
+      sg.fillStyle(0xfff8e0, 0.1 + Math.random()*0.5);
+      sg.fillCircle(Math.random()*W, Math.random()*H, 0.3 + Math.random()*1.0);
+    }
+
+    // Divider lines
+    const dg = this.add.graphics();
+    this._textObjs.push(dg);
+    dg.lineStyle(1, 0x5a4a2a, 0.35);
+    dg.lineBetween(W*0.25, H*0.82, W*0.75, H*0.82);
+
+    // Progress dots
+    this._slides.forEach((_, i) => {
+      const dot = this.add.graphics();
+      dot.fillStyle(i===idx ? 0xffd700 : 0x3a3020, i===idx ? 0.9 : 0.5);
+      dot.fillCircle(W/2 + (i - (this._slides.length-1)/2)*22, H*0.86, i===idx ? 5 : 3);
+      this._textObjs.push(dot);
+    });
+
+    // Text lines with stagger
+    s.lines.forEach((l, li) => {
+      const fontSize = Math.min(l.sz, Math.floor(W * l.sz/560));
+      const t = this.add.text(W/2, H*l.y, l.t, {
+        fontSize: fontSize+'px',
+        fontFamily: '"Noto Serif TC","SimSun",serif',
+        color: l.c,
+        fontStyle: l.bold ? 'bold' : 'normal',
+        stroke: '#000', strokeThickness: l.bold ? 4 : 2,
+        shadow: l.bold ? { offsetX:0, offsetY:0, color:l.c, blur:20, fill:true } : undefined,
+      }).setOrigin(0.5, 0.5).setAlpha(0);
+      this._textObjs.push(t);
+      this.tweens.add({ targets:t, alpha:1, duration:600, delay:li*500 });
+    });
+  }
+
+  update() {
+    const ok  = Phaser.Input.Keyboard.JustDown(this.keys.z) || Phaser.Input.Keyboard.JustDown(this.keys.enter);
+    const esc = Phaser.Input.Keyboard.JustDown(this.keys.esc);
+    const padOk = !!window.PAD?.ok; if (padOk && window.PAD) window.PAD.ok = false;
+
+    if (esc) { this.scene.start('TitleScene'); return; }
+    if (ok || padOk) {
+      this._slide++;
+      if (this._slide >= this._slides.length) {
+        this.scene.start('WorldScene');
+      } else {
+        Sound?.play('menuSelect');
+        this._showSlide(this._slide);
+      }
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  EndingScene — game clear screen with New Game+ option
+// ══════════════════════════════════════════════════════════
+class EndingScene extends Phaser.Scene {
+  constructor() { super('EndingScene'); }
+
+  create() {
+    this.cursor = 0;
+    const W = this.scale.width, H = this.scale.height;
+    Sound?.stopBgm();
+    this.time.delayedCall(600, () => Sound?.bgm('shrine'));
+
+    const bg = this.add.graphics();
+    bg.fillGradientStyle(0x08041c, 0x060318, 0x040210, 0x06021a, 1);
+    bg.fillRect(0, 0, W, H);
+
+    // Stars
+    const sg = this.add.graphics();
+    for (let i = 0; i < 120; i++) {
+      sg.fillStyle(0xfff8e0, 0.08 + Math.random()*0.6);
+      sg.fillCircle(Math.random()*W, Math.random()*H, 0.3 + Math.random()*1.5);
+    }
+
+    // Sparks (gold firework effect, looping)
+    this.sparks = [];
+    this.sparkGfx = this.add.graphics();
+    for (let i = 0; i < 70; i++) {
+      const angle = Math.random()*Math.PI*2;
+      const speed = 0.5 + Math.random()*3.5;
+      this.sparks.push({
+        x: W*0.5 + (Math.random()-0.5)*120, y: H*0.22,
+        vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed - 0.8,
+        alpha: 0.5 + Math.random()*0.5, fade: 0.004 + Math.random()*0.01,
+        r: 1 + Math.random()*2.2,
+        color: [0xffd700, 0xff9040, 0xffffc0, 0xff6020][Math.floor(Math.random()*4)],
+      });
+    }
+
+    // Title
+    const titleT = this.add.text(W/2, H*0.13, '天命達成', {
+      fontSize: Math.min(58, Math.floor(W*0.1))+'px',
+      fontFamily: '"Noto Serif TC","SimSun",serif',
+      color:'#ffd700', fontStyle:'bold',
+      stroke:'#1a0800', strokeThickness:8,
+      shadow:{ offsetX:0, offsetY:0, color:'#ffd700', blur:40, fill:true },
+    }).setOrigin(0.5, 0.5).setAlpha(0);
+    this.tweens.add({ targets:titleT, alpha:1, y:H*0.14, duration:900, ease:'Back.easeOut', delay:300 });
+
+    const subT = this.add.text(W/2, H*0.24, '黃眉大王已伏誅，天下太平。', {
+      fontSize: Math.min(17, Math.floor(W*0.028))+'px',
+      fontFamily: '"Noto Serif TC","SimSun",serif',
+      color:'#c8b080', stroke:'#000', strokeThickness:2,
+    }).setOrigin(0.5, 0.5).setAlpha(0);
+    this.tweens.add({ targets:subT, alpha:1, duration:700, delay:1100 });
+
+    const divG = this.add.graphics();
+    divG.lineStyle(1, 0x9a7828, 0.45);
+    divG.lineBetween(W*0.18, H*0.30, W*0.82, H*0.30);
+
+    // Stats panel
+    const panW = Math.min(500, W-60), panH = Math.floor(H*0.30);
+    const panX = (W-panW)/2, panY = Math.floor(H*0.33);
+    mkPanel(this, panX, panY, panW, panH, 0.9);
+
+    const pt = GS.flags?.playtime || 0;
+    const maxLv = GS.party.reduce((mx,m) => Math.max(mx, m.lv||1), 1);
+    const achList = Achieve?.getAll() || [];
+    const achDone = achList.filter(a=>a.unlocked).length;
+    const stats = [
+      ['遊玩時間', `${Math.floor(pt/3600)}時 ${Math.floor((pt%3600)/60)}分 ${pt%60}秒`],
+      ['最高等級', `Lv.${maxLv}`],
+      ['所得靈石', `${GS.gold} 靈石`],
+      ['成就解鎖', `${achDone} / ${achList.length}`],
+    ];
+    const rowH2 = Math.floor(panH / stats.length);
+    stats.forEach(([lbl, val], i) => {
+      const sy = panY + i*rowH2 + rowH2/2;
+      const fsL = Math.max(12, Math.floor(panW*0.027));
+      const lblT = this.add.text(panX + panW*0.44, sy, lbl+'：', {
+        fontSize: fsL+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#9a8060', stroke:'#000', strokeThickness:1,
+      }).setOrigin(1, 0.5).setAlpha(0);
+      const valT = this.add.text(panX + panW*0.46, sy, val, {
+        fontSize: fsL+'px', fontFamily:'monospace',
+        color:'#ffd700', fontStyle:'bold', stroke:'#000', strokeThickness:1,
+      }).setOrigin(0, 0.5).setAlpha(0);
+      this.tweens.add({ targets:[lblT,valT], alpha:1, duration:500, delay:1200+i*200 });
+    });
+
+    // Buttons
+    const btnFontSz = Math.min(20, Math.floor(W*0.030));
+    this.opts = ['新遊戲＋（繼承 60% 靈石）', '回到標題'];
+    this.optBgs = [];
+    this.optTexts = this.opts.map((o, i) => {
+      const oy = panY + panH + 40 + i*58;
+      const bg2 = this.add.graphics();
+      const t = this.add.text(W/2, oy, o, {
+        fontSize: btnFontSz+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#c8a060', stroke:'#000', strokeThickness:3,
+      }).setOrigin(0.5, 0.5).setAlpha(0);
+      this.tweens.add({ targets:t, alpha:1, duration:400, delay:2200+i*150 });
+      this.optBgs.push({ g:bg2, y:oy });
+      return t;
+    });
+
+    this.add.text(W/2, H*0.95, '↑↓ 選擇　Z/Enter 確認', {
+      fontSize:'12px', fontFamily:'serif', color:'#5a4a2a',
+    }).setOrigin(0.5, 0.5);
+
+    this.t = 0;
+    this.keys = this.input.keyboard.addKeys({
+      up: Phaser.Input.Keyboard.KeyCodes.UP,
+      down: Phaser.Input.Keyboard.KeyCodes.DOWN,
+      z: Phaser.Input.Keyboard.KeyCodes.Z,
+      enter: Phaser.Input.Keyboard.KeyCodes.ENTER,
+    });
+    this._updateOpts();
+  }
+
+  _updateOpts() {
+    const W = this.scale.width;
+    const bw = Math.min(360, W*0.7);
+    this.optBgs.forEach(({g, y}, i) => {
+      g.clear();
+      const sel = i === this.cursor;
+      if (sel) {
+        g.fillStyle(0x9a7828, 0.18);
+        g.fillRoundedRect(W/2-bw/2, y-26, bw, 52, 6);
+        g.lineStyle(1, 0x9a7828, 0.7);
+        g.strokeRoundedRect(W/2-bw/2, y-26, bw, 52, 6);
+      }
+      this.optTexts[i].setColor(sel ? '#ffd700' : '#c8a060');
+    });
+  }
+
+  update() {
+    this.t++;
+    this.sparkGfx.clear();
+    const W = this.scale.width;
+    this.sparks.forEach(s => {
+      s.x += s.vx; s.y += s.vy; s.vy += 0.05;
+      s.alpha -= s.fade;
+      if (s.alpha <= 0) {
+        const angle = Math.random()*Math.PI*2, speed = 0.5 + Math.random()*3.5;
+        s.x = W*0.5 + (Math.random()-0.5)*120; s.y = this.scale.height*0.22;
+        s.vx = Math.cos(angle)*speed; s.vy = Math.sin(angle)*speed - 0.8;
+        s.alpha = 0.5 + Math.random()*0.5;
+      }
+      this.sparkGfx.fillStyle(s.color, s.alpha);
+      this.sparkGfx.fillCircle(s.x, s.y, s.r);
+    });
+
+    const up   = Phaser.Input.Keyboard.JustDown(this.keys.up);
+    const down = Phaser.Input.Keyboard.JustDown(this.keys.down);
+    const ok   = Phaser.Input.Keyboard.JustDown(this.keys.z) || Phaser.Input.Keyboard.JustDown(this.keys.enter);
+    const padOk = !!window.PAD?.ok; if (padOk && window.PAD) window.PAD.ok = false;
+    const padUp = !!window.PAD?.up;  if (padUp  && window.PAD) window.PAD.up = false;
+    const padDn = !!window.PAD?.down; if (padDn  && window.PAD) window.PAD.down = false;
+
+    if (up || padUp)   { this.cursor = Math.max(0, this.cursor-1); this._updateOpts(); Sound?.play('menuMove'); }
+    if (down || padDn) { this.cursor = Math.min(1, this.cursor+1); this._updateOpts(); Sound?.play('menuMove'); }
+    if (ok || padOk) {
+      Sound?.play('menuSelect');
+      if (this.cursor === 0) {
+        const savedGold = Math.floor((GS.gold||0) * 0.6) + 200;
+        const savedPlaytime = GS.flags?.playtime || 0;
+        GS.init();
+        GS.gold = savedGold;
+        GS.flags.ngplus = true;
+        GS.flags.playtime = savedPlaytime;
+        Achieve?.unlock('ngplus');
+        this.scene.start('OpeningScene');
+      } else {
+        this.scene.start('TitleScene');
+      }
+    }
   }
 }
 

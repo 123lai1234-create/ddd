@@ -149,9 +149,10 @@ class WorldScene extends Phaser.Scene {
     banner.fillRoundedRect(8, 8, 180, 36, 8);
     banner.lineStyle(1, 0x9a7828, 0.7);
     banner.strokeRoundedRect(8, 8, 180, 36, 8);
-    this.add.text(98, 26, map.name, {
+    const mapLabel = map.name + (GS.flags.ngplus ? '  ★' : '');
+    this.add.text(98, 26, mapLabel, {
       fontSize:'16px', fontFamily:'"Noto Serif TC","SimSun",serif',
-      color:'#e8c060', stroke:'#000', strokeThickness:2,
+      color: GS.flags.ngplus ? '#ffe080' : '#e8c060', stroke:'#000', strokeThickness:2,
     }).setOrigin(0.5, 0.5).setDepth(3);
 
     // NPCs
@@ -226,7 +227,7 @@ class WorldScene extends Phaser.Scene {
         if (isFinal) {
           Sound?.stopBgm();
           this.cameras.main.fadeOut(1200, 0, 0, 0);
-          this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('TitleScene'));
+          this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('EndingScene'));
         }
       }));
     }
@@ -247,6 +248,17 @@ class WorldScene extends Phaser.Scene {
     this.bobTimer = 0;
     this._dayStep = 0;
     this._skyOverlay = this.add.graphics().setScrollFactor(0).setDepth(9);
+
+    // Castle visit flag for quest tracking
+    if (GS.map === 'castle') GS.flags.visitedCastle = true;
+
+    // Achievement toast listener
+    this._onAchieve = (e) => this._showAchieveToast(e.detail);
+    window.addEventListener('xian:achievement', this._onAchieve);
+    this.events.once('shutdown', () => window.removeEventListener('xian:achievement', this._onAchieve));
+
+    // Playtime counter (seconds)
+    this._ptCounter = 0;
   }
 
   _drawNpc(g, x, y, color=0xd4b060) {
@@ -537,6 +549,28 @@ class WorldScene extends Phaser.Scene {
     });
   }
 
+  _showAchieveToast(a) {
+    if (!a) return;
+    const W = this.scale.width;
+    const toastW = Math.min(340, W - 30);
+    const tx = W/2 - toastW/2;
+    const bg = this.add.graphics().setScrollFactor(0).setDepth(30);
+    bg.fillStyle(0x121808, 0.96);
+    bg.fillRoundedRect(tx, 12, toastW, 56, 8);
+    bg.lineStyle(2, 0xffd700, 0.95);
+    bg.strokeRoundedRect(tx, 12, toastW, 56, 8);
+    const t1 = this.add.text(W/2, 22, '★ 成就解鎖！', {
+      fontSize:'11px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#ffd700', stroke:'#000', strokeThickness:2,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(31);
+    const t2 = this.add.text(W/2, 36, `${a.icon||'🏆'} ${a.name} — ${a.desc}`, {
+      fontSize:'13px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#e8c060', stroke:'#000', strokeThickness:2,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(31);
+    this.tweens.add({ targets:[bg,t1,t2], alpha:0, duration:500, delay:2800,
+      onComplete: () => { bg.destroy(); t1.destroy(); t2.destroy(); } });
+  }
+
   _canWalk(x, y) {
     const map = MAPS[GS.map];
     if (x < 0 || y < 0 || x >= map.w || y >= map.h) return false;
@@ -571,8 +605,10 @@ class WorldScene extends Phaser.Scene {
       for (let i = 0; i < count; i++) {
         const id = pool[Math.floor(Math.random() * pool.length)];
         const base = ENEMIES[id];
-        enemies.push({ id, name:base.name, hp:base.hp, maxHp:base.hp,
-          atk:base.atk, def:base.def, spd:base.spd,
+        const ngS = GS.flags.ngplus ? 1.35 : 1.0;
+        enemies.push({ id, name:base.name,
+          hp:Math.floor(base.hp*ngS), maxHp:Math.floor(base.hp*ngS),
+          atk:Math.floor(base.atk*ngS), def:Math.floor(base.def*ngS), spd:base.spd,
           color:base.color, sz:base.sz, acts:base.acts, drops:base.drops,
           status:[], dead:false });
       }
@@ -661,9 +697,11 @@ class WorldScene extends Phaser.Scene {
       }
       this._showDialog([...npc.dlg], () => {
         const base = ENEMIES[npc.boss];
+        const ngS = GS.flags.ngplus ? 1.35 : 1.0;
         GS.battleData = { enemies:[{
-          id:npc.boss, name:base.name, hp:base.hp, maxHp:base.hp,
-          atk:base.atk, def:base.def, spd:base.spd,
+          id:npc.boss, name:base.name,
+          hp:Math.floor(base.hp*ngS), maxHp:Math.floor(base.hp*ngS),
+          atk:Math.floor(base.atk*ngS), def:Math.floor(base.def*ngS), spd:base.spd,
           color:base.color, sz:base.sz, acts:base.acts, drops:base.drops,
           status:[], dead:false, boss:true,
         }], isBoss:true };
@@ -784,6 +822,8 @@ class WorldScene extends Phaser.Scene {
   }
 
   update() {
+    this._ptCounter++;
+    if (this._ptCounter >= 60) { this._ptCounter = 0; GS.flags.playtime = (GS.flags.playtime||0) + 1; }
     if (this.inDialog) return;
     this.bobTimer++;
     this.moveDelay = Math.max(0, this.moveDelay - 1);
