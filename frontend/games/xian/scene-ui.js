@@ -345,12 +345,19 @@ class MenuScene extends Phaser.Scene {
   }
 
   update() {
-    const up    = Phaser.Input.Keyboard.JustDown(this.keys.up);
-    const down  = Phaser.Input.Keyboard.JustDown(this.keys.down);
-    const left  = Phaser.Input.Keyboard.JustDown(this.keys.left);
-    const right = Phaser.Input.Keyboard.JustDown(this.keys.right);
-    const ok    = Phaser.Input.Keyboard.JustDown(this.keys.z)   || Phaser.Input.Keyboard.JustDown(this.keys.enter);
-    const back  = Phaser.Input.Keyboard.JustDown(this.keys.x)   || Phaser.Input.Keyboard.JustDown(this.keys.esc);
+    const padUp   = !!window.PAD?.up;    if (padUp    && window.PAD) window.PAD.up    = false;
+    const padDown = !!window.PAD?.down;  if (padDown  && window.PAD) window.PAD.down  = false;
+    const padLeft = !!window.PAD?.left;  if (padLeft  && window.PAD) window.PAD.left  = false;
+    const padRight= !!window.PAD?.right; if (padRight && window.PAD) window.PAD.right = false;
+    const padOk   = !!window.PAD?.ok;    if (padOk    && window.PAD) window.PAD.ok    = false;
+    const padBack = !!window.PAD?.menu;  if (padBack  && window.PAD) window.PAD.menu  = false;
+
+    const up    = Phaser.Input.Keyboard.JustDown(this.keys.up)    || padUp;
+    const down  = Phaser.Input.Keyboard.JustDown(this.keys.down)  || padDown;
+    const left  = Phaser.Input.Keyboard.JustDown(this.keys.left)  || padLeft;
+    const right = Phaser.Input.Keyboard.JustDown(this.keys.right) || padRight;
+    const ok    = Phaser.Input.Keyboard.JustDown(this.keys.z)   || Phaser.Input.Keyboard.JustDown(this.keys.enter) || padOk;
+    const back  = Phaser.Input.Keyboard.JustDown(this.keys.x)   || Phaser.Input.Keyboard.JustDown(this.keys.esc)  || padBack;
 
     if (back) {
       if (this.tab===1 && this.equipSlot!==-1) { this.equipSlot=-1; this.drawPanel(); return; }
@@ -526,10 +533,15 @@ class ShopScene extends Phaser.Scene {
   }
 
   update() {
-    const up   = Phaser.Input.Keyboard.JustDown(this.keys.up);
-    const down = Phaser.Input.Keyboard.JustDown(this.keys.down);
-    const ok   = Phaser.Input.Keyboard.JustDown(this.keys.z)   || Phaser.Input.Keyboard.JustDown(this.keys.enter);
-    const back = Phaser.Input.Keyboard.JustDown(this.keys.x)   || Phaser.Input.Keyboard.JustDown(this.keys.esc);
+    const padUp   = !!window.PAD?.up;   if (padUp   && window.PAD) window.PAD.up   = false;
+    const padDown = !!window.PAD?.down; if (padDown && window.PAD) window.PAD.down = false;
+    const padOk   = !!window.PAD?.ok;   if (padOk   && window.PAD) window.PAD.ok   = false;
+    const padBack = !!window.PAD?.menu; if (padBack && window.PAD) window.PAD.menu = false;
+
+    const up   = Phaser.Input.Keyboard.JustDown(this.keys.up)   || padUp;
+    const down = Phaser.Input.Keyboard.JustDown(this.keys.down) || padDown;
+    const ok   = Phaser.Input.Keyboard.JustDown(this.keys.z)   || Phaser.Input.Keyboard.JustDown(this.keys.enter) || padOk;
+    const back = Phaser.Input.Keyboard.JustDown(this.keys.x)   || Phaser.Input.Keyboard.JustDown(this.keys.esc)  || padBack;
 
     if (back)  { this.scene.resume(this.caller); this.scene.stop(); return; }
     if (up)    { this.cursor=Math.max(0,this.cursor-1); this._draw(); }
