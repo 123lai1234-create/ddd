@@ -542,6 +542,10 @@ class BattleScene extends Phaser.Scene {
           }
         });
         this._shake(0.006);
+        const _elemC = ELEM_CLR[sk.elem||'none']||0x8888ff;
+        const _ef = this.add.graphics().setDepth(45);
+        _ef.fillStyle(_elemC, 0); _ef.fillRect(0, 0, this.W, this.H);
+        this.tweens.add({ targets:_ef, alpha:0.14, duration:75, yoyo:true, repeat:1, onComplete:()=>_ef.destroy() });
         msg=`${actor.name} 施展 ${sk.name}，造成 ${dmgs.join('/')} 點傷害！`;
       } else if (sk.type==='heal') {
         Sound?.play('heal');
