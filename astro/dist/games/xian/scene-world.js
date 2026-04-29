@@ -391,86 +391,97 @@ class WorldScene extends Phaser.Scene {
     const bob = Math.sin(this.bobTimer * 0.15) * 1.5;
     const m = GS.party[0];
     const col = m ? m.color : 0x4a9eff;
+    const id  = m ? m.id   : 'yunyi';
+    const g   = this.playerGfx;
 
-    // Shadow
-    this.playerGfx.fillStyle(0x000000, 0.3);
-    this.playerGfx.fillEllipse(sx, sy+23, 30, 8);
+    g.fillStyle(0x000000, 0.3);
+    g.fillEllipse(sx, sy+23, 32, 8);
 
-    // Robe skirt (tapered wider at bottom — xianxia style)
-    this.playerGfx.fillStyle(col, 1);
-    this.playerGfx.fillTriangle(sx-11, sy+7+bob, sx+11, sy+7+bob, sx-17, sy+25+bob);
-    this.playerGfx.fillTriangle(sx-11, sy+7+bob, sx+11, sy+7+bob, sx+17, sy+25+bob);
-    this.playerGfx.fillRect(sx-11, sy+5+bob, 22, 4);
-
-    // Upper body / torso
-    this.playerGfx.fillStyle(col, 1);
-    this.playerGfx.fillRect(sx-9, sy-8+bob, 18, 15);
-
-    // Sleeves / arms
-    this.playerGfx.fillRect(sx-21, sy-5+bob, 13, 6);
-    this.playerGfx.fillRect(sx+8,  sy-5+bob, 13, 6);
-
-    // Collar / sash center line
-    this.playerGfx.fillStyle(0xffffff, 0.22);
-    this.playerGfx.fillRect(sx-1, sy-8+bob, 2, 13);
-
-    // Head
-    this.playerGfx.fillStyle(col, 1);
-    this.playerGfx.fillCircle(sx, sy-19+bob, 11);
-
-    // Topknot (xianxia style)
-    this.playerGfx.fillStyle(0x1c1000, 1);
-    this.playerGfx.fillRect(sx-2, sy-33+bob, 4, 12);
-    this.playerGfx.fillCircle(sx, sy-34+bob, 3);
-
-    // Eyes
-    this.playerGfx.fillStyle(0x0d0600, 1);
-    this.playerGfx.fillCircle(sx-4, sy-19+bob, 2);
-    this.playerGfx.fillCircle(sx+4, sy-19+bob, 2);
-
-    // Face highlight
-    this.playerGfx.fillStyle(0xffffff, 0.2);
-    this.playerGfx.fillCircle(sx-3, sy-23+bob, 3.5);
-
-    // Weapon
-    if (!m || m.shape === 'sword') {
-      // Blade
-      this.playerGfx.fillStyle(0xe8e8e8, 1);
-      this.playerGfx.fillRect(sx+11, sy-22+bob, 3, 28);
-      // Guard
-      this.playerGfx.fillRect(sx+4,  sy-22+bob, 17, 3);
-      // Handle
-      this.playerGfx.fillStyle(0xb07820, 1);
-      this.playerGfx.fillRect(sx+11, sy+6+bob, 3, 8);
-      // Tip
-      this.playerGfx.fillStyle(0xffe060, 1);
-      this.playerGfx.fillTriangle(sx+11, sy-22+bob, sx+14, sy-22+bob, sx+12, sy-30+bob);
-    } else if (m.shape === 'mage') {
-      // Staff
-      this.playerGfx.fillStyle(0x806020, 1);
-      this.playerGfx.fillRect(sx-2, sy-36+bob, 3, 30);
-      // Orb
-      this.playerGfx.fillStyle(col, 1);
-      this.playerGfx.fillCircle(sx-1, sy-38+bob, 7);
-      this.playerGfx.fillStyle(0xffffff, 0.5);
-      this.playerGfx.fillCircle(sx-3, sy-41+bob, 2.5);
-    } else if (m.shape === 'archer') {
-      this.playerGfx.lineStyle(2, 0xdddddd, 1);
-      this.playerGfx.beginPath();
-      this.playerGfx.arc(sx-14, sy-6+bob, 16, Math.PI*0.22, Math.PI*1.78);
-      this.playerGfx.strokePath();
-      this.playerGfx.lineStyle(1, 0xaaaaaa, 0.7);
-      this.playerGfx.lineBetween(sx-14, sy-22+bob, sx-14, sy+10+bob);
-      this.playerGfx.fillStyle(0xdddddd, 1);
-      this.playerGfx.fillRect(sx-15, sy-22+bob, 2, 32);
+    if (id === 'yunyi') {
+      // golden armor + 金箍棒
+      const gc = 0xf0a010;
+      // legs
+      g.fillStyle(0x7a4010, 1); g.fillRect(sx-10,sy+8+bob,9,16); g.fillRect(sx+1,sy+8+bob,9,16);
+      // armor body
+      g.fillStyle(gc, 1);
+      g.fillTriangle(sx-13,sy+8+bob, sx+13,sy+8+bob, sx-10,sy-10+bob);
+      g.fillTriangle(sx-10,sy-10+bob, sx+13,sy+8+bob, sx+10,sy-10+bob);
+      // armor highlight
+      g.fillStyle(0xffe870, 0.4); g.fillTriangle(sx-4,sy+4+bob, sx+4,sy+4+bob, sx,sy-8+bob);
+      // red belt
+      g.fillStyle(0xc83010, 1); g.fillRect(sx-13,sy+5+bob,26,4);
+      // sleeves
+      g.fillStyle(gc, 1); g.fillRect(sx-23,sy-8+bob,14,8); g.fillRect(sx+9,sy-8+bob,14,8);
+      // hands
+      g.fillStyle(0xd4a060, 1); g.fillCircle(sx-17,sy-4+bob,4); g.fillCircle(sx+17,sy-4+bob,4);
+      // collar
+      g.fillStyle(0xffe060, 0.5); g.fillRect(sx-2,sy-10+bob,4,12);
+      // head
+      g.fillStyle(0xd4a060, 1); g.fillCircle(sx,sy-22+bob,11);
+      // 金箍 headband
+      g.fillStyle(0xffd700, 1); g.fillRect(sx-12,sy-24+bob,24,5);
+      g.lineStyle(1,0xd4a010,0.8); g.strokeRect(sx-12,sy-24+bob,24,5);
+      // hair
+      g.fillStyle(0x201000, 1); g.fillCircle(sx,sy-34+bob,6); g.fillRect(sx-7,sy-34+bob,14,5);
+      // eyes
+      g.fillStyle(0x0c0808, 1); g.fillCircle(sx-4,sy-22+bob,2.2); g.fillCircle(sx+4,sy-22+bob,2.2);
+      g.fillStyle(0xffffff, 1); g.fillCircle(sx-5,sy-23+bob,0.9); g.fillCircle(sx+3,sy-23+bob,0.9);
+      // 金箍棒
+      g.lineStyle(3.5,0xc84010,1); g.lineBetween(sx+16,sy-36+bob,sx+16,sy+24+bob);
+      g.fillStyle(0xffd700,1); g.fillRect(sx+11,sy-36+bob,10,5); g.fillRect(sx+11,sy-2+bob,10,5); g.fillRect(sx+11,sy+20+bob,10,5);
+    } else if (id === 'linger') {
+      // elder mage, green robes, white beard
+      const rc = 0x508840;
+      g.fillStyle(rc, 0.7); g.fillRect(sx-10,sy+8+bob,9,16); g.fillRect(sx+1,sy+8+bob,9,16);
+      g.fillStyle(rc, 1);
+      g.fillTriangle(sx-13,sy+8+bob, sx+13,sy+8+bob, sx-11,sy-10+bob);
+      g.fillTriangle(sx-11,sy-10+bob, sx+13,sy+8+bob, sx+11,sy-10+bob);
+      g.fillStyle(0x80c860, 0.3); g.fillTriangle(sx-4,sy+4+bob, sx+4,sy+4+bob, sx,sy-8+bob);
+      g.fillStyle(0x2a6040, 1); g.fillRect(sx-13,sy+5+bob,26,4);
+      g.fillStyle(rc, 1); g.fillRect(sx-23,sy-8+bob,14,8); g.fillRect(sx+9,sy-8+bob,14,8);
+      g.fillStyle(0xd4b888, 1); g.fillCircle(sx-17,sy-4+bob,4); g.fillCircle(sx+17,sy-4+bob,4);
+      g.fillStyle(0xd4b888, 1); g.fillCircle(sx,sy-22+bob,11);
+      g.fillStyle(0xf0ece8, 0.95); g.fillTriangle(sx-7,sy-16+bob, sx+7,sy-16+bob, sx,sy-1+bob);
+      g.fillStyle(0xf0ece8, 1); g.fillCircle(sx,sy-34+bob,6); g.fillRect(sx-7,sy-34+bob,14,5);
+      g.fillStyle(0x2a6040, 1); g.fillRect(sx-4,sy-22+bob,8,4);
+      g.fillStyle(0x0c0c0c, 1); g.fillRect(sx-6,sy-23+bob,4,2); g.fillRect(sx+2,sy-23+bob,4,2);
+      g.fillStyle(0xffffff, 1); g.fillCircle(sx-5,sy-23+bob,0.9); g.fillCircle(sx+3,sy-23+bob,0.9);
+      // nature staff
+      g.lineStyle(3,0x5a3810,1); g.lineBetween(sx-18,sy-38+bob,sx-18,sy+24+bob);
+      g.lineStyle(2,0x7a5020,0.7); g.lineBetween(sx-22,sy-16+bob,sx-14,sy-24+bob);
+      g.fillStyle(0x40a030,1); g.fillCircle(sx-18,sy-40+bob,8);
+      g.fillStyle(0x80e060,0.6); g.fillCircle(sx-21,sy-43+bob,4);
+      g.fillStyle(0x40a030,0.2); g.fillCircle(sx-18,sy-40+bob,14);
+    } else {
+      // yuehua — celestial archer, light blue
+      const cc = 0x60c8ff;
+      g.fillStyle(cc, 0.7); g.fillRect(sx-10,sy+8+bob,9,16); g.fillRect(sx+1,sy+8+bob,9,16);
+      g.fillStyle(cc, 1);
+      g.fillTriangle(sx-13,sy+8+bob, sx+13,sy+8+bob, sx-10,sy-10+bob);
+      g.fillTriangle(sx-10,sy-10+bob, sx+13,sy+8+bob, sx+10,sy-10+bob);
+      g.fillStyle(0xffffff, 0.12); g.fillTriangle(sx-4,sy+4+bob, sx+4,sy+4+bob, sx,sy-8+bob);
+      g.fillStyle(0x48c890, 1); g.fillRect(sx-13,sy+5+bob,26,4);
+      g.fillStyle(cc, 1); g.fillRect(sx-23,sy-8+bob,14,8); g.fillRect(sx+9,sy-8+bob,14,8);
+      g.fillStyle(0xd4c0a8, 1); g.fillCircle(sx-17,sy-4+bob,4); g.fillCircle(sx+17,sy-4+bob,4);
+      g.fillStyle(0xd4c0a8, 1); g.fillCircle(sx,sy-22+bob,11);
+      g.fillStyle(0xffffff, 0.18); g.fillCircle(sx-3,sy-26+bob,5);
+      g.fillStyle(0x1c1000, 1); g.fillCircle(sx,sy-34+bob,6); g.fillRect(sx-7,sy-34+bob,14,5);
+      g.fillStyle(0xffd700,1); g.fillCircle(sx+7,sy-34+bob,5);
+      g.fillStyle(0xff80c0,0.9);
+      for (let a=0;a<5;a++){const r=a*Math.PI*2/5; g.fillCircle(sx+7+Math.cos(r)*4,sy-34+bob+Math.sin(r)*4,2.5);}
+      g.fillStyle(0x0c0808, 1); g.fillCircle(sx-4,sy-22+bob,2); g.fillCircle(sx+4,sy-22+bob,2);
+      g.fillStyle(0xffffff, 1); g.fillCircle(sx-5,sy-23+bob,0.9); g.fillCircle(sx+3,sy-23+bob,0.9);
+      // bow
+      g.lineStyle(2.5,0x9a6830,1);
+      g.beginPath(); g.arc(sx-18,sy-6+bob,18,Math.PI*0.2,Math.PI*1.8); g.strokePath();
+      g.lineStyle(1,0xd8c8a0,0.8); g.lineBetween(sx-18,sy-22+bob,sx-18,sy+10+bob);
+      g.lineStyle(1.5,0x9a7030,1); g.lineBetween(sx-6,sy-8+bob,sx-28,sy-8+bob);
+      g.fillStyle(0xc0c8d8,1); g.fillTriangle(sx-28,sy-12+bob,sx-34,sy-8+bob,sx-28,sy-4+bob);
     }
 
-    // Direction indicator
-    this.playerGfx.lineStyle(2, 0xffffff, 0.28);
-    this.playerGfx.strokeCircle(sx, sy-19+bob, 14);
-
-    // Move camera reference point to player center
-    this.playerGfx.setPosition(0, 0);
+    g.lineStyle(1.5,0xffffff,0.2);
+    g.strokeCircle(sx,sy-22+bob,15);
+    g.setPosition(0,0);
     this._refreshMinimap();
   }
 

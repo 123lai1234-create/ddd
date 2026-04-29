@@ -224,93 +224,377 @@ class BattleScene extends Phaser.Scene {
   _drawEnemy(g, e) {
     g.clear();
     if (e.dead) return;
-    const sz = e.sz || 28, col = e.color || 0x884422;
-    const cy = -sz*0.85, hy = -sz*1.8, hr = sz*0.62;
-
-    g.fillStyle(0x000000, 0.28); g.fillEllipse(0, 3, sz*2.4, sz*0.3);
-    g.fillStyle(col, 1);         g.fillEllipse(0, cy, sz*2.0, sz*1.4);
-    g.fillStyle(0xffffff, 0.07); g.fillEllipse(-sz*0.15, cy-sz*0.18, sz*0.9, sz*0.5);
-    g.lineStyle(1, 0x000000, 0.35); g.strokeEllipse(0, cy, sz*2.0, sz*1.4);
-
-    g.fillStyle(col, 1);         g.fillCircle(0, hy, hr);
-    g.fillStyle(0xffffff, 0.06); g.fillCircle(-hr*0.3, hy-hr*0.3, hr*0.45);
-    g.lineStyle(1, 0x000000, 0.35); g.strokeCircle(0, hy, hr);
-
-    if (!e.boss) {
-      g.fillStyle(0x604820, 1);
-      g.fillTriangle(-sz*0.27, hy-hr*0.82, -sz*0.52, hy-hr*1.55, -sz*0.02, hy-hr*0.72);
-      g.fillTriangle( sz*0.27, hy-hr*0.82,  sz*0.52, hy-hr*1.55,  sz*0.02, hy-hr*0.72);
-    }
-
-    const er = sz*0.11;
-    g.fillStyle(0xff0000, 0.28); g.fillCircle(-sz*0.24, hy-sz*0.06, er*2.0); g.fillCircle(sz*0.24, hy-sz*0.06, er*2.0);
-    g.fillStyle(0xff2020, 1);    g.fillCircle(-sz*0.24, hy-sz*0.06, er);     g.fillCircle(sz*0.24, hy-sz*0.06, er);
-    g.fillStyle(0x080000, 1);    g.fillCircle(-sz*0.22, hy-sz*0.05, er*0.5); g.fillCircle(sz*0.26, hy-sz*0.05, er*0.5);
-    g.fillStyle(0xffffff, 1);    g.fillCircle(-sz*0.28, hy-sz*0.08, er*0.28);g.fillCircle(sz*0.20, hy-sz*0.08, er*0.28);
-
-    g.fillStyle(0x180000, 1); g.fillEllipse(0, hy+sz*0.28, sz*0.55, sz*0.2);
-    g.fillStyle(0xeeeeee, 1);
-    g.fillTriangle(-sz*0.16, hy+sz*0.20, -sz*0.06, hy+sz*0.38,  sz*0.04, hy+sz*0.20);
-    g.fillTriangle( sz*0.05, hy+sz*0.20,  sz*0.15, hy+sz*0.38,  sz*0.25, hy+sz*0.20);
-
-    g.fillStyle(col, 1);
-    g.fillEllipse(-sz*1.1, cy+sz*0.08, sz*0.55, sz*0.75);
-    g.fillEllipse( sz*1.1, cy+sz*0.08, sz*0.55, sz*0.75);
-    const cly = cy + sz*0.42;
-    g.fillStyle(0x604820, 1);
-    g.fillTriangle(-sz*1.28, cly-sz*0.05, -sz*1.08, cly+sz*0.22, -sz*0.88, cly-sz*0.05);
-    g.fillTriangle( sz*0.88, cly-sz*0.05,  sz*1.08, cly+sz*0.22,  sz*1.28, cly-sz*0.05);
-
-    if (e.boss) {
+    const sz = e.sz || 28;
+    // shadow
+    g.fillStyle(0x000000, 0.28); g.fillEllipse(0, 4, sz*2.2, sz*0.28);
+    const id = e.id;
+    if (id === 'wolf') {
+      // 黑熊精 — stocky dark bear
+      const c = 0x1e1208;
+      g.fillStyle(c, 1); g.fillEllipse(0, -sz*0.7, sz*2.1, sz*1.55);
+      g.fillStyle(0x3a2010, 1); g.fillEllipse(0, -sz*0.55, sz*1.4, sz*0.7); // belly
+      g.fillStyle(c, 1); g.fillCircle(0, -sz*1.82, sz*0.68);
+      // round ears
+      g.fillStyle(c, 1); g.fillCircle(-sz*0.52, -sz*2.28, sz*0.32); g.fillCircle(sz*0.52, -sz*2.28, sz*0.32);
+      g.fillStyle(0x7a3828, 1); g.fillCircle(-sz*0.52, -sz*2.28, sz*0.16); g.fillCircle(sz*0.52, -sz*2.28, sz*0.16);
+      // snout
+      g.fillStyle(0x3a2010, 1); g.fillEllipse(0, -sz*1.58, sz*0.7, sz*0.38);
+      g.fillStyle(0x080000, 1); g.fillCircle(-sz*0.12, -sz*1.62, sz*0.1); g.fillCircle(sz*0.12, -sz*1.62, sz*0.1);
+      // red eyes
+      g.fillStyle(0xff2020, 1); g.fillCircle(-sz*0.28, -sz*1.92, sz*0.13); g.fillCircle(sz*0.28, -sz*1.92, sz*0.13);
+      g.fillStyle(0x100000, 1); g.fillCircle(-sz*0.26, -sz*1.90, sz*0.07); g.fillCircle(sz*0.30, -sz*1.90, sz*0.07);
+      // claws
+      g.fillStyle(c, 1); g.fillEllipse(-sz*1.15, -sz*0.55, sz*0.52, sz*0.8);
+      g.fillEllipse( sz*1.15, -sz*0.55, sz*0.52, sz*0.8);
+      g.fillStyle(0xe8e0c0, 1);
+      for (let i=-1;i<=1;i++) {
+        g.fillTriangle((-sz*1.15)+i*sz*0.14, -sz*0.12, (-sz*1.15)+i*sz*0.14+sz*0.09, -sz*0.12, (-sz*1.15)+i*sz*0.07, sz*0.08);
+        g.fillTriangle((sz*1.15)+i*sz*0.14, -sz*0.12, (sz*1.15)+i*sz*0.14+sz*0.09, -sz*0.12, (sz*1.15)+i*sz*0.07, sz*0.08);
+      }
+    } else if (id === 'bandit') {
+      // 山賊頭 — armored human with helmet
+      const skin = 0xc8906c, armor = 0x4a3820;
+      g.fillStyle(armor, 1); g.fillRect(-sz*0.75, -sz*1.55, sz*1.5, sz*1.6); // torso armor
+      g.fillStyle(0x6a5030, 1); g.fillRect(-sz*0.85, -sz*0.85, sz*1.7, sz*0.18); // belt
+      // arms
+      g.fillStyle(armor, 1); g.fillRect(-sz*1.12, -sz*1.45, sz*0.42, sz*1.1);
+      g.fillRect(sz*0.7, -sz*1.45, sz*0.42, sz*1.1);
+      // legs
+      g.fillStyle(0x2a1e10, 1); g.fillRect(-sz*0.62, -sz*0.15, sz*0.54, sz*0.5);
+      g.fillRect(sz*0.08, -sz*0.15, sz*0.54, sz*0.5);
+      // head + helmet
+      g.fillStyle(skin, 1); g.fillCircle(0, -sz*1.98, sz*0.58);
+      g.fillStyle(armor, 1);
+      g.fillRect(-sz*0.62, -sz*2.52, sz*1.24, sz*0.6); // helmet top
+      g.fillRect(-sz*0.68, -sz*2.52, sz*0.22, sz*0.72); // left cheek guard
+      g.fillRect(sz*0.46, -sz*2.52, sz*0.22, sz*0.72); // right cheek guard
+      g.fillRect(-sz*0.18, -sz*2.06, sz*0.36, sz*0.52); // nose guard
+      // eyes visible through visor gap
+      g.fillStyle(0xff3030, 0.9); g.fillCircle(-sz*0.25, -sz*2.0, sz*0.1); g.fillCircle(sz*0.25, -sz*2.0, sz*0.1);
+      // sword held forward
+      g.lineStyle(3, 0xc8c0a0, 1); g.lineBetween(sz*0.92, -sz*1.55, sz*0.92, sz*0.28);
+      g.lineStyle(2, 0xffd700, 1); g.lineBetween(sz*0.58, -sz*1.2, sz*1.28, -sz*1.2);
+      g.fillStyle(0x8a6020, 1); g.fillRect(sz*0.82, sz*0.18, sz*0.2, sz*0.2);
+    } else if (id === 'skeleton') {
+      // 冥兵 — skeleton warrior
+      const bone = 0xd8d0b8, dark = 0x101018;
+      // pelvis + spine
+      g.fillStyle(bone, 1); g.fillEllipse(0, -sz*0.4, sz*1.1, sz*0.6);
+      g.fillRect(-sz*0.12, -sz*1.55, sz*0.24, sz*1.2);
+      // ribcage
+      g.fillStyle(bone, 1); g.fillEllipse(0, -sz*1.12, sz*1.2, sz*0.95);
+      g.fillStyle(dark, 1); // rib gaps
+      for (let i=0;i<3;i++) { const ry=-sz*0.82-i*sz*0.22; g.fillRect(-sz*0.42, ry, sz*0.84, sz*0.1); }
+      // arms (thin bones)
+      g.fillStyle(bone, 1); g.fillRect(-sz*1.1, -sz*1.52, sz*0.28, sz*0.95);
+      g.fillRect(sz*0.82, -sz*1.52, sz*0.28, sz*0.95);
+      // skull
+      g.fillStyle(bone, 1); g.fillCircle(0, -sz*1.98, sz*0.62);
+      g.fillStyle(bone, 1); g.fillEllipse(0, -sz*1.62, sz*0.72, sz*0.34); // jaw
+      // hollow eye sockets
+      g.fillStyle(dark, 1); g.fillEllipse(-sz*0.25, -sz*2.05, sz*0.28, sz*0.22);
+      g.fillEllipse(sz*0.25, -sz*2.05, sz*0.28, sz*0.22);
+      g.fillStyle(0x4040ff, 0.7); g.fillCircle(-sz*0.25, -sz*2.05, sz*0.1); g.fillCircle(sz*0.25, -sz*2.05, sz*0.1); // blue glow
+      // nose cavity
+      g.fillStyle(dark, 1); g.fillTriangle(-sz*0.08, -sz*1.84, sz*0.08, -sz*1.84, 0, -sz*1.72);
+      // teeth
+      g.fillStyle(bone, 1); g.fillEllipse(0, -sz*1.58, sz*0.52, sz*0.2);
+      for (let i=-2;i<=2;i++) g.fillRect(i*sz*0.1-sz*0.04, -sz*1.68, sz*0.07, sz*0.12);
+      // spear
+      g.lineStyle(2.5, 0x8a6820, 1); g.lineBetween(-sz*1.08, -sz*1.52, -sz*1.08, sz*0.3);
+      g.fillStyle(0xc0c8d8, 1); g.fillTriangle(-sz*1.2, -sz*2.18, -sz*0.96, -sz*2.18, -sz*1.08, -sz*1.52);
+    } else if (id === 'snake') {
+      // 蛇蟒精 — serpent demon
+      const sc = 0x205010, sc2 = 0x408028, belly = 0xc8d890;
+      // coiled tail body
+      g.fillStyle(sc, 1); g.fillEllipse(sz*0.3, sz*0.1, sz*2.2, sz*0.55);
+      g.fillEllipse(-sz*0.5, -sz*0.28, sz*1.6, sz*0.48);
+      g.fillStyle(sc2, 1); g.fillEllipse(sz*0.2, sz*0.05, sz*1.8, sz*0.35);
+      // torso (humanoid upper)
+      g.fillStyle(sc, 1); g.fillEllipse(0, -sz*1.0, sz*1.3, sz*1.1);
+      g.fillStyle(belly, 1); g.fillEllipse(0, -sz*0.98, sz*0.7, sz*0.75);
+      // cobra hood
+      g.fillStyle(sc, 1); g.fillEllipse(0, -sz*1.82, sz*1.8, sz*1.0);
+      g.fillStyle(0x102008, 1); g.fillEllipse(0, -sz*1.78, sz*0.2, sz*0.82); // hood spine
+      // head
+      g.fillStyle(sc, 1); g.fillEllipse(0, -sz*2.12, sz*0.88, sz*0.68);
+      // slit pupils
+      g.fillStyle(0xffe840, 1); g.fillEllipse(-sz*0.22, -sz*2.18, sz*0.22, sz*0.16);
+      g.fillEllipse(sz*0.22, -sz*2.18, sz*0.22, sz*0.16);
+      g.fillStyle(0x080000, 1); g.fillRect(-sz*0.24, -sz*2.22, sz*0.04, sz*0.12);
+      g.fillRect(sz*0.20, -sz*2.22, sz*0.04, sz*0.12);
+      // forked tongue
+      g.lineStyle(1.5, 0xff2020, 1); g.lineBetween(0, -sz*1.82, 0, -sz*1.65);
+      g.lineBetween(0, -sz*1.65, -sz*0.1, -sz*1.52);
+      g.lineBetween(0, -sz*1.65, sz*0.1, -sz*1.52);
+      // scale pattern
+      g.lineStyle(0.8, 0x102008, 0.5);
+      g.strokeEllipse(sz*0.3, sz*0.1, sz*2.2, sz*0.55);
+      g.strokeEllipse(-sz*0.5, -sz*0.28, sz*1.6, sz*0.48);
+    } else if (id === 'ghost') {
+      // 怨靈 — wispy ghost
+      const gc = 0x7040c0, gl = 0xa070f0;
+      // wispy tail
+      g.fillStyle(gc, 0.55); g.fillEllipse(sz*0.2, sz*0.18, sz*0.9, sz*0.62);
+      g.fillEllipse(-sz*0.4, sz*0.06, sz*0.7, sz*0.45);
+      g.fillEllipse(sz*0.55, -sz*0.05, sz*0.55, sz*0.38);
+      // body (translucent bell)
+      g.fillStyle(gc, 0.72); g.fillEllipse(0, -sz*1.0, sz*1.55, sz*1.65);
+      g.fillStyle(gl, 0.22); g.fillEllipse(-sz*0.28, -sz*1.35, sz*0.7, sz*0.55);
+      // head
+      g.fillStyle(gc, 0.88); g.fillCircle(0, -sz*2.0, sz*0.68);
+      g.fillStyle(gl, 0.18); g.fillCircle(-sz*0.22, -sz*2.22, sz*0.3);
+      // hollow glowing eyes
+      g.fillStyle(0x000000, 0.9); g.fillEllipse(-sz*0.26, -sz*2.05, sz*0.32, sz*0.22);
+      g.fillEllipse(sz*0.26, -sz*2.05, sz*0.32, sz*0.22);
+      g.fillStyle(0xe0c0ff, 0.9); g.fillEllipse(-sz*0.26, -sz*2.05, sz*0.18, sz*0.13);
+      g.fillEllipse(sz*0.26, -sz*2.05, sz*0.18, sz*0.13);
+      // chains
+      g.lineStyle(1.5, 0x8060a0, 0.8);
+      g.lineBetween(-sz*0.55, -sz*0.5, -sz*0.82, sz*0.22);
+      g.lineBetween(sz*0.55, -sz*0.5, sz*0.82, sz*0.22);
+      g.lineStyle(1, 0x8060a0, 0.5);
+      g.lineBetween(-sz*0.68, -sz*0.18, -sz*0.42, sz*0.04);
+      g.lineBetween(sz*0.42, -sz*0.18, sz*0.68, sz*0.04);
+      // open mouth wail
+      g.fillStyle(0x1a0030, 0.9); g.fillEllipse(0, -sz*1.78, sz*0.38, sz*0.28);
+    } else if (id === 'demon') {
+      // 妖兵 — horned armored demon
+      const dc = 0x8a0808, da = 0x2a1010, skin = 0x802828;
+      g.fillStyle(da, 1); g.fillRect(-sz*0.75, -sz*1.55, sz*1.5, sz*1.6);
+      g.fillStyle(0x4a1818, 1); g.fillRect(-sz*0.9, -sz*0.82, sz*1.8, sz*0.2); // waist plate
+      // arms
+      g.fillStyle(da, 1); g.fillRect(-sz*1.1, -sz*1.45, sz*0.42, sz*1.1);
+      g.fillRect(sz*0.68, -sz*1.45, sz*0.42, sz*1.1);
+      // legs
+      g.fillStyle(da, 1); g.fillRect(-sz*0.62, -sz*0.12, sz*0.54, sz*0.5);
+      g.fillRect(sz*0.08, -sz*0.12, sz*0.54, sz*0.5);
+      // head
+      g.fillStyle(skin, 1); g.fillCircle(0, -sz*2.0, sz*0.62);
+      g.fillStyle(da, 1); g.fillRect(-sz*0.65, -sz*2.55, sz*1.3, sz*0.6);
+      // horns
+      g.fillStyle(0x1a0808, 1);
+      g.fillTriangle(-sz*0.42, -sz*2.52, -sz*0.6, -sz*3.08, -sz*0.18, -sz*2.52);
+      g.fillTriangle(sz*0.42, -sz*2.52, sz*0.6, -sz*3.08, sz*0.18, -sz*2.52);
+      g.fillStyle(dc, 0.5);
+      g.fillTriangle(-sz*0.42, -sz*2.52, -sz*0.52, -sz*2.92, -sz*0.28, -sz*2.52);
+      g.fillTriangle(sz*0.28, -sz*2.52, sz*0.52, -sz*2.92, sz*0.42, -sz*2.52);
+      // glowing eyes
+      g.fillStyle(0xff6020, 1); g.fillCircle(-sz*0.26, -sz*2.05, sz*0.14); g.fillCircle(sz*0.26, -sz*2.05, sz*0.14);
+      g.fillStyle(0x100000, 1); g.fillCircle(-sz*0.24, -sz*2.04, sz*0.07); g.fillCircle(sz*0.28, -sz*2.04, sz*0.07);
+      // battle axe
+      g.lineStyle(3, 0x5a3010, 1); g.lineBetween(sz*0.92, -sz*1.55, sz*0.92, sz*0.18);
+      g.fillStyle(0x9ab0c0, 1);
+      g.fillTriangle(sz*0.62, -sz*1.98, sz*1.32, -sz*1.72, sz*0.62, -sz*1.45);
+      g.fillTriangle(sz*0.62, -sz*1.85, sz*0.32, -sz*1.72, sz*0.62, -sz*1.58);
+      g.lineStyle(1, 0xc8d8e0, 0.6); g.strokeCircle(sz*0.62, -sz*1.72, sz*0.52);
+    } else if (id === 'dragon') {
+      // 虎先鋒 — tiger spirit
+      const tc = 0xe06010, ts = 0xf8a030;
+      g.fillStyle(tc, 1); g.fillEllipse(0, -sz*0.75, sz*2.0, sz*1.55);
+      g.fillStyle(ts, 1); g.fillEllipse(0, -sz*0.7, sz*1.4, sz*0.85); // lighter belly
+      // stripes
+      g.fillStyle(0x180800, 0.65);
+      g.fillRect(-sz*0.8, -sz*1.42, sz*0.18, sz*1.05);
+      g.fillRect(-sz*0.38, -sz*1.48, sz*0.15, sz*1.12);
+      g.fillRect(sz*0.2, -sz*1.48, sz*0.15, sz*1.12);
+      g.fillRect(sz*0.6, -sz*1.42, sz*0.18, sz*1.05);
+      // arms with claws
+      g.fillStyle(tc, 1); g.fillEllipse(-sz*1.15, -sz*0.55, sz*0.52, sz*0.88);
+      g.fillEllipse(sz*1.15, -sz*0.55, sz*0.52, sz*0.88);
+      g.fillStyle(0xe8e0c0, 1);
+      for (let i=-1;i<=1;i++) {
+        g.fillTriangle((-sz*1.15)+i*sz*0.13, -sz*0.1, (-sz*1.15)+i*sz*0.13+sz*0.1, -sz*0.1, (-sz*1.15)+i*sz*0.06, sz*0.1);
+        g.fillTriangle((sz*1.15)+i*sz*0.13, -sz*0.1, (sz*1.15)+i*sz*0.13+sz*0.1, -sz*0.1, (sz*1.15)+i*sz*0.06, sz*0.1);
+      }
+      // tiger head
+      g.fillStyle(tc, 1); g.fillCircle(0, -sz*1.88, sz*0.72);
+      g.fillStyle(ts, 1); g.fillEllipse(0, -sz*1.72, sz*0.7, sz*0.4); // muzzle
+      // ears
+      g.fillStyle(tc, 1); g.fillTriangle(-sz*0.45, -sz*2.42, -sz*0.7, -sz*2.95, -sz*0.1, -sz*2.42);
+      g.fillTriangle(sz*0.45, -sz*2.42, sz*0.7, -sz*2.95, sz*0.1, -sz*2.42);
+      g.fillStyle(0xff8080, 0.7); g.fillTriangle(-sz*0.45, -sz*2.42, -sz*0.62, -sz*2.78, -sz*0.2, -sz*2.42);
+      g.fillTriangle(sz*0.2, -sz*2.42, sz*0.62, -sz*2.78, sz*0.45, -sz*2.42);
+      // face stripes
+      g.fillStyle(0x180800, 0.6);
+      g.fillRect(-sz*0.55, -sz*2.1, sz*0.16, sz*0.45);
+      g.fillRect(sz*0.38, -sz*2.1, sz*0.16, sz*0.45);
+      g.fillRect(-sz*0.18, -sz*1.62, sz*0.36, sz*0.1);
+      // fierce eyes
+      g.fillStyle(0xffe040, 1); g.fillCircle(-sz*0.28, -sz*1.95, sz*0.15); g.fillCircle(sz*0.28, -sz*1.95, sz*0.15);
+      g.fillStyle(0x080000, 1); g.fillCircle(-sz*0.26, -sz*1.94, sz*0.08); g.fillCircle(sz*0.30, -sz*1.94, sz*0.08);
+      // fangs
+      g.fillStyle(0xf0e8d0, 1);
+      g.fillTriangle(-sz*0.22, -sz*1.58, -sz*0.1, -sz*1.58, -sz*0.16, -sz*1.42);
+      g.fillTriangle(sz*0.1, -sz*1.58, sz*0.22, -sz*1.58, sz*0.16, -sz*1.42);
+    } else {
+      // boss — 黃眉大王 fat corrupt monk
+      const bc = 0xc09010, br = 0xe8a820, bskin = 0xd4b87a;
+      // robes (wide fat body)
+      g.fillStyle(bc, 1); g.fillEllipse(0, -sz*0.65, sz*2.8, sz*2.0);
+      g.fillStyle(0xa07808, 1); g.fillEllipse(0, -sz*0.58, sz*2.0, sz*1.1); // belly highlight
+      // belt sash
+      g.fillStyle(0xc03010, 1); g.fillRect(-sz*1.18, -sz*0.28, sz*2.36, sz*0.28);
+      // arms
+      g.fillStyle(bc, 1); g.fillEllipse(-sz*1.42, -sz*0.85, sz*0.7, sz*1.1);
+      g.fillEllipse(sz*1.42, -sz*0.85, sz*0.7, sz*1.1);
+      g.fillStyle(bskin, 1); g.fillCircle(-sz*1.5, -sz*0.28, sz*0.28);
+      g.fillCircle(sz*1.5, -sz*0.28, sz*0.28);
+      // fat head
+      g.fillStyle(bskin, 1); g.fillCircle(0, -sz*2.08, sz*0.88);
+      // huge yellow eyebrows (signature feature)
+      g.fillStyle(0xf8d040, 1); g.fillEllipse(-sz*0.32, -sz*2.38, sz*0.72, sz*0.22);
+      g.fillEllipse(sz*0.32, -sz*2.38, sz*0.72, sz*0.22);
+      g.fillStyle(0xd4a000, 0.5); g.fillRect(-sz*0.66, -sz*2.48, sz*0.62, sz*0.1);
+      g.fillRect(sz*0.04, -sz*2.48, sz*0.62, sz*0.1);
+      // eyes — squinting corrupt look
+      g.fillStyle(0x200800, 1); g.fillRect(-sz*0.42, -sz*2.18, sz*0.28, sz*0.12);
+      g.fillRect(sz*0.14, -sz*2.18, sz*0.28, sz*0.12);
+      g.fillStyle(0xff4020, 0.9); g.fillCircle(-sz*0.28, -sz*2.15, sz*0.08); g.fillCircle(sz*0.28, -sz*2.15, sz*0.08);
+      // smug grin
+      g.fillStyle(0x201000, 1); g.fillEllipse(0, -sz*1.88, sz*0.52, sz*0.18);
+      g.fillStyle(0xf8f0e0, 1); g.fillRect(-sz*0.18, -sz*1.94, sz*0.12, sz*0.1); g.fillRect(sz*0.06, -sz*1.94, sz*0.12, sz*0.1);
+      // bald head shine
+      g.fillStyle(0xffffff, 0.12); g.fillEllipse(-sz*0.3, -sz*2.38, sz*0.55, sz*0.28);
+      // golden crown / headdress
       g.fillStyle(0xffd700, 1);
-      g.fillRect(-sz*0.56, hy-hr*1.08, sz*1.12, sz*0.22);
-      g.fillTriangle(-sz*0.5, hy-hr*1.08, -sz*0.3, hy-hr*1.72, -sz*0.1, hy-hr*1.08);
-      g.fillTriangle(-sz*0.1, hy-hr*1.08,  sz*0.10,hy-hr*1.95,  sz*0.3, hy-hr*1.08);
-      g.fillTriangle( sz*0.1, hy-hr*1.08,  sz*0.34,hy-hr*1.68,  sz*0.56,hy-hr*1.08);
-      g.fillStyle(0xff4040, 1); g.fillCircle(0, hy-hr*1.2, sz*0.12);
+      g.fillRect(-sz*0.88, -sz*2.88, sz*1.76, sz*0.3);
+      g.fillTriangle(-sz*0.78, -sz*2.88, -sz*0.6, -sz*3.42, -sz*0.42, -sz*2.88);
+      g.fillTriangle(-sz*0.35, -sz*2.88, -sz*0.12, -sz*3.68, sz*0.12, -sz*2.88);
+      g.fillTriangle(sz*0.42, -sz*2.88, sz*0.6, -sz*3.42, sz*0.78, -sz*2.88);
+      g.fillStyle(0xff4040, 1); g.fillCircle(-sz*0.6, -sz*3.08, sz*0.14);
+      g.fillStyle(0x40ff80, 1); g.fillCircle(0, -sz*3.28, sz*0.16);
+      g.fillStyle(0xff4040, 1); g.fillCircle(sz*0.6, -sz*3.08, sz*0.14);
+      // ornate staff
+      g.lineStyle(3, 0x8a6820, 1); g.lineBetween(-sz*1.62, -sz*1.42, -sz*1.62, sz*0.22);
+      g.fillStyle(0xffd700, 1); g.fillCircle(-sz*1.62, -sz*1.72, sz*0.32);
+      g.fillStyle(0xff8020, 1); g.fillCircle(-sz*1.62, -sz*1.72, sz*0.2);
+      g.lineStyle(1.5, 0xffd700, 0.8);
+      g.lineBetween(-sz*1.82, -sz*1.72, -sz*1.42, -sz*1.72);
+      g.lineBetween(-sz*1.62, -sz*1.92, -sz*1.62, -sz*1.52);
     }
   }
 
   _drawHero(g, m) {
     g.clear();
-    const s = 14, col = m.dead ? 0x282828 : (m.color || 0x4a9eff);
+    const s = 14;
     g.fillStyle(0x000000, 0.22); g.fillEllipse(0, 2, s*2.2, s*0.45);
     if (m.dead) {
       g.fillStyle(0x282828, 0.75); g.fillEllipse(-s*0.4, -s*0.35, s*2.6, s*0.85);
       g.lineStyle(1, 0xff4040, 0.75); g.lineBetween(-11,-8,11,8); g.lineBetween(11,-8,-11,8);
       return;
     }
-    g.fillStyle(col, 0.65); g.fillRect(-s*0.5,-s*0.85,s*0.42,s*0.85); g.fillRect(s*0.08,-s*0.85,s*0.42,s*0.85);
-    g.fillStyle(col, 1);
-    g.fillTriangle(-s*0.65,-s*0.85, s*0.65,-s*0.85,  s*0.48,-s*2.25);
-    g.fillTriangle(-s*0.65,-s*0.85,-s*0.48,-s*2.25,  s*0.48,-s*2.25);
-    g.fillStyle(0xffffff, 0.1); g.fillTriangle(-s*0.22,-s*0.95, s*0.22,-s*0.95, 0,-s*2.1);
-    g.lineStyle(1.5, 0xffd700, 0.4);
-    g.lineBetween(-s*0.48,-s*2.25, 0,-s*2.42); g.lineBetween(s*0.48,-s*2.25, 0,-s*2.42);
-    g.fillStyle(0x906030, 1); g.fillRect(-s*0.65,-s*1.05,s*1.3,s*0.2);
-    g.fillStyle(col, 0.8); g.fillRect(-s*0.95,-s*2.2,s*0.33,s*0.85); g.fillRect(s*0.62,-s*2.2,s*0.33,s*0.85);
-    g.fillStyle(0xd4a078, 1);
-    g.fillRect(-s*0.18,-s*2.38,s*0.36,s*0.18);
-    g.fillCircle(0,-s*2.82,s*0.65);
-    g.lineStyle(0.8, 0xa07050, 0.4); g.strokeCircle(0,-s*2.82,s*0.65);
-    g.fillStyle(0x1c0c08, 1);
-    g.fillCircle(0,-s*3.15,s*0.65); g.fillRect(-s*0.66,-s*3.0,s*1.32,s*0.32);
-    g.fillRect(-s*0.70,-s*2.98,s*0.19,s*0.48); g.fillRect(s*0.51,-s*2.98,s*0.19,s*0.48);
-    g.fillStyle(0x0c0808, 1); g.fillCircle(-s*0.26,-s*2.80,s*0.12); g.fillCircle(s*0.26,-s*2.80,s*0.12);
-    g.fillStyle(0xffffff, 1); g.fillCircle(-s*0.29,-s*2.83,s*0.05); g.fillCircle(s*0.23,-s*2.83,s*0.05);
-    if (m.shape === 'sword') {
-      g.lineStyle(2.5, 0xd8d8d8, 1); g.lineBetween(s*0.98,-s*3.25, s*0.98,-s*0.95);
-      g.lineStyle(2, 0xffd700, 1);   g.lineBetween(s*0.64,-s*2.65, s*1.32,-s*2.65);
-      g.fillStyle(0xa08030, 1);      g.fillRect(s*0.88,-s*1.08,s*0.2,s*0.2);
-    } else if (m.shape === 'mage') {
-      g.lineStyle(2, 0x806020, 1); g.lineBetween(-s*1.18,0,-s*1.18,-s*3.4);
-      g.fillStyle(col, 0.85); g.fillCircle(-s*1.18,-s*3.62,s*0.38);
-      g.fillStyle(0xffffff, 0.5);  g.fillCircle(-s*1.28,-s*3.78,s*0.18);
-      g.fillStyle(col, 0.18); g.fillCircle(-s*1.18,-s*3.62,s*0.72);
-    } else if (m.shape === 'archer') {
-      g.lineStyle(2, 0x9a6830, 1);
-      g.beginPath(); g.arc(s*1.22,-s*1.8,s*0.98,-Math.PI*0.55,Math.PI*0.55); g.strokePath();
-      g.lineStyle(1, 0xd8c8a0, 0.75); g.lineBetween(s*1.22,-s*2.6,s*1.22,-s*1.0);
+    const id = m.id;
+    if (id === 'yunyi') {
+      // 雲逸 — golden monkey warrior, 金箍棒 staff
+      const gc = 0xf0a010, ga = 0xe8c050, skin = 0xd4a060;
+      // legs
+      g.fillStyle(0x8a5020, 1); g.fillRect(-s*0.5,-s*0.85,s*0.42,s*0.88); g.fillRect(s*0.08,-s*0.85,s*0.42,s*0.88);
+      // golden armor body
+      g.fillStyle(gc, 1);
+      g.fillTriangle(-s*0.68,-s*0.85, s*0.68,-s*0.85, s*0.52,-s*2.3);
+      g.fillTriangle(-s*0.68,-s*0.85,-s*0.52,-s*2.3, s*0.52,-s*2.3);
+      // armor highlight
+      g.fillStyle(ga, 0.55); g.fillTriangle(-s*0.2,-s*1.0, s*0.2,-s*1.0, 0,-s*2.1);
+      // armor trim
+      g.lineStyle(1.5, 0xffd700, 0.8); g.lineBetween(-s*0.52,-s*2.3, 0,-s*2.48); g.lineBetween(s*0.52,-s*2.3, 0,-s*2.48);
+      // waist belt
+      g.fillStyle(0xc84010, 1); g.fillRect(-s*0.68,-s*1.05,s*1.36,s*0.22);
+      // arms (wide sleeves)
+      g.fillStyle(gc, 0.9); g.fillRect(-s*1.0,-s*2.25,s*0.36,s*0.88); g.fillRect(s*0.64,-s*2.25,s*0.36,s*0.88);
+      // hands
+      g.fillStyle(skin, 1); g.fillCircle(-s*0.82,-s*1.38,s*0.25); g.fillCircle(s*0.82,-s*1.38,s*0.25);
+      // face
+      g.fillStyle(skin, 1); g.fillRect(-s*0.18,-s*2.45,s*0.36,s*0.18);
+      g.fillCircle(0,-s*2.88,s*0.66);
+      // 金箍 headband (signature)
+      g.fillStyle(0xffd700, 1); g.fillRect(-s*0.75,-s*2.88,s*1.5,s*0.18);
+      g.lineStyle(1, 0xffa020, 0.8); g.strokeRect(-s*0.75,-s*2.88,s*1.5,s*0.18);
+      // hair topknot
+      g.fillStyle(0x201000, 1); g.fillCircle(0,-s*3.25,s*0.58); g.fillRect(-s*0.6,-s*3.15,s*1.2,s*0.3);
+      g.fillRect(-s*0.62,-s*3.08,s*0.18,s*0.45); g.fillRect(s*0.44,-s*3.08,s*0.18,s*0.45);
+      // monkey face features (slightly broader nose, alert eyes)
+      g.fillStyle(0x0c0808, 1); g.fillCircle(-s*0.28,-s*2.86,s*0.13); g.fillCircle(s*0.28,-s*2.86,s*0.13);
+      g.fillStyle(0xffffff, 1); g.fillCircle(-s*0.31,-s*2.89,s*0.05); g.fillCircle(s*0.25,-s*2.89,s*0.05);
+      // 金箍棒 — extending staff with golden rings
+      g.lineStyle(3, 0xc84010, 1); g.lineBetween(s*1.08,-s*3.5, s*1.08,-s*0.88);
+      g.fillStyle(0xffd700, 1);
+      g.fillRect(s*0.88,-s*3.5,s*0.4,s*0.22); g.fillRect(s*0.88,-s*2.2,s*0.4,s*0.22); g.fillRect(s*0.88,-s*0.98,s*0.4,s*0.22);
+    } else if (id === 'linger') {
+      // 靈兒 — elder mage, white beard, nature staff
+      const rc = 0x508840, skin = 0xd4b888;
+      // legs (long green robe)
+      g.fillStyle(rc, 0.7); g.fillRect(-s*0.5,-s*0.85,s*0.42,s*0.88); g.fillRect(s*0.08,-s*0.85,s*0.42,s*0.88);
+      // robe body
+      g.fillStyle(rc, 1);
+      g.fillTriangle(-s*0.7,-s*0.85, s*0.7,-s*0.85, s*0.55,-s*2.35);
+      g.fillTriangle(-s*0.7,-s*0.85,-s*0.55,-s*2.35, s*0.55,-s*2.35);
+      // robe pattern (lighter center stripe)
+      g.fillStyle(0x80c860, 0.35); g.fillTriangle(-s*0.18,-s*1.0, s*0.18,-s*1.0, 0,-s*2.2);
+      // wide sleeves
+      g.fillStyle(rc, 1); g.fillRect(-s*1.1,-s*2.28,s*0.42,s*1.0); g.fillRect(s*0.68,-s*2.28,s*0.42,s*1.0);
+      // belt
+      g.fillStyle(0x2a6040, 1); g.fillRect(-s*0.7,-s*1.05,s*1.4,s*0.22);
+      // hands
+      g.fillStyle(skin, 1); g.fillCircle(-s*0.88,-s*1.42,s*0.22); g.fillCircle(s*0.88,-s*1.42,s*0.22);
+      // face (elderly)
+      g.fillStyle(skin, 1); g.fillRect(-s*0.18,-s*2.45,s*0.36,s*0.18);
+      g.fillCircle(0,-s*2.88,s*0.64);
+      // long white beard
+      g.fillStyle(0xf0ece8, 0.95); g.fillTriangle(-s*0.38,-s*2.38, s*0.38,-s*2.38, 0,-s*1.62);
+      g.fillStyle(0xe8e4e0, 0.7); g.fillTriangle(-s*0.2,-s*2.38, s*0.2,-s*2.38, 0,-s*1.72);
+      // white hair + topknot (elder)
+      g.fillStyle(0xf0ece8, 1); g.fillCircle(0,-s*3.2,s*0.6); g.fillRect(-s*0.62,-s*3.1,s*1.24,s*0.3);
+      g.fillRect(-s*0.64,-s*3.05,s*0.18,s*0.42); g.fillRect(s*0.46,-s*3.05,s*0.18,s*0.42);
+      // eyes (wise, slightly squinting)
+      g.fillStyle(0x0c0c0c, 1); g.fillRect(-s*0.38,-s*2.85,s*0.24,s*0.1); g.fillRect(s*0.14,-s*2.85,s*0.24,s*0.1);
+      g.fillStyle(0xffffff, 1); g.fillCircle(-s*0.29,-s*2.88,s*0.05); g.fillCircle(s*0.23,-s*2.88,s*0.05);
+      // nature staff (gnarled wood + green orb)
+      g.lineStyle(2.5, 0x5a3810, 1); g.lineBetween(-s*1.18,0,-s*1.18,-s*3.45);
+      g.lineStyle(1.5, 0x7a5020, 0.7); g.lineBetween(-s*1.28,-s*1.8,-s*1.08,-s*2.2); g.lineBetween(-s*1.08,-s*2.6,-s*1.28,-s*2.9);
+      g.fillStyle(0x40a030, 1); g.fillCircle(-s*1.18,-s*3.68,s*0.4);
+      g.fillStyle(0x80e060, 0.6); g.fillCircle(-s*1.28,-s*3.82,s*0.2);
+      g.fillStyle(0x40a030, 0.2); g.fillCircle(-s*1.18,-s*3.68,s*0.72);
+      // leaf accents
+      g.fillStyle(0x60c040, 0.7); g.fillEllipse(-s*1.52,-s*3.68,s*0.38,s*0.18); g.fillEllipse(-s*0.84,-s*3.72,s*0.35,s*0.16);
+    } else {
+      // yuehua — 月華, celestial archer
+      const cc = 0x60c8ff, cl = 0x90d8ff, skin = 0xd4c0a8;
+      // legs (flowing celestial robe)
+      g.fillStyle(cc, 0.65); g.fillRect(-s*0.5,-s*0.85,s*0.42,s*0.88); g.fillRect(s*0.08,-s*0.85,s*0.42,s*0.88);
+      // robe body
+      g.fillStyle(cc, 1);
+      g.fillTriangle(-s*0.65,-s*0.85, s*0.65,-s*0.85, s*0.5,-s*2.32);
+      g.fillTriangle(-s*0.65,-s*0.85,-s*0.5,-s*2.32, s*0.5,-s*2.32);
+      // light celestial shimmer
+      g.fillStyle(0xffffff, 0.12); g.fillTriangle(-s*0.2,-s*1.0, s*0.2,-s*1.0, 0,-s*2.15);
+      g.lineStyle(1, 0xffffff, 0.35); g.lineBetween(-s*0.5,-s*2.32, 0,-s*2.46); g.lineBetween(s*0.5,-s*2.32, 0,-s*2.46);
+      // jade belt
+      g.fillStyle(0x48c890, 1); g.fillRect(-s*0.65,-s*1.02,s*1.3,s*0.22);
+      // arms
+      g.fillStyle(cc, 0.9); g.fillRect(-s*0.98,-s*2.22,s*0.36,s*0.9); g.fillRect(s*0.62,-s*2.22,s*0.36,s*0.9);
+      // hands
+      g.fillStyle(skin, 1); g.fillCircle(-s*0.8,-s*1.38,s*0.22); g.fillCircle(s*0.8,-s*1.38,s*0.22);
+      // face
+      g.fillStyle(skin, 1); g.fillRect(-s*0.18,-s*2.45,s*0.36,s*0.18);
+      g.fillCircle(0,-s*2.88,s*0.64);
+      // hair ornament (hairpin + flower)
+      g.fillStyle(0x1c1000, 1); g.fillCircle(0,-s*3.22,s*0.6); g.fillRect(-s*0.62,-s*3.12,s*1.24,s*0.3);
+      g.fillRect(-s*0.64,-s*3.07,s*0.18,s*0.44); g.fillRect(s*0.46,-s*3.07,s*0.18,s*0.44);
+      g.fillStyle(0xffd700, 1); g.fillCircle(s*0.55,-s*3.22,s*0.28); // hair pin orb
+      g.fillStyle(0xff80c0, 0.9); // flower petals
+      for (let a=0;a<5;a++) { const r=a*Math.PI*2/5; g.fillCircle(s*0.55+Math.cos(r)*s*0.22,-s*3.22+Math.sin(r)*s*0.22,s*0.14); }
+      // eyes (delicate)
+      g.fillStyle(0x0c0808, 1); g.fillCircle(-s*0.28,-s*2.86,s*0.12); g.fillCircle(s*0.28,-s*2.86,s*0.12);
+      g.fillStyle(0xffffff, 1); g.fillCircle(-s*0.31,-s*2.89,s*0.05); g.fillCircle(s*0.25,-s*2.89,s*0.05);
+      // celestial bow (crescent shape) with arrow nocked
+      g.lineStyle(2.5, 0x9a6830, 1);
+      g.beginPath(); g.arc(s*1.22,-s*1.85,s*1.05,-Math.PI*0.52,Math.PI*0.52); g.strokePath();
+      g.lineStyle(1, 0xd8c8a0, 0.8); g.lineBetween(s*1.22,-s*2.68,s*1.22,-s*1.02);
+      // nocked arrow
+      g.lineStyle(1.5, 0x9a7030, 1); g.lineBetween(s*0.52,-s*2.1, s*1.5,-s*2.1);
+      g.fillStyle(0xc0c8d8, 1); g.fillTriangle(s*1.5,-s*2.18, s*1.72,-s*2.1, s*1.5,-s*2.02);
+      g.fillStyle(0xd8c890, 0.8); g.fillTriangle(s*0.52,-s*2.18, s*0.38,-s*2.1, s*0.52,-s*2.02);
     }
   }
 
