@@ -93,7 +93,7 @@ class BattleScene extends Phaser.Scene {
         fontFamily:'"Noto Serif TC","SimSun",serif',
         color:'#c8a060', stroke:'#000', strokeThickness:2,
       }).setOrigin(0.5,0.5).setAlpha(0);
-      this.enemySprites.push({ g, hp, lbl, x:ex, y:this.groundY, e });
+      this.enemySprites.push({ g, hp, lbl, x:ex, y:this.groundY, e, statusTxt:null });
     });
 
     // ── Hero sprites (off-screen left for intro) ──────────
@@ -154,6 +154,19 @@ class BattleScene extends Phaser.Scene {
       this._addLog(this.enemies.length > 1
         ? `遭遇了 ${this.enemies.map(e=>e.name).join('、')}！`
         : `遭遇了 ${this.enemies[0].name}！`);
+      if (GS.battleData?.isBoss) {
+        this._shake(0.012, 500);
+        const bt = this.add.text(this.W/2, this.H*0.32, this.enemies[0].name, {
+          fontSize: Math.floor(this.H*0.065)+'px',
+          fontFamily:'"Noto Serif TC","SimSun",serif',
+          color:'#ff4040', stroke:'#600000', strokeThickness:6,
+        }).setOrigin(0.5).setDepth(50).setAlpha(0).setScale(1.6);
+        this.tweens.add({ targets:bt, alpha:1, scaleX:1, scaleY:1, duration:450, ease:'Back.easeOut',
+          onComplete:()=>this.time.delayedCall(900, ()=>{
+            this.tweens.add({ targets:bt, alpha:0, y:bt.y-18, duration:380, onComplete:()=>bt.destroy() });
+          }),
+        });
+      }
     });
   }
 
@@ -418,10 +431,18 @@ class BattleScene extends Phaser.Scene {
   _refreshEnemyHp(idx) {
     const sp=this.enemySprites[idx]; if (!sp) return;
     sp.hp.destroy();
+    if (sp.statusTxt) { sp.statusTxt.destroy(); sp.statusTxt=null; }
     const e=sp.e, sz=e.sz||28;
     sp.hp=mkBar(this,sp.x-sz,this.groundY+6,sz*2,7,e.hp,e.maxHp,0xe04040);
     this._drawEnemy(sp.g, e);
     if (e.dead) { sp.g.setAlpha(0); sp.lbl.setAlpha(0.3); sp.g.setPosition(sp.x,sp.y); }
+    const STATUS_LBL = { poison:'毒', atkUp:'強', slow:'緩', atkDown:'弱' };
+    const badges = [...new Set(e.status)].filter(s=>STATUS_LBL[s]);
+    if (badges.length>0 && !e.dead) {
+      sp.statusTxt = this.add.text(sp.x, this.groundY+16, badges.map(s=>STATUS_LBL[s]).join(' '), {
+        fontSize:'11px', fontFamily:'serif', color:'#e090ff', stroke:'#000', strokeThickness:2,
+      }).setOrigin(0.5,0).setDepth(8);
+    }
   }
 
   _heroAct(cmd, skillId=null, itemId=null, targetIdx=null) {
@@ -457,6 +478,8 @@ class BattleScene extends Phaser.Scene {
         this._shake(crit?0.010:0.005);
         const ex=enemySp?enemySp.g.x:sp.x, ey=(enemySp?enemySp.g.y:this.groundY)-(tgt.sz||28)*1.4;
         if (crit) {
+          const cf=this.add.graphics(); cf.fillStyle(0xffd700,0); cf.fillRect(0,0,this.W,this.H); cf.setDepth(40);
+          this.tweens.add({targets:cf,alpha:0.18,duration:75,yoyo:true,repeat:1,onComplete:()=>cf.destroy()});
           this._floatText(ex,ey,`CRIT! ${dmg}`,'#ffd700',24);
           this._spawnParticles(ex,ey+20,0xffd700,12,55);
         } else {
@@ -639,15 +662,17 @@ class BattleScene extends Phaser.Scene {
     GS.gold+=goldGain;
     const drops=[];
     this.enemies.forEach(e=>{(e.drops||[]).forEach(d=>{if(Math.random()<d.r){GS.addItem(d.id);drops.push(ITEMS[d.id]?.name||d.id);}});});
+    GS.party.forEach((gm,i)=>{if(this.party[i])Object.assign(gm,this.party[i]);});
     const levelUps=[];
-    GS.party.forEach(m=>{
+    GS.party.forEach((m,mi)=>{
       if(m.dead)return; m.exp+=expGain;
       while(m.exp>=expForLevel(m.lv)){
         GS.levelUp(m); levelUps.push(m.name); Sound?.play('levelUp');
         if(m.lv>=5)Achieve?.unlock('level_5'); if(m.lv>=10)Achieve?.unlock('level_10');
+        const sp=this.partySprites[mi];
+        if(sp){ this._floatText(sp.g.x,sp.g.y-85,`Lv.${m.lv} UP!`,'#ffd700',22); this._spawnParticles(sp.g.x,sp.g.y-45,0xffd700,14,50); }
       }
     });
-    GS.party.forEach((gm,i)=>{if(this.party[i])Object.assign(gm,this.party[i]);});
     let msg=`戰鬥勝利！獲得 ${expGain} EXP、${goldGain} 靈石。`;
     if(drops.length)   msg+=` 獲得：${drops.join('、')}。`;
     if(levelUps.length)msg+=` ${levelUps.join('、')} 升級！`;
