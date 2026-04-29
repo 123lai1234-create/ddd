@@ -168,6 +168,17 @@ class WorldScene extends Phaser.Scene {
       return { npc, g, lbl };
     });
 
+    // Chests
+    if (!GS.flags.chests) GS.flags.chests = {};
+    this.chestObjects = (map.chests||[]).map(chest => {
+      const sx = chest.x * TILE_SZ + TILE_SZ/2;
+      const sy = chest.y * TILE_SZ + TILE_SZ/2;
+      const g = this.add.graphics().setDepth(4);
+      const opened = !!GS.flags.chests[chest.id];
+      this._drawChest(g, sx, sy, opened);
+      return { chest, g, opened };
+    });
+
     // Player
     this.playerGfx = this.add.graphics().setDepth(6);
     this._drawPlayer();
@@ -245,6 +256,48 @@ class WorldScene extends Phaser.Scene {
     // Glow indicator
     g.lineStyle(1, color, 0.5);
     g.strokeCircle(x, y-18, 12);
+  }
+
+  _drawChest(g, x, y, opened) {
+    g.clear();
+    const w = 22, h = 16;
+    // Shadow
+    g.fillStyle(0x000000, 0.22); g.fillEllipse(x, y+h/2+4, w+6, 5);
+    // Chest body
+    g.fillStyle(opened ? 0x4a3010 : 0x7a5218, 1);
+    g.fillRect(x-w/2, y-h/2, w, h);
+    // Lid
+    g.fillStyle(opened ? 0x362208 : 0x9a6a24, 1);
+    g.fillRect(x-w/2, y-h/2-5, w, 7);
+    // Metal bands
+    g.fillStyle(opened ? 0x3a3020 : 0xc8a040, 1);
+    g.fillRect(x-w/2, y-3, w, 3);
+    g.fillRect(x-2, y-h/2-5, 4, h+5);
+    // Lock
+    g.fillStyle(opened ? 0x2a2010 : 0xffe080, 1);
+    g.fillRect(x-3, y-5, 6, 5);
+    // Shine (closed only)
+    if (!opened) {
+      g.fillStyle(0xffffff, 0.15);
+      g.fillRect(x-w/2+2, y-h/2-4, w-4, 3);
+    }
+    // Open lid gap
+    if (opened) {
+      g.fillStyle(0x000000, 0.7);
+      g.fillRect(x-w/2+1, y-h/2-4, w-2, 4);
+    }
+  }
+
+  _openChest(chest) {
+    if (!GS.flags.chests) GS.flags.chests = {};
+    GS.flags.chests[chest.id] = true;
+    const rewards = [];
+    if (chest.gold) { GS.gold += chest.gold; rewards.push(`${chest.gold} 靈石`); }
+    if (chest.item) { GS.addItem(chest.item); rewards.push(ITEMS[chest.item]?.name || chest.item); }
+    Sound?.play('shopBuy');
+    const co = this.chestObjects?.find(c => c.chest === chest);
+    if (co) { co.opened = true; this._drawChest(co.g, chest.x*TILE_SZ+TILE_SZ/2, chest.y*TILE_SZ+TILE_SZ/2, true); }
+    this._showDialog(['打開了寶箱！', `獲得：${rewards.join('、')}！`], () => this._refreshHud());
   }
 
   _drawPlayer() {
@@ -413,7 +466,9 @@ class WorldScene extends Phaser.Scene {
     if (!enc.rate || !enc.enemies.length) return;
     GS.encStep++;
     if (GS.encStep < 5) return;
-    if (Math.random() < enc.rate) {
+    const avgLv = Math.floor(GS.party.reduce((s,m)=>s+(m.lv||1),0) / Math.max(1,GS.party.length));
+    const scaledRate = enc.rate * Math.max(0.3, 1 - (avgLv - 1) * 0.07);
+    if (Math.random() < scaledRate) {
       GS.encStep = 0;
       const pool = enc.enemies.filter(e => !GS.defeated[e]);
       if (!pool.length) return;
@@ -444,6 +499,11 @@ class WorldScene extends Phaser.Scene {
 
     const npc = map.npcs?.find(n => n.x===tx && n.y===ty);
     if (npc) { this._talkNpc(npc); return; }
+
+    const chest = map.chests?.find(c => c.x===tx && c.y===ty && !GS.flags.chests?.[c.id]);
+    if (chest) { this._openChest(chest); return; }
+    const openedChest = map.chests?.find(c => c.x===tx && c.y===ty && GS.flags.chests?.[c.id]);
+    if (openedChest) { this._showDialog(['寶箱已被打開。']); }
   }
 
   _doExit(exit) {

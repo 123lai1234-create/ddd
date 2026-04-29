@@ -107,6 +107,10 @@ const MAPS = {
       { x:9, y:0,  to:'forest',  toX:9,  toY:13, msg:'前往幽林森林' },
       { x:18,y:7,  to:'castle',  toX:1,  toY:7,  msg:'前往千魔城' },
     ],
+    chests:[
+      { x:2, y:2, id:'v1', gold:80 },
+      { x:17,y:2, id:'v2', item:'herb' },
+    ],
     enc:{ rate:0, enemies:[] },
     w:20, h:15,
     tiles:[
@@ -140,6 +144,11 @@ const MAPS = {
       { x:9,y:14, to:'village', toX:9, toY:1, msg:'返回青雲村' },
       { x:0, y:7, to:'cave',    toX:18, toY:7, msg:'進入深淵秘窟' },
     ],
+    chests:[
+      { x:2, y:2, id:'f1', item:'elixir' },
+      { x:17,y:2, id:'f2', gold:120 },
+      { x:10,y:11,id:'f3', item:'ironSword' },
+    ],
     enc:{ rate:0.15, enemies:['wolf','bandit','snake','ghost'] },
     w:20, h:15,
     tiles:[
@@ -170,6 +179,10 @@ const MAPS = {
     name:'千魔城', music:'castle',
     exits:[
       { x:1,y:7,  to:'village', toX:17, toY:7, msg:'返回青雲村' },
+    ],
+    chests:[
+      { x:18,y:1, id:'c1', gold:200 },
+      { x:18,y:13,id:'c2', item:'redPotion' },
     ],
     enc:{ rate:0.2, enemies:['skeleton','demon','dragon'] },
     w:20, h:15,
@@ -203,6 +216,10 @@ const MAPS = {
       { x:19,y:7, to:'forest',  toX:1,  toY:7, msg:'返回幽林森林' },
       { x:9, y:14,to:'shrine',  toX:9,  toY:1, msg:'進入上古神殿' },
     ],
+    chests:[
+      { x:5, y:11,id:'ca1', item:'fullElixir' },
+      { x:14,y:3, id:'ca2', gold:300 },
+    ],
     enc:{ rate:0.25, enemies:['ghost','demon','dragon'] },
     w:20, h:15,
     tiles:[
@@ -233,6 +250,11 @@ const MAPS = {
     name:'上古神殿', music:'shrine',
     exits:[
       { x:9, y:0, to:'cave', toX:9, toY:13, msg:'返回深淵秘窟' },
+    ],
+    chests:[
+      { x:2, y:12,id:'sh1', item:'revive' },
+      { x:17,y:12,id:'sh2', item:'ancientJade' },
+      { x:9, y:7, id:'sh3', gold:500 },
     ],
     enc:{ rate:0.22, enemies:['demon','dragon','skeleton'] },
     w:20, h:15,
