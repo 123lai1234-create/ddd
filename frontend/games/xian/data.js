@@ -198,7 +198,7 @@ const MAPS = {
     startX:2, startY:7,
   },
   cave: {
-    name:'深淵秘窟', music:'castle',
+    name:'深淵秘窟', music:'dungeon',
     exits:[
       { x:19,y:7, to:'forest',  toX:1,  toY:7, msg:'返回幽林森林' },
       { x:9, y:14,to:'shrine',  toX:9,  toY:1, msg:'進入上古神殿' },

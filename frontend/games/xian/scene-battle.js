@@ -505,11 +505,12 @@ class BattleScene extends Phaser.Scene {
       if (sk.type==='atk') {
         Sound?.play('magic');
         const targets=sk.tgt==='all'?this.enemies.filter(e=>!e.dead):[this.enemies[targetIdx]];
+        const hitCount=sk.hits||1;
         const dmgs=targets.map(tgt=>{
-          const dmg=this._calcDmg(st.atk,tgt.def,sk.pow,sk.pierce||0);
-          tgt.hp=Math.max(0,tgt.hp-dmg); if(tgt.hp===0)tgt.dead=true;
+          let total=0;
+          for(let h=0;h<hitCount;h++){const d=this._calcDmg(st.atk,tgt.def,sk.pow,sk.pierce||0);tgt.hp=Math.max(0,tgt.hp-d);if(tgt.hp===0)tgt.dead=true;total+=d;}
           if(sk.debuff)Object.entries(sk.debuff).forEach(([k,v])=>{for(let j=0;j<v;j++)tgt.status.push(k);});
-          return dmg;
+          return total;
         });
         targets.forEach((tgt,ti)=>{
           const eIdx=this.enemies.indexOf(tgt), sp=this.enemySprites[eIdx];
@@ -517,7 +518,8 @@ class BattleScene extends Phaser.Scene {
           if(sp){
             const ex=sp.g.x,ey=sp.g.y-(tgt.sz||28)*1.4;
             const _ec=ELEM_CLR[sk.elem||'none']||0x8888ff, _et=ELEM_TXT[sk.elem||'none']||'#aaaaff';
-            this._floatText(ex,ey,String(dmgs[ti]),_et,20);
+            const hitSuffix=hitCount>1?` ×${hitCount}`:'';
+            this._floatText(ex,ey,String(dmgs[ti])+hitSuffix,_et,20);
             this._spawnParticles(ex,ey+20,_ec,10,45);
           }
         });
@@ -631,7 +633,11 @@ class BattleScene extends Phaser.Scene {
         const dmg=this._calcDmg(eAtk,def,act.pow||1);
         tgt.hp=Math.max(0,tgt.hp-dmg); if(tgt.hp===0)tgt.dead=true;
         if(act.debuff)Object.entries(act.debuff).forEach(([k,v])=>{for(let i=0;i<v;i++)tgt.status.push(k);});
-        if(act.type==='drain')e.hp=Math.min(e.maxHp,e.hp+Math.floor(dmg*0.5));
+        if(act.type==='drain'){
+          const heal=Math.floor(dmg*0.5); e.hp=Math.min(e.maxHp,e.hp+heal);
+          const ei=this.enemies.indexOf(e); this._refreshEnemyHp(ei);
+          if(enemySp) this._floatText(enemySp.g.x,enemySp.g.y-50,`+${heal}`,'#88ff88',16);
+        }
         Sound?.play('damage'); this._shake(0.004,240);
         if (heroSp) {
           const hx=heroSp.g.x, hy=heroSp.g.y-30;
