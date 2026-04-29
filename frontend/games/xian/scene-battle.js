@@ -1,4 +1,7 @@
 'use strict';
+// Element colour/text maps for skill visuals
+const ELEM_CLR = { fire:0xff5020, ice:0x40c8ff, thunder:0xffee20, wind:0x40e880, light:0x88ffcc, none:0x8888ff };
+const ELEM_TXT = { fire:'#ff8040', ice:'#60ccff', thunder:'#ffe040', wind:'#80ee80', light:'#ccffcc', none:'#aaaaff' };
 // ══════════════════════════════════════════════════════════
 class BattleScene extends Phaser.Scene {
   constructor() { super('BattleScene'); }
@@ -488,7 +491,12 @@ class BattleScene extends Phaser.Scene {
         targets.forEach((tgt,ti)=>{
           const eIdx=this.enemies.indexOf(tgt), sp=this.enemySprites[eIdx];
           this._refreshEnemyHp(eIdx); this._flashEnemy(eIdx);
-          if(sp){const ex=sp.g.x,ey=sp.g.y-(tgt.sz||28)*1.4; this._floatText(ex,ey,String(dmgs[ti]),'#88aaff',20); this._spawnParticles(ex,ey+20,0x8888ff,8,40);}
+          if(sp){
+            const ex=sp.g.x,ey=sp.g.y-(tgt.sz||28)*1.4;
+            const _ec=ELEM_CLR[sk.elem||'none']||0x8888ff, _et=ELEM_TXT[sk.elem||'none']||'#aaaaff';
+            this._floatText(ex,ey,String(dmgs[ti]),_et,20);
+            this._spawnParticles(ex,ey+20,_ec,10,45);
+          }
         });
         this._shake(0.006);
         msg=`${actor.name} 施展 ${sk.name}，造成 ${dmgs.join('/')} 點傷害！`;
@@ -502,6 +510,8 @@ class BattleScene extends Phaser.Scene {
           if(sp){this._floatText(sp.g.x,sp.g.y-50,`+${h}`,'#88ff88',20);this._spawnParticles(sp.g.x,sp.g.y-20,0x44ff88,8,35);}
           return h;
         });
+        GS.flags._healCount=(GS.flags._healCount||0)+targets.length;
+        if(GS.flags._healCount>=10)Achieve?.unlock('healer');
         msg=`${actor.name} 施展 ${sk.name}，恢復 ${heals.join('/')} 點生命值！`;
       }
       this._rebuildStatus(); this._addLog(msg);
@@ -552,6 +562,22 @@ class BattleScene extends Phaser.Scene {
             m.status=m.status.filter(s=>s!=='defend'&&s!=='atkUp'&&s!=='poison');
             for(let i=0;i<pc-1;i++) m.status.push('poison');
           });
+          // Enemy status tick (poison + clear buffs)
+          this.enemies.forEach((e,ei)=>{
+            if(e.dead)return;
+            if(e.status.includes('poison')){
+              const dmg=Math.max(1,Math.floor(e.maxHp*0.05));
+              e.hp=Math.max(0,e.hp-dmg); if(e.hp===0)e.dead=true;
+              this._addLog(`${e.name} 中毒，損失 ${dmg} HP！`);
+              Sound?.play('poison');
+              const sp=this.enemySprites[ei];
+              if(sp){this._floatText(sp.g.x,sp.g.y-50,String(dmg),'#c050e8',16);this._spawnParticles(sp.g.x,sp.g.y-20,0x9030c0,4,22);}
+              this._refreshEnemyHp(ei);
+            }
+            const epc=e.status.filter(s=>s==='poison').length;
+            e.status=e.status.filter(s=>s!=='atkUp'&&s!=='poison');
+            for(let i=0;i<epc-1;i++)e.status.push('poison');
+          });
           this._rebuildStatus();
           if(this.party.every(m=>m.dead)){this._loseBattle();return;}
           this.phase='playerTurn'; this.actorIdx=0;
@@ -578,7 +604,8 @@ class BattleScene extends Phaser.Scene {
     if (act.type==='atk'||act.type==='drain') {
       this._animEnemyAttack(enemySp, heroSp, ()=>{
         let def=tgt.baseDef; if(tgt.status.includes('defend'))def=Math.floor(def*1.5);
-        const dmg=this._calcDmg(e.atk,def,act.pow||1);
+        let eAtk=e.atk; if(e.status.includes('atkUp'))eAtk=Math.floor(eAtk*1.5);
+        const dmg=this._calcDmg(eAtk,def,act.pow||1);
         tgt.hp=Math.max(0,tgt.hp-dmg); if(tgt.hp===0)tgt.dead=true;
         if(act.debuff)Object.entries(act.debuff).forEach(([k,v])=>{for(let i=0;i<v;i++)tgt.status.push(k);});
         if(act.type==='drain')e.hp=Math.min(e.maxHp,e.hp+Math.floor(dmg*0.5));
@@ -629,8 +656,19 @@ class BattleScene extends Phaser.Scene {
     Achieve?.unlock('first_blood');
     if(GS.gold>=100) Achieve?.unlock('gold_100');
     if(GS.gold>=1000)Achieve?.unlock('gold_1000');
-    if(GS.battleData?.isBoss){Achieve?.unlock('boss_slayer');this._submitLeaderboard();}
     if(this.party.some(m=>m.hp===1&&!m.dead))Achieve?.unlock('survivor');
+    // Track dragon kills (unlocks final boss NPC)
+    this.enemies.forEach(e=>{ if(e.id==='dragon')GS.flags.defeatedDragon=true; });
+    // Boss defeat handling
+    if(GS.battleData?.isBoss){
+      Achieve?.unlock('boss_slayer'); this._submitLeaderboard();
+      const bossEnemy=this.enemies[0];
+      GS.flags[`defeated_${bossEnemy.id}`]=true;
+      if(bossEnemy.id==='boss'){
+        GS.flags._pendingLines=['魔君已被消滅！天下太平了！','靈兒：邪氣消散，願天下安寧。','月華：大家辛苦了，回青雲村吧！'];
+        GS.flags._isFinalBoss=true;
+      }
+    }
 
     // Victory flash
     const flash=this.add.graphics(); flash.fillStyle(0xffffff,0); flash.fillRect(0,0,this.W,this.H); flash.setDepth(50);

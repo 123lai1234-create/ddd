@@ -180,6 +180,21 @@ class WorldScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, MAP_W, MAP_H + HUD_H);
     this.cameras.main.startFollow(this.playerGfx, true, 0.12, 0.12);
 
+    // Post-battle pending dialogue (e.g. after boss)
+    if (GS.flags._pendingLines) {
+      const lines = [...GS.flags._pendingLines];
+      const isFinal = !!GS.flags._isFinalBoss;
+      delete GS.flags._pendingLines; delete GS.flags._isFinalBoss;
+      this.cameras.main.fadeIn(400, 0, 0, 0);
+      this.time.delayedCall(600, () => this._showDialog(lines, () => {
+        if (isFinal) {
+          Sound?.stopBgm();
+          this.cameras.main.fadeOut(1200, 0, 0, 0);
+          this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('TitleScene'));
+        }
+      }));
+    }
+
     // Input
     this.keys = this.input.keyboard.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.UP,    w: Phaser.Input.Keyboard.KeyCodes.W,
