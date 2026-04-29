@@ -93,19 +93,19 @@ class TitleScene extends Phaser.Scene {
 
     // Title
     const titleY = H * 0.28;
-    this.add.text(W/2, titleY, '仙 俠 傳', {
+    this.add.text(W/2, titleY, '悟 空 傳', {
       fontSize: Math.min(88, W * 0.1) + 'px',
       fontFamily: '"Noto Serif TC","SimSun",serif',
-      color: '#e8c060',
+      color: '#f0a010',
       fontStyle: 'bold',
-      stroke: '#2a1400',
+      stroke: '#1a0800',
       strokeThickness: 8,
-      shadow: { offsetX:0, offsetY:0, color:'#e8c060', blur:40, fill:true },
+      shadow: { offsetX:0, offsetY:0, color:'#f0a010', blur:45, fill:true },
     }).setOrigin(0.5, 0.5);
 
-    this.add.text(W/2, titleY + 64, '— 回合制 仙劍風格 RPG —', {
+    this.add.text(W/2, titleY + 64, '— 天命之人的征途 —', {
       fontSize: '17px', fontFamily: '"Noto Serif TC","SimSun",serif',
-      color: '#9a7850', stroke:'#000', strokeThickness:2,
+      color: '#9a6030', stroke:'#000', strokeThickness:2,
     }).setOrigin(0.5, 0.5);
 
     // Divider
@@ -244,7 +244,7 @@ class AboutScene extends Phaser.Scene {
     mkText(this, W/2, py+40, '關　於', { size:24, color:'#e8c060', align:'center', bold:true });
 
     const lines = [
-      ['仙俠傳 — 回合制 RPG', '#e8c060', true],
+      ['悟空傳 — 天命之人的征途', '#f0a010', true],
       ['', '#f0e6c8', false],
       ['角色', '#e8c060', true],
       ['  雲逸：青雲劍客，劍術高手', '#f0e6c8', false],

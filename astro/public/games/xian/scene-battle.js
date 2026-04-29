@@ -26,7 +26,7 @@ class BattleScene extends Phaser.Scene {
 
     // ── Background ──────────────────────────────────────
     const bg = this.add.graphics();
-    bg.fillGradientStyle(0x0c0418, 0x100820, 0x040210, 0x060316, 1);
+    bg.fillGradientStyle(0x180808, 0x120410, 0x060202, 0x0a0208, 1);
     bg.fillRect(0, 0, W, H);
 
     // Moon + glow
@@ -254,10 +254,10 @@ class BattleScene extends Phaser.Scene {
       g.lineStyle(2, 0xffd700, 1);   g.lineBetween(s*0.64,-s*2.65, s*1.32,-s*2.65);
       g.fillStyle(0xa08030, 1);      g.fillRect(s*0.88,-s*1.08,s*0.2,s*0.2);
     } else if (m.shape === 'mage') {
-      g.lineStyle(2, 0xb09050, 1); g.lineBetween(-s*1.18,0,-s*1.18,-s*3.4);
-      g.fillStyle(0x7888ff, 0.85); g.fillCircle(-s*1.18,-s*3.62,s*0.38);
-      g.fillStyle(0xaabbff, 0.6);  g.fillCircle(-s*1.28,-s*3.78,s*0.18);
-      g.fillStyle(0x4455ff, 0.15); g.fillCircle(-s*1.18,-s*3.62,s*0.72);
+      g.lineStyle(2, 0x806020, 1); g.lineBetween(-s*1.18,0,-s*1.18,-s*3.4);
+      g.fillStyle(col, 0.85); g.fillCircle(-s*1.18,-s*3.62,s*0.38);
+      g.fillStyle(0xffffff, 0.5);  g.fillCircle(-s*1.28,-s*3.78,s*0.18);
+      g.fillStyle(col, 0.18); g.fillCircle(-s*1.18,-s*3.62,s*0.72);
     } else if (m.shape === 'archer') {
       g.lineStyle(2, 0x9a6830, 1);
       g.beginPath(); g.arc(s*1.22,-s*1.8,s*0.98,-Math.PI*0.55,Math.PI*0.55); g.strokePath();
@@ -730,7 +730,7 @@ class BattleScene extends Phaser.Scene {
       const bossEnemy=this.enemies[0];
       GS.flags[`defeated_${bossEnemy.id}`]=true;
       if(bossEnemy.id==='boss'){
-        GS.flags._pendingLines=['魔君已被消滅！天下太平了！','靈兒：邪氣消散，願天下安寧。','月華：大家辛苦了，回青雲村吧！'];
+        GS.flags._pendingLines=['黃眉大王已伏誅！天命得成！','土地：妖氣盡散，山河安寧。','楊嬋：天命之人，你做到了，回黑山村吧！'];
         GS.flags._isFinalBoss=true;
       }
     }
