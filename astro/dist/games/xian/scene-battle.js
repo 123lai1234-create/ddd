@@ -113,19 +113,26 @@ class BattleScene extends Phaser.Scene {
       this.partySprites.push({ g, x:hx, y:this.groundY, m });
     });
 
-    // ── Log strip ────────────────────────────────────────
+    // ── Log strip (2-line) ────────────────────────────────
     const logY = this.groundY + 34;
-    const logH = Math.max(32, Math.floor(H*0.065));
+    const logH = Math.max(52, Math.floor(H*0.1));
     const logBg = this.add.graphics();
     logBg.fillStyle(0x050410, 0.93); logBg.fillRect(0, logY, W, logH);
     logBg.lineStyle(1, 0x5a3e10, 0.8);
     logBg.lineBetween(0, logY, W, logY); logBg.lineBetween(0, logY+logH, W, logY+logH);
-    this.logText = this.add.text(14, logY+logH/2, '', {
-      fontSize: Math.max(12,Math.floor(H*0.023))+'px',
+    const logFs = Math.max(11,Math.floor(H*0.020));
+    this.logText = this.add.text(14, logY+5, '', {
+      fontSize: logFs+'px',
       fontFamily:'"Noto Serif TC","SimSun",serif',
       color:'#f0e6c8', stroke:'#000', strokeThickness:2,
       wordWrap:{ width: W-28 },
-    }).setOrigin(0,0.5).setDepth(5);
+    }).setOrigin(0,0).setDepth(5);
+    this.logText2 = this.add.text(14, logY+6+logFs, '', {
+      fontSize: Math.max(10,logFs-2)+'px',
+      fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#a09080', stroke:'#000', strokeThickness:1,
+      wordWrap:{ width: W-28 },
+    }).setOrigin(0,0).setDepth(5);
 
     // ── UI panels ────────────────────────────────────────
     this.uiY    = logY + logH + 2;
@@ -482,8 +489,9 @@ class BattleScene extends Phaser.Scene {
 
   _addLog(msg) {
     this.log.unshift(msg);
-    if (this.log.length > 2) this.log.pop();
+    if (this.log.length > 3) this.log.pop();
     this.logText.setText(this.log[0] || '');
+    if (this.logText2) this.logText2.setText(this.log[1] || '');
   }
 
   // ── Battle logic ──────────────────────────────────────

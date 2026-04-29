@@ -516,12 +516,24 @@ class WorldScene extends Phaser.Scene {
       if (hpBar.active) hpBar.destroy();
       if (mpBar.active) mpBar.destroy();
     });
-    // Rebuild bars
+    if (this._hudStatusObjs) this._hudStatusObjs.forEach(o=>{ if(o&&o.active) o.destroy(); });
+    this._hudStatusObjs = [];
     GS.party.forEach((m, i) => {
       const barX = 360 + i * 200;
       const barY = this.cameras.main.height - 52 + 12;
-      mkBar(this, barX, barY+14, 120, 8, m.hp, m.maxHp, 0xe05050).setScrollFactor(0).setDepth(11);
-      mkBar(this, barX, barY+26, 120, 6, m.mp, m.maxMp||1, 0x5080e8).setScrollFactor(0).setDepth(11);
+      const hpClr = m.dead ? 0x443838 : m.hp<=Math.floor(m.maxHp*0.25) ? 0xff6020 : 0xe05050;
+      this._hudStatusObjs.push(
+        mkBar(this, barX, barY+14, 120, 8, m.hp, m.maxHp, hpClr).setScrollFactor(0).setDepth(11),
+        mkBar(this, barX, barY+26, 120, 6, m.mp, m.maxMp||1, 0x5080e8).setScrollFactor(0).setDepth(11),
+      );
+      if (m.dead) {
+        const dt=this.add.text(barX+60,barY+20,'陣亡',{fontSize:'9px',fontFamily:'serif',color:'#886060',stroke:'#000',strokeThickness:1}).setScrollFactor(0).setDepth(12).setOrigin(0.5);
+        this._hudStatusObjs.push(dt);
+      } else if (m.status?.includes('poison')) {
+        const dg=this.add.graphics().setScrollFactor(0).setDepth(12);
+        dg.fillStyle(0xb040e0,0.9); dg.fillCircle(barX+130,barY+20,4);
+        this._hudStatusObjs.push(dg);
+      }
     });
   }
 
@@ -565,7 +577,20 @@ class WorldScene extends Phaser.Scene {
           status:[], dead:false });
       }
       GS.battleData = { enemies };
-      this.scene.start('BattleScene');
+      this.inDialog = true;
+      this.cameras.main.flash(100, 255, 30, 30, true);
+      this.cameras.main.shake(180, 0.006);
+      const W2=this.scale.width, H2=this.scale.height;
+      const et=this.add.text(W2/2, H2/2, '！', {
+        fontSize:Math.floor(H2*0.18)+'px', fontFamily:'serif',
+        color:'#ff2020', stroke:'#000', strokeThickness:8,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(28).setAlpha(0).setScale(0.4);
+      this.tweens.add({targets:et, alpha:1, scaleX:1.5, scaleY:1.5, duration:120, ease:'Back.easeOut',
+        onComplete:()=>this.time.delayedCall(180,()=>{
+          this.cameras.main.fadeOut(280,0,0,0);
+          this.cameras.main.once('camerafadeoutcomplete',()=>this.scene.start('BattleScene'));
+        })
+      });
     }
   }
 

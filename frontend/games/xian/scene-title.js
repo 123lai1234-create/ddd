@@ -106,6 +106,9 @@ class TitleScene extends Phaser.Scene {
       deco.lineBetween(0, i*H/6, W, i*H/6);
     }
 
+    // Wukong figure (right side, animated)
+    this.wukongGfx = this.add.graphics();
+
     // Title
     const titleY = H * 0.28;
     this.add.text(W/2, titleY, '悟 空 傳', {
@@ -207,6 +210,9 @@ class TitleScene extends Phaser.Scene {
       this.orbGfx.fillStyle(o.color, o.alpha);
       this.orbGfx.fillCircle(o.x, o.y, o.r);
     });
+    // Wukong figure
+    if (this.t % 2 === 0) this._drawWukong(this.t);
+
     // Golden sparks
     this.sparkGfx.clear();
     const H = this.scale.height, Ws = this.scale.width;
@@ -247,6 +253,63 @@ class TitleScene extends Phaser.Scene {
         document.getElementById('auth-open-btn')?.click();
       }
     }
+  }
+
+  _drawWukong(t) {
+    this.wukongGfx.clear();
+    const W = this.scale.width, H = this.scale.height;
+    const cx = W * 0.80, cy = H * 0.52;
+    const sc = Math.min(H * 0.26, 110);
+    const bob = Math.sin(t * 0.025) * 3;
+    const fy = cy + bob;
+    // Shadow
+    this.wukongGfx.fillStyle(0x000000, 0.12);
+    this.wukongGfx.fillEllipse(cx, fy + sc*0.54, sc*0.95, sc*0.1);
+    // Legs
+    this.wukongGfx.fillStyle(0xb06010, 0.9);
+    this.wukongGfx.fillRoundedRect(cx - sc*0.15, fy + sc*0.42, sc*0.12, sc*0.14, sc*0.03);
+    this.wukongGfx.fillRoundedRect(cx + sc*0.03, fy + sc*0.42, sc*0.12, sc*0.14, sc*0.03);
+    // Body
+    this.wukongGfx.fillStyle(0xd08010, 0.88);
+    this.wukongGfx.fillRoundedRect(cx - sc*0.19, fy, sc*0.38, sc*0.44, sc*0.07);
+    // Arms
+    this.wukongGfx.lineStyle(sc*0.06, 0xd08010, 0.88);
+    this.wukongGfx.lineBetween(cx - sc*0.19, fy + sc*0.06, cx - sc*0.32, fy + sc*0.25);
+    this.wukongGfx.lineBetween(cx + sc*0.19, fy + sc*0.06, cx + sc*0.32, fy + sc*0.18);
+    // Head
+    this.wukongGfx.fillStyle(0xf0a010, 0.92);
+    this.wukongGfx.fillCircle(cx, fy - sc*0.07, sc*0.22);
+    // 金箍
+    this.wukongGfx.lineStyle(sc*0.044, 0xffe060, 0.95);
+    this.wukongGfx.strokeEllipse(cx, fy - sc*0.08, sc*0.46, sc*0.14);
+    // Eyes (fire glare)
+    this.wukongGfx.fillStyle(0xfff060, 1);
+    this.wukongGfx.fillCircle(cx - sc*0.07, fy - sc*0.11, sc*0.038);
+    this.wukongGfx.fillCircle(cx + sc*0.07, fy - sc*0.11, sc*0.038);
+    // Staff swing animation
+    const swingCycle = t % 200;
+    const swingA = swingCycle < 28 ? (swingCycle / 28) * 0.55 : 0;
+    const angle = Math.PI * (-0.55 + Math.sin(t * 0.028) * 0.08 - swingA);
+    const staffLen = sc * 1.6;
+    const sx = cx + sc*0.28, sy = fy + sc*0.14;
+    const ex = sx + Math.cos(angle)*staffLen, ey = sy + Math.sin(angle)*staffLen;
+    // Staff glow
+    this.wukongGfx.lineStyle(sc*0.13, 0xf0c020, 0.08);
+    this.wukongGfx.lineBetween(sx, sy, ex, ey);
+    // Staff body
+    this.wukongGfx.lineStyle(sc*0.042, 0x7a4c18, 1);
+    this.wukongGfx.lineBetween(sx, sy, ex, ey);
+    // Gold rings
+    for (let r = 0.25; r <= 0.78; r += 0.26) {
+      const rx = sx + Math.cos(angle)*staffLen*r, ry = sy + Math.sin(angle)*staffLen*r;
+      this.wukongGfx.lineStyle(sc*0.044, 0xffd040, 0.9);
+      this.wukongGfx.strokeCircle(rx, ry, sc*0.04);
+    }
+    // Orb at top
+    this.wukongGfx.fillStyle(0xffc020, 0.92);
+    this.wukongGfx.fillCircle(ex, ey, sc*0.065);
+    this.wukongGfx.fillStyle(0xffffff, 0.45);
+    this.wukongGfx.fillCircle(ex - sc*0.025, ey - sc*0.025, sc*0.022);
   }
 
   shutdown() {
