@@ -286,7 +286,10 @@ class MenuScene extends Phaser.Scene {
         }
       });
     }
-    this.add.text(cx+cw/2, cy+ch+14, `靈石：${GS.gold}　↑↓ 移動`, {
+    const selId = items.length>0 ? items[this.itemCursor]?.[0] : null;
+    const selIt = selId ? ITEMS[selId] : null;
+    const useHint = (selIt && (selIt.hp||selIt.mp||selIt.revive)) ? '　Z：使用' : '';
+    this.add.text(cx+cw/2, cy+ch+14, `靈石：${GS.gold}　↑↓ 移動${useHint}`, {
       fontSize: fsS+'px', fontFamily:'serif', color:'#5a4a2a',
     }).setOrigin(0.5, 0);
   }
@@ -389,7 +392,24 @@ class MenuScene extends Phaser.Scene {
       case 2: {
         const items=Object.entries(GS.inventory).filter(([,n])=>n>0);
         if (up)   { this.itemCursor=Math.max(0,this.itemCursor-1); this.drawPanel(); }
-        if (down) { this.itemCursor=Math.min(items.length-1,this.itemCursor+1); this.drawPanel(); }
+        if (down) { this.itemCursor=Math.min(Math.max(0,items.length-1),this.itemCursor+1); this.drawPanel(); }
+        if (ok && items.length>0) {
+          const [id]=items[this.itemCursor]; const it=ITEMS[id];
+          if (it && (it.hp||it.mp||it.revive)) {
+            const target = it.revive
+              ? (GS.party.find(m=>m.dead) || GS.party[0])
+              : GS.party.filter(m=>!m.dead).sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
+            if (target) {
+              if (it.revive && target.dead) { target.dead=false; target.hp=Math.floor(target.maxHp*0.3); }
+              else if (!target.dead) {
+                if (it.hp) target.hp=Math.min(target.maxHp,target.hp+it.hp);
+                if (it.mp) { const st=calcStats(target); target.mp=Math.min(st.maxMp,target.mp+it.mp); }
+              }
+              GS.removeItem(id); Sound?.play('heal');
+              this.drawPanel();
+            }
+          }
+        }
         break;
       }
       case 3:
@@ -519,7 +539,12 @@ class ShopScene extends Phaser.Scene {
       const it = ITEMS[id];
       if (!it) return;
       if (GS.gold < it.price) { this.msg='靈石不足！'; }
-      else { GS.gold -= it.price; GS.addItem(id); this.msg=`購得 ${it.name}！`; }
+      else {
+        GS.gold -= it.price; GS.addItem(id); this.msg=`購得 ${it.name}！`;
+        GS.flags._shopBuys = (GS.flags._shopBuys||0) + 1;
+        if (GS.flags._shopBuys >= 5) Achieve?.unlock('shop_addict');
+        Sound?.play('shopBuy');
+      }
       this._draw();
       this.time.delayedCall(1200, () => { this.msg=''; this._draw(); });
     }
