@@ -208,22 +208,61 @@ class BattleScene extends Phaser.Scene {
       this.tweens.add({ targets: sp.g, x: sp.x, duration: 520, ease: 'Back.easeOut', delay: 80 + i*80 });
     });
     this.time.delayedCall(900, () => {
-      this.phase = 'playerTurn';
       this._addLog(this.enemies.length > 1
         ? `遭遇了 ${this.enemies.map(e=>e.name).join('、')}！`
         : `遭遇了 ${this.enemies[0].name}！`);
       if (GS.battleData?.isBoss) {
-        this._shake(0.012, 500);
-        const bt = this.add.text(this.W/2, this.H*0.32, this.enemies[0].name, {
-          fontSize: Math.floor(this.H*0.065)+'px',
-          fontFamily:'"Noto Serif TC","SimSun",serif',
-          color:'#ff4040', stroke:'#600000', strokeThickness:6,
-        }).setOrigin(0.5).setDepth(50).setAlpha(0).setScale(1.6);
-        this.tweens.add({ targets:bt, alpha:1, scaleX:1, scaleY:1, duration:450, ease:'Back.easeOut',
-          onComplete:()=>this.time.delayedCall(900, ()=>{
-            this.tweens.add({ targets:bt, alpha:0, y:bt.y-18, duration:380, onComplete:()=>bt.destroy() });
-          }),
+        const boss=this.enemies[0];
+        Sound?.play('bossIntro');
+        this._shake(0.018, 700);
+        // Dark overlay
+        const darken=this.add.graphics().setDepth(48);
+        darken.fillStyle(0x000000,0); darken.fillRect(0,0,this.W,this.H);
+        this.tweens.add({targets:darken,alpha:0.72,duration:350,
+          onComplete:()=>this.tweens.add({targets:darken,alpha:0,duration:600,delay:1700,onComplete:()=>darken.destroy()})
         });
+        // Horizontal red shocklines
+        for(let i=0;i<5;i++){
+          const fl=this.add.graphics().setDepth(49);
+          fl.fillStyle(0xff1010, 0.35-i*0.05);
+          fl.fillRect(0, this.H*0.34+i*this.H*0.03, this.W, this.H*0.024);
+          this.tweens.add({targets:fl,alpha:0,x:fl.x-50,duration:520,delay:i*35,onComplete:()=>fl.destroy()});
+        }
+        // Boss name
+        const BOSS_TITLES={
+          boss:      '天命之敵　— 　小西天惡僧',
+          silverKing:'銀山妖王　— 　混元大魔君',
+          dragonKing:'東海龍主　— 　敖廣天龍王',
+          dragon:    '黃風嶺霸主　— 　虎先鋒',
+        };
+        const bn=this.add.text(this.W/2,this.H*0.31,boss.name,{
+          fontSize:Math.floor(this.H*0.09)+'px',
+          fontFamily:'"Noto Serif TC","SimSun",serif',
+          color:'#ff3020',stroke:'#800000',strokeThickness:9,
+          shadow:{offsetX:0,offsetY:0,color:'#ff4020',blur:36,fill:true},
+        }).setOrigin(0.5).setDepth(51).setAlpha(0).setScale(1.9);
+        this.tweens.add({targets:bn,alpha:1,scaleX:1,scaleY:1,duration:500,ease:'Back.easeOut'});
+        // Decorative lines
+        const hl=this.add.graphics().setDepth(51).setAlpha(0);
+        hl.lineStyle(1,0xb09030,0.85);
+        hl.lineBetween(this.W*0.08,this.H*0.40,this.W*0.92,this.H*0.40);
+        hl.lineBetween(this.W*0.08,this.H*0.43,this.W*0.92,this.H*0.43);
+        this.tweens.add({targets:hl,alpha:1,duration:280,delay:280});
+        // Boss subtitle
+        const subTitle=BOSS_TITLES[boss.id]||'';
+        if(subTitle){
+          const bs=this.add.text(this.W/2,this.H*0.455,subTitle,{
+            fontSize:Math.floor(this.H*0.028)+'px',
+            fontFamily:'"Noto Serif TC","SimSun",serif',
+            color:'#d0b060',stroke:'#000',strokeThickness:3,
+          }).setOrigin(0.5).setDepth(51).setAlpha(0);
+          this.tweens.add({targets:bs,alpha:1,duration:380,delay:340});
+          this.time.delayedCall(2300,()=>this.tweens.add({targets:[bn,bs,hl],alpha:0,y:'-=22',duration:380,onComplete:()=>{bn.destroy();bs.destroy();hl.destroy();this.phase='playerTurn';this._rebuildMenu();}}));
+        } else {
+          this.time.delayedCall(2200,()=>this.tweens.add({targets:[bn,hl],alpha:0,y:'-=22',duration:380,onComplete:()=>{bn.destroy();hl.destroy();this.phase='playerTurn';this._rebuildMenu();}}));
+        }
+      } else {
+        this.phase = 'playerTurn';
       }
     });
   }
@@ -1212,6 +1251,22 @@ class BattleScene extends Phaser.Scene {
       sp.hpText=this.add.text(sp.x,this.groundY+4,`${e.hp}/${e.maxHp}`,{
         fontSize:'10px',fontFamily:'monospace',color:'#ff9090',stroke:'#000',strokeThickness:1,
       }).setOrigin(0.5,1).setDepth(8);
+      // Status icons above HP bar
+      const STATUS_EICL={poison:0xc050e8,burn:0xff5020,slow:0x4080ff,stun:0xffcc00,atkUp:0xffe060,defUp:0x80e8ff};
+      const uniqSt=[...new Set(e.status)].filter(s=>STATUS_EICL[s]);
+      if(uniqSt.length>0){
+        const iSz=8, iGap=2;
+        const startIX=sp.x-(uniqSt.length*(iSz+iGap))/2;
+        const iY=this.groundY+14;
+        const stG=this.add.graphics().setDepth(9);
+        uniqSt.forEach((s,ii)=>{
+          stG.fillStyle(STATUS_EICL[s],0.9);
+          stG.fillRect(startIX+ii*(iSz+iGap),iY,iSz,iSz);
+          stG.lineStyle(1,0x000000,0.4);
+          stG.strokeRect(startIX+ii*(iSz+iGap),iY,iSz,iSz);
+        });
+        sp.statusTxt=stG;
+      }
     }
     this._drawEnemy(sp.g, e);
     if (e.dead && !e._deathFXDone) {
@@ -1318,8 +1373,13 @@ class BattleScene extends Phaser.Scene {
 
     if (cmd==='attack') {
       const tgt=this.enemies[targetIdx], st=calcStats(actor);
-      const crit=Math.random()<0.08;
-      let dmg=this._calcDmg(st.atk,tgt.def,1.0);
+      // Passive: yuehua has 15% crit; yunyi gets +20% ATK at near-full HP (勇者本色)
+      const critRate=actor.id==='yuehua'?0.15:0.08;
+      const crit=Math.random()<critRate;
+      const yunyiPassive=(actor.id==='yunyi'&&actor.hp>=Math.floor(actor.maxHp*0.9));
+      const passiveAtk=yunyiPassive?Math.floor(st.atk*1.2):st.atk;
+      if(yunyiPassive){const _hSp=this.partySprites[this.actorIdx];if(_hSp)this._floatText(_hSp.g.x,_hSp.g.y-82,'勇者本色','#ffd060',11);}
+      let dmg=this._calcDmg(passiveAtk,tgt.def,1.0);
       if (crit) dmg=Math.floor(dmg*1.5);
       const heroSp=this.partySprites[this.actorIdx], enemySp=this.enemySprites[targetIdx];
       const onHit=() => {
@@ -1426,7 +1486,7 @@ class BattleScene extends Phaser.Scene {
           gl.fillStyle(0xffd700,0.22); gl.fillCircle(sp2.g.x,sp2.g.y-18,32);
           this.tweens.add({targets:gl,alpha:0,duration:700,onComplete:()=>gl.destroy()});
         }
-        Sound?.play('magic');
+        Sound?.play('buff');
         msg=`${actor.name} 施展 ${sk.name}！${bn}`;
       }
       this._rebuildStatus(); this._addLog(msg);
@@ -1478,7 +1538,7 @@ class BattleScene extends Phaser.Scene {
             if (m.status.includes('burn')) {
               const dmg=Math.max(1,Math.floor(m.maxHp*0.06));
               m.hp=Math.max(1,m.hp-dmg); this._addLog(`${m.name} 灼傷，損失 ${dmg} HP！`);
-              Sound?.play('hit');
+              Sound?.play('burn');
               if(_sp){this._floatText(_sp.g.x,_sp.g.y-40,String(dmg),'#ff8040',16);this._spawnParticles(_sp.g.x,_sp.g.y-10,0xff4020,5,22);}
             }
             if (m.status.includes('poison')) {
@@ -1486,6 +1546,13 @@ class BattleScene extends Phaser.Scene {
               m.hp=Math.max(1,m.hp-dmg); this._addLog(`${m.name} 中毒，損失 ${dmg} HP！`);
               Sound?.play('poison');
               if(_sp){this._floatText(_sp.g.x,_sp.g.y-54,String(dmg),'#c050e8',16);this._spawnParticles(_sp.g.x,_sp.g.y-10,0x9030c0,5,25);}
+            }
+            // Passive: linger (土地) regens 5% maxMP per turn (山神補氣)
+            if (m.id==='linger' && !m.dead) {
+              const regen=Math.max(1,Math.floor(m.maxMp*0.05));
+              const stL=calcStats(m);
+              m.mp=Math.min(stL.maxMp, m.mp+regen);
+              if(_sp) this._floatText(_sp.g.x,_sp.g.y-68,`MP+${regen}`,'#60c0ff',13);
             }
             const pc=m.status.filter(s=>s==='poison').length;
             const bc=m.status.filter(s=>s==='burn').length;
@@ -1505,7 +1572,7 @@ class BattleScene extends Phaser.Scene {
               const dmg=Math.max(1,Math.floor(e.maxHp*0.06));
               e.hp=Math.max(0,e.hp-dmg); if(e.hp===0){e.dead=true;}
               this._addLog(`${e.name} 灼傷，損失 ${dmg} HP！`);
-              Sound?.play('hit');
+              Sound?.play('burn');
               if(_esp){this._floatText(_esp.g.x,_esp.g.y-50,String(dmg),'#ff8040',16);this._spawnParticles(_esp.g.x,_esp.g.y-20,0xff4020,4,22);}
               this._refreshEnemyHp(ei);
             }
@@ -1550,6 +1617,7 @@ class BattleScene extends Phaser.Scene {
     if (act.type==='atk'||act.type==='drain') {
       if (e.status.includes('stun')) {
         const _si=e.status.indexOf('stun'); e.status.splice(_si,1);
+        Sound?.play('stun');
         this._addLog(`${e.name} 被震暈，無法行動！`);
         this.time.delayedCall(500, onDone); return;
       }
@@ -1578,7 +1646,15 @@ class BattleScene extends Phaser.Scene {
             let def=t.baseDef; if(t.status.includes('defend'))def=Math.floor(def*1.5);
             const dmg=this._calcDmg(eAtk,def,act.pow||1);
             t.hp=Math.max(0,t.hp-dmg); if(t.hp===0)t.dead=true;
-            if(!t.dead) t.limitGauge=Math.min(100,(t.limitGauge||0)+Math.max(4,Math.floor(dmg/t.maxHp*65)));
+            if(!t.dead){
+              const prevGauge=t.limitGauge||0;
+              t.limitGauge=Math.min(100,prevGauge+Math.max(4,Math.floor(dmg/t.maxHp*65)));
+              if(prevGauge<100&&t.limitGauge>=100){
+                Sound?.play('limitReady');
+                const _tSp=this.partySprites[this.party.indexOf(t)];
+                if(_tSp) this._floatText(_tSp.g.x,_tSp.g.y-72,'◆ 必殺就緒！','#ffd700',16);
+              }
+            }
             if(act.debuff)Object.entries(act.debuff).forEach(([k,v])=>{for(let i=0;i<v;i++)t.status.push(k);});
             if(act.type==='drain'){
               const heal=Math.floor(dmg*0.5); e.hp=Math.min(e.maxHp,e.hp+heal);

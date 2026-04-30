@@ -164,6 +164,23 @@ const Sound = (() => {
     drain() {
       [300, 270, 240, 200, 165].forEach((f, i) => _osc(f, 'sawtooth', 0.18, 0.1, i * 0.06));
     },
+    burn() {
+      _osc(180, 'sawtooth', 0.10, 0.22);
+      _noise(0.22, 0.18, 420);
+      _osc(240, 'sawtooth', 0.08, 0.14, 0.05);
+    },
+    buff() {
+      [523, 659, 784, 880].forEach((f, i) => _osc(f, 'triangle', 0.20, 0.20, i * 0.06));
+    },
+    stun() {
+      _noise(0.07, 0.35, 1800);
+      _osc(200, 'sawtooth', 0.10, 0.22);
+      _osc(140, 'sawtooth', 0.14, 0.16, 0.06);
+    },
+    limitReady() {
+      [330, 415, 523, 659, 784].forEach((f, i) => _osc(f, 'triangle', 0.15, 0.22, i * 0.045));
+      _noise(0.07, 0.10, 3200, 0.20);
+    },
     bossIntro() {
       _noise(0.09, 0.38, 80);
       _osc(110, 'sawtooth', 0.12, 0.48);
