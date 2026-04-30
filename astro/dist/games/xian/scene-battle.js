@@ -435,6 +435,101 @@ class BattleScene extends Phaser.Scene {
       g.fillStyle(0xf0e8d0, 1);
       g.fillTriangle(-sz*0.22, -sz*1.58, -sz*0.1, -sz*1.58, -sz*0.16, -sz*1.42);
       g.fillTriangle(sz*0.1, -sz*1.58, sz*0.22, -sz*1.58, sz*0.16, -sz*1.42);
+    } else if (id === 'fireSpirit') {
+      // 火靈精 — fire spirit (floating flame being)
+      const fc = 0xff4010, fl = 0xff8030, fw = 0xffe060;
+      // flame wisp trails
+      g.fillStyle(fc, 0.35); g.fillEllipse(-sz*0.55, sz*0.12, sz*0.45, sz*0.65);
+      g.fillEllipse(sz*0.6, sz*0.08, sz*0.4, sz*0.58);
+      g.fillEllipse(sz*0.05, sz*0.2, sz*0.35, sz*0.5);
+      // main flame body (teardrop)
+      g.fillStyle(fc, 0.85); g.fillEllipse(0, -sz*0.78, sz*1.55, sz*2.0);
+      g.fillStyle(fl, 0.7);  g.fillEllipse(0, -sz*0.95, sz*1.0,  sz*1.45);
+      g.fillStyle(fw, 0.55); g.fillEllipse(0, -sz*1.15, sz*0.55, sz*0.9);
+      // inner bright core
+      g.fillStyle(0xfffff0, 0.9); g.fillEllipse(0, -sz*1.25, sz*0.22, sz*0.35);
+      // flame tips (top)
+      g.fillStyle(fc, 0.7);
+      g.fillTriangle(-sz*0.38, -sz*1.62, sz*0.0, -sz*2.42, sz*0.15, -sz*1.55);
+      g.fillTriangle(sz*0.32, -sz*1.55, sz*0.0, -sz*2.28, -sz*0.1, -sz*1.48);
+      g.fillStyle(fl, 0.5); g.fillTriangle(-sz*0.1, -sz*1.72, sz*0.0, -sz*2.35, sz*0.1, -sz*1.65);
+      // glowing ember eyes
+      g.fillStyle(0xffffff, 0.9); g.fillEllipse(-sz*0.22, -sz*1.08, sz*0.28, sz*0.2);
+      g.fillEllipse(sz*0.22, -sz*1.08, sz*0.28, sz*0.2);
+      g.fillStyle(0xff2000, 1); g.fillCircle(-sz*0.22, -sz*1.08, sz*0.1); g.fillCircle(sz*0.22, -sz*1.08, sz*0.1);
+      // outer heat shimmer
+      g.fillStyle(fc, 0.12); g.fillEllipse(0, -sz*0.88, sz*2.1, sz*2.6);
+    } else if (id === 'iceScorp') {
+      // 冰蠍 — ice scorpion
+      const ic = 0x40b0e0, il = 0x80d8f8, id2 = 0x1a4860;
+      // segmented tail (arching up and over)
+      g.fillStyle(ic, 1);
+      g.fillEllipse(-sz*0.3, -sz*0.48, sz*0.42, sz*0.35);
+      g.fillEllipse(-sz*0.58, -sz*0.72, sz*0.38, sz*0.32);
+      g.fillEllipse(-sz*0.78, -sz*1.02, sz*0.35, sz*0.30);
+      g.fillEllipse(-sz*0.88, -sz*1.35, sz*0.30, sz*0.28);
+      // stinger tip
+      g.fillStyle(il, 1); g.fillTriangle(-sz*1.08, -sz*1.65, -sz*0.68, -sz*1.65, -sz*0.88, -sz*1.18);
+      g.fillStyle(0x80f8ff, 0.7); g.fillCircle(-sz*0.88, -sz*1.65, sz*0.15);
+      // main carapace body
+      g.fillStyle(ic, 1); g.fillEllipse(sz*0.15, -sz*0.35, sz*2.1, sz*0.88);
+      g.fillStyle(il, 0.5); g.fillEllipse(sz*0.0, -sz*0.45, sz*1.4, sz*0.45); // ice sheen
+      // segmented lines on body
+      g.lineStyle(1, id2, 0.8);
+      g.lineBetween(-sz*0.3, -sz*0.1, -sz*0.3, -sz*0.72);
+      g.lineBetween(sz*0.15, -sz*0.06, sz*0.15, -sz*0.68);
+      g.lineBetween(sz*0.6, -sz*0.1, sz*0.6, -sz*0.65);
+      // 6 legs (3 per side)
+      g.lineStyle(2, id2, 1);
+      g.lineBetween(sz*0.0, -sz*0.15, -sz*0.6, sz*0.38); g.lineBetween(sz*0.38, -sz*0.12, sz*0.2, sz*0.45);
+      g.lineBetween(sz*0.72, -sz*0.15, sz*1.25, sz*0.42); g.lineBetween(-sz*0.55, -sz*0.1, -sz*1.12, sz*0.38);
+      g.lineBetween(sz*0.95, -sz*0.08, sz*1.55, sz*0.18); g.lineBetween(-sz*0.85, -sz*0.08, -sz*1.45, sz*0.18);
+      // head (forward, small)
+      g.fillStyle(ic, 1); g.fillEllipse(sz*1.08, -sz*0.35, sz*0.65, sz*0.52);
+      g.fillStyle(il, 0.6); g.fillEllipse(sz*1.02, -sz*0.42, sz*0.38, sz*0.28);
+      // pincers
+      g.fillStyle(ic, 1); g.fillEllipse(sz*1.38, -sz*0.58, sz*0.45, sz*0.22); g.fillEllipse(sz*1.38, -sz*0.18, sz*0.45, sz*0.22);
+      g.fillStyle(il, 1); g.fillTriangle(sz*1.55, -sz*0.65, sz*1.75, -sz*0.52, sz*1.55, -sz*0.38);
+      g.fillTriangle(sz*1.55, -sz*0.28, sz*1.75, -sz*0.14, sz*1.55, sz*0.0);
+      // blue glowing eyes
+      g.fillStyle(0x40e0ff, 1); g.fillCircle(sz*1.12, -sz*0.45, sz*0.1); g.fillCircle(sz*1.22, -sz*0.28, sz*0.08);
+    } else if (id === 'dragonGuard') {
+      // 龍族守衛 — dragon palace guard (armored, draconic)
+      const gc = 0x1e6888, gl = 0x2890b8, skin = 0x204858;
+      // scaled torso armor
+      g.fillStyle(gc, 1); g.fillEllipse(0, -sz*0.78, sz*1.75, sz*1.55);
+      // scale pattern
+      g.lineStyle(0.7, 0x0e3848, 0.7);
+      for (let rs = 0; rs < 3; rs++) {
+        for (let cs = -2; cs <= 2; cs++) {
+          g.strokeEllipse(cs*sz*0.32+(rs%2)*sz*0.16, -sz*0.45-rs*sz*0.32, sz*0.36, sz*0.2);
+        }
+      }
+      // chest highlight
+      g.fillStyle(gl, 0.45); g.fillEllipse(-sz*0.18, -sz*0.92, sz*0.88, sz*0.62);
+      // shoulder fins (draconic)
+      g.fillStyle(gc, 1); g.fillEllipse(-sz*1.05, -sz*1.15, sz*0.55, sz*0.75);
+      g.fillEllipse(sz*1.05, -sz*1.15, sz*0.55, sz*0.75);
+      g.fillStyle(0x0a3850, 0.8);
+      g.fillTriangle(-sz*1.28, -sz*0.88, -sz*0.82, -sz*0.88, -sz*1.05, -sz*1.52);
+      g.fillTriangle(sz*0.82, -sz*0.88, sz*1.28, -sz*0.88, sz*1.05, -sz*1.52);
+      // arms
+      g.fillStyle(gc, 1); g.fillEllipse(-sz*1.12, -sz*0.62, sz*0.52, sz*0.95); g.fillEllipse(sz*1.12, -sz*0.62, sz*0.52, sz*0.95);
+      // dragon helm head
+      g.fillStyle(gc, 1); g.fillCircle(0, -sz*1.95, sz*0.68);
+      g.fillStyle(gl, 0.4); g.fillCircle(-sz*0.15, -sz*2.15, sz*0.38);
+      // helm crest (dragon fin)
+      g.fillStyle(0x0a3850, 1); g.fillTriangle(-sz*0.35, -sz*2.52, sz*0.35, -sz*2.52, 0, -sz*3.12);
+      g.fillStyle(gc, 0.6); g.fillTriangle(-sz*0.22, -sz*2.52, sz*0.22, -sz*2.52, 0, -sz*2.95);
+      // face visor
+      g.fillStyle(0x082030, 1); g.fillRect(-sz*0.52, -sz*2.28, sz*1.04, sz*0.4);
+      g.fillStyle(0x40d0ff, 0.75); g.fillEllipse(-sz*0.26, -sz*2.1, sz*0.28, sz*0.16); g.fillEllipse(sz*0.26, -sz*2.1, sz*0.28, sz*0.16);
+      // trident weapon
+      g.lineStyle(3, 0x4090b8, 1); g.lineBetween(sz*0.92, -sz*1.75, sz*0.92, sz*0.25);
+      g.fillStyle(0x80d0f0, 1);
+      g.fillTriangle(sz*0.76, -sz*2.2, sz*0.92, -sz*1.75, sz*1.08, -sz*2.2);
+      g.fillTriangle(sz*0.62, -sz*2.08, sz*0.72, -sz*1.75, sz*0.82, -sz*2.08);
+      g.fillTriangle(sz*1.02, -sz*2.08, sz*1.12, -sz*1.75, sz*1.22, -sz*2.08);
     } else if (id === 'spider') {
       // 蜘蛛精 — spider demon
       const sc = 0x1a0828, sh = 0x6020a0;
@@ -1483,10 +1578,13 @@ class BattleScene extends Phaser.Scene {
       Achieve?.unlock('boss_slayer'); this._submitLeaderboard();
       const bossEnemy=this.enemies[0];
       GS.flags[`defeated_${bossEnemy.id}`]=true;
-      if(bossEnemy.id==='silverKing') Achieve?.unlock('silver_king');
+      if(bossEnemy.id==='silverKing') {
+        Achieve?.unlock('silver_king');
+        GS.flags._pendingLines=['銀角大王已伏誅！妖氣消散！','土地：銀角大王的妖法已被破除。','楊嬋：前方東海龍宮，天命之路繼續！'];
+      }
       if(bossEnemy.id==='dragonKing') {
         Achieve?.unlock('dragon_king');
-        // completionist: all bosses slain
+        GS.flags._pendingLines=['東海龍王已伏誅！龍珠現於眼前…','土地：龍氣歸位，東海重歸平靜。','楊嬋：龍王已敗！前往小西天，天命即將完成！'];
         const allBossIds=['dragon','silverKing','dragonKing','boss'];
         if(allBossIds.every(bid=>GS.flags[`defeated_${bid}`]||bid===bossEnemy.id)) Achieve?.unlock('completionist');
       }

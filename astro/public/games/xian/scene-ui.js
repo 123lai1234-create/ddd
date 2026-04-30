@@ -461,7 +461,7 @@ class MenuScene extends Phaser.Scene {
     const fs  = Math.max(12, Math.floor(cw * 0.020));
     const fsS = Math.max(10, fs - 2);
     const entries = Object.entries(typeof ENEMIES !== 'undefined' ? ENEMIES : {});
-    const seenCount = entries.filter(([id]) => !!GS.defeated?.[id]).length;
+    const seenCount = entries.filter(([id]) => !!(GS.flags?._enemySeen?.[id])).length;
 
     this.add.text(cx+cw/2, cy+6, `妖怪圖鑑　（${seenCount} / ${entries.length}）`, {
       fontSize: Math.floor(fs*1.2)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
