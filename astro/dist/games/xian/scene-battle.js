@@ -1225,6 +1225,9 @@ class BattleScene extends Phaser.Scene {
         });
         this._addLog(`${e.name} 進入狂怒！攻擊大幅提升！`);
         this._spawnParticles(sp.g.x,sp.g.y-40,0xff2020,22,75); this._shake(0.014,700);
+        // Boss bar rage pulse
+        if (this._bossBg) { this.tweens.add({targets:this._bossBg,alpha:0.5,duration:130,yoyo:true,repeat:4}); }
+        if (this._bossBarText) this._bossBarText.setColor('#ff6060');
       }
     }
     const STATUS_LBL = { poison:'毒', atkUp:'強', slow:'緩', atkDown:'弱' };
@@ -1590,10 +1593,15 @@ class BattleScene extends Phaser.Scene {
     GS.party.forEach((m,mi)=>{
       if(m.dead)return; m.exp+=expGain;
       while(m.exp>=expForLevel(m.lv)){
+        const g=(typeof GROWTH!=='undefined'&&GROWTH[m.id])||{hp:8,mp:4,atk:2,def:1,spd:1};
         GS.levelUp(m); levelUps.push(m.name); Sound?.play('levelUp');
         if(m.lv>=5)Achieve?.unlock('level_5'); if(m.lv>=10)Achieve?.unlock('level_10'); if(m.lv>=15)Achieve?.unlock('level_max');
         const sp=this.partySprites[mi];
-        if(sp){ this._floatText(sp.g.x,sp.g.y-85,`Lv.${m.lv} UP!`,'#ffd700',22); this._spawnParticles(sp.g.x,sp.g.y-45,0xffd700,14,50); }
+        if(sp){
+          this._floatText(sp.g.x,sp.g.y-85,`Lv.${m.lv} UP!`,'#ffd700',22);
+          this.time.delayedCall(260,()=>this._floatText(sp.g.x,sp.g.y-108,`HP+${g.hp} MP+${g.mp} ATK+${g.atk}`,'#aaffcc',13));
+          this._spawnParticles(sp.g.x,sp.g.y-45,0xffd700,14,50);
+        }
       }
     });
     let msg=`戰鬥勝利！獲得 ${expGain} EXP、${goldGain} 靈石。`;
@@ -1716,10 +1724,12 @@ class BattleScene extends Phaser.Scene {
     if (this._bossAuraG && this.enemySprites.length>0) {
       const bsp=this.enemySprites[0];
       if (bsp && !bsp.e.dead) {
-        const pulse=0.07+Math.abs(Math.sin(this._t*0.038))*0.16;
+        const raged = !!bsp.e._raged;
+        const pulseBase = raged ? 0.14 : 0.07;
+        const pulse = pulseBase + Math.abs(Math.sin(this._t*(raged?0.06:0.038)))*(raged?0.22:0.16);
         const sz=bsp.e.sz||28;
-        const auraClr = bsp.e.color || 0xff2020;
-        const auraClr2 = bsp.e.id==='dragonKing' ? 0x20d0ff : (bsp.e.id==='silverKing' ? 0xa0c0ff : 0xff8020);
+        const auraClr = raged ? 0xff2020 : (bsp.e.color || 0xff2020);
+        const auraClr2 = raged ? 0xff6010 : (bsp.e.id==='dragonKing' ? 0x20d0ff : (bsp.e.id==='silverKing' ? 0xa0c0ff : 0xff8020));
         this._bossAuraG.clear();
         this._bossAuraG.fillStyle(auraClr, pulse);
         this._bossAuraG.fillCircle(bsp.g.x, bsp.g.y-sz*0.82, sz*1.65);

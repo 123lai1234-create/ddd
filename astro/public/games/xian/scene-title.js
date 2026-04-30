@@ -188,6 +188,7 @@ class TitleScene extends Phaser.Scene {
 
   _updateMenu() {
     const W = this.scale.width;
+    const hasSave = [0,1,2].some(i => !!Save?.read(i));
     this.menuBgs.forEach(({g, y}, i) => {
       g.clear();
       const sel = i === this.cursor;
@@ -197,7 +198,8 @@ class TitleScene extends Phaser.Scene {
         g.lineStyle(1, 0x9a7828, 0.7);
         g.strokeRoundedRect(W/2 - 160, y-28, 320, 56, 6);
       }
-      this.menuTexts[i].setColor(sel ? '#ffd700' : '#c8a060');
+      const baseCol = (i === 1 && hasSave) ? '#80e8a0' : '#c8a060';
+      this.menuTexts[i].setColor(sel ? '#ffd700' : baseCol);
       if (sel) {
         this.menuTexts[i].setShadow(0, 0, '#ffd700', 12, true, true);
       } else {
