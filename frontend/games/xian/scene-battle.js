@@ -1041,7 +1041,7 @@ class BattleScene extends Phaser.Scene {
       const st=calcStats(actor);
       let msg='';
       if (sk.type==='atk') {
-        Sound?.play('magic');
+        Sound?.play(sk.elem==='thunder' ? 'thunderSkill' : 'magic');
         const targets=sk.tgt==='all'?this.enemies.filter(e=>!e.dead):[this.enemies[targetIdx]];
         const hitCount=sk.hits||1;
         const dmgs=targets.map(tgt=>{
@@ -1139,7 +1139,7 @@ class BattleScene extends Phaser.Scene {
             if(e.dead)return;
             if(e.status.includes('poison')){
               const dmg=Math.max(1,Math.floor(e.maxHp*0.05));
-              e.hp=Math.max(0,e.hp-dmg); if(e.hp===0)e.dead=true;
+              e.hp=Math.max(0,e.hp-dmg); if(e.hp===0){ e.dead=true; Achieve?.unlock('poisoner'); }
               this._addLog(`${e.name} 中毒，損失 ${dmg} HP！`);
               Sound?.play('poison');
               const sp=this.enemySprites[ei];
@@ -1200,8 +1200,9 @@ class BattleScene extends Phaser.Scene {
             const heal=Math.floor(dmg*0.5); e.hp=Math.min(e.maxHp,e.hp+heal);
             const ei=this.enemies.indexOf(e); this._refreshEnemyHp(ei);
             if(enemySp) this._floatText(enemySp.g.x,enemySp.g.y-50,`+${heal}`,'#88ff88',16);
-          }
-          Sound?.play('damage'); this._shake(isStrong?0.010:0.005, isStrong?320:240);
+            Sound?.play('drain');
+          } else { Sound?.play('damage'); }
+          this._shake(isStrong?0.010:0.005, isStrong?320:240);
           if (heroSp) {
             const hx=heroSp.g.x, hy=heroSp.g.y-32;
             this._floatText(hx,hy,String(dmg),'#ff5050',isStrong?24:20);
@@ -1279,11 +1280,15 @@ class BattleScene extends Phaser.Scene {
     this.enemies.forEach(e => { GS.flags._enemySeen[e.id] = true; });
     // Track dragon kills (unlocks final boss NPC)
     this.enemies.forEach(e=>{ if(e.id==='dragon')GS.flags.defeatedDragon=true; });
+    // no_damage achievement
+    if(this.party.every(m=>!m.dead&&m.hp===m.maxHp)) Achieve?.unlock('no_damage');
+
     // Boss defeat handling
     if(GS.battleData?.isBoss){
       Achieve?.unlock('boss_slayer'); this._submitLeaderboard();
       const bossEnemy=this.enemies[0];
       GS.flags[`defeated_${bossEnemy.id}`]=true;
+      if(bossEnemy.id==='silverKing') Achieve?.unlock('silver_king');
       if(bossEnemy.id==='boss'){
         GS.flags._pendingLines=['黃眉大王已伏誅！天命得成！','土地：妖氣盡散，山河安寧。','楊嬋：天命之人，你做到了，回黑山村吧！'];
         GS.flags._isFinalBoss=true;

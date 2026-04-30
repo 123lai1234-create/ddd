@@ -51,6 +51,39 @@ const Sound = (() => {
     src.start(); src.stop(c.currentTime + dur + 0.05);
   }
 
+  function _noiseAt(dur, vol = 0.15, freq = 800, start = 0, dest = null) {
+    const c = _ctx();
+    const bufSz = Math.ceil(c.sampleRate * (dur + 0.1));
+    const buf = c.createBuffer(1, bufSz, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const flt = c.createBiquadFilter();
+    flt.type = 'bandpass';
+    flt.frequency.value = freq;
+    const g = c.createGain();
+    g.gain.setValueAtTime(vol, c.currentTime + start);
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + start + dur);
+    src.connect(flt); flt.connect(g); g.connect(dest || masterGain);
+    src.start(c.currentTime + start);
+    src.stop(c.currentTime + start + dur + 0.1);
+  }
+
+  function _kick(start = 0) {
+    const c = _ctx();
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(180, c.currentTime + start);
+    o.frequency.exponentialRampToValueAtTime(42, c.currentTime + start + 0.09);
+    g.gain.setValueAtTime(0.55, c.currentTime + start);
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + start + 0.14);
+    o.connect(g); g.connect(masterGain);
+    o.start(c.currentTime + start);
+    o.stop(c.currentTime + start + 0.2);
+  }
+
   // ── SFX ──────────────────────────────────────────────────
   const SFX = {
     hit() {
@@ -110,6 +143,37 @@ const Sound = (() => {
     },
     inn() {
       [261, 329, 392, 523].forEach((f, i) => _osc(f, 'sine', 0.3, 0.12, i * 0.12));
+    },
+    chest() {
+      [880, 1100, 1320, 1760].forEach((f, i) => _osc(f, 'triangle', 0.14, 0.18 - i*0.02, i*0.07));
+    },
+    door() {
+      _noise(0.18, 0.22, 160);
+      _osc(190, 'sawtooth', 0.22, 0.14, 0.04);
+    },
+    thunderSkill() {
+      _noise(0.06, 0.48, 200);
+      _osc(80, 'sawtooth', 0.12, 0.5);
+      _osc(60, 'sawtooth', 0.2, 0.4, 0.06);
+      [1600, 1200, 800].forEach((f, i) => _osc(f, 'sine', 0.07, 0.12, i * 0.022));
+    },
+    freeze() {
+      [2400, 2800, 3200, 2000].forEach((f, i) => _osc(f, 'sine', 0.08, 0.09, i * 0.04));
+      _noise(0.18, 0.06, 4000);
+    },
+    drain() {
+      [300, 270, 240, 200, 165].forEach((f, i) => _osc(f, 'sawtooth', 0.18, 0.1, i * 0.06));
+    },
+    bossIntro() {
+      _noise(0.09, 0.38, 80);
+      _osc(110, 'sawtooth', 0.12, 0.48);
+      _osc(82, 'sawtooth', 0.18, 0.42, 0.09);
+      _osc(62, 'sawtooth', 0.24, 0.36, 0.18);
+    },
+    mapTransition() {
+      _osc(1046, 'triangle', 0.07, 0.2);
+      _osc(1318, 'triangle', 0.09, 0.17, 0.06);
+      _osc(880, 'triangle', 0.11, 0.14, 0.12);
     },
   };
 
@@ -173,6 +237,15 @@ const Sound = (() => {
       const f = notes[idx] * 0.5;
       _osc(f, 'sine', beatDur * 1.8, 0.07, i * beatDur);
     });
+    // Percussion — battle gets kick+snare+hihat, castle gets kick+snare
+    if (name === 'battle') {
+      [0, 4, 8, 12].forEach(i => _kick(i * beatDur));
+      [4, 12].forEach(i => _noiseAt(0.09, 0.2, 2200, i * beatDur));
+      [2, 6, 10, 14].forEach(i => _noiseAt(0.04, 0.08, 5000, i * beatDur));
+    } else if (name === 'castle') {
+      [0, 8].forEach(i => _kick(i * beatDur));
+      [4, 12].forEach(i => _noiseAt(0.08, 0.16, 2000, i * beatDur));
+    }
 
     _bgmTimeout = setTimeout(() => {
       if (_bgmName === name) _playBgmLoop(name);

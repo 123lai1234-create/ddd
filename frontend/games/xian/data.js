@@ -14,15 +14,15 @@ const C = {
 const CHAR_BASE = {
   yunyi:  { id:'yunyi',  name:'天命人', title:'齊天後裔', color:0xf0a010, shape:'mage',
             hp:120, mp:40,  atk:18, def:12, spd:15, luk:10,
-            skills:['slash','piercing','windBlade'],
+            skills:['slash','piercing','windBlade','thunderStomp'],
             desc:'身負天命，持金箍棒踏上除妖之路，傳承齊天大聖意志的孤勇者。' },
   linger: { id:'linger', name:'土地',   title:'山神使者', color:0x80c040, shape:'mage',
             hp:80,  mp:120, atk:10, def:8,  spd:18, luk:15,
-            skills:['fireball','iceArrow','heal','thunder'],
+            skills:['fireball','iceArrow','heal','thunder','earthBind'],
             desc:'主管一方的山神土地，法術精通，感應天命而主動加入除妖行列。' },
   yuehua: { id:'yuehua', name:'楊嬋',   title:'天神弓手', color:0x60c8ff, shape:'archer',
             hp:90,  mp:60,  atk:20, def:10, spd:20, luk:20,
-            skills:['shoot','multiShot','poisonArrow','moonLight'],
+            skills:['shoot','multiShot','poisonArrow','moonLight','moonRain'],
             desc:'天宮仙姬，箭術絕倫，為斬妖除魔之大義毅然下凡相助天命人。' },
 };
 
@@ -38,6 +38,9 @@ const SKILLS = {
   multiShot:   { name:'三連箭',   mp:12, pow:0.8, type:'atk', tgt:'all',    elem:'none',  hits:3, desc:'連發三矢，貫穿敵陣。' },
   poisonArrow: { name:'罡風箭',   mp:8,  pow:1.2, type:'atk', tgt:'single', elem:'none',  debuff:{poison:3}, desc:'罡風箭矢附帶毒氣，侵蝕妖體。' },
   moonLight:   { name:'仙光照',   mp:18, pow:1.2, type:'heal', tgt:'all',    elem:'light',  desc:'仙光普照，恢復全體夥伴生命值。' },
+  thunderStomp:{ name:'雷震九天', mp:22, pow:2.2, type:'atk', tgt:'all',    elem:'thunder', desc:'召喚九天神雷，轟擊所有妖物。' },
+  earthBind:   { name:'縛妖索',   mp:14, pow:0.6, type:'atk', tgt:'all',    elem:'none', debuff:{slow:3}, desc:'以法力化索縛住所有妖物，令其行動遲緩。' },
+  moonRain:    { name:'月雨千箭', mp:20, pow:0.9, type:'atk', tgt:'all',    elem:'none', hits:4, desc:'引月光化千矢，貫穿妖陣，連擊四次。' },
 };
 
 const ITEMS = {
@@ -80,7 +83,11 @@ const ENEMIES = {
   ghost:    { name:'怨靈',   hp:90,  atk:22, def:6,  spd:20, exp:90,  gold:35, color:0x7040c0, sz:28, acts:['curse','drain','curse'],      drops:[{id:'elixir',r:0.3}] },
   demon:    { name:'妖兵',   hp:140, atk:25, def:15, spd:12, exp:110, gold:55, color:0xb01010, sz:32, acts:['slash','slam','slash'],       drops:[{id:'redPotion',r:0.2}] },
   dragon:   { name:'虎先鋒', hp:200, atk:32, def:20, spd:10, exp:180, gold:100,color:0xe06010, sz:40, acts:['bite','fireBreath','tail'],   drops:[{id:'redPotion',r:0.4},{id:'fullElixir',r:0.3}] },
-  boss:     { name:'黃眉大王',hp:400, atk:40, def:25, spd:8,  exp:0,   gold:0,  color:0xc09010, sz:48, acts:['slam','curse','aoe','slam'],  drops:[], boss:true },
+  boss:       { name:'黃眉大王',hp:400, atk:40, def:25, spd:8,  exp:0,   gold:0,  color:0xc09010, sz:48, acts:['slam','curse','aoe','slam'],          drops:[], boss:true },
+  spider:     { name:'蜘蛛精', hp:110, atk:16, def:8,  spd:18, exp:75,  gold:35, color:0x501840, sz:28, acts:['bite','webTrap','bite','poisonSpray'],   drops:[{id:'elixir',r:0.3}] },
+  yasha:      { name:'夜叉',   hp:135, atk:22, def:14, spd:14, exp:98,  gold:48, color:0x203060, sz:30, acts:['slash','curse','drain','slash'],          drops:[{id:'redPotion',r:0.15}] },
+  goldenEagle:{ name:'大鵬金翅',hp:185, atk:28, def:18, spd:22, exp:155, gold:85, color:0xd0a010, sz:36, acts:['claw','diveBomb','claw','aoe'],           drops:[{id:'redPotion',r:0.3},{id:'fullElixir',r:0.2}] },
+  silverKing: { name:'銀角大王',hp:380, atk:38, def:24, spd:9,  exp:0,   gold:0,  color:0xc0c8f0, sz:48, acts:['slam','soulDrain','aoe','slam','curse'],  drops:[], boss:true },
 };
 
 const ENEMY_ACTS = {
@@ -96,6 +103,10 @@ const ENEMY_ACTS = {
   aoe:        { name:'禪杖揮舞', pow:1.0, type:'atk', tgt:'all' },
   tail:       { name:'虎尾橫掃', pow:1.2, type:'atk', tgt:'all' },
   fireBreath: { name:'虎嘯火焰', pow:1.6, type:'atk', tgt:'all',    elem:'fire' },
+  webTrap:    { name:'蜘蛛絲',   pow:0,   type:'debuff',tgt:'single', debuff:{slow:2} },
+  claw:       { name:'金爪撕裂', pow:1.3, type:'atk',   tgt:'single' },
+  diveBomb:   { name:'俯衝重擊', pow:1.8, type:'atk',   tgt:'single' },
+  soulDrain:  { name:'攝魂術',   pow:1.1, type:'drain',  tgt:'single' },
 };
 
 // ── Maps ───────────────────────────────────────────────────
@@ -149,7 +160,7 @@ const MAPS = {
       { x:17,y:2, id:'f2', gold:120 },
       { x:10,y:11,id:'f3', item:'ironSword' },
     ],
-    enc:{ rate:0.15, enemies:['wolf','bandit','snake','ghost'] },
+    enc:{ rate:0.15, enemies:['wolf','bandit','snake','ghost','spider'] },
     w:20, h:15,
     tiles:[
       [3,3,3,3,3,3,3,3,3,0,0,3,3,3,3,3,3,3,3,3],
@@ -184,7 +195,7 @@ const MAPS = {
       { x:18,y:1, id:'c1', gold:200 },
       { x:18,y:13,id:'c2', item:'redPotion' },
     ],
-    enc:{ rate:0.2, enemies:['skeleton','demon','dragon'] },
+    enc:{ rate:0.2, enemies:['skeleton','demon','yasha','goldenEagle'] },
     w:20, h:15,
     tiles:[
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -220,7 +231,7 @@ const MAPS = {
       { x:5, y:11,id:'ca1', item:'fullElixir' },
       { x:14,y:3, id:'ca2', gold:300 },
     ],
-    enc:{ rate:0.25, enemies:['ghost','demon','dragon'] },
+    enc:{ rate:0.25, enemies:['spider','yasha','ghost','demon','goldenEagle'] },
     w:20, h:15,
     tiles:[
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -243,6 +254,7 @@ const MAPS = {
       { x:5, y:7, name:'被困僧人', dlg:['此乃蜘蛛精盤絲洞…', '往南面有通往小西天之路！', '天命之人，快去吧！'] },
       { x:14,y:7, name:'石壁刻文', dlg:['〔壁上刻著〕', '蜘蛛精盤踞於此，妖氣沖天。', '南門通往小西天，彌勒道場所在。'] },
       { x:9, y:3, name:'行商',     dlg:['這鬼地方真嚇人…', '最後一批貨，你要的話快買！'], shop:'cave' },
+      { x:4, y:4, name:'銀角大王', dlg:['哈哈哈！天命之人！', '本王乃太上老君弟子，奉命鎮守此地！', '要想通過，先過本王這一關！'], boss:'silverKing' },
     ],
     startX:18, startY:7,
   },
@@ -256,7 +268,7 @@ const MAPS = {
       { x:17,y:12,id:'sh2', item:'ancientJade' },
       { x:9, y:7, id:'sh3', gold:500 },
     ],
-    enc:{ rate:0.22, enemies:['demon','dragon','skeleton'] },
+    enc:{ rate:0.22, enemies:['demon','goldenEagle','skeleton','yasha'] },
     w:20, h:15,
     tiles:[
       [3,3,3,3,3,3,3,3,3,0,0,3,3,3,3,3,3,3,3,3],
@@ -504,6 +516,9 @@ const ACHIEVEMENTS = {
   shop_addict:  { name:'行商常客',   icon:'🛒',  desc:'累計購物 5 次。' },
   healer:       { name:'妙手回春',   icon:'💚',  desc:'使用 10 次治療技能。' },
   ngplus:       { name:'二周目',     icon:'★',   desc:'開始新遊戲+，重踏征途。' },
+  silver_king:  { name:'降魔伏妖',   icon:'⚡',  desc:'擊敗盤絲洞的銀角大王。' },
+  no_damage:    { name:'銅牆鐵壁',   icon:'🛡️', desc:'全員滿HP贏得一場戰鬥。' },
+  poisoner:     { name:'毒手',       icon:'☠️', desc:'以毒擊倒妖物。' },
 };
 
 const Achieve = {

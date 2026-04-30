@@ -328,34 +328,86 @@ class WorldScene extends Phaser.Scene {
   }
 
   _spawnAtmosphere(mapW, mapH) {
-    const cfgs = {
-      forest:  { color:0x80e840, alpha:0.55, size:2,   count:2, dy:-55, dx:30, dur:2200 },
-      cave:    { color:0xff8030, alpha:0.40, size:1.5,  count:1, dy:-70, dx:15, dur:2800 },
-      shrine:  { color:0xffe080, alpha:0.65, size:2.5,  count:1, dy:-90, dx:25, dur:3000 },
-      castle:  { color:0x9050c0, alpha:0.25, size:1.5,  count:1, dy:-60, dx:20, dur:2500 },
-    };
-    const cfg = cfgs[GS.map];
-    if (!cfg) return;
-    this.time.addEvent({
-      delay: 350, loop: true, callback: () => {
-        for (let i = 0; i < cfg.count; i++) {
-          const px = Math.random() * mapW;
-          const py = Math.random() * mapH;
-          const p = this.add.graphics().setDepth(3);
-          p.fillStyle(cfg.color, cfg.alpha);
-          p.fillCircle(0, 0, cfg.size + Math.random() * cfg.size * 0.5);
-          p.setPosition(px, py);
-          this.tweens.add({
-            targets: p,
-            x: px + (Math.random()-0.5) * cfg.dx,
-            y: py + cfg.dy * (0.6 + Math.random() * 0.7),
-            alpha: 0,
-            duration: cfg.dur * (0.7 + Math.random() * 0.6),
-            onComplete: () => p.destroy(),
-          });
-        }
-      },
-    });
+    const map = GS.map;
+    if (map === 'forest') {
+      // Falling leaves
+      this.time.addEvent({ delay: 300, loop: true, callback: () => {
+        const vp = this.cameras.main.worldView;
+        const px = vp.x + Math.random() * vp.width;
+        const p = this.add.graphics().setDepth(3);
+        const lc = [0x60c840,0x80e860,0x50a830,0xc8e040][Math.floor(Math.random()*4)];
+        p.fillStyle(lc, 0.55 + Math.random()*0.35);
+        p.fillEllipse(0, 0, 8+Math.random()*5, 4+Math.random()*3);
+        p.setPosition(px, vp.y - 10); p.setAngle(Math.random()*360);
+        this.tweens.add({ targets:p, x:px+(Math.random()-0.5)*100, y:vp.y+vp.height+20,
+          angle:p.angle+(Math.random()-0.5)*300, alpha:0, duration:3500+Math.random()*2500, onComplete:()=>p.destroy() });
+      }});
+      this.time.addEvent({ delay: 550, loop: true, callback: () => {
+        const vp = this.cameras.main.worldView;
+        const p = this.add.graphics().setDepth(3);
+        p.fillStyle(0x80e840, 0.35); p.fillCircle(0, 0, 1.5+Math.random()*1.5);
+        p.setPosition(vp.x+Math.random()*vp.width, vp.y+Math.random()*vp.height);
+        this.tweens.add({ targets:p, x:p.x+18, y:p.y-55, alpha:0, duration:2400, onComplete:()=>p.destroy() });
+      }});
+    } else if (map === 'cave') {
+      // Water drips
+      this.time.addEvent({ delay: 200, loop: true, callback: () => {
+        const vp = this.cameras.main.worldView;
+        const px = vp.x + Math.random() * vp.width;
+        const p = this.add.graphics().setDepth(3);
+        p.fillStyle(0x4090c0, 0.4+Math.random()*0.35); p.fillEllipse(0, 0, 2, 7);
+        p.setPosition(px, vp.y - 5);
+        this.tweens.add({ targets:p, y:vp.y+100+Math.random()*120, alpha:0, duration:500+Math.random()*350, onComplete:()=>p.destroy() });
+      }});
+      // Glowing embers/spores
+      this.time.addEvent({ delay: 480, loop: true, callback: () => {
+        const vp = this.cameras.main.worldView;
+        const p = this.add.graphics().setDepth(3);
+        p.fillStyle(0xff6040, 0.28+Math.random()*0.2); p.fillCircle(0, 0, 1.2+Math.random()*1.5);
+        p.setPosition(vp.x+Math.random()*vp.width, vp.y+Math.random()*vp.height);
+        this.tweens.add({ targets:p, x:p.x+(Math.random()-0.5)*25, y:p.y-45, alpha:0, duration:2800, onComplete:()=>p.destroy() });
+      }});
+    } else if (map === 'shrine') {
+      // Cherry blossoms
+      this.time.addEvent({ delay: 340, loop: true, callback: () => {
+        const vp = this.cameras.main.worldView;
+        const px = vp.x + Math.random() * vp.width;
+        const p = this.add.graphics().setDepth(3);
+        const pc = [0xffb0d0,0xffd0e0,0xff80b0,0xffe8f0][Math.floor(Math.random()*4)];
+        p.fillStyle(pc, 0.5+Math.random()*0.4); p.fillEllipse(0, 0, 7+Math.random()*5, 4+Math.random()*3);
+        p.setPosition(px, vp.y-10); p.setAngle(Math.random()*360);
+        this.tweens.add({ targets:p, x:px+(Math.random()-0.5)*70, y:vp.y+vp.height+20,
+          angle:p.angle+(Math.random()-0.5)*160, alpha:0, duration:5500+Math.random()*2500, onComplete:()=>p.destroy() });
+      }});
+      // Golden motes
+      this.time.addEvent({ delay: 700, loop: true, callback: () => {
+        const vp = this.cameras.main.worldView;
+        const p = this.add.graphics().setDepth(3);
+        p.fillStyle(0xffe080, 0.45); p.fillCircle(0, 0, 1.5+Math.random()*2);
+        p.setPosition(vp.x+Math.random()*vp.width, vp.y+Math.random()*vp.height);
+        this.tweens.add({ targets:p, y:p.y-75, alpha:0, duration:3200, onComplete:()=>p.destroy() });
+      }});
+    } else if (map === 'castle') {
+      // Sand/dust blowing sideways
+      this.time.addEvent({ delay: 110, loop: true, callback: () => {
+        const vp = this.cameras.main.worldView;
+        const py = vp.y + Math.random() * vp.height;
+        const p = this.add.graphics().setDepth(3);
+        p.fillStyle(0xd0a040, 0.16+Math.random()*0.22); p.fillEllipse(0, 0, 5+Math.random()*5, 2);
+        p.setPosition(vp.x - 10, py);
+        this.tweens.add({ targets:p, x:vp.x+vp.width+20, y:py+(Math.random()-0.5)*30, alpha:0, duration:700+Math.random()*500, onComplete:()=>p.destroy() });
+      }});
+    } else if (map === 'village') {
+      // Fireflies
+      this.time.addEvent({ delay: 950, loop: true, callback: () => {
+        const vp = this.cameras.main.worldView;
+        const p = this.add.graphics().setDepth(3);
+        p.fillStyle(0xc0ff60, 0.7); p.fillCircle(0, 0, 2+Math.random()*1.5);
+        p.setPosition(vp.x+Math.random()*vp.width, vp.y+Math.random()*vp.height);
+        this.tweens.add({ targets:p, x:p.x+(Math.random()-0.5)*50, y:p.y+(Math.random()-0.5)*35,
+          alpha:{ from:0, to:0.8 }, duration:1300, yoyo:true, onComplete:()=>p.destroy() });
+      }});
+    }
   }
 
   _openChest(chest) {
@@ -364,7 +416,7 @@ class WorldScene extends Phaser.Scene {
     const rewards = [];
     if (chest.gold) { GS.gold += chest.gold; rewards.push(`${chest.gold} 靈石`); }
     if (chest.item) { GS.addItem(chest.item); rewards.push(ITEMS[chest.item]?.name || chest.item); }
-    Sound?.play('shopBuy');
+    Sound?.play('chest');
     const co = this.chestObjects?.find(c => c.chest === chest);
     if (co) { co.opened = true; this._drawChest(co.g, chest.x*TILE_SZ+TILE_SZ/2, chest.y*TILE_SZ+TILE_SZ/2, true); }
     this._showDialog(['打開了寶箱！', `獲得：${rewards.join('、')}！`], () => this._refreshHud());
@@ -677,6 +729,7 @@ class WorldScene extends Phaser.Scene {
     GS.map = exit.to;
     GS.player.x = exit.toX; GS.player.y = exit.toY; GS.player.facing = 'down';
     GS.save(0);
+    Sound?.play('mapTransition');
     this.cameras.main.fadeOut(380, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
   }
@@ -716,6 +769,7 @@ class WorldScene extends Phaser.Scene {
           color:base.color, sz:base.sz, acts:base.acts, drops:base.drops,
           status:[], dead:false, boss:true,
         }], isBoss:true };
+        Sound?.play('bossIntro');
         this.scene.start('BattleScene');
       }, npc.name);
       return;
