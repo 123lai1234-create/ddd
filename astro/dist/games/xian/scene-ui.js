@@ -778,7 +778,9 @@ class ShopScene extends Phaser.Scene {
         else {
           GS.gold -= it.price; GS.addItem(id); this.msg=`購得 ${it.name}！`;
           GS.flags._shopBuys = (GS.flags._shopBuys||0) + 1;
+          GS.flags._totalSpend = (GS.flags._totalSpend||0) + it.price;
           if (GS.flags._shopBuys >= 5) Achieve?.unlock('shop_addict');
+          if (GS.flags._totalSpend >= 1000) Achieve?.unlock('big_spender');
           Sound?.play('shopBuy');
         }
         this._draw();

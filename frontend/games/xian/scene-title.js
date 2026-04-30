@@ -500,59 +500,110 @@ class EndingScene extends Phaser.Scene {
     this.cursor = 0;
     const W = this.scale.width, H = this.scale.height;
     Sound?.stopBgm();
-    this.time.delayedCall(600, () => Sound?.bgm('shrine'));
+    this.time.delayedCall(1200, () => Sound?.bgm('shrine'));
 
+    // Background — deep celestial gradient
     const bg = this.add.graphics();
-    bg.fillGradientStyle(0x08041c, 0x060318, 0x040210, 0x06021a, 1);
+    bg.fillGradientStyle(0x050112, 0x080422, 0x030110, 0x060218, 1);
     bg.fillRect(0, 0, W, H);
 
-    // Stars
+    // Nebula glow blobs
+    const nebula = this.add.graphics().setAlpha(0.12);
+    [[W*0.2,H*0.3,0x4060ff],[W*0.8,H*0.5,0x8020ff],[W*0.5,H*0.7,0x2080ff]].forEach(([nx,ny,nc]) => {
+      nebula.fillStyle(nc, 1); nebula.fillCircle(nx, ny, W*0.28);
+    });
+
+    // Stars — two layers for depth
     const sg = this.add.graphics();
-    for (let i = 0; i < 120; i++) {
-      sg.fillStyle(0xfff8e0, 0.08 + Math.random()*0.6);
-      sg.fillCircle(Math.random()*W, Math.random()*H, 0.3 + Math.random()*1.5);
+    for (let i = 0; i < 160; i++) {
+      sg.fillStyle(0xfff8e0, 0.04 + Math.random()*0.65);
+      sg.fillCircle(Math.random()*W, Math.random()*H, 0.3 + Math.random()*1.8);
     }
 
-    // Sparks (gold firework effect, looping)
+    // Gold sparks — more, spread wider
     this.sparks = [];
     this.sparkGfx = this.add.graphics();
-    for (let i = 0; i < 70; i++) {
-      const angle = Math.random()*Math.PI*2;
-      const speed = 0.5 + Math.random()*3.5;
+    for (let i = 0; i < 90; i++) {
+      const angle = Math.random()*Math.PI*2, speed = 0.4 + Math.random()*4.2;
       this.sparks.push({
-        x: W*0.5 + (Math.random()-0.5)*120, y: H*0.22,
-        vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed - 0.8,
-        alpha: 0.5 + Math.random()*0.5, fade: 0.004 + Math.random()*0.01,
-        r: 1 + Math.random()*2.2,
-        color: [0xffd700, 0xff9040, 0xffffc0, 0xff6020][Math.floor(Math.random()*4)],
+        x: W*0.5 + (Math.random()-0.5)*200, y: H*0.08,
+        vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed - 1.1,
+        alpha: 0.4 + Math.random()*0.6, fade: 0.003 + Math.random()*0.009,
+        r: 1 + Math.random()*2.6,
+        color: [0xffd700, 0xff9040, 0xffffc0, 0xff6020, 0xff80ff][Math.floor(Math.random()*5)],
       });
     }
 
-    // Title
-    const titleT = this.add.text(W/2, H*0.13, '天命達成', {
-      fontSize: Math.min(58, Math.floor(W*0.1))+'px',
+    // Title — scale-in + float
+    const titleT = this.add.text(W/2, H*0.06, '天命達成', {
+      fontSize: Math.min(54, Math.floor(W*0.1))+'px',
       fontFamily: '"Noto Serif TC","SimSun",serif',
       color:'#ffd700', fontStyle:'bold',
       stroke:'#1a0800', strokeThickness:8,
-      shadow:{ offsetX:0, offsetY:0, color:'#ffd700', blur:40, fill:true },
-    }).setOrigin(0.5, 0.5).setAlpha(0);
-    this.tweens.add({ targets:titleT, alpha:1, y:H*0.14, duration:900, ease:'Back.easeOut', delay:300 });
+      shadow:{ offsetX:0, offsetY:0, color:'#ffd700', blur:38, fill:true },
+    }).setOrigin(0.5, 0.5).setAlpha(0).setScale(0.3);
+    this.tweens.add({ targets:titleT, alpha:1, scaleX:1, scaleY:1, y:H*0.09, duration:1000, ease:'Back.easeOut', delay:200 });
+    this.titleT = titleT;
 
-    const subT = this.add.text(W/2, H*0.24, '黃眉大王已伏誅，天下太平。', {
-      fontSize: Math.min(17, Math.floor(W*0.028))+'px',
+    const subT = this.add.text(W/2, H*0.175, '黃眉大王已伏誅，天下太平。', {
+      fontSize: Math.min(16, Math.floor(W*0.028))+'px',
       fontFamily: '"Noto Serif TC","SimSun",serif',
       color:'#c8b080', stroke:'#000', strokeThickness:2,
     }).setOrigin(0.5, 0.5).setAlpha(0);
-    this.tweens.add({ targets:subT, alpha:1, duration:700, delay:1100 });
+    this.tweens.add({ targets:subT, alpha:1, duration:600, delay:1100 });
 
     const divG = this.add.graphics();
-    divG.lineStyle(1, 0x9a7828, 0.45);
-    divG.lineBetween(W*0.18, H*0.30, W*0.82, H*0.30);
+    divG.lineStyle(1, 0x9a7828, 0.5);
+    divG.lineBetween(W*0.12, H*0.225, W*0.88, H*0.225);
 
-    // Stats panel
-    const panW = Math.min(500, W-60), panH = Math.floor(H*0.30);
-    const panX = (W-panW)/2, panY = Math.floor(H*0.33);
-    mkPanel(this, panX, panY, panW, panH, 0.9);
+    // ── Character showcase ────────────────────────────────────
+    const heroes = [
+      { name:'天命人', title:'齊天後裔',  color:0xffd060, tc:'#ffd060', skills:'金箍棒・天命之力' },
+      { name:'土地',   title:'山神使者',  color:0x60e880, tc:'#80ff90', skills:'靈法・自然之力' },
+      { name:'楊嬋',   title:'天神弓手',  color:0x80d0ff, tc:'#a0e0ff', skills:'天箭・神力' },
+    ];
+    const cardH = Math.floor(H * 0.16);
+    const cardW = Math.floor(Math.min((W - 30) / 3, 140));
+    const totalCardW = cardW * 3;
+    const startX = (W - totalCardW) / 2;
+    const cardY = H * 0.26;
+    heroes.forEach(({ name, title, color, tc, skills }, i) => {
+      const cx = startX + cardW * i + cardW / 2;
+      const cy = cardY + cardH / 2;
+      const card = this.add.graphics().setAlpha(0);
+      card.fillStyle(0x060220, 0.82); card.fillRoundedRect(cx-cardW/2+2, cy-cardH/2, cardW-4, cardH, 7);
+      card.lineStyle(1.5, color, 0.7); card.strokeRoundedRect(cx-cardW/2+2, cy-cardH/2, cardW-4, cardH, 7);
+      const fs = Math.max(11, Math.floor(cardW * 0.12));
+      const nm = this.add.text(cx, cy - cardH*0.26, name, {
+        fontSize:(fs+3)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:tc, fontStyle:'bold', stroke:'#000', strokeThickness:2,
+      }).setOrigin(0.5, 0.5).setAlpha(0);
+      const tl = this.add.text(cx, cy + cardH*0.04, title, {
+        fontSize:Math.max(9, fs-1)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#9a8060', stroke:'#000', strokeThickness:1,
+      }).setOrigin(0.5, 0.5).setAlpha(0);
+      const lv = this.add.text(cx, cy + cardH*0.32, `Lv.${GS.party[i]?.lv || 1}`, {
+        fontSize:Math.max(9, fs)+'px', fontFamily:'monospace',
+        color:'#ffd700', fontStyle:'bold', stroke:'#000', strokeThickness:1,
+      }).setOrigin(0.5, 0.5).setAlpha(0);
+      const delay = 1400 + i * 280;
+      this.tweens.add({ targets:[card,nm,tl,lv], alpha:1, duration:480, delay, ease:'Power2' });
+      // Flash glow on appear
+      this.time.delayedCall(delay+80, () => {
+        const gl = this.add.graphics();
+        gl.lineStyle(10, color, 0.5); gl.strokeRoundedRect(cx-cardW/2+2, cy-cardH/2, cardW-4, cardH, 7);
+        this.tweens.add({ targets:gl, alpha:0, duration:500, onComplete:()=>gl.destroy() });
+      });
+    });
+
+    const divG2 = this.add.graphics();
+    divG2.lineStyle(1, 0x9a7828, 0.35);
+    divG2.lineBetween(W*0.12, H*0.445, W*0.88, H*0.445);
+
+    // ── Stats panel ───────────────────────────────────────────
+    const panW = Math.min(470, W-40), panH = Math.floor(H*0.21);
+    const panX = (W-panW)/2, panY = Math.floor(H*0.46);
+    mkPanel(this, panX, panY, panW, panH, 0.88);
 
     const pt = GS.flags?.playtime || 0;
     const maxLv = GS.party.reduce((mx,m) => Math.max(mx, m.lv||1), 1);
@@ -567,7 +618,7 @@ class EndingScene extends Phaser.Scene {
     const rowH2 = Math.floor(panH / stats.length);
     stats.forEach(([lbl, val], i) => {
       const sy = panY + i*rowH2 + rowH2/2;
-      const fsL = Math.max(12, Math.floor(panW*0.027));
+      const fsL = Math.max(11, Math.floor(panW*0.024));
       const lblT = this.add.text(panX + panW*0.44, sy, lbl+'：', {
         fontSize: fsL+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
         color:'#9a8060', stroke:'#000', strokeThickness:1,
@@ -576,27 +627,27 @@ class EndingScene extends Phaser.Scene {
         fontSize: fsL+'px', fontFamily:'monospace',
         color:'#ffd700', fontStyle:'bold', stroke:'#000', strokeThickness:1,
       }).setOrigin(0, 0.5).setAlpha(0);
-      this.tweens.add({ targets:[lblT,valT], alpha:1, duration:500, delay:1200+i*200 });
+      this.tweens.add({ targets:[lblT,valT], alpha:1, duration:500, delay:2300+i*180 });
     });
 
-    // Buttons
-    const btnFontSz = Math.min(20, Math.floor(W*0.030));
+    // ── Buttons ───────────────────────────────────────────────
+    const btnFontSz = Math.min(19, Math.floor(W*0.030));
     this.opts = ['新遊戲＋（繼承 60% 靈石）', '回到標題'];
     this.optBgs = [];
     this.optTexts = this.opts.map((o, i) => {
-      const oy = panY + panH + 40 + i*58;
+      const oy = panY + panH + 28 + i*50;
       const bg2 = this.add.graphics();
       const t = this.add.text(W/2, oy, o, {
         fontSize: btnFontSz+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
         color:'#c8a060', stroke:'#000', strokeThickness:3,
       }).setOrigin(0.5, 0.5).setAlpha(0);
-      this.tweens.add({ targets:t, alpha:1, duration:400, delay:2200+i*150 });
+      this.tweens.add({ targets:t, alpha:1, duration:400, delay:3100+i*150 });
       this.optBgs.push({ g:bg2, y:oy });
       return t;
     });
 
-    this.add.text(W/2, H*0.95, '↑↓ 選擇　Z/Enter 確認', {
-      fontSize:'12px', fontFamily:'serif', color:'#5a4a2a',
+    this.add.text(W/2, H*0.97, '↑↓ 選擇　Z/Enter 確認', {
+      fontSize:'11px', fontFamily:'serif', color:'#5a4a2a',
     }).setOrigin(0.5, 0.5);
 
     this.t = 0;
@@ -616,10 +667,10 @@ class EndingScene extends Phaser.Scene {
       g.clear();
       const sel = i === this.cursor;
       if (sel) {
-        g.fillStyle(0x9a7828, 0.18);
-        g.fillRoundedRect(W/2-bw/2, y-26, bw, 52, 6);
-        g.lineStyle(1, 0x9a7828, 0.7);
-        g.strokeRoundedRect(W/2-bw/2, y-26, bw, 52, 6);
+        g.fillStyle(0x9a7828, 0.2);
+        g.fillRoundedRect(W/2-bw/2, y-24, bw, 48, 6);
+        g.lineStyle(1, 0x9a7828, 0.75);
+        g.strokeRoundedRect(W/2-bw/2, y-24, bw, 48, 6);
       }
       this.optTexts[i].setColor(sel ? '#ffd700' : '#c8a060');
     });
@@ -627,16 +678,20 @@ class EndingScene extends Phaser.Scene {
 
   update() {
     this.t++;
+    // Title gentle pulse
+    if (this.titleT) {
+      this.titleT.setScale(1 + Math.sin(this.t * 0.04) * 0.018);
+    }
     this.sparkGfx.clear();
     const W = this.scale.width;
     this.sparks.forEach(s => {
       s.x += s.vx; s.y += s.vy; s.vy += 0.05;
       s.alpha -= s.fade;
       if (s.alpha <= 0) {
-        const angle = Math.random()*Math.PI*2, speed = 0.5 + Math.random()*3.5;
-        s.x = W*0.5 + (Math.random()-0.5)*120; s.y = this.scale.height*0.22;
-        s.vx = Math.cos(angle)*speed; s.vy = Math.sin(angle)*speed - 0.8;
-        s.alpha = 0.5 + Math.random()*0.5;
+        const angle = Math.random()*Math.PI*2, speed = 0.4 + Math.random()*4.2;
+        s.x = W*0.5 + (Math.random()-0.5)*200; s.y = this.scale.height*0.08;
+        s.vx = Math.cos(angle)*speed; s.vy = Math.sin(angle)*speed - 1.1;
+        s.alpha = 0.4 + Math.random()*0.6;
       }
       this.sparkGfx.fillStyle(s.color, s.alpha);
       this.sparkGfx.fillCircle(s.x, s.y, s.r);

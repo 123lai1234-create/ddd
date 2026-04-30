@@ -461,6 +461,7 @@ class WorldScene extends Phaser.Scene {
   _openChest(chest) {
     if (!GS.flags.chests) GS.flags.chests = {};
     GS.flags.chests[chest.id] = true;
+    if(Object.keys(GS.flags.chests).length>=5) Achieve?.unlock('all_chests');
     const rewards = [];
     if (chest.gold) { GS.gold += chest.gold; rewards.push(`${chest.gold} 靈石`); }
     if (chest.item) { GS.addItem(chest.item); rewards.push(ITEMS[chest.item]?.name || chest.item); }
@@ -811,7 +812,8 @@ class WorldScene extends Phaser.Scene {
         for (const p of parts) val = val?.[p];
         if (!val) { this._showDialog(['此路不通…']); return; }
       }
-      this._showDialog([...npc.dlg], () => {
+      const bossDlg = (GS.flags.ngplus && npc.dlgNG) ? npc.dlgNG : npc.dlg;
+      this._showDialog([...bossDlg], () => {
         const base = ENEMIES[npc.boss];
         const ngS = GS.flags.ngplus ? 1.35 : 1.0;
         GS.battleData = { enemies:[{
@@ -837,7 +839,8 @@ class WorldScene extends Phaser.Scene {
       }, npc.name);
       return;
     }
-    this._showDialog([...npc.dlg], null, npc.name);
+    const dlg = (GS.flags.ngplus && npc.dlgNG) ? npc.dlgNG : npc.dlg;
+    this._showDialog([...dlg], null, npc.name);
   }
 
   _showDialog(lines, onDone=null, speaker=null) {

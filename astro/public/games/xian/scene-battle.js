@@ -1258,6 +1258,8 @@ class BattleScene extends Phaser.Scene {
     if (cmd==='flee') {
       if (Math.random()<0.5) {
         this._addLog('成功逃跑！');
+        GS.flags._escapes = (GS.flags._escapes||0)+1;
+        if(GS.flags._escapes>=5) Achieve?.unlock('pacifist');
         this.time.delayedCall(400, () => {
           this.cameras.main.fadeOut(400,0,0,0);
           this.cameras.main.once('camerafadeoutcomplete',()=>this.scene.start('WorldScene'));
@@ -1587,7 +1589,7 @@ class BattleScene extends Phaser.Scene {
       if(m.dead)return; m.exp+=expGain;
       while(m.exp>=expForLevel(m.lv)){
         GS.levelUp(m); levelUps.push(m.name); Sound?.play('levelUp');
-        if(m.lv>=5)Achieve?.unlock('level_5'); if(m.lv>=10)Achieve?.unlock('level_10');
+        if(m.lv>=5)Achieve?.unlock('level_5'); if(m.lv>=10)Achieve?.unlock('level_10'); if(m.lv>=15)Achieve?.unlock('level_max');
         const sp=this.partySprites[mi];
         if(sp){ this._floatText(sp.g.x,sp.g.y-85,`Lv.${m.lv} UP!`,'#ffd700',22); this._spawnParticles(sp.g.x,sp.g.y-45,0xffd700,14,50); }
       }
@@ -1627,6 +1629,7 @@ class BattleScene extends Phaser.Scene {
       if(bossEnemy.id==='boss'){
         GS.flags._pendingLines=['黃眉大王已伏誅！天命得成！','土地：妖氣盡散，山河安寧。','楊嬋：天命之人，你做到了，回黑山村吧！'];
         GS.flags._isFinalBoss=true;
+        if((GS.flags?.playtime||0)<1800) Achieve?.unlock('speed_run');
       }
     }
 
