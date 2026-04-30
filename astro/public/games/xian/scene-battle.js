@@ -1098,6 +1098,11 @@ class BattleScene extends Phaser.Scene {
         const stT=this.add.text(px+pw-8,ty,m.status.slice(0,2).join(' '),{fontSize:fsS+'px',fontFamily:'serif',color:'#c050e8',stroke:'#000',strokeThickness:1}).setOrigin(1,0).setDepth(5);
         this.statusTexts.push(stT);
       }
+      if (!dead && m.hp<=Math.floor(m.maxHp*0.2) && !m.limitUsed) {
+        const stOff=m.status.length>0?Math.floor(fsS*1.35):0;
+        const lt=this.add.text(px+pw-8,ty+stOff,'◆必殺',{fontSize:fsS+'px',fontFamily:'"Noto Serif TC","SimSun",serif',color:'#ff5010',stroke:'#000',strokeThickness:1}).setOrigin(1,0).setDepth(5);
+        this.statusTexts.push(lt);
+      }
     });
   }
 
@@ -1545,8 +1550,16 @@ class BattleScene extends Phaser.Scene {
       } else { doAtk(); }
     } else if (act.type==='buff') {
       e.status.push(act.buff||'atkUp');
-      this._addLog(`${e.name} 使用 ${act.name}！`);
+      const _bsi=this.enemies.indexOf(e), _bsp=this.enemySprites[_bsi];
+      if (_bsp) { this._floatText(_bsp.g.x,_bsp.g.y-(e.sz||28)*2.2,'強化！','#ffaa20',18); this._spawnParticles(_bsp.g.x,_bsp.g.y-40,0xff8020,8,42); }
+      this._addLog(`${e.name} 使用 ${act.name}！攻擊力大幅提升！`);
       this.time.delayedCall(600, onDone);
+    } else if (act.type==='debuff') {
+      const _dt=living[Math.floor(Math.random()*living.length)], _di=this.party.indexOf(_dt), _ds=this.partySprites[_di];
+      if (act.debuff) Object.entries(act.debuff).forEach(([k,v])=>{for(let i=0;i<v;i++)_dt.status.push(k);});
+      if (_ds) { this._floatText(_ds.g.x,_ds.g.y-46,'緩！','#80b0ff',20); this._spawnParticles(_ds.g.x,_ds.g.y-18,0x5080ff,6,32); }
+      this._addLog(`${e.name} 使用 ${act.name}！${_dt.name} 行動遲緩！`);
+      this._rebuildStatus(); this.time.delayedCall(600, onDone);
     } else {
       this.time.delayedCall(400, onDone);
     }
@@ -1750,19 +1763,23 @@ class BattleScene extends Phaser.Scene {
     const down=Phaser.Input.Keyboard.JustDown(this.keys.down)||dnPad;
     const ok  =Phaser.Input.Keyboard.JustDown(this.keys.z)  ||Phaser.Input.Keyboard.JustDown(this.keys.enter)||okPad;
     const back=Phaser.Input.Keyboard.JustDown(this.keys.x)  ||Phaser.Input.Keyboard.JustDown(this.keys.esc) ||backPad;
+    const left =Phaser.Input.Keyboard.JustDown(this.keys.left);
+    const right=Phaser.Input.Keyboard.JustDown(this.keys.right);
 
     if (!this.subMode) {
       const actor0=this.party[this.actorIdx];
       const mSz=(actor0&&!actor0.dead&&actor0.hp<=Math.floor(actor0.maxHp*0.2)&&!actor0.limitUsed)?6:5;
       if(up)  {this.cursor=(this.cursor-1+mSz)%mSz;this._rebuildMenu();Sound?.play('menuMove');}
       if(down){this.cursor=(this.cursor+1)%mSz;     this._rebuildMenu();Sound?.play('menuMove');}
+      if(right&&this.cursor<3){const nc=this.cursor+3;if(nc<mSz){this.cursor=nc;this._rebuildMenu();Sound?.play('menuMove');}}
+      if(left &&this.cursor>=3){this.cursor-=3;this._rebuildMenu();Sound?.play('menuMove');}
       if(ok){
         Sound?.play('menuSelect');
         if(this.cursor===0){
           const alive=this.enemies.filter(e=>!e.dead);
           if(alive.length===1){this._heroAct('attack',null,null,this.enemies.indexOf(alive[0]));}
           else{this.subMode='target';this.subCursor=0;this.targetList=alive.map(e=>({isEnemy:true,e}));this._rebuildMenu();}
-        } else if(this.cursor===1){this.subMode='skill';this.subCursor=0;this._rebuildMenu();}
+        } else if(this.cursor===1){this.subMode='skill';this.subCursor=0;this._rebuildMenu();const _sk0=SKILLS[actor.skills?.[0]];if(this.logText2&&_sk0)this.logText2.setText(_sk0.desc||'');}
           else if(this.cursor===2){this.subMode='item'; this.subCursor=0;this._rebuildMenu();}
           else if(this.cursor===3){this._heroAct('defend');}
           else if(this.cursor===4){this._heroAct('flee');}
@@ -1770,9 +1787,9 @@ class BattleScene extends Phaser.Scene {
       }
     } else if (this.subMode==='skill') {
       const skills=actor.skills.map(sk=>SKILLS[sk]).filter(Boolean);
-      if(up)  {this.subCursor=(this.subCursor-1+skills.length)%skills.length;this._rebuildMenu();Sound?.play('menuMove');}
-      if(down){this.subCursor=(this.subCursor+1)%skills.length;this._rebuildMenu();Sound?.play('menuMove');}
-      if(back){this.subMode=null;this._rebuildMenu();}
+      if(up)  {this.subCursor=(this.subCursor-1+skills.length)%skills.length;this._rebuildMenu();Sound?.play('menuMove');if(this.logText2)this.logText2.setText(skills[this.subCursor]?.desc||'');}
+      if(down){this.subCursor=(this.subCursor+1)%skills.length;this._rebuildMenu();Sound?.play('menuMove');if(this.logText2)this.logText2.setText(skills[this.subCursor]?.desc||'');}
+      if(back){this.subMode=null;this._rebuildMenu();if(this.logText2)this.logText2.setText('');}
       if(ok){
         const sk=skills[this.subCursor], skId=actor.skills[this.subCursor];
         if(!sk||actor.mp<sk.mp){this._addLog('靈力不足！');return;}
