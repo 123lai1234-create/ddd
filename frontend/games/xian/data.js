@@ -596,6 +596,9 @@ const ACHIEVEMENTS = {
   all_chests:   { name:'尋寶達人',   icon:'📦',  desc:'開啟 5 個隱藏寶箱。' },
   big_spender:  { name:'一擲千金',   icon:'💸',  desc:'累計消費 1000 靈石。' },
   pacifist:     { name:'慈悲為懷',   icon:'🕊️', desc:'累計逃跑 5 次。' },
+  chain_master: { name:'元素共鳴師', icon:'🔥',  desc:'觸發 3 次元素連鎖反應。' },
+  limit_breaker:{ name:'極限突破者', icon:'💥',  desc:'使用必殺技 3 次。' },
+  purifier:     { name:'神光淨化者', icon:'✨',  desc:'使用淨化靈光解除異常狀態。' },
 };
 
 const Achieve = {
@@ -739,4 +742,10 @@ const QUESTS = [
     done: () => GS.party.some(m=>(m.lv||1)>=8) },
   { id:'q11',name:'見識百妖',     desc:'遭遇六種以上的妖物。',
     done: () => Object.keys(GS.flags?._enemySeen||{}).length >= 6 },
+  { id:'q12',name:'元素相剋',     desc:'發現並觸發元素連鎖反應。',
+    done: () => (GS.flags?._chainCount||0) >= 1 },
+  { id:'q13',name:'必殺三連',     desc:'使用必殺技三次。',
+    done: () => (GS.flags?._limitCount||0) >= 3 },
+  { id:'q14',name:'淨化之道',     desc:'以淨化靈光解除隊友異常狀態。',
+    done: () => (GS.flags?._purifyCount||0) >= 1 },
 ];

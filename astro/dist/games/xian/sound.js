@@ -188,6 +188,10 @@ const Sound = (() => {
       _osc(55, 'sawtooth', 0.30, 0.30, 0.18);
       _osc(160, 'sawtooth', 0.10, 0.22, 0.32);
     },
+    cleanse() {
+      [1047, 1318, 1568, 2093].forEach((f, i) => _osc(f, 'sine', 0.22, 0.14, i * 0.07));
+      _noise(0.03, 0.18, 2400, 0.10);
+    },
     bossIntro() {
       _noise(0.09, 0.38, 80);
       _osc(110, 'sawtooth', 0.12, 0.48);

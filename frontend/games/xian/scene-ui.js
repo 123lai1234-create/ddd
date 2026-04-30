@@ -627,6 +627,26 @@ class MenuScene extends Phaser.Scene {
             tagX += tt.width + 4;
           });
         }
+        // Drop items
+        const dropParts = (e.drops||[]).map(d => {
+          const nm = (typeof ITEMS!=='undefined'&&ITEMS[d.id]?.name) || d.id;
+          return `${d.r>=0.4?'●':'◆'}${nm}`;
+        });
+        if (dropParts.length > 0) {
+          const dropY = ay + 6 + fs + (fsS-1)*2 + 4;
+          this.add.text(ax+26, dropY, dropParts.join(' '), {
+            fontSize: Math.max(7, fsS-3)+'px', fontFamily:'monospace', color:'#c0a040',
+            stroke:'#000', strokeThickness:1,
+          });
+        }
+        // Boss indicator
+        if (e.boss) {
+          this.panelGfx.fillStyle(0xff2020, 0.15); this.panelGfx.fillRoundedRect(ax+colW-56, ay+1, 48, 16, 4);
+          this.add.text(ax+colW-32, ay+9, 'BOSS', {
+            fontSize: Math.max(7,fsS-3)+'px', fontFamily:'monospace', color:'#ff8060', fontStyle:'bold',
+            stroke:'#000', strokeThickness:1,
+          }).setOrigin(0.5);
+        }
       } else {
         this.add.text(ax+14, ay+rowH/2-fs/2, '？？？　未知妖怪', {
           fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',

@@ -1295,9 +1295,13 @@ class BattleScene extends Phaser.Scene {
         });
         this._addLog(`${e.name} 進入狂怒！攻擊大幅提升！`);
         this._spawnParticles(sp.g.x,sp.g.y-40,0xff2020,22,75); this._shake(0.014,700);
-        // Boss bar rage pulse
+        // Boss bar rage pulse + Phase 2 label
         if (this._bossBg) { this.tweens.add({targets:this._bossBg,alpha:0.5,duration:130,yoyo:true,repeat:4}); }
         if (this._bossBarText) this._bossBarText.setColor('#ff6060');
+        const p2lbl=this.add.text(this._bossBarX+(this._bossBarW||0)+6, this._bossBarY+4, '【第二形態】', {
+          fontSize:'10px',fontFamily:'"Noto Serif TC","SimSun",serif',color:'#ff6040',stroke:'#000',strokeThickness:2,
+        }).setDepth(24).setAlpha(0);
+        this.tweens.add({targets:p2lbl,alpha:1,duration:350,delay:400});
       }
     }
     // Non-boss enemy enrage at <30% HP
@@ -1414,6 +1418,8 @@ class BattleScene extends Phaser.Scene {
       });
       Sound?.play(lcfg.sfx);
 
+      GS.flags._limitCount=(GS.flags._limitCount||0)+1;
+      if(GS.flags._limitCount>=3)Achieve?.unlock('limit_breaker');
       this._animHeroAttack(heroSp, enemySp, ()=>{
         tgt.hp=Math.max(0,tgt.hp-dmg); if(tgt.hp===0){tgt.dead=true;Sound?.play('enemyDead');}else Sound?.play('hit');
         this._flashEnemy(tgtIdx); this._refreshEnemyHp(tgtIdx); this._shake(0.020,520);
@@ -1524,6 +1530,8 @@ class BattleScene extends Phaser.Scene {
               this._floatText(ex,ey-60,`+${cr.bonus}`,cr.clr,14);
               this._spawnParticles(ex,ey,parseInt(cr.clr.replace('#',''),16),20,65);
               this._shake(0.013,400);
+              GS.flags._chainCount=(GS.flags._chainCount||0)+1;
+              if(GS.flags._chainCount>=3)Achieve?.unlock('chain_master');
             }
           }
         });
@@ -1554,7 +1562,7 @@ class BattleScene extends Phaser.Scene {
         if(GS.flags._healCount>=10)Achieve?.unlock('healer');
         msg=`${actor.name} 施展 ${sk.name}，恢復 ${heals.join('/')} 點生命值！`;
       } else if (sk.type==='cleanse') {
-        Sound?.play('heal');
+        Sound?.play('cleanse');
         const CLEANSE_ST=['poison','burn','slow','stun','atkDown'];
         const ctargets=this.party.filter(m=>!m.dead);
         let totalRemoved=0;
@@ -1571,6 +1579,7 @@ class BattleScene extends Phaser.Scene {
             this.tweens.add({targets:cgl,alpha:0,scaleX:1.8,scaleY:1.8,duration:700,onComplete:()=>cgl.destroy()});
           }
         });
+        if(totalRemoved>0){GS.flags._purifyCount=(GS.flags._purifyCount||0)+1;Achieve?.unlock('purifier');}
         msg=totalRemoved>0?`${actor.name} 施展 ${sk.name}！全體異常狀態解除！`:`${actor.name} 施展 ${sk.name}！`;
       } else if (sk.type==='buff') {
         const turns=sk.turns||3;
