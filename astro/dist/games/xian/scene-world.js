@@ -973,8 +973,32 @@ class WorldScene extends Phaser.Scene {
       }, npc.name);
       return;
     }
+    const contextDlg = this._getContextDlg(npc);
+    if (contextDlg) { this._showDialog(contextDlg, null, npc.name); return; }
     const dlg = (GS.flags.ngplus && npc.dlgNG) ? npc.dlgNG : npc.dlg;
     this._showDialog([...dlg], null, npc.name);
+  }
+
+  _getContextDlg(npc) {
+    const f = GS.flags;
+    if (npc.name === '老猴子') {
+      if (f.defeated_boss)     return ['黃眉大王終於伏誅！天命得成！', '孩子，你做到了。這一路的艱辛，老朽都看在眼裡。', '山河重歸安寧，老朽在此多謝天命之人！'];
+      if (f.defeated_dragonKing) return ['東海龍王已敗，龍珠到手！', '前往小西天的路已開，黃眉大王還在等著你。', '快去吧，天命之人，勝利就在眼前！'];
+      if (f.defeated_silverKing) return ['銀角大王已伏誅！天命人了不起！', '東海龍宮的路已通，龍王等待挑戰。', '帶著三人之力，繼續前進吧！'];
+      if (f.defeatedDragon)    return ['虎先鋒已敗！哈哈哈！', '東海龍宮的大門已為你敞開。', '繼續保持這股氣勢，天命之路必成！'];
+    }
+    if (npc.name === '村婦') {
+      if (f.defeated_boss)   return ['黃眉大王被你除掉了！謝謝你！', '村子的孩子可以回來了，全靠天命之人的英勇！'];
+      if (f.defeatedDragon)  return ['聽說你打敗了黃風嶺的虎先鋒！', '村民們都在慶賀，請你多保重！'];
+    }
+    if (npc.name === '土地廟') {
+      if (f.defeated_boss)   return ['〔石碑刻字〕', '黃眉大王已伏，天命圓滿。', '願此後山河無憂，妖氣不生。'];
+      if (f.party?.length>=3||GS.party.length>=3) return ['〔石碑刻字〕', '三位天命者已聚，山神之力加護汝等。', '除妖之路，前途光明！'];
+    }
+    if (npc.name === '客棧掌柜') {
+      if (f.defeated_boss)   return ['天命人，黃眉大王已除，天下太平！', '今晚若要住宿，老夫只收半價。', '英雄難得，請多保重！'];
+    }
+    return null;
   }
 
   _showDialog(lines, onDone=null, speaker=null) {
