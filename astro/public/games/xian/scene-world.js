@@ -278,6 +278,8 @@ class WorldScene extends Phaser.Scene {
 
     // Castle visit flag for quest tracking
     if (GS.map === 'castle') GS.flags.visitedCastle = true;
+    // Check quest completions on each scene enter (delayed so scene renders first)
+    this.time.delayedCall(800, () => this._checkQuestToasts?.());
 
     // NG+ banner on first load of village in NG+
     if (GS.flags.ngplus && GS.map === 'village' && !GS.flags._ngBannerShown) {
@@ -302,6 +304,9 @@ class WorldScene extends Phaser.Scene {
     this._onAchieve = (e) => this._showAchieveToast(e.detail);
     window.addEventListener('xian:achievement', this._onAchieve);
     this.events.once('shutdown', () => window.removeEventListener('xian:achievement', this._onAchieve));
+
+    // Quest completion tracking (skip q1 which is always done)
+    this._shownQuestToasts = new Set(GS.flags._shownQuestToasts || ['q1']);
 
     // Playtime counter (seconds)
     this._ptCounter = 0;
@@ -487,7 +492,7 @@ class WorldScene extends Phaser.Scene {
     Sound?.play('chest');
     const co = this.chestObjects?.find(c => c.chest === chest);
     if (co) { co.opened = true; this._drawChest(co.g, chest.x*TILE_SZ+TILE_SZ/2, chest.y*TILE_SZ+TILE_SZ/2, true); }
-    this._showDialog(['打開了寶箱！', `獲得：${rewards.join('、')}！`], () => this._refreshHud());
+    this._showDialog(['打開了寶箱！', `獲得：${rewards.join('、')}！`], () => { this._refreshHud(); this._checkQuestToasts(); });
   }
 
   _refreshMinimap() {
@@ -678,6 +683,45 @@ class WorldScene extends Phaser.Scene {
         this._hudStatusObjs.push(dg);
       }
     });
+  }
+
+  _checkQuestToasts() {
+    if (typeof QUESTS === 'undefined') return;
+    QUESTS.forEach(q => {
+      if (this._shownQuestToasts.has(q.id)) return;
+      if (q.done()) {
+        this._shownQuestToasts.add(q.id);
+        GS.flags._shownQuestToasts = [...this._shownQuestToasts];
+        this.time.delayedCall(400, () => this._showQuestToast(q));
+      }
+    });
+  }
+
+  _showQuestToast(q) {
+    const W = this.scale.width;
+    const toastW = Math.min(340, W - 30);
+    const tx = W/2 - toastW/2;
+    const bg = this.add.graphics().setScrollFactor(0).setDepth(30).setAlpha(0);
+    bg.fillStyle(0x081208, 0.96);
+    bg.fillRoundedRect(tx, 78, toastW, 60, 8);
+    bg.lineStyle(2, 0x60d040, 0.95);
+    bg.strokeRoundedRect(tx, 78, toastW, 60, 8);
+    const t1 = this.add.text(W/2, 86, '✓ 任務完成！', {
+      fontSize:'11px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#60d040', stroke:'#000', strokeThickness:2,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(31).setAlpha(0);
+    const t2 = this.add.text(W/2, 102, q.name, {
+      fontSize:'14px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#c0f070', fontStyle:'bold', stroke:'#000', strokeThickness:2,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(31).setAlpha(0);
+    const t3 = this.add.text(W/2, 119, q.desc, {
+      fontSize:'10px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#608040', stroke:'#000', strokeThickness:1,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(31).setAlpha(0);
+    Sound?.play('levelUp');
+    this.tweens.add({ targets:[bg,t1,t2,t3], alpha:1, duration:280, ease:'Power2',
+      onComplete:()=>this.tweens.add({ targets:[bg,t1,t2,t3], alpha:0, duration:500, delay:2800,
+        onComplete:()=>{ bg.destroy(); t1.destroy(); t2.destroy(); t3.destroy(); } }) });
   }
 
   _showAchieveToast(a) {

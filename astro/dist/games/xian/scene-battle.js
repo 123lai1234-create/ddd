@@ -20,7 +20,7 @@ class BattleScene extends Phaser.Scene {
     this.waiting = false;
     this._t = 0;
 
-    this.party   = GS.party.map(m => ({ ...m, status:[...m.status], limitUsed:false }));
+    this.party   = GS.party.map(m => ({ ...m, status:[...m.status], limitUsed:false, limitGauge:m.limitGauge||0 }));
     this.enemies = GS.battleData.enemies.map(e => ({ ...e, status:[...e.status] }));
     this.groundY = Math.floor(H * 0.56);
 
@@ -1086,20 +1086,33 @@ class BattleScene extends Phaser.Scene {
         color:dead?'#484040':sel?'#ffd700':'#e8c060',stroke:'#000',strokeThickness:fs>13?2:1,
       }).setDepth(5);
       this.statusTexts.push(nameT);
-      const barW=Math.floor(pw*0.52), bx=px+10, by1=ry+rowH*0.46, by2=ry+rowH*0.70, bh2=Math.max(5,Math.floor(rowH*0.13));
+      const barW=Math.floor(pw*0.52), bx=px+10;
+      const by1=ry+rowH*0.43, by2=ry+rowH*0.63, bh2=Math.max(4,Math.floor(rowH*0.12));
       const st=calcStats(m);
       const hpBar=mkBar(this,bx,by1,barW,bh2,m.hp,m.maxHp,0xe04040); hpBar.setDepth(5); this.statusTexts.push(hpBar);
       const mpBar=mkBar(this,bx,by2,barW,bh2,m.mp,st.maxMp,0x4060e0); mpBar.setDepth(5); this.statusTexts.push(mpBar);
       const hpT=this.add.text(bx+barW+5,by1+bh2/2,`${m.hp}`,{fontSize:fsS+'px',fontFamily:'monospace',color:'#e05050',stroke:'#000',strokeThickness:1}).setOrigin(0,0.5).setDepth(5);
       const mpT=this.add.text(bx+barW+5,by2+bh2/2,`${m.mp}`,{fontSize:fsS+'px',fontFamily:'monospace',color:'#5070e0',stroke:'#000',strokeThickness:1}).setOrigin(0,0.5).setDepth(5);
       this.statusTexts.push(hpT,mpT);
-      const expBar=mkBar(this,bx,ry+rowH*0.88,barW,3,m.exp,expForLevel(m.lv),0x50c878); expBar.setDepth(5); this.statusTexts.push(expBar);
-      if (m.status.length>0) {
-        const stT=this.add.text(px+pw-8,ty,m.status.slice(0,2).join(' '),{fontSize:fsS+'px',fontFamily:'serif',color:'#c050e8',stroke:'#000',strokeThickness:1}).setOrigin(1,0).setDepth(5);
+      // Limit gauge (tiny gold bar, fills from damage taken)
+      const lgGauge=m.limitGauge||0, lgW=Math.floor(barW*0.55), lgY=ry+rowH*0.80;
+      const lgBar=mkBar(this,bx,lgY,lgW,2,lgGauge,100,0xffe040); lgBar.setDepth(5); this.statusTexts.push(lgBar);
+      const lgLbl=this.add.text(bx+lgW+3,lgY+1,'必',{fontSize:Math.max(7,fsS-3)+'px',fontFamily:'monospace',color:lgGauge>=100?'#ffd700':'#5a4a10',stroke:'#000',strokeThickness:1}).setOrigin(0,0.5).setDepth(5);
+      this.statusTexts.push(lgLbl);
+      // EXP bar
+      const expBar=mkBar(this,bx,ry+rowH*0.92,barW,2,m.exp,expForLevel(m.lv),0x50c878); expBar.setDepth(5); this.statusTexts.push(expBar);
+      // Status labels (Chinese icons)
+      const STATUS_LBL={poison:'毒',burn:'燒',slow:'緩',stun:'昏',atkUp:'攻↑',defUp:'守↑',defend:'防'};
+      const STATUS_CLR={poison:'#c050e8',burn:'#ff8040',slow:'#80a0ff',stun:'#ffcc00',atkUp:'#ffe060',defUp:'#80e8ff',defend:'#80c0ff'};
+      const uniqueSt=[...new Set(m.status)].filter(s=>STATUS_LBL[s]);
+      if (uniqueSt.length>0) {
+        const stLabel=uniqueSt.map(s=>STATUS_LBL[s]).join(' ');
+        const stClr=STATUS_CLR[uniqueSt[0]]||'#c050e8';
+        const stT=this.add.text(px+pw-8,ty,stLabel,{fontSize:fsS+'px',fontFamily:'"Noto Serif TC","SimSun",serif',color:stClr,stroke:'#000',strokeThickness:1}).setOrigin(1,0).setDepth(5);
         this.statusTexts.push(stT);
       }
-      if (!dead && m.hp<=Math.floor(m.maxHp*0.2) && !m.limitUsed) {
-        const stOff=m.status.length>0?Math.floor(fsS*1.35):0;
+      if (!dead && lgGauge>=100) {
+        const stOff=uniqueSt.length>0?Math.floor(fsS*1.35):0;
         const lt=this.add.text(px+pw-8,ty+stOff,'◆必殺',{fontSize:fsS+'px',fontFamily:'"Noto Serif TC","SimSun",serif',color:'#ff5010',stroke:'#000',strokeThickness:1}).setOrigin(1,0).setDepth(5);
         this.statusTexts.push(lt);
       }
@@ -1119,7 +1132,7 @@ class BattleScene extends Phaser.Scene {
     const fs=Math.max(13,Math.floor(ph*0.18));
     if (!this.subMode) {
       const cmds=['攻擊','技能','道具','防禦','逃跑'];
-      if (actor.hp<=Math.floor(actor.maxHp*0.2)&&!actor.limitUsed) cmds.push('必殺');
+      if ((actor.limitGauge||0)>=100) cmds.push('必殺');
       const colW=Math.floor(pw/2), rowH=Math.floor(ph/3);
       cmds.forEach((cmd,i) => {
         const col=Math.floor(i/3), row=i%3, tx=px+col*colW+20, ty=py+row*rowH+rowH*0.5, sel=i===this.cursor;
@@ -1272,7 +1285,7 @@ class BattleScene extends Phaser.Scene {
     }
 
     if (cmd==='limit') {
-      actor.limitUsed=true;
+      actor.limitGauge=0;
       const alive=this.enemies.filter(e=>!e.dead);
       if (!alive.length) { doAfter('…'); return; }
       const tgt=alive[0], tgtIdx=this.enemies.indexOf(tgt), st=calcStats(actor);
@@ -1400,6 +1413,21 @@ class BattleScene extends Phaser.Scene {
         GS.flags._healCount=(GS.flags._healCount||0)+targets.length;
         if(GS.flags._healCount>=10)Achieve?.unlock('healer');
         msg=`${actor.name} 施展 ${sk.name}，恢復 ${heals.join('/')} 點生命值！`;
+      } else if (sk.type==='buff') {
+        const turns=sk.turns||3;
+        for(let i=0;i<turns;i++) actor.status.push(sk.buff||'atkUp');
+        const sp2=this.partySprites[this.actorIdx];
+        const BUFF_LABELS={atkUp:'攻擊↑',defUp:'防禦↑'};
+        const bn=BUFF_LABELS[sk.buff]||'BUFF↑';
+        if(sp2){
+          this._floatText(sp2.g.x,sp2.g.y-62,bn,'#ffe060',22);
+          this._spawnParticles(sp2.g.x,sp2.g.y-20,0xffe060,8,35);
+          const gl=this.add.graphics().setDepth(12);
+          gl.fillStyle(0xffd700,0.22); gl.fillCircle(sp2.g.x,sp2.g.y-18,32);
+          this.tweens.add({targets:gl,alpha:0,duration:700,onComplete:()=>gl.destroy()});
+        }
+        Sound?.play('magic');
+        msg=`${actor.name} 施展 ${sk.name}！${bn}`;
       }
       this._rebuildStatus(); this._addLog(msg);
       this.time.delayedCall(480,()=>{ this.waiting=false; this._nextActor(); });
@@ -1426,6 +1454,13 @@ class BattleScene extends Phaser.Scene {
     if (this.actorIdx>=this.party.length) { this._enemyPhase(); return; }
     while (this.actorIdx<this.party.length&&this.party[this.actorIdx].dead) this.actorIdx++;
     if (this.actorIdx>=this.party.length) { this._enemyPhase(); return; }
+    const _stunActor=this.party[this.actorIdx];
+    if (_stunActor.status.includes('stun')) {
+      const _si=_stunActor.status.indexOf('stun'); _stunActor.status.splice(_si,1);
+      this._addLog(`${_stunActor.name} 昏迷，跳過行動！`);
+      this._rebuildStatus();
+      this.time.delayedCall(500,()=>this._nextActor()); return;
+    }
     this.cursor=0; this.subMode=null; this._rebuildStatus(); this._rebuildMenu();
   }
 
@@ -1438,32 +1473,55 @@ class BattleScene extends Phaser.Scene {
         this.time.delayedCall(200,()=>{
           this.party.forEach(m=>{
             if (m.dead) return;
+            const _pmi=this.party.indexOf(m);
+            const _sp=this.partySprites[_pmi];
+            if (m.status.includes('burn')) {
+              const dmg=Math.max(1,Math.floor(m.maxHp*0.06));
+              m.hp=Math.max(1,m.hp-dmg); this._addLog(`${m.name} 灼傷，損失 ${dmg} HP！`);
+              Sound?.play('hit');
+              if(_sp){this._floatText(_sp.g.x,_sp.g.y-40,String(dmg),'#ff8040',16);this._spawnParticles(_sp.g.x,_sp.g.y-10,0xff4020,5,22);}
+            }
             if (m.status.includes('poison')) {
               const dmg=Math.max(1,Math.floor(m.maxHp*0.05));
               m.hp=Math.max(1,m.hp-dmg); this._addLog(`${m.name} 中毒，損失 ${dmg} HP！`);
               Sound?.play('poison');
-              const sp=this.partySprites[this.party.indexOf(m)];
-              if(sp){this._floatText(sp.g.x,sp.g.y-40,String(dmg),'#c050e8',16);this._spawnParticles(sp.g.x,sp.g.y-10,0x9030c0,5,25);}
+              if(_sp){this._floatText(_sp.g.x,_sp.g.y-54,String(dmg),'#c050e8',16);this._spawnParticles(_sp.g.x,_sp.g.y-10,0x9030c0,5,25);}
             }
             const pc=m.status.filter(s=>s==='poison').length;
-            m.status=m.status.filter(s=>s!=='defend'&&s!=='atkUp'&&s!=='poison');
+            const bc=m.status.filter(s=>s==='burn').length;
+            const ac=m.status.filter(s=>s==='atkUp').length;
+            const dc=m.status.filter(s=>s==='defUp').length;
+            m.status=m.status.filter(s=>!['defend','poison','burn','atkUp','defUp'].includes(s));
             for(let i=0;i<pc-1;i++) m.status.push('poison');
+            for(let i=0;i<bc-1;i++) m.status.push('burn');
+            for(let i=0;i<ac-1;i++) m.status.push('atkUp');
+            for(let i=0;i<dc-1;i++) m.status.push('defUp');
           });
-          // Enemy status tick (poison + clear buffs)
+          // Enemy status tick (burn + poison + clear buffs)
           this.enemies.forEach((e,ei)=>{
             if(e.dead)return;
+            const _esp=this.enemySprites[ei];
+            if(e.status.includes('burn')){
+              const dmg=Math.max(1,Math.floor(e.maxHp*0.06));
+              e.hp=Math.max(0,e.hp-dmg); if(e.hp===0){e.dead=true;}
+              this._addLog(`${e.name} 灼傷，損失 ${dmg} HP！`);
+              Sound?.play('hit');
+              if(_esp){this._floatText(_esp.g.x,_esp.g.y-50,String(dmg),'#ff8040',16);this._spawnParticles(_esp.g.x,_esp.g.y-20,0xff4020,4,22);}
+              this._refreshEnemyHp(ei);
+            }
             if(e.status.includes('poison')){
               const dmg=Math.max(1,Math.floor(e.maxHp*0.05));
               e.hp=Math.max(0,e.hp-dmg); if(e.hp===0){ e.dead=true; Achieve?.unlock('poisoner'); }
               this._addLog(`${e.name} 中毒，損失 ${dmg} HP！`);
               Sound?.play('poison');
-              const sp=this.enemySprites[ei];
-              if(sp){this._floatText(sp.g.x,sp.g.y-50,String(dmg),'#c050e8',16);this._spawnParticles(sp.g.x,sp.g.y-20,0x9030c0,4,22);}
+              if(_esp){this._floatText(_esp.g.x,_esp.g.y-64,String(dmg),'#c050e8',16);this._spawnParticles(_esp.g.x,_esp.g.y-20,0x9030c0,4,22);}
               this._refreshEnemyHp(ei);
             }
             const epc=e.status.filter(s=>s==='poison').length;
-            e.status=e.status.filter(s=>s!=='atkUp'&&s!=='atkDown'&&s!=='slow'&&s!=='poison');
+            const ebc=e.status.filter(s=>s==='burn').length;
+            e.status=e.status.filter(s=>!['atkUp','atkDown','slow','poison','burn'].includes(s));
             for(let i=0;i<epc-1;i++)e.status.push('poison');
+            for(let i=0;i<ebc-1;i++)e.status.push('burn');
           });
           this._rebuildStatus();
           if(this.party.every(m=>m.dead)){this._loseBattle();return;}
@@ -1490,6 +1548,11 @@ class BattleScene extends Phaser.Scene {
     const heroSp=this.partySprites[pIdx];
 
     if (act.type==='atk'||act.type==='drain') {
+      if (e.status.includes('stun')) {
+        const _si=e.status.indexOf('stun'); e.status.splice(_si,1);
+        this._addLog(`${e.name} 被震暈，無法行動！`);
+        this.time.delayedCall(500, onDone); return;
+      }
       if (e.status.includes('slow') && Math.random()<0.4) {
         this._addLog(`${e.name} 動作遲緩，無法行動！`);
         this.time.delayedCall(600, onDone); return;
@@ -1515,6 +1578,7 @@ class BattleScene extends Phaser.Scene {
             let def=t.baseDef; if(t.status.includes('defend'))def=Math.floor(def*1.5);
             const dmg=this._calcDmg(eAtk,def,act.pow||1);
             t.hp=Math.max(0,t.hp-dmg); if(t.hp===0)t.dead=true;
+            if(!t.dead) t.limitGauge=Math.min(100,(t.limitGauge||0)+Math.max(4,Math.floor(dmg/t.maxHp*65)));
             if(act.debuff)Object.entries(act.debuff).forEach(([k,v])=>{for(let i=0;i<v;i++)t.status.push(k);});
             if(act.type==='drain'){
               const heal=Math.floor(dmg*0.5); e.hp=Math.min(e.maxHp,e.hp+heal);
@@ -1830,7 +1894,7 @@ class BattleScene extends Phaser.Scene {
 
     if (!this.subMode) {
       const actor0=this.party[this.actorIdx];
-      const mSz=(actor0&&!actor0.dead&&actor0.hp<=Math.floor(actor0.maxHp*0.2)&&!actor0.limitUsed)?6:5;
+      const mSz=(actor0&&!actor0.dead&&(actor0.limitGauge||0)>=100)?6:5;
       if(up)  {this.cursor=(this.cursor-1+mSz)%mSz;this._rebuildMenu();Sound?.play('menuMove');}
       if(down){this.cursor=(this.cursor+1)%mSz;     this._rebuildMenu();Sound?.play('menuMove');}
       if(right&&this.cursor<3){const nc=this.cursor+3;if(nc<mSz){this.cursor=nc;this._rebuildMenu();Sound?.play('menuMove');}}

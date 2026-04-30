@@ -201,6 +201,8 @@ function calcStats(m){
     luk+=it.luk||0; maxMp+=it.mp||0;
   }
   if(m.status.includes('atkDown')) atk=Math.max(1,atk-8);
+  if(m.status.includes('atkUp'))   atk=Math.floor(atk*1.4);
+  if(m.status.includes('defUp'))   def=Math.floor(def*1.4);
   if(m.status.includes('slow'))    spd=Math.max(1,Math.floor(spd*0.6));
   return {atk,def,spd,luk,maxMp};
 }

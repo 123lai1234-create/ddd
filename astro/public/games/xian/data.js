@@ -14,11 +14,11 @@ const C = {
 const CHAR_BASE = {
   yunyi:  { id:'yunyi',  name:'天命人', title:'齊天後裔', color:0xf0a010, shape:'mage',
             hp:120, mp:40,  atk:18, def:12, spd:15, luk:10,
-            skills:['slash','piercing','windBlade','thunderStomp','dragonStrike'],
+            skills:['slash','piercing','windBlade','thunderStomp','dragonStrike','focus'],
             desc:'身負天命，持金箍棒踏上除妖之路，傳承齊天大聖意志的孤勇者。' },
   linger: { id:'linger', name:'土地',   title:'山神使者', color:0x80c040, shape:'mage',
             hp:80,  mp:120, atk:10, def:8,  spd:18, luk:15,
-            skills:['fireball','iceArrow','heal','thunder','earthBind','soulMend'],
+            skills:['fireball','iceArrow','heal','thunder','earthBind','soulMend','barrier'],
             desc:'主管一方的山神土地，法術精通，感應天命而主動加入除妖行列。' },
   yuehua: { id:'yuehua', name:'楊嬋',   title:'天神弓手', color:0x60c8ff, shape:'archer',
             hp:90,  mp:60,  atk:20, def:10, spd:20, luk:20,
@@ -43,6 +43,8 @@ const SKILLS = {
   moonRain:    { name:'月雨千箭', mp:20, pow:0.9, type:'atk', tgt:'all',    elem:'none', hits:4, desc:'引月光化千矢，貫穿妖陣，連擊四次。' },
   dragonStrike:{ name:'龍紋震天', mp:28, pow:2.5, type:'atk', tgt:'all',    elem:'thunder', desc:'運天命之力，龍紋雷霆轟擊所有妖物。' },
   soulMend:    { name:'靈魂救療', mp:20, pow:1.8, type:'heal', tgt:'all',   elem:'light',   desc:'以神力療癒全隊，令所有夥伴生命恢復。' },
+  focus:       { name:'氣貫長虹', mp:10, pow:0, type:'buff', tgt:'self', buff:'atkUp', turns:3, desc:'凝氣蓄力，自身攻擊力大幅提升3回合。' },
+  barrier:     { name:'神光護體', mp:12, pow:0, type:'buff', tgt:'self', buff:'defUp', turns:3, desc:'以法力結界護體，自身防禦力大幅提升3回合。' },
 };
 
 const ITEMS = {
@@ -90,7 +92,7 @@ const ENEMIES = {
   ghost:    { name:'怨靈',   hp:90,  atk:22, def:6,  spd:20, exp:90,  gold:35, color:0x7040c0, sz:28, acts:['curse','drain','curse'],      drops:[{id:'elixir',r:0.3}] },
   demon:    { name:'妖兵',   hp:140, atk:25, def:15, spd:12, exp:110, gold:55, color:0xb01010, sz:32, acts:['slash','slam','slash'],       drops:[{id:'redPotion',r:0.2}] },
   dragon:   { name:'虎先鋒', hp:200, atk:32, def:20, spd:10, exp:180, gold:100,color:0xe06010, sz:40, acts:['bite','fireBreath','tail'],   drops:[{id:'redPotion',r:0.4},{id:'fullElixir',r:0.3}], weak:['ice'] },
-  boss:       { name:'黃眉大王',hp:400, atk:40, def:25, spd:8,  exp:0,   gold:0,  color:0xc09010, sz:48, acts:['slam','curse','aoe','slam'],          drops:[], boss:true, weak:['wind'] },
+  boss:       { name:'黃眉大王',hp:400, atk:40, def:25, spd:8,  exp:0,   gold:0,  color:0xc09010, sz:48, acts:['slam','curse','vortex','aoe','slam'],  drops:[], boss:true, weak:['wind'] },
   spider:     { name:'蜘蛛精', hp:110, atk:16, def:8,  spd:18, exp:75,  gold:35, color:0x501840, sz:28, acts:['bite','webTrap','bite','poisonSpray'],   drops:[{id:'elixir',r:0.3}], weak:['fire'] },
   yasha:      { name:'夜叉',   hp:135, atk:22, def:14, spd:14, exp:98,  gold:48, color:0x203060, sz:30, acts:['slash','curse','drain','slash'],          drops:[{id:'redPotion',r:0.15}], weak:['light'] },
   goldenEagle:{ name:'大鵬金翅',hp:185, atk:28, def:18, spd:22, exp:155, gold:85, color:0xd0a010, sz:36, acts:['claw','diveBomb','claw','aoe'],           drops:[{id:'redPotion',r:0.3},{id:'fullElixir',r:0.2}], weak:['thunder'] },
@@ -113,7 +115,7 @@ const ENEMY_ACTS = {
   slam:       { name:'禪杖重擊', pow:1.4, type:'atk', tgt:'single' },
   aoe:        { name:'禪杖揮舞', pow:1.0, type:'atk', tgt:'all' },
   tail:       { name:'虎尾橫掃', pow:1.2, type:'atk', tgt:'all' },
-  fireBreath: { name:'虎嘯火焰', pow:1.6, type:'atk', tgt:'all',    elem:'fire' },
+  fireBreath: { name:'虎嘯火焰', pow:1.6, type:'atk', tgt:'all',    elem:'fire', debuff:{burn:2} },
   webTrap:    { name:'蜘蛛絲',   pow:0,   type:'debuff',tgt:'single', debuff:{slow:2} },
   claw:       { name:'金爪撕裂', pow:1.3, type:'atk',   tgt:'single' },
   diveBomb:   { name:'俯衝重擊', pow:1.8, type:'atk',   tgt:'single' },
@@ -121,7 +123,8 @@ const ENEMY_ACTS = {
   waterBlast: { name:'水龍衝擊', pow:1.4, type:'atk',   tgt:'all' },
   scaleDash:  { name:'鱗甲突進', pow:2.0, type:'atk',   tgt:'single' },
   tideCall:   { name:'召喚潮水', pow:0.8, type:'atk',   tgt:'all',    debuff:{slow:2} },
-  fireFlare:  { name:'火焰爆裂', pow:1.5, type:'atk',   tgt:'single' },
+  fireFlare:  { name:'火焰爆裂', pow:1.5, type:'atk',   tgt:'single', elem:'fire', debuff:{burn:2} },
+  vortex:     { name:'混沌漩渦', pow:0.8, type:'atk',   tgt:'all', debuff:{stun:1} },
   frostClaw:  { name:'冰霜爪',   pow:1.2, type:'atk',   tgt:'single', debuff:{slow:2} },
   iceBlast:   { name:'冰霜爆',   pow:0.9, type:'atk',   tgt:'all',    debuff:{slow:1} },
 };
