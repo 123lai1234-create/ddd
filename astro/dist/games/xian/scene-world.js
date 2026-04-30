@@ -682,24 +682,30 @@ class WorldScene extends Phaser.Scene {
 
   _showAchieveToast(a) {
     if (!a) return;
+    Sound?.play('chest');
     const W = this.scale.width;
     const toastW = Math.min(340, W - 30);
     const tx = W/2 - toastW/2;
-    const bg = this.add.graphics().setScrollFactor(0).setDepth(30);
+    const bg = this.add.graphics().setScrollFactor(0).setDepth(30).setAlpha(0);
     bg.fillStyle(0x121808, 0.96);
-    bg.fillRoundedRect(tx, 12, toastW, 56, 8);
+    bg.fillRoundedRect(tx, 12, toastW, 60, 8);
     bg.lineStyle(2, 0xffd700, 0.95);
-    bg.strokeRoundedRect(tx, 12, toastW, 56, 8);
-    const t1 = this.add.text(W/2, 22, '★ 成就解鎖！', {
+    bg.strokeRoundedRect(tx, 12, toastW, 60, 8);
+    const t1 = this.add.text(W/2, 20, '★ 成就解鎖！', {
       fontSize:'11px', fontFamily:'"Noto Serif TC","SimSun",serif',
       color:'#ffd700', stroke:'#000', strokeThickness:2,
-    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(31);
-    const t2 = this.add.text(W/2, 36, `${a.icon||'🏆'} ${a.name} — ${a.desc}`, {
-      fontSize:'13px', fontFamily:'"Noto Serif TC","SimSun",serif',
-      color:'#e8c060', stroke:'#000', strokeThickness:2,
-    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(31);
-    this.tweens.add({ targets:[bg,t1,t2], alpha:0, duration:500, delay:2800,
-      onComplete: () => { bg.destroy(); t1.destroy(); t2.destroy(); } });
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(31).setAlpha(0);
+    const t2 = this.add.text(W/2, 36, `${a.icon||'🏆'} ${a.name}`, {
+      fontSize:'14px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#e8c060', fontStyle:'bold', stroke:'#000', strokeThickness:2,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(31).setAlpha(0);
+    const t3 = this.add.text(W/2, 53, a.desc, {
+      fontSize:'10px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#9a8050', stroke:'#000', strokeThickness:1,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(31).setAlpha(0);
+    this.tweens.add({ targets:[bg,t1,t2,t3], alpha:1, duration:280, ease:'Power2',
+      onComplete:()=>this.tweens.add({ targets:[bg,t1,t2,t3], alpha:0, duration:500, delay:2600,
+        onComplete:()=>{ bg.destroy(); t1.destroy(); t2.destroy(); t3.destroy(); } }) });
   }
 
   _canWalk(x, y) {

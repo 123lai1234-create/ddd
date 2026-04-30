@@ -1669,15 +1669,38 @@ class BattleScene extends Phaser.Scene {
 
   _loseBattle() {
     this.phase='lose'; this.waiting=true;
+    this._loseCursor=0;
     Sound?.play('dead'); Sound?.stopBgm();
     this._addLog('全員陣亡…');
     const darken=this.add.graphics(); darken.fillStyle(0x000000,0); darken.fillRect(0,0,this.W,this.H); darken.setDepth(50);
-    this.tweens.add({targets:darken,alpha:0.72,duration:900});
-    const ltxt=this.add.text(this.W/2,this.H*0.38,'全員陣亡',{fontSize:Math.floor(this.H*0.08)+'px',fontFamily:'"Noto Serif TC","SimSun",serif',color:'#ff4040',stroke:'#400000',strokeThickness:6}).setOrigin(0.5).setDepth(55).setAlpha(0).setScale(0.4);
+    this.tweens.add({targets:darken,alpha:0.75,duration:900});
+    const ltxt=this.add.text(this.W/2,this.H*0.30,'全員陣亡',{fontSize:Math.floor(this.H*0.08)+'px',fontFamily:'"Noto Serif TC","SimSun",serif',color:'#ff4040',stroke:'#400000',strokeThickness:6}).setOrigin(0.5).setDepth(55).setAlpha(0).setScale(0.4);
     this.tweens.add({targets:ltxt,alpha:1,scaleX:1,scaleY:1,duration:580,ease:'Back.easeOut',delay:380});
-    this.time.delayedCall(2800,()=>{
-      this.cameras.main.fadeOut(600,0,0,0);
-      this.cameras.main.once('camerafadeoutcomplete',()=>{GS.init();this.scene.start('TitleScene');});
+
+    // Retry options
+    const hasSave=[0,1,2].some(i=>!!Save?.read(i));
+    const opts=hasSave?['從存檔繼續','放棄（回到標題）']:['回到標題'];
+    this._loseOptBgs=[]; this._loseOptTxts=[];
+    opts.forEach((o,i)=>{
+      const oy=this.H*0.52+i*54;
+      const bg2=this.add.graphics().setDepth(56).setAlpha(0);
+      const t=this.add.text(this.W/2,oy,o,{fontSize:Math.min(20,Math.floor(this.H*0.032))+'px',
+        fontFamily:'"Noto Serif TC","SimSun",serif',color:'#c8a060',stroke:'#000',strokeThickness:3,
+      }).setOrigin(0.5,0.5).setDepth(57).setAlpha(0);
+      this._loseOptBgs.push({g:bg2,y:oy}); this._loseOptTxts.push(t);
+      this.tweens.add({targets:[bg2,t],alpha:1,duration:400,delay:1800+i*150});
+    });
+    this._loseOpts=opts;
+    this.time.delayedCall(1600,()=>{ this.waiting=false; this._loseUpdateOpts(); });
+  }
+
+  _loseUpdateOpts() {
+    const bw=Math.min(300,this.W*0.65);
+    this._loseOptBgs.forEach(({g,y},i)=>{
+      g.clear();
+      const sel=i===this._loseCursor;
+      if(sel){g.fillStyle(0x9a2020,0.22);g.fillRoundedRect(this.W/2-bw/2,y-24,bw,48,6);g.lineStyle(1,0xff4040,0.7);g.strokeRoundedRect(this.W/2-bw/2,y-24,bw,48,6);}
+      this._loseOptTxts[i].setColor(sel?'#ff8060':'#c8a060');
     });
   }
 
@@ -1764,6 +1787,30 @@ class BattleScene extends Phaser.Scene {
           this._tgtCursorG.fillTriangle(sp.g.x,ay+8,sp.g.x-6,ay-4,sp.g.x+6,ay-4);
         }
       }
+    }
+
+    // Game over menu handling
+    if (this.phase==='lose' && !this.waiting && this._loseOpts) {
+      const ok2=Phaser.Input.Keyboard.JustDown(this.keys.z)||Phaser.Input.Keyboard.JustDown(this.keys.enter)||okPad;
+      const up2=Phaser.Input.Keyboard.JustDown(this.keys.up)||upPad;
+      const dn2=Phaser.Input.Keyboard.JustDown(this.keys.down)||dnPad;
+      if(up2){this._loseCursor=Math.max(0,this._loseCursor-1);Sound?.play('menuMove');this._loseUpdateOpts();}
+      if(dn2){this._loseCursor=Math.min(this._loseOpts.length-1,this._loseCursor+1);Sound?.play('menuMove');this._loseUpdateOpts();}
+      if(ok2){
+        Sound?.play('menuSelect');
+        this.cameras.main.fadeOut(500,0,0,0);
+        this.cameras.main.once('camerafadeoutcomplete',()=>{
+          const hasSave=[0,1,2].some(i=>!!Save?.read(i));
+          if(hasSave&&this._loseCursor===0){
+            // Load most recent save
+            const slot=[0,1,2].find(i=>!!Save?.read(i))??0;
+            GS.load(slot); this.scene.start('WorldScene');
+          } else {
+            GS.init(); this.scene.start('TitleScene');
+          }
+        });
+      }
+      return;
     }
 
     if (this.waiting||this.phase!=='playerTurn') return;
