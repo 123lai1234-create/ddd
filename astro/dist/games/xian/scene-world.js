@@ -905,6 +905,16 @@ class WorldScene extends Phaser.Scene {
       this._showDialog(['【東海龍王守護此路！須先擊敗東海龍王，方可進入小西天。】']);
       return;
     }
+    if (exit.to === 'lingxiao') {
+      if (!GS.flags.ngplus) {
+        this._showDialog(['〔天門緊閉〕', '靈霄殿為天帝居所，非尋常天命人可入。', '唯有歷盡一周目磨難、踏上二周目征途者，', '方能開啟這扇天門。']);
+        return;
+      }
+      if (!GS.flags.defeated_boss) {
+        this._showDialog(['〔天門未全開〕', '天帝之門雖為二周目而開，', '然須先擊敗黃眉大王，淨化三界妖氣，', '靈霄殿方才完全開啟。']);
+        return;
+      }
+    }
     this._exiting = true;
     const W = this.scale.width;
     const banner = this.add.text(W/2, 56, exit.msg, {

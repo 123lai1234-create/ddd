@@ -236,23 +236,45 @@ class MenuScene extends Phaser.Scene {
     this.panelGfx.lineStyle(1, 0x5a4a1a, 0.5);
     this.panelGfx.lineBetween(rx+10, skillTitleY+fsS+2, rx+halfW-18, skillTitleY+fsS+2);
 
+    const ELEM_SYM = { fire:'火', ice:'冰', thunder:'雷', wind:'風', light:'光', none:'無' };
     const skills = m.skills || [];
-    const skRowH = Math.max(22, Math.floor((dh - Math.floor(dh*0.24)) / Math.max(skills.length, 1)));
+    const skRowH = Math.max(24, Math.floor((dh - Math.floor(dh*0.24)) / Math.max(skills.length, 1)));
+    const showDesc = skRowH >= 32;
     skills.forEach((sid, si) => {
       const sk = SKILLS[sid]; if (!sk) return;
       const sy = skillTitleY + fsS + 6 + si * skRowH;
       const elemClr = ELEM_CLR2[sk.elem||'none'] || '#707090';
       const typeStr = TYPE_LBL[sk.type] || '技';
-      // Type badge
-      this.panelGfx.fillStyle(_h2c(elemClr), 0.85);
-      this.panelGfx.fillRoundedRect(rx+10, sy+1, 16, skRowH-4, 3);
-      this.add.text(rx+18, sy+skRowH/2-1, typeStr, { fontSize:Math.max(8,fsXS-1)+'px', fontFamily:'monospace', color:'#000', fontStyle:'bold' }).setOrigin(0.5,0.5);
+      // Type badge (wider to fit element symbol)
+      this.panelGfx.fillStyle(_h2c(elemClr), 0.82);
+      this.panelGfx.fillRoundedRect(rx+10, sy+1, 22, skRowH-4, 3);
+      this.add.text(rx+21, sy+skRowH/2-1, typeStr, { fontSize:Math.max(8,fsXS-1)+'px', fontFamily:'monospace', color:'#000', fontStyle:'bold' }).setOrigin(0.5,0.5);
+      // Element symbol below badge (if space)
+      if (sk.elem && sk.elem !== 'none') {
+        const symTxt = this.add.text(rx+21, sy+skRowH-5, ELEM_SYM[sk.elem]||'', {
+          fontSize:Math.max(7,fsXS-3)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+          color:'#000', fontStyle:'bold',
+        }).setOrigin(0.5,1).setAlpha(0.85);
+      }
+      // Target indicator
+      const tgtClr = sk.tgt==='all' ? '#ff8840' : '#88c8ff';
+      const tgtSym = sk.tgt==='all' ? '◎' : '●';
+      this.add.text(rx+34, sy+2, tgtSym, { fontSize:Math.max(8,fsXS-2)+'px', fontFamily:'monospace', color:tgtClr, stroke:'#000', strokeThickness:1 });
       // Skill name
-      this.add.text(rx+30, sy+2, sk.name, {
+      this.add.text(rx+44, sy+2, sk.name, {
         fontSize: fsXS+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
         color:'#d0c090', stroke:'#000', strokeThickness:1,
       });
+      // Description (if space available)
+      if (showDesc && sk.desc) {
+        this.add.text(rx+44, sy+fsXS+4, sk.desc, {
+          fontSize: Math.max(7,fsXS-3)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+          color:'#7a6a4a', stroke:'#000', strokeThickness:1,
+          wordWrap:{ width: halfW-70 },
+        });
+      }
       // MP cost
+      const mpY = sy + (showDesc ? 2 : skRowH/2-fsXS/2);
       if (sk.mp > 0) {
         this.add.text(rx+halfW-18, sy+2, `MP ${sk.mp}`, {
           fontSize: Math.max(8,fsXS-1)+'px', fontFamily:'monospace', color:'#5070e0', stroke:'#000', strokeThickness:1,
@@ -260,6 +282,16 @@ class MenuScene extends Phaser.Scene {
       } else {
         this.add.text(rx+halfW-18, sy+2, '無消耗', {
           fontSize: Math.max(8,fsXS-1)+'px', fontFamily:'monospace', color:'#4a5a3a', stroke:'#000', strokeThickness:1,
+        }).setOrigin(1,0);
+      }
+      // Debuff indicator
+      if (sk.debuff) {
+        const dKeys=Object.keys(sk.debuff);
+        const DB_L={burn:'灼',poison:'毒',slow:'緩',stun:'眩',atkDown:'弱'};
+        const dbStr=dKeys.map(d=>DB_L[d]||d).join('');
+        this.add.text(rx+halfW-18, sy+fsXS+3, dbStr, {
+          fontSize:Math.max(7,fsXS-3)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+          color:'#e080c0', stroke:'#000', strokeThickness:1,
         }).setOrigin(1,0);
       }
     });

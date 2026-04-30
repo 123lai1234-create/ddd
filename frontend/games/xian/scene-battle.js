@@ -31,6 +31,7 @@ class BattleScene extends Phaser.Scene {
       cave:   { sky:[0x0e0420,0x0a0218,0x04020e,0x06021a], moon:0x120630, mtn1:0x14063a, mtn2:0x1a0840, gnd:[0x0c0418,0x0c0418,0x060210,0x060210], gndLine:0x6040b0, gndSub:0x180630, arena:0x200840 },
       shrine: { sky:[0x181208,0x140e04,0x080604,0x0c0a04], moon:0x1c1606, mtn1:0x241a04, mtn2:0x2e200a, gnd:[0x201608,0x201608,0x100c04,0x100c04], gndLine:0xc09020, gndSub:0x301e06, arena:0x302010 },
       dragonPalace: { sky:[0x040820,0x030616,0x020410,0x04061a], moon:0x0a1c3c, mtn1:0x0a1e4a, mtn2:0x103262, gnd:[0x080e22,0x080e22,0x040810,0x040810], gndLine:0x2870e0, gndSub:0x1040a0, arena:0x082090 },
+      lingxiao:     { sky:[0x1a1408,0x160e02,0x0c0a04,0x121008], moon:0xffd060, mtn1:0xd09010, mtn2:0xe0b020, gnd:[0x281e08,0x281e08,0x140e02,0x140e02], gndLine:0xffd060, gndSub:0xb09020, arena:0xffcc20 },
     };
     const bgc = BG_MAP[GS.map] || { sky:[0x180808,0x120410,0x060202,0x0a0208], moon:0x0c0418, mtn1:0x180c2a, mtn2:0x1e1030, gnd:[0x1c1008,0x1c1008,0x080604,0x080604], gndLine:0xb07828, gndSub:0x3a2606, arena:0x280840 };
     const bg = this.add.graphics();
@@ -173,6 +174,7 @@ class BattleScene extends Phaser.Scene {
       castle:{count:22,clr:0xd4a040,minR:0.8,maxR:2.5,vy:-0.55,vxS:0.5,a:0.35},
       shrine:{count:12,clr:0xffd060,minR:2.0,maxR:4.0,vy:-0.30,vxS:0.2,a:0.45},
       dragonPalace:{count:22,clr:0x40c0ff,minR:1.2,maxR:3.0,vy:-0.30,vxS:0.10,a:0.40},
+      lingxiao:    {count:28,clr:0xffd050,minR:1.0,maxR:2.8,vy:-0.22,vxS:0.18,a:0.45},
     };
     this._ambientCfg=ABCFG[GS.map]||null;
     if (this._ambientCfg) {
@@ -184,6 +186,37 @@ class BattleScene extends Phaser.Scene {
         alpha:ac.a*(0.5+Math.random()*0.5), phase:Math.random()*Math.PI*2,
       });
     }
+
+    // ── Weather particles ─────────────────────────────────
+    const WCFG = {
+      forest:      { type:'rain',   count:38, clr:0x80d8a0, a:0.18 },
+      castle:      { type:'sand',   count:28, clr:0xd4a840, a:0.22 },
+      cave:        { type:'drip',   count:16, clr:0x8090c0, a:0.32 },
+      shrine:      { type:'mote',   count:20, clr:0xffd060, a:0.36 },
+      dragonPalace:{ type:'bubble', count:20, clr:0x40c8ff, a:0.28 },
+      lingxiao:    { type:'mote',   count:32, clr:0xffd040, a:0.42 },
+    };
+    this._weatherCfg = WCFG[GS.map] || null;
+    this._weatherG = this.add.graphics().setDepth(2);
+    this._weatherPts = [];
+    if (this._weatherCfg) {
+      const wc = this._weatherCfg;
+      for (let i = 0; i < wc.count; i++) {
+        this._weatherPts.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          vx: wc.type==='sand' ? -(0.9+Math.random()*1.4) : (Math.random()-0.5)*0.4,
+          vy: wc.type==='rain'   ? (3.8+Math.random()*2.5) :
+              wc.type==='drip'   ? (1.0+Math.random()*0.9) :
+              wc.type==='bubble' ? -(0.4+Math.random()*0.7) : (Math.random()-0.5)*0.5,
+          r:  wc.type==='bubble' ? (2.5+Math.random()*3.5) : (0.9+Math.random()*1.3),
+          len:wc.type==='rain'   ? (6+Math.random()*9)     :
+              wc.type==='drip'   ? (3+Math.random()*5)     : 0,
+          phase: Math.random()*Math.PI*2,
+        });
+      }
+    }
+    this._statusAuraG = this.add.graphics().setDepth(3);
 
     this.keys = this.input.keyboard.addKeys({
       up:   Phaser.Input.Keyboard.KeyCodes.UP,
@@ -234,6 +267,7 @@ class BattleScene extends Phaser.Scene {
           silverKing:'銀山妖王　— 　混元大魔君',
           dragonKing:'東海龍主　— 　敖廣天龍王',
           dragon:    '黃風嶺霸主　— 　虎先鋒',
+          jadeKing:  '三界之主　— 　靈霄殿玉帝',
         };
         const bn=this.add.text(this.W/2,this.H*0.31,boss.name,{
           fontSize:Math.floor(this.H*0.09)+'px',
@@ -762,6 +796,111 @@ class BattleScene extends Phaser.Scene {
       g.lineStyle(1.8, dg, 0.7);
       g.lineBetween(-sz*0.55, -sz*1.95, -sz*1.35, -sz*2.4); g.lineBetween(-sz*0.55, -sz*1.95, -sz*1.1, -sz*1.62);
       g.lineBetween(sz*0.75, -sz*1.95, sz*1.55, -sz*2.4); g.lineBetween(sz*0.75, -sz*1.95, sz*1.3, -sz*1.62);
+    } else if (id === 'celestial') {
+      // 天兵衛 — golden heavenly soldier
+      const cc=0xd0a030, cs=0xffe060, cskin=0xd4b87a;
+      g.fillStyle(cc,1); g.fillRect(-sz*0.76,-sz*1.55,sz*1.52,sz*1.6);
+      g.fillStyle(0xb08020,1); g.fillRect(-sz*0.88,-sz*0.88,sz*1.76,sz*0.2);
+      g.fillStyle(cc,1); g.fillRect(-sz*1.12,-sz*1.45,sz*0.44,sz*1.12); g.fillRect(sz*0.68,-sz*1.45,sz*0.44,sz*1.12);
+      g.fillStyle(0x3a2c10,1); g.fillRect(-sz*0.62,-sz*0.18,sz*0.54,sz*0.5); g.fillRect(sz*0.08,-sz*0.18,sz*0.54,sz*0.5);
+      g.fillStyle(cskin,1); g.fillCircle(0,-sz*1.98,sz*0.58);
+      g.fillStyle(cc,1); g.fillRect(-sz*0.65,-sz*2.55,sz*1.3,sz*0.62);
+      g.fillStyle(cs,1); g.fillRect(-sz*0.7,-sz*2.58,sz*1.4,sz*0.12);
+      // divine halo
+      g.lineStyle(2,cs,0.7); g.strokeCircle(0,-sz*2.2,sz*0.9);
+      g.lineStyle(1,cs,0.35); g.strokeCircle(0,-sz*2.2,sz*1.1);
+      g.fillStyle(0xff3020,0.9); g.fillCircle(-sz*0.22,-sz*2.02,sz*0.1); g.fillCircle(sz*0.22,-sz*2.02,sz*0.1);
+      g.lineStyle(3,cs,1); g.lineBetween(sz*0.9,-sz*1.55,sz*0.9,sz*0.28);
+      g.fillStyle(cs,1); g.fillTriangle(sz*0.9,-sz*2.0,sz*0.76,-sz*1.55,sz*1.04,-sz*1.55);
+      g.fillStyle(0xb08820,1); g.fillRect(sz*0.82,sz*0.16,sz*0.2,sz*0.22);
+    } else if (id === 'phoenix') {
+      // 鳳凰精 — fire phoenix spirit
+      const pc=0xff4010, ps=0xff8020, pf=0xffd040;
+      // tail feathers fanning down
+      g.fillStyle(pc,0.55); g.fillTriangle(-sz*1.1,sz*0.4,-sz*0.3,sz*0.0,-sz*0.6,sz*0.6);
+      g.fillTriangle(-sz*0.6,sz*0.5, sz*0.1,sz*0.05,sz*0.0,sz*0.7);
+      g.fillTriangle( sz*0.0,sz*0.5, sz*0.8,sz*0.0,sz*0.5,sz*0.7);
+      g.fillTriangle( sz*0.6,sz*0.4, sz*1.1,sz*0.1,sz*0.9,sz*0.65);
+      // body (bird shape)
+      g.fillStyle(pc,1); g.fillEllipse(0,-sz*0.85,sz*1.6,sz*1.55);
+      g.fillStyle(ps,0.5); g.fillEllipse(-sz*0.2,-sz*1.0,sz*0.8,sz*0.8);
+      // wings outstretched
+      g.fillStyle(pc,0.85); g.fillTriangle(-sz*1.5,-sz*0.55,-sz*0.75,-sz*0.85,sz*0.0,-sz*0.4);
+      g.fillTriangle(sz*1.5,-sz*0.55,sz*0.75,-sz*0.85,sz*0.0,-sz*0.4);
+      g.fillStyle(pf,0.4); g.fillTriangle(-sz*1.3,-sz*0.55,-sz*0.6,-sz*0.8,sz*0.0,-sz*0.4);
+      g.fillTriangle(sz*1.3,-sz*0.55,sz*0.6,-sz*0.8,sz*0.0,-sz*0.4);
+      // flame tips on wings
+      for(let fi=0;fi<3;fi++){
+        g.fillStyle(pf,0.75);
+        g.fillTriangle(-sz*(1.5-fi*0.35),-sz*0.55,-sz*(1.4-fi*0.35),-sz*0.8,-sz*(1.25-fi*0.35),-sz*0.55);
+        g.fillTriangle(sz*(1.5-fi*0.35),-sz*0.55,sz*(1.4-fi*0.35),-sz*0.8,sz*(1.25-fi*0.35),-sz*0.55);
+      }
+      // neck + head
+      g.fillStyle(pc,1); g.fillEllipse(0,-sz*1.65,sz*0.65,sz*0.9);
+      g.fillStyle(pc,1); g.fillEllipse(sz*0.1,-sz*2.18,sz*0.72,sz*0.62);
+      // crest feathers
+      g.fillStyle(pf,1);
+      g.fillTriangle(-sz*0.12,-sz*2.48,sz*0.0,-sz*2.78,sz*0.12,-sz*2.48);
+      g.fillTriangle(sz*0.08,-sz*2.44,sz*0.25,-sz*2.72,sz*0.38,-sz*2.44);
+      g.fillTriangle(-sz*0.08,-sz*2.44,-sz*0.25,-sz*2.72,-sz*0.38,-sz*2.44);
+      // beak
+      g.fillStyle(pf,1); g.fillTriangle(sz*0.38,-sz*2.28,sz*0.65,-sz*2.12,sz*0.38,-sz*2.04);
+      // eyes — golden
+      g.fillStyle(pf,1); g.fillCircle(-sz*0.08,-sz*2.22,sz*0.1); g.fillCircle(sz*0.24,-sz*2.22,sz*0.1);
+      g.fillStyle(0x100000,1); g.fillCircle(-sz*0.07,-sz*2.22,sz*0.06); g.fillCircle(sz*0.25,-sz*2.22,sz*0.06);
+    } else if (id === 'jadeKing') {
+      // 玉皇大帝 — Jade Emperor (ultimate boss)
+      const jc=0xd4a010, jg=0xffd700, jw=0xfffce0, jsk=0xe8d0a8;
+      // divine robes (wide, majestic)
+      g.fillStyle(jc,1); g.fillEllipse(0,-sz*0.75,sz*3.0,sz*2.2);
+      g.fillStyle(0xb08808,1); g.fillEllipse(0,-sz*0.65,sz*2.2,sz*1.3);
+      // celestial emblem on robe
+      g.fillStyle(jg,0.8); g.fillCircle(0,-sz*0.8,sz*0.4);
+      g.fillStyle(0xd4a010,1); g.fillCircle(0,-sz*0.8,sz*0.28);
+      g.lineStyle(1.5,jg,0.8);
+      for(let ri=0;ri<8;ri++){
+        const ra=ri*Math.PI/4;
+        g.lineBetween(Math.cos(ra)*sz*0.3,-sz*0.8+Math.sin(ra)*sz*0.3,Math.cos(ra)*sz*0.5,-sz*0.8+Math.sin(ra)*sz*0.5);
+      }
+      // belt (wide ornate)
+      g.fillStyle(0xa00020,1); g.fillRect(-sz*1.28,-sz*0.28,sz*2.56,sz*0.3);
+      g.fillStyle(jg,0.9); g.fillRect(-sz*1.28,-sz*0.28,sz*2.56,sz*0.08);
+      // arms (long sleeves)
+      g.fillStyle(jc,1); g.fillEllipse(-sz*1.55,-sz*0.85,sz*0.75,sz*1.2); g.fillEllipse(sz*1.55,-sz*0.85,sz*0.75,sz*1.2);
+      g.fillStyle(jg,0.8); g.fillEllipse(-sz*1.55,-sz*0.25,sz*0.6,sz*0.35); g.fillEllipse(sz*1.55,-sz*0.25,sz*0.6,sz*0.35);
+      g.fillStyle(jsk,1); g.fillCircle(-sz*1.58,-sz*0.12,sz*0.25); g.fillCircle(sz*1.58,-sz*0.12,sz*0.25);
+      // scepter (ruyi)
+      g.lineStyle(3.5,jg,1); g.lineBetween(sz*1.72,-sz*1.62,sz*1.72,sz*0.32);
+      g.fillStyle(jg,1); g.fillEllipse(sz*1.72,-sz*1.82,sz*0.5,sz*0.35);
+      g.fillStyle(jw,0.6); g.fillEllipse(sz*1.72,-sz*1.82,sz*0.32,sz*0.22);
+      g.lineStyle(1.5,jg,0.7); g.lineBetween(sz*1.52,-sz*1.72,sz*1.92,-sz*1.72); g.lineBetween(sz*1.52,-sz*1.92,sz*1.92,-sz*1.92);
+      // imperial face (dignified)
+      g.fillStyle(jsk,1); g.fillCircle(0,-sz*2.12,sz*0.82);
+      // majestic beard
+      g.fillStyle(jw,1); g.fillEllipse(0,-sz*1.65,sz*0.95,sz*0.65);
+      g.lineStyle(1,0xd0c890,0.5);
+      for(let bi=0;bi<7;bi++) g.lineBetween(-sz*0.36+bi*sz*0.12,-sz*1.42,-sz*0.36+bi*sz*0.12,-sz*1.22);
+      // eyes — wise and powerful
+      g.fillStyle(0x301808,1); g.fillEllipse(-sz*0.28,-sz*2.25,sz*0.28,sz*0.16); g.fillEllipse(sz*0.28,-sz*2.25,sz*0.28,sz*0.16);
+      g.fillStyle(0xffd040,0.9); g.fillCircle(-sz*0.28,-sz*2.25,sz*0.07); g.fillCircle(sz*0.28,-sz*2.25,sz*0.07);
+      // eyebrows (thick, authoritative)
+      g.fillStyle(0x201008,1); g.fillRect(-sz*0.48,-sz*2.42,sz*0.42,sz*0.1); g.fillRect(sz*0.06,-sz*2.42,sz*0.42,sz*0.1);
+      // imperial crown (九龍冠 — nine dragon crown)
+      g.fillStyle(jg,1); g.fillRect(-sz*0.95,-sz*2.92,sz*1.9,sz*0.35);
+      g.fillStyle(0xa08008,1); g.fillRect(-sz*0.88,-sz*2.92,sz*1.76,sz*0.12);
+      // crown spires
+      g.fillStyle(jg,1);
+      g.fillTriangle(-sz*0.78,-sz*2.92,-sz*0.55,-sz*3.55,-sz*0.32,-sz*2.92);
+      g.fillTriangle(-sz*0.2,-sz*2.92,sz*0.0,-sz*3.78,sz*0.2,-sz*2.92);
+      g.fillTriangle(sz*0.32,-sz*2.92,sz*0.55,-sz*3.55,sz*0.78,-sz*2.92);
+      // crown gems
+      g.fillStyle(0xff2020,1); g.fillCircle(-sz*0.55,-sz*3.18,sz*0.13);
+      g.fillStyle(0x40c8ff,1); g.fillCircle(0,-sz*3.38,sz*0.15);
+      g.fillStyle(0xff2020,1); g.fillCircle(sz*0.55,-sz*3.18,sz*0.13);
+      g.fillStyle(jg,0.4); g.fillCircle(0,-sz*2.12,sz*1.15);
+      // divine aura streaks
+      g.lineStyle(1.2,jg,0.25);
+      for(let ai=0;ai<8;ai++){const aa=ai*Math.PI/4; g.lineBetween(Math.cos(aa)*sz*1.2,-sz*1.2+Math.sin(aa)*sz*1.0,Math.cos(aa)*sz*2.0,-sz*1.2+Math.sin(aa)*sz*1.8);}
     } else {
       // boss — 黃眉大王 fat corrupt monk
       const bc = 0xc09010, br = 0xe8a820, bskin = 0xd4b87a;
@@ -1733,7 +1872,7 @@ class BattleScene extends Phaser.Scene {
         this._addLog(`${e.name} 動作遲緩，無法行動！`);
         this.time.delayedCall(600, onDone); return;
       }
-      const isStrong=['slam','aoe','fireBreath','tail','waterBlast','tideCall','scaleDash','thunderStomp','dragonStrike','enrageSlam','sacredBlast','soulScream','tideSurge','dragonErupt'].includes(actId);
+      const isStrong=['slam','aoe','fireBreath','tail','waterBlast','tideCall','scaleDash','thunderStomp','dragonStrike','enrageSlam','sacredBlast','soulScream','tideSurge','dragonErupt','divineStrike','celestialEdict','heavenlyPunish','divineWrath'].includes(actId);
       const isAoe = act.tgt==='all';
       const doAtk=()=>{
         if (enemySp && !e.dead) {
@@ -1783,8 +1922,8 @@ class BattleScene extends Phaser.Scene {
             logParts.push(`${t.name} ${dmg}`);
           });
           if(act.type==='drain') Sound?.play('drain');
-          else if(['sacredBlast','soulScream','dragonErupt'].includes(actId)) Sound?.play('thunderSkill');
-          else if(['enrageSlam','tideSurge'].includes(actId)) Sound?.play('damage');
+          else if(['sacredBlast','soulScream','dragonErupt','divineStrike','celestialEdict','divineWrath'].includes(actId)) Sound?.play('thunderSkill');
+          else if(['enrageSlam','tideSurge','heavenlyPunish'].includes(actId)) Sound?.play('damage');
           else Sound?.play('damage');
           this._shake(isStrong?0.010:0.005, isStrong?320:240);
           const logMsg=isAoe
@@ -1886,6 +2025,12 @@ class BattleScene extends Phaser.Scene {
         GS.flags._pendingLines=['東海龍王已伏誅！龍珠現於眼前…','土地：龍氣歸位，東海重歸平靜。','楊嬋：龍王已敗！前往小西天，天命即將完成！'];
         const allBossIds=['dragon','silverKing','dragonKing','boss'];
         if(allBossIds.every(bid=>GS.flags[`defeated_${bid}`]||bid===bossEnemy.id)) Achieve?.unlock('completionist');
+      }
+      if(bossEnemy.id==='jadeKing') {
+        Achieve?.unlock('jade_king');
+        const allIds=['dragon','silverKing','dragonKing','boss','jadeKing'];
+        if(allIds.every(bid=>GS.flags[`defeated_${bid}`]||bid===bossEnemy.id)) Achieve?.unlock('all_realms');
+        GS.flags._pendingLines=['玉皇大帝！天帝竟然敗於人手！','土地：三界震動！天命之人問鼎天庭！','楊嬋：你做到了——成為了三界無敵的天命人！','此後天地長安，萬古無憂！'];
       }
       if(bossEnemy.id==='boss'){
         GS.flags._pendingLines=['黃眉大王已伏誅！天命得成！','土地：妖氣盡散，山河安寧。','楊嬋：天命之人，你做到了，回黑山村吧！'];
@@ -2038,6 +2183,57 @@ class BattleScene extends Phaser.Scene {
         if (p.y<-10||p.x<-20||p.x>this.W+20) { p.x=Math.random()*this.W; p.y=this.groundY+Math.random()*8; }
         const a=p.alpha*(0.55+0.45*Math.sin(this._t*0.07+p.phase));
         this._ambientG.fillStyle(ac.clr,a); this._ambientG.fillCircle(p.x,p.y,p.r);
+      });
+    }
+
+    // Weather particles
+    if (this._weatherCfg && this._t%2===0) {
+      this._weatherG.clear();
+      const wc=this._weatherCfg;
+      this._weatherPts.forEach(p=>{
+        p.x += p.vx + Math.sin(this._t*0.04+p.phase)*0.18;
+        p.y += p.vy;
+        if (p.y>this.H+14) { p.y=-8; p.x=Math.random()*this.W; }
+        if (p.y<-24)        { p.y=this.H+8; p.x=Math.random()*this.W; }
+        if (p.x<-24)  p.x=this.W+8;
+        if (p.x>this.W+24) p.x=-8;
+        const a=wc.a*(0.55+0.45*Math.sin(this._t*0.05+p.phase));
+        this._weatherG.fillStyle(wc.clr,a);
+        if (wc.type==='rain')   { this._weatherG.fillRect(p.x,p.y,1,p.len); }
+        else if (wc.type==='drip') {
+          this._weatherG.fillEllipse(p.x,p.y,p.r*1.5,p.len);
+        } else if (wc.type==='bubble') {
+          this._weatherG.fillCircle(p.x,p.y,p.r);
+          this._weatherG.lineStyle(1,wc.clr,a*0.6); this._weatherG.strokeCircle(p.x,p.y,p.r);
+        } else { this._weatherG.fillCircle(p.x,p.y,p.r); }
+      });
+    }
+
+    // Enemy status effect auras
+    if (this._t%3===0) {
+      this._statusAuraG.clear();
+      const ST_CLR={burn:0xff4010,poison:0x9030c0,slow:0x4080c0,stun:0xffee20,atkDown:0x4060e0,atkUp:0xff8020};
+      this.enemySprites.forEach((sp,ei)=>{
+        const e=sp.e; if(e.dead||!e.status.length) return;
+        const sz=e.sz||28, cx=sp.g.x, cy=sp.g.y-sz*0.85;
+        const uniq=[...new Set(e.status)].filter(s=>ST_CLR[s]);
+        uniq.forEach((s,si)=>{
+          const clr=ST_CLR[s], r=sz*1.05+si*5;
+          const pulse=0.07+0.10*Math.abs(Math.sin(this._t*0.055+si*1.6+ei*0.9));
+          this._statusAuraG.lineStyle(2,clr,Math.min(0.85,pulse*2.8));
+          this._statusAuraG.strokeCircle(cx,cy,r);
+          this._statusAuraG.fillStyle(clr,pulse*0.45);
+          this._statusAuraG.fillCircle(cx,cy,r);
+          const oc=s==='burn'?4:s==='stun'?5:s==='poison'?3:0;
+          for(let d=0;d<oc;d++){
+            const ang=(this._t*(s==='stun'?0.10:0.06)+d*Math.PI*2/oc);
+            const dx=cx+Math.cos(ang)*r*1.12, dy=cy+Math.sin(ang)*r*1.12;
+            const pc=s==='burn'?0xff8020:s==='stun'?0xffee40:0xc060ff;
+            this._statusAuraG.fillStyle(pc,0.95);
+            if(s==='stun') this._statusAuraG.fillTriangle(dx,dy-3,dx-2.5,dy+2,dx+2.5,dy+2);
+            else this._statusAuraG.fillCircle(dx,dy,2.5);
+          }
+        });
       });
     }
 
