@@ -313,7 +313,7 @@ const MAPS = {
     startX:9, startY:1,
   },
   dragonPalace: {
-    name:'東海龍宮', music:'dungeon',
+    name:'東海龍宮', music:'dragonPalace',
     exits:[
       { x:9, y:0,  to:'cave',   toX:9,  toY:13, msg:'返回盤絲洞' },
       { x:19,y:7,  to:'shrine', toX:1,  toY:7,  msg:'進入小西天' },

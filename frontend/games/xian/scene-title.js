@@ -337,16 +337,16 @@ class AboutScene extends Phaser.Scene {
       ['悟空傳 — 天命之人的征途', '#f0a010', true],
       ['', '#f0e6c8', false],
       ['角色', '#e8c060', true],
-      ['  雲逸：青雲劍客，劍術高手', '#f0e6c8', false],
-      ['  靈兒：靈族後裔，精通法術', '#f0e6c8', false],
-      ['  月華：飛羽弓手，箭術無雙', '#f0e6c8', false],
+      ['  天命人：齊天後裔，金箍棒闖天涯', '#f0e6c8', false],
+      ['  土地：山神使者，靈法護眾生', '#f0e6c8', false],
+      ['  楊嬋：天神弓手，天箭誅妖魔', '#f0e6c8', false],
       ['', '#f0e6c8', false],
       ['操作', '#e8c060', true],
       ['  方向鍵 / WASD：移動', '#f0e6c8', false],
       ['  Z / Enter：確認・與NPC對話', '#f0e6c8', false],
       ['  X / Esc：取消・開啟選單', '#f0e6c8', false],
       ['', '#f0e6c8', false],
-      ['目標：斬殺千魔城魔君，守護青雲村。', '#c8d0c8', false],
+      ['目標：擊敗黃眉大王，解救蒼生於水火。', '#c8d0c8', false],
     ];
     lines.forEach(([ text, color, bold ], i) => {
       mkText(this, px+36, py+90+i*27, text, { size:14, color, bold });

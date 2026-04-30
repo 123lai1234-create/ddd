@@ -215,6 +215,12 @@ const Sound = (() => {
       pattern: [0, 2, 4, 7, 4, 2, 0, -1, 1, 3, 5, 6, 5, 3, 1, -1],
       bass:    [0, -1, 4, -1, 2, -1, 0, -1, 1, -1, 5, -1, 3, -1, 0, -1],
     },
+    dragonPalace: { // 東海龍宮 — 深海幽冥，龍威浩蕩
+      bpm: 48,
+      notes: [87, 97, 110, 116, 131, 146, 164, 174],
+      pattern: [0, -1, 2, -1, 4, 3, 2, -1, 5, -1, 4, 2, 0, -1, 1, -1],
+      bass:    [0, -1, 0, -1, 4, -1, 4, -1, 5, -1, 5, -1, 0, -1, 0, -1],
+    },
   };
 
   let _bgmTimeout = null;
@@ -245,6 +251,11 @@ const Sound = (() => {
     } else if (name === 'castle') {
       [0, 8].forEach(i => _kick(i * beatDur));
       [4, 12].forEach(i => _noiseAt(0.08, 0.16, 2000, i * beatDur));
+    } else if (name === 'dragonPalace') {
+      // Underwater bubble pops on off-beats
+      [1, 3, 7, 9, 13].forEach(i => _noiseAt(0.06, 0.04, 3200, i * beatDur));
+      // Deep resonant thud every 4 beats
+      [0, 8].forEach(i => _noiseAt(0.18, 0.09, 60, i * beatDur));
     }
 
     _bgmTimeout = setTimeout(() => {
