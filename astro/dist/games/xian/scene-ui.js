@@ -148,13 +148,38 @@ class MenuScene extends Phaser.Scene {
         fontSize: Math.max(9,fsS-1)+'px', fontFamily:'monospace', color:'#5070e0', stroke:'#000', strokeThickness:1,
       }).setOrigin(0, 0.5);
 
-      // Equipped items (right side)
+      // Character color badge (right side, top)
+      const CHAR_CLR = { yunyi:0xf0a010, linger:0x508840, yuehua:0x60c8ff };
+      const badgeClr = CHAR_CLR[m.id] || 0x888888;
+      const badgeX = cx + cw - 18;
+      const badgeY = ry + 18;
+      this.panelGfx.fillStyle(badgeClr, 0.85);
+      this.panelGfx.fillCircle(badgeX, badgeY, 12);
+      this.panelGfx.lineStyle(1.5, 0xffffff, 0.4);
+      this.panelGfx.strokeCircle(badgeX, badgeY, 12);
+
+      // Equipped items (right side, below badge)
       const eqStr = Object.entries(m.equip).filter(([,v])=>v).map(([,v])=>ITEMS[v]?.name||v).join('　');
       if (eqStr) {
         this.add.text(cx+cw-8, ry+8+fs+4, eqStr, {
           fontSize: Math.max(10,fsS-1)+'px', fontFamily:'"Noto Serif TC",serif', color:'#7a9090', stroke:'#000', strokeThickness:1,
         }).setOrigin(1, 0);
       }
+
+      // Skill list with element color badges
+      const ELEM_CLR = { fire:0xff6020, ice:0x40c0ff, thunder:0xffd020, wind:0x40e080, light:0xfff0a0, none:0x909090 };
+      const skills = m.skills || [];
+      const skillRowY = ry + 8 + fs * 2 + 8 + fsS + 8;
+      skills.forEach((sid, si) => {
+        const sk = SKILLS[sid]; if (!sk) return;
+        const sx = cx + 8 + si * Math.floor(cw * 0.28);
+        const ec = ELEM_CLR[sk.elem] || ELEM_CLR.none;
+        this.panelGfx.fillStyle(ec, 0.75);
+        this.panelGfx.fillRoundedRect(sx, skillRowY, 6, fsS, 3);
+        this.add.text(sx + 9, skillRowY, `${sk.name} ${sk.mp?sk.mp+'MP':''}`, {
+          fontSize: Math.max(9,fsS-2)+'px', fontFamily:'"Noto Serif TC","SimSun",serif', color:'#c8d0b0', stroke:'#000', strokeThickness:1,
+        });
+      });
     });
 
     this.add.text(cx+cw/2, cy+ch+14, '↑↓ 選擇成員', {

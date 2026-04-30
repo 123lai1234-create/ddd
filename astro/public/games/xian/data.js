@@ -14,11 +14,11 @@ const C = {
 const CHAR_BASE = {
   yunyi:  { id:'yunyi',  name:'天命人', title:'齊天後裔', color:0xf0a010, shape:'mage',
             hp:120, mp:40,  atk:18, def:12, spd:15, luk:10,
-            skills:['slash','piercing','windBlade','thunderStomp'],
+            skills:['slash','piercing','windBlade','thunderStomp','dragonStrike'],
             desc:'身負天命，持金箍棒踏上除妖之路，傳承齊天大聖意志的孤勇者。' },
   linger: { id:'linger', name:'土地',   title:'山神使者', color:0x80c040, shape:'mage',
             hp:80,  mp:120, atk:10, def:8,  spd:18, luk:15,
-            skills:['fireball','iceArrow','heal','thunder','earthBind'],
+            skills:['fireball','iceArrow','heal','thunder','earthBind','soulMend'],
             desc:'主管一方的山神土地，法術精通，感應天命而主動加入除妖行列。' },
   yuehua: { id:'yuehua', name:'楊嬋',   title:'天神弓手', color:0x60c8ff, shape:'archer',
             hp:90,  mp:60,  atk:20, def:10, spd:20, luk:20,
@@ -41,6 +41,8 @@ const SKILLS = {
   thunderStomp:{ name:'雷震九天', mp:22, pow:2.2, type:'atk', tgt:'all',    elem:'thunder', desc:'召喚九天神雷，轟擊所有妖物。' },
   earthBind:   { name:'縛妖索',   mp:14, pow:0.6, type:'atk', tgt:'all',    elem:'none', debuff:{slow:3}, desc:'以法力化索縛住所有妖物，令其行動遲緩。' },
   moonRain:    { name:'月雨千箭', mp:20, pow:0.9, type:'atk', tgt:'all',    elem:'none', hits:4, desc:'引月光化千矢，貫穿妖陣，連擊四次。' },
+  dragonStrike:{ name:'龍紋震天', mp:28, pow:1.8, type:'atk', tgt:'all',    elem:'thunder', desc:'運天命之力，龍紋雷霆轟擊所有妖物。' },
+  soulMend:    { name:'靈魂救療', mp:20, pow:1.8, type:'heal', tgt:'all',   elem:'light',   desc:'以神力療癒全隊，令所有夥伴生命恢復。' },
 };
 
 const ITEMS = {
@@ -64,7 +66,11 @@ const ITEMS = {
   moonStaff:   { name:'太乙法杖',   cat:'eq',  slot:'wp', who:'linger', atk:30, mp:80, price:1200, desc:'+30攻擊，+80法力上限。' },
   starBow:     { name:'天神弓',     cat:'eq',  slot:'wp', who:'yuehua', atk:50, price:1200, desc:'+50攻擊力，天宮神弓。' },
   dragonArmor: { name:'龍鱗甲',     cat:'eq',  slot:'ar', def:35, price:1000, desc:'+35防禦力，龍鱗護體。' },
-  ancientJade: { name:'混天綾',     cat:'eq',  slot:'ac', def:12, luk:20, price:800, desc:'+12防禦，+20幸運，哪吒法寶。' },
+  ancientJade:  { name:'混天綾',     cat:'eq',  slot:'ac', def:12, luk:20, price:800, desc:'+12防禦，+20幸運，哪吒法寶。' },
+  dragonPearl:  { name:'龍珠',       cat:'use', hp:300, mp:80,  price:2000, desc:'東海龍王之寶，恢復300HP與80MP。' },
+  seaDragonArmor:{ name:'海龍甲',    cat:'eq',  slot:'ar', def:50, price:2000, desc:'+50防禦力，東海龍鱗鍛造。' },
+  waterStaff:   { name:'水晶仙杖',   cat:'eq',  slot:'wp', who:'linger', atk:45, mp:100, price:2200, desc:'+45攻擊，+100法力上限。' },
+  dragonBow:    { name:'龍骨神弓',   cat:'eq',  slot:'wp', who:'yuehua', atk:65, price:2200, desc:'+65攻擊力，龍骨所制。' },
 };
 
 const SHOP_STOCK = {
@@ -72,7 +78,8 @@ const SHOP_STOCK = {
   forest:  ['herb','elixir','redPotion','steelSword','ironArmor'],
   castle:  ['redPotion','fullElixir','revive','jadeSword','moonBow','crystalStaff','silkRobe','jade'],
   cave:    ['redPotion','fullElixir','revive','elixir','ironArmor'],
-  shrine:  ['fullElixir','revive','spiritBlade','moonStaff','starBow','dragonArmor','ancientJade'],
+  shrine:       ['fullElixir','revive','spiritBlade','moonStaff','starBow','dragonArmor','ancientJade'],
+  dragonPalace: ['dragonPearl','seaDragonArmor','waterStaff','dragonBow','redPotion','fullElixir','revive'],
 };
 
 const ENEMIES = {
@@ -87,7 +94,11 @@ const ENEMIES = {
   spider:     { name:'蜘蛛精', hp:110, atk:16, def:8,  spd:18, exp:75,  gold:35, color:0x501840, sz:28, acts:['bite','webTrap','bite','poisonSpray'],   drops:[{id:'elixir',r:0.3}] },
   yasha:      { name:'夜叉',   hp:135, atk:22, def:14, spd:14, exp:98,  gold:48, color:0x203060, sz:30, acts:['slash','curse','drain','slash'],          drops:[{id:'redPotion',r:0.15}] },
   goldenEagle:{ name:'大鵬金翅',hp:185, atk:28, def:18, spd:22, exp:155, gold:85, color:0xd0a010, sz:36, acts:['claw','diveBomb','claw','aoe'],           drops:[{id:'redPotion',r:0.3},{id:'fullElixir',r:0.2}] },
-  silverKing: { name:'銀角大王',hp:380, atk:38, def:24, spd:9,  exp:0,   gold:0,  color:0xc0c8f0, sz:48, acts:['slam','soulDrain','aoe','slam','curse'],  drops:[], boss:true },
+  silverKing:  { name:'銀角大王', hp:380, atk:38, def:24, spd:9,  exp:0,   gold:0,  color:0xc0c8f0, sz:48, acts:['slam','soulDrain','aoe','slam','curse'],  drops:[], boss:true },
+  fireSpirit:  { name:'火靈精',  hp:130, atk:28, def:8,  spd:20, exp:120, gold:60, color:0xff4010, sz:28, acts:['fireFlare','bite','fireFlare','howl'],           drops:[{id:'elixir',r:0.3}] },
+  iceScorp:    { name:'冰蠍',    hp:145, atk:22, def:16, spd:12, exp:105, gold:55, color:0x40b0e0, sz:28, acts:['frostClaw','frostClaw','iceBlast','bite'],        drops:[{id:'herb',r:0.2},{id:'elixir',r:0.2}] },
+  dragonGuard: { name:'龍族守衛',hp:200, atk:30, def:22, spd:10, exp:160, gold:80, color:0x2090c0, sz:32, acts:['slash','waterBlast','slam','scaleDash'],          drops:[{id:'redPotion',r:0.25}] },
+  dragonKing:  { name:'東海龍王',hp:600, atk:48, def:30, spd:7,  exp:0,   gold:0,  color:0x0090ff, sz:52, acts:['waterBlast','scaleDash','tideCall','scaleDash','waterBlast'], drops:[], boss:true },
 };
 
 const ENEMY_ACTS = {
@@ -107,6 +118,12 @@ const ENEMY_ACTS = {
   claw:       { name:'金爪撕裂', pow:1.3, type:'atk',   tgt:'single' },
   diveBomb:   { name:'俯衝重擊', pow:1.8, type:'atk',   tgt:'single' },
   soulDrain:  { name:'攝魂術',   pow:1.1, type:'drain',  tgt:'single' },
+  waterBlast: { name:'水龍衝擊', pow:1.4, type:'atk',   tgt:'all' },
+  scaleDash:  { name:'鱗甲突進', pow:2.0, type:'atk',   tgt:'single' },
+  tideCall:   { name:'召喚潮水', pow:0.8, type:'atk',   tgt:'all',    debuff:{slow:2} },
+  fireFlare:  { name:'火焰爆裂', pow:1.5, type:'atk',   tgt:'single' },
+  frostClaw:  { name:'冰霜爪',   pow:1.2, type:'atk',   tgt:'single', debuff:{slow:2} },
+  iceBlast:   { name:'冰霜爆',   pow:0.9, type:'atk',   tgt:'all',    debuff:{slow:1} },
 };
 
 // ── Maps ───────────────────────────────────────────────────
@@ -224,14 +241,14 @@ const MAPS = {
   cave: {
     name:'盤絲洞', music:'dungeon',
     exits:[
-      { x:19,y:7, to:'forest',  toX:1,  toY:7, msg:'返回幽竹林' },
-      { x:9, y:14,to:'shrine',  toX:9,  toY:1, msg:'進入小西天' },
+      { x:19,y:7, to:'forest',       toX:1,  toY:7, msg:'返回幽竹林' },
+      { x:9, y:14,to:'dragonPalace', toX:9,  toY:1, msg:'前往東海龍宮' },
     ],
     chests:[
       { x:5, y:11,id:'ca1', item:'fullElixir' },
       { x:14,y:3, id:'ca2', gold:300 },
     ],
-    enc:{ rate:0.25, enemies:['spider','yasha','ghost','demon','goldenEagle'] },
+    enc:{ rate:0.25, enemies:['spider','yasha','ghost','demon','goldenEagle','fireSpirit','iceScorp'] },
     w:20, h:15,
     tiles:[
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -251,17 +268,18 @@ const MAPS = {
       [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1],
     ],
     npcs:[
-      { x:5, y:7, name:'被困僧人', dlg:['此乃蜘蛛精盤絲洞…', '往南面有通往小西天之路！', '天命之人，快去吧！'] },
-      { x:14,y:7, name:'石壁刻文', dlg:['〔壁上刻著〕', '蜘蛛精盤踞於此，妖氣沖天。', '南門通往小西天，彌勒道場所在。'] },
+      { x:5, y:7, name:'被困僧人', dlg:['此乃蜘蛛精盤絲洞…', '往南面有通往東海龍宮之路！', '天命之人，快去吧！'] },
+      { x:14,y:7, name:'石壁刻文', dlg:['〔壁上刻著〕', '蜘蛛精盤踞於此，妖氣沖天。', '南門通往東海龍宮，黃眉大王腹地。'] },
       { x:9, y:3, name:'行商',     dlg:['這鬼地方真嚇人…', '最後一批貨，你要的話快買！'], shop:'cave' },
       { x:4, y:4, name:'銀角大王', dlg:['哈哈哈！天命之人！', '本王乃太上老君弟子，奉命鎮守此地！', '要想通過，先過本王這一關！'], boss:'silverKing' },
+      { x:9, y:12,name:'虎先鋒',   dlg:['吼！！', '本先鋒奉命鎮守此處，守衛南路！', '要想繼續南行，先打敗本先鋒！'], boss:'dragon' },
     ],
     startX:18, startY:7,
   },
   shrine: {
     name:'小西天', music:'shrine',
     exits:[
-      { x:9, y:0, to:'cave', toX:9, toY:13, msg:'返回盤絲洞' },
+      { x:9, y:0, to:'dragonPalace', toX:18, toY:7, msg:'返回東海龍宮' },
     ],
     chests:[
       { x:2, y:12,id:'sh1', item:'revive' },
@@ -291,6 +309,44 @@ const MAPS = {
       { x:9, y:7,  name:'金身羅漢', dlg:['此乃彌勒佛道場小西天。', '黃眉大王反出師門，竊取佛寶，', '天命之人，此劫靠你解決！'] },
       { x:5, y:7,  name:'阿羅漢',   dlg:['黃眉大王法力高強，', '其禪杖能震碎山嶽，禪定珠能困縛萬物。', '做好萬全準備再去決戰！'] },
       { x:14,y:7,  name:'掌寶人',   dlg:['你已有足夠的力量！', '贈你此神器，可助你斬妖除魔！'], shop:'shrine' },
+    ],
+    startX:9, startY:1,
+  },
+  dragonPalace: {
+    name:'東海龍宮', music:'dungeon',
+    exits:[
+      { x:9, y:0,  to:'cave',   toX:9,  toY:13, msg:'返回盤絲洞' },
+      { x:19,y:7,  to:'shrine', toX:1,  toY:7,  msg:'進入小西天' },
+    ],
+    chests:[
+      { x:2, y:2,  id:'dp1', gold:800 },
+      { x:17,y:2,  id:'dp2', item:'dragonBow' },
+      { x:9, y:5,  id:'dp3', item:'waterStaff' },
+    ],
+    enc:{ rate:0.28, enemies:['dragonGuard','fireSpirit','iceScorp','yasha'] },
+    w:20, h:15,
+    tiles:[
+      [1,1,1,1,1,1,1,1,1,6,1,1,1,1,1,1,1,1,1,1],
+      [1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1],
+      [1,5,4,4,5,5,1,5,5,5,5,5,5,1,5,5,4,4,5,1],
+      [1,5,4,4,5,5,5,5,5,1,1,5,5,5,5,5,4,4,5,1],
+      [1,5,5,5,5,1,5,5,5,5,5,5,5,5,1,5,5,5,5,1],
+      [1,5,5,1,5,5,5,5,4,4,4,4,5,5,5,5,1,5,5,1],
+      [1,5,5,5,5,5,5,5,4,4,4,4,5,5,5,5,5,5,5,1],
+      [1,5,5,5,5,5,5,5,4,4,4,4,5,5,5,5,5,5,5,6],
+      [1,5,5,5,5,5,5,5,4,4,4,4,5,5,5,5,5,5,5,1],
+      [1,5,5,1,5,5,5,5,4,4,4,4,5,5,5,5,1,5,5,1],
+      [1,5,5,5,5,1,5,5,5,5,5,5,5,5,1,5,5,5,5,1],
+      [1,5,4,4,5,5,5,5,5,1,1,5,5,5,5,5,4,4,5,1],
+      [1,5,4,4,5,5,1,5,5,5,5,5,5,1,5,5,4,4,5,1],
+      [1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    npcs:[
+      { x:9, y:7,  name:'東海龍王', dlg:['哈哈哈！何方神聖，竟敢闖入朕之龍宮！', '朕乃東海之主，法力無邊！', '今日便讓你見識水龍之威！'], boss:'dragonKing' },
+      { x:5, y:7,  name:'海靈使者', dlg:['此乃東海龍宮，', '龍王以水法攻擊，雷系技能乃其剋星！', '準備充分再出手吧！'] },
+      { x:14,y:7,  name:'龍宮行商', dlg:['龍宮秘寶盡在此！', '這可是最後的補給機會了！'], shop:'dragonPalace' },
+      { x:9, y:3,  name:'龍柱石刻', dlg:['〔古龍文〕', '東海龍王鎮守海疆，水法通天。', '雷霆乃水之剋，以雷攻水，事半功倍。'] },
     ],
     startX:9, startY:1,
   },
@@ -519,6 +575,8 @@ const ACHIEVEMENTS = {
   silver_king:  { name:'降魔伏妖',   icon:'⚡',  desc:'擊敗盤絲洞的銀角大王。' },
   no_damage:    { name:'銅牆鐵壁',   icon:'🛡️', desc:'全員滿HP贏得一場戰鬥。' },
   poisoner:     { name:'毒手',       icon:'☠️', desc:'以毒擊倒妖物。' },
+  dragon_king:  { name:'制霸龍宮',   icon:'🐉',  desc:'擊敗東海龍王，取得龍珠。' },
+  completionist:{ name:'除妖大功德', icon:'🌠',  desc:'擊敗四位Boss，除妖功德圓滿。' },
 };
 
 const Achieve = {
@@ -650,4 +708,8 @@ const QUESTS = [
     done: () => !!GS.flags.defeatedDragon },
   { id:'q5', name:'討伐黃眉大王', desc:'前往小西天，終結黃眉大王之禍。',
     done: () => !!GS.flags.defeated_boss },
+  { id:'q6', name:'東海龍宮',     desc:'進入龍宮，擊敗東海龍王，取得龍珠。',
+    done: () => !!GS.flags.defeated_dragonKing },
+  { id:'q7', name:'除妖大功德',   desc:'四大Boss盡皆伏誅，天下太平。',
+    done: () => ['defeated_boss','defeated_silverKing','defeated_dragonKing'].every(f=>GS.flags[f]) && !!GS.flags.defeatedDragon },
 ];

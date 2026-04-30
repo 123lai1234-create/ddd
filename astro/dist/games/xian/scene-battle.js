@@ -30,6 +30,7 @@ class BattleScene extends Phaser.Scene {
       castle: { sky:[0x1a1002,0x160e02,0x080602,0x0c0a02], moon:0x1a1404, mtn1:0x2a1a04, mtn2:0x342008, gnd:[0x1e1402,0x1e1402,0x0c0a02,0x0c0a02], gndLine:0xb09020, gndSub:0x2e1e04, arena:0x302008 },
       cave:   { sky:[0x0e0420,0x0a0218,0x04020e,0x06021a], moon:0x120630, mtn1:0x14063a, mtn2:0x1a0840, gnd:[0x0c0418,0x0c0418,0x060210,0x060210], gndLine:0x6040b0, gndSub:0x180630, arena:0x200840 },
       shrine: { sky:[0x181208,0x140e04,0x080604,0x0c0a04], moon:0x1c1606, mtn1:0x241a04, mtn2:0x2e200a, gnd:[0x201608,0x201608,0x100c04,0x100c04], gndLine:0xc09020, gndSub:0x301e06, arena:0x302010 },
+      dragonPalace: { sky:[0x040820,0x030616,0x020410,0x04061a], moon:0x0a1c3c, mtn1:0x0a1e4a, mtn2:0x103262, gnd:[0x080e22,0x080e22,0x040810,0x040810], gndLine:0x2870e0, gndSub:0x1040a0, arena:0x082090 },
     };
     const bgc = BG_MAP[GS.map] || { sky:[0x180808,0x120410,0x060202,0x0a0208], moon:0x0c0418, mtn1:0x180c2a, mtn2:0x1e1030, gnd:[0x1c1008,0x1c1008,0x080604,0x080604], gndLine:0xb07828, gndSub:0x3a2606, arena:0x280840 };
     const bg = this.add.graphics();
@@ -171,6 +172,7 @@ class BattleScene extends Phaser.Scene {
       cave:  {count:14,clr:0xa060f0,minR:1.5,maxR:3.0,vy:-0.20,vxS:0.1,a:0.40},
       castle:{count:22,clr:0xd4a040,minR:0.8,maxR:2.5,vy:-0.55,vxS:0.5,a:0.35},
       shrine:{count:12,clr:0xffd060,minR:2.0,maxR:4.0,vy:-0.30,vxS:0.2,a:0.45},
+      dragonPalace:{count:22,clr:0x40c0ff,minR:1.2,maxR:3.0,vy:-0.30,vxS:0.10,a:0.40},
     };
     this._ambientCfg=ABCFG[GS.map]||null;
     if (this._ambientCfg) {
@@ -433,6 +435,199 @@ class BattleScene extends Phaser.Scene {
       g.fillStyle(0xf0e8d0, 1);
       g.fillTriangle(-sz*0.22, -sz*1.58, -sz*0.1, -sz*1.58, -sz*0.16, -sz*1.42);
       g.fillTriangle(sz*0.1, -sz*1.58, sz*0.22, -sz*1.58, sz*0.16, -sz*1.42);
+    } else if (id === 'spider') {
+      // 蜘蛛精 — spider demon
+      const sc = 0x1a0828, sh = 0x6020a0;
+      // abdomen (large rear bulb)
+      g.fillStyle(sc, 1); g.fillEllipse(sz*0.1, sz*0.1, sz*2.4, sz*1.6);
+      // web pattern on abdomen
+      g.lineStyle(0.8, 0x9040e0, 0.45);
+      g.lineBetween(-sz*0.8, sz*0.1, sz*1.0, sz*0.1); g.lineBetween(sz*0.1, -sz*0.7, sz*0.1, sz*0.9);
+      g.strokeEllipse(sz*0.1, sz*0.1, sz*1.2, sz*0.8);
+      // cephalothorax (front body)
+      g.fillStyle(sh, 1); g.fillEllipse(-sz*0.55, -sz*1.05, sz*1.35, sz*1.0);
+      // 8 legs (4 per side)
+      g.lineStyle(2, 0x280840, 1);
+      const legY = -sz*0.85;
+      g.lineBetween(-sz*0.82, legY, -sz*1.9, -sz*1.6); g.lineBetween(-sz*0.82, legY, -sz*2.1, -sz*0.55);
+      g.lineBetween(-sz*0.55, legY+sz*0.25, -sz*1.8, sz*0.3); g.lineBetween(-sz*0.55, legY+sz*0.25, -sz*1.5, sz*0.85);
+      g.lineBetween(sz*0.28, legY, sz*1.35, -sz*1.6); g.lineBetween(sz*0.28, legY, sz*1.55, -sz*0.55);
+      g.lineBetween(sz*0.05, legY+sz*0.25, sz*1.25, sz*0.3); g.lineBetween(sz*0.05, legY+sz*0.25, sz*0.95, sz*0.85);
+      // head
+      g.fillStyle(sh, 1); g.fillCircle(-sz*0.58, -sz*1.72, sz*0.55);
+      // 6 red eyes (2 rows of 3)
+      g.fillStyle(0xff2020, 1);
+      for (let ei = -1; ei <= 1; ei++) {
+        g.fillCircle(-sz*0.58+ei*sz*0.28, -sz*1.82, sz*0.1);
+        g.fillCircle(-sz*0.58+ei*sz*0.22, -sz*1.62, sz*0.08);
+      }
+      // chelicerae (fangs)
+      g.fillStyle(0x0c0018, 1); g.fillEllipse(-sz*0.78, -sz*1.28, sz*0.28, sz*0.5); g.fillEllipse(-sz*0.38, -sz*1.28, sz*0.28, sz*0.5);
+      g.fillStyle(0xc040ff, 0.8); g.fillCircle(-sz*0.78, -sz*1.06, sz*0.1); g.fillCircle(-sz*0.38, -sz*1.06, sz*0.1);
+    } else if (id === 'yasha') {
+      // 夜叉 — aquatic demon warrior
+      const yc = 0x1a4878, ys = 0x2870c0, skin = 0x204060;
+      // fish-scale body armor
+      g.fillStyle(ys, 1); g.fillEllipse(0, -sz*0.75, sz*1.85, sz*1.55);
+      // scale texture
+      g.lineStyle(0.7, 0x102848, 0.6);
+      for (let row = 0; row < 3; row++) {
+        for (let col = -2; col <= 2; col++) {
+          g.strokeEllipse(col*sz*0.35 + (row%2)*sz*0.17, -sz*0.5 - row*sz*0.35, sz*0.38, sz*0.22);
+        }
+      }
+      // belly (lighter)
+      g.fillStyle(0x90c8e8, 0.35); g.fillEllipse(0, -sz*0.72, sz*0.95, sz*0.9);
+      // webbed arms
+      g.fillStyle(yc, 1); g.fillEllipse(-sz*1.12, -sz*0.62, sz*0.55, sz*1.0); g.fillEllipse(sz*1.12, -sz*0.62, sz*0.55, sz*1.0);
+      g.fillStyle(0x204870, 0.8);
+      g.fillTriangle(-sz*1.38, -sz*0.28, -sz*0.88, -sz*0.28, -sz*1.12, sz*0.15);
+      g.fillTriangle(sz*0.88, -sz*0.28, sz*1.38, -sz*0.28, sz*1.12, sz*0.15);
+      // head (amphibian)
+      g.fillStyle(ys, 1); g.fillEllipse(0, -sz*1.92, sz*1.1, sz*0.82);
+      // gill slits
+      g.lineStyle(1.5, 0x102848, 0.8); g.lineBetween(-sz*0.5, -sz*1.78, -sz*0.62, -sz*1.58); g.lineBetween(-sz*0.38, -sz*1.75, -sz*0.48, -sz*1.55);
+      g.lineBetween(sz*0.5, -sz*1.78, sz*0.62, -sz*1.58); g.lineBetween(sz*0.38, -sz*1.75, sz*0.48, -sz*1.55);
+      // eyes (predator)
+      g.fillStyle(0xffe020, 1); g.fillEllipse(-sz*0.3, -sz*1.98, sz*0.28, sz*0.2); g.fillEllipse(sz*0.3, -sz*1.98, sz*0.28, sz*0.2);
+      g.fillStyle(0x080000, 1); g.fillRect(-sz*0.32, -sz*2.02, sz*0.06, sz*0.16); g.fillRect(sz*0.26, -sz*2.02, sz*0.06, sz*0.16);
+      // trident
+      g.lineStyle(3, 0x4080b0, 1); g.lineBetween(sz*0.92, -sz*1.65, sz*0.92, sz*0.22);
+      g.fillStyle(0x80c8e8, 1);
+      g.fillTriangle(sz*0.76, -sz*2.1, sz*0.92, -sz*1.65, sz*1.08, -sz*2.1);
+      g.fillTriangle(sz*0.62, -sz*1.98, sz*0.72, -sz*1.65, sz*0.82, -sz*1.98);
+      g.fillTriangle(sz*1.02, -sz*1.98, sz*1.12, -sz*1.65, sz*1.22, -sz*1.98);
+    } else if (id === 'goldenEagle') {
+      // 金翅大鵬 — giant golden eagle demon
+      const gc = 0xd4a010, gd = 0x8a6808, beak = 0xe8b820;
+      // wings spread
+      g.fillStyle(gc, 1); g.fillEllipse(-sz*1.6, -sz*1.15, sz*2.0, sz*0.8);
+      g.fillEllipse(sz*1.6, -sz*1.15, sz*2.0, sz*0.8);
+      // wing feather tips (dark)
+      g.fillStyle(gd, 1); g.fillEllipse(-sz*2.3, -sz*1.18, sz*0.9, sz*0.45);
+      g.fillEllipse(sz*2.3, -sz*1.18, sz*0.9, sz*0.45);
+      // primary feathers
+      g.fillStyle(0xffd700, 0.5);
+      for (let fi = -3; fi <= 3; fi++) {
+        if (fi === 0) continue;
+        const fx = fi * sz * 0.48;
+        g.fillTriangle(fx - sz*0.12, -sz*0.65, fx + sz*0.12, -sz*0.65, fx, -sz*1.55);
+      }
+      // body (raptor chest)
+      g.fillStyle(gc, 1); g.fillEllipse(0, -sz*0.72, sz*1.55, sz*1.45);
+      g.fillStyle(0xfff8d0, 0.6); g.fillEllipse(0, -sz*0.65, sz*0.75, sz*0.85); // white breast
+      // head
+      g.fillStyle(0xfff0c0, 1); g.fillCircle(0, -sz*1.85, sz*0.65);
+      // fierce yellow eyes
+      g.fillStyle(0xffd020, 1); g.fillCircle(-sz*0.26, -sz*1.95, sz*0.18); g.fillCircle(sz*0.26, -sz*1.95, sz*0.18);
+      g.fillStyle(0x080000, 1); g.fillCircle(-sz*0.24, -sz*1.94, sz*0.1); g.fillCircle(sz*0.28, -sz*1.94, sz*0.1);
+      g.fillStyle(0xffffff, 1); g.fillCircle(-sz*0.22, -sz*1.97, sz*0.04); g.fillCircle(sz*0.30, -sz*1.97, sz*0.04);
+      // hooked beak
+      g.fillStyle(beak, 1); g.fillTriangle(-sz*0.2, -sz*1.68, sz*0.2, -sz*1.68, 0, -sz*1.38);
+      g.fillStyle(0xc8a010, 1); g.fillTriangle(-sz*0.12, -sz*1.52, sz*0.12, -sz*1.52, 0, -sz*1.38);
+      // talons
+      g.fillStyle(gd, 1); g.fillEllipse(-sz*0.45, sz*0.08, sz*0.38, sz*0.28); g.fillEllipse(sz*0.45, sz*0.08, sz*0.38, sz*0.28);
+      g.fillStyle(0xd0c080, 1);
+      for (let ti = -1; ti <= 1; ti++) {
+        g.fillTriangle(-sz*0.45+ti*sz*0.15, sz*0.22, -sz*0.45+ti*sz*0.15+sz*0.1, sz*0.22, -sz*0.45+ti*sz*0.08, sz*0.42);
+        g.fillTriangle(sz*0.45+ti*sz*0.15, sz*0.22, sz*0.45+ti*sz*0.15+sz*0.1, sz*0.22, sz*0.45+ti*sz*0.08, sz*0.42);
+      }
+    } else if (id === 'silverKing') {
+      // 銀角大王 — silver horn demon king
+      const sc = 0xc8d8e8, sa = 0xe8f0f8, sd = 0x506070;
+      // armored body (heavy silver plate)
+      g.fillStyle(sc, 1); g.fillEllipse(0, -sz*0.72, sz*2.1, sz*1.65);
+      g.fillStyle(sa, 0.5); g.fillEllipse(-sz*0.22, -sz*0.9, sz*1.1, sz*0.7); // armor sheen
+      // waist skirt plates
+      g.fillStyle(sd, 1); g.fillRect(-sz*0.95, -sz*0.18, sz*1.9, sz*0.28);
+      g.fillStyle(sc, 1);
+      for (let pl = -2; pl <= 2; pl++) g.fillRect(pl*sz*0.38-sz*0.16, sz*0.08, sz*0.3, sz*0.38);
+      // arms (gauntlets)
+      g.fillStyle(sc, 1); g.fillEllipse(-sz*1.2, -sz*0.65, sz*0.58, sz*1.0); g.fillEllipse(sz*1.2, -sz*0.65, sz*0.58, sz*1.0);
+      g.fillStyle(sa, 0.5); g.fillRect(-sz*1.38, -sz*0.28, sz*0.36, sz*0.16); g.fillRect(sz*1.02, -sz*0.28, sz*0.36, sz*0.16);
+      // head (demon-king face)
+      g.fillStyle(sc, 1); g.fillCircle(0, -sz*2.0, sz*0.72);
+      g.fillStyle(sa, 0.35); g.fillCircle(-sz*0.18, -sz*2.22, sz*0.42);
+      // silver helmet
+      g.fillStyle(sd, 1); g.fillRect(-sz*0.75, -sz*2.68, sz*1.5, sz*0.58);
+      // twin silver horns (signature)
+      g.fillStyle(sc, 1);
+      g.fillTriangle(-sz*0.48, -sz*2.62, -sz*0.72, -sz*3.38, -sz*0.22, -sz*2.62);
+      g.fillTriangle(sz*0.22, -sz*2.62, sz*0.72, -sz*3.38, sz*0.48, -sz*2.62);
+      g.fillStyle(sa, 0.7);
+      g.fillTriangle(-sz*0.48, -sz*2.62, -sz*0.62, -sz*3.18, -sz*0.3, -sz*2.62);
+      g.fillTriangle(sz*0.3, -sz*2.62, sz*0.62, -sz*3.18, sz*0.48, -sz*2.62);
+      // piercing blue eyes
+      g.fillStyle(0x40a0ff, 1); g.fillCircle(-sz*0.28, -sz*2.06, sz*0.14); g.fillCircle(sz*0.28, -sz*2.06, sz*0.14);
+      g.fillStyle(0x100820, 1); g.fillCircle(-sz*0.26, -sz*2.05, sz*0.07); g.fillCircle(sz*0.30, -sz*2.05, sz*0.07);
+      // sneer mouth
+      g.fillStyle(0x201010, 1); g.fillEllipse(0, -sz*1.82, sz*0.48, sz*0.18);
+      g.fillStyle(0xf0e8d8, 1); g.fillRect(-sz*0.14, -sz*1.88, sz*0.1, sz*0.1); g.fillRect(sz*0.04, -sz*1.88, sz*0.1, sz*0.1);
+      // silver sword (massive)
+      g.lineStyle(4, sd, 1); g.lineBetween(sz*1.18, -sz*1.72, sz*1.18, sz*0.28);
+      g.fillStyle(sc, 1); g.fillRect(sz*0.96, -sz*2.22, sz*0.44, sz*0.55);
+      g.fillStyle(sa, 0.7); g.fillRect(sz*1.04, -sz*2.18, sz*0.28, sz*0.42);
+      g.fillStyle(0x8090a0, 1); g.fillRect(sz*0.78, -sz*1.72, sz*0.78, sz*0.18);
+    } else if (id === 'dragonKing') {
+      // 東海龍王 — Dragon King of the East Sea (boss)
+      const dc = 0x104888, ds = 0x1868b8, dg = 0x20d080, dsc = 0x0080a0;
+      // serpentine tail base
+      g.fillStyle(dc, 1); g.fillEllipse(sz*0.4, sz*0.2, sz*2.5, sz*0.75);
+      g.fillEllipse(-sz*0.3, -sz*0.12, sz*1.8, sz*0.6);
+      // scale texture on tail
+      g.lineStyle(0.8, 0x082848, 0.5);
+      for (let sc2 = 0; sc2 < 5; sc2++) {
+        g.strokeEllipse(-sz*0.5+sc2*sz*0.45, sz*0.15, sz*0.55, sz*0.3);
+      }
+      // main body (rearing up)
+      g.fillStyle(dc, 1); g.fillEllipse(0, -sz*1.0, sz*1.65, sz*2.1);
+      // belly (lighter plates)
+      g.fillStyle(0x40b8d0, 0.55); g.fillEllipse(0, -sz*1.0, sz*0.85, sz*1.55);
+      // horizontal belly lines
+      g.lineStyle(0.8, 0x106880, 0.6);
+      for (let bi = 0; bi < 6; bi++) g.lineBetween(-sz*0.38, -sz*0.25 - bi*sz*0.32, sz*0.38, -sz*0.25 - bi*sz*0.32);
+      // arms (clawed)
+      g.fillStyle(dc, 1); g.fillEllipse(-sz*1.12, -sz*0.65, sz*0.65, sz*1.05); g.fillEllipse(sz*1.12, -sz*0.65, sz*0.65, sz*1.05);
+      // webbing
+      g.fillStyle(dsc, 0.6);
+      g.fillTriangle(-sz*1.38, -sz*0.35, -sz*0.88, -sz*0.35, -sz*1.12, sz*0.08);
+      g.fillTriangle(sz*0.88, -sz*0.35, sz*1.38, -sz*0.35, sz*1.12, sz*0.08);
+      // dragon claws
+      g.fillStyle(0xe0e8c0, 1);
+      for (let ci = -1; ci <= 1; ci++) {
+        g.fillTriangle(-sz*1.12+ci*sz*0.18, sz*0.12, -sz*1.12+ci*sz*0.18+sz*0.12, sz*0.12, -sz*1.12+ci*sz*0.1, sz*0.38);
+        g.fillTriangle(sz*1.12+ci*sz*0.18, sz*0.12, sz*1.12+ci*sz*0.18+sz*0.12, sz*0.12, sz*1.12+ci*sz*0.1, sz*0.38);
+      }
+      // dragon head (imposing)
+      g.fillStyle(dc, 1); g.fillEllipse(0, -sz*2.28, sz*1.4, sz*1.0);
+      // dragon snout (elongated)
+      g.fillStyle(ds, 1); g.fillEllipse(sz*0.1, -sz*1.95, sz*1.1, sz*0.52);
+      g.fillStyle(0xe0f0ff, 0.3); g.fillEllipse(sz*0.0, -sz*2.0, sz*0.65, sz*0.28);
+      // nostrils (wisps of smoke)
+      g.fillStyle(dc, 1); g.fillCircle(sz*0.42, -sz*1.82, sz*0.1); g.fillCircle(sz*0.62, -sz*1.82, sz*0.1);
+      // teeth
+      g.fillStyle(0xf0eed0, 1);
+      for (let ti = -2; ti <= 2; ti++) {
+        g.fillTriangle(ti*sz*0.15+sz*0.15, -sz*1.72, ti*sz*0.15+sz*0.25, -sz*1.72, ti*sz*0.15+sz*0.2, -sz*1.52);
+        g.fillTriangle(ti*sz*0.15+sz*0.15, -sz*2.12, ti*sz*0.15+sz*0.25, -sz*2.12, ti*sz*0.15+sz*0.2, -sz*2.28);
+      }
+      // glowing water eyes
+      g.fillStyle(dg, 1); g.fillEllipse(-sz*0.38, -sz*2.42, sz*0.35, sz*0.25); g.fillEllipse(sz*0.22, -sz*2.42, sz*0.35, sz*0.25);
+      g.fillStyle(0x000000, 1); g.fillRect(-sz*0.4, -sz*2.46, sz*0.06, sz*0.18); g.fillRect(sz*0.2, -sz*2.46, sz*0.06, sz*0.18);
+      g.fillStyle(dg, 0.6); g.fillEllipse(-sz*0.38, -sz*2.42, sz*0.42, sz*0.32); g.fillEllipse(sz*0.22, -sz*2.42, sz*0.42, sz*0.32);
+      // antler horns (dragon style)
+      g.fillStyle(dg, 1);
+      g.lineStyle(3, dg, 1);
+      g.lineBetween(-sz*0.35, -sz*2.82, -sz*0.65, -sz*3.42); g.lineBetween(-sz*0.65, -sz*3.42, -sz*0.88, -sz*3.0); g.lineBetween(-sz*0.65, -sz*3.42, -sz*0.35, -sz*3.15);
+      g.lineBetween(sz*0.35, -sz*2.82, sz*0.65, -sz*3.42); g.lineBetween(sz*0.65, -sz*3.42, sz*0.88, -sz*3.0); g.lineBetween(sz*0.65, -sz*3.42, sz*0.35, -sz*3.15);
+      // dragon pearl (floating between horns)
+      g.fillStyle(0x80f0ff, 0.85); g.fillCircle(0, -sz*3.35, sz*0.28);
+      g.fillStyle(0xffffff, 0.6); g.fillCircle(-sz*0.1, -sz*3.45, sz*0.12);
+      g.fillStyle(dg, 0.25); g.fillCircle(0, -sz*3.35, sz*0.45);
+      // flowing whiskers
+      g.lineStyle(1.8, dg, 0.7);
+      g.lineBetween(-sz*0.55, -sz*1.95, -sz*1.35, -sz*2.4); g.lineBetween(-sz*0.55, -sz*1.95, -sz*1.1, -sz*1.62);
+      g.lineBetween(sz*0.75, -sz*1.95, sz*1.55, -sz*2.4); g.lineBetween(sz*0.75, -sz*1.95, sz*1.3, -sz*1.62);
     } else {
       // boss — 黃眉大王 fat corrupt monk
       const bc = 0xc09010, br = 0xe8a820, bskin = 0xd4b87a;
@@ -1041,7 +1236,7 @@ class BattleScene extends Phaser.Scene {
       const st=calcStats(actor);
       let msg='';
       if (sk.type==='atk') {
-        Sound?.play('magic');
+        Sound?.play(sk.elem==='thunder' ? 'thunderSkill' : 'magic');
         const targets=sk.tgt==='all'?this.enemies.filter(e=>!e.dead):[this.enemies[targetIdx]];
         const hitCount=sk.hits||1;
         const dmgs=targets.map(tgt=>{
@@ -1139,7 +1334,7 @@ class BattleScene extends Phaser.Scene {
             if(e.dead)return;
             if(e.status.includes('poison')){
               const dmg=Math.max(1,Math.floor(e.maxHp*0.05));
-              e.hp=Math.max(0,e.hp-dmg); if(e.hp===0)e.dead=true;
+              e.hp=Math.max(0,e.hp-dmg); if(e.hp===0){ e.dead=true; Achieve?.unlock('poisoner'); }
               this._addLog(`${e.name} 中毒，損失 ${dmg} HP！`);
               Sound?.play('poison');
               const sp=this.enemySprites[ei];
@@ -1200,8 +1395,9 @@ class BattleScene extends Phaser.Scene {
             const heal=Math.floor(dmg*0.5); e.hp=Math.min(e.maxHp,e.hp+heal);
             const ei=this.enemies.indexOf(e); this._refreshEnemyHp(ei);
             if(enemySp) this._floatText(enemySp.g.x,enemySp.g.y-50,`+${heal}`,'#88ff88',16);
-          }
-          Sound?.play('damage'); this._shake(isStrong?0.010:0.005, isStrong?320:240);
+            Sound?.play('drain');
+          } else { Sound?.play('damage'); }
+          this._shake(isStrong?0.010:0.005, isStrong?320:240);
           if (heroSp) {
             const hx=heroSp.g.x, hy=heroSp.g.y-32;
             this._floatText(hx,hy,String(dmg),'#ff5050',isStrong?24:20);
@@ -1279,11 +1475,21 @@ class BattleScene extends Phaser.Scene {
     this.enemies.forEach(e => { GS.flags._enemySeen[e.id] = true; });
     // Track dragon kills (unlocks final boss NPC)
     this.enemies.forEach(e=>{ if(e.id==='dragon')GS.flags.defeatedDragon=true; });
+    // no_damage achievement
+    if(this.party.every(m=>!m.dead&&m.hp===m.maxHp)) Achieve?.unlock('no_damage');
+
     // Boss defeat handling
     if(GS.battleData?.isBoss){
       Achieve?.unlock('boss_slayer'); this._submitLeaderboard();
       const bossEnemy=this.enemies[0];
       GS.flags[`defeated_${bossEnemy.id}`]=true;
+      if(bossEnemy.id==='silverKing') Achieve?.unlock('silver_king');
+      if(bossEnemy.id==='dragonKing') {
+        Achieve?.unlock('dragon_king');
+        // completionist: all bosses slain
+        const allBossIds=['dragon','silverKing','dragonKing','boss'];
+        if(allBossIds.every(bid=>GS.flags[`defeated_${bid}`]||bid===bossEnemy.id)) Achieve?.unlock('completionist');
+      }
       if(bossEnemy.id==='boss'){
         GS.flags._pendingLines=['黃眉大王已伏誅！天命得成！','土地：妖氣盡散，山河安寧。','楊嬋：天命之人，你做到了，回黑山村吧！'];
         GS.flags._isFinalBoss=true;
@@ -1373,10 +1579,12 @@ class BattleScene extends Phaser.Scene {
       if (bsp && !bsp.e.dead) {
         const pulse=0.07+Math.abs(Math.sin(this._t*0.038))*0.16;
         const sz=bsp.e.sz||28;
+        const auraClr = bsp.e.color || 0xff2020;
+        const auraClr2 = bsp.e.id==='dragonKing' ? 0x20d0ff : (bsp.e.id==='silverKing' ? 0xa0c0ff : 0xff8020);
         this._bossAuraG.clear();
-        this._bossAuraG.fillStyle(0xff2020, pulse);
+        this._bossAuraG.fillStyle(auraClr, pulse);
         this._bossAuraG.fillCircle(bsp.g.x, bsp.g.y-sz*0.82, sz*1.65);
-        this._bossAuraG.fillStyle(0xff8020, pulse*0.45);
+        this._bossAuraG.fillStyle(auraClr2, pulse*0.45);
         this._bossAuraG.fillCircle(bsp.g.x, bsp.g.y-sz*0.82, sz*2.3);
       }
     }
