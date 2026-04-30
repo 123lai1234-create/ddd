@@ -1469,7 +1469,8 @@ class BattleScene extends Phaser.Scene {
         this._addLog(`${e.name} 動作遲緩，無法行動！`);
         this.time.delayedCall(600, onDone); return;
       }
-      const isStrong=['slam','aoe','fireBreath','tail'].includes(actId);
+      const isStrong=['slam','aoe','fireBreath','tail','waterBlast','tideCall','scaleDash','thunderStomp','dragonStrike'].includes(actId);
+      const isAoe = act.tgt==='all';
       const doAtk=()=>{
         if (enemySp && !e.dead) {
           const exStr=isStrong?'！！':'！';
@@ -1478,33 +1479,42 @@ class BattleScene extends Phaser.Scene {
           }).setOrigin(0.5,1).setDepth(15);
           this.tweens.add({targets:exc,y:exc.y-14,alpha:0,duration:480,onComplete:()=>exc.destroy()});
         }
+        const targets=isAoe?living:[tgt];
         this._animEnemyAttack(enemySp, heroSp, ()=>{
-          let def=tgt.baseDef; if(tgt.status.includes('defend'))def=Math.floor(def*1.5);
           let eAtk=e.atk;
           if(e.status.includes('atkUp'))   eAtk=Math.floor(eAtk*1.5);
           if(e.status.includes('atkDown')) eAtk=Math.floor(eAtk*0.6);
-          const dmg=this._calcDmg(eAtk,def,act.pow||1);
-          tgt.hp=Math.max(0,tgt.hp-dmg); if(tgt.hp===0)tgt.dead=true;
-          if(act.debuff)Object.entries(act.debuff).forEach(([k,v])=>{for(let i=0;i<v;i++)tgt.status.push(k);});
-          if(act.type==='drain'){
-            const heal=Math.floor(dmg*0.5); e.hp=Math.min(e.maxHp,e.hp+heal);
-            const ei=this.enemies.indexOf(e); this._refreshEnemyHp(ei);
-            if(enemySp) this._floatText(enemySp.g.x,enemySp.g.y-50,`+${heal}`,'#88ff88',16);
-            Sound?.play('drain');
-          } else { Sound?.play('damage'); }
+          let logParts=[];
+          targets.forEach(t=>{
+            const tSp=this.partySprites[this.party.indexOf(t)];
+            let def=t.baseDef; if(t.status.includes('defend'))def=Math.floor(def*1.5);
+            const dmg=this._calcDmg(eAtk,def,act.pow||1);
+            t.hp=Math.max(0,t.hp-dmg); if(t.hp===0)t.dead=true;
+            if(act.debuff)Object.entries(act.debuff).forEach(([k,v])=>{for(let i=0;i<v;i++)t.status.push(k);});
+            if(act.type==='drain'){
+              const heal=Math.floor(dmg*0.5); e.hp=Math.min(e.maxHp,e.hp+heal);
+              const ei=this.enemies.indexOf(e); this._refreshEnemyHp(ei);
+              if(enemySp) this._floatText(enemySp.g.x,enemySp.g.y-50,`+${heal}`,'#88ff88',16);
+            }
+            if(tSp){
+              const hx=tSp.g.x, hy=tSp.g.y-32;
+              this._floatText(hx,hy,String(dmg),'#ff5050',isStrong?24:20);
+              this._hitImpact(hx,hy,0xff2020,isStrong);
+              this._spawnParticles(hx,hy+10,0xff4444,isStrong?8:5,isStrong?40:26);
+              let c=0;
+              this.time.addEvent({ delay:72, repeat:7, callback:()=>{
+                c++; tSp.g.setAlpha(c%2===0?1:0.18);
+                if(c>=8){tSp.g.setAlpha(1);this._drawHero(tSp.g,t);tSp.g.setPosition(tSp.x,tSp.y);}
+              }});
+            }
+            logParts.push(`${t.name} ${dmg}`);
+          });
+          if(act.type==='drain') Sound?.play('drain'); else Sound?.play('damage');
           this._shake(isStrong?0.010:0.005, isStrong?320:240);
-          if (heroSp) {
-            const hx=heroSp.g.x, hy=heroSp.g.y-32;
-            this._floatText(hx,hy,String(dmg),'#ff5050',isStrong?24:20);
-            this._hitImpact(hx, hy, 0xff2020, isStrong);
-            this._spawnParticles(hx,hy+10,0xff4444,isStrong?10:6,isStrong?44:30);
-            let c=0;
-            this.time.addEvent({ delay:72, repeat:7, callback:()=>{
-              c++; heroSp.g.setAlpha(c%2===0?1:0.18);
-              if(c>=8){heroSp.g.setAlpha(1);this._drawHero(heroSp.g,tgt);heroSp.g.setPosition(heroSp.x,heroSp.y);}
-            }});
-          }
-          this._addLog(`${e.name} 使用 ${act.name}，${tgt.name} 受到 ${dmg} 點傷害！`);
+          const logMsg=isAoe
+            ?`${e.name} 使用 ${act.name}！全體受到傷害：${logParts.join('、')}！`
+            :`${e.name} 使用 ${act.name}，${targets[0].name} 受到 ${logParts[0]} 點傷害！`;
+          this._addLog(logMsg);
           this._rebuildStatus();
         }, ()=>this.time.delayedCall(380,onDone));
       };
