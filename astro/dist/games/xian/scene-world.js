@@ -143,7 +143,7 @@ class WorldScene extends Phaser.Scene {
       }
     }
 
-    // Map name banner
+    // Map name banner (corner — permanent)
     const banner = this.add.graphics().setDepth(2);
     banner.fillStyle(0x0e0a1c, 0.85);
     banner.fillRoundedRect(8, 8, 180, 36, 8);
@@ -154,6 +154,29 @@ class WorldScene extends Phaser.Scene {
       fontSize:'16px', fontFamily:'"Noto Serif TC","SimSun",serif',
       color: GS.flags.ngplus ? '#ffe080' : '#e8c060', stroke:'#000', strokeThickness:2,
     }).setOrigin(0.5, 0.5).setDepth(3);
+
+    // Dramatic entrance banner (centered, fades out)
+    if (!GS.flags._pendingLines) {
+      const eBg=this.add.graphics().setScrollFactor(0).setDepth(28).setAlpha(0);
+      const ebW=Math.min(260,W*0.7), ebH=68, ebX=(W-ebW)/2, ebY=H/2-ebH/2;
+      eBg.fillStyle(0x060312,0.94); eBg.fillRoundedRect(ebX,ebY,ebW,ebH,10);
+      eBg.lineStyle(2,0x9a7828,0.85); eBg.strokeRoundedRect(ebX,ebY,ebW,ebH,10);
+      eBg.lineStyle(1,0x4a3808,0.5); eBg.strokeRoundedRect(ebX+3,ebY+3,ebW-6,ebH-6,8);
+      const eT=this.add.text(W/2,H/2-6,map.name,{
+        fontSize:'22px',fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#ffd700',stroke:'#000',strokeThickness:3,
+        shadow:{offsetX:0,offsetY:0,color:'#ffd700',blur:14,fill:true},
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(29).setAlpha(0);
+      const eS=this.add.text(W/2,H/2+20,GS.flags.ngplus?'★ 新遊戲＋ ★':'— 天命之路 —',{
+        fontSize:'11px',fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:GS.flags.ngplus?'#ffe080':'#9a7840',stroke:'#000',strokeThickness:1,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(29).setAlpha(0);
+      this.tweens.add({targets:[eBg,eT,eS],alpha:1,duration:380,ease:'Power2',
+        onComplete:()=>this.time.delayedCall(1600,()=>
+          this.tweens.add({targets:[eBg,eT,eS],alpha:0,duration:480,onComplete:()=>{ eBg.destroy();eT.destroy();eS.destroy(); }})
+        )
+      });
+    }
 
     // NPCs
     this.npcObjects = (map.npcs||[]).map(npc => {
@@ -176,6 +199,28 @@ class WorldScene extends Phaser.Scene {
       g._npcBaseY = baseY; g._npcPhase = phase;
       lbl._npcBaseY = baseY - 36; lbl._npcPhase = phase;
     });
+
+    // Periodic NPC "！" hint bubbles
+    if (this.npcObjects.length > 0) {
+      this.time.addEvent({ delay:9000+Math.random()*3000, loop:true, callback:()=>{
+        if (this.inDialog || !this.npcObjects?.length) return;
+        const no=this.npcObjects[Math.floor(Math.random()*this.npcObjects.length)];
+        if (!no?.g?.active) return;
+        const bx=no.npc.x*TILE_SZ+TILE_SZ/2, by=no.npc.y*TILE_SZ-4;
+        const bGfx=this.add.graphics().setDepth(5.5);
+        bGfx.fillStyle(0xf4ecd8,0.95); bGfx.fillRoundedRect(-13,-15,26,20,4);
+        bGfx.lineStyle(1,0x9a7828,0.6); bGfx.strokeRoundedRect(-13,-15,26,20,4);
+        bGfx.fillStyle(0xf4ecd8,0.85);
+        bGfx.fillTriangle(-4,5,4,5,0,11);
+        const bTxt=this.add.text(0,-5,'！',{fontSize:'12px',fontFamily:'serif',color:'#c04020',stroke:'#000',strokeThickness:1}).setOrigin(0.5).setDepth(5.6);
+        bGfx.setPosition(bx,by-48); bTxt.setPosition(bx,by-53);
+        this.tweens.add({targets:[bGfx,bTxt],alpha:1,y:'-=4',duration:260,
+          onComplete:()=>this.time.delayedCall(1400,()=>
+            this.tweens.add({targets:[bGfx,bTxt],alpha:0,y:'-=8',duration:320,onComplete:()=>{ bGfx.destroy();bTxt.destroy(); }})
+          )
+        });
+      }});
+    }
 
     // Chests
     if (!GS.flags.chests) GS.flags.chests = {};

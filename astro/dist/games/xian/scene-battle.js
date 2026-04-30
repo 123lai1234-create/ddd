@@ -1283,6 +1283,8 @@ class BattleScene extends Phaser.Scene {
       if(this._bossBarText) this._bossBarText.setText(`${e.name}　${e.hp} / ${e.maxHp}`);
       if (e.hp<=e.maxHp*0.5&&!e._raged&&!e.dead) {
         e._raged=true; e.atk=Math.floor(e.atk*1.35);
+        if (e.acts2) e.acts=[...e.acts2];
+        Sound?.play('rage');
         const rt=this.add.text(this.W/2,this.H*0.3,'狂　怒！',{
           fontSize:Math.floor(this.H*0.08)+'px',fontFamily:'"Noto Serif TC","SimSun",serif',
           color:'#ff2010',stroke:'#400000',strokeThickness:6,
@@ -1296,6 +1298,17 @@ class BattleScene extends Phaser.Scene {
         // Boss bar rage pulse
         if (this._bossBg) { this.tweens.add({targets:this._bossBg,alpha:0.5,duration:130,yoyo:true,repeat:4}); }
         if (this._bossBarText) this._bossBarText.setColor('#ff6060');
+      }
+    }
+    // Non-boss enemy enrage at <30% HP
+    if (!e.boss && !e.dead && !e._enraged && e.hp>0 && e.hp<=e.maxHp*0.3) {
+      e._enraged=true; e.status.push('atkUp');
+      Sound?.play('rage');
+      this._addLog(`${e.name} 瀕死狂怒！攻擊力大幅提升！`);
+      if (sp) {
+        this._floatText(sp.g.x, sp.g.y-(e.sz||28)*2.2, '發狂！', '#ff4020', 18);
+        this._spawnParticles(sp.g.x, sp.g.y-32, 0xff3010, 14, 55);
+        this._shake(0.008, 350);
       }
     }
     const STATUS_LBL = { poison:'毒', atkUp:'強', slow:'緩', atkDown:'弱' };
@@ -1346,27 +1359,68 @@ class BattleScene extends Phaser.Scene {
       const tgt=alive[0], tgtIdx=this.enemies.indexOf(tgt), st=calcStats(actor);
       const dmg=this._calcDmg(st.atk, tgt.def, 4.0);
       const heroSp=this.partySprites[this.actorIdx], enemySp=this.enemySprites[tgtIdx];
+
+      // Per-character limit break colors + titles
+      const LIMIT_CFG={
+        yunyi:  {clr:0xffc020,txt:'#ffe040',title:'天命金棍　必殺！',sfx:'thunderSkill'},
+        linger: {clr:0x60c040,txt:'#88ff60',title:'山神法力　必殺！',sfx:'magic'},
+        yuehua: {clr:0x60c8ff,txt:'#a0e8ff',title:'月雨千矢　必殺！',sfx:'thunderSkill'},
+      };
+      const lcfg=LIMIT_CFG[actor.id]||{clr:0xff8020,txt:'#ffaa40',title:'必 殺！',sfx:'hit'};
+
+      // Screen flash
       const flash=this.add.graphics().setDepth(45);
-      flash.fillStyle(0xff2020,0); flash.fillRect(0,0,this.W,this.H);
-      this.tweens.add({targets:flash,alpha:0.4,duration:80,yoyo:true,repeat:1,
-        onComplete:()=>{flash.clear();flash.fillStyle(0xffc020,0);flash.fillRect(0,0,this.W,this.H);
-          this.tweens.add({targets:flash,alpha:0.25,duration:200,yoyo:true,onComplete:()=>flash.destroy()});}
+      flash.fillStyle(lcfg.clr,0); flash.fillRect(0,0,this.W,this.H);
+      this.tweens.add({targets:flash,alpha:0.42,duration:75,yoyo:true,repeat:2,onComplete:()=>flash.destroy()});
+
+      // Character-specific intro effects
+      if (actor.id==='yunyi' && heroSp) {
+        for (let i=0;i<6;i++) {
+          this.time.delayedCall(i*40, ()=>{
+            const lg=this.add.graphics().setDepth(46);
+            const lx=heroSp.g.x+(Math.random()-0.5)*60, ly=this.groundY-this.H*0.6*Math.random();
+            lg.lineStyle(2+Math.random()*2,0xffc020,0.85); lg.lineBetween(lx,ly,lx+(Math.random()-0.5)*20,ly+this.H*0.5);
+            this.tweens.add({targets:lg,alpha:0,duration:220+Math.random()*120,onComplete:()=>lg.destroy()});
+          });
+        }
+      } else if (actor.id==='linger' && heroSp) {
+        for (let i=0;i<4;i++) {
+          const rg=this.add.graphics().setDepth(46);
+          rg.lineStyle(2,0x60e040,0.7); rg.strokeCircle(heroSp.g.x,heroSp.g.y-20,12+i*16);
+          rg.setAlpha(0);
+          this.tweens.add({targets:rg,alpha:1,scaleX:1.8,scaleY:1.8,duration:350,delay:i*60,ease:'Power2',onComplete:()=>this.tweens.add({targets:rg,alpha:0,duration:220,onComplete:()=>rg.destroy()})});
+        }
+      } else if (actor.id==='yuehua' && heroSp) {
+        for (let i=0;i<8;i++) {
+          this.time.delayedCall(i*35, ()=>{
+            const ag=this.add.graphics().setDepth(46);
+            ag.fillStyle(0x80d8ff,0.9); ag.fillTriangle(0,-7,-4,7,4,7);
+            ag.lineStyle(1.5,0x40a8ff,0.7); ag.lineBetween(0,7,0,24);
+            const ax=enemySp?enemySp.g.x+(Math.random()-0.5)*55:this.W*0.25+Math.random()*60;
+            ag.setPosition(ax,-20); ag.setAngle(180);
+            this.tweens.add({targets:ag,y:this.groundY,duration:280,ease:'Power3.easeIn',onComplete:()=>{this._spawnParticles(ax,this.groundY-10,0x60c8ff,4,20);ag.destroy();}});
+          });
+        }
+      }
+
+      // "必殺！" title text
+      const bt=this.add.text(this.W/2,this.H*0.32,lcfg.title,{
+        fontSize:Math.floor(this.H*0.075)+'px',fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:lcfg.txt,stroke:'#000000',strokeThickness:7,
+        shadow:{offsetX:0,offsetY:0,color:lcfg.txt,blur:32,fill:true},
+      }).setOrigin(0.5).setDepth(52).setAlpha(0).setScale(1.7);
+      this.tweens.add({targets:bt,alpha:1,scaleX:1,scaleY:1,duration:280,ease:'Back.easeOut',
+        onComplete:()=>this.time.delayedCall(480,()=>this.tweens.add({targets:bt,alpha:0,y:bt.y-22,duration:260,onComplete:()=>bt.destroy()}))
       });
-      const bt=this.add.text(this.W/2,this.H*0.34,'必 殺！',{
-        fontSize:Math.floor(this.H*0.08)+'px',fontFamily:'"Noto Serif TC","SimSun",serif',
-        color:'#ff4020',stroke:'#300000',strokeThickness:6,
-        shadow:{offsetX:0,offsetY:0,color:'#ff6020',blur:28,fill:true},
-      }).setOrigin(0.5).setDepth(50).setAlpha(0).setScale(1.8);
-      this.tweens.add({targets:bt,alpha:1,scaleX:1,scaleY:1,duration:260,ease:'Back.easeOut',
-        onComplete:()=>this.time.delayedCall(500,()=>this.tweens.add({targets:bt,alpha:0,y:bt.y-20,duration:280,onComplete:()=>bt.destroy()}))
-      });
+      Sound?.play(lcfg.sfx);
+
       this._animHeroAttack(heroSp, enemySp, ()=>{
         tgt.hp=Math.max(0,tgt.hp-dmg); if(tgt.hp===0){tgt.dead=true;Sound?.play('enemyDead');}else Sound?.play('hit');
-        this._flashEnemy(tgtIdx); this._refreshEnemyHp(tgtIdx); this._shake(0.016,450);
+        this._flashEnemy(tgtIdx); this._refreshEnemyHp(tgtIdx); this._shake(0.020,520);
         const ex=enemySp?enemySp.g.x:0, ey=(enemySp?enemySp.g.y:this.groundY)-(tgt.sz||28)*1.4;
-        this._floatText(ex,ey,`必殺！${dmg}`,'#ff8020',30);
-        this._spawnParticles(ex,ey,0xffc020,20,70); this._spawnParticles(ex,ey,0xff4020,12,55);
-        if(tgt.dead)this.time.delayedCall(350,()=>this._spawnParticles(ex,ey+20,tgt.color||0x884422,14,65));
+        this._floatText(ex,ey,String(dmg),lcfg.txt,34);
+        this._spawnParticles(ex,ey,lcfg.clr,28,80); this._spawnParticles(ex,ey+20,0xffffff,10,50);
+        if(tgt.dead)this.time.delayedCall(350,()=>this._spawnParticles(ex,ey+20,tgt.color||0x884422,18,72));
       }, ()=>doAfter(`${actor.name} 發動必殺技！對 ${tgt.name} 造成 ${dmg} 點傷害！`), actor.id);
       return;
     }
@@ -1418,6 +1472,14 @@ class BattleScene extends Phaser.Scene {
         const targets=sk.tgt==='all'?this.enemies.filter(e=>!e.dead):[this.enemies[targetIdx]];
         const hitCount=sk.hits||1;
         const elemEffects=[];
+        // Elemental chain reaction table
+        const ELEM_CHAINS={
+          ice:    {status:'burn',   name:'凍炎爆裂！',clr:'#80e8ff',mult:0.65},
+          fire:   {status:'poison', name:'毒焰爆炎！',clr:'#ff7020',mult:0.70},
+          thunder:{status:'slow',   name:'雷電穿刺！',clr:'#ffe040',mult:0.55},
+          wind:   {status:'stun',   name:'疾風破甲！',clr:'#80ee80',mult:0.50},
+        };
+        const chainResults=[];
         const dmgs=targets.map(tgt=>{
           const isWeak=sk.elem&&sk.elem!=='none'&&tgt.weak?.includes(sk.elem);
           const isResist=sk.elem&&sk.elem!=='none'&&tgt.resist?.includes(sk.elem);
@@ -1425,6 +1487,16 @@ class BattleScene extends Phaser.Scene {
           elemEffects.push(isWeak?'weak':isResist?'resist':'none');
           let total=0;
           for(let h=0;h<hitCount;h++){const d=Math.floor(this._calcDmg(st.atk,tgt.def,sk.pow,sk.pierce||0)*elemMult);tgt.hp=Math.max(0,tgt.hp-d);if(tgt.hp===0)tgt.dead=true;total+=d;}
+          // Chain reaction bonus
+          const chain=sk.elem&&ELEM_CHAINS[sk.elem];
+          let chainInfo=null;
+          if(chain&&tgt.status.includes(chain.status)){
+            const si=tgt.status.indexOf(chain.status); tgt.status.splice(si,1);
+            const bonus=Math.floor(total*chain.mult);
+            tgt.hp=Math.max(0,tgt.hp-bonus); if(tgt.hp===0)tgt.dead=true;
+            total+=bonus; chainInfo={name:chain.name,clr:chain.clr,bonus};
+          }
+          chainResults.push(chainInfo);
           if(sk.debuff)Object.entries(sk.debuff).forEach(([k,v])=>{for(let j=0;j<v;j++)tgt.status.push(k);});
           return total;
         });
@@ -1446,6 +1518,13 @@ class BattleScene extends Phaser.Scene {
               this._spawnParticles(ex,ey+20,_ec,16,58);
             }
             this._hitImpact(ex,ey+20,_ec,elemEffects[ti]==='weak');
+            if(chainResults[ti]){
+              const cr=chainResults[ti];
+              this._floatText(ex,ey-42,cr.name,cr.clr,17);
+              this._floatText(ex,ey-60,`+${cr.bonus}`,cr.clr,14);
+              this._spawnParticles(ex,ey,parseInt(cr.clr.replace('#',''),16),20,65);
+              this._shake(0.013,400);
+            }
           }
         });
         this._shake(0.009, 300);
@@ -1459,7 +1538,8 @@ class BattleScene extends Phaser.Scene {
         this.tweens.add({targets:_sw, scaleX:12, scaleY:12, alpha:0, duration:550, ease:'Power2', onComplete:()=>_sw.destroy()});
         const _efx=elemEffects[0];
         const _efxSuf=_efx==='weak'?' 弱點！':_efx==='resist'?' 耐性…':'';
-        msg=`${actor.name} 施展 ${sk.name}，造成 ${dmgs.join('/')} 點傷害！${_efxSuf}`;
+        const _chainSuf=chainResults[0]?` ${chainResults[0].name}`:'';
+        msg=`${actor.name} 施展 ${sk.name}，造成 ${dmgs.join('/')} 點傷害！${_efxSuf}${_chainSuf}`;
       } else if (sk.type==='heal') {
         Sound?.play('heal');
         const targets=sk.tgt==='all'?this.party.filter(m=>!m.dead):[this.party[targetIdx]];
@@ -1473,6 +1553,25 @@ class BattleScene extends Phaser.Scene {
         GS.flags._healCount=(GS.flags._healCount||0)+targets.length;
         if(GS.flags._healCount>=10)Achieve?.unlock('healer');
         msg=`${actor.name} 施展 ${sk.name}，恢復 ${heals.join('/')} 點生命值！`;
+      } else if (sk.type==='cleanse') {
+        Sound?.play('heal');
+        const CLEANSE_ST=['poison','burn','slow','stun','atkDown'];
+        const ctargets=this.party.filter(m=>!m.dead);
+        let totalRemoved=0;
+        ctargets.forEach(tgt=>{
+          const before=tgt.status.length;
+          tgt.status=tgt.status.filter(s=>!CLEANSE_ST.includes(s));
+          totalRemoved+=before-tgt.status.length;
+          const csp=this.partySprites[this.party.indexOf(tgt)];
+          if(csp){
+            this._floatText(csp.g.x,csp.g.y-50,'淨化！','#aaffcc',18);
+            this._spawnParticles(csp.g.x,csp.g.y-20,0x88ffcc,8,30);
+            const cgl=this.add.graphics().setDepth(12);
+            cgl.fillStyle(0x80ffcc,0.18); cgl.fillCircle(csp.g.x,csp.g.y-18,36);
+            this.tweens.add({targets:cgl,alpha:0,scaleX:1.8,scaleY:1.8,duration:700,onComplete:()=>cgl.destroy()});
+          }
+        });
+        msg=totalRemoved>0?`${actor.name} 施展 ${sk.name}！全體異常狀態解除！`:`${actor.name} 施展 ${sk.name}！`;
       } else if (sk.type==='buff') {
         const turns=sk.turns||3;
         for(let i=0;i<turns;i++) actor.status.push(sk.buff||'atkUp');
@@ -1625,7 +1724,7 @@ class BattleScene extends Phaser.Scene {
         this._addLog(`${e.name} 動作遲緩，無法行動！`);
         this.time.delayedCall(600, onDone); return;
       }
-      const isStrong=['slam','aoe','fireBreath','tail','waterBlast','tideCall','scaleDash','thunderStomp','dragonStrike'].includes(actId);
+      const isStrong=['slam','aoe','fireBreath','tail','waterBlast','tideCall','scaleDash','thunderStomp','dragonStrike','enrageSlam','sacredBlast','soulScream','tideSurge','dragonErupt'].includes(actId);
       const isAoe = act.tgt==='all';
       const doAtk=()=>{
         if (enemySp && !e.dead) {
@@ -1674,7 +1773,10 @@ class BattleScene extends Phaser.Scene {
             }
             logParts.push(`${t.name} ${dmg}`);
           });
-          if(act.type==='drain') Sound?.play('drain'); else Sound?.play('damage');
+          if(act.type==='drain') Sound?.play('drain');
+          else if(['sacredBlast','soulScream','dragonErupt'].includes(actId)) Sound?.play('thunderSkill');
+          else if(['enrageSlam','tideSurge'].includes(actId)) Sound?.play('damage');
+          else Sound?.play('damage');
           this._shake(isStrong?0.010:0.005, isStrong?320:240);
           const logMsg=isAoe
             ?`${e.name} 使用 ${act.name}！全體受到傷害：${logParts.join('、')}！`
@@ -1786,16 +1888,76 @@ class BattleScene extends Phaser.Scene {
     // Victory flash
     const flash=this.add.graphics(); flash.fillStyle(0xffffff,0); flash.fillRect(0,0,this.W,this.H); flash.setDepth(50);
     this.tweens.add({targets:flash,alpha:0.4,duration:110,yoyo:true,onComplete:()=>flash.destroy()});
-    // Victory title
-    const vtxt=this.add.text(this.W/2,this.H*0.35,'勝利！',{fontSize:Math.floor(this.H*0.08)+'px',fontFamily:'"Noto Serif TC","SimSun",serif',color:'#ffd700',stroke:'#804000',strokeThickness:6}).setOrigin(0.5).setDepth(55).setAlpha(0).setScale(0.4);
-    this.tweens.add({targets:vtxt,alpha:1,scaleX:1,scaleY:1,duration:480,ease:'Back.easeOut'});
-    this.time.delayedCall(380,()=>{
-      this._floatText(this.W/2,this.H*0.46,`+${expGain} EXP`,'#88ffcc',18);
-      this._floatText(this.W/2,this.H*0.53,`+${goldGain} 靈石`,'#ffd700',18);
+
+    // Hero victory jump poses
+    this.partySprites.forEach((sp,i)=>{
+      if (this.party[i]?.dead) return;
+      const origY=sp.y;
+      this.time.delayedCall(120+i*80, ()=>{
+        this.tweens.add({targets:sp.g, y:origY-26, duration:180, ease:'Power2',
+          onComplete:()=>this.tweens.add({targets:sp.g, y:origY, duration:260, ease:'Bounce.easeOut'})
+        });
+        this._spawnParticles(sp.g.x, sp.g.y-18, 0xffd700, 6, 28);
+      });
     });
-    this.time.delayedCall(2200,()=>{
-      this.cameras.main.fadeOut(500,0,0,0);
-      this.cameras.main.once('camerafadeoutcomplete',()=>this.scene.start('WorldScene'));
+
+    // Victory reward panel (appears after short delay)
+    this.time.delayedCall(480, () => {
+      const pw=Math.min(330,this.W*0.82), ph=Math.min(260,this.H*0.60);
+      const px=(this.W-pw)/2, py=(this.H-ph)/2-16;
+      const panelG=this.add.graphics().setDepth(52).setAlpha(0);
+      panelG.fillStyle(0x060410,0.96); panelG.fillRoundedRect(px,py,pw,ph,10);
+      panelG.lineStyle(2,0xb09030,0.9); panelG.strokeRoundedRect(px,py,pw,ph,10);
+      panelG.lineStyle(1,0x604818,0.5); panelG.strokeRoundedRect(px+3,py+3,pw-6,ph-6,8);
+      this.tweens.add({targets:panelG,alpha:1,duration:320});
+
+      const vtxt=this.add.text(this.W/2,py+28,'勝　利！',{
+        fontSize:Math.floor(this.H*0.065)+'px',fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#ffd700',stroke:'#804000',strokeThickness:5,
+        shadow:{offsetX:0,offsetY:0,color:'#ffaa00',blur:22,fill:true},
+      }).setOrigin(0.5).setDepth(55).setAlpha(0).setScale(0.4);
+      this.tweens.add({targets:vtxt,alpha:1,scaleX:1,scaleY:1,duration:420,ease:'Back.easeOut'});
+
+      const sepG=this.add.graphics().setDepth(53).setAlpha(0);
+      sepG.lineStyle(1,0x806020,0.8); sepG.lineBetween(px+18,py+56,px+pw-18,py+56);
+      this.tweens.add({targets:sepG,alpha:1,duration:280,delay:200});
+
+      // Reward rows
+      const rows=[
+        { lbl:'獲得 EXP：', val:`＋${expGain}`, clr:'#88ffcc' },
+        { lbl:'獲得靈石：', val:`＋${goldGain}`, clr:'#ffd700' },
+      ];
+      if (drops.length) rows.push({ lbl:'獲得道具：', val:drops.map(d=>d.name).join('、'), clr:'#ff9840' });
+      if (levelUps.length) rows.push({ lbl:'升　　級：', val:levelUps.join('、')+' Lv UP！', clr:'#ffe060' });
+
+      const rowH=34, rowY0=py+68, _winTexts=[];
+      rows.forEach((r,ri)=>{
+        const t1=this.add.text(px+22,rowY0+ri*rowH,r.lbl,{
+          fontSize:'14px',fontFamily:'"Noto Serif TC","SimSun",serif',color:'#c8a060',stroke:'#000',strokeThickness:1,
+        }).setOrigin(0,0.5).setDepth(55).setAlpha(0);
+        const t2=this.add.text(px+pw-22,rowY0+ri*rowH,r.val,{
+          fontSize:'14px',fontFamily:'"Noto Serif TC","SimSun",serif',color:r.clr,stroke:'#000',strokeThickness:1,
+        }).setOrigin(1,0.5).setDepth(55).setAlpha(0);
+        this.tweens.add({targets:[t1,t2],alpha:1,duration:240,delay:300+ri*110});
+        _winTexts.push(t1,t2);
+      });
+
+      // Continue prompt (flashing)
+      const prompt=this.add.text(this.W/2,py+ph-20,'按任意鍵繼續…',{
+        fontSize:'12px',fontFamily:'"Noto Serif TC","SimSun",serif',color:'#9a7840',stroke:'#000',strokeThickness:1,
+      }).setOrigin(0.5).setDepth(55).setAlpha(0);
+      this.tweens.add({targets:prompt,alpha:1,duration:280,delay:1100});
+      this.tweens.add({targets:prompt,alpha:0.3,duration:560,yoyo:true,loop:-1,delay:1400});
+
+      this.phase='winPanel';
+      this.waiting=false;
+      this._winLeave=()=>{
+        this.waiting=true; this.phase='win';
+        this.cameras.main.fadeOut(500,0,0,0);
+        this.cameras.main.once('camerafadeoutcomplete',()=>this.scene.start('WorldScene'));
+      };
+      // Auto-exit after 6 seconds if no input
+      this.time.delayedCall(6000, ()=>{ if(this.phase==='winPanel') this._winLeave(); });
     });
   }
 
@@ -1927,6 +2089,14 @@ class BattleScene extends Phaser.Scene {
           this._tgtCursorG.fillTriangle(sp.g.x,ay+8,sp.g.x-6,ay-4,sp.g.x+6,ay-4);
         }
       }
+    }
+
+    // Win panel — any key to continue
+    if (this.phase==='winPanel' && !this.waiting) {
+      const anyOk=Phaser.Input.Keyboard.JustDown(this.keys.z)||Phaser.Input.Keyboard.JustDown(this.keys.enter)||Phaser.Input.Keyboard.JustDown(this.keys.x)||Phaser.Input.Keyboard.JustDown(this.keys.esc)||!!window.PAD?.ok;
+      if(anyOk&&window.PAD)window.PAD.ok=false;
+      if(anyOk&&this._winLeave)this._winLeave();
+      return;
     }
 
     // Game over menu handling

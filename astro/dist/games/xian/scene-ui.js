@@ -109,7 +109,7 @@ class MenuScene extends Phaser.Scene {
       yuehua: { name:'月神之眼', desc:'暴擊率提升至 15%',   clr:'#80d8ff' },
     };
     const ELEM_CLR2 = { fire:'#ff6020', ice:'#40c0ff', thunder:'#ffd020', wind:'#40e080', light:'#ffd0a0', none:'#707090' };
-    const TYPE_LBL  = { atk:'攻', heal:'回', buff:'強' };
+    const TYPE_LBL  = { atk:'攻', heal:'回', buff:'強', cleanse:'淨' };
     const CHAR_CLR  = { yunyi:0xf0a010, linger:0x508840, yuehua:0x60c8ff };
     const CHAR_CLR_S= { yunyi:'#f0a010', linger:'#70c050', yuehua:'#60c8ff' };
 
@@ -772,10 +772,11 @@ class ShopScene extends Phaser.Scene {
     this.allTexts = [];
 
     const W = this.scale.width, H = this.scale.height;
-    const px = Math.floor(W*0.10), py = Math.floor(H*0.08);
-    const pw = Math.floor(W*0.80), ph = Math.floor(H*0.84);
-    const fs  = Math.max(13, Math.floor(pw * 0.025));
-    const fsS = Math.max(10, fs - 3);
+    const px = Math.floor(W*0.05), py = Math.floor(H*0.06);
+    const pw = Math.floor(W*0.90), ph = Math.floor(H*0.88);
+    const fs  = Math.max(12, Math.floor(pw * 0.022));
+    const fsS = Math.max(10, fs - 2);
+    const fsXS= Math.max(9,  fs - 4);
 
     // Panel
     this.panelGfx.fillStyle(0x0c0818, 0.98);
@@ -785,99 +786,217 @@ class ShopScene extends Phaser.Scene {
     this.panelGfx.lineStyle(1, 0x4a3a10, 0.7);
     this.panelGfx.strokeRoundedRect(px+3, py+3, pw-6, ph-6, 8);
 
-    // Mode tabs
-    const tabW = Math.floor(pw / 2);
+    // Header: mode tabs + gold
+    const tabW = Math.floor(pw * 0.22);
     ['購買', '賣出'].forEach((label, i) => {
       const sel = (this.mode === 'buy') === (i === 0);
+      const tx = px + 8 + i*(tabW+6);
       if (sel) {
-        this.panelGfx.fillStyle(0x9a7828, 0.22);
-        this.panelGfx.fillRoundedRect(px + i*tabW + 4, py+6, tabW-8, 40, 6);
-        this.panelGfx.lineStyle(1, 0x9a7828, 0.7);
-        this.panelGfx.strokeRoundedRect(px + i*tabW + 4, py+6, tabW-8, 40, 6);
+        this.panelGfx.fillStyle(0x9a7828, 0.28);
+        this.panelGfx.fillRoundedRect(tx, py+6, tabW, 38, 6);
+        this.panelGfx.lineStyle(1, 0xc8a040, 0.8);
+        this.panelGfx.strokeRoundedRect(tx, py+6, tabW, 38, 6);
       }
-      const tt = this.add.text(px + i*tabW + tabW/2, py+28, label, {
+      this.allTexts.push(this.add.text(tx+tabW/2, py+26, label, {
         fontSize: Math.floor(fs*1.1)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
-        color: sel?'#ffd700':'#c8a060', fontStyle:sel?'bold':'normal', stroke:'#000', strokeThickness:2,
-      }).setOrigin(0.5, 0.5);
-      this.allTexts.push(tt);
+        color: sel?'#ffd700':'#7a6030', fontStyle:sel?'bold':'normal', stroke:'#000', strokeThickness:2,
+      }).setOrigin(0.5, 0.5));
     });
-    const goldT = this.add.text(px+pw-8, py+28, `靈石：${GS.gold}`, {
-      fontSize: fsS+'px', fontFamily:'monospace', color:'#e8c060', stroke:'#000', strokeThickness:1,
-    }).setOrigin(1, 0.5);
-    this.allTexts.push(goldT);
-    this.panelGfx.lineStyle(1, 0x7a5c1e, 0.5);
+    // Shop title
+    this.allTexts.push(this.add.text(px+pw/2, py+26, '✦ 行商 ✦', {
+      fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#c8a060', stroke:'#000', strokeThickness:1,
+    }).setOrigin(0.5, 0.5));
+    // Gold
+    this.allTexts.push(this.add.text(px+pw-14, py+26, `靈石 ◆ ${GS.gold}`, {
+      fontSize: fs+'px', fontFamily:'monospace', color:'#ffe060', fontStyle:'bold', stroke:'#000', strokeThickness:2,
+    }).setOrigin(1, 0.5));
+    this.panelGfx.lineStyle(1, 0x7a5c1e, 0.6);
     this.panelGfx.lineBetween(px+12, py+50, px+pw-12, py+50);
 
-    if (this.mode === 'buy') {
-      const rowH = Math.max(48, Math.floor((ph - 80) / Math.max(1, this.stock.length)));
-      this.stock.forEach((id, i) => {
-        const it = ITEMS[id]; if (!it) return;
-        const ry  = py + 58 + i * rowH;
-        const sel = i === this.cursor;
-        if (sel) {
-          this.panelGfx.fillStyle(0xe8c060, 0.1);
-          this.panelGfx.fillRoundedRect(px+8, ry-10, pw-16, rowH-4, 5);
-          this.panelGfx.lineStyle(1, 0x9a7a28, 0.5);
-          this.panelGfx.strokeRoundedRect(px+8, ry-10, pw-16, rowH-4, 5);
-        }
-        const nmT = this.add.text(px+24, ry+4, (sel?'▶ ':'')+it.name, {
-          fontSize: fs+'px', fontFamily:'"Noto Serif TC",serif',
-          color: sel?'#ffd700':'#c8a060', stroke:'#000', strokeThickness:2,
-        });
-        const prT = this.add.text(px+pw*0.65, ry+4, `${it.price} 靈石`, {
-          fontSize: fs+'px', fontFamily:'monospace', color:'#e8c060', stroke:'#000', strokeThickness:1,
-        });
-        const dcT = this.add.text(px+24, ry+4+fs+2, it.desc||'', {
-          fontSize: fsS+'px', fontFamily:'serif', color:'#7a7060', stroke:'#000', strokeThickness:1,
-        });
-        this.allTexts.push(nmT, prT, dcT);
-      });
-    } else {
-      const sellable = Object.entries(GS.inventory).filter(([id,n]) => n>0 && ITEMS[id]?.price);
-      if (sellable.length === 0) {
-        const et = this.add.text(px+pw/2, py+ph/2, '── 無可出售道具 ──', {
-          fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif', color:'#444',
-        }).setOrigin(0.5, 0.5);
-        this.allTexts.push(et);
-      } else {
-        const rowH = Math.max(48, Math.floor((ph - 80) / Math.max(1, sellable.length)));
-        sellable.forEach(([id, n], i) => {
-          const it = ITEMS[id]; if (!it) return;
-          const ry  = py + 58 + i * rowH;
-          const sel = i === this.cursor;
-          const sellPrice = Math.floor(it.price * 0.5);
-          if (sel) {
-            this.panelGfx.fillStyle(0xe8c060, 0.1);
-            this.panelGfx.fillRoundedRect(px+8, ry-10, pw-16, rowH-4, 5);
-            this.panelGfx.lineStyle(1, 0x9a7a28, 0.5);
-            this.panelGfx.strokeRoundedRect(px+8, ry-10, pw-16, rowH-4, 5);
-          }
-          const nmT = this.add.text(px+24, ry+4, (sel?'▶ ':'')+it.name+` ×${n}`, {
-            fontSize: fs+'px', fontFamily:'"Noto Serif TC",serif',
-            color: sel?'#ffd700':'#c8a060', stroke:'#000', strokeThickness:2,
-          });
-          const prT = this.add.text(px+pw*0.65, ry+4, `售 ${sellPrice} 靈石`, {
-            fontSize: fs+'px', fontFamily:'monospace', color:'#80e0d0', stroke:'#000', strokeThickness:1,
-          });
-          const dcT = this.add.text(px+24, ry+4+fs+2, it.desc||'', {
-            fontSize: fsS+'px', fontFamily:'serif', color:'#7a7060', stroke:'#000', strokeThickness:1,
-          });
-          this.allTexts.push(nmT, prT, dcT);
-        });
+    // ── Two-column layout: list (left 52%) + detail (right 46%) ──
+    const listW = Math.floor(pw * 0.52);
+    const detX  = px + listW + 14;
+    const detW  = pw - listW - 22;
+    const listY = py + 56;
+    const listH = ph - 70;
+
+    // Vertical divider
+    this.panelGfx.lineStyle(1, 0x4a3a10, 0.6);
+    this.panelGfx.lineBetween(px+listW+6, listY, px+listW+6, py+ph-14);
+
+    const items = this.mode === 'buy'
+      ? this.stock.map(id => ({ id, n: GS.inventory[id]||0, sell: false }))
+      : Object.entries(GS.inventory).filter(([,n])=>n>0&&ITEMS[id_=>id_]?.price).map(([id,n])=>({id,n,sell:true}));
+    // fix: proper sell list
+    const sellable = Object.entries(GS.inventory).filter(([id,n]) => n>0 && ITEMS[id]?.price);
+    const listItems = this.mode === 'buy'
+      ? this.stock.map(id => ({ id, n: GS.inventory[id]||0 }))
+      : sellable.map(([id, n]) => ({ id, n }));
+
+    const rowH = Math.max(40, Math.floor(listH / Math.max(1, listItems.length)));
+    const clampCursor = Math.min(this.cursor, Math.max(0, listItems.length-1));
+    if (this.cursor !== clampCursor) this.cursor = clampCursor;
+
+    listItems.forEach(({ id, n }, i) => {
+      const it = ITEMS[id]; if (!it) return;
+      const ry  = listY + i * rowH;
+      const sel = i === this.cursor;
+      const canAfford = this.mode==='buy' ? GS.gold >= it.price : true;
+      const sellPrice = Math.floor((it.price||0) * 0.5);
+
+      // Row bg
+      if (sel) {
+        this.panelGfx.fillStyle(0xe8c060, 0.12);
+        this.panelGfx.fillRoundedRect(px+6, ry-4, listW-4, rowH-3, 5);
+        this.panelGfx.lineStyle(1, 0xc8a040, 0.6);
+        this.panelGfx.strokeRoundedRect(px+6, ry-4, listW-4, rowH-3, 5);
       }
+
+      // Category color dot
+      const catClr = it.cat==='eq' ? 0x60b0ff : 0x80e060;
+      this.panelGfx.fillStyle(catClr, 0.7);
+      this.panelGfx.fillCircle(px+20, ry+rowH/2-4, 4);
+
+      // Name
+      const nameClr = !canAfford ? '#664444' : sel ? '#ffd700' : '#c8a060';
+      this.allTexts.push(this.add.text(px+30, ry+rowH/2-8, (sel?'▶ ':'')+it.name, {
+        fontSize: fs+'px', fontFamily:'"Noto Serif TC",serif',
+        color: nameClr, stroke:'#000', strokeThickness:2,
+      }));
+
+      // Price / sell price (right side of list)
+      const priceStr = this.mode==='buy' ? `${it.price}◆` : `售${sellPrice}◆`;
+      const priceClr = this.mode==='buy' ? (canAfford?'#e8c060':'#884444') : '#80e0d0';
+      this.allTexts.push(this.add.text(px+listW-4, ry+rowH/2-8, priceStr, {
+        fontSize: fsS+'px', fontFamily:'monospace', color:priceClr, stroke:'#000', strokeThickness:1,
+      }).setOrigin(1, 0));
+
+      // Bag count tag
+      if (n > 0) {
+        this.allTexts.push(this.add.text(px+30, ry+rowH/2+4, `持有 ×${n}`, {
+          fontSize: fsXS+'px', fontFamily:'monospace', color:'#607050', stroke:'#000', strokeThickness:1,
+        }));
+      }
+      // Already equipped tag
+      const equippedBy = GS.party.filter(m=>Object.values(m.equip).includes(id)).map(m=>m.name);
+      if (equippedBy.length) {
+        this.allTexts.push(this.add.text(px+listW*0.55, ry+rowH/2+4, `裝備中:${equippedBy.join('/')}`, {
+          fontSize: fsXS+'px', fontFamily:'"Noto Serif TC",serif', color:'#4a8888', stroke:'#000', strokeThickness:1,
+        }));
+      }
+    });
+
+    // ── Right: Detail panel ──────────────────────────────
+    const selItem = listItems[this.cursor];
+    const selIt = selItem ? ITEMS[selItem.id] : null;
+    if (selIt) {
+      const diy = listY;
+      // Item name + category
+      const catLabel = selIt.cat==='eq' ? '裝備' : '消耗';
+      const catClrS  = selIt.cat==='eq' ? '#60b0ff' : '#80e060';
+      this.panelGfx.fillStyle(selIt.cat==='eq' ? 0x0a1828 : 0x081408, 0.85);
+      this.panelGfx.fillRoundedRect(detX, diy, detW, Math.floor(listH*0.28), 6);
+      this.panelGfx.lineStyle(1, selIt.cat==='eq' ? 0x2060a0 : 0x206020, 0.5);
+      this.panelGfx.strokeRoundedRect(detX, diy, detW, Math.floor(listH*0.28), 6);
+      this.allTexts.push(this.add.text(detX+10, diy+8, selIt.name, {
+        fontSize: Math.floor(fs*1.15)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#e8d080', fontStyle:'bold', stroke:'#000', strokeThickness:2,
+      }));
+      this.allTexts.push(this.add.text(detX+detW-10, diy+8, catLabel, {
+        fontSize: fsS+'px', fontFamily:'monospace', color:catClrS, stroke:'#000', strokeThickness:1,
+      }).setOrigin(1, 0));
+      // Description
+      this.allTexts.push(this.add.text(detX+10, diy+10+fs, selIt.desc||'', {
+        fontSize: fsS+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#9a8860', stroke:'#000', strokeThickness:1,
+        wordWrap:{ width: detW-20 },
+      }));
+
+      // Stats for this item
+      const statY = diy + Math.floor(listH*0.30);
+      this.panelGfx.lineStyle(1, 0x4a3a10, 0.5);
+      this.panelGfx.lineBetween(detX+6, statY, detX+detW-6, statY);
+      const STAT_PAIRS = [['atk','ATK','#ff9060'],['def','DEF','#60c0ff'],['mp','MP','#5080e0'],['luk','LUK','#ffd080']];
+      let sIdx = 0;
+      STAT_PAIRS.forEach(([k,lbl,clr]) => {
+        if (!selIt[k]) return;
+        const sx = detX+10 + Math.floor(sIdx/2) * Math.floor(detW/2);
+        const sy = statY+8 + (sIdx%2) * (fsS+5);
+        this.allTexts.push(this.add.text(sx, sy, `${lbl} +${selIt[k]}`, {
+          fontSize: fsS+'px', fontFamily:'monospace', color:clr, fontStyle:'bold', stroke:'#000', strokeThickness:1,
+        }));
+        sIdx++;
+      });
+      if (selIt.hp)  { this.allTexts.push(this.add.text(detX+10, statY+8, `HP 回 +${selIt.hp}`, { fontSize:fsS+'px', fontFamily:'monospace', color:'#e06060', stroke:'#000', strokeThickness:1 })); }
+      if (selIt.revive) { this.allTexts.push(this.add.text(detX+10, statY+8, `復活 ${selIt.revive}% HP`, { fontSize:fsS+'px', fontFamily:'monospace', color:'#ffaa40', stroke:'#000', strokeThickness:1 })); }
+
+      // Who can equip
+      if (selIt.cat === 'eq') {
+        const whoY = statY + Math.floor(listH * 0.18);
+        this.panelGfx.lineStyle(1, 0x4a3a10, 0.4);
+        this.panelGfx.lineBetween(detX+6, whoY, detX+detW-6, whoY);
+        this.allTexts.push(this.add.text(detX+10, whoY+4, '可裝備', {
+          fontSize: fsXS+'px', fontFamily:'"Noto Serif TC","SimSun",serif', color:'#7a6a4a',
+        }));
+        const CHAR_NAMES = { yunyi:'天命人', linger:'土地', yuehua:'楊嬋' };
+        const whoList = selIt.who ? [selIt.who] : ['yunyi','linger','yuehua'];
+        let wx = detX+10+32;
+        whoList.forEach(cid => {
+          const CHAR_CLR_S = { yunyi:'#f0a010', linger:'#70c050', yuehua:'#60c8ff' };
+          const ct = this.add.text(wx, whoY+4, CHAR_NAMES[cid]||cid, {
+            fontSize: fsXS+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+            color: CHAR_CLR_S[cid]||'#c8a060', stroke:'#000', strokeThickness:1,
+          });
+          this.allTexts.push(ct);
+          wx += ct.width + 8;
+        });
+        // Stat comparison for equippable items
+        const slotMap = { wp:'武器', ar:'防具', ac:'飾品' };
+        if (slotMap[selIt.slot]) {
+          const compY = whoY + fsXS + 12;
+          this.allTexts.push(this.add.text(detX+10, compY, `(${slotMap[selIt.slot]}) vs 當前裝備`, {
+            fontSize: fsXS+'px', fontFamily:'"Noto Serif TC","SimSun",serif', color:'#5a4a2a',
+          }));
+          // Find best current eq from equippable chars
+          const chars = whoList.map(id => GS.party.find(m=>m.id===id)).filter(Boolean);
+          chars.forEach((ch, ci) => {
+            const curId = ch.equip[selIt.slot];
+            const curIt2 = curId ? ITEMS[curId] : null;
+            const statKeys = ['atk','def','mp'];
+            const diffs = statKeys.map(k=>{const d=(selIt[k]||0)-(curIt2?.[k]||0); return d!==0?{k,d}:null;}).filter(Boolean);
+            if (diffs.length) {
+              const CHAR_CLR_S = { yunyi:'#f0a010', linger:'#70c050', yuehua:'#60c8ff' };
+              let tx2 = detX+10, ty2 = compY+fsXS+4+ci*(fsXS+2);
+              this.allTexts.push(this.add.text(tx2, ty2, `${ch.name}：`, { fontSize:fsXS+'px', fontFamily:'monospace', color:CHAR_CLR_S[ch.id]||'#888', stroke:'#000', strokeThickness:1 }));
+              tx2 += 36;
+              diffs.forEach(({k,d}) => {
+                const dc = d>0?'#80ff80':'#ff8080', ds = d>0?`+${d}`:String(d);
+                const dt2 = this.add.text(tx2, ty2, `${k.toUpperCase()}${ds}`, { fontSize:fsXS+'px', fontFamily:'monospace', color:dc, stroke:'#000', strokeThickness:1 });
+                this.allTexts.push(dt2); tx2 += dt2.width + 6;
+              });
+            }
+          });
+        }
+      }
+    } else if (listItems.length === 0) {
+      this.allTexts.push(this.add.text(px+listW/2+px, listY+listH/2, this.mode==='buy'?'── 無商品 ──':'── 無可出售道具 ──', {
+        fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif', color:'#444',
+      }).setOrigin(0.5, 0.5));
     }
 
+    // Message bar
     if (this.msg) {
-      const mt = this.add.text(px+pw/2, py+ph-38, this.msg, {
-        fontSize: fs+'px', fontFamily:'"Noto Serif TC",serif', color:'#80e090', stroke:'#000', strokeThickness:2,
-      }).setOrigin(0.5, 0.5);
-      this.allTexts.push(mt);
+      const isErr = this.msg.includes('不足') || this.msg.includes('失敗');
+      this.allTexts.push(this.add.text(px+pw/2, py+ph-36, this.msg, {
+        fontSize: fs+'px', fontFamily:'"Noto Serif TC",serif',
+        color: isErr?'#ff8080':'#80e090', fontStyle:'bold', stroke:'#000', strokeThickness:2,
+      }).setOrigin(0.5, 0.5));
     }
     const footerHint = this.mode==='buy' ? '↑↓ 選擇　Z 購買　←→ 賣出' : '↑↓ 選擇　Z 賣出　←→ 購買';
-    const ht = this.add.text(px+pw/2, py+ph-16, footerHint+'　X 離開', {
-      fontSize: fsS+'px', fontFamily:'serif', color:'#5a4a2a',
-    }).setOrigin(0.5, 0.5);
-    this.allTexts.push(ht);
+    this.allTexts.push(this.add.text(px+pw/2, py+ph-16, footerHint+'　X 離開', {
+      fontSize: fsXS+'px', fontFamily:'serif', color:'#5a4a2a',
+    }).setOrigin(0.5, 0.5));
   }
 
   update() {

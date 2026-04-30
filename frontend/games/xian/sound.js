@@ -181,6 +181,13 @@ const Sound = (() => {
       [330, 415, 523, 659, 784].forEach((f, i) => _osc(f, 'triangle', 0.15, 0.22, i * 0.045));
       _noise(0.07, 0.10, 3200, 0.20);
     },
+    rage() {
+      _noise(0.28, 0.55, 90);
+      _osc(80, 'sawtooth', 0.22, 0.50);
+      _osc(120, 'sawtooth', 0.18, 0.38, 0.08);
+      _osc(55, 'sawtooth', 0.30, 0.30, 0.18);
+      _osc(160, 'sawtooth', 0.10, 0.22, 0.32);
+    },
     bossIntro() {
       _noise(0.09, 0.38, 80);
       _osc(110, 'sawtooth', 0.12, 0.48);

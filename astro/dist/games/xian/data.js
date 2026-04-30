@@ -18,11 +18,11 @@ const CHAR_BASE = {
             desc:'身負天命，持金箍棒踏上除妖之路，傳承齊天大聖意志的孤勇者。' },
   linger: { id:'linger', name:'土地',   title:'山神使者', color:0x80c040, shape:'mage',
             hp:80,  mp:120, atk:10, def:8,  spd:18, luk:15,
-            skills:['fireball','iceArrow','heal','thunder','earthBind','soulMend','barrier'],
+            skills:['fireball','iceArrow','heal','thunder','earthBind','soulMend','barrier','purify'],
             desc:'主管一方的山神土地，法術精通，感應天命而主動加入除妖行列。' },
   yuehua: { id:'yuehua', name:'楊嬋',   title:'天神弓手', color:0x60c8ff, shape:'archer',
             hp:90,  mp:60,  atk:20, def:10, spd:20, luk:20,
-            skills:['shoot','multiShot','poisonArrow','moonLight','moonRain'],
+            skills:['shoot','multiShot','poisonArrow','moonLight','moonRain','moonSeal'],
             desc:'天宮仙姬，箭術絕倫，為斬妖除魔之大義毅然下凡相助天命人。' },
 };
 
@@ -45,6 +45,8 @@ const SKILLS = {
   soulMend:    { name:'靈魂救療', mp:20, pow:1.8, type:'heal', tgt:'all',   elem:'light',   desc:'以神力療癒全隊，令所有夥伴生命恢復。' },
   focus:       { name:'氣貫長虹', mp:10, pow:0, type:'buff', tgt:'self', buff:'atkUp', turns:3, desc:'凝氣蓄力，自身攻擊力大幅提升3回合。' },
   barrier:     { name:'神光護體', mp:12, pow:0, type:'buff', tgt:'self', buff:'defUp', turns:3, desc:'以法力結界護體，自身防禦力大幅提升3回合。' },
+  purify:      { name:'淨化靈光', mp:18, pow:0, type:'cleanse', tgt:'all', elem:'light', desc:'神光淨化全體夥伴，解除毒、燒、緩、昏等異常狀態。' },
+  moonSeal:    { name:'月魄封印', mp:14, pow:1.4, type:'atk', tgt:'single', elem:'light', debuff:{atkDown:2}, desc:'以月魄封印敵人，造成傷害並降低其攻擊力2回合。' },
 };
 
 const ITEMS = {
@@ -91,16 +93,16 @@ const ENEMIES = {
   snake:    { name:'蛇蟒精', hp:120, atk:20, def:10, spd:18, exp:80,  gold:40, color:0x205010, sz:28, acts:['bite','poisonSpray','bite'],  drops:[{id:'herb',r:0.5},{id:'elixir',r:0.2}] },
   ghost:    { name:'怨靈',   hp:90,  atk:22, def:6,  spd:20, exp:90,  gold:35, color:0x7040c0, sz:28, acts:['curse','drain','curse'],      drops:[{id:'elixir',r:0.3}] },
   demon:    { name:'妖兵',   hp:140, atk:25, def:15, spd:12, exp:110, gold:55, color:0xb01010, sz:32, acts:['slash','slam','slash'],       drops:[{id:'redPotion',r:0.2}] },
-  dragon:   { name:'虎先鋒', hp:200, atk:32, def:20, spd:10, exp:180, gold:100,color:0xe06010, sz:40, acts:['bite','fireBreath','tail'],   drops:[{id:'redPotion',r:0.4},{id:'fullElixir',r:0.3}], weak:['ice'] },
-  boss:       { name:'黃眉大王',hp:400, atk:40, def:25, spd:8,  exp:0,   gold:0,  color:0xc09010, sz:48, acts:['slam','curse','vortex','aoe','slam'],  drops:[], boss:true, weak:['wind'] },
+  dragon:   { name:'虎先鋒', hp:200, atk:32, def:20, spd:10, exp:180, gold:100,color:0xe06010, sz:40, acts:['bite','fireBreath','tail'],   acts2:['fireBreath','enrageSlam','tail','fireBreath','enrageSlam'], drops:[{id:'redPotion',r:0.4},{id:'fullElixir',r:0.3}], weak:['ice'] },
+  boss:       { name:'黃眉大王',hp:400, atk:40, def:25, spd:8,  exp:0,   gold:0,  color:0xc09010, sz:48, acts:['slam','curse','vortex','aoe','slam'],  acts2:['enrageSlam','sacredBlast','slam','soulScream','enrageSlam'], drops:[], boss:true, weak:['wind'] },
   spider:     { name:'蜘蛛精', hp:110, atk:16, def:8,  spd:18, exp:75,  gold:35, color:0x501840, sz:28, acts:['bite','webTrap','bite','poisonSpray'],   drops:[{id:'elixir',r:0.3}], weak:['fire'] },
   yasha:      { name:'夜叉',   hp:135, atk:22, def:14, spd:14, exp:98,  gold:48, color:0x203060, sz:30, acts:['slash','curse','drain','slash'],          drops:[{id:'redPotion',r:0.15}], weak:['light'] },
   goldenEagle:{ name:'大鵬金翅',hp:185, atk:28, def:18, spd:22, exp:155, gold:85, color:0xd0a010, sz:36, acts:['claw','diveBomb','claw','aoe'],           drops:[{id:'redPotion',r:0.3},{id:'fullElixir',r:0.2}], weak:['thunder'] },
-  silverKing:  { name:'銀角大王', hp:380, atk:38, def:24, spd:9,  exp:0,   gold:0,  color:0xc0c8f0, sz:48, acts:['slam','soulDrain','aoe','slam','curse'],  drops:[], boss:true, weak:['fire'] },
+  silverKing:  { name:'銀角大王', hp:380, atk:38, def:24, spd:9,  exp:0,   gold:0,  color:0xc0c8f0, sz:48, acts:['slam','soulDrain','aoe','slam','curse'],  acts2:['enrageSlam','sacredBlast','soulScream','enrageSlam','soulDrain'], drops:[], boss:true, weak:['fire'] },
   fireSpirit:  { name:'火靈精',  hp:130, atk:28, def:8,  spd:20, exp:120, gold:60, color:0xff4010, sz:28, acts:['fireFlare','bite','fireFlare','howl'],           drops:[{id:'elixir',r:0.3}], weak:['ice'], resist:['fire'] },
   iceScorp:    { name:'冰蠍',    hp:145, atk:22, def:16, spd:12, exp:105, gold:55, color:0x40b0e0, sz:28, acts:['frostClaw','frostClaw','iceBlast','bite'],        drops:[{id:'herb',r:0.2},{id:'elixir',r:0.2}], weak:['fire'], resist:['ice'] },
   dragonGuard: { name:'龍族守衛',hp:200, atk:30, def:22, spd:10, exp:160, gold:80, color:0x2090c0, sz:32, acts:['slash','waterBlast','slam','scaleDash'],          drops:[{id:'redPotion',r:0.25}], weak:['thunder'] },
-  dragonKing:  { name:'東海龍王',hp:600, atk:48, def:30, spd:7,  exp:0,   gold:0,  color:0x0090ff, sz:52, acts:['waterBlast','scaleDash','tideCall','scaleDash','waterBlast'], drops:[], boss:true, weak:['thunder'], resist:['ice','wind'] },
+  dragonKing:  { name:'東海龍王',hp:600, atk:48, def:30, spd:7,  exp:0,   gold:0,  color:0x0090ff, sz:52, acts:['waterBlast','scaleDash','tideCall','scaleDash','waterBlast'], acts2:['dragonErupt','tideSurge','scaleDash','tideSurge','dragonErupt'], drops:[], boss:true, weak:['thunder'], resist:['ice','wind'] },
 };
 
 const ENEMY_ACTS = {
@@ -127,6 +129,11 @@ const ENEMY_ACTS = {
   vortex:     { name:'混沌漩渦', pow:0.8, type:'atk',   tgt:'all', debuff:{stun:1} },
   frostClaw:  { name:'冰霜爪',   pow:1.2, type:'atk',   tgt:'single', debuff:{slow:2} },
   iceBlast:   { name:'冰霜爆',   pow:0.9, type:'atk',   tgt:'all',    debuff:{slow:1} },
+  enrageSlam: { name:'狂怒猛擊', pow:2.2, type:'atk',   tgt:'single' },
+  sacredBlast:{ name:'禪杖聖爆', pow:1.5, type:'atk',   tgt:'all', debuff:{burn:2} },
+  soulScream: { name:'魂力爆嘯', pow:1.4, type:'atk',   tgt:'all', debuff:{stun:1} },
+  tideSurge:  { name:'龍王怒濤', pow:1.6, type:'atk',   tgt:'all', debuff:{slow:3} },
+  dragonErupt:{ name:'龍氣爆發', pow:2.5, type:'atk',   tgt:'single', elem:'thunder' },
 };
 
 // ── Maps ───────────────────────────────────────────────────
