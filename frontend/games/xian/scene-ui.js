@@ -387,17 +387,30 @@ class MenuScene extends Phaser.Scene {
     const fsS = Math.max(10, fs - 3);
     const list = Achieve?.getAll() || [];
     const unlocked = list.filter(a => a.unlocked).length;
+    if (!this._achPage) this._achPage = 0;
 
-    this.add.text(cx+cw/2, cy+6, `成　就　（${unlocked}/${list.length}）`, {
+    const cols = 2, PAGE = 8;
+    const totalPages = Math.ceil(list.length / PAGE);
+    this._achPage = Math.min(this._achPage, totalPages - 1);
+    const page = list.slice(this._achPage * PAGE, (this._achPage + 1) * PAGE);
+    const rows = Math.ceil(page.length / cols);
+    const colW = Math.floor(cw / cols);
+    const rowH = Math.floor((ch - 52) / Math.min(PAGE / cols, rows));
+
+    const pageLabel = totalPages > 1 ? `  ${this._achPage+1}/${totalPages}` : '';
+    this.add.text(cx+cw/2, cy+6, `成　就　（${unlocked}/${list.length}）${pageLabel}`, {
       fontSize: Math.floor(fs*1.2)+'px', fontFamily:'"Noto Serif TC",serif',
       color:'#e8c060', fontStyle:'bold', stroke:'#000', strokeThickness:2,
     }).setOrigin(0.5, 0);
+    if (totalPages > 1) {
+      this.add.text(cx+cw/2, cy+ch-8, '↑↓ 翻頁', {
+        fontSize: (fsS-1)+'px', fontFamily:'"Noto Serif TC",serif', color:'#5a4a2a',
+      }).setOrigin(0.5, 1);
+    }
 
-    const cols = 2, rows = Math.ceil(list.length / cols);
-    const colW = Math.floor(cw / cols), rowH = Math.floor((ch - 44) / rows);
-    list.forEach((a, i) => {
+    page.forEach((a, i) => {
       const col = i % cols, row = Math.floor(i / cols);
-      const ax = cx + col * colW + 8, ay = cy + 44 + row * rowH;
+      const ax = cx + col * colW + 8, ay = cy + 48 + row * rowH;
       const done = a.unlocked;
       this.panelGfx.fillStyle(done ? 0x1a2a10 : 0x1a1010, 0.7);
       this.panelGfx.fillRoundedRect(ax-4, ay, colW-12, rowH-6, 5);
@@ -533,8 +546,8 @@ class MenuScene extends Phaser.Scene {
       if (this.tab===1 && this.equipSlot!==-1) { this.equipSlot=-1; this.drawPanel(); return; }
       this.scene.resume(this.caller); this.scene.stop(); return;
     }
-    if (left  && this.tab>0 && (this.tab!==1||this.equipSlot===-1)) { this.tab--; this.cursor=0; this.drawPanel(); return; }
-    if (right && this.tab<this.tabs.length-1 && (this.tab!==1||this.equipSlot===-1)) { this.tab++; this.cursor=0; this.drawPanel(); return; }
+    if (left  && this.tab>0 && (this.tab!==1||this.equipSlot===-1)) { this.tab--; this.cursor=0; this._achPage=0; this.drawPanel(); return; }
+    if (right && this.tab<this.tabs.length-1 && (this.tab!==1||this.equipSlot===-1)) { this.tab++; this.cursor=0; this._achPage=0; this.drawPanel(); return; }
 
     switch(this.tab) {
       case 0:
@@ -599,6 +612,13 @@ class MenuScene extends Phaser.Scene {
           this.time.delayedCall(1500, () => { this.saveMsg=''; this.drawPanel(); });
         }
         break;
+      case 4: {
+        const list4 = Achieve?.getAll() || [];
+        const totalPages4 = Math.ceil(list4.length / 8);
+        if (up)   { if(!this._achPage)this._achPage=0; this._achPage=Math.max(0,this._achPage-1); Sound?.play('menuMove'); this.drawPanel(); }
+        if (down) { if(!this._achPage)this._achPage=0; this._achPage=Math.min(totalPages4-1,this._achPage+1); Sound?.play('menuMove'); this.drawPanel(); }
+        break;
+      }
     }
   }
 }

@@ -721,4 +721,12 @@ const QUESTS = [
     done: () => !!GS.flags.defeated_dragonKing },
   { id:'q7', name:'除妖大功德',   desc:'四大Boss盡皆伏誅，天下太平。',
     done: () => ['defeated_boss','defeated_silverKing','defeated_dragonKing'].every(f=>GS.flags[f]) && !!GS.flags.defeatedDragon },
+  { id:'q8', name:'尋寶獵人',     desc:'在各地圖中找到隱藏寶箱。',
+    done: () => Object.keys(GS.flags?.chests||{}).length >= 3 },
+  { id:'q9', name:'靈石富翁',     desc:'累積持有 500 靈石以上。',
+    done: () => (GS.gold||0) >= 500 },
+  { id:'q10',name:'修行有成',     desc:'全隊伍任意角色達到 8 級以上。',
+    done: () => GS.party.some(m=>(m.lv||1)>=8) },
+  { id:'q11',name:'見識百妖',     desc:'遭遇六種以上的妖物。',
+    done: () => Object.keys(GS.flags?._enemySeen||{}).length >= 6 },
 ];

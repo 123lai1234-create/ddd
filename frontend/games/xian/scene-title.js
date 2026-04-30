@@ -369,7 +369,44 @@ class OpeningScene extends Phaser.Scene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     this._slide = 0;
-    this._slides = [
+
+    const ngplus = !!GS.flags?.ngplus;
+    this._slides = ngplus ? [
+      {
+        bg: [0x0a0020, 0x140030, 0x060010, 0x0a0018],
+        lines: [
+          { t:'天命不滅', c:'#ffd700', sz:30, bold:true, y:0.28 },
+          { t:'上一次的試煉，已刻入記憶。', c:'#c8b090', sz:15, y:0.44 },
+          { t:'妖王記住了你。', c:'#ff8060', sz:16, y:0.52 },
+        ],
+      },
+      {
+        bg: [0x1a0800, 0x120400, 0x200a00, 0x0e0200],
+        lines: [
+          { t:'二周目開始', c:'#ff9020', sz:28, bold:true, y:0.28 },
+          { t:'黃眉大王更強，妖兵更兇猛，', c:'#c8b090', sz:15, y:0.43 },
+          { t:'但你的力量，也更甚以往。', c:'#c8d0c0', sz:15, y:0.51 },
+          { t:'── 天命之路，從未止息 ──', c:'#9a6030', sz:14, y:0.64 },
+        ],
+      },
+      {
+        bg: [0x080a18, 0x04060e, 0x06080c, 0x030408],
+        lines: [
+          { t:'三英再聚', c:'#80d0ff', sz:28, bold:true, y:0.28 },
+          { t:'天命人、土地、楊嬋，', c:'#c8d0e0', sz:15, y:0.43 },
+          { t:'三人之羈絆，跨越輪迴。', c:'#c8d0e0', sz:15, y:0.51 },
+          { t:'再次並肩，斬妖除魔。', c:'#a0b8a0', sz:14, y:0.60 },
+        ],
+      },
+      {
+        bg: [0x100820, 0x080414, 0x060210, 0x040108],
+        lines: [
+          { t:'★ 二周目啟程 ★', c:'#ffd700', sz:26, bold:true, y:0.30 },
+          { t:'這一次，你已不再是新手。', c:'#f0e6c8', sz:17, y:0.46 },
+          { t:'天命，再次召喚你。', c:'#ffd700', sz:16, y:0.56 },
+        ],
+      },
+    ] : [
       {
         bg: [0x000000, 0x060214, 0x000000, 0x040108],
         lines: [

@@ -279,6 +279,25 @@ class WorldScene extends Phaser.Scene {
     // Castle visit flag for quest tracking
     if (GS.map === 'castle') GS.flags.visitedCastle = true;
 
+    // NG+ banner on first load of village in NG+
+    if (GS.flags.ngplus && GS.map === 'village' && !GS.flags._ngBannerShown) {
+      GS.flags._ngBannerShown = true;
+      const ngW = Math.min(300, W - 40), ngX = (W - ngW) / 2;
+      const ngG = this.add.graphics().setScrollFactor(0).setDepth(30).setAlpha(0);
+      ngG.fillStyle(0x100820, 0.92); ngG.fillRoundedRect(ngX, H/2-40, ngW, 80, 10);
+      ngG.lineStyle(2, 0xffd700, 0.9); ngG.strokeRoundedRect(ngX, H/2-40, ngW, 80, 10);
+      const ngT = this.add.text(W/2, H/2-14, '★ 新遊戲＋ ★', {
+        fontSize:'22px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#ffd700', fontStyle:'bold', stroke:'#000', strokeThickness:3,
+        shadow:{ offsetX:0, offsetY:0, color:'#ffd700', blur:16, fill:true },
+      }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(31).setAlpha(0);
+      const ngS = this.add.text(W/2, H/2+16, '繼承靈石　妖王更強', {
+        fontSize:'14px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#c8b080', stroke:'#000', strokeThickness:2,
+      }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(31).setAlpha(0);
+      this.tweens.add({ targets:[ngG,ngT,ngS], alpha:1, duration:600, hold:2200, yoyo:true, onComplete:()=>{ ngG.destroy(); ngT.destroy(); ngS.destroy(); } });
+    }
+
     // Achievement toast listener
     this._onAchieve = (e) => this._showAchieveToast(e.detail);
     window.addEventListener('xian:achievement', this._onAchieve);
