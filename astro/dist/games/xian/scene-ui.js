@@ -166,20 +166,27 @@ class MenuScene extends Phaser.Scene {
         }).setOrigin(1, 0);
       }
 
-      // Skill list with element color badges
-      const ELEM_CLR = { fire:0xff6020, ice:0x40c0ff, thunder:0xffd020, wind:0x40e080, light:0xfff0a0, none:0x909090 };
-      const skills = m.skills || [];
-      const skillRowY = ry + 8 + fs * 2 + 8 + fsS + 8;
-      skills.forEach((sid, si) => {
-        const sk = SKILLS[sid]; if (!sk) return;
-        const sx = cx + 8 + si * Math.floor(cw * 0.28);
-        const ec = ELEM_CLR[sk.elem] || ELEM_CLR.none;
-        this.panelGfx.fillStyle(ec, 0.75);
-        this.panelGfx.fillRoundedRect(sx, skillRowY, 6, fsS, 3);
-        this.add.text(sx + 9, skillRowY, `${sk.name} ${sk.mp?sk.mp+'MP':''}`, {
-          fontSize: Math.max(9,fsS-2)+'px', fontFamily:'"Noto Serif TC","SimSun",serif', color:'#c8d0b0', stroke:'#000', strokeThickness:1,
+      // Skill list — shown for selected member only, below the bars
+      if (sel) {
+        const ELEM_CLR2 = { fire:0xff6020, ice:0x40c0ff, thunder:0xffd020, wind:0x40e080, light:0xfff0a0, none:0x707090 };
+        const skills = m.skills || [];
+        const skFs = Math.max(8, fsS - 3);
+        const skColW = Math.floor(cw / 3);
+        const skBaseY = barY + barH2 + 4;
+        skills.forEach((sid, si) => {
+          const sk = SKILLS[sid]; if (!sk) return;
+          const col = si % 3, row = Math.floor(si / 3);
+          const sx = cx + 6 + col * skColW;
+          const sy = skBaseY + row * (skFs + 4);
+          const ec = ELEM_CLR2[sk.elem] || ELEM_CLR2.none;
+          this.panelGfx.fillStyle(ec, 0.8);
+          this.panelGfx.fillRoundedRect(sx, sy + 1, 5, skFs - 2, 2);
+          this.add.text(sx + 8, sy, `${sk.name}${sk.mp ? ' '+sk.mp+'mp' : ''}`, {
+            fontSize: skFs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+            color:'#b8c8a8', stroke:'#000', strokeThickness:1,
+          });
         });
-      });
+      }
     });
 
     this.add.text(cx+cw/2, cy+ch+14, '↑↓ 選擇成員', {

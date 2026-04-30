@@ -1334,9 +1334,14 @@ class BattleScene extends Phaser.Scene {
         Sound?.play(sk.elem==='thunder' ? 'thunderSkill' : 'magic');
         const targets=sk.tgt==='all'?this.enemies.filter(e=>!e.dead):[this.enemies[targetIdx]];
         const hitCount=sk.hits||1;
+        const elemEffects=[];
         const dmgs=targets.map(tgt=>{
+          const isWeak=sk.elem&&sk.elem!=='none'&&tgt.weak?.includes(sk.elem);
+          const isResist=sk.elem&&sk.elem!=='none'&&tgt.resist?.includes(sk.elem);
+          const elemMult=isWeak?1.5:isResist?0.5:1.0;
+          elemEffects.push(isWeak?'weak':isResist?'resist':'none');
           let total=0;
-          for(let h=0;h<hitCount;h++){const d=this._calcDmg(st.atk,tgt.def,sk.pow,sk.pierce||0);tgt.hp=Math.max(0,tgt.hp-d);if(tgt.hp===0)tgt.dead=true;total+=d;}
+          for(let h=0;h<hitCount;h++){const d=Math.floor(this._calcDmg(st.atk,tgt.def,sk.pow,sk.pierce||0)*elemMult);tgt.hp=Math.max(0,tgt.hp-d);if(tgt.hp===0)tgt.dead=true;total+=d;}
           if(sk.debuff)Object.entries(sk.debuff).forEach(([k,v])=>{for(let j=0;j<v;j++)tgt.status.push(k);});
           return total;
         });
@@ -1348,8 +1353,16 @@ class BattleScene extends Phaser.Scene {
             const _ec=ELEM_CLR[sk.elem||'none']||0x8888ff, _et=ELEM_TXT[sk.elem||'none']||'#aaaaff';
             const hitSuffix=hitCount>1?` ×${hitCount}`:'';
             this._floatText(ex,ey,String(dmgs[ti])+hitSuffix,_et,22);
-            this._hitImpact(ex,ey+20,_ec,true);
-            this._spawnParticles(ex,ey+20,_ec,16,58);
+            if(elemEffects[ti]==='weak'){
+              this._floatText(ex,ey-28,'弱點！','#ffee20',16);
+              this._spawnParticles(ex,ey+20,_ec,24,68);
+            } else if(elemEffects[ti]==='resist'){
+              this._floatText(ex,ey-28,'耐性…','#aaaaaa',14);
+              this._spawnParticles(ex,ey+20,_ec,6,28);
+            } else {
+              this._spawnParticles(ex,ey+20,_ec,16,58);
+            }
+            this._hitImpact(ex,ey+20,_ec,elemEffects[ti]==='weak');
           }
         });
         this._shake(0.009, 300);
