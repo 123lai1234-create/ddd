@@ -469,6 +469,26 @@ class WorldScene extends Phaser.Scene {
         p.setPosition(vp.x+Math.random()*vp.width, vp.y+Math.random()*vp.height);
         this.tweens.add({ targets:p, x:p.x+(Math.random()-0.5)*28, y:p.y-38, alpha:0, duration:2200, onComplete:()=>p.destroy() });
       }});
+    } else if (map === 'dungeon') {
+      // Purple spore wisps (盤絲洞 — spider cave)
+      this.time.addEvent({ delay: 280, loop: true, callback: () => {
+        const vp = this.cameras.main.worldView;
+        const p = this.add.graphics().setDepth(3);
+        const pc = [0x8020c0,0xb040e0,0x600090,0xd060ff][Math.floor(Math.random()*4)];
+        p.fillStyle(pc, 0.25+Math.random()*0.3); p.fillCircle(0, 0, 1.5+Math.random()*2);
+        p.setPosition(vp.x+Math.random()*vp.width, vp.y+vp.height*0.3+Math.random()*vp.height*0.7);
+        this.tweens.add({ targets:p, x:p.x+(Math.random()-0.5)*30, y:p.y-40, alpha:0, duration:2000+Math.random()*1000, onComplete:()=>p.destroy() });
+      }});
+      // Web strand glints
+      this.time.addEvent({ delay: 900, loop: true, callback: () => {
+        const vp = this.cameras.main.worldView;
+        const p = this.add.graphics().setDepth(3);
+        const len = 20+Math.random()*35, ang = Math.random()*Math.PI*2;
+        p.lineStyle(0.8, 0xd0b0e0, 0.22+Math.random()*0.22);
+        p.lineBetween(0, 0, Math.cos(ang)*len, Math.sin(ang)*len);
+        p.setPosition(vp.x+Math.random()*vp.width, vp.y+Math.random()*vp.height);
+        this.tweens.add({ targets:p, alpha:0, duration:2500+Math.random()*1500, onComplete:()=>p.destroy() });
+      }});
     } else if (map === 'village') {
       // Fireflies
       this.time.addEvent({ delay: 950, loop: true, callback: () => {

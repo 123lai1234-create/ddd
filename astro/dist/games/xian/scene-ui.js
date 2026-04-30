@@ -98,94 +98,169 @@ class MenuScene extends Phaser.Scene {
   }
 
   _drawStatus() {
-    const { _px:px, _py:py, _pw:pw, _ph:ph, _cx:cx, _cy:cy, _cw:cw, _ch:ch } = this;
-    const rowH = Math.floor(ch / GS.party.length);
-    const fs   = Math.max(13, Math.floor(rowH * 0.18));
-    const fsS  = Math.max(10, fs - 3);
+    const { _cx:cx, _cy:cy, _cw:cw, _ch:ch } = this;
+    const n = GS.party.length;
+    if (!n) return;
 
+    // Passive ability descriptions per character
+    const PASSIVES = {
+      yunyi:  { name:'勇者本色', desc:'HP ≥ 90% 時攻擊+20%', clr:'#ffd060' },
+      linger: { name:'山神補氣', desc:'每回合自動回復 5% MP', clr:'#80e880' },
+      yuehua: { name:'月神之眼', desc:'暴擊率提升至 15%',   clr:'#80d8ff' },
+    };
+    const ELEM_CLR2 = { fire:'#ff6020', ice:'#40c0ff', thunder:'#ffd020', wind:'#40e080', light:'#ffd0a0', none:'#707090' };
+    const TYPE_LBL  = { atk:'攻', heal:'回', buff:'強' };
+    const CHAR_CLR  = { yunyi:0xf0a010, linger:0x508840, yuehua:0x60c8ff };
+    const CHAR_CLR_S= { yunyi:'#f0a010', linger:'#70c050', yuehua:'#60c8ff' };
+
+    // Compact member selector tabs at top
+    const tabH = 36, tabW = Math.floor(cw / n);
     GS.party.forEach((m, i) => {
       const sel = i === this.member;
-      const ry  = cy + i * rowH;
-
+      const tx = cx + i * tabW, ty = cy;
+      const clr = CHAR_CLR[m.id] || 0x888888;
+      this.panelGfx.fillStyle(clr, sel ? 0.35 : 0.12);
+      this.panelGfx.fillRoundedRect(tx, ty, tabW-3, tabH, 5);
       if (sel) {
-        this.panelGfx.fillStyle(0xe8c060, 0.08);
-        this.panelGfx.fillRoundedRect(cx-4, ry-4, cw+8, rowH-2, 6);
-        this.panelGfx.lineStyle(1, 0x9a7a28, 0.4);
-        this.panelGfx.strokeRoundedRect(cx-4, ry-4, cw+8, rowH-2, 6);
-      } else if (i > 0) {
-        this.panelGfx.lineStyle(1, 0x3a2a08, 0.4);
-        this.panelGfx.lineBetween(cx, ry-2, cx+cw, ry-2);
+        this.panelGfx.lineStyle(1, clr, 0.8);
+        this.panelGfx.strokeRoundedRect(tx, ty, tabW-3, tabH, 5);
       }
-
-      // Name + title
-      this.add.text(cx+8, ry+8, `${m.name}　${m.title}`, {
-        fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
-        color: sel ? '#ffd700' : '#e8c060', stroke:'#000', strokeThickness:2, fontStyle:'bold',
-      });
-
-      // Level / EXP
-      const st = calcStats(m);
-      this.add.text(cx+8, ry+8+fs+4, `Lv.${m.lv}　EXP ${m.exp}/${expForLevel(m.lv)}`, {
-        fontSize: fsS+'px', fontFamily:'monospace', color:'#c8b080', stroke:'#000', strokeThickness:1,
-      });
-
-      // Stats
-      this.add.text(cx+8, ry+8+fs*2+8, `ATK:${st.atk}　DEF:${st.def}　SPD:${st.spd}　LUK:${st.luk}`, {
-        fontSize: fsS+'px', fontFamily:'monospace', color:'#9a8060', stroke:'#000', strokeThickness:1,
-      });
-
-      // Bars
-      const barW = Math.floor(cw * 0.28);
-      const barY = ry + rowH - Math.floor(rowH * 0.30);
-      const barH2 = Math.max(6, Math.floor(rowH * 0.10));
-      mkBar(this, cx+8, barY, barW, barH2, m.hp, m.maxHp, 0xe04040);
-      this.add.text(cx+8+barW+6, barY+barH2/2, `HP ${m.hp}/${m.maxHp}`, {
-        fontSize: Math.max(9,fsS-1)+'px', fontFamily:'monospace', color:'#e05050', stroke:'#000', strokeThickness:1,
+      // Color dot
+      this.panelGfx.fillStyle(clr, 0.9);
+      this.panelGfx.fillCircle(tx+14, ty+tabH/2, 7);
+      this.add.text(tx+26, ty+tabH/2, `${m.name}　Lv.${m.lv}`, {
+        fontSize: Math.max(11, Math.floor(cw*0.018))+'px',
+        fontFamily:'"Noto Serif TC","SimSun",serif',
+        color: sel ? CHAR_CLR_S[m.id]||'#ffd700' : '#806840',
+        fontStyle: sel ? 'bold' : 'normal', stroke:'#000', strokeThickness:sel?2:1,
       }).setOrigin(0, 0.5);
+    });
 
-      mkBar(this, cx+8+barW*1.12+30, barY, barW, barH2, m.mp, st.maxMp, 0x4060e0);
-      this.add.text(cx+8+barW*1.12+30+barW+6, barY+barH2/2, `MP ${m.mp}/${st.maxMp}`, {
-        fontSize: Math.max(9,fsS-1)+'px', fontFamily:'monospace', color:'#5070e0', stroke:'#000', strokeThickness:1,
-      }).setOrigin(0, 0.5);
+    // Detail area for selected member
+    const m = GS.party[this.member]; if (!m) return;
+    const st = calcStats(m);
+    const dy = cy + tabH + 8;
+    const dh = ch - tabH - 8;
+    const halfW = Math.floor(cw / 2);
+    const fs = Math.max(13, Math.floor(dh * 0.055));
+    const fsS = Math.max(10, fs - 2);
+    const fsXS = Math.max(9, fs - 4);
 
-      // Character color badge (right side, top)
-      const CHAR_CLR = { yunyi:0xf0a010, linger:0x508840, yuehua:0x60c8ff };
-      const badgeClr = CHAR_CLR[m.id] || 0x888888;
-      const badgeX = cx + cw - 18;
-      const badgeY = ry + 18;
-      this.panelGfx.fillStyle(badgeClr, 0.85);
-      this.panelGfx.fillCircle(badgeX, badgeY, 12);
-      this.panelGfx.lineStyle(1.5, 0xffffff, 0.4);
-      this.panelGfx.strokeCircle(badgeX, badgeY, 12);
+    // ── Left column ─────────────────────────────────────
+    // Name + title
+    this.add.text(cx+8, dy, m.name, {
+      fontSize: Math.floor(fs*1.4)+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color: CHAR_CLR_S[m.id]||'#ffd700', fontStyle:'bold', stroke:'#000', strokeThickness:2,
+    });
+    this.add.text(cx+8, dy+Math.floor(fs*1.5)+2, m.title, {
+      fontSize: fsS+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#9a8060', stroke:'#000', strokeThickness:1,
+    });
 
-      // Equipped items (right side, below badge)
-      const eqStr = Object.entries(m.equip).filter(([,v])=>v).map(([,v])=>ITEMS[v]?.name||v).join('　');
-      if (eqStr) {
-        this.add.text(cx+cw-8, ry+8+fs+4, eqStr, {
-          fontSize: Math.max(10,fsS-1)+'px', fontFamily:'"Noto Serif TC",serif', color:'#7a9090', stroke:'#000', strokeThickness:1,
-        }).setOrigin(1, 0);
-      }
+    // EXP bar + level
+    const expY = dy + Math.floor(fs*1.5) + fsS + 8;
+    const barW = Math.floor(halfW * 0.85);
+    const expMax = expForLevel(m.lv);
+    mkBar(this, cx+8, expY, barW, 5, m.exp, expMax, 0x50c878);
+    this.add.text(cx+8, expY+7, `Lv.${m.lv}　EXP ${m.exp}/${expMax}`, {
+      fontSize: fsXS+'px', fontFamily:'monospace', color:'#50c878', stroke:'#000', strokeThickness:1,
+    });
 
-      // Skill list — shown for selected member only, below the bars
-      if (sel) {
-        const ELEM_CLR2 = { fire:0xff6020, ice:0x40c0ff, thunder:0xffd020, wind:0x40e080, light:0xfff0a0, none:0x707090 };
-        const skills = m.skills || [];
-        const skFs = Math.max(8, fsS - 3);
-        const skColW = Math.floor(cw / 3);
-        const skBaseY = barY + barH2 + 4;
-        skills.forEach((sid, si) => {
-          const sk = SKILLS[sid]; if (!sk) return;
-          const col = si % 3, row = Math.floor(si / 3);
-          const sx = cx + 6 + col * skColW;
-          const sy = skBaseY + row * (skFs + 4);
-          const ec = ELEM_CLR2[sk.elem] || ELEM_CLR2.none;
-          this.panelGfx.fillStyle(ec, 0.8);
-          this.panelGfx.fillRoundedRect(sx, sy + 1, 5, skFs - 2, 2);
-          this.add.text(sx + 8, sy, `${sk.name}${sk.mp ? ' '+sk.mp+'mp' : ''}`, {
-            fontSize: skFs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
-            color:'#b8c8a8', stroke:'#000', strokeThickness:1,
-          });
-        });
+    // HP / MP bars
+    const barY2 = expY + 22;
+    const barH2 = Math.max(7, Math.floor(dh * 0.038));
+    mkBar(this, cx+8, barY2,        barW, barH2, m.hp,  m.maxHp,  0xe04040);
+    mkBar(this, cx+8, barY2+barH2+5,barW, barH2, m.mp,  st.maxMp, 0x4060e0);
+    this.add.text(cx+8+barW+5, barY2+barH2/2,        `HP ${m.hp}/${m.maxHp}`,  { fontSize:fsXS+'px', fontFamily:'monospace', color:'#e05050', stroke:'#000', strokeThickness:1 }).setOrigin(0,0.5);
+    this.add.text(cx+8+barW+5, barY2+barH2+5+barH2/2,`MP ${m.mp}/${st.maxMp}`, { fontSize:fsXS+'px', fontFamily:'monospace', color:'#5070e0', stroke:'#000', strokeThickness:1 }).setOrigin(0,0.5);
+
+    // Stats 2-col grid
+    const statY = barY2 + barH2*2 + 16;
+    const statPairs = [['ATK', st.atk, '#ff9060'], ['DEF', st.def, '#60c0ff'], ['SPD', st.spd, '#80e080'], ['LUK', st.luk, '#ffd080']];
+    statPairs.forEach(([lbl, val, clr], si) => {
+      const sx = cx + 8 + Math.floor(si/2) * Math.floor(halfW*0.55), sy = statY + (si%2) * (fsS+5);
+      this.add.text(sx, sy, lbl+':', { fontSize:fsS+'px', fontFamily:'monospace', color:'#7a6a4a', stroke:'#000', strokeThickness:1 });
+      this.add.text(sx+38, sy, String(val), { fontSize:fsS+'px', fontFamily:'monospace', color:clr, fontStyle:'bold', stroke:'#000', strokeThickness:1 });
+    });
+
+    // Equipment row
+    const eqY = statY + fsS*2 + 14;
+    const eqEntries = Object.entries(m.equip).filter(([,v])=>v);
+    if (eqEntries.length) {
+      this.add.text(cx+8, eqY, '裝備　', { fontSize:fsXS+'px', fontFamily:'"Noto Serif TC","SimSun",serif', color:'#6a5a3a' });
+      const eqStr = eqEntries.map(([,v])=>ITEMS[v]?.name||v).join('・');
+      this.add.text(cx+8+32, eqY, eqStr, { fontSize:fsXS+'px', fontFamily:'"Noto Serif TC","SimSun",serif', color:'#80c0b8', stroke:'#000', strokeThickness:1 });
+    }
+
+    // Status effects
+    const stEffects = [...new Set(m.status||[])];
+    if (stEffects.length) {
+      const ST_C = { poison:'#c050e8', burn:'#ff8040', slow:'#80a0ff', stun:'#ffcc00', atkUp:'#ffe060', defUp:'#80e8ff', defend:'#80c0ff' };
+      const ST_L = { poison:'中毒', burn:'灼燒', slow:'遲緩', stun:'昏迷', atkUp:'攻↑', defUp:'守↑', defend:'防禦' };
+      const seY = eqY + fsXS + 6;
+      let seX = cx + 8;
+      stEffects.forEach(s => {
+        const lbl = ST_L[s]||s, clr = ST_C[s]||'#fff';
+        const tt = this.add.text(seX, seY, lbl, { fontSize:Math.max(9,fsXS-1)+'px', fontFamily:'"Noto Serif TC","SimSun",serif', color:clr, stroke:'#000', strokeThickness:1 });
+        seX += tt.width + 8;
+      });
+    }
+
+    // ── Right column: Passive + Skills ───────────────────
+    const rx = cx + halfW + 8;
+
+    // Passive ability box
+    const passive = PASSIVES[m.id];
+    const _h2c = s => parseInt(String(s).replace('#',''), 16);
+    if (passive) {
+      this.panelGfx.fillStyle(0x181020, 0.8);
+      this.panelGfx.fillRoundedRect(rx, dy, halfW-16, Math.floor(dh*0.18), 6);
+      this.panelGfx.lineStyle(1, _h2c(passive.clr), 0.6);
+      this.panelGfx.strokeRoundedRect(rx, dy, halfW-16, Math.floor(dh*0.18), 6);
+      this.add.text(rx+10, dy+5, '【被動】' + passive.name, {
+        fontSize: fsS+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color: passive.clr, fontStyle:'bold', stroke:'#000', strokeThickness:2,
+      });
+      this.add.text(rx+10, dy+7+fsS, passive.desc, {
+        fontSize: fsXS+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#9a8860', stroke:'#000', strokeThickness:1,
+      });
+    }
+
+    // Skill list
+    const skillTitleY = dy + Math.floor(dh*0.21);
+    this.add.text(rx+10, skillTitleY, '技能', {
+      fontSize: fsS+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+      color:'#c8a060', fontStyle:'bold', stroke:'#000', strokeThickness:1,
+    });
+    this.panelGfx.lineStyle(1, 0x5a4a1a, 0.5);
+    this.panelGfx.lineBetween(rx+10, skillTitleY+fsS+2, rx+halfW-18, skillTitleY+fsS+2);
+
+    const skills = m.skills || [];
+    const skRowH = Math.max(22, Math.floor((dh - Math.floor(dh*0.24)) / Math.max(skills.length, 1)));
+    skills.forEach((sid, si) => {
+      const sk = SKILLS[sid]; if (!sk) return;
+      const sy = skillTitleY + fsS + 6 + si * skRowH;
+      const elemClr = ELEM_CLR2[sk.elem||'none'] || '#707090';
+      const typeStr = TYPE_LBL[sk.type] || '技';
+      // Type badge
+      this.panelGfx.fillStyle(_h2c(elemClr), 0.85);
+      this.panelGfx.fillRoundedRect(rx+10, sy+1, 16, skRowH-4, 3);
+      this.add.text(rx+18, sy+skRowH/2-1, typeStr, { fontSize:Math.max(8,fsXS-1)+'px', fontFamily:'monospace', color:'#000', fontStyle:'bold' }).setOrigin(0.5,0.5);
+      // Skill name
+      this.add.text(rx+30, sy+2, sk.name, {
+        fontSize: fsXS+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#d0c090', stroke:'#000', strokeThickness:1,
+      });
+      // MP cost
+      if (sk.mp > 0) {
+        this.add.text(rx+halfW-18, sy+2, `MP ${sk.mp}`, {
+          fontSize: Math.max(8,fsXS-1)+'px', fontFamily:'monospace', color:'#5070e0', stroke:'#000', strokeThickness:1,
+        }).setOrigin(1,0);
+      } else {
+        this.add.text(rx+halfW-18, sy+2, '無消耗', {
+          fontSize: Math.max(8,fsXS-1)+'px', fontFamily:'monospace', color:'#4a5a3a', stroke:'#000', strokeThickness:1,
+        }).setOrigin(1,0);
       }
     });
 
@@ -247,22 +322,39 @@ class MenuScene extends Phaser.Scene {
         }).setOrigin(0.5, 0.5);
       } else {
         const rowH = Math.max(36, Math.floor((ch - 60) / this.equipList.length));
+        const slot = ['wp','ar','ac'][this.equipSlot];
+        const curEqId = m.equip[slot];
+        const curIt = curEqId ? ITEMS[curEqId] : null;
         this.equipList.forEach((id, i) => {
           const ry  = cy + 68 + i * rowH;
           const sel = i === this.equipCursor;
           if (sel) {
             this.panelGfx.fillStyle(0xe8c060, 0.1);
             this.panelGfx.fillRoundedRect(cx-4, ry-8, cw+8, rowH-4, 5);
+            this.panelGfx.lineStyle(1, 0x9a7a28, 0.4);
+            this.panelGfx.strokeRoundedRect(cx-4, ry-8, cw+8, rowH-4, 5);
           }
           const it = id ? ITEMS[id] : null;
           const nm = it ? it.name : '── 卸除 ──';
           this.add.text(cx+14, ry+4, (sel?'▶ ':'') + nm, {
             fontSize: fs+'px', fontFamily:'"Noto Serif TC",serif',
-            color: sel?'#ffd700':'#c8a060', stroke:'#000', strokeThickness:2,
+            color: sel?'#ffd700': it?'#c8a060':'#666', stroke:'#000', strokeThickness:2,
           });
           if (it) {
-            const bonus = [it.atk&&`ATK+${it.atk}`,it.def&&`DEF+${it.def}`,it.mp&&`MP+${it.mp}`].filter(Boolean).join(' ');
-            this.add.text(cx+cw*0.6, ry+4, bonus, { fontSize: fsS+'px', fontFamily:'monospace', color:'#7a9090' });
+            // Stat comparison: show delta vs current equip
+            const STAT_KEYS = ['atk','def','mp','luk'];
+            const deltas = STAT_KEYS.map(k => {
+              const nv = it[k]||0, ov = curIt?.[k]||0, d = nv - ov;
+              if (!nv && !ov) return null;
+              if (d > 0) return { t:`↑${k.toUpperCase()}+${d}`, c:'#80ff80' };
+              if (d < 0) return { t:`↓${k.toUpperCase()}${d}`, c:'#ff8080' };
+              return { t:`${k.toUpperCase()}+${nv}`, c:'#888' };
+            }).filter(Boolean);
+            let dx = cx + Math.floor(cw*0.48);
+            deltas.forEach(({t, c}) => {
+              const dt = this.add.text(dx, ry+4, t, { fontSize:Math.max(9,fsS-1)+'px', fontFamily:'monospace', color:c, stroke:'#000', strokeThickness:1 });
+              dx += dt.width + 7;
+            });
           }
         });
       }
