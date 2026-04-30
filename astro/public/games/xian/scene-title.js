@@ -132,20 +132,36 @@ class TitleScene extends Phaser.Scene {
     const dw = Math.min(340, W * 0.35);
     div.lineBetween(W/2 - dw, titleY+94, W/2 + dw, titleY+94);
 
+    // Check if any save exists
+    const hasSave = [0,1,2].some(i => !!Save?.read(i));
+
     // Menu
     const menuY = H * 0.58;
     this.menuBgs = [];
     this.menuTexts = this.opts.map((o, i) => {
       const y = menuY + i * 62;
       const bg2 = this.add.graphics();
+      // "繼續遊戲" glows green if a save exists
+      const col = (i === 1 && hasSave) ? '#80e8a0' : '#c8a060';
       const t = this.add.text(W/2, y, o, {
         fontSize: '24px', fontFamily: '"Noto Serif TC","SimSun",serif',
-        color: '#c8a060', fontStyle:'bold',
+        color: col, fontStyle:'bold',
         stroke:'#000', strokeThickness:3,
       }).setOrigin(0.5, 0.5);
       this.menuBgs.push({ g:bg2, y });
       return t;
     });
+    // Save summary blurb under "繼續遊戲"
+    if (hasSave) {
+      const d0 = Save?.read(0) || Save?.read(1) || Save?.read(2);
+      if (d0) {
+        const ng = d0.flags?.ngplus ? ' ★NG+' : '';
+        this.add.text(W/2, menuY + 62 + 24, `${MAPS[d0.map]?.name||''} · Lv.${d0.party?.[0]?.lv||'?'}${ng}`, {
+          fontSize:'12px', fontFamily:'"Noto Serif TC","SimSun",serif',
+          color:'#5a7050', stroke:'#000', strokeThickness:1,
+        }).setOrigin(0.5, 0.5);
+      }
+    }
 
     this.add.text(W/2, H - 40, '方向鍵 / WASD 移動　Z / Enter 確認　X / Esc 取消', {
       fontSize: '12px', fontFamily: '"Noto Serif TC","SimSun",serif',
@@ -786,8 +802,14 @@ class LoadScene extends Phaser.Scene {
       const d = Save.read(i);
       const sy = py + 110 + i * 105;
       const bg2 = this.add.graphics();
-      let mainStr = `欄位 ${i+1}`;
-      let sub1 = d ? `Lv.${d.party?.[0]?.lv||'?'} · ${MAPS[d.map]?.name||d.map} · 靈石 ${d.gold||0}` : '── 空欄 ──';
+      const ngTag = d?.flags?.ngplus ? ' ★NG+' : '';
+      let mainStr = `欄位 ${i+1}${ngTag}`;
+      let sub1 = '── 空欄 ──';
+      if (d) {
+        const pt = d.flags?.playtime || 0;
+        const ptStr = pt > 0 ? `　${Math.floor(pt/3600)}h${Math.floor((pt%3600)/60)}m` : '';
+        sub1 = `Lv.${d.party?.[0]?.lv||'?'} · ${MAPS[d.map]?.name||d.map} · 靈石 ${d.gold||0}${ptStr}`;
+      }
       let sub2 = d ? (d.party||[]).map(m=>m.name).join(' · ') : '';
       mkText(this, px+40, sy+8,  mainStr, { size:15, color:'#c8b080', bold:true });
       mkText(this, W/2,  sy+34, sub1,    { size:12, color: d ? '#9a8060' : '#444', align:'center' });

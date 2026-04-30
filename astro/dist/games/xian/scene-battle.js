@@ -1381,7 +1381,9 @@ class BattleScene extends Phaser.Scene {
         const _sw = this.add.graphics().setDepth(44);
         _sw.lineStyle(3, _elemC, 0.8); _sw.strokeCircle(this.W*0.22, this.groundY-20, 10);
         this.tweens.add({targets:_sw, scaleX:12, scaleY:12, alpha:0, duration:550, ease:'Power2', onComplete:()=>_sw.destroy()});
-        msg=`${actor.name} 施展 ${sk.name}，造成 ${dmgs.join('/')} 點傷害！`;
+        const _efx=elemEffects[0];
+        const _efxSuf=_efx==='weak'?' 弱點！':_efx==='resist'?' 耐性…':'';
+        msg=`${actor.name} 施展 ${sk.name}，造成 ${dmgs.join('/')} 點傷害！${_efxSuf}`;
       } else if (sk.type==='heal') {
         Sound?.play('heal');
         const targets=sk.tgt==='all'?this.party.filter(m=>!m.dead):[this.party[targetIdx]];

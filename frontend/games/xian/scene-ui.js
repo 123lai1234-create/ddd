@@ -518,6 +518,23 @@ class MenuScene extends Phaser.Scene {
         this.add.text(ax+colW-14, ay+4, `EXP:${e.exp}`, {
           fontSize: (fsS-1)+'px', fontFamily:'monospace', color:'#70a050', stroke:'#000', strokeThickness:1,
         }).setOrigin(1, 0);
+        // Elemental tags
+        const ELEM_ZH = { fire:'火', ice:'冰', thunder:'雷', wind:'風', light:'光' };
+        const ELEM_C  = { fire:'#ff7040', ice:'#50ccff', thunder:'#ffee40', wind:'#60ee60', light:'#aaffcc' };
+        const weakTags   = (e.weak   || []).map(el => ({ t:`弱:${ELEM_ZH[el]||el}`, c:ELEM_C[el]||'#fff' }));
+        const resistTags = (e.resist || []).map(el => ({ t:`耐:${ELEM_ZH[el]||el}`, c:'#888' }));
+        const allTags = [...weakTags, ...resistTags];
+        if (allTags.length > 0) {
+          const tagY = ay + 6 + fs + (fsS-1) + 2;
+          let tagX = ax + 26;
+          allTags.forEach(tag => {
+            const tt = this.add.text(tagX, tagY, tag.t, {
+              fontSize: Math.max(8, fsS-2)+'px', fontFamily:'monospace', color:tag.c,
+              stroke:'#000', strokeThickness:1,
+            });
+            tagX += tt.width + 4;
+          });
+        }
       } else {
         this.add.text(ax+14, ay+rowH/2-fs/2, '？？？　未知妖怪', {
           fontSize: fs+'px', fontFamily:'"Noto Serif TC","SimSun",serif',
