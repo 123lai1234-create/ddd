@@ -143,7 +143,7 @@ class WorldScene extends Phaser.Scene {
       }
     }
 
-    // Map name banner
+    // Map name banner (corner — permanent)
     const banner = this.add.graphics().setDepth(2);
     banner.fillStyle(0x0e0a1c, 0.85);
     banner.fillRoundedRect(8, 8, 180, 36, 8);
@@ -154,6 +154,29 @@ class WorldScene extends Phaser.Scene {
       fontSize:'16px', fontFamily:'"Noto Serif TC","SimSun",serif',
       color: GS.flags.ngplus ? '#ffe080' : '#e8c060', stroke:'#000', strokeThickness:2,
     }).setOrigin(0.5, 0.5).setDepth(3);
+
+    // Dramatic entrance banner (centered, fades out)
+    if (!GS.flags._pendingLines) {
+      const eBg=this.add.graphics().setScrollFactor(0).setDepth(28).setAlpha(0);
+      const ebW=Math.min(260,W*0.7), ebH=68, ebX=(W-ebW)/2, ebY=H/2-ebH/2;
+      eBg.fillStyle(0x060312,0.94); eBg.fillRoundedRect(ebX,ebY,ebW,ebH,10);
+      eBg.lineStyle(2,0x9a7828,0.85); eBg.strokeRoundedRect(ebX,ebY,ebW,ebH,10);
+      eBg.lineStyle(1,0x4a3808,0.5); eBg.strokeRoundedRect(ebX+3,ebY+3,ebW-6,ebH-6,8);
+      const eT=this.add.text(W/2,H/2-6,map.name,{
+        fontSize:'22px',fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:'#ffd700',stroke:'#000',strokeThickness:3,
+        shadow:{offsetX:0,offsetY:0,color:'#ffd700',blur:14,fill:true},
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(29).setAlpha(0);
+      const eS=this.add.text(W/2,H/2+20,GS.flags.ngplus?'★ 新遊戲＋ ★':'— 天命之路 —',{
+        fontSize:'11px',fontFamily:'"Noto Serif TC","SimSun",serif',
+        color:GS.flags.ngplus?'#ffe080':'#9a7840',stroke:'#000',strokeThickness:1,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(29).setAlpha(0);
+      this.tweens.add({targets:[eBg,eT,eS],alpha:1,duration:380,ease:'Power2',
+        onComplete:()=>this.time.delayedCall(1600,()=>
+          this.tweens.add({targets:[eBg,eT,eS],alpha:0,duration:480,onComplete:()=>{ eBg.destroy();eT.destroy();eS.destroy(); }})
+        )
+      });
+    }
 
     // NPCs
     this.npcObjects = (map.npcs||[]).map(npc => {
@@ -176,6 +199,28 @@ class WorldScene extends Phaser.Scene {
       g._npcBaseY = baseY; g._npcPhase = phase;
       lbl._npcBaseY = baseY - 36; lbl._npcPhase = phase;
     });
+
+    // Periodic NPC "！" hint bubbles
+    if (this.npcObjects.length > 0) {
+      this.time.addEvent({ delay:9000+Math.random()*3000, loop:true, callback:()=>{
+        if (this.inDialog || !this.npcObjects?.length) return;
+        const no=this.npcObjects[Math.floor(Math.random()*this.npcObjects.length)];
+        if (!no?.g?.active) return;
+        const bx=no.npc.x*TILE_SZ+TILE_SZ/2, by=no.npc.y*TILE_SZ-4;
+        const bGfx=this.add.graphics().setDepth(5.5);
+        bGfx.fillStyle(0xf4ecd8,0.95); bGfx.fillRoundedRect(-13,-15,26,20,4);
+        bGfx.lineStyle(1,0x9a7828,0.6); bGfx.strokeRoundedRect(-13,-15,26,20,4);
+        bGfx.fillStyle(0xf4ecd8,0.85);
+        bGfx.fillTriangle(-4,5,4,5,0,11);
+        const bTxt=this.add.text(0,-5,'！',{fontSize:'12px',fontFamily:'serif',color:'#c04020',stroke:'#000',strokeThickness:1}).setOrigin(0.5).setDepth(5.6);
+        bGfx.setPosition(bx,by-48); bTxt.setPosition(bx,by-53);
+        this.tweens.add({targets:[bGfx,bTxt],alpha:1,y:'-=4',duration:260,
+          onComplete:()=>this.time.delayedCall(1400,()=>
+            this.tweens.add({targets:[bGfx,bTxt],alpha:0,y:'-=8',duration:320,onComplete:()=>{ bGfx.destroy();bTxt.destroy(); }})
+          )
+        });
+      }});
+    }
 
     // Chests
     if (!GS.flags.chests) GS.flags.chests = {};
@@ -860,6 +905,16 @@ class WorldScene extends Phaser.Scene {
       this._showDialog(['【東海龍王守護此路！須先擊敗東海龍王，方可進入小西天。】']);
       return;
     }
+    if (exit.to === 'lingxiao') {
+      if (!GS.flags.ngplus) {
+        this._showDialog(['〔天門緊閉〕', '靈霄殿為天帝居所，非尋常天命人可入。', '唯有歷盡一周目磨難、踏上二周目征途者，', '方能開啟這扇天門。']);
+        return;
+      }
+      if (!GS.flags.defeated_boss) {
+        this._showDialog(['〔天門未全開〕', '天帝之門雖為二周目而開，', '然須先擊敗黃眉大王，淨化三界妖氣，', '靈霄殿方才完全開啟。']);
+        return;
+      }
+    }
     this._exiting = true;
     const W = this.scale.width;
     const banner = this.add.text(W/2, 56, exit.msg, {
@@ -928,8 +983,32 @@ class WorldScene extends Phaser.Scene {
       }, npc.name);
       return;
     }
+    const contextDlg = this._getContextDlg(npc);
+    if (contextDlg) { this._showDialog(contextDlg, null, npc.name); return; }
     const dlg = (GS.flags.ngplus && npc.dlgNG) ? npc.dlgNG : npc.dlg;
     this._showDialog([...dlg], null, npc.name);
+  }
+
+  _getContextDlg(npc) {
+    const f = GS.flags;
+    if (npc.name === '老猴子') {
+      if (f.defeated_boss)     return ['黃眉大王終於伏誅！天命得成！', '孩子，你做到了。這一路的艱辛，老朽都看在眼裡。', '山河重歸安寧，老朽在此多謝天命之人！'];
+      if (f.defeated_dragonKing) return ['東海龍王已敗，龍珠到手！', '前往小西天的路已開，黃眉大王還在等著你。', '快去吧，天命之人，勝利就在眼前！'];
+      if (f.defeated_silverKing) return ['銀角大王已伏誅！天命人了不起！', '東海龍宮的路已通，龍王等待挑戰。', '帶著三人之力，繼續前進吧！'];
+      if (f.defeatedDragon)    return ['虎先鋒已敗！哈哈哈！', '東海龍宮的大門已為你敞開。', '繼續保持這股氣勢，天命之路必成！'];
+    }
+    if (npc.name === '村婦') {
+      if (f.defeated_boss)   return ['黃眉大王被你除掉了！謝謝你！', '村子的孩子可以回來了，全靠天命之人的英勇！'];
+      if (f.defeatedDragon)  return ['聽說你打敗了黃風嶺的虎先鋒！', '村民們都在慶賀，請你多保重！'];
+    }
+    if (npc.name === '土地廟') {
+      if (f.defeated_boss)   return ['〔石碑刻字〕', '黃眉大王已伏，天命圓滿。', '願此後山河無憂，妖氣不生。'];
+      if (f.party?.length>=3||GS.party.length>=3) return ['〔石碑刻字〕', '三位天命者已聚，山神之力加護汝等。', '除妖之路，前途光明！'];
+    }
+    if (npc.name === '客棧掌柜') {
+      if (f.defeated_boss)   return ['天命人，黃眉大王已除，天下太平！', '今晚若要住宿，老夫只收半價。', '英雄難得，請多保重！'];
+    }
+    return null;
   }
 
   _showDialog(lines, onDone=null, speaker=null) {

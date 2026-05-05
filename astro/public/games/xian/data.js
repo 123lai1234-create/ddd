@@ -18,11 +18,11 @@ const CHAR_BASE = {
             desc:'身負天命，持金箍棒踏上除妖之路，傳承齊天大聖意志的孤勇者。' },
   linger: { id:'linger', name:'土地',   title:'山神使者', color:0x80c040, shape:'mage',
             hp:80,  mp:120, atk:10, def:8,  spd:18, luk:15,
-            skills:['fireball','iceArrow','heal','thunder','earthBind','soulMend','barrier'],
+            skills:['fireball','iceArrow','heal','thunder','earthBind','soulMend','barrier','purify'],
             desc:'主管一方的山神土地，法術精通，感應天命而主動加入除妖行列。' },
   yuehua: { id:'yuehua', name:'楊嬋',   title:'天神弓手', color:0x60c8ff, shape:'archer',
             hp:90,  mp:60,  atk:20, def:10, spd:20, luk:20,
-            skills:['shoot','multiShot','poisonArrow','moonLight','moonRain'],
+            skills:['shoot','multiShot','poisonArrow','moonLight','moonRain','moonSeal'],
             desc:'天宮仙姬，箭術絕倫，為斬妖除魔之大義毅然下凡相助天命人。' },
 };
 
@@ -45,6 +45,8 @@ const SKILLS = {
   soulMend:    { name:'靈魂救療', mp:20, pow:1.8, type:'heal', tgt:'all',   elem:'light',   desc:'以神力療癒全隊，令所有夥伴生命恢復。' },
   focus:       { name:'氣貫長虹', mp:10, pow:0, type:'buff', tgt:'self', buff:'atkUp', turns:3, desc:'凝氣蓄力，自身攻擊力大幅提升3回合。' },
   barrier:     { name:'神光護體', mp:12, pow:0, type:'buff', tgt:'self', buff:'defUp', turns:3, desc:'以法力結界護體，自身防禦力大幅提升3回合。' },
+  purify:      { name:'淨化靈光', mp:18, pow:0, type:'cleanse', tgt:'all', elem:'light', desc:'神光淨化全體夥伴，解除毒、燒、緩、昏等異常狀態。' },
+  moonSeal:    { name:'月魄封印', mp:14, pow:1.4, type:'atk', tgt:'single', elem:'light', debuff:{atkDown:2}, desc:'以月魄封印敵人，造成傷害並降低其攻擊力2回合。' },
 };
 
 const ITEMS = {
@@ -73,6 +75,10 @@ const ITEMS = {
   seaDragonArmor:{ name:'海龍甲',    cat:'eq',  slot:'ar', def:50, price:2000, desc:'+50防禦力，東海龍鱗鍛造。' },
   waterStaff:   { name:'水晶仙杖',   cat:'eq',  slot:'wp', who:'linger', atk:45, mp:100, price:2200, desc:'+45攻擊，+100法力上限。' },
   dragonBow:    { name:'龍骨神弓',   cat:'eq',  slot:'wp', who:'yuehua', atk:65, price:2200, desc:'+65攻擊力，龍骨所制。' },
+  goldenPill:   { name:'金丹',       cat:'use', hp:200, mp:60,  price:800,  desc:'太上老君煉丹，恢復200HP與60MP。' },
+  divineRobe:   { name:'神衣',       cat:'eq',  slot:'ar', def:18, mp:15,  price:3000, desc:'+18防禦，+15法力上限，天庭神衣。' },
+  celestialJade:{ name:'天靈玉',     cat:'eq',  slot:'ac', atk:8, spd:8, luk:12, price:4000, desc:'+8攻擊+8速+12幸，蘊含仙氣。' },
+  jadeToken:    { name:'靈霄令牌',   cat:'use', hp:0, mp:0, price:99999, desc:'玉皇大帝的令牌，傳說中的寶物。' },
 };
 
 const SHOP_STOCK = {
@@ -82,6 +88,7 @@ const SHOP_STOCK = {
   cave:    ['redPotion','fullElixir','revive','elixir','ironArmor'],
   shrine:       ['fullElixir','revive','spiritBlade','moonStaff','starBow','dragonArmor','ancientJade'],
   dragonPalace: ['dragonPearl','seaDragonArmor','waterStaff','dragonBow','redPotion','fullElixir','revive'],
+  lingxiao:     ['goldenPill','divineRobe','celestialJade','fullElixir','revive','dragonPearl'],
 };
 
 const ENEMIES = {
@@ -91,16 +98,19 @@ const ENEMIES = {
   snake:    { name:'蛇蟒精', hp:120, atk:20, def:10, spd:18, exp:80,  gold:40, color:0x205010, sz:28, acts:['bite','poisonSpray','bite'],  drops:[{id:'herb',r:0.5},{id:'elixir',r:0.2}] },
   ghost:    { name:'怨靈',   hp:90,  atk:22, def:6,  spd:20, exp:90,  gold:35, color:0x7040c0, sz:28, acts:['curse','drain','curse'],      drops:[{id:'elixir',r:0.3}] },
   demon:    { name:'妖兵',   hp:140, atk:25, def:15, spd:12, exp:110, gold:55, color:0xb01010, sz:32, acts:['slash','slam','slash'],       drops:[{id:'redPotion',r:0.2}] },
-  dragon:   { name:'虎先鋒', hp:200, atk:32, def:20, spd:10, exp:180, gold:100,color:0xe06010, sz:40, acts:['bite','fireBreath','tail'],   drops:[{id:'redPotion',r:0.4},{id:'fullElixir',r:0.3}], weak:['ice'] },
-  boss:       { name:'黃眉大王',hp:400, atk:40, def:25, spd:8,  exp:0,   gold:0,  color:0xc09010, sz:48, acts:['slam','curse','vortex','aoe','slam'],  drops:[], boss:true, weak:['wind'] },
+  dragon:   { name:'虎先鋒', hp:200, atk:32, def:20, spd:10, exp:180, gold:100,color:0xe06010, sz:40, acts:['bite','fireBreath','tail'],   acts2:['fireBreath','enrageSlam','tail','fireBreath','enrageSlam'], drops:[{id:'redPotion',r:0.4},{id:'fullElixir',r:0.3}], weak:['ice'] },
+  boss:       { name:'黃眉大王',hp:400, atk:40, def:25, spd:8,  exp:0,   gold:0,  color:0xc09010, sz:48, acts:['slam','curse','vortex','aoe','slam'],  acts2:['enrageSlam','sacredBlast','slam','soulScream','enrageSlam'], drops:[], boss:true, weak:['wind'] },
   spider:     { name:'蜘蛛精', hp:110, atk:16, def:8,  spd:18, exp:75,  gold:35, color:0x501840, sz:28, acts:['bite','webTrap','bite','poisonSpray'],   drops:[{id:'elixir',r:0.3}], weak:['fire'] },
   yasha:      { name:'夜叉',   hp:135, atk:22, def:14, spd:14, exp:98,  gold:48, color:0x203060, sz:30, acts:['slash','curse','drain','slash'],          drops:[{id:'redPotion',r:0.15}], weak:['light'] },
   goldenEagle:{ name:'大鵬金翅',hp:185, atk:28, def:18, spd:22, exp:155, gold:85, color:0xd0a010, sz:36, acts:['claw','diveBomb','claw','aoe'],           drops:[{id:'redPotion',r:0.3},{id:'fullElixir',r:0.2}], weak:['thunder'] },
-  silverKing:  { name:'銀角大王', hp:380, atk:38, def:24, spd:9,  exp:0,   gold:0,  color:0xc0c8f0, sz:48, acts:['slam','soulDrain','aoe','slam','curse'],  drops:[], boss:true, weak:['fire'] },
+  silverKing:  { name:'銀角大王', hp:380, atk:38, def:24, spd:9,  exp:0,   gold:0,  color:0xc0c8f0, sz:48, acts:['slam','soulDrain','aoe','slam','curse'],  acts2:['enrageSlam','sacredBlast','soulScream','enrageSlam','soulDrain'], drops:[], boss:true, weak:['fire'] },
   fireSpirit:  { name:'火靈精',  hp:130, atk:28, def:8,  spd:20, exp:120, gold:60, color:0xff4010, sz:28, acts:['fireFlare','bite','fireFlare','howl'],           drops:[{id:'elixir',r:0.3}], weak:['ice'], resist:['fire'] },
   iceScorp:    { name:'冰蠍',    hp:145, atk:22, def:16, spd:12, exp:105, gold:55, color:0x40b0e0, sz:28, acts:['frostClaw','frostClaw','iceBlast','bite'],        drops:[{id:'herb',r:0.2},{id:'elixir',r:0.2}], weak:['fire'], resist:['ice'] },
   dragonGuard: { name:'龍族守衛',hp:200, atk:30, def:22, spd:10, exp:160, gold:80, color:0x2090c0, sz:32, acts:['slash','waterBlast','slam','scaleDash'],          drops:[{id:'redPotion',r:0.25}], weak:['thunder'] },
-  dragonKing:  { name:'東海龍王',hp:600, atk:48, def:30, spd:7,  exp:0,   gold:0,  color:0x0090ff, sz:52, acts:['waterBlast','scaleDash','tideCall','scaleDash','waterBlast'], drops:[], boss:true, weak:['thunder'], resist:['ice','wind'] },
+  dragonKing:  { name:'東海龍王',hp:600, atk:48, def:30, spd:7,  exp:0,   gold:0,  color:0x0090ff, sz:52, acts:['waterBlast','scaleDash','tideCall','scaleDash','waterBlast'], acts2:['dragonErupt','tideSurge','scaleDash','tideSurge','dragonErupt'], drops:[], boss:true, weak:['thunder'], resist:['ice','wind'] },
+  celestial:   { name:'天兵衛',  hp:260, atk:46, def:26, spd:24, exp:200, gold:100,color:0xd0a030, sz:30, acts:['divineStrike','slash','celestialEdict','slash'], drops:[{id:'goldenPill',r:0.18},{id:'elixir',r:0.4}], weak:['wind'] },
+  phoenix:     { name:'鳳凰精',  hp:210, atk:52, def:18, spd:32, exp:220, gold:110,color:0xff6020, sz:30, acts:['fireBreath','bite','fireFlare','fireBreath'],     drops:[{id:'redPotion',r:0.35},{id:'fullElixir',r:0.15}], weak:['ice'], resist:['fire'] },
+  jadeKing:    { name:'玉皇大帝',hp:2400,atk:68, def:50, spd:30, exp:0,   gold:0,  color:0xffd040, sz:56, acts:['divineStrike','celestialEdict','heavenlyPunish','divineStrike','celestialEdict'], acts2:['divineWrath','celestialEdict','heavenlyPunish','divineWrath','divineStrike'], drops:[{id:'jadeToken',r:1.0}], boss:true, weak:['wind','ice'], resist:['thunder','fire'] },
 };
 
 const ENEMY_ACTS = {
@@ -127,6 +137,15 @@ const ENEMY_ACTS = {
   vortex:     { name:'混沌漩渦', pow:0.8, type:'atk',   tgt:'all', debuff:{stun:1} },
   frostClaw:  { name:'冰霜爪',   pow:1.2, type:'atk',   tgt:'single', debuff:{slow:2} },
   iceBlast:   { name:'冰霜爆',   pow:0.9, type:'atk',   tgt:'all',    debuff:{slow:1} },
+  enrageSlam: { name:'狂怒猛擊', pow:2.2, type:'atk',   tgt:'single' },
+  sacredBlast:{ name:'禪杖聖爆', pow:1.5, type:'atk',   tgt:'all', debuff:{burn:2} },
+  soulScream: { name:'魂力爆嘯', pow:1.4, type:'atk',   tgt:'all', debuff:{stun:1} },
+  tideSurge:  { name:'龍王怒濤', pow:1.6, type:'atk',   tgt:'all', debuff:{slow:3} },
+  dragonErupt:{ name:'龍氣爆發', pow:2.5, type:'atk',   tgt:'single', elem:'thunder' },
+  divineStrike:  { name:'天雷降擊', pow:2.2, type:'atk', tgt:'single', elem:'thunder' },
+  celestialEdict:{ name:'天威敕令', pow:1.1, type:'atk', tgt:'all',    elem:'thunder', debuff:{stun:1} },
+  heavenlyPunish:{ name:'天罰神火', pow:1.4, type:'atk', tgt:'all',    elem:'fire',    debuff:{burn:2} },
+  divineWrath:   { name:'萬道天威', pow:3.2, type:'atk', tgt:'single', elem:'thunder' },
 };
 
 // ── Maps ───────────────────────────────────────────────────
@@ -286,7 +305,8 @@ const MAPS = {
   shrine: {
     name:'小西天', music:'shrine',
     exits:[
-      { x:9, y:0, to:'dragonPalace', toX:18, toY:7, msg:'返回東海龍宮' },
+      { x:9, y:0,  to:'dragonPalace', toX:18, toY:7, msg:'返回東海龍宮' },
+      { x:9, y:14, to:'lingxiao',     toX:9,  toY:1,  msg:'進入靈霄殿' },
     ],
     chests:[
       { x:2, y:12,id:'sh1', item:'revive' },
@@ -310,12 +330,13 @@ const MAPS = {
       [3,5,1,5,5,5,5,1,5,5,5,5,1,5,5,5,5,1,5,3],
       [3,5,1,1,5,5,1,1,5,5,5,5,1,1,5,5,1,1,5,3],
       [3,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,3],
-      [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+      [3,3,3,3,3,3,3,3,3,0,0,3,3,3,3,3,3,3,3,3],
     ],
     npcs:[
       { x:9, y:7,  name:'金身羅漢', dlg:['此乃彌勒佛道場小西天。', '黃眉大王反出師門，竊取佛寶，', '天命之人，你歷盡磨難，天命所歸！', '佛法庇佑，必能斬妖除魔！'] },
       { x:5, y:7,  name:'阿羅漢',   dlg:['黃眉大王法力高強，', '其禪杖能震碎山嶽，禪定珠能困縛萬物。', '以風系技能攻擊乃其弱點！', '做好萬全準備再去決戰！'] },
       { x:14,y:7,  name:'掌寶人',   dlg:['你已有足夠的力量！', '此乃小西天最後珍藏。', '拿去吧，助你斬妖除魔！'], shop:'shrine' },
+      { x:9, y:13, name:'靈霄天門', dlg:['〔天門刻字〕', '此門通往靈霄殿，玉皇大帝居所。', '非二周目天命人不得入內。', '歷盡三界磨難者，方能問鼎天庭。'] },
     ],
     startX:9, startY:1,
   },
@@ -354,6 +375,42 @@ const MAPS = {
       { x:5, y:7,  name:'海靈使者', dlg:['此乃東海龍宮，', '龍王以水法攻擊，雷系技能乃其剋星！', '龍王憤怒時還能召喚潮水衝擊全隊，', '備好回復道具，速戰速決！'] },
       { x:14,y:7,  name:'龍宮行商', dlg:['龍宮秘寶盡在此！', '這可是最後的補給機會了！', '決戰龍王前，務必補滿所有藥品！'], shop:'dragonPalace' },
       { x:5, y:3,  name:'龍柱石刻', dlg:['〔古龍文〕', '東海龍王鎮守海疆，水法通天。', '雷霆乃水之剋，以雷攻水，事半功倍。', '龍王之怒可引潮汐淹沒眾生，需速戰速決！'] },
+    ],
+    startX:9, startY:1,
+  },
+  lingxiao: {
+    name:'靈霄殿', music:'shrine',
+    exits:[
+      { x:9, y:14, to:'shrine', toX:9, toY:13, msg:'返回小西天' },
+    ],
+    chests:[
+      { x:4,  y:2,  id:'lx1', item:'divineRobe' },
+      { x:15, y:2,  id:'lx2', item:'celestialJade' },
+      { x:10, y:12, id:'lx3', gold:2000 },
+    ],
+    enc:{ rate:0.25, enemies:['celestial','phoenix','demon','yasha'] },
+    w:20, h:15,
+    tiles:[
+      [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1],
+      [1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1],
+      [1,5,1,1,5,5,5,5,5,5,5,5,5,5,5,5,1,1,5,1],
+      [1,5,1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1,5,1],
+      [1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1],
+      [1,5,5,5,5,5,5,5,4,4,4,4,5,5,5,5,5,5,5,1],
+      [1,5,1,5,5,5,5,5,4,4,4,4,5,5,5,5,5,1,5,1],
+      [1,5,5,5,5,5,5,5,4,4,4,4,5,5,5,5,5,5,5,1],
+      [1,5,5,5,5,5,5,5,4,4,4,4,5,5,5,5,5,5,5,1],
+      [1,5,1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1,5,1],
+      [1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1],
+      [1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1],
+      [1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1],
+      [1,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,1],
+      [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1],
+    ],
+    npcs:[
+      { x:10,y:3,  name:'玉皇大帝', dlg:['哈哈哈！凡人竟敢闖入靈霄殿！', '朕乃天帝，掌管三界萬靈！', '你歷盡苦難抵達此處，確有幾分本事。', '但天命也有極限——今日便讓你見識真正的天威！'], dlgNG:['你又來了！', '朕的天威你已領教過一次！', '今日朕動用萬道天威，毫不手軟！', '準備好迎接天庭最終試煉！'], boss:'jadeKing' },
+      { x:5, y:11, name:'天庭使者', dlg:['此乃靈霄殿，三界最高天庭。', '玉皇大帝法力通天，歷經萬古。', '冰系與風系技能是其剋星！', '其相位二形態更為兇猛，準備萬全方可應戰！'] },
+      { x:14,y:11, name:'天庭行商', dlg:['天宮最後一家舖子！', '玉皇大帝身邊的物資，可都是頂級貨。', '備足補給，全力迎戰天帝！'], shop:'lingxiao' },
     ],
     startX:9, startY:1,
   },
@@ -589,6 +646,11 @@ const ACHIEVEMENTS = {
   all_chests:   { name:'尋寶達人',   icon:'📦',  desc:'開啟 5 個隱藏寶箱。' },
   big_spender:  { name:'一擲千金',   icon:'💸',  desc:'累計消費 1000 靈石。' },
   pacifist:     { name:'慈悲為懷',   icon:'🕊️', desc:'累計逃跑 5 次。' },
+  chain_master: { name:'元素共鳴師', icon:'🔥',  desc:'觸發 3 次元素連鎖反應。' },
+  limit_breaker:{ name:'極限突破者', icon:'💥',  desc:'使用必殺技 3 次。' },
+  purifier:     { name:'神光淨化者', icon:'✨',  desc:'使用淨化靈光解除異常狀態。' },
+  jade_king:    { name:'破天之人',   icon:'⚡',  desc:'擊敗靈霄殿玉皇大帝，問鼎天庭。' },
+  all_realms:   { name:'三界無敵',   icon:'🌟',  desc:'擊敗所有Boss包括玉皇大帝。' },
 };
 
 const Achieve = {
@@ -732,4 +794,10 @@ const QUESTS = [
     done: () => GS.party.some(m=>(m.lv||1)>=8) },
   { id:'q11',name:'見識百妖',     desc:'遭遇六種以上的妖物。',
     done: () => Object.keys(GS.flags?._enemySeen||{}).length >= 6 },
+  { id:'q12',name:'元素相剋',     desc:'發現並觸發元素連鎖反應。',
+    done: () => (GS.flags?._chainCount||0) >= 1 },
+  { id:'q13',name:'必殺三連',     desc:'使用必殺技三次。',
+    done: () => (GS.flags?._limitCount||0) >= 3 },
+  { id:'q14',name:'淨化之道',     desc:'以淨化靈光解除隊友異常狀態。',
+    done: () => (GS.flags?._purifyCount||0) >= 1 },
 ];
