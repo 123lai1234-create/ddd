@@ -899,6 +899,283 @@ footer a {
   filter: brightness(1.15);
 }
 
+/* ── Valuation Calculator ──────────────────────────────────────────────── */
+.val-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+.val-inputs {
+  position: sticky;
+  top: calc(var(--nav-h) + 12px);
+}
+.val-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+.val-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.val-field label {
+  font-size: .75rem;
+  color: var(--muted);
+  letter-spacing: .04em;
+}
+.val-field-group {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.val-results {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.val-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .82rem;
+}
+.val-matrix-table th {
+  padding: 8px 10px;
+  text-align: center;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+}
+.val-matrix-table td {
+  padding: 9px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.val-matrix-table tr:last-child td { border-bottom: none; }
+.val-matrix-table .vm-row-hd {
+  text-align: left;
+  color: var(--muted);
+  font-size: .78rem;
+  font-family: var(--mono);
+}
+.val-matrix-table .vm-bear { color: var(--red); }
+.val-matrix-table .vm-base { color: var(--text); font-weight: 600; }
+.val-matrix-table .vm-bull { color: var(--green); }
+.val-matrix-table .vm-star {
+  background: rgba(123,240,190,.08);
+  border-radius: 8px;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.val-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  font-size: .84rem;
+}
+.val-summary-row:last-child { border-bottom: none; }
+.val-summary-label { color: var(--muted); }
+.val-summary-value { font-weight: 600; font-family: var(--mono); }
+.val-overlap-band {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(123,240,190,.06);
+  border: 1px solid rgba(123,240,190,.18);
+  text-align: center;
+}
+.val-overlap-band .band-label { font-size: .75rem; color: var(--muted); margin-bottom: 4px; }
+.val-overlap-band .band-range { font-size: 1.5rem; font-weight: 700; color: var(--green); font-family: var(--mono); }
+.val-price-vs {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.val-price-chip {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: .8rem;
+  font-family: var(--mono);
+}
+
+/* ── Technical Analysis ────────────────────────────────────────────────── */
+.ta-controls {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.ta-signal-strip {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.ta-signal {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+}
+.ta-signal-bull {
+  background: rgba(123,240,190,.12);
+  color: var(--green);
+  border: 1px solid rgba(123,240,190,.25);
+}
+.ta-signal-bear {
+  background: rgba(255,131,146,.1);
+  color: var(--red);
+  border: 1px solid rgba(255,131,146,.2);
+}
+.ta-signal-neutral {
+  background: rgba(255,255,255,.05);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+/* ── Quant Reference ───────────────────────────────────────────────────── */
+.ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .82rem;
+}
+.ref-table th {
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+  font-size: .75rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.ref-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.ref-table tr:last-child td { border-bottom: none; }
+.ref-val {
+  font-family: var(--mono);
+  font-size: .8rem;
+}
+.ref-tag {
+  font-size: .75rem;
+  font-weight: 600;
+}
+.quant-golden-box {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255,188,114,.06);
+  border: 1px solid rgba(255,188,114,.18);
+  font-size: .8rem;
+  color: var(--orange);
+  line-height: 1.6;
+}
+.strategy-recipe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.recipe-row {
+  display: flex;
+  gap: 12px;
+  font-size: .82rem;
+  align-items: baseline;
+}
+.recipe-key {
+  color: var(--teal);
+  font-weight: 600;
+  min-width: 40px;
+  font-size: .75rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+/* ── Prompt Library ────────────────────────────────────────────────────── */
+.prompt-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.prompt-tab {
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: .8rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .18s;
+}
+.prompt-tab:hover { border-color: rgba(88,215,255,.25); color: var(--text); }
+.prompt-tab.active {
+  background: rgba(88,215,255,.1);
+  border-color: rgba(88,215,255,.3);
+  color: var(--teal);
+}
+.prompt-body {
+  min-height: 260px;
+}
+.prompt-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.prompt-title { font-size: 1rem; font-weight: 600; }
+.prompt-desc { font-size: .82rem; color: var(--muted); margin-bottom: 14px; line-height: 1.6; }
+.prompt-code {
+  background: rgba(0,0,0,.35);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  font-family: var(--mono);
+  font-size: .78rem;
+  line-height: 1.75;
+  color: #d6eee6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.btn-copy {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(88,215,255,.25);
+  background: rgba(88,215,255,.08);
+  color: var(--teal);
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-copy:hover { background: rgba(88,215,255,.15); }
+.btn-copy.copied { color: var(--green); border-color: rgba(123,240,190,.3); }
+
+/* ── Responsive additions ──────────────────────────────────────────────── */
+@media (max-width: 840px) {
+  .val-layout { grid-template-columns: 1fr; }
+  .val-inputs { position: static; }
+  .val-field-group { grid-template-columns: 1fr 1fr; }
+  .ta-controls { flex-direction: column; align-items: stretch; }
+}
+
 .ops-summary-card {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }

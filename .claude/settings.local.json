@@ -83,7 +83,13 @@
       "Bash(python astro/tmp_reduce_spacing.py)",
       "Bash(git show *)",
       "WebFetch(domain:claude.ai)",
-      "Bash(node \"C:\\\\Users\\\\User\\\\.claude\\\\skills\\\\felo-web-fetch\\\\scripts\\\\run_web_fetch.mjs\" --url \"https://claude.ai/share/3f377555-2fcc-43cb-835f-54232eadd1db\" --output-format markdown --crawl-mode fine --with-readability true)"
+      "Bash(node \"C:\\\\Users\\\\User\\\\.claude\\\\skills\\\\felo-web-fetch\\\\scripts\\\\run_web_fetch.mjs\" --url \"https://claude.ai/share/3f377555-2fcc-43cb-835f-54232eadd1db\" --output-format markdown --crawl-mode fine --with-readability true)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__select_browser",
+      "mcp__Claude_in_Chrome__navigate",
+      "mcp__Claude_in_Chrome__get_page_text",
+      "mcp__Claude_in_Chrome__read_page",
+      "mcp__Claude_in_Chrome__javascript_tool"
     ]
   }
 }

@@ -2376,3 +2376,708 @@ if (document.readyState === 'loading') {
 } else {
     initialisePage();
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   AI 輔助估值計算器 — PE × PB 情境矩陣
+   ═══════════════════════════════════════════════════════════════════════ */
+
+let _valCurrentPrice = null;
+
+async function valFetchPrice() {
+    const code = (document.getElementById('valCode')?.value || '').trim().replace('.TW', '');
+    if (!code) return;
+    const hint = document.getElementById('valPriceHint');
+    const btn = document.getElementById('valFetchBtn');
+    if (hint) hint.textContent = '載入中…';
+    if (btn) btn.disabled = true;
+    try {
+        // Try existing real-price infrastructure first
+        let price = null;
+        const cached = REAL_PRICE_CACHE.get(code);
+        if (cached && cached.closes?.length) {
+            price = cached.closes[cached.closes.length - 1];
+        } else {
+            const apiBase = await resolveMarketApiBase();
+            if (apiBase) {
+                const res = await fetch(`${apiBase}/api/market/yahoo-prices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbols: [code + '.TW'], range: '5d' }),
+                    signal: AbortSignal.timeout(10000),
+                }).catch(() => null);
+                if (res?.ok) {
+                    const data = await res.json();
+                    const sym = data?.data?.[code + '.TW'] || data?.data?.[code];
+                    if (sym?.closes?.length) price = sym.closes[sym.closes.length - 1];
+                }
+            }
+            // Fallback: TWSE Open API (CORS-friendly)
+            if (!price) {
+                const today = new Date();
+                const yyyymm = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}01`;
+                const r = await fetch(
+                    `https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY?response=json&date=${yyyymm}&stockNo=${code}`,
+                    { signal: AbortSignal.timeout(8000) }
+                ).catch(() => null);
+                if (r?.ok) {
+                    const rows = await r.json().catch(() => []);
+                    if (Array.isArray(rows) && rows.length) {
+                        const last = rows[rows.length - 1];
+                        price = parseFloat((last.closingPrice || '').replace(/,/g, ''));
+                    }
+                }
+            }
+        }
+        _valCurrentPrice = Number.isFinite(price) ? price : null;
+        if (hint) hint.textContent = _valCurrentPrice ? `現價：$${_valCurrentPrice.toFixed(1)}` : '無法取得現價（可手動比對）';
+    } catch {
+        if (hint) hint.textContent = '無法取得現價';
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+function _buildMatrix(rowVals, colVals, rowLabel, colLabel) {
+    const rows = rowVals.map((rv, ri) =>
+        colVals.map((cv, ci) => ({ val: rv * cv, isBase: ri === 1 && ci === 1 }))
+    );
+    let html = `<table class="val-matrix-table"><thead><tr><th>${rowLabel} \\ ${colLabel}</th>`;
+    colVals.forEach((cv, ci) => {
+        const cls = ci === 0 ? 'vm-bear' : ci === 2 ? 'vm-bull' : 'vm-base';
+        html += `<th class="${cls}">${cv}×</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    rows.forEach((row, ri) => {
+        const rCls = ri === 0 ? 'vm-bear' : ri === 2 ? 'vm-bull' : 'vm-base';
+        html += `<tr><td class="vm-row-hd ${rCls}">$${rowVals[ri]}</td>`;
+        row.forEach(cell => {
+            html += `<td class="${cell.isBase ? 'vm-star' : ''}">$${cell.val.toFixed(0)}${cell.isBase ? ' ⭐' : ''}</td>`;
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table>';
+    return { html, baseVal: rows[1][1].val, allVals: rows.flat().map(c => c.val) };
+}
+
+function calcValuation() {
+    const n = id => parseFloat(document.getElementById(id)?.value) || 0;
+    const epsBear = n('valEpsBear'), epsBase = n('valEpsBase'), epsBull = n('valEpsBull');
+    const peBear = n('valPeBear'), peBase = n('valPeBase'), peBull = n('valPeBull');
+    const bps = n('valBps');
+    const pbBear = n('valPbBear'), pbBase = n('valPbBase'), pbBull = n('valPbBull');
+
+    if (!epsBase || !peBase || !bps || !pbBase) return;
+
+    const peResult = _buildMatrix([epsBear, epsBase, epsBull], [peBear, peBase, peBull], 'EPS', 'PE');
+    const pbResult = _buildMatrix([bps], [pbBear, pbBase, pbBull], 'BPS', 'PB');
+
+    const peCard = document.getElementById('valPeCard');
+    const pbCard = document.getElementById('valPbCard');
+    const sumCard = document.getElementById('valSummaryCard');
+    if (peCard) { peCard.style.display = ''; document.getElementById('valPeTable').innerHTML = peResult.html; }
+
+    // PB table — single BPS row
+    const pbHtml = `<table class="val-matrix-table"><thead><tr>
+        <th>BPS \\ PB</th>
+        <th class="vm-bear">${pbBear}×</th><th class="vm-base">${pbBase}×</th><th class="vm-bull">${pbBull}×</th>
+    </tr></thead><tbody><tr>
+        <td class="vm-row-hd">$${bps}</td>
+        <td class="vm-bear">$${(bps * pbBear).toFixed(0)}</td>
+        <td class="vm-star">$${(bps * pbBase).toFixed(0)} ⭐</td>
+        <td class="vm-bull">$${(bps * pbBull).toFixed(0)}</td>
+    </tr></tbody></table>`;
+    if (pbCard) { pbCard.style.display = ''; document.getElementById('valPbTable').innerHTML = pbHtml; }
+
+    // Overlap analysis
+    const peBase_ = epsBase * peBase;
+    const pbBase_ = bps * pbBase;
+    const lo = Math.min(peBase_, pbBase_) * 0.97;
+    const hi = Math.max(peBase_, pbBase_) * 1.03;
+    const midpoint = (peBase_ + pbBase_) / 2;
+    let priceComment = '';
+    if (_valCurrentPrice) {
+        const pct = ((_valCurrentPrice - midpoint) / midpoint * 100).toFixed(1);
+        const dir = _valCurrentPrice > midpoint ? '高估' : '低估';
+        priceComment = `<div class="val-price-vs">
+            <div class="val-price-chip" style="background:rgba(255,255,255,.05);border:1px solid var(--border)">現價 $${_valCurrentPrice.toFixed(1)}</div>
+            <div class="val-price-chip" style="background:rgba(123,240,190,.07);border:1px solid rgba(123,240,190,.2);color:var(--green)">重疊中點 $${midpoint.toFixed(0)}</div>
+            <div class="val-price-chip" style="background:rgba(255,188,114,.07);border:1px solid rgba(255,188,114,.2);color:var(--orange)">${dir} ${Math.abs(pct)}%</div>
+        </div>`;
+    }
+    const sumHtml = `
+        <div class="val-summary-row"><span class="val-summary-label">PE 基本情境</span><span class="val-summary-value">$${peBase_.toFixed(0)}</span></div>
+        <div class="val-summary-row"><span class="val-summary-label">PB 基本情境</span><span class="val-summary-value">$${pbBase_.toFixed(0)}</span></div>
+        <div class="val-overlap-band">
+            <div class="band-label">兩法重疊合理估值區間</div>
+            <div class="band-range">$${lo.toFixed(0)} – $${hi.toFixed(0)}</div>
+        </div>
+        ${priceComment}
+        <div style="margin-top:12px;font-size:.76rem;color:var(--dim);line-height:1.6">
+            ⚠ 本計算器僅供學術研究參考，不構成任何買賣建議。所有假設由使用者自行負責，數字須回原始財報驗證。
+        </div>`;
+    if (sumCard) { sumCard.style.display = ''; document.getElementById('valSummary').innerHTML = sumHtml; }
+}
+
+window.valFetchPrice = valFetchPrice;
+window.calcValuation = calcValuation;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   技術分析看板 — MA / RSI / 支撐壓力
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const TA_CHARTS = {};
+
+function _calcMA(closes, n) {
+    return closes.map((_, i) =>
+        i < n - 1 ? null : closes.slice(i - n + 1, i + 1).reduce((a, b) => a + b, 0) / n
+    );
+}
+
+function _calcRSI(closes, n = 14) {
+    const rsi = Array(closes.length).fill(null);
+    if (closes.length <= n) return rsi;
+    let gains = 0, losses = 0;
+    for (let i = 1; i <= n; i++) {
+        const d = closes[i] - closes[i - 1];
+        if (d > 0) gains += d; else losses -= d;
+    }
+    let avgG = gains / n, avgL = losses / n;
+    rsi[n] = avgL === 0 ? 100 : 100 - 100 / (1 + avgG / avgL);
+    for (let i = n + 1; i < closes.length; i++) {
+        const d = closes[i] - closes[i - 1];
+        avgG = (avgG * (n - 1) + Math.max(d, 0)) / n;
+        avgL = (avgL * (n - 1) + Math.max(-d, 0)) / n;
+        rsi[i] = avgL === 0 ? 100 : 100 - 100 / (1 + avgG / avgL);
+    }
+    return rsi;
+}
+
+function _supportResistance(closes, highLow) {
+    const window = 10;
+    const levels = [];
+    for (let i = window; i < closes.length - window; i++) {
+        const slice = closes.slice(i - window, i + window + 1);
+        const isHigh = closes[i] === Math.max(...slice);
+        const isLow = closes[i] === Math.min(...slice);
+        if (isHigh || isLow) levels.push({ price: closes[i], type: isHigh ? 'resistance' : 'support' });
+    }
+    // deduplicate within 2% band
+    const deduped = [];
+    levels.forEach(l => {
+        const dup = deduped.find(d => Math.abs(d.price - l.price) / l.price < 0.02 && d.type === l.type);
+        if (!dup) deduped.push(l);
+    });
+    return deduped.slice(-6);
+}
+
+async function loadTechAnalysis() {
+    const sel = document.getElementById('taStockSelect');
+    const custom = (document.getElementById('taCustomCode')?.value || '').trim();
+    const code = custom || sel?.value || '2330';
+    const statusEl = document.getElementById('taStatus');
+    const resultArea = document.getElementById('taResultArea');
+
+    if (statusEl) statusEl.textContent = '載入中…';
+    if (resultArea) resultArea.style.display = 'none';
+
+    let closes = [], dates = [];
+
+    // Try real data from cache or API
+    const cached = REAL_PRICE_CACHE.get(code);
+    if (cached && cached.closes?.length >= 30) {
+        closes = cached.closes;
+        dates = cached.dates || [];
+    } else {
+        try {
+            const apiBase = await resolveMarketApiBase();
+            if (apiBase) {
+                const res = await fetch(`${apiBase}/api/market/yahoo-prices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symbols: [code + '.TW'], range: '1y' }),
+                    signal: AbortSignal.timeout(12000),
+                }).catch(() => null);
+                if (res?.ok) {
+                    const data = await res.json();
+                    const sym = data?.data?.[code + '.TW'] || data?.data?.[code];
+                    if (sym?.closes?.length >= 30) {
+                        closes = sym.closes;
+                        dates = sym.dates || [];
+                        REAL_PRICE_CACHE.set(code, { closes, dates });
+                    }
+                }
+            }
+        } catch { /* fall through to synthetic */ }
+
+        // Fallback: TWSE Open API (last 2 months)
+        if (closes.length < 30) {
+            try {
+                const months = [new Date(), new Date(Date.now() - 32 * 86400000)];
+                for (const m of months) {
+                    const yyyymm = `${m.getFullYear()}${String(m.getMonth() + 1).padStart(2, '0')}01`;
+                    const r = await fetch(
+                        `https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY?response=json&date=${yyyymm}&stockNo=${code}`,
+                        { signal: AbortSignal.timeout(8000) }
+                    ).catch(() => null);
+                    if (r?.ok) {
+                        const rows = await r.json().catch(() => []);
+                        rows.forEach(row => {
+                            const p = parseFloat((row.closingPrice || '').replace(/,/g, ''));
+                            if (Number.isFinite(p)) { closes.push(p); dates.push(row.Date || ''); }
+                        });
+                    }
+                }
+            } catch { /* ignore */ }
+        }
+
+        // Fallback: synthetic from SERIES_CACHE
+        if (closes.length < 30) {
+            const stock = getStockByCode(code);
+            if (stock) {
+                const synth = getStockSeries(stock);
+                closes = [...(synth.train || []), ...(synth.test || [])];
+                dates = closes.map((_, i) => `D${i + 1}`);
+                if (statusEl) statusEl.textContent = '⚠ 使用模擬數據（無法取得真實股價）';
+            } else {
+                if (statusEl) statusEl.textContent = '❌ 找不到此代號，請確認後重試';
+                return;
+            }
+        }
+    }
+
+    // Use last 120 data points
+    const N = Math.min(closes.length, 120);
+    const c = closes.slice(-N);
+    const d = dates.slice(-N);
+
+    const ma5 = _calcMA(c, 5);
+    const ma20 = _calcMA(c, 20);
+    const ma60 = _calcMA(c, 60);
+    const rsi = _calcRSI(c, 14);
+    const srLevels = _supportResistance(c, c);
+
+    const lastClose = c[c.length - 1];
+    const lastMa5 = ma5[ma5.length - 1];
+    const lastMa20 = ma20[ma20.length - 1];
+    const lastMa60 = ma60[ma60.length - 1];
+    const lastRsi = rsi[rsi.length - 1];
+
+    // Generate signals
+    const signals = [];
+    if (lastMa5 && lastMa20 && lastMa60 && lastMa5 > lastMa20 && lastMa20 > lastMa60) {
+        signals.push({ text: '多頭排列 5>20>60', cls: 'ta-signal-bull' });
+    } else if (lastMa5 && lastMa20 && lastMa5 < lastMa20) {
+        signals.push({ text: '空頭排列', cls: 'ta-signal-bear' });
+    }
+    if (lastMa5 && lastMa20) {
+        const prev5 = ma5[ma5.length - 2], prev20 = ma20[ma20.length - 2];
+        if (prev5 && prev20 && prev5 < prev20 && lastMa5 >= lastMa20) {
+            signals.push({ text: '黃金交叉 ✓', cls: 'ta-signal-bull' });
+        } else if (prev5 && prev20 && prev5 > prev20 && lastMa5 <= lastMa20) {
+            signals.push({ text: '死亡交叉 ✗', cls: 'ta-signal-bear' });
+        }
+    }
+    if (lastMa20 && Math.abs((lastClose - lastMa20) / lastMa20) > 0.05) {
+        const dir = lastClose > lastMa20 ? '偏離 20MA 過熱' : '偏離 20MA 過冷';
+        signals.push({ text: dir, cls: 'ta-signal-neutral' });
+    }
+    if (lastRsi) {
+        if (lastRsi > 70) signals.push({ text: `RSI ${lastRsi.toFixed(0)} 超買`, cls: 'ta-signal-bear' });
+        else if (lastRsi < 30) signals.push({ text: `RSI ${lastRsi.toFixed(0)} 超賣`, cls: 'ta-signal-bull' });
+        else signals.push({ text: `RSI ${lastRsi.toFixed(0)} 中性`, cls: 'ta-signal-neutral' });
+    }
+
+    if (resultArea) resultArea.style.display = '';
+    if (statusEl) statusEl.textContent = `✓ 已載入 ${c.length} 筆數據`;
+
+    // Signal strip
+    document.getElementById('taSignals').innerHTML = signals
+        .map(s => `<span class="ta-signal ${s.cls}">${s.text}</span>`).join('');
+
+    document.getElementById('taPriceLabel').textContent =
+        `${code} · 最新 $${lastClose?.toFixed(1) || '—'} · ${N} 日`;
+
+    // Price + MA chart
+    const priceCtx = document.getElementById('taChart')?.getContext('2d');
+    if (priceCtx) {
+        if (TA_CHARTS.price) TA_CHARTS.price.destroy();
+        TA_CHARTS.price = new Chart(priceCtx, {
+            type: 'line',
+            data: {
+                labels: d,
+                datasets: [
+                    { label: '收盤價', data: c, borderColor: C.text, borderWidth: 1.5, pointRadius: 0, tension: 0.2, fill: false },
+                    { label: 'MA5', data: ma5, borderColor: C.yellow, borderWidth: 1.5, pointRadius: 0, tension: 0.2, fill: false, borderDash: [] },
+                    { label: 'MA20', data: ma20, borderColor: C.teal, borderWidth: 1.5, pointRadius: 0, tension: 0.2, fill: false },
+                    { label: 'MA60', data: ma60, borderColor: C.purple, borderWidth: 1.5, pointRadius: 0, tension: 0.2, fill: false },
+                ],
+            },
+            options: {
+                ...BASE_OPTS,
+                scales: {
+                    x: { ...BASE_OPTS.scales.x, ticks: { ...BASE_OPTS.scales.x.ticks, maxTicksLimit: 8 } },
+                    y: { ...BASE_OPTS.scales.y, ticks: { ...BASE_OPTS.scales.y.ticks, callback: v => `$${v.toFixed(0)}` } },
+                },
+            },
+        });
+    }
+
+    // RSI chart
+    const rsiCtx = document.getElementById('taRsiChart')?.getContext('2d');
+    if (rsiCtx) {
+        if (TA_CHARTS.rsi) TA_CHARTS.rsi.destroy();
+        TA_CHARTS.rsi = new Chart(rsiCtx, {
+            type: 'line',
+            data: {
+                labels: d,
+                datasets: [
+                    { label: 'RSI(14)', data: rsi, borderColor: C.orange, borderWidth: 1.5, pointRadius: 0, tension: 0.2, fill: false },
+                ],
+            },
+            options: {
+                ...BASE_OPTS,
+                scales: {
+                    x: { ...BASE_OPTS.scales.x, ticks: { ...BASE_OPTS.scales.x.ticks, maxTicksLimit: 8 } },
+                    y: { ...BASE_OPTS.scales.y, min: 0, max: 100,
+                        ticks: { ...BASE_OPTS.scales.y.ticks, stepSize: 20 } },
+                },
+                plugins: {
+                    ...BASE_OPTS.plugins,
+                    annotation: undefined,
+                },
+            },
+        });
+    }
+
+    // MA table
+    const maRows = [
+        { label: 'MA5', val: lastMa5, color: C.yellow },
+        { label: 'MA20', val: lastMa20, color: C.teal },
+        { label: 'MA60', val: lastMa60, color: C.purple },
+    ];
+    document.getElementById('taMaTable').innerHTML = maRows.map(r => {
+        const diff = r.val ? ((lastClose - r.val) / r.val * 100) : null;
+        const sign = diff > 0 ? '+' : '';
+        const col = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red)' : 'var(--muted)';
+        return `<div class="kv-row"><span class="kv-key" style="color:${r.color}">${r.label}</span>
+            <span class="kv-val">$${r.val?.toFixed(1) || '—'} <small style="color:${col}">${diff != null ? sign + diff.toFixed(1) + '%' : ''}</small></span></div>`;
+    }).join('');
+
+    // Support/Resistance table
+    const highPt = Math.max(...c);
+    const lowPt = Math.min(...c);
+    const supports = srLevels.filter(s => s.type === 'support').sort((a, b) => b.price - a.price).slice(0, 2);
+    const resistances = srLevels.filter(s => s.type === 'resistance').sort((a, b) => a.price - b.price).slice(0, 2);
+    const srHtml = [
+        { label: '強壓力（近期高點）', price: highPt, color: 'var(--red)', icon: '🔴' },
+        ...resistances.map(r => ({ label: '次壓力', price: r.price, color: 'var(--orange)', icon: '🟠' })),
+        { label: '現價', price: lastClose, color: 'var(--text)', icon: '⚪' },
+        ...supports.map(s => ({ label: '強支撐', price: s.price, color: 'var(--green)', icon: '🟢' })),
+        { label: '關鍵支撐（近期低點）', price: lowPt, color: 'var(--blue)', icon: '🔵' },
+    ].sort((a, b) => b.price - a.price).map(l =>
+        `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.8rem">
+            <span>${l.icon} <span style="color:var(--muted)">${l.label}</span></span>
+            <span style="color:${l.color};font-family:var(--mono);font-weight:600">$${l.price.toFixed(1)}</span>
+        </div>`
+    ).join('');
+    document.getElementById('taSRTable').innerHTML = srHtml;
+
+    // Signal detail
+    const isGolden = signals.some(s => s.text.includes('黃金交叉'));
+    const isDeath = signals.some(s => s.text.includes('死亡交叉'));
+    const isBull = signals.some(s => s.text.includes('多頭排列'));
+    const signalDetail = `
+        ${isBull ? '<span style="color:var(--green)">✅ 多頭排列</span>：5>20>60均線，趨勢強健<br>' : ''}
+        ${isGolden ? '<span style="color:var(--green)">📈 黃金交叉</span>：MA5 上穿 MA20，短線買進訊號<br>' : ''}
+        ${isDeath ? '<span style="color:var(--red)">📉 死亡交叉</span>：MA5 下穿 MA20，短線賣出訊號<br>' : ''}
+        ${lastRsi > 70 ? `<span style="color:var(--red)">⚠ RSI ${lastRsi.toFixed(0)}</span>：超買區，動能可能減弱<br>` : ''}
+        ${lastRsi < 30 ? `<span style="color:var(--green)">💡 RSI ${lastRsi.toFixed(0)}</span>：超賣區，可能出現反彈<br>` : ''}
+        <br><span style="color:var(--dim);font-size:.75rem">⚠ 技術分析僅供學術參考，不構成投資建議。若…則可能…，最終判斷須由投資人自行負責。</span>
+    `;
+    document.getElementById('taSignalDetail').innerHTML = signalDetail;
+}
+
+function initTaStockSelect() {
+    const sel = document.getElementById('taStockSelect');
+    if (!sel) return;
+    const defaultStocks = [
+        ['2330', '台積電'], ['2317', '鴻海'], ['2454', '聯發科'],
+        ['2303', '聯電'], ['2382', '廣達'], ['2412', '中華電'],
+        ['0050', '元大台50'],
+    ];
+    sel.innerHTML = defaultStocks.map(([c, n]) => `<option value="${c}">${c} ${n}</option>`).join('');
+}
+
+window.loadTechAnalysis = loadTechAnalysis;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   AI Prompt 模板庫
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const PROMPT_TEMPLATES = [
+    {
+        id: 'etf',
+        label: 'ETF 持股分析',
+        desc: '分析 ETF 持股結構：產業分布、AI 概念股佔比、集中度、風格判斷。',
+        body: `角色：你是專業的台股 ETF 分析師
+任務：分析以下 ETF 的持股結構
+
+資料：
+[基金名稱]：
+[資料日期]：
+[持股清單]：（貼上持股明細）
+
+請產出：
+1. 產業分布（各產業佔比，表格呈現）
+2. AI 概念股佔比
+3. 集中度（前 5、前 10 持股佔比）
+4. 風格判斷（成長 / 價值 / 股息）
+5. 一句話總結
+
+格式：表格 + 條列
+限制：只用提供的數據，不給買賣建議，標明資料日期`,
+    },
+    {
+        id: 'report',
+        label: '財報快速摘要',
+        desc: '快速萃取財報核心數字：營收、毛利率、EPS、管理層展望、超出/低於預期項目。',
+        body: `角色：你是賣方分析師
+任務：摘要本季財報
+
+資料：[貼入財報文字或 PDF 擷取內容]
+
+【Section 1：本季表現】
+- 營收 (YoY / QoQ)：
+- 毛利率：
+- 營業利益率：
+- EPS：
+
+【Section 2：管理層展望】
+- 下季營收區間（公司原話）：
+- 全年資本支出：
+- 毛利率指引：
+
+【Section 3：法說問答重點】
+- 被追問最多的議題：
+- 經理人語氣：
+- 沒有正面回答的問題：
+
+【Section 4：超出 / 低於預期的點】
+
+限制：guidance 用公司原文、不做股價預測、不給投資建議、標明數據來源與時效`,
+    },
+    {
+        id: 'valuation',
+        label: '估值情境矩陣',
+        desc: 'PE × PB 雙重驗證，產出 3×3 情境矩陣與重疊區間分析。',
+        body: `角色：你是賣方股票分析師
+任務：產出目標價情境分析
+
+資料：
+- 公司名稱 / 代號：
+- 預估 EPS：悲觀 $__ / 基本 $__ / 樂觀 $__
+- 同業 / 歷史 PE 區間：__x / __x / __x
+- 預估 BPS：$__
+- 同業 / 歷史 PB 區間：__x / __x / __x
+
+請產出：
+【表 1】PE 法 3×3 矩陣（EPS × PE 情境）
+【表 2】PB 法 3×3 矩陣（BPS × PB 情境）
+【表 3】兩法重疊分析（說明重疊區間及可信度）
+【現價對比】現價相對重疊中點的溢折價
+【敏感度分析】哪個假設對估值影響最大
+
+合規限制：
+- 不寫「建議買進 / 賣出」
+- 用「合理估值區間」而非「目標價」
+- 標明所有假設依據及資料時效`,
+    },
+    {
+        id: 'technical',
+        label: '技術分析',
+        desc: '根據 OHLC 數據判斷 K 線型態、支撐壓力位、均線多空訊號。',
+        body: `角色：你是技術分析師
+任務：判斷型態與支撐壓力
+
+資料：
+- 近期高點 / 低點：$__ / $__
+- 當前股價：$__
+- 5 日均線：$__
+- 20 日均線：$__
+- 60 日均線：$__
+- RSI(14)：__
+- 近期整理區間：$__~$__
+- [可附上 OHLC 日 K 數據]
+
+請產出：
+【型態判斷】（W底 / M頭 / 三角收斂 / 旗形 等，若無明顯型態請說明）
+【關鍵價位】
+- 主要壓力：$__ （依據：）
+- 強支撐：$__ （依據：）
+【均線狀態】多頭 / 空頭排列，最近交叉訊號
+【RSI 解讀】
+【風險警示】
+
+限制：只描述型態，用「若...則可能...」條件句，不下買賣結論`,
+    },
+    {
+        id: 'theme',
+        label: '議題受惠族群',
+        desc: '從新聞事件快速找出受惠 / 受害的台股產業鏈與個股。',
+        body: `角色：你是產業研究員
+任務：從議題找受惠 / 受害族群
+
+資料：
+議題：[例：美國對中晶片禁令升級]
+背景：[貼入相關新聞 1~3 則]
+
+請產出：
+【議題本質】（一句話說明供需影響邏輯）
+
+【受惠族群】（按程度由高到低排列）
+| 類型 | 代表公司 | 受益邏輯 |
+|------|---------|---------|
+| 直接受益 | | |
+| 間接受益 | | |
+
+【受害族群】
+| 類型 | 代表公司 | 受損邏輯 |
+
+【時序分析】
+- 短期（1~3 個月）：
+- 中期（3~12 個月）：
+- 長期（>1 年）：
+
+格式：表格化
+限制：個股只列代表性案例，標明對中營收曝險需個別驗證`,
+    },
+    {
+        id: 'earnings',
+        label: '法說會 Takeaway',
+        desc: '從法說會逐字稿萃取 5 大 Takeaway、關鍵字頻率、避而不談議題。',
+        body: `角色：你是法人圈買方分析師
+任務：找出 5 個最關鍵 Takeaway
+
+資料：[貼入法說會逐字稿或摘要]
+
+【Top 5 Takeaway】（按重要性排序）
+1.
+2.
+3.
+4.
+5.
+
+【經理人關鍵字頻率】
+- 出現最多次的正面詞彙：
+- 出現最多次的不確定詞彙：
+
+【避而不談的議題】（被問但未正面回答的問題）
+
+【相比上次法說的差異】
+- 升溫（語氣更積極）：
+- 降溫（語氣保守化）：
+- 新增說法：
+
+限制：直接引述必須一字不差，推斷部分須標明「推斷」`,
+    },
+    {
+        id: 'compliance',
+        label: '合規檢查',
+        desc: '逐條核查報告是否符合金管會規範，產出紅旗清單與修改建議。',
+        body: `角色：你是金融合規法遵主管
+任務：檢查報告是否違反金管會規範
+
+待檢查文本：[貼入報告 / 分析文字]
+
+請逐條檢查以下紅線：
+1. 明確薦股（「建議買進」「目標價 XX 元」「強力推薦」）
+2. 保證報酬（「保證」「穩賺」「絕對」「一定」）
+3. 誇大渲染（「飆漲」「噴出」「主力鎖籌」「必漲」）
+4. 缺乏風險揭露
+5. 資料來源不明確
+6. 未標示 AI 輔助（若有使用 AI）
+7. 資料時效性未標明
+8. 利益衝突未揭露
+
+請產出：
+【紅旗清單】（條列違規段落 + 違規類型）
+【修改建議】（逐條對應）
+【修改後版本】（完整修改稿）
+【合規評分】（滿分 100，僅供參考）`,
+    },
+];
+
+let _activePromptId = PROMPT_TEMPLATES[0].id;
+
+function renderPromptLib() {
+    const tabsEl = document.getElementById('promptTabs');
+    const bodyEl = document.getElementById('promptBody');
+    if (!tabsEl || !bodyEl) return;
+
+    tabsEl.innerHTML = PROMPT_TEMPLATES.map(t =>
+        `<button class="prompt-tab ${t.id === _activePromptId ? 'active' : ''}"
+            onclick="switchPrompt('${t.id}')">${t.label}</button>`
+    ).join('');
+
+    const tmpl = PROMPT_TEMPLATES.find(t => t.id === _activePromptId) || PROMPT_TEMPLATES[0];
+    bodyEl.innerHTML = `
+        <div class="prompt-meta">
+            <div class="prompt-title">${tmpl.label}</div>
+            <button class="btn-copy" id="promptCopyBtn" onclick="copyPrompt()">
+                <span>複製</span>
+            </button>
+        </div>
+        <div class="prompt-desc">${tmpl.desc}</div>
+        <div class="prompt-code" id="promptCode">${escHtml(tmpl.body)}</div>
+    `;
+}
+
+function switchPrompt(id) {
+    _activePromptId = id;
+    renderPromptLib();
+}
+
+async function copyPrompt() {
+    const tmpl = PROMPT_TEMPLATES.find(t => t.id === _activePromptId);
+    if (!tmpl) return;
+    const btn = document.getElementById('promptCopyBtn');
+    try {
+        await navigator.clipboard.writeText(tmpl.body);
+        if (btn) { btn.innerHTML = '<span>✓ 已複製</span>'; btn.classList.add('copied'); }
+        setTimeout(() => {
+            if (btn) { btn.innerHTML = '<span>複製</span>'; btn.classList.remove('copied'); }
+        }, 2000);
+    } catch {
+        if (btn) btn.innerHTML = '<span>複製失敗</span>';
+    }
+}
+
+function escHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+window.switchPrompt = switchPrompt;
+window.copyPrompt = copyPrompt;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   初始化新增模組
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function initNewModules() {
+    initTaStockSelect();
+    renderPromptLib();
+    // Wire up valuation inputs for live recalc on Enter
+    ['valEpsBear','valEpsBase','valEpsBull','valPeBear','valPeBase','valPeBull',
+     'valBps','valPbBear','valPbBase','valPbBull'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') calcValuation(); });
+    });
+}
+
+// Hook into DOMContentLoaded after existing initialisePage
+const _origInitialisePage = typeof initialisePage === 'function' ? initialisePage : null;
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNewModules);
+} else {
+    initNewModules();
+}
