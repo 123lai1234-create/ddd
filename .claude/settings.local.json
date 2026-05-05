@@ -82,7 +82,8 @@
       "Bash(git status *)",
       "Bash(python astro/tmp_reduce_spacing.py)",
       "Bash(git show *)",
-      "WebFetch(domain:claude.ai)"
+      "WebFetch(domain:claude.ai)",
+      "Bash(node \"C:\\\\Users\\\\User\\\\.claude\\\\skills\\\\felo-web-fetch\\\\scripts\\\\run_web_fetch.mjs\" --url \"https://claude.ai/share/3f377555-2fcc-43cb-835f-54232eadd1db\" --output-format markdown --crawl-mode fine --with-readability true)"
     ]
   }
 }
