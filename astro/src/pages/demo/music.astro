@@ -1,9 +1,6 @@
 ---
-// Astro page: /demo/music — MiniMax Music Generation Demo
-
 const API_BASE = import.meta.env.PUBLIC_API_BASE || 'https://donttalk-api-production.up.railway.app';
 
-// Predefined prompts for quick demos
 const presetPrompts = [
   { label: 'Ambient Biotech', prompt: 'Ambient electronic music with soft synth pads, perfect for a lab documentary opening sequence' },
   { label: 'Drug Discovery', prompt: 'Cinematic orchestral with electronic elements, building tension like a critical experiment moment' },
@@ -12,7 +9,6 @@ const presetPrompts = [
   { label: 'Researchmontage', prompt: 'Energetic corporate electronic, perfect for research progress video background' },
 ];
 
-// DOM element references
 let statusEl, audioPlayerEl, audioEl, downloadEl, promptEl, submitBtn;
 
 function init() {
@@ -23,7 +19,6 @@ function init() {
   promptEl = document.getElementById('prompt');
   submitBtn = document.querySelector('button[type="submit"]');
 
-  // Preset button click handlers
   document.querySelectorAll('.preset-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.index);
@@ -35,10 +30,10 @@ function init() {
   });
 }
 
-function showStatus(msg, type = 'warning') {
+function showStatus(msg, type) {
   if (statusEl) {
     statusEl.textContent = msg;
-    statusEl.className = 'status-message ' + type;
+    statusEl.className = 'status-message ' + (type || 'warning');
     statusEl.style.display = 'block';
   }
 }
@@ -66,13 +61,13 @@ async function generateMusic(event) {
   if (audioPlayerEl) audioPlayerEl.style.display = 'none';
 
   try {
-    const response = await fetch(`${API_BASE}/ai/music`, {
+    const response = await fetch(API_BASE + '/ai/music', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         prompt: promptEl.value.trim(),
-        duration: parseInt(durationInput?.value || '30'),
-        instrumental: instrumentalInput?.checked || false,
+        duration: parseInt(durationInput && durationInput.value) || 30,
+        instrumental: (instrumentalInput && instrumentalInput.checked) || false,
         model: 'music-2.6'
       })
     });
@@ -99,7 +94,6 @@ async function generateMusic(event) {
   }
 }
 
-// Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', init);
 ---
 
@@ -113,7 +107,7 @@ document.addEventListener('DOMContentLoaded', init);
 <body>
   <header class="demo-header">
     <nav>
-      <a href="/">&larr; Back to Portfolio</a>
+      <a href="/">Back to Portfolio</a>
     </nav>
     <h1>AI Music Generation</h1>
     <p class="subtitle">Powered by MiniMax music-2.6 via LiteLLM Proxy</p>
@@ -122,11 +116,7 @@ document.addEventListener('DOMContentLoaded', init);
   <main class="demo-container">
     <section class="info-panel">
       <h2>About This Demo</h2>
-      <p>
-        This page demonstrates multi-modal AI integration on your portfolio. 
-        The FastAPI backend routes requests through LiteLLM Proxy (deployed via Cloudflare Tunnel) 
-        to MiniMax's music-2.6 model, enabling programmatic music generation.
-      </p>
+      <p>This page demonstrates multi-modal AI integration on your portfolio. The FastAPI backend routes requests through LiteLLM Proxy to MiniMax music-2.6 model.</p>
       <div class="tech-stack">
         <span class="tag">FastAPI</span>
         <span class="tag">LiteLLM Proxy</span>
@@ -137,16 +127,10 @@ document.addEventListener('DOMContentLoaded', init);
 
     <section class="generator-panel">
       <h2>Generate Music</h2>
-      <form id="musicForm" onsubmit="generateMusic(event)">
+      <form id="musicForm">
         <div class="form-group">
           <label for="prompt">Music Description</label>
-          <textarea 
-            id="prompt" 
-            name="prompt" 
-            rows="3" 
-            placeholder="Describe the music you want to generate..."
-            required
-          ></textarea>
+          <textarea id="prompt" name="prompt" rows="3" required></textarea>
         </div>
 
         <div class="form-row">
@@ -162,9 +146,7 @@ document.addEventListener('DOMContentLoaded', init);
           </div>
         </div>
 
-        <button type="submit">
-          Generate Music
-        </button>
+        <button type="submit">Generate Music</button>
       </form>
 
       <div id="statusMessage" class="status-message" style="display:none;"></div>
@@ -178,11 +160,11 @@ document.addEventListener('DOMContentLoaded', init);
     <section class="presets-panel">
       <h2>Quick Presets</h2>
       <div class="preset-grid">
-        {presetPrompts.map((preset, i) => (
-          <button type="button" class="preset-btn" data-index={i}>
-            {preset.label}
-          </button>
-        ))}
+        <button type="button" class="preset-btn" data-index="0">Ambient Biotech</button>
+        <button type="button" class="preset-btn" data-index="1">Drug Discovery</button>
+        <button type="button" class="preset-btn" data-index="2">Gene Sequence</button>
+        <button type="button" class="preset-btn" data-index="3">Protein Folding</button>
+        <button type="button" class="preset-btn" data-index="4">Researchmontage</button>
       </div>
     </section>
 
@@ -190,17 +172,98 @@ document.addEventListener('DOMContentLoaded', init);
       <h2>API Integration Example</h2>
       <pre><code>import httpx
 
-async def generate_music(prompt: str, duration: int = 30):
+async def generate_music(prompt, duration=30):
     response = await httpx.AsyncClient().post(
         "https://your-api.com/ai/music",
         json={"prompt": prompt, "duration": duration, "model": "music-2.6"}
     )
-    return response.json()  # {"audio_url": "...", "task_id": None}</code></pre>
-      <p class="code-note">
-        The FastAPI layer handles API key security — MiniMax key never touches the client.
-      </p>
+    return response.json()</code></pre>
+      <p class="code-note">The FastAPI layer handles API key security - MiniMax key never touches the client.</p>
     </section>
   </main>
+
+  <script is:inline>
+    document.getElementById('musicForm').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      var promptEl = document.getElementById('prompt');
+      var statusEl = document.getElementById('statusMessage');
+      var audioPlayerEl = document.getElementById('audioPlayer');
+      var audioEl = document.getElementById('audioElement');
+      var downloadEl = document.getElementById('downloadLink');
+      var submitBtn = document.querySelector('button[type="submit"]');
+      var durationInput = document.getElementById('duration');
+      var instrumentalInput = document.getElementById('instrumental');
+
+      if (!promptEl || !promptEl.value.trim()) {
+        statusEl.textContent = 'Please enter a music description.';
+        statusEl.className = 'status-message error';
+        statusEl.style.display = 'block';
+        return;
+      }
+
+      if (submitBtn) submitBtn.disabled = true;
+      statusEl.textContent = 'Generating music... (this may take up to 2 minutes for longer tracks)';
+      statusEl.className = 'status-message warning';
+      statusEl.style.display = 'block';
+      if (audioPlayerEl) audioPlayerEl.style.display = 'none';
+
+      var API_BASE = 'https://donttalk-api-production.up.railway.app';
+
+      try {
+        var response = await fetch(API_BASE + '/ai/music', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: promptEl.value.trim(),
+            duration: parseInt(durationInput && durationInput.value) || 30,
+            instrumental: (instrumentalInput && instrumentalInput.checked) || false,
+            model: 'music-2.6'
+          })
+        });
+
+        if (!response.ok) {
+          var error = await response.json();
+          throw new Error(error.detail || 'Generation failed');
+        }
+
+        var result = await response.json();
+        
+        if (result.audio_url) {
+          statusEl.textContent = 'Music generated successfully!';
+          statusEl.className = 'status-message info';
+          audioEl.src = result.audio_url;
+          downloadEl.href = result.audio_url;
+          audioPlayerEl.style.display = 'block';
+        } else if (result.task_id) {
+          statusEl.textContent = 'Long generation started. Poll task: ' + result.task_id;
+        } else {
+          statusEl.textContent = 'Generation completed but no audio URL returned.';
+        }
+      } catch (error) {
+        statusEl.textContent = 'Error: ' + error.message;
+        statusEl.className = 'status-message error';
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+
+    document.querySelectorAll('.preset-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var prompts = [
+          'Ambient electronic music with soft synth pads, perfect for a lab documentary opening sequence',
+          'Cinematic orchestral with electronic elements, building tension like a critical experiment moment',
+          'Upbeat techno with bioinformatics-inspired rhythmic patterns, futuristic and energetic',
+          'Dark ambient with evolving textures, mysterious and scientific atmosphere',
+          'Energetic corporate electronic, perfect for research progress video background'
+        ];
+        var idx = parseInt(btn.dataset.index);
+        var promptEl = document.getElementById('prompt');
+        if (promptEl && prompts[idx]) {
+          promptEl.value = prompts[idx];
+        }
+      });
+    });
+  </script>
 </body>
 </html>
 
@@ -221,7 +284,10 @@ async def generate_music(prompt: str, duration: int = 30):
   padding: 2rem;
 }
 
-.info-panel, .generator-panel, .presets-panel, .code-example {
+.info-panel,
+.generator-panel,
+.presets-panel,
+.code-example {
   background: white;
   border-radius: 8px;
   padding: 1.5rem;
@@ -242,6 +308,7 @@ h2 { margin-top: 0; color: #333; }
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; font-weight: 500; margin-bottom: 0.5rem; }
 .form-group input[type="text"],
+.form-group input[type="number"],
 .form-group textarea {
   width: 100%;
   padding: 0.75rem;
@@ -270,6 +337,8 @@ button[type="submit"]:disabled { background: #ccc; cursor: not-allowed; }
   border-radius: 4px;
   border-left: 4px solid #f9a825;
 }
+.status-message.info { background: #e6f4ea; border-color: #34a853; }
+.status-message.error { background: #fce8e6; border-color: #ea4335; }
 
 .audio-player { margin-top: 1rem; }
 .audio-player audio { width: 100%; margin-top: 0.5rem; }
