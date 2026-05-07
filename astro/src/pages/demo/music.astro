@@ -1,102 +1,5 @@
 ---
-const API_BASE = import.meta.env.PUBLIC_API_BASE || 'https://donttalk-api-production.up.railway.app';
-
-const presetPrompts = [
-  { label: 'Ambient Biotech', prompt: 'Ambient electronic music with soft synth pads, perfect for a lab documentary opening sequence' },
-  { label: 'Drug Discovery', prompt: 'Cinematic orchestral with electronic elements, building tension like a critical experiment moment' },
-  { label: 'Gene Sequence', prompt: 'Upbeat techno with bioinformatics-inspired rhythmic patterns, futuristic and energetic' },
-  { label: 'Protein Folding', prompt: 'Dark ambient with evolving textures, mysterious and scientific atmosphere' },
-  { label: 'Researchmontage', prompt: 'Energetic corporate electronic, perfect for research progress video background' },
-];
-
-let statusEl, audioPlayerEl, audioEl, downloadEl, promptEl, submitBtn;
-
-function init() {
-  statusEl = document.getElementById('statusMessage');
-  audioPlayerEl = document.getElementById('audioPlayer');
-  audioEl = document.getElementById('audioElement');
-  downloadEl = document.getElementById('downloadLink');
-  promptEl = document.getElementById('prompt');
-  submitBtn = document.querySelector('button[type="submit"]');
-
-  document.querySelectorAll('.preset-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.index);
-      const preset = presetPrompts[idx];
-      if (promptEl && preset) {
-        promptEl.value = preset.prompt;
-      }
-    });
-  });
-}
-
-function showStatus(msg, type) {
-  if (statusEl) {
-    statusEl.textContent = msg;
-    statusEl.className = 'status-message ' + (type || 'warning');
-    statusEl.style.display = 'block';
-  }
-}
-
-function showAudio(url) {
-  if (audioPlayerEl && audioEl && downloadEl) {
-    audioEl.src = url;
-    downloadEl.href = url;
-    audioPlayerEl.style.display = 'block';
-  }
-}
-
-async function generateMusic(event) {
-  event.preventDefault();
-  if (!promptEl || !promptEl.value.trim()) {
-    showStatus('Please enter a music description.', 'error');
-    return;
-  }
-
-  const durationInput = document.getElementById('duration');
-  const instrumentalInput = document.getElementById('instrumental');
-
-  if (submitBtn) submitBtn.disabled = true;
-  showStatus('Generating music... (this may take up to 2 minutes for longer tracks)', 'warning');
-  if (audioPlayerEl) audioPlayerEl.style.display = 'none';
-
-  try {
-    const response = await fetch(API_BASE + '/ai/music', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: promptEl.value.trim(),
-        duration: parseInt(durationInput && durationInput.value) || 30,
-        instrumental: (instrumentalInput && instrumentalInput.checked) || false,
-        model: 'music-2.6'
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Generation failed');
-    }
-
-    const result = await response.json();
-    
-    if (result.audio_url) {
-      showStatus('Music generated successfully!', 'info');
-      showAudio(result.audio_url);
-    } else if (result.task_id) {
-      showStatus('Long generation started. Poll task: ' + result.task_id, 'warning');
-    } else {
-      showStatus('Generation completed but no audio URL returned.', 'warning');
-    }
-  } catch (error) {
-    showStatus('Error: ' + error.message, 'error');
-  } finally {
-    if (submitBtn) submitBtn.disabled = false;
-  }
-}
-
-document.addEventListener('DOMContentLoaded', init);
 ---
-
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -183,6 +86,14 @@ async def generate_music(prompt, duration=30):
   </main>
 
   <script is:inline>
+    var prompts = [
+      'Ambient electronic music with soft synth pads, perfect for a lab documentary opening sequence',
+      'Cinematic orchestral with electronic elements, building tension like a critical experiment moment',
+      'Upbeat techno with bioinformatics-inspired rhythmic patterns, futuristic and energetic',
+      'Dark ambient with evolving textures, mysterious and scientific atmosphere',
+      'Energetic corporate electronic, perfect for research progress video background'
+    ];
+
     document.getElementById('musicForm').addEventListener('submit', async function(event) {
       event.preventDefault();
       var promptEl = document.getElementById('prompt');
@@ -249,13 +160,6 @@ async def generate_music(prompt, duration=30):
 
     document.querySelectorAll('.preset-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
-        var prompts = [
-          'Ambient electronic music with soft synth pads, perfect for a lab documentary opening sequence',
-          'Cinematic orchestral with electronic elements, building tension like a critical experiment moment',
-          'Upbeat techno with bioinformatics-inspired rhythmic patterns, futuristic and energetic',
-          'Dark ambient with evolving textures, mysterious and scientific atmosphere',
-          'Energetic corporate electronic, perfect for research progress video background'
-        ];
         var idx = parseInt(btn.dataset.index);
         var promptEl = document.getElementById('prompt');
         if (promptEl && prompts[idx]) {
@@ -284,10 +188,7 @@ async def generate_music(prompt, duration=30):
   padding: 2rem;
 }
 
-.info-panel,
-.generator-panel,
-.presets-panel,
-.code-example {
+.info-panel, .generator-panel, .presets-panel, .code-example {
   background: white;
   border-radius: 8px;
   padding: 1.5rem;
