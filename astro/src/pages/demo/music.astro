@@ -1,12 +1,7 @@
 ---
 // Astro page: /demo/music — MiniMax Music Generation Demo
-// This page showcases AI music generation as part of your biotech portfolio
 
 const API_BASE = import.meta.env.PUBLIC_API_BASE || 'https://donttalk-api-production.up.railway.app';
-
-let statusMessage = '';
-let audioUrl = '';
-let isGenerating = false;
 
 // Predefined prompts for quick demos
 const presetPrompts = [
@@ -17,29 +12,65 @@ const presetPrompts = [
   { label: 'Researchmontage', prompt: 'Energetic corporate electronic, perfect for research progress video background' },
 ];
 
+// DOM element references
+let statusEl, audioPlayerEl, audioEl, downloadEl, promptEl, submitBtn;
+
+function init() {
+  statusEl = document.getElementById('statusMessage');
+  audioPlayerEl = document.getElementById('audioPlayer');
+  audioEl = document.getElementById('audioElement');
+  downloadEl = document.getElementById('downloadLink');
+  promptEl = document.getElementById('prompt');
+  submitBtn = document.querySelector('button[type="submit"]');
+
+  // Preset button click handlers
+  document.querySelectorAll('.preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.index);
+      const preset = presetPrompts[idx];
+      if (promptEl && preset) {
+        promptEl.value = preset.prompt;
+      }
+    });
+  });
+}
+
+function showStatus(msg, type = 'warning') {
+  if (statusEl) {
+    statusEl.textContent = msg;
+    statusEl.className = 'status-message ' + type;
+    statusEl.style.display = 'block';
+  }
+}
+
+function showAudio(url) {
+  if (audioPlayerEl && audioEl && downloadEl) {
+    audioEl.src = url;
+    downloadEl.href = url;
+    audioPlayerEl.style.display = 'block';
+  }
+}
+
 async function generateMusic(event) {
   event.preventDefault();
-  const form = event.target;
-  const promptInput = form.querySelector('#prompt');
-  const durationInput = form.querySelector('#duration');
-  const instrumentalInput = form.querySelector('#instrumental');
-  
-  const prompt = promptInput.value.trim();
-  if (!prompt) {
-    statusMessage = 'Please enter a music description.';
+  if (!promptEl || !promptEl.value.trim()) {
+    showStatus('Please enter a music description.', 'error');
     return;
   }
 
-  isGenerating = true;
-  statusMessage = 'Generating music... (this may take up to 2 minutes for longer tracks)';
-  audioUrl = '';
+  const durationInput = document.getElementById('duration');
+  const instrumentalInput = document.getElementById('instrumental');
+
+  if (submitBtn) submitBtn.disabled = true;
+  showStatus('Generating music... (this may take up to 2 minutes for longer tracks)', 'warning');
+  if (audioPlayerEl) audioPlayerEl.style.display = 'none';
 
   try {
     const response = await fetch(`${API_BASE}/ai/music`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        prompt: prompt,
+        prompt: promptEl.value.trim(),
         duration: parseInt(durationInput?.value || '30'),
         instrumental: instrumentalInput?.checked || false,
         model: 'music-2.6'
@@ -54,24 +85,22 @@ async function generateMusic(event) {
     const result = await response.json();
     
     if (result.audio_url) {
-      audioUrl = result.audio_url;
-      statusMessage = 'Music generated successfully!';
+      showStatus('Music generated successfully!', 'info');
+      showAudio(result.audio_url);
     } else if (result.task_id) {
-      statusMessage = 'Long generation started. Poll task: ' + result.task_id;
+      showStatus('Long generation started. Poll task: ' + result.task_id, 'warning');
     } else {
-      statusMessage = 'Generation completed but no audio URL returned.';
+      showStatus('Generation completed but no audio URL returned.', 'warning');
     }
   } catch (error) {
-    statusMessage = `Error: ${error.message}`;
+    showStatus('Error: ' + error.message, 'error');
   } finally {
-    isGenerating = false;
+    if (submitBtn) submitBtn.disabled = false;
   }
 }
 
-function usePreset(index) {
-  const preset = presetPrompts[index];
-  document.getElementById('prompt').value = preset.prompt;
-}
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', init);
 ---
 
 <html lang="en">
@@ -117,7 +146,7 @@ function usePreset(index) {
             rows="3" 
             placeholder="Describe the music you want to generate..."
             required
-          >Ambient electronic music with evolving textures, perfect for a biotech documentary</textarea>
+          ></textarea>
         </div>
 
         <div class="form-row">
@@ -133,35 +162,24 @@ function usePreset(index) {
           </div>
         </div>
 
-        <button type="submit" disabled={isGenerating}>
-          {isGenerating ? 'Generating...' : 'Generate Music'}
+        <button type="submit">
+          Generate Music
         </button>
       </form>
 
-      {statusMessage && (
-        <div class="status-message">{statusMessage}</div>
-      )}
-
-      {audioUrl && (
-        <div class="audio-player">
-          <h3>Generated Audio</h3>
-          <audio controls src={audioUrl}>
-            Your browser does not support audio playback.
-          </audio>
-          <a href={audioUrl} download class="download-link">Download Audio</a>
-        </div>
-      )}
+      <div id="statusMessage" class="status-message" style="display:none;"></div>
+      <div id="audioPlayer" class="audio-player" style="display:none;">
+        <h3>Generated Audio</h3>
+        <audio id="audioElement" controls></audio>
+        <a id="downloadLink" href="#" download class="download-link">Download Audio</a>
+      </div>
     </section>
 
     <section class="presets-panel">
       <h2>Quick Presets</h2>
       <div class="preset-grid">
         {presetPrompts.map((preset, i) => (
-          <button 
-            type="button" 
-            class="preset-btn"
-            onclick={`usePreset(${i})`}
-          >
+          <button type="button" class="preset-btn" data-index={i}>
             {preset.label}
           </button>
         ))}
