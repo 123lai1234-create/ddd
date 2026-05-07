@@ -1,0 +1,271 @@
+---
+---
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Music Generation Demo | JT Lai Portfolio</title>
+  <link rel="stylesheet" href="/styles/demo.css">
+</head>
+<body>
+  <header class="demo-header">
+    <nav>
+      <a href="/">Back to Portfolio</a>
+    </nav>
+    <h1>AI Music Generation</h1>
+    <p class="subtitle">Powered by MiniMax music-2.6 via LiteLLM Proxy</p>
+  </header>
+
+  <main class="demo-container">
+    <section class="info-panel">
+      <h2>About This Demo</h2>
+      <p>This page demonstrates multi-modal AI integration on your portfolio. The FastAPI backend routes requests through LiteLLM Proxy to MiniMax music-2.6 model.</p>
+      <div class="tech-stack">
+        <span class="tag">FastAPI</span>
+        <span class="tag">LiteLLM Proxy</span>
+        <span class="tag">MiniMax API</span>
+        <span class="tag">Cloudflare Tunnel</span>
+      </div>
+    </section>
+
+    <section class="generator-panel">
+      <h2>Generate Music</h2>
+      <form id="musicForm">
+        <div class="form-group">
+          <label for="prompt">Music Description</label>
+          <textarea id="prompt" name="prompt" rows="3" required></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="duration">Duration (seconds)</label>
+            <input type="number" id="duration" name="duration" min="15" max="180" value="30">
+          </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="instrumental" name="instrumental">
+              Instrumental Only
+            </label>
+          </div>
+        </div>
+
+        <button type="submit">Generate Music</button>
+      </form>
+
+      <div id="statusMessage" class="status-message" style="display:none;"></div>
+      <div id="audioPlayer" class="audio-player" style="display:none;">
+        <h3>Generated Audio</h3>
+        <audio id="audioElement" controls></audio>
+        <a id="downloadLink" href="#" download class="download-link">Download Audio</a>
+      </div>
+    </section>
+
+    <section class="presets-panel">
+      <h2>Quick Presets</h2>
+      <div class="preset-grid">
+        <button type="button" class="preset-btn" data-index="0">Ambient Biotech</button>
+        <button type="button" class="preset-btn" data-index="1">Drug Discovery</button>
+        <button type="button" class="preset-btn" data-index="2">Gene Sequence</button>
+        <button type="button" class="preset-btn" data-index="3">Protein Folding</button>
+        <button type="button" class="preset-btn" data-index="4">Researchmontage</button>
+      </div>
+    </section>
+
+    <section class="code-example">
+      <h2>API Integration Example</h2>
+      <pre><code>import httpx
+
+async def generate_music(prompt, duration=30):
+    response = await httpx.AsyncClient().post(
+        "https://your-api.com/ai/music",
+        json=&#123;"prompt": prompt, "duration": duration, "model": "music-2.6"&#125;
+    )
+    return response.json()</code></pre>
+      <p class="code-note">The FastAPI layer handles API key security - MiniMax key never touches the client.</p>
+    </section>
+  </main>
+
+  <script is:inline>
+    var prompts = [
+      'Ambient electronic music with soft synth pads, perfect for a lab documentary opening sequence',
+      'Cinematic orchestral with electronic elements, building tension like a critical experiment moment',
+      'Upbeat techno with bioinformatics-inspired rhythmic patterns, futuristic and energetic',
+      'Dark ambient with evolving textures, mysterious and scientific atmosphere',
+      'Energetic corporate electronic, perfect for research progress video background'
+    ];
+
+    document.getElementById('musicForm').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      var promptEl = document.getElementById('prompt');
+      var statusEl = document.getElementById('statusMessage');
+      var audioPlayerEl = document.getElementById('audioPlayer');
+      var audioEl = document.getElementById('audioElement');
+      var downloadEl = document.getElementById('downloadLink');
+      var submitBtn = document.querySelector('button[type="submit"]');
+      var durationInput = document.getElementById('duration');
+      var instrumentalInput = document.getElementById('instrumental');
+
+      if (!promptEl || !promptEl.value.trim()) {
+        statusEl.textContent = 'Please enter a music description.';
+        statusEl.className = 'status-message error';
+        statusEl.style.display = 'block';
+        return;
+      }
+
+      if (submitBtn) submitBtn.disabled = true;
+      statusEl.textContent = 'Generating music... (this may take up to 2 minutes for longer tracks)';
+      statusEl.className = 'status-message warning';
+      statusEl.style.display = 'block';
+      if (audioPlayerEl) audioPlayerEl.style.display = 'none';
+
+      var API_BASE = 'https://donttalk-api-production.up.railway.app';
+
+      try {
+        var response = await fetch(API_BASE + '/ai/music', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: promptEl.value.trim(),
+            duration: parseInt(durationInput && durationInput.value) || 30,
+            instrumental: (instrumentalInput && instrumentalInput.checked) || false,
+            model: 'music-2.6'
+          })
+        });
+
+        if (!response.ok) {
+          var error = await response.json();
+          throw new Error(error.detail || 'Generation failed');
+        }
+
+        var result = await response.json();
+        
+        if (result.audio_url) {
+          statusEl.textContent = 'Music generated successfully!';
+          statusEl.className = 'status-message info';
+          audioEl.src = result.audio_url;
+          downloadEl.href = result.audio_url;
+          audioPlayerEl.style.display = 'block';
+        } else if (result.task_id) {
+          statusEl.textContent = 'Long generation started. Poll task: ' + result.task_id;
+        } else {
+          statusEl.textContent = 'Generation completed but no audio URL returned.';
+        }
+      } catch (error) {
+        statusEl.textContent = 'Error: ' + error.message;
+        statusEl.className = 'status-message error';
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+
+    document.querySelectorAll('.preset-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var idx = parseInt(btn.dataset.index);
+        var promptEl = document.getElementById('prompt');
+        if (promptEl && prompts[idx]) {
+          promptEl.value = prompts[idx];
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+
+<style>
+.demo-header {
+  padding: 2rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: white;
+}
+.demo-header nav { margin-bottom: 1rem; }
+.demo-header nav a { color: #8ab4f8; text-decoration: none; }
+.demo-header h1 { margin: 0; font-size: 2rem; }
+.subtitle { opacity: 0.8; margin-top: 0.5rem; }
+
+.demo-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.info-panel, .generator-panel, .presets-panel, .code-example {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+h2 { margin-top: 0; color: #333; }
+.tech-stack { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+.tag {
+  background: #e8f0fe;
+  color: #1a73e8;
+  padding: 0.25rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.85rem;
+}
+
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-weight: 500; margin-bottom: 0.5rem; }
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+.form-row { display: flex; gap: 1rem; }
+.checkbox-group { display: flex; align-items: center; }
+
+button[type="submit"] {
+  background: #1a73e8;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+button[type="submit"]:disabled { background: #ccc; cursor: not-allowed; }
+
+.status-message {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fef7e0;
+  border-radius: 4px;
+  border-left: 4px solid #f9a825;
+}
+.status-message.info { background: #e6f4ea; border-color: #34a853; }
+.status-message.error { background: #fce8e6; border-color: #ea4335; }
+
+.audio-player { margin-top: 1rem; }
+.audio-player audio { width: 100%; margin-top: 0.5rem; }
+.download-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: #1a73e8;
+}
+
+.preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; }
+.preset-btn {
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.preset-btn:hover { background: #e8f0fe; }
+
+.code-example pre {
+  background: #1a1a2e;
+  color: #e8f0fe;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+.code-note { margin-top: 0.5rem; color: #666; font-size: 0.9rem; }
+</style>
