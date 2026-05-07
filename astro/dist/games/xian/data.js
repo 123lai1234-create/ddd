@@ -384,8 +384,8 @@ const MAPS = {
       { x:9, y:14, to:'shrine', toX:9, toY:13, msg:'返回小西天' },
     ],
     chests:[
-      { x:2,  y:2,  id:'lx1', item:'divineRobe' },
-      { x:17, y:2,  id:'lx2', item:'celestialJade' },
+      { x:4,  y:2,  id:'lx1', item:'divineRobe' },
+      { x:15, y:2,  id:'lx2', item:'celestialJade' },
       { x:10, y:12, id:'lx3', gold:2000 },
     ],
     enc:{ rate:0.25, enemies:['celestial','phoenix','demon','yasha'] },

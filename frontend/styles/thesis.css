@@ -1643,3 +1643,161 @@ footer a {
   .recap-action-grid { grid-template-columns: 1fr; }
   .recap-macro-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
+
+/* ── 技術指標補充 ── */
+.indicator-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 700px) {
+  .indicator-grid { grid-template-columns: 1fr; }
+}
+
+.ind-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  transition: border-color 0.25s;
+}
+
+.ind-card:hover { border-color: var(--border-hover); }
+
+.ind-icon { font-size: 1.45rem; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+
+.ind-title {
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--teal);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.ind-body { font-size: .79rem; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
+
+.ind-signal {
+  display: inline-block;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--green);
+  background: rgba(123,240,190,.07);
+  border: 1px solid rgba(123,240,190,.18);
+  border-radius: 6px;
+  padding: 3px 10px;
+}
+
+/* ── Triple Signal ── */
+.triple-signal-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+.triple-signal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(123,240,190,.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: .8rem;
+  flex-wrap: wrap;
+}
+
+.ts-idx { color: var(--dim); min-width: 38px; font-family: var(--mono); font-size: .72rem; }
+.ts-price { color: var(--text); font-weight: 600; min-width: 52px; font-family: var(--mono); }
+
+.ts-chip {
+  padding: 3px 9px;
+  border-radius: 5px;
+  font-size: .71rem;
+  font-weight: 600;
+  background: rgba(255,255,255,.04);
+  color: var(--dim);
+  border: 1px solid rgba(255,255,255,.07);
+}
+
+.ts-chip.active {
+  background: rgba(123,240,190,.12);
+  color: var(--green);
+  border-color: rgba(123,240,190,.28);
+}
+
+.ts-score { margin-left: auto; font-weight: 700; font-size: .86rem; }
+
+/* ── 工具資源整理 ── */
+.tools-category { margin-bottom: 28px; }
+
+.tools-category-label {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 12px;
+  padding-left: 2px;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.tool-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  transition: border-color 0.25s, transform 0.2s;
+}
+
+.tool-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.tool-card-icon { font-size: 1.3rem; margin-bottom: 8px; }
+.tool-card-name { font-size: .84rem; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+.tool-card-desc { font-size: .77rem; color: var(--muted); line-height: 1.55; }
+
+.tool-card-tag {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: .68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(88,215,255,.08);
+  color: var(--teal);
+  border: 1px solid rgba(88,215,255,.18);
+}
+
+.tool-card-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: .7rem;
+  color: var(--orange);
+  background: rgba(255,188,114,.07);
+  border: 1px solid rgba(255,188,114,.18);
+  border-radius: 6px;
+  padding: 5px 9px;
+  line-height: 1.5;
+}
+
+.macro-notice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(88,215,255,.05);
+  border: 1px solid rgba(88,215,255,.18);
+  border-radius: var(--radius-sm);
+  padding: 18px 22px;
+  margin-bottom: 28px;
+  font-size: .84rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.macro-notice-icon { font-size: 1.8rem; flex-shrink: 0; }

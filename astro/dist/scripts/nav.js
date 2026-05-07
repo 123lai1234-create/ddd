@@ -105,6 +105,7 @@
     }
 
     /* ── Scroll reveal ── */
+    var allReveals = document.querySelectorAll('.reveal');
     if (typeof IntersectionObserver !== 'undefined') {
         var revealObs = new IntersectionObserver(function (entries) {
             entries.forEach(function (e) {
@@ -114,10 +115,23 @@
                 }
             });
         }, { threshold: 0.07 });
-        document.querySelectorAll('.reveal').forEach(function (el) {
-            revealObs.observe(el);
+        allReveals.forEach(function (el) {
+            var rect = el.getBoundingClientRect();
+            if (rect.top < window.innerHeight && rect.bottom > 0) {
+                el.classList.add('visible');
+            } else {
+                revealObs.observe(el);
+            }
         });
+    } else {
+        allReveals.forEach(function (el) { el.classList.add('visible'); });
     }
+    /* fallback: 若 1s 後仍有未顯示的元素，強制顯示 */
+    setTimeout(function () {
+        document.querySelectorAll('.reveal:not(.visible)').forEach(function (el) {
+            el.classList.add('visible');
+        });
+    }, 1000);
 
     // ── SEO: canonical URL + JSON-LD structured data ──
     (function injectSEO() {

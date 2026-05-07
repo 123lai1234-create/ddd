@@ -1,40 +1,15 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化</title>
-    <meta name="description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。">
-    <meta property="og:title" content="PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化">
-    <meta property="og:description" content="以 48 檔 0050 樣本股票、2019-2023 訓練資料與 2024 測試資料，重建論文中的 PPTS 與 GAPPTS 方法。">
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta property="og:image" content="https://donttalk.vercel.app/og-image.svg">
-    <meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
-    <!-- BEGIN COMMON_HEAD -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="styles/shared.css">
-    <link rel="stylesheet" href="styles/polish.css">
-    <link rel="stylesheet" href="styles/dynamic.css">
-    <script src="scripts/theme-randomizer.js"></script>
-    <script src="scripts/shader-bg.js" defer></script>
-    <script src="scripts/admin-mode.js"></script>
-    <script src="scripts/site-shell-config.js" defer></script>
-    <script src="scripts/nav.js" defer></script>
-    <script src="scripts/app-config.js" defer></script>
-    <script src="scripts/dynamic-features.js" defer></script>
-    <!-- END COMMON_HEAD -->
-    <link rel="stylesheet" href="styles/thesis.css">
-</head>
-
-<body data-page="thesis">
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><title>PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化</title><meta name="description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><meta property="og:title" content="PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化"><meta property="og:description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og?t=PPTS%20%C3%97%20GAPPTS%20%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%20%C2%B7%20%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E4%BA%A4%E6%98%93%E7%AD%96%E7%95%A5%E6%9C%80%E4%BD%B3%E5%8C%96&#38;s=%E4%BE%9D%E7%A2%A9%E5%A3%AB%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%E7%9A%84%20PPTS%20%C3%97%20GAPPTS%20%E4%BA%92%E5%8B%95%E9%A0%81%EF%BC%8C%E8%81%9A%E7%84%A6%E5%85%83%E5%A4%A7%E5%8F%B0%E7%81%A3%2050%20%E7%9A%84%2048%20%E6%AA%94%E8%82%A1%E7%A5%A8%E3%80%81%E5%83%B9%E6%A0%BC%E5%8D%80%E9%96%93%E5%88%A9%E6%BD%A4%E5%88%86%E5%B8%83%E8%88%87%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E5%8F%83%E6%95%B8%E6%9C%80%E4%BD%B3%E5%8C%96%E3%80%82&#38;tag="><meta name="twitter:image" content="https://donttalk.vercel.app/og?t=PPTS%20%C3%97%20GAPPTS%20%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%20%C2%B7%20%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E4%BA%A4%E6%98%93%E7%AD%96%E7%95%A5%E6%9C%80%E4%BD%B3%E5%8C%96&#38;s=%E4%BE%9D%E7%A2%A9%E5%A3%AB%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%E7%9A%84%20PPTS%20%C3%97%20GAPPTS%20%E4%BA%92%E5%8B%95%E9%A0%81%EF%BC%8C%E8%81%9A%E7%84%A6%E5%85%83%E5%A4%A7%E5%8F%B0%E7%81%A3%2050%20%E7%9A%84%2048%20%E6%AA%94%E8%82%A1%E7%A5%A8%E3%80%81%E5%83%B9%E6%A0%BC%E5%8D%80%E9%96%93%E5%88%A9%E6%BD%A4%E5%88%86%E5%B8%83%E8%88%87%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E5%8F%83%E6%95%B8%E6%9C%80%E4%BD%B3%E5%8C%96%E3%80%82&#38;tag="><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/thesis.css"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script></head> <body data-page="thesis">  
     <div data-site-nav></div>
 
     <header class="hero">
@@ -503,6 +478,162 @@ for i in range(bm):
                         <button onclick="closeAlgoStrategy()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:0 4px">✕</button>
                     </div>
                     <div id="algoStrategyContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="section reveal">
+        <div class="section-inner">
+            <div class="section-label">技術指標補充</div>
+            <h2 class="section-title">布林通道 · MACD · KD · 籌碼面 — 輔助進場確認</h2>
+            <p class="section-sub">PPTS 以統計利潤分布識別買入區間，搭配技術面與籌碼面訊號可進一步提升進場品質。台股量化實戰案例顯示，「BBand 收斂 + KD 低檔回升 + MACD 動能翻正」三重共振型態，對應 PPTS 買入區間時，能有效過濾假突破、提升勝率。</p>
+            <div class="indicator-grid">
+                <div class="ind-card">
+                    <div class="ind-icon">📊</div>
+                    <div>
+                        <div class="ind-title">布林通道 Bollinger Bands</div>
+                        <div class="ind-body">上下軌 = MA20 ± 2σ，通道寬度代表市場波動程度。通道收斂（Width ≤ 70% 均寬）是即將變盤的預警訊號，收斂後突破方向往往延續。</div>
+                        <div class="ind-signal">收斂訊號：Width ≤ 均寬 × 0.70</div>
+                    </div>
+                </div>
+                <div class="ind-card">
+                    <div class="ind-icon">📉</div>
+                    <div>
+                        <div class="ind-title">MACD 動能指標</div>
+                        <div class="ind-body">DIF = EMA12 − EMA26，Signal = EMA9(DIF)，OSC = DIF − Signal。OSC 直方圖由紅轉綠（負翻正）代表短期動能開始回升，是早期多方確認。</div>
+                        <div class="ind-signal">確認訊號：OSC 由負轉正（柱狀翻綠）</div>
+                    </div>
+                </div>
+                <div class="ind-card">
+                    <div class="ind-icon">🎯</div>
+                    <div>
+                        <div class="ind-title">KD 隨機指標</div>
+                        <div class="ind-body">RSV 計算最近 9 日相對位置，K = 2/3 × K_prev + 1/3 × RSV，D = 2/3 × D_prev + 1/3 × K。K 值從低檔向上穿越 D 值為黃金交叉，代表超賣後動能反轉。</div>
+                        <div class="ind-signal">黃金交叉：K 由低檔上穿 D（K &lt; 50）</div>
+                    </div>
+                </div>
+                <div class="ind-card">
+                    <div class="ind-icon">🏦</div>
+                    <div>
+                        <div class="ind-title">籌碼面 — 法人動向</div>
+                        <div class="ind-body">外資 + 投信 + 自營商連續買超為多方籌碼訊號。主力買超千張以上且散戶同步賣超，代表聰明錢在低檔積累，是底部反轉候選股的關鍵條件之一。</div>
+                        <div class="ind-signal">多方籌碼：法人連 3 日淨買超</div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid-2" style="margin-top:18px">
+                <div class="card">
+                    <div class="card-title">所選個股 · 布林通道（測試集）</div>
+                    <div class="card-note">實線為收盤價，橙色虛線為布林上下軌，半透明帶為通道範圍。通道收窄時即將面臨方向性突破。</div>
+                    <div class="chart-box"><canvas id="bbandChart"></canvas></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">KD 隨機指標 + MACD OSC（測試集）</div>
+                    <div class="card-note">藍/橙線為 K/D 值（左軸 0–100），綠/紅直方圖為 MACD OSC（右軸）。</div>
+                    <div class="chart-box"><canvas id="macdKdChart"></canvas></div>
+                </div>
+            </div>
+            <div class="card" style="margin-top:14px">
+                <div class="card-title">三重共振訊號偵測 — 同時滿足 ≥ 2 項技術條件</div>
+                <div class="card-note">偵測測試集中同時達到「BBand 收斂 + KD 黃金交叉 + MACD OSC 翻正」中至少兩項的訊號點，為 PPTS 買入區間提供技術面輔助確認。</div>
+                <div id="tripleSignalPanel" class="triple-signal-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section reveal">
+        <div class="section-inner">
+            <div class="section-label">衍生性商品延伸</div>
+            <h2 class="section-title">權證 vs 選擇權 — GAPPTS 策略延伸討論</h2>
+            <p class="section-sub">GAPPTS 以價格區間識別方向性進場機會，除現股之外可搭配衍生性商品放大槓桿。台灣市場中，選擇權（台指選 TXO）在定價透明度與流動性上遠優於個股權證，更適合量化策略重複執行與歷史回測驗證。</p>
+            <div class="card">
+                <div class="card-title">量化策略適用性比較：權證 vs 選擇權</div>
+                <div style="overflow-x:auto;margin-top:12px">
+                    <table style="width:100%;border-collapse:collapse;font-size:.84rem">
+                        <thead>
+                            <tr style="border-bottom:2px solid var(--border);color:var(--muted);text-align:left">
+                                <th style="padding:10px 12px">特性</th>
+                                <th style="padding:10px 12px">權證 (Warrant)</th>
+                                <th style="padding:10px 12px">選擇權 (Option)</th>
+                                <th style="padding:10px 12px">量化適用</th>
+                            </tr>
+                        </thead>
+                        <tbody id="derivativesTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="grid-2" style="margin-top:14px">
+                <div class="card">
+                    <div class="card-title">台積電假設情境損益比較（買方）</div>
+                    <div class="card-note">現價 1000 元，履約價 1050，比較三種到期情境下的損益比。選擇權因 IV 公平定價，漲幅情境報酬明顯優於權證。</div>
+                    <div class="chart-box"><canvas id="derivativesPayoffChart"></canvas></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">GAPPTS 延伸至衍生商品的操作建議</div>
+                    <div id="derivativesAdvicePanel" style="margin-top:8px"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section reveal">
+        <div class="section-inner">
+            <div class="section-label">資源整理</div>
+            <h2 class="section-title">投資研究工具全覽 · 今日重點複習</h2>
+            <p class="section-sub">從總體經濟到個股分析，面對龐雜的財經資訊，善用對的工具能大幅提升研究效率。以下整理今日介紹的實用工具，建議依據自己的需求組合搭配使用。</p>
+            <div class="macro-notice">
+                <div class="macro-notice-icon">🌐</div>
+                <div>
+                    <strong style="color:var(--teal)">總經局勢複習</strong>：掌握大環境方向是個股分析的基礎。總體經濟數據（GDP、通膨、利率、PMI）的趨勢變化，會直接影響資金流向與產業輪動節奏。建議定期追蹤總經指標，由上而下選股，並搭配今日附上的圖卡一起回顧總經重點。
+                </div>
+            </div>
+            <div class="tools-category">
+                <div class="tools-category-label">📊 投資與數據分析工具</div>
+                <div class="tools-grid">
+                    <div class="tool-card">
+                        <div class="tool-card-icon">📈</div>
+                        <div class="tool-card-name">財經 M 平方</div>
+                        <div class="tool-card-desc">專注於「總體經濟」數據與趨勢分析，提供全球 GDP、通膨、利率、PMI 等關鍵指標視覺化，掌握大方向的必備工具。</div>
+                        <span class="tool-card-tag">總體經濟</span>
+                    </div>
+                    <div class="tool-card">
+                        <div class="tool-card-icon">🐕</div>
+                        <div class="tool-card-name">財報狗</div>
+                        <div class="tool-card-desc">專精於「企業財報分析」，提供台股個股損益表、資產負債表、現金流量表整理，研究基本面、檢視公司體質的好幫手。</div>
+                        <span class="tool-card-tag">基本面分析</span>
+                    </div>
+                    <div class="tool-card">
+                        <div class="tool-card-icon">💻</div>
+                        <div class="tool-card-name">XQ 全球贏家</div>
+                        <div class="tool-card-desc">強大的「股票分析」軟體，涵蓋即時看盤、技術指標、籌碼動向與程式交易，電腦版與手機版皆有。</div>
+                        <span class="tool-card-tag">技術分析 · 籌碼</span>
+                    </div>
+                    <div class="tool-card">
+                        <div class="tool-card-icon">⚡</div>
+                        <div class="tool-card-name">金十數據 APP</div>
+                        <div class="tool-card-desc">提供即時且快速的全球財經新聞與數據庫，消息面追蹤效率高，適合需要即時掌握市場動態的投資人。</div>
+                        <span class="tool-card-tag">即時財經新聞</span>
+                        <div class="tool-card-warning">⚠ 中國大陸開發軟體，對資安或隱私有疑慮者請審慎評估後再決定是否下載使用。</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tools-category">
+                <div class="tools-category-label">💡 補充與輔助工具</div>
+                <div class="tools-grid">
+                    <div class="tool-card">
+                        <div class="tool-card-icon">🚦</div>
+                        <div class="tool-card-name">處置王 APP</div>
+                        <div class="tool-card-desc">專門查詢股票「何時被列入處置」的工具，避免在處置期間發生非預期的交易限制，對留意個股流動性風險非常實用。</div>
+                        <span class="tool-card-tag">處置股票查詢</span>
+                    </div>
+                    <div class="tool-card" style="border-color:rgba(123,240,190,0.22)">
+                        <div class="tool-card-icon">🤖</div>
+                        <div class="tool-card-name">Claude · Gemini · Notebook LM</div>
+                        <div class="tool-card-desc">強大的 AI 生產力助手。可快速整理龐雜財經資訊、總結長篇報告重點、梳理投資邏輯，善用 AI 能大幅提升研究效率，打破舊有思考框架，看見更多投資機會。</div>
+                        <span class="tool-card-tag" style="background:rgba(123,240,190,.1);color:var(--green);border-color:rgba(123,240,190,.25)">AI 輔助工具</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -986,6 +1117,47 @@ for i in range(bm):
     <button class="scroll-top" aria-label="返回頂部">↑</button>
 
     <script src="scripts/thesis.js"></script>
-</body>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script><script src="/scripts/thesis.js"></script> <vercel-analytics data-props="{}" data-params="{}" data-pathname="/thesis.html"></vercel-analytics> <script type="module">var v=()=>{window.va||(window.va=function(...i){window.vaq||(window.vaq=[]),window.vaq.push(i)})},w="@vercel/analytics",h="2.0.1";function f(){return typeof window<"u"}function l(){try{const e="production"}catch{}return"production"}function m(e="auto"){if(e==="auto"){window.vam=l();return}window.vam=e}function y(){return(f()?window.vam:l())||"production"}function d(){return y()==="development"}function b(e,i){if(!e||!i)return e;let n=e;try{const t=Object.entries(i);for(const[r,s]of t)if(!Array.isArray(s)){const o=u(s);o.test(n)&&(n=n.replace(o,`/[${r}]`))}for(const[r,s]of t)if(Array.isArray(s)){const o=u(s.join("/"));o.test(n)&&(n=n.replace(o,`/[...${r}]`))}return n}catch{return e}}function u(e){return new RegExp(`/${g(e)}(?=[/?#]|$)`)}function g(e){return e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function E(e){return e.scriptSrc?a(e.scriptSrc):d()?"https://va.vercel-scripts.com/v1/script.debug.js":e.basePath?a(`${e.basePath}/insights/script.js`):"/_vercel/insights/script.js"}function k(e,i){var n;let t=e;if(i)try{t={...(n=JSON.parse(i))==null?void 0:n.analytics,...e}}catch{}m(t.mode);const r={sdkn:w+(t.framework?`/${t.framework}`:""),sdkv:h};return t.disableAutoTrack&&(r.disableAutoTrack="1"),t.viewEndpoint&&(r.viewEndpoint=a(t.viewEndpoint)),t.eventEndpoint&&(r.eventEndpoint=a(t.eventEndpoint)),t.sessionEndpoint&&(r.sessionEndpoint=a(t.sessionEndpoint)),d()&&t.debug===!1&&(r.debug="false"),t.dsn&&(r.dsn=t.dsn),t.endpoint?r.endpoint=t.endpoint:t.basePath&&(r.endpoint=a(`${t.basePath}/insights`)),{beforeSend:t.beforeSend,src:E(t),dataset:r}}function a(e){return e.startsWith("http://")||e.startsWith("https://")||e.startsWith("/")?e:`/${e}`}function S(e={debug:!0},i){var n;if(!f())return;const{beforeSend:t,src:r,dataset:s}=k(e,i);if(v(),t&&((n=window.va)==null||n.call(window,"beforeSend",t)),document.head.querySelector(`script[src*="${r}"]`))return;const o=document.createElement("script");o.src=r;for(const[c,p]of Object.entries(s))o.dataset[c]=p;o.defer=!0,o.onerror=()=>{const c=d()?"Please check if any ad blockers are enabled and try again.":"Be sure to enable Web Analytics for your project and deploy again. See https://vercel.com/docs/analytics/quickstart for more information.";console.log(`[Vercel Web Analytics] Failed to load script from ${r}. ${c}`)},document.head.appendChild(o)}function $({route:e,path:i}){var n;(n=window.va)==null||n.call(window,"pageview",{route:e,path:i})}function A(){try{return}catch{}}function j(){try{return}catch{}}customElements.define("vercel-analytics",class extends HTMLElement{constructor(){super();try{const i=JSON.parse(this.dataset.props??"{}"),n=JSON.parse(this.dataset.params??"{}");S({...i,disableAutoTrack:!0,framework:"astro",basePath:A(),beforeSend:window.webAnalyticsBeforeSend},j());const t=this.dataset.pathname;$({route:b(t??"",n),path:t})}catch(i){throw new Error(`Failed to parse WebAnalytics properties: ${i}`)}}});</script> <!-- ── Search modal (Pagefind) ── --> <div id="pf-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:10vh"> <div style="background:var(--bg,#0d1117);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;width:min(640px,90vw);max-height:70vh;overflow:hidden;display:flex;flex-direction:column"> <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border,rgba(255,255,255,.08))"> <span style="color:var(--muted,#8b949e);font-size:1.1rem">🔍</span> <input id="pf-input" placeholder="搜尋頁面內容…" autocomplete="off" spellcheck="false" style="flex:1;background:none;border:none;outline:none;font-size:1rem;color:var(--text,#e6edf3);font-family:inherit"> <kbd style="font-size:.75rem;color:var(--muted,#8b949e);border:1px solid var(--border,rgba(255,255,255,.12));border-radius:4px;padding:2px 6px">Esc</kbd> </div> <div id="pf-results" style="overflow-y:auto;padding:8px 0;flex:1"></div> </div> </div> <!-- Search trigger button (bottom-right) --> <button id="pf-btn" title="搜尋 (Ctrl+K)" aria-label="搜尋" style="position:fixed;bottom:24px;right:24px;z-index:500;background:var(--surface,rgba(255,255,255,.06));border:1px solid var(--border,rgba(255,255,255,.12));border-radius:50%;width:44px;height:44px;font-size:1.1rem;cursor:pointer;color:var(--muted,#8b949e);display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:0 4px 16px rgba(0,0,0,.3)">🔍</button> <script>
+    (function() {
+      const modal  = document.getElementById('pf-modal');
+      const input  = document.getElementById('pf-input');
+      const results= document.getElementById('pf-results');
+      const btn    = document.getElementById('pf-btn');
+      let pf = null, debounce = null;
 
-</html>
+      async function openModal() {
+        modal.style.display = 'flex';
+        input.focus();
+        if (!pf) {
+          try {
+            pf = await import('/pagefind/pagefind.js');
+            await pf.init();
+          } catch(e) { results.innerHTML = '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">搜尋索引尚未建立（需要先 build）。</p>'; pf = null; }
+        }
+      }
+      function closeModal() { modal.style.display = 'none'; input.value = ''; results.innerHTML = ''; }
+
+      async function doSearch(q) {
+        if (!pf || !q.trim()) { results.innerHTML = ''; return; }
+        const sr = await pf.search(q);
+        const items = await Promise.all(sr.results.slice(0, 8).map(r => r.data()));
+        results.innerHTML = items.length
+          ? items.map(d => `<a href="${d.url}" style="display:block;padding:10px 18px;text-decoration:none;color:var(--text,#e6edf3);border-bottom:1px solid var(--border,rgba(255,255,255,.05));transition:background .1s" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
+              <div style="font-size:.9rem;font-weight:600;margin-bottom:3px">${d.meta?.title || d.url}</div>
+              <div style="font-size:.78rem;color:#8b949e">${d.excerpt}</div>
+            </a>`).join('')
+          : '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">找不到結果。</p>';
+      }
+
+      btn.addEventListener('click', openModal);
+      modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+      document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openModal(); }
+        if (e.key === 'Escape') closeModal();
+      });
+      input.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => doSearch(input.value), 250);
+      });
+    })();
+    </script> </body> </html>
