@@ -1,0 +1,36 @@
+# LiteLLM Proxy Configuration
+# MiniMax API Integration
+
+model_list:
+  # MiniMax M2 (text generation)
+  - model_name: minimax-m2
+    litellm_params:
+      model: openai/MiniMax-M2
+      api_base: https://api.minimaxi.com/v1
+      api_key: os.environ/MINIMAX_API_KEY
+
+  # MiniMax Music Generation (music-2.6)
+  - model_name: minimax-music
+    litellm_params:
+      model: openai/music-2.6
+      api_base: https://api.minimaxi.com/v1
+      api_key: os.environ/MINIMAX_API_KEY
+
+  # Optional: add other models you already use
+  - model_name: gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: claude-3-5-sonnet
+    litellm_params:
+      model: claude-3-5-sonnet-20241022
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+# General settings
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+
+environment:
+  MINIMAX_API_KEY: "" # Set via environment variable

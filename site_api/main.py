@@ -23,6 +23,7 @@ from site_api.db import (
     get_allowed_origins,
 )
 from site_api.routes import router
+from site_api.routes_minimax import router as minimax_router
 
 logger = logging.getLogger(__name__)
 
@@ -69,3 +70,4 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 app.include_router(router)
+app.include_router(minimax_router)
