@@ -1,0 +1,179 @@
+/* ════════════════════════════════════════════════════════════════
+   IMMERSIVE EXPERIENCE DESIGN FOR ASTRO
+   ════════════════════════════════════════════════════════════════ */
+
+/* 1. 滾動觸發動畫 */
+.scroll-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
+                transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.scroll-reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.scroll-reveal.stagger-1 { transition-delay: 0.1s; }
+.scroll-reveal.stagger-2 { transition-delay: 0.2s; }
+.scroll-reveal.stagger-3 { transition-delay: 0.3s; }
+.scroll-reveal.stagger-4 { transition-delay: 0.4s; }
+
+/* 2. 3D 深度感卡片 */
+.depth-card {
+    position: relative;
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.depth-card:hover {
+    transform: rotateX(5deg) rotateY(-5deg) translateZ(20px);
+}
+
+.depth-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent);
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+/* 3. 視差滾動效果 */
+.parallax-section {
+    position: relative;
+    overflow: hidden;
+}
+
+.parallax-layer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    will-change: transform;
+}
+
+/* 4. 光暈效果 */
+.glow-effect {
+    position: relative;
+}
+
+.glow-effect::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.3), transparent);
+    border-radius: inherit;
+    filter: blur(8px);
+    animation: glowPulse 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes glowPulse {
+    0%, 100% {
+        opacity: 0.5;
+        filter: blur(8px);
+    }
+    50% {
+        opacity: 1;
+        filter: blur(12px);
+    }
+}
+
+/* 5. 互動式視覺回饋 */
+.interactive-element {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.interactive-element::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.2), transparent);
+    border-radius: inherit;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.4s ease;
+    pointer-events: none;
+}
+
+.interactive-element:hover::after {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+.interactive-element:active {
+    transform: scale(0.98);
+}
+
+/* 6. 頁面轉場動畫 */
+.page-transition {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #a855f7, #06b6d4);
+    z-index: 9999;
+    pointer-events: none;
+    animation: slideOut 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes slideOut {
+    0% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes slideIn {
+    0% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* 7. 漸變色彩動畫背景 */
+.gradient-animate {
+    background: linear-gradient(
+        -45deg,
+        #a855f7,
+        #06b6d4,
+        #ec4899,
+        #a855f7
+    );
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* 8. 響應式設計 */
+@media (max-width: 768px) {
+    .depth-card:hover {
+        transform: rotateX(2deg) rotateY(-2deg) translateZ(10px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scroll-reveal,
+    .depth-card,
+    .glow-effect::before {
+        animation: none !important;
+        transition: none !important;
+    }
+}

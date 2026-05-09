@@ -1,0 +1,102 @@
+---
+// Immersive Background Component for Astro
+---
+
+<div class="immersive-bg" id="immersive-bg"></div>
+
+<style>
+    .immersive-bg {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        overflow: hidden;
+        background: linear-gradient(135deg, #08060e 0%, #1a0f2e 50%, #0d0620 100%);
+        pointer-events: none;
+    }
+
+    .particle {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: radial-gradient(circle, rgba(255,255,255,0.8), rgba(255,255,255,0));
+        border-radius: 50%;
+        pointer-events: none;
+        animation: float 20s infinite ease-in-out;
+    }
+
+    @keyframes float {
+        0%, 100% { 
+            transform: translateY(0) translateX(0) scale(1); 
+            opacity: 0; 
+        }
+        10% { opacity: 1; }
+        50% { opacity: 0.8; }
+        90% { opacity: 0; }
+    }
+
+    /* Gradient animation */
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+</style>
+
+<script>
+    class ImmersiveBackground {
+        constructor() {
+            this.container = document.getElementById('immersive-bg');
+            this.particles = [];
+            this.init();
+        }
+
+        init() {
+            this.createParticles();
+            this.setupEventListeners();
+        }
+
+        createParticles() {
+            if (!this.container) return;
+            
+            const particleCount = Math.min(80, Math.floor(window.innerWidth / 15));
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                
+                const size = Math.random() * 3 + 1;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.animationDuration = (Math.random() * 10 + 15) + 's';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                
+                this.container.appendChild(particle);
+                this.particles.push(particle);
+            }
+        }
+
+        setupEventListeners() {
+            window.addEventListener('resize', () => this.handleResize());
+        }
+
+        handleResize() {
+            const newParticleCount = Math.min(80, Math.floor(window.innerWidth / 15));
+            if (newParticleCount !== this.particles.length) {
+                this.particles.forEach(p => p.remove());
+                this.particles = [];
+                this.createParticles();
+            }
+        }
+    }
+
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            new ImmersiveBackground();
+        });
+    } else {
+        new ImmersiveBackground();
+    }
+</script>

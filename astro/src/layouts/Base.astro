@@ -1,5 +1,6 @@
 ---
 import Analytics from '@vercel/analytics/astro';
+import ImmersiveBackground from '../components/ImmersiveBackground.astro';
 
 const SITE = 'https://donttalk.vercel.app';
 
@@ -55,6 +56,7 @@ const ogImageUrl = ogImage
     <link rel="stylesheet" href="/styles/shared.css" />
     <link rel="stylesheet" href="/styles/polish.css" />
     <link rel="stylesheet" href="/styles/dynamic.css" />
+    <link rel="stylesheet" href="/styles/immersive.css" />
     {pageStyles.map((href) => <link rel="stylesheet" href={href} />)}
     <!-- Sentry error monitoring (set SENTRY_DSN env var to activate) -->
     <script is:inline>
@@ -74,9 +76,11 @@ const ogImageUrl = ogImage
     <script is:inline src="/scripts/nav.js" defer></script>
     <script is:inline src="/scripts/app-config.js" defer></script>
     <script is:inline src="/scripts/dynamic-features.js" defer></script>
+    <script is:inline src="/scripts/immersive.js" defer></script>
     <Fragment set:html={headInline} />
 </head>
 <body data-page={bodyPage}>
+    <ImmersiveBackground />
     <slot />
     {pageScripts.map((src) => <script is:inline src={src}></script>)}
     <Analytics />
