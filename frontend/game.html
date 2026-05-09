@@ -12,6 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;600&display=swap"
         rel="stylesheet">
+    <!-- Performance & AI Optimizations -->
+    <script src="games/xian/performance-engine.js" defer></script>
+    <script src="games/xian/ai-improvement.js" defer></script>
     <style>
         * {
             margin: 0;
@@ -27,7 +30,24 @@
             --neon-green: #22ffa7;
             --bg-0: #04020c;
             --bg-1: #0a0420;
+            --transition-fast: 0.15s ease-out;
+            --animation-duration: 0.4s;
         }
+        
+        /* Performance: Reduce motion preference */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* Performance: CSS Containment */
+        .stage { contain: layout style paint; }
+        
+        /* Performance: Image lazy loading */
+        img { loading: lazy; decoding: async; }
 
         html,
         body {
@@ -673,15 +693,45 @@
             if (fill) ctx.fill();
         }
 
+        // Initialize Performance Engine
+        let perfEngine = null;
+        let aiSystem = null;
+        
+        // Performance monitoring
+        let frameCount = 0;
+        let lastFpsTime = performance.now();
+        let currentFps = 60;
+        
         let last = performance.now();
         function loop(now) {
             const dt = Math.min(0.05, (now - last) / 1000);
             last = now;
+            
+            // FPS Monitoring
+            frameCount++;
+            const elapsed = now - lastFpsTime;
+            if (elapsed >= 1000) {
+                currentFps = frameCount;
+                frameCount = 0;
+                lastFpsTime = now;
+                if (currentFps < 50) {
+                    console.warn('Low FPS: ' + currentFps + ' FPS');
+                }
+            }
+            
             update(dt);
             draw();
             requestAnimationFrame(loop);
         }
         requestAnimationFrame(loop);
+        
+        // Initialize AI System on game start
+        window.addEventListener('load', function() {
+            if (typeof AISystem !== 'undefined') {
+                aiSystem = new AISystem('normal');
+                console.log('AI System initialized with normal difficulty');
+            }
+        });
     </script>
 </body>
 

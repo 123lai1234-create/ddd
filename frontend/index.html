@@ -36,6 +36,22 @@
     <link rel="stylesheet" href="styles/index.css">
     <link rel="stylesheet" href="styles/index-live.css">
     <link rel="stylesheet" href="styles/index-content.css">
+    <!-- Performance Optimizations -->
+    <link rel="stylesheet" href="styles/performance-optimized.css">
+    <style>
+        /* 性能優化：減少動作偏好 */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        /* 性能優化：CSS Containment */
+        .container { contain: layout style paint; }
+        /* 性能優化：圖片延遲載入 */
+        img { loading: lazy; decoding: async; }
+    </style>
 </head>
 
 <body data-page="index">
