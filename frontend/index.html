@@ -32,12 +32,15 @@
     <script src="scripts/nav.js" defer></script>
     <script src="scripts/app-config.js" defer></script>
     <script src="scripts/dynamic-features.js" defer></script>
+    <script src="scripts/immersive-experience.js" defer></script>
     <!-- END COMMON_HEAD -->
     <link rel="stylesheet" href="styles/index.css">
     <link rel="stylesheet" href="styles/index-live.css">
     <link rel="stylesheet" href="styles/index-content.css">
     <!-- Performance Optimizations -->
     <link rel="stylesheet" href="styles/performance-optimized.css">
+    <!-- Immersive Experience Design -->
+    <link rel="stylesheet" href="styles/immersive-experience.css">
     <style>
         /* 性能優化：減少動作偏好 */
         @media (prefers-reduced-motion: reduce) {
@@ -55,6 +58,8 @@
 </head>
 
 <body data-page="index">
+    <!-- Immersive Background -->
+    <div class="immersive-bg"></div>
     <!-- ════════ NAV ════════ -->
     <div data-site-nav></div>
     <!-- ════════ HERO ════════ -->
@@ -99,24 +104,23 @@
     <hr class="divider">
     <!-- ════════ CREATOR ════════ -->
     <section id="creator">
-        <div class="reveal">
+        <div class="reveal scroll-reveal">
             <div class="section-label">關於我</div>
             <h2 class="section-title">工程與生醫的跨域能力線</h2>
-            <p class="section-sub">電資工程與生物醫學的雙碩士訓練，加上研究與產品實作的第一線經驗，讓這裡展示的每個作品都有真實意義的背景支撐。 </p>
+            <p class="section-sub">電資工程與生物醫學的雙碑士訓練，加上研究與產品實作的第一線經驗，讓這裡展示的每個作品都有真實意義的背景支擔。 </p>
         </div>
-        <div class="metrics-grid reveal">
-            <div class="metric-card">
-                <div class="mval">雙碩士</div>
+        <div class="metrics-grid reveal scroll-reveal">
+            <div class="metric-card scroll-reveal stagger-1">
+                <div class="mval">雙碑士</div>
                 <div class="mlabel">電資 × 生醫跨域背景</div>
                 <div class="mdetail">同時具備工程設計與生物醫學研究的訓練，站在研究與產品交界上進行有深度的跨域設計。</div>
             </div>
-            <div class="metric-card">
-                <div class="mval">2020–Now</div>
-                <div class="mlabel">前後端介面與應用開發</div>
+            <div class="metric-card scroll-reveal stagger-3">
+                <div class="mval">2014–2019</div>                <div class="mlabel">前後端介面與應用開發</div>
                 <div class="mdetail">持續投入網站、應用程式與互動介面開發，能把研究模型轉成可操作的平台。</div>
             </div>
-            <div class="metric-card">
-                <div class="mval">2014–2019</div>
+            <div class="metric-card scroll-reveal stagger-2">
+                <div class="mval">2020–2019</div>
                 <div class="mlabel">生物醫學研究工作</div>
                 <div class="mdetail">涵蓋臨床與研究場景的第一手經驗，直接支撐 NGS、變異解讀與生物資料流程的設計判斷。</div>
             </div>
