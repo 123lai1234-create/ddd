@@ -96,7 +96,8 @@
       "Bash(python3 apply_all_frontend.py)",
       "Bash(npm list *)",
       "Bash(netlify deploy *)",
-      "Bash(npx netlify *)"
+      "Bash(npx netlify *)",
+      "mcp__claude_ai_Vercel__get_access_to_vercel_url"
     ]
   }
 }
