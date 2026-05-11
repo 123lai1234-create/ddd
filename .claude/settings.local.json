@@ -93,7 +93,10 @@
       "Bash(python3 -c ' *)",
       "Bash(python3 insert_sections.py)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")",
-      "Bash(python3 apply_all_frontend.py)"
+      "Bash(python3 apply_all_frontend.py)",
+      "Bash(npm list *)",
+      "Bash(netlify deploy *)",
+      "Bash(npx netlify *)"
     ]
   }
 }
