@@ -1,0 +1,253 @@
+/* ════════════════════════════════════════════════════════════════
+   IMMERSIVE EXPERIENCE DESIGN - 沉浸式體驗設計
+   ════════════════════════════════════════════════════════════════ */
+
+/* 1. 動態背景粒子系統 */
+.immersive-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    background: linear-gradient(135deg, #08060e 0%, #1a0f2e 50%, #0d0620 100%);
+}
+
+.particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: radial-gradient(circle, rgba(255,255,255,0.8), rgba(255,255,255,0));
+    border-radius: 50%;
+    pointer-events: none;
+    animation: float 20s infinite ease-in-out;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+    10% { opacity: 1; }
+    50% { opacity: 0.8; }
+    90% { opacity: 0; }
+}
+
+/* 2. 視差滾動效果 */
+.parallax-section {
+    position: relative;
+    overflow: hidden;
+}
+
+.parallax-layer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    will-change: transform;
+}
+
+.parallax-layer.bg-1 {
+    transform: translateZ(0);
+}
+
+.parallax-layer.bg-2 {
+    transform: translateZ(-1px) scale(1.001);
+}
+
+.parallax-layer.bg-3 {
+    transform: translateZ(-2px) scale(1.002);
+}
+
+/* 3. 滾動觸發動畫 */
+.scroll-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
+                transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.scroll-reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.scroll-reveal.stagger-1 { transition-delay: 0.1s; }
+.scroll-reveal.stagger-2 { transition-delay: 0.2s; }
+.scroll-reveal.stagger-3 { transition-delay: 0.3s; }
+.scroll-reveal.stagger-4 { transition-delay: 0.4s; }
+
+/* 4. 3D 深度感設計 */
+.depth-card {
+    position: relative;
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.depth-card:hover {
+    transform: rotateX(5deg) rotateY(-5deg) translateZ(20px);
+}
+
+.depth-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent);
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+/* 5. 流暢的轉場動畫 */
+.page-transition {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #a855f7, #06b6d4);
+    z-index: 9999;
+    pointer-events: none;
+    animation: slideOut 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes slideOut {
+    0% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes slideIn {
+    0% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* 6. 互動式視覺回饋 */
+.interactive-element {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.interactive-element::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.2), transparent);
+    border-radius: inherit;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.4s ease;
+    pointer-events: none;
+}
+
+.interactive-element:hover::after {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+.interactive-element:active {
+    transform: scale(0.98);
+}
+
+/* 7. 漸變色彩動畫背景 */
+.gradient-animate {
+    background: linear-gradient(
+        -45deg,
+        #a855f7,
+        #06b6d4,
+        #ec4899,
+        #a855f7
+    );
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* 8. 音效視覺化 */
+.sound-wave {
+    display: inline-flex;
+    gap: 3px;
+    align-items: center;
+}
+
+.sound-bar {
+    width: 3px;
+    height: 12px;
+    background: linear-gradient(180deg, #a855f7, #06b6d4);
+    border-radius: 2px;
+    animation: soundPulse 0.6s ease-in-out infinite;
+}
+
+.sound-bar:nth-child(1) { animation-delay: 0s; }
+.sound-bar:nth-child(2) { animation-delay: 0.1s; }
+.sound-bar:nth-child(3) { animation-delay: 0.2s; }
+.sound-bar:nth-child(4) { animation-delay: 0.1s; }
+.sound-bar:nth-child(5) { animation-delay: 0s; }
+
+@keyframes soundPulse {
+    0%, 100% { height: 12px; }
+    50% { height: 24px; }
+}
+
+/* 9. 光暈效果 */
+.glow-effect {
+    position: relative;
+}
+
+.glow-effect::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.3), transparent);
+    border-radius: inherit;
+    filter: blur(8px);
+    animation: glowPulse 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes glowPulse {
+    0%, 100% {
+        opacity: 0.5;
+        filter: blur(8px);
+    }
+    50% {
+        opacity: 1;
+        filter: blur(12px);
+    }
+}
+
+/* 10. 響應式設計 */
+@media (max-width: 768px) {
+    .depth-card:hover {
+        transform: rotateX(2deg) rotateY(-2deg) translateZ(10px);
+    }
+    
+    .parallax-layer.bg-2 {
+        transform: translateZ(-0.5px) scale(1.0005);
+    }
+    
+    .parallax-layer.bg-3 {
+        transform: translateZ(-1px) scale(1.001);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scroll-reveal,
+    .depth-card,
+    .particle,
+    .sound-bar,
+    .glow-effect::before {
+        animation: none !important;
+        transition: none !important;
+    }
+}
