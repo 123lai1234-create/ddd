@@ -88,6 +88,12 @@ const headInline = ${JSON.stringify(headInlineRaw)};
 }
 
 async function main() {
+    try {
+        await fs.access(frontendDir);
+    } catch {
+        console.log('skipped convert_pages (frontend/ not present)');
+        return;
+    }
     const entries = await fs.readdir(frontendDir);
     for (const f of entries) {
         if (!f.endsWith('.html') || skip.has(f)) continue;
