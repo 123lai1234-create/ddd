@@ -97,7 +97,8 @@
       "Bash(npm list *)",
       "Bash(netlify deploy *)",
       "Bash(npx netlify *)",
-      "mcp__claude_ai_Vercel__get_access_to_vercel_url"
+      "mcp__claude_ai_Vercel__get_access_to_vercel_url",
+      "Bash(git submodule *)"
     ]
   }
 }
