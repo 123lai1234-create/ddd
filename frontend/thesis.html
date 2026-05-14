@@ -74,173 +74,198 @@
         </div>
     </header>
 
-    <div class="section reveal">
-        <div class="section-inner">
-            <div class="section-label">研究方法</div>
-            <h2 class="section-title">PPTS × GAPPTS 研究流程</h2>
-            <p class="section-sub">論文把歷史價格資料拆成價格區間統計問題，再用遺傳演算法搜尋最佳區間數、持有天數、目標利潤與進場門檻，避免固定參數策略在不同個股與產業上失靈。</p>
-            <div class="algo-flow" style="margin-bottom:28px">
-                <div class="algo-step">
-                    <div class="icon">🗃</div>
-                    <div class="lbl">資料整理</div>
-                    <div class="sub">48 檔個股 · 2019–2024</div>
+    <!-- ═══ Tab Navigation ═══ -->
+    <div class="tab-nav-wrap">
+        <nav class="tab-nav" id="thesisTabNav">
+            <button class="tab-btn active" data-tab="research">
+                <span class="tab-icon">📖</span>論文研究
+            </button>
+            <button class="tab-btn" data-tab="interactive">
+                <span class="tab-icon">⚡</span>互動體驗
+            </button>
+            <button class="tab-btn" data-tab="tools">
+                <span class="tab-icon">🛠</span>技術工具
+            </button>
+            <button class="tab-btn" data-tab="appendix">
+                <span class="tab-icon">📎</span>附錄資料
+            </button>
+        </nav>
+    </div>
+
+    <!-- ═══ Tab 1: 論文研究 ═══ -->
+    <div class="tab-panel active" id="panel-research">
+
+        <div class="section reveal">
+            <div class="section-inner">
+                <div class="section-label">研究方法</div>
+                <h2 class="section-title">PPTS × GAPPTS 研究流程</h2>
+                <p class="section-sub">論文把歷史價格資料拆成價格區間統計問題，再用遺傳演算法搜尋最佳區間數、持有天數、目標利潤與進場門檻，避免固定參數策略在不同個股與產業上失靈。</p>
+                <div class="algo-flow" style="margin-bottom:28px">
+                    <div class="algo-step">
+                        <div class="icon">🗃</div>
+                        <div class="lbl">資料整理</div>
+                        <div class="sub">48 檔個股 · 2019–2024</div>
+                    </div>
+                    <div class="algo-arrow">→</div>
+                    <div class="algo-step">
+                        <div class="icon">📏</div>
+                        <div class="lbl">PPTS 區間切分</div>
+                        <div class="sub">將價格切成 m 個等距區間</div>
+                    </div>
+                    <div class="algo-arrow">→</div>
+                    <div class="algo-step">
+                        <div class="icon">📈</div>
+                        <div class="lbl">利潤機率分析</div>
+                        <div class="sub">平均利潤 + 達標機率</div>
+                    </div>
+                    <div class="algo-arrow">→</div>
+                    <div class="algo-step">
+                        <div class="icon">🎯</div>
+                        <div class="lbl">輪盤選擇</div>
+                        <div class="sub">保留高適應度參數組</div>
+                    </div>
+                    <div class="algo-arrow">→</div>
+                    <div class="algo-step">
+                        <div class="icon">🔀</div>
+                        <div class="lbl">交叉 / 突變</div>
+                        <div class="sub">CR 0.8 · MR 0.1</div>
+                    </div>
+                    <div class="algo-arrow">→</div>
+                    <div class="algo-step">
+                        <div class="icon">✅</div>
+                        <div class="lbl">最佳策略</div>
+                        <div class="sub">輸出逐檔最佳參數</div>
+                    </div>
                 </div>
-                <div class="algo-arrow">→</div>
-                <div class="algo-step">
-                    <div class="icon">📏</div>
-                    <div class="lbl">PPTS 區間切分</div>
-                    <div class="sub">將價格切成 m 個等距區間</div>
-                </div>
-                <div class="algo-arrow">→</div>
-                <div class="algo-step">
-                    <div class="icon">📈</div>
-                    <div class="lbl">利潤機率分析</div>
-                    <div class="sub">平均利潤 + 達標機率</div>
-                </div>
-                <div class="algo-arrow">→</div>
-                <div class="algo-step">
-                    <div class="icon">🎯</div>
-                    <div class="lbl">輪盤選擇</div>
-                    <div class="sub">保留高適應度參數組</div>
-                </div>
-                <div class="algo-arrow">→</div>
-                <div class="algo-step">
-                    <div class="icon">🔀</div>
-                    <div class="lbl">交叉 / 突變</div>
-                    <div class="sub">CR 0.8 · MR 0.1</div>
-                </div>
-                <div class="algo-arrow">→</div>
-                <div class="algo-step">
-                    <div class="icon">✅</div>
-                    <div class="lbl">最佳策略</div>
-                    <div class="sub">輸出逐檔最佳參數</div>
-                </div>
-            </div>
-            <div class="grid-3">
-                <div class="card">
-                    <div class="card-title">染色體結構（29 bit）</div>
-                    <div id="chromTable"></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">適應度與評估指標</div>
-                    <div id="fitnessTable"></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">研究資料設計</div>
-                    <div style="font-size:.82rem;line-height:1.8;color:var(--muted)">
-                        <span style="color:var(--green);font-weight:600">母體：</span>元大台灣 50 成分股中的 48 檔股票<br>
-                        <span style="color:var(--green);font-weight:600">訓練集：</span>2019–2023 歷史資料<br>
-                        <span style="color:var(--green);font-weight:600">測試集：</span>2024 外樣本回測<br>
-                        <span style="color:var(--green);font-weight:600">系統：</span>Python、SQL Server、Gradio 介面<br>
-                        <span style="color:var(--green);font-weight:600">目標：</span>比較 GAPPTS、固定參數 PPTS 與 Buy &amp; Hold
+                <div class="grid-3">
+                    <div class="card">
+                        <div class="card-title">染色體結構（29 bit）</div>
+                        <div id="chromTable"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">適應度與評估指標</div>
+                        <div id="fitnessTable"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">研究資料設計</div>
+                        <div style="font-size:.82rem;line-height:1.8;color:var(--muted)">
+                            <span style="color:var(--green);font-weight:600">母體：</span>元大台灣 50 成分股中的 48 檔股票<br>
+                            <span style="color:var(--green);font-weight:600">訓練集：</span>2019–2023 歷史資料<br>
+                            <span style="color:var(--green);font-weight:600">測試集：</span>2024 外樣本回測<br>
+                            <span style="color:var(--green);font-weight:600">系統：</span>Python、SQL Server、Gradio 介面<br>
+                            <span style="color:var(--green);font-weight:600">目標：</span>比較 GAPPTS、固定參數 PPTS 與 Buy &amp;
+                            Hold
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="section reveal">
-        <div class="section-inner">
-            <div class="section-label">論文核心</div>
-            <h2 class="section-title">PPTS 價格區間利潤邏輯</h2>
-            <p class="section-sub">PPTS 先依買入價把歷史交易切進不同價格區間，統計每個區間的平均利潤與達標機率，再用 α 門檻判斷該區間屬於買入訊號還是保守區間。</p>
-            <div class="grid-2">
-                <div class="card">
-                    <div class="card-title">所選個股的價格區間平均利潤 / 達標機率</div>
-                    <div class="card-note">每個柱狀代表該價格區間的平均利潤，折線代表達成目標利潤的機率。綠色區間表示通過 α 門檻的買入候選。</div>
-                    <div class="chart-box"><canvas id="returnDistChart"></canvas></div>
+        <div class="section reveal">
+            <div class="section-inner">
+                <div class="section-label">論文核心</div>
+                <h2 class="section-title">PPTS 價格區間利潤邏輯</h2>
+                <p class="section-sub">PPTS 先依買入價把歷史交易切進不同價格區間，統計每個區間的平均利潤與達標機率，再用 α 門檻判斷該區間屬於買入訊號還是保守區間。</p>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">所選個股的價格區間平均利潤 / 達標機率</div>
+                        <div class="card-note">每個柱狀代表該價格區間的平均利潤，折線代表達成目標利潤的機率。綠色區間表示通過 α 門檻的買入候選。</div>
+                        <div class="chart-box"><canvas id="returnDistChart"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">48 檔樣本績效分級</div>
+                        <div class="card-note">論文把樣本分成「有效果」「一般」「無效果」三類。互動頁保留同一個分級框架，方便直接對照研究結果。</div>
+                        <div class="chart-box"><canvas id="profitDistChart"></canvas></div>
+                    </div>
                 </div>
-                <div class="card">
-                    <div class="card-title">48 檔樣本績效分級</div>
-                    <div class="card-note">論文把樣本分成「有效果」「一般」「無效果」三類。互動頁保留同一個分級框架，方便直接對照研究結果。</div>
-                    <div class="chart-box"><canvas id="profitDistChart"></canvas></div>
-                </div>
-            </div>
-            <div class="grid-3" style="margin-top:14px">
-                <div class="card">
-                    <div class="card-title">所選個股最佳化參數</div>
-                    <div id="gen0Stats" style="margin-top:6px"></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">所選個股測試績效</div>
-                    <div id="finalStats" style="margin-top:6px"></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">論文整體觀察</div>
-                    <div id="impStats" style="margin-top:6px"></div>
+                <div class="grid-3" style="margin-top:14px">
+                    <div class="card">
+                        <div class="card-title">所選個股最佳化參數</div>
+                        <div id="gen0Stats" style="margin-top:6px"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">所選個股測試績效</div>
+                        <div id="finalStats" style="margin-top:6px"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">論文整體觀察</div>
+                        <div id="impStats" style="margin-top:6px"></div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="section reveal">
-        <div class="section-inner">
-            <div class="section-label">互動體驗</div>
-            <h2 class="section-title">選股與 GAPPTS 參數產生 GAPPTS 策略</h2>
-            <p class="section-sub">你可以切換不同 ETF50 個股，重新執行 GAPPTS，觀察相同方法在不同產業與價格結構上會如何收斂到不同的參數組合。</p>
-            <div class="ga-cfg-panel">
-                <div class="ga-cfg-grid">
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="industryFilter">產業篩選</label>
-                        <select class="ga-cfg-input" id="industryFilter"></select>
-                        <div class="ga-cfg-hint">依論文的跨產業比較方式切換股票池</div>
+        <div class="section reveal">
+            <div class="section-inner">
+                <div class="section-label">互動體驗</div>
+                <h2 class="section-title">選股與 GAPPTS 參數產生 GAPPTS 策略</h2>
+                <p class="section-sub">你可以切換不同 ETF50 個股，重新執行 GAPPTS，觀察相同方法在不同產業與價格結構上會如何收斂到不同的參數組合。</p>
+                <div class="ga-cfg-panel">
+                    <div class="ga-cfg-grid">
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="industryFilter">產業篩選</label>
+                            <select class="ga-cfg-input" id="industryFilter"></select>
+                            <div class="ga-cfg-hint">依論文的跨產業比較方式切換股票池</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="stockSelect">個股</label>
+                            <select class="ga-cfg-input" id="stockSelect"></select>
+                            <div class="ga-cfg-hint">逐檔查看 PPTS / GAPPTS 的參數與績效差異</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="cfgPop">族群規模 (POP)</label>
+                            <input class="ga-cfg-input" id="cfgPop" type="number" value="50" min="20" max="120"
+                                step="10">
+                            <div class="ga-cfg-hint">論文建議值：50</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="cfgGens">最大世代數 (GENS)</label>
+                            <input class="ga-cfg-input" id="cfgGens" type="number" value="50" min="10" max="80"
+                                step="5">
+                            <div class="ga-cfg-hint">論文系統預設：50</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="cfgCR">交配率 (CR)</label>
+                            <input class="ga-cfg-input" id="cfgCR" type="number" value="0.80" min="0.30" max="1.00"
+                                step="0.05">
+                            <div class="ga-cfg-hint">輪盤選擇後的單點交叉機率</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="cfgMR">突變率 (MR)</label>
+                            <input class="ga-cfg-input" id="cfgMR" type="number" value="0.10" min="0.01" max="0.30"
+                                step="0.01">
+                            <div class="ga-cfg-hint">論文系統預設：0.10</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="strat-m">價格區間數 m</label>
+                            <input class="ga-cfg-input" id="strat-m" type="number" value="8" min="2" max="20" step="1">
+                            <div class="ga-cfg-hint">PPTS 將價格切成 m 個等距區間</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="strat-hold">持有天數</label>
+                            <input class="ga-cfg-input" id="strat-hold" type="number" value="5" min="1" max="30"
+                                step="1">
+                            <div class="ga-cfg-hint">買入後持有天數</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="strat-target">目標利潤 (%)</label>
+                            <input class="ga-cfg-input" id="strat-target" type="number" value="3.0" min="0.5" max="20"
+                                step="0.5">
+                            <div class="ga-cfg-hint">區間達標機率的門檻</div>
+                        </div>
                     </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="stockSelect">個股</label>
-                        <select class="ga-cfg-input" id="stockSelect"></select>
-                        <div class="ga-cfg-hint">逐檔查看 PPTS / GAPPTS 的參數與績效差異</div>
-                    </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="cfgPop">族群規模 (POP)</label>
-                        <input class="ga-cfg-input" id="cfgPop" type="number" value="50" min="20" max="120" step="10">
-                        <div class="ga-cfg-hint">論文建議值：50</div>
-                    </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="cfgGens">最大世代數 (GENS)</label>
-                        <input class="ga-cfg-input" id="cfgGens" type="number" value="50" min="10" max="80" step="5">
-                        <div class="ga-cfg-hint">論文系統預設：50</div>
-                    </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="cfgCR">交配率 (CR)</label>
-                        <input class="ga-cfg-input" id="cfgCR" type="number" value="0.80" min="0.30" max="1.00"
-                            step="0.05">
-                        <div class="ga-cfg-hint">輪盤選擇後的單點交叉機率</div>
-                    </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="cfgMR">突變率 (MR)</label>
-                        <input class="ga-cfg-input" id="cfgMR" type="number" value="0.10" min="0.01" max="0.30"
-                            step="0.01">
-                        <div class="ga-cfg-hint">論文系統預設：0.10</div>
-                    </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="strat-m">價格區間數 m</label>
-                        <input class="ga-cfg-input" id="strat-m" type="number" value="8" min="2" max="20" step="1">
-                        <div class="ga-cfg-hint">PPTS 將價格切成 m 個等距區間</div>
-                    </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="strat-hold">持有天數</label>
-                        <input class="ga-cfg-input" id="strat-hold" type="number" value="5" min="1" max="30" step="1">
-                        <div class="ga-cfg-hint">買入後持有天數</div>
-                    </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="strat-target">目標利潤 (%)</label>
-                        <input class="ga-cfg-input" id="strat-target" type="number" value="3.0" min="0.5" max="20"
-                            step="0.5">
-                        <div class="ga-cfg-hint">區間達標機率的門檻</div>
+                    <div class="stock-meta" id="selectedStockMeta"></div>
+                    <div class="ga-cfg-actions">
+                        <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 產生 GAPPTS 策略</button>
+                        <button class="btn btn-ghost" onclick="resetGaCfg()">↩ 重置論文預設</button>
+                        <button class="btn btn-ghost" id="btnSyncStocks"
+                            style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步真實股價</button>
+                        <span class="ga-cfg-status" id="cfgStatus"></span>
                     </div>
                 </div>
-                <div class="stock-meta" id="selectedStockMeta"></div>
-                <div class="ga-cfg-actions">
-                    <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 產生 GAPPTS 策略</button>
-                    <button class="btn btn-ghost" onclick="resetGaCfg()">↩ 重置論文預設</button>
-                    <button class="btn btn-ghost" id="btnSyncStocks"
-                        style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步真實股價</button>
-                    <span class="ga-cfg-status" id="cfgStatus"></span>
-                </div>
-            </div>
 
-            <div id="pyodide-runner-card" style="display:none">
-                <textarea id="pyodide-code">import numpy as np
+                <div id="pyodide-runner-card" style="display:none">
+                    <textarea id="pyodide-code">import numpy as np
 
 # 變數由上方 GUI 自動注入：
 #   個股: stock_code, stock_name, prices (list[float])
@@ -317,10 +342,10 @@ for i in range(bm):
     else:
         print(f"  [{lo:5.1f}~{hi:5.1f}] (無交易)")
 </textarea>
-                <div id="pyodide-output"></div>
+                    <div id="pyodide-output"></div>
+                </div>
             </div>
         </div>
-    </div>
     </div>
 
     <div class="section reveal">
@@ -1360,6 +1385,44 @@ for i in range(bm):
     <button class="scroll-top" aria-label="返回頂部">↑</button>
 
     <script src="scripts/thesis.js"></script>
+    <script>
+        (function () {
+            var nav = document.getElementById('thesisTabNav');
+            if (!nav) return;
+            nav.addEventListener('click', function (e) {
+                var btn = e.target.closest('.tab-btn');
+                if (!btn) return;
+                var tab = btn.dataset.tab;
+                nav.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                var map = {
+                    research: ['研究方法', '論文核心', '回測結果', '演算法模擬', '方法比較', '實證發現', '文獻對照', '技術指標補充', '衍生性商品延伸', '資源整理'],
+                    interactive: ['互動體驗'],
+                    tools: ['AI 輔助估值', '技術分析', '量化工具速查'],
+                    appendix: ['AI 分析工具', '課程複習']
+                };
+                var show = map[tab] || [];
+                document.querySelectorAll('.section').forEach(function (s) {
+                    var lbl = s.querySelector('.section-label');
+                    if (!lbl) return;
+                    var t = lbl.textContent.trim();
+                    s.style.display = show.some(function (x) { return t.indexOf(x) !== -1; }) ? 'block' : 'none';
+                });
+                var extra = {
+                    research: ['quant-ref', 'prompt-lib', 'course-recap', 'valuation-calc', 'tech-analysis', 'detailed-ta'],
+                    interactive: ['valuation-calc', 'tech-analysis', 'detailed-ta'],
+                    tools: ['quant-ref', 'prompt-lib'],
+                    appendix: ['course-recap', 'quant-ref']
+                };
+                var all = ['quant-ref', 'prompt-lib', 'course-recap', 'valuation-calc', 'tech-analysis', 'detailed-ta'];
+                var toShow = extra[tab] || [];
+                all.forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el) el.style.display = toShow.indexOf(id) !== -1 ? 'block' : 'none';
+                });
+            });
+        })();
+    </script>
 </body>
 
 </html>
