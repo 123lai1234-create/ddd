@@ -994,3 +994,286 @@ footer {
   }
   .explore-group-sub { margin-left: 0; width: 100%; }
 }
+/* ─── Tablet RWD Fixes (768px - 1024px) ──────────────────────────── */
+
+/* Fix 1: Navigation padding on tablet */
+@media (max-width: 1024px) and (min-width: 768px) {
+  nav {
+    padding: 0 24px;
+  }
+
+  .nav-brand {
+    font-size: 0.85rem;
+  }
+
+  .nav-links {
+    gap: 16px;
+  }
+
+  .nav-links a {
+    font-size: 0.8rem;
+  }
+
+  .nav-cta {
+    padding: 5px 12px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Fix 2: Hero section padding and sizing */
+@media (max-width: 1024px) and (min-width: 768px) {
+  #hero {
+    padding-top: var(--nav-h);
+    min-height: 90vh;
+  }
+
+  .hero-content {
+    padding: 0 20px;
+    max-width: 100%;
+  }
+
+  .hero-title {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    margin-bottom: 16px;
+  }
+
+  .hero-sub {
+    font-size: 0.95rem;
+    max-width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .hero-eyebrow {
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    margin-bottom: 20px;
+  }
+
+  .hero-tags {
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+
+  .htag {
+    font-size: 0.72rem;
+    padding: 3px 10px;
+  }
+
+  .hero-ctas {
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+
+  .btn {
+    padding: 9px 18px;
+    font-size: 0.8rem;
+  }
+
+  .hero-stats {
+    max-width: 100%;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .hero-stat {
+    padding: 14px 12px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-stat:last-child {
+    border-bottom: none;
+  }
+
+  .hero-stat .val {
+    font-size: 1.1rem;
+  }
+
+  .hero-stat .lbl {
+    font-size: 0.7rem;
+  }
+}
+
+/* Fix 3: Section padding and layout */
+@media (max-width: 1024px) and (min-width: 768px) {
+  section {
+    padding: 48px 24px;
+    max-width: 100%;
+  }
+
+  .section-label {
+    font-size: 0.72rem;
+    margin-bottom: 10px;
+  }
+
+  .section-title {
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    margin-bottom: 12px;
+  }
+
+  .section-sub {
+    font-size: 0.9rem;
+    max-width: 100%;
+    margin-bottom: 36px;
+  }
+}
+
+/* Fix 4: Explore grid on tablet */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .explore-grid,
+  .explore-grid-2,
+  .explore-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .explore-card {
+    padding: 18px;
+    min-height: auto;
+  }
+
+  .explore-icon {
+    font-size: 1.4rem;
+  }
+
+  .explore-card h3 {
+    font-size: 0.9rem;
+  }
+
+  .explore-card p {
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+
+  .explore-tag {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+  }
+
+  .explore-group-head {
+    gap: 8px 10px;
+    margin-bottom: 12px;
+  }
+
+  .explore-group-label {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+
+  .explore-group-title {
+    font-size: 0.95rem;
+  }
+
+  .explore-group-sub {
+    font-size: 0.75rem;
+    margin-left: auto;
+  }
+}
+
+/* Fix 5: Selected works list on tablet */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .sel-item {
+    gap: 12px;
+    padding: 16px 0;
+    flex-wrap: wrap;
+  }
+
+  .sel-left {
+    width: 100%;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .sel-title {
+    font-size: 0.9rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sel-desc {
+    font-size: 0.75rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sel-tag {
+    font-size: 0.65rem;
+    padding: 2px 7px;
+    flex-shrink: 0;
+  }
+
+  .sel-arrow {
+    font-size: 1rem;
+  }
+}
+
+/* Fix 6: Ensure proper text overflow handling */
+@media (max-width: 1024px) and (min-width: 768px) {
+  body {
+    overflow-x: hidden;
+    word-break: break-word;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  p, a, span {
+    word-break: break-word;
+  }
+}
+
+/* Fix 7: Scroll hint visibility on tablet */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .scroll-hint {
+    bottom: 24px;
+    font-size: 0.75rem;
+  }
+
+  .scroll-arrow {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Fix 8: Divider spacing */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .divider {
+    max-width: 100%;
+    margin: 0;
+  }
+}
+
+/* Fix 9: Ensure flex wrapping for buttons and tags */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .hero-ctas {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .hero-tags {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .explore-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* Fix 10: Prevent horizontal scroll on tablet */
+@media (max-width: 1024px) and (min-width: 768px) {
+  * {
+    max-width: 100%;
+  }
+
+  section,
+  nav,
+  .nav-drawer {
+    max-width: 100vw;
+  }
+}
