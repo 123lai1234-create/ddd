@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 服務展示 | MiniMax TTS + Chat + Music</title>
+    <meta name="description" content="MiniMax AI 服務實作展示：文字轉語音、智慧聊天、 AI 音樂生成">
+    <!-- BEGIN COMMON_HEAD -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles/shared.css">
+    <link rel="stylesheet" href="styles/polish.css">
+    <link rel="stylesheet" href="styles/dynamic.css">
+    <script src="scripts/admin-mode.js"></script>
+    <script src="scripts/site-shell-config.js" defer></script>
+    <script src="scripts/nav.js" defer></script>
+    <script src="scripts/app-config.js" defer></script>
+    <!-- END COMMON_HEAD -->
+    <style>
+        :root {
+            --accent: #7c3aed;
+            --accent-light: #a78bfa;
+            --surface: #1a1a2e;
+            --surface2: #16213e;
+            --border: #2d2d44;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+        }
+
+        .ai-hero {
+            text-align: center;
+            padding: 80px 24px 60px;
+            background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+        }
+
+        .ai-hero .eyebrow {
+            font-size: .75rem;
+            letter-spacing: .15em;
+            color: var(--accent-light);
+            margin-bottom: 16px;
+        }
+
+        .ai-hero h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff, var(--accent-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .ai-hero p {
+            color: var(--muted);
+            max-width: 600px;
+            margin: 0 auto 32px;
+            font-size: 1.1rem;
+        }
+
+        .ai-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 24px;
+            padding: 0 24px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .ai-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .ai-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(124, 58, 237, 0.15);
+        }
+
+        .ai-card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .tts-card .ai-card-icon {
+            background: linear-gradient(135deg, #f97316, #fb923c);
+        }
+
+        .chat-card .ai-card-icon {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+        }
+
+        .music-card .ai-card-icon {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+
+        .ai-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .ai-card p {
+            color: var(--muted);
+            font-size: .9rem;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .ai-field {
+            margin-bottom: 16px;
+        }
+
+        .ai-field label {
+            display: block;
+            font-size: .8rem;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .ai-field input,
+        .ai-field textarea,
+        .ai-field select {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: .9rem;
+            font-family: inherit;
+        }
+
+        .ai-field textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .ai-btn {
+            width: 100%;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: .95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .ai-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .ai-btn:active {
+            transform: scale(0.98);
+        }
+
+        .tts-btn {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: #fff;
+        }
+
+        .chat-btn {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+        }
+
+        .music-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+        }
+
+        .ai-result {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--surface2);
+            border-radius: 8px;
+            min-height: 80px;
+        }
+
+        .ai-result-label {
+            font-size: .75rem;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .ai-result-content {
+            color: var(--text);
+            font-size: .9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .audio-player {
+            width: 100%;
+            margin-top: 12px;
+            border-radius: 8px;
+        }
+
+        .chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+
+        .chat-msg {
+            padding: 10px 14px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            font-size: .9rem;
+            line-height: 1.5;
+        }
+
+        .chat-msg-user {
+            background: var(--accent);
+            color: #fff;
+            margin-left: 40px;
+        }
+
+        .chat-msg-bot {
+            background: var(--surface2);
+            color: var(--text);
+            margin-right: 40px;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input-row input {
+            flex: 1;
+        }
+
+        .chat-input-row button {
+            padding: 10px 20px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: .75rem;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .status-loading {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .arch-section {
+            padding: 60px 24px;
+            background: var(--surface);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .arch-title {
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 40px;
+            color: #fff;
+        }
+
+        .arch-flow {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .arch-node {
+            padding: 12px 20px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: .85rem;
+            font-weight: 500;
+        }
+
+        .arch-arrow {
+            color: var(--accent-light);
+            font-size: 1.2rem;
+        }
+
+        .api-endpoints {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 40px;
+        }
+
+        .endpoint-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .endpoint-card code {
+            display: block;
+            padding: 8px 12px;
+            background: #0f0f1a;
+            border-radius: 6px;
+            font-size: .8rem;
+            color: var(--accent-light);
+            margin-bottom: 12px;
+        }
+
+        .endpoint-card h4 {
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .endpoint-card p {
+            color: var(--muted);
+            font-size: .8rem;
+        }
+    </style>
+</head>
+
+<body data-page="ai-demo">
+    <div data-site-nav></div>
+
+    <section class="ai-hero">
+        <div class="eyebrow">MINIMAX AI SERVICES</div>
+        <h1>AI 服務展示廳</h1>
+        <p>文字轉語音、智慧聊天、 AI 音樂生成 — 全部透過 MiniMax API 驅動，API Key 完全藏在後端。</p>
+        <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:20px">
+            <span class="status-badge status-success">✓ TTS 已啟用</span>
+            <span class="status-badge status-success">✓ Chat 已啟用</span>
+            <span class="status-badge status-success">✓ Music 已啟用</span>
+        </div>
+    </section>
+
+    <div class="ai-grid">
+        <!-- TTS Card -->
+        <div class="ai-card tts-card">
+            <div class="ai-card-icon">🔊</div>
+            <h3>文字轉語音 (TTS)</h3>
+            <p>輸入文字，即時轉換為自然語音。支持多種音色與速度調整。</p>
+
+            <div class="ai-field">
+                <label for="tts-text">要轉換的文字</label>
+                <textarea id="tts-text" placeholder="輸入您要轉換成語音的文字...">您好，這是 MiniMax 文字轉語音服務的測試。您可以輸入任何文字內容。</textarea>
+            </div>
+
+            <div class="ai-field">
+                <label for="tts-voice">音色</label>
+                <select id="tts-voice">
+                    <option value="default">預設音色</option>
+                    <option value="female">女性音色</option>
+                    <option value="male">男性音色</option>
+                </select>
+            </div>
+
+            <div class="ai-field">
+                <label for="tts-speed">速度 (0.5 - 2.0)</label>
+                <input type="range" id="tts-speed" min="0.5" max="2.0" step="0.1" value="1.0" style="width:100%">
+                <span id="tts-speed-val" style="font-size:.8rem;color:var(--muted)">1.0x</span>
+            </div>
+
+            <button class="ai-btn tts-btn" id="tts-generate">
+                <span id="tts-spinner" class="spinner" style="display:none"></span>
+                <span id="tts-btn-text">生成語音</span>
+            </button>
+
+            <div class="ai-result">
+                <div class="ai-result-label">輸出結果</div>
+                <div id="tts-result">
+                    <audio id="tts-audio" class="audio-player" controls style="display:none"></audio>
+                    <div id="tts-status" style="color:var(--muted);font-size:.85rem">點擊上方按鈕生成語音</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Card -->
+        <div class="ai-card chat-card">
+            <div class="ai-card-icon">💬</div>
+            <h3>智慧聊天 (Chat)</h3>
+            <p>基於 MiniMax-M2 模型的 AI 對話助手，可以回答各種問題。</p>
+
+            <div class="chat-messages" id="chat-messages">
+                <div class="chat-msg chat-bot">👋 你好！我是 AI 助手，有什麼可以幫您的嗎？</div>
+            </div>
+
+            <div class="ai-field">
+                <label for="chat-input">輸入訊息</label>
+                <div class="chat-input-row">
+                    <input type="text" id="chat-input" placeholder="輸入您想問的問題..."
+                        onkeypress="if(event.key==='Enter')sendChat()">
+                    <button onclick="sendChat()">送出</button>
+                </div>
+            </div>
+
+            <button class="ai-btn chat-btn" id="chat-generate" onclick="sendChat()">
+                <span id="chat-spinner" class="spinner" style="display:none"></span>
+                <span id="chat-btn-text">送出</span>
+            </button>
+        </div>
+
+        <!-- Music Card -->
+        <div class="ai-card music-card">
+            <div class="ai-card-icon">🎵</div>
+            <h3>AI 音樂生成</h3>
+            <p>用文字描述您想要的音樂風格，AI 即時生成原創音樂。</p>
+
+            <div class="ai-field">
+                <label for="music-prompt">音樂描述</label>
+                <textarea id="music-prompt" placeholder="描述您想要的音樂，例如：電子舞曲，活潑節奏，適合健身...">平靜的鋼琴曲，適合放鬆和冥想</textarea>
+            </div>
+
+            <div class="ai-field">
+                <label for="music-duration">時長（秒）</label>
+                <select id="music-duration">
+                    <option value="15">15 秒</option>
+                    <option value="30" selected>30 秒</option>
+                    <option value="60">60 秒</option>
+                </select>
+            </div>
+
+            <div class="ai-field">
+                <label>
+                    <input type="checkbox" id="music-instrumental">
+                    純音樂（無人聲）
+                </label>
+            </div>
+
+            <button class="ai-btn music-btn" id="music-generate">
+                <span id="music-spinner" class="spinner" style="display:none"></span>
+                <span id="music-btn-text">生成音樂</span>
+            </button>
+
+            <div class="ai-result">
+                <div class="ai-result-label">輸出結果</div>
+                <div id="music-result">
+                    <audio id="music-audio" class="audio-player" controls style="display:none"></audio>
+                    <div id="music-status" style="color:var(--muted);font-size:.85rem">點擊上方按鈕生成音樂</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="arch-section">
+        <h2 class="arch-title">技術架構</h2>
+        <div class="arch-flow">
+            <span class="arch-node">🌐 前端 HTML</span>
+            <span class="arch-arrow">→</span>
+            <span class="arch-node">⚡ FastAPI 後端</span>
+            <span class="arch-arrow">→</span>
+            <span class="arch-node">🔐 MiniMax API</span>
+        </div>
+
+        <div class="api-endpoints">
+            <div class="endpoint-card">
+                <code>POST /api/ai/tts</code>
+                <h4>文字轉語音</h4>
+                <p>將文字轉換為 MP3 音訊格式返回</p>
+            </div>
+            <div class="endpoint-card">
+                <code>POST /api/ai/chat</code>
+                <h4>聊天對話</h4>
+                <p>使用 MiniMax-M2 模型進行自然語言處理</p>
+            </div>
+            <div class="endpoint-card">
+                <code>POST /api/ai/music</code>
+                <h4>音樂生成</h4>
+                <p>根據文字描述生成 AI 音樂</p>
+            </div>
+        </div>
+    </section>
+
+    <div data-site-footer></div>
+
+    <script>
+        // TTS Speed slider
+        document.getElementById('tts-speed').addEventListener('input', function (e) {
+            document.getElementById('tts-speed-val').textContent = e.target.value + 'x';
+        });
+
+        // TTS Generation
+        document.getElementById('tts-generate').addEventListener('click', async function () {
+            const text = document.getElementById('tts-text').value.trim();
+            if (!text) {
+                alert('請輸入要轉換的文字');
+                return;
+            }
+
+            const btn = this;
+            const spinner = document.getElementById('tts-spinner');
+            const btnText = document.getElementById('tts-btn-text');
+            const audio = document.getElementById('tts-audio');
+            const status = document.getElementById('tts-status');
+
+            btn.disabled = true;
+            spinner.style.display = 'inline-block';
+            btnText.textContent = '生成中...';
+            status.textContent = '正在生成語音...';
+            status.style.color = 'var(--accent-light)';
+
+            try {
+                const voice = document.getElementById('tts-voice').value;
+                const speed = parseFloat(document.getElementById('tts-speed').value);
+
+                const response = await fetch('/api/ai/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        model: 'e2all-turbo',
+                        voice: voice,
+                        speed: speed
+                    })
+                });
+
+                if (!response.ok) throw new Error('API 請求失敗');
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+
+                audio.src = url;
+                audio.style.display = 'block';
+                status.textContent = '✓ 語音生成完成！';
+                status.style.color = '#10b981';
+
+                audio.play().catch(() => { });
+            } catch (error) {
+                status.textContent = '✗ 生成失敗：' + error.message;
+                status.style.color = '#ef4444';
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = '生成語音';
+            }
+        });
+
+        // Chat functionality
+        let chatHistory = [];
+
+        async function sendChat() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const messagesDiv = document.getElementById('chat-messages');
+            const btn = document.getElementById('chat-generate');
+            const spinner = document.getElementById('chat-spinner');
+            const btnText = document.getElementById('chat-btn-text');
+
+            // Add user message
+            messagesDiv.innerHTML += `<div class="chat-msg chat-msg-user">${escapeHtml(message)}</div>`;
+            input.value = '';
+
+            // Add loading message
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'chat-msg chat-msg-bot';
+            loadingMsg.innerHTML = '<span class="spinner" style="display:inline-block"></span> 思考中...';
+            messagesDiv.appendChild(loadingMsg);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            btn.disabled = true;
+            spinner.style.display = 'inline-block';
+            btnText.textContent = '處理中...';
+
+            try {
+                chatHistory.push({ role: 'user', content: message });
+
+                const response = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'system', content: '你是專業的 AI 助手，幫助用戶了解這個作品集的內容。請用繁體中文回答。' },
+                            ...chatHistory
+                        ],
+                        model: 'MiniMax-M2',
+                        temperature: 0.7,
+                        max_tokens: 2048
+                    })
+                });
+
+                if (!response.ok) throw new Error('API 請求失敗');
+
+                const data = await response.json();
+                const botResponse = data.content;
+
+                chatHistory.push({ role: 'assistant', content: botResponse });
+
+                // Replace loading message with response
+                loadingMsg.innerHTML = botResponse;
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            } catch (error) {
+                loadingMsg.innerHTML = '✗ 發生錯誤：' + error.message;
+                loadingMsg.style.color = '#ef4444';
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = '送出';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Music Generation
+        document.getElementById('music-generate').addEventListener('click', async function () {
+            const prompt = document.getElementById('music-prompt').value.trim();
+            if (!prompt) {
+                alert('請輸入音樂描述');
+                return;
+            }
+
+            const btn = this;
+            const spinner = document.getElementById('music-spinner');
+            const btnText = document.getElementById('music-btn-text');
+            const audio = document.getElementById('music-audio');
+            const status = document.getElementById('music-status');
+
+            btn.disabled = true;
+            spinner.style.display = 'inline-block';
+            btnText.textContent = '生成中...';
+            status.textContent = '正在生成音樂（可能需要 30-60 秒）...';
+            status.style.color = 'var(--accent-light)';
+
+            try {
+                const duration = parseInt(document.getElementById('music-duration').value);
+                const instrumental = document.getElementById('music-instrumental').checked;
+
+                const response = await fetch('/api/ai/music', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        model: 'music-2.6',
+                        duration: duration,
+                        instrumental: instrumental
+                    })
+                });
+
+                if (!response.ok) throw new Error('API 請求失敗');
+
+                const data = await response.json();
+
+                if (data.audio_url) {
+                    audio.src = data.audio_url;
+                    audio.style.display = 'block';
+                    status.textContent = '✓ 音樂生成完成！';
+                    status.style.color = '#10b981';
+                    audio.play().catch(() => { });
+                } else if (data.task_id) {
+                    status.textContent = '⏳ 任務已提交，ID: ' + data.task_id;
+                    // Polling would be implemented here for longer tasks
+                } else {
+                    throw new Error('未取得音訊 URL');
+                }
+            } catch (error) {
+                status.textContent = '✗ 生成失敗：' + error.message;
+                status.style.color = '#ef4444';
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = '生成音樂';
+            }
+        });
+    </script>
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+</body>
+
+</html>
