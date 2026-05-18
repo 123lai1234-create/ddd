@@ -421,22 +421,13 @@
     <div data-site-footer></div>
 
     <script>
-        let API_BASE = '';
+        // 直接使用後端 URL，不經過自動偵測
+        const API_BASE = 'https://donttalk-api.fly.dev';
 
         async function initApiBase() {
             const statusEl = document.getElementById('api-status');
-            await new Promise(resolve => setTimeout(resolve, 500));
-            if (window.APP_CONFIG_UTILS?.resolveApiBase) {
-                try {
-                    API_BASE = await window.APP_CONFIG_UTILS.resolveApiBase() || window.APP_CONFIG?.API_BASE_URL || '';
-                } catch (e) {
-                    API_BASE = window.APP_CONFIG?.API_BASE_URL || '';
-                }
-            } else {
-                API_BASE = window.APP_CONFIG?.API_BASE_URL || '';
-            }
             if (statusEl) {
-                statusEl.textContent = API_BASE ? 'API: ' + API_BASE : 'API: 未設定';
+                statusEl.textContent = 'API: ' + API_BASE + ' (直接連接)';
             }
             console.log('API Base:', API_BASE);
         }
