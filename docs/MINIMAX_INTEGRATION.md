@@ -162,3 +162,78 @@ Astro Frontend → FastAPI (/ai/*) → MiniMax API
 - **Portfolio 技術展示**（Demo 頁面）
 
 這些都是 MLOps Platform 工程師職位的加分項。
+
+---
+
+## 新增功能（2025/05）
+
+### 🚀 歌詞生成 `/ai/lyrics`
+
+```bash
+curl -X POST http://localhost:8000/ai/lyrics \
+  -H "Content-Type: application/json" \
+  -d '{"theme": "工程師的深夜告白", "style": "electronic"}'
+```
+
+### 👁️ 圖片理解 `/ai/vision`
+
+```bash
+curl -X POST http://localhost:8000/ai/vision \
+  -H "Content-Type: application/json" \
+  -d '{"image_url": "https://example.com/diagram.png", "prompt": "請分析這個系統架構圖"}'
+```
+
+### 🔍 網絡搜索 `/ai/search`
+
+```bash
+curl -X POST http://localhost:8000/ai/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "最新 AI 製藥研究趨勢", "num_results": 5}'
+```
+
+### 📚 RAG 搜索 `/ai/rag`
+
+```bash
+curl -X POST http://localhost:8000/ai/rag \
+  -H "Content-Type: application/json" \
+  -d '{"query": "這個藥物的作用機制是什麼？", "context": "藥物名稱：ABC123"}'
+```
+
+### 🎤 音樂翻唱 `/ai/music/cover`
+
+```bash
+curl -X POST http://localhost:8000/ai/music/cover \
+  -H "Content-Type: application/json" \
+  -d '{"source_audio_url": "https://example.com/song.mp3", "style": "jazz"}'
+```
+
+### 🎸 AI Band 完整管道 `/ai/ai-band`
+
+一鍵完成：歌詞生成 + 音樂生成
+
+```bash
+curl -X POST http://localhost:8000/ai/ai-band \
+  -H "Content-Type: application/json" \
+  -d '{"theme": "工程師的日常", "style": "electronic", "duration": 30}'
+```
+
+---
+
+## 命令列展示腳本
+
+```bash
+# 設定 API Key
+export MINIMAX_API_KEY=your_key_here
+
+# 歌詞 + 音樂演示
+python scripts/minimax_demo.py --theme "工程師的日常" --style "電子搖滾"
+
+# 網絡搜索演示
+python scripts/minimax_demo.py --mode web-search --query "AI製藥最新進展"
+
+# 圖片分析演示
+python scripts/minimax_demo.py --mode vision --image-url "https://example.com/arch.png"
+
+# 完整管道演示（所有功能串聯）
+python scripts/minimax_demo.py --mode full --theme "深夜程式碼" --style "ambient"
+```

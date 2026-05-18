@@ -7,4 +7,9 @@ export default defineConfig({
     build: {
         format: 'file',
     },
+    vite: {
+        optimizeDeps: {
+            include: ['react', 'react-dom'],
+        },
+    },
 });

@@ -209,6 +209,246 @@ async def poll_music_task(task_id: str) -> dict[str, Any]:
     return response.json()
 
 
+# ── Lyrics Generation ─────────────────────────────────────────────────────────
+
+
+async def generate_lyrics(
+    theme: str,
+    style: str = "pop",
+    model: str = "MiniMax-M2",
+) -> dict[str, Any]:
+    """
+    Generate song lyrics based on a theme using MiniMax M2.
+
+    Args:
+        theme: The topic or story to write about.
+        style: Music style (pop, rock, ballad, hiphop, electronic, etc.).
+        model: Chat model to use for generation.
+
+    Returns:
+        Dict containing generated lyrics with structure (verse, chorus, bridge).
+    """
+    if not MINIMAX_API_KEY:
+        raise MiniMaxError("MINIMAX_API_KEY is not set")
+
+    if not theme.strip():
+        raise MiniMaxError("Theme cannot be empty")
+
+    prompt = f"""你是一位專業的歌詞創作人。請根據以下主題和風格，創作一首完整、有結構的歌曲歌詞。
+
+主題：{theme}
+風格：{style}
+
+請按照以下格式創作：
+1. 主歌 1 (Verse 1)
+2. 副歌 (Chorus)  
+3. 主歌 2 (Verse 2)
+4. 副歌 (Chorus)
+5. 橋段 (Bridge)
+6. 最終副歌 (Final Chorus)
+
+要求：
+- 歌詞要有情感共鳴
+- 押韻自然
+- 適合演唱
+- 中文或英文皆可根據風格自動調整
+
+請直接開始創作歌詞："""
+
+    messages = [
+        {"role": "system", "content": "你是一位專業的歌詞創作人，擅長創作出感人、有韻律的歌曲歌詞。"},
+        {"role": "user", "content": prompt},
+    ]
+
+    result = await chat_completion(messages=messages, model=model, temperature=0.8, max_tokens=1024)
+    return result
+
+
+# ── Image Understanding (Vision) ──────────────────────────────────────────────
+
+
+async def image_understanding(
+    image_url: str | None = None,
+    image_base64: str | None = None,
+    prompt: str = "請詳細描述這張圖片的內容。",
+    model: str = "MiniMax-M2",
+) -> dict[str, Any]:
+    """
+    Analyze images using MiniMax's vision capabilities.
+
+    Args:
+        image_url: URL of the image to analyze.
+        image_base64: Base64 encoded image data.
+        prompt: Question or instruction about the image.
+        model: Vision model to use.
+
+    Returns:
+        Dict containing image analysis result.
+    """
+    if not MINIMAX_API_KEY:
+        raise MiniMaxError("MINIMAX_API_KEY is not set")
+
+    if not image_url and not image_base64:
+        raise MiniMaxError("Either image_url or image_base64 must be provided")
+
+    # Build image content
+    if image_url:
+        image_content = {"type": "image_url", "image_url": {"url": image_url}}
+    else:
+        image_content = {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "user", "content": [image_content, {"type": "text", "text": prompt}]},
+        ],
+        "max_tokens": 2048,
+    }
+
+    return await _post("/v1/images/understand", payload, timeout=60.0)
+
+
+# ── Web Search (RAG) ───────────────────────────────────────────────────────────
+
+
+class SearchModel(str):
+    """MiniMax search models."""
+
+    SEARCH_PRO = "search-pro"
+    SEARCH_STANDARD = "search-standard"
+
+
+async def web_search(
+    query: str,
+    model: str = SearchModel.SEARCH_PRO,
+    num_results: int = 5,
+    recency_days: int | None = None,
+) -> dict[str, Any]:
+    """
+    Search the web for current information using MiniMax search API.
+
+    Args:
+        query: Search query string.
+        model: Search model to use.
+        num_results: Number of results to return (1-10).
+        recency_days: Limit results to recent days (optional).
+
+    Returns:
+        Dict containing search results with sources and summaries.
+    """
+    if not MINIMAX_API_KEY:
+        raise MiniMaxError("MINIMAX_API_KEY is not set")
+
+    if not query.strip():
+        raise MiniMaxError("Query cannot be empty")
+
+    num_results = max(1, min(10, num_results))
+
+    payload = {
+        "model": model,
+        "query": query,
+        "num_results": num_results,
+    }
+
+    if recency_days:
+        payload["recency_days"] = recency_days
+
+    return await _post("/v1/search", payload, timeout=30.0)
+
+
+async def rag_search(
+    query: str,
+    context: str,
+    model: str = "MiniMax-M2",
+) -> dict[str, Any]:
+    """
+    Perform RAG-style search: search web + synthesize answer with context.
+
+    Args:
+        query: User's question.
+        context: Additional context to ground the answer.
+        model: Chat model for synthesis.
+
+    Returns:
+        Dict containing synthesized answer with citations.
+    """
+    if not MINIMAX_API_KEY:
+        raise MiniMaxError("MINIMAX_API_KEY is not set")
+
+    # First search for relevant information
+    search_results = await web_search(query=query, num_results=5)
+
+    # Build context from search results
+    sources = search_results.get("data", [])
+    context_text = "\n\n".join([
+        f"來源 {i+1}: {s.get('title', 'N/A')}\n摘要: {s.get('snippet', 'N/A')}"
+        for i, s in enumerate(sources)
+    ])
+
+    # Synthesize answer
+    prompt = f"""根據以下搜索結果和額外上下文，請回答用戶問題。
+
+搜索結果：
+{context_text}
+
+額外上下文：
+{context}
+
+用戶問題：{query}
+
+請給出準確、有依據的回答，並適當引用來源。"""
+
+    messages = [
+        {"role": "system", "content": "你是一個精準、可靠的資訊助手。根據事實回答，不要編造。"},
+        {"role": "user", "content": prompt},
+    ]
+
+    result = await chat_completion(messages=messages, model=model, temperature=0.3, max_tokens=2048)
+    result["sources"] = sources
+    return result
+
+
+# ── Music Cover / Reprise ──────────────────────────────────────────────────────
+
+
+async def music_cover(
+    source_audio_url: str | None = None,
+    source_audio_base64: str | None = None,
+    style: str = "pop",
+    vocals_style: str = "natural",
+) -> dict[str, Any]:
+    """
+    Create a cover version of existing music with different style.
+
+    Args:
+        source_audio_url: URL of source audio.
+        source_audio_base64: Base64 encoded audio.
+        style: Target style (pop, rock, jazz, electronic, etc.).
+        vocals_style: Vocals processing style.
+
+    Returns:
+        Dict containing task_id for polling or audio_url.
+    """
+    if not MINIMAX_API_KEY:
+        raise MiniMaxError("MINIMAX_API_KEY is not set")
+
+    if not source_audio_url and not source_audio_base64:
+        raise MiniMaxError("Source audio URL or base64 required")
+
+    payload = {
+        "model": "music-cover",
+        "style": style,
+        "vocals_style": vocals_style,
+    }
+
+    if source_audio_url:
+        payload["source_audio_url"] = source_audio_url
+    else:
+        payload["source_audio_base64"] = source_audio_base64
+
+    return await _post("/v1/audio/covers", payload, timeout=30.0)
+
+
 # ── Text Completion (MiniMax M2) ─────────────────────────────────────────────
 
 

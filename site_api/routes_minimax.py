@@ -22,12 +22,18 @@ from site_api.minimax_client import (
     MiniMaxTimeoutError,
     MiniMaxAuthError,
     MusicModel,
+    SearchModel,
     TTSModel,
     chat_completion,
     stream_chat_completion,
     text_to_speech,
     generate_music,
     poll_music_task,
+    generate_lyrics,
+    image_understanding,
+    web_search,
+    rag_search,
+    music_cover,
 )
 
 logger = logging.getLogger(__name__)
@@ -273,4 +279,306 @@ async def music_status(task_id: str):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to poll task status: {e}",
+        )
+
+
+# ── Lyrics Generation ───────────────────────────────────────────────────────────
+
+
+class LyricsRequest(BaseModel):
+    theme: str = Field(..., min_length=1, max_length=500, description="Song theme or topic")
+    style: str = Field(default="pop", description="Music style (pop, rock, ballad, hiphop, electronic, etc.)")
+    model: str = Field(default="MiniMax-M2")
+
+
+class LyricsResponse(BaseModel):
+    model: str
+    content: str
+    theme: str
+    style: str
+
+
+@router.post("/lyrics", response_model=LyricsResponse)
+async def lyrics(request: LyricsRequest):
+    """
+    Generate song lyrics based on a theme.
+    
+    Returns structured lyrics with verse, chorus, bridge sections.
+    """
+    try:
+        result = await generate_lyrics(
+            theme=request.theme,
+            style=request.style,
+            model=request.model,
+        )
+
+        choices = result.get("choices", [{}])
+        content = choices[0].get("message", {}).get("content", "") if choices else ""
+
+        return LyricsResponse(
+            model=result.get("model", request.model),
+            content=content,
+            theme=request.theme,
+            style=request.style,
+        )
+
+    except MiniMaxError as e:
+        logger.error("Lyrics generation error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Lyrics generation failed: {e}",
+        )
+
+
+# ── Image Understanding (Vision) ───────────────────────────────────────────────
+
+
+class ImageUnderstandingRequest(BaseModel):
+    image_url: str | None = Field(default=None, description="URL of image to analyze")
+    image_base64: str | None = Field(default=None, description="Base64 encoded image")
+    prompt: str = Field(
+        default="請詳細描述這張圖片的內容。",
+        description="Question or instruction about the image",
+    )
+    model: str = Field(default="MiniMax-M2")
+
+
+class ImageUnderstandingResponse(BaseModel):
+    model: str
+    content: str
+    usage: dict[str, int] | None = None
+
+
+@router.post("/vision", response_model=ImageUnderstandingResponse)
+async def vision(request: ImageUnderstandingRequest):
+    """
+    Analyze images using MiniMax vision capabilities.
+    
+    Use cases:
+    - Analyze screenshots, diagrams, charts
+    - Extract information from documents
+    - Code/architecture diagram analysis
+    """
+    try:
+        result = await image_understanding(
+            image_url=request.image_url,
+            image_base64=request.image_base64,
+            prompt=request.prompt,
+            model=request.model,
+        )
+
+        choices = result.get("choices", [{}])
+        content = choices[0].get("message", {}).get("content", "") if choices else ""
+
+        return ImageUnderstandingResponse(
+            model=result.get("model", request.model),
+            content=content,
+            usage=result.get("usage"),
+        )
+
+    except MiniMaxError as e:
+        logger.error("Image understanding error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Image understanding failed: {e}",
+        )
+
+
+# ── Web Search (RAG) ──────────────────────────────────────────────────────────────
+
+
+class WebSearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=500, description="Search query")
+    model: str = Field(default=SearchModel.SEARCH_PRO)
+    num_results: int = Field(default=5, ge=1, le=10)
+    recency_days: int | None = Field(default=None, description="Limit to recent days")
+
+
+class WebSearchResponse(BaseModel):
+    query: str
+    results: list[dict[str, Any]]
+    model: str
+
+
+@router.post("/search", response_model=WebSearchResponse)
+async def search(request: WebSearchRequest):
+    """
+    Search the web for current information.
+    
+    Returns search results with titles, snippets, and URLs.
+    """
+    try:
+        result = await web_search(
+            query=request.query,
+            model=request.model,
+            num_results=request.num_results,
+            recency_days=request.recency_days,
+        )
+
+        return WebSearchResponse(
+            query=request.query,
+            results=result.get("data", []),
+            model=request.model,
+        )
+
+    except MiniMaxError as e:
+        logger.error("Web search error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Web search failed: {e}",
+        )
+
+
+class RagSearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=500, description="User question")
+    context: str = Field(..., min_length=1, description="Additional context to ground answer")
+    model: str = Field(default="MiniMax-M2")
+
+
+class RagSearchResponse(BaseModel):
+    answer: str
+    sources: list[dict[str, Any]]
+    model: str
+
+
+@router.post("/rag", response_model=RagSearchResponse)
+async def rag(request: RagSearchRequest):
+    """
+    RAG-style search: web search + synthesis with context.
+    
+    First searches the web for information, then synthesizes
+    an answer grounded in both search results and provided context.
+    """
+    try:
+        result = await rag_search(
+            query=request.query,
+            context=request.context,
+            model=request.model,
+        )
+
+        choices = result.get("choices", [{}])
+        content = choices[0].get("message", {}).get("content", "") if choices else ""
+
+        return RagSearchResponse(
+            answer=content,
+            sources=result.get("sources", []),
+            model=request.model,
+        )
+
+    except MiniMaxError as e:
+        logger.error("RAG search error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"RAG search failed: {e}",
+        )
+
+
+# ── Music Cover ────────────────────────────────────────────────────────────────
+
+
+class MusicCoverRequest(BaseModel):
+    source_audio_url: str | None = Field(default=None, description="URL of source audio")
+    source_audio_base64: str | None = Field(default=None, description="Base64 encoded audio")
+    style: str = Field(default="pop", description="Target style (pop, rock, jazz, electronic, etc.)")
+    vocals_style: str = Field(default="natural", description="Vocals processing style")
+
+
+class MusicCoverResponse(BaseModel):
+    task_id: str | None = None
+    audio_url: str | None = None
+    status: str
+    model: str = "music-cover"
+
+
+@router.post("/music/cover", response_model=MusicCoverResponse)
+async def cover(request: MusicCoverRequest):
+    """
+    Create a cover version of existing music with different style.
+    
+    Provide either source_audio_url or source_audio_base64.
+    For long audio, returns task_id for polling via /ai/music/{task_id}/status
+    """
+    try:
+        if not request.source_audio_url and not request.source_audio_base64:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Either source_audio_url or source_audio_base64 required",
+            )
+
+        result = await music_cover(
+            source_audio_url=request.source_audio_url,
+            source_audio_base64=request.source_audio_base64,
+            style=request.style,
+            vocals_style=request.vocals_style,
+        )
+
+        return MusicCoverResponse(
+            task_id=result.get("task_id"),
+            audio_url=result.get("audio_url"),
+            status=result.get("status", "completed"),
+        )
+
+    except MiniMaxError as e:
+        logger.error("Music cover error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Music cover failed: {e}",
+        )
+
+
+# ── Full Pipeline: Lyrics + Music ────────────────────────────────────────────────
+
+
+class AIBandRequest(BaseModel):
+    theme: str = Field(..., min_length=1, max_length=500, description="Song theme")
+    style: str = Field(default="pop", description="Music style")
+    duration: int = Field(default=30, ge=15, le=180, description="Music duration in seconds")
+
+
+class AIBandResponse(BaseModel):
+    lyrics: str
+    music_url: str | None = None
+    task_id: str | None = None
+    status: str
+
+
+@router.post("/ai-band", response_model=AIBandResponse)
+async def ai_band(request: AIBandRequest):
+    """
+    Complete AI songwriting pipeline: generate lyrics + music.
+    
+    1. Generate lyrics based on theme and style
+    2. Generate music using the lyrics as prompt
+    
+    Returns both lyrics and music URL/task_id.
+    """
+    try:
+        # Step 1: Generate lyrics
+        lyrics_result = await generate_lyrics(
+            theme=request.theme,
+            style=request.style,
+        )
+        choices = lyrics_result.get("choices", [{}])
+        lyrics_content = choices[0].get("message", {}).get("content", "") if choices else ""
+
+        # Step 2: Generate music with lyrics as prompt
+        music_prompt = f"{request.style} song. {lyrics_content}"
+        music_result = await generate_music(
+            prompt=music_prompt,
+            duration=request.duration,
+            instrumental=False,
+        )
+
+        return AIBandResponse(
+            lyrics=lyrics_content,
+            music_url=music_result.get("audio_url"),
+            task_id=music_result.get("task_id"),
+            status=music_result.get("status", "processing"),
+        )
+
+    except MiniMaxError as e:
+        logger.error("AI Band pipeline error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"AI Band pipeline failed: {e}",
         )

@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPTS × GAPPTS 視覺化解說</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --bg: #F9F7F7;
+            --bg2: #EEF1F7;
+            --card: #fff;
+            --teal: #3F72AF;
+            --teal-soft: rgba(63, 114, 175, 0.08);
+            --coral: #E07A5F;
+            --coral-soft: rgba(224, 122, 95, 0.08);
+            --navy: #112D4E;
+            --text: #112D4E;
+            --muted: rgba(17, 45, 78, 0.7);
+            --border: rgba(17, 45, 78, 0.08);
+            --shadow: 0 2px 20px rgba(17, 45, 78, 0.06);
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            font-family: 'Chiron GoRound TC', sans-serif;
+            color: var(--text)
+        }
+
+        .subtitle {
+            font-family: 'DM Mono', monospace;
+            font-size: .7rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--teal)
+        }
+
+        .title {
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            line-height: 1.15;
+            color: var(--navy);
+            font-weight: 400
+        }
+
+        .title .hl {
+            color: var(--teal);
+            font-style: italic
+        }
+
+        .note {
+            font-size: .9rem;
+            color: var(--muted);
+            max-width: 640px;
+            line-height: 1.7
+        }
+
+        .note code {
+            background: var(--teal-soft);
+            color: var(--teal);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'DM Mono', monospace;
+            font-size: .85em
+        }
+
+        /* Stage */
+        #stage {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 44px;
+            perspective: 1800px;
+            transform-style: preserve-3d;
+            overflow: hidden
+        }
+
+        #sceneFlash {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 100;
+            background: radial-gradient(circle at center, rgba(63, 114, 175, 0.25) 0%, transparent 70%);
+            transition: opacity .1s
+        }
+
+        .scene {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            opacity: 0;
+            transform: scale(1.05) translateZ(-100px);
+            transition: opacity .7s cubic-bezier(.4, 0, .2, 1), transform .7s cubic-bezier(.4, 0, .2, 1);
+            pointer-events: none
+        }
+
+        .scene.active {
+            opacity: 1;
+            transform: scale(1) translateZ(0);
+            pointer-events: auto
+        }
+
+        .scene.zoom-out {
+            opacity: 0;
+            transform: scale(1.08) translateZ(200px)
+        }
+
+        .scene-inner {
+            position: relative;
+            z-index: 2;
+            max-width: 900px;
+            width: 100%
+        }
+
+        /* Ambient */
+        #ambient {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden
+        }
+
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--teal);
+            opacity: .15
+        }
+
+        #bg-shape1,
+        #bg-shape2 {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: .4
+        }
+
+        #bg-shape1 {
+            width: 600px;
+            height: 600px;
+            background: linear-gradient(135deg, var(--teal-soft), var(--coral-soft));
+            top: -200px;
+            right: -200px
+        }
+
+        #bg-shape2 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(45deg, var(--coral-soft), var(--teal-soft));
+            bottom: -100px;
+            left: -100px
+        }
+
+        @keyframes float1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg)
+            }
+
+            50% {
+                transform: translate(30px, -40px) rotate(180deg)
+            }
+        }
+
+        @keyframes float2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg)
+            }
+
+            50% {
+                transform: translate(-25px, 35px) rotate(-180deg)
+            }
+        }
+
+        /* Controls Bar */
+        #controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            background: var(--card);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 200;
+            box-shadow: 0 -2px 20px var(--shadow)
+        }
+
+        #progress-bar-wrap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--border);
+            cursor: pointer
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--teal), var(--coral));
+            width: 0;
+            transition: width .1s linear
+        }
+
+        .chapter-dots {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 12px;
+            display: flex;
+            align-items: flex-start;
+            padding-top: 3px
+        }
+
+        .chapter-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--border);
+            margin-left: -3px;
+            cursor: pointer;
+            transition: all .3s
+        }
+
+        .chapter-dot:first-child {
+            margin-left: 0
+        }
+
+        .chapter-dot.past {
+            background: var(--teal);
+            opacity: .5
+        }
+
+        .chapter-dot.next {
+            animation: pulse-dot 1.5s infinite
+        }
+
+        .chapter-dot.active {
+            background: var(--coral);
+            transform: scale(1.4)
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: .4
+            }
+
+            50% {
+                transform: scale(1.3);
+                opacity: .8
+            }
+        }
+
+        .cb {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            color: var(--navy);
+            font-size: 1.2rem;
+            transition: all .2s;
+            flex-shrink: 0
+        }
+
+        .cb:hover {
+            background: var(--teal-soft)
+        }
+
+        .cb.on {
+            background: var(--teal);
+            color: #fff
+        }
+
+        #caption {
+            font-size: .85rem;
+            color: var(--text);
+            margin: 0 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 400px;
+            flex: 1
+        }
+
+        #timer {
+            font-family: 'DM Mono', monospace;
+            font-size: .75rem;
+            color: var(--muted);
+            white-space: nowrap
+        }
+
+        /* 3D Visual Components */
+        .card-3d {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transform-style: preserve-3d
+        }
+
+        /* Flip Card */
+        .flip-card {
+            width: 280px;
+            height: 180px;
+            perspective: 1000px;
+            cursor: pointer
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform .8s cubic-bezier(.4, 0, .2, 1);
+            transform-style: preserve-3d
+        }
+
+        .flip-card:hover .flip-card-inner,
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg)
+        }
+
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px
+        }
+
+        .flip-card-front {
+            background: linear-gradient(135deg, var(--teal), #5a8fd4);
+            color: #fff
+        }
+
+        .flip-card-back {
+            background: var(--card);
+            transform: rotateY(180deg);
+            border: 2px solid var(--teal)
+        }
+
+        /* Rotating Cube */
+        .cube-container {
+            width: 120px;
+            height: 120px;
+            perspective: 600px
+        }
+
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotate-cube 8s infinite linear
+        }
+
+        .cube-face {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border: 2px solid var(--teal);
+            background: rgba(63, 114, 175, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .7rem;
+            font-weight: 600;
+            color: var(--teal)
+        }
+
+        @keyframes rotate-cube {
+            0% {
+                transform: rotateX(0) rotateY(0)
+            }
+
+            100% {
+                transform: rotateX(360deg) rotateY(360deg)
+            }
+        }
+
+        /* Parallax Layers */
+        .parallax-container {
+            position: relative;
+            width: 400px;
+            height: 250px;
+            perspective: 800px
+        }
+
+        .parallax-layer {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform-style: preserve-3d;
+            border-radius: 12px;
+            transition: transform .1s
+        }
+
+        .parallax-layer.back {
+            width: 350px;
+            height: 200px;
+            background: var(--coral-soft);
+            transform: translate(-50%, -50%) translateZ(-80px) rotateX(5deg)
+        }
+
+        .parallax-layer.mid {
+            width: 300px;
+            height: 170px;
+            background: var(--teal-soft);
+            transform: translate(-50%, -50%) translateZ(-40px) rotateX(3deg)
+        }
+
+        .parallax-layer.front {
+            width: 250px;
+            height: 140px;
+            background: var(--card);
+            transform: translate(-50%, -50%) translateZ(0) rotateX(1deg);
+            box-shadow: var(--shadow)
+        }
+
+        /* Carousel Ring */
+        .carousel-ring {
+            position: relative;
+            width: 300px;
+            height: 200px;
+            perspective: 1200px
+        }
+
+        .carousel-item {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 80px;
+            height: 100px;
+            margin: -50px 0 0 -40px;
+            background: var(--card);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: .7rem;
+            color: var(--teal);
+            border: 1px solid var(--border);
+            transform-style: preserve-3d
+        }
+
+        /* Floating Phone */
+        .phone-mockup {
+            width: 160px;
+            height: 280px;
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border-radius: 24px;
+            padding: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+            transform-style: preserve-3d;
+            animation: float-phone 4s ease-in-out infinite
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: var(--card);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 10px
+        }
+
+        @keyframes float-phone {
+
+            0%,
+            100% {
+                transform: translateY(0) rotateX(5deg) rotateY(-5deg)
+            }
+
+            50% {
+                transform: translateY(-20px) rotateX(-5deg) rotateY(5deg)
+            }
+        }
+
+        /* 3D Text */
+        .text-3d {
+            font-family: 'Instrument Serif', serif;
+            font-size: 3rem;
+            font-weight: 400;
+            color: var(--navy);
+            text-shadow: 1px 1px 0 var(--teal-soft), 2px 2px 0 var(--teal-soft), 3px 3px 0 var(--teal-soft), 4px 4px 0 var(--teal-soft), 5px 5px 0 var(--teal-soft), 6px 6px 15px rgba(17, 45, 78, .2)
+        }
+
+        /* Browser Mockup */
+        .browser-mockup {
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transform-style: preserve-3d
+        }
+
+        .browser-bar {
+            height: 32px;
+            background: var(--bg2);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 6px
+        }
+
+        .browser-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%
+        }
+
+        .browser-content {
+            flex: 1;
+            padding: 16px;
+            min-height: 120px
+        }
+
+        /* Z-Axis Arc */
+        .z-arc-container {
+            position: relative;
+            width: 350px;
+            height: 200px;
+            perspective: 600px;
+            transform-style: preserve-3d
+        }
+
+        .z-step {
+            position: absolute;
+            left: 50%;
+            width: 60px;
+            height: 40px;
+            background: var(--card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .7rem;
+            color: var(--teal);
+            font-weight: 600;
+            transform-style: preserve-3d
+        }
+
+        /* Conversation Bubbles */
+        .conversation-container {
+            position: relative;
+            width: 300px;
+            height: 200px
+        }
+
+        .chat-bubble {
+            position: absolute;
+            background: var(--card);
+            border-radius: 16px;
+            padding: 12px 16px;
+            box-shadow: var(--shadow);
+            max-width: 200px;
+            font-size: .8rem;
+            transform-style: preserve-3d
+        }
+
+        .chat-bubble.left {
+            border-bottom-left-radius: 4px;
+            left: 0
+        }
+
+        .chat-bubble.right {
+            border-bottom-right-radius: 4px;
+            right: 0;
+            background: var(--teal);
+            color: #fff
+        }
+
+        /* Spotlight Grid */
+        .spotlight-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            width: 280px
+        }
+
+        .spotlight-item {
+            aspect-ratio: 1;
+            background: var(--card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'DM Mono', monospace;
+            font-size: .7rem;
+            color: var(--teal);
+            transform-style: preserve-3d
+        }
+
+        .spotlight-item.highlight {
+            background: var(--teal);
+            color: #fff;
+            animation: spotlight-pulse 2s infinite
+        }
+
+        /* Before/After Panels */
+        .before-after {
+            display: flex;
+            gap: 20px;
+            align-items: center
+        }
+
+        .panel-tilt {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            transform-style: preserve-3d
+        }
+
+        .panel-tilt.left {
+            transform: perspective(600px) rotateY(15deg)
+        }
+
+        .panel-tilt.right {
+            transform: perspective(600px) rotateY(-15deg)
+        }
+
+        /* Orbiting Network */
+        .orbit-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            perspective: 800px
+        }
+
+        .orbit-node {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 50px;
+            height: 50px;
+            margin: -25px;
+            background: var(--card);
+            border-radius: 50%;
+            border: 2px solid var(--teal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .65rem;
+            font-weight: 600;
+            color: var(--teal);
+            transform-style: preserve-3d
+        }
+
+        .orbit-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 60px;
+            height: 60px;
+            margin: -30px;
+            background: var(--teal);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: .8rem;
+            z-index: 2
+        }
+
+        /* Data At Animations */
+        [data-at] {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity .6s ease-out, transform .6s ease-out
+        }
+
+        [data-at].visible {
+            opacity: 1;
+            transform: translateY(0)
+        }
+
+        [data-at="1"] {
+            transition-delay: .1s
+        }
+
+        [data-at="2"] {
+            transition-delay: .2s
+        }
+
+        [data-at="3"] {
+            transition-delay: .3s
+        }
+
+        [data-at="4"] {
+            transition-delay: .4s
+        }
+
+        [data-at="5"] {
+            transition-delay: .5s
+        }
+
+        [data-at="6"] {
+            transition-delay: .6s
+        }
+
+        [data-at="7"] {
+            transition-delay: .7s
+        }
+
+        [data-at="8"] {
+            transition-delay: .8s
+        }
+
+        [data-at="9"] {
+            transition-delay: .9s
+        }
+
+        /* Caption Animations */
+        @keyframes cap-in {
+            0% {
+                opacity: 0;
+                transform: translateY(8px)
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .cap-in {
+            animation: cap-in .4s ease-out
+        }
+
+        /* Controls Animation */
+        @keyframes float-controls {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-4px)
+            }
+        }
+
+        /* Particle Animations */
+        @keyframes particle-float {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: .15
+            }
+
+            50% {
+                transform: translate(var(--tx), var(--ty)) scale(1.2);
+                opacity: .25
+            }
+
+            100% {
+                transform: translate(0, 0) scale(1);
+                opacity: .15
+            }
+        }
+
+        /* Reduced Motion */
+        @media(prefers-reduced-motion:reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .01ms !important
+            }
+
+            .scene {
+                transition: none
+            }
+
+            [data-at] {
+                transition: none;
+                opacity: 1;
+                transform: none
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ambient">
+        <div id="bg-shape1"></div>
+        <div id="bg-shape2"></div>
+        <div id="particles"></div>
+    </div>
+    <div id="sceneFlash"></div>
+    <div id="stage"></div>
+    <div id="controls">
+        <div id="progress-bar-wrap">
+            <div id="progress-bar"></div>
+            <div class="chapter-dots" id="chapterDots"></div>
+        </div>
+        <button class="cb" id="btnPrev" title="上一頁 (←)">◀</button>
+        <button class="cb" id="btnPlay" title="播放/暫停 (Space)">▶</button>
+        <button class="cb" id="btnNext" title="下一頁 (→)">▶</button>
+        <span id="caption"></span>
+        <span id="timer">00:00 / 00:00</span>
+    </div>
+
+    <script>
+        const scenes = [
+            {
+                start: 0, end: 22,
+                html: `
+<div class="scene-inner" style="text-align:center">
+<div class="subtitle" data-at="1">CHAPTER 01 · 研究動機</div>
+<div class="title" data-at="2" style="margin:20px 0">用遺傳演算法找出<br><span class="hl">最佳交易參數</span></div>
+<div class="phone-mockup" data-at="4" style="margin:30px auto">
+<div class="phone-screen">
+<div style="font-size:1.5rem;font-weight:700;color:var(--navy)">PPTS</div>
+<div style="font-size:.65rem;color:var(--muted);margin-top:4px">利潤價格分布策略</div>
+<div style="width:80%;height:8px;background:var(--bg2);border-radius:4px;margin:16px 0"></div>
+<div style="width:70%;height:8px;background:var(--teal-soft);border-radius:4px"></div>
+<div style="width:60%;height:8px;background:var(--coral-soft);border-radius:4px;margin-top:8px"></div>
+</div>
+</div>
+<div class="note" data-at="6">傳統固定參數策略難以適用於不同產業與個股特性。本研究提出 <code>GAPPTS</code> 以遺傳演算法動態搜尋最佳參數組合。</div>
+</div>`
+            },
+            {
+                start: 22, end: 46,
+                html: `
+<div class="scene-inner" style="display:flex;align-items:center;gap:60px;flex-wrap:wrap;justify-content:center">
+<div>
+<div class="subtitle" data-at="1">CHAPTER 02 · 問題背景</div>
+<div class="title" data-at="2" style="margin:16px 0 20px">同一套參數<br><span class="hl">無法適用所有股票</span></div>
+<div class="note" data-at="4" style="margin-bottom:20px">元大台灣 50 的 48 檔成分股涵蓋科技、金融、傳產，價格結構差異極大。固定參數策略容易在高波動股失靈，在穩定型股票錯過機會。</div>
+<div class="parallax-container" data-at="6">
+<div class="parallax-layer back"></div>
+<div class="parallax-layer mid"></div>
+<div class="parallax-layer front" style="display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif';font-size:1.5rem;color:var(--teal)">48 stocks</div>
+</div>
+</div>
+</div>`
+            },
+            {
+                start: 46, end: 74,
+                html: `
+<div class="scene-inner" style="text-align:center">
+<div class="subtitle" data-at="1">CHAPTER 03 · PPTS 核心邏輯</div>
+<div class="title" data-at="2" style="margin:20px 0">將價格切成<br><span class="hl">等距區間</span></div>
+<div style="display:flex;justify-content:center;gap:16px;margin:24px 0;transform-style:preserve-3d" data-at="4">
+<div class="card-3d" style="text-align:center;transform:rotateY(8deg) rotateX(-5deg)">
+<div style="font-size:1.8rem;color:var(--coral)">📉</div>
+<div style="font-size:.75rem;font-weight:600;margin-top:8px">低價區間</div>
+<div style="font-size:.65rem;color:var(--muted)">平均利潤低</div>
+</div>
+<div class="card-3d" style="text-align:center;transform:rotateY(-3deg) rotateX(2deg);border:2px solid var(--teal)">
+<div style="font-size:1.8rem;color:var(--teal)">📈</div>
+<div style="font-size:.75rem;font-weight:600;margin-top:8px">中價區間</div>
+<div style="font-size:.65rem;color:var(--muted)">達標機率高</div>
+</div>
+<div class="card-3d" style="text-align:center;transform:rotateY(-8deg) rotateX(5deg)">
+<div style="font-size:1.8rem;color:var(--coral)">📊</div>
+<div style="font-size:.75rem;font-weight:600;margin-top:8px">高價區間</div>
+<div style="font-size:.65rem;color:var(--muted)">回檔風險大</div>
+</div>
+</div>
+<div class="note" data-at="6">每個區間計算「平均利潤」與「達標機率」，再以 <code>α 門檻</code> 判斷買入訊號。低利潤區間維持觀望，高利潤區間果斷進場。</div>
+</div>`
+            },
+            {
+                start: 74, end: 100,
+                html: `
+<div class="scene-inner" style="display:flex;align-items:center;gap:50px;flex-wrap:wrap;justify-content:center">
+<div>
+<div class="subtitle" data-at="1">CHAPTER 04 · 染色體結構</div>
+<div class="title" data-at="2" style="margin:16px 0">29 位元<br><span class="hl">基因編碼</span></div>
+<div class="note" data-at="4">每一條染色體代表一組候選參數：區間數 m、持有天數、目標利潤、α 進場係數。</div>
+</div>
+<div class="flip-card" data-at="6">
+<div class="flip-card-inner">
+<div class="flip-card-front">
+<div style="font-size:2rem;margin-bottom:12px">🧬</div>
+<div style="font-size:.8rem;font-weight:600">翻轉查看結構</div>
+</div>
+<div class="flip-card-back" style="justify-content:flex-start;padding:16px">
+<div style="font-family:'DM Mono';font-size:.7rem;color:var(--muted);margin-bottom:8px">染色體 29 bit</div>
+<div style="display:flex;flex-wrap:wrap;gap:4px">
+<span style="background:var(--teal-soft);color:var(--teal);padding:2px 6px;border-radius:4px;font-size:.65rem">區間 5bit</span>
+<span style="background:var(--coral-soft);color:var(--coral);padding:2px 6px;border-radius:4px;font-size:.65rem">週期 6bit</span>
+<span style="background:var(--teal-soft);color:var(--teal);padding:2px 6px;border-radius:4px;font-size:.65rem">目標 10bit</span>
+<span style="background:var(--coral-soft);color:var(--coral);padding:2px 6px;border-radius:4px;font-size:.65rem">α 8bit</span>
+</div>
+</div>
+</div>
+</div>
+</div>`
+            },
+            {
+                start: 100, end: 126,
+                html: `
+<div class="scene-inner" style="text-align:center">
+<div class="subtitle" data-at="1">CHAPTER 05 · 輪盤選擇</div>
+<div class="title" data-at="2" style="margin:20px 0">Fitness 越高<br><span class="hl">越容易被選中</span></div>
+<div class="carousel-ring" data-at="4">
+<div class="carousel-item" style="animation:rotate-cube 8s linear infinite;transform:rotateY(0deg) translateZ(120px)">個股 A<br>f=.81</div>
+<div class="carousel-item" style="animation:rotate-cube 8s linear infinite;animation-delay:-2.6s;transform:rotateY(120deg) translateZ(120px)">個股 B<br>f=.45</div>
+<div class="carousel-item" style="animation:rotate-cube 8s linear infinite;animation-delay:-5.2s;transform:rotateY(240deg) translateZ(120px)">個股 C<br>f=.63</div>
+</div>
+<div class="note" data-at="6" style="margin-top:24px">根據 <code>Fitness = 平均利潤 × 達標機率</code> 計算適應度，高適應度染色體有更高機會傳遞基因到下一代。</div>
+</div>`
+            },
+            {
+                start: 126, end: 152,
+                html: `
+<div class="scene-inner" style="display:flex;align-items:center;gap:60px;flex-wrap:wrap;justify-content:center">
+<div class="browser-mockup" data-at="2">
+<div class="browser-bar">
+<div class="browser-dot" style="background:#ff5f57"></div>
+<div class="browser-dot" style="background:#febc2e"></div>
+<div class="browser-dot" style="background:#28c840"></div>
+</div>
+<div class="browser-content" style="font-family:'DM Mono';font-size:.7rem">
+<div style="color:var(--teal);margin-bottom:8px">交叉率 CR = 0.8</div>
+<div style="display:flex;gap:8px;margin-bottom:12px">
+<span style="background:var(--teal-soft);padding:4px 8px;border-radius:4px">00110|011</span>
+<span style="color:var(--muted)">×</span>
+<span style="background:var(--coral-soft);padding:4px 8px;border-radius:4px">11001|100</span>
+</div>
+<div style="color:var(--muted)">↓ 單點交叉</div>
+<div style="background:var(--bg2);padding:8px;border-radius:4px;margin-top:8px">00101|100</div>
+<div style="color:var(--muted);font-size:.6rem;margin-top:4px">突變率 MR = 0.1</div>
+</div>
+</div>
+<div>
+<div class="subtitle" data-at="1">CHAPTER 06 · 交叉與突變</div>
+<div class="title" data-at="3" style="margin:16px 0">CR 0.8 + MR 0.1<br><span class="hl">平衡探索與利用</span></div>
+<div class="note" data-at="5">交叉將兩個親代染色體交換片段產生新組合；突變則隨機翻轉位元避免陷入局部最優。</div>
+</div>
+</div>`
+            },
+            {
+                start: 152, end: 178,
+                html: `
+<div class="scene-inner" style="text-align:center">
+<div class="subtitle" data-at="1">CHAPTER 07 · 回測驗證</div>
+<div class="title" data-at="2" style="margin:20px 0">GAPPTS vs 固定參數<br><span class="hl">vs Buy & Hold</span></div>
+<div class="spotlight-grid" data-at="4" style="margin:24px auto">
+<div class="spotlight-item">B&H</div>
+<div class="spotlight-item">PPTS</div>
+<div class="spotlight-item highlight">GAPPTS</div>
+<div class="spotlight-item">GAPPTS</div>
+<div class="spotlight-item">PPTS</div>
+<div class="spotlight-item highlight">GAPPTS</div>
+<div class="spotlight-item">B&H</div>
+<div class="spotlight-item">PPTS</div>
+</div>
+<div class="note" data-at="6">論文結果顯示 GAPPTS 在 48 檔樣本中有 <code>72%</code> 勝過固定參數策略，平均報酬提升 <code>8.3%</code>。</div>
+</div>`
+            },
+            {
+                start: 178, end: 200,
+                html: `
+<div class="scene-inner" style="display:flex;align-items:center;gap:50px;flex-wrap:wrap;justify-content:center">
+<div>
+<div class="subtitle" data-at="1">CHAPTER 08 · 結論</div>
+<div class="title" data-at="2" style="margin:16px 0">差異化策略<br><span class="hl">才能發揮優勢</span></div>
+<div class="note" data-at="4" style="margin-bottom:20px">統一模型不適用於台股多元產業特性。GAPPTS 的核心價值在於「因股制宜」—— 自動調整參數以適應不同價格結構與產業週期。</div>
+</div>
+<div class="orbit-container" data-at="6">
+<div class="orbit-center">GAPPTS</div>
+<div class="orbit-node" style="animation:float1 6s ease-in-out infinite">科技</div>
+<div class="orbit-node" style="animation:float1 6s ease-in-out infinite;animation-delay:-1s">金融</div>
+<div class="orbit-node" style="animation:float1 6s ease-in-out infinite;animation-delay:-2s">傳產</div>
+<div class="orbit-node" style="animation:float1 6s ease-in-out infinite;animation-delay:-3s">電信</div>
+</div>
+</div>`
+            }
+        ];
+        const subs = [
+            { s: 0, e: 8, t: '傳統固定參數策略難以適用所有股票' },
+            { s: 8, e: 16, t: '需要一種能動態調整的參數最佳化方法' },
+            { s: 16, e: 22, t: 'GAPPTS 以遺傳演算法搜尋最佳參數組合' },
+            { s: 22, e: 30, t: '不同產業與個股價格結構差異極大' },
+            { s: 30, e: 38, t: '固定參數在高波動股容易失靈' },
+            { s: 38, e: 46, t: '研究聚焦於元大台灣 50 的 48 檔成分股' },
+            { s: 46, e: 56, t: 'PPTS 先將歷史價格切成等距區間' },
+            { s: 56, e: 66, t: '統計每個區間的平均利潤與達標機率' },
+            { s: 66, e: 74, t: '以 α 門檻判斷買入訊號' },
+            { s: 74, e: 84, t: '染色體結構包含 4 個基因區段' },
+            { s: 84, e: 94, t: '區間數、持有天數、目標利潤、α 進場係數' },
+            { s: 94, e: 100, t: '共 29 位元精確編碼每組參數' },
+            { s: 100, e: 110, t: 'Fitness = 平均利潤 × 達標機率' },
+            { s: 110, e: 118, t: '輪盤選擇保留高適應度染色體' },
+            { s: 118, e: 126, t: '確保優秀基因傳遞到下一代' },
+            { s: 126, e: 138, t: '交叉率 0.8 產生新參數組合' },
+            { s: 138, e: 152, t: '突變率 0.1 避免陷入局部最優' },
+            { s: 152, e: 162, t: '測試集驗證三種策略表現' },
+            { s: 162, e: 178, t: 'GAPPTS 在 72% 的股票上勝過固定參數' },
+            { s: 178, e: 190, t: '平均報酬提升 8.3%' },
+            { s: 190, e: 200, t: '結論：差異化策略才能發揮 GAPPTS 優勢' }
+        ];
+        const TOTAL = 200;
+        let currentTime = 0;
+        let isPlaying = false;
+        let rafId = null;
+        let lastTs = 0;
+        const stage = document.getElementById('stage');
+        const progressBar = document.getElementById('progress-bar');
+        const chapterDots = document.getElementById('chapterDots');
+        const captionEl = document.getElementById('caption');
+        const timerEl = document.getElementById('timer');
+        const btnPlay = document.getElementById('btnPlay');
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+        const sceneFlash = document.getElementById('sceneFlash');
+
+        // Build scenes
+        scenes.forEach((s, i) => {
+            const div = document.createElement('div');
+            div.className = 'scene';
+            div.id = 'scene-' + i;
+            div.innerHTML = s.html;
+            stage.appendChild(div);
+        });
+        // Build chapter dots
+        scenes.forEach((s, i) => {
+            const dot = document.createElement('div');
+            dot.className = 'chapter-dot';
+            dot.dataset.scene = i;
+            dot.addEventListener('click', () => { seekTo(s.start); });
+            chapterDots.appendChild(dot);
+        });
+        // Build particles
+        const particlesEl = document.getElementById('particles');
+        for (let i = 0; i < 18; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.cssText = `left:${Math.random() * 100}%;top:${Math.random() * 100}%;--tx:${(Math.random() - .5) * 100}px;--ty:${(Math.random() - .5) * 100}px;animation:particle-float ${6 + Math.random() * 6}s ease-in-out infinite;animation-delay:${-Math.random() * 6}s`;
+            particlesEl.appendChild(p);
+        }
+        // Background shape animation
+        document.getElementById('bg-shape1').style.animation = 'float1 20s ease-in-out infinite';
+        document.getElementById('bg-shape2').style.animation = 'float2 25s ease-in-out infinite';
+
+        function getCurrentSceneIdx() {
+            for (let i = scenes.length - 1; i >= 0; i--) { if (currentTime >= scenes[i].start) return i; }
+            return 0;
+        }
+        function getCurrentCaption() {
+            for (let i = subs.length - 1; i >= 0; i--) { if (currentTime >= subs[i].s) return subs[i].t; }
+            return subs[0].t;
+        }
+        function formatTime(t) {
+            const m = Math.floor(t / 60).toString().padStart(2, '0');
+            const s = Math.floor(t % 60).toString().padStart(2, '0');
+            return m + ':' + s;
+        }
+        function flashScene() {
+            sceneFlash.style.opacity = '1';
+            setTimeout(() => { sceneFlash.style.opacity = '0'; }, 150);
+        }
+        function seekTo(t) {
+            currentTime = Math.max(0, Math.min(t, TOTAL));
+        }
+        function tick(ts) {
+            if (!lastTs) lastTs = ts;
+            const dt = (ts - lastTs) / 1000;
+            lastTs = ts;
+            if (isPlaying) {
+                currentTime += dt;
+                if (currentTime >= TOTAL) { currentTime = TOTAL; isPlaying = false; btnPlay.textContent = '▶'; btnPlay.classList.remove('on'); }
+            }
+            // Update scenes
+            let prevScene = -1;
+            scenes.forEach((s, i) => {
+                const el = document.getElementById('scene-' + i);
+                const active = currentTime >= s.start && currentTime < s.end;
+                if (active) { prevScene = i; }
+                el.classList.toggle('active', active);
+                el.classList.toggle('zoom-out', !active && currentTime >= s.end);
+            });
+            // Flash on scene change
+            const curScene = getCurrentSceneIdx();
+            staticLastScene = staticLastScene || 0;
+            if (curScene !== staticLastScene && currentTime > 0) {
+                flashScene();
+                staticLastScene = curScene;
+            }
+            // Update data-at elements
+            scenes.forEach((s, i) => {
+                if (currentTime >= s.start && currentTime < s.end) {
+                    const at = Math.floor(currentTime - s.start) + 1;
+                    document.querySelectorAll(`#scene-${i} [data-at]`).forEach(el => {
+                        const atVal = parseInt(el.dataset.at) || 0;
+                        el.classList.toggle('visible', currentTime >= s.start + atVal);
+                    });
+                }
+            });
+            // Update caption
+            const cap = getCurrentCaption();
+            if (captionEl.textContent !== cap) {
+                captionEl.textContent = cap;
+                captionEl.classList.remove('cap-in');
+                void captionEl.offsetWidth;
+                captionEl.classList.add('cap-in');
+            }
+            // Update progress
+            progressBar.style.width = (currentTime / TOTAL * 100) + '%';
+            // Update chapter dots
+            document.querySelectorAll('.chapter-dot').forEach((dot, i) => {
+                dot.classList.remove('past', 'next', 'active');
+                if (i < curScene) dot.classList.add('past');
+                else if (i === curScene) dot.classList.add('active');
+                else if (i === curScene + 1) dot.classList.add('next');
+            });
+            // Update timer
+            timerEl.textContent = formatTime(currentTime) + ' / ' + formatTime(TOTAL);
+            if (isPlaying) rafId = requestAnimationFrame(tick);
+        }
+        let staticLastScene = 0;
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            btnPlay.textContent = isPlaying ? '⏸' : '▶';
+            btnPlay.classList.toggle('on', isPlaying);
+            if (isPlaying) { lastTs = 0; rafId = requestAnimationFrame(tick); }
+        }
+        function prevScene() {
+            const idx = getCurrentSceneIdx();
+            const prev = Math.max(0, idx - 1);
+            seekTo(scenes[prev].start);
+        }
+        function nextScene() {
+            const idx = getCurrentSceneIdx();
+            const next = Math.min(scenes.length - 1, idx + 1);
+            seekTo(scenes[next].start);
+        }
+        btnPlay.addEventListener('click', togglePlay);
+        btnPrev.addEventListener('click', prevScene);
+        btnNext.addEventListener('click', nextScene);
+        document.getElementById('progress-bar-wrap').addEventListener('click', (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const ratio = (e.clientX - rect.left) / rect.width;
+            seekTo(ratio * TOTAL);
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+            else if (e.code === 'ArrowLeft') prevScene();
+            else if (e.code === 'ArrowRight') nextScene();
+        });
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+        document.addEventListener('touchend', (e) => {
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            if (Math.abs(dx) > 50) { if (dx > 0) prevScene(); else nextScene(); }
+        });
+        // Init
+        seekTo(0);
+        captionEl.textContent = getCurrentCaption();
+        timerEl.textContent = '00:00 / ' + formatTime(TOTAL);
+    </script>
+</body>
+
+</html>
