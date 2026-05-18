@@ -366,6 +366,16 @@
             color: var(--muted);
             font-size: .8rem;
         }
+
+        .debug-info {
+            margin-top: 12px;
+            padding: 8px;
+            background: #0f0f1a;
+            border-radius: 6px;
+            font-size: .75rem;
+            color: var(--muted);
+            font-family: monospace;
+        }
     </style>
 </head>
 
@@ -376,7 +386,8 @@
         <div class="eyebrow">MINIMAX AI SERVICES</div>
         <h1>AI 服務展示廳</h1>
         <p>文字轉語音、智慧聊天、 AI 音樂生成 — 全部透過 MiniMax API 驅動，API Key 完全藏在後端。</p>
-        <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:20px">
+        <div id="api-status" style="margin-top:16px;font-size:.85rem;color:var(--muted)">偵測 API 路徑中...</div>
+        <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:12px">
             <span class="status-badge status-success">✓ TTS 已啟用</span>
             <span class="status-badge status-success">✓ Chat 已啟用</span>
             <span class="status-badge status-success">✓ Music 已啟用</span>
@@ -470,10 +481,7 @@
             </div>
 
             <div class="ai-field">
-                <label>
-                    <input type="checkbox" id="music-instrumental">
-                    純音樂（無人聲）
-                </label>
+                <label><input type="checkbox" id="music-instrumental"> 純音樂（無人聲）</label>
             </div>
 
             <button class="ai-btn music-btn" id="music-generate">
@@ -523,6 +531,41 @@
     <div data-site-footer></div>
 
     <script>
+        // Global API base URL
+        let API_BASE = '';
+
+        // Initialize API base on page load
+        async function initApiBase() {
+            const statusEl = document.getElementById('api-status');
+
+            // Wait for app-config to load
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Try to get API base from APP_CONFIG_UTILS
+            if (window.APP_CONFIG_UTILS?.resolveApiBase) {
+                try {
+                    API_BASE = await window.APP_CONFIG_UTILS.resolveApiBase() || window.APP_CONFIG?.API_BASE_URL || '';
+                } catch (e) {
+                    API_BASE = window.APP_CONFIG?.API_BASE_URL || '';
+                }
+            } else {
+                API_BASE = window.APP_CONFIG?.API_BASE_URL || '';
+            }
+
+            if (statusEl) {
+                statusEl.textContent = API_BASE ? 'API: ' + API_BASE : 'API: 未設定（使用当前源）';
+            }
+
+            console.log('API Base:', API_BASE);
+            return API_BASE;
+        }
+
+        // Helper to build full URL
+        function buildUrl(path) {
+            if (!API_BASE) return path;
+            return API_BASE.replace(/\/$/, '') + path;
+        }
+
         // TTS Speed slider
         document.getElementById('tts-speed').addEventListener('input', function (e) {
             document.getElementById('tts-speed-val').textContent = e.target.value + 'x';
@@ -531,10 +574,7 @@
         // TTS Generation
         document.getElementById('tts-generate').addEventListener('click', async function () {
             const text = document.getElementById('tts-text').value.trim();
-            if (!text) {
-                alert('請輸入要轉換的文字');
-                return;
-            }
+            if (!text) { alert('請輸入要轉換的文字'); return; }
 
             const btn = this;
             const spinner = document.getElementById('tts-spinner');
@@ -552,7 +592,7 @@
                 const voice = document.getElementById('tts-voice').value;
                 const speed = parseFloat(document.getElementById('tts-speed').value);
 
-                const response = await fetch('/api/ai/tts', {
+                const response = await fetch(buildUrl('/api/ai/tts'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -563,7 +603,7 @@
                     })
                 });
 
-                if (!response.ok) throw new Error('API 請求失敗');
+                if (!response.ok) throw new Error('API 請求失敗 (' + response.status + ')');
 
                 const blob = await response.blob();
                 const url = URL.createObjectURL(blob);
@@ -597,11 +637,9 @@
             const spinner = document.getElementById('chat-spinner');
             const btnText = document.getElementById('chat-btn-text');
 
-            // Add user message
             messagesDiv.innerHTML += `<div class="chat-msg chat-msg-user">${escapeHtml(message)}</div>`;
             input.value = '';
 
-            // Add loading message
             const loadingMsg = document.createElement('div');
             loadingMsg.className = 'chat-msg chat-msg-bot';
             loadingMsg.innerHTML = '<span class="spinner" style="display:inline-block"></span> 思考中...';
@@ -615,7 +653,7 @@
             try {
                 chatHistory.push({ role: 'user', content: message });
 
-                const response = await fetch('/api/ai/chat', {
+                const response = await fetch(buildUrl('/api/ai/chat'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -629,14 +667,13 @@
                     })
                 });
 
-                if (!response.ok) throw new Error('API 請求失敗');
+                if (!response.ok) throw new Error('API 請求失敗 (' + response.status + ')');
 
                 const data = await response.json();
                 const botResponse = data.content;
 
                 chatHistory.push({ role: 'assistant', content: botResponse });
 
-                // Replace loading message with response
                 loadingMsg.innerHTML = botResponse;
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
@@ -659,10 +696,7 @@
         // Music Generation
         document.getElementById('music-generate').addEventListener('click', async function () {
             const prompt = document.getElementById('music-prompt').value.trim();
-            if (!prompt) {
-                alert('請輸入音樂描述');
-                return;
-            }
+            if (!prompt) { alert('請輸入音樂描述'); return; }
 
             const btn = this;
             const spinner = document.getElementById('music-spinner');
@@ -680,7 +714,7 @@
                 const duration = parseInt(document.getElementById('music-duration').value);
                 const instrumental = document.getElementById('music-instrumental').checked;
 
-                const response = await fetch('/api/ai/music', {
+                const response = await fetch(buildUrl('/api/ai/music'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -691,7 +725,7 @@
                     })
                 });
 
-                if (!response.ok) throw new Error('API 請求失敗');
+                if (!response.ok) throw new Error('API 請求失敗 (' + response.status + ')');
 
                 const data = await response.json();
 
@@ -703,7 +737,6 @@
                     audio.play().catch(() => { });
                 } else if (data.task_id) {
                     status.textContent = '⏳ 任務已提交，ID: ' + data.task_id;
-                    // Polling would be implemented here for longer tasks
                 } else {
                     throw new Error('未取得音訊 URL');
                 }
@@ -716,6 +749,9 @@
                 btnText.textContent = '生成音樂';
             }
         });
+
+        // Initialize on page load
+        initApiBase();
     </script>
     <button class="scroll-top" aria-label="返回頂部">↑</button>
 </body>
