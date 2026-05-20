@@ -15,6 +15,8 @@ const videos = [
     <video class="immersive-video" id="bgVideo" autoplay muted loop playsinline>
         <source id="bgSource" src="/bg1.mp4" type="video/mp4">
     </video>
+    <!-- 遮罩層：模糊文字浮水印 -->
+    <div class="watermark-mask"></div>
 </div>
 
 <style>
@@ -35,6 +37,22 @@ const videos = [
         object-fit: cover;
         opacity: 0.35;
         z-index: -1;
+    }
+
+    .watermark-mask {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background: 
+            /* 底部區域遮罩 - 移除浮水印 */
+            linear-gradient(to top, rgba(8,6,14,0.9) 0%, rgba(8,6,14,0.6) 8%, transparent 15%),
+            /* 右下角遮罩 */
+            radial-gradient(ellipse at 100% 100%, rgba(8,6,14,0.7) 0%, transparent 40%),
+            /* 左下角遮罩 */
+            radial-gradient(ellipse at 0% 100%, rgba(8,6,14,0.7) 0%, transparent 40%);
+        /* 減弱文字清晰度 */
+        backdrop-filter: blur(0px);
     }
 
     .particle {
