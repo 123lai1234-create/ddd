@@ -1,10 +1,19 @@
 ---
 // Immersive Background Component for Astro
+const videos = [
+    '/bg1.mp4',
+    '/bg2.mp4',
+    '/bg3.mp4',
+    '/bg4.mp4',
+    '/bg5.mp4',
+    '/bg6.mp4',
+    '/bg7.mp4'
+];
 ---
 
 <div class="immersive-bg" id="immersive-bg">
-    <video class="immersive-video" autoplay muted loop playsinline>
-        <source src="/waiting-bg.mp4" type="video/mp4">
+    <video class="immersive-video" id="bgVideo" autoplay muted loop playsinline>
+        <source id="bgSource" src="/bg1.mp4" type="video/mp4">
     </video>
 </div>
 
@@ -57,6 +66,38 @@
 </style>
 
 <script>
+    const videos = [
+        '/bg1.mp4',
+        '/bg2.mp4',
+        '/bg3.mp4',
+        '/bg4.mp4',
+        '/bg5.mp4',
+        '/bg6.mp4',
+        '/bg7.mp4'
+    ];
+    let currentIndex = Math.floor(Math.random() * videos.length);
+    let lastIndex = currentIndex;
+
+    function getRandomVideo() {
+        // 確保新影片和上一個不同
+        while (currentIndex === lastIndex && videos.length > 1) {
+            currentIndex = Math.floor(Math.random() * videos.length);
+        }
+        lastIndex = currentIndex;
+        return videos[currentIndex];
+    }
+
+    function switchVideo() {
+        const video = document.getElementById('bgVideo');
+        const source = document.getElementById('bgSource');
+        if (!video || !source) return;
+
+        const newVideo = getRandomVideo();
+        source.src = newVideo;
+        video.load();
+        console.log('Switched to:', newVideo);
+    }
+
     class ImmersiveBackground {
         constructor() {
             this.container = document.getElementById('immersive-bg');
@@ -67,6 +108,14 @@
         init() {
             this.createParticles();
             this.setupEventListeners();
+            
+            // 每 30 秒隨機切換到另一個影片
+            setInterval(() => {
+                const video = document.getElementById('bgVideo');
+                if (video && !video.paused) {
+                    switchVideo();
+                }
+            }, 30000);
         }
 
         createParticles() {
