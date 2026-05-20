@@ -15,8 +15,8 @@ const videos = [
     <video class="immersive-video" id="bgVideo" autoplay muted loop playsinline>
         <source id="bgSource" src="/bg1.mp4" type="video/mp4">
     </video>
-    <!-- 遮罩層：模糊文字浮水印 -->
-    <div class="watermark-mask"></div>
+    <!-- 全域遮罩：降低所有浮水印可見度 -->
+    <div class="watermark-blur-overlay"></div>
 </div>
 
 <style>
@@ -39,20 +39,16 @@ const videos = [
         z-index: -1;
     }
 
-    .watermark-mask {
+    .watermark-blur-overlay {
         position: absolute;
         inset: 0;
         z-index: 0;
         pointer-events: none;
+        /* 降低文字清晰度 */
+        backdrop-filter: blur(0px) contrast(0.5) brightness(1.2);
+        /* 全域暗角遮罩 */
         background: 
-            /* 底部區域遮罩 - 移除浮水印 */
-            linear-gradient(to top, rgba(8,6,14,0.9) 0%, rgba(8,6,14,0.6) 8%, transparent 15%),
-            /* 右下角遮罩 */
-            radial-gradient(ellipse at 100% 100%, rgba(8,6,14,0.7) 0%, transparent 40%),
-            /* 左下角遮罩 */
-            radial-gradient(ellipse at 0% 100%, rgba(8,6,14,0.7) 0%, transparent 40%);
-        /* 減弱文字清晰度 */
-        backdrop-filter: blur(0px);
+            radial-gradient(ellipse at center, transparent 40%, rgba(8,6,14,0.95) 100%);
     }
 
     .particle {
