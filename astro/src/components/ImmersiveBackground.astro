@@ -15,8 +15,8 @@ const videos = [
     <video class="immersive-video" id="bgVideo" autoplay muted loop playsinline>
         <source id="bgSource" src="/bg1.mp4" type="video/mp4">
     </video>
-    <!-- 全域遮罩：降低所有浮水印可見度 -->
-    <div class="watermark-blur-overlay"></div>
+    <!-- 輕微遮罩：保護邊緣但不影響清晰度 -->
+    <div class="vignette-overlay"></div>
 </div>
 
 <style>
@@ -35,20 +35,20 @@ const videos = [
         width: 100%;
         height: 100%;
         object-fit: cover;
-        opacity: 0.35;
+        opacity: 0.45;
         z-index: -1;
+        /* 提高銳利度 */
+        image-rendering: auto;
+        filter: contrast(1.05) saturate(1.1);
     }
 
-    .watermark-blur-overlay {
+    .vignette-overlay {
         position: absolute;
         inset: 0;
         z-index: 0;
         pointer-events: none;
-        /* 降低文字清晰度 */
-        backdrop-filter: blur(0px) contrast(0.5) brightness(1.2);
-        /* 全域暗角遮罩 */
-        background: 
-            radial-gradient(ellipse at center, transparent 40%, rgba(8,6,14,0.95) 100%);
+        /* 輕微暗角，不影響中央清晰度 */
+        background: radial-gradient(ellipse at center, transparent 50%, rgba(8,6,14,0.4) 100%);
     }
 
     .particle {
