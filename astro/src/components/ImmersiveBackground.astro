@@ -6,6 +6,8 @@
         <source id="bgSource" src="/bg1.mp4" type="video/mp4">
     </video>
     <div class="vignette-overlay"></div>
+    <!-- 全域深色背景覆蓋層 -->
+    <div class="global-scrim"></div>
 </div>
 
 <style>
@@ -38,30 +40,29 @@
         background: radial-gradient(ellipse at center, transparent 50%, rgba(8,6,14,0.3) 100%);
     }
 
-    /* 為所有主要內容容器添加背景 */
-    body {
+    /* 全域深色背景覆蓋 - 覆蓋所有內容 */
+    .global-scrim {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background: rgba(8, 6, 14, 0.88) !important;
+    }
+
+    /* 確保所有元素在覆蓋層之上 */
+    body, main, header, section, article, footer, aside, nav,
+    .hero, .container, .panel, .card, .surface-card, .runtime-card, .metric-card,
+    .demo-card, .skill-card, .timeline-card, .link-card, .fw {
+        background: rgba(8, 6, 14, 0.92) !important;
+        position: relative;
+        z-index: 2;
+    }
+
+    /* 所有文字元素 */
+    p, h1, h2, h3, h4, h5, h6, span, a, li, td, th, label, div:not(.immersive-bg) {
         background: rgba(8, 6, 14, 0.85) !important;
-    }
-
-    /* 確保內容區域有背景 */
-    main, header, section, .hero, .container, article, footer {
-        background: rgba(8, 6, 14, 0.85) !important;
-    }
-
-    /* 卡片和面板背景 */
-    .card, .panel, .surface-card, .runtime-card, .metric-card,
-    .demo-card, .skill-card, .timeline-card, .link-card {
-        background: rgba(8, 6, 14, 0.9) !important;
-    }
-
-    /* 按鈕和表單背景 */
-    button, input, textarea, select {
-        background: rgba(8, 6, 14, 0.9) !important;
-    }
-
-    /* 文字段落背景 */
-    p, h1, h2, h3, h4, h5, h6, span, a {
-        background: rgba(8, 6, 14, 0.7) !important;
+        position: relative;
+        z-index: 3;
     }
 
     .particle {
@@ -72,6 +73,7 @@
         border-radius: 50%;
         pointer-events: none;
         animation: float 20s infinite ease-in-out;
+        z-index: 4;
     }
 
     @keyframes float {
@@ -87,21 +89,9 @@
 
 <script>
     const videos = [
-        '/bg1.mp4',
-        '/bg2.mp4',
-        '/bg3.mp4',
-        '/bg4.mp4',
-        '/bg5.mp4',
-        '/bg6.mp4',
-        '/bg7.mp4',
-        '/bg8.mp4',
-        '/bg9.mp4',
-        '/bg10.mp4',
-        '/bg11.mp4',
-        '/bg12.mp4',
-        '/bg13.mp4',
-        '/bg14.mp4',
-        '/bg15.mp4'
+        '/bg1.mp4', '/bg2.mp4', '/bg3.mp4', '/bg4.mp4', '/bg5.mp4',
+        '/bg6.mp4', '/bg7.mp4', '/bg8.mp4', '/bg9.mp4', '/bg10.mp4',
+        '/bg11.mp4', '/bg12.mp4', '/bg13.mp4', '/bg14.mp4', '/bg15.mp4'
     ];
     let currentIndex = Math.floor(Math.random() * videos.length);
     let lastIndex = currentIndex;
