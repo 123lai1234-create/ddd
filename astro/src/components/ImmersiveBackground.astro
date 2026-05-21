@@ -23,8 +23,8 @@ const videos = [
     <video class="immersive-video" id="bgVideo" autoplay muted loop playsinline>
         <source id="bgSource" src="/bg1.mp4" type="video/mp4">
     </video>
-    <!-- 輕微遮罩：保護邊緣但不影響清晰度 -->
     <div class="vignette-overlay"></div>
+    <div class="content-scrim"></div>
 </div>
 
 <style>
@@ -45,7 +45,6 @@ const videos = [
         object-fit: cover;
         opacity: 0.5;
         z-index: -1;
-        /* 最高解析度設定 */
         image-rendering: high-quality;
         filter: contrast(1.1) saturate(1.15) brightness(1.05);
     }
@@ -55,8 +54,15 @@ const videos = [
         inset: 0;
         z-index: 0;
         pointer-events: none;
-        /* 輕微暗角，不影響中央清晰度 */
         background: radial-gradient(ellipse at center, transparent 50%, rgba(8,6,14,0.3) 100%);
+    }
+
+    .content-scrim {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background: rgba(8, 6, 14, 0.6);
     }
 
     .particle {
@@ -77,13 +83,6 @@ const videos = [
         10% { opacity: 1; }
         50% { opacity: 0.8; }
         90% { opacity: 0; }
-    }
-
-    /* Gradient animation */
-    @keyframes gradientShift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
     }
 </style>
 
@@ -109,7 +108,6 @@ const videos = [
     let lastIndex = currentIndex;
 
     function getRandomVideo() {
-        // 確保新影片和上一個不同
         while (currentIndex === lastIndex && videos.length > 1) {
             currentIndex = Math.floor(Math.random() * videos.length);
         }
@@ -121,7 +119,6 @@ const videos = [
         const video = document.getElementById('bgVideo');
         const source = document.getElementById('bgSource');
         if (!video || !source) return;
-
         const newVideo = getRandomVideo();
         source.src = newVideo;
         video.load();
@@ -138,8 +135,6 @@ const videos = [
         init() {
             this.createParticles();
             this.setupEventListeners();
-            
-            // 每 15 秒隨機切換到另一個影片
             setInterval(() => {
                 const video = document.getElementById('bgVideo');
                 if (video && !video.paused) {
@@ -150,21 +145,17 @@ const videos = [
 
         createParticles() {
             if (!this.container) return;
-            
             const particleCount = Math.min(80, Math.floor(window.innerWidth / 15));
-
             for (let i = 0; i < particleCount; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
                 particle.style.left = Math.random() * 100 + '%';
                 particle.style.top = Math.random() * 100 + '%';
-                
                 const size = Math.random() * 3 + 1;
                 particle.style.width = size + 'px';
                 particle.style.height = size + 'px';
                 particle.style.animationDuration = (Math.random() * 10 + 15) + 's';
                 particle.style.animationDelay = Math.random() * 5 + 's';
-                
                 this.container.appendChild(particle);
                 this.particles.push(particle);
             }
@@ -184,7 +175,6 @@ const videos = [
         }
     }
 
-    // Initialize on page load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             new ImmersiveBackground();
