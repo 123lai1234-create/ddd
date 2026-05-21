@@ -43,11 +43,11 @@ const videos = [
         width: 100%;
         height: 100%;
         object-fit: cover;
-        opacity: 0.45;
+        opacity: 0.5;
         z-index: -1;
-        /* 提高銳利度 */
-        image-rendering: auto;
-        filter: contrast(1.05) saturate(1.1);
+        /* 最高解析度設定 */
+        image-rendering: high-quality;
+        filter: contrast(1.1) saturate(1.15) brightness(1.05);
     }
 
     .vignette-overlay {
@@ -56,7 +56,7 @@ const videos = [
         z-index: 0;
         pointer-events: none;
         /* 輕微暗角，不影響中央清晰度 */
-        background: radial-gradient(ellipse at center, transparent 50%, rgba(8,6,14,0.4) 100%);
+        background: radial-gradient(ellipse at center, transparent 50%, rgba(8,6,14,0.3) 100%);
     }
 
     .particle {
@@ -139,13 +139,13 @@ const videos = [
             this.createParticles();
             this.setupEventListeners();
             
-            // 每 30 秒隨機切換到另一個影片
+            // 每 15 秒隨機切換到另一個影片
             setInterval(() => {
                 const video = document.getElementById('bgVideo');
                 if (video && !video.paused) {
                     switchVideo();
                 }
-            }, 30000);
+            }, 15000);
         }
 
         createParticles() {
