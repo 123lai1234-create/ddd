@@ -29,7 +29,7 @@ const TAG_COLORS = {
 
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
-  const title = (searchParams.get('t') || 'JT Lai').slice(0, 70);
+  const title = (searchParams.get('t') || '不說').slice(0, 70);
   const sub   = (searchParams.get('s') || '工程 × 生醫 × AI 平台作品集').slice(0, 110);
   const tag   = (searchParams.get('tag') || '').slice(0, 24);
 
@@ -95,7 +95,6 @@ export default async function handler(req) {
           fontSize: 20, fontWeight: 700, color: '#e8c060',
         }}>JT</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div style={{ fontSize: 19, color: '#c8b080', fontWeight: 600 }}>JT Lai</div>
           <div style={{ fontSize: 15, color: '#2a1a00', letterSpacing: 1.2 }}>donttalk.vercel.app</div>
         </div>
       </div>

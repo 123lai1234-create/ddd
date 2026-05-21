@@ -11,8 +11,6 @@ RUN uv pip install --no-cache --system --prefix=/install -r requirements.txt
 # ---------- runtime stage ----------
 FROM python:3.11-slim
 
-LABEL maintainer="JT Lai"
-
 # Non-root user for security
 RUN addgroup --system app && adduser --system --ingroup app app
 

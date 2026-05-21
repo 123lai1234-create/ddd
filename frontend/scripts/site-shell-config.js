@@ -1,40 +1,40 @@
 window.SITE_SHELL_CONFIG = (function () {
     var STD_NAV = [
-        { href: '/about',        label: 'About Me' },
-        { href: '/works',        label: '作品總覽' },
-        { href: '/ngs',          label: 'NGS 定序' },
-        { href: '/gene-ai',      label: '基因 AI' },
-        { href: '/firmware',     label: '🔌 韌體' },
-        { href: '/stem-cell',    label: '🧫 幹細胞' },
-        { href: '/protein-mpnn',           label: '互動展示' },
-        { href: '/interactive-showcase',   label: '⚡ Tech Lab', classes: 'nav-cta' }
+        { href: 'about_me.html', label: 'About Me' },
+        { href: 'works.html', label: '作品總覽' },
+        { href: 'ngs.html', label: 'NGS 定序' },
+        { href: 'gene_ai.html', label: '基因 AI' },
+        { href: 'firmware.html', label: '🔌 韌體' },
+        { href: 'stem-cell.html', label: '🧫 幹細胞' },
+        { href: 'protein_mpnn.html', label: 'ProteinMPNN' },
+        { href: 'interactive-showcase.html', label: '⚡ Tech Lab', classes: 'nav-cta' }
     ];
 
     var STD_DRAWER = [
-        { href: '/',                       label: '首頁' },
-        { href: '/about',                  label: 'About Me' },
-        { href: '/works',                  label: '作品總覽' },
-        { href: '/ngs',                    label: 'NGS 定序' },
-        { href: '/gene-ai',                label: '基因 AI' },
-        { href: '/report',                 label: '專案報告' },
-        { href: '/protein-mpnn',           label: '互動展示' },
-        { href: '/interactive-showcase',   label: '⚡ 互動技術展示館' },
-        { href: '/firmware',               label: '🔌 韌體 MCU' },
-        { href: '/interview',              label: '面試準備' },
-        { href: '/stem-cell',              label: '🧫 幹細胞研究' }
+        { href: 'index.html', label: '首頁' },
+        { href: 'about_me.html', label: 'About Me' },
+        { href: 'works.html', label: '作品總覽' },
+        { href: 'ngs.html', label: 'NGS 定序' },
+        { href: 'gene_ai.html', label: '基因 AI' },
+        { href: 'report.html', label: '專案報告' },
+        { href: 'protein_mpnn.html', label: 'ProteinMPNN' },
+        { href: 'interactive-showcase.html', label: '⚡ 互動技術展示館' },
+        { href: 'firmware.html', label: '🔌 韌體 MCU' },
+        { href: 'interview_prep.html', label: '面試準備' },
+        { href: 'stem-cell.html', label: '🧫 幹細胞研究' }
     ];
 
     var STD_FOOTER_LINKS = [
-        { href: '/',             label: '首頁' },
-        { href: '/about',        label: 'About Me' },
-        { href: '/works',        label: '作品總覽' },
-        { href: '/gene-ai',      label: '基因 AI' },
-        { href: '/ngs',          label: 'NGS 定序' },
-        { href: '/protein-mpnn', label: '互動展示' },
-        { href: '/report',       label: '專案報告' },
-        { href: '/firmware',     label: '韌體' },
-        { href: '/stem-cell',    label: '幹細胞研究' },
-        { href: '/interactive-showcase', label: '⚡ Tech Lab' },
+        { href: 'index.html', label: '首頁' },
+        { href: 'about_me.html', label: 'About Me' },
+        { href: 'works.html', label: '作品總覽' },
+        { href: 'gene_ai.html', label: '基因 AI' },
+        { href: 'ngs.html', label: 'NGS 定序' },
+        { href: 'protein_mpnn.html', label: 'ProteinMPNN' },
+        { href: 'report.html', label: '專案報告' },
+        { href: 'firmware.html', label: '韌體' },
+        { href: 'stem-cell.html', label: '幹細胞研究' },
+        { href: 'interactive-showcase.html', label: '⚡ Tech Lab' },
         { href: 'https://jtlai0921.wixsite.com/mysite', label: '個人網站', target: '_blank', rel: 'noreferrer' }
     ];
 
@@ -98,7 +98,7 @@ window.SITE_SHELL_CONFIG = (function () {
             footer: stdFooter('蛋白質設計 AI 報告', '作為大分子 AI 演算法研究方向的技術作品集專案製作 · 2026')
         },
         thesis: {
-            brandHref: '/',
+            brandHref: 'index.html',
             brandHtml: '<span class="nav-dot"></span>交易策略研究',
             navLinks: STD_NAV,
             drawerLinks: STD_DRAWER,
@@ -106,9 +106,9 @@ window.SITE_SHELL_CONFIG = (function () {
                 variant: 'inline',
                 noteHtml: '碩士論文互動展示 · 電資工程研究所 · 利用遺傳演算法於利潤價格分布為基礎的交易策略最佳化技術之研究',
                 links: [
-                    { href: '/',      label: '返回首頁' },
-                    { href: '/works', label: '作品總覽' },
-                    { href: '/about', label: 'About Me' }
+                    { href: 'index.html', label: '返回首頁' },
+                    { href: 'works.html', label: '作品總覽' },
+                    { href: 'about_me.html', label: 'About Me' }
                 ]
             }
         },
