@@ -6,8 +6,6 @@
         <source id="bgSource" src="/bg1.mp4" type="video/mp4">
     </video>
     <div class="vignette-overlay"></div>
-    <!-- 全域深色背景覆蓋層 -->
-    <div class="global-scrim"></div>
 </div>
 
 <style>
@@ -40,29 +38,40 @@
         background: radial-gradient(ellipse at center, transparent 50%, rgba(8,6,14,0.3) 100%);
     }
 
-    /* 全域深色背景覆蓋 - 覆蓋所有內容 */
-    .global-scrim {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        pointer-events: none;
-        background: rgba(8, 6, 14, 0.88) !important;
+    /* 全域深色背景 */
+    body {
+        background: rgba(8, 6, 14, 0.95) !important;
     }
 
-    /* 確保所有元素在覆蓋層之上 */
-    body, main, header, section, article, footer, aside, nav,
+    main, header, section, article, footer, aside, nav {
+        background: rgba(8, 6, 14, 0.95) !important;
+    }
+
+    /* 每个文字元素有方块背景（内联显示） */
+    p, h1, h2, h3, h4, h5, h6, span, a, li, td, th, label,
     .hero, .container, .panel, .card, .surface-card, .runtime-card, .metric-card,
-    .demo-card, .skill-card, .timeline-card, .link-card, .fw {
-        background: rgba(8, 6, 14, 0.92) !important;
-        position: relative;
-        z-index: 2;
+    .demo-card, .skill-card, .timeline-card, .link-card {
+        display: inline;
+        background: rgba(8, 6, 14, 0.95) !important;
+        padding: 2px 4px;
+        margin: 1px;
+        border-radius: 3px;
     }
 
-    /* 所有文字元素 */
-    p, h1, h2, h3, h4, h5, h6, span, a, li, td, th, label, div:not(.immersive-bg) {
-        background: rgba(8, 6, 14, 0.85) !important;
-        position: relative;
-        z-index: 3;
+    /* 块级元素特殊处理 */
+    p, h1, h2, h3, h4, h5, h6, li, td, th, article, section, main, header, footer {
+        display: block;
+        background: rgba(8, 6, 14, 0.95) !important;
+        padding: 4px 8px;
+        margin: 2px 0;
+        border-radius: 4px;
+    }
+
+    /* 确保链接和span等行内元素有背景 */
+    span, a, strong, em, b, i {
+        background: rgba(8, 6, 14, 0.95) !important;
+        padding: 2px 4px;
+        border-radius: 3px;
     }
 
     .particle {
@@ -73,7 +82,6 @@
         border-radius: 50%;
         pointer-events: none;
         animation: float 20s infinite ease-in-out;
-        z-index: 4;
     }
 
     @keyframes float {
