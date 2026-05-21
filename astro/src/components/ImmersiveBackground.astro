@@ -44,13 +44,24 @@
     }
 
     /* 確保內容區域有背景 */
-    main, header, section, .hero, .container {
+    main, header, section, .hero, .container, article, footer {
         background: rgba(8, 6, 14, 0.85) !important;
     }
 
     /* 卡片和面板背景 */
-    .card, .panel, .surface-card, .runtime-card, .metric-card {
+    .card, .panel, .surface-card, .runtime-card, .metric-card,
+    .demo-card, .skill-card, .timeline-card, .link-card {
         background: rgba(8, 6, 14, 0.9) !important;
+    }
+
+    /* 按鈕和表單背景 */
+    button, input, textarea, select {
+        background: rgba(8, 6, 14, 0.9) !important;
+    }
+
+    /* 文字段落背景 */
+    p, h1, h2, h3, h4, h5, h6, span, a {
+        background: rgba(8, 6, 14, 0.7) !important;
     }
 
     .particle {
