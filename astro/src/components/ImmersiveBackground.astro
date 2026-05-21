@@ -1,22 +1,4 @@
 ---
-// Immersive Background Component for Astro
-const videos = [
-    '/bg1.mp4',
-    '/bg2.mp4',
-    '/bg3.mp4',
-    '/bg4.mp4',
-    '/bg5.mp4',
-    '/bg6.mp4',
-    '/bg7.mp4',
-    '/bg8.mp4',
-    '/bg9.mp4',
-    '/bg10.mp4',
-    '/bg11.mp4',
-    '/bg12.mp4',
-    '/bg13.mp4',
-    '/bg14.mp4',
-    '/bg15.mp4'
-];
 ---
 
 <div class="immersive-bg" id="immersive-bg">
@@ -24,7 +6,6 @@ const videos = [
         <source id="bgSource" src="/bg1.mp4" type="video/mp4">
     </video>
     <div class="vignette-overlay"></div>
-    <div class="content-scrim"></div>
 </div>
 
 <style>
@@ -57,12 +38,19 @@ const videos = [
         background: radial-gradient(ellipse at center, transparent 50%, rgba(8,6,14,0.3) 100%);
     }
 
-    .content-scrim {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        pointer-events: none;
-        background: rgba(8, 6, 14, 0.6);
+    /* 為所有主要內容容器添加背景 */
+    body {
+        background: rgba(8, 6, 14, 0.85) !important;
+    }
+
+    /* 確保內容區域有背景 */
+    main, header, section, .hero, .container {
+        background: rgba(8, 6, 14, 0.85) !important;
+    }
+
+    /* 卡片和面板背景 */
+    .card, .panel, .surface-card, .runtime-card, .metric-card {
+        background: rgba(8, 6, 14, 0.9) !important;
     }
 
     .particle {
