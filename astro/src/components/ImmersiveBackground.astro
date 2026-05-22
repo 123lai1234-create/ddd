@@ -3,7 +3,7 @@
 
 <div class="immersive-bg" id="immersive-bg">
     <video class="immersive-video" id="bgVideo" autoplay muted loop playsinline>
-        <source id="bgSource" src="/bg1.mp4" type="video/mp4">
+        <source id="bgSource" type="video/mp4">
     </video>
     <div class="vignette-overlay"></div>
     <div class="content-scrim"></div>
@@ -152,11 +152,24 @@
         }
     }
 
+    // 初始化時選擇隨機影片
+    function initRandomVideo() {
+        const video = document.getElementById('bgVideo');
+        const source = document.getElementById('bgSource');
+        if (video && source) {
+            const initialIndex = Math.floor(Math.random() * videos.length);
+            source.src = videos[initialIndex];
+            video.load();
+        }
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+            initRandomVideo();
             new ImmersiveBackground();
         });
     } else {
+        initRandomVideo();
         new ImmersiveBackground();
     }
 </script>
