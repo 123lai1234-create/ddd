@@ -25,10 +25,9 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
-        opacity: 0.5;
+        opacity: 1;
         z-index: -1;
         image-rendering: high-quality;
-        filter: contrast(1.1) saturate(1.15) brightness(1.05);
     }
 
     .vignette-overlay {
@@ -36,16 +35,16 @@
         inset: 0;
         z-index: 0;
         pointer-events: none;
-        background: radial-gradient(ellipse at center, transparent 50%, rgba(8,6,14,0.4) 100%);
+        background: radial-gradient(ellipse at center, transparent 60%, rgba(8,6,14,0.15) 100%);
     }
 
-    /* 深色內容遮罩 - 覆蓋整個畫面 */
+    /* 內容遮罩 - 保持透明讓背景影片可見 */
     .content-scrim {
         position: absolute;
         inset: 0;
         z-index: 1;
         pointer-events: none;
-        background: rgba(8, 6, 14, 0.92);
+        background: transparent;
     }
 
     .particle {
@@ -73,7 +72,15 @@
     const videos = [
         '/bg1.mp4', '/bg2.mp4', '/bg3.mp4', '/bg4.mp4', '/bg5.mp4',
         '/bg6.mp4', '/bg7.mp4', '/bg8.mp4', '/bg9.mp4', '/bg10.mp4',
-        '/bg11.mp4', '/bg12.mp4', '/bg13.mp4', '/bg14.mp4', '/bg15.mp4'
+        '/bg11.mp4', '/bg12.mp4', '/bg13.mp4', '/bg14.mp4', '/bg15.mp4',
+        '/350f54bf-9466-4b56-b740-bc1cfd1cfb1.mp4',
+        '/6354a061-40a3-4783-90c6-ae8d1fb24ff7.mp4',
+        '/97eb4e11-5e1b-4e4c-b59b-b1ceada17ee1.mp4',
+        '/9c52e0cd-3149-41bf-a352-dc6b0a057d4d.mp4',
+        '/a59aa81d-8d61-42d1-bd95-7153bfc50a91.mp4',
+        '/a9283c1d-a6d5-40e3-a89a-85cf7f2546e9.mp4',
+        '/cd66d6a-3dbb-4ed4-bd24-4a05add4b914.mp4',
+        '/f5ea057b-3d35-4cad-83d6-fbf5223cce47.mp4'
     ];
     let currentIndex = Math.floor(Math.random() * videos.length);
     let lastIndex = currentIndex;
