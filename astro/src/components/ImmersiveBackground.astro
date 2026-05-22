@@ -39,16 +39,9 @@
         background: radial-gradient(ellipse at center, transparent 60%, rgba(8,6,14,0.15) 100%);
     }
 
-    /* 浮水印覆蓋層 - 遮蓋左側浮水印區域（不改變影片） */
+    /* 浮水印覆蓋層 - 已停用，使用處理的影片 */
     .watermark-cover {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 90px;
-        height: 100%;
-        background: #08060e;
-        z-index: 2;
-        pointer-events: none;
+        display: none;
     }
 
     .particle {
