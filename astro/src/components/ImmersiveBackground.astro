@@ -7,6 +7,7 @@
     </video>
     <div class="vignette-overlay"></div>
     <div class="content-scrim"></div>
+    <div class="watermark-cover"></div>
 </div>
 
 <style>
@@ -38,13 +39,16 @@
         background: radial-gradient(ellipse at center, transparent 60%, rgba(8,6,14,0.15) 100%);
     }
 
-    /* 內容遮罩 - 保持透明讓背景影片可見 */
-    .content-scrim {
+    /* 浮水印覆蓋層 - 遮蓋左側浮水印區域（不改變影片） */
+    .watermark-cover {
         position: absolute;
-        inset: 0;
-        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 90px;
+        height: 100%;
+        background: #08060e;
+        z-index: 2;
         pointer-events: none;
-        background: transparent;
     }
 
     .particle {
