@@ -64,7 +64,10 @@
                 <div class="chat-input-row">
                     <input type="text" id="chat-input" placeholder="輸入您想問的問題..."
                         onkeypress="if(event.key==='Enter')sendChat()">
-                    <button onclick="sendChat()">送出</button>
+                    <button id="chat-generate" onclick="sendChat()">
+                        <span id="chat-spinner" class="spinner" style="display:none"></span>
+                        <span id="chat-btn-text">送出</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -122,9 +125,25 @@
             console.log('API Base:', API_BASE);
         }
 
+        // 使用環境變數或預設值
+        function getApiBase() {
+            if (API_BASE) return API_BASE;
+            // 嘗試多個可能的 API 端點
+            const possibleUrls = [
+                window.API_BASE,
+                '/api',
+                'https://donttalk-api.fly.dev'
+            ];
+            for (const url of possibleUrls) {
+                if (url) return url;
+            }
+            return '';
+        }
+
         function buildUrl(path) {
-            if (!API_BASE) return path;
-            return API_BASE.replace(/\/$/, '') + path;
+            const base = getApiBase();
+            if (!base) return path;
+            return base.replace(/\/$/, '') + path;
         }
 
         document.getElementById('tts-speed').addEventListener('input', function (e) {

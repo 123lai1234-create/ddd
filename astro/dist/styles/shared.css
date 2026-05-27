@@ -376,3 +376,28 @@ html.is-admin .admin-only {
   text-align: center;
   min-height: 1.2em;
 }
+
+/* ─── Touch Target Minimum (44x44px) ─── */
+button,
+.btn,
+[role="button"],
+input[type="submit"],
+input[type="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* ─── Image Performance ─── */
+img {
+  loading: lazy;
+  decoding: async;
+}
+
+/* ─── Animation Performance ─── */
+.animating,
+.card,
+.pipe-step,
+.metric-card,
+.reveal {
+  will-change: transform;
+}

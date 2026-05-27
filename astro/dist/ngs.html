@@ -34,7 +34,8 @@
                     </p>
                 </div>
                 <div class="service-overview-note">
-                    前台可先承接：模組介紹、資料上傳、任務提交、報告瀏覽、互動圖表與結果下載。真正要跑 scRNA、WES/WGS、Proteomics 等高計算量分析時，接 job queue、物件儲存與 worker 即可擴充。
+                    前台可先承接：模組介紹、資料上傳、任務提交、報告瀏覽、互動圖表與結果下載。真正要跑 scRNA、WES/WGS、Proteomics 等高計算量分析時，接 job queue、物件儲存與 worker
+                    即可擴充。
                 </div>
             </div>
 
@@ -675,7 +676,7 @@ gatk VariantFiltration \
             <h3 id="modalTitle"></h3>
             <div id="modalTool" class="modal-tool"></div>
             <div class="modal-canvas-wrap">
-                <canvas id="modalCanvas" height="180"></canvas>
+                <canvas id="modalCanvas" height="180" decoding="async"></canvas>
             </div>
             <div class="modal-body" id="modalBody"></div>
         </div>
@@ -688,11 +689,23 @@ gatk VariantFiltration \
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
             <div>
                 <h3 style="font-size:0.82rem;color:var(--teal);margin-bottom:8px;">Volcano Plot (DE Analysis)</h3>
-                <div data-plotly="volcano" style="height:320px;background:var(--surface);border-radius:12px;border:1px solid var(--border);"></div>
+                <div data-plotly="volcano" id="plotly-volcano"
+                    style="height:320px;background:var(--surface);border-radius:12px;border:1px solid var(--border);position:relative;">
+                    <div class="plotly-loading"
+                        style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.85rem;">
+                        <span>載入圖表中...</span>
+                    </div>
+                </div>
             </div>
             <div>
                 <h3 style="font-size:0.82rem;color:var(--orange);margin-bottom:8px;">Expression Heatmap</h3>
-                <div data-plotly="heatmap" style="height:320px;background:var(--surface);border-radius:12px;border:1px solid var(--border);"></div>
+                <div data-plotly="heatmap" id="plotly-heatmap"
+                    style="height:320px;background:var(--surface);border-radius:12px;border:1px solid var(--border);position:relative;">
+                    <div class="plotly-loading"
+                        style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.85rem;">
+                        <span>載入圖表中...</span>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -723,8 +736,10 @@ gatk VariantFiltration \
         <div class="section-label">Pipeline Flow</div>
         <h2 class="section-title">NGS 分析流程 · 動態視覺化</h2>
         <p class="section-sub" style="margin-bottom:24px">Canvas 2D 繪製的完整 NGS pipeline，點擊各節點查看詳情。</p>
-        <canvas id="ngs-pipeline-canvas" style="width:100%;height:240px;border-radius:12px;background:rgba(0,0,0,0.2);border:1px solid rgba(88,215,255,0.1);display:block;cursor:pointer"></canvas>
-        <div id="ngs-pipeline-detail" style="margin-top:12px;padding:14px 18px;background:rgba(88,215,255,0.06);border:1px solid rgba(88,215,255,0.15);border-radius:10px;font-size:0.85rem;color:var(--muted);min-height:44px;transition:all 0.3s">
+        <canvas id="ngs-pipeline-canvas"
+            style="width:100%;height:240px;border-radius:12px;background:rgba(0,0,0,0.2);border:1px solid rgba(88,215,255,0.1);display:block;cursor:pointer"></canvas>
+        <div id="ngs-pipeline-detail"
+            style="margin-top:12px;padding:14px 18px;background:rgba(88,215,255,0.06);border:1px solid rgba(88,215,255,0.15);border-radius:10px;font-size:0.85rem;color:var(--muted);min-height:44px;transition:all 0.3s">
             點擊流程節點查看詳情
         </div>
     </section>
@@ -734,136 +749,136 @@ gatk VariantFiltration \
     <script src="scripts/app-config.js"></script>
     <script src="scripts/ngs.js"></script>
 
-<script>
-(function() {
-  const canvas = document.getElementById('ngs-pipeline-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const detail = document.getElementById('ngs-pipeline-detail');
+    <script>
+        (function () {
+            const canvas = document.getElementById('ngs-pipeline-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const detail = document.getElementById('ngs-pipeline-detail');
 
-  const STEPS = [
-    { id:'raw',    label:'FastQ\n原始讀取', color:'#58d7ff', info:'Illumina/Nanopore 測序產生 FastQ 格式原始讀取，包含鹼基質量分數 (Phred)。覆蓋深度目標 ≥ 30×。' },
-    { id:'qc',     label:'FastQC\nQC 評估', color:'#7bf0be', info:'FastQC 評估每鹼基質量、GC 含量、adapter 汙染。MultiQC 匯整多樣本報告。' },
-    { id:'trim',   label:'Trimmomatic\n品質修剪', color:'#ffd080', info:'移除低品質鹼基（Q<20）和 adapter 序列，保留有效讀取。SLIDINGWINDOW:4:20 MINLEN:36。' },
-    { id:'align',  label:'BWA-MEM\n序列比對', color:'#b59cff', info:'BWA-MEM 將讀取比對至 hg38 參考基因組。Picard MarkDuplicates 標記重複序列。' },
-    { id:'gatk',   label:'GATK\n變異偵測', color:'#ff8080', info:'HaplotypeCaller 呼叫 SNV/InDel。VQSR 變異品質校正。gVCF 模式支援多樣本分析。' },
-    { id:'annot',  label:'ANNOVAR\n功能注釋', color:'#58d7ff', info:'ANNOVAR/VEP 注釋變異功能影響：RefSeq 轉錄本、ClinVar 臨床意義、gnomAD 族群頻率。' },
-    { id:'report', label:'報告\n輸出', color:'#7bf0be', info:'整合 QC 指標、變異表、臨床注釋，輸出 HTML 報告與 VCF/TSV 格式結果供下游分析。' },
-  ];
+            const STEPS = [
+                { id: 'raw', label: 'FastQ\n原始讀取', color: '#58d7ff', info: 'Illumina/Nanopore 測序產生 FastQ 格式原始讀取，包含鹼基質量分數 (Phred)。覆蓋深度目標 ≥ 30×。' },
+                { id: 'qc', label: 'FastQC\nQC 評估', color: '#7bf0be', info: 'FastQC 評估每鹼基質量、GC 含量、adapter 汙染。MultiQC 匯整多樣本報告。' },
+                { id: 'trim', label: 'Trimmomatic\n品質修剪', color: '#ffd080', info: '移除低品質鹼基（Q<20）和 adapter 序列，保留有效讀取。SLIDINGWINDOW:4:20 MINLEN:36。' },
+                { id: 'align', label: 'BWA-MEM\n序列比對', color: '#b59cff', info: 'BWA-MEM 將讀取比對至 hg38 參考基因組。Picard MarkDuplicates 標記重複序列。' },
+                { id: 'gatk', label: 'GATK\n變異偵測', color: '#ff8080', info: 'HaplotypeCaller 呼叫 SNV/InDel。VQSR 變異品質校正。gVCF 模式支援多樣本分析。' },
+                { id: 'annot', label: 'ANNOVAR\n功能注釋', color: '#58d7ff', info: 'ANNOVAR/VEP 注釋變異功能影響：RefSeq 轉錄本、ClinVar 臨床意義、gnomAD 族群頻率。' },
+                { id: 'report', label: '報告\n輸出', color: '#7bf0be', info: '整合 QC 指標、變異表、臨床注釋，輸出 HTML 報告與 VCF/TSV 格式結果供下游分析。' },
+            ];
 
-  let activeStep = -1;
-  let animProgress = 0;
+            let activeStep = -1;
+            let animProgress = 0;
 
-  function resize() {
-    canvas.width  = canvas.offsetWidth;
-    canvas.height = 240;
-    draw(animProgress);
-  }
+            function resize() {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = 240;
+                draw(animProgress);
+            }
 
-  function stepPos(i) {
-    const W = canvas.width;
-    const pad = 60;
-    const x = pad + (i / (STEPS.length - 1)) * (W - pad * 2);
-    const y = canvas.height / 2;
-    return { x, y };
-  }
+            function stepPos(i) {
+                const W = canvas.width;
+                const pad = 60;
+                const x = pad + (i / (STEPS.length - 1)) * (W - pad * 2);
+                const y = canvas.height / 2;
+                return { x, y };
+            }
 
-  function draw(p) {
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
+            function draw(p) {
+                const W = canvas.width, H = canvas.height;
+                ctx.clearRect(0, 0, W, H);
 
-    // Draw connecting lines
-    for (let i = 0; i < STEPS.length - 1; i++) {
-      const a = stepPos(i), b = stepPos(i + 1);
-      const progress = Math.min(1, Math.max(0, p * STEPS.length - i));
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(a.x + (b.x - a.x) * progress, a.y);
-      ctx.strokeStyle = 'rgba(88,215,255,0.3)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
+                // Draw connecting lines
+                for (let i = 0; i < STEPS.length - 1; i++) {
+                    const a = stepPos(i), b = stepPos(i + 1);
+                    const progress = Math.min(1, Math.max(0, p * STEPS.length - i));
+                    ctx.beginPath();
+                    ctx.moveTo(a.x, a.y);
+                    ctx.lineTo(a.x + (b.x - a.x) * progress, a.y);
+                    ctx.strokeStyle = 'rgba(88,215,255,0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
 
-    // Draw nodes
-    STEPS.forEach((step, i) => {
-      const { x, y } = stepPos(i);
-      const appear = Math.min(1, Math.max(0, p * STEPS.length - i + 0.5));
-      if (appear <= 0) return;
+                // Draw nodes
+                STEPS.forEach((step, i) => {
+                    const { x, y } = stepPos(i);
+                    const appear = Math.min(1, Math.max(0, p * STEPS.length - i + 0.5));
+                    if (appear <= 0) return;
 
-      const r = 26;
-      const isActive = i === activeStep;
+                    const r = 26;
+                    const isActive = i === activeStep;
 
-      // Glow
-      if (isActive) {
-        ctx.beginPath();
-        ctx.arc(x, y, r + 10, 0, Math.PI * 2);
-        const g = ctx.createRadialGradient(x, y, r, x, y, r + 10);
-        g.addColorStop(0, 'rgba(88,215,255,0.3)');
-        g.addColorStop(1, 'transparent');
-        ctx.fillStyle = g;
-        ctx.fill();
-      }
+                    // Glow
+                    if (isActive) {
+                        ctx.beginPath();
+                        ctx.arc(x, y, r + 10, 0, Math.PI * 2);
+                        const g = ctx.createRadialGradient(x, y, r, x, y, r + 10);
+                        g.addColorStop(0, 'rgba(88,215,255,0.3)');
+                        g.addColorStop(1, 'transparent');
+                        ctx.fillStyle = g;
+                        ctx.fill();
+                    }
 
-      ctx.globalAlpha = appear;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = isActive ? step.color : 'rgba(16,22,30,0.9)';
-      ctx.fill();
-      ctx.strokeStyle = step.color;
-      ctx.lineWidth = isActive ? 3 : 1.5;
-      ctx.stroke();
+                    ctx.globalAlpha = appear;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fillStyle = isActive ? step.color : 'rgba(16,22,30,0.9)';
+                    ctx.fill();
+                    ctx.strokeStyle = step.color;
+                    ctx.lineWidth = isActive ? 3 : 1.5;
+                    ctx.stroke();
 
-      // Label
-      ctx.fillStyle = isActive ? '#0a1116' : step.color;
-      ctx.font = `bold 9px Inter, sans-serif`;
-      ctx.textAlign = 'center';
-      const lines = step.label.split('\n');
-      lines.forEach((line, li) => {
-        ctx.fillText(line, x, y + (li - (lines.length-1)/2) * 11 + 1);
-      });
+                    // Label
+                    ctx.fillStyle = isActive ? '#0a1116' : step.color;
+                    ctx.font = `bold 9px Inter, sans-serif`;
+                    ctx.textAlign = 'center';
+                    const lines = step.label.split('\n');
+                    lines.forEach((line, li) => {
+                        ctx.fillText(line, x, y + (li - (lines.length - 1) / 2) * 11 + 1);
+                    });
 
-      // Step number
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.font = '9px JetBrains Mono, monospace';
-      ctx.fillText(`0${i+1}`, x, y + r + 14);
+                    // Step number
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.font = '9px JetBrains Mono, monospace';
+                    ctx.fillText(`0${i + 1}`, x, y + r + 14);
 
-      ctx.globalAlpha = 1;
-    });
-  }
+                    ctx.globalAlpha = 1;
+                });
+            }
 
-  // Animate in
-  const start = performance.now();
-  const animLoop = now => {
-    animProgress = Math.min((now - start) / 1200, 1);
-    draw(animProgress);
-    if (animProgress < 1) requestAnimationFrame(animLoop);
-  };
+            // Animate in
+            const start = performance.now();
+            const animLoop = now => {
+                animProgress = Math.min((now - start) / 1200, 1);
+                draw(animProgress);
+                if (animProgress < 1) requestAnimationFrame(animLoop);
+            };
 
-  new IntersectionObserver(entries => {
-    if (entries[0].isIntersecting) requestAnimationFrame(animLoop);
-  }, { threshold: 0.3 }).observe(canvas);
+            new IntersectionObserver(entries => {
+                if (entries[0].isIntersecting) requestAnimationFrame(animLoop);
+            }, { threshold: 0.3 }).observe(canvas);
 
-  // Click interaction
-  canvas.addEventListener('click', e => {
-    const r = canvas.getBoundingClientRect();
-    const mx = e.clientX - r.left, my = e.clientY - r.top;
-    let hit = -1;
-    STEPS.forEach((_, i) => {
-      const { x, y } = stepPos(i);
-      if (Math.hypot(mx - x, my - y) < 30) hit = i;
-    });
-    activeStep = hit;
-    draw(1);
-    if (detail && hit >= 0) detail.textContent = STEPS[hit].info;
-    else if (detail) detail.textContent = '點擊流程節點查看詳情';
-  });
+            // Click interaction
+            canvas.addEventListener('click', e => {
+                const r = canvas.getBoundingClientRect();
+                const mx = e.clientX - r.left, my = e.clientY - r.top;
+                let hit = -1;
+                STEPS.forEach((_, i) => {
+                    const { x, y } = stepPos(i);
+                    if (Math.hypot(mx - x, my - y) < 30) hit = i;
+                });
+                activeStep = hit;
+                draw(1);
+                if (detail && hit >= 0) detail.textContent = STEPS[hit].info;
+                else if (detail) detail.textContent = '點擊流程節點查看詳情';
+            });
 
-  window.addEventListener('resize', resize);
-  resize();
-})();
-</script>
+            window.addEventListener('resize', resize);
+            resize();
+        })();
+    </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script><script src="/scripts/app-config.js"></script><script src="/scripts/ngs.js"></script> <vercel-analytics data-props="{&#34;data-astro-cid-5hce7sga&#34;:true}" data-params="{}" data-pathname="/ngs.html"></vercel-analytics> <script type="module">var v=()=>{window.va||(window.va=function(...i){window.vaq||(window.vaq=[]),window.vaq.push(i)})},w="@vercel/analytics",h="2.0.1";function f(){return typeof window<"u"}function l(){try{const e="production"}catch{}return"production"}function m(e="auto"){if(e==="auto"){window.vam=l();return}window.vam=e}function y(){return(f()?window.vam:l())||"production"}function d(){return y()==="development"}function b(e,i){if(!e||!i)return e;let n=e;try{const t=Object.entries(i);for(const[r,s]of t)if(!Array.isArray(s)){const o=u(s);o.test(n)&&(n=n.replace(o,`/[${r}]`))}for(const[r,s]of t)if(Array.isArray(s)){const o=u(s.join("/"));o.test(n)&&(n=n.replace(o,`/[...${r}]`))}return n}catch{return e}}function u(e){return new RegExp(`/${g(e)}(?=[/?#]|$)`)}function g(e){return e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function E(e){return e.scriptSrc?a(e.scriptSrc):d()?"https://va.vercel-scripts.com/v1/script.debug.js":e.basePath?a(`${e.basePath}/insights/script.js`):"/_vercel/insights/script.js"}function k(e,i){var n;let t=e;if(i)try{t={...(n=JSON.parse(i))==null?void 0:n.analytics,...e}}catch{}m(t.mode);const r={sdkn:w+(t.framework?`/${t.framework}`:""),sdkv:h};return t.disableAutoTrack&&(r.disableAutoTrack="1"),t.viewEndpoint&&(r.viewEndpoint=a(t.viewEndpoint)),t.eventEndpoint&&(r.eventEndpoint=a(t.eventEndpoint)),t.sessionEndpoint&&(r.sessionEndpoint=a(t.sessionEndpoint)),d()&&t.debug===!1&&(r.debug="false"),t.dsn&&(r.dsn=t.dsn),t.endpoint?r.endpoint=t.endpoint:t.basePath&&(r.endpoint=a(`${t.basePath}/insights`)),{beforeSend:t.beforeSend,src:E(t),dataset:r}}function a(e){return e.startsWith("http://")||e.startsWith("https://")||e.startsWith("/")?e:`/${e}`}function S(e={debug:!0},i){var n;if(!f())return;const{beforeSend:t,src:r,dataset:s}=k(e,i);if(v(),t&&((n=window.va)==null||n.call(window,"beforeSend",t)),document.head.querySelector(`script[src*="${r}"]`))return;const o=document.createElement("script");o.src=r;for(const[c,p]of Object.entries(s))o.dataset[c]=p;o.defer=!0,o.onerror=()=>{const c=d()?"Please check if any ad blockers are enabled and try again.":"Be sure to enable Web Analytics for your project and deploy again. See https://vercel.com/docs/analytics/quickstart for more information.";console.log(`[Vercel Web Analytics] Failed to load script from ${r}. ${c}`)},document.head.appendChild(o)}function $({route:e,path:i}){var n;(n=window.va)==null||n.call(window,"pageview",{route:e,path:i})}function A(){try{return}catch{}}function j(){try{return}catch{}}customElements.define("vercel-analytics",class extends HTMLElement{constructor(){super();try{const i=JSON.parse(this.dataset.props??"{}"),n=JSON.parse(this.dataset.params??"{}");S({...i,disableAutoTrack:!0,framework:"astro",basePath:A(),beforeSend:window.webAnalyticsBeforeSend},j());const t=this.dataset.pathname;$({route:b(t??"",n),path:t})}catch(i){throw new Error(`Failed to parse WebAnalytics properties: ${i}`)}}});</script> <!-- ── Search modal (Pagefind) ── --> <div id="pf-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:10vh" data-astro-cid-5hce7sga> <div style="background:var(--bg,#0d1117);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;width:min(640px,90vw);max-height:70vh;overflow:hidden;display:flex;flex-direction:column" data-astro-cid-5hce7sga> <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border,rgba(255,255,255,.08))" data-astro-cid-5hce7sga> <span style="color:var(--muted,#8b949e);font-size:1.1rem" data-astro-cid-5hce7sga>🔍</span> <input id="pf-input" placeholder="搜尋頁面內容…" autocomplete="off" spellcheck="false" style="flex:1;background:none;border:none;outline:none;font-size:1rem;color:var(--text,#e6edf3);font-family:inherit" data-astro-cid-5hce7sga> <kbd style="font-size:.75rem;color:var(--muted,#8b949e);border:1px solid var(--border,rgba(255,255,255,.12));border-radius:4px;padding:2px 6px" data-astro-cid-5hce7sga>Esc</kbd> </div> <div id="pf-results" style="overflow-y:auto;padding:8px 0;flex:1" data-astro-cid-5hce7sga></div> </div> </div> <!-- Search trigger button (bottom-right) - Q版人偶 --> <button id="pf-btn" title="搜尋 (Ctrl+K)" aria-label="搜尋" style="position:fixed;bottom:24px;right:24px;z-index:500;background:transparent;border:none;border-radius:50%;width:60px;height:60px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,filter .2s;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));overflow:visible" onmouseover="this.style.transform='scale(1.15)';this.style.filter='drop-shadow(0 8px 20px rgba(88,215,255,.4))'" onmouseout="this.style.transform='scale(1)';this.style.filter='drop-shadow(0 4px 12px rgba(0,0,0,.4))'" data-astro-cid-5hce7sga> <img src="https://minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com/ccv2%2F2026-05-22%2FMiniMax-M2.7%2F2051828084830642340%2F90bfbbf2424b111a0e9e4fd2bf2d4fe9161a737df67195fcde6563674978ea60..png?Expires=1779502655&OSSAccessKeyId=LTAI5tGLnRTkBjLuYPjNcKQ8&Signature=nXfWGxcAAyYikCCK%2FQW5Vmc1UW8%3D" alt="AI 助手" style="width:100%;height:100%;object-fit:contain;border-radius:50%;animation:bounce-gentle 3s ease-in-out infinite" id="search-avatar" data-astro-cid-5hce7sga> </button>  <script>
     (function() {
       const modal  = document.getElementById('pf-modal');

@@ -117,11 +117,6 @@
       "source": "/music.html",
       "destination": "/music",
       "permanent": true
-    },
-    {
-      "source": "/music",
-      "destination": "/music",
-      "permanent": true
     }
   ]
 }
