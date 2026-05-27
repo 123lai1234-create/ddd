@@ -5,7 +5,7 @@ import react from '@astrojs/react';
 export default defineConfig({
     integrations: [react()],
     build: {
-        format: 'file',
+        format: 'directory',
     },
     vite: {
         optimizeDeps: {
