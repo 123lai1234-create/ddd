@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "cd astro && npm install && npm run build"
+    "build": "cd astro && npm install && npm run build",
+    "vercel-build": "cd astro && npm run build"
   },
   "dependencies": {
     "@vercel/og": "^0.6.3"
