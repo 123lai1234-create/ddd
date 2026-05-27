@@ -13,7 +13,8 @@
     <meta property="og:image" content="https://donttalk.vercel.app/og-image.svg">
     <meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg">
     <!-- BEGIN COMMON_HEAD -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -213,47 +214,59 @@
 
             <!-- Canvas Skill Radar + WAA Progress Bars -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px;align-items:start">
-              <div>
-                <div class="section-label" style="margin-bottom:12px">Radar</div>
-                <div class="skill-radar-wrap">
-                  <canvas id="skill-radar-canvas"></canvas>
+                <div>
+                    <div class="section-label" style="margin-bottom:12px">Radar</div>
+                    <div class="skill-radar-wrap">
+                        <canvas id="skill-radar-canvas"></canvas>
+                    </div>
                 </div>
-              </div>
-              <div>
-                <div class="section-label" style="margin-bottom:12px">Proficiency</div>
-                <div class="skill-bar-list">
-                  <div class="skill-bar-item" data-skill-bar="88">
-                    <span>Frontend</span>
-                    <div class="skill-bar-track"><div class="skill-bar-fill"></div></div>
-                    <span class="skill-pct">88%</span>
-                  </div>
-                  <div class="skill-bar-item" data-skill-bar="85">
-                    <span>Python / AI</span>
-                    <div class="skill-bar-track"><div class="skill-bar-fill"></div></div>
-                    <span class="skill-pct">85%</span>
-                  </div>
-                  <div class="skill-bar-item" data-skill-bar="92">
-                    <span>Biomedical</span>
-                    <div class="skill-bar-track"><div class="skill-bar-fill"></div></div>
-                    <span class="skill-pct">92%</span>
-                  </div>
-                  <div class="skill-bar-item" data-skill-bar="80">
-                    <span>NGS / Genomics</span>
-                    <div class="skill-bar-track"><div class="skill-bar-fill"></div></div>
-                    <span class="skill-pct">80%</span>
-                  </div>
-                  <div class="skill-bar-item" data-skill-bar="90">
-                    <span>Research</span>
-                    <div class="skill-bar-track"><div class="skill-bar-fill"></div></div>
-                    <span class="skill-pct">90%</span>
-                  </div>
-                  <div class="skill-bar-item" data-skill-bar="68">
-                    <span>DevOps</span>
-                    <div class="skill-bar-track"><div class="skill-bar-fill"></div></div>
-                    <span class="skill-pct">68%</span>
-                  </div>
+                <div>
+                    <div class="section-label" style="margin-bottom:12px">Proficiency</div>
+                    <div class="skill-bar-list">
+                        <div class="skill-bar-item" data-skill-bar="88">
+                            <span>Frontend</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill"></div>
+                            </div>
+                            <span class="skill-pct">88%</span>
+                        </div>
+                        <div class="skill-bar-item" data-skill-bar="85">
+                            <span>Python / AI</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill"></div>
+                            </div>
+                            <span class="skill-pct">85%</span>
+                        </div>
+                        <div class="skill-bar-item" data-skill-bar="92">
+                            <span>Biomedical</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill"></div>
+                            </div>
+                            <span class="skill-pct">92%</span>
+                        </div>
+                        <div class="skill-bar-item" data-skill-bar="80">
+                            <span>NGS / Genomics</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill"></div>
+                            </div>
+                            <span class="skill-pct">80%</span>
+                        </div>
+                        <div class="skill-bar-item" data-skill-bar="90">
+                            <span>Research</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill"></div>
+                            </div>
+                            <span class="skill-pct">90%</span>
+                        </div>
+                        <div class="skill-bar-item" data-skill-bar="68">
+                            <span>DevOps</span>
+                            <div class="skill-bar-track">
+                                <div class="skill-bar-fill"></div>
+                            </div>
+                            <span class="skill-pct">68%</span>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
         </section>
 
@@ -287,7 +300,7 @@
                     <div id="dbMultiStatus" class="db-multi-status admin-only" style="margin-top:12px"></div>
                     <div class="contact-meta admin-only">API base: <span id="apiBaseLabel">Not configured</span></div>
                 </div>
-                <form id="contactForm" class="contact-form" novalidate>
+                <form id="contactForm" class="contact-form" novalidate aria-label="聯絡表單">
                     <div class="tiny">Leave a message</div>
                     <h3 style="margin-bottom:8px">合作洽詢 / 聯絡表單</h3>
                     <p style="color:var(--muted);margin-bottom:18px">合作、研究、產品或平台整合，歡迎直接留言。</p>
@@ -295,12 +308,12 @@
                         <div class="field">
                             <label for="contact-name">姓名</label>
                             <input id="contact-name" name="name" type="text" maxlength="120" placeholder="Your name"
-                                required>
+                                required aria-required="true">
                         </div>
                         <div class="field">
                             <label for="contact-email">Email</label>
                             <input id="contact-email" name="email" type="email" maxlength="255"
-                                placeholder="you@example.com" required>
+                                placeholder="you@example.com" required aria-required="true">
                         </div>
                         <div class="field full">
                             <label for="contact-organization">公司 / 單位</label>
@@ -310,12 +323,15 @@
                         <div class="field full">
                             <label for="contact-message">訊息內容</label>
                             <textarea id="contact-message" name="message" maxlength="4000"
-                                placeholder="想聊的主題、合作方向、研究需求或平台想法" required></textarea>
+                                placeholder="想聊的主題、合作方向、研究需求或平台想法" required aria-required="true"></textarea>
                         </div>
-                        <input class="hp-field" name="website" type="text" tabindex="-1" autocomplete="off">
+                        <input class="hp-field" name="website" type="text" tabindex="-1" autocomplete="off"
+                            aria-hidden="true">
                     </div>
-                    <button type="submit" class="btn btn-primary" id="contactSubmitBtn">送出留言</button>
-                    <div id="contactStatus" class="form-status" data-state="idle" role="status" aria-live="polite">連線確認中…</div>
+                    <button type="submit" class="btn btn-primary" id="contactSubmitBtn"
+                        style="min-height:44px;min-width:44px">送出留言</button>
+                    <div id="contactStatus" class="form-status" data-state="idle" role="status" aria-live="polite">
+                        連線確認中…</div>
                 </form>
             </div>
         </section>

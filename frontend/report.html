@@ -14,7 +14,8 @@
     <meta property="og:image" content="https://donttalk.vercel.app/og-image.svg">
     <meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg">
     <!-- BEGIN COMMON_HEAD -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -138,20 +139,23 @@
             <h2>視覺化結果</h2>
             <div class="img-grid">
                 <div class="img-card">
-                    <img src="outputs/results_esm2.png" alt="貝葉斯最佳化結果"
-                        onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                    <img src="outputs/results_esm2.png" alt="貝葉斯最佳化結果：訓練損失、代理模型預測與 BO 適應度曲線"
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='block'" loading="lazy"
+                        decoding="async">
                     <div class="img-fallback">results_esm2.png</div>
                     <div class="cap">貝葉斯最佳化：訓練損失、代理模型預測與 BO 適應度曲線</div>
                 </div>
                 <div class="img-card">
-                    <img src="outputs/rl_training.png" alt="RL 獎勵曲線"
-                        onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                    <img src="outputs/rl_training.png" alt="REINFORCE RL 獎勵曲線：多目標獎勵隨訓練回合的變化"
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='block'" loading="lazy"
+                        decoding="async">
                     <div class="img-fallback">rl_training.png</div>
                     <div class="cap">REINFORCE RL：多目標獎勵隨訓練回合的變化</div>
                 </div>
                 <div class="img-card">
-                    <img src="outputs/mpnn_loss.png" alt="ProteinMPNN 損失"
-                        onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                    <img src="outputs/mpnn_loss.png" alt="ProteinMPNN 損失：交叉熵訓練損失隨步驟的收斂情形"
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='block'" loading="lazy"
+                        decoding="async">
                     <div class="img-fallback">mpnn_loss.png</div>
                     <div class="cap">ProteinMPNN：交叉熵訓練損失隨步驟的收斂情形</div>
                 </div>
@@ -205,34 +209,156 @@
                 </div>
             </div>
             <style>
-                #report-timeline { --rpt-accent: var(--cyan, #58d7ff); }
-                .rpt-line { position:absolute; left:50%; top:0; bottom:0; width:2px; background:linear-gradient(to bottom, transparent, var(--rpt-accent), transparent); transform:translateX(-50%); }
-                .rpt-item { display:flex; align-items:flex-start; gap:20px; margin-bottom:48px; position:relative; padding-left:calc(50% + 24px); opacity:0; transform:translateX(-40px); transition:opacity .6s ease, transform .6s ease; }
-                .rpt-item.rpt-right { flex-direction:row-reverse; padding-left:0; padding-right:calc(50% + 24px); transform:translateX(40px); }
-                .rpt-item.rpt-visible { opacity:1; transform:translateX(0); }
-                .rpt-dot { position:absolute; left:50%; top:8px; width:14px; height:14px; border-radius:50%; border:2px solid var(--rpt-accent); background:var(--bg,#0a1116); transform:translateX(-50%); box-shadow:0 0 8px var(--rpt-accent); transition:transform .3s; }
-                .rpt-item.rpt-visible .rpt-dot { transform:translateX(-50%) scale(1.3); }
-                .rpt-card { background:rgba(255,255,255,.04); border:1px solid var(--border,rgba(255,255,255,.08)); border-radius:12px; padding:18px 20px; max-width:340px; }
-                .rpt-date { font-size:.72rem; color:var(--rpt-accent); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }
-                .rpt-card h4 { font-size:.95rem; margin:0 0 8px; color:var(--text); }
-                .rpt-card p { font-size:.82rem; color:var(--muted); line-height:1.6; margin:0; }
-                @media(max-width:640px) {
-                    .rpt-line { left:18px; }
-                    .rpt-item, .rpt-item.rpt-right { padding-left:48px; padding-right:0; flex-direction:row; }
-                    .rpt-dot { left:18px; }
+                #report-timeline {
+                    --rpt-accent: var(--cyan, #58d7ff);
+                }
+
+                .rpt-line {
+                    position: absolute;
+                    left: 50%;
+                    top: 0;
+                    bottom: 0;
+                    width: 2px;
+                    background: linear-gradient(to bottom, transparent, var(--rpt-accent), transparent);
+                    transform: translateX(-50%);
+                }
+
+                .rpt-item {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 20px;
+                    margin-bottom: 48px;
+                    position: relative;
+                    padding-left: calc(50% + 24px);
+                    opacity: 0;
+                    transform: translateX(-40px);
+                    transition: opacity .6s ease, transform .6s ease;
+                }
+
+                .rpt-item.rpt-right {
+                    flex-direction: row-reverse;
+                    padding-left: 0;
+                    padding-right: calc(50% + 24px);
+                    transform: translateX(40px);
+                }
+
+                .rpt-item.rpt-visible {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+
+                .rpt-dot {
+                    position: absolute;
+                    left: 50%;
+                    top: 8px;
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 50%;
+                    border: 2px solid var(--rpt-accent);
+                    background: var(--bg, #0a1116);
+                    transform: translateX(-50%);
+                    box-shadow: 0 0 8px var(--rpt-accent);
+                    transition: transform .3s;
+                }
+
+                .rpt-item.rpt-visible .rpt-dot {
+                    transform: translateX(-50%) scale(1.3);
+                }
+
+                .rpt-card {
+                    background: rgba(255, 255, 255, .04);
+                    border: 1px solid var(--border, rgba(255, 255, 255, .08));
+                    border-radius: 12px;
+                    padding: 18px 20px;
+                    max-width: 340px;
+                }
+
+                .rpt-date {
+                    font-size: .72rem;
+                    color: var(--rpt-accent);
+                    text-transform: uppercase;
+                    letter-spacing: .08em;
+                    margin-bottom: 6px;
+                }
+
+                .rpt-card h4 {
+                    font-size: .95rem;
+                    margin: 0 0 8px;
+                    color: var(--text);
+                }
+
+                .rpt-card p {
+                    font-size: .82rem;
+                    color: var(--muted);
+                    line-height: 1.6;
+                    margin: 0;
+                }
+
+                /* Improved responsive design */
+                @media (max-width:768px) {
+                    #report-timeline {
+                        padding-bottom: 20px;
+                    }
+
+                    .rpt-line {
+                        left: 24px;
+                    }
+
+                    .rpt-item,
+                    .rpt-item.rpt-right {
+                        padding-left: 56px;
+                        padding-right: 0;
+                        flex-direction: row;
+                        transform: translateX(-20px);
+                    }
+
+                    .rpt-item.rpt-right {
+                        transform: translateX(-20px);
+                    }
+
+                    .rpt-item.rpt-visible {
+                        transform: translateX(0);
+                    }
+
+                    .rpt-dot {
+                        left: 24px;
+                    }
+
+                    .rpt-card {
+                        max-width: 100%;
+                        width: 100%;
+                    }
+                }
+
+                @media (max-width:480px) {
+                    .rpt-card {
+                        padding: 14px 16px;
+                    }
+
+                    .rpt-card h4 {
+                        font-size: .88rem;
+                    }
+
+                    .rpt-card p {
+                        font-size: .78rem;
+                    }
+
+                    .rpt-item {
+                        margin-bottom: 32px;
+                    }
                 }
             </style>
             <script>
-            (function(){
-                const items = document.querySelectorAll('.rpt-item');
-                const io = new IntersectionObserver((entries) => {
-                    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('rpt-visible'); io.unobserve(e.target); } });
-                }, { threshold: 0.2 });
-                items.forEach((el, i) => {
-                    el.style.transitionDelay = (i * 0.12) + 's';
-                    io.observe(el);
-                });
-            })();
+                (function () {
+                    const items = document.querySelectorAll('.rpt-item');
+                    const io = new IntersectionObserver((entries) => {
+                        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('rpt-visible'); io.unobserve(e.target); } });
+                    }, { threshold: 0.2 });
+                    items.forEach((el, i) => {
+                        el.style.transitionDelay = (i * 0.12) + 's';
+                        io.observe(el);
+                    });
+                })();
             </script>
         </section>
 

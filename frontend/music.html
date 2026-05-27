@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎵 音樂播放平台</title>
+    <meta name="description" content="現代化音樂播放平台，支援播放清單、音質控制與視覺化效果">
+    <meta property="og:title" content="🎵 音樂播放平台">
+    <meta property="og:description" content="現代化音樂播放平台">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <!-- BEGIN COMMON_HEAD -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { });</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles/shared.css">
+    <link rel="stylesheet" href="styles/polish.css">
+    <link rel="stylesheet" href="styles/dynamic.css">
+    <script src="scripts/theme-randomizer.js" defer></script>
+    <script src="scripts/shader-bg.js" defer></script>
+    <script src="scripts/admin-mode.js" defer></script>
+    <script src="scripts/site-shell-config.js" defer></script>
+    <script src="scripts/nav.js" defer></script>
+    <script src="scripts/app-config.js" defer></script>
+    <script src="scripts/dynamic-features.js" defer></script>
+    <script src="scripts/immersive-experience.js" defer></script>
+    <!-- END COMMON_HEAD -->
+    <link rel="stylesheet" href="styles/music.css">
+</head>
+
+<body data-page="music">
+    <!-- Immersive Background -->
+    <div class="immersive-bg"></div>
+
+    <!-- ════════ NAV ════════ -->
+    <div data-site-nav></div>
+
+    <!-- ════════ MUSIC PLAYER ════════ -->
+    <main class="music-container">
+        <!-- Left Panel - Playlist -->
+        <aside class="playlist-panel">
+            <div class="panel-header">
+                <h2>📋 播放清單</h2>
+                <button class="btn-icon" id="add-music-btn" title="新增音樂">➕</button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="搜尋音樂...">
+            </div>
+            <div class="playlist-tabs">
+                <button class="tab-btn active" data-tab="all">全部</button>
+                <button class="tab-btn" data-tab="favorites">❤️ 最愛</button>
+            </div>
+            <div class="playlist" id="playlist">
+                <!-- 動態生成歌曲列表 -->
+            </div>
+            <div class="playlist-stats">
+                <span id="total-songs">0</span> 首歌曲 · <span id="total-duration">0:00</span>
+            </div>
+        </aside>
+
+        <!-- Center - Now Playing -->
+        <section class="now-playing">
+            <div class="album-art-container">
+                <div class="album-art" id="album-art">
+                    <div class="album-placeholder">🎵</div>
+                    <div class="vinyl-overlay"></div>
+                </div>
+                <div class="audio-visualizer" id="audio-visualizer">
+                    <canvas id="visualizer-canvas"></canvas>
+                </div>
+            </div>
+
+            <div class="track-info">
+                <h1 class="track-title" id="track-title">選擇一首音樂開始</h1>
+                <p class="track-artist" id="track-artist">-</p>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-section">
+                <span class="time-current" id="time-current">0:00</span>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                        <div class="progress-handle" id="progress-handle"></div>
+                    </div>
+                </div>
+                <span class="time-total" id="time-total">0:00</span>
+            </div>
+
+            <!-- Controls -->
+            <div class="player-controls">
+                <button class="control-btn" id="shuffle-btn" title="隨機播放">🔀</button>
+                <button class="control-btn" id="prev-btn" title="上一首">⏮️</button>
+                <button class="control-btn play-btn" id="play-btn" title="播放">▶️</button>
+                <button class="control-btn" id="next-btn" title="下一首">⏭️</button>
+                <button class="control-btn" id="repeat-btn" title="重複播放">🔁</button>
+            </div>
+
+            <!-- Volume & Quality -->
+            <div class="extra-controls">
+                <div class="volume-control">
+                    <button class="control-btn" id="volume-btn" title="靜音">🔊</button>
+                    <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="75">
+                    <span class="volume-value" id="volume-value">75%</span>
+                </div>
+                <div class="quality-control">
+                    <select id="quality-select" title="音質">
+                        <option value="low">低音質</option>
+                        <option value="medium" selected>標準</option>
+                        <option value="high">高品質</option>
+                        <option value="lossless">無損</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Lyrics (Optional) -->
+            <div class="lyrics-container" id="lyrics-container">
+                <div class="lyrics" id="lyrics">
+                    <p class="lyric-line">歌詞將在播放時顯示</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Panel - Equalizer & Stats -->
+        <aside class="equalizer-panel">
+            <div class="panel-header">
+                <h2>🎛️ 等化器</h2>
+                <button class="btn-icon" id="eq-reset" title="重置">🔄</button>
+            </div>
+            <div class="equalizer" id="equalizer">
+                <div class="eq-band">
+                    <label>60Hz</label>
+                    <input type="range" class="eq-slider" data-band="60" min="-12" max="12" value="0">
+                    <span class="eq-value">0</span>
+                </div>
+                <div class="eq-band">
+                    <label>170Hz</label>
+                    <input type="range" class="eq-slider" data-band="170" min="-12" max="12" value="0">
+                    <span class="eq-value">0</span>
+                </div>
+                <div class="eq-band">
+                    <label>310Hz</label>
+                    <input type="range" class="eq-slider" data-band="310" min="-12" max="12" value="0">
+                    <span class="eq-value">0</span>
+                </div>
+                <div class="eq-band">
+                    <label>600Hz</label>
+                    <input type="range" class="eq-slider" data-band="600" min="-12" max="12" value="0">
+                    <span class="eq-value">0</span>
+                </div>
+                <div class="eq-band">
+                    <label>1kHz</label>
+                    <input type="range" class="eq-slider" data-band="1000" min="-12" max="12" value="0">
+                    <span class="eq-value">0</span>
+                </div>
+                <div class="eq-band">
+                    <label>3kHz</label>
+                    <input type="range" class="eq-slider" data-band="3000" min="-12" max="12" value="0">
+                    <span class="eq-value">0</span>
+                </div>
+                <div class="eq-band">
+                    <label>6kHz</label>
+                    <input type="range" class="eq-slider" data-band="6000" min="-12" max="12" value="0">
+                    <span class="eq-value">0</span>
+                </div>
+                <div class="eq-band">
+                    <label>12kHz</label>
+                    <input type="range" class="eq-slider" data-band="12000" min="-12" max="12" value="0">
+                    <span class="eq-value">0</span>
+                </div>
+                <div class="eq-band">
+                    <label>14kHz</label>
+                    <input type="range" class="eq-slider" data-band="14000" min="-12" max="12" value="0">
+                    <span class="eq-value">0</span>
+                </div>
+            </div>
+
+            <div class="presets">
+                <h3>預設</h3>
+                <div class="preset-buttons">
+                    <button class="preset-btn" data-preset="flat">平坦</button>
+                    <button class="preset-btn" data-preset="pop">流行</button>
+                    <button class="preset-btn" data-preset="rock">搖滾</button>
+                    <button class="preset-btn" data-preset="jazz">爵士</button>
+                    <button class="preset-btn" data-preset="classical">古典</button>
+                    <button class="preset-btn" data-preset="bass">低音</button>
+                </div>
+            </div>
+
+            <div class="now-playing-stats">
+                <h3>📊 播放統計</h3>
+                <div class="stat-item">
+                    <span>已播放時間</span>
+                    <strong id="stat-played">0:00</strong>
+                </div>
+                <div class="stat-item">
+                    <span>今日播放次數</span>
+                    <strong id="stat-plays">0</strong>
+                </div>
+                <div class="stat-item">
+                    <span>最常播放</span>
+                    <strong id="stat-most-played">-</strong>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Hidden Audio Element -->
+    <audio id="audio-player" crossorigin="anonymous"></audio>
+
+    <!-- Add Music Modal -->
+    <div class="modal" id="add-music-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>新增音樂</h3>
+                <button class="modal-close" id="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>標題</label>
+                    <input type="text" id="new-title" placeholder="歌曲標題">
+                </div>
+                <div class="input-group">
+                    <label>藝術家</label>
+                    <input type="text" id="new-artist" placeholder="藝術家名稱">
+                </div>
+                <div class="input-group">
+                    <label>專輯</label>
+                    <input type="text" id="new-album" placeholder="專輯名稱">
+                </div>
+                <div class="input-group">
+                    <label>音樂 URL</label>
+                    <input type="text" id="new-url" placeholder="https://example.com/music.mp3">
+                </div>
+                <div class="input-group">
+                    <label>專輯圖片 URL</label>
+                    <input type="text" id="new-cover" placeholder="https://example.com/cover.jpg">
+                </div>
+                <div class="input-group">
+                    <label>時長（秒）</label>
+                    <input type="number" id="new-duration" placeholder="180">
+                </div>
+                <div class="input-group">
+                    <label>歌詞（可選）</label>
+                    <textarea id="new-lyrics" placeholder="一行一行歌詞"></textarea>
+                </div>
+                <button class="btn btn-primary" id="add-music-confirm">新增</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div data-site-footer></div>
+
+    <!-- Scripts -->
+    <script src="scripts/app-config.js"></script>
+    <script src="scripts/music-player.js"></script>
+</body>
+
+</html>

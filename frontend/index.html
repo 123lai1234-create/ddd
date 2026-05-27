@@ -13,10 +13,11 @@
     <meta property="og:image" content="https://donttalk.vercel.app/og-image.svg">
     <meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg">
     <!-- BEGIN COMMON_HEAD -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#08060e">
-    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});</script>
+    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { });</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -25,9 +26,9 @@
     <link rel="stylesheet" href="styles/shared.css">
     <link rel="stylesheet" href="styles/polish.css">
     <link rel="stylesheet" href="styles/dynamic.css">
-    <script src="scripts/theme-randomizer.js"></script>
+    <script src="scripts/theme-randomizer.js" defer></script>
     <script src="scripts/shader-bg.js" defer></script>
-    <script src="scripts/admin-mode.js"></script>
+    <script src="scripts/admin-mode.js" defer></script>
     <script src="scripts/site-shell-config.js" defer></script>
     <script src="scripts/nav.js" defer></script>
     <script src="scripts/app-config.js" defer></script>
@@ -50,10 +51,17 @@
                 transition-duration: 0.01ms !important;
             }
         }
+
         /* 性能優化：CSS Containment */
-        .container { contain: layout style paint; }
+        .container {
+            contain: layout style paint;
+        }
+
         /* 性能優化：圖片延遲載入 */
-        img { loading: lazy; decoding: async; }
+        img {
+            loading: lazy;
+            decoding: async;
+        }
     </style>
 </head>
 
@@ -116,7 +124,8 @@
                 <div class="mdetail">同時具備工程設計與生物醫學研究的訓練，站在研究與產品交界上進行有深度的跨域設計。</div>
             </div>
             <div class="metric-card scroll-reveal stagger-3">
-                <div class="mval">2014–2019</div>                <div class="mlabel">前後端介面與應用開發</div>
+                <div class="mval">2014–2019</div>
+                <div class="mlabel">前後端介面與應用開發</div>
                 <div class="mdetail">持續投入網站、應用程式與互動介面開發，能把研究模型轉成可操作的平台。</div>
             </div>
             <div class="metric-card scroll-reveal stagger-2">
@@ -129,13 +138,17 @@
             <div class="chart-card">
                 <h3>背景與能力摘要</h3>
                 <div class="card-heading">工程 × 生醫 × 產品實作</div>
-                <p class="card-body">具備電資與生醫雙碩士學位，擁有醫藥行銷與臨床訓練的第一手經歷，曾協助團隊取得國家新創獎與 2 項發明專利。站內的蛋白質 AI、NGS 與基因 AI 頁面，是同一條跨域能力線上的不同實作，而非零散單點展示。</p>
+                <p class="card-body">具備電資與生醫雙碩士學位，擁有醫藥行銷與臨床訓練的第一手經歷，曾協助團隊取得國家新創獎與 2 項發明專利。站內的蛋白質 AI、NGS 與基因 AI
+                    頁面，是同一條跨域能力線上的不同實作，而非零散單點展示。</p>
                 <div class="card-ctas">
                     <a href="about_me.html" class="btn btn-outline btn-sm">本地 About Me</a>
                     <a href="works.html" class="btn btn-outline btn-sm">本地作品總覽</a>
-                    <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer" class="btn btn-outline btn-sm">個人網站</a>
-                    <a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer" class="btn btn-outline btn-sm">About Me</a>
-                    <a href="https://jtlai0921.wixsite.com/mysite/research-blog" target="_blank" rel="noreferrer" class="btn btn-outline btn-sm">Research Blog</a>
+                    <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer"
+                        class="btn btn-outline btn-sm">個人網站</a>
+                    <a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer"
+                        class="btn btn-outline btn-sm">About Me</a>
+                    <a href="https://jtlai0921.wixsite.com/mysite/research-blog" target="_blank" rel="noreferrer"
+                        class="btn btn-outline btn-sm">Research Blog</a>
                 </div>
             </div>
             <div class="chart-card">
@@ -174,43 +187,50 @@
                 <div class="explore-icon">🧬</div>
                 <h3>蛋白質 AI 專案報告</h3>
                 <p>端到端 Pipeline 架構、實驗結果圖表、核心演算法數學推導、程式碼庫結構一覽。</p>
-                <div class="explore-footer"><span class="explore-tag">Protein AI</span><span class="explore-arrow">→</span></div>
+                <div class="explore-footer"><span class="explore-tag">Protein AI</span><span
+                        class="explore-arrow">→</span></div>
             </a>
             <a href="protein_mpnn.html" class="explore-card ec-bio">
                 <div class="explore-icon">🧪</div>
                 <h3>ProteinMPNN 互動展示</h3>
                 <p>獨立工作台頁面，直接操作序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</p>
-                <div class="explore-footer"><span class="explore-tag">Interactive</span><span class="explore-arrow">→</span></div>
+                <div class="explore-footer"><span class="explore-tag">Interactive</span><span
+                        class="explore-arrow">→</span></div>
             </a>
             <a href="gene_ai.html" class="explore-card ec-gene">
                 <div class="explore-icon">🔬</div>
                 <h3>基因 AI 平台</h3>
                 <p>序列資料庫、知識庫、RAG 文件搜尋、啟動子設計、CRISPR 導引排序、變異效應評估。</p>
-                <div class="explore-footer"><span class="explore-tag">Gene AI</span><span class="explore-arrow">→</span></div>
+                <div class="explore-footer"><span class="explore-tag">Gene AI</span><span class="explore-arrow">→</span>
+                </div>
             </a>
             <a href="ngs.html" class="explore-card ec-gene">
                 <div class="explore-icon">📊</div>
                 <h3>NGS 次世代定序</h3>
                 <p>實驗設計計算器、定序深度估算、QC 到功能分析的完整結果圖表集。</p>
-                <div class="explore-footer"><span class="explore-tag">NGS</span><span class="explore-arrow">→</span></div>
+                <div class="explore-footer"><span class="explore-tag">NGS</span><span class="explore-arrow">→</span>
+                </div>
             </a>
             <a href="works.html" class="explore-card ec-study">
                 <div class="explore-icon">💼</div>
                 <h3>作品總覽</h3>
                 <p>所有專案卡片篩選、即時 API 統計、跨域作品集一覽。</p>
-                <div class="explore-footer"><span class="explore-tag">Portfolio</span><span class="explore-arrow">→</span></div>
+                <div class="explore-footer"><span class="explore-tag">Portfolio</span><span
+                        class="explore-arrow">→</span></div>
             </a>
             <a href="firmware.html" class="explore-card ec-bio">
                 <div class="explore-icon">🔌</div>
                 <h3>韌體工程 · MCU</h3>
                 <p>Nuvoton Cortex-M0 + TFT EBI 驅動、RGB565 圖像、Keil + J-Link 工作流、完整教學播放清單。</p>
-                <div class="explore-footer"><span class="explore-tag">Firmware</span><span class="explore-arrow">→</span></div>
+                <div class="explore-footer"><span class="explore-tag">Firmware</span><span
+                        class="explore-arrow">→</span></div>
             </a>
             <a href="thesis.html" class="explore-card ec-research">
                 <div class="explore-icon">📝</div>
                 <h3>論文 · 遺傳演算法</h3>
                 <p>以 48 檔 ETF50 股票池重建 PPTS × GAPPTS，逐檔觀察參數最佳化與回測結果。</p>
-                <div class="explore-footer"><span class="explore-tag">Research</span><span class="explore-arrow">→</span></div>
+                <div class="explore-footer"><span class="explore-tag">Research</span><span
+                        class="explore-arrow">→</span></div>
             </a>
         </div>
     </section>
@@ -220,15 +240,15 @@
     <section id="esm-demo" style="max-width:800px;margin:0 auto;padding:48px 24px">
         <div class="section-label">Live Demo · ESM-2</div>
         <h2 class="section-title">蛋白質序列相似度分析</h2>
-        <p class="section-sub" style="margin-bottom:28px">輸入兩段胺基酸序列，透過 ESM-2（8M）embedding 計算語意相似度。由 <a href="https://huggingface.co/spaces/Donttalk123/web" target="_blank" rel="noreferrer" style="color:var(--accent)">HuggingFace Space</a> 即時推論。</p>
+        <p class="section-sub" style="margin-bottom:28px">輸入兩段胺基酸序列，透過 ESM-2（8M）embedding 計算語意相似度。由 <a
+                href="https://huggingface.co/spaces/Donttalk123/web" target="_blank" rel="noreferrer"
+                style="color:var(--accent)">HuggingFace Space</a> 即時推論。</p>
         <div style="display:flex;flex-direction:column;gap:12px">
             <label style="font-size:.85rem;color:var(--muted)">序列 A</label>
-            <input id="esm-seq-a" type="text" value="MKTIIALSYIFCLVFA"
-                placeholder="MKTIIALSYIFCLVFA"
+            <input id="esm-seq-a" type="text" value="MKTIIALSYIFCLVFA" placeholder="MKTIIALSYIFCLVFA"
                 style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:.9rem">
             <label style="font-size:.85rem;color:var(--muted)">序列 B</label>
-            <input id="esm-seq-b" type="text" value="MKTIIALSYIFCLVFAFF"
-                placeholder="MKTIIALSYIFCLVFAFF"
+            <input id="esm-seq-b" type="text" value="MKTIIALSYIFCLVFAFF" placeholder="MKTIIALSYIFCLVFAFF"
                 style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:.9rem">
             <button id="esm-run-btn"
                 style="align-self:flex-start;padding:10px 28px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.95rem">
@@ -244,7 +264,8 @@
     <section id="leaderboard" style="max-width:640px;margin:0 auto;padding:48px 24px">
         <div class="section-label">仙俠傳 · Live</div>
         <h2 class="section-title" style="margin-bottom:8px">勇者排行榜</h2>
-        <p class="section-sub" style="margin-bottom:28px">擊敗魔王的勇者紀錄，即時更新。<a href="games/xian/" style="color:var(--accent)">→ 進入遊戲</a></p>
+        <p class="section-sub" style="margin-bottom:28px">擊敗魔王的勇者紀錄，即時更新。<a href="games/xian/"
+                style="color:var(--accent)">→ 進入遊戲</a></p>
         <div id="lb-list" style="display:flex;flex-direction:column;gap:8px;min-height:80px">
             <div id="lb-loading" style="color:var(--muted);font-size:.9rem;text-align:center;padding:24px 0">載入中…</div>
         </div>
@@ -280,104 +301,104 @@
         </div>
     </div>
 
-<script>
-(function () {
-  const canvas = document.getElementById('hero-sparkle');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  let W, H, particles = [];
+    <script>
+        (function () {
+            const canvas = document.getElementById('hero-sparkle');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let W, H, particles = [];
 
-  const COLORS = ['#58d7ff', '#b59cff', '#7bf0be', '#ffffff', '#c8aaff'];
-  const COUNT  = 70;
+            const COLORS = ['#58d7ff', '#b59cff', '#7bf0be', '#ffffff', '#c8aaff'];
+            const COUNT = 70;
 
-  function resize() {
-    const hero = canvas.parentElement;
-    W = canvas.width  = hero.offsetWidth;
-    H = canvas.height = hero.offsetHeight;
-  }
+            function resize() {
+                const hero = canvas.parentElement;
+                W = canvas.width = hero.offsetWidth;
+                H = canvas.height = hero.offsetHeight;
+            }
 
-  function rand(a, b) { return a + Math.random() * (b - a); }
+            function rand(a, b) { return a + Math.random() * (b - a); }
 
-  function spawn() {
-    return {
-      x:     rand(0, W),
-      y:     rand(0, H),
-      vx:    rand(-0.18, 0.18),
-      vy:    rand(-0.22, -0.06),
-      size:  rand(2.5, 7.5),
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      phase: rand(0, Math.PI * 2),
-      speed: rand(0.6, 1.4),
-      twinkleSpeed: rand(0.8, 2.2),
-    };
-  }
+            function spawn() {
+                return {
+                    x: rand(0, W),
+                    y: rand(0, H),
+                    vx: rand(-0.18, 0.18),
+                    vy: rand(-0.22, -0.06),
+                    size: rand(2.5, 7.5),
+                    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                    phase: rand(0, Math.PI * 2),
+                    speed: rand(0.6, 1.4),
+                    twinkleSpeed: rand(0.8, 2.2),
+                };
+            }
 
-  function drawStar(x, y, r, alpha, color) {
-    if (r < 0.5) return;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.shadowColor  = color;
-    ctx.shadowBlur   = r * 9;
-    ctx.fillStyle    = color;
-    ctx.translate(x, y);
+            function drawStar(x, y, r, alpha, color) {
+                if (r < 0.5) return;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = r * 9;
+                ctx.fillStyle = color;
+                ctx.translate(x, y);
 
-    // 4-pointed star
-    ctx.beginPath();
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
-      const rad   = i % 2 === 0 ? r : r * 0.22;
-      i === 0
-        ? ctx.moveTo(Math.cos(angle) * rad, Math.sin(angle) * rad)
-        : ctx.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
-    }
-    ctx.closePath();
-    ctx.fill();
+                // 4-pointed star
+                ctx.beginPath();
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
+                    const rad = i % 2 === 0 ? r : r * 0.22;
+                    i === 0
+                        ? ctx.moveTo(Math.cos(angle) * rad, Math.sin(angle) * rad)
+                        : ctx.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
+                }
+                ctx.closePath();
+                ctx.fill();
 
-    // bright centre dot
-    ctx.shadowBlur  = r * 3;
-    ctx.fillStyle   = '#ffffff';
-    ctx.globalAlpha = alpha * 0.9;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.18, 0, Math.PI * 2);
-    ctx.fill();
+                // bright centre dot
+                ctx.shadowBlur = r * 3;
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = alpha * 0.9;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.18, 0, Math.PI * 2);
+                ctx.fill();
 
-    ctx.restore();
-  }
+                ctx.restore();
+            }
 
-  function init() {
-    resize();
-    particles = Array.from({ length: COUNT }, spawn);
-  }
+            function init() {
+                resize();
+                particles = Array.from({ length: COUNT }, spawn);
+            }
 
-  function tick() {
-    ctx.clearRect(0, 0, W, H);
-    const t = performance.now() / 1000;
+            function tick() {
+                ctx.clearRect(0, 0, W, H);
+                const t = performance.now() / 1000;
 
-    particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
 
-      // wrap
-      if (p.y < -20)  { p.y = H + 10; p.x = rand(0, W); }
-      if (p.x < -20)  p.x = W + 10;
-      if (p.x > W+20) p.x = -10;
+                    // wrap
+                    if (p.y < -20) { p.y = H + 10; p.x = rand(0, W); }
+                    if (p.x < -20) p.x = W + 10;
+                    if (p.x > W + 20) p.x = -10;
 
-      const alpha = (0.55 + 0.45 * Math.abs(Math.sin(t * p.twinkleSpeed + p.phase))) *
-                    Math.min(1, Math.min(p.y / 60, (H - p.y) / 60));
-      drawStar(p.x, p.y, p.size, alpha, p.color);
-    });
+                    const alpha = (0.55 + 0.45 * Math.abs(Math.sin(t * p.twinkleSpeed + p.phase))) *
+                        Math.min(1, Math.min(p.y / 60, (H - p.y) / 60));
+                    drawStar(p.x, p.y, p.size, alpha, p.color);
+                });
 
-    requestAnimationFrame(tick);
-  }
+                requestAnimationFrame(tick);
+            }
 
-  init();
-  window.addEventListener('resize', () => { resize(); });
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) requestAnimationFrame(tick);
-  });
-  requestAnimationFrame(tick);
-})();
-</script>
+            init();
+            window.addEventListener('resize', () => { resize(); });
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) requestAnimationFrame(tick);
+            });
+            requestAnimationFrame(tick);
+        })();
+    </script>
 </body>
 
 </html>

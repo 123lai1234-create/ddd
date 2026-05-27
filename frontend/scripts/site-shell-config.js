@@ -7,6 +7,7 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: 'firmware.html', label: '🔌 韌體' },
         { href: 'stem-cell.html', label: '🧫 幹細胞' },
         { href: 'protein_mpnn.html', label: 'ProteinMPNN' },
+        { href: 'music.html', label: '🎵 音樂' },
         { href: 'interactive-showcase.html', label: '⚡ Tech Lab', classes: 'nav-cta' }
     ];
 
@@ -18,6 +19,7 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: 'gene_ai.html', label: '基因 AI' },
         { href: 'report.html', label: '專案報告' },
         { href: 'protein_mpnn.html', label: 'ProteinMPNN' },
+        { href: 'music.html', label: '🎵 音樂播放' },
         { href: 'interactive-showcase.html', label: '⚡ 互動技術展示館' },
         { href: 'firmware.html', label: '🔌 韌體 MCU' },
         { href: 'interview_prep.html', label: '面試準備' },
@@ -31,6 +33,7 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: 'gene_ai.html', label: '基因 AI' },
         { href: 'ngs.html', label: 'NGS 定序' },
         { href: 'protein_mpnn.html', label: 'ProteinMPNN' },
+        { href: 'music.html', label: '🎵 音樂播放' },
         { href: 'report.html', label: '專案報告' },
         { href: 'firmware.html', label: '韌體' },
         { href: 'stem-cell.html', label: '幹細胞研究' },
@@ -146,6 +149,13 @@ window.SITE_SHELL_CONFIG = (function () {
             navLinks: STD_NAV,
             drawerLinks: STD_DRAWER,
             footer: stdFooter('互動技術展示館', 'Three.js · Canvas · Web Animations API · A-Frame VR · WebAssembly · PWA · 2026')
+        },
+        music: {
+            brandHref: '/',
+            brandHtml: '<span class="nav-dot"></span>🎵 音樂播放',
+            navLinks: STD_NAV,
+            drawerLinks: STD_DRAWER,
+            footer: stdFooter('音樂播放平台', '現代化音樂播放平台 · 等化器 · 視覺化效果 · 2026')
         }
     };
 })();

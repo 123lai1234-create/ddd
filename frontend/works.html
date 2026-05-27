@@ -13,7 +13,8 @@
     <meta property="og:image" content="https://donttalk.vercel.app/og-image.svg">
     <meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg">
     <!-- BEGIN COMMON_HEAD -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -190,8 +191,8 @@
                     </div>
                 </div>
                 <div class="tag-row">
-                    <span class="tag">FastAPI</span><span class="tag">Postgres Cache</span><span
-                        class="tag">UniProt / PubMed</span><span class="tag">RAG Documents</span>
+                    <span class="tag">FastAPI</span><span class="tag">Postgres Cache</span><span class="tag">UniProt /
+                        PubMed</span><span class="tag">RAG Documents</span>
                 </div>
                 <div class="work-links">
                     <a href="gene_ai.html">開啟頁面</a>
@@ -369,7 +370,8 @@
                     </div>
                     <div class="score-pill">完整遊戲</div>
                 </div>
-                <p class="work-desc">純瀏覽器、零依賴的回合制 RPG，仙劍奇俠傳風格。三位角色、三張地圖、完整戰鬥 AI、裝備技能系統，以及存檔讀檔功能，全以 Canvas 2D API 手繪實作。</p>
+                <p class="work-desc">純瀏覽器、零依賴的回合制 RPG，仙劍奇俠傳風格。三位角色、三張地圖、完整戰鬥 AI、裝備技能系統，以及存檔讀檔功能，全以 Canvas 2D API 手繪實作。
+                </p>
                 <div class="meta-grid">
                     <div class="meta">
                         <div class="k">技術</div>
@@ -385,7 +387,8 @@
                     </div>
                 </div>
                 <div class="tag-row">
-                    <span class="tag">JavaScript</span><span class="tag">Canvas</span><span class="tag">RPG</span><span class="tag">Game Design</span>
+                    <span class="tag">JavaScript</span><span class="tag">Canvas</span><span class="tag">RPG</span><span
+                        class="tag">Game Design</span>
                 </div>
                 <div class="work-links">
                     <a href="/games/xian/" target="_blank" rel="noreferrer">立即遊玩</a>
@@ -401,66 +404,73 @@
 
     <script src="scripts/app-config.js"></script>
     <script src="scripts/works.js"></script>
-<script>
-(function() {
-  /* Works: real-time search highlight + filter animation */
-  const searchEl = document.getElementById('works-search');
-  const countEl  = document.getElementById('works-search-count');
-  const cards    = document.querySelectorAll('.work-card');
+    <script>
+        (function () {
+            /* Works: real-time search highlight + filter animation with debounce */
+            const searchEl = document.getElementById('works-search');
+            const countEl = document.getElementById('works-search-count');
+            const cards = document.querySelectorAll('.work-card');
+            let debounceTimer = null;
 
-  function highlight(el, term) {
-    if (!term) { el.querySelectorAll('mark.wh').forEach(m => { m.replaceWith(m.textContent); }); return; }
-    const walk = (node) => {
-      if (node.nodeType === 3) {
-        const idx = node.textContent.toLowerCase().indexOf(term.toLowerCase());
-        if (idx < 0) return;
-        const before = document.createTextNode(node.textContent.slice(0, idx));
-        const mark   = document.createElement('mark');
-        mark.className = 'wh';
-        mark.textContent = node.textContent.slice(idx, idx + term.length);
-        const after  = document.createTextNode(node.textContent.slice(idx + term.length));
-        node.parentNode.replaceChild(after, node);
-        node.parentNode.insertBefore(mark, after);
-        node.parentNode.insertBefore(before, mark);
-      } else if (node.nodeType === 1 && !['SCRIPT','STYLE','A'].includes(node.tagName)) {
-        [...node.childNodes].forEach(walk);
-      }
-    };
-    // Clear old marks first
-    el.querySelectorAll('mark.wh').forEach(m => m.replaceWith(m.textContent));
-    walk(el);
-  }
+            function highlight(el, term) {
+                if (!term) { el.querySelectorAll('mark.wh').forEach(m => { m.replaceWith(m.textContent); }); return; }
+                const walk = (node) => {
+                    if (node.nodeType === 3) {
+                        const idx = node.textContent.toLowerCase().indexOf(term.toLowerCase());
+                        if (idx < 0) return;
+                        const before = document.createTextNode(node.textContent.slice(0, idx));
+                        const mark = document.createElement('mark');
+                        mark.className = 'wh';
+                        mark.textContent = node.textContent.slice(idx, idx + term.length);
+                        const after = document.createTextNode(node.textContent.slice(idx + term.length));
+                        node.parentNode.replaceChild(after, node);
+                        node.parentNode.insertBefore(mark, after);
+                        node.parentNode.insertBefore(before, mark);
+                    } else if (node.nodeType === 1 && !['SCRIPT', 'STYLE', 'A'].includes(node.tagName)) {
+                        [...node.childNodes].forEach(walk);
+                    }
+                };
+                // Clear old marks first
+                el.querySelectorAll('mark.wh').forEach(m => m.replaceWith(m.textContent));
+                walk(el);
+            }
 
-  function filterAndSearch() {
-    const term    = searchEl.value.trim();
-    const active  = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
-    let visible   = 0;
+            function filterAndSearch() {
+                const term = searchEl.value.trim();
+                const active = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+                let visible = 0;
 
-    cards.forEach((card, i) => {
-      const cat   = card.dataset.cat || '';
-      const text  = card.textContent.toLowerCase();
-      const matchCat  = active === 'all' || cat.includes(active);
-      const matchTerm = !term || text.includes(term.toLowerCase());
-      const show  = matchCat && matchTerm;
+                cards.forEach((card, i) => {
+                    const cat = card.dataset.cat || '';
+                    const text = card.textContent.toLowerCase();
+                    const matchCat = active === 'all' || cat.includes(active);
+                    const matchTerm = !term || text.includes(term.toLowerCase());
+                    const show = matchCat && matchTerm;
 
-      if (show) {
-        card.style.display = '';
-        card.style.animationDelay = `${(visible % 4) * 60}ms`;
-        card.classList.add('card-flip-in');
-        highlight(card, term);
-        visible++;
-      } else {
-        card.style.display = 'none';
-        highlight(card, '');
-      }
-    });
+                    if (show) {
+                        card.style.display = '';
+                        card.style.animationDelay = `${(visible % 4) * 60}ms`;
+                        card.classList.add('card-flip-in');
+                        highlight(card, term);
+                        visible++;
+                    } else {
+                        card.style.display = 'none';
+                        highlight(card, '');
+                    }
+                });
 
-    if (countEl) countEl.textContent = term ? `${visible} 筆結果` : '';
-  }
+                if (countEl) countEl.textContent = term ? `${visible} 筆結果` : '';
+            }
 
-  // Inject styles
-  const s = document.createElement('style');
-  s.textContent = `
+            // Debounced search (300ms)
+            function debouncedSearch() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(filterAndSearch, 300);
+            }
+
+            // Inject styles
+            const s = document.createElement('style');
+            s.textContent = `
     .works-search-wrap {
       display: flex;
       align-items: center;
@@ -477,17 +487,19 @@
       padding: 10px 16px;
       font-size: 0.9rem;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
     }
     .works-search-input:focus {
       border-color: rgba(88,215,255,0.4);
       box-shadow: 0 0 0 3px rgba(88,215,255,0.08);
+      background: rgba(255,255,255,0.06);
     }
     .works-search-count {
       font-size: 0.78rem;
       color: var(--cyan, #58d7ff);
       font-family: 'JetBrains Mono', monospace;
       white-space: nowrap;
+      transition: opacity 0.2s;
     }
     mark.wh {
       background: rgba(88,215,255,0.25);
@@ -502,17 +514,35 @@
     .card-flip-in {
       animation: cardFlipIn 0.35s ease both;
     }
+    /* Filter button transitions */
+    .filter-btn {
+      transition: background-color 0.2s, border-color 0.2s, transform 0.15s;
+    }
+    .filter-btn:hover {
+      transform: translateY(-1px);
+    }
+    .filter-btn:active {
+      transform: translateY(0);
+    }
   `;
-  document.head.appendChild(s);
+            document.head.appendChild(s);
 
-  searchEl.addEventListener('input', filterAndSearch);
+            // Use debounced search for better performance
+            searchEl.addEventListener('input', debouncedSearch);
 
-  // Hook into existing filter buttons
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => setTimeout(filterAndSearch, 10));
-  });
-})();
-</script>
+            // Hook into existing filter buttons with transition
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Visual feedback
+                    btn.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        btn.style.transform = '';
+                        filterAndSearch();
+                    }, 100);
+                });
+            });
+        })();
+    </script>
 </body>
 
 </html>
