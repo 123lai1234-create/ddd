@@ -112,6 +112,16 @@
       "source": "/stem_cell",
       "destination": "/stem-cell",
       "permanent": true
+    },
+    {
+      "source": "/music.html",
+      "destination": "/music",
+      "permanent": true
+    },
+    {
+      "source": "/music",
+      "destination": "/music",
+      "permanent": true
     }
   ]
 }
