@@ -14,3 +14,4 @@ outputs/*.pt
 .env
 .env*.local
 .hftoken
+.env*
