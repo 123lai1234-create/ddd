@@ -8,10 +8,35 @@ const SITE = 'https://donttalk.vercel.app';
   <main class="container mx-auto px-4 py-8 max-w-4xl">
     <h1 class="text-3xl font-bold mb-8 text-center">🎵 音樂播放器</h1>
     
+    <!-- 分類篩選 -->
+    <div id="filters" class="mb-6 flex flex-wrap gap-4 justify-center">
+      <div class="flex gap-2">
+        <button class="filter-btn active" data-filter="lang" data-value="all">全部</button>
+        <button class="filter-btn" data-filter="lang" data-value="TW">🇹🇼 台灣</button>
+        <button class="filter-btn" data-filter="lang" data-value="EN">🇺🇸 英文</button>
+        <button class="filter-btn" data-filter="lang" data-value="JP">🇯🇵 日文</button>
+        <button class="filter-btn" data-filter="lang" data-value="KR">🇰🇷 韓文</button>
+      </div>
+      <div class="flex gap-2">
+        <button class="filter-btn active" data-filter="style" data-value="all">全部曲風</button>
+        <button class="filter-btn" data-filter="style" data-value="流行">流行</button>
+        <button class="filter-btn" data-filter="style" data-value="抒情">抒情</button>
+        <button class="filter-btn" data-filter="style" data-value="嘻哈">嘻哈</button>
+        <button class="filter-btn" data-filter="style" data-value="搖滾">搖滾</button>
+        <button class="filter-btn" data-filter="style" data-value="民謠">民謠</button>
+        <button class="filter-btn" data-filter="style" data-value="Lo-fi">Lo-fi</button>
+        <button class="filter-btn" data-filter="style" data-value="J-Pop">J-Pop</button>
+        <button class="filter-btn" data-filter="style" data-value="K-Pop">K-Pop</button>
+      </div>
+    </div>
+
     <div id="player-container" class="bg-gray-900 rounded-xl p-6 shadow-2xl">
       <!-- 歌曲列表 -->
       <div class="mb-6">
-        <h2 class="text-lg font-semibold mb-3 text-gray-300">📂 歌曲列表</h2>
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-lg font-semibold text-gray-300">📂 歌曲列表</h2>
+          <span id="track-count" class="text-sm text-gray-500">共 0 首</span>
+        </div>
         <div id="track-list" class="space-y-2 max-h-64 overflow-y-auto">
           <p class="text-gray-500">載入中...</p>
         </div>
@@ -78,46 +103,53 @@ const SITE = 'https://donttalk.vercel.app';
   const durationEl = document.getElementById('duration')!;
   const trackNameEl = document.getElementById('track-name')!;
 
-  let tracks: { name: string; audio: string; lrc?: string }[] = [];
+  interface Track { name: string; audio: string; lrc?: string; lang?: string; style?: string; }
+  let tracks: Track[] = [];
+  let filteredTracks: Track[] = [];
   let currentIndex = 0;
   let isPlaying = false;
+  let currentLang = 'all';
+  let currentStyle = 'all';
 
   const audio = new Audio();
+  const trackCountEl = document.getElementById('track-count')!;
 
-  // 載入歌曲列表（你需要手動配置或用 API）
-  // 這裡示範靜態列表，实际使用时需要根據 music 文件夾動態生成
-  const knownTracks = [
-    { name: '示範歌曲', audio: '/music/demo.mp3', lrc: '/music/demo.lrc' }
-  ];
-
-  // 嘗試獲取歌曲列表
   async function loadTracks() {
     try {
       const res = await fetch('/music/playlist.json');
       const data = await res.json();
       return data.tracks || [];
     } catch {
-      return [
-        { name: '請編輯 public/music/playlist.json 添加歌曲', audio: '' }
-      ];
+      return [];
     }
   }
 
-  async function init() {
-    tracks = await loadTracks();
+  function applyFilters() {
+    filteredTracks = tracks.filter(track => {
+      const langMatch = currentLang === 'all' || track.lang === currentLang;
+      const styleMatch = currentStyle === 'all' || track.style === currentStyle;
+      return langMatch && styleMatch;
+    });
+    renderTrackList();
+  }
+
+  function renderTrackList() {
+    trackCountEl.textContent = `共 ${filteredTracks.length} 首`;
     
-    if (tracks.length === 0) {
-      trackListEl.innerHTML = '<p class="text-yellow-500">尚未添加歌曲。請參考頁面底部的說明添加歌曲。</p>';
+    if (filteredTracks.length === 0) {
+      trackListEl.innerHTML = '<p class="text-yellow-500">沒有符合條件的歌曲</p>';
+      nowPlayingEl.classList.add('hidden');
       return;
     }
 
-    trackListEl.innerHTML = tracks.map((track, i) => `
+    trackListEl.innerHTML = filteredTracks.map((track, i) => `
       <button 
         class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-800 transition track-item ${i === 0 ? 'bg-blue-900' : ''}"
         data-index="${i}"
       >
         <span class="track-number text-gray-500 mr-2">${i + 1}.</span>
         <span class="track-title">${track.name}</span>
+        <span class="ml-2 text-xs text-gray-600">${track.lang || ''} · ${track.style || ''}</span>
       </button>
     `).join('');
 
@@ -129,13 +161,43 @@ const SITE = 'https://donttalk.vercel.app';
         playTrack(index);
       }
     });
+  }
 
+  async function init() {
+    tracks = await loadTracks();
+    
+    if (tracks.length === 0) {
+      trackListEl.innerHTML = '<p class="text-yellow-500">尚未添加歌曲</p>';
+      return;
+    }
+
+    // 分類篩選按鈕事件
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filterType = (btn as HTMLElement).dataset.filter!;
+        const value = (btn as HTMLElement).dataset.value!;
+        
+        // 更新按鈕狀態
+        document.querySelectorAll(`.filter-btn[data-filter="${filterType}"]`).forEach(b => {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        
+        // 更新過濾條件
+        if (filterType === 'lang') currentLang = value;
+        if (filterType === 'style') currentStyle = value;
+        
+        applyFilters();
+      });
+    });
+
+    applyFilters();
     playTrack(0);
   }
 
   function playTrack(index: number) {
     currentIndex = index;
-    const track = tracks[index];
+    const track = filteredTracks[index];
     
     audio.src = track.audio;
     audio.volume = volumeBar.value / 100;
@@ -178,11 +240,11 @@ const SITE = 'https://donttalk.vercel.app';
   });
 
   prevBtn.addEventListener('click', () => {
-    playTrack((currentIndex - 1 + tracks.length) % tracks.length);
+    playTrack((currentIndex - 1 + filteredTracks.length) % filteredTracks.length);
   });
 
   nextBtn.addEventListener('click', () => {
-    playTrack((currentIndex + 1) % tracks.length);
+    playTrack((currentIndex + 1) % filteredTracks.length);
   });
 
   lyricsBtn.addEventListener('click', () => {
@@ -202,7 +264,7 @@ const SITE = 'https://donttalk.vercel.app';
   });
 
   audio.addEventListener('ended', () => {
-    playTrack((currentIndex + 1) % tracks.length);
+    playTrack((currentIndex + 1) % filteredTracks.length);
   });
 
   progressBar.addEventListener('input', () => {
@@ -310,4 +372,21 @@ const SITE = 'https://donttalk.vercel.app';
   .scale-100 { transform: scale(1); }
   .opacity-50 { opacity: 0.5; }
   .opacity-100 { opacity: 1; }
+  .filter-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: #9ca3af;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: white;
+  }
+  .filter-btn.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+  }
 </style>
