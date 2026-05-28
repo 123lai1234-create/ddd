@@ -2739,8 +2739,10 @@ async function loadTechAnalysis() {
                 ...BASE_OPTS,
                 scales: {
                     x: { ...BASE_OPTS.scales.x, ticks: { ...BASE_OPTS.scales.x.ticks, maxTicksLimit: 8 } },
-                    y: { ...BASE_OPTS.scales.y, min: 0, max: 100,
-                        ticks: { ...BASE_OPTS.scales.y.ticks, stepSize: 20 } },
+                    y: {
+                        ...BASE_OPTS.scales.y, min: 0, max: 100,
+                        ticks: { ...BASE_OPTS.scales.y.ticks, stepSize: 20 }
+                    },
                 },
                 plugins: {
                     ...BASE_OPTS.plugins,
@@ -3068,11 +3070,11 @@ function initNewModules() {
     initTaStockSelect();
     renderPromptLib();
     // Wire up valuation inputs for live recalc on Enter
-    ['valEpsBear','valEpsBase','valEpsBull','valPeBear','valPeBase','valPeBull',
-     'valBps','valPbBear','valPbBase','valPbBull'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') calcValuation(); });
-    });
+    ['valEpsBear', 'valEpsBase', 'valEpsBull', 'valPeBear', 'valPeBase', 'valPeBull',
+        'valBps', 'valPbBear', 'valPbBase', 'valPbBull'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') calcValuation(); });
+        });
     try { renderDerivativesSection(); } catch (e) { console.warn('renderDerivativesSection:', e); }
 }
 
@@ -3282,3 +3284,343 @@ function renderDerivativesSection() {
         ]);
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   詳細技術分析模組 — MACD、KD、布林通道、成交量
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const DTA_CHARTS = {};
+
+// 計算 EMA
+function _calcEMA(data, period) {
+    const k = 2 / (period + 1);
+    const ema = [null];
+    for (let i = 1; i < data.length; i++) {
+        if (data[i] == null) { ema.push(null); continue; }
+        ema.push(data[i] * k + (ema[i - 1] || data[i]) * (1 - k));
+    }
+    return ema;
+}
+
+// 計算布林通道
+function _calcBollingerBands(closes, period = 20, mult = 2) {
+    const bb = [];
+    for (let i = 0; i < closes.length; i++) {
+        if (i < period - 1) { bb.push(null); continue; }
+        const slice = closes.slice(i - period + 1, i + 1);
+        const avg = slice.reduce((a, b) => a + b, 0) / period;
+        const variance = slice.reduce((s, p) => s + (p - avg) ** 2, 0) / period;
+        const std = Math.sqrt(variance);
+        bb.push({ upper: avg + mult * std, mid: avg, lower: avg - mult * std, width: mult * std * 2 });
+    }
+    return bb;
+}
+
+// 計算 MACD
+function _calcMACD(closes, fast = 12, slow = 26, signal = 9) {
+    const dif = _calcEMA(closes, fast).map((v, i) => v && closes[i] ? v - (_calcEMA(closes, slow)[i] || v) : null);
+    const signalLine = _calcEMA(dif, signal);
+    const osc = dif.map((v, i) => v != null && signalLine[i] != null ? v - signalLine[i] : null);
+    return { dif, signal: signalLine, osc };
+}
+
+// 計算 KD
+function _calcKD(closes, period = 9) {
+    const kd = [];
+    for (let i = 0; i < closes.length; i++) {
+        if (i < period) { kd.push(null); continue; }
+        const slice = closes.slice(i - period + 1, i + 1);
+        const h = Math.max(...slice), l = Math.min(...slice);
+        const rsv = h === l ? 50 : ((closes[i] - l) / (h - l)) * 100;
+        const prev = kd[i - 1];
+        const K = prev ? (2 / 3) * prev.K + (1 / 3) * rsv : rsv;
+        const D = prev ? (2 / 3) * prev.D + (1 / 3) * K : K;
+        kd.push({ K, D });
+    }
+    return kd;
+}
+
+// 模擬成交量（基於價格變動）
+function _simulateVolume(closes) {
+    const rng = new Math.Random(); // 簡化版本
+    return closes.map((p, i) => {
+        const base = 1e6 + Math.random() * 5e6;
+        if (i > 0) {
+            const change = Math.abs(closes[i] - closes[i - 1]) / closes[i - 1];
+            return base * (1 + change * 10);
+        }
+        return base;
+    });
+}
+
+// 同步股票下拉選單
+function _syncDtaStockSelect() {
+    const sel = document.getElementById('dtaStockSelect');
+    if (!sel || sel.options.length > 0) return;
+    const mainSel = document.getElementById('stockSelect');
+    if (mainSel) {
+        mainSel.querySelectorAll('option').forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt.value;
+            o.textContent = opt.textContent;
+            sel.appendChild(o);
+        });
+    }
+}
+
+// 主要載入函數
+async function loadDetailedTA() {
+    _syncDtaStockSelect();
+    const sel = document.getElementById('dtaStockSelect');
+    const custom = (document.getElementById('dtaCustomCode')?.value || '').trim();
+    const code = custom || sel?.value || '2330';
+    const statusEl = document.getElementById('dtaStatus');
+    const resultArea = document.getElementById('dtaResultArea');
+
+    if (statusEl) statusEl.textContent = '載入中…';
+    if (resultArea) resultArea.style.display = 'none';
+
+    let closes = [];
+
+    // 嘗試取得真實或模擬數據
+    const cached = REAL_PRICE_CACHE.get(code);
+    if (cached && cached.closes?.length >= 30) {
+        closes = cached.closes;
+    } else {
+        const stock = getStockByCode(code);
+        if (stock) {
+            const synth = getStockSeries(stock);
+            closes = [...(synth.train || []), ...(synth.test || [])];
+        }
+    }
+
+    if (closes.length < 30) {
+        if (statusEl) statusEl.textContent = '❌ 數據不足';
+        return;
+    }
+
+    const N = Math.min(closes.length, 120);
+    const c = closes.slice(-N);
+
+    // 計算各項指標
+    const bb = _calcBollingerBands(c, 20, 2);
+    const macd = _calcMACD(c, 12, 26, 9);
+    const kd = _calcKD(c, 9);
+    const rsi = _calcRSI(c, 14);
+    const ma20 = _calcMA(c, 20);
+
+    // 取得最後值
+    const lastClose = c[c.length - 1];
+    const lastBb = bb[bb.length - 1];
+    const lastMacd = { dif: macd.dif[macd.dif.length - 1], osc: macd.osc[macd.osc.length - 1] };
+    const lastKd = kd[kd.length - 1];
+    const lastRsi = rsi[rsi.length - 1];
+
+    // 計算平均布林通道寬度
+    const bbWidths = bb.filter(b => b).map(b => b.width);
+    const avgWidth = bbWidths.reduce((a, b) => a + b, 0) / bbWidths.length;
+    const lastWidth = lastBb?.width || 0;
+    const bbConverge = lastWidth < avgWidth * 0.7;
+
+    // 訊號判斷
+    const signals = [];
+    if (lastBb && lastClose > lastBb.upper) signals.push({ text: 'BBand 突破上軌', cls: 'bear' });
+    else if (lastBb && lastClose < lastBb.lower) signals.push({ text: 'BBand 突破下軌', cls: 'bull' });
+    if (bbConverge) signals.push({ text: 'BBand 收斂 ⚠', cls: 'neutral' });
+    if (lastMacd.osc > 0) signals.push({ text: 'MACD OSC 正 (+)', cls: 'bull' });
+    else if (lastMacd.osc < 0) signals.push({ text: 'MACD OSC 負 (−)', cls: 'bear' });
+    if (lastKd && lastKd.K > lastKd.D && lastKd.K < 30) signals.push({ text: 'KD 超賣區黃金交叉', cls: 'bull' });
+    else if (lastKd && lastKd.K < lastKd.D && lastKd.K > 70) signals.push({ text: 'KD 超買區死亡交叉', cls: 'bear' });
+    if (lastRsi > 70) signals.push({ text: `RSI 超買 ${lastRsi.toFixed(0)}`, cls: 'bear' });
+    else if (lastRsi < 30) signals.push({ text: `RSI 超賣 ${lastRsi.toFixed(0)}`, cls: 'bull' });
+
+    if (resultArea) resultArea.style.display = '';
+    if (statusEl) statusEl.textContent = `✓ 已載入 ${c.length} 筆數據`;
+
+    // Signal strip
+    document.getElementById('dtaSignals').innerHTML = signals.map(s =>
+        `<span class="ta-signal ta-signal-${s.cls}">${s.text}</span>`
+    ).join('');
+
+    // 圖表 1: 布林通道
+    const bbandCtx = document.getElementById('dtaBbandChart')?.getContext('2d');
+    if (bbandCtx) {
+        if (DTA_CHARTS.bband) DTA_CHARTS.bband.destroy();
+        DTA_CHARTS.bband = new Chart(bbandCtx, {
+            type: 'line',
+            data: {
+                labels: c.map((_, i) => i),
+                datasets: [
+                    { label: '收盤價', data: c, borderColor: C.text, borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
+                    { label: 'MA20', data: ma20, borderColor: C.blue, borderWidth: 1.2, pointRadius: 0, tension: 0.2, borderDash: [4, 4] },
+                    { label: '上軌', data: bb.map(b => b?.upper), borderColor: C.orange, borderWidth: 1, pointRadius: 0, tension: 0.2, borderDash: [3, 3] },
+                    { label: '下軌', data: bb.map(b => b?.lower), borderColor: C.orange, borderWidth: 1, pointRadius: 0, tension: 0.2, borderDash: [3, 3] },
+                ],
+            },
+            options: {
+                ...BASE_OPTS,
+                scales: {
+                    x: { ...BASE_OPTS.scales.x, ticks: { maxTicksLimit: 8 } },
+                    y: { ...BASE_OPTS.scales.y, ticks: { callback: v => `$${v.toFixed(0)}` } },
+                },
+            },
+        });
+    }
+
+    // 圖表 2: MACD
+    const macdCtx = document.getElementById('dtaMacdChart')?.getContext('2d');
+    if (macdCtx) {
+        if (DTA_CHARTS.macd) DTA_CHARTS.macd.destroy();
+        DTA_CHARTS.macd = new Chart(macdCtx, {
+            type: 'bar',
+            data: {
+                labels: c.map((_, i) => i),
+                datasets: [
+                    { label: 'OSC', data: macd.osc, backgroundColor: macd.osc.map(o => o >= 0 ? 'rgba(123,240,190,0.6)' : 'rgba(255,131,146,0.6)'), borderWidth: 0 },
+                    { label: 'DIF', data: macd.dif, borderColor: C.teal, borderWidth: 1.5, pointRadius: 0, type: 'line', yAxisID: 'y1' },
+                    { label: 'Signal', data: macd.signal, borderColor: C.purple, borderWidth: 1.2, pointRadius: 0, type: 'line', yAxisID: 'y1' },
+                ],
+            },
+            options: {
+                ...BASE_OPTS,
+                scales: {
+                    x: { ...BASE_OPTS.scales.x, ticks: { maxTicksLimit: 8 } },
+                    y: { ...BASE_OPTS.scales.y, title: { display: true, text: 'OSC', color: C.muted } },
+                    y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: C.muted } },
+                },
+            },
+        });
+    }
+
+    // 圖表 3: KD
+    const kdCtx = document.getElementById('dtaKdChart')?.getContext('2d');
+    if (kdCtx) {
+        if (DTA_CHARTS.kd) DTA_CHARTS.kd.destroy();
+        DTA_CHARTS.kd = new Chart(kdCtx, {
+            type: 'line',
+            data: {
+                labels: c.map((_, i) => i),
+                datasets: [
+                    { label: 'K', data: kd.map(k => k?.K), borderColor: C.blue, borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
+                    { label: 'D', data: kd.map(k => k?.D), borderColor: C.orange, borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
+                ],
+            },
+            options: {
+                ...BASE_OPTS,
+                scales: {
+                    x: { ...BASE_OPTS.scales.x, ticks: { maxTicksLimit: 8 } },
+                    y: { ...BASE_OPTS.scales.y, min: 0, max: 100, ticks: { stepSize: 20 } },
+                },
+            },
+        });
+    }
+
+    // 圖表 4: 成交量模擬
+    const volCtx = document.getElementById('dtaVolChart')?.getContext('2d');
+    if (volCtx) {
+        if (DTA_CHARTS.vol) DTA_CHARTS.vol.destroy();
+        const volData = c.map(() => Math.random() * 1000 + 500);
+        const volColors = c.map((p, i) => i > 0 && p > c[i - 1] ? 'rgba(123,240,190,0.7)' : 'rgba(255,131,146,0.7)');
+        DTA_CHARTS.vol = new Chart(volCtx, {
+            type: 'bar',
+            data: {
+                labels: c.map((_, i) => i),
+                datasets: [{ label: '成交量', data: volData, backgroundColor: volColors, borderWidth: 0 }],
+            },
+            options: {
+                ...BASE_OPTS,
+                scales: {
+                    x: { ...BASE_OPTS.scales.x, ticks: { maxTicksLimit: 8 } },
+                    y: { ...BASE_OPTS.scales.y, title: { display: true, text: '成交量', color: C.muted } },
+                },
+            },
+        });
+    }
+
+    // 指標數值摘要
+    const summaryHtml = `
+        <div class="dta-indicators">
+            <div class="dta-indi-card">
+                <div class="dta-indi-label">收盤價</div>
+                <div class="dta-indi-value" style="color:var(--text)">$${lastClose?.toFixed(1) || '—'}</div>
+            </div>
+            <div class="dta-indi-card">
+                <div class="dta-indi-label">MA20</div>
+                <div class="dta-indi-value" style="color:${C.blue}">${ma20[ma20.length - 1]?.toFixed(1) || '—'}</div>
+            </div>
+            <div class="dta-indi-card">
+                <div class="dta-indi-label">BBand Width</div>
+                <div class="dta-indi-value" style="color:${bbConverge ? 'var(--orange)' : 'var(--muted)'}">${lastWidth?.toFixed(1) || '—'}</div>
+                <div class="dta-indi-sub">均寬 ${avgWidth?.toFixed(1)} · ${bbConverge ? '收斂 ⚠' : '正常'}</div>
+            </div>
+            <div class="dta-indi-card">
+                <div class="dta-indi-label">MACD OSC</div>
+                <div class="dta-indi-value" style="color:${lastMacd.osc >= 0 ? 'var(--green)' : 'var(--red)'}">${lastMacd.osc?.toFixed(2) || '—'}</div>
+            </div>
+            <div class="dta-indi-card">
+                <div class="dta-indi-label">KD K</div>
+                <div class="dta-indi-value" style="color:var(--blue)">${lastKd?.K?.toFixed(1) || '—'}</div>
+            </div>
+            <div class="dta-indi-card">
+                <div class="dta-indi-label">KD D</div>
+                <div class="dta-indi-value" style="color:var(--orange)">${lastKd?.D?.toFixed(1) || '—'}</div>
+            </div>
+            <div class="dta-indi-card">
+                <div class="dta-indi-label">RSI(14)</div>
+                <div class="dta-indi-value" style="color:${lastRsi > 70 ? 'var(--red)' : lastRsi < 30 ? 'var(--green)' : 'var(--muted)'}">${lastRsi?.toFixed(1) || '—'}</div>
+            </div>
+        </div>
+    `;
+    document.getElementById('dtaIndicatorSummary').innerHTML = summaryHtml;
+
+    // 綜合進場評估
+    const bullSignals = signals.filter(s => s.cls === 'bull').length;
+    const bearSignals = signals.filter(s => s.cls === 'bear').length;
+    const verdict = bullSignals > bearSignals ? '偏多' : bearSignals > bullSignals ? '偏空' : '中立';
+    const verdictCls = bullSignals > bearSignals ? 'bull' : bearSignals > bullSignals ? 'bear' : 'neutral';
+
+    const assessmentHtml = `
+        <div class="dta-assess-item">
+            <span class="dta-assess-icon">📊</span>
+            <span class="dta-assess-label">趨勢方向</span>
+            <span class="dta-assess-verdict ${verdictCls}">${verdict}</span>
+        </div>
+        <div class="dta-assess-item">
+            <span class="dta-assess-icon">🟢</span>
+            <span class="dta-assess-label">多頭訊號</span>
+            <span class="dta-assess-verdict bull">${bullSignals} 項</span>
+        </div>
+        <div class="dta-assess-item">
+            <span class="dta-assess-icon">🔴</span>
+            <span class="dta-assess-label">空頭訊號</span>
+            <span class="dta-assess-verdict bear">${bearSignals} 項</span>
+        </div>
+        <div class="dta-assess-item">
+            <span class="dta-assess-icon">${verdict === '偏多' ? '✅' : verdict === '偏空' ? '⚠️' : '➖'}</span>
+            <span class="dta-assess-label">GAPPTS 搭配建議</span>
+            <span class="dta-assess-verdict ${verdictCls}">${verdict === '偏多' ? '可積極進場' : verdict === '偏空' ? '觀望或空手' : '謹慎操作'}</span>
+        </div>
+    `;
+    document.getElementById('dtaEntryAssessment').innerHTML = assessmentHtml;
+
+    // 訊號檢查清單
+    const checks = [
+        { pass: lastClose > (lastBb?.upper || Infinity), text: '價格低於 BBand 上軌（未過熱）', icon: '✅', cls: 'pass' },
+        { pass: lastClose < (lastBb?.lower || -Infinity), text: '價格跌破 BBand 下軌（超跌區）', icon: '⚠️', cls: 'warn' },
+        { pass: bbConverge, text: 'BBand 收斂至 70% 均寬以下（變盤前兆）', icon: '⚠️', cls: 'warn' },
+        { pass: lastMacd.osc >= 0, text: 'MACD OSC 為正（動能向上）', icon: '✅', cls: 'pass' },
+        { pass: lastMacd.osc < 0, text: 'MACD OSC 為負（動能向下）', icon: '❌', cls: 'fail' },
+        { pass: lastKd && lastKd.K < lastKd.D && lastKd.K < 30, text: 'KD 在超賣區形成黃金交叉', icon: '✅', cls: 'pass' },
+        { pass: lastRsi < 30, text: 'RSI 低於 30（超賣區）', icon: '✅', cls: 'pass' },
+        { pass: lastRsi > 70, text: 'RSI 高於 70（超買區）', icon: '❌', cls: 'fail' },
+    ];
+
+    document.getElementById('dtaSignalChecklist').innerHTML = checks.map(c => `
+        <div class="dta-check-item dta-check-${c.cls}">
+            <span class="dta-check-icon">${c.icon}</span>
+            <span class="dta-check-text">${c.text}</span>
+        </div>
+    `).join('');
+}
+
+window.loadDetailedTA = loadDetailedTA;

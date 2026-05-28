@@ -1,0 +1,9 @@
+{
+  "tracks": [
+    {
+      "name": "示範歌曲",
+      "audio": "/music/demo.mp3",
+      "lrc": "/music/demo.lrc"
+    }
+  ]
+}

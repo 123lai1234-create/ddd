@@ -6,7 +6,7 @@ const posts = (await getCollection('blog', p => !p.data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
 <Base
-  title="技術文章 | JT Lai"
+  title="技術文章 | Portfolio"
   description="蛋白質 AI、NGS 定序、演算法研究的技術筆記與研究心得。"
   ogTag="Portfolio"
   bodyPage="blog"

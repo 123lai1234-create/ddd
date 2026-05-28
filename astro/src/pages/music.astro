@@ -1,0 +1,313 @@
+---
+import Base from '../layouts/Base.astro';
+
+const SITE = 'https://donttalk.vercel.app';
+---
+
+<Base title="🎵 音樂播放器" bodyPage="music">
+  <main class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-3xl font-bold mb-8 text-center">🎵 音樂播放器</h1>
+    
+    <div id="player-container" class="bg-gray-900 rounded-xl p-6 shadow-2xl">
+      <!-- 歌曲列表 -->
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold mb-3 text-gray-300">📂 歌曲列表</h2>
+        <div id="track-list" class="space-y-2 max-h-64 overflow-y-auto">
+          <p class="text-gray-500">載入中...</p>
+        </div>
+      </div>
+
+      <!-- 播放器 -->
+      <div id="now-playing" class="hidden">
+        <div class="flex items-center gap-4 mb-4">
+          <button id="prev-btn" class="p-2 hover:bg-gray-800 rounded-lg transition">⏮️</button>
+          <button id="play-btn" class="p-4 bg-blue-600 hover:bg-blue-700 rounded-full transition text-2xl">▶️</button>
+          <button id="next-btn" class="p-2 hover:bg-gray-800 rounded-lg transition">⏭️</button>
+          <button id="lyrics-btn" class="ml-auto p-2 hover:bg-gray-800 rounded-lg transition" title="切換歌詞">📝</button>
+        </div>
+        
+        <!-- 進度條 -->
+        <div class="mb-4">
+          <span id="current-time" class="text-sm text-gray-400">0:00</span>
+          <input type="range" id="progress" min="0" max="100" value="0" class="w-full accent-blue-600">
+          <span id="duration" class="text-sm text-gray-400">0:00</span>
+        </div>
+        
+        <!-- 音量控制 -->
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-gray-400">🔊</span>
+          <input type="range" id="volume" min="0" max="100" value="80" class="w-24 accent-blue-600">
+          <span id="track-name" class="ml-4 text-blue-400 truncate flex-1"></span>
+        </div>
+
+        <!-- 歌詞顯示區 -->
+        <div id="lyrics-container" class="bg-gray-800 rounded-lg p-4 h-64 overflow-y-auto relative">
+          <div id="lyrics-gradient-top" class="pointer-events-none absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-gray-800 to-transparent z-10"></div>
+          <div id="lyrics-gradient-bottom" class="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-800 to-transparent z-10"></div>
+          <div id="lyrics-display" class="text-center">
+            <p class="text-gray-500">無歌詞</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 上傳說明 -->
+    <div class="mt-8 p-4 bg-gray-800 rounded-lg">
+      <h3 class="font-semibold mb-2">📤 如何添加歌曲</h3>
+      <ol class="text-gray-300 space-y-1 text-sm">
+        <li>1. 將 MP3 文件放入 <code class="bg-gray-700 px-2 py-1 rounded">public/music/</code> 文件夾</li>
+        <li>2. 將同名 LRC 歌詞文件放入同一文件夾（可選）</li>
+        <li>3. 例如：<code class="bg-gray-700 px-2 py-1 rounded">告白氣球.mp3</code> + <code class="bg-gray-700 px-2 py-1 rounded">告白氣球.lrc</code></li>
+      </ol>
+    </div>
+  </main>
+</Base>
+
+<script>
+  const trackListEl = document.getElementById('track-list')!;
+  const nowPlayingEl = document.getElementById('now-playing')!;
+  const playBtn = document.getElementById('play-btn')!;
+  const prevBtn = document.getElementById('prev-btn')!;
+  const nextBtn = document.getElementById('next-btn')!;
+  const lyricsBtn = document.getElementById('lyrics-btn')!;
+  const lyricsContainer = document.getElementById('lyrics-container')!;
+  const lyricsDisplay = document.getElementById('lyrics-display')!;
+  const progressBar = document.getElementById('progress') as HTMLInputElement;
+  const volumeBar = document.getElementById('volume') as HTMLInputElement;
+  const currentTimeEl = document.getElementById('current-time')!;
+  const durationEl = document.getElementById('duration')!;
+  const trackNameEl = document.getElementById('track-name')!;
+
+  let tracks: { name: string; audio: string; lrc?: string }[] = [];
+  let currentIndex = 0;
+  let isPlaying = false;
+
+  const audio = new Audio();
+
+  // 載入歌曲列表（你需要手動配置或用 API）
+  // 這裡示範靜態列表，实际使用时需要根據 music 文件夾動態生成
+  const knownTracks = [
+    { name: '示範歌曲', audio: '/music/demo.mp3', lrc: '/music/demo.lrc' }
+  ];
+
+  // 嘗試獲取歌曲列表
+  async function loadTracks() {
+    try {
+      const res = await fetch('/music/playlist.json');
+      const data = await res.json();
+      return data.tracks || [];
+    } catch {
+      return [
+        { name: '請編輯 public/music/playlist.json 添加歌曲', audio: '' }
+      ];
+    }
+  }
+
+  async function init() {
+    tracks = await loadTracks();
+    
+    if (tracks.length === 0) {
+      trackListEl.innerHTML = '<p class="text-yellow-500">尚未添加歌曲。請參考頁面底部的說明添加歌曲。</p>';
+      return;
+    }
+
+    trackListEl.innerHTML = tracks.map((track, i) => `
+      <button 
+        class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-800 transition track-item ${i === 0 ? 'bg-blue-900' : ''}"
+        data-index="${i}"
+      >
+        <span class="track-number text-gray-500 mr-2">${i + 1}.</span>
+        <span class="track-title">${track.name}</span>
+      </button>
+    `).join('');
+
+    // 點擊歌曲
+    trackListEl.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('.track-item') as HTMLElement;
+      if (btn) {
+        const index = parseInt(btn.dataset.index!);
+        playTrack(index);
+      }
+    });
+
+    playTrack(0);
+  }
+
+  function playTrack(index: number) {
+    currentIndex = index;
+    const track = tracks[index];
+    
+    audio.src = track.audio;
+    audio.volume = volumeBar.value / 100;
+    
+    trackNameEl.textContent = track.name;
+    nowPlayingEl.classList.remove('hidden');
+
+    // 更新列表高亮
+    document.querySelectorAll('.track-item').forEach((el, i) => {
+      el.classList.toggle('bg-blue-900', i === index);
+    });
+
+    // 載入歌詞
+    if (track.lrc) {
+      fetch(track.lrc)
+        .then(r => r.text())
+        .then(text => parseLRC(text))
+        .catch(() => showLyrics([{ time: 0, text: '歌詞載入失敗' }]));
+    } else {
+      showLyrics([{ time: 0, text: '無歌詞' }]);
+    }
+
+    play();
+  }
+
+  function play() {
+    audio.play();
+    isPlaying = true;
+    playBtn.textContent = '⏸️';
+  }
+
+  function pause() {
+    audio.pause();
+    isPlaying = false;
+    playBtn.textContent = '▶️';
+  }
+
+  playBtn.addEventListener('click', () => {
+    isPlaying ? pause() : play();
+  });
+
+  prevBtn.addEventListener('click', () => {
+    playTrack((currentIndex - 1 + tracks.length) % tracks.length);
+  });
+
+  nextBtn.addEventListener('click', () => {
+    playTrack((currentIndex + 1) % tracks.length);
+  });
+
+  lyricsBtn.addEventListener('click', () => {
+    lyricsContainer.classList.toggle('hidden');
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    if (audio.duration) {
+      progressBar.value = (audio.currentTime / audio.duration) * 100;
+      currentTimeEl.textContent = formatTime(audio.currentTime);
+      updateLyricsHighlight(audio.currentTime);
+    }
+  });
+
+  audio.addEventListener('loadedmetadata', () => {
+    durationEl.textContent = formatTime(audio.duration);
+  });
+
+  audio.addEventListener('ended', () => {
+    playTrack((currentIndex + 1) % tracks.length);
+  });
+
+  progressBar.addEventListener('input', () => {
+    audio.currentTime = (parseFloat(progressBar.value) / 100) * audio.duration;
+  });
+
+  volumeBar.addEventListener('input', () => {
+    audio.volume = parseFloat(volumeBar.value) / 100;
+  });
+
+  function formatTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  // LRC 歌詞解析
+  interface LyricLine { time: number; text: string; }
+  let lyrics: LyricLine[] = [];
+
+  function parseLRC(text: string) {
+    lyrics = [];
+    const lines = text.split('\n');
+    const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+    
+    for (const line of lines) {
+      const match = line.match(timeRegex);
+      if (match) {
+        const min = parseInt(match[1]);
+        const sec = parseInt(match[2]);
+        const ms = parseInt(match[3].padEnd(3, '0'));
+        const time = min * 60 + sec + ms / 1000;
+        const text = line.replace(timeRegex, '').trim();
+        if (text) lyrics.push({ time, text });
+      }
+    }
+    
+    showLyrics(lyrics);
+  }
+
+  function showLyrics(lines: LyricLine[]) {
+    lyricsDisplay.innerHTML = lines.map(l => 
+      `<p class="lyric-line" data-time="${l.time}">${l.text}</p>`
+    ).join('');
+    // 自動滾動到歌詞區頂部
+    lyricsContainer.scrollTop = 0;
+  }
+
+  function updateLyricsHighlight(currentTime: number) {
+    const lines = lyricsDisplay.querySelectorAll('.lyric-line');
+    let activeIndex = 0;
+    
+    for (let i = 0; i < lyrics.length; i++) {
+      if (lyrics[i].time <= currentTime) {
+        activeIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    lines.forEach((line, i) => {
+      const isActive = i === activeIndex;
+      line.classList.toggle('text-white', isActive);
+      line.classList.toggle('text-2xl', isActive);
+      line.classList.toggle('font-bold', isActive);
+      line.classList.toggle('scale-100', isActive);
+      line.classList.toggle('scale-90', !isActive);
+      line.classList.toggle('text-gray-500', !isActive);
+      line.classList.toggle('opacity-100', isActive);
+      line.classList.toggle('opacity-50', !isActive);
+    });
+
+    // 滾動到當前歌詞（帶動態效果）
+    const activeLine = lines[activeIndex] as HTMLElement;
+    if (activeLine) {
+      activeLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  init();
+</script>
+
+<style>
+  .track-item {
+    transition: background-color 0.2s;
+  }
+  .track-number {
+    display: inline-block;
+    width: 2rem;
+  }
+  input[type="range"] {
+    cursor: pointer;
+  }
+  .lyric-line {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0.75rem 1rem;
+  }
+  #lyrics-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 0;
+  }
+  .scale-90 { transform: scale(0.9); }
+  .scale-100 { transform: scale(1); }
+  .opacity-50 { opacity: 0.5; }
+  .opacity-100 { opacity: 1; }
+</style>

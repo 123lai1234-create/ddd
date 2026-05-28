@@ -2,25 +2,26 @@
 import Base from '../layouts/Base.astro';
 ---
 <Base
-    title="JT Lai — 工程 × 生醫 × AI 平台"
+    title="工程 × 生醫 × AI 平台作品集"
     description="電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。"
     ogTag="Portfolio"
     bodyPage="index"
     pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css"]}
-    pageScripts={["/scripts/app-config.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js"]}
+    pageScripts={["/scripts/app-config.js", "/scripts/dynamic-features.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js"]}
 >
     <div data-site-nav></div>
 
     <!-- Hero: compact, left-aligned, leerob-style -->
     <section id="hero">
+        <div class="hero-canvas"></div>
         <div class="hero-content">
-            <div class="hero-badge"><span class="live-dot"></span>2026 · 開放洽談機會</div>
-            <h1 class="hero-name">JT Lai</h1>
-            <p class="hero-role">工程師 · 生醫研究者 · AI 平台設計</p>
-            <p class="hero-bio">
+            <div class="hero-eyebrow"><span class="live-dot"></span>2026 · 開放洽談機會</div>
+            <h1 class="hero-title">Portfolio</h1>
+            <p class="hero-sub">工程師 · 生醫研究者 · AI 平台設計</p>
+            <p class="hero-sub" style="max-width:600px;margin:1rem auto;font-size:.95rem;opacity:.85">
                 電資工程與生物醫學雙碩士，把蛋白質語言模型、基因分析工具與互動介面整合成可操作的研究平台。站在研究與產品的交界，做有真實意義的跨域系統。
             </p>
-            <div class="hero-links">
+            <div class="hero-ctas">
                 <a href="/about" class="btn btn-primary">認識我</a>
                 <a href="/works" class="btn btn-outline">全部作品 →</a>
                 <a href="/gene-ai" class="btn btn-ghost">基因 AI 平台 ↗</a>
