@@ -201,16 +201,55 @@ const SITE = 'https://donttalk.vercel.app';
       el.classList.toggle('bg-blue-900', i === index);
     });
 
-    // 載入歌詞
+  // 載入歌詞
+    loadLyrics(track);
+  }
+
+  async function loadLyrics(track: Track) {
+    // 1. 先嘗試本地 .lrc 文件
     if (track.lrc) {
-      fetch(track.lrc)
-        .then(r => r.text())
-        .then(text => parseLRC(text))
-        .catch(() => showLyrics([{ time: 0, text: '歌詞載入失敗' }]));
-    } else {
-      showLyrics([{ time: 0, text: '無歌詞' }]);
+      try {
+        const res = await fetch(track.lrc);
+        if (res.ok) {
+          const text = await res.text();
+          parseLRC(text);
+          return;
+        }
+      } catch {}
     }
 
+    // 2. 嘗試 LRCLIB API
+    try {
+      const trackName = track.name.replace(/\s*\([^)]*\)/g, '').trim();
+      const res = await fetch(`https://lrclib.net/api/get?q=${encodeURIComponent(trackName)}&artist_name=`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.syncedLyrics) {
+          parseLRC(data.syncedLyrics);
+          return;
+        }
+      }
+    } catch {}
+
+    // 3. 都找不到
+    showLyrics([{ time: 0, text: '🎤 歌詞同步中...' }]);
+    
+    // 嘗試獲取普通歌詞（.txt）
+    const txtSrc = track.audio.replace(/\.mp3$/, '.txt');
+    try {
+      const res = await fetch(txtSrc);
+      if (res.ok) {
+        const text = await res.text();
+        // 將純文字轉為無時間戳的歌詞顯示
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length > 0) {
+          lyrics = lines.map((line, i) => ({ time: i * 3, text: line.trim() }));
+          showLyrics(lyrics);
+        }
+      }
+    } catch {}
+
+    // 4. 最後才播放
     play();
   }
 
