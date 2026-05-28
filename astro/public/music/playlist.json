@@ -1,9 +1,29 @@
 {
   "tracks": [
-    {
-      "name": "示範歌曲",
-      "audio": "/music/demo.mp3",
-      "lrc": "/music/demo.lrc"
-    }
+    { "name": "02 兄弟本色", "audio": "/music/02_兄弟本色.mp3", "lrc": "/music/02_最後一次說再見.txt" },
+    { "name": "03 不服輸", "audio": "/music/03_不服輸.mp3", "lrc": "/music/03_不服輸.txt" },
+    { "name": "04 水泥森林", "audio": "/music/04_水泥森林.mp3" },
+    { "name": "05 雨夜出租", "audio": "/music/05_雨夜出租.mp3", "lrc": "/music/05_雨夜出租.txt" },
+    { "name": "06 回不去的夏天", "audio": "/music/06_回不去的夏天.mp3" },
+    { "name": "07 愛的模樣", "audio": "/music/07_愛的模樣.mp3", "lrc": "/music/07_愛的模樣.txt" },
+    { "name": "08 三十歲的懸賞令", "audio": "/music/08_三十歲的懸賞令.mp3", "lrc": "/music/08_三十歲的懸賞令.txt" },
+    { "name": "09 我一個人也很好", "audio": "/music/09_我一個人也很好.mp3", "lrc": "/music/09_我一個人也很好.txt" },
+    { "name": "10 十年後的重逢", "audio": "/music/10_十年後的重逢.mp3", "lrc": "/music/10_十年後的重逢.txt" },
+    { "name": "11 如果有一天", "audio": "/music/11_如果有一天.mp3", "lrc": "/music/11_如果有一天.txt" },
+    { "name": "12 故鄉的雲", "audio": "/music/12_故鄉的雲.mp3", "lrc": "/music/12_故鄉的雲.txt" },
+    { "name": "13 時光膠囊", "audio": "/music/13_時光膠囊.mp3", "lrc": "/music/13_時光膠囊.txt" },
+    { "name": "15 風箏的故鄉", "audio": "/music/15_風箏的故鄉.mp3", "lrc": "/music/15_風箏的故鄉.txt" },
+    { "name": "18 遇見你之前", "audio": "/music/18_遇見你之前.mp3", "lrc": "/music/18_遇見你之前.txt" },
+    { "name": "20 等天亮", "audio": "/music/20_等天亮.mp3", "lrc": "/music/20_等天亮.txt" },
+    { "name": "EN-01 Late Night City", "audio": "/music/EN-01-Late_Night_City---e8779acd-4f36-4c58-a6b2-00ea0bd5de2b.mp3" },
+    { "name": "EN-02 Coffee Shop Dreams", "audio": "/music/EN-02-Coffee_Shop_Dreams---57ef9222-8b53-4715-b8de-0205b65e26f0.mp3" },
+    { "name": "EN-03 Almost Famous", "audio": "/music/EN-03-Almost_Famous---9f2400f6-0ab4-431c-90eb-4dc5b46cba27.mp3" },
+    { "name": "JP-01 Tokyo Rain", "audio": "/music/JP-01-Tokyo_Rain---8164549c-c2ba-4ba9-a005-697a741bdad4.mp3" },
+    { "name": "JP-02 昭和写真館", "audio": "/music/JP-02-昭和写真館---75770fcc-d679-4ceb-8eff-2cd81263f32d.mp3" },
+    { "name": "JP-03 富士山ノ下", "audio": "/music/JP-03-富士山ノ下---22e10dba-70c4-46a7-b660-e3b8285399f0.mp3" },
+    { "name": "JP-04 屋台ヒーロー", "audio": "/music/JP-04-屋台ヒーロー---2aca815c-fe94-43c1-a7f9-fa0cae905575.mp3" },
+    { "name": "KR-01 Seoul Subway", "audio": "/music/KR-01-Seoul_Subway---fc09460e-7d70-4c77-b76c-727f0992ceca.mp3" },
+    { "name": "KR-02 Bukchu Market", "audio": "/music/KR-02-Bukchu_Market---9734c2f0-69c8-4cbc-be37-23e6ada1448f.mp3" },
+    { "name": "KR-03 Rainy Itaewon", "audio": "/music/KR-03-Rainy_Itaewon---c7093e8a-c20d-4969-8a7d-d0590f4a3a57.mp3" }
   ]
 }
