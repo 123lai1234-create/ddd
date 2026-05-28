@@ -5,7 +5,7 @@ const SITE = 'https://donttalk.vercel.app';
 ---
 
 <Base title="🎵 音樂播放器" bodyPage="music">
-  <main class="container mx-auto px-4 py-8 max-w-4xl">
+  <main class="container mx-auto px-4 py-8 max-w-4xl pb-24">
     <h1 class="text-3xl font-bold mb-8 text-center">🎵 音樂播放器</h1>
     
     <!-- 分類篩選 -->
@@ -30,53 +30,108 @@ const SITE = 'https://donttalk.vercel.app';
       </div>
     </div>
 
-    <div id="player-container" class="bg-gray-900 rounded-xl p-6 shadow-2xl">
+    <div id="player-container" class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-8 shadow-2xl border border-gray-700/50 backdrop-blur">
       <!-- 歌曲列表 -->
-      <div class="mb-6">
-        <div class="flex justify-between items-center mb-3">
-          <h2 class="text-lg font-semibold text-gray-300">📂 歌曲列表</h2>
-          <span id="track-count" class="text-sm text-gray-500">共 0 首</span>
+      <div class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold text-gray-200 flex items-center gap-2">
+            <span>📂</span> 歌曲列表
+          </h2>
+          <span id="track-count" class="text-sm text-gray-400 bg-gray-700/50 px-3 py-1 rounded-full">共 0 首</span>
         </div>
-        <div id="track-list" class="space-y-2 max-h-64 overflow-y-auto">
+        <div id="track-list" class="space-y-2 max-h-72 overflow-y-auto pr-2 scrollbar-thin">
           <p class="text-gray-500">載入中...</p>
         </div>
       </div>
 
-      <!-- 播放器 -->
+      <!-- 主播放器 -->
       <div id="now-playing" class="hidden">
-        <div class="flex items-center gap-4 mb-4">
-          <button id="prev-btn" class="p-2 hover:bg-gray-800 rounded-lg transition">⏮️</button>
-          <button id="play-btn" class="p-4 bg-blue-600 hover:bg-blue-700 rounded-full transition text-2xl">▶️</button>
-          <button id="next-btn" class="p-2 hover:bg-gray-800 rounded-lg transition">⏭️</button>
-          <button id="lyrics-btn" class="ml-auto p-2 hover:bg-gray-800 rounded-lg transition" title="切換歌詞">📝</button>
+        <!-- 專輯封面效果 -->
+        <div class="flex justify-center mb-6">
+          <div class="relative">
+            <div id="album-art" class="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg animate-spin-slow" style="animation-play-state: paused;">
+              <div class="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center">
+                <span class="text-2xl">🎵</span>
+              </div>
+            </div>
+            <div class="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center animate-pulse" id="now-playing-indicator">
+              <span class="text-xs">LIVE</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-center gap-4 mb-6">
+          <button id="shuffle-btn" class="p-3 hover:bg-gray-700 rounded-lg transition text-gray-400 hover:text-white" title="隨機播放">🔀</button>
+          <button id="prev-btn" class="p-3 hover:bg-gray-700 rounded-lg transition">⏮️</button>
+          <button id="play-btn" class="p-5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-full transition text-3xl shadow-lg hover:shadow-xl hover:scale-105">▶️</button>
+          <button id="next-btn" class="p-3 hover:bg-gray-700 rounded-lg transition">⏭️</button>
+          <button id="mode-btn" class="p-3 hover:bg-gray-700 rounded-lg transition text-gray-400 hover:text-white" title="播放模式">🔁</button>
+        </div>
+        
+        <!-- 歌曲名稱 -->
+        <div class="text-center mb-4">
+          <h3 id="track-name" class="text-xl font-bold text-white truncate"></h3>
+          <p id="track-meta" class="text-sm text-gray-400"></p>
         </div>
         
         <!-- 進度條 -->
-        <div class="mb-4">
-          <span id="current-time" class="text-sm text-gray-400">0:00</span>
-          <input type="range" id="progress" min="0" max="100" value="0" class="w-full accent-blue-600">
-          <span id="duration" class="text-sm text-gray-400">0:00</span>
+        <div class="mb-6">
+          <input type="range" id="progress" min="0" max="100" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+          <div class="flex justify-between text-xs text-gray-400 mt-1">
+            <span id="current-time">0:00</span>
+            <span id="duration">0:00</span>
+          </div>
         </div>
         
         <!-- 音量控制 -->
-        <div class="flex items-center gap-2 mb-4">
-          <span class="text-gray-400">🔊</span>
-          <input type="range" id="volume" min="0" max="100" value="80" class="w-24 accent-blue-600">
-          <span id="track-name" class="ml-4 text-blue-400 truncate flex-1"></span>
+        <div class="flex items-center gap-3 mb-6">
+          <button id="mute-btn" class="text-gray-400 hover:text-white">🔊</button>
+          <input type="range" id="volume" min="0" max="100" value="80" class="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
         </div>
 
         <!-- 歌詞顯示區 -->
-        <div id="lyrics-container" class="bg-gray-800 rounded-lg p-4 h-64 overflow-y-auto relative">
-          <div id="lyrics-gradient-top" class="pointer-events-none absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-gray-800 to-transparent z-10"></div>
-          <div id="lyrics-gradient-bottom" class="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-800 to-transparent z-10"></div>
+        <div id="lyrics-container" class="bg-black/30 rounded-xl p-6 h-48 overflow-y-auto relative">
+          <div id="lyrics-gradient-top" class="pointer-events-none absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-transparent via-black/30 to-transparent z-10"></div>
+          <div id="lyrics-gradient-bottom" class="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-transparent via-black/30 to-transparent z-10"></div>
           <div id="lyrics-display" class="text-center">
             <p class="text-gray-500">無歌詞</p>
           </div>
+        </div>
+        
+        <div class="flex justify-center mt-4">
+          <button id="lyrics-btn" class="text-gray-400 hover:text-white text-sm flex items-center gap-1">
+            <span>📝</span> 歌詞
+          </button>
         </div>
       </div>
     </div>
 
   </main>
+
+  <!-- 迷你播放器 -->
+  <div id="mini-player" class="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-700/50 p-3 transform translate-y-full transition-transform duration-300 z-50">
+    <div class="container mx-auto flex items-center gap-4">
+      <div id="mini-album" class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+        <span class="text-lg">🎵</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p id="mini-track-name" class="text-white text-sm font-medium truncate"></p>
+        <p id="mini-time" class="text-gray-400 text-xs">0:00 / 0:00</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="mini-prev" class="p-2 hover:bg-gray-800 rounded-lg">⏮️</button>
+        <button id="mini-play" class="p-3 bg-blue-600 hover:bg-blue-700 rounded-full">▶️</button>
+        <button id="mini-next" class="p-2 hover:bg-gray-800 rounded-lg">⏭️</button>
+      </div>
+      <div class="w-24 hidden sm:block">
+        <input type="range" id="mini-progress" min="0" max="100" value="0" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+      </div>
+    </div>
+    <!-- 迷你播放器進度條 -->
+    <div class="h-1 bg-gray-700">
+      <div id="mini-progress-bar" class="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-100" style="width: 0%"></div>
+    </div>
+  </div>
 </Base>
 
 <script>
@@ -101,9 +156,28 @@ const SITE = 'https://donttalk.vercel.app';
   let isPlaying = false;
   let currentLang = 'all';
   let currentStyle = 'all';
+  let isShuffle = false;
+  let playMode = 0; // 0: 列表循環, 1: 單曲循環, 2: 隨機
+  let shuffledOrder: number[] = [];
 
   const audio = new Audio();
   const trackCountEl = document.getElementById('track-count')!;
+  const miniPlayer = document.getElementById('mini-player')!;
+  const miniPlay = document.getElementById('mini-play')!;
+  const miniPrev = document.getElementById('mini-prev')!;
+  const miniNext = document.getElementById('mini-next')!;
+  const miniTrackName = document.getElementById('mini-track-name')!;
+  const miniTime = document.getElementById('mini-time')!;
+  const miniProgressBar = document.getElementById('mini-progress-bar')!;
+  const miniProgress = document.getElementById('mini-progress') as HTMLInputElement;
+  const albumArt = document.getElementById('album-art')!;
+  const shuffleBtn = document.getElementById('shuffle-btn')!;
+  const modeBtn = document.getElementById('mode-btn')!;
+  const muteBtn = document.getElementById('mute-btn')!;
+  const trackMeta = document.getElementById('track-meta')!;
+
+  const modeIcons = ['🔁', '🔂', '🔀'];
+  const modeTitles = ['列表循環', '單曲循環', '隨機播放'];
 
   async function loadTracks() {
     try {
@@ -186,6 +260,17 @@ const SITE = 'https://donttalk.vercel.app';
     playTrack(0);
   }
 
+  function updateMiniPlayer() {
+    const track = filteredTracks[currentIndex];
+    if (!track) return;
+    
+    miniTrackName.textContent = track.name;
+    miniTime.textContent = `${currentTimeEl.textContent} / ${durationEl.textContent}`;
+    
+    // 顯示迷你播放器
+    miniPlayer.classList.remove('translate-y-full');
+  }
+
   function playTrack(index: number) {
     currentIndex = index;
     const track = filteredTracks[index];
@@ -194,15 +279,38 @@ const SITE = 'https://donttalk.vercel.app';
     audio.volume = volumeBar.value / 100;
     
     trackNameEl.textContent = track.name;
+    trackMeta.textContent = `${track.lang || ''} · ${track.style || ''}`;
     nowPlayingEl.classList.remove('hidden');
+    
+    // 更新迷你播放器
+    updateMiniPlayer();
 
     // 更新列表高亮
     document.querySelectorAll('.track-item').forEach((el, i) => {
       el.classList.toggle('bg-blue-900', i === index);
     });
 
-  // 載入歌詞
+    // 載入歌詞
     loadLyrics(track);
+  }
+
+  function getNextIndex(): number {
+    if (playMode === 2 && filteredTracks.length > 1) {
+      // 隨機播放
+      let next = Math.floor(Math.random() * filteredTracks.length);
+      if (next === currentIndex && filteredTracks.length > 1) {
+        next = (next + 1) % filteredTracks.length;
+      }
+      return next;
+    }
+    return (currentIndex + 1) % filteredTracks.length;
+  }
+
+  function getPrevIndex(): number {
+    if (playMode === 2 && filteredTracks.length > 1) {
+      return (currentIndex - 1 + filteredTracks.length) % filteredTracks.length;
+    }
+    return (currentIndex - 1 + filteredTracks.length) % filteredTracks.length;
   }
 
   async function loadLyrics(track: Track) {
@@ -270,22 +378,71 @@ const SITE = 'https://donttalk.vercel.app';
   });
 
   prevBtn.addEventListener('click', () => {
-    playTrack((currentIndex - 1 + filteredTracks.length) % filteredTracks.length);
+    playTrack(getPrevIndex());
   });
 
   nextBtn.addEventListener('click', () => {
-    playTrack((currentIndex + 1) % filteredTracks.length);
+    playTrack(getNextIndex());
   });
 
   lyricsBtn.addEventListener('click', () => {
     lyricsContainer.classList.toggle('hidden');
   });
 
+  // 迷你播放器事件
+  miniPlay.addEventListener('click', () => {
+    isPlaying ? pause() : play();
+  });
+  miniPrev.addEventListener('click', () => playTrack(getPrevIndex()));
+  miniNext.addEventListener('click', () => playTrack(getNextIndex()));
+
+  // 播放模式按鈕
+  modeBtn.addEventListener('click', () => {
+    playMode = (playMode + 1) % 3;
+    modeBtn.textContent = modeIcons[playMode];
+    modeBtn.title = modeTitles[playMode];
+    modeBtn.classList.toggle('text-blue-400', playMode !== 0);
+  });
+
+  // 隨機播放按鈕
+  shuffleBtn.addEventListener('click', () => {
+    playMode = playMode === 2 ? 0 : 2;
+    modeBtn.textContent = modeIcons[playMode];
+    modeBtn.title = modeTitles[playMode];
+    shuffleBtn.classList.toggle('text-blue-400', playMode === 2);
+    modeBtn.classList.toggle('text-blue-400', playMode !== 0);
+  });
+
+  // 靜音按鈕
+  let lastVolume = 80;
+  muteBtn.addEventListener('click', () => {
+    if (audio.volume > 0) {
+      lastVolume = parseFloat(volumeBar.value);
+      audio.volume = 0;
+      volumeBar.value = '0';
+      muteBtn.textContent = '🔇';
+    } else {
+      audio.volume = lastVolume / 100;
+      volumeBar.value = String(lastVolume);
+      muteBtn.textContent = '🔊';
+    }
+  });
+
   audio.addEventListener('timeupdate', () => {
     if (audio.duration) {
       progressBar.value = (audio.currentTime / audio.duration) * 100;
+      miniProgress.value = progressBar.value;
+      miniProgressBar.style.width = `${progressBar.value}%`;
       currentTimeEl.textContent = formatTime(audio.currentTime);
       updateLyricsHighlight(audio.currentTime);
+      updateMiniPlayer();
+      
+      // 專輯封面旋轉
+      if (isPlaying) {
+        albumArt.style.animationPlayState = 'running';
+      } else {
+        albumArt.style.animationPlayState = 'paused';
+      }
     }
   });
 
@@ -294,15 +451,40 @@ const SITE = 'https://donttalk.vercel.app';
   });
 
   audio.addEventListener('ended', () => {
-    playTrack((currentIndex + 1) % filteredTracks.length);
+    if (playMode === 1) {
+      // 單曲循環
+      audio.currentTime = 0;
+      play();
+    } else {
+      playTrack(getNextIndex());
+    }
+  });
+
+  audio.addEventListener('play', () => {
+    isPlaying = true;
+    playBtn.textContent = '⏸️';
+    miniPlay.textContent = '⏸️';
+    document.getElementById('now-playing-indicator')?.classList.remove('animate-pulse');
+  });
+
+  audio.addEventListener('pause', () => {
+    isPlaying = false;
+    playBtn.textContent = '▶️';
+    miniPlay.textContent = '▶️';
+    document.getElementById('now-playing-indicator')?.classList.add('animate-pulse');
   });
 
   progressBar.addEventListener('input', () => {
     audio.currentTime = (parseFloat(progressBar.value) / 100) * audio.duration;
   });
 
+  miniProgress.addEventListener('input', () => {
+    audio.currentTime = (parseFloat(miniProgress.value) / 100) * audio.duration;
+  });
+
   volumeBar.addEventListener('input', () => {
     audio.volume = parseFloat(volumeBar.value) / 100;
+    muteBtn.textContent = audio.volume === 0 ? '🔇' : '🔊';
   });
 
   function formatTime(seconds: number): string {
@@ -418,5 +600,26 @@ const SITE = 'https://donttalk.vercel.app';
     background: #3b82f6;
     color: white;
     border-color: #3b82f6;
+  }
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin-slow {
+    animation: spin-slow 8s linear infinite;
+  }
+  /* 滾動條樣式 */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
   }
 </style>
