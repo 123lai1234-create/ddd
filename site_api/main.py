@@ -1,9 +1,5 @@
 """
 site_api/main.py — FastAPI application entrypoint.
-
-This module only configures the application, middleware, and lifespan.
-All route handlers live in routes.py; business logic in services.py;
-database access in db.py; Pydantic models in models.py; SQL in schemas.py.
 """
 
 from __future__ import annotations
@@ -19,10 +15,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from site_api.db import (
-    get_allowed_origins,
-)
-from site_api.routes import router
+from site_api.db import get_allowed_origins
+from site_api.routes import build_router
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +36,7 @@ async def lifespan(application: FastAPI):
         db._DB_POOL.close()
 
 
-app = FastAPI(title="JT Lai Portfolio API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="JT Lai Portfolio API", version="2.0.0", lifespan=lifespan)
 
 _rate_limit = os.getenv("API_RATE_LIMIT", "60/minute")
 limiter = Limiter(key_func=get_remote_address, default_limits=[_rate_limit])
@@ -67,5 +61,5 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal server error."},
     )
 
-
-app.include_router(router)
+# ── Include all domain routers ────────────────────────────────────────────────
+build_router(app)
