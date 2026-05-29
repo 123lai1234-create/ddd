@@ -99,6 +99,28 @@ body {
   padding-top: var(--nav-h);
 }
 
+/* Hero 背景影片 */
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+}
+
+.hero-video-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 12, 16, 0.5) 0%,
+    rgba(8, 12, 16, 0.3) 50%,
+    rgba(8, 12, 16, 0.6) 100%
+  );
+  z-index: 0;
+}
+
 .hero-canvas {
   position: absolute;
   inset: 0;
@@ -119,23 +141,48 @@ body {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(var(--accent-cyan, rgba(151,190,181,.3)) 1px, transparent 1px),
-    linear-gradient(90deg, var(--accent-purple, rgba(151,190,181,.3)) 1px, transparent 1px);
+    linear-gradient(
+      var(--accent-cyan, rgba(151, 190, 181, 0.3)) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      var(--accent-purple, rgba(151, 190, 181, 0.3)) 1px,
+      transparent 1px
+    );
   background-size: 40px 40px;
   opacity: 0.07;
   animation: gridPan 40s linear infinite;
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 75%);
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 40%,
+    #000 0%,
+    transparent 75%
+  );
+  mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 40%,
+    #000 0%,
+    transparent 75%
+  );
   pointer-events: none;
   overflow: hidden;
   will-change: background-position;
 }
 @keyframes gridPan {
-  from { background-position: 0 0, 0 0; }
-  to { background-position: 40px 40px, 40px 40px; }
+  from {
+    background-position:
+      0 0,
+      0 0;
+  }
+  to {
+    background-position:
+      40px 40px,
+      40px 40px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .grid-bg { animation: none !important; }
+  .grid-bg {
+    animation: none !important;
+  }
 }
 
 #hero-sparkle {
@@ -181,8 +228,15 @@ body {
 }
 
 @keyframes livePulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.8); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
 }
 
 .hero-title {
@@ -233,7 +287,9 @@ body {
   border: 1px solid rgba(88, 215, 255, 0.15);
   color: var(--teal);
   letter-spacing: 0.03em;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
 .htag:hover {
@@ -502,7 +558,9 @@ section {
   font-size: 1rem;
   color: var(--dim);
   flex-shrink: 0;
-  transition: transform 0.18s, color 0.18s;
+  transition:
+    transform 0.18s,
+    color 0.18s;
 }
 
 /* ─── Pipeline section ───────────────────────────────────────────── */
@@ -682,7 +740,9 @@ section {
   border-left: 3px solid rgba(88, 215, 255, 0.4);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.02);
-  transition: border-left-color 0.2s, background 0.2s;
+  transition:
+    border-left-color 0.2s,
+    background 0.2s;
 }
 
 .mini-item:hover {
@@ -909,24 +969,60 @@ footer {
 }
 
 /* Category color variants */
-.ec-bio { border-top: 2px solid rgba(88, 215, 255, 0.3); }
-.ec-bio .explore-tag { background: rgba(88, 215, 255, 0.1); color: var(--teal); }
-.ec-bio:hover { border-color: var(--teal); border-top-color: var(--teal); }
+.ec-bio {
+  border-top: 2px solid rgba(88, 215, 255, 0.3);
+}
+.ec-bio .explore-tag {
+  background: rgba(88, 215, 255, 0.1);
+  color: var(--teal);
+}
+.ec-bio:hover {
+  border-color: var(--teal);
+  border-top-color: var(--teal);
+}
 
-.ec-gene { border-top: 2px solid rgba(123, 240, 190, 0.3); }
-.ec-gene .explore-tag { background: rgba(123, 240, 190, 0.1); color: var(--green); }
-.ec-gene:hover { border-color: var(--green); border-top-color: var(--green); }
+.ec-gene {
+  border-top: 2px solid rgba(123, 240, 190, 0.3);
+}
+.ec-gene .explore-tag {
+  background: rgba(123, 240, 190, 0.1);
+  color: var(--green);
+}
+.ec-gene:hover {
+  border-color: var(--green);
+  border-top-color: var(--green);
+}
 
-.ec-study { border-top: 2px solid rgba(255, 188, 114, 0.3); }
-.ec-study .explore-tag { background: rgba(255, 188, 114, 0.1); color: var(--orange); }
-.ec-study:hover { border-color: var(--orange); border-top-color: var(--orange); }
+.ec-study {
+  border-top: 2px solid rgba(255, 188, 114, 0.3);
+}
+.ec-study .explore-tag {
+  background: rgba(255, 188, 114, 0.1);
+  color: var(--orange);
+}
+.ec-study:hover {
+  border-color: var(--orange);
+  border-top-color: var(--orange);
+}
 
-.ec-research { border-top: 2px solid rgba(181, 156, 255, 0.3); }
-.ec-research .explore-tag { background: rgba(181, 156, 255, 0.1); color: var(--purple); }
-.ec-research:hover { border-color: var(--purple); border-top-color: var(--purple); }
+.ec-research {
+  border-top: 2px solid rgba(181, 156, 255, 0.3);
+}
+.ec-research .explore-tag {
+  background: rgba(181, 156, 255, 0.1);
+  color: var(--purple);
+}
+.ec-research:hover {
+  border-color: var(--purple);
+  border-top-color: var(--purple);
+}
 
-.explore-grid-2 { grid-template-columns: repeat(2, 1fr); }
-.explore-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.explore-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.explore-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
 
 .explore-groups {
   display: flex;
@@ -946,7 +1042,7 @@ footer {
 }
 
 .explore-group-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.78rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -979,7 +1075,7 @@ footer {
   font-size: 0.82rem;
   color: var(--muted, #a8b0c2);
   margin-left: auto;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
 }
 
 .explore-grid {
@@ -992,7 +1088,10 @@ footer {
   .explore-grid-3 {
     grid-template-columns: 1fr;
   }
-  .explore-group-sub { margin-left: 0; width: 100%; }
+  .explore-group-sub {
+    margin-left: 0;
+    width: 100%;
+  }
 }
 /* ─── Tablet RWD Fixes (768px - 1024px) ──────────────────────────── */
 
@@ -1216,12 +1315,19 @@ footer {
     word-break: break-word;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     word-break: break-word;
     hyphens: auto;
   }
 
-  p, a, span {
+  p,
+  a,
+  span {
     word-break: break-word;
   }
 }
