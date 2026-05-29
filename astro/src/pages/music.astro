@@ -852,6 +852,42 @@ const OG_TAG = 'music';
       cursor: pointer;
     }
     .close-shortcuts:hover { opacity: 0.9; }
+
+    /* ── Mobile RWD ────────────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .bottom-bar {
+        height: 70px;
+        padding: 0 12px;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 8px;
+      }
+      .bar-left { gap: 6px; }
+      .bar-track-name { font-size: 0.8rem; max-width: 120px; }
+      .bar-track-artist { font-size: 0.7rem; }
+      .bar-center { gap: 6px; }
+      .bar-ctrl-btn { width: 28px; height: 28px; }
+      .bar-play-btn { width: 36px; height: 36px; }
+      .bar-progress { height: 3px; min-width: 80px; }
+      .bar-progress-slider { display: none; }
+      .bar-right { gap: 4px; justify-content: flex-end; }
+      .bar-time { font-size: 0.65rem; min-width: 36px; }
+      .bar-volume-slider { width: 50px; }
+      .bar-like-btn { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      .bottom-bar {
+        height: 64px;
+        padding: 0 8px;
+      }
+      .bar-track-info { max-width: 90px; }
+      .bar-track-name { font-size: 0.75rem; max-width: 80px; }
+      .bar-track-artist { display: none; }
+      .bar-ctrl-btn { width: 24px; height: 24px; }
+      .bar-play-btn { width: 32px; height: 32px; }
+      .bar-right { display: none; }
+    }
+
   </style>
 
   <div class="bg-gradient"></div>
