@@ -1,92 +1,1207 @@
----
----
-<html lang="en">
+<!DOCTYPE html>
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Music Generation Demo | JT Lai Portfolio</title>
-  <link rel="stylesheet" href="/styles/demo.css">
+  <title>AI Music Generation — JT Lai Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #121212;
+      --bg-secondary: #181818;
+      --bg-tertiary: #282828;
+      --bg-highlight: #3e3e3e;
+      --text-primary: #ffffff;
+      --text-secondary: #b3b3b3;
+      --text-subtle: #6a6a6a;
+      --accent: #1db954;
+      --accent-hover: #1ed760;
+      --accent-soft: rgba(29, 185, 84, 0.15);
+      --border: rgba(255,255,255,0.1);
+      --player-height: 90px;
+      --sidebar-width: 280px;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) 1fr;
+      grid-template-rows: 1fr var(--player-height);
+      height: 100vh;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      grid-row: 1 / 3;
+      background: var(--bg-primary);
+      padding: 1.5rem 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0 1.5rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-logo svg { width: 32px; height: 32px; flex-shrink: 0; }
+    .sidebar-logo-text { font-size: 1.1rem; font-weight: 700; line-height: 1.2; }
+    .sidebar-logo-text span { color: var(--accent); }
+
+    .sidebar-nav { padding: 1rem 0; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1.5rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      border-radius: 6px;
+      margin: 2px 0.75rem;
+      transition: background 0.2s, color 0.2s;
+      cursor: pointer;
+    }
+
+    .nav-item:hover { color: var(--text-primary); background: var(--bg-highlight); }
+    .nav-item.active { color: var(--text-primary); background: var(--accent-soft); }
+    .nav-item svg { width: 22px; height: 22px; flex-shrink: 0; }
+
+    .sidebar-divider { height: 1px; background: var(--border); margin: 0.75rem 1.5rem; }
+
+    .playlist-section { padding: 0.5rem 1.5rem; }
+
+    .playlist-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-subtle);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.5rem 0;
+    }
+
+    .playlist-section-header span { font-size: 1.2rem; cursor: pointer; opacity: 0.6; }
+    .playlist-section-header span:hover { opacity: 1; }
+
+    .playlist-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .playlist-item:hover .playlist-name { color: var(--text-primary); }
+
+    .playlist-cover {
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+      color: var(--text-secondary);
+      font-size: 0.65rem;
+    }
+
+    .playlist-cover img { width: 100%; height: 100%; object-fit: cover; }
+
+    .playlist-info { flex: 1; min-width: 0; }
+
+    .playlist-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .playlist-meta { font-size: 0.75rem; color: var(--text-subtle); margin-top: 2px; }
+
+    /* MAIN */
+    .main-content {
+      background: linear-gradient(180deg, #1e1e1e 0%, #121212 30%);
+      overflow-y: auto;
+      padding-bottom: calc(var(--player-height) + 1rem);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      background: rgba(18, 18, 18, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .topbar-nav { display: flex; align-items: center; gap: 0.5rem; }
+
+    .topbar-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.7);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      transition: background 0.2s, color 0.2s, transform 0.15s;
+    }
+
+    .topbar-btn:hover { background: #333; color: var(--text-primary); transform: scale(1.05); }
+
+    .topbar-search {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--bg-tertiary);
+      border-radius: 20px;
+      padding: 0.5rem 1rem;
+      width: 320px;
+      transition: background 0.2s;
+    }
+
+    .topbar-search:focus-within { background: #3e3e3e; }
+    .topbar-search svg { width: 18px; height: 18px; color: var(--text-subtle); flex-shrink: 0; }
+
+    .topbar-search input {
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      width: 100%;
+    }
+
+    .topbar-search input::placeholder { color: var(--text-subtle); }
+
+    .topbar-user {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 20px;
+      transition: background 0.2s;
+    }
+
+    .topbar-user:hover { background: var(--bg-tertiary); }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .user-name { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
+    .user-dropdown { color: var(--text-subtle); font-size: 0.8rem; }
+
+    .content-inner { padding: 1.5rem 2rem; }
+
+    /* HERO */
+    .hero-banner {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-end;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, rgba(118,75,162,0.4) 0%, rgba(30,30,30,0.8) 100%);
+      border-radius: 8px;
+    }
+
+    .hero-art {
+      width: 200px;
+      height: 200px;
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      overflow: hidden;
+      color: var(--text-subtle);
+    }
+
+    .hero-art img { width: 100%; height: 100%; object-fit: cover; }
+
+    .hero-info { flex: 1; }
+
+    .hero-type {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .hero-title {
+      font-size: 3rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-artist { font-size: 1rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
+    .hero-meta { font-size: 0.85rem; color: var(--text-subtle); }
+
+    /* SECTIONS */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-title { font-size: 1.25rem; font-weight: 700; }
+
+    .section-link {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .section-link:hover { color: var(--text-primary); text-decoration: underline; }
+
+    /* TRACK LIST */
+    .track-list { margin-bottom: 2.5rem; }
+
+    .track-list-header {
+      display: grid;
+      grid-template-columns: 40px 1fr 120px 80px;
+      gap: 1rem;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .track-row {
+      display: grid;
+      grid-template-columns: 40px 1fr 120px 80px;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .track-row:hover { background: rgba(255,255,255,0.05); }
+    .track-row:hover .track-number,
+    .track-row:hover .track-title-main { color: var(--text-primary); }
+
+    .track-number {
+      font-size: 0.85rem;
+      color: var(--text-subtle);
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .track-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+    .track-title-main {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .track-title-sub {
+      font-size: 0.75rem;
+      color: var(--text-subtle);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .track-album {
+      font-size: 0.8rem;
+      color: var(--text-subtle);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .track-duration {
+      font-size: 0.8rem;
+      color: var(--text-subtle);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    /* GENERATOR */
+    .generator-section {
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 2rem;
+      margin-top: 1rem;
+    }
+
+    .generator-section h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .generator-section > p { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+    .generate-form { display: flex; flex-direction: column; gap: 1rem; }
+
+    .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .form-group label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-group textarea,
+    .form-group input[type="text"],
+    .form-group input[type="number"] {
+      background: var(--bg-tertiary);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: var(--text-primary);
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-group textarea:focus,
+    .form-group input:focus { border-color: var(--accent); }
+
+    .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .form-row .form-group { flex: 1; min-width: 160px; }
+
+    .checkbox-row { display: flex; align-items: center; gap: 0.5rem; }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .checkbox-row label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .generate-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 0.85rem 2.5rem;
+      border-radius: 24px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      align-self: flex-start;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .generate-btn:hover { background: var(--accent-hover); transform: scale(1.02); }
+    .generate-btn:disabled { background: #555; cursor: not-allowed; transform: none; }
+    .generate-btn svg { width: 20px; height: 20px; }
+
+    /* PRESETS */
+    .preset-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+
+    .preset-chip {
+      background: var(--bg-tertiary);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-secondary);
+      padding: 0.4rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preset-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    /* STATUS */
+    .status-message {
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      display: none;
+      border-left: 4px solid;
+    }
+
+    .status-message.loading {
+      display: block;
+      background: rgba(255,213,0,0.1);
+      border-color: #ffd500;
+      color: #ffd500;
+    }
+
+    .status-message.success {
+      display: block;
+      background: rgba(29,185,84,0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .status-message.error {
+      display: block;
+      background: rgba(240,78,80,0.1);
+      border-color: #f04e50;
+      color: #f04e50;
+    }
+
+    .status-message .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,213,0,0.3);
+      border-top-color: #ffd500;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 0.5rem;
+      vertical-align: -2px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* RESULT */
+    .result-player {
+      margin-top: 1.5rem;
+      display: none;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .result-player.active { display: block; }
+
+    .result-info {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .result-album-art {
+      width: 80px;
+      height: 80px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .result-album-art img { width: 100%; height: 100%; object-fit: cover; }
+
+    .result-details { flex: 1; }
+
+    .result-label { font-size: 0.7rem; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; margin-bottom: 4px; }
+    .result-title { font-size: 1rem; font-weight: 600; }
+    .result-subtitle { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+
+    .result-audio {
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .result-audio audio {
+      flex: 1;
+      height: 40px;
+    }
+
+    .download-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 0.5rem 1.25rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .download-btn:hover { background: var(--accent-hover); }
+    .download-btn svg { width: 16px; height: 16px; }
+
+    /* PLAYER BAR */
+    .player-bar {
+      grid-column: 2;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 280px 1fr 280px;
+      align-items: center;
+      padding: 0 1rem;
+      height: var(--player-height);
+    }
+
+    .player-track { display: flex; align-items: center; gap: 0.875rem; padding-right: 1rem; }
+
+    .player-cover {
+      width: 56px;
+      height: 56px;
+      border-radius: 4px;
+      background: var(--bg-tertiary);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      color: var(--text-subtle);
+    }
+
+    .player-cover img { width: 100%; height: 100%; object-fit: cover; }
+
+    .player-track-info { min-width: 0; }
+
+    .player-track-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 160px;
+    }
+
+    .player-track-artist {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 160px;
+    }
+
+    .player-like-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-subtle);
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+
+    .player-like-btn:hover { color: var(--text-primary); }
+    .player-like-btn.liked { color: var(--accent); }
+    .player-like-btn svg { width: 18px; height: 18px; }
+
+    /* Controls */
+    .player-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0 1rem;
+    }
+
+    .player-buttons { display: flex; align-items: center; gap: 1.25rem; }
+
+    .player-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: color 0.2s, transform 0.15s;
+      padding: 2px;
+    }
+
+    .player-btn:hover { color: var(--text-primary); }
+    .player-btn.active { color: var(--accent); }
+    .player-btn svg { width: 20px; height: 20px; }
+
+    .player-btn.play-btn {
+      width: 36px;
+      height: 36px;
+      background: var(--text-primary);
+      color: #000;
+    }
+
+    .player-btn.play-btn:hover { transform: scale(1.05); background: white; }
+    .player-btn.play-btn svg { width: 16px; height: 16px; }
+
+    .player-progress {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .player-time {
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+      font-variant-numeric: tabular-nums;
+      min-width: 40px;
+    }
+
+    .player-time.current { text-align: right; }
+
+    .progress-bar {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .progress-bar:hover { height: 6px; transition: height 0.1s; }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--text-primary);
+      border-radius: 2px;
+      transition: width 0.1s linear;
+    }
+
+    .progress-bar:hover .progress-fill { background: var(--accent); }
+
+    .progress-thumb {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 12px;
+      height: 12px;
+      background: var(--text-primary);
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .progress-bar:hover .progress-thumb { opacity: 1; }
+
+    /* Extra */
+    .player-extra {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding-left: 1rem;
+    }
+
+    .player-extra-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+
+    .player-extra-btn:hover { color: var(--text-primary); }
+    .player-extra-btn svg { width: 18px; height: 18px; }
+
+    .volume-control { display: flex; align-items: center; gap: 0.5rem; }
+
+    .volume-slider {
+      width: 100px;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .volume-slider:hover { height: 6px; }
+    .volume-fill { height: 100%; background: var(--text-primary); border-radius: 2px; width: 70%; transition: width 0.1s; }
+    .volume-slider:hover .volume-fill { background: var(--accent); }
+
+    /* Divider */
+    .divider { height: 1px; background: var(--border); margin: 2rem 0; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 0 1fr; }
+      .sidebar { display: none; }
+      .topbar-search { width: 200px; }
+      .player-bar { grid-template-columns: 1fr auto 1fr; }
+      .player-extra { display: none; }
+      .player-progress { max-width: 300px; }
+    }
+  </style>
 </head>
 <body>
-  <header class="demo-header">
-    <nav>
-      <a href="/">Back to Portfolio</a>
-    </nav>
-    <h1>AI Music Generation</h1>
-    <p class="subtitle">Powered by MiniMax music-2.6 via LiteLLM Proxy</p>
-  </header>
+  <div class="app">
 
-  <main class="demo-container">
-    <section class="info-panel">
-      <h2>About This Demo</h2>
-      <p>This page demonstrates multi-modal AI integration on your portfolio. The FastAPI backend routes requests through LiteLLM Proxy to MiniMax music-2.6 model.</p>
-      <div class="tech-stack">
-        <span class="tag">FastAPI</span>
-        <span class="tag">LiteLLM Proxy</span>
-        <span class="tag">MiniMax API</span>
-        <span class="tag">Cloudflare Tunnel</span>
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="#1db954"/>
+          <path d="M10 22V14l12-4v12" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="22" cy="10" r="2" fill="white"/>
+        </svg>
+        <div class="sidebar-logo-text">AI Music<br><span>Generator</span></div>
       </div>
-    </section>
 
-    <section class="generator-panel">
-      <h2>Generate Music</h2>
-      <form id="musicForm">
-        <div class="form-group">
-          <label for="prompt">Music Description</label>
-          <textarea id="prompt" name="prompt" rows="3" required></textarea>
+      <nav class="sidebar-nav">
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          </svg>
+          <span>首頁</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <span>搜尋</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+          </svg>
+          <span>音樂庫</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="playlist-section">
+        <div class="playlist-section-header">
+          <span>AI 生成作品</span>
+          <span>+</span>
+        </div>
+        <div class="playlist-item">
+          <div class="playlist-cover" style="background: linear-gradient(135deg,#667eea,#764ba2); color: white; font-size:0.6rem;">封面</div>
+          <div class="playlist-info">
+            <div class="playlist-name">生物醫學Ambient</div>
+            <div class="playlist-meta">5 首曲目 · 25 分鐘</div>
+          </div>
+        </div>
+        <div class="playlist-item">
+          <div class="playlist-cover" style="background: linear-gradient(135deg,#f093fb,#f5576c); color: white; font-size:0.6rem;">封面</div>
+          <div class="playlist-info">
+            <div class="playlist-name">蛋白質折疊電音</div>
+            <div class="playlist-meta">3 首曲目 · 12 分鐘</div>
+          </div>
+        </div>
+        <div class="playlist-item">
+          <div class="playlist-cover" style="background: linear-gradient(135deg,#4facfe,#00f2fe); color: white; font-size:0.6rem;">封面</div>
+          <div class="playlist-info">
+            <div class="playlist-name">基因序列節拍</div>
+            <div class="playlist-meta">8 首曲目 · 38 分鐘</div>
+          </div>
+        </div>
+        <div class="playlist-item">
+          <div class="playlist-cover" style="background: linear-gradient(135deg,#43e97b,#38f9d7); color: white; font-size:0.6rem;">封面</div>
+          <div class="playlist-info">
+            <div class="playlist-name">科研紀錄片配樂</div>
+            <div class="playlist-meta">4 首曲目 · 20 分鐘</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== MAIN ===== -->
+    <main class="main-content">
+      <div class="topbar">
+        <div class="topbar-nav">
+          <button class="topbar-btn" onclick="history.back()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="topbar-btn" onclick="history.forward()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+        <div class="topbar-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="text" placeholder="搜尋音樂、藝術家、專輯...">
+        </div>
+        <div class="topbar-user">
+          <div class="user-avatar">JT</div>
+          <span class="user-name">JT Lai</span>
+          <span class="user-dropdown">▾</span>
+        </div>
+      </div>
+
+      <div class="content-inner">
+
+        <!-- Hero Banner -->
+        <div class="hero-banner">
+          <div class="hero-art">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="width:80px;height:80px;opacity:0.4;">
+              <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            </svg>
+          </div>
+          <div class="hero-info">
+            <div class="hero-type">音樂生成平台</div>
+            <div class="hero-title">AI Music Studio</div>
+            <div class="hero-artist">Powered by MiniMax music-2.6</div>
+            <div class="hero-meta">FastAPI · LiteLLM Proxy · Cloudflare Tunnel</div>
+          </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="duration">Duration (seconds)</label>
-            <input type="number" id="duration" name="duration" min="15" max="180" value="30">
+        <!-- Recently Generated -->
+        <div class="track-list">
+          <div class="section-header">
+            <h3 class="section-title">最近生成</h3>
+            <a class="section-link">查看全部</a>
           </div>
-          <div class="form-group checkbox-group">
-            <label>
-              <input type="checkbox" id="instrumental" name="instrumental">
-              Instrumental Only
-            </label>
+          <div class="track-list-header">
+            <span>#</span><span>標題</span><span>專輯</span><span>時長</span>
+          </div>
+          <div class="track-row" onclick="playTrack(0, this)">
+            <div class="track-number">1</div>
+            <div class="track-info">
+              <div class="track-title-main">Ambient Biotech Journey</div>
+              <div class="track-title-sub">MiniMax AI · 基因科學</div>
+            </div>
+            <div class="track-album">生物醫學Ambient</div>
+            <div class="track-duration">3:24</div>
+          </div>
+          <div class="track-row" onclick="playTrack(1, this)">
+            <div class="track-number">2</div>
+            <div class="track-info">
+              <div class="track-title-main">Protein Folding Symphony</div>
+              <div class="track-title-sub">MiniMax AI · 蛋白質研究</div>
+            </div>
+            <div class="track-album">蛋白質折疊電音</div>
+            <div class="track-duration">4:15</div>
+          </div>
+          <div class="track-row" onclick="playTrack(2, this)">
+            <div class="track-number">3</div>
+            <div class="track-info">
+              <div class="track-title-main">Gene Sequence Beats</div>
+              <div class="track-title-sub">MiniMax AI · 生物資訊</div>
+            </div>
+            <div class="track-album">基因序列節拍</div>
+            <div class="track-duration">2:58</div>
+          </div>
+          <div class="track-row" onclick="playTrack(3, this)">
+            <div class="track-number">4</div>
+            <div class="track-info">
+              <div class="track-title-main">Drug Discovery Ambient</div>
+              <div class="track-title-sub">MiniMax AI · 製藥工程</div>
+            </div>
+            <div class="track-album">科研紀錄片配樂</div>
+            <div class="track-duration">5:02</div>
+          </div>
+          <div class="track-row" onclick="playTrack(4, this)">
+            <div class="track-number">5</div>
+            <div class="track-info">
+              <div class="track-title-main">Researchmontage Theme</div>
+              <div class="track-title-sub">MiniMax AI · 科學進展</div>
+            </div>
+            <div class="track-album">科研紀錄片配樂</div>
+            <div class="track-duration">3:47</div>
+          </div>
+          <div class="track-row" onclick="playTrack(5, this)">
+            <div class="track-number">6</div>
+            <div class="track-info">
+              <div class="track-title-main">Bioinformatics Rhythm</div>
+              <div class="track-title-sub">MiniMax AI · 計算生物學</div>
+            </div>
+            <div class="track-album">基因序列節拍</div>
+            <div class="track-duration">4:33</div>
           </div>
         </div>
 
-        <button type="submit">Generate Music</button>
-      </form>
+        <div class="divider"></div>
 
-      <div id="statusMessage" class="status-message" style="display:none;"></div>
-      <div id="audioPlayer" class="audio-player" style="display:none;">
-        <h3>Generated Audio</h3>
-        <audio id="audioElement" controls></audio>
-        <a id="downloadLink" href="#" download class="download-link">Download Audio</a>
+        <!-- Generator -->
+        <div class="generator-section">
+          <h2>🎵 AI 音樂生成器</h2>
+          <p>使用 MiniMax 強大的音樂生成模型，創作原創音樂作品</p>
+
+          <form class="generate-form" id="musicForm">
+            <div class="form-group">
+              <label>音樂描述 Prompt</label>
+              <textarea id="prompt" rows="3" placeholder="描述你想要生成的音樂風格、情緒、節奏、樂器配置等..."></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="duration">時長（秒）</label>
+                <input type="number" id="duration" min="15" max="180" value="30">
+              </div>
+              <div class="form-group" style="justify-content: flex-end;">
+                <div class="checkbox-row">
+                  <input type="checkbox" id="instrumental">
+                  <label for="instrumental">純器樂（無人聲）</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label style="margin-bottom: 0.25rem; display: block;">快速預設</label>
+              <div class="preset-chips">
+                <button type="button" class="preset-chip" onclick="applyPreset(0)">🧬 生物醫學 Ambient</button>
+                <button type="button" class="preset-chip" onclick="applyPreset(1)">💊 藥物發現</button>
+                <button type="button" class="preset-chip" onclick="applyPreset(2)">🧬 基因序列節拍</button>
+                <button type="button" class="preset-chip" onclick="applyPreset(3)">🔬 蛋白質折疊</button>
+                <button type="button" class="preset-chip" onclick="applyPreset(4)">🎬 科研紀錄片</button>
+              </div>
+            </div>
+
+            <button type="submit" class="generate-btn" id="generateBtn">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              生成音樂
+            </button>
+
+            <div class="status-message" id="statusMessage"></div>
+
+            <div class="result-player" id="resultPlayer">
+              <div class="result-info">
+                <div class="result-album-art">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" style="width:36px;height:36px;">
+                    <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+                  </svg>
+                </div>
+                <div class="result-details">
+                  <div class="result-label">剛生成</div>
+                  <div class="result-title" id="resultTitle">AI Music</div>
+                  <div class="result-subtitle" id="resultSubtitle">MiniMax music-2.6</div>
+                </div>
+              </div>
+              <div class="result-audio">
+                <audio id="resultAudio" controls></audio>
+                <a class="download-btn" id="downloadBtn" href="#" download>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                  </svg>
+                  下載
+                </a>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Recommended -->
+        <div class="track-list">
+          <div class="section-header">
+            <h3 class="section-title">推薦音樂</h3>
+            <a class="section-link">查看全部</a>
+          </div>
+          <div class="track-list-header">
+            <span>#</span><span>標題</span><span>專輯</span><span>時長</span>
+          </div>
+          <div class="track-row" onclick="playTrack(6, this)">
+            <div class="track-number">1</div>
+            <div class="track-info">
+              <div class="track-title-main">Scientific Discovery Theme</div>
+              <div class="track-title-sub">MiniMax AI · 科學探索</div>
+            </div>
+            <div class="track-album">科研配樂精選</div>
+            <div class="track-duration">3:55</div>
+          </div>
+          <div class="track-row" onclick="playTrack(7, this)">
+            <div class="track-number">2</div>
+            <div class="track-info">
+              <div class="track-title-main">Lab Documentary Opening</div>
+              <div class="track-title-sub">MiniMax AI · 實驗室</div>
+            </div>
+            <div class="track-album">科研配樂精選</div>
+            <div class="track-duration">4:20</div>
+          </div>
+          <div class="track-row" onclick="playTrack(8, this)">
+            <div class="track-number">3</div>
+            <div class="track-info">
+              <div class="track-title-main">Bioinformatics Epic</div>
+              <div class="track-title-sub">MiniMax AI · 生物資訊</div>
+            </div>
+            <div class="track-album">生物電音合集</div>
+            <div class="track-duration">5:10</div>
+          </div>
+          <div class="track-row" onclick="playTrack(9, this)">
+            <div class="track-number">4</div>
+            <div class="track-info">
+              <div class="track-title-main">Researchmontage Beat</div>
+              <div class="track-title-sub">MiniMax AI · 研究進展</div>
+            </div>
+            <div class="track-album">科研配樂精選</div>
+            <div class="track-duration">3:30</div>
+          </div>
+        </div>
+
       </div>
-    </section>
+    </main>
 
-    <section class="presets-panel">
-      <h2>Quick Presets</h2>
-      <div class="preset-grid">
-        <button type="button" class="preset-btn" data-index="0">Ambient Biotech</button>
-        <button type="button" class="preset-btn" data-index="1">Drug Discovery</button>
-        <button type="button" class="preset-btn" data-index="2">Gene Sequence</button>
-        <button type="button" class="preset-btn" data-index="3">Protein Folding</button>
-        <button type="button" class="preset-btn" data-index="4">Researchmontage</button>
+    <!-- ===== PLAYER BAR ===== -->
+    <div class="player-bar">
+      <!-- Track info -->
+      <div class="player-track">
+        <div class="player-cover">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:24px;height:24px;">
+            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          </svg>
+        </div>
+        <div class="player-track-info">
+          <div class="player-track-name" id="playerTrackName">選擇一首音樂</div>
+          <div class="player-track-artist" id="playerTrackArtist">—</div>
+        </div>
+        <button class="player-like-btn" id="playerLikeBtn" onclick="toggleLike()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
       </div>
-    </section>
 
-    <section class="code-example">
-      <h2>API Integration Example</h2>
-      <pre><code>import httpx
+      <!-- Controls -->
+      <div class="player-controls">
+        <div class="player-buttons">
+          <button class="player-btn" id="shuffleBtn" onclick="toggleShuffle()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+              <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+            </svg>
+          </button>
+          <button class="player-btn" onclick="prevTrack()">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/>
+            </svg>
+          </button>
+          <button class="player-btn play-btn" id="playBtn" onclick="togglePlay()">
+            <svg viewBox="0 0 24 24" fill="currentColor" id="playIcon">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </button>
+          <button class="player-btn" onclick="nextTrack()">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+            </svg>
+          </button>
+          <button class="player-btn" id="repeatBtn" onclick="toggleRepeat()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+              <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="player-progress">
+          <span class="player-time current" id="currentTime">0:00</span>
+          <div class="progress-bar" id="progressBar" onclick="seekTo(event)">
+            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+            <div class="progress-thumb" id="progressThumb" style="left:0%"></div>
+          </div>
+          <span class="player-time" id="totalTime">0:00</span>
+        </div>
+      </div>
 
-async def generate_music(prompt, duration=30):
-    response = await httpx.AsyncClient().post(
-        "https://your-api.com/ai/music",
-        json=&#123;"prompt": prompt, "duration": duration, "model": "music-2.6"&#125;
-    )
-    return response.json()</code></pre>
-      <p class="code-note">The FastAPI layer handles API key security - MiniMax key never touches the client.</p>
-    </section>
-  </main>
+      <!-- Extra -->
+      <div class="player-extra">
+        <button class="player-extra-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+        </button>
+        <button class="player-extra-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          </svg>
+        </button>
+        <div class="volume-control">
+          <button class="player-extra-btn" onclick="toggleMute()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="volIcon">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+          </button>
+          <div class="volume-slider" onclick="setVolume(event)">
+            <div class="volume-fill" id="volumeFill" style="width:70%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <script is:inline>
-    var prompts = [
+  </div><!-- .app -->
+
+  <script>
+    var presets = [
       'Ambient electronic music with soft synth pads, perfect for a lab documentary opening sequence',
       'Cinematic orchestral with electronic elements, building tension like a critical experiment moment',
       'Upbeat techno with bioinformatics-inspired rhythmic patterns, futuristic and energetic',
@@ -94,29 +1209,160 @@ async def generate_music(prompt, duration=30):
       'Energetic corporate electronic, perfect for research progress video background'
     ];
 
-    document.getElementById('musicForm').addEventListener('submit', async function(event) {
-      event.preventDefault();
+    function applyPreset(idx) {
+      var el = document.getElementById('prompt');
+      if (el && presets[idx]) el.value = presets[idx];
+    }
+
+    var currentTrackIdx = -1;
+    var isPlaying = false;
+    var isShuffle = false;
+    var repeatMode = 0;
+    var volume = 0.7;
+    var progressInterval = null;
+    var elapsed = 0;
+
+    var trackData = [
+      { title: 'Ambient Biotech Journey', artist: 'MiniMax AI', album: '生物醫學Ambient', duration: '3:24', durationSec: 204 },
+      { title: 'Protein Folding Symphony', artist: 'MiniMax AI', album: '蛋白質折疊電音', duration: '4:15', durationSec: 255 },
+      { title: 'Gene Sequence Beats', artist: 'MiniMax AI', album: '基因序列節拍', duration: '2:58', durationSec: 178 },
+      { title: 'Drug Discovery Ambient', artist: 'MiniMax AI', album: '科研紀錄片配樂', duration: '5:02', durationSec: 302 },
+      { title: 'Researchmontage Theme', artist: 'MiniMax AI', album: '科研紀錄片配樂', duration: '3:47', durationSec: 227 },
+      { title: 'Bioinformatics Rhythm', artist: 'MiniMax AI', album: '基因序列節拍', duration: '4:33', durationSec: 273 },
+      { title: 'Scientific Discovery Theme', artist: 'MiniMax AI', album: '科研配樂精選', duration: '3:55', durationSec: 235 },
+      { title: 'Lab Documentary Opening', artist: 'MiniMax AI', album: '科研配樂精選', duration: '4:20', durationSec: 260 },
+      { title: 'Bioinformatics Epic', artist: 'MiniMax AI', album: '生物電音合集', duration: '5:10', durationSec: 310 },
+      { title: 'Researchmontage Beat', artist: 'MiniMax AI', album: '科研配樂精選', duration: '3:30', durationSec: 210 },
+    ];
+
+    function playTrack(idx, row) {
+      if (progressInterval) clearInterval(progressInterval);
+      document.querySelectorAll('.track-row').forEach(function(r) { r.style.background = ''; });
+      if (row) row.style.background = 'rgba(255,255,255,0.08)';
+      currentTrackIdx = idx;
+      var track = trackData[idx];
+      document.getElementById('playerTrackName').textContent = track.title;
+      document.getElementById('playerTrackArtist').textContent = track.artist;
+      document.getElementById('progressFill').style.width = '0%';
+      document.getElementById('progressThumb').style.left = '0%';
+      document.getElementById('currentTime').textContent = '0:00';
+      document.getElementById('totalTime').textContent = track.duration;
+      elapsed = 0;
+      isPlaying = true;
+      document.getElementById('playIcon').innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+      progressInterval = setInterval(function() {
+        elapsed++;
+        var pct = (elapsed / track.durationSec) * 100;
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressThumb').style.left = pct + '%';
+        var mins = Math.floor(elapsed / 60);
+        var secs = elapsed % 60;
+        document.getElementById('currentTime').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+        if (elapsed >= track.durationSec) {
+          clearInterval(progressInterval);
+          nextTrack();
+        }
+      }, 1000);
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        if (progressInterval) clearInterval(progressInterval);
+        isPlaying = false;
+        document.getElementById('playIcon').innerHTML = '<path d="M8 5v14l11-7z"/>';
+      } else {
+        if (currentTrackIdx < 0) playTrack(0);
+        var track = trackData[currentTrackIdx];
+        isPlaying = true;
+        document.getElementById('playIcon').innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+        progressInterval = setInterval(function() {
+          elapsed++;
+          var pct = (elapsed / track.durationSec) * 100;
+          document.getElementById('progressFill').style.width = pct + '%';
+          document.getElementById('progressThumb').style.left = pct + '%';
+          var mins = Math.floor(elapsed / 60);
+          var secs = elapsed % 60;
+          document.getElementById('currentTime').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+          if (elapsed >= track.durationSec) {
+            clearInterval(progressInterval);
+            nextTrack();
+          }
+        }, 1000);
+      }
+    }
+
+    function nextTrack() {
+      var next = isShuffle ? Math.floor(Math.random() * trackData.length) : (currentTrackIdx + 1) % trackData.length;
+      var rows = document.querySelectorAll('.track-row');
+      playTrack(next, rows[next] || null);
+    }
+
+    function prevTrack() {
+      var prev = (currentTrackIdx - 1 + trackData.length) % trackData.length;
+      var rows = document.querySelectorAll('.track-row');
+      playTrack(prev, rows[prev] || null);
+    }
+
+    function toggleShuffle() {
+      isShuffle = !isShuffle;
+      document.getElementById('shuffleBtn').style.color = isShuffle ? 'var(--accent)' : '';
+    }
+
+    function toggleRepeat() {
+      repeatMode = (repeatMode + 1) % 3;
+      var colors = ['', 'var(--accent)', 'var(--accent)'];
+      document.getElementById('repeatBtn').style.color = colors[repeatMode];
+    }
+
+    function toggleLike() {
+      document.getElementById('playerLikeBtn').classList.toggle('liked');
+    }
+
+    function seekTo(e) {
+      var bar = document.getElementById('progressBar');
+      var rect = bar.getBoundingClientRect();
+      var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      document.getElementById('progressFill').style.width = (pct * 100) + '%';
+      document.getElementById('progressThumb').style.left = (pct * 100) + '%';
+      var track = trackData[currentTrackIdx] || trackData[0];
+      elapsed = Math.floor(pct * track.durationSec);
+      var mins = Math.floor(elapsed / 60);
+      var secs = elapsed % 60;
+      document.getElementById('currentTime').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    }
+
+    function toggleMute() {
+      var fill = document.getElementById('volumeFill');
+      if (volume > 0) { volume = 0; fill.style.width = '0%'; }
+      else { volume = 0.7; fill.style.width = '70%'; }
+    }
+
+    function setVolume(e) {
+      var slider = e.currentTarget;
+      var rect = slider.getBoundingClientRect();
+      var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      volume = pct;
+      document.getElementById('volumeFill').style.width = (volume * 100) + '%';
+    }
+
+    // Music generation
+    document.getElementById('musicForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
       var promptEl = document.getElementById('prompt');
       var statusEl = document.getElementById('statusMessage');
-      var audioPlayerEl = document.getElementById('audioPlayer');
-      var audioEl = document.getElementById('audioElement');
-      var downloadEl = document.getElementById('downloadLink');
-      var submitBtn = document.querySelector('button[type="submit"]');
-      var durationInput = document.getElementById('duration');
-      var instrumentalInput = document.getElementById('instrumental');
+      var btn = document.getElementById('generateBtn');
+      var resultPlayer = document.getElementById('resultPlayer');
 
-      if (!promptEl || !promptEl.value.trim()) {
-        statusEl.textContent = 'Please enter a music description.';
+      if (!promptEl.value.trim()) {
+        statusEl.textContent = '請輸入音樂描述';
         statusEl.className = 'status-message error';
-        statusEl.style.display = 'block';
         return;
       }
 
-      if (submitBtn) submitBtn.disabled = true;
-      statusEl.textContent = 'Generating music... (this may take up to 2 minutes for longer tracks)';
-      statusEl.className = 'status-message warning';
-      statusEl.style.display = 'block';
-      if (audioPlayerEl) audioPlayerEl.style.display = 'none';
+      btn.disabled = true;
+      resultPlayer.classList.remove('active');
+      statusEl.innerHTML = '<span class="spinner"></span>正在生成音樂…（較長曲目可能需要 2 分鐘）';
+      statusEl.className = 'status-message loading';
 
       var API_BASE = 'https://donttalk-api-production.up.railway.app';
 
@@ -126,146 +1372,40 @@ async def generate_music(prompt, duration=30):
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt: promptEl.value.trim(),
-            duration: parseInt(durationInput && durationInput.value) || 30,
-            instrumental: (instrumentalInput && instrumentalInput.checked) || false,
+            duration: parseInt(document.getElementById('duration').value) || 30,
+            instrumental: document.getElementById('instrumental').checked,
             model: 'music-2.6'
           })
         });
 
         if (!response.ok) {
-          var error = await response.json();
-          throw new Error(error.detail || 'Generation failed');
+          var err = await response.json();
+          throw new Error(err.detail || 'Generation failed');
         }
 
         var result = await response.json();
-        
+
         if (result.audio_url) {
-          statusEl.textContent = 'Music generated successfully!';
-          statusEl.className = 'status-message info';
+          statusEl.textContent = '✅ 音樂生成成功！';
+          statusEl.className = 'status-message success';
+          var audioEl = document.getElementById('resultAudio');
           audioEl.src = result.audio_url;
-          downloadEl.href = result.audio_url;
-          audioPlayerEl.style.display = 'block';
+          document.getElementById('downloadBtn').href = result.audio_url;
+          var promptText = promptEl.value.trim().substring(0, 50);
+          document.getElementById('resultTitle').textContent = promptText + (promptText.length >= 50 ? '…' : '');
+          document.getElementById('resultSubtitle').textContent = 'MiniMax music-2.6 · ' + (document.getElementById('instrumental').checked ? '純器樂' : 'AI 生成');
+          resultPlayer.classList.add('active');
         } else if (result.task_id) {
-          statusEl.textContent = 'Long generation started. Poll task: ' + result.task_id;
-        } else {
-          statusEl.textContent = 'Generation completed but no audio URL returned.';
+          statusEl.textContent = '⏳ 任務已建立：' + result.task_id + '，請稍後查詢進度';
+          statusEl.className = 'status-message loading';
         }
-      } catch (error) {
-        statusEl.textContent = 'Error: ' + error.message;
+      } catch (err) {
+        statusEl.textContent = '❌ 錯誤：' + err.message;
         statusEl.className = 'status-message error';
       } finally {
-        if (submitBtn) submitBtn.disabled = false;
+        btn.disabled = false;
       }
-    });
-
-    document.querySelectorAll('.preset-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var idx = parseInt(btn.dataset.index);
-        var promptEl = document.getElementById('prompt');
-        if (promptEl && prompts[idx]) {
-          promptEl.value = prompts[idx];
-        }
-      });
     });
   </script>
 </body>
 </html>
-
-<style>
-.demo-header {
-  padding: 2rem;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  color: white;
-}
-.demo-header nav { margin-bottom: 1rem; }
-.demo-header nav a { color: #8ab4f8; text-decoration: none; }
-.demo-header h1 { margin: 0; font-size: 2rem; }
-.subtitle { opacity: 0.8; margin-top: 0.5rem; }
-
-.demo-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.info-panel, .generator-panel, .presets-panel, .code-example {
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-h2 { margin-top: 0; color: #333; }
-.tech-stack { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
-.tag {
-  background: #e8f0fe;
-  color: #1a73e8;
-  padding: 0.25rem 0.75rem;
-  border-radius: 16px;
-  font-size: 0.85rem;
-}
-
-.form-group { margin-bottom: 1rem; }
-.form-group label { display: block; font-weight: 500; margin-bottom: 0.5rem; }
-.form-group input[type="text"],
-.form-group input[type="number"],
-.form-group textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-.form-row { display: flex; gap: 1rem; }
-.checkbox-group { display: flex; align-items: center; }
-
-button[type="submit"] {
-  background: #1a73e8;
-  color: white;
-  border: none;
-  padding: 0.75rem 2rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-button[type="submit"]:disabled { background: #ccc; cursor: not-allowed; }
-
-.status-message {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #fef7e0;
-  border-radius: 4px;
-  border-left: 4px solid #f9a825;
-}
-.status-message.info { background: #e6f4ea; border-color: #34a853; }
-.status-message.error { background: #fce8e6; border-color: #ea4335; }
-
-.audio-player { margin-top: 1rem; }
-.audio-player audio { width: 100%; margin-top: 0.5rem; }
-.download-link {
-  display: inline-block;
-  margin-top: 0.5rem;
-  color: #1a73e8;
-}
-
-.preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; }
-.preset-btn {
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  padding: 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.preset-btn:hover { background: #e8f0fe; }
-
-.code-example pre {
-  background: #1a1a2e;
-  color: #e8f0fe;
-  padding: 1rem;
-  border-radius: 4px;
-  overflow-x: auto;
-}
-.code-note { margin-top: 0.5rem; color: #666; font-size: 0.9rem; }
-</style>
