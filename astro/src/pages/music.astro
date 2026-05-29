@@ -772,6 +772,18 @@ const OG_TAG = 'music';
       background: var(--text-tertiary);
       border-radius: 5px;
       cursor: pointer;
+      position: relative;
+    }
+    .bar-volume-slider::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: var(--volume, 80%);
+      background: var(--text-primary);
+      border-radius: 5px;
+      pointer-events: none;
     }
     .bar-volume-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -1125,6 +1137,7 @@ class MusicPlayer {
         this.barCurrentTime = document.getElementById('bar-current-time');
         this.barDuration = document.getElementById('bar-duration');
         this.barVolume = document.getElementById('bar-volume');
+        this.barVolume.style.setProperty('--volume', this.savedVolume + '%');
         this.barLikeBtn = document.getElementById('bar-like-btn');
         this.barAlbum = document.getElementById('bar-album');
         this.bindEvents();
@@ -1174,7 +1187,7 @@ class MusicPlayer {
         this.barPrev.addEventListener('click', () => { const prevIdx = this.getPrevIdx(); if (prevIdx !== -1) this.playTrack(prevIdx); });
         this.barNext.addEventListener('click', () => { const nextIdx = this.getNextIdx(); if (nextIdx !== -1) this.playTrack(nextIdx); });
         this.barProgress.addEventListener('input', () => { this.audio.currentTime = (parseFloat(this.barProgress.value) / 100) * this.audio.duration; });
-        this.barVolume.addEventListener('input', () => { this.savedVolume = parseInt(this.barVolume.value); this.audio.volume = this.savedVolume / 100; this.isMuted = this.savedVolume === 0; });
+        this.barVolume.addEventListener('input', () => { this.savedVolume = parseInt(this.barVolume.value); this.audio.volume = this.savedVolume / 100; this.isMuted = this.savedVolume === 0; this.barVolume.style.setProperty('--volume', this.savedVolume + '%'); });
         document.getElementById('bar-vol-btn')?.addEventListener('click', () => this.toggleMute());
         this.audio.addEventListener('timeupdate', () => {
             if (this.audio.duration && this.audio.currentTime > 0) {
@@ -1189,16 +1202,26 @@ class MusicPlayer {
         });
         this.audio.addEventListener('loadedmetadata', () => { this.barDuration.textContent = this.formatTime(this.audio.duration); });
         this.audio.addEventListener('ended', () => this.playTrack(this.getNextIdx()));
-        this.audio.addEventListener('play', () => { this.isPlaying = true; this.renderTrackList(); });
-        this.audio.addEventListener('pause', () => { this.isPlaying = false; this.renderTrackList(); });
+        this.audio.addEventListener('play', () => {
+            this.isPlaying = true;
+            this.renderTrackList();
+            document.getElementById('play-icon').style.display = 'none';
+            document.getElementById('pause-icon').style.display = '';
+        });
+        this.audio.addEventListener('pause', () => {
+            this.isPlaying = false;
+            this.renderTrackList();
+            document.getElementById('play-icon').style.display = '';
+            document.getElementById('pause-icon').style.display = 'none';
+        });
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             switch(e.code) {
                 case 'Space': e.preventDefault(); this.togglePlay(); break;
                 case 'ArrowLeft': e.preventDefault(); this.audio.currentTime -= 10; break;
                 case 'ArrowRight': e.preventDefault(); this.audio.currentTime += 10; break;
-                case 'ArrowUp': this.barVolume.value = Math.min(100, parseInt(this.barVolume.value) + 10); this.audio.volume = parseInt(this.barVolume.value) / 100; break;
-                case 'ArrowDown': this.barVolume.value = Math.max(0, parseInt(this.barVolume.value) - 10); this.audio.volume = parseInt(this.barVolume.value) / 100; break;
+                case 'ArrowUp': this.barVolume.value = Math.min(100, parseInt(this.barVolume.value) + 10); this.audio.volume = parseInt(this.barVolume.value) / 100; this.barVolume.style.setProperty('--volume', this.barVolume.value + '%'); break;
+                case 'ArrowDown': this.barVolume.value = Math.max(0, parseInt(this.barVolume.value) - 10); this.audio.volume = parseInt(this.barVolume.value) / 100; this.barVolume.style.setProperty('--volume', this.barVolume.value + '%'); break;
                 case 'KeyM': this.toggleMute(); break;
             }
         });
@@ -1261,8 +1284,8 @@ class MusicPlayer {
         this.loadLyrics(track);
     }
     updateLikeButton() { const svg = this.barLikeBtn.querySelector('svg'); if (this.isLiked) { svg.setAttribute('fill', '#ef4444'); this.barLikeBtn.classList.add('liked'); } else { svg.setAttribute('fill', 'none'); this.barLikeBtn.classList.remove('liked'); } }
-    togglePlay() { if (this.isPlaying) { this.audio.pause(); this.barAlbum.classList.remove('playing'); } else { this.audio.play(); this.barAlbum.classList.add('playing'); } this.isPlaying = !this.isPlaying; }
-    toggleMute() { this.isMuted = !this.isMuted; this.audio.volume = this.isMuted ? 0 : this.savedVolume / 100; this.barVolume.value = this.isMuted ? '0' : String(this.savedVolume); }
+    togglePlay() { const playIcon = document.getElementById('play-icon'); const pauseIcon = document.getElementById('pause-icon'); if (this.isPlaying) { this.audio.pause(); this.barAlbum.classList.remove('playing'); } else { this.audio.play(); this.barAlbum.classList.add('playing'); } this.isPlaying = !this.isPlaying; if (this.isPlaying) { playIcon.style.display = 'none'; pauseIcon.style.display = ''; } else { playIcon.style.display = ''; pauseIcon.style.display = 'none'; } }
+    toggleMute() { this.isMuted = !this.isMuted; this.audio.volume = this.isMuted ? 0 : this.savedVolume / 100; this.barVolume.value = this.isMuted ? '0' : String(this.savedVolume); this.barVolume.style.setProperty('--volume', this.isMuted ? '0%' : this.savedVolume + '%'); }
     getNextIdx() { if (this.queue.length > 1 && this.queueIdx < this.queue.length - 1) { this.queueIdx++; return this.queue[this.queueIdx]; } return (this.currentIndex + 1) % this.filteredTracks.length; }
     getPrevIdx() {
         const now = Date.now();
