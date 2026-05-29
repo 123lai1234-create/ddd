@@ -1,0 +1,280 @@
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><title>🎵 音樂播放器</title><meta name="description" content="一個現代化的音樂播放器，支援歌詞同步、佇列管理、語言與曲風篩選，即時搜尋功能，打造流暢的音樂體驗。"><meta property="og:title" content="🎵 音樂播放器"><meta property="og:description" content="一個現代化的音樂播放器，支援歌詞同步、佇列管理、語言與曲風篩選，即時搜尋功能，打造流暢的音樂體驗。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og?t=%F0%9F%8E%B5%20%E9%9F%B3%E6%A8%82%E6%92%AD%E6%94%BE%E5%99%A8&#38;s=%E4%B8%80%E5%80%8B%E7%8F%BE%E4%BB%A3%E5%8C%96%E7%9A%84%E9%9F%B3%E6%A8%82%E6%92%AD%E6%94%BE%E5%99%A8%EF%BC%8C%E6%94%AF%E6%8F%B4%E6%AD%8C%E8%A9%9E%E5%90%8C%E6%AD%A5%E3%80%81%E4%BD%87%E5%88%97%E7%AE%A1%E7%90%86%E3%80%81%E8%AA%9E%E8%A8%80%E8%88%87%E6%9B%B2%E9%A2%A8%E7%AF%A9%E9%81%B8%EF%BC%8C%E5%8D%B3%E6%99%82%E6%90%9C%E5%B0%8B%E5%8A%9F%E8%83%BD%EF%BC%8C%E6%89%93%E9%80%A0%E6%B5%81%E6%9A%A2%E7%9A%84%E9%9F%B3%E6%A8%82%E9%AB%94%E9%A9%97%E3%80%82&#38;tag="><meta name="twitter:image" content="https://donttalk.vercel.app/og?t=%F0%9F%8E%B5%20%E9%9F%B3%E6%A8%82%E6%92%AD%E6%94%BE%E5%99%A8&#38;s=%E4%B8%80%E5%80%8B%E7%8F%BE%E4%BB%A3%E5%8C%96%E7%9A%84%E9%9F%B3%E6%A8%82%E6%92%AD%E6%94%BE%E5%99%A8%EF%BC%8C%E6%94%AF%E6%8F%B4%E6%AD%8C%E8%A9%9E%E5%90%8C%E6%AD%A5%E3%80%81%E4%BD%87%E5%88%97%E7%AE%A1%E7%90%86%E3%80%81%E8%AA%9E%E8%A8%80%E8%88%87%E6%9B%B2%E9%A2%A8%E7%AF%A9%E9%81%B8%EF%BC%8C%E5%8D%B3%E6%99%82%E6%90%9C%E5%B0%8B%E5%8A%9F%E8%83%BD%EF%BC%8C%E6%89%93%E9%80%A0%E6%B5%81%E6%9A%A2%E7%9A%84%E9%9F%B3%E6%A8%82%E9%AB%94%E9%A9%97%E3%80%82&#38;tag="><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><script src="/scripts/immersive.js" defer></script><link rel="stylesheet" href="/_assets/music@_@astro.NzV2h0PE.css">
+<style>.immersive-bg[data-astro-cid-3guv64em]{position:fixed;inset:0;z-index:-1;overflow:hidden;background:#08060e}.bg-video[data-astro-cid-3guv64em]{position:absolute;top:50%;left:0;width:100%;height:auto;min-height:100%;object-fit:cover;object-position:center top;transform:translateY(0);pointer-events:none}.bg-overlay[data-astro-cid-3guv64em]{position:absolute;inset:0;background:#08060e40;pointer-events:none}.particle[data-astro-cid-3guv64em]{position:absolute;width:2px;height:2px;background:radial-gradient(circle,#fffc,#fff0);border-radius:50%;pointer-events:none;animation:float 20s infinite ease-in-out}@keyframes float{0%,to{transform:translateY(0) translate(0) scale(1);opacity:0}10%{opacity:1}50%{opacity:.8}90%{opacity:0}}
+</style><script type="module" src="/_assets/page.DRdgb3HH.js"></script></head> <body data-page="music"> <div class="immersive-bg" id="immersive-bg" data-astro-cid-3guv64em> <video id="bg-video" class="bg-video" autoplay muted loop playsinline data-astro-cid-3guv64em> <source src="/videos/background_landscape.mp4" type="video/mp4" data-astro-cid-3guv64em> </video> <div class="bg-overlay" data-astro-cid-3guv64em></div> </div>  <script type="module">class s{constructor(){this.container=document.getElementById("immersive-bg"),this.video=document.getElementById("bg-video"),this.particles=[],this.init()}init(){this.createParticles(),this.setupEventListeners(),this.setupVideo()}setupVideo(){this.video&&this.video.play().catch(()=>{this.video.style.display="none"})}createParticles(){if(!this.container)return;const i=Math.min(80,Math.floor(window.innerWidth/15));for(let e=0;e<i;e++){const t=document.createElement("div");t.className="particle",t.style.left=Math.random()*100+"%",t.style.top=Math.random()*100+"%";const n=Math.random()*3+1;t.style.width=n+"px",t.style.height=n+"px",t.style.animationDuration=Math.random()*10+15+"s",t.style.animationDelay=Math.random()*5+"s",this.container.appendChild(t),this.particles.push(t)}}setupEventListeners(){window.addEventListener("resize",()=>this.handleResize())}handleResize(){Math.min(80,Math.floor(window.innerWidth/15))!==this.particles.length&&(this.particles.forEach(e=>e.remove()),this.particles=[],this.createParticles())}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",()=>{new s}):new s;</script>   <div class="bg-gradient" data-astro-cid-klhljcvd></div> <div class="music-layout" data-astro-cid-klhljcvd> <!-- 左側導覽 --> <aside class="left-sidebar" data-astro-cid-klhljcvd> <div class="logo" data-astro-cid-klhljcvd>🎵 Music</div> <div class="nav-section" data-astro-cid-klhljcvd> <div class="playlist-item active" id="playlist-all" data-astro-cid-klhljcvd> <div class="playlist-cover" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><path d="M9 18V5l12-2v13" data-astro-cid-klhljcvd></path><circle cx="6" cy="18" r="3" data-astro-cid-klhljcvd></circle><circle cx="18" cy="16" r="3" data-astro-cid-klhljcvd></circle></svg> </div> <div class="playlist-info" data-astro-cid-klhljcvd> <p class="playlist-name" data-astro-cid-klhljcvd>全部歌曲</p> <p class="playlist-meta" data-astro-cid-klhljcvd>50 首歌曲</p> </div> </div> </div> <div class="demo-badge" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><circle cx="12" cy="12" r="10" data-astro-cid-klhljcvd></circle><line x1="12" y1="16" x2="12" y2="12" data-astro-cid-klhljcvd></line><line x1="12" y1="8" x2="12.01" y2="8" data-astro-cid-klhljcvd></line></svg>
+Demo — 資料存在 localStorage
+</div> </aside> <!-- 主內容區 --> <section class="main-content" data-astro-cid-klhljcvd> <!-- 搜尋框 --> <div class="search-wrapper" data-astro-cid-klhljcvd> <span class="search-icon" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><circle cx="11" cy="11" r="8" data-astro-cid-klhljcvd></circle><line x1="21" y1="21" x2="16.65" y2="16.65" data-astro-cid-klhljcvd></line></svg> </span> <input type="text" id="track-search" class="search-box" placeholder="搜尋歌曲、藝人或專輯..." data-astro-cid-klhljcvd> </div> <!-- 下拉篩選 --> <div class="filter-row" data-astro-cid-klhljcvd> <select id="lang-filter" data-astro-cid-klhljcvd> <option value="all" data-astro-cid-klhljcvd>🌐 全部語言</option> <option value="TW" data-astro-cid-klhljcvd>🇹🇼 台灣</option> <option value="EN" data-astro-cid-klhljcvd>🇺🇸 英文</option> <option value="JP" data-astro-cid-klhljcvd>🇯🇵 日文</option> <option value="KR" data-astro-cid-klhljcvd>🇰🇷 韓文</option> </select> <select id="style-filter" data-astro-cid-klhljcvd> <option value="all" data-astro-cid-klhljcvd>🎵 全部曲風</option> <option value="流行" data-astro-cid-klhljcvd>流行</option> <option value="抒情" data-astro-cid-klhljcvd>抒情</option> <option value="嘻哈" data-astro-cid-klhljcvd>嘻哈</option> <option value="搖滾" data-astro-cid-klhljcvd>搖滾</option> <option value="Lo-fi" data-astro-cid-klhljcvd>Lo-fi</option> <option value="電子" data-astro-cid-klhljcvd>電子</option> <option value="R&B" data-astro-cid-klhljcvd>R&B</option> </select> <select id="gender-filter" data-astro-cid-klhljcvd> <option value="all" data-astro-cid-klhljcvd>👤 全部歌手</option> <option value="M" data-astro-cid-klhljcvd>♂ 男歌手</option> <option value="F" data-astro-cid-klhljcvd>♀ 女歌手</option> </select> </div> <!-- 歌曲列表 --> <div class="track-list-container" data-astro-cid-klhljcvd> <div class="track-list-header" data-astro-cid-klhljcvd> <span data-astro-cid-klhljcvd>#</span> <span data-astro-cid-klhljcvd>標題</span> <span data-astro-cid-klhljcvd>歌手</span> <span data-astro-cid-klhljcvd>專輯</span> <span data-astro-cid-klhljcvd>⏱</span> <span data-astro-cid-klhljcvd></span> </div> <div class="track-scroll" data-astro-cid-klhljcvd> <div id="track-list" data-astro-cid-klhljcvd> <p style="color: var(--text-tertiary); text-align: center; padding: 50px;" data-astro-cid-klhljcvd>載入中...</p> </div> </div> </div> </section> <!-- 右側面板 --> <aside class="right-panel" data-astro-cid-klhljcvd> <div class="panel-tabs" data-astro-cid-klhljcvd> <div class="panel-tab active" data-tab="lyrics" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" data-astro-cid-klhljcvd></path><polyline points="14 2 14 8 20 8" data-astro-cid-klhljcvd></polyline><line x1="16" y1="13" x2="8" y2="13" data-astro-cid-klhljcvd></line><line x1="16" y1="17" x2="8" y2="17" data-astro-cid-klhljcvd></line><polyline points="10 9 9 9 8 9" data-astro-cid-klhljcvd></polyline></svg> <span data-astro-cid-klhljcvd>歌詞</span> </div> <div class="panel-tab" data-tab="queue" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><line x1="8" y1="6" x2="21" y2="6" data-astro-cid-klhljcvd></line><line x1="8" y1="12" x2="21" y2="12" data-astro-cid-klhljcvd></line><line x1="8" y1="18" x2="21" y2="18" data-astro-cid-klhljcvd></line><line x1="3" y1="6" x2="3.01" y2="6" data-astro-cid-klhljcvd></line><line x1="3" y1="12" x2="3.01" y2="12" data-astro-cid-klhljcvd></line><line x1="3" y1="18" x2="3.01" y2="18" data-astro-cid-klhljcvd></line></svg> <span data-astro-cid-klhljcvd>佇列</span> </div> </div> <div id="lyrics-content" data-astro-cid-klhljcvd> <div class="panel-scroll" id="lyrics-container" data-astro-cid-klhljcvd> <p style="color: var(--text-tertiary); text-align: center; padding: 50px;" data-astro-cid-klhljcvd>選擇曲目以顯示歌詞</p> </div> </div> <div id="queue-content" style="display: none;" data-astro-cid-klhljcvd> <div id="queue-list" class="panel-scroll" data-astro-cid-klhljcvd> <p style="color: var(--text-tertiary); text-align: center; padding: 50px;" data-astro-cid-klhljcvd>點擊 + 加入佇列</p> </div> </div> </aside> </div>  <div class="bottom-bar" data-astro-cid-klhljcvd> <div class="bar-left" data-astro-cid-klhljcvd> <div class="bar-album" id="bar-album" data-astro-cid-klhljcvd> <img id="album-img" src="" alt="" style="display: none;" data-astro-cid-klhljcvd> <svg id="album-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><circle cx="12" cy="12" r="10" data-astro-cid-klhljcvd></circle><path d="M9 18V5l12-2v13" data-astro-cid-klhljcvd></path><circle cx="6" cy="18" r="3" data-astro-cid-klhljcvd></circle><circle cx="18" cy="16" r="3" data-astro-cid-klhljcvd></circle></svg> </div> <div class="bar-track-info" data-astro-cid-klhljcvd> <p class="bar-track-name" id="bar-track-name" data-astro-cid-klhljcvd>未播放</p> <p class="bar-track-artist" id="bar-track-artist" data-astro-cid-klhljcvd>--</p> </div> <button class="bar-like-btn" id="bar-like-btn" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" data-astro-cid-klhljcvd></path></svg> </button> </div> <div class="bar-center" data-astro-cid-klhljcvd> <div class="bar-controls" data-astro-cid-klhljcvd> <button class="bar-ctrl-btn" id="bar-prev" title="上一首" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><polygon points="19 20 9 12 19 4 19 20" data-astro-cid-klhljcvd></polygon><line x1="5" y1="19" x2="5" y2="5" data-astro-cid-klhljcvd></line></svg> </button> <button class="bar-play-btn" id="bar-play" title="播放" data-astro-cid-klhljcvd> <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none" data-astro-cid-klhljcvd><polygon points="5 3 19 12 5 21 5 3" data-astro-cid-klhljcvd></polygon></svg> <svg id="pause-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none" data-astro-cid-klhljcvd><rect x="6" y="4" width="4" height="16" data-astro-cid-klhljcvd></rect><rect x="14" y="4" width="4" height="16" data-astro-cid-klhljcvd></rect></svg> </button> <button class="bar-ctrl-btn" id="bar-next" title="下一首" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><polygon points="5 4 15 12 5 20 5 4" data-astro-cid-klhljcvd></polygon><line x1="19" y1="5" x2="19" y2="19" data-astro-cid-klhljcvd></line></svg> </button> </div> <div class="bar-progress" data-astro-cid-klhljcvd> <span class="bar-time" id="bar-current-time" data-astro-cid-klhljcvd>0:00</span> <input type="range" class="bar-progress-slider" id="bar-progress" min="0" max="100" value="0" style="--progress: 0%" data-astro-cid-klhljcvd> <span class="bar-time" id="bar-duration" data-astro-cid-klhljcvd>0:00</span> </div> </div> <div class="bar-right" data-astro-cid-klhljcvd> <button class="bar-icon-btn" id="bar-vol-btn" title="靜音" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="vol-icon" data-astro-cid-klhljcvd><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" data-astro-cid-klhljcvd></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" data-astro-cid-klhljcvd></path></svg> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="vol-mute-icon" style="display:none" data-astro-cid-klhljcvd><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" data-astro-cid-klhljcvd></polygon><line x1="23" y1="9" x2="17" y2="15" data-astro-cid-klhljcvd></line><line x1="17" y1="9" x2="23" y2="15" data-astro-cid-klhljcvd></line></svg> </button> <input type="range" class="bar-volume-slider" id="bar-volume" min="0" max="100" value="80" data-astro-cid-klhljcvd> </div> </div>  <div id="toast-container" data-astro-cid-klhljcvd></div>  <div class="shortcuts-modal" id="shortcuts-modal" data-astro-cid-klhljcvd> <div class="shortcuts-content" data-astro-cid-klhljcvd> <h2 class="shortcuts-title" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><rect x="2" y="4" width="20" height="16" rx="2" ry="2" data-astro-cid-klhljcvd></rect><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M6 16h12" data-astro-cid-klhljcvd></path></svg>
+鍵盤快捷鍵
+</h2> <div class="shortcut-row" data-astro-cid-klhljcvd> <span data-astro-cid-klhljcvd>播放 / 暫停</span> <span class="shortcut-key" data-astro-cid-klhljcvd><kbd data-astro-cid-klhljcvd>Space</kbd></span> </div> <div class="shortcut-row" data-astro-cid-klhljcvd> <span data-astro-cid-klhljcvd>上一首 / 倒帶 10 秒</span> <span class="shortcut-key" data-astro-cid-klhljcvd><kbd data-astro-cid-klhljcvd>←</kbd></span> </div> <div class="shortcut-row" data-astro-cid-klhljcvd> <span data-astro-cid-klhljcvd>下一首 / 快轉 10 秒</span> <span class="shortcut-key" data-astro-cid-klhljcvd><kbd data-astro-cid-klhljcvd>→</kbd></span> </div> <div class="shortcut-row" data-astro-cid-klhljcvd> <span data-astro-cid-klhljcvd>靜音 / 取消靜音</span> <span class="shortcut-key" data-astro-cid-klhljcvd><kbd data-astro-cid-klhljcvd>M</kbd></span> </div> <div class="shortcut-row" data-astro-cid-klhljcvd> <span data-astro-cid-klhljcvd>增加音量</span> <span class="shortcut-key" data-astro-cid-klhljcvd><kbd data-astro-cid-klhljcvd>↑</kbd></span> </div> <div class="shortcut-row" data-astro-cid-klhljcvd> <span data-astro-cid-klhljcvd>降低音量</span> <span class="shortcut-key" data-astro-cid-klhljcvd><kbd data-astro-cid-klhljcvd>↓</kbd></span> </div> <div class="shortcut-row" data-astro-cid-klhljcvd> <span data-astro-cid-klhljcvd>關閉此面板</span> <span class="shortcut-key" data-astro-cid-klhljcvd><kbd data-astro-cid-klhljcvd>Esc</kbd></span> </div> <button class="close-shortcuts" id="close-shortcuts" data-astro-cid-klhljcvd>關閉</button> </div> </div> <script>
+class MusicPlayer {
+    constructor() {
+        this.tracks = [];
+        this.filteredTracks = [];
+        this.currentIndex = 0;
+        this.isPlaying = false;
+        this.currentLang = 'all';
+        this.currentStyle = 'all';
+        this.currentGender = 'all';
+        this.lyrics = [];
+        this.queue = [];
+        this.queueIdx = 0;
+        this.prevPressTime = 0;
+        this.isLiked = false;
+        this.isMuted = false;
+        this.savedVolume = 80;
+        this.audio = new Audio();
+        this.likedSongs = JSON.parse(localStorage.getItem('likedSongs') || '[]');
+        this.init();
+    }
+    async init() {
+        this.renderSkeletons();
+        this.tracks = await this.loadTracks();
+        if (this.tracks.length === 0) {
+            document.getElementById('track-list').innerHTML = '<p style="color: var(--accent); text-align: center; padding: 50px;">尚未添加歌曲</p>';
+            return;
+        }
+        this.trackSearch = document.getElementById('track-search');
+        this.trackListEl = document.getElementById('track-list');
+        this.lyricsContainer = document.getElementById('lyrics-container');
+        this.queueListEl = document.getElementById('queue-list');
+        this.toastContainer = document.getElementById('toast-container');
+        this.barTrackName = document.getElementById('bar-track-name');
+        this.barTrackArtist = document.getElementById('bar-track-artist');
+        this.barPlay = document.getElementById('bar-play');
+        this.barPrev = document.getElementById('bar-prev');
+        this.barNext = document.getElementById('bar-next');
+        this.barProgress = document.getElementById('bar-progress');
+        this.barCurrentTime = document.getElementById('bar-current-time');
+        this.barDuration = document.getElementById('bar-duration');
+        this.barVolume = document.getElementById('bar-volume');
+        this.barVolume.style.setProperty('--volume', this.savedVolume + '%');
+        this.barLikeBtn = document.getElementById('bar-like-btn');
+        this.barAlbum = document.getElementById('bar-album');
+        this.bindEvents();
+        this.applyFilters();
+    }
+    async loadTracks() {
+        try {
+            const res = await fetch('/music/playlist.json');
+            const data = await res.json();
+            return data.tracks || [];
+        } catch { return []; }
+    }
+    bindEvents() {
+        this.trackSearch.addEventListener('input', () => this.applyFilters());
+        document.getElementById('lang-filter').addEventListener('change', (e) => { this.currentLang = e.target.value; this.applyFilters(); });
+        document.getElementById('style-filter').addEventListener('change', (e) => { this.currentStyle = e.target.value; this.applyFilters(); });
+        document.getElementById('gender-filter').addEventListener('change', (e) => { this.currentGender = e.target.value; this.applyFilters(); });
+        document.querySelectorAll('.panel-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const tabName = tab.dataset.tab;
+                document.getElementById('lyrics-content').style.display = tabName === 'lyrics' ? 'block' : 'none';
+                document.getElementById('queue-content').style.display = tabName === 'queue' ? 'block' : 'none';
+            });
+        });
+        this.trackListEl.addEventListener('click', (e) => {
+            const row = e.target.closest('.track-row');
+            const addBtn = e.target.closest('.add-queue-btn');
+            if (addBtn) { e.stopPropagation(); this.addToQueue(parseInt(addBtn.dataset.idx)); return; }
+            if (row) { const idx = parseInt(row.dataset.idx); this.queue = [idx]; this.queueIdx = 0; this.playTrack(idx); }
+        });
+        this.queueListEl.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.queue-remove');
+            if (removeBtn) this.removeFromQueue(parseInt(removeBtn.dataset.qi));
+        });
+        this.barPlay.addEventListener('click', () => this.togglePlay());
+        this.barLikeBtn.addEventListener('click', () => {
+            const idx = this.currentIndex;
+            const pos = this.likedSongs.indexOf(idx);
+            if (pos === -1) { this.likedSongs.push(idx); this.showToast('已加入到喜歡'); }
+            else { this.likedSongs.splice(pos, 1); this.showToast('已移除'); }
+            this.isLiked = this.likedSongs.includes(idx);
+            this.updateLikeButton();
+            localStorage.setItem('likedSongs', JSON.stringify(this.likedSongs));
+        });
+        this.barPrev.addEventListener('click', () => { const prevIdx = this.getPrevIdx(); if (prevIdx !== -1) this.playTrack(prevIdx); });
+        this.barNext.addEventListener('click', () => { const nextIdx = this.getNextIdx(); if (nextIdx !== -1) this.playTrack(nextIdx); });
+        this.barProgress.addEventListener('input', () => { this.audio.currentTime = (parseFloat(this.barProgress.value) / 100) * this.audio.duration; });
+        this.barVolume.addEventListener('input', () => { this.savedVolume = parseInt(this.barVolume.value); this.audio.volume = this.savedVolume / 100; this.isMuted = this.savedVolume === 0; this.barVolume.style.setProperty('--volume', this.savedVolume + '%'); });
+        document.getElementById('bar-vol-btn')?.addEventListener('click', () => this.toggleMute());
+        this.audio.addEventListener('timeupdate', () => {
+            if (this.audio.duration && this.audio.currentTime > 0) {
+                const progress = (this.audio.currentTime / this.audio.duration) * 100;
+                this.barProgress.value = progress;
+                this.barProgress.style.setProperty('--progress', progress + '%');
+                this.barCurrentTime.textContent = this.formatTime(this.audio.currentTime);
+                this.updateLyricsHighlight(this.audio.currentTime);
+                const progressEl = document.querySelector('.track-row.playing .track-progress-bar');
+                if (progressEl) progressEl.style.width = progress + '%';
+            }
+        });
+        this.audio.addEventListener('loadedmetadata', () => { this.barDuration.textContent = this.formatTime(this.audio.duration); });
+        this.audio.addEventListener('ended', () => this.playTrack(this.getNextIdx()));
+        this.audio.addEventListener('play', () => {
+            this.isPlaying = true;
+            this.renderTrackList();
+            document.getElementById('play-icon').style.display = 'none';
+            document.getElementById('pause-icon').style.display = '';
+        });
+        this.audio.addEventListener('pause', () => {
+            this.isPlaying = false;
+            this.renderTrackList();
+            document.getElementById('play-icon').style.display = '';
+            document.getElementById('pause-icon').style.display = 'none';
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            switch(e.code) {
+                case 'Space': e.preventDefault(); this.togglePlay(); break;
+                case 'ArrowLeft': e.preventDefault(); this.audio.currentTime -= 10; break;
+                case 'ArrowRight': e.preventDefault(); this.audio.currentTime += 10; break;
+                case 'ArrowUp': this.barVolume.value = Math.min(100, parseInt(this.barVolume.value) + 10); this.audio.volume = parseInt(this.barVolume.value) / 100; this.barVolume.style.setProperty('--volume', this.barVolume.value + '%'); break;
+                case 'ArrowDown': this.barVolume.value = Math.max(0, parseInt(this.barVolume.value) - 10); this.audio.volume = parseInt(this.barVolume.value) / 100; this.barVolume.style.setProperty('--volume', this.barVolume.value + '%'); break;
+                case 'KeyM': this.toggleMute(); break;
+            }
+        });
+    }
+    renderSkeletons() {
+        let html = '';
+        for (let i = 0; i < 8; i++) {
+            html += '<div class="skeleton-row"><div class="skeleton" style="height:16px;width:20px;border-radius:4px;"></div><div><div class="skeleton" style="height:16px;width:70%;margin-bottom:6px;"></div><div class="skeleton" style="height:12px;width:40%;"></div></div><div class="skeleton" style="height:14px;width:60%;"></div><div class="skeleton" style="height:14px;width:50%;"></div><div class="skeleton" style="height:14px;width:40px;"></div><div class="skeleton" style="height:20px;width:20px;"></div></div>';
+        }
+        document.getElementById('track-list').innerHTML = html;
+    }
+    applyFilters() {
+        const search = this.trackSearch.value.toLowerCase();
+        this.filteredTracks = this.tracks.filter(t => {
+            const langOk = this.currentLang === 'all' || t.lang === this.currentLang;
+            const styleOk = this.currentStyle === 'all' || t.style === this.currentStyle;
+            const genderOk = this.currentGender === 'all' || t.gender === this.currentGender;
+            const searchOk = !search || t.name.toLowerCase().includes(search) || (t.artist && t.artist.toLowerCase().includes(search));
+            return langOk && styleOk && genderOk && searchOk;
+        });
+        this.renderTrackList();
+    }
+    renderTrackList() {
+        if (this.filteredTracks.length === 0) {
+            this.trackListEl.innerHTML = '<p style="color: var(--accent); text-align: center; padding: 50px;">沒有符合條件的歌曲</p>';
+            return;
+        }
+        const progress = this.audio.duration ? (this.audio.currentTime / this.audio.duration) * 100 : 0;
+        this.trackListEl.innerHTML = this.filteredTracks.map((track, i) => {
+            const isPlayingNow = i === this.currentIndex;
+            return '<div class="track-row ' + (isPlayingNow ? 'playing' : '') + '" data-idx="' + i + '"><span class="track-num">' + (i + 1) + '</span><div class="track-wave"><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div></div><div class="track-info"><p class="track-title">' + track.name + '</p><p class="track-artist-list">' + (track.artist || '--') + '</p><div class="track-progress"><div class="track-progress-bar" style="width:' + (isPlayingNow ? progress : 0) + '%"></div></div></div><span class="track-album">' + (track.album || '--') + '</span><span class="track-lang">' + this.getLangLabel(track.lang) + '</span><span class="track-duration">' + (track.duration || '--:--') + '</span><button class="add-queue-btn" data-idx="' + i + '">+</button></div>';
+        }).join('');
+    }
+    getLangLabel(lang) { const map = { TW: '🇹🇼', EN: '🇺🇸', JP: '🇯🇵', KR: '🇰🇷' }; return map[lang] || ''; }
+    renderQueue() {
+        if (this.queue.length === 0) { this.queueListEl.innerHTML = '<p style="color: var(--text-tertiary); text-align: center; padding: 50px;">佇列是空的<br><span style="font-size: 0.8rem;">點擊 + 加入</span></p>'; return; }
+        this.queueListEl.innerHTML = this.queue.map((trackIdx, qi) => {
+            const track = this.filteredTracks[trackIdx];
+            if (!track) return '';
+            const isCurrent = qi === this.queueIdx;
+            return '<div class="queue-item ' + (isCurrent ? 'playing' : '') + '" data-qi="' + qi + '">' + (isCurrent ? '<div class="queue-dot"></div>' : '<div style="width: 10px;"></div>') + '<div class="queue-info"><p class="queue-title">' + track.name + '</p><p class="queue-artist">' + (track.artist || '--') + '</p></div><button class="queue-remove" data-qi="' + qi + '">✕</button></div>';
+        }).join('');
+    }
+    addToQueue(idx) { if (!this.queue.includes(idx)) { this.queue.push(idx); this.showToast('已加入佇列'); this.renderQueue(); } }
+    removeFromQueue(qi) { this.queue.splice(qi, 1); if (qi < this.queueIdx) this.queueIdx--; else if (qi === this.queueIdx && this.queue.length > 0) this.queueIdx = Math.min(this.queueIdx, this.queue.length - 1); this.renderQueue(); }
+    playTrack(index) {
+        if (this.filteredTracks.length === 0) return;
+        this.currentIndex = Math.max(0, Math.min(index, this.filteredTracks.length - 1));
+        const track = this.filteredTracks[this.currentIndex];
+        if (!track) return;
+        this.audio.src = track.audio;
+        this.audio.volume = this.savedVolume / 100;
+        this.barTrackName.textContent = track.name;
+        this.barTrackArtist.textContent = track.artist || '--';
+        this.isLiked = this.likedSongs.includes(this.currentIndex);
+        this.updateLikeButton();
+        this.isPlaying = true;
+        this.barAlbum.classList.add('playing');
+        this.renderTrackList();
+        this.loadLyrics(track);
+    }
+    updateLikeButton() { const svg = this.barLikeBtn.querySelector('svg'); if (this.isLiked) { svg.setAttribute('fill', '#ef4444'); this.barLikeBtn.classList.add('liked'); } else { svg.setAttribute('fill', 'none'); this.barLikeBtn.classList.remove('liked'); } }
+    togglePlay() { const playIcon = document.getElementById('play-icon'); const pauseIcon = document.getElementById('pause-icon'); if (this.isPlaying) { this.audio.pause(); this.barAlbum.classList.remove('playing'); } else { this.audio.play(); this.barAlbum.classList.add('playing'); } this.isPlaying = !this.isPlaying; if (this.isPlaying) { playIcon.style.display = 'none'; pauseIcon.style.display = ''; } else { playIcon.style.display = ''; pauseIcon.style.display = 'none'; } }
+    toggleMute() { this.isMuted = !this.isMuted; this.audio.volume = this.isMuted ? 0 : this.savedVolume / 100; this.barVolume.value = this.isMuted ? '0' : String(this.savedVolume); this.barVolume.style.setProperty('--volume', this.isMuted ? '0%' : this.savedVolume + '%'); }
+    getNextIdx() { if (this.queue.length > 1 && this.queueIdx < this.queue.length - 1) { this.queueIdx++; return this.queue[this.queueIdx]; } return (this.currentIndex + 1) % this.filteredTracks.length; }
+    getPrevIdx() {
+        const now = Date.now();
+        if (this.audio.currentTime > 3 && now - this.prevPressTime > 2000) { this.prevPressTime = now; this.audio.currentTime = 0; return this.currentIndex; }
+        this.prevPressTime = now;
+        if (this.queue.length > 1 && this.queueIdx > 0) { this.queueIdx--; return this.queue[this.queueIdx]; }
+        return (this.currentIndex - 1 + this.filteredTracks.length) % this.filteredTracks.length;
+    }
+    async loadLyrics(track) {
+        try { const res = await fetch('https://lrclib.net/api/get?q=' + encodeURIComponent(track.name)); if (res.ok) { const data = await res.json(); if (data?.syncedLyrics) { this.parseLRC(data.syncedLyrics); this.audio.play(); return; } } } catch {}
+        this.lyrics = []; this.lyricsContainer.innerHTML = '<p style="color: var(--text-tertiary); text-align: center;">選擇曲目以顯示歌詞</p>'; this.audio.play();
+    }
+    parseLRC(text) {
+        this.lyrics = []; const lines = text.split('\n'); const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+        for (const line of lines) { const match = line.match(timeRegex); if (match) { const time = parseInt(match[1]) * 60 + parseInt(match[2]) + parseInt(match[3].padEnd(3, '0')) / 1000; const txt = line.replace(timeRegex, '').trim(); if (txt) this.lyrics.push({ time, text: txt }); } }
+        this.showLyrics(this.lyrics);
+    }
+    showLyrics(lines) { this.lyricsContainer.innerHTML = lines.map(l => '<div class="lyric-line" data-time="' + l.time + '">' + l.text + '</div>').join(''); this.lyricsContainer.querySelectorAll('.lyric-line').forEach(line => { line.addEventListener('click', () => { this.audio.currentTime = parseFloat(line.dataset.time); }); }); }
+    updateLyricsHighlight(time) {
+        const lines = this.lyricsContainer.querySelectorAll('.lyric-line'); let activeIdx = 0;
+        for (let i = 0; i < this.lyrics.length; i++) { if (this.lyrics[i].time <= time) activeIdx = i; else break; }
+        lines.forEach((line, i) => { line.classList.remove('active', 'past'); if (i === activeIdx) line.classList.add('active'); else if (i < activeIdx) line.classList.add('past'); });
+        const active = lines[activeIdx]; if (active) active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    showToast(msg) { const toast = document.createElement('div'); toast.className = 'toast'; toast.innerHTML = '✓ ' + msg; this.toastContainer.appendChild(toast); setTimeout(() => toast.remove(), 2500); }
+    formatTime(s) { return Math.floor(s / 60) + ':' + Math.floor(s % 60).toString().padStart(2, '0'); }
+}
+document.addEventListener('DOMContentLoaded', () => { window.musicPlayer = new MusicPlayer(); });
+  </script>   <vercel-analytics data-props="{}" data-params="{}" data-pathname="/music.html"></vercel-analytics> <script type="module">var v=()=>{window.va||(window.va=function(...i){window.vaq||(window.vaq=[]),window.vaq.push(i)})},w="@vercel/analytics",h="2.0.1";function f(){return typeof window<"u"}function l(){try{const e="production"}catch{}return"production"}function m(e="auto"){if(e==="auto"){window.vam=l();return}window.vam=e}function y(){return(f()?window.vam:l())||"production"}function d(){return y()==="development"}function b(e,i){if(!e||!i)return e;let n=e;try{const t=Object.entries(i);for(const[r,s]of t)if(!Array.isArray(s)){const o=u(s);o.test(n)&&(n=n.replace(o,`/[${r}]`))}for(const[r,s]of t)if(Array.isArray(s)){const o=u(s.join("/"));o.test(n)&&(n=n.replace(o,`/[...${r}]`))}return n}catch{return e}}function u(e){return new RegExp(`/${g(e)}(?=[/?#]|$)`)}function g(e){return e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function E(e){return e.scriptSrc?a(e.scriptSrc):d()?"https://va.vercel-scripts.com/v1/script.debug.js":e.basePath?a(`${e.basePath}/insights/script.js`):"/_vercel/insights/script.js"}function k(e,i){var n;let t=e;if(i)try{t={...(n=JSON.parse(i))==null?void 0:n.analytics,...e}}catch{}m(t.mode);const r={sdkn:w+(t.framework?`/${t.framework}`:""),sdkv:h};return t.disableAutoTrack&&(r.disableAutoTrack="1"),t.viewEndpoint&&(r.viewEndpoint=a(t.viewEndpoint)),t.eventEndpoint&&(r.eventEndpoint=a(t.eventEndpoint)),t.sessionEndpoint&&(r.sessionEndpoint=a(t.sessionEndpoint)),d()&&t.debug===!1&&(r.debug="false"),t.dsn&&(r.dsn=t.dsn),t.endpoint?r.endpoint=t.endpoint:t.basePath&&(r.endpoint=a(`${t.basePath}/insights`)),{beforeSend:t.beforeSend,src:E(t),dataset:r}}function a(e){return e.startsWith("http://")||e.startsWith("https://")||e.startsWith("/")?e:`/${e}`}function S(e={debug:!0},i){var n;if(!f())return;const{beforeSend:t,src:r,dataset:s}=k(e,i);if(v(),t&&((n=window.va)==null||n.call(window,"beforeSend",t)),document.head.querySelector(`script[src*="${r}"]`))return;const o=document.createElement("script");o.src=r;for(const[c,p]of Object.entries(s))o.dataset[c]=p;o.defer=!0,o.onerror=()=>{const c=d()?"Please check if any ad blockers are enabled and try again.":"Be sure to enable Web Analytics for your project and deploy again. See https://vercel.com/docs/analytics/quickstart for more information.";console.log(`[Vercel Web Analytics] Failed to load script from ${r}. ${c}`)},document.head.appendChild(o)}function $({route:e,path:i}){var n;(n=window.va)==null||n.call(window,"pageview",{route:e,path:i})}function A(){try{return}catch{}}function j(){try{return}catch{}}customElements.define("vercel-analytics",class extends HTMLElement{constructor(){super();try{const i=JSON.parse(this.dataset.props??"{}"),n=JSON.parse(this.dataset.params??"{}");S({...i,disableAutoTrack:!0,framework:"astro",basePath:A(),beforeSend:window.webAnalyticsBeforeSend},j());const t=this.dataset.pathname;$({route:b(t??"",n),path:t})}catch(i){throw new Error(`Failed to parse WebAnalytics properties: ${i}`)}}});</script> <!-- ── Search modal (Pagefind) ── --> <div id="pf-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:10vh"> <div style="background:var(--bg,#0d1117);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;width:min(640px,90vw);max-height:70vh;overflow:hidden;display:flex;flex-direction:column"> <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border,rgba(255,255,255,.08))"> <span style="color:var(--muted,#8b949e);font-size:1.1rem">🔍</span> <input id="pf-input" placeholder="搜尋頁面內容…" autocomplete="off" spellcheck="false" style="flex:1;background:none;border:none;outline:none;font-size:1rem;color:var(--text,#e6edf3);font-family:inherit"> <kbd style="font-size:.75rem;color:var(--muted,#8b949e);border:1px solid var(--border,rgba(255,255,255,.12));border-radius:4px;padding:2px 6px">Esc</kbd> </div> <div id="pf-results" style="overflow-y:auto;padding:8px 0;flex:1"></div> </div> </div> <!-- Search trigger button (bottom-right) --> <button id="pf-btn" title="搜尋 (Ctrl+K)" aria-label="搜尋" style="position:fixed;bottom:24px;right:24px;z-index:500;background:var(--surface,rgba(255,255,255,.06));border:1px solid var(--border,rgba(255,255,255,.12));border-radius:50%;width:44px;height:44px;font-size:1.1rem;cursor:pointer;color:var(--muted,#8b949e);display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:0 4px 16px rgba(0,0,0,.3)">🔍</button> <script>
+    (function() {
+      const modal  = document.getElementById('pf-modal');
+      const input  = document.getElementById('pf-input');
+      const results= document.getElementById('pf-results');
+      const btn    = document.getElementById('pf-btn');
+      let pf = null, debounce = null;
+
+      async function openModal() {
+        modal.style.display = 'flex';
+        input.focus();
+        if (!pf) {
+          try {
+            pf = await import('/pagefind/pagefind.js');
+            await pf.init();
+          } catch(e) { results.innerHTML = '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">搜尋索引尚未建立（需要先 build）。</p>'; pf = null; }
+        }
+      }
+      function closeModal() { modal.style.display = 'none'; input.value = ''; results.innerHTML = ''; }
+
+      async function doSearch(q) {
+        if (!pf || !q.trim()) { results.innerHTML = ''; return; }
+        const sr = await pf.search(q);
+        const items = await Promise.all(sr.results.slice(0, 8).map(r => r.data()));
+        results.innerHTML = items.length
+          ? items.map(d => `<a href="${d.url}" style="display:block;padding:10px 18px;text-decoration:none;color:var(--text,#e6edf3);border-bottom:1px solid var(--border,rgba(255,255,255,.05));transition:background .1s" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
+              <div style="font-size:.9rem;font-weight:600;margin-bottom:3px">${d.meta?.title || d.url}</div>
+              <div style="font-size:.78rem;color:#8b949e">${d.excerpt}</div>
+            </a>`).join('')
+          : '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">找不到結果。</p>';
+      }
+
+      btn.addEventListener('click', openModal);
+      modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+      document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openModal(); }
+        if (e.key === 'Escape') closeModal();
+      });
+      input.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => doSearch(input.value), 250);
+      });
+    })();
+    </script> </body> </html>
