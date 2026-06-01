@@ -1136,8 +1136,14 @@ class MusicPlayer {
     async init() {
         this.renderSkeletons();
         this.tracks = await this.loadTracks();
+        console.log('Loaded tracks:', this.tracks.length, window.__MUSIC_TRACKS__ ? '(from embedded)' : '(from fetch)');
         if (this.tracks.length === 0) {
-            document.getElementById('track-list').innerHTML = '<p style="color: var(--accent); text-align: center; padding: 50px;">尚未添加歌曲</p>';
+            // Debug: show what we got
+            const debug = document.createElement('div');
+            debug.style.cssText = 'position:fixed;top:0;left:0;background:red;color:white;padding:20px;z-index:9999';
+            debug.innerHTML = 'No tracks loaded!<br>Embedded: ' + (window.__MUSIC_TRACKS__ ? JSON.stringify(window.__MUSIC_TRACKS__.length) : 'none');
+            document.body.appendChild(debug);
+            document.getElementById('track-list').innerHTML = '<p style="color: #ef4444; text-align: center; padding: 50px;">載入失敗：請檢查網路或聯繫管理員</p>';
             return;
         }
         this.trackSearch = document.getElementById('track-search');
