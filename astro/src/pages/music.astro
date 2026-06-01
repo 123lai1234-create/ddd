@@ -1,10 +1,22 @@
 ---
 import Base from '../layouts/Base.astro';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 const SITE = 'https://donttalk.vercel.app';
 const PAGE_TITLE = '🎵 音樂播放器';
 const PAGE_DESC = '一個現代化的音樂播放器，支援歌詞同步、佇列管理、語言與曲風篩選，即時搜尋功能，打造流暢的音樂體驗。';
 const OG_TAG = 'music';
+
+// 直接讀取 playlist.json 避免部署保護問題
+let tracksData = { tracks: [] };
+try {
+  const playlistPath = join(process.cwd(), 'public/music/playlist.json');
+  const playlistContent = await readFile(playlistPath, 'utf-8');
+  tracksData = JSON.parse(playlistContent);
+} catch (err) {
+  console.error('Failed to load playlist:', err);
+}
 ---
 
 <Base title={PAGE_TITLE} bodyPage="music" description={PAGE_DESC}>
@@ -1095,6 +1107,11 @@ const OG_TAG = 'music';
     </div>
   </div>
 
+  <!-- 注入播放列表避免 fetch 被 Vercel 保護阻擋 -->
+  <script is:inline define:vars={{ tracks: tracksData.tracks }}>
+    window.__MUSIC_TRACKS__ = tracks;
+  </script>
+
   <script is:inline>
 class MusicPlayer {
     constructor() {
@@ -1144,6 +1161,11 @@ class MusicPlayer {
         this.applyFilters();
     }
     async loadTracks() {
+        // 優先使用 Astro 注入的播放列表，繞過 Vercel 部署保護
+        if (window.__MUSIC_TRACKS__ && window.__MUSIC_TRACKS__.length > 0) {
+            return window.__MUSIC_TRACKS__;
+        }
+        // 備用：嘗試 fetch（可能會被 Vercel 保護阻擋）
         try {
             const res = await fetch('/music/playlist.json');
             const data = await res.json();
