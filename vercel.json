@@ -4,7 +4,6 @@
   "installCommand": "cd astro && npm ci",
   "buildCommand": "cd astro && npm run build",
   "outputDirectory": "astro/dist",
-  "frameworkVersion": "6.1.6",
   "cleanUrls": true,
   "trailingSlash": false,
   "env": {
