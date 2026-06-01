@@ -84,6 +84,42 @@
       "destination": "/api/og"
     },
     {
+      "source": "/about",
+      "destination": "/about.html"
+    },
+    {
+      "source": "/works",
+      "destination": "/works.html"
+    },
+    {
+      "source": "/gene-ai",
+      "destination": "/gene-ai.html"
+    },
+    {
+      "source": "/ngs",
+      "destination": "/ngs.html"
+    },
+    {
+      "source": "/report",
+      "destination": "/report.html"
+    },
+    {
+      "source": "/thesis",
+      "destination": "/thesis.html"
+    },
+    {
+      "source": "/protein-mpnn",
+      "destination": "/protein-mpnn.html"
+    },
+    {
+      "source": "/interview",
+      "destination": "/interview.html"
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog.html"
+    },
+    {
       "source": "/healthz",
       "destination": "https://donttalk-api-production.up.railway.app/healthz"
     },
