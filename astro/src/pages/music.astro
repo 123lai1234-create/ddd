@@ -1135,34 +1135,20 @@ class MusicPlayer {
     }
     async init() {
         this.tracks = await this.loadTracks();
-        console.log('Loaded tracks:', this.tracks.length, window.__MUSIC_TRACKS__ ? '(from embedded)' : '(from fetch)');
         
         // Get DOM element immediately
         this.trackListEl = document.getElementById('track-list');
-        console.log('trackListEl:', this.trackListEl ? 'found' : 'NOT FOUND');
-        console.log('filteredTracks initial:', this.filteredTracks.length);
         
         if (this.tracks.length === 0) {
-            // Debug: show what we got
-            const debug = document.createElement('div');
-            debug.style.cssText = 'position:fixed;top:0;left:0;background:red;color:white;padding:20px;z-index:9999';
-            debug.innerHTML = 'No tracks loaded!<br>Embedded: ' + (window.__MUSIC_TRACKS__ ? JSON.stringify(window.__MUSIC_TRACKS__.length) : 'none');
-            document.body.appendChild(debug);
             this.trackListEl.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 50px;">載入失敗：請檢查網路或聯繫管理員</p>';
             return;
         }
         
         // Initialize filteredTracks BEFORE render
         this.filteredTracks = [...this.tracks];
-        console.log('filteredTracks after init:', this.filteredTracks.length);
         
         // Skip skeleton, render directly
         this.renderTrackList();
-        console.log('renderTrackList called, filteredTracks:', this.filteredTracks.length);
-        
-        // Final debug - check what's in DOM
-        console.log('Final DOM check - trackListEl innerHTML length:', this.trackListEl.innerHTML.length);
-        console.log('Final DOM check - trackListEl children:', this.trackListEl.children.length);
         
         this.trackSearch = document.getElementById('track-search');
         this.lyricsContainer = document.getElementById('lyrics-container');
@@ -1270,7 +1256,7 @@ class MusicPlayer {
             }
         });
     }
-    renderSkeletons() {
+   每derSkeletons() {
         let html = '';
         for (let i = 0; i < 8; i++) {
             html += '<div class="skeleton-row"><div class="skeleton" style="height:16px;width:20px;border-radius:4px;"></div><div><div class="skeleton" style="height:16px;width:70%;margin-bottom:6px;"></div><div class="skeleton" style="height:12px;width:40%;"></div></div><div class="skeleton" style="height:14px;width:60%;"></div><div class="skeleton" style="height:14px;width:50%;"></div><div class="skeleton" style="height:14px;width:40px;"></div><div class="skeleton" style="height:20px;width:20px;"></div></div>';
