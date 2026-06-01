@@ -29,3 +29,4 @@ outputs/*.pt
 .vscode/
 .idea/
 *.swp
+.vercel
