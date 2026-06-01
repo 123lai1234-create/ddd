@@ -5,15 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>基因資料平台 | 序列資料庫 × 知識庫 × RAG</title>
-    <meta name="description" content="基因資料平台——保留真實可用的 Sequence Vault、Knowledge Vault 與 RAG-ready documents，直接連接 FastAPI 與資料庫。">
+    <meta name="description"
+        content="基因資料平台——保留真實可用的 Sequence Vault、Knowledge Vault 與 RAG-ready documents，直接連接 FastAPI 與資料庫。">
     <meta property="og:title" content="基因資料平台 | 序列資料庫 × 知識庫 × RAG">
-    <meta property="og:description" content="基因資料平台——保留真實可用的 Sequence Vault、Knowledge Vault 與 RAG-ready documents，直接連接 FastAPI 與資料庫。">
+    <meta property="og:description"
+        content="基因資料平台——保留真實可用的 Sequence Vault、Knowledge Vault 與 RAG-ready documents，直接連接 FastAPI 與資料庫。">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
     <meta property="og:image" content="https://donttalk.vercel.app/og-image.svg">
     <meta name="twitter:image" content="https://donttalk.vercel.app/og-image.svg">
     <!-- BEGIN COMMON_HEAD -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -34,12 +37,23 @@
 </head>
 
 <body data-page="gene_ai">
+    <!-- Immersive Background -->
+    <div class="immersive-bg"></div>
     <div data-site-nav></div>
 
     <header class="hero">
+        <video class="hero-video" autoplay muted loop playsinline
+            poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3Crect fill='%230a1116'/%3E%3C/svg%3E">
+            <source src="/videos/5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.mp4" type="video/mp4">
+        </video>
+        <div class="hero-video-overlay"></div>
+        <div class="hero-canvas"></div>
+        <div class="grid-bg"></div>
+        <canvas id="hero-sparkle" aria-hidden="true"></canvas>
         <div class="hero-grid">
             <div>
-                <div class="eyebrow"><span class="live-dot"></span>Genome Data Platform · Live Sequence + Knowledge + RAG</div>
+                <div class="eyebrow"><span class="live-dot"></span>Genome Data Platform · Live Sequence + Knowledge +
+                    RAG</div>
                 <h1>把序列資料、知識檢索與 RAG 文件<br><span>收進同一個基因資料平台</span></h1>
                 <p class="hero-sub">真接後端的基因資料平台：序列快取、知識庫與 RAG 文件，三層同步、全部可驗證。</p>
                 <div class="hero-note">全 API-backed，無前端模擬介面。</div>
@@ -157,10 +171,8 @@
                         <div class="cp-step-body">
                             <div class="field">
                                 <label for="sequenceProteinQuery">UniProt 蛋白質關鍵字</label>
-                                <input id="sequenceProteinQuery" type="text" value="kinase"
-                                       list="proteinQueryPresets"
-                                       placeholder="如 kinase、receptor、CRISPR…"
-                                       autocomplete="off">
+                                <input id="sequenceProteinQuery" type="text" value="kinase" list="proteinQueryPresets"
+                                    placeholder="如 kinase、receptor、CRISPR…" autocomplete="off">
                                 <datalist id="proteinQueryPresets">
                                     <option value="kinase">kinase — 激酶（EGFR、MAPK）</option>
                                     <option value="phosphatase">phosphatase — 磷酸酶</option>
@@ -168,7 +180,8 @@
                                     <option value="polymerase">polymerase — 聚合酶</option>
                                     <option value="helicase">helicase — 解旋酶</option>
                                     <option value="receptor">receptor — 受體</option>
-                                    <option value="G protein-coupled receptor">G protein-coupled receptor — GPCR</option>
+                                    <option value="G protein-coupled receptor">G protein-coupled receptor — GPCR
+                                    </option>
                                     <option value="ion channel">ion channel — 離子通道</option>
                                     <option value="antibody">antibody — 抗體</option>
                                     <option value="cytokine">cytokine — 細胞因子</option>
@@ -191,10 +204,8 @@
                                 <textarea id="sequenceGeneSymbols" rows="2">TP53, BRCA1, EGFR, APOE</textarea>
                             </div>
                             <div class="gene-picker-row">
-                                <input id="geneSymbolPicker" type="text"
-                                       list="geneSymbolPresets"
-                                       placeholder="輸入或選取基因符號加入…"
-                                       autocomplete="off">
+                                <input id="geneSymbolPicker" type="text" list="geneSymbolPresets"
+                                    placeholder="輸入或選取基因符號加入…" autocomplete="off">
                                 <button id="geneSymbolAdd" type="button" class="btn btn-secondary btn-sm">＋</button>
                                 <datalist id="geneSymbolPresets">
                                     <option value="TP53">TP53 — 腫瘤抑制蛋白 p53</option>
@@ -254,7 +265,8 @@
                         <button id="sequenceReload" class="btn btn-secondary" type="button">↺ 重新載入</button>
                     </div>
                     <div id="sequenceStatus" class="status-banner" data-state="info">正在載入序列快取...</div>
-                    <div class="small-note admin-only">API: <span id="sequenceApiLabel" class="mono">detecting...</span></div>
+                    <div class="small-note admin-only">API: <span id="sequenceApiLabel" class="mono">detecting...</span>
+                    </div>
                 </aside>
 
                 <div class="panel result-panel">
@@ -309,7 +321,8 @@
                     <div class="section-label">Live Interface · ENA Metadata Cache</div>
                     <h2 class="section-title">把 ENA sequencing run metadata 收進 DB，直接查 study / sample / instrument</h2>
                     <p class="section-sub">
-                        這個模組會從 ENA Portal API 抓取 sequencing run metadata，寫進 Render PostgreSQL，之後頁面就能直接查詢 study accession、sample accession、library strategy、instrument model 與 FASTQ metadata。
+                        這個模組會從 ENA Portal API 抓取 sequencing run metadata，寫進 Render PostgreSQL，之後頁面就能直接查詢 study
+                        accession、sample accession、library strategy、instrument model 與 FASTQ metadata。
                     </p>
                 </div>
                 <div class="section-badge badge-live">Live API · ENA Portal API + Render Postgres</div>
@@ -327,8 +340,10 @@
                         <div class="cp-step-body">
                             <div class="field">
                                 <label for="sequencingRunQuery">ENA query</label>
-                                <textarea id="sequencingRunQuery" rows="3">tax_name("Homo sapiens") AND library_strategy="RNA-Seq"</textarea>
-                                <div class="field-hint">支援 ENA Portal API 語法，如 tax_name / library_strategy / instrument_model</div>
+                                <textarea id="sequencingRunQuery"
+                                    rows="3">tax_name("Homo sapiens") AND library_strategy="RNA-Seq"</textarea>
+                                <div class="field-hint">支援 ENA Portal API 語法，如 tax_name / library_strategy /
+                                    instrument_model</div>
                             </div>
                         </div>
                     </div>
@@ -349,11 +364,14 @@
                     </details>
 
                     <div class="cp-actions">
-                        <button id="sequencingRunSync" class="btn btn-primary admin-only" type="button">⬆ 同步到 DB</button>
+                        <button id="sequencingRunSync" class="btn btn-primary admin-only" type="button">⬆ 同步到
+                            DB</button>
                         <button id="sequencingRunReload" class="btn btn-secondary" type="button">↺ 重新載入</button>
                     </div>
-                    <div id="sequencingRunStatus" class="status-banner" data-state="info">正在讀取 sequencing run metadata 快取...</div>
-                    <div class="small-note admin-only">API: <span id="sequencingRunApiLabel" class="mono">detecting...</span></div>
+                    <div id="sequencingRunStatus" class="status-banner" data-state="info">正在讀取 sequencing run metadata
+                        快取...</div>
+                    <div class="small-note admin-only">API: <span id="sequencingRunApiLabel"
+                            class="mono">detecting...</span></div>
                 </aside>
 
                 <div class="panel result-panel">
@@ -416,7 +434,8 @@
                         <div class="cp-step-body">
                             <div class="field">
                                 <label for="knowledgeProteinQuery">UniProt annotation query</label>
-                                <input id="knowledgeProteinQuery" type="text" value="kinase" placeholder="如 kinase、receptor…">
+                                <input id="knowledgeProteinQuery" type="text" value="kinase"
+                                    placeholder="如 kinase、receptor…">
                             </div>
                         </div>
                     </div>
@@ -449,10 +468,12 @@
                     <div class="cp-actions">
                         <button id="knowledgeSync" class="btn btn-primary admin-only" type="button">⬆ 同步到 DB</button>
                         <button id="knowledgeReload" class="btn btn-secondary" type="button">↺ 重新載入</button>
-                        <button id="knowledgeRagRefresh" class="btn btn-secondary admin-only" type="button">⟳ 更新 RAG</button>
+                        <button id="knowledgeRagRefresh" class="btn btn-secondary admin-only" type="button">⟳ 更新
+                            RAG</button>
                     </div>
                     <div id="knowledgeStatus" class="status-banner" data-state="info">正在讀取知識庫與 RAG 文件預覽...</div>
-                    <div class="small-note admin-only">API: <span id="knowledgeApiLabel" class="mono">detecting...</span></div>
+                    <div class="small-note admin-only">API: <span id="knowledgeApiLabel"
+                            class="mono">detecting...</span></div>
                 </aside>
 
                 <div class="panel result-panel">
@@ -527,6 +548,7 @@
     <div data-site-footer></div>
 
     <script src="scripts/app-config.js"></script>
+    <script src="scripts/hero-video-bg.js"></script>
     <script src="scripts/gene_ai.js"></script>
 
     <button class="scroll-top" aria-label="返回頂部">↑</button>
@@ -534,8 +556,12 @@
     <!-- Chatbot widget -->
     <button id="chatbot-toggle" aria-label="AI 助手">💬</button>
     <div id="chatbot-panel">
-        <div class="chatbot-header"><h4>AI 助手</h4><button class="chatbot-close" aria-label="關閉">✕</button></div>
-        <div id="chatbot-messages"><div class="chat-msg chat-bot">你好！有什麼關於基因 AI 平台的問題嗎？</div></div>
+        <div class="chatbot-header">
+            <h4>AI 助手</h4><button class="chatbot-close" aria-label="關閉">✕</button>
+        </div>
+        <div id="chatbot-messages">
+            <div class="chat-msg chat-bot">你好！有什麼關於基因 AI 平台的問題嗎？</div>
+        </div>
         <div class="chatbot-input-row">
             <div class="voice-input-wrap" style="flex:1">
                 <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off" style="width:100%">
@@ -544,6 +570,102 @@
             <button id="chatbot-send">送出</button>
         </div>
     </div>
+
+    <script>
+        (function () {
+            const canvas = document.getElementById('hero-sparkle');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let W, H, particles = [];
+
+            const COLORS = ['#58d7ff', '#b59cff', '#7bf0be', '#ffffff', '#c8aaff'];
+            const COUNT = 70;
+
+            function resize() {
+                const hero = canvas.parentElement;
+                W = canvas.width = hero.offsetWidth;
+                H = canvas.height = hero.offsetHeight;
+            }
+
+            function rand(a, b) { return a + Math.random() * (b - a); }
+
+            function spawn() {
+                return {
+                    x: rand(0, W),
+                    y: rand(0, H),
+                    vx: rand(-0.18, 0.18),
+                    vy: rand(-0.22, -0.06),
+                    size: rand(2.5, 7.5),
+                    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                    phase: rand(0, Math.PI * 2),
+                    speed: rand(0.6, 1.4),
+                    twinkleSpeed: rand(0.8, 2.2),
+                };
+            }
+
+            function drawStar(x, y, r, alpha, color) {
+                if (r < 0.5) return;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = r * 9;
+                ctx.fillStyle = color;
+                ctx.translate(x, y);
+
+                ctx.beginPath();
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
+                    const rad = i % 2 === 0 ? r : r * 0.22;
+                    i === 0
+                        ? ctx.moveTo(Math.cos(angle) * rad, Math.sin(angle) * rad)
+                        : ctx.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.shadowBlur = r * 3;
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = alpha * 0.9;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.18, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            function init() {
+                resize();
+                particles = Array.from({ length: COUNT }, spawn);
+            }
+
+            function tick() {
+                ctx.clearRect(0, 0, W, H);
+                const t = performance.now() / 1000;
+
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    if (p.y < -20) { p.y = H + 10; p.x = rand(0, W); }
+                    if (p.x < -20) p.x = W + 10;
+                    if (p.x > W + 20) p.x = -10;
+
+                    const alpha = (0.55 + 0.45 * Math.abs(Math.sin(t * p.twinkleSpeed + p.phase))) *
+                        Math.min(1, Math.min(p.y / 60, (H - p.y) / 60));
+                    drawStar(p.x, p.y, p.size, alpha, p.color);
+                });
+
+                requestAnimationFrame(tick);
+            }
+
+            init();
+            window.addEventListener('resize', () => { resize(); });
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) requestAnimationFrame(tick);
+            });
+            requestAnimationFrame(tick);
+        })();
+    </script>
 </body>
 
 </html>
