@@ -1,17 +1,31 @@
+# Python
 .venv/
-dist/
-!astro/dist/
-node_modules/
-astro/.astro/
 __pycache__/
 *.pyc
+src/__pycache__/
 
-outputs/*.pt
-.vercel
+# Node
+node_modules/
+
+# Build outputs
+dist/
+astro/.astro/
+
+# Deployment
+.vercel/
 .netlify/
 .wrangler/
 .railway/
+
+# Environment
 .env
 .env*.local
 .hftoken
-.env*
+
+# Outputs
+outputs/*.pt
+
+# IDE
+.vscode/
+.idea/
+*.swp
