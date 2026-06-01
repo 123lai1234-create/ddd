@@ -1,11 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "astro",
+  "framework": null,
   "installCommand": "cd astro && npm ci",
   "buildCommand": "cd astro && npm run build",
   "outputDirectory": "astro/dist",
   "cleanUrls": true,
-  "trailingSlash": false,
+  "trailingSlash": true,
   "env": {
     "API_PROXY_TARGET": "https://donttalk-api-production.up.railway.app"
   },
@@ -67,15 +67,6 @@
           "value": "public, s-maxage=31536000, max-age=86400"
         }
       ]
-    },
-    {
-      "source": "/(.*).html",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
     }
   ],
   "rewrites": [
@@ -85,39 +76,87 @@
     },
     {
       "source": "/about",
-      "destination": "/about.html"
+      "destination": "/about/"
     },
     {
       "source": "/works",
-      "destination": "/works.html"
+      "destination": "/works/"
     },
     {
       "source": "/gene-ai",
-      "destination": "/gene-ai.html"
+      "destination": "/gene-ai/"
     },
     {
       "source": "/ngs",
-      "destination": "/ngs.html"
+      "destination": "/ngs/"
     },
     {
       "source": "/report",
-      "destination": "/report.html"
+      "destination": "/report/"
     },
     {
       "source": "/thesis",
-      "destination": "/thesis.html"
+      "destination": "/thesis/"
     },
     {
       "source": "/protein-mpnn",
-      "destination": "/protein-mpnn.html"
+      "destination": "/protein-mpnn/"
     },
     {
       "source": "/interview",
-      "destination": "/interview.html"
+      "destination": "/interview/"
     },
     {
       "source": "/blog",
-      "destination": "/blog.html"
+      "destination": "/blog/"
+    },
+    {
+      "source": "/about_me",
+      "destination": "/about_me/"
+    },
+    {
+      "source": "/firmware",
+      "destination": "/firmware/"
+    },
+    {
+      "source": "/index-optimized",
+      "destination": "/index-optimized/"
+    },
+    {
+      "source": "/ingest",
+      "destination": "/ingest/"
+    },
+    {
+      "source": "/interactive-showcase",
+      "destination": "/interactive-showcase/"
+    },
+    {
+      "source": "/offline",
+      "destination": "/offline/"
+    },
+    {
+      "source": "/seo-accessibility",
+      "destination": "/seo-accessibility/"
+    },
+    {
+      "source": "/stem-cell",
+      "destination": "/stem-cell/"
+    },
+    {
+      "source": "/video-gen",
+      "destination": "/video-gen/"
+    },
+    {
+      "source": "/xian-godot",
+      "destination": "/xian-godot/"
+    },
+    {
+      "source": "/music",
+      "destination": "/music/"
+    },
+    {
+      "source": "/music-test",
+      "destination": "/music-test/"
     },
     {
       "source": "/healthz",

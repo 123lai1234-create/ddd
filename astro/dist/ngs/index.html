@@ -1,0 +1,910 @@
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><title>NGS 次世代定序 · 實驗設計</title><meta name="description" content="NGS 次世代定序互動工作站——實驗設計計算器、定序深度估算、QC 至功能分析完整流程展示。"><meta property="og:title" content="NGS 次世代定序 · 實驗設計"><meta property="og:description" content="NGS 次世代定序互動工作站——實驗設計計算器、定序深度估算、QC 至功能分析完整流程展示。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og?t=NGS%20%E6%AC%A1%E4%B8%96%E4%BB%A3%E5%AE%9A%E5%BA%8F%20%C2%B7%20%E5%AF%A6%E9%A9%97%E8%A8%AD%E8%A8%88&#38;s=NGS%20%E6%AC%A1%E4%B8%96%E4%BB%A3%E5%AE%9A%E5%BA%8F%E4%BA%92%E5%8B%95%E5%B7%A5%E4%BD%9C%E7%AB%99%E2%80%94%E2%80%94%E5%AF%A6%E9%A9%97%E8%A8%AD%E8%A8%88%E8%A8%88%E7%AE%97%E5%99%A8%E3%80%81%E5%AE%9A%E5%BA%8F%E6%B7%B1%E5%BA%A6%E4%BC%B0%E7%AE%97%E3%80%81QC%20%E8%87%B3%E5%8A%9F%E8%83%BD%E5%88%86%E6%9E%90%E5%AE%8C%E6%95%B4%E6%B5%81%E7%A8%8B%E5%B1%95%E7%A4%BA%E3%80%82&#38;tag="><meta name="twitter:image" content="https://donttalk.vercel.app/og?t=NGS%20%E6%AC%A1%E4%B8%96%E4%BB%A3%E5%AE%9A%E5%BA%8F%20%C2%B7%20%E5%AF%A6%E9%A9%97%E8%A8%AD%E8%A8%88&#38;s=NGS%20%E6%AC%A1%E4%B8%96%E4%BB%A3%E5%AE%9A%E5%BA%8F%E4%BA%92%E5%8B%95%E5%B7%A5%E4%BD%9C%E7%AB%99%E2%80%94%E2%80%94%E5%AF%A6%E9%A9%97%E8%A8%AD%E8%A8%88%E8%A8%88%E7%AE%97%E5%99%A8%E3%80%81%E5%AE%9A%E5%BA%8F%E6%B7%B1%E5%BA%A6%E4%BC%B0%E7%AE%97%E3%80%81QC%20%E8%87%B3%E5%8A%9F%E8%83%BD%E5%88%86%E6%9E%90%E5%AE%8C%E6%95%B4%E6%B5%81%E7%A8%8B%E5%B1%95%E7%A4%BA%E3%80%82&#38;tag="><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css"><link rel="stylesheet" href="/styles/ngs.css"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><script src="/scripts/immersive.js" defer></script><style>.immersive-bg[data-astro-cid-3guv64em]{position:fixed;inset:0;z-index:-1;overflow:hidden;background:#08060e}.bg-video[data-astro-cid-3guv64em]{position:absolute;top:50%;left:0;width:100%;height:auto;min-height:100%;object-fit:cover;object-position:center top;transform:translateY(0);pointer-events:none}.bg-overlay[data-astro-cid-3guv64em]{position:absolute;inset:0;background:#08060e40;pointer-events:none}.particle[data-astro-cid-3guv64em]{position:absolute;width:2px;height:2px;background:radial-gradient(circle,#fffc,#fff0);border-radius:50%;pointer-events:none;animation:float 20s infinite ease-in-out}@keyframes float{0%,to{transform:translateY(0) translate(0) scale(1);opacity:0}10%{opacity:1}50%{opacity:.8}90%{opacity:0}}
+</style><script type="module" src="/_assets/page.DRdgb3HH.js"></script></head> <body data-page="ngs"> <div class="immersive-bg" id="immersive-bg" data-astro-cid-3guv64em> <video id="bg-video" class="bg-video" autoplay muted loop playsinline data-astro-cid-3guv64em> <source id="video-source" type="video/mp4" data-astro-cid-3guv64em> </video> <div class="bg-overlay" data-astro-cid-3guv64em></div> </div>  <script type="module">class n{constructor(){this.container=document.getElementById("immersive-bg"),this.video=document.getElementById("bg-video"),this.particles=[],this.init()}init(){this.createParticles(),this.setupEventListeners(),this.setupVideo()}setupVideo(){if(!this.video)return;const a=["179f1b00-2727-47ec-81d3-591d8405c762_watermarked.mp4","314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.mp4","5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.mp4","6b95a3b8-no-watermark_watermarked.mp4","a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.mp4","bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.mp4","ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.mp4","cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.mp4"],t=a[Math.floor(Math.random()*a.length)],e=document.getElementById("video-source");e&&(e.src="/videos/"+t),this.video.play().catch(()=>{this.video.style.display="none"})}createParticles(){if(!this.container)return;const a=Math.min(80,Math.floor(window.innerWidth/15));for(let t=0;t<a;t++){const e=document.createElement("div");e.className="particle",e.style.left=Math.random()*100+"%",e.style.top=Math.random()*100+"%";const i=Math.random()*3+1;e.style.width=i+"px",e.style.height=i+"px",e.style.animationDuration=Math.random()*10+15+"s",e.style.animationDelay=Math.random()*5+"s",this.container.appendChild(e),this.particles.push(e)}}setupEventListeners(){window.addEventListener("resize",()=>this.handleResize())}handleResize(){Math.min(80,Math.floor(window.innerWidth/15))!==this.particles.length&&(this.particles.forEach(t=>t.remove()),this.particles=[],this.createParticles())}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",()=>{new n}):new n;</script>  
+
+    <!-- ── Nav ── -->
+    <div data-site-nav></div>
+
+    <!-- ── Hero ── -->
+    <div class="page-hero">
+        <div class="page-eyebrow"><span class="live-dot"></span>Genomics · Sequencing · NGS</div>
+        <h1 class="page-title">NGS <span>次世代定序</span><br>實驗設計指南</h1>
+        <p class="page-subtitle">從研究目的到分析流程的系統性規劃——覆蓋建庫策略、定序深度計算、品質控管與生物資訊分析。</p>
+    </div>
+
+    <!-- ── Content ── -->
+    <div class="container">
+        <section class="service-overview reveal">
+            <div class="service-overview-head">
+                <div>
+                    <div class="service-overview-label">Multi-omics Service Catalog</div>
+                    <h2 class="service-overview-title">本站已具備多體學分析入口的架構基礎</h2>
+                    <p class="service-overview-sub">
+                        最合理的定位不是「所有分析都在瀏覽器內完成」，而是把本站做成分析模組總覽、任務入口、結果報告與雲端工作台，再把重計算流程交給後端 pipeline。
+                    </p>
+                </div>
+                <div class="service-overview-note">
+                    前台可先承接：模組介紹、資料上傳、任務提交、報告瀏覽、互動圖表與結果下載。真正要跑 scRNA、WES/WGS、Proteomics 等高計算量分析時，接 job queue、物件儲存與 worker 即可擴充。
+                </div>
+            </div>
+
+            <div class="service-grid">
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-green">標準轉錄體</span>
+                        <h3>RNAseq</h3>
+                    </div>
+                    <p>轉錄體定序分析，用於差異表現、PCA、volcano plot、heatmap、GSEA 與 pathway enrichment。</p>
+                    <div class="service-meta">
+                        <span>STAR / Salmon</span><span>DESeq2</span><span>GSEA</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-red">高計算量</span>
+                        <h3>scRNA</h3>
+                    </div>
+                    <p>單細胞 RNA 定序，可做 QC、細胞分群、marker genes、UMAP/TSNE 與 cell type annotation。</p>
+                    <div class="service-meta">
+                        <span>Cell Ranger</span><span>Seurat</span><span>Scanpy</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-teal">微生物相</span>
+                        <h3>FL16S</h3>
+                    </div>
+                    <p>全長 16S rRNA 菌相分析，可輸出 taxonomy profile、alpha/beta diversity、relative abundance 與群落比較。</p>
+                    <div class="service-meta">
+                        <span>SILVA</span><span>DADA2</span><span>Kraken2</span>
+                    </div>
+                </article>
+
+                <article class="service-card service-card-highlight">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-green">最適合產品化</span>
+                        <h3>FL16S ASAP</h3>
+                    </div>
+                    <p>把 FL16S 做成一鍵式自動分析平台，特別適合網站型產品：上傳樣本、跑標準流程、回傳固定報告。</p>
+                    <div class="service-meta">
+                        <span>Upload Portal</span><span>Auto Report</span><span>Batch Mode</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-purple">變異分析</span>
+                        <h3>WES / WGS</h3>
+                    </div>
+                    <p>全外顯子與全基因體定序，可做 variant calling、annotation、CNV / SV 報告與優先排序。</p>
+                    <div class="service-meta">
+                        <span>BWA</span><span>GATK</span><span>VEP / ANNOVAR</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-orange">特色模組</span>
+                        <h3>miLinker / miRNA</h3>
+                    </div>
+                    <p>小分子 RNA 定序與標靶基因預測分析，可延伸成 regulatory network、target ranking 與 pathway view。</p>
+                    <div class="service-meta">
+                        <span>miRDeep2</span><span>TargetScan</span><span>Network View</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-yellow">蛋白質體</span>
+                        <h3>Proteomics</h3>
+                    </div>
+                    <p>蛋白質體分析雲平台，可做顯著差異蛋白、火山圖、聚類熱圖與功能富集分析。</p>
+                    <div class="service-meta">
+                        <span>MaxQuant</span><span>FragPipe</span><span>DEP</span>
+                    </div>
+                </article>
+
+                <article class="service-card">
+                    <div class="service-card-top">
+                        <span class="service-badge service-badge-teal">瀏覽器可直接做</span>
+                        <h3>Toolbox</h3>
+                    </div>
+                    <p>內建統計圖表、序列反轉互補、轉譯、GC 計算與多序列比對等工具，最適合先做成前端即時小工具。</p>
+                    <div class="service-meta">
+                        <span>Sequence Utils</span><span>Chart Tools</span><span>Alignment</span>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <div class="steps-grid">
+
+            <!-- Step 1 -->
+            <div class="step-card reveal">
+                <div class="step-num"
+                    style="background:rgba(57,208,240,.12);color:var(--teal);border:1px solid rgba(57,208,240,.25)">01
+                </div>
+                <div class="step-body">
+                    <h2>確定研究目的 — 選擇定序策略</h2>
+                    <p>不同生物問題需要不同的 NGS 方法，策略選擇影響後續所有設計決策。</p>
+                    <table class="ngs-table">
+                        <thead>
+                            <tr>
+                                <th>研究問題</th>
+                                <th>策略</th>
+                                <th>代表工具</th>
+                                <th>平台</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>全基因組變異</td>
+                                <td><span class="badge badge-teal">WGS</span></td>
+                                <td>GATK HaplotypeCaller</td>
+                                <td>Illumina NovaSeq</td>
+                            </tr>
+                            <tr>
+                                <td>基因表現量</td>
+                                <td><span class="badge badge-green">RNA-seq</span></td>
+                                <td>STAR + DESeq2</td>
+                                <td>Illumina NovaSeq / NextSeq</td>
+                            </tr>
+                            <tr>
+                                <td>蛋白質結合位點</td>
+                                <td><span class="badge badge-yellow">ChIP-seq</span></td>
+                                <td>MACS2 + deepTools</td>
+                                <td>Illumina HiSeq</td>
+                            </tr>
+                            <tr>
+                                <td>染色質開放區域</td>
+                                <td><span class="badge badge-orange">ATAC-seq</span></td>
+                                <td>MACS2 + chromVAR</td>
+                                <td>Illumina NextSeq</td>
+                            </tr>
+                            <tr>
+                                <td>甲基化分析</td>
+                                <td><span class="badge badge-purple">Bisulfite-seq</span></td>
+                                <td>Bismark + DSS</td>
+                                <td>Illumina NovaSeq</td>
+                            </tr>
+                            <tr>
+                                <td>目標區域</td>
+                                <td><span class="badge badge-teal">Panel / Amplicon</span></td>
+                                <td>GATK + Pindel</td>
+                                <td>Illumina MiSeq / Ion Torrent</td>
+                            </tr>
+                            <tr>
+                                <td>單細胞轉錄組</td>
+                                <td><span class="badge badge-green">scRNA-seq</span></td>
+                                <td>Cell Ranger + Seurat</td>
+                                <td>Illumina + 10x Genomics</td>
+                            </tr>
+                            <tr>
+                                <td>全長轉錄本</td>
+                                <td><span class="badge badge-orange">ISO-seq</span></td>
+                                <td>SQANTI3 + IsoQuant</td>
+                                <td>PacBio Sequel II / ONT</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="tip tip-info" style="margin-top:14px">
+                        💡 蛋白質工程應用中 DNA-seq（Amplicon）常用於 <strong>深突變掃描（DMS）</strong>，而 RNA-seq 用於評估設計序列的表現量變化。
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-card reveal">
+                <div class="step-num"
+                    style="background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.25)">02
+                </div>
+                <div class="step-body">
+                    <h2>樣本設計</h2>
+                    <p>充足的統計效力來自合適的生物重複數與對照組設計。</p>
+                    <ul class="checklist">
+                        <li><strong>生物重複數</strong>：RNA-seq 建議 ≥ 3，差異表現分析至少 4–6</li>
+                        <li><strong>技術重複</strong>：同一樣本跑兩次，評估定序重現性（通常非必要）</li>
+                        <li><strong>對照組</strong>：明確 control vs. treatment，避免混淆因子</li>
+                        <li><strong>批次效應</strong>：盡量同批次建庫定序；若無法避免，記錄批次資訊供 <code>ComBat</code> /
+                            <code>limma::removeBatchEffect</code> 校正
+                        </li>
+                        <li><strong>樣本量估算工具</strong>：<code>RnaSeqSampleSize</code>（R）、<code>pwr</code>（R）、<code>PROPER</code>
+                        </li>
+                    </ul>
+                    <div class="tip tip-warn" style="margin-top:14px">
+                        ⚠️ 批次效應是 RNA-seq 分析最常見的混淆來源，實驗計劃階段就應規劃好隨機化策略。
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-card reveal">
+                <div class="step-num"
+                    style="background:rgba(240,136,62,.12);color:var(--orange);border:1px solid rgba(240,136,62,.25)">03
+                </div>
+                <div class="step-body">
+                    <h2>定序深度計算</h2>
+                    <p>深度不足導致偵測力下降；過深則浪費成本。下方計算機協助估算總 reads 數與成本。</p>
+                    <table class="ngs-table">
+                        <thead>
+                            <tr>
+                                <th>應用</th>
+                                <th>建議 Reads 數</th>
+                                <th>涵蓋率</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>WGS (人類 3 Gb)</td>
+                                <td>~90 億 bp</td>
+                                <td>30× coverage</td>
+                            </tr>
+                            <tr>
+                                <td>WES (人類 exome)</td>
+                                <td>~1–2 億 reads</td>
+                                <td>100× coverage</td>
+                            </tr>
+                            <tr>
+                                <td>RNA-seq</td>
+                                <td>20–50M reads / 樣本</td>
+                                <td>多數轉錄本 >10 reads</td>
+                            </tr>
+                            <tr>
+                                <td>ChIP-seq</td>
+                                <td>20–40M reads</td>
+                                <td>取決於峰寬</td>
+                            </tr>
+                            <tr>
+                                <td>ATAC-seq</td>
+                                <td>50–150M reads</td>
+                                <td>核小體解析度</td>
+                            </tr>
+                            <tr>
+                                <td>scRNA-seq</td>
+                                <td>1,000–10,000 reads / cell</td>
+                                <td>依細胞數而定</td>
+                            </tr>
+                            <tr>
+                                <td>Amplicon-seq (DMS)</td>
+                                <td>≥ 500× / variant</td>
+                                <td>依突變數量決定</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Reads depth bar chart -->
+                    <div
+                        style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-top:14px">
+                        <div style="font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:14px">📊 各定序類型建議
+                            reads 數比較（百萬 / 樣本）</div>
+                        <canvas id="depthChart" height="90"></canvas>
+                    </div>
+
+                    <!-- 互動計算機 -->
+                    <div class="calc-panel">
+                        <div style="font-size:.88rem;font-weight:600;color:var(--text);margin-bottom:14px">⚡ 定序深度快速估算機
+                        </div>
+                        <div class="calc-row">
+                            <div class="calc-field">
+                                <label>定序類型</label>
+                                <select id="seqType" onchange="calcDepth()">
+                                    <option value="rnaseq">RNA-seq</option>
+                                    <option value="wgs">WGS (人類)</option>
+                                    <option value="wes">WES (Exome)</option>
+                                    <option value="chipseq">ChIP-seq</option>
+                                    <option value="atacseq">ATAC-seq</option>
+                                    <option value="scrna">scRNA-seq</option>
+                                    <option value="amplicon">Amplicon-seq</option>
+                                </select>
+                            </div>
+                            <div class="calc-field" id="sampleNumField">
+                                <label>樣本數</label>
+                                <input type="number" id="sampleNum" value="6" min="1" max="200" oninput="calcDepth()">
+                            </div>
+                            <div class="calc-field" id="extraField" style="display:none">
+                                <label id="extraLabel">細胞數</label>
+                                <input type="number" id="extraVal" value="5000" min="100" oninput="calcDepth()">
+                            </div>
+                        </div>
+                        <div class="calc-result" id="calcResult"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step-card reveal">
+                <div class="step-num"
+                    style="background:rgba(188,140,255,.12);color:var(--purple);border:1px solid rgba(188,140,255,.25)">
+                    04</div>
+                <div class="step-body">
+                    <h2>定序平台選擇</h2>
+                    <table class="ngs-table">
+                        <thead>
+                            <tr>
+                                <th>平台</th>
+                                <th>讀長</th>
+                                <th>準確率</th>
+                                <th>適合應用</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Illumina</strong><br><span style="font-size:.75rem;color:var(--dim)">NovaSeq
+                                        / NextSeq / MiSeq</span></td>
+                                <td>75–300 bp</td>
+                                <td><span class="badge badge-green">Q30 > 85%</span></td>
+                                <td>RNA-seq、WGS、ChIP-seq、Amplicon</td>
+                            </tr>
+                            <tr>
+                                <td><strong>PacBio</strong><br><span style="font-size:.75rem;color:var(--dim)">Sequel
+                                        IIe / Revio</span></td>
+                                <td>10–25 kb (HiFi)</td>
+                                <td><span class="badge badge-green">Q30 > 99%</span></td>
+                                <td>全長轉錄本、SV 分析、基因組組裝</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Oxford Nanopore</strong><br><span
+                                        style="font-size:.75rem;color:var(--dim)">PromethION / MinION</span></td>
+                                <td>kb–Mb 級</td>
+                                <td><span class="badge badge-orange">Q20 ~99%</span></td>
+                                <td>超長讀長、即時定序、直接 RNA-seq</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ion Torrent</strong></td>
+                                <td>200–600 bp</td>
+                                <td><span class="badge badge-teal">Q30 > 80%</span></td>
+                                <td>臨床 Panel、Amplicon</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <!-- Platform comparison chart -->
+                    <div
+                        style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-top:14px">
+                        <div style="font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:14px">🔬 定序平台特性比較
+                        </div>
+                        <canvas id="platformChart" height="100"></canvas>
+                    </div>
+
+                    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+                        <div
+                            style="flex:1;min-width:220px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px">
+                            <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:8px">讀長選擇
+                            </div>
+                            <ul class="checklist" style="margin-top:0">
+                                <li><strong>Single-end 50/100 bp</strong>：RNA-seq 基本分析（省成本）</li>
+                                <li><strong>Paired-end 150 bp</strong>：基因組、ChIP-seq、差異表現（最常用）</li>
+                                <li><strong>Paired-end 250/300 bp</strong>：16S 擴增子、低複雜度樣本</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="step-card reveal">
+                <div class="step-num"
+                    style="background:rgba(210,153,34,.12);color:var(--yellow);border:1px solid rgba(210,153,34,.25)">05
+                </div>
+                <div class="step-body">
+                    <h2>建庫設計</h2>
+                    <div
+                        style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:4px">
+                        <div
+                            style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px">
+                            <div style="font-size:.82rem;font-weight:700;color:var(--orange);margin-bottom:10px">🧫 DNA
+                                建庫</div>
+                            <ol style="padding-left:18px;font-size:.83rem;color:var(--muted);line-height:2">
+                                <li>Fragmentation（超音波或酵素）</li>
+                                <li>End repair + A-tailing</li>
+                                <li>Adapter ligation</li>
+                                <li>Size selection (SPRI beads)</li>
+                                <li>PCR amplification</li>
+                            </ol>
+                        </div>
+                        <div
+                            style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px">
+                            <div style="font-size:.82rem;font-weight:700;color:var(--green);margin-bottom:10px">🔬 RNA
+                                建庫</div>
+                            <ol style="padding-left:18px;font-size:.83rem;color:var(--muted);line-height:2">
+                                <li>RNA 品質確認（RIN ≥ 7）</li>
+                                <li>rRNA 去除 <em>或</em> polyA 選取</li>
+                                <li>RNA 片段化</li>
+                                <li>逆轉錄（cDNA 合成）</li>
+                                <li>Strand-specific 建庫（建議）</li>
+                                <li>PCR + 定量</li>
+                            </ol>
+                        </div>
+                        <div
+                            style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px">
+                            <div style="font-size:.82rem;font-weight:700;color:var(--teal);margin-bottom:10px">🏷️ UMI
+                                去重複</div>
+                            <p style="font-size:.83rem;color:var(--muted);line-height:1.7">Unique Molecular Identifier
+                                在逆轉錄前加入，可區分 PCR duplication 與真實分子，提升定量精準度。</p>
+                            <div class="tip tip-success" style="margin-top:10px;font-size:.78rem">推薦用於定量要求高的 bulk
+                                RNA-seq 及 scRNA-seq</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 6 -->
+            <div class="step-card reveal">
+                <div class="step-num"
+                    style="background:rgba(248,81,73,.12);color:var(--red);border:1px solid rgba(248,81,73,.25)">06
+                </div>
+                <div class="step-body">
+                    <h2>品質控管（QC）</h2>
+                    <table class="ngs-table">
+                        <thead>
+                            <tr>
+                                <th>步驟</th>
+                                <th>工具</th>
+                                <th>關鍵指標</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>建庫前 RNA 品質</td>
+                                <td>Bioanalyzer、Qubit</td>
+                                <td>RIN ≥ 7、DV200 ≥ 30%</td>
+                            </tr>
+                            <tr>
+                                <td>建庫前 DNA 品質</td>
+                                <td>Bioanalyzer、NanoDrop</td>
+                                <td>260/280 ≈ 1.8、無降解</td>
+                            </tr>
+                            <tr>
+                                <td>Raw reads QC</td>
+                                <td><code>FastQC</code>、<code>MultiQC</code></td>
+                                <td>Q30 > 80%、GC 分佈正常</td>
+                            </tr>
+                            <tr>
+                                <td>Adapter trimming</td>
+                                <td><code>Trimmomatic</code>、<code>fastp</code></td>
+                                <td>殘留 adapter < 1%</td>
+                            </tr>
+                            <tr>
+                                <td>Alignment QC</td>
+                                <td><code>Picard</code>、<code>RSeQC</code></td>
+                                <td>對齊率 > 85%（RNA > 70%）</td>
+                            </tr>
+                            <tr>
+                                <td>Duplication</td>
+                                <td><code>Picard MarkDuplicates</code></td>
+                                <td>WGS dup < 20%；Amplicon 可接受高 dup</td>
+                            </tr>
+                            <tr>
+                                <td>Coverage uniformity</td>
+                                <td><code>mosdepth</code>、<code>samtools</code></td>
+                                <td>目標區域 > 95% 達到最低深度</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Step 7 -->
+            <div class="step-card reveal">
+                <div class="step-num"
+                    style="background:rgba(57,208,240,.12);color:var(--teal);border:1px solid rgba(57,208,240,.25)">07
+                </div>
+                <div class="step-body">
+                    <h2>分析流程設計</h2>
+                    <div class="pipeline">
+                        <span class="pipe-step" style="color:var(--muted)">📥 Raw FASTQ</span>
+                        <span class="pipe-arrow">→</span>
+                        <span class="pipe-step" style="color:var(--orange)">🔍 FastQC</span>
+                        <span class="pipe-arrow">→</span>
+                        <span class="pipe-step" style="color:var(--yellow)">✂️ Trimming</span>
+                        <span class="pipe-arrow">→</span>
+                        <span class="pipe-step" style="color:var(--teal)">🗺️ Alignment</span>
+                        <span class="pipe-arrow">→</span>
+                        <span class="pipe-step" style="color:var(--green)">📊 Quantify / Call</span>
+                        <span class="pipe-arrow">→</span>
+                        <span class="pipe-step" style="color:var(--purple)">📈 統計分析</span>
+                        <span class="pipe-arrow">→</span>
+                        <span class="pipe-step" style="color:var(--text)">🖼️ 視覺化</span>
+                    </div>
+
+                    <div
+                        style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:14px">
+                        <div
+                            style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px">
+                            <div style="font-size:.78rem;font-weight:700;color:var(--green);margin-bottom:8px">RNA-seq
+                                流程</div>
+                            <pre style="margin-top:0;font-size:.75rem">STAR --genomeDir /ref \
+  --readFilesIn R1.fq R2.fq \
+  --outSAMtype BAM SortedByCoordinate
+
+featureCounts -a gtf -o counts.txt bam
+
+# DESeq2 (R)
+dds &lt;- DESeqDataSetFromMatrix(...)
+res &lt;- results(DESeq(dds))</pre>
+                        </div>
+                        <div
+                            style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px">
+                            <div style="font-size:.78rem;font-weight:700;color:var(--teal);margin-bottom:8px">WGS
+                                Variant Calling</div>
+                            <pre style="margin-top:0;font-size:.75rem">bwa mem ref.fa R1.fq R2.fq | \
+  samtools sort -o sorted.bam
+
+gatk HaplotypeCaller \
+  -I sorted.bam -O variants.vcf \
+  -R ref.fa
+
+gatk VariantFiltration \
+  --variant variants.vcf</pre>
+                        </div>
+                    </div>
+                    <div class="tip tip-success" style="margin-top:14px">
+                        ✅ 建議使用 <strong>Snakemake</strong> 或 <strong>Nextflow</strong> 建立可重現的工作流程，並搭配 <code>conda</code>
+                        / <code>Docker</code> 管理環境。
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /steps-grid -->
+    </div><!-- /container -->
+
+    <!-- ── NGS 結果圖示庫 ── -->
+    <section class="gallery-section reveal">
+        <h2>NGS 結果<span style="color:var(--teal)"> 圖示解讀庫</span></h2>
+        <p class="section-sub">11 種常見輸出圖表 &middot; 點擊任意卡片查看深度解讀指南和面試語術</p>
+
+        <!-- 品質控管 -->
+        <div class="gallery-group-label qc">🔵 品質控管 QC</div>
+        <div class="chart-cards-grid">
+            <div class="chart-card" onclick="openChartModal('qc1')">
+                <div class="chart-card-num">①</div>
+                <canvas id="mini-qc1" height="90"></canvas>
+                <div class="chart-card-name">Per-Base Quality</div>
+                <div class="chart-card-desc">FastQC 讀取每一位元的 Phred 分數分布</div>
+                <div class="chart-card-hint">FastQC &middot; MultiQC</div>
+            </div>
+            <div class="chart-card" onclick="openChartModal('qc2')">
+                <div class="chart-card-num">②</div>
+                <canvas id="mini-qc2" height="90"></canvas>
+                <div class="chart-card-name">Coverage Depth Histogram</div>
+                <div class="chart-card-desc">WGS/WES 每個位元的深度次數分布</div>
+                <div class="chart-card-hint">samtools &middot; mosdepth</div>
+            </div>
+        </div>
+
+        <!-- 變異分析 -->
+        <div class="gallery-group-label var">🟠 變異分析</div>
+        <div class="chart-cards-grid">
+            <div class="chart-card" onclick="openChartModal('var1')">
+                <div class="chart-card-num">③</div>
+                <canvas id="mini-var1" height="90"></canvas>
+                <div class="chart-card-name">Lollipop Plot</div>
+                <div class="chart-card-desc">VCF 突變熱點標記，館位上抱的進行性突變</div>
+                <div class="chart-card-hint">maftools &middot; lollipops</div>
+            </div>
+            <div class="chart-card" onclick="openChartModal('var2')">
+                <div class="chart-card-num">⑥</div>
+                <canvas id="mini-var2" height="90"></canvas>
+                <div class="chart-card-name">IGV Pileup</div>
+                <div class="chart-card-desc">SNP/Indel 的 read-level 視覺化，確認是翟變還是工具誤差</div>
+                <div class="chart-card-hint">IGV &middot; RSeQC</div>
+            </div>
+        </div>
+
+        <!-- 差異表現 -->
+        <div class="gallery-group-label de">🟢 差異表現分析</div>
+        <div class="chart-cards-grid">
+            <div class="chart-card" onclick="openChartModal('de1')">
+                <div class="chart-card-num">④</div>
+                <canvas id="mini-de1" height="90"></canvas>
+                <div class="chart-card-name">Volcano Plot</div>
+                <div class="chart-card-desc">倍數变化 vs 統計顯著性，檢向差異表現基因</div>
+                <div class="chart-card-hint">DESeq2 &middot; edgeR</div>
+            </div>
+            <div class="chart-card" onclick="openChartModal('de2')">
+                <div class="chart-card-num">⑤</div>
+                <canvas id="mini-de2" height="90"></canvas>
+                <div class="chart-card-name">Heatmap</div>
+                <div class="chart-card-desc">層次聚類的基因表現量矩陣，樣本分組確認</div>
+                <div class="chart-card-hint">pheatmap &middot; ComplexHeatmap</div>
+            </div>
+            <div class="chart-card" onclick="openChartModal('de3')">
+                <div class="chart-card-num">⑦</div>
+                <canvas id="mini-de3" height="90"></canvas>
+                <div class="chart-card-name">PCA Plot</div>
+                <div class="chart-card-desc">樣本重複性確認，發現批次效應 (batch effect)</div>
+                <div class="chart-card-hint">DESeq2 plotPCA &middot; ggplot2</div>
+            </div>
+            <div class="chart-card" onclick="openChartModal('de4')">
+                <div class="chart-card-num">⑧</div>
+                <canvas id="mini-de4" height="90"></canvas>
+                <div class="chart-card-name">MA Plot</div>
+                <div class="chart-card-desc">低表現量偏差検查，A 軌怎平均表達反映批次效應</div>
+                <div class="chart-card-hint">DESeq2 plotMA &middot; edgeR</div>
+            </div>
+        </div>
+
+        <!-- 功能分析 -->
+        <div class="gallery-group-label func">💜 功能分析</div>
+        <div class="chart-cards-grid">
+            <div class="chart-card" onclick="openChartModal('func1')">
+                <div class="chart-card-num">⑨</div>
+                <canvas id="mini-func1" height="90"></canvas>
+                <div class="chart-card-name">GSEA Bubble Plot</div>
+                <div class="chart-card-desc">通路富集分析，水泡大小 = 基因數，顏色 = NES</div>
+                <div class="chart-card-hint">clusterProfiler &middot; GSEA</div>
+            </div>
+        </div>
+
+        <!-- 單細胞 / 結構變異 -->
+        <div class="gallery-group-label sc">🔴 單細胞 / 結構變異</div>
+        <div class="chart-cards-grid">
+            <div class="chart-card" onclick="openChartModal('sc1')">
+                <div class="chart-card-num">⑩</div>
+                <canvas id="mini-sc1" height="90"></canvas>
+                <div class="chart-card-name">UMAP</div>
+                <div class="chart-card-desc">高維 embedding 壓縮到 2D，標註細胞類型分布</div>
+                <div class="chart-card-hint">Seurat &middot; Scanpy</div>
+            </div>
+            <div class="chart-card" onclick="openChartModal('sc2')">
+                <div class="chart-card-num">⑪</div>
+                <canvas id="mini-sc2" height="90"></canvas>
+                <div class="chart-card-name">Circos Plot</div>
+                <div class="chart-card-desc">結構變異 / 基因融合弧線圖，全基因組觀點</div>
+                <div class="chart-card-hint">STAR-Fusion &middot; circos.js</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Modal 覆蓋層 ── -->
+    <div class="chart-modal-overlay" id="chartModal" onclick="closeChartModal(event)">
+        <div class="chart-modal-box">
+            <button class="chart-modal-close" onclick="closeChartModal()">&times;</button>
+            <div id="modalBadge" class="modal-badge"></div>
+            <h3 id="modalTitle"></h3>
+            <div id="modalTool" class="modal-tool"></div>
+            <div class="modal-canvas-wrap">
+                <canvas id="modalCanvas" height="180"></canvas>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- ════════ INTERACTIVE PLOTLY CHARTS ════════ -->
+    <section class="section reveal" style="max-width:1000px;margin:0 auto 32px;">
+        <h2>互動分析圖表</h2>
+        <p style="color:var(--muted);font-size:0.88rem;margin-bottom:20px;">可拖曳選取、縮放、hover 查看數值</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div>
+                <h3 style="font-size:0.82rem;color:var(--teal);margin-bottom:8px;">Volcano Plot (DE Analysis)</h3>
+                <div data-plotly="volcano" style="height:320px;background:var(--surface);border-radius:12px;border:1px solid var(--border);"></div>
+            </div>
+            <div>
+                <h3 style="font-size:0.82rem;color:var(--orange);margin-bottom:8px;">Expression Heatmap</h3>
+                <div data-plotly="heatmap" style="height:320px;background:var(--surface);border-radius:12px;border:1px solid var(--border);"></div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="divider">
+    <div data-site-footer></div>
+
+    <!-- ── RAG Knowledge Search ── -->
+    <section class="rag-section reveal">
+        <div class="rag-section-label">Render API 動態連接</div>
+        <h2 class="rag-section-title">NGS <span style="color:var(--teal)">知識庫搜尋</span></h2>
+        <p class="rag-section-sub">
+            透過後端 RAG（檢索增強）模型，從同步自 UniProt / PubMed 的知識庫中搜尋與 NGS 相關的蛋白質注釋與文獻片段。
+        </p>
+        <div class="rag-input-row">
+            <input class="rag-input" id="ragInput" type="text"
+                placeholder="輸入關鍵字，例如：variant calling, RNA sequencing, quality control…" maxlength="120">
+            <button class="rag-btn" id="ragSearchBtn" onclick="doRagSearch()">🔍 搜尋</button>
+        </div>
+        <div class="rag-status" id="ragStatus"></div>
+        <div class="rag-results" id="ragResults">
+            <div class="rag-empty">輸入關鍵字後按搜尋，從知識庫取得相關文獻與注釋片段。</div>
+        </div>
+    </section>
+
+    <!-- ════ Canvas Pipeline Animation ════ -->
+    <section class="reveal" style="padding:60px 40px;max-width:1100px;margin:0 auto">
+        <div class="section-label">Pipeline Flow</div>
+        <h2 class="section-title">NGS 分析流程 · 動態視覺化</h2>
+        <p class="section-sub" style="margin-bottom:24px">Canvas 2D 繪製的完整 NGS pipeline，點擊各節點查看詳情。</p>
+        <canvas id="ngs-pipeline-canvas" style="width:100%;height:240px;border-radius:12px;background:rgba(0,0,0,0.2);border:1px solid rgba(88,215,255,0.1);display:block;cursor:pointer"></canvas>
+        <div id="ngs-pipeline-detail" style="margin-top:12px;padding:14px 18px;background:rgba(88,215,255,0.06);border:1px solid rgba(88,215,255,0.15);border-radius:10px;font-size:0.85rem;color:var(--muted);min-height:44px;transition:all 0.3s">
+            點擊流程節點查看詳情
+        </div>
+    </section>
+
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+
+    <script src="scripts/app-config.js"></script>
+    <script src="scripts/ngs.js"></script>
+
+<script>
+(function() {
+  const canvas = document.getElementById('ngs-pipeline-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const detail = document.getElementById('ngs-pipeline-detail');
+
+  const STEPS = [
+    { id:'raw',    label:'FastQ\n原始讀取', color:'#58d7ff', info:'Illumina/Nanopore 測序產生 FastQ 格式原始讀取，包含鹼基質量分數 (Phred)。覆蓋深度目標 ≥ 30×。' },
+    { id:'qc',     label:'FastQC\nQC 評估', color:'#7bf0be', info:'FastQC 評估每鹼基質量、GC 含量、adapter 汙染。MultiQC 匯整多樣本報告。' },
+    { id:'trim',   label:'Trimmomatic\n品質修剪', color:'#ffd080', info:'移除低品質鹼基（Q<20）和 adapter 序列，保留有效讀取。SLIDINGWINDOW:4:20 MINLEN:36。' },
+    { id:'align',  label:'BWA-MEM\n序列比對', color:'#b59cff', info:'BWA-MEM 將讀取比對至 hg38 參考基因組。Picard MarkDuplicates 標記重複序列。' },
+    { id:'gatk',   label:'GATK\n變異偵測', color:'#ff8080', info:'HaplotypeCaller 呼叫 SNV/InDel。VQSR 變異品質校正。gVCF 模式支援多樣本分析。' },
+    { id:'annot',  label:'ANNOVAR\n功能注釋', color:'#58d7ff', info:'ANNOVAR/VEP 注釋變異功能影響：RefSeq 轉錄本、ClinVar 臨床意義、gnomAD 族群頻率。' },
+    { id:'report', label:'報告\n輸出', color:'#7bf0be', info:'整合 QC 指標、變異表、臨床注釋，輸出 HTML 報告與 VCF/TSV 格式結果供下游分析。' },
+  ];
+
+  let activeStep = -1;
+  let animProgress = 0;
+
+  function resize() {
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = 240;
+    draw(animProgress);
+  }
+
+  function stepPos(i) {
+    const W = canvas.width;
+    const pad = 60;
+    const x = pad + (i / (STEPS.length - 1)) * (W - pad * 2);
+    const y = canvas.height / 2;
+    return { x, y };
+  }
+
+  function draw(p) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw connecting lines
+    for (let i = 0; i < STEPS.length - 1; i++) {
+      const a = stepPos(i), b = stepPos(i + 1);
+      const progress = Math.min(1, Math.max(0, p * STEPS.length - i));
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(a.x + (b.x - a.x) * progress, a.y);
+      ctx.strokeStyle = 'rgba(88,215,255,0.3)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Draw nodes
+    STEPS.forEach((step, i) => {
+      const { x, y } = stepPos(i);
+      const appear = Math.min(1, Math.max(0, p * STEPS.length - i + 0.5));
+      if (appear <= 0) return;
+
+      const r = 26;
+      const isActive = i === activeStep;
+
+      // Glow
+      if (isActive) {
+        ctx.beginPath();
+        ctx.arc(x, y, r + 10, 0, Math.PI * 2);
+        const g = ctx.createRadialGradient(x, y, r, x, y, r + 10);
+        g.addColorStop(0, 'rgba(88,215,255,0.3)');
+        g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = appear;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = isActive ? step.color : 'rgba(16,22,30,0.9)';
+      ctx.fill();
+      ctx.strokeStyle = step.color;
+      ctx.lineWidth = isActive ? 3 : 1.5;
+      ctx.stroke();
+
+      // Label
+      ctx.fillStyle = isActive ? '#0a1116' : step.color;
+      ctx.font = `bold 9px Inter, sans-serif`;
+      ctx.textAlign = 'center';
+      const lines = step.label.split('\n');
+      lines.forEach((line, li) => {
+        ctx.fillText(line, x, y + (li - (lines.length-1)/2) * 11 + 1);
+      });
+
+      // Step number
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.fillText(`0${i+1}`, x, y + r + 14);
+
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  // Animate in
+  const start = performance.now();
+  const animLoop = now => {
+    animProgress = Math.min((now - start) / 1200, 1);
+    draw(animProgress);
+    if (animProgress < 1) requestAnimationFrame(animLoop);
+  };
+
+  new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) requestAnimationFrame(animLoop);
+  }, { threshold: 0.3 }).observe(canvas);
+
+  // Click interaction
+  canvas.addEventListener('click', e => {
+    const r = canvas.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    let hit = -1;
+    STEPS.forEach((_, i) => {
+      const { x, y } = stepPos(i);
+      if (Math.hypot(mx - x, my - y) < 30) hit = i;
+    });
+    activeStep = hit;
+    draw(1);
+    if (detail && hit >= 0) detail.textContent = STEPS[hit].info;
+    else if (detail) detail.textContent = '點擊流程節點查看詳情';
+  });
+
+  window.addEventListener('resize', resize);
+  resize();
+})();
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script><script src="/scripts/app-config.js"></script><script src="/scripts/ngs.js"></script> <vercel-analytics data-props="{}" data-params="{}" data-pathname="/ngs/"></vercel-analytics> <script type="module">var v=()=>{window.va||(window.va=function(...i){window.vaq||(window.vaq=[]),window.vaq.push(i)})},w="@vercel/analytics",h="2.0.1";function f(){return typeof window<"u"}function l(){try{const e="production"}catch{}return"production"}function m(e="auto"){if(e==="auto"){window.vam=l();return}window.vam=e}function y(){return(f()?window.vam:l())||"production"}function d(){return y()==="development"}function b(e,i){if(!e||!i)return e;let n=e;try{const t=Object.entries(i);for(const[r,s]of t)if(!Array.isArray(s)){const o=u(s);o.test(n)&&(n=n.replace(o,`/[${r}]`))}for(const[r,s]of t)if(Array.isArray(s)){const o=u(s.join("/"));o.test(n)&&(n=n.replace(o,`/[...${r}]`))}return n}catch{return e}}function u(e){return new RegExp(`/${g(e)}(?=[/?#]|$)`)}function g(e){return e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function E(e){return e.scriptSrc?a(e.scriptSrc):d()?"https://va.vercel-scripts.com/v1/script.debug.js":e.basePath?a(`${e.basePath}/insights/script.js`):"/_vercel/insights/script.js"}function k(e,i){var n;let t=e;if(i)try{t={...(n=JSON.parse(i))==null?void 0:n.analytics,...e}}catch{}m(t.mode);const r={sdkn:w+(t.framework?`/${t.framework}`:""),sdkv:h};return t.disableAutoTrack&&(r.disableAutoTrack="1"),t.viewEndpoint&&(r.viewEndpoint=a(t.viewEndpoint)),t.eventEndpoint&&(r.eventEndpoint=a(t.eventEndpoint)),t.sessionEndpoint&&(r.sessionEndpoint=a(t.sessionEndpoint)),d()&&t.debug===!1&&(r.debug="false"),t.dsn&&(r.dsn=t.dsn),t.endpoint?r.endpoint=t.endpoint:t.basePath&&(r.endpoint=a(`${t.basePath}/insights`)),{beforeSend:t.beforeSend,src:E(t),dataset:r}}function a(e){return e.startsWith("http://")||e.startsWith("https://")||e.startsWith("/")?e:`/${e}`}function S(e={debug:!0},i){var n;if(!f())return;const{beforeSend:t,src:r,dataset:s}=k(e,i);if(v(),t&&((n=window.va)==null||n.call(window,"beforeSend",t)),document.head.querySelector(`script[src*="${r}"]`))return;const o=document.createElement("script");o.src=r;for(const[c,p]of Object.entries(s))o.dataset[c]=p;o.defer=!0,o.onerror=()=>{const c=d()?"Please check if any ad blockers are enabled and try again.":"Be sure to enable Web Analytics for your project and deploy again. See https://vercel.com/docs/analytics/quickstart for more information.";console.log(`[Vercel Web Analytics] Failed to load script from ${r}. ${c}`)},document.head.appendChild(o)}function $({route:e,path:i}){var n;(n=window.va)==null||n.call(window,"pageview",{route:e,path:i})}function A(){try{return}catch{}}function j(){try{return}catch{}}customElements.define("vercel-analytics",class extends HTMLElement{constructor(){super();try{const i=JSON.parse(this.dataset.props??"{}"),n=JSON.parse(this.dataset.params??"{}");S({...i,disableAutoTrack:!0,framework:"astro",basePath:A(),beforeSend:window.webAnalyticsBeforeSend},j());const t=this.dataset.pathname;$({route:b(t??"",n),path:t})}catch(i){throw new Error(`Failed to parse WebAnalytics properties: ${i}`)}}});</script> <!-- ── Search modal (Pagefind) ── --> <div id="pf-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:10vh"> <div style="background:var(--bg,#0d1117);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;width:min(640px,90vw);max-height:70vh;overflow:hidden;display:flex;flex-direction:column"> <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border,rgba(255,255,255,.08))"> <span style="color:var(--muted,#8b949e);font-size:1.1rem">🔍</span> <input id="pf-input" placeholder="搜尋頁面內容…" autocomplete="off" spellcheck="false" style="flex:1;background:none;border:none;outline:none;font-size:1rem;color:var(--text,#e6edf3);font-family:inherit"> <kbd style="font-size:.75rem;color:var(--muted,#8b949e);border:1px solid var(--border,rgba(255,255,255,.12));border-radius:4px;padding:2px 6px">Esc</kbd> </div> <div id="pf-results" style="overflow-y:auto;padding:8px 0;flex:1"></div> </div> </div> <!-- Search trigger button (bottom-right) --> <button id="pf-btn" title="搜尋 (Ctrl+K)" aria-label="搜尋" style="position:fixed;bottom:24px;right:24px;z-index:500;background:var(--surface,rgba(255,255,255,.06));border:1px solid var(--border,rgba(255,255,255,.12));border-radius:50%;width:44px;height:44px;font-size:1.1rem;cursor:pointer;color:var(--muted,#8b949e);display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:0 4px 16px rgba(0,0,0,.3)">🔍</button> <script>
+    (function() {
+      const modal  = document.getElementById('pf-modal');
+      const input  = document.getElementById('pf-input');
+      const results= document.getElementById('pf-results');
+      const btn    = document.getElementById('pf-btn');
+      let pf = null, debounce = null;
+
+      async function openModal() {
+        modal.style.display = 'flex';
+        input.focus();
+        if (!pf) {
+          try {
+            pf = await import('/pagefind/pagefind.js');
+            await pf.init();
+          } catch(e) { results.innerHTML = '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">搜尋索引尚未建立（需要先 build）。</p>'; pf = null; }
+        }
+      }
+      function closeModal() { modal.style.display = 'none'; input.value = ''; results.innerHTML = ''; }
+
+      async function doSearch(q) {
+        if (!pf || !q.trim()) { results.innerHTML = ''; return; }
+        const sr = await pf.search(q);
+        const items = await Promise.all(sr.results.slice(0, 8).map(r => r.data()));
+        results.innerHTML = items.length
+          ? items.map(d => `<a href="${d.url}" style="display:block;padding:10px 18px;text-decoration:none;color:var(--text,#e6edf3);border-bottom:1px solid var(--border,rgba(255,255,255,.05));transition:background .1s" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
+              <div style="font-size:.9rem;font-weight:600;margin-bottom:3px">${d.meta?.title || d.url}</div>
+              <div style="font-size:.78rem;color:#8b949e">${d.excerpt}</div>
+            </a>`).join('')
+          : '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">找不到結果。</p>';
+      }
+
+      btn.addEventListener('click', openModal);
+      modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+      document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openModal(); }
+        if (e.key === 'Escape') closeModal();
+      });
+      input.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => doSearch(input.value), 250);
+      });
+    })();
+    </script> </body> </html>
