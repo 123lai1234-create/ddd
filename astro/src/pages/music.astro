@@ -1140,6 +1140,7 @@ class MusicPlayer {
         // Get DOM element immediately
         this.trackListEl = document.getElementById('track-list');
         console.log('trackListEl:', this.trackListEl ? 'found' : 'NOT FOUND');
+        console.log('filteredTracks initial:', this.filteredTracks.length);
         
         if (this.tracks.length === 0) {
             // Debug: show what we got
@@ -1151,8 +1152,13 @@ class MusicPlayer {
             return;
         }
         
+        // Initialize filteredTracks BEFORE render
+        this.filteredTracks = [...this.tracks];
+        console.log('filteredTracks after init:', this.filteredTracks.length);
+        
         // Skip skeleton, render directly
         this.renderTrackList();
+        console.log('renderTrackList called, filteredTracks:', this.filteredTracks.length);
         
         this.trackSearch = document.getElementById('track-search');
         this.lyricsContainer = document.getElementById('lyrics-container');
