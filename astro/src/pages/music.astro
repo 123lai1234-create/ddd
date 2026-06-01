@@ -1160,6 +1160,10 @@ class MusicPlayer {
         this.renderTrackList();
         console.log('renderTrackList called, filteredTracks:', this.filteredTracks.length);
         
+        // Final debug - check what's in DOM
+        console.log('Final DOM check - trackListEl innerHTML length:', this.trackListEl.innerHTML.length);
+        console.log('Final DOM check - trackListEl children:', this.trackListEl.children.length);
+        
         this.trackSearch = document.getElementById('track-search');
         this.lyricsContainer = document.getElementById('lyrics-container');
         this.queueListEl = document.getElementById('queue-list');
@@ -1354,6 +1358,7 @@ class MusicPlayer {
     formatTime(s) { return Math.floor(s / 60) + ':' + Math.floor(s % 60).toString().padStart(2, '0'); }
     cleanTrackName(name) { if (!name) return '--'; return name.replace(/\.mp3$/i, '').replace(/_/g, ' '); }
 }
-document.addEventListener('DOMContentLoaded', () => { window.musicPlayer = new MusicPlayer(); });
+// 立即初始化，不要等待 DOMContentLoaded
+window.musicPlayer = new MusicPlayer();
   </script>
 </Base>
