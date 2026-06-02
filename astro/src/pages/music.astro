@@ -240,6 +240,7 @@ try {
     .lyrics-badge { background: var(--accent-dim); color: var(--accent); padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; }
     
     .lyrics-translate-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+    
     .translate-tab { padding: 8px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); border: none; transition: all 0.2s; }
     .translate-tab.active { background: var(--accent); color: #000; }
     
@@ -259,6 +260,36 @@ try {
     .lyric-line.past { opacity: 0.35; transform: translateX(-4px); color: var(--text-tertiary); }
     .lyric-time { font-size: 0.7rem; color: var(--text-tertiary); font-variant-numeric: tabular-nums; min-width: 36px; opacity: 0.7; }
     .lyric-line.active .lyric-time { color: var(--accent); opacity: 1; }
+    
+    .lyrics-visualizer {
+      height: 120px;
+      background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-primary) 100%);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+    .lyrics-visualizer canvas {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .visualizer-toggle {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--bg-elevated);
+      border: none;
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.2s;
+    }
+    .visualizer-toggle:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .visualizer-toggle.active { background: var(--accent-dim); color: var(--accent); }
     
     .toast {
       position: fixed; bottom: 120px; right: 32px; background: rgba(34, 34, 34, 0.98);
@@ -602,6 +633,10 @@ try {
           <button class="translate-tab active" data-mode="original">原文</button>
           <button class="translate-tab" data-mode="roman">羅馬拼音</button>
         </div>
+        <div class="lyrics-visualizer" id="lyrics-visualizer">
+          <button class="visualizer-toggle active" id="visualizer-toggle">🎵</button>
+          <canvas id="lyrics-canvas"></canvas>
+        </div>
         <div class="lyrics-container" id="lyrics-container">
           <p style="color: var(--text-tertiary); text-align: center; padding: 50px;">選擇歌曲以顯示歌詞</p>
         </div>
@@ -865,7 +900,82 @@ try {
         this.barAlbum = document.getElementById('bar-album');
         this.lyricsContainer = document.getElementById('lyrics-container');
         this.lyricsCount = document.getElementById('lyrics-count');
+        this.initVisualizer();
         this.bindEvents();
+      }
+      
+      initVisualizer() {
+        this.visualizerEnabled = true;
+        this.visCanvas = document.getElementById('lyrics-canvas');
+        this.visCtx = this.visCanvas ? this.visCanvas.getContext('2d') : null;
+        this.visualizerAnalyser = null;
+        this.visualizerData = null;
+        
+        const toggleBtn = document.getElementById('visualizer-toggle');
+        if (toggleBtn) {
+          toggleBtn.addEventListener('click', () => {
+            this.visualizerEnabled = !this.visualizerEnabled;
+            toggleBtn.classList.toggle('active', this.visualizerEnabled);
+            if (!this.visualizerEnabled && this.visCtx) {
+              this.visCtx.clearRect(0, 0, this.visCanvas.width, this.visCanvas.height);
+            }
+          });
+        }
+        
+        if (this.visCanvas) {
+          const resize = () => {
+            this.visCanvas.width = this.visCanvas.offsetWidth;
+            this.visCanvas.height = this.visCanvas.offsetHeight;
+          };
+          resize();
+          window.addEventListener('resize', resize);
+          this.startVisualizerLoop();
+        }
+      }
+      
+      startVisualizerLoop() {
+        if (!this.visCtx) return;
+        const draw = () => {
+          if (!this.visualizerEnabled || !this.isPlaying || !this.visualizerAnalyser) {
+            if (!this.visualizerEnabled) {
+              this.visCtx.fillStyle = 'rgba(20, 20, 20, 0.3)';
+              this.visCtx.fillRect(0, 0, this.visCanvas.width, this.visCanvas.height);
+            }
+          } else {
+            this.visualizerAnalyser.getByteFrequencyData(this.visualizerData);
+            this.visCtx.fillStyle = 'rgba(20, 20, 20, 0.25)';
+            this.visCtx.fillRect(0, 0, this.visCanvas.width, this.visCanvas.height);
+            
+            const bufferLength = this.visualizerData.length;
+            const barWidth = (this.visCanvas.width / bufferLength) * 2.5;
+            let x = 0;
+            
+            for (let i = 0; i < bufferLength; i++) {
+              const barHeight = (this.visualizerData[i] / 255) * this.visCanvas.height * 0.8;
+              const hue = (i / bufferLength) * 60 + 240;
+              const gradient = this.visCtx.createLinearGradient(x, this.visCanvas.height, x, this.visCanvas.height - barHeight);
+              gradient.addColorStop(0, `hsla(${hue}, 80%, 50%, 0.8)`);
+              gradient.addColorStop(1, `hsla(${hue}, 100%, 70%, 1)`);
+              this.visCtx.fillStyle = gradient;
+              this.visCtx.fillRect(x, this.visCanvas.height - barHeight, barWidth - 2, barHeight);
+              x += barWidth;
+            }
+          }
+          requestAnimationFrame(draw);
+        };
+        draw();
+      }
+      
+      connectVisualizer() {
+        if (this.visualizerAnalyser || !this.audioCtx) return;
+        try {
+          this.visualizerAnalyser = this.audioCtx.createAnalyser();
+          this.visualizerAnalyser.fftSize = 128;
+          this.visualizerData = new Uint8Array(this.visualizerAnalyser.frequencyBinCount);
+          const source = this.audioCtx.createMediaElementSource(this.audio);
+          source.connect(this.visualizerAnalyser);
+          this.visualizerAnalyser.connect(this.audioCtx.destination);
+        } catch(e) { console.error('Visualizer init failed:', e); }
       }
       
       async loadTracks() {
@@ -1180,6 +1290,7 @@ try {
         this.isPlaying = true;
         this.renderTrackList();
         this.audio.play();
+        this.connectVisualizer();
         this.loadLyrics(track.lyrics);
       }
       
