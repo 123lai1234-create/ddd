@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 const SITE = 'https://donttalk.vercel.app';
 const PAGE_TITLE = '🎵 音樂播放器';
-const PAGE_DESC = '一個 SoundCloud 風格的音樂播放器，支援歌詞同步、佇列管理、波形視覺化，打造流暢的音樂體驗。';
+const PAGE_DESC = '一個優質的音樂播放器，支援歌詞同步、佇列管理、波形視覺化，打造流暢的音樂體驗。';
 const OG_TAG = 'music';
 
 // 直接讀取 playlist.json 避免部署保護問題
@@ -26,7 +26,6 @@ try {
     * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
     
     :root {
-      /* SoundCloud 配色方案 */
       --bg-primary: #1a1a1a;
       --bg-secondary: #141414;
       --bg-card: #222222;
@@ -46,206 +45,83 @@ try {
     
     body { background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
     
-    /* 背景漸層 */
     .bg-gradient {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 400px;
+      position: fixed; top: 0; left: 0; right: 0; height: 400px;
       background: linear-gradient(180deg, rgba(255, 85, 0, 0.08) 0%, transparent 100%);
-      pointer-events: none;
-      z-index: 0;
+      pointer-events: none; z-index: 0;
     }
     
-    /* 頂部導航欄 - SoundCloud 風格 */
     .top-nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 72px;
-      background: rgba(20, 20, 20, 0.98);
-      backdrop-filter: blur(40px);
+      position: fixed; top: 0; left: 0; right: 0; height: 72px;
+      background: rgba(20, 20, 20, 0.98); backdrop-filter: blur(40px);
       border-bottom: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      padding: 0 32px;
-      z-index: 100;
+      display: flex; align-items: center; padding: 0 32px; z-index: 100;
     }
     
     .nav-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: var(--accent);
-      letter-spacing: -0.02em;
-      text-shadow: 0 0 30px var(--accent-glow);
+      display: flex; align-items: center; gap: 10px; font-size: 1.4rem; font-weight: 800;
+      color: var(--accent); letter-spacing: -0.02em; text-shadow: 0 0 30px var(--accent-glow);
     }
-    
     .nav-logo svg { width: 36px; height: 36px; }
     
-    .nav-search {
-      flex: 1;
-      max-width: 600px;
-      margin: 0 48px;
-      position: relative;
-    }
+    .nav-search { flex: 1; max-width: 600px; margin: 0 48px; position: relative; }
     
     .nav-search-box {
-      width: 100%;
-      padding: 14px 20px 14px 52px;
-      background: var(--bg-card);
-      border: 1px solid transparent;
-      border-radius: 50px;
-      color: var(--text-primary);
-      font-size: 0.9rem;
+      width: 100%; padding: 14px 20px 14px 52px;
+      background: var(--bg-card); border: 1px solid transparent;
+      border-radius: 50px; color: var(--text-primary); font-size: 0.9rem;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .nav-search-box::placeholder { color: var(--text-tertiary); }
-    .nav-search-box:focus { 
-      outline: none; 
-      border-color: var(--accent);
-      background: var(--bg-elevated);
-      box-shadow: 0 0 0 3px var(--accent-dim);
-    }
-    .nav-search-icon {
-      position: absolute;
-      left: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-tertiary);
-    }
+    .nav-search-box:focus { outline: none; border-color: var(--accent); background: var(--bg-elevated); box-shadow: 0 0 0 3px var(--accent-dim); }
+    .nav-search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); }
     .nav-search-icon svg { width: 18px; height: 18px; }
     
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
+    .nav-actions { display: flex; align-items: center; gap: 16px; }
     
     .nav-btn {
-      padding: 12px 24px;
-      border-radius: 50px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      border: none;
+      padding: 12px 24px; border-radius: 50px; font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: none;
     }
+    .nav-btn-outline { background: transparent; border: 2px solid var(--accent); color: var(--accent); }
+    .nav-btn-outline:hover { background: var(--accent); color: #000; }
+    .nav-btn-primary { background: var(--accent); color: #000; }
+    .nav-btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 20px var(--accent-glow); }
     
-    .nav-btn-outline {
-      background: transparent;
-      border: 2px solid var(--accent);
-      color: var(--accent);
+    .stats-row { display: flex; gap: 12px; margin-left: auto; }
+    .stats-badge {
+      background: var(--bg-card); padding: 8px 14px; border-radius: 20px;
+      font-size: 0.7rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;
     }
-    .nav-btn-outline:hover {
-      background: var(--accent);
-      color: #000;
-    }
+    .stats-badge svg { width: 12px; height: 12px; }
     
-    .nav-btn-primary {
-      background: var(--accent);
-      color: #000;
-    }
-    .nav-btn-primary:hover {
-      background: var(--accent-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px var(--accent-glow);
-    }
+    .main-content { padding: 104px 32px 120px; max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
     
-    /* 主內容區 */
-    .main-content {
-      padding: 104px 32px 120px;
-      max-width: 1400px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 1;
-    }
-    
-    /* 橫幅區 - SoundCloud 風格 */
     .hero-banner {
       background: linear-gradient(135deg, #ff5500 0%, #ff7a42 50%, #ff9060 100%);
-      border-radius: 24px;
-      padding: 56px;
-      margin-bottom: 40px;
-      display: flex;
-      align-items: center;
-      gap: 48px;
-      position: relative;
-      overflow: hidden;
+      border-radius: 24px; padding: 56px; margin-bottom: 40px;
+      display: flex; align-items: center; gap: 48px; position: relative; overflow: hidden;
       box-shadow: 0 20px 60px rgba(255, 85, 0, 0.4);
     }
-    
     .hero-banner::before {
-      content: '';
-      position: absolute;
-      top: -100px;
-      right: -100px;
-      width: 400px;
-      height: 400px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
+      content: ''; position: absolute; top: -100px; right: -100px;
+      width: 400px; height: 400px; background: rgba(255, 255, 255, 0.1); border-radius: 50%;
     }
-    
     .hero-banner::after {
-      content: '';
-      position: absolute;
-      bottom: -150px;
-      left: 50%;
-      width: 500px;
-      height: 500px;
-      background: rgba(0, 0, 0, 0.15);
-      border-radius: 50%;
+      content: ''; position: absolute; bottom: -150px; left: 50%;
+      width: 500px; height: 500px; background: rgba(0, 0, 0, 0.15); border-radius: 50%;
     }
-    
     .hero-content { position: relative; z-index: 1; flex: 1; }
-    
     .hero-tag {
-      display: inline-block;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 6px 16px;
-      border-radius: 50px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 16px;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+      display: inline-block; background: rgba(0, 0, 0, 0.3); padding: 6px 16px;
+      border-radius: 50px; font-size: 0.75rem; font-weight: 700; color: #fff;
+      margin-bottom: 16px; letter-spacing: 0.05em; text-transform: uppercase;
     }
+    .hero-title { font-size: 2.5rem; font-weight: 800; color: #fff; margin-bottom: 12px; text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3); }
+    .hero-subtitle { font-size: 1rem; color: rgba(255, 255, 255, 0.85); font-weight: 500; }
     
-    .hero-title {
-      font-size: 2.5rem;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 12px;
-      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
-    }
-    
-    .hero-subtitle {
-      font-size: 1rem;
-      color: rgba(255, 255, 255, 0.85);
-      font-weight: 500;
-    }
-    
-    .hero-waveform {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      height: 80px;
-    }
-    
-    .hero-wave-bar {
-      width: 6px;
-      background: rgba(255, 255, 255, 0.7);
-      border-radius: 3px;
-      animation: heroWave 1.2s ease-in-out infinite;
-    }
-    
+    .hero-waveform { position: relative; z-index: 1; display: flex; align-items: center; gap: 4px; height: 80px; }
+    .hero-wave-bar { width: 6px; background: rgba(255, 255, 255, 0.7); border-radius: 3px; animation: heroWave 1.2s ease-in-out infinite; }
     .hero-wave-bar:nth-child(1) { animation-delay: 0s; height: 40px; }
     .hero-wave-bar:nth-child(2) { animation-delay: 0.1s; height: 60px; }
     .hero-wave-bar:nth-child(3) { animation-delay: 0.2s; height: 80px; }
@@ -264,129 +140,57 @@ try {
       50% { transform: scaleY(1); }
     }
     
-    /* 篩選器 */
-    .filter-row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 24px;
-    }
+    .filter-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
     
     select {
-      padding: 12px 20px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 24px;
-      color: var(--text-secondary);
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      min-width: 150px;
+      padding: 12px 20px; background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: 24px; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); min-width: 150px;
     }
     select:hover { background: var(--bg-hover); color: var(--text-primary); border-color: transparent; transform: translateY(-1px); }
     select:focus { outline: none; border-color: var(--accent); color: var(--text-primary); box-shadow: 0 0 0 3px var(--accent-dim); }
     select option { background: var(--bg-card); }
     
-    /* 曲目列表容器 */
     .track-list-container {
-      background: rgba(20, 20, 20, 0.95);
-      border-radius: 16px;
-      padding: 20px;
-      backdrop-filter: blur(60px);
-      border: 1px solid var(--border-subtle);
+      background: rgba(20, 20, 20, 0.95); border-radius: 16px; padding: 20px;
+      backdrop-filter: blur(60px); border: 1px solid var(--border-subtle);
     }
     
     .track-list-header {
-      display: grid;
-      grid-template-columns: 60px 2fr 1fr 1fr 80px 80px;
-      padding: 12px 20px;
-      border-bottom: 1px solid var(--border-subtle);
-      margin-bottom: 12px;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--text-tertiary);
-      font-weight: 700;
+      display: grid; grid-template-columns: 60px 2fr 1fr 1fr 80px 100px;
+      padding: 12px 20px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 12px;
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--text-tertiary); font-weight: 700;
     }
     
-    .track-scroll {
-      max-height: 55vh;
-      overflow-y: auto;
-      padding-right: 8px;
-    }
+    .track-scroll { max-height: 55vh; overflow-y: auto; padding-right: 8px; }
     .track-scroll::-webkit-scrollbar { width: 8px; }
     .track-scroll::-webkit-scrollbar-track { background: transparent; }
     .track-scroll::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 4px; }
     .track-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
     
     .track-row {
-      display: grid;
-      grid-template-columns: 60px 2fr 1fr 1fr 80px 80px;
-      align-items: center;
-      gap: 16px;
-      padding: 14px 16px;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      border: 2px solid transparent;
+      display: grid; grid-template-columns: 60px 2fr 1fr 1fr 80px 100px;
+      align-items: center; gap: 16px; padding: 14px 16px; border-radius: 12px;
+      cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative; border: 2px solid transparent;
     }
-    .track-row:hover { 
-      background: var(--bg-hover);
-      border-color: var(--accent);
-      transform: translateX(4px);
-    }
-    .track-row.playing { 
-      background: var(--accent-dim);
-      border-color: var(--accent);
-      box-shadow: 0 0 30px var(--accent-glow);
-    }
+    .track-row:hover { background: var(--bg-hover); border-color: var(--accent); transform: translateX(4px); }
+    .track-row.playing { background: var(--accent-dim); border-color: var(--accent); box-shadow: 0 0 30px var(--accent-glow); }
     
-    /* 播放進度條 */
     .track-progress {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: rgba(255, 85, 0, 0.2);
-      border-radius: 0 0 10px 10px;
-      overflow: hidden;
+      position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+      background: rgba(255, 85, 0, 0.2); border-radius: 0 0 10px 10px; overflow: hidden;
     }
-    .track-progress-bar {
-      height: 100%;
-      background: var(--accent);
-      transition: width 0.1s linear;
-      box-shadow: 0 0 15px var(--accent);
-    }
+    .track-progress-bar { height: 100%; background: var(--accent); transition: width 0.1s linear; box-shadow: 0 0 15px var(--accent); }
     
-    /* SoundCloud 編號 */
-    .track-num { 
-      font-size: 0.9rem; 
-      color: var(--text-tertiary);
-      text-align: center;
-      width: 32px;
-      font-variant-numeric: tabular-nums;
-    }
+    .track-num { font-size: 0.9rem; color: var(--text-tertiary); text-align: center; width: 32px; font-variant-numeric: tabular-nums; }
     
-    /* SoundCloud 音波動畫 */
-    .track-wave {
-      display: none;
-      gap: 2px;
-      align-items: center;
-      justify-content: center;
-      height: 14px;
-    }
+    .track-wave { display: none; gap: 2px; align-items: center; justify-content: center; height: 14px; }
     .track-row.playing .track-num { display: none; }
     .track-row.playing .track-wave { display: flex; }
     
-    .wave-bar-sm {
-      width: 3px;
-      background: var(--accent);
-      border-radius: 2px;
-      animation: waveAnim 0.8s ease-in-out infinite;
-    }
+    .wave-bar-sm { width: 3px; background: var(--accent); border-radius: 2px; animation: waveAnim 0.8s ease-in-out infinite; }
     .wave-bar-sm:nth-child(1) { animation-delay: 0s; }
     .wave-bar-sm:nth-child(2) { animation-delay: 0.12s; }
     .wave-bar-sm:nth-child(3) { animation-delay: 0.24s; }
@@ -399,551 +203,265 @@ try {
     }
     
     .track-info { min-width: 0; }
-    .track-title { 
-      font-size: 0.95rem; 
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .track-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .track-row.playing .track-title { color: var(--accent); }
+    .track-artist-list { font-size: 0.8rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .track-album { font-size: 0.85rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .track-duration { font-size: 0.85rem; color: var(--text-tertiary); font-variant-numeric: tabular-nums; text-align: right; }
     
-    .track-artist-list {
-      font-size: 0.8rem; 
-      color: var(--text-tertiary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    .track-album {
-      font-size: 0.85rem;
-      color: var(--text-tertiary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    .track-lang {
-      font-size: 0.8rem;
-      color: var(--text-tertiary);
-    }
-    
-    .track-duration {
-      font-size: 0.85rem;
-      color: var(--text-tertiary);
-      font-variant-numeric: tabular-nums;
-      text-align: right;
-    }
-    
-    /* SoundCloud 風格操作按鈕 */
-    .track-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      justify-content: flex-end;
-    }
-    
-    .action-btn {
-      background: none;
-      border: none;
-      color: var(--text-tertiary);
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 8px;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+    .track-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+    .action-btn { background: none; border: none; color: var(--text-tertiary); cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
     .action-btn svg { width: 18px; height: 18px; }
     .action-btn:hover { color: var(--accent); background: var(--accent-dim); }
     
-    .add-queue-btn {
-      opacity: 0;
-      background: var(--accent);
-      color: #000;
-    }
+    .add-queue-btn { opacity: 0; background: var(--accent); color: #000; }
     .track-row:hover .add-queue-btn { opacity: 1; }
     .add-queue-btn:hover { transform: scale(1.15); box-shadow: 0 4px 15px var(--accent-glow); }
     
-    .repost-btn {
-      opacity: 0;
-      color: var(--accent);
-    }
+    .repost-btn { opacity: 0; color: var(--accent); }
     .track-row:hover .repost-btn { opacity: 1; }
     .repost-btn:hover { background: var(--accent-dim); }
+    .repost-btn.reposted { opacity: 1; color: var(--accent); }
     
-    .repost-btn.reposted {
-      opacity: 1;
-      color: var(--accent);
-    }
+    .download-btn { opacity: 0; background: var(--accent-dim); color: var(--accent); }
+    .track-row:hover .download-btn { opacity: 1; }
+    .download-btn:hover { background: var(--accent); color: #000; }
     
-    /* 右側面板 - SoundCloud 風格 */
-    .right-panel {
-      background: rgba(20, 20, 20, 0.98);
-      border-radius: 20px;
-      padding: 28px;
-      height: fit-content;
-      max-height: calc(100vh - 120px);
-      position: sticky;
-      top: 24px;
-      overflow: hidden;
-      backdrop-filter: blur(60px);
-      border: 1px solid var(--border-subtle);
-    }
-    
-    .panel-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-    
-    .panel-tab {
-      flex: 1;
-      padding: 14px 20px;
-      text-align: center;
-      color: var(--text-secondary);
-      cursor: pointer;
-      border-radius: 24px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      background: var(--bg-card);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .panel-tab svg { width: 18px; height: 18px; }
-    .panel-tab:hover { color: var(--text-primary); }
-    .panel-tab.active { 
-      color: #000; 
-      background: var(--accent);
-      box-shadow: 0 4px 20px var(--accent-glow);
-    }
-    
-    .panel-scroll {
-      max-height: 480px;
-      overflow-y: auto;
-      padding: 8px 0;
-    }
-    .panel-scroll::-webkit-scrollbar { width: 4px; }
-    .panel-scroll::-webkit-scrollbar-track { background: transparent; }
-    .panel-scroll::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 2px; }
-    
-    /* 歌詞面板 - SoundCloud 風格 */
     .lyrics-panel {
-      background: rgba(20, 20, 20, 0.98);
-      border-radius: 20px;
-      padding: 28px;
-      height: calc(100vh - 280px);
-      max-height: 600px;
-      position: sticky;
-      top: 104px;
-      overflow: hidden;
-      backdrop-filter: blur(60px);
-      border: 1px solid var(--border-subtle);
-      display: flex;
-      flex-direction: column;
+      background: rgba(20, 20, 20, 0.98); border-radius: 20px; padding: 28px;
+      height: calc(100vh - 280px); max-height: 600px; position: sticky; top: 104px;
+      overflow: hidden; backdrop-filter: blur(60px); border: 1px solid var(--border-subtle);
+      display: flex; flex-direction: column;
     }
     
-    .lyrics-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-    
-    .lyrics-title {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
+    .lyrics-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle); }
+    .lyrics-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
     .lyrics-title svg { width: 20px; height: 20px; color: var(--accent); }
+    .lyrics-badge { background: var(--accent-dim); color: var(--accent); padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; }
     
-    .lyrics-badge {
-      background: var(--accent-dim);
-      color: var(--accent);
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 0.7rem;
-      font-weight: 700;
-    }
+    .lyrics-translate-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+    .translate-tab { padding: 8px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); border: none; transition: all 0.2s; }
+    .translate-tab.active { background: var(--accent); color: #000; }
     
-    .lyrics-container {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px 0;
-    }
+    .lyrics-container { flex: 1; overflow-y: auto; padding: 8px 0; }
     .lyrics-container::-webkit-scrollbar { width: 4px; }
     .lyrics-container::-webkit-scrollbar-track { background: transparent; }
     .lyrics-container::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 2px; }
     
-    /* 歌詞樣式 */
     .lyric-line {
-      padding: 14px 16px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-      border-radius: 10px;
-      font-size: 0.9rem;
-      line-height: 1.7;
-      margin-bottom: 4px;
-      border-left: 3px solid transparent;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      padding: 14px 16px; color: var(--text-secondary); cursor: pointer;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 10px;
+      font-size: 0.9rem; line-height: 1.7; margin-bottom: 4px;
+      border-left: 3px solid transparent; display: flex; align-items: center; gap: 12px;
     }
     .lyric-line:hover { background: var(--bg-hover); color: var(--text-primary); border-left-color: var(--accent); }
-    .lyric-line.active {
-      color: var(--accent);
-      font-size: 1.15rem;
-      font-weight: 700;
-      transform: scale(1.02) translateX(6px);
-      text-shadow: 0 0 30px var(--accent-glow);
-      border-left-color: var(--accent);
-      background: var(--accent-dim);
-    }
-    .lyric-line.past { 
-      opacity: 0.35;
-      transform: translateX(-4px);
-      color: var(--text-tertiary);
-    }
-    .lyric-time {
-      font-size: 0.7rem;
-      color: var(--text-tertiary);
-      font-variant-numeric: tabular-nums;
-      min-width: 36px;
-      opacity: 0.7;
-    }
+    .lyric-line.active { color: var(--accent); font-size: 1.15rem; font-weight: 700; transform: scale(1.02) translateX(6px); text-shadow: 0 0 30px var(--accent-glow); border-left-color: var(--accent); background: var(--accent-dim); }
+    .lyric-line.past { opacity: 0.35; transform: translateX(-4px); color: var(--text-tertiary); }
+    .lyric-time { font-size: 0.7rem; color: var(--text-tertiary); font-variant-numeric: tabular-nums; min-width: 36px; opacity: 0.7; }
     .lyric-line.active .lyric-time { color: var(--accent); opacity: 1; }
     
-    /* 佇列樣式 */
-    .queue-item {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 16px 20px;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-bottom: 6px;
-      border-left: 4px solid transparent;
-    }
-    .queue-item:hover { background: var(--bg-hover); border-left-color: var(--accent); }
-    .queue-item.playing { 
-      background: var(--accent-dim);
-      border-left-color: var(--accent);
-    }
-    
-    .queue-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: pulseGlow 1.5s ease-in-out infinite;
-      flex-shrink: 0;
-    }
-    
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.7); }
-    }
-    
-    .queue-info { flex: 1; min-width: 0; }
-    .queue-title { font-size: 0.9rem; color: var(--text-primary); font-weight: 600; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .queue-artist { font-size: 0.75rem; color: var(--text-tertiary); }
-    
-    .queue-remove {
-      background: none;
-      border: none;
-      color: var(--text-tertiary);
-      cursor: pointer;
-      padding: 6px 10px;
-      border-radius: 8px;
-      opacity: 0;
-      transition: all 0.15s;
-      font-size: 0.9rem;
-    }
-    .queue-remove svg { width: 14px; height: 14px; }
-    .queue-item:hover .queue-remove { opacity: 1; }
-    .queue-remove:hover { color: #ef4444; background: rgba(239, 68, 68, 0.15); }
-    
-    /* Toast 通知 */
     .toast {
-      position: fixed;
-      bottom: 120px;
-      right: 32px;
-      background: rgba(34, 34, 34, 0.98);
-      backdrop-filter: blur(30px);
-      padding: 18px 28px;
-      border-radius: 16px;
-      color: var(--text-primary);
-      font-size: 0.9rem;
-      font-weight: 600;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-      border: 1px solid var(--accent);
-      animation: toastIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      gap: 14px;
+      position: fixed; bottom: 120px; right: 32px; background: rgba(34, 34, 34, 0.98);
+      backdrop-filter: blur(30px); padding: 18px 28px; border-radius: 16px;
+      color: var(--text-primary); font-size: 0.9rem; font-weight: 600;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); border: 1px solid var(--accent);
+      animation: toastIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000;
+      display: flex; align-items: center; gap: 14px;
     }
-    
     @keyframes toastIn {
       from { opacity: 0; transform: translateX(50px) scale(0.9); }
       to { opacity: 1; transform: translateX(0) scale(1); }
     }
     
-    /* 底部播放器 - SoundCloud 風格增強版 */
     .bottom-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 96px;
-      background: rgba(13, 13, 13, 0.99);
-      backdrop-filter: blur(60px);
+      position: fixed; bottom: 0; left: 0; right: 0; height: 96px;
+      background: rgba(13, 13, 13, 0.99); backdrop-filter: blur(60px);
       border-top: 1px solid var(--border-subtle);
-      display: grid;
-      grid-template-columns: 1fr 2.5fr 1fr;
-      align-items: center;
-      padding: 0 32px;
-      z-index: 100;
+      display: grid; grid-template-columns: 1fr 2.5fr 1fr;
+      align-items: center; padding: 0 32px; z-index: 100;
       box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
     }
     
-    .bar-left {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-    }
+    .bar-left { display: flex; align-items: center; gap: 18px; }
     
-    /* SoundCloud 專輯封面 - 增大並添加動畫 */
     .bar-album {
-      width: 64px;
-      height: 64px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #252525, #1a1a1a);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
-      transition: all 0.3s;
-      overflow: hidden;
-      flex-shrink: 0;
+      width: 64px; height: 64px; border-radius: 12px; background: linear-gradient(135deg, #252525, #1a1a1a);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5); transition: all 0.3s;
+      overflow: hidden; flex-shrink: 0; cursor: pointer;
     }
-    .bar-album img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .bar-album.playing { 
-      animation: vinylSpin 6s linear infinite;
-      box-shadow: 0 8px 25px var(--accent-glow);
-    }
-    
+    .bar-album img { width: 100%; height: 100%; object-fit: cover; }
+    .bar-album.playing { animation: vinylSpin 6s linear infinite; box-shadow: 0 8px 25px var(--accent-glow); }
     @keyframes vinylSpin {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
     
     .bar-track-info { min-width: 0; }
-    .bar-track-name {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .bar-track-artist {
-      font-size: 0.8rem;
-      color: var(--text-tertiary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .bar-track-name { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-track-artist { font-size: 0.8rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
-    .bar-like-btn {
-      background: none;
-      border: none;
-      color: var(--text-tertiary);
-      cursor: pointer;
-      padding: 10px;
-      transition: all 0.2s;
-    }
+    .bar-like-btn { background: none; border: none; color: var(--text-tertiary); cursor: pointer; padding: 10px; transition: all 0.2s; }
     .bar-like-btn svg { width: 22px; height: 22px; }
     .bar-like-btn:hover { color: var(--text-primary); transform: scale(1.15); }
     .bar-like-btn.liked { color: #ef4444; }
     .bar-like-btn.liked:hover { transform: scale(1.2); }
     
-    .bar-center {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
+    .bar-center { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .bar-controls { display: flex; align-items: center; gap: 20px; }
     
-    .bar-controls {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-    
-    .bar-ctrl-btn {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      cursor: pointer;
-      padding: 10px;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      opacity: 0.9;
-    }
+    .bar-ctrl-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 10px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); opacity: 0.9; position: relative; }
     .bar-ctrl-btn svg { width: 20px; height: 20px; }
     .bar-ctrl-btn:hover { color: var(--text-primary); opacity: 1; transform: scale(1.1); }
     .bar-ctrl-btn.active { color: var(--accent); opacity: 1; }
     
+    .mode-dropdown {
+      position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+      background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px;
+      padding: 8px 0; min-width: 160px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      opacity: 0; visibility: hidden; transition: all 0.2s; z-index: 200;
+    }
+    .bar-ctrl-btn:hover .mode-dropdown { opacity: 1; visibility: visible; }
+    .mode-option { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-secondary); transition: all 0.15s; }
+    .mode-option:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .mode-option.active { color: var(--accent); background: var(--accent-dim); }
+    .mode-option svg { width: 16px; height: 16px; }
+    
+    .speed-btn { font-size: 0.75rem; font-weight: 700; min-width: 48px; text-align: center; }
+    .speed-dropdown {
+      position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+      background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px;
+      padding: 8px 0; min-width: 100px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      opacity: 0; visibility: hidden; transition: all 0.2s; z-index: 200;
+    }
+    .speed-btn:hover .speed-dropdown { opacity: 1; visibility: visible; }
+    .speed-option { padding: 10px 20px; cursor: pointer; font-size: 0.85rem; color: var(--text-secondary); text-align: center; transition: all 0.15s; }
+    .speed-option:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .speed-option.active { color: var(--accent); font-weight: 700; }
+    
     .bar-play-btn {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: var(--accent);
-      border: none;
-      color: #000;
-      font-size: 1.1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 6px 25px var(--accent-glow);
+      width: 48px; height: 48px; border-radius: 50%; background: var(--accent);
+      border: none; color: #000; font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 6px 25px var(--accent-glow);
     }
     .bar-play-btn svg { width: 20px; height: 20px; }
     .bar-play-btn:hover { transform: scale(1.08); box-shadow: 0 8px 35px var(--accent-glow); }
     .bar-play-btn:active { transform: scale(0.95); }
     
-    .bar-progress {
-      width: 100%;
-      max-width: 580px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    
-    .bar-time {
-      font-size: 0.75rem;
-      color: var(--text-tertiary);
-      width: 45px;
-      font-variant-numeric: tabular-nums;
-    }
+    .bar-progress { width: 100%; max-width: 580px; display: flex; align-items: center; gap: 14px; }
+    .bar-time { font-size: 0.75rem; color: var(--text-tertiary); width: 45px; font-variant-numeric: tabular-nums; }
     .bar-time:last-child { text-align: right; }
     
-    /* SoundCloud 風格進度條 */
     .bar-progress-slider {
-      -webkit-appearance: none;
-      flex: 1;
-      height: 6px;
-      background: var(--text-tertiary);
-      border-radius: 6px;
-      cursor: pointer;
-      position: relative;
-      transition: height 0.2s;
+      -webkit-appearance: none; flex: 1; height: 6px; background: var(--text-tertiary);
+      border-radius: 6px; cursor: pointer; position: relative; transition: height 0.2s;
     }
     .bar-progress-slider::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      height: 100%;
-      width: var(--progress, 0%);
-      background: var(--accent);
-      border-radius: 6px;
-      pointer-events: none;
-      transition: width 0.1s;
-      box-shadow: 0 0 10px var(--accent-glow);
+      content: ''; position: absolute; left: 0; top: 0; height: 100%;
+      width: var(--progress, 0%); background: var(--accent); border-radius: 6px;
+      pointer-events: none; transition: width 0.1s; box-shadow: 0 0 10px var(--accent-glow);
     }
     .bar-progress-slider:hover { height: 8px; }
     .bar-progress-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: var(--text-primary);
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.25s, transform 0.2s;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+      -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+      background: var(--text-primary); cursor: pointer; opacity: 0;
+      transition: opacity 0.25s, transform 0.2s; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
     }
     .bar-progress-slider:hover::-webkit-slider-thumb { opacity: 1; transform: scale(1.15); }
     
-    .bar-right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      justify-content: flex-end;
-    }
-    
-    .bar-icon-btn {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      cursor: pointer;
-      padding: 10px;
-      transition: all 0.2s;
-      opacity: 0.9;
-    }
+    .bar-right { display: flex; align-items: center; gap: 16px; justify-content: flex-end; }
+    .bar-icon-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 10px; transition: all 0.2s; opacity: 0.9; }
     .bar-icon-btn svg { width: 18px; height: 18px; }
     .bar-icon-btn:hover { color: var(--text-primary); opacity: 1; }
     .bar-icon-btn.active { color: var(--accent); opacity: 1; }
     
+    .eq-panel {
+      position: absolute; bottom: 100%; right: 0; background: var(--bg-card);
+      border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px;
+      min-width: 280px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      opacity: 0; visibility: hidden; transition: all 0.25s; z-index: 200;
+    }
+    .eq-panel.open { opacity: 1; visibility: visible; }
+    .eq-title { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+    .eq-slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .eq-label { font-size: 0.75rem; color: var(--text-tertiary); min-width: 40px; text-align: center; }
+    .eq-slider { -webkit-appearance: none; flex: 1; height: 6px; background: linear-gradient(to right, var(--text-tertiary), var(--text-secondary)); border-radius: 6px; cursor: pointer; }
+    .eq-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .eq-value { font-size: 0.75rem; color: var(--text-secondary); min-width: 30px; text-align: right; }
+    .eq-close { background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 1.1rem; padding: 4px; }
+    
     .bar-volume-slider {
-      -webkit-appearance: none;
-      width: 120px;
-      height: 6px;
-      background: var(--text-tertiary);
-      border-radius: 6px;
-      cursor: pointer;
-      position: relative;
+      -webkit-appearance: none; width: 120px; height: 6px; background: var(--text-tertiary);
+      border-radius: 6px; cursor: pointer; position: relative;
     }
     .bar-volume-slider::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      height: 100%;
-      width: var(--volume, 80%);
-      background: var(--text-primary);
-      border-radius: 6px;
-      pointer-events: none;
+      content: ''; position: absolute; left: 0; top: 0; height: 100%;
+      width: var(--volume, 80%); background: var(--text-primary); border-radius: 6px; pointer-events: none;
     }
-    .bar-volume-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: var(--text-primary);
-      cursor: pointer;
+    .bar-volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--text-primary); cursor: pointer; }
+    
+    .shortcuts-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 10px; font-size: 0.8rem; font-weight: 700; opacity: 0.7; transition: all 0.2s; }
+    .shortcuts-btn:hover { opacity: 1; color: var(--text-primary); }
+    
+    .shortcuts-panel {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 20px;
+      padding: 28px; min-width: 380px; z-index: 1100; opacity: 0; visibility: hidden;
+      transition: all 0.3s; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
     }
+    .shortcuts-panel.open { opacity: 1; visibility: visible; }
+    .shortcuts-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 20px; text-align: center; }
+    .shortcuts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .shortcut-item { display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg-elevated); border-radius: 10px; }
+    .shortcut-key { background: var(--bg-primary); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: var(--accent); font-family: monospace; min-width: 40px; text-align: center; }
+    .shortcut-desc { font-size: 0.8rem; color: var(--text-secondary); }
+    .close-shortcuts { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 1.2rem; padding: 4px 8px; }
+    .shortcuts-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; opacity: 0; visibility: hidden; transition: all 0.3s; }
+    .shortcuts-overlay.open { opacity: 1; visibility: visible; }
+    
+    .player-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden; transition: all 0.3s;
+    }
+    .player-modal.open { opacity: 1; visibility: visible; }
+    .player-modal-content { width: 90%; max-width: 500px; background: var(--bg-secondary); border-radius: 24px; padding: 32px; text-align: center; border: 1px solid var(--border-subtle); position: relative; }
+    .player-modal-album { width: 180px; height: 180px; margin: 0 auto 24px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); background: linear-gradient(135deg, var(--bg-elevated), var(--bg-card)); display: flex; align-items: center; justify-content: center; }
+    .player-modal-album img { width: 100%; height: 100%; object-fit: cover; }
+    .player-modal-album.playing { animation: vinylSpin 6s linear infinite; }
+    .player-modal-title { font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; }
+    .player-modal-artist { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 20px; }
+    .player-modal-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 20px; }
+    .player-modal-progress { margin-bottom: 16px; }
+    .close-modal-btn { background: none; border: none; color: var(--text-tertiary); cursor: pointer; padding: 12px; font-size: 1.5rem; transition: all 0.2s; position: absolute; top: 20px; right: 20px; }
+    .close-modal-btn:hover { color: var(--text-primary); }
+    
+    .mobile-lyrics-toggle {
+      display: none; position: fixed; bottom: 110px; right: 16px;
+      background: var(--accent); color: #000; border: none; border-radius: 50%;
+      width: 48px; height: 48px; cursor: pointer; box-shadow: 0 4px 20px var(--accent-glow); z-index: 99;
+    }
+    .mobile-lyrics-toggle svg { width: 20px; height: 20px; }
+    .mobile-lyrics-close { display: none; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.5rem; padding: 16px; text-align: right; width: 100%; }
     
     /* Mobile RWD */
+    @media (max-width: 768px) {
+      .main-content { padding: 88px 16px 140px; }
+      .hero-banner { padding: 32px; margin-bottom: 24px; }
+      .hero-title { font-size: 1.8rem; }
+      .hero-waveform { display: none; }
+      .filter-row { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 8px; }
+      select { min-width: 120px; font-size: 0.8rem; }
+      .track-list-header { grid-template-columns: 40px 1.5fr 80px 60px; font-size: 0.6rem; }
+      .track-row { grid-template-columns: 40px 1.5fr 80px 60px; padding: 10px 8px; gap: 8px; }
+      .track-album, .track-actions .repost-btn, .track-actions .download-btn { display: none; }
+      .mobile-lyrics-toggle { display: flex; align-items: center; justify-content: center; }
+      .stats-row { display: none; }
+    }
+    
     @media (max-width: 600px) {
-      .bottom-bar {
-        height: 72px;
-        padding: 0 12px;
-        grid-template-columns: 1fr auto 1fr;
-        gap: 8px;
-      }
+      .bottom-bar { height: 72px; padding: 0 12px; grid-template-columns: 1fr auto 1fr; gap: 8px; }
       .bar-left { gap: 8px; }
       .bar-album { width: 48px; height: 48px; }
       .bar-track-name { font-size: 0.8rem; max-width: 120px; }
@@ -957,31 +475,31 @@ try {
       .bar-time { font-size: 0.65rem; min-width: 36px; }
       .bar-volume-slider { width: 60px; }
       .bar-like-btn { display: none; }
+      .player-modal-content { padding: 24px; }
+      .player-modal-album { width: 160px; height: 160px; }
+      .shortcuts-panel { min-width: 90%; padding: 20px; }
+      .shortcuts-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 480px) {
-      .bottom-bar {
-        height: 64px;
-        padding: 0 8px;
-      }
+      .bottom-bar { height: 64px; padding: 0 8px; }
       .bar-track-info { max-width: 90px; }
       .bar-track-name { font-size: 0.75rem; max-width: 80px; }
       .bar-track-artist { display: none; }
       .bar-ctrl-btn { width: 24px; height: 24px; }
       .bar-play-btn { width: 34px; height: 34px; }
-      .bar-right { display: none; }
+      .nav-search { display: none; }
+      .nav-actions { gap: 8px; }
+      .nav-btn { padding: 10px 16px; font-size: 0.75rem; }
     }
-
-    /* 隱藏 .music-layout 左側和右側，維持原有結構 */
+    
     .music-layout { display: contents; }
     .left-sidebar { display: none; }
     .right-panel { display: none; }
-
   </style>
 
   <div class="bg-gradient"></div>
   
-  <!-- 頂部導航欄 -->
   <nav class="top-nav">
     <div class="nav-logo">
       <svg viewBox="0 0 24 24" fill="currentColor">
@@ -997,42 +515,38 @@ try {
       <input type="text" id="track-search" class="nav-search-box" placeholder="搜尋歌曲、藝人或專輯...">
     </div>
     
+    <div class="stats-row">
+      <span class="stats-badge" id="stats-total">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <span id="total-tracks">0</span> 首歌
+      </span>
+      <span class="stats-badge" id="stats-liked">
+        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <span id="liked-count">0</span> 喜歡
+      </span>
+    </div>
+    
     <div class="nav-actions">
-      <button class="nav-btn nav-btn-outline">上傳</button>
+      <button class="nav-btn nav-btn-outline" id="upload-lyrics-btn">🎤 生成歌詞</button>
       <button class="nav-btn nav-btn-primary">登入</button>
     </div>
   </nav>
 
-  <!-- 主內容區 -->
   <section class="main-content">
     <div style="display: grid; grid-template-columns: 1fr 380px; gap: 24px;">
       
-      <!-- 左側：橫幅 + 篩選 + 歌曲列表 -->
       <div>
-        <!-- 橫幅區 -->
         <div class="hero-banner">
           <div class="hero-content">
-            <span class="hero-tag">SoundCloud 風格</span>
+            <span class="hero-tag">線上音樂</span>
             <h1 class="hero-title">探索音樂世界</h1>
             <p class="hero-subtitle">盡情播放、分享你喜愛的音樂</p>
           </div>
           <div class="hero-waveform">
-            <div class="hero-wave-bar"></div>
-            <div class="hero-wave-bar"></div>
-            <div class="hero-wave-bar"></div>
-            <div class="hero-wave-bar"></div>
-            <div class="hero-wave-bar"></div>
-            <div class="hero-wave-bar"></div>
-            <div class="hero-wave-bar"></div>
-            <div class="hero-wave-bar"></div>
-            <div class="hero-wave-bar"></div>
-            <div class="hero-wave-bar"></div>
-            <div class="hero-wave-bar"></div>
-            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div><div class="hero-wave-bar"></div><div class="hero-wave-bar"></div><div class="hero-wave-bar"></div><div class="hero-wave-bar"></div><div class="hero-wave-bar"></div><div class="hero-wave-bar"></div><div class="hero-wave-bar"></div><div class="hero-wave-bar"></div><div class="hero-wave-bar"></div><div class="hero-wave-bar"></div><div class="hero-wave-bar"></div>
           </div>
         </div>
         
-        <!-- 下拉篩選 -->
         <div class="filter-row">
           <select id="lang-filter">
             <option value="all">🌐 全部語言</option>
@@ -1058,7 +572,6 @@ try {
           </select>
         </div>
         
-        <!-- 歌曲列表 -->
         <div class="track-list-container">
           <div class="track-list-header">
             <span>#</span>
@@ -1076,14 +589,18 @@ try {
         </div>
       </div>
       
-      <!-- 右側：歌詞面板 -->
       <div class="lyrics-panel">
+        <button class="mobile-lyrics-close" id="mobile-lyrics-close">✕ 關閉</button>
         <div class="lyrics-header">
           <div class="lyrics-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
             歌詞
           </div>
           <span class="lyrics-badge" id="lyrics-count">0 句</span>
+        </div>
+        <div class="lyrics-translate-toggle">
+          <button class="translate-tab active" data-mode="original">原文</button>
+          <button class="translate-tab" data-mode="roman">羅馬拼音</button>
         </div>
         <div class="lyrics-container" id="lyrics-container">
           <p style="color: var(--text-tertiary); text-align: center; padding: 50px;">選擇歌曲以顯示歌詞</p>
@@ -1092,10 +609,13 @@ try {
     </div>
   </section>
 
-  <!-- 底部播放器 -->
+  <button class="mobile-lyrics-toggle" id="mobile-lyrics-toggle">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+  </button>
+
   <div class="bottom-bar">
     <div class="bar-left">
-      <div class="bar-album" id="bar-album">
+      <div class="bar-album" id="bar-album" title="點擊展開播放器">
         <img id="album-img" src="" alt="" style="display: none;">
         <svg id="album-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
       </div>
@@ -1113,17 +633,54 @@ try {
     
     <div class="bar-center">
       <div class="bar-controls">
+        <button class="bar-ctrl-btn mode-btn" id="bar-mode" title="播放模式">
+          <svg id="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          <div class="mode-dropdown">
+            <div class="mode-option active" data-mode="sequence">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              順序播放
+            </div>
+            <div class="mode-option" data-mode="shuffle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+              隨機播放
+            </div>
+            <div class="mode-option" data-mode="repeat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              全部循環
+            </div>
+            <div class="mode-option" data-mode="repeat-one">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+              單曲循環
+            </div>
+          </div>
+        </button>
+        
         <button class="bar-ctrl-btn" id="bar-prev" title="上一首">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
         </button>
+        
         <button class="bar-play-btn" id="bar-play" title="播放">
           <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           <svg id="pause-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
         </button>
+        
         <button class="bar-ctrl-btn" id="bar-next" title="下一首">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
         </button>
+        
+        <button class="bar-ctrl-btn speed-btn" id="bar-speed" title="播放速度">
+          <span id="speed-label">1x</span>
+          <div class="speed-dropdown">
+            <div class="speed-option" data-speed="0.5">0.5x</div>
+            <div class="speed-option" data-speed="0.75">0.75x</div>
+            <div class="speed-option active" data-speed="1">1x</div>
+            <div class="speed-option" data-speed="1.25">1.25x</div>
+            <div class="speed-option" data-speed="1.5">1.5x</div>
+            <div class="speed-option" data-speed="2">2x</div>
+          </div>
+        </button>
       </div>
+      
       <div class="bar-progress">
         <span class="bar-time" id="bar-current-time">0:00</span>
         <input type="range" class="bar-progress-slider" id="bar-progress" min="0" max="100" value="0" style="--progress: 0%">
@@ -1132,6 +689,10 @@ try {
     </div>
     
     <div class="bar-right">
+      <button class="shortcuts-btn" id="shortcuts-btn" title="快捷鍵">?</button>
+      <button class="bar-icon-btn" id="bar-eq-btn" title="等化器">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+      </button>
       <button class="bar-icon-btn" id="bar-vol-btn" title="靜音">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="vol-icon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="vol-mute-icon" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
@@ -1140,10 +701,79 @@ try {
     </div>
   </div>
 
-  <!-- Toast 容器 -->
+  <div class="eq-panel" id="eq-panel">
+    <div class="eq-title">
+      等化器
+      <button class="eq-close" id="eq-close">✕</button>
+    </div>
+    <div class="eq-slider-row">
+      <span class="eq-label">低音</span>
+      <input type="range" class="eq-slider" id="eq-bass" min="-10" max="10" value="0">
+      <span class="eq-value" id="eq-bass-val">0</span>
+    </div>
+    <div class="eq-slider-row">
+      <span class="eq-label">中音</span>
+      <input type="range" class="eq-slider" id="eq-mid" min="-10" max="10" value="0">
+      <span class="eq-value" id="eq-mid-val">0</span>
+    </div>
+    <div class="eq-slider-row">
+      <span class="eq-label">高音</span>
+      <input type="range" class="eq-slider" id="eq-treble" min="-10" max="10" value="0">
+      <span class="eq-value" id="eq-treble-val">0</span>
+    </div>
+    <div class="eq-slider-row">
+      <span class="eq-label">音量</span>
+      <input type="range" class="eq-slider" id="eq-gain" min="-10" max="10" value="0">
+      <span class="eq-value" id="eq-gain-val">0</span>
+    </div>
+  </div>
+
+  <div class="shortcuts-overlay" id="shortcuts-overlay"></div>
+  <div class="shortcuts-panel" id="shortcuts-panel">
+    <button class="close-shortcuts" id="close-shortcuts">✕</button>
+    <div class="shortcuts-title">⌨️ 快捷鍵</div>
+    <div class="shortcuts-grid">
+      <div class="shortcut-item"><span class="shortcut-key">Space</span><span class="shortcut-desc">播放/暫停</span></div>
+      <div class="shortcut-item"><span class="shortcut-key">←</span><span class="shortcut-desc">倒回 10 秒</span></div>
+      <div class="shortcut-item"><span class="shortcut-key">→</span><span class="shortcut-desc">快轉 10 秒</span></div>
+      <div class="shortcut-item"><span class="shortcut-key">↑</span><span class="shortcut-desc">音量 +10</span></div>
+      <div class="shortcut-item"><span class="shortcut-key">↓</span><span class="shortcut-desc">音量 -10</span></div>
+      <div class="shortcut-item"><span class="shortcut-key">M</span><span class="shortcut-desc">靜音切換</span></div>
+      <div class="shortcut-item"><span class="shortcut-key">S</span><span class="shortcut-desc">隨機播放</span></div>
+      <div class="shortcut-item"><span class="shortcut-key">L</span><span class="shortcut-desc">喜歡/取消</span></div>
+    </div>
+  </div>
+
+  <div class="player-modal" id="player-modal">
+    <div class="player-modal-content">
+      <button class="close-modal-btn" id="close-modal-btn">✕</button>
+      <div class="player-modal-album" id="modal-album">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      </div>
+      <h2 class="player-modal-title" id="modal-title">未播放</h2>
+      <p class="player-modal-artist" id="modal-artist">--</p>
+      <div class="player-modal-controls">
+        <button class="bar-ctrl-btn" id="modal-prev" title="上一首">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+        </button>
+        <button class="bar-play-btn" id="modal-play">
+          <svg id="modal-play-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <svg id="modal-pause-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        </button>
+        <button class="bar-ctrl-btn" id="modal-next" title="下一首">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+        </button>
+      </div>
+      <div class="player-modal-progress">
+        <span class="bar-time" id="modal-current-time">0:00</span>
+        <input type="range" class="bar-progress-slider" id="modal-progress" min="0" max="100" value="0" style="--progress: 0%">
+        <span class="bar-time" id="modal-duration">0:00</span>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-container"></div>
 
-  <!-- 注入播放列表避免 fetch 被 Vercel 保護阻擋 -->
   <script is:inline define:vars={{ tracks: tracksData.tracks }}>
     window.__MUSIC_TRACKS__ = tracks;
   </script>
@@ -1165,10 +795,45 @@ try {
         this.isLiked = false;
         this.isMuted = false;
         this.savedVolume = 80;
+        this.playMode = 'sequence';
+        this.playbackSpeed = 1;
+        this.eqSettings = { bass: 0, mid: 0, treble: 0, gain: 0 };
         this.audio = new Audio();
+        this.audioCtx = null;
+        this.gainNode = null;
+        this.filters = {};
         this.likedSongs = JSON.parse(localStorage.getItem('likedSongs') || '[]');
         this.repostedSongs = JSON.parse(localStorage.getItem('repostedSongs') || '[]');
+        this.playStats = JSON.parse(localStorage.getItem('playStats') || '{"total":0,"liked":0,"history":[]}');
+        this.initAudioContext();
         this.init();
+      }
+      
+      initAudioContext() {
+        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        this.gainNode = this.audioCtx.createGain();
+        this.gainNode.connect(this.audioCtx.destination);
+        
+        ['bass', 'mid', 'treble'].forEach((name, i) => {
+          const filter = this.audioCtx.createBiquadFilter();
+          filter.type = ['lowshelf', 'peaking', 'highshelf'][i];
+          filter.frequency.value = [200, 1000, 4000][i];
+          filter.Q.value = 1;
+          filter.gain.value = 0;
+          this.filters[name] = filter;
+        });
+        
+        this.audio.addEventListener('canplay', () => {
+          try {
+            if (!this.audio.src.includes(this.audioCtx.currentSource)) {
+              const source = this.audioCtx.createMediaElementSource(this.audio);
+              source.connect(this.filters.bass);
+              this.filters.bass.connect(this.filters.mid);
+              this.filters.mid.connect(this.filters.treble);
+              this.filters.treble.connect(this.gainNode);
+            }
+          } catch(e) {}
+        });
       }
       
       async init() {
@@ -1182,6 +847,7 @@ try {
         
         this.filteredTracks = [...this.tracks];
         this.renderTrackList();
+        this.updateStats();
         
         this.trackSearch = document.getElementById('track-search');
         this.toastContainer = document.getElementById('toast-container');
@@ -1213,6 +879,11 @@ try {
         } catch { return []; }
       }
       
+      updateStats() {
+        document.getElementById('total-tracks').textContent = this.tracks.length;
+        document.getElementById('liked-count').textContent = this.likedSongs.length;
+      }
+      
       bindEvents() {
         this.trackSearch.addEventListener('input', () => this.applyFilters());
         document.getElementById('lang-filter').addEventListener('change', (e) => { this.currentLang = e.target.value; this.applyFilters(); });
@@ -1223,7 +894,9 @@ try {
           const row = e.target.closest('.track-row');
           const addBtn = e.target.closest('.add-queue-btn');
           const repostBtn = e.target.closest('.repost-btn');
+          const dlBtn = e.target.closest('.download-btn');
           
+          if (dlBtn) { e.stopPropagation(); this.downloadTrack(parseInt(dlBtn.dataset.idx)); return; }
           if (repostBtn) { e.stopPropagation(); this.toggleRepost(parseInt(repostBtn.dataset.idx)); return; }
           if (addBtn) { e.stopPropagation(); this.addToQueue(parseInt(addBtn.dataset.idx)); return; }
           if (row) { const idx = parseInt(row.dataset.idx); this.queue = [idx]; this.queueIdx = 0; this.playTrack(idx); }
@@ -1231,14 +904,71 @@ try {
         
         this.barPlay.addEventListener('click', () => this.togglePlay());
         this.barLikeBtn.addEventListener('click', () => this.toggleLike());
-        
         document.getElementById('bar-share-btn')?.addEventListener('click', () => this.shareTrack());
         
         this.barPrev.addEventListener('click', () => { const prevIdx = this.getPrevIdx(); if (prevIdx !== -1) this.playTrack(prevIdx); });
         this.barNext.addEventListener('click', () => { const nextIdx = this.getNextIdx(); if (nextIdx !== -1) this.playTrack(nextIdx); });
-        this.barProgress.addEventListener('input', () => { this.audio.currentTime = (parseFloat(this.barProgress.value) / 100) * this.audio.duration; });
-        this.barVolume.addEventListener('input', () => { this.savedVolume = parseInt(this.barVolume.value); this.audio.volume = this.savedVolume / 100; this.isMuted = this.savedVolume === 0; this.barVolume.style.setProperty('--volume', this.savedVolume + '%'); });
+        this.barProgress.addEventListener('input', () => { if(this.audio.duration) this.audio.currentTime = (parseFloat(this.barProgress.value) / 100) * this.audio.duration; });
+        this.barVolume.addEventListener('input', () => { this.savedVolume = parseInt(this.barVolume.value); this.audio.volume = this.savedVolume / 100; this.isMuted = this.savedVolume === 0; this.barVolume.style.setProperty('--volume', this.savedVolume + '%'); if(this.gainNode) this.gainNode.gain.value = this.savedVolume / 100; });
         document.getElementById('bar-vol-btn')?.addEventListener('click', () => this.toggleMute());
+        
+        document.getElementById('bar-mode')?.addEventListener('click', (e) => {
+          const opt = e.target.closest('.mode-option');
+          if (opt) { this.playMode = opt.dataset.mode; this.updateModeUI(); this.showToast('模式：' + {'sequence':'順序播放','shuffle':'隨機播放','repeat':'全部循環','repeat-one':'單曲循環'}[this.playMode]); }
+        });
+        
+        document.getElementById('bar-speed')?.addEventListener('click', (e) => {
+          const opt = e.target.closest('.speed-option');
+          if (opt) { this.playbackSpeed = parseFloat(opt.dataset.speed); this.audio.playbackRate = this.playbackSpeed; document.getElementById('speed-label').textContent = this.playbackSpeed + 'x'; this.updateSpeedUI(); }
+        });
+        
+        document.getElementById('bar-eq-btn')?.addEventListener('click', () => {
+          document.getElementById('eq-panel').classList.toggle('open');
+        });
+        
+        document.getElementById('eq-close')?.addEventListener('click', () => {
+          document.getElementById('eq-panel').classList.remove('open');
+        });
+        
+        ['bass', 'mid', 'treble', 'gain'].forEach(name => {
+          const slider = document.getElementById('eq-' + name);
+          const valEl = document.getElementById('eq-' + name + '-val');
+          if (slider) {
+            slider.addEventListener('input', () => {
+              this.eqSettings[name] = parseInt(slider.value);
+              valEl.textContent = slider.value;
+              this.applyEQ();
+            });
+          }
+        });
+        
+        this.barAlbum.addEventListener('click', () => this.openPlayerModal());
+        document.getElementById('close-modal-btn')?.addEventListener('click', () => this.closePlayerModal());
+        document.getElementById('player-modal')?.addEventListener('click', (e) => { if(e.target.id === 'player-modal') this.closePlayerModal(); });
+        document.getElementById('modal-play')?.addEventListener('click', () => this.togglePlay());
+        document.getElementById('modal-prev')?.addEventListener('click', () => { const prevIdx = this.getPrevIdx(); if (prevIdx !== -1) this.playTrack(prevIdx); });
+        document.getElementById('modal-next')?.addEventListener('click', () => { const nextIdx = this.getNextIdx(); if (nextIdx !== -1) this.playTrack(nextIdx); });
+        document.getElementById('modal-progress')?.addEventListener('input', (e) => { if(this.audio.duration) this.audio.currentTime = (parseFloat(e.target.value) / 100) * this.audio.duration; });
+        
+        document.getElementById('shortcuts-btn')?.addEventListener('click', () => this.toggleShortcuts());
+        document.getElementById('close-shortcuts')?.addEventListener('click', () => this.toggleShortcuts());
+        document.getElementById('shortcuts-overlay')?.addEventListener('click', () => this.toggleShortcuts());
+        
+        document.getElementById('mobile-lyrics-toggle')?.addEventListener('click', () => {
+          document.querySelector('.lyrics-panel').classList.add('mobile-open');
+        });
+        document.getElementById('mobile-lyrics-close')?.addEventListener('click', () => {
+          document.querySelector('.lyrics-panel').classList.remove('mobile-open');
+        });
+        
+        document.querySelectorAll('.translate-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            document.querySelectorAll('.translate-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            this.lyricsMode = tab.dataset.mode;
+            this.renderLyrics();
+          });
+        });
         
         this.audio.addEventListener('timeupdate', () => {
           if (this.audio.duration && this.audio.currentTime > 0) {
@@ -1249,24 +979,48 @@ try {
             const progressEl = document.querySelector('.track-row.playing .track-progress-bar');
             if (progressEl) progressEl.style.width = progress + '%';
             this.updateLyricsSync();
+            
+            const modalProgress = document.getElementById('modal-progress');
+            if (modalProgress) { modalProgress.value = progress; modalProgress.style.setProperty('--progress', progress + '%'); }
+            document.getElementById('modal-current-time').textContent = this.formatTime(this.audio.currentTime);
           }
         });
         
-        this.audio.addEventListener('loadedmetadata', () => { this.barDuration.textContent = this.formatTime(this.audio.duration); });
-        this.audio.addEventListener('ended', () => this.playTrack(this.getNextIdx()));
+        this.audio.addEventListener('loadedmetadata', () => {
+          this.barDuration.textContent = this.formatTime(this.audio.duration);
+          document.getElementById('modal-duration').textContent = this.formatTime(this.audio.duration);
+        });
+        
+        this.audio.addEventListener('ended', () => {
+          if (this.playMode === 'repeat-one') {
+            this.audio.currentTime = 0;
+            this.audio.play();
+          } else {
+            const nextIdx = this.getNextIdx();
+            if (nextIdx !== -1) this.playTrack(nextIdx);
+          }
+        });
+        
         this.audio.addEventListener('play', () => {
           this.isPlaying = true;
           this.renderTrackList();
           document.getElementById('play-icon').style.display = 'none';
           document.getElementById('pause-icon').style.display = '';
+          document.getElementById('modal-play-icon').style.display = 'none';
+          document.getElementById('modal-pause-icon').style.display = '';
           this.barAlbum.classList.add('playing');
+          document.getElementById('modal-album')?.classList.add('playing');
         });
+        
         this.audio.addEventListener('pause', () => {
           this.isPlaying = false;
           this.renderTrackList();
           document.getElementById('play-icon').style.display = '';
           document.getElementById('pause-icon').style.display = 'none';
+          document.getElementById('modal-play-icon').style.display = '';
+          document.getElementById('modal-pause-icon').style.display = 'none';
           this.barAlbum.classList.remove('playing');
+          document.getElementById('modal-album')?.classList.remove('playing');
         });
         
         document.addEventListener('keydown', (e) => {
@@ -1278,6 +1032,8 @@ try {
             case 'ArrowUp': this.barVolume.value = Math.min(100, parseInt(this.barVolume.value) + 10); this.audio.volume = parseInt(this.barVolume.value) / 100; this.barVolume.style.setProperty('--volume', this.barVolume.value + '%'); break;
             case 'ArrowDown': this.barVolume.value = Math.max(0, parseInt(this.barVolume.value) - 10); this.audio.volume = parseInt(this.barVolume.value) / 100; this.barVolume.style.setProperty('--volume', this.barVolume.value + '%'); break;
             case 'KeyM': this.toggleMute(); break;
+            case 'KeyS': this.playMode = 'shuffle'; this.updateModeUI(); this.showToast('隨機播放'); break;
+            case 'KeyL': this.toggleLike(); break;
           }
         });
       }
@@ -1315,10 +1071,55 @@ try {
               '<button class="action-btn repost-btn ' + (isReposted ? 'reposted' : '') + '" data-idx="' + i + '" title="轉發">' +
                 '<svg viewBox="0 0 24 24" fill="' + (isReposted ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>' +
               '</button>' +
+              '<button class="action-btn download-btn" data-idx="' + i + '" title="下載">⬇</button>' +
               '<button class="action-btn add-queue-btn" data-idx="' + i + '" title="加入佇列">+</button>' +
             '</div>' +
           '</div>';
         }).join('');
+      }
+      
+      updateModeUI() {
+        document.querySelectorAll('.mode-option').forEach(opt => {
+          opt.classList.toggle('active', opt.dataset.mode === this.playMode);
+        });
+        const modeIcon = document.getElementById('mode-icon');
+        if (modeIcon) {
+          const icons = {
+            sequence: '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+            shuffle: '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>',
+            repeat: '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+            'repeat-one': '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="9" y1="12" x2="15" y2="12"/>'
+          };
+          modeIcon.innerHTML = icons[this.playMode] || icons.sequence;
+        }
+      }
+      
+      updateSpeedUI() {
+        document.querySelectorAll('.speed-option').forEach(opt => {
+          opt.classList.toggle('active', parseFloat(opt.dataset.speed) === this.playbackSpeed);
+        });
+      }
+      
+      applyEQ() {
+        if (this.filters.bass) {
+          this.filters.bass.gain.value = this.eqSettings.bass;
+          this.filters.mid.gain.value = this.eqSettings.mid;
+          this.filters.treble.gain.value = this.eqSettings.treble;
+        }
+        if (this.gainNode) {
+          const volMultiplier = 1 + (this.eqSettings.gain / 20);
+          this.gainNode.gain.value = (this.savedVolume / 100) * volMultiplier;
+        }
+      }
+      
+      downloadTrack(idx) {
+        const track = this.filteredTracks[idx];
+        if (!track) return;
+        const a = document.createElement('a');
+        a.href = track.audio;
+        a.download = track.name + '.mp3';
+        a.click();
+        this.showToast('開始下載：' + this.cleanTrackName(track.name));
       }
       
       toggleRepost(idx) {
@@ -1337,7 +1138,7 @@ try {
       shareTrack() {
         const track = this.filteredTracks[this.currentIndex];
         if (!track) return;
-        const shareUrl = `${window.location.origin}/music?track=${encodeURIComponent(track.name)}`;
+        const shareUrl = window.location.origin + '/music?track=' + encodeURIComponent(track.name);
         if (navigator.share) {
           navigator.share({ title: track.name, text: track.artist, url: shareUrl });
         } else {
@@ -1351,17 +1152,34 @@ try {
         this.currentIndex = Math.max(0, Math.min(index, this.filteredTracks.length - 1));
         const track = this.filteredTracks[this.currentIndex];
         if (!track) return;
+        
+        this.playStats.total++;
+        this.playStats.history.unshift({ name: track.name, time: Date.now() });
+        if (this.playStats.history.length > 100) this.playStats.history.pop();
+        localStorage.setItem('playStats', JSON.stringify(this.playStats));
+        
         this.audio.src = track.audio;
         this.audio.volume = this.savedVolume / 100;
+        this.audio.playbackRate = this.playbackSpeed;
         this.barTrackName.textContent = this.cleanTrackName(track.name);
         this.barTrackArtist.textContent = track.artist || '--';
+        document.getElementById('modal-title').textContent = this.cleanTrackName(track.name);
+        document.getElementById('modal-artist').textContent = track.artist || '--';
+        
+        if (track.cover) {
+          document.getElementById('album-img').src = track.cover;
+          document.getElementById('album-img').style.display = '';
+          document.getElementById('album-fallback').style.display = 'none';
+        } else {
+          document.getElementById('album-img').style.display = 'none';
+          document.getElementById('album-fallback').style.display = '';
+        }
+        
         this.isLiked = this.likedSongs.includes(this.currentIndex);
         this.updateLikeButton();
         this.isPlaying = true;
         this.renderTrackList();
         this.audio.play();
-        
-        // 載入歌詞
         this.loadLyrics(track.lyrics);
       }
       
@@ -1388,11 +1206,8 @@ try {
       }
       
       parseLyrics(text) {
-        // 解析 LRC 格式或純文字歌詞
         const lines = text.split('\n').filter(l => l.trim());
         const lyrics = [];
-        
-        // 嘗試解析 LRC 格式 [mm:ss.xx] 或 [mm:ss]
         const lrcRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d{2,3}))?\](.*)/;
         
         for (const line of lines) {
@@ -1405,18 +1220,14 @@ try {
             const text = match[4].trim();
             if (text) lyrics.push({ time, text });
           } else if (line.trim() && !line.startsWith('[')) {
-            // 純文字歌詞，無時間軸
             lyrics.push({ time: -1, text: line.trim() });
           }
         }
         
-        // 如果沒有 LRC 格式，按行號分配時間
         if (lyrics.length > 0 && lyrics[0].time === -1) {
           const duration = this.audio.duration || 180;
           const timePerLine = duration / (lyrics.length + 1);
-          lyrics.forEach((l, i) => {
-            l.time = timePerLine * (i + 1);
-          });
+          lyrics.forEach((l, i) => { l.time = timePerLine * (i + 1); });
         }
         
         return lyrics.sort((a, b) => a.time - b.time);
@@ -1435,13 +1246,10 @@ try {
           '</div>'
         ).join('');
         
-        // 點擊歌詞跳轉
         this.lyricsContainer.querySelectorAll('.lyric-line').forEach(el => {
           el.addEventListener('click', () => {
             const time = parseFloat(el.dataset.time);
-            if (time >= 0) {
-              this.audio.currentTime = time;
-            }
+            if (time >= 0) this.audio.currentTime = time;
           });
         });
       }
@@ -1463,7 +1271,6 @@ try {
           el.classList.remove('active', 'past');
           if (i === activeIdx) {
             el.classList.add('active');
-            // 自動滾動
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           } else if (i < activeIdx) {
             el.classList.add('past');
@@ -1476,14 +1283,18 @@ try {
         const pos = this.likedSongs.indexOf(idx);
         if (pos === -1) {
           this.likedSongs.push(idx);
+          this.playStats.liked++;
           this.showToast('已加入到喜歡');
         } else {
           this.likedSongs.splice(pos, 1);
+          this.playStats.liked = Math.max(0, this.playStats.liked - 1);
           this.showToast('已移除');
         }
         this.isLiked = this.likedSongs.includes(idx);
         this.updateLikeButton();
         localStorage.setItem('likedSongs', JSON.stringify(this.likedSongs));
+        localStorage.setItem('playStats', JSON.stringify(this.playStats));
+        this.updateStats();
       }
       
       updateLikeButton() {
@@ -1498,8 +1309,6 @@ try {
       }
       
       togglePlay() {
-        const playIcon = document.getElementById('play-icon');
-        const pauseIcon = document.getElementById('pause-icon');
         if (this.isPlaying) {
           this.audio.pause();
         } else {
@@ -1516,6 +1325,13 @@ try {
       }
       
       getNextIdx() {
+        if (this.playMode === 'repeat-one') return this.currentIndex;
+        
+        if (this.playMode === 'shuffle') {
+          const available = [...Array(this.filteredTracks.length).keys()].filter(i => i !== this.currentIndex);
+          if (available.length > 0) return available[Math.floor(Math.random() * available.length)];
+        }
+        
         if (this.queue.length > 1 && this.queueIdx < this.queue.length - 1) {
           this.queueIdx++;
           return this.queue[this.queueIdx];
@@ -1531,6 +1347,7 @@ try {
           return this.currentIndex;
         }
         this.prevPressTime = now;
+        
         if (this.queue.length > 1 && this.queueIdx > 0) {
           this.queueIdx--;
           return this.queue[this.queueIdx];
@@ -1543,6 +1360,20 @@ try {
           this.queue.push(idx);
           this.showToast('已加入佇列');
         }
+      }
+      
+      openPlayerModal() {
+        document.getElementById('player-modal').classList.add('open');
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+      }
+      
+      closePlayerModal() {
+        document.getElementById('player-modal').classList.remove('open');
+      }
+      
+      toggleShortcuts() {
+        document.getElementById('shortcuts-panel').classList.toggle('open');
+        document.getElementById('shortcuts-overlay').classList.toggle('open');
       }
       
       showToast(msg) {
