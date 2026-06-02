@@ -534,33 +534,98 @@ try {
     .panel-scroll::-webkit-scrollbar-track { background: transparent; }
     .panel-scroll::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 2px; }
     
+    /* 歌詞面板 - SoundCloud 風格 */
+    .lyrics-panel {
+      background: rgba(20, 20, 20, 0.98);
+      border-radius: 20px;
+      padding: 28px;
+      height: calc(100vh - 280px);
+      max-height: 600px;
+      position: sticky;
+      top: 104px;
+      overflow: hidden;
+      backdrop-filter: blur(60px);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .lyrics-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .lyrics-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .lyrics-title svg { width: 20px; height: 20px; color: var(--accent); }
+    
+    .lyrics-badge {
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    
+    .lyrics-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+    .lyrics-container::-webkit-scrollbar { width: 4px; }
+    .lyrics-container::-webkit-scrollbar-track { background: transparent; }
+    .lyrics-container::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 2px; }
+    
     /* 歌詞樣式 */
     .lyric-line {
-      padding: 16px 20px;
+      padding: 14px 16px;
       color: var(--text-secondary);
       cursor: pointer;
       transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-      border-radius: 12px;
-      font-size: 0.95rem;
-      line-height: 1.6;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      line-height: 1.7;
       margin-bottom: 4px;
       border-left: 3px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
     .lyric-line:hover { background: var(--bg-hover); color: var(--text-primary); border-left-color: var(--accent); }
     .lyric-line.active {
       color: var(--accent);
-      font-size: 1.3rem;
+      font-size: 1.15rem;
       font-weight: 700;
-      transform: scale(1.02) translateX(8px);
-      text-shadow: 0 0 40px var(--accent-glow), 0 0 80px var(--accent-dim);
+      transform: scale(1.02) translateX(6px);
+      text-shadow: 0 0 30px var(--accent-glow);
       border-left-color: var(--accent);
       background: var(--accent-dim);
     }
     .lyric-line.past { 
       opacity: 0.35;
-      transform: translateX(-8px);
+      transform: translateX(-4px);
       color: var(--text-tertiary);
     }
+    .lyric-time {
+      font-size: 0.7rem;
+      color: var(--text-tertiary);
+      font-variant-numeric: tabular-nums;
+      min-width: 36px;
+      opacity: 0.7;
+    }
+    .lyric-line.active .lyric-time { color: var(--accent); opacity: 1; }
     
     /* 佇列樣式 */
     .queue-item {
@@ -940,68 +1005,88 @@ try {
 
   <!-- 主內容區 -->
   <section class="main-content">
-    <!-- 橫幅區 -->
-    <div class="hero-banner">
-      <div class="hero-content">
-        <span class="hero-tag">SoundCloud 風格</span>
-        <h1 class="hero-title">探索音樂世界</h1>
-        <p class="hero-subtitle">盡情播放、分享你喜愛的音樂</p>
+    <div style="display: grid; grid-template-columns: 1fr 380px; gap: 24px;">
+      
+      <!-- 左側：橫幅 + 篩選 + 歌曲列表 -->
+      <div>
+        <!-- 橫幅區 -->
+        <div class="hero-banner">
+          <div class="hero-content">
+            <span class="hero-tag">SoundCloud 風格</span>
+            <h1 class="hero-title">探索音樂世界</h1>
+            <p class="hero-subtitle">盡情播放、分享你喜愛的音樂</p>
+          </div>
+          <div class="hero-waveform">
+            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div>
+            <div class="hero-wave-bar"></div>
+          </div>
+        </div>
+        
+        <!-- 下拉篩選 -->
+        <div class="filter-row">
+          <select id="lang-filter">
+            <option value="all">🌐 全部語言</option>
+            <option value="TW">🇹🇼 台灣</option>
+            <option value="EN">🇺🇸 英文</option>
+            <option value="JP">🇯🇵 日文</option>
+            <option value="KR">🇰🇷 韓文</option>
+          </select>
+          <select id="style-filter">
+            <option value="all">🎵 全部曲風</option>
+            <option value="流行">流行</option>
+            <option value="抒情">抒情</option>
+            <option value="嘻哈">嘻哈</option>
+            <option value="搖滾">搖滾</option>
+            <option value="Lo-fi">Lo-fi</option>
+            <option value="電子">電子</option>
+            <option value="R&B">R&B</option>
+          </select>
+          <select id="gender-filter">
+            <option value="all">👤 全部歌手</option>
+            <option value="M">♂ 男歌手</option>
+            <option value="F">♀ 女歌手</option>
+          </select>
+        </div>
+        
+        <!-- 歌曲列表 -->
+        <div class="track-list-container">
+          <div class="track-list-header">
+            <span>#</span>
+            <span>標題</span>
+            <span>歌手</span>
+            <span>專輯</span>
+            <span>⏱</span>
+            <span></span>
+          </div>
+          <div class="track-scroll">
+            <div id="track-list">
+              <p style="color: var(--text-tertiary); text-align: center; padding: 50px;">載入中...</p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="hero-waveform">
-        <div class="hero-wave-bar"></div>
-        <div class="hero-wave-bar"></div>
-        <div class="hero-wave-bar"></div>
-        <div class="hero-wave-bar"></div>
-        <div class="hero-wave-bar"></div>
-        <div class="hero-wave-bar"></div>
-        <div class="hero-wave-bar"></div>
-        <div class="hero-wave-bar"></div>
-        <div class="hero-wave-bar"></div>
-        <div class="hero-wave-bar"></div>
-        <div class="hero-wave-bar"></div>
-        <div class="hero-wave-bar"></div>
-      </div>
-    </div>
-    
-    <!-- 下拉篩選 -->
-    <div class="filter-row">
-      <select id="lang-filter">
-        <option value="all">🌐 全部語言</option>
-        <option value="TW">🇹🇼 台灣</option>
-        <option value="EN">🇺🇸 英文</option>
-        <option value="JP">🇯🇵 日文</option>
-        <option value="KR">🇰🇷 韓文</option>
-      </select>
-      <select id="style-filter">
-        <option value="all">🎵 全部曲風</option>
-        <option value="流行">流行</option>
-        <option value="抒情">抒情</option>
-        <option value="嘻哈">嘻哈</option>
-        <option value="搖滾">搖滾</option>
-        <option value="Lo-fi">Lo-fi</option>
-        <option value="電子">電子</option>
-        <option value="R&B">R&B</option>
-      </select>
-      <select id="gender-filter">
-        <option value="all">👤 全部歌手</option>
-        <option value="M">♂ 男歌手</option>
-        <option value="F">♀ 女歌手</option>
-      </select>
-    </div>
-    
-    <!-- 歌曲列表 -->
-    <div class="track-list-container">
-      <div class="track-list-header">
-        <span>#</span>
-        <span>標題</span>
-        <span>歌手</span>
-        <span>專輯</span>
-        <span>⏱</span>
-        <span></span>
-      </div>
-      <div class="track-scroll">
-        <div id="track-list">
-          <p style="color: var(--text-tertiary); text-align: center; padding: 50px;">載入中...</p>
+      
+      <!-- 右側：歌詞面板 -->
+      <div class="lyrics-panel">
+        <div class="lyrics-header">
+          <div class="lyrics-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            歌詞
+          </div>
+          <span class="lyrics-badge" id="lyrics-count">0 句</span>
+        </div>
+        <div class="lyrics-container" id="lyrics-container">
+          <p style="color: var(--text-tertiary); text-align: center; padding: 50px;">選擇歌曲以顯示歌詞</p>
         </div>
       </div>
     </div>
@@ -1112,6 +1197,8 @@ try {
         this.barVolume.style.setProperty('--volume', this.savedVolume + '%');
         this.barLikeBtn = document.getElementById('bar-like-btn');
         this.barAlbum = document.getElementById('bar-album');
+        this.lyricsContainer = document.getElementById('lyrics-container');
+        this.lyricsCount = document.getElementById('lyrics-count');
         this.bindEvents();
       }
       
@@ -1161,6 +1248,7 @@ try {
             this.barCurrentTime.textContent = this.formatTime(this.audio.currentTime);
             const progressEl = document.querySelector('.track-row.playing .track-progress-bar');
             if (progressEl) progressEl.style.width = progress + '%';
+            this.updateLyricsSync();
           }
         });
         
@@ -1272,6 +1360,115 @@ try {
         this.isPlaying = true;
         this.renderTrackList();
         this.audio.play();
+        
+        // 載入歌詞
+        this.loadLyrics(track.lyrics);
+      }
+      
+      async loadLyrics(lyricsPath) {
+        if (!lyricsPath) {
+          this.lyrics = [];
+          this.renderLyrics();
+          this.lyricsCount.textContent = '0 句';
+          return;
+        }
+        
+        try {
+          const res = await fetch(lyricsPath);
+          const text = await res.text();
+          this.lyrics = this.parseLyrics(text);
+          this.renderLyrics();
+          this.lyricsCount.textContent = this.lyrics.length + ' 句';
+        } catch (err) {
+          console.error('Failed to load lyrics:', err);
+          this.lyrics = [];
+          this.renderLyrics();
+          this.lyricsCount.textContent = '載入失敗';
+        }
+      }
+      
+      parseLyrics(text) {
+        // 解析 LRC 格式或純文字歌詞
+        const lines = text.split('\n').filter(l => l.trim());
+        const lyrics = [];
+        
+        // 嘗試解析 LRC 格式 [mm:ss.xx] 或 [mm:ss]
+        const lrcRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d{2,3}))?\](.*)/;
+        
+        for (const line of lines) {
+          const match = line.match(lrcRegex);
+          if (match) {
+            const mins = parseInt(match[1]);
+            const secs = parseInt(match[2]);
+            const ms = match[3] ? parseInt(match[3].padEnd(3, '0')) : 0;
+            const time = mins * 60 + secs + ms / 1000;
+            const text = match[4].trim();
+            if (text) lyrics.push({ time, text });
+          } else if (line.trim() && !line.startsWith('[')) {
+            // 純文字歌詞，無時間軸
+            lyrics.push({ time: -1, text: line.trim() });
+          }
+        }
+        
+        // 如果沒有 LRC 格式，按行號分配時間
+        if (lyrics.length > 0 && lyrics[0].time === -1) {
+          const duration = this.audio.duration || 180;
+          const timePerLine = duration / (lyrics.length + 1);
+          lyrics.forEach((l, i) => {
+            l.time = timePerLine * (i + 1);
+          });
+        }
+        
+        return lyrics.sort((a, b) => a.time - b.time);
+      }
+      
+      renderLyrics() {
+        if (this.lyrics.length === 0) {
+          this.lyricsContainer.innerHTML = '<p style="color: var(--text-tertiary); text-align: center; padding: 50px;">此歌曲暫無歌詞</p>';
+          return;
+        }
+        
+        this.lyricsContainer.innerHTML = this.lyrics.map((l, i) => 
+          '<div class="lyric-line" data-time="' + l.time + '" data-idx="' + i + '">' +
+            '<span class="lyric-time">' + (l.time >= 0 ? this.formatTime(l.time) : '') + '</span>' +
+            '<span>' + l.text + '</span>' +
+          '</div>'
+        ).join('');
+        
+        // 點擊歌詞跳轉
+        this.lyricsContainer.querySelectorAll('.lyric-line').forEach(el => {
+          el.addEventListener('click', () => {
+            const time = parseFloat(el.dataset.time);
+            if (time >= 0) {
+              this.audio.currentTime = time;
+            }
+          });
+        });
+      }
+      
+      updateLyricsSync() {
+        if (this.lyrics.length === 0) return;
+        
+        const currentTime = this.audio.currentTime;
+        let activeIdx = -1;
+        
+        for (let i = this.lyrics.length - 1; i >= 0; i--) {
+          if (this.lyrics[i].time >= 0 && this.lyrics[i].time <= currentTime) {
+            activeIdx = i;
+            break;
+          }
+        }
+        
+        this.lyricsContainer.querySelectorAll('.lyric-line').forEach((el, i) => {
+          el.classList.remove('active', 'past');
+          if (i === activeIdx) {
+            el.classList.add('active');
+            // 自動滾動
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else if (i < activeIdx) {
+            el.classList.add('past');
+          }
+        });
       }
       
       toggleLike() {
