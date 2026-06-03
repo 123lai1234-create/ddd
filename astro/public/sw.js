@@ -34,13 +34,14 @@ self.addEventListener('fetch', event => {
 
   event.respondWith(
     caches.match(request).then(cached => {
-      const network = fetch(request).then(res => {
+      if (cached) return cached;
+      return fetch(request).then(res => {
         if (res && res.status === 200) {
-          caches.open(CACHE_NAME).then(c => c.put(request, res.clone()));
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(request, clone));
         }
         return res;
       });
-      return cached || network;
     })
   );
 });

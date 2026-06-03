@@ -152,22 +152,35 @@ try {
     select option { background: var(--bg-card); }
     
     .track-list-container {
-      background: rgba(20, 20, 20, 0.95); border-radius: 16px; padding: 20px;
+      background: rgba(20, 20, 20, 0.95); border-radius: 16px; padding: 16px;
       backdrop-filter: blur(60px); border: 1px solid var(--border-subtle);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
     }
     
     .track-list-header {
       display: grid; grid-template-columns: 60px 2fr 1fr 1fr 80px 100px;
-      padding: 12px 20px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 12px;
-      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em;
-      color: var(--text-tertiary); font-weight: 700;
+      padding: 14px 20px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 4px;
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.15em;
+      color: var(--text-tertiary); font-weight: 700; user-select: none;
+      background: linear-gradient(180deg, rgba(255,85,0,0.04) 0%, transparent 100%);
+      border-radius: 10px 10px 0 0;
     }
+    .track-list-header span {
+      display: flex; align-items: center; gap: 6px;
+      position: relative;
+    }
+    .track-list-header span::after {
+      content: ''; position: absolute; bottom: -14px; left: 0; right: 0;
+      height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .track-list-header:hover span::after { opacity: 0.5; }
     
-    .track-scroll { max-height: 55vh; overflow-y: auto; padding-right: 8px; }
-    .track-scroll::-webkit-scrollbar { width: 8px; }
+    .track-scroll { max-height: 55vh; overflow-y: auto; }
+    .track-scroll::-webkit-scrollbar { width: 6px; }
     .track-scroll::-webkit-scrollbar-track { background: transparent; }
-    .track-scroll::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: 4px; }
-    .track-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+    .track-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    .track-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,85,0,0.4); }
     
     .track-row {
       display: grid; grid-template-columns: 60px 2fr 1fr 1fr 80px 100px;
@@ -184,7 +197,7 @@ try {
     }
     .track-progress-bar { height: 100%; background: var(--accent); transition: width 0.1s linear; box-shadow: 0 0 15px var(--accent); }
     
-    .track-num { font-size: 0.9rem; color: var(--text-tertiary); text-align: center; width: 32px; font-variant-numeric: tabular-nums; }
+    .track-num { font-size: 0.75rem; color: var(--text-tertiary); text-align: center; width: 32px; font-variant-numeric: tabular-nums; font-weight: 600; opacity: 0.6; }
     
     .track-wave { display: none; gap: 2px; align-items: center; justify-content: center; height: 14px; }
     .track-row.playing .track-num { display: none; }
@@ -206,8 +219,8 @@ try {
     .track-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .track-row.playing .track-title { color: var(--accent); }
     .track-artist-list { font-size: 0.8rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .track-album { font-size: 0.85rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .track-duration { font-size: 0.85rem; color: var(--text-tertiary); font-variant-numeric: tabular-nums; text-align: right; }
+    .track-album { font-size: 0.82rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.75; }
+    .track-duration { font-size: 0.78rem; color: var(--text-tertiary); font-variant-numeric: tabular-nums; text-align: right; opacity: 0.7; font-weight: 500; }
     
     .track-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
     .action-btn { background: none; border: none; color: var(--text-tertiary); cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
@@ -240,7 +253,6 @@ try {
     .lyrics-badge { background: var(--accent-dim); color: var(--accent); padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; }
     
     .lyrics-translate-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
-    
     .translate-tab { padding: 8px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); border: none; transition: all 0.2s; }
     .translate-tab.active { background: var(--accent); color: #000; }
     
@@ -260,36 +272,6 @@ try {
     .lyric-line.past { opacity: 0.35; transform: translateX(-4px); color: var(--text-tertiary); }
     .lyric-time { font-size: 0.7rem; color: var(--text-tertiary); font-variant-numeric: tabular-nums; min-width: 36px; opacity: 0.7; }
     .lyric-line.active .lyric-time { color: var(--accent); opacity: 1; }
-    
-    .lyrics-visualizer {
-      height: 120px;
-      background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-primary) 100%);
-      border-radius: 12px;
-      margin-bottom: 16px;
-      overflow: hidden;
-      position: relative;
-    }
-    .lyrics-visualizer canvas {
-      width: 100%;
-      height: 100%;
-    }
-    
-    .visualizer-toggle {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: var(--bg-elevated);
-      border: none;
-      border-radius: 8px;
-      padding: 6px 10px;
-      color: var(--text-secondary);
-      font-size: 0.7rem;
-      cursor: pointer;
-      z-index: 10;
-      transition: all 0.2s;
-    }
-    .visualizer-toggle:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .visualizer-toggle.active { background: var(--accent-dim); color: var(--accent); }
     
     .toast {
       position: fixed; bottom: 120px; right: 32px; background: rgba(34, 34, 34, 0.98);
@@ -605,11 +587,11 @@ try {
         
         <div class="track-list-container">
           <div class="track-list-header">
-            <span>#</span>
+            <span>🎵</span>
             <span>標題</span>
-            <span>歌手</span>
-            <span>專輯</span>
-            <span>⏱</span>
+            <span>🎤 歌手</span>
+            <span>💿 專輯</span>
+            <span>⏱ 時長</span>
             <span></span>
           </div>
           <div class="track-scroll">
@@ -632,10 +614,6 @@ try {
         <div class="lyrics-translate-toggle">
           <button class="translate-tab active" data-mode="original">原文</button>
           <button class="translate-tab" data-mode="roman">羅馬拼音</button>
-        </div>
-        <div class="lyrics-visualizer" id="lyrics-visualizer">
-          <button class="visualizer-toggle active" id="visualizer-toggle">🎵</button>
-          <canvas id="lyrics-canvas"></canvas>
         </div>
         <div class="lyrics-container" id="lyrics-container">
           <p style="color: var(--text-tertiary); text-align: center; padding: 50px;">選擇歌曲以顯示歌詞</p>
@@ -832,43 +810,13 @@ try {
         this.savedVolume = 80;
         this.playMode = 'sequence';
         this.playbackSpeed = 1;
-        this.eqSettings = { bass: 0, mid: 0, treble: 0, gain: 0 };
         this.audio = new Audio();
-        this.audioCtx = null;
-        this.gainNode = null;
-        this.filters = {};
+        this.audio.preload = 'auto';
+        this.audio.volume = this.savedVolume / 100;
         this.likedSongs = JSON.parse(localStorage.getItem('likedSongs') || '[]');
         this.repostedSongs = JSON.parse(localStorage.getItem('repostedSongs') || '[]');
         this.playStats = JSON.parse(localStorage.getItem('playStats') || '{"total":0,"liked":0,"history":[]}');
-        this.initAudioContext();
         this.init();
-      }
-      
-      initAudioContext() {
-        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        this.gainNode = this.audioCtx.createGain();
-        this.gainNode.connect(this.audioCtx.destination);
-        
-        ['bass', 'mid', 'treble'].forEach((name, i) => {
-          const filter = this.audioCtx.createBiquadFilter();
-          filter.type = ['lowshelf', 'peaking', 'highshelf'][i];
-          filter.frequency.value = [200, 1000, 4000][i];
-          filter.Q.value = 1;
-          filter.gain.value = 0;
-          this.filters[name] = filter;
-        });
-        
-        this.audio.addEventListener('canplay', () => {
-          try {
-            if (!this.audio.src.includes(this.audioCtx.currentSource)) {
-              const source = this.audioCtx.createMediaElementSource(this.audio);
-              source.connect(this.filters.bass);
-              this.filters.bass.connect(this.filters.mid);
-              this.filters.mid.connect(this.filters.treble);
-              this.filters.treble.connect(this.gainNode);
-            }
-          } catch(e) {}
-        });
       }
       
       async init() {
@@ -900,82 +848,7 @@ try {
         this.barAlbum = document.getElementById('bar-album');
         this.lyricsContainer = document.getElementById('lyrics-container');
         this.lyricsCount = document.getElementById('lyrics-count');
-        this.initVisualizer();
         this.bindEvents();
-      }
-      
-      initVisualizer() {
-        this.visualizerEnabled = true;
-        this.visCanvas = document.getElementById('lyrics-canvas');
-        this.visCtx = this.visCanvas ? this.visCanvas.getContext('2d') : null;
-        this.visualizerAnalyser = null;
-        this.visualizerData = null;
-        
-        const toggleBtn = document.getElementById('visualizer-toggle');
-        if (toggleBtn) {
-          toggleBtn.addEventListener('click', () => {
-            this.visualizerEnabled = !this.visualizerEnabled;
-            toggleBtn.classList.toggle('active', this.visualizerEnabled);
-            if (!this.visualizerEnabled && this.visCtx) {
-              this.visCtx.clearRect(0, 0, this.visCanvas.width, this.visCanvas.height);
-            }
-          });
-        }
-        
-        if (this.visCanvas) {
-          const resize = () => {
-            this.visCanvas.width = this.visCanvas.offsetWidth;
-            this.visCanvas.height = this.visCanvas.offsetHeight;
-          };
-          resize();
-          window.addEventListener('resize', resize);
-          this.startVisualizerLoop();
-        }
-      }
-      
-      startVisualizerLoop() {
-        if (!this.visCtx) return;
-        const draw = () => {
-          if (!this.visualizerEnabled || !this.isPlaying || !this.visualizerAnalyser) {
-            if (!this.visualizerEnabled) {
-              this.visCtx.fillStyle = 'rgba(20, 20, 20, 0.3)';
-              this.visCtx.fillRect(0, 0, this.visCanvas.width, this.visCanvas.height);
-            }
-          } else {
-            this.visualizerAnalyser.getByteFrequencyData(this.visualizerData);
-            this.visCtx.fillStyle = 'rgba(20, 20, 20, 0.25)';
-            this.visCtx.fillRect(0, 0, this.visCanvas.width, this.visCanvas.height);
-            
-            const bufferLength = this.visualizerData.length;
-            const barWidth = (this.visCanvas.width / bufferLength) * 2.5;
-            let x = 0;
-            
-            for (let i = 0; i < bufferLength; i++) {
-              const barHeight = (this.visualizerData[i] / 255) * this.visCanvas.height * 0.8;
-              const hue = (i / bufferLength) * 60 + 240;
-              const gradient = this.visCtx.createLinearGradient(x, this.visCanvas.height, x, this.visCanvas.height - barHeight);
-              gradient.addColorStop(0, `hsla(${hue}, 80%, 50%, 0.8)`);
-              gradient.addColorStop(1, `hsla(${hue}, 100%, 70%, 1)`);
-              this.visCtx.fillStyle = gradient;
-              this.visCtx.fillRect(x, this.visCanvas.height - barHeight, barWidth - 2, barHeight);
-              x += barWidth;
-            }
-          }
-          requestAnimationFrame(draw);
-        };
-        draw();
-      }
-      
-      connectVisualizer() {
-        if (this.visualizerAnalyser || !this.audioCtx) return;
-        try {
-          this.visualizerAnalyser = this.audioCtx.createAnalyser();
-          this.visualizerAnalyser.fftSize = 128;
-          this.visualizerData = new Uint8Array(this.visualizerAnalyser.frequencyBinCount);
-          const source = this.audioCtx.createMediaElementSource(this.audio);
-          source.connect(this.visualizerAnalyser);
-          this.visualizerAnalyser.connect(this.audioCtx.destination);
-        } catch(e) { console.error('Visualizer init failed:', e); }
       }
       
       async loadTracks() {
@@ -1019,7 +892,7 @@ try {
         this.barPrev.addEventListener('click', () => { const prevIdx = this.getPrevIdx(); if (prevIdx !== -1) this.playTrack(prevIdx); });
         this.barNext.addEventListener('click', () => { const nextIdx = this.getNextIdx(); if (nextIdx !== -1) this.playTrack(nextIdx); });
         this.barProgress.addEventListener('input', () => { if(this.audio.duration) this.audio.currentTime = (parseFloat(this.barProgress.value) / 100) * this.audio.duration; });
-        this.barVolume.addEventListener('input', () => { this.savedVolume = parseInt(this.barVolume.value); this.audio.volume = this.savedVolume / 100; this.isMuted = this.savedVolume === 0; this.barVolume.style.setProperty('--volume', this.savedVolume + '%'); if(this.gainNode) this.gainNode.gain.value = this.savedVolume / 100; });
+        this.barVolume.addEventListener('input', () => { this.savedVolume = parseInt(this.barVolume.value); this.audio.volume = this.savedVolume / 100; this.isMuted = this.savedVolume === 0; this.barVolume.style.setProperty('--volume', this.savedVolume + '%'); });
         document.getElementById('bar-vol-btn')?.addEventListener('click', () => this.toggleMute());
         
         document.getElementById('bar-mode')?.addEventListener('click', (e) => {
@@ -1038,18 +911,6 @@ try {
         
         document.getElementById('eq-close')?.addEventListener('click', () => {
           document.getElementById('eq-panel').classList.remove('open');
-        });
-        
-        ['bass', 'mid', 'treble', 'gain'].forEach(name => {
-          const slider = document.getElementById('eq-' + name);
-          const valEl = document.getElementById('eq-' + name + '-val');
-          if (slider) {
-            slider.addEventListener('input', () => {
-              this.eqSettings[name] = parseInt(slider.value);
-              valEl.textContent = slider.value;
-              this.applyEQ();
-            });
-          }
         });
         
         this.barAlbum.addEventListener('click', () => this.openPlayerModal());
@@ -1109,6 +970,25 @@ try {
             const nextIdx = this.getNextIdx();
             if (nextIdx !== -1) this.playTrack(nextIdx);
           }
+        });
+
+        this.audio.addEventListener('error', (e) => {
+          const err = this.audio.error;
+          let msg = '載入音訊失敗';
+          if (err) {
+            switch (err.code) {
+              case MediaError.MEDIA_ERR_ABORTED: msg = '音訊載入被中斷'; break;
+              case MediaError.MEDIA_ERR_NETWORK: msg = '網路錯誤，請檢查網路連線或確認開發伺服器正在運行'; break;
+              case MediaError.MEDIA_ERR_DECODE: msg = '音訊格式解碼失敗'; break;
+              case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: msg = '不支援的音訊格式或檔案不存在'; break;
+            }
+          }
+          console.error('[MusicPlayer] Audio error:', err?.code, err?.message, 'src:', this.audio.src);
+          this.showToast('⚠️ ' + msg + '（' + this.cleanTrackName(this.filteredTracks[this.currentIndex]?.name || '') + '）');
+        });
+
+        this.audio.addEventListener('canplay', () => {
+          console.log('[MusicPlayer] Audio ready, duration:', this.audio.duration);
         });
         
         this.audio.addEventListener('play', () => {
@@ -1210,18 +1090,6 @@ try {
         });
       }
       
-      applyEQ() {
-        if (this.filters.bass) {
-          this.filters.bass.gain.value = this.eqSettings.bass;
-          this.filters.mid.gain.value = this.eqSettings.mid;
-          this.filters.treble.gain.value = this.eqSettings.treble;
-        }
-        if (this.gainNode) {
-          const volMultiplier = 1 + (this.eqSettings.gain / 20);
-          this.gainNode.gain.value = (this.savedVolume / 100) * volMultiplier;
-        }
-      }
-      
       downloadTrack(idx) {
         const track = this.filteredTracks[idx];
         if (!track) return;
@@ -1268,9 +1136,13 @@ try {
         if (this.playStats.history.length > 100) this.playStats.history.pop();
         localStorage.setItem('playStats', JSON.stringify(this.playStats));
         
+        this.audio.pause();
         this.audio.src = track.audio;
         this.audio.volume = this.savedVolume / 100;
         this.audio.playbackRate = this.playbackSpeed;
+        
+        console.log('[MusicPlayer] Track set:', this.cleanTrackName(track.name), 'src:', this.audio.src, 'volume:', this.audio.volume);
+        
         this.barTrackName.textContent = this.cleanTrackName(track.name);
         this.barTrackArtist.textContent = track.artist || '--';
         document.getElementById('modal-title').textContent = this.cleanTrackName(track.name);
@@ -1287,10 +1159,22 @@ try {
         
         this.isLiked = this.likedSongs.includes(this.currentIndex);
         this.updateLikeButton();
-        this.isPlaying = true;
         this.renderTrackList();
-        this.audio.play();
-        this.connectVisualizer();
+        
+        const playPromise = this.audio.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            console.log('[MusicPlayer] Playing OK');
+          }).catch(err => {
+            console.error('[MusicPlayer] Play rejected:', err.name, err.message);
+            if (err.name === 'NotAllowedError') {
+              this.showToast('⚠️ 請點擊頁面任意處（讓瀏覽器授權音訊），再按播放鍵');
+            } else {
+              this.showToast('⚠️ 播放失敗：' + err.message);
+            }
+          });
+        }
+        
         this.loadLyrics(track.lyrics);
       }
       
@@ -1422,10 +1306,19 @@ try {
       togglePlay() {
         if (this.isPlaying) {
           this.audio.pause();
+          this.isPlaying = false;
+        } else if (!this.audio.src) {
+          if (this.filteredTracks.length > 0) {
+            this.playTrack(0);
+          }
         } else {
-          this.audio.play();
+          this.audio.play().then(() => {
+            this.isPlaying = true;
+          }).catch(err => {
+            console.warn('Play failed:', err);
+            this.showToast('⚠️ 播放失敗，請點歌曲播放');
+          });
         }
-        this.isPlaying = !this.isPlaying;
       }
       
       toggleMute() {
@@ -1475,7 +1368,6 @@ try {
       
       openPlayerModal() {
         document.getElementById('player-modal').classList.add('open');
-        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
       }
       
       closePlayerModal() {
