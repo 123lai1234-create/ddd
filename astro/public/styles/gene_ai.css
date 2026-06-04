@@ -81,7 +81,7 @@ a {
 /* ─── Hamburger ────────────────────────────────────────────── */
 .hero {
   position: relative;
-  padding: calc(var(--nav-h) + 36px) 40px 32px;
+  padding: calc(var(--nav-h) + 11px) 40px 32px;  /* was 36px (100px top); trimmed per user feedback 2026-06-04 */
   overflow: hidden;
 }
 

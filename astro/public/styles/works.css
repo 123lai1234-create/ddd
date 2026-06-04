@@ -50,7 +50,7 @@ a {
 }
 
 .hero {
-  padding: calc(var(--nav-h) + 32px) 30px 24px;
+  padding: calc(var(--nav-h) + 8px) 30px 24px;  /* was 32px; trimmed per user feedback 2026-06-04 */
 }
 
 .hero-inner {
