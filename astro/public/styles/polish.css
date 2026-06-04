@@ -113,32 +113,8 @@ pre:hover, .terminal:hover, .math-card:hover {
   animation: shimmer 1.8s ease infinite;
 }
 
-/* ── Smooth scroll behavior ──────────────────────────────────────────────── */
-html {
-  scroll-behavior: smooth;
-}
 
-/* ── Selection color ─────────────────────────────────────────────────────── */
-::selection {
-  background: rgba(88, 215, 255, 0.25);
-  color: #e9f0ec;
-}
-
-/* ── Scrollbar styling (Webkit) ──────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(151, 190, 181, 0.15);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(151, 190, 181, 0.3);
-}
+/* Selection / Scrollbar (Webkit) are defined below in the 2026 Design Refresh block (single source of truth). */
 
 /* ── Responsive touch targets ────────────────────────────────────────────── */
 @media (max-width: 640px) {

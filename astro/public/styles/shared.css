@@ -17,19 +17,7 @@ body {
   color: var(--text, #e6edf3);
 }
 
-/* ─── Scrollbar ───────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg, #080c10);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border, #21262d);
-  border-radius: 3px;
-}
+/* Scrollbar / Selection / Focus are now defined in polish.css (single source of truth). */
 
 /* ─── Navigation ──────────────────────────────────────────── */
 nav {
@@ -269,12 +257,6 @@ nav {
   border-color: transparent;
   color: #000;
   transform: translateY(-3px);
-}
-
-/* ─── Focus outline ────────────────────────────────────────────────── */
-:focus-visible {
-  outline: 2px solid var(--nav-accent, var(--teal, #39d0f0));
-  outline-offset: 3px;
 }
 
 /* ─── Footer note ───────────────────────────────────────────────────── */
