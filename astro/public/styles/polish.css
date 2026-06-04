@@ -584,7 +584,7 @@ input:focus, textarea:focus, select:focus {
 
 /* ── Display font token ── */
 :root {
-  --display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --display: 'Inter', system-ui, sans-serif;
 }
 
 /* ── Headlines: Space Grotesk for impact ── */
