@@ -66,12 +66,15 @@ async function initGSAP() {
     gsap.registerPlugin(ScrollTrigger);
 
     reveals.forEach((el, i) => {
-      gsap.from(el, {
-        y: 40, opacity: 0, duration: 0.7,
-        delay: (i % 4) * 0.08,
-        ease: 'power2.out',
-        scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
-      });
+      gsap.fromTo(el,
+        { y: 40, opacity: 0, immediateRender: false },
+        {
+          y: 0, opacity: 1, duration: 0.7,
+          delay: (i % 4) * 0.08,
+          ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' },
+        }
+      );
     });
 
     // Animate stat numbers
