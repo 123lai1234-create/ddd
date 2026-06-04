@@ -195,15 +195,39 @@ nav {
 /* ─── Scroll reveal ───────────────────────────────────────── */
 .js-reveal .reveal:not(.visible) {
   opacity: 0;
-  transform: translateY(22px);
+  transform: translateY(28px);
   transition:
-    opacity 0.58s ease,
-    transform 0.58s ease;
+    opacity 0.65s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: opacity, transform;
 }
 
 .reveal.visible {
   opacity: 1;
   transform: none;
+  transition:
+    opacity 0.65s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ── Reveal hover enhancement: deeper card lift + glow on hover ── */
+.reveal.visible > a:hover,
+.reveal.visible .sel-item:hover,
+.reveal.visible .bento-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(88, 215, 255, 0.12);
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease;
+}
+
+.reveal.visible .sel-item,
+.reveal.visible .bento-card {
+  transition:
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease;
 }
 
 /* ─── Scroll-to-top button ────────────────────────────────── */
