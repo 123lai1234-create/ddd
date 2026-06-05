@@ -259,6 +259,13 @@
       this.renderTrackList();
     }
 
+    getGenderIcon(g) {
+      return g === 'F' ? '♀' : g === 'M' ? '♂' : '·';
+    },
+    getGenderClass(g) {
+      return g === 'F' ? 'gender-f' : g === 'M' ? 'gender-m' : 'gender-x';
+    },
+
     renderTrackList() {
       if (this.filteredTracks.length === 0) {
         this.trackListEl.innerHTML = '<p style="color: var(--accent); text-align: center; padding: 50px;">沒有符合條件的歌曲</p>';
@@ -268,11 +275,13 @@
       this.trackListEl.innerHTML = this.filteredTracks.map((track, i) => {
         const isPlayingNow = i === this.currentIndex;
         const isReposted = this.repostedSongs.includes(i);
+        const gIcon = this.getGenderIcon(track.gender);
+        const gCls = this.getGenderClass(track.gender);
         return '<div class="track-row ' + (isPlayingNow ? 'playing' : '') + '" data-idx="' + i + '">' +
           '<span class="track-num">' + (i + 1) + '</span>' +
           '<div class="track-wave"><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div></div>' +
           '<div class="track-info"><p class="track-title">' + this.cleanTrackName(track.name) + '</p>' +
-          '<p class="track-artist-list">' + (track.artist || '--') + '</p>' +
+          '<p class="track-artist-list"><span class="gender-badge ' + gCls + '" title="' + (track.gender === 'F' ? '女歌手' : track.gender === 'M' ? '男歌手' : '性別未標') + '">' + gIcon + '</span>' + (track.artist || '--') + '</p>' +
           '<div class="track-progress"><div class="track-progress-bar" style="width:' + (isPlayingNow ? progress : 0) + '%"></div></div></div>' +
           '<span class="track-album">' + (track.album || '--') + '</span>' +
           '<span class="track-duration">' + (track.duration || '--:--') + '</span>' +
@@ -480,6 +489,10 @@
           break;
         }
       }
+
+      // Only update and scroll when the active line changes
+      if (activeIdx === this._lastActiveLyricIdx) return;
+      this._lastActiveLyricIdx = activeIdx;
 
       this.lyricsContainer.querySelectorAll('.lyric-line').forEach((el, i) => {
         el.classList.remove('active', 'past');

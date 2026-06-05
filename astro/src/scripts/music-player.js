@@ -54,6 +54,16 @@ class MusicPlayer {
     }
 
     async loadTracks() {
+        // 已修：優先用 astro 注入的 <script id="music-tracks"> 內嵌資料
+        // 原本每次都 fetch('/music/playlist.json')，會跟部署 dist 內的版本脫鉤（性別錯就是這來源）
+        const inline = document.getElementById('music-tracks');
+        if (inline?.textContent?.trim()) {
+            try {
+                const data = JSON.parse(inline.textContent);
+                if (Array.isArray(data)) return data;
+                if (data?.tracks) return data.tracks;
+            } catch (e) { /* 解析失敗就 fallback */ }
+        }
         try {
             const res = await fetch('/music/playlist.json');
             const data = await res.json();
@@ -164,8 +174,28 @@ class MusicPlayer {
         });
 
         this.audio.addEventListener('ended', () => this.playTrack(this.getNextIdx()));
-        this.audio.addEventListener('play', () => { this.isPlaying = true; this.renderTrackList(); });
-        this.audio.addEventListener('pause', () => { this.isPlaying = false; this.renderTrackList(); });
+        // 已修：play/pause 只切 .playing class + 更新 icon，不再 innerHTML 整列重繪
+        // 原本會把 44 首歌 DOM 砍掉重建，scroll / hover 焦點 / progress bar 全部中斷
+        this.audio.addEventListener('play', () => {
+            this.isPlaying = true;
+            this.barAlbum.classList.add('playing');
+            const cur = this.trackListEl.querySelector('.track-row.playing');
+            if (cur) cur.classList.add('is-playing');
+            const curIcon = document.getElementById('play-icon');
+            const pauseIcon = document.getElementById('pause-icon');
+            if (curIcon) curIcon.style.display = 'none';
+            if (pauseIcon) pauseIcon.style.display = 'block';
+        });
+        this.audio.addEventListener('pause', () => {
+            this.isPlaying = false;
+            this.barAlbum.classList.remove('playing');
+            const cur = this.trackListEl.querySelector('.track-row.is-playing');
+            if (cur) cur.classList.remove('is-playing');
+            const curIcon = document.getElementById('play-icon');
+            const pauseIcon = document.getElementById('pause-icon');
+            if (curIcon) curIcon.style.display = 'block';
+            if (pauseIcon) pauseIcon.style.display = 'none';
+        });
 
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -217,12 +247,14 @@ class MusicPlayer {
 
         this.trackListEl.innerHTML = this.filteredTracks.map((track, i) => {
             const isPlayingNow = i === this.currentIndex;
-            return `<div class="track-row ${isPlayingNow ? 'playing' : ''}" data-idx="${i}">
+            const gIcon = this.getGenderIcon(track.gender);
+            const gCls = this.getGenderClass(track.gender);
+            return `<div class="track-row ${isPlayingNow ? 'playing' : ''} ${this.isPlaying && isPlayingNow ? 'is-playing' : ''}" data-idx="${i}">
         <span class="track-num">${i + 1}</span>
         <div class="track-wave"><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div></div>
         <div class="track-info">
           <p class="track-title">${track.name}</p>
-          <p class="track-artist-list">${track.artist || '--'}</p>
+          <p class="track-artist-list"><span class="gender-badge ${gCls}" title="${track.gender === 'F' ? '女歌手' : track.gender === 'M' ? '男歌手' : '性別未標'}">${gIcon}</span>${track.artist || '--'}</p>
         </div>
         <span class="track-album">${track.album || '--'}</span>
         <span class="track-lang">${this.getLangLabel(track.lang)}</span>
@@ -231,6 +263,13 @@ class MusicPlayer {
         ${isPlayingNow ? `<div class="track-progress"><div class="track-progress-bar" style="width: ${progress}%"></div></div>` : ''}
       </div>`;
         }).join('');
+    }
+
+    getGenderIcon(g) {
+        return g === 'F' ? '♀' : g === 'M' ? '♂' : '·';
+    }
+    getGenderClass(g) {
+        return g === 'F' ? 'gender-f' : g === 'M' ? 'gender-m' : 'gender-x';
     }
 
     getLangLabel(lang) {
@@ -247,11 +286,13 @@ class MusicPlayer {
             const track = this.filteredTracks[trackIdx];
             if (!track) return '';
             const isCurrent = qi === this.queueIdx;
+            const gIcon = this.getGenderIcon(track.gender);
+            const gCls = this.getGenderClass(track.gender);
             return `<div class="queue-item ${isCurrent ? 'playing' : ''}" data-qi="${qi}">
         ${isCurrent ? '<div class="queue-dot"></div>' : '<div style="width: 10px;"></div>'}
         <div class="queue-info">
           <p class="queue-title">${track.name}</p>
-          <p class="queue-artist">${track.artist || '--'}</p>
+          <p class="queue-artist"><span class="gender-badge ${gCls}">${gIcon}</span>${track.artist || '--'}</p>
         </div>
         <button class="queue-remove" data-qi="${qi}">✕</button>
       </div>`;
@@ -333,7 +374,11 @@ class MusicPlayer {
 
     async loadLyrics(track) {
         try {
-            const res = await fetch(`https://lrclib.net/api/get?q=${encodeURIComponent(track.name)}`);
+            // Use artist + name for more accurate lyrics match
+            const query = track.artist 
+                ? `${track.artist} ${track.name}`
+                : track.name;
+            const res = await fetch(`https://lrclib.net/api/get?q=${encodeURIComponent(query)}&artist_name=${encodeURIComponent(track.artist || '')}`);
             if (res.ok) {
                 const data = await res.json();
                 if (data?.syncedLyrics) { this.parseLRC(data.syncedLyrics); this.audio.play(); return; }
@@ -374,6 +419,18 @@ class MusicPlayer {
             if (this.lyrics[i].time <= time) activeIdx = i;
             else break;
         }
+
+        // Only scroll when the active line changes
+        if (activeIdx === this._lastActiveLyricIdx) {
+            lines.forEach((line, i) => {
+                if (i === activeIdx) line.classList.add('active');
+                else if (i < activeIdx) line.classList.add('past');
+                else line.classList.remove('active', 'past');
+            });
+            return;
+        }
+        this._lastActiveLyricIdx = activeIdx;
+
         lines.forEach((line, i) => {
             line.classList.remove('active', 'past');
             if (i === activeIdx) line.classList.add('active');
