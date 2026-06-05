@@ -162,17 +162,24 @@ select option { background: var(--bg-card); }
 .track-row {
   display: grid; grid-template-columns: 60px 2fr 1fr 1fr 80px 100px;
   align-items: center; gap: 16px; padding: 14px 16px; border-radius: 12px;
-  cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer; transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
   position: relative; border: 2px solid transparent;
 }
-.track-row:hover { background: var(--bg-hover); border-color: var(--accent); transform: translateX(4px); }
+.track-row:hover { background: var(--bg-hover); border-color: var(--accent); }
+/* 已修：移除 hover 時的 transform: translateX(4px) 避免「自動拖曳」誤判
+   原 transition: all 會同時把 .track-progress-bar 的 width 動畫也吃掉，看起來像在抖 */
 .track-row.playing { background: var(--accent-dim); border-color: var(--accent); box-shadow: 0 0 30px var(--accent-glow); }
 
 .track-progress {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
-  background: rgba(255, 85, 0, 0.2); border-radius: 0 0 10px 10px; overflow: hidden;
+  position: absolute; bottom: -1px; left: 12px; right: 12px; height: 2px;
+  background: rgba(255, 85, 0, 0.15); border-radius: 2px; overflow: hidden;
+  pointer-events: none;
 }
-.track-progress-bar { height: 100%; background: var(--accent); transition: width 0.1s linear; box-shadow: 0 0 15px var(--accent); }
+.track-progress-bar {
+  height: 100%; background: var(--accent);
+  width: 0%; box-shadow: 0 0 8px var(--accent-glow);
+  /* 不加 transition: width，避免與 timeupdate 高頻更新打架，看起來才不會「抖」 */
+}
 
 .track-num { font-size: 0.75rem; color: var(--text-tertiary); text-align: center; width: 32px; font-variant-numeric: tabular-nums; font-weight: 600; opacity: 0.6; }
 
@@ -195,9 +202,21 @@ select option { background: var(--bg-card); }
 .track-info { min-width: 0; }
 .track-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-row.playing .track-title { color: var(--accent); }
-.track-artist-list { font-size: 0.8rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-artist-list { font-size: 0.8rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
 .track-album { font-size: 0.82rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.75; }
 .track-duration { font-size: 0.78rem; color: var(--text-tertiary); font-variant-numeric: tabular-nums; text-align: right; opacity: 0.7; font-weight: 500; }
+
+/* 性別小標籤：♀ = 女、♂ = 男、· = 未標 */
+.gender-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%;
+  font-size: 0.7rem; font-weight: 700; line-height: 1; flex-shrink: 0;
+  border: 1px solid currentColor;
+}
+.gender-badge.gender-f { color: #ec4899; background: rgba(236, 72, 153, 0.12); }
+.gender-badge.gender-m { color: #3b82f6; background: rgba(59, 130, 246, 0.12); }
+.gender-badge.gender-x { color: var(--text-tertiary); background: transparent; }
+.queue-artist { display: flex; align-items: center; gap: 6px; }
 
 .track-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
 .action-btn { background: none; border: none; color: var(--text-tertiary); cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
