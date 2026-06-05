@@ -78,10 +78,10 @@ a {
   border-radius: 999px;
 }
 
-/* â”€â”€â”€ Hamburger â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ?€?€?€ Hamburger ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
 .hero {
   position: relative;
-  padding: calc(var(--nav-h) + 36px) 40px 32px;
+  padding: calc(var(--nav-h) + 11px) 40px 32px;
   overflow: hidden;
 }
 
@@ -1567,7 +1567,7 @@ footer {
     grid-template-columns: 1fr;
   }
 
-  /* 4-column metrics â†’ 2Ã—2 grid on mobile */
+  /* 4-column metrics ??2?2 grid on mobile */
   .mini-metrics {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1597,7 +1597,7 @@ footer {
   }
 }
 
-/* â”€â”€ Platform Landscape â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ?€?€ Platform Landscape ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
 .platform-categories {
   display: flex;
   flex-direction: column;
@@ -1735,7 +1735,7 @@ footer {
   font-family: var(--mono);
 }
 
-/* â”€â”€ Plain-language intro â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ?€?€ Plain-language intro ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
 .plain-intro { padding-top: 28px; padding-bottom: 28px; }
 .plain-intro-grid {
   display: grid;
@@ -1809,7 +1809,7 @@ footer {
 .flow-row-final .flow-src { color: var(--teal); }
 .flow-row-final .flow-dst { color: var(--green); }
 
-/* â”€â”€ Module Nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ?€?€ Module Nav ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
 .module-nav {
   /* reset: shared.css nav{position:fixed} would otherwise pin this to viewport */
   position: static;
@@ -1872,7 +1872,7 @@ footer {
   flex-shrink: 0;
 }
 
-/* â”€â”€ Control Panel Improvements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ?€?€ Control Panel Improvements ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
 .cp-header {
   border-bottom: 1px solid var(--border);
   padding-bottom: 14px;
@@ -1926,7 +1926,7 @@ footer {
 }
 
 .cp-advanced summary::before {
-  content: 'â–¸';
+  content: '??;
   transition: transform .18s;
   font-size: .8rem;
 }
