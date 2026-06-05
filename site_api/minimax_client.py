@@ -1,5 +1,5 @@
-"""
-site_api/minimax_client.py — MiniMax API client for music generation and TTS.
+﻿"""
+site_api/minimax_client.py ??MiniMax API client for music generation and TTS.
 
 This module provides a clean interface to MiniMax's endpoints via the LiteLLM proxy
 or directly through the MiniMax API, keeping API keys secure on the server side.
@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
-# ── Configuration ────────────────────────────────────────────────────────────
+# ?? Configuration ????????????????????????????????????????????????????????????
 
 MINIMAX_API_KEY = os.getenv("MINIMAX_API_KEY", "")
 MINIMAX_API_BASE = os.getenv("MINIMAX_API_BASE", "https://api.minimaxi.com/v1")
@@ -29,7 +30,7 @@ _use_litellm = bool(LITELLM_PROXY_URL and MINIMAX_API_KEY)
 _base_url = LITELLM_PROXY_URL if _use_litellm else MINIMAX_API_BASE
 _model_prefix = "minimax/" if _use_litellm else ""  # LiteLLM model naming
 
-# ── Exceptions ────────────────────────────────────────────────────────────────
+# ?? Exceptions ????????????????????????????????????????????????????????????????
 
 
 class MiniMaxError(Exception):
@@ -51,7 +52,7 @@ class MiniMaxAuthError(MiniMaxError):
     pass
 
 
-# ── HTTP Client ───────────────────────────────────────────────────────────────
+# ?? HTTP Client ???????????????????????????????????????????????????????????????
 
 
 def _build_headers() -> dict[str, str]:
@@ -89,7 +90,7 @@ async def _post(
     return response.json()
 
 
-# ── Text-to-Speech (TTS) ──────────────────────────────────────────────────────
+# ?? Text-to-Speech (TTS) ??????????????????????????????????????????????????????
 
 
 class TTSModel(str):
@@ -137,7 +138,7 @@ async def text_to_speech(
     return result.get("audio_data", b"")  # In practice, response is raw bytes
 
 
-# ── Music Generation ─────────────────────────────────────────────────────────
+# ?? Music Generation ?????????????????????????????????????????????????????????
 
 
 class MusicModel(str):
@@ -209,7 +210,7 @@ async def poll_music_task(task_id: str) -> dict[str, Any]:
     return response.json()
 
 
-# ── Lyrics Generation ─────────────────────────────────────────────────────────
+# ?? Lyrics Generation ?????????????????????????????????????????????????????????
 
 
 async def generate_lyrics(
@@ -234,29 +235,29 @@ async def generate_lyrics(
     if not theme.strip():
         raise MiniMaxError("Theme cannot be empty")
 
-    prompt = f"""你是一位專業的歌詞創作人。請根據以下主題和風格，創作一首完整、有結構的歌曲歌詞。
+    prompt = f"""雿銝雿?璆剔?甇??萎?鈭箝??寞?隞乩?銝駁??◢?潘??萎?銝擐??氬?蝯????脫?閰?
 
-主題：{theme}
-風格：{style}
+銝駁?嚗theme}
+憸冽嚗style}
 
-請按照以下格式創作：
-1. 主歌 1 (Verse 1)
-2. 副歌 (Chorus)  
-3. 主歌 2 (Verse 2)
-4. 副歌 (Chorus)
-5. 橋段 (Bridge)
-6. 最終副歌 (Final Chorus)
+隢??找誑銝撘雿?
+1. 銝餅? 1 (Verse 1)
+2. ?舀? (Chorus)
+3. 銝餅? 2 (Verse 2)
+4. ?舀? (Chorus)
+5. 璈挾 (Bridge)
+6. ?蝯甇?(Final Chorus)
 
-要求：
-- 歌詞要有情感共鳴
-- 押韻自然
-- 適合演唱
-- 中文或英文皆可根據風格自動調整
+閬?嚗?
+- 甇?閬????梢陷
+- ?潮?芰
+- ?拙?瞍
+- 銝剜?????舀?◢?潸?矽??
 
-請直接開始創作歌詞："""
+隢?仿?憪雿?閰?"""
 
     messages = [
-        {"role": "system", "content": "你是一位專業的歌詞創作人，擅長創作出感人、有韻律的歌曲歌詞。"},
+        {"role": "system", "content": "雿銝雿?璆剔?甇??萎?鈭綽???萎??箸?鈭箝??餃????脫?閰?},
         {"role": "user", "content": prompt},
     ]
 
@@ -264,13 +265,13 @@ async def generate_lyrics(
     return result
 
 
-# ── Image Understanding (Vision) ──────────────────────────────────────────────
+# ?? Image Understanding (Vision) ??????????????????????????????????????????????
 
 
 async def image_understanding(
     image_url: str | None = None,
     image_base64: str | None = None,
-    prompt: str = "請詳細描述這張圖片的內容。",
+    prompt: str = "隢底蝝唳?餈圈撐???摰嫘?,
     model: str = "MiniMax-M2",
 ) -> dict[str, Any]:
     """
@@ -308,7 +309,7 @@ async def image_understanding(
     return await _post("/v1/images/understand", payload, timeout=60.0)
 
 
-# ── Web Search (RAG) ───────────────────────────────────────────────────────────
+# ?? Web Search (RAG) ???????????????????????????????????????????????????????????
 
 
 class SearchModel(str):
@@ -381,25 +382,25 @@ async def rag_search(
     # Build context from search results
     sources = search_results.get("data", [])
     context_text = "\n\n".join([
-        f"來源 {i+1}: {s.get('title', 'N/A')}\n摘要: {s.get('snippet', 'N/A')}"
+        f"靘? {i+1}: {s.get('title', 'N/A')}\n??: {s.get('snippet', 'N/A')}"
         for i, s in enumerate(sources)
     ])
 
     # Synthesize answer
-    prompt = f"""根據以下搜索結果和額外上下文，請回答用戶問題。
+    prompt = f"""?寞?隞乩??揣蝯???憭?銝?嚗????冽????
 
-搜索結果：
+?揣蝯?嚗?
 {context_text}
 
-額外上下文：
+憿?銝???
 {context}
 
-用戶問題：{query}
+?冽??嚗query}
 
-請給出準確、有依據的回答，並適當引用來源。"""
+隢策?箸?蝣箝?靘???蝑?銝阡?嗅??其?皞?""
 
     messages = [
-        {"role": "system", "content": "你是一個精準、可靠的資訊助手。根據事實回答，不要編造。"},
+        {"role": "system", "content": "雿銝?移皞??鞈??拇????撖血?蝑?銝?蝺券?},
         {"role": "user", "content": prompt},
     ]
 
@@ -408,7 +409,7 @@ async def rag_search(
     return result
 
 
-# ── Music Cover / Reprise ──────────────────────────────────────────────────────
+# ?? Music Cover / Reprise ??????????????????????????????????????????????????????
 
 
 async def music_cover(
@@ -449,7 +450,7 @@ async def music_cover(
     return await _post("/v1/audio/covers", payload, timeout=30.0)
 
 
-# ── Text Completion (MiniMax M2) ─────────────────────────────────────────────
+# ?? Text Completion (MiniMax M2) ?????????????????????????????????????????????
 
 
 async def chat_completion(
@@ -486,7 +487,7 @@ async def chat_completion(
     return await _post("/chat/completions", payload, timeout=60.0)
 
 
-# ── Streaming Chat Completion ────────────────────────────────────────────────
+# ?? Streaming Chat Completion ????????????????????????????????????????????????
 
 
 async def stream_chat_completion(
@@ -517,21 +518,24 @@ async def stream_chat_completion(
         "stream": True,
     }
 
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        async with client.stream("POST", url, json=payload, headers=headers) as response:
-            if response.status_code >= 400:
-                body = await response.aread()
-                raise MiniMaxError(
-                    f"MiniMax API error {response.status_code}",
-                    status_code=response.status_code,
-                    response_body=body.decode(),
-                )
+    async with (
+        httpx.AsyncClient(timeout=120.0) as client,
+        client.stream("POST", url, json=payload, headers=headers) as response,
+    ):
+        if response.status_code >= 400:
+            body = await response.aread()
+            raise MiniMaxError(
+                f"MiniMax API error {response.status_code}",
+                status_code=response.status_code,
+                response_body=body.decode(),
+            )
 
-            async for line in response.aiter_lines():
-                if not line or not line.startswith("data:"):
-                    continue
-                data = line[5:].strip()
-                if data == "[DONE]":
-                    break
-                if data:
-                    yield data
+        async for line in response.aiter_lines():
+            if not line or not line.startswith("data:"):
+                continue
+            data = line[5:].strip()
+            if data == "[DONE]":
+                break
+            if data:
+                yield data
+

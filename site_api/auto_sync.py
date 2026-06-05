@@ -1,5 +1,5 @@
-"""
-site_api/auto_sync.py — Automatic data synchronisation on startup.
+﻿"""
+site_api/auto_sync.py ??Automatic data synchronisation on startup.
 
 When the server starts, check if key tables (sequences, market) are empty
 and seed them with default data from external APIs.  Runs in a background
@@ -12,11 +12,11 @@ import logging
 import os
 import threading
 import time
-from typing import Callable
+from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
-# ── Default seed parameters ────────────────────────────────────────────
+# ?? Default seed parameters ????????????????????????????????????????????
 
 _DEFAULT_PROTEIN_QUERY = "kinase"
 _DEFAULT_GENE_SYMBOLS = ["TP53", "BRCA1", "EGFR", "APOE"]
@@ -69,7 +69,7 @@ def _table_is_empty(table_name: str) -> bool:
             exists = cur.fetchone()[0]
             if not exists:
                 return True
-            cur.execute(f"SELECT 1 FROM {table_name} LIMIT 1")
+            cur.execute("SELECT 1 FROM %s LIMIT 1", (table_name,))
             return cur.fetchone() is None
     except Exception:
         return True
@@ -85,13 +85,13 @@ def _sync_sequences() -> None:
         logger.warning("auto-sync: core schema not ready, skipping sequences")
         return
 
-    logger.info("auto-sync: refreshing protein + gene sequences …")
+    logger.info("auto-sync: refreshing protein + gene sequences ??)
     try:
         proteins = fetch_protein_sequences(_DEFAULT_PROTEIN_QUERY, _DEFAULT_FETCH_LIMIT)
         genes = fetch_gene_sequences(_DEFAULT_GENE_SYMBOLS, _DEFAULT_GENE_SPECIES)
         upsert_sequence_records(proteins + genes)
         logger.info(
-            "auto-sync: sequences upserted — %d protein, %d gene",
+            "auto-sync: sequences upserted ??%d protein, %d gene",
             len(proteins),
             len(genes),
         )
@@ -113,7 +113,7 @@ def _sync_market() -> None:
         logger.info("auto-sync: market_instruments already has data, skipping")
         return
 
-    logger.info("auto-sync: seeding market data …")
+    logger.info("auto-sync: seeding market data ??)
     instruments = []
     bars = []
     for asset_type, symbols in (
@@ -136,7 +136,7 @@ def _sync_market() -> None:
             upsert_market_instruments(instruments)
             upsert_market_bars(bars)
             logger.info(
-                "auto-sync: market seeded — %d instruments, %d bars",
+                "auto-sync: market seeded ??%d instruments, %d bars",
                 len(instruments),
                 len(bars),
             )
@@ -151,7 +151,7 @@ def _refresh_market_incremental() -> None:
 
     Unlike ``_sync_market`` which only seeds when the table is empty, this runs
     on every schedule tick: pull the last couple of months for each symbol and
-    upsert — existing bars dedupe on (symbol, trade_date), new trading days
+    upsert ??existing bars dedupe on (symbol, trade_date), new trading days
     land automatically.
     """
     from site_api.db import ensure_market_schema, get_connection
@@ -175,7 +175,7 @@ def _refresh_market_incremental() -> None:
         _sync_market()
         return
 
-    logger.info("auto-sync: incremental market refresh — %d instruments", len(rows))
+    logger.info("auto-sync: incremental market refresh ??%d instruments", len(rows))
     instruments = []
     bars = []
     failures = 0
@@ -201,7 +201,7 @@ def _refresh_market_incremental() -> None:
         upsert_market_instruments(instruments)
         upsert_market_bars(bars)
         logger.info(
-            "auto-sync: incremental refresh done — %d instruments, %d bars, %d failures",
+            "auto-sync: incremental refresh done ??%d instruments, %d bars, %d failures",
             len(instruments),
             len(bars),
             failures,
@@ -305,7 +305,7 @@ def _sync_twse_discover_and_update() -> None:
         logger.warning("auto-sync: TWSE listing returned 0 symbols, skipping discovery")
         return
 
-    logger.info("auto-sync: TWSE discovery — %d listed stocks", len(listed))
+    logger.info("auto-sync: TWSE discovery ??%d listed stocks", len(listed))
 
     instruments = []
     bars = []
@@ -339,7 +339,7 @@ def _sync_twse_discover_and_update() -> None:
             logger.error("auto-sync: TWSE final batch upsert failed: %s", exc)
 
     logger.info(
-        "auto-sync: TWSE discovery done — %d listed, %d failures",
+        "auto-sync: TWSE discovery done ??%d listed, %d failures",
         len(listed),
         failures,
     )
