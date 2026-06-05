@@ -81,7 +81,7 @@ a {
 /* ─── Hamburger ────────────────────────────────────────────── */
 .hero {
   position: relative;
-  padding: calc(var(--nav-h) + 11px) 40px 32px;  /* was 36px (100px top); trimmed per user feedback 2026-06-04 */
+  padding: calc(var(--nav-h) + 36px) 40px 32px;
   overflow: hidden;
 }
 
@@ -123,9 +123,15 @@ a {
   max-width: 1240px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+  grid-template-columns: 1fr;
   gap: 28px;
   align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  }
 }
 
 .eyebrow {
@@ -1547,6 +1553,14 @@ footer {
     flex-direction: column;
     align-items: start;
   }
+
+  .signal-card {
+    max-width: 100%;
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 840px) {
@@ -1557,7 +1571,19 @@ footer {
     padding-right: 18px;
   }
 
-  .hero-stats,
+  .hero h1 {
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+  }
+
+  .hero-cta-row {
+    flex-direction: column;
+  }
+
+  .hero-cta-row .btn {
+    width: 100%;
+    text-align: center;
+  }
+
   .candidate-list,
   .summary-strip,
   .signal-matrix,
@@ -1594,6 +1620,15 @@ footer {
   .group-chip-row {
     width: 100%;
     justify-content: start;
+  }
+
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sequence-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1819,14 +1854,22 @@ footer {
   backdrop-filter: none;
   z-index: auto;
   display: flex;
-  align-items: center;
-  gap: 0;
+  flex-direction: column;
+  gap: 6px;
   margin: 28px 0 0;
   background: rgba(255,255,255,0.02);
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 6px;
-  overflow-x: auto;
+}
+
+@media (min-width: 768px) {
+  .module-nav {
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
 }
 
 .module-nav-item {
@@ -1838,8 +1881,14 @@ footer {
   text-decoration: none;
   color: var(--text);
   transition: background .18s, transform .18s;
-  flex: 1;
-  min-width: 0;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .module-nav-item {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .module-nav-item:hover {
@@ -1870,6 +1919,13 @@ footer {
   font-size: 1.1rem;
   padding: 0 4px;
   flex-shrink: 0;
+  display: none;
+}
+
+@media (max-width: 840px) {
+  .module-nav { flex-direction: column; gap: 4px; }
+  .module-nav-item { width: 100%; }
+  .module-nav-arrow { display: none; }
 }
 
 /* ── Control Panel Improvements ─────────────────────────────── */
