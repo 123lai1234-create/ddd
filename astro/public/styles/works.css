@@ -50,7 +50,7 @@ a {
 }
 
 .hero {
-  padding: calc(var(--nav-h) + 32px) 30px 24px;
+  padding: calc(var(--nav-h) + 8px) 30px 24px;
 }
 
 .hero-inner {
@@ -438,7 +438,7 @@ h1 span {
 }
 
 .work-links a::after {
-  content: "â†’";
+  content: "??;
   transition: transform 0.18s ease;
 }
 
@@ -543,7 +543,7 @@ footer {
   }
 }
 
-/* â”€â”€ Live Stats Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ?€?€ Live Stats Bar ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
 .live-bar-wrap {
   max-width: 1180px;
   margin: 0 auto;
@@ -633,7 +633,7 @@ footer {
   background: var(--border);
 }
 
-/* â”€â”€ Search Input â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ?€?€ Search Input ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ */
 .works-search-wrap {
   position: relative;
   display: flex;
