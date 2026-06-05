@@ -81,7 +81,7 @@ a {
 /* ─── Hamburger ────────────────────────────────────────────── */
 .hero {
   position: relative;
-  padding: calc(var(--nav-h) + 36px) 40px 32px;
+  padding: calc(var(--nav-h) + 20px) 40px 20px;
   overflow: hidden;
 }
 
@@ -124,7 +124,7 @@ a {
   margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
-  gap: 28px;
+  gap: 20px;
   align-items: center;
 }
 
@@ -132,16 +132,16 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 14px;
+  padding: 5px 12px;
   border-radius: 999px;
   border: 1px solid rgba(119, 242, 178, 0.24);
   background: rgba(119, 242, 178, 0.08);
   color: var(--mint);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
 
 .eyebrow .live-dot {
@@ -159,10 +159,10 @@ a {
 }
 
 .hero h1 {
-  font-size: clamp(2.8rem, 6vw, 5rem);
-  line-height: 1.02;
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 1.05;
   letter-spacing: -0.04em;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .hero h1 span {
@@ -179,27 +179,27 @@ a {
 
 .hero-sub {
   color: var(--muted);
-  font-size: 1.04rem;
+  font-size: 1rem;
   max-width: 680px;
-  margin-bottom: 26px;
+  margin-bottom: 16px;
 }
 
 .hero-note {
   max-width: 700px;
   color: #bfd2cd;
-  font-size: 0.92rem;
-  padding: 14px 16px;
-  border-radius: 14px;
+  font-size: 0.88rem;
+  padding: 10px 14px;
+  border-radius: 10px;
   background: rgba(255, 191, 103, 0.08);
   border: 1px solid rgba(255, 191, 103, 0.18);
-  margin-bottom: 26px;
+  margin-bottom: 16px;
 }
 
 .hero-cta-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 26px;
+  margin-bottom: 16px;
 }
 
 .btn {
@@ -246,7 +246,7 @@ a {
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px;
   max-width: 760px;
 }
 
@@ -384,11 +384,11 @@ a {
 .container {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 0 40px 56px;
+  padding: 0 40px 32px;
 }
 
 .section {
-  padding: 34px 0 0;
+  padding: 20px 0 0;
 }
 
 .section-head {
@@ -396,7 +396,7 @@ a {
   align-items: end;
   justify-content: space-between;
   gap: 18px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .section-label {
@@ -409,9 +409,9 @@ a {
 }
 
 .section-title {
-  font-size: clamp(1.75rem, 4vw, 2.6rem);
+  font-size: clamp(1.5rem, 3.5vw, 2.2rem);
   letter-spacing: -0.03em;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .section-sub {
@@ -1821,7 +1821,7 @@ footer {
   display: flex;
   align-items: center;
   gap: 0;
-  margin: 28px 0 0;
+  margin: 16px 0 0;
   background: rgba(255,255,255,0.02);
   border: 1px solid var(--border);
   border-radius: 20px;
