@@ -5,15 +5,12 @@ and business logic that doesn't require a real DB connection.
 
 from __future__ import annotations
 
-import time
 import unittest
-from unittest.mock import MagicMock, patch
 
 # Import the service functions directly (no FastAPI bootstrap needed)
 from site_api.services import (
     gc_content,
     serialize_sequence_row,
-    serialize_knowledge_row,
     serialize_sequencing_run_row,
     serialize_market_instrument_row,
     serialize_market_bar_row,
