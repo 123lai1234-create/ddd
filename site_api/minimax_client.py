@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import httpx
 
@@ -241,7 +242,7 @@ async def generate_lyrics(
 
 請按照以下格式創作：
 1. 主歌 1 (Verse 1)
-2. 副歌 (Chorus)  
+2. 副歌 (Chorus)
 3. 主歌 2 (Verse 2)
 4. 副歌 (Chorus)
 5. 橋段 (Bridge)
@@ -517,21 +518,24 @@ async def stream_chat_completion(
         "stream": True,
     }
 
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        async with client.stream("POST", url, json=payload, headers=headers) as response:
-            if response.status_code >= 400:
-                body = await response.aread()
-                raise MiniMaxError(
-                    f"MiniMax API error {response.status_code}",
-                    status_code=response.status_code,
-                    response_body=body.decode(),
-                )
+    async with (
+        httpx.AsyncClient(timeout=120.0) as client,
+        client.stream("POST", url, json=payload, headers=headers) as response,
+    ):
+        if response.status_code >= 400:
+            body = await response.aread()
+            raise MiniMaxError(
+                f"MiniMax API error {response.status_code}",
+                status_code=response.status_code,
+                response_body=body.decode(),
+            )
 
-            async for line in response.aiter_lines():
-                if not line or not line.startswith("data:"):
-                    continue
-                data = line[5:].strip()
-                if data == "[DONE]":
-                    break
-                if data:
-                    yield data
+        async for line in response.aiter_lines():
+            if not line or not line.startswith("data:"):
+                continue
+            data = line[5:].strip()
+            if data == "[DONE]":
+                break
+            if data:
+                yield data
+

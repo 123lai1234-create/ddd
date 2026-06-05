@@ -12,7 +12,7 @@ import logging
 import os
 import threading
 import time
-from typing import Callable
+from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ def _table_is_empty(table_name: str) -> bool:
             exists = cur.fetchone()[0]
             if not exists:
                 return True
-            cur.execute(f"SELECT 1 FROM {table_name} LIMIT 1")
+            cur.execute("SELECT 1 FROM %s LIMIT 1", (table_name,))
             return cur.fetchone() is None
     except Exception:
         return True

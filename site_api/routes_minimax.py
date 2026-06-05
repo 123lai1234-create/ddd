@@ -147,19 +147,19 @@ async def chat(request: ChatRequest) -> ChatResponse:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="MiniMax API authentication failed. Check your API key.",
-        )
+        ) from e
     except MiniMaxTimeoutError as e:
         logger.warning("MiniMax request timed out: %s", e)
         raise HTTPException(
             status_code=status.HTTP_408_REQUEST_TIMEOUT,
             detail="MiniMax request timed out. Try a shorter prompt.",
-        )
+        ) from e
     except MiniMaxError as e:
         logger.error("MiniMax error: %s", e)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"MiniMax API error: {e}",
-        )
+        ) from e
 
 
 @router.post("/chat/stream")
@@ -192,10 +192,10 @@ async def chat_stream(request: ChatRequest):
             },
         )
 
-    except MiniMaxAuthError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Auth failed")
+    except MiniMaxAuthError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Auth failed") from e
     except MiniMaxError as e:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e)) from e
 
 
 # ── Text-to-Speech ─────────────────────────────────────────────────────────────
@@ -230,7 +230,7 @@ async def tts(request: TTSRequest):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"TTS generation failed: {e}",
-        )
+        ) from e
 
 
 # ── Music Generation ───────────────────────────────────────────────────────────
@@ -264,7 +264,7 @@ async def music(request: MusicGenerationRequest):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Music generation failed: {e}",
-        )
+        ) from e
 
 
 @router.get("/music/{task_id}/status")
@@ -279,7 +279,7 @@ async def music_status(task_id: str):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to poll task status: {e}",
-        )
+        ) from e
 
 
 # ── Lyrics Generation ───────────────────────────────────────────────────────────
@@ -302,7 +302,7 @@ class LyricsResponse(BaseModel):
 async def lyrics(request: LyricsRequest):
     """
     Generate song lyrics based on a theme.
-    
+
     Returns structured lyrics with verse, chorus, bridge sections.
     """
     try:
@@ -327,7 +327,7 @@ async def lyrics(request: LyricsRequest):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Lyrics generation failed: {e}",
-        )
+        ) from e
 
 
 # ── Image Understanding (Vision) ───────────────────────────────────────────────
@@ -353,7 +353,7 @@ class ImageUnderstandingResponse(BaseModel):
 async def vision(request: ImageUnderstandingRequest):
     """
     Analyze images using MiniMax vision capabilities.
-    
+
     Use cases:
     - Analyze screenshots, diagrams, charts
     - Extract information from documents
@@ -381,7 +381,7 @@ async def vision(request: ImageUnderstandingRequest):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Image understanding failed: {e}",
-        )
+        ) from e
 
 
 # ── Web Search (RAG) ──────────────────────────────────────────────────────────────
@@ -404,7 +404,7 @@ class WebSearchResponse(BaseModel):
 async def search(request: WebSearchRequest):
     """
     Search the web for current information.
-    
+
     Returns search results with titles, snippets, and URLs.
     """
     try:
@@ -426,7 +426,7 @@ async def search(request: WebSearchRequest):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Web search failed: {e}",
-        )
+        ) from e
 
 
 class RagSearchRequest(BaseModel):
@@ -445,7 +445,7 @@ class RagSearchResponse(BaseModel):
 async def rag(request: RagSearchRequest):
     """
     RAG-style search: web search + synthesis with context.
-    
+
     First searches the web for information, then synthesizes
     an answer grounded in both search results and provided context.
     """
@@ -470,7 +470,7 @@ async def rag(request: RagSearchRequest):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"RAG search failed: {e}",
-        )
+        ) from e
 
 
 # ── Music Cover ────────────────────────────────────────────────────────────────
@@ -494,7 +494,7 @@ class MusicCoverResponse(BaseModel):
 async def cover(request: MusicCoverRequest):
     """
     Create a cover version of existing music with different style.
-    
+
     Provide either source_audio_url or source_audio_base64.
     For long audio, returns task_id for polling via /ai/music/{task_id}/status
     """
@@ -523,7 +523,7 @@ async def cover(request: MusicCoverRequest):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Music cover failed: {e}",
-        )
+        ) from e
 
 
 # ── Full Pipeline: Lyrics + Music ────────────────────────────────────────────────
@@ -546,10 +546,10 @@ class AIBandResponse(BaseModel):
 async def ai_band(request: AIBandRequest):
     """
     Complete AI songwriting pipeline: generate lyrics + music.
-    
+
     1. Generate lyrics based on theme and style
     2. Generate music using the lyrics as prompt
-    
+
     Returns both lyrics and music URL/task_id.
     """
     try:
@@ -581,4 +581,4 @@ async def ai_band(request: AIBandRequest):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"AI Band pipeline failed: {e}",
-        )
+        ) from e
