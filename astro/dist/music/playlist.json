@@ -1,0 +1,68 @@
+{
+  "album": "这个时代的艺术家",
+  "genre": "Chinese Indie Folk",
+  "theme": "Being young in modern China",
+  "year": 2026,
+  "tracks": [
+    {
+      "track_number": 1,
+      "title": "内卷共和国",
+      "filename": "track-01-内卷共和国---6eab1e69-d381-403d-839a-ff8298feef0a.mp3",
+      "description": "Satire on China's hyper-competitive education/work culture"
+    },
+    {
+      "track_number": 2,
+      "title": "深圳凌晨四点的光",
+      "filename": "track-02-深圳凌晨四点的光---6af9b2fa-bc49-433d-81a0-72e43d03d9c2.mp3",
+      "description": "Migrant worker in Shenzhen, seeing dawn only through office windows"
+    },
+    {
+      "track_number": 3,
+      "title": "摆烂主义者",
+      "filename": "track-03-摆烂主义者---9ea18f36-7a94-49e7-bc4f-319eb060d7a1.mp3",
+      "description": "About the lying flat movement 躺平"
+    },
+    {
+      "track_number": 4,
+      "title": "房价像风筝一样飞走了",
+      "filename": "track-04-房价像风筝一样飞走了---42641f4a-7558-41f6-8998-d299c3c491b1.mp3",
+      "description": "Housing prices skyrocketing beyond reach"
+    },
+    {
+      "track_number": 5,
+      "title": "毕业等于失业",
+      "filename": "track-05-毕业等于失业---0fb92b47-b3f5-4279-8ee7-a23a1b529202.mp3",
+      "description": "Youth unemployment after graduation"
+    },
+    {
+      "track_number": 6,
+      "title": "外卖小哥的蓝色多瑙河",
+      "filename": "track-06-外卖小哥的蓝色多瑙河---4d912c69-6220-41a3-96bd-21908ea1dcb0.mp3",
+      "description": "Delivery rider's piano dreams"
+    },
+    {
+      "track_number": 7,
+      "title": "六便士与月亮",
+      "filename": "track-07-六便士与月亮---dc8424db-1a13-4a10-b012-3414c62a3b5f.mp3",
+      "description": "Choosing ideals over money"
+    },
+    {
+      "track_number": 8,
+      "title": "租住在北平等的彩虹",
+      "filename": "track-08-租住在北平等的彩虹---7cbfeb9f-e0fa-4f77-b9a6-7e987c7f7de8.mp3",
+      "description": "Renting forever in Beijing, chasing small joys"
+    },
+    {
+      "track_number": 9,
+      "title": "打工人狂想曲",
+      "filename": "track-09-打工人狂想曲---d18b35f9-84c8-4a8d-a76c-81cd3cd53c05.mp3",
+      "description": "Epic anthem for working youth"
+    },
+    {
+      "track_number": 10,
+      "title": "这个时代的艺术家",
+      "filename": "track-10-这个时代的艺术家---a2da149a-72d6-4ece-918a-9fbc0a5c0a95.mp3",
+      "description": "Being an artist between mainstream and outsider status"
+    }
+  ]
+}

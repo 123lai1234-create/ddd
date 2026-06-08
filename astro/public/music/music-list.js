@@ -109,7 +109,8 @@ const DEFAULT_PLAYLIST = [
         url: '/music/track-10-这个时代的艺术家---771c5519-c626-4955-a42a-23c5b48cc4f7.mp3',
         cover: '',
         duration: 250,
-        lyrics: []
+        hasLyrics: true,
+        lyricsUrl: '/music/01-這個時代的藝術家.txt'
     }
 ];
 

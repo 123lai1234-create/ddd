@@ -192,6 +192,78 @@
         });
 
         elements.lyricsContainer?.addEventListener('click', toggleLyricsPanel);
+
+        // Keyboard shortcuts - with proper error handling
+        document.removeEventListener('keydown', handleKeyboardShortcuts);
+        document.addEventListener('keydown', handleKeyboardShortcuts);
+    }
+
+    // Keyboard shortcuts handler with try-catch to prevent unhandled promise rejections
+    function handleKeyboardShortcuts(e) {
+        try {
+            // Ignore if typing in input fields
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            switch (e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    prevTrack();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    nextTrack();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (state.volume < 100) {
+                        state.volume = Math.min(100, state.volume + 5);
+                        elements.audioPlayer.volume = state.volume / 100;
+                        elements.volumeSlider.value = state.volume;
+                        elements.volumeValue.textContent = `${state.volume}%`;
+                        updateVolumeIcon();
+                    }
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (state.volume > 0) {
+                        state.volume = Math.max(0, state.volume - 5);
+                        elements.audioPlayer.volume = state.volume / 100;
+                        elements.volumeSlider.value = state.volume;
+                        elements.volumeValue.textContent = `${state.volume}%`;
+                        updateVolumeIcon();
+                    }
+                    break;
+                case 'KeyL':
+                    e.preventDefault();
+                    if (state.currentIndex >= 0) {
+                        const song = state.playlist[state.currentIndex];
+                        toggleFavorite(song.id);
+                    }
+                    break;
+                case 'KeyM':
+                    e.preventDefault();
+                    toggleMute();
+                    break;
+                case 'KeyS':
+                    if (!e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        toggleShuffle();
+                    }
+                    break;
+                case 'KeyR':
+                    if (!e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        toggleRepeat();
+                    }
+                    break;
+            }
+        } catch (err) {
+            console.log('Keyboard shortcut error (non-critical):', err);
+        }
     }
 
     let audioContext, analyser, dataArray;
@@ -227,9 +299,16 @@
             const isFavorite = state.favorites.has(song.id);
             const hasLyrics = song.hasLyrics || state.lyricsCache[song.id];
             const isLRC = state.lyricsCache[song.id]?.isLRC;
+            const duration = song.duration > 0 ? formatTime(song.duration) : '--:--';
 
             return `
                 <div class="playlist-item ${isActive ? 'active' : ''}" data-index="${actualIndex}">
+                    <div class="item-playing-indicator">
+                        <div class="playing-bar"></div>
+                        <div class="playing-bar"></div>
+                        <div class="playing-bar"></div>
+                        <div class="playing-bar"></div>
+                    </div>
                     <div class="item-cover">
                         ${song.cover ? `<img src="${song.cover}" alt="">` : '<span>🎵</span>'}
                     </div>
@@ -239,7 +318,7 @@
                     </div>
                     <div class="item-meta">
                         ${hasLyrics ? `<span class="has-lyrics" title="${isLRC ? '動態歌詞' : '歌詞'}">${isLRC ? '🎤' : '📝'}</span>` : ''}
-                        <span class="item-duration">${formatTime(song.duration)}</span>
+                        <span class="item-duration ${song.duration <= 0 ? 'loading' : ''}">${duration}</span>
                     </div>
                     <button class="item-favorite ${isFavorite ? 'active' : ''}" data-id="${song.id}">
                         ${isFavorite ? '❤️' : '🤍'}
@@ -260,7 +339,7 @@
 
         elements.totalSongs.textContent = state.playlist.length;
         elements.totalDuration.textContent = formatTime(
-            state.playlist.reduce((acc, s) => acc + s.duration, 0)
+            state.playlist.reduce((acc, s) => acc + (s.duration || 0), 0)
         );
     }
 
@@ -287,9 +366,16 @@
             const isFavorite = state.favorites.has(song.id);
             const hasLyrics = song.hasLyrics || state.lyricsCache[song.id];
             const isLRC = state.lyricsCache[song.id]?.isLRC;
+            const duration = song.duration > 0 ? formatTime(song.duration) : '--:--';
 
             return `
                 <div class="playlist-item ${isActive ? 'active' : ''}" data-index="${actualIndex}">
+                    <div class="item-playing-indicator">
+                        <div class="playing-bar"></div>
+                        <div class="playing-bar"></div>
+                        <div class="playing-bar"></div>
+                        <div class="playing-bar"></div>
+                    </div>
                     <div class="item-cover">
                         ${song.cover ? `<img src="${song.cover}" alt="">` : '<span>🎵</span>'}
                     </div>
@@ -299,7 +385,7 @@
                     </div>
                     <div class="item-meta">
                         ${hasLyrics ? `<span class="has-lyrics" title="${isLRC ? '動態歌詞' : '歌詞'}">${isLRC ? '🎤' : '📝'}</span>` : ''}
-                        <span class="item-duration">${formatTime(song.duration)}</span>
+                        <span class="item-duration ${song.duration <= 0 ? 'loading' : ''}">${duration}</span>
                     </div>
                     <button class="item-favorite ${isFavorite ? 'active' : ''}" data-id="${song.id}">
                         ${isFavorite ? '❤️' : '🤍'}
@@ -320,7 +406,7 @@
 
         elements.totalSongs.textContent = filtered.length;
         elements.totalDuration.textContent = formatTime(
-            filtered.reduce((acc, s) => acc + s.duration, 0)
+            filtered.reduce((acc, s) => acc + (s.duration || 0), 0)
         );
     }
 
@@ -652,6 +738,27 @@
             state.lyricsCache[songId] = { lyrics: parsed, isLRC };
             renderLyrics(parsed, isLRC);
             return;
+        }
+
+        // Check for lyricsUrl in song data (custom lyrics path)
+        if (song?.lyricsUrl) {
+            try {
+                const response = await fetch(song.lyricsUrl);
+                if (response.ok) {
+                    const text = await response.text();
+                    const lines = text.split('\n').filter(l => l.trim());
+                    // Remove title line (first line with ===)
+                    const cleanLines = lines.map(line => {
+                        if (line.startsWith('=====') || line.startsWith('【') || line.includes('====')) {
+                            return '';
+                        }
+                        return line;
+                    }).filter(l => l.trim());
+                    state.lyricsCache[songId] = { lyrics: cleanLines, isLRC: false };
+                    renderLyrics(cleanLines, false);
+                    return;
+                }
+            } catch (e) { }
         }
 
         // Try to fetch LRC first, then TXT
