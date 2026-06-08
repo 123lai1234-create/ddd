@@ -754,7 +754,7 @@ async function doRagSearch() {
             : '知識庫中暫無匹配結果，可先至「基因 AI」頁同步資料。';
 
         if (!docs.length) {
-            results.innerHTML = '<div class="rag-empty">目前知識庫無此關鍵字的相關條目。<br>請前往 <a href="gene_ai.html" style="color:var(--teal)">基因 AI</a> 頁面同步資料後再試。</div>';
+            results.innerHTML = '<div class="rag-empty">目前知識庫無此關鍵字的相關條目。<br>請前往 <a href="/gene-ai" style="color:var(--teal)">基因 AI</a> 頁面同步資料後再試。</div>';
             return;
         }
 
