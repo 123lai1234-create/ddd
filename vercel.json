@@ -81,10 +81,6 @@
       "destination": "/api/og"
     },
     {
-      "source": "/music",
-      "destination": "/music/"
-    },
-    {
       "source": "/about",
       "destination": "/about/"
     },
