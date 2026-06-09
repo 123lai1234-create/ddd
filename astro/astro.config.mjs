@@ -3,7 +3,6 @@ import vercel from '@astrojs/vercel';
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
-    output: 'hybrid',
     adapter: vercel(),
     build: {
         format: 'directory',
