@@ -5,7 +5,6 @@
   "framework": null,
   "outputDirectory": "astro/dist",
   "cleanUrls": true,
-  "trailingSlash": true,
   "headers": [
     {
       "source": "/videos/(.*)",
