@@ -2,8 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "cd astro && npm ci && npm run build",
   "installCommand": "cd astro && npm ci",
-  "framework": null,
-  "outputDirectory": "astro/dist",
+  "framework": "astro",
+  "outputDirectory": "astro/.vercel/output",
   "cleanUrls": true,
   "headers": [
     {
@@ -38,7 +38,7 @@
       ]
     },
     {
-      "source": "/_astro/(.*)",
+      "source": "/_assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -77,47 +77,7 @@
   "rewrites": [
     {
       "source": "/og",
-      "destination": "/api/og"
-    },
-    {
-      "source": "/music",
-      "destination": "/music/"
-    },
-    {
-      "source": "/about",
-      "destination": "/about/"
-    },
-    {
-      "source": "/works",
-      "destination": "/works/"
-    },
-    {
-      "source": "/gene-ai",
-      "destination": "/gene-ai/"
-    },
-    {
-      "source": "/ngs",
-      "destination": "/ngs/"
-    },
-    {
-      "source": "/report",
-      "destination": "/report/"
-    },
-    {
-      "source": "/thesis",
-      "destination": "/thesis/"
-    },
-    {
-      "source": "/protein-mpnn",
-      "destination": "/protein-mpnn/"
-    },
-    {
-      "source": "/interview",
-      "destination": "/interview/"
-    },
-    {
-      "source": "/blog",
-      "destination": "/blog/"
+      "destination": "/api/og/"
     },
     {
       "source": "/healthz",
