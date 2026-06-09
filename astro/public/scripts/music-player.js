@@ -261,10 +261,10 @@
 
     getGenderIcon(g) {
       return g === 'F' ? '♀' : g === 'M' ? '♂' : '·';
-    },
+    }
     getGenderClass(g) {
       return g === 'F' ? 'gender-f' : g === 'M' ? 'gender-m' : 'gender-x';
-    },
+    }
 
     renderTrackList() {
       if (this.filteredTracks.length === 0) {
