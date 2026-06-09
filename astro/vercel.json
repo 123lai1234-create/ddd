@@ -1,7 +1,6 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
+  "buildCommand": "cd astro && npm install && npm run build",
+  "outputDirectory": "astro/dist",
   "framework": null,
-  "builders": ["@astrojs/vercel-builder"]
+  "ignoreBuildSteps": ["Install dependencies"]
 }

@@ -1,0 +1,13 @@
+site_api/
+hf-spaces/
+api/
+src/
+migrations/
+tests/
+.venv/
+.ruff_cache/
+.github/
+docs/
+videos/
+outputs/
+scripts/
