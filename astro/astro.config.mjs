@@ -1,6 +1,5 @@
-import vercel from '@astrojs/vercel';
-
 // @ts-check
+import vercel from '@astrojs/vercel';
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
