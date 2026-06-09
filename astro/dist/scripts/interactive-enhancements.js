@@ -131,7 +131,7 @@
         pendingG = false;
         const k = e.key.toLowerCase();
         if (k === 'h') { window.location.href = '/'; return; }
-        if (k === 'w') { window.location.href = '/works.html'; return; }
+        if (k === 'w') { window.location.href = '/works'; return; }
         if (k === 'c') {
           const toggle = document.getElementById('chatbot-toggle');
           if (toggle) toggle.click();
