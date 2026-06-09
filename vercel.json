@@ -17,25 +17,7 @@
       ]
     },
     {
-      "source": "/music/(.*\\.mp3$)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/music/(.*\\.txt$)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/music/(.*\\.json$)",
+      "source": "/music/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -182,11 +164,6 @@
     {
       "source": "/index.html",
       "destination": "/",
-      "permanent": true
-    },
-    {
-      "source": "/music",
-      "destination": "/music/",
       "permanent": true
     }
   ]
