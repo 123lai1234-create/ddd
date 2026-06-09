@@ -17,7 +17,25 @@
       ]
     },
     {
-      "source": "/music/(.*\\.(mp3|txt|json))",
+      "source": "/music/(.*\\.mp3$)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/music/(.*\\.txt$)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/music/(.*\\.json$)",
       "headers": [
         {
           "key": "Cache-Control",
