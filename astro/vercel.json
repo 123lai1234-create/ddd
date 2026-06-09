@@ -1,6 +1,21 @@
 {
-  "buildCommand": "cd astro && npm install && npm run build",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm install && npm run build",
+  "installCommand": "npm install",
+  "framework": "astro",
   "outputDirectory": "astro/dist",
-  "framework": null,
-  "ignoreBuildSteps": ["Install dependencies"]
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/music/(.*)",
+      "headers": [{"key": "Cache-Control", "value": "public, max-age=0, must-revalidate"}]
+    }
+  ],
+  "rewrites": [
+    {"source": "/og", "destination": "/api/og/"},
+    {"source": "/api/:path*", "destination": "https://donttalk-api-production.up.railway.app/api/:path*"}
+  ],
+  "redirects": [
+    {"source": "/index.html", "destination": "/", "permanent": true}
+  ]
 }
