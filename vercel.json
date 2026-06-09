@@ -17,7 +17,7 @@
       ]
     },
     {
-      "source": "/music/(.*)",
+      "source": "/music/(.*\\.(mp3|txt|json))",
       "headers": [
         {
           "key": "Cache-Control",
@@ -164,6 +164,11 @@
     {
       "source": "/index.html",
       "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/music",
+      "destination": "/music/",
       "permanent": true
     }
   ]
