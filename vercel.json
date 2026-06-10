@@ -1,22 +1,36 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rootDirectory": "astro",
-  "buildCommand": "npm install && npm run build",
-  "installCommand": "npm install",
+  "buildCommand": "cd astro && npm install && npm run build",
+  "installCommand": "cd astro && npm install",
   "framework": "astro",
-  "outputDirectory": "dist",
+  "outputDirectory": "astro/dist",
   "cleanUrls": true,
   "headers": [
     {
       "source": "/music/(.*)",
-      "headers": [{"key": "Cache-Control", "value": "public, max-age=0, must-revalidate"}]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     }
   ],
   "rewrites": [
-    {"source": "/og", "destination": "/api/og/"},
-    {"source": "/api/:path*", "destination": "https://donttalk-api-production.up.railway.app/api/:path*"}
+    {
+      "source": "/og",
+      "destination": "/api/og/"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://donttalk-api-production.up.railway.app/api/:path*"
+    }
   ],
   "redirects": [
-    {"source": "/index.html", "destination": "/", "permanent": true}
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    }
   ]
 }
