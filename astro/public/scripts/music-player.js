@@ -46,6 +46,7 @@
       this.likedSongs = JSON.parse(localStorage.getItem('likedSongs') || '[]');
       this.repostedSongs = JSON.parse(localStorage.getItem('repostedSongs') || '[]');
       this.playStats = JSON.parse(localStorage.getItem('playStats') || '{"total":0,"liked":0,"history":[]}');
+      this.lyricsOffset = parseFloat(localStorage.getItem('lyricsOffset') || '0');
       this.init();
     }
 
@@ -61,6 +62,7 @@
       this.filteredTracks = [...this.tracks];
       this.renderTrackList();
       this.updateStats();
+      this.updateLyricsOffsetUI();
 
       this.trackSearch = document.getElementById('track-search');
       this.toastContainer = document.getElementById('toast-container');
@@ -160,6 +162,20 @@
         });
       });
 
+      // 歌詞偏移控制
+      document.getElementById('lyrics-offset-minus')?.addEventListener('click', () => {
+        this.lyricsOffset -= 0.5;
+        this.updateLyricsOffsetUI();
+      });
+      document.getElementById('lyrics-offset-plus')?.addEventListener('click', () => {
+        this.lyricsOffset += 0.5;
+        this.updateLyricsOffsetUI();
+      });
+      document.getElementById('lyrics-offset-reset')?.addEventListener('click', () => {
+        this.lyricsOffset = 0;
+        this.updateLyricsOffsetUI();
+      });
+
       this.audio.addEventListener('timeupdate', () => {
         if (this.audio.duration && this.audio.currentTime > 0) {
           const progress = (this.audio.currentTime / this.audio.duration) * 100;
@@ -243,6 +259,8 @@
           case 'KeyM': this.toggleMute(); break;
           case 'KeyS': this.playMode = 'shuffle'; this.updateModeUI(); this.showToast('隨機播放'); break;
           case 'KeyL': this.toggleLike(); break;
+          case 'KeyJ': this.lyricsOffset -= 0.5; this.updateLyricsOffsetUI(); this.showToast('歌詞提前 0.5s'); break;
+          case 'KeyK': this.lyricsOffset += 0.5; this.updateLyricsOffsetUI(); this.showToast('歌詞延後 0.5s'); break;
         }
       });
     }
@@ -289,7 +307,9 @@
             '<button class="action-btn repost-btn ' + (isReposted ? 'reposted' : '') + '" data-idx="' + i + '" title="轉發">' +
               '<svg viewBox="0 0 24 24" fill="' + (isReposted ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>' +
             '</button>' +
-            '<button class="action-btn download-btn" data-idx="' + i + '" title="下載">⬇</button>' +
+            '<button class="action-btn download-btn" data-idx="' + i + '" title="下載">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+            '</button>' +
             '<button class="action-btn add-queue-btn" data-idx="' + i + '" title="加入佇列">+</button>' +
           '</div>' +
         '</div>';
@@ -449,8 +469,14 @@
 
       if (lyrics.length > 0 && lyrics[0].time === -1) {
         const duration = this.audio.duration || 180;
-        const timePerLine = duration / (lyrics.length + 1);
-        lyrics.forEach((l, i) => { l.time = timePerLine * (i + 1); });
+        // 預留前 10% 當 intro，最後 5% 當 outro，平均分配中間行
+        const introTime = duration * 0.05;
+        const outroTime = duration * 0.03;
+        const usableTime = duration - introTime - outroTime;
+        const timePerLine = usableTime / (lyrics.length - 1 || 1);
+        lyrics.forEach((l, i) => { 
+          l.time = introTime + timePerLine * i;
+        });
       }
 
       return lyrics.sort((a, b) => a.time - b.time);
@@ -480,7 +506,7 @@
     updateLyricsSync() {
       if (this.lyrics.length === 0) return;
 
-      const currentTime = this.audio.currentTime;
+      const currentTime = this.audio.currentTime + this.lyricsOffset;
       let activeIdx = -1;
 
       for (let i = this.lyrics.length - 1; i >= 0; i--) {
@@ -503,6 +529,14 @@
           el.classList.add('past');
         }
       });
+    }
+
+    updateLyricsOffsetUI() {
+      const offsetEl = document.getElementById('lyrics-offset-value');
+      if (offsetEl) {
+        offsetEl.textContent = this.lyricsOffset + 's';
+      }
+      localStorage.setItem('lyricsOffset', this.lyricsOffset.toString());
     }
 
     toggleLike() {
