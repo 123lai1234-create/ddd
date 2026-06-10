@@ -24,6 +24,7 @@ from site_api.db import (
 )
 from site_api.routes import router
 from site_api.routes_minimax import router as minimax_router
+from site_api.routes.music_analysis import router as music_analysis_router
 
 logger = logging.getLogger(__name__)
 
@@ -71,3 +72,4 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 app.include_router(router)
 app.include_router(minimax_router)
+app.include_router(music_analysis_router)

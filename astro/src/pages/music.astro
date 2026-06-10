@@ -24,7 +24,7 @@ try {
   description={PAGE_DESC}
   bodyPage="music"
   pageStyles={["/styles/music.css"]}
-  pageScripts={["/scripts/music-player.js"]}
+  pageScripts={["/scripts/music-player.js", "/scripts/music-ai-analysis.js"]}
 >
   <div class="bg-gradient"></div>
 
@@ -55,7 +55,7 @@ try {
     </div>
 
     <div class="nav-actions">
-      <button class="nav-btn nav-btn-outline" id="upload-lyrics-btn">🎤 生成歌詞</button>
+      <button class="nav-btn nav-btn-outline" id="ai-analyze-btn">🤖 AI 分析</button>
       <button class="nav-btn nav-btn-primary">登入</button>
     </div>
   </nav>
@@ -107,7 +107,7 @@ try {
             <span>🎤 歌手</span>
             <span>💿 專輯</span>
             <span>⏱ 時長</span>
-            <span></span>
+            <span>操作</span>
           </div>
           <div class="track-scroll">
             <div id="track-list">
@@ -126,12 +126,21 @@ try {
           </div>
           <span class="lyrics-badge" id="lyrics-count">0 句</span>
         </div>
+        
+        <!-- 歌詞偏移控制 UI -->
+        <div class="lyrics-offset-controls">
+          <button class="lyrics-offset-btn" id="lyrics-offset-minus" title="歌詞提前 0.5s">−</button>
+          <span class="lyrics-offset-value" id="lyrics-offset-value">0s</span>
+          <button class="lyrics-offset-btn" id="lyrics-offset-plus" title="歌詞延後 0.5s">+</button>
+          <button class="lyrics-offset-btn" id="lyrics-offset-reset" title="重置偏移" style="font-size: 0.7rem;">↺</button>
+        </div>
+        
         <div class="lyrics-translate-toggle">
           <button class="translate-tab active" data-mode="original">原文</button>
           <button class="translate-tab" data-mode="roman">羅馬拼音</button>
         </div>
         <div class="lyrics-container" id="lyrics-container">
-          <p style="color: var(--text-tertiary); text-align: center; padding: 50px;">選擇歌曲以顯示歌詞</p>
+          <p style="color: var(--text-tertiary); text-align: center; padding: 50px;">選擇歌曲以顯示歌詞<br><span style="font-size: 0.75rem;">按 J/K 鍵調整歌詞時間偏移</span></p>
         </div>
       </div>
     </div>
@@ -140,6 +149,84 @@ try {
   <button class="mobile-lyrics-toggle" id="mobile-lyrics-toggle">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
   </button>
+
+  <!-- AI 分析 Modal -->
+  <div class="ai-modal" id="ai-modal">
+    <div class="ai-modal-content">
+      <button class="ai-modal-close" id="ai-modal-close">✕</button>
+      <div class="ai-modal-header">
+        <h2>🤖 AI 音樂分析</h2>
+        <p>上傳音頻檔案或輸入歌曲名稱，讓 AI 幫你分析歌詞和歌手性別</p>
+      </div>
+      
+      <div class="ai-tabs">
+        <button class="ai-tab active" data-tab="upload">📤 上傳音頻</button>
+        <button class="ai-tab" data-tab="text">✏️ 輸入名稱</button>
+      </div>
+      
+      <!-- 上傳音頻 Tab -->
+      <div class="ai-tab-content active" id="ai-upload-tab">
+        <div class="ai-dropzone" id="ai-dropzone">
+          <div class="ai-dropzone-icon">🎵</div>
+          <p class="ai-dropzone-text">拖放音頻檔案到此處</p>
+          <p class="ai-dropzone-subtext">或點擊選擇檔案 (MP3, WAV, OGG, M4A)</p>
+          <input type="file" id="ai-file-input" accept="audio/*" hidden>
+        </div>
+        <div class="ai-file-preview" id="ai-file-preview" style="display: none;">
+          <span class="ai-file-name" id="ai-file-name"></span>
+          <button class="ai-remove-file" id="ai-remove-file">✕</button>
+        </div>
+        <button class="ai-analyze-btn" id="ai-analyze-upload-btn" disabled>
+          <span class="ai-btn-text">🔍 開始分析</span>
+          <span class="ai-btn-loading" style="display: none;">分析中...</span>
+        </button>
+      </div>
+      
+      <!-- 輸入名稱 Tab -->
+      <div class="ai-tab-content" id="ai-text-tab">
+        <div class="ai-form-group">
+          <label for="ai-song-name">歌曲名稱</label>
+          <input type="text" id="ai-song-name" placeholder="例如：不服輸、城市裡的我們、Late Night City">
+        </div>
+        <div class="ai-form-group">
+          <label for="ai-artist">歌手名稱（可選）</label>
+          <input type="text" id="ai-artist" placeholder="例如：TW男歌手、EN女歌手">
+        </div>
+        <button class="ai-analyze-btn" id="ai-analyze-text-btn">
+          <span class="ai-btn-text">🔍 開始分析</span>
+          <span class="ai-btn-loading" style="display: none;">分析中...</span>
+        </button>
+      </div>
+      
+      <!-- 分析結果 -->
+      <div class="ai-result" id="ai-result" style="display: none;">
+        <h3>📊 分析結果</h3>
+        <div class="ai-result-grid">
+          <div class="ai-result-item">
+            <span class="ai-result-label">🎤 歌手性別</span>
+            <span class="ai-result-value" id="ai-result-gender">--</span>
+          </div>
+          <div class="ai-result-item">
+            <span class="ai-result-label">🌐 語言</span>
+            <span class="ai-result-value" id="ai-result-language">--</span>
+          </div>
+          <div class="ai-result-item">
+            <span class="ai-result-label">🎵 曲風</span>
+            <span class="ai-result-value" id="ai-result-style">--</span>
+          </div>
+          <div class="ai-result-item">
+            <span class="ai-result-label">📈 置信度</span>
+            <span class="ai-result-value" id="ai-result-confidence">--</span>
+          </div>
+        </div>
+        <div class="ai-lyrics-section">
+          <h4>📝 歌詞內容</h4>
+          <pre class="ai-lyrics-content" id="ai-lyrics-content"></pre>
+        </div>
+        <button class="ai-apply-btn" id="ai-apply-btn">✅ 套用到歌曲</button>
+      </div>
+    </div>
+  </div>
 
   <div class="bottom-bar">
     <div class="bar-left">
@@ -269,6 +356,8 @@ try {
       <div class="shortcut-item"><span class="shortcut-key">M</span><span class="shortcut-desc">靜音切換</span></div>
       <div class="shortcut-item"><span class="shortcut-key">S</span><span class="shortcut-desc">隨機播放</span></div>
       <div class="shortcut-item"><span class="shortcut-key">L</span><span class="shortcut-desc">喜歡/取消</span></div>
+      <div class="shortcut-item"><span class="shortcut-key">J</span><span class="shortcut-desc">歌詞提前 0.5s</span></div>
+      <div class="shortcut-item"><span class="shortcut-key">K</span><span class="shortcut-desc">歌詞延後 0.5s</span></div>
     </div>
   </div>
 
@@ -305,3 +394,240 @@ try {
   <!-- Music tracks data injected as JSON for music-player.js to consume -->
   <script type="application/json" id="music-tracks" set:html={JSON.stringify(tracksData.tracks)} />
 </Base>
+
+<style>
+/* AI Modal Styles */
+.ai-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+.ai-modal.open { display: flex; }
+
+.ai-modal-content {
+  background: var(--bg-card, #222);
+  border-radius: 20px;
+  padding: 32px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  border: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.ai-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--text-tertiary, #999);
+  cursor: pointer;
+  font-size: 1.5rem;
+  padding: 4px 8px;
+}
+.ai-modal-close:hover { color: var(--text-primary, #fff); }
+
+.ai-modal-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.ai-modal-header h2 {
+  font-size: 1.5rem;
+  color: var(--text-primary, #fff);
+  margin-bottom: 8px;
+}
+.ai-modal-header p {
+  color: var(--text-tertiary, #999);
+  font-size: 0.85rem;
+}
+
+.ai-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.ai-tab {
+  flex: 1;
+  padding: 12px 20px;
+  background: var(--bg-elevated, #2a2a2a);
+  border: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
+  border-radius: 12px;
+  color: var(--text-secondary, #e0e0e0);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ai-tab.active {
+  background: var(--accent, #ff5500);
+  color: #000;
+  border-color: var(--accent, #ff5500);
+}
+.ai-tab:hover:not(.active) {
+  background: var(--bg-hover, rgba(255,85,0,0.08));
+}
+
+.ai-tab-content { display: none; }
+.ai-tab-content.active { display: block; }
+
+.ai-dropzone {
+  border: 2px dashed var(--border-secondary, rgba(255,255,255,0.12));
+  border-radius: 16px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+.ai-dropzone:hover, .ai-dropzone.dragover {
+  border-color: var(--accent, #ff5500);
+  background: var(--bg-hover, rgba(255,85,0,0.08));
+}
+.ai-dropzone-icon { font-size: 3rem; margin-bottom: 12px; }
+.ai-dropzone-text { color: var(--text-primary, #fff); font-weight: 600; margin-bottom: 4px; }
+.ai-dropzone-subtext { color: var(--text-tertiary, #999); font-size: 0.8rem; }
+
+.ai-file-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-elevated, #2a2a2a);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+.ai-file-name { color: var(--text-primary, #fff); font-size: 0.9rem; }
+.ai-remove-file {
+  background: none;
+  border: none;
+  color: var(--text-tertiary, #999);
+  cursor: pointer;
+  font-size: 1rem;
+}
+.ai-remove-file:hover { color: #ef4444; }
+
+.ai-form-group {
+  margin-bottom: 16px;
+}
+.ai-form-group label {
+  display: block;
+  color: var(--text-secondary, #e0e0e0);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.ai-form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-elevated, #2a2a2a);
+  border: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
+  border-radius: 12px;
+  color: var(--text-primary, #fff);
+  font-size: 0.9rem;
+}
+.ai-form-group input:focus {
+  outline: none;
+  border-color: var(--accent, #ff5500);
+}
+
+.ai-analyze-btn {
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, var(--accent, #ff5500) 0%, var(--accent-hover, #ff7a42) 100%);
+  border: none;
+  border-radius: 12px;
+  color: #000;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ai-analyze-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 85, 0, 0.4);
+}
+.ai-analyze-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ai-btn-loading { display: none; }
+
+.ai-result {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
+}
+.ai-result h3 {
+  color: var(--text-primary, #fff);
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+}
+.ai-result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.ai-result-item {
+  background: var(--bg-elevated, #2a2a2a);
+  padding: 12px 16px;
+  border-radius: 12px;
+}
+.ai-result-label {
+  display: block;
+  color: var(--text-tertiary, #999);
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+}
+.ai-result-value {
+  color: var(--accent, #ff5500);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.ai-lyrics-section {
+  margin-top: 16px;
+}
+.ai-lyrics-section h4 {
+  color: var(--text-secondary, #e0e0e0);
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+.ai-lyrics-content {
+  background: var(--bg-elevated, #2a2a2a);
+  padding: 16px;
+  border-radius: 12px;
+  color: var(--text-secondary, #e0e0e0);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.ai-apply-btn {
+  width: 100%;
+  padding: 12px 24px;
+  background: var(--bg-elevated, #2a2a2a);
+  border: 1px solid var(--accent, #ff5500);
+  border-radius: 12px;
+  color: var(--accent, #ff5500);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: all 0.2s;
+}
+.ai-apply-btn:hover {
+  background: var(--accent, #ff5500);
+  color: #000;
+}
+</style>

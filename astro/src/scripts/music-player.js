@@ -11,6 +11,7 @@ class MusicPlayer {
         this.currentStyle = 'all';
         this.currentGender = 'all';
         this.lyrics = [];
+        this.lyricsOffset = 0; // 歌詞時間偏移（秒）
         this.queue = [];
         this.queueIdx = 0;
         this.prevPressTime = 0;
@@ -19,6 +20,10 @@ class MusicPlayer {
         this.savedVolume = 80;
         this.audio = new Audio();
         this.likedSongs = JSON.parse(localStorage.getItem('likedSongs') || '[]');
+        
+        // 載入歌詞偏移設定
+        const savedOffset = localStorage.getItem('lyricsOffset');
+        if (savedOffset) this.lyricsOffset = parseFloat(savedOffset);
 
         this.init();
     }
@@ -102,6 +107,14 @@ class MusicPlayer {
         this.trackListEl.addEventListener('click', (e) => {
             const row = e.target.closest('.track-row');
             const addBtn = e.target.closest('.add-queue-btn');
+            const downloadBtn = e.target.closest('.download-btn');
+
+            if (downloadBtn) {
+                e.stopPropagation();
+                const idx = parseInt(downloadBtn.dataset.idx);
+                this.downloadTrack(idx);
+                return;
+            }
 
             if (addBtn) {
                 e.stopPropagation();
@@ -206,8 +219,35 @@ class MusicPlayer {
                 case 'ArrowUp': this.barVolume.value = Math.min(100, parseInt(this.barVolume.value) + 10); this.audio.volume = parseInt(this.barVolume.value) / 100; break;
                 case 'ArrowDown': this.barVolume.value = Math.max(0, parseInt(this.barVolume.value) - 10); this.audio.volume = parseInt(this.barVolume.value) / 100; break;
                 case 'KeyM': this.toggleMute(); break;
+                // J = 歌詞提前（減少偏移），K = 歌詞延後（增加偏移）
+                case 'KeyJ': this.adjustLyricsOffset(-0.5); break;
+                case 'KeyK': this.adjustLyricsOffset(0.5); break;
             }
         });
+
+        // 歌詞偏移按鈕
+        document.getElementById('lyrics-offset-minus')?.addEventListener('click', () => this.adjustLyricsOffset(-0.5));
+        document.getElementById('lyrics-offset-plus')?.addEventListener('click', () => this.adjustLyricsOffset(0.5));
+        document.getElementById('lyrics-offset-reset')?.addEventListener('click', () => {
+            this.lyricsOffset = 0;
+            localStorage.setItem('lyricsOffset', '0');
+            this.updateOffsetDisplay();
+            this.showToast('歌詞偏移已重置');
+        });
+    }
+
+    adjustLyricsOffset(delta) {
+        this.lyricsOffset = Math.round((this.lyricsOffset + delta) * 10) / 10;
+        localStorage.setItem('lyricsOffset', String(this.lyricsOffset));
+        this.updateOffsetDisplay();
+        this.showToast(`歌詞偏移: ${this.lyricsOffset > 0 ? '+' : ''}${this.lyricsOffset}s`);
+    }
+
+    updateOffsetDisplay() {
+        const offsetEl = document.getElementById('lyrics-offset-value');
+        if (offsetEl) {
+            offsetEl.textContent = this.lyricsOffset > 0 ? `+${this.lyricsOffset}s` : `${this.lyricsOffset}s`;
+        }
     }
 
     renderSkeletons() {
@@ -259,10 +299,38 @@ class MusicPlayer {
         <span class="track-album">${track.album || '--'}</span>
         <span class="track-lang">${this.getLangLabel(track.lang)}</span>
         <span class="track-duration">${track.duration || '--:--'}</span>
-        <button class="add-queue-btn" data-idx="${i}">+</button>
+        <div class="track-actions">
+          <button class="download-btn" data-idx="${i}" title="下載">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <button class="add-queue-btn" data-idx="${i}">+</button>
+        </div>
         ${isPlayingNow ? `<div class="track-progress"><div class="track-progress-bar" style="width: ${progress}%"></div></div>` : ''}
       </div>`;
         }).join('');
+    }
+
+    async downloadTrack(idx) {
+        const track = this.filteredTracks[idx];
+        if (!track || !track.audio) return;
+        
+        try {
+            this.showToast('開始下載...');
+            const response = await fetch(track.audio);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${track.name}.mp3`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.showToast('下載完成');
+        } catch (err) {
+            this.showToast('下載失敗');
+            console.error('Download error:', err);
+        }
     }
 
     getGenderIcon(g) {
@@ -373,20 +441,93 @@ class MusicPlayer {
     }
 
     async loadLyrics(track) {
+        this.lyrics = [];
+        this.lyricsOffset = parseFloat(localStorage.getItem('lyricsOffset') || '0');
+        this.updateOffsetDisplay();
+
+        // 1. 首先檢查本地歌詞檔案（優先使用）
+        if (track.lyrics) {
+            try {
+                const localRes = await fetch(track.lyrics);
+                if (localRes.ok) {
+                    const localText = await localRes.text();
+                    const hasTimeTags = /\[\d{2}:\d{2}\.\d{2,3}\]/.test(localText);
+                    
+                    if (hasTimeTags) {
+                        // 本地歌詞已有時間戳，直接使用
+                        this.parseLRC(localText);
+                        this.audio.play();
+                        return;
+                    } else {
+                        // 本地歌詞沒有時間戳，顯示為普通文字
+                        this.showPlainLyrics(localText);
+                        this.audio.play();
+                        return;
+                    }
+                }
+            } catch { }
+        }
+
+        // 2. 如果本地歌詞獲取失敗，從 lrclib API 獲取同步歌詞
+        // 只用歌曲名稱搜索，避免 artist 不匹配問題
         try {
-            // Use artist + name for more accurate lyrics match
-            const query = track.artist 
-                ? `${track.artist} ${track.name}`
-                : track.name;
-            const res = await fetch(`https://lrclib.net/api/get?q=${encodeURIComponent(query)}&artist_name=${encodeURIComponent(track.artist || '')}`);
+            // 清理歌曲名稱（移除前綴如 "02_"）
+            let cleanName = track.name.replace(/^\d+_/, '').trim();
+            
+            const res = await fetch(`https://lrclib.net/api/get?q=${encodeURIComponent(cleanName)}&artist_name=${encodeURIComponent(track.artist || '')}`);
             if (res.ok) {
                 const data = await res.json();
-                if (data?.syncedLyrics) { this.parseLRC(data.syncedLyrics); this.audio.play(); return; }
+                if (data?.syncedLyrics) { 
+                    this.parseLRC(data.syncedLyrics); 
+                    this.audio.play(); 
+                    return; 
+                }
             }
         } catch { }
-        this.lyrics = [];
-        this.lyricsContainer.innerHTML = '<p style="color: var(--text-tertiary); text-align: center;">選擇曲目以顯示歌詞</p>';
+
+        // 3. 嘗試只用歌曲名稱搜索（不帶 artist）
+        try {
+            let cleanName = track.name.replace(/^\d+_/, '').trim();
+            const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanName)}`);
+            if (res.ok) {
+                const results = await res.json();
+                if (Array.isArray(results) && results.length > 0) {
+                    // 找到第一個匹配的歌詞
+                    for (const result of results) {
+                        if (result.syncedLyrics) {
+                            this.parseLRC(result.syncedLyrics);
+                            this.audio.play();
+                            return;
+                        }
+                    }
+                }
+            }
+        } catch { }
+
+        // 4. 都沒有歌詞，顯示提示
+        this.lyricsContainer.innerHTML = '<p style="color: var(--text-tertiary); text-align: center;">選擇曲目以顯示歌詞<br><span style="font-size: 0.8rem;">按 J/K 鍵調整歌詞時間偏移</span></p>';
         this.audio.play();
+    }
+
+    showPlainLyrics(text) {
+        // 解析普通文字歌詞（沒有時間戳）
+        const lines = text.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0 && !line.startsWith('【') && !line.startsWith('['));
+        
+        this.lyrics = lines.map((text, idx) => ({
+            time: idx * 5, // 每行約 5 秒
+            text: text
+        }));
+        
+        this.lyricsContainer.innerHTML = this.lyrics.map(l => 
+            `<div class="lyric-line" data-time="${l.time}" style="opacity: 0.6;">${l.text}</div>`
+        ).join('');
+        
+        // 添加說明
+        this.lyricsContainer.innerHTML = `<p style="color: var(--text-tertiary); font-size: 0.75rem; text-align: center; margin-bottom: 16px;">📝 本地歌詞（無同步時間）</p>` + this.lyricsContainer.innerHTML;
+        
+        document.getElementById('lyrics-count').textContent = `${lines.length} 句`;
     }
 
     parseLRC(text) {
@@ -406,17 +547,22 @@ class MusicPlayer {
     }
 
     showLyrics(lines) {
+        document.getElementById('lyrics-count').textContent = `${lines.length} 句`;
         this.lyricsContainer.innerHTML = lines.map(l => `<div class="lyric-line" data-time="${l.time}">${l.text}</div>`).join('');
         this.lyricsContainer.querySelectorAll('.lyric-line').forEach(line => {
-            line.addEventListener('click', () => { this.audio.currentTime = parseFloat(line.dataset.time); });
+            line.addEventListener('click', () => { this.audio.currentTime = parseFloat(line.dataset.time) + this.lyricsOffset; });
         });
     }
 
     updateLyricsHighlight(time) {
         const lines = this.lyricsContainer.querySelectorAll('.lyric-line');
         let activeIdx = 0;
+        
+        // 應用歌詞偏移
+        const adjustedTime = time - this.lyricsOffset;
+        
         for (let i = 0; i < this.lyrics.length; i++) {
-            if (this.lyrics[i].time <= time) activeIdx = i;
+            if (this.lyrics[i].time <= adjustedTime) activeIdx = i;
             else break;
         }
 

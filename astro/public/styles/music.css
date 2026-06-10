@@ -223,18 +223,66 @@ select option { background: var(--bg-card); }
 .action-btn svg { width: 18px; height: 18px; }
 .action-btn:hover { color: var(--accent); background: var(--accent-dim); }
 
-.add-queue-btn { opacity: 0; background: var(--accent); color: #000; }
+.add-queue-btn { 
+  opacity: 0; 
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); 
+  color: #000; 
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 10px rgba(255, 85, 0, 0.3);
+}
 .track-row:hover .add-queue-btn { opacity: 1; }
-.add-queue-btn:hover { transform: scale(1.15); box-shadow: 0 4px 15px var(--accent-glow); }
+.add-queue-btn:hover { 
+  transform: scale(1.15); 
+  box-shadow: 0 4px 15px var(--accent-glow); 
+}
 
 .repost-btn { opacity: 0; color: var(--accent); }
 .track-row:hover .repost-btn { opacity: 1; }
 .repost-btn:hover { background: var(--accent-dim); }
 .repost-btn.reposted { opacity: 1; color: var(--accent); }
 
-.download-btn { opacity: 0; background: var(--accent-dim); color: var(--accent); }
+/* 下載按鈕 - 美化版本 */
+.download-btn { 
+  opacity: 0; 
+  background: var(--bg-elevated); 
+  border: 1px solid var(--border-secondary);
+  color: var(--text-secondary);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.download-btn svg { 
+  width: 16px; 
+  height: 16px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .track-row:hover .download-btn { opacity: 1; }
-.download-btn:hover { background: var(--accent); color: #000; }
+.download-btn:hover { 
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); 
+  color: #000;
+  border-color: var(--accent);
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px var(--accent-glow);
+}
+.download-btn:active {
+  transform: scale(0.95);
+}
 
 .lyrics-panel {
   background: rgba(20, 20, 20, 0.98); border-radius: 20px; padding: 28px;
@@ -247,6 +295,40 @@ select option { background: var(--bg-card); }
 .lyrics-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
 .lyrics-title svg { width: 20px; height: 20px; color: var(--accent); }
 .lyrics-badge { background: var(--accent-dim); color: var(--accent); padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; }
+
+/* 歌詞偏移控制 */
+.lyrics-offset-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 4px 8px;
+  background: var(--bg-card);
+  border-radius: 20px;
+  border: 1px solid var(--border-subtle);
+}
+.lyrics-offset-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: all 0.2s;
+  border-radius: 50%;
+}
+.lyrics-offset-btn:hover {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+.lyrics-offset-value {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  min-width: 40px;
+  text-align: center;
+  font-weight: 600;
+}
 
 .lyrics-translate-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
 .translate-tab { padding: 8px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); border: none; transition: all 0.2s; }
@@ -467,6 +549,7 @@ select option { background: var(--bg-card); }
   .track-album, .track-actions .repost-btn, .track-actions .download-btn { display: none; }
   .mobile-lyrics-toggle { display: flex; align-items: center; justify-content: center; }
   .stats-row { display: none; }
+  .lyrics-offset-controls { display: none; }
 }
 
 @media (max-width: 600px) {
