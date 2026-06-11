@@ -1,9 +1,8 @@
 // @ts-check
-import vercel from '@astrojs/vercel';
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
-    adapter: vercel(),
+    output: 'static',
     build: {
         format: 'directory',
         assets: '_assets',
