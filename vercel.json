@@ -3,7 +3,7 @@
   "buildCommand": "cd astro && npm install && npm run build",
   "installCommand": "cd astro && npm install",
   "framework": "astro",
-  "outputDirectory": "astro/dist",
+  "outputDirectory": "astro/.vercel/output",
   "cleanUrls": true,
   "headers": [
     {
