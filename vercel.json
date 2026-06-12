@@ -3,7 +3,6 @@
   "framework": "astro",
   "buildCommand": "npm install && npm run build",
   "installCommand": "npm install",
-  "outputDirectory": "astro/dist",
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
     { "source": "/(.*)/", "destination": "/$1/index.html" },
