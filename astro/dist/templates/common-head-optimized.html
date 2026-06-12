@@ -1,0 +1,99 @@
+<!-- Optimized Common Head Template -->
+<!-- Meta Tags for SEO & Performance -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="工程與生醫雙碩士背景，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。">
+<meta name="keywords" content="AI, 蛋白質設計, 基因分析, NGS, 生物資訊, 機器學習, Python, FastAPI">
+<meta name="author" content="JT Lai">
+<meta name="theme-color" content="#08060e">
+
+<!-- Open Graph for Social Sharing -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_TW">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- Preconnect to External Resources -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+<!-- DNS Prefetch for CDN -->
+<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+<!-- Favicon & Manifest -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>">
+<link rel="manifest" href="manifest.json">
+
+<!-- Service Worker for PWA -->
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+
+<!-- Fonts with display=swap for better performance -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Critical CSS Inline (for above-the-fold content) -->
+<style>
+/* Minimal critical styles to prevent layout shift */
+html { scroll-behavior: smooth; }
+body { overflow-x: hidden; background: #0a1116; color: #e6edf3; font-family: 'Inter', sans-serif; }
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: 64px; background: rgba(8, 12, 16, 0.92); backdrop-filter: blur(16px); }
+</style>
+
+<!-- Stylesheets with async loading for non-critical CSS -->
+<link rel="stylesheet" href="styles/shared.css">
+<link rel="stylesheet" href="styles/polish.css">
+<link rel="stylesheet" href="styles/dynamic.css">
+
+<!-- Scripts with defer for better performance -->
+<script src="scripts/theme-randomizer.js" defer></script>
+<script src="scripts/shader-bg.js" defer></script>
+<script src="scripts/admin-mode.js" defer></script>
+<script src="scripts/site-shell-config.js" defer></script>
+<script src="scripts/nav.js" defer></script>
+<script src="scripts/app-config.js" defer></script>
+
+<!-- Lazy load dynamic features -->
+<script>
+// Defer non-critical feature initialization
+document.addEventListener('DOMContentLoaded', () => {
+    const script = document.createElement('script');
+    script.src = 'scripts/dynamic-features.js';
+    script.defer = true;
+    document.head.appendChild(script);
+});
+</script>
+
+<!-- JSON-LD Structured Data for Better SEO -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "JT Lai",
+  "url": "https://donttalk.vercel.app/",
+  "image": "https://donttalk.vercel.app/og-image.svg",
+  "description": "工程與生醫雙碩士背景，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。",
+  "sameAs": [
+    "https://github.com/onlyforwork2026"
+  ],
+  "knowsAbout": ["Protein Design", "Gene Analysis", "NGS", "AI/ML", "Python", "FastAPI", "React"],
+  "jobTitle": "AI Research Engineer"
+}
+</script>
+
+<!-- Performance Monitoring -->
+<script>
+// Log performance metrics
+window.addEventListener('load', () => {
+    const perfData = window.performance.timing;
+    const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
+    console.log('Page Load Time: ' + pageLoadTime + 'ms');
+});
+</script>

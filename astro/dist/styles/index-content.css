@@ -1,0 +1,342 @@
+/* ─── Algorithms section ─────────────────────────────────────────── */
+.algo-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+  overflow-x: auto;
+}
+
+.algo-tab {
+  padding: 10px 20px;
+  font-size: .85rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color .2s, border-color .2s;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.algo-tab:hover {
+  color: var(--text);
+}
+
+.algo-tab.active {
+  color: var(--teal);
+  border-bottom-color: var(--teal);
+}
+
+.algo-panel {
+  display: none;
+}
+
+.algo-panel.active {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.algo-desc h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.algo-desc p {
+  color: var(--muted);
+  line-height: 1.8;
+  margin-bottom: 16px;
+  font-size: .92rem;
+}
+
+.algo-desc ul {
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: .88rem;
+  line-height: 1.9;
+}
+
+.algo-desc li::marker {
+  color: var(--teal);
+}
+
+.math-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.math-header {
+  background: var(--surface2);
+  padding: 10px 16px;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.math-lang {
+  color: var(--teal);
+  font-family: var(--mono);
+}
+
+.math-body {
+  padding: 20px 18px;
+  font-size: .88rem;
+  line-height: 2.2;
+  color: var(--purple);
+}
+
+.code-body {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.code-body pre {
+  padding: 18px 18px;
+  font-family: var(--mono);
+  font-size: .78rem;
+  line-height: 1.7;
+  color: #a8d8a8;
+  background: transparent;
+}
+
+.kw {
+  color: #ff79c6;
+}
+
+.fn {
+  color: #8be9fd;
+}
+
+.str {
+  color: #f1fa8c;
+}
+
+.cm {
+  color: #6272a4;
+}
+
+.var {
+  color: #bd93f9;
+}
+
+/* ─── Code / Codebase section ────────────────────────────────────── */
+.module-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.module-row {
+  display: grid;
+  grid-template-columns: 200px 1fr auto;
+  align-items: center;
+  gap: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 20px;
+  transition: border-color .2s;
+}
+
+.module-row:hover {
+  border-color: var(--teal2);
+}
+
+.module-file {
+  font-family: var(--mono);
+  font-size: .78rem;
+  color: var(--teal);
+}
+
+.module-desc {
+  font-size: .84rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.module-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.tag {
+  background: rgba(57, 208, 240, .08);
+  color: var(--teal);
+  border: 1px solid rgba(57, 208, 240, .2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: .7rem;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.tag-purple {
+  background: rgba(188, 140, 255, .08);
+  color: var(--purple);
+  border-color: rgba(188, 140, 255, .2);
+}
+
+.tag-orange {
+  background: rgba(240, 136, 62, .08);
+  color: var(--orange);
+  border-color: rgba(240, 136, 62, .2);
+}
+
+.tag-green {
+  background: rgba(63, 185, 80, .08);
+  color: var(--green);
+  border-color: rgba(63, 185, 80, .2);
+}
+
+/* ─── CLI section ────────────────────────────────────────────────── */
+.terminal {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.terminal-bar {
+  background: var(--surface2);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.t-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.t-red {
+  background: #ff6058;
+}
+
+.t-yellow {
+  background: #ffbd2e;
+}
+
+.t-green {
+  background: #28c940;
+}
+
+.t-title {
+  font-size: .78rem;
+  color: var(--muted);
+  margin-left: 8px;
+  font-family: var(--mono);
+}
+
+.terminal-body {
+  padding: 20px 24px;
+  font-family: var(--mono);
+  font-size: .82rem;
+  line-height: 2;
+}
+
+.t-prompt {
+  color: #3fb950;
+}
+
+.t-cmd {
+  color: #e6edf3;
+}
+
+.t-out {
+  color: var(--muted);
+}
+
+.t-hi {
+  color: var(--teal);
+}
+
+.t-blank {
+  display: block;
+  margin: 4px 0;
+}
+
+/* ─── FAQ / Interview ────────────────────────────────────────────── */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faq-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.faq-q {
+  padding: 18px 22px;
+  font-size: .92rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  transition: background .2s;
+}
+
+.faq-q:hover {
+  background: var(--surface2);
+}
+
+.faq-q::after {
+  content: '+';
+  color: var(--teal);
+  font-size: 1.2rem;
+  transition: transform .25s;
+}
+
+.faq-item.open .faq-q::after {
+  transform: rotate(45deg);
+}
+
+.faq-a {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .3s ease, padding .3s;
+  padding: 0 22px;
+  color: var(--muted);
+  font-size: .88rem;
+  line-height: 1.8;
+}
+
+.faq-item.open .faq-a {
+  max-height: 400px;
+  padding: 0 22px 18px;
+}
+
+.faq-a strong {
+  color: var(--text);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .algo-panel.active { grid-template-columns: 1fr; gap: 18px; }
+  .module-row { grid-template-columns: 1fr; gap: 8px; padding: 12px 14px; }
+  .module-row .mod-lang { text-align: left; }
+}

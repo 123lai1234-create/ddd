@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仙俠傳 · 回合制 RPG</title>
+<meta name="description" content="仙俠傳 — 經典回合制 RPG，仙劍奇俠傳風格，純瀏覽器遊玩。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+canvas { display: block; max-width: 100vw; max-height: 100vh; }
+
+/* ── Auth bar (top-right status) ── */
+#auth-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 6px 14px;
+  background: linear-gradient(to bottom, rgba(7,5,13,0.95), transparent);
+  font-family: "Noto Serif TC","SimSun",serif;
+  font-size: 12px; color: #9a8060;
+  pointer-events: none;
+}
+#auth-bar > * { pointer-events: auto; }
+#auth-user { color: #50c878; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#auth-open-btn {
+  background: rgba(26,20,40,0.9); border: 1px solid #7a5c1e;
+  color: #c8a060; border-radius: 4px; padding: 4px 12px;
+  cursor: pointer; font-size: 12px; font-family: inherit;
+  transition: background .15s;
+}
+#auth-open-btn:hover { background: rgba(58,40,8,0.9); color: #e8c060; }
+
+/* ── Auth modal ── */
+#auth-modal {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(7,5,13,0.82); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+#auth-modal.open { display: flex; }
+#auth-box {
+  background: #0e0a1c; border: 1.5px solid #7a5c1e; border-radius: 12px;
+  padding: 32px 36px; width: min(360px, 90vw);
+  font-family: "Noto Serif TC","SimSun",serif; color: #f0e6c8;
+  box-shadow: 0 0 40px rgba(232,192,96,0.12);
+}
+#auth-box h3 { margin: 0 0 8px; font-size: 18px; color: #e8c060; }
+#auth-box p  { font-size: 12px; color: #5a4a2a; margin: 0 0 20px; line-height: 1.6; }
+.auth-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.auth-field label { font-size: 12px; color: #9a8060; }
+.auth-field input {
+  background: #160e28; border: 1px solid #5a4a2a; border-radius: 6px;
+  color: #f0e6c8; padding: 9px 12px; font-size: 14px; font-family: inherit;
+  outline: none; transition: border-color .15s;
+}
+.auth-field input:focus { border-color: #e8c060; }
+.auth-field input::placeholder { color: #3a2a0e; }
+#auth-action-btn {
+  width: 100%; padding: 10px; background: rgba(232,192,96,0.15);
+  border: 1px solid #9a7828; border-radius: 6px; color: #e8c060;
+  font-size: 14px; font-family: inherit; cursor: pointer;
+  transition: background .15s; margin-bottom: 10px;
+}
+#auth-action-btn:hover { background: rgba(232,192,96,0.25); }
+#auth-action-btn:disabled { opacity: 0.5; cursor: default; }
+#auth-cancel-btn {
+  width: 100%; padding: 8px; background: none; border: none;
+  color: #5a4a2a; font-size: 12px; font-family: inherit; cursor: pointer;
+}
+#auth-cancel-btn:hover { color: #9a8060; }
+#auth-status { font-size: 12px; min-height: 18px; margin-bottom: 10px; text-align: center; }
+#auth-status[data-s="ok"]   { color: #50c878; }
+#auth-status[data-s="err"]  { color: #e05050; }
+#auth-status[data-s="info"] { color: #9a8060; }
+
+/* ── Touch gamepad overlay ── */
+#touch-pad {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
+  height: 190px;
+  align-items: flex-end; justify-content: space-between;
+  padding: 0 24px 64px;
+  pointer-events: none;
+}
+#touch-pad.visible { display: flex; }
+#touch-pad > * { pointer-events: auto; }
+.tp-dpad { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tp-row  { display: flex; align-items: center; gap: 2px; }
+.tp-center { width: 48px; height: 48px; }
+.tp-btn {
+  width: 52px; height: 52px;
+  background: rgba(10,6,20,0.65); border: 1.5px solid rgba(154,120,40,0.5);
+  border-radius: 10px; color: rgba(232,192,96,0.85);
+  font-size: 20px; display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent; user-select: none;
+  touch-action: manipulation; cursor: pointer;
+  transition: background .08s;
+}
+.tp-btn:active, .tp-btn.pressed { background: rgba(232,192,96,0.25); border-color: rgba(232,192,96,0.8); }
+.tp-actions { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.tp-act { width: 68px; height: 46px; font-size: 13px; font-family: "Noto Serif TC","SimSun",serif; border-radius: 23px; }
+</style>
+</head>
+<body>
+
+<!-- Auth status bar -->
+<div id="auth-bar">
+  <span id="auth-user"></span>
+  <button id="auth-open-btn">帳號登入</button>
+</div>
+
+<!-- Auth modal (Email OTP) -->
+<div id="auth-modal">
+  <div id="auth-box">
+    <h3 id="auth-title">☁ 帳號登入</h3>
+    <p id="auth-desc">輸入 Email，系統將寄出 6 位數驗證碼。<br>登入後存檔將綁定帳號，可跨裝置繼續遊戲。</p>
+    <div id="auth-status" data-s=""></div>
+
+    <!-- Step 1: email -->
+    <div id="auth-step1">
+      <div class="auth-field">
+        <label>Email 地址</label>
+        <input id="auth-email" type="email" placeholder="your@email.com" autocomplete="email" />
+      </div>
+      <button id="auth-action-btn">寄出驗證碼</button>
+      <button id="auth-cancel-btn">取消</button>
+    </div>
+
+    <!-- Step 2: OTP code (hidden initially) -->
+    <div id="auth-step2" style="display:none">
+      <div class="auth-field">
+        <label>驗證碼（Email 中的 6 位數字）</label>
+        <input id="auth-otp" type="text" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="one-time-code" />
+      </div>
+      <button id="auth-verify-btn" id="auth-action-btn" style="width:100%;padding:10px;background:rgba(232,192,96,0.15);border:1px solid #9a7828;border-radius:6px;color:#e8c060;font-size:14px;font-family:inherit;cursor:pointer;margin-bottom:10px">驗證並登入</button>
+      <button id="auth-back-btn" style="width:100%;padding:8px;background:none;border:none;color:#5a4a2a;font-size:12px;font-family:inherit;cursor:pointer">← 重新輸入 Email</button>
+    </div>
+
+    <!-- Logged-in state (hidden initially) -->
+    <div id="auth-step3" style="display:none">
+      <p id="auth-loggedin-name" style="text-align:center;color:#50c878;font-size:15px;margin:12px 0 20px"></p>
+      <button id="auth-logout-btn" style="width:100%;padding:10px;background:rgba(224,80,80,0.1);border:1px solid #804040;border-radius:6px;color:#e08080;font-size:14px;font-family:inherit;cursor:pointer;margin-bottom:10px">登出</button>
+      <button id="auth-close-btn" style="width:100%;padding:8px;background:none;border:none;color:#5a4a2a;font-size:12px;font-family:inherit;cursor:pointer">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- Achievement toast -->
+<div id="ach-toast" style="
+  display:none; position:fixed; bottom:80px; right:16px; z-index:150;
+  background:#0e0a1c; border:1.5px solid #9a7828; border-radius:10px;
+  padding:12px 18px; font-family:'Noto Serif TC','SimSun',serif;
+  color:#f0e6c8; font-size:13px; min-width:200px; max-width:260px;
+  box-shadow:0 0 24px rgba(232,192,96,0.2);
+  animation:achSlide .35s ease;
+">
+  <div id="ach-icon" style="font-size:22px;margin-bottom:4px"></div>
+  <div style="color:#e8c060;font-size:11px;margin-bottom:3px">🏆 成就解鎖！</div>
+  <div id="ach-name" style="font-weight:bold;font-size:14px"></div>
+  <div id="ach-desc" style="color:#9a8060;font-size:11px;margin-top:2px"></div>
+</div>
+<style>
+@keyframes achSlide { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
+</style>
+
+<!-- Virtual gamepad (mobile) -->
+<div id="touch-pad">
+  <div class="tp-dpad">
+    <button class="tp-btn" id="tp-up">▲</button>
+    <div class="tp-row">
+      <button class="tp-btn" id="tp-left">◀</button>
+      <div class="tp-center"></div>
+      <button class="tp-btn" id="tp-right">▶</button>
+    </div>
+    <button class="tp-btn" id="tp-down">▼</button>
+  </div>
+  <div class="tp-actions">
+    <button class="tp-btn tp-act" id="tp-b">選單</button>
+    <button class="tp-btn tp-act" id="tp-a">確認</button>
+  </div>
+</div>
+
+<script>
+if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+  import('https://browser.sentry-cdn.com/8.0.0/bundle.min.js').then(() => {
+    Sentry.init({ dsn: __SENTRY_DSN__, environment: location.hostname==='localhost'?'development':'production' });
+  }).catch(()=>{});
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+<script src="/games/xian/data.js"></script>
+<script src="/games/xian/sound.js"></script>
+<script>
+(async () => {
+  await Auth.init();
+
+  // ── DOM refs ──
+  const userEl    = document.getElementById('auth-user');
+  const openBtn   = document.getElementById('auth-open-btn');
+  const modal     = document.getElementById('auth-modal');
+  const step1     = document.getElementById('auth-step1');
+  const step2     = document.getElementById('auth-step2');
+  const step3     = document.getElementById('auth-step3');
+  const statusEl  = document.getElementById('auth-status');
+  const emailInp  = document.getElementById('auth-email');
+  const otpInp    = document.getElementById('auth-otp');
+  const sendBtn   = document.getElementById('auth-action-btn');
+  const verifyBtn = document.getElementById('auth-verify-btn');
+  const backBtn   = document.getElementById('auth-back-btn');
+  const logoutBtn = document.getElementById('auth-logout-btn');
+  const closeBtn  = document.getElementById('auth-close-btn');
+  const cancelBtn = document.getElementById('auth-cancel-btn');
+  const nameEl    = document.getElementById('auth-loggedin-name');
+
+  const setStatus = (msg, s = 'info') => { statusEl.textContent = msg; statusEl.dataset.s = s; };
+  const showStep  = (n) => { step1.style.display = n===1?'':'none'; step2.style.display = n===2?'':'none'; step3.style.display = n===3?'':'none'; };
+
+  const updateBar = () => {
+    if (Auth.isLoggedIn()) {
+      userEl.textContent  = Auth.displayName() || Auth.email() || '已登入';
+      openBtn.textContent = '帳號';
+    } else {
+      userEl.textContent  = '';
+      openBtn.textContent = '帳號登入';
+    }
+  };
+
+  const openModal = () => {
+    setStatus('');
+    if (Auth.isLoggedIn()) {
+      nameEl.textContent = `✓ 已登入：${Auth.displayName() || Auth.email()}`;
+      showStep(3);
+    } else {
+      emailInp.value = '';
+      showStep(1);
+    }
+    modal.classList.add('open');
+  };
+
+  updateBar();
+
+  // ── Open / close ──
+  openBtn.addEventListener('click', openModal);
+  cancelBtn.addEventListener('click', () => modal.classList.remove('open'));
+  closeBtn.addEventListener('click',  () => modal.classList.remove('open'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+  // ── Step 1: send OTP ──
+  sendBtn.addEventListener('click', async () => {
+    const email = emailInp.value.trim();
+    if (!email || !email.includes('@')) { setStatus('請輸入有效的 Email 地址。', 'err'); return; }
+    sendBtn.disabled = true;
+    setStatus('寄送中…', 'info');
+    const ok = await Auth.sendOtp(email);
+    sendBtn.disabled = false;
+    if (ok) {
+      setStatus(`驗證碼已寄到 ${email}，請查收。`, 'ok');
+      showStep(2);
+      otpInp.value = '';
+      setTimeout(() => otpInp.focus(), 100);
+    } else {
+      setStatus('寄送失敗，請確認 Email 後再試。', 'err');
+    }
+  });
+  emailInp.addEventListener('keydown', e => { if (e.key === 'Enter') sendBtn.click(); });
+
+  // ── Step 2: verify OTP ──
+  verifyBtn.addEventListener('click', async () => {
+    const otp = otpInp.value.trim();
+    if (otp.length !== 6 || !/^\d{6}$/.test(otp)) { setStatus('請輸入 6 位數字驗證碼。', 'err'); return; }
+    verifyBtn.disabled = true;
+    setStatus('驗證中…', 'info');
+    const ok = await Auth.verifyOtp(emailInp.value.trim(), otp);
+    verifyBtn.disabled = false;
+    if (ok) {
+      setStatus('登入成功！', 'ok');
+      updateBar();
+      window.dispatchEvent(new CustomEvent('xian:authchange'));
+      setTimeout(() => { modal.classList.remove('open'); }, 1200);
+    } else {
+      setStatus('驗證碼錯誤或已過期，請重試。', 'err');
+    }
+  });
+  otpInp.addEventListener('keydown', e => { if (e.key === 'Enter') verifyBtn.click(); });
+  backBtn.addEventListener('click', () => { setStatus(''); showStep(1); });
+
+  // ── Step 3: logout ──
+  logoutBtn.addEventListener('click', async () => {
+    await Auth.signOut();
+    updateBar();
+    window.dispatchEvent(new CustomEvent('xian:authchange'));
+    modal.classList.remove('open');
+  });
+})();
+</script>
+<script>
+// ── Achievement Toast ─────────────────────────────────────
+(function() {
+  const toast = document.getElementById('ach-toast');
+  const iconEl = document.getElementById('ach-icon');
+  const nameEl = document.getElementById('ach-name');
+  const descEl = document.getElementById('ach-desc');
+  let _timer = null;
+  window.addEventListener('xian:achievement', e => {
+    const { name, icon, desc } = e.detail;
+    iconEl.textContent = icon;
+    nameEl.textContent = name;
+    descEl.textContent = desc;
+    toast.style.display = 'block';
+    toast.style.animation = 'none';
+    requestAnimationFrame(() => { toast.style.animation = ''; toast.style.animation = 'achSlide .35s ease'; });
+    Sound?.play('levelUp');
+    if (_timer) clearTimeout(_timer);
+    _timer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+  });
+})();
+
+// ── Virtual Gamepad (PAD) ──────────────────────────────────
+window.PAD = { up:false, down:false, left:false, right:false, ok:false, menu:false };
+(function() {
+  const overlay = document.getElementById('touch-pad');
+  const show = () => overlay.classList.add('visible');
+  if (window.matchMedia?.('(pointer: coarse)').matches) show();
+  window.addEventListener('touchstart', show, { once: true, passive: true });
+
+  function bind(id, key, pulse) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('touchstart', e => {
+      e.preventDefault(); PAD[key] = true; el.classList.add('pressed');
+    }, { passive: false });
+    el.addEventListener('touchend', e => {
+      e.preventDefault(); el.classList.remove('pressed');
+      if (!pulse) PAD[key] = false;
+    }, { passive: false });
+    el.addEventListener('touchcancel', () => {
+      el.classList.remove('pressed');
+      if (!pulse) PAD[key] = false;
+    });
+  }
+  bind('tp-up',    'up',   false);
+  bind('tp-down',  'down', false);
+  bind('tp-left',  'left', false);
+  bind('tp-right', 'right',false);
+  bind('tp-a',     'ok',   true);   // pulse: game reads & clears each frame
+  bind('tp-b',     'menu', true);
+})();
+</script>
+<script src="/games/xian/scene-title.js"></script>
+<script src="/games/xian/scene-world.js"></script>
+<script src="/games/xian/scene-battle.js"></script>
+<script src="/games/xian/scene-ui.js"></script>
+<script src="/games/xian/main.js"></script>
+</body>
+</html>
