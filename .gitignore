@@ -8,8 +8,8 @@ src/__pycache__/
 node_modules/
 
 # Build outputs
-# dist/         -- tracked for Vercel static deploy (2026-06-12)
-# **/dist/      -- tracked for Vercel static deploy (2026-06-12)
+dist/
+**/dist/
 astro/.astro/
 
 # Deployment
