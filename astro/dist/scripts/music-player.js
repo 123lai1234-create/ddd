@@ -409,6 +409,12 @@
       this.updateLikeButton();
       this.renderTrackList();
 
+      // 套用 per-track 歌詞偏移（從 playlist.json 讀取，預設 0）
+      if (typeof track.lyricsOffset === 'number') {
+        this.lyricsOffset = track.lyricsOffset;
+        this.updateLyricsOffsetUI();
+      }
+
       const playPromise = this.audio.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
