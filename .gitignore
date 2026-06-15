@@ -42,6 +42,10 @@ __pycache__/
 astro/__extract_bodies.py
 astro/_nav.json
 astro/.netlify/
+
+# Astro lyrics-alignment experiments (scratch)
+astro/scripts/_align_*.txt
+astro/scripts/align_lyrics.py
 .expo
 .expo-shared
 
