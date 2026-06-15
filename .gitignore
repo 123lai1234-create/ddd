@@ -1,33 +1,49 @@
-# Python
-.venv/
-__pycache__/
-*.pyc
-src/__pycache__/
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# Node
-node_modules/
+# compiled output
+dist
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
 
-# Build outputs
-# dist/         -- tracked for Vercel static deploy (2026-06-12, keep tracked)
-# **/dist/      -- tracked for Vercel static deploy (2026-06-12, keep tracked)
-astro/.astro/
+# dependencies
+node_modules
 
-# Deployment
-.vercel/
-.netlify/
-.wrangler/
-.railway/
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
-# Environment
-.env
-.env*.local
-.hftoken
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
-# Outputs
-outputs/*.pt
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
 
-# IDE
-.vscode/
-.idea/
-*.swp
-.vercel
+# System Files
+.DS_Store
+Thumbs.db
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+# Replit
+.cache/
+.local/
