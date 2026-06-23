@@ -643,8 +643,7 @@ input:focus, textarea:focus, select:focus {
   mix-blend-mode: soft-light;
   z-index: 0;
 }
-.hero-inner,
-.hero > * {
+.hero-inner {
   position: relative;
   z-index: 1;
 }

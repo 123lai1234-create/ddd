@@ -1,7 +1,7 @@
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
 # compiled output
-dist
+# dist  -- tracked for Vercel static deploy (2026-06-12, keep tracked)
 tmp
 out-tsc
 *.tsbuildinfo
@@ -88,3 +88,5 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+.vercel

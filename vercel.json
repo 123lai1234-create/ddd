@@ -1,12 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/(.*)/", "destination": "/$1/index.html" },
-    { "source": "/og", "destination": "/api/og/" },
-    { "source": "/api/:path*", "destination": "https://donttalk-api-production.up.railway.app/api/:path*" }
-  ],
+  "outputDirectory": "astro/dist",
+  "buildCommand": null,
+  "installCommand": null,
   "headers": [
     {
       "source": "/music/(.*)",
@@ -16,6 +13,16 @@
           "value": "public, max-age=0, must-revalidate"
         }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/og",
+      "destination": "/api/og/"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://donttalk-api-production.up.railway.app/api/:path*"
     }
   ],
   "redirects": [

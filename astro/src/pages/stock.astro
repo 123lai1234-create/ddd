@@ -3,575 +3,72 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>台股個股分析 · 站內小工具</title>
-<meta name="description" content="台股 K 線 + 4 條均線 + 黃金切割 + 量能 + 法人買賣超 (TWSE 公開資料)">
+<title>台股均線買賣訊號系統 · 站內小工具</title>
+<meta name="description" content="台股 K 線 + 均線訊號 + 法人買賣超 + 盤中監控 + 自選股（同步 replit 系統）">
 <style>
   *,*::before,*::after { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif; background: #0d1117; color: #e6edf3; }
-  .wrap { max-width: 1280px; margin: 0 auto; padding: 20px; }
-  h1 { margin: 0 0 8px; font-size: 24px; }
-  .sub { color: #8b949e; font-size: 13px; margin-bottom: 20px; }
-  .tabs { display: flex; gap: 4px; border-bottom: 1px solid #30363d; margin-bottom: 20px; }
-  .tab { padding: 10px 18px; cursor: pointer; color: #8b949e; border: 0; background: transparent; font-size: 14px; border-bottom: 2px solid transparent; }
-  .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
-  .tab:hover { color: #e6edf3; }
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .search { display: flex; gap: 8px; margin-bottom: 16px; }
-  .search input { flex: 1; padding: 10px 14px; background: #161b22; border: 1px solid #30363d; color: #e6edf3; border-radius: 6px; font-size: 14px; }
-  .search button { padding: 10px 20px; background: #238636; color: #fff; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; }
-  .search button:hover { background: #2ea043; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-  .card { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 12px; cursor: pointer; transition: all .15s; }
-  .card:hover { border-color: #58a6ff; transform: translateY(-2px); }
-  .card .code { font-weight: 700; font-size: 14px; }
-  .card .name { font-size: 12px; color: #8b949e; margin-top: 2px; }
-  .card .type { font-size: 10px; color: #8b949e; margin-top: 4px; display: inline-block; padding: 1px 6px; background: #21262d; border-radius: 3px; }
-  .loading { text-align: center; padding: 60px; color: #8b949e; }
-  .error { color: #ff7b72; padding: 12px; background: #4c1d1d; border: 1px solid #f85149; border-radius: 6px; }
-  /* 個股頁 */
-  .stock-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
-  .stock-title h2 { margin: 0; font-size: 24px; }
-  .stock-title .code { color: #8b949e; font-size: 14px; }
-  .price-box { display: flex; align-items: baseline; gap: 12px; }
-  .price-big { font-size: 32px; font-weight: 700; }
-  .price-change { font-size: 16px; }
-  .up { color: #ff6b6b; }
-  .down { color: #4ecdc4; }
-  .neutral { color: #8b949e; }
-  .score-box { text-align: center; }
-  .score-big { font-size: 36px; font-weight: 700; }
-  .signals { margin-top: 8px; }
-  .sig { display: inline-block; padding: 2px 8px; margin: 2px; border-radius: 4px; font-size: 12px; background: #21262d; color: #8b949e; }
-  .sig.bull { background: rgba(255,107,107,0.15); color: #ff6b6b; }
-  .sig.bear { background: rgba(78,205,196,0.15); color: #4ecdc4; }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-  @media (max-width: 700px) { .row2 { grid-template-columns: 1fr; } }
-  .panel-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; }
-  .panel-card h3 { margin: 0 0 12px; font-size: 14px; color: #8b949e; font-weight: 600; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid #21262d; }
-  th { color: #8b949e; font-weight: 500; font-size: 12px; }
-  td.num { text-align: right; font-family: monospace; }
-  #chart, #volume { width: 100%; }
-  #chart { height: 420px; }
-  #volume { height: 120px; margin-top: 8px; }
-  .back-btn { display: inline-block; padding: 6px 12px; background: #21262d; color: #e6edf3; border: 0; border-radius: 6px; cursor: pointer; font-size: 13px; margin-bottom: 12px; }
-  .back-btn:hover { background: #30363d; }
-  .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-  .toolbar select, .toolbar input { padding: 6px 10px; background: #161b22; border: 1px solid #30363d; color: #e6edf3; border-radius: 4px; font-size: 13px; }
-  .inst-bar { display: flex; align-items: center; margin-bottom: 4px; font-size: 12px; }
-  .inst-bar .d { width: 70px; color: #8b949e; }
-  .inst-bar .b { flex: 1; height: 14px; background: #21262d; position: relative; border-radius: 2px; overflow: hidden; }
-  .inst-bar .pos { position: absolute; left: 50%; top: 0; bottom: 0; background: #ff6b6b; }
-  .inst-bar .neg { position: absolute; right: 50%; top: 0; bottom: 0; background: #4ecdc4; }
-  .inst-bar .v { width: 80px; text-align: right; font-family: monospace; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
-  .badge.stock { background: #1f3a5f; color: #58a6ff; }
-  .badge.etf { background: #3d2f5f; color: #d2a8ff; }
+  html, body { margin: 0; padding: 0; height: 100%; background: #0d1117; color: #e6edf3; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif; }
+  .frame-shell { position: fixed; inset: 0; display: flex; flex-direction: column; background: #0d1117; }
+  .frame-bar { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #161b22; border-bottom: 1px solid #30363d; font-size: 13px; }
+  .frame-bar .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff5f56; box-shadow: 0 0 6px rgba(255,95,86,0.6); }
+  .frame-bar .label { color: #e6edf3; font-weight: 600; }
+  .frame-bar .sub { color: #8b949e; }
+  .frame-bar .spacer { flex: 1; }
+  .frame-bar a { color: #58a6ff; text-decoration: none; }
+  .frame-bar a:hover { text-decoration: underline; }
+  .frame-host { flex: 1 1 auto; position: relative; min-height: 0; }
+  .frame-host iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #0d1117; }
+  .frame-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: #8b949e; }
+  .frame-fallback code { color: #e6edf3; }
+  @media (max-width: 600px) {
+    .frame-bar { flex-wrap: wrap; }
+    .frame-bar .sub { display: none; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>📈 台股個股分析</h1>
-  <p class="sub">資料來源：TWSE 公開資訊（每日盤後更新）· 本站不儲存任何個資</p>
-
-  <div class="tabs" id="tabs">
-    <button class="tab active" data-tab="home">首頁</button>
-    <button class="tab" data-tab="stock" id="tab-stock" style="display:none;">個股</button>
-    <button class="tab" data-tab="etf">ETF 排行</button>
-    <button class="tab" data-tab="calendar">除權息</button>
-  </div>
-
-  <!-- 首頁 -->
-  <div class="panel active" id="panel-home">
-    <div class="search">
-      <input type="text" id="search-input" placeholder="輸入台股代碼 (例如 2330、0050、00919)" autocomplete="off">
-      <button onclick="goToStock()">查詢</button>
+  <div class="frame-shell">
+    <div class="frame-bar">
+      <span class="dot"></span>
+      <span class="label">📊 台股均線買賣訊號系統</span>
+      <span class="sub">資料即時同步自 replit 後端</span>
+      <span class="spacer"></span>
+      <a href="https://ddd--8888uhiuh.replit.app/stock-app/index.html" target="_blank" rel="noopener">在新分頁開啟 ↗</a>
     </div>
-    <p style="color:#8b949e;font-size:13px;margin:0 0 16px;">點選熱門標的或輸入代碼查詢</p>
-    <div class="grid" id="hot-grid"></div>
-  </div>
-
-  <!-- 個股頁 -->
-  <div class="panel" id="panel-stock">
-    <button class="back-btn" onclick="goHome()">← 回到首頁</button>
-    <div id="stock-loading" class="loading">讀取 TWSE 資料中（首次約需 3-5 秒）…</div>
-    <div id="stock-error" class="error" style="display:none;"></div>
-    <div id="stock-content" style="display:none;">
-      <div class="stock-header">
-        <div class="stock-title">
-          <h2 id="s-name">-</h2>
-          <div class="code" id="s-code">-</div>
+    <div class="frame-host">
+      <iframe
+        src="https://ddd--8888uhiuh.replit.app/stock-app/index.html"
+        title="台股均線買賣訊號系統"
+        loading="eager"
+        referrerpolicy="no-referrer-when-downgrade"
+        allow="fullscreen; clipboard-read; clipboard-write"
+      ></iframe>
+      <noscript class="frame-fallback">
+        <div>
+          <p>此頁面需要 JavaScript 才能載入 iframe。</p>
+          <p>請改用 <a href="https://ddd--8888uhiuh.replit.app/stock-app/index.html" target="_blank" rel="noopener">replit 直接連結</a>。</p>
         </div>
-        <div class="price-box">
-          <div class="price-big" id="s-price">-</div>
-          <div class="price-change" id="s-change">-</div>
-        </div>
-        <div class="score-box">
-          <div style="color:#8b949e;font-size:12px;">多頭評分</div>
-          <div class="score-big" id="s-score">-</div>
-          <div class="signals" id="s-signals"></div>
-        </div>
-      </div>
-      <div class="panel-card" style="margin-bottom:16px;">
-        <h3>📊 K 線圖 + 4 條均線（MA5/10/20/60）</h3>
-        <div id="chart"></div>
-        <div id="volume"></div>
-      </div>
-      <div class="row2">
-        <div class="panel-card">
-          <h3>📐 均線 & 乖離率</h3>
-          <table>
-            <thead><tr><th>均線</th><th class="num">數值</th><th class="num">乖離率</th><th>狀態</th></tr></thead>
-            <tbody id="ma-table"></tbody>
-          </table>
-        </div>
-        <div class="panel-card">
-          <h3>📐 黃金切割 (近 60 根)</h3>
-          <table>
-            <thead><tr><th>回檔位</th><th class="num">價位</th></tr></thead>
-            <tbody id="fib-table"></tbody>
-          </table>
-          <div style="color:#8b949e;font-size:12px;margin-top:8px;" id="fib-range"></div>
-        </div>
-      </div>
-      <div class="panel-card">
-        <h3>💰 三大法人買賣超（近 20 個交易日）</h3>
-        <div id="inst-content" style="color:#8b949e;">載入中…</div>
-      </div>
+      </noscript>
     </div>
   </div>
-
-  <!-- ETF 排行 -->
-  <div class="panel" id="panel-etf">
-    <div class="toolbar">
-      <label style="color:#8b949e;font-size:13px;">排序：</label>
-      <select id="etf-sort" onchange="renderEtf()">
-        <option value="yield">現金股利殖利率</option>
-        <option value="discount">折價幅度</option>
-      </select>
-    </div>
-    <div class="loading" id="etf-loading">載入中…</div>
-    <table id="etf-table" style="display:none;">
-      <thead>
-        <tr>
-          <th>ETF 名稱</th>
-          <th class="num">收盤</th>
-          <th class="num">漲跌</th>
-          <th class="num">現金股利</th>
-          <th class="num">年化殖利率</th>
-          <th>折溢價</th>
-        </tr>
-      </thead>
-      <tbody id="etf-tbody"></tbody>
-    </table>
-  </div>
-
-  <!-- 除權息 -->
-  <div class="panel" id="panel-calendar">
-    <div class="loading" id="cal-loading">載入中…</div>
-    <table id="cal-table" style="display:none;">
-      <thead>
-        <tr>
-          <th>除權息日</th>
-          <th>代號</th>
-          <th>名稱</th>
-          <th class="num">現金股利</th>
-          <th class="num">股票股利</th>
-          <th class="num">殖利率</th>
-        </tr>
-      </thead>
-      <tbody id="cal-tbody"></tbody>
-    </table>
-  </div>
-</div>
-
-<script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
-<script>
-const CORS = 'https://corsproxy.io/?url=';
-const HOT_STOCKS = [
-  ['2330', '台積電', 'stock'], ['2317', '鴻海', 'stock'], ['2454', '聯發科', 'stock'],
-  ['2308', '台達電', 'stock'], ['2881', '富邦金', 'stock'], ['2882', '國泰金', 'stock'],
-  ['2303', '聯電', 'stock'], ['2603', '長榮', 'stock'], ['2609', '陽明', 'stock'],
-  ['2379', '瑞昱', 'stock'], ['2884', '玉山金', 'stock'],
-  ['0050', '元大台灣50', 'etf'], ['0056', '元大高股息', 'etf'],
-  ['006208', '富邦台50', 'etf'], ['00878', '國泰永續高股息', 'etf'],
-  ['00919', '群益台灣精選高息', 'etf'], ['00929', '復華台灣科技優息', 'etf'],
-  ['00713', '元大台灣高息低波', 'etf'],
-];
-
-const ETF_LIST = [
-  ['0050', '元大台灣50', 'yuhdimsun.com.tw'],
-  ['0056', '元大高股息', 'yuhdimsun.com.tw'],
-  ['00878', '國泰永續高股息', ' cathaysite.com'],
-  ['00919', '群益台灣精選高息', 'capitalfund.com.tw'],
-];
-
-// ============ Tab 切換 ============
-document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
-  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
-  t.classList.add('active');
-  document.getElementById('panel-' + t.dataset.tab).classList.add('active');
-  if (t.dataset.tab === 'etf') loadEtf();
-  if (t.dataset.tab === 'calendar') loadCalendar();
-}));
-
-// ============ 首頁 ============
-function renderHot() {
-  document.getElementById('hot-grid').innerHTML = HOT_STOCKS.map(([c, n, t]) =>
-    `<div class="card" onclick="openStock('${c}')">
-      <div class="code">${c} <span class="badge ${t}">${t === 'etf' ? 'ETF' : '股'}</span></div>
-      <div class="name">${n}</div>
-    </div>`
-  ).join('');
-}
-renderHot();
-
-document.getElementById('search-input').addEventListener('keypress', e => {
-  if (e.key === 'Enter') goToStock();
-});
-function goToStock() {
-  const code = document.getElementById('search-input').value.trim();
-  if (code) openStock(code);
-}
-function goHome() {
-  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
-  document.querySelector('[data-tab="home"]').classList.add('active');
-  document.getElementById('panel-home').classList.add('active');
-  document.getElementById('tab-stock').style.display = 'none';
-}
-
-// ============ 個股頁 ============
-function openStock(code) {
-  document.getElementById('tab-stock').style.display = '';
-  document.getElementById('tab-stock').textContent = '個股 ' + code;
-  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
-  document.getElementById('tab-stock').classList.add('active');
-  document.getElementById('panel-stock').classList.add('active');
-  loadStock(code);
-}
-
-async function fetchJSON(url) {
-  const r = await fetch(CORS + encodeURIComponent(url));
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-  return r.json();
-}
-
-async function loadStock(code) {
-  document.getElementById('stock-loading').style.display = 'block';
-  document.getElementById('stock-content').style.display = 'none';
-  document.getElementById('stock-error').style.display = 'none';
-  try {
-    // 抓近 12 個月 K 線（每月一次請求，12 次）
-    const kline = await fetchKline(code, 12);
-    if (!kline.length) throw new Error('查無資料');
-    const ind = calcIndicators(kline);
-    document.getElementById('stock-loading').style.display = 'none';
-    document.getElementById('stock-content').style.display = 'block';
-    document.getElementById('s-name').textContent = ind.name;
-    document.getElementById('s-code').textContent = `${code} · TWSE`;
-    const cls = ind.last.change > 0 ? 'up' : (ind.last.change < 0 ? 'down' : 'neutral');
-    document.getElementById('s-price').textContent = ind.last.close.toFixed(2);
-    document.getElementById('s-price').className = 'price-big ' + cls;
-    const sign = ind.last.change > 0 ? '+' : '';
-    document.getElementById('s-change').innerHTML = `<span class="${cls}">${sign}${ind.last.change.toFixed(2)} (${sign}${ind.last.change_pct.toFixed(2)}%)</span>`;
-    document.getElementById('s-score').textContent = ind.score;
-    document.getElementById('s-score').className = 'score-big ' + (ind.score >= 60 ? 'up' : (ind.score >= 30 ? 'neutral' : 'down'));
-    document.getElementById('s-signals').innerHTML = ind.signals.map(s => {
-      const isBull = s.includes('站上') || s.includes('黃金') || s.includes('爆量長紅') || s.includes('多頭');
-      const isBear = s.includes('跌破') || s.includes('死亡') || s.includes('爆量長黑');
-      const t = isBull ? 'bull' : (isBear ? 'bear' : '');
-      return `<span class="sig ${t}">${s}</span>`;
-    }).join('');
-    // 均線表
-    document.getElementById('ma-table').innerHTML = [5, 10, 20, 60].map(p => {
-      const v = ind.mas[p];
-      if (!v) return '';
-      const bias = ((ind.last.close - v) / v * 100).toFixed(2);
-      const above = ind.last.close > v;
-      return `<tr>
-        <td>MA${p}</td>
-        <td class="num">${v.toFixed(2)}</td>
-        <td class="num ${above ? 'up' : 'down'}">${above ? '+' : ''}${bias}%</td>
-        <td><span class="badge ${above ? 'stock' : ''}" style="background:${above ? '#1a4d2e' : '#4d1a1a'};">${above ? '站上' : '跌破'}</span></td>
-      </tr>`;
-    }).join('');
-    // 黃金切割
-    const f = ind.fib;
-    document.getElementById('fib-table').innerHTML = [236, 382, 500, 618, 786].map(p => {
-      const key = p === 500 ? '500' : String(p);
-      return `<tr><td>${(p/1000).toFixed(3)}</td><td class="num">${f[key].toFixed(2)}</td></tr>`;
-    }).join('');
-    document.getElementById('fib-range').textContent = `區間: ${f.low.toFixed(2)} ~ ${f.high.toFixed(2)} (近 60 根)`;
-    // 三大法人
-    loadInstitutional(code);
-    // 畫圖
-    drawChart(kline, ind.mas);
-  } catch (e) {
-    document.getElementById('stock-loading').style.display = 'none';
-    const err = document.getElementById('stock-error');
-    err.style.display = 'block';
-    err.textContent = '❌ ' + (e.message || '載入失敗');
-  }
-}
-
-async function fetchKline(code, months) {
-  const now = new Date();
-  const allRows = [];
-  for (let i = 0; i < months; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}01`;
-    const url = `https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${dateStr}&stockNo=${code}`;
-    try {
-      const data = await fetchJSON(url);
-      if (data.stat === 'OK' && data.data) {
-        for (const row of data.data) {
-          try {
-            const dp = row[0].split('/');
-            const y = parseInt(dp[0]) + 1911;
-            const date = `${y}-${dp[1]}-${dp[2]}`;
-            allRows.push({
-              date,
-              open: parseFloat(row[3].replace(/,/g, '')),
-              high: parseFloat(row[4].replace(/,/g, '')),
-              low: parseFloat(row[5].replace(/,/g, '')),
-              close: parseFloat(row[6].replace(/,/g, '')),
-              volume: parseInt(row[1].replace(/,/g, '')),
-            });
-          } catch {}
+  <script>
+    // iframe 載入失敗偵測：若 replit 掛了，顯示提示
+    (function() {
+      const iframe = document.querySelector('.frame-host iframe');
+      const host = document.querySelector('.frame-host');
+      let loaded = false;
+      iframe.addEventListener('load', () => { loaded = true; });
+      // replit 一般 5s 內會有回應，10s 沒 load 視為失敗
+      setTimeout(() => {
+        if (!loaded) {
+          const fb = document.createElement('div');
+          fb.className = 'frame-fallback';
+          fb.innerHTML = '<div><p>⚠️ replit 系統目前無回應。</p><p>請稍後再試，或<a href="https://ddd--8888uhiuh.replit.app/stock-app/index.html" target="_blank" rel="noopener">直接前往 replit ↗</a></p></div>';
+          host.appendChild(fb);
         }
-      }
-    } catch (e) { console.warn('month', i, e); }
-  }
-  // 去重 + 排序
-  const seen = new Set();
-  const uniq = [];
-  for (const r of allRows) {
-    if (!seen.has(r.date)) { seen.add(r.date); uniq.push(r); }
-  }
-  uniq.sort((a, b) => a.date.localeCompare(b.date));
-  return uniq;
-}
-
-function calcIndicators(kline) {
-  const closes = kline.map(k => k.close);
-  const volumes = kline.map(k => k.volume);
-  const mas = {};
-  [5, 10, 20, 60].forEach(p => {
-    if (closes.length >= p) {
-      const slice = closes.slice(-p);
-      mas[p] = slice.reduce((a, b) => a + b, 0) / p;
-    }
-  });
-  const last = kline[kline.length - 1];
-  const prev = kline[kline.length - 2] || last;
-  const change = last.close - prev.close;
-  const change_pct = (change / prev.close) * 100;
-  // 黃金切割
-  const last60 = kline.slice(-60);
-  const high = Math.max(...last60.map(k => k.high));
-  const low = Math.min(...last60.map(k => k.low));
-  const diff = high - low;
-  const fib = {
-    high, low,
-    236: high - diff * 0.236,
-    382: high - diff * 0.382,
-    500: high - diff * 0.5,
-    618: high - diff * 0.618,
-    786: high - diff * 0.786,
-  };
-  // 訊號
-  const signals = [];
-  for (const p of [5, 10, 20, 60]) {
-    if (mas[p]) {
-      if (last.close > mas[p]) signals.push(`站上 MA${p}`);
-      else signals.push(`跌破 MA${p}`);
-    }
-  }
-  // 黃金/死亡交叉
-  if (mas[5] && mas[20]) {
-    const ma5y = closes.slice(-6, -1).reduce((a, b) => a + b, 0) / 5;
-    const ma20y = closes.slice(-21, -1).reduce((a, b) => a + b, 0) / 20;
-    if (ma5y <= ma20y && mas[5] > mas[20]) signals.push('黃金交叉 (5↗20)');
-    if (ma5y >= ma20y && mas[5] < mas[20]) signals.push('死亡交叉 (5↘20)');
-  }
-  // 量能
-  if (volumes.length >= 5) {
-    const volAvg = volumes.slice(-5).reduce((a, b) => a + b, 0) / 5;
-    if (last.volume > volAvg * 1.5) signals.push('爆量');
-    if (last.volume < volAvg * 0.5) signals.push('量縮');
-  }
-  // 評分
-  let score = 50;
-  for (const p of [5, 10, 20, 60]) {
-    if (mas[p]) {
-      if (last.close > mas[p]) score += 5;
-      else score -= 3;
-    }
-  }
-  if (mas[5] && mas[20] && mas[5] > mas[20]) score += 10;
-  if (mas[20] && mas[60] && mas[20] > mas[60]) score += 10;
-  score = Math.max(0, Math.min(100, score));
-  return { name: HOT_STOCKS.find(s => s[0] === code)?.[1] || code, last: { ...last, change, change_pct }, mas, fib, signals, score };
-}
-
-function drawChart(kline, mas) {
-  const c1 = document.getElementById('chart');
-  c1.innerHTML = '';
-  const c2 = document.getElementById('volume');
-  c2.innerHTML = '';
-  const chart = LightweightCharts.createChart(c1, {
-    width: c1.clientWidth, height: 420,
-    layout: { background: { color: '#0d1117' }, textColor: '#e6edf3' },
-    grid: { vertLines: { color: '#21262d' }, horzLines: { color: '#21262d' } },
-    timeScale: { borderColor: '#30363d' },
-    rightPriceScale: { borderColor: '#30363d' },
-  });
-  const cs = chart.addCandlestickSeries({
-    upColor: '#ff6b6b', downColor: '#4ecdc4',
-    wickUpColor: '#ff6b6b', wickDownColor: '#4ecdc4',
-    borderVisible: false,
-  });
-  cs.setData(kline.map(k => ({ time: k.date, open: k.open, high: k.high, low: k.low, close: k.close })));
-  const maColors = { 5: '#ffa500', 10: '#58a6ff', 20: '#a371f7', 60: '#8b949e' };
-  [5, 10, 20, 60].forEach(p => {
-    if (!mas[p]) return;
-    const data = kline.map((k, i) => {
-      if (i < p - 1) return null;
-      const s = kline.slice(i - p + 1, i + 1);
-      return { time: k.date, value: s.reduce((a, b) => a + b.close, 0) / p };
-    }).filter(x => x);
-    const s = chart.addLineSeries({ color: maColors[p], lineWidth: 1 });
-    s.setData(data);
-  });
-  // 量能
-  const vChart = LightweightCharts.createChart(c2, {
-    width: c2.clientWidth, height: 120,
-    layout: { background: { color: '#0d1117' }, textColor: '#e6edf3' },
-    grid: { vertLines: { color: '#21262d' }, horzLines: { color: '#21262d' } },
-    timeScale: { visible: false },
-    rightPriceScale: { borderColor: '#30363d' },
-  });
-  const vs = vChart.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol' });
-  vChart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
-  vs.setData(kline.map(k => ({
-    time: k.date,
-    value: k.volume,
-    color: k.close >= k.open ? 'rgba(255,107,107,0.5)' : 'rgba(78,205,196,0.5)',
-  })));
-  chart.timeScale().fitContent();
-  vChart.timeScale().fitContent();
-  chart.timeScale().subscribeVisibleLogicalRangeChange(r => r && vChart.timeScale().setVisibleLogicalRange(r));
-}
-
-async function loadInstitutional(code) {
-  const target = document.getElementById('inst-content');
-  try {
-    const today = new Date();
-    const rows = [];
-    // 抓近 20 個交易日
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
-      if (d.getDay() === 0 || d.getDay() === 6) continue;
-      const ds = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-      const url = `https://www.twse.com.tw/rwd/zh/fund/T86?response=json&date=${ds}&selectType=ALLBUT0999`;
-      try {
-        const data = await fetchJSON(url);
-        if (data.stat === 'OK') {
-          for (const row of data.data) {
-            if (row[0].trim() === code) {
-              const num = s => parseFloat((s||'').toString().replace(/,/g, '').replace('+', '')) || 0;
-              rows.push({
-                date: `${ds.slice(0,4)}/${ds.slice(4,6)}/${ds.slice(6,8)}`,
-                foreign: num(row[2]),
-                trust: num(row[3]),
-                dealer: num(row[4]),
-                total: num(row[5]),
-              });
-              break;
-            }
-          }
-          if (rows.length >= 20) break;
-        }
-      } catch {}
-    }
-    if (!rows.length) { target.innerHTML = '無三大法人資料'; return; }
-    const max = Math.max(...rows.map(r => Math.abs(r.total))) || 1;
-    target.innerHTML = rows.map(r => {
-      const w = Math.abs(r.total) / max * 50;
-      const bar = r.total >= 0
-        ? `<div class="pos" style="width:${w}%"></div>`
-        : `<div class="neg" style="width:${w}%"></div>`;
-      return `<div class="inst-bar"><div class="d">${r.date}</div><div class="b">${bar}</div><div class="v ${r.total >= 0 ? 'up' : 'down'}">${r.total >= 0 ? '+' : ''}${r.total.toFixed(0)}</div></div>`;
-    }).join('');
-  } catch (e) {
-    target.innerHTML = '載入失敗: ' + e.message;
-  }
-}
-
-// ============ ETF 排行 ============
-async function loadEtf() {
-  // ETF 殖利率需要年度資料，這裡示範簡化版
-  document.getElementById('etf-loading').style.display = 'block';
-  document.getElementById('etf-table').style.display = 'none';
-  // 範例資料（實際需接證交所 API 或證券商網站）
-  setTimeout(() => {
-    document.getElementById('etf-loading').style.display = 'none';
-    document.getElementById('etf-table').style.display = '';
-    const sample = [
-      { code: '0056', name: '元大高股息', close: 35.5, change: -0.3, cash: 2.1, yield: 5.9, premium: 0.1 },
-      { code: '00878', name: '國泰永續高股息', close: 19.8, change: -0.2, cash: 1.2, yield: 6.1, premium: -0.2 },
-      { code: '00919', name: '群益台灣精選高息', close: 22.3, change: -0.1, cash: 1.4, yield: 6.3, premium: 0.0 },
-      { code: '00929', name: '復華台灣科技優息', close: 18.5, change: -0.4, cash: 1.15, yield: 6.2, premium: 0.3 },
-    ];
-    document.getElementById('etf-tbody').innerHTML = sample.map(e => `
-      <tr onclick="openStock('${e.code}')" style="cursor:pointer;">
-        <td>${e.code} ${e.name}</td>
-        <td class="num">${e.close}</td>
-        <td class="num ${e.change > 0 ? 'up' : 'down'}">${e.change > 0 ? '+' : ''}${e.change}</td>
-        <td class="num">${e.cash}</td>
-        <td class="num">${e.yield}%</td>
-        <td>${e.premium > 0 ? '溢價' : (e.premium < 0 ? '折價' : '平價')} ${Math.abs(e.premium).toFixed(2)}%</td>
-      </tr>
-    `).join('');
-  }, 500);
-}
-
-// ============ 除權息 ============
-async function loadCalendar() {
-  document.getElementById('cal-loading').style.display = 'block';
-  document.getElementById('cal-table').style.display = 'none';
-  try {
-    const url = 'https://mopsov.twse.com.tw/server-java/t05st10?step=1&firstin=true&TYPEK=sii';
-    const data = await fetchJSON(url);
-    // TWSE 這個 endpoint 回的是 HTML，不是 JSON，給個 fallback
-    setTimeout(() => {
-      document.getElementById('cal-loading').style.display = 'none';
-      document.getElementById('cal-table').style.display = '';
-      const sample = [
-        { date: '115/07/15', code: '2330', name: '台積電', cash: 4.5, stock: 0, yield: 1.9 },
-        { date: '115/07/20', code: '2317', name: '鴻海', cash: 5.2, stock: 0, yield: 3.8 },
-        { date: '115/08/15', code: '2454', name: '聯發科', cash: 16.0, stock: 0, yield: 2.5 },
-      ];
-      document.getElementById('cal-tbody').innerHTML = sample.map(e => `
-        <tr onclick="openStock('${e.code}')" style="cursor:pointer;">
-          <td>${e.date}</td>
-          <td><code>${e.code}</code></td>
-          <td>${e.name}</td>
-          <td class="num">${e.cash}</td>
-          <td class="num">${e.stock}</td>
-          <td class="num">${e.yield}%</td>
-        </tr>
-      `).join('');
-    }, 500);
-  } catch {
-    document.getElementById('cal-loading').textContent = '載入失敗';
-  }
-}
-</script>
+      }, 10000);
+    })();
+  </script>
 </body>
 </html>

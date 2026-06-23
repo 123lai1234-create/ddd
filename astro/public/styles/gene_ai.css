@@ -86,10 +86,10 @@ a {
   overflow: hidden;
 }
 
-.hero-video,
-.hero-canvas,
-.hero-video-overlay,
-.grid-bg,
+.hero > .hero-video,
+.hero > .hero-canvas,
+.hero > .hero-video-overlay,
+.hero > .grid-bg,
 .hero > canvas {
   position: absolute;
   inset: 0;
@@ -98,14 +98,14 @@ a {
   object-fit: cover;
 }
 
-.hero-video-overlay {
+.hero > .hero-video-overlay {
   background: linear-gradient(180deg, rgba(8,12,16,0.5) 0%, rgba(8,12,16,0.3) 50%, rgba(8,12,16,0.6) 100%);
   z-index: 0;
 }
 
-.hero-video,
-.hero-canvas,
-.grid-bg,
+.hero > .hero-video,
+.hero > .hero-canvas,
+.hero > .grid-bg,
 .hero > canvas { z-index: -1; }
 
 .hero-grid {
