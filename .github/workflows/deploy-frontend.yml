@@ -59,19 +59,6 @@ jobs:
       - name: Build
         run: cd astro && npm run build
 
-      - name: Deploy to Vercel
-        continue-on-error: true
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ env.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ env.VERCEL_PROJECT_ID }}
-        run: |
-          [ -z "$VERCEL_TOKEN" ] && echo "::warning::VERCEL_TOKEN not set" && exit 0
-          cd astro && npx vercel deploy --prod \
-            --token="$VERCEL_TOKEN" \
-            --dir=dist \
-            --local-config=../../vercel.json
-
       - name: Deploy to Netlify
         continue-on-error: true
         env:
@@ -83,3 +70,8 @@ jobs:
             --prod \
             --site="$NETLIFY_SITE_ID" \
             --auth="$NETLIFY_AUTH_TOKEN"
+
+      # Note: Vercel deployment is now handled by Vercel's Git integration
+      # connected to prj_bmqwjk7Bgm6C3Gukcv3u3DMOqWOb (set up in Vercel dashboard).
+      # Vercel auto-builds and deploys on push to main; vercel.json at the repo
+      # root drives install/build/output settings (see commit 5d794d5).
