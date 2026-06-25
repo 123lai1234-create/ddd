@@ -2,6 +2,10 @@
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 
+// Astro 5+ Content Layer (glob loader): `slug` is no longer auto-derived — use `id`.
+// Strip the `.md`/`.mdx` extension to get the URL-safe slug.
+const stripExt = (id: string) => id.replace(/\.mdx?$/, '');
+
 const posts = (await getCollection('blog', p => !p.data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
@@ -21,7 +25,7 @@ const posts = (await getCollection('blog', p => !p.data.draft))
 
     <div style="display:flex;flex-direction:column;gap:0">
       {posts.map(post => (
-        <a href={`/blog/${post.slug}`} style="display:block;padding:20px 0;border-bottom:1px solid var(--border,rgba(255,255,255,.07));text-decoration:none;color:inherit;transition:opacity .15s" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
+        <a href={`/blog/${stripExt(post.id)}`} style="display:block;padding:20px 0;border-bottom:1px solid var(--border,rgba(255,255,255,.07));text-decoration:none;color:inherit;transition:opacity .15s" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
           <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap">
             <h2 style="font-size:1.05rem;font-weight:600;color:var(--text);margin:0 0 6px">{post.data.title}</h2>
             <time style="font-size:.78rem;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">

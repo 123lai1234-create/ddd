@@ -1,14 +1,22 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getCollection, getEntry } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 
+// Astro 5+ Content Layer (glob loader):
+//   - `slug` is no longer auto-derived — derive from `id`.
+//   - `entry.render()` was removed — use `render(entry)` from astro:content.
+// NOTE: `getStaticPaths` runs in its own scope, so this helper must live INSIDE it.
 export async function getStaticPaths() {
+  const stripExt = (id: string) => id.replace(/\.mdx?$/, '');
   const posts = await getCollection('blog', p => !p.data.draft);
-  return posts.map(post => ({ params: { slug: post.slug }, props: { post } }));
+  return posts.map(post => ({
+    params: { slug: stripExt(post.id) },
+    props: { post },
+  }));
 }
 
 const { post } = Astro.props;
-const { Content } = await post.render();
+const { Content } = await render(post);
 ---
 <Base
   title={`${post.data.title} | Portfolio`}
