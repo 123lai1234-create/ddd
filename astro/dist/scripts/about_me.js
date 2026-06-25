@@ -49,6 +49,7 @@
                 method:  'POST',
                 headers: SUPA_HEADERS,
                 body:    '{}',
+                signal:  AbortSignal.timeout(4000),
             });
             if (!r.ok) throw new Error('stats failed');
             const data = await r.json();

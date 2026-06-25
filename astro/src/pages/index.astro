@@ -7,7 +7,7 @@ import Base from '../layouts/Base.astro';
     ogTag="Portfolio"
     bodyPage="index"
     pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css"]}
-    pageScripts={["/scripts/app-config.js", "/scripts/dynamic-features.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js"]}
+    pageScripts={["https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js"]}
 >
     <div data-site-nav></div>
 
@@ -224,7 +224,7 @@ import Base from '../layouts/Base.astro';
     <script>
     (async () => {
         const base = 'https://api.github.com';
-        const user = 'jtlai0921';
+        const user = '123lai1234-create';
         try {
             const [uRes, rRes] = await Promise.all([
                 fetch(`${base}/users/${user}`),

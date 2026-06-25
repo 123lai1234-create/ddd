@@ -1,5 +1,8 @@
 ---
-import Analytics from '@vercel/analytics/astro';
+// NOTE: Vercel Analytics removed — the `<Analytics />` web component hard-loads
+// `/_vercel/insights/script.js` which only exists on Vercel deployments and
+// spammed the console on Netlify. Re-add with a host-conditional wrapper if
+// analytics are needed on both hosts.
 import ImmersiveBackground from '../components/ImmersiveBackground.astro';
 
 const SITE = 'https://donttalk.vercel.app';
@@ -83,7 +86,6 @@ const ogImageUrl = ogImage
     <ImmersiveBackground />
     <slot />
     {pageScripts.map((src) => <script is:inline src={src}></script>)}
-    <Analytics />
 
     <!-- ── Search modal (Pagefind) ── -->
     <div id="pf-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:10vh">

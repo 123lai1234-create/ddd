@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+    title="工具集 | Portfolio"
+    description="小型瀏覽器工具與計算機 — DontTalk"
+    ogTag="Tools"
+    bodyPage="tools"
+>
+    <div data-site-nav></div>
+    <main style="max-width:960px;margin:0 auto;padding:60px 24px">
+        <div class="section-label">Tools</div>
+        <h1 style="font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;margin:8px 0 24px;color:var(--text)">小工具集</h1>
+        <p style="color:var(--muted);margin-bottom:32px">放在瀏覽器即可使用，無需安裝。</p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+            <a href="/interactive-showcase/" style="display:block;padding:24px;border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;text-decoration:none;color:inherit;background:rgba(255,255,255,.02);transition:border-color .15s,transform .15s" onmouseover="this.style.borderColor='rgba(88,215,255,.4)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.transform=''">
+                <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px">Interactive Showcase</div>
+                <h2 style="font-size:1.1rem;font-weight:600;margin:0 0 8px;color:var(--text)">互動展示</h2>
+                <p style="font-size:.88rem;color:var(--muted);margin:0;line-height:1.6">網頁互動元件 demo 集合。</p>
+            </a>
+            <a href="/stem-cell/" style="display:block;padding:24px;border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;text-decoration:none;color:inherit;background:rgba(255,255,255,.02);transition:border-color .15s,transform .15s" onmouseover="this.style.borderColor='rgba(88,215,255,.4)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.transform=''">
+                <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px">Biomed</div>
+                <h2 style="font-size:1.1rem;font-weight:600;margin:0 0 8px;color:var(--text)">幹細胞主題頁</h2>
+                <p style="font-size:.88rem;color:var(--muted);margin:0;line-height:1.6">幹細胞相關研究筆記與計算工具。</p>
+            </a>
+            <a href="/ngs/" style="display:block;padding:24px;border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;text-decoration:none;color:inherit;background:rgba(255,255,255,.02);transition:border-color .15s,transform .15s" onmouseover="this.style.borderColor='rgba(88,215,255,.4)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.transform=''">
+                <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px">Biomed</div>
+                <h2 style="font-size:1.1rem;font-weight:600;margin:0 0 8px;color:var(--text)">NGS 工作站</h2>
+                <p style="font-size:.88rem;color:var(--muted);margin:0;line-height:1.6">次世代定序實驗設計到分析。</p>
+            </a>
+        </div>
+    </main>
+    <div data-site-footer></div>
+</Base>

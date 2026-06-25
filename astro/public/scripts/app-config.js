@@ -16,8 +16,12 @@
     const host = window.location.hostname;
     const defaultPortfolioServiceNames = ['donttalk'];
     const defaultApiServiceNames = ['donttalk-api'];
+    // Canonical backend (Railway). fly.dev / netlify-app variants are kept as
+    // graceful fallbacks if they ever come back online, but probing them costs
+    // a DNS lookup + timeout per candidate, so we short-circuit on the first
+    // resolvable host via the resolveApiBase loop below.
     const defaultApiCandidates = [
-        'https://donttalk-api.fly.dev',
+        'https://donttalk-api-production.up.railway.app',
     ];
     const resolvedPortfolioServiceNames = normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES).length
         ? normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES)
@@ -73,7 +77,9 @@
         const candidates = deriveApiCandidates(options);
         for (const candidate of candidates) {
             try {
-                const response = await fetch(`${candidate}/healthz`);
+                const response = await fetch(`${candidate}/healthz`, {
+                    signal: AbortSignal.timeout(3000),
+                });
                 if (!response.ok) {
                     continue;
                 }

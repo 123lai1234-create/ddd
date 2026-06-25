@@ -1,0 +1,54 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+    title="隱私權政策 | Portfolio"
+    description="本站隱私權政策。"
+    ogTag="Legal"
+    bodyPage="legal"
+>
+    <div data-site-nav></div>
+    <main style="max-width:720px;margin:0 auto;padding:60px 24px">
+        <div class="section-label">Legal</div>
+        <h1 style="font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;margin:8px 0 24px;color:var(--text)">隱私權政策</h1>
+
+        <article class="legal-prose">
+            <p><strong>最後更新：</strong>2026-06-25</p>
+
+            <h2>1. 資料收集</h2>
+            <p>本作品集網站不會主動收集個人識別資料。所有瀏覽活動均為匿名，且不會與第三方分享。</p>
+
+            <h2>2. Cookie 使用</h2>
+            <p>本站僅使用功能性 cookie 來記憶介面偏好（例如深色／淺色主題）。不使用追蹤或廣告 cookie。</p>
+
+            <h2>3. 第三方服務</h2>
+            <p>本站可能內嵌或連結到以下第三方服務：</p>
+            <ul>
+                <li><strong>YouTube</strong> — 嵌入作品展示影片時載入，受 YouTube 隱私政策規範。</li>
+                <li><strong>GitHub</strong> — 連結到開源專案時受 GitHub 隱私政策規範。</li>
+                <li><strong>Google Fonts</strong> — 用於字型載入，可能會收集 IP 位址等基本瀏覽資訊。</li>
+            </ul>
+
+            <h2>4. 聯絡表單</h2>
+            <p>若透過聯絡表單提交訊息，相關內容僅用於回覆您的來信，不會用於行銷或轉交第三方。</p>
+
+            <h2>5. 您的權利</h2>
+            <p>您可隨時來信要求查閱、更正或刪除我們持有的關於您的任何資料。</p>
+
+            <h2>6. 政策更新</h2>
+            <p>本政策可能不定期更新，更新日期會標示於頁面頂端。</p>
+
+            <p style="margin-top:2em"><a href="/seo-accessibility/">← 回到無障礙聲明</a> · <a href="/terms/">使用條款</a></p>
+        </article>
+    </main>
+    <div data-site-footer></div>
+
+    <style>
+    .legal-prose { color: var(--text, #e6edf3); line-height: 1.8; font-size: .95rem; }
+    .legal-prose h2 { font-size: 1.15rem; font-weight: 700; margin: 1.8em 0 .6em; color: var(--text); border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); padding-bottom: .3em; }
+    .legal-prose p { margin: 0 0 1em; }
+    .legal-prose ul { margin: 0 0 1em 1.4em; }
+    .legal-prose li { margin-bottom: .35em; }
+    .legal-prose a { color: var(--accent, #58d7ff); }
+    </style>
+</Base>

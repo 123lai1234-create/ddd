@@ -1,0 +1,30 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+    title="作品集 | Portfolio"
+    description="遊戲、互動展示作品 — DontTalk"
+    ogTag="Works"
+    bodyPage="games"
+>
+    <div data-site-nav></div>
+    <main style="max-width:960px;margin:0 auto;padding:60px 24px">
+        <div class="section-label">Games</div>
+        <h1 style="font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;margin:8px 0 24px;color:var(--text)">互動作品</h1>
+        <p style="color:var(--muted);margin-bottom:32px">點下列任一作品即可開玩。</p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+            <a href="/games/xian/" style="display:block;padding:24px;border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;text-decoration:none;color:inherit;background:rgba(255,255,255,.02);transition:border-color .15s,transform .15s" onmouseover="this.style.borderColor='rgba(88,215,255,.4)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.transform=''">
+                <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px">Browser Game · Canvas 2D</div>
+                <h2 style="font-size:1.1rem;font-weight:600;margin:0 0 8px;color:var(--text)">仙俠傳 · 回合制 RPG</h2>
+                <p style="font-size:.88rem;color:var(--muted);margin:0;line-height:1.6">Canvas 2D + Vanilla JS 寫的回合制角色扮演遊戲，含三種地形、三種敵人 AI、裝備與技能系統。</p>
+            </a>
+            <a href="/xian-godot/" style="display:block;padding:24px;border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;text-decoration:none;color:inherit;background:rgba(255,255,255,.02);opacity:.65;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.65'">
+                <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px">Godot 4 Web Export · 已封存</div>
+                <h2 style="font-size:1.1rem;font-weight:600;margin:0 0 8px;color:var(--text)">仙俠傳 X 版（Godot）</h2>
+                <p style="font-size:.88rem;color:var(--muted);margin:0;line-height:1.6">Godot 4 Web 版本已於 2026-06-12 下架。原始碼保留於 <code>astro/public/games/xian-godot/</code>，可隨時重新建置。</p>
+            </a>
+        </div>
+    </main>
+    <div data-site-footer></div>
+</Base>

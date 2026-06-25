@@ -1,0 +1,47 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+    title="使用條款 | Portfolio"
+    description="本站使用條款。"
+    ogTag="Legal"
+    bodyPage="legal"
+>
+    <div data-site-nav></div>
+    <main style="max-width:720px;margin:0 auto;padding:60px 24px">
+        <div class="section-label">Legal</div>
+        <h1 style="font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;margin:8px 0 24px;color:var(--text)">使用條款</h1>
+
+        <article class="legal-prose">
+            <p><strong>最後更新：</strong>2026-06-25</p>
+
+            <h2>1. 接受條款</h2>
+            <p>存取或使用本站即表示您同意本使用條款。如不同意請停止使用。</p>
+
+            <h2>2. 內容使用</h2>
+            <p>本站展示的程式碼、設計、研究筆記等內容，除另有註明外，僅供個人瀏覽與學習使用。商業使用或大量轉載請事先聯絡作者取得授權。</p>
+
+            <h2>3. 智慧財產權</h2>
+            <p>本站所有內容（包含但不限於文字、圖片、影片、程式碼）之智慧財產權歸原作者或其授權方所有。</p>
+
+            <h2>4. 免責聲明</h2>
+            <p>本站內容僅供參考，不構成任何專業建議。本站作者不對因使用本站內容所導致的任何損失負責。</p>
+
+            <h2>5. 外部連結</h2>
+            <p>本站可能包含指向第三方網站的連結。這些連結的內容不受本站控制，使用風險由您自行承擔。</p>
+
+            <h2>6. 條款修改</h2>
+            <p>本站保留隨時修改本條款的權利。修改後的條款將於本頁面公布。</p>
+
+            <p style="margin-top:2em"><a href="/seo-accessibility/">← 回到無障礙聲明</a> · <a href="/privacy/">隱私權政策</a></p>
+        </article>
+    </main>
+    <div data-site-footer></div>
+
+    <style>
+    .legal-prose { color: var(--text, #e6edf3); line-height: 1.8; font-size: .95rem; }
+    .legal-prose h2 { font-size: 1.15rem; font-weight: 700; margin: 1.8em 0 .6em; color: var(--text); border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); padding-bottom: .3em; }
+    .legal-prose p { margin: 0 0 1em; }
+    .legal-prose a { color: var(--accent, #58d7ff); }
+    </style>
+</Base>

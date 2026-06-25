@@ -233,9 +233,12 @@ async function loadPortfolioSequenceFeed() {
     } catch (error) {
         renderPortfolioSequenceList('portfolioProteinFeed', [], 'protein');
         renderPortfolioSequenceList('portfolioGeneFeed', [], 'gene');
-        document.getElementById('portfolioProteinCount').textContent = '0';
-        document.getElementById('portfolioGeneCount').textContent = '0';
-        document.getElementById('portfolioLatestFetched').textContent = '-';
+        const proteinCount = document.getElementById('portfolioProteinCount');
+        const geneCount = document.getElementById('portfolioGeneCount');
+        const latestFetched = document.getElementById('portfolioLatestFetched');
+        if (proteinCount) proteinCount.textContent = '0';
+        if (geneCount) geneCount.textContent = '0';
+        if (latestFetched) latestFetched.textContent = '-';
         setPortfolioSequenceStatus(`序列資料庫讀取失敗：${error.message}`, 'error');
     }
 }
@@ -283,9 +286,12 @@ async function loadPortfolioKnowledgeFeed() {
 
         setPortfolioKnowledgeStatus('首頁已接上知識資料庫與 RAG 文件預覽。', 'success');
     } catch (error) {
-        document.getElementById('portfolioKnowledgeProteinCount').textContent = '0';
-        document.getElementById('portfolioKnowledgeLiteratureCount').textContent = '0';
-        document.getElementById('portfolioKnowledgeLatestFetched').textContent = '-';
+        const kProteinCount = document.getElementById('portfolioKnowledgeProteinCount');
+        const kLitCount = document.getElementById('portfolioKnowledgeLiteratureCount');
+        const kLatest = document.getElementById('portfolioKnowledgeLatestFetched');
+        if (kProteinCount) kProteinCount.textContent = '0';
+        if (kLitCount) kLitCount.textContent = '0';
+        if (kLatest) kLatest.textContent = '-';
         renderPortfolioKnowledgeList('portfolioKnowledgeProteinFeed', [], 'protein_annotation');
         renderPortfolioKnowledgeList('portfolioKnowledgeLiteratureFeed', [], 'literature');
         renderPortfolioRagPreview([]);
