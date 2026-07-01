@@ -21,10 +21,6 @@
       "destination": "/api/og/"
     },
     {
-      "source": "/api/:path*",
-      "destination": "https://donttalk-api-production.up.railway.app/api/:path*"
-    },
-    {
       "source": "/f1/:path*",
       "destination": "/f1/index.html"
     }
