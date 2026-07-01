@@ -3,38 +3,5 @@
   "framework": null,
   "outputDirectory": "astro/dist",
   "buildCommand": "cd astro && npm install --ignore-scripts && npm run build",
-  "installCommand": "cd astro && npm install --ignore-scripts",
-  "headers": [
-    {
-      "source": "/music/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/og",
-      "destination": "/api/og/"
-    },
-    {
-      "source": "/f1/:path*",
-      "destination": "/f1/index.html"
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/index.html",
-      "destination": "/",
-      "permanent": true
-    }
-  ],
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "edge"
-    }
-  }
+  "installCommand": "cd astro && npm install --ignore-scripts"
 }
