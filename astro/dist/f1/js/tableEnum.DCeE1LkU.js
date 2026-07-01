@@ -1,0 +1,1 @@
+const e={CM:"bg-blue-50 text-blue-700",FTTH:"bg-violet-50 text-violet-700",CMM:"bg-emerald-50 text-emerald-700",FTTHM:"bg-amber-50 text-amber-700"},r={0:"bg-[var(--success-bg)] border border-[var(--success-border)] text-[var(--success-text)]",1:"bg-[var(--danger-bg)] border border-[var(--danger-border)] text-[var(--danger-text)]"};export{e as S,r as a};
