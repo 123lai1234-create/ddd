@@ -273,54 +273,56 @@ const metrics: Metric[] = [
             </div>
         </section>
 
-        <!-- ─────── 即時資料嵌入試圖（fallback 到外連） ─────── -->
+        <!-- ─────── 即時資料來源（直接外連 — 兩站 CSP frame-ancestors 擋 iframe） ─────── -->
         <section class="section">
             <div class="section-head">
-                <span class="section-tag">即時觀測</span>
-                <h2>Windguru + CWA 雙畫面</h2>
-                <p>兩個站通常禁止 iframe 嵌入，若沒顯示請用上方按鈕另開。</p>
+                <span class="section-tag">即時資料來源</span>
+                <h2>Windguru + CWA 雙查</h2>
+                <p>兩站都設了 CSP frame-ancestors（防止 iframe 嵌入），所以會在新分頁開啟 — 不是連結壞掉。</p>
             </div>
 
-            <div class="embed-grid">
-                <div class="embed-card">
-                    <div class="embed-bar">
-                        <span class="embed-dot"></span>
-                        <span class="embed-title">Windguru · 龍洞和美國小</span>
-                        <a href={WINDGURU_URL} target="_blank" rel="noopener" class="embed-open">↗ 另開</a>
-                    </div>
-                    <div class="embed-frame">
-                        <iframe
-                            src={WINDGURU_URL}
-                            loading="lazy"
-                            title="Windguru 464009"
-                            referrerpolicy="no-referrer"
-                        ></iframe>
-                        <div class="embed-fallback">
-                            <p>Windguru 通常禁止 iframe 嵌入。</p>
-                            <a href={WINDGURU_URL} target="_blank" rel="noopener" class="btn">在新分頁開啟 Windguru ↗</a>
+            <div class="source-grid">
+                <article class="source-card">
+                    <div class="source-head">
+                        <div class="source-logo">💨</div>
+                        <div>
+                            <h3 class="source-title">Windguru · 龍洞和美國小</h3>
+                            <div class="source-id">spot #464009</div>
                         </div>
                     </div>
-                </div>
+                    <div class="source-look">
+                        <strong>看什麼：</strong>未來 10 日的風速、風向、浪高、週期、氣溫。<br/>
+                        <strong>主模型：</strong> GFS / ICON（每 6 小時更新）。<br/>
+                        <strong>提示：</strong> 切到「風」圖層比「溫度」更能判斷能不能潛。
+                    </div>
+                    <a href={WINDGURU_URL} target="_blank" rel="noopener" class="source-btn">
+                        <span>開啟 Windguru 預報</span>
+                        <span class="source-arrow">↗</span>
+                    </a>
+                </article>
 
-                <div class="embed-card">
-                    <div class="embed-bar">
-                        <span class="embed-dot"></span>
-                        <span class="embed-title">CWA · 海象時序圖</span>
-                        <a href={CWA_URL} target="_blank" rel="noopener" class="embed-open">↗ 另開</a>
-                    </div>
-                    <div class="embed-frame">
-                        <iframe
-                            src={CWA_URL}
-                            loading="lazy"
-                            title="CWA Marine Plot 46694A"
-                            referrerpolicy="no-referrer"
-                        ></iframe>
-                        <div class="embed-fallback">
-                            <p>CWA 時序圖通常禁止 iframe 嵌入。</p>
-                            <a href={CWA_URL} target="_blank" rel="noopener" class="btn">在新分頁開啟 CWA ↗</a>
+                <article class="source-card">
+                    <div class="source-head">
+                        <div class="source-logo">📊</div>
+                        <div>
+                            <h3 class="source-title">CWA · 海象時序圖</h3>
+                            <div class="source-id">MID 46694A</div>
                         </div>
                     </div>
-                </div>
+                    <div class="source-look">
+                        <strong>看什麼：</strong>過去 24–48 小時實測浪高、風速、氣壓、水溫。<br/>
+                        <strong>用途：</strong> 跟 Windguru 預報對照 — 預報 vs 實況有沒有落差。<br/>
+                        <strong>提示：</strong> 圖可能需要點「重新載入畫圖」才更新。
+                    </div>
+                    <a href={CWA_URL} target="_blank" rel="noopener" class="source-btn">
+                        <span>開啟 CWA 時序圖</span>
+                        <span class="source-arrow">↗</span>
+                    </a>
+                </article>
+            </div>
+
+            <div class="source-note">
+                💡 <strong>用兩個站的理由：</strong> Windguru 給「未來預報」、CWA 給「過去實況」。只看預報可能會誤判（模型有誤差），只看實況會錯過轉好的時機。兩個交叉看才準。
             </div>
         </section>
 
@@ -486,26 +488,4 @@ const metrics: Metric[] = [
     </main>
 
     <div data-site-footer></div>
-
-    <!-- iframe fallback：偵測 X-Frame-Options 被擋時顯示覆蓋 -->
-    <script is:inline>
-        (function() {
-            const iframes = document.querySelectorAll('.embed-frame iframe');
-            iframes.forEach((ifr) => {
-                let loaded = false;
-                ifr.addEventListener('load', () => { loaded = true; });
-                setTimeout(() => {
-                    if (!loaded) {
-                        const fb = ifr.parentElement.querySelector('.embed-fallback');
-                        if (fb) fb.style.display = 'flex';
-                    }
-                }, 4000);
-                // 監聽錯誤事件（部分瀏覽器會觸發）
-                ifr.addEventListener('error', () => {
-                    const fb = ifr.parentElement.querySelector('.embed-fallback');
-                    if (fb) fb.style.display = 'flex';
-                });
-            });
-        })();
-    </script>
 </Base>
