@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request } from "express";
 import { fetchCandles, type Candle } from "../lib/yahoo";
+import { operatorOk } from "../lib/operator";
 import {
   sma,
   computeMacd,
@@ -15,13 +16,7 @@ import { rateLimit } from "../lib/ratelimit";
 const router: IRouter = Router();
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
-// Closed-by-default operator gate: privileged writes are disabled until the
-// STOCK_OPERATOR_PASSWORD secret is configured (mirrors routes/stock.ts).
-function operatorOk(password: unknown): boolean {
-  const expected = process.env["STOCK_OPERATOR_PASSWORD"];
-  if (!expected) return false;
-  return typeof password === "string" && password === expected;
-}
+// operatorOk is imported from "../lib/operator"
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10);

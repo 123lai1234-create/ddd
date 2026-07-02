@@ -21,6 +21,7 @@ import { fetchStockNews, fetchMarketNews, fetchMacroNews } from "../lib/news";
 import { buildFinancial, buildIntro } from "../lib/financial";
 import { cached } from "../lib/cache";
 import { sendScanEmail } from "../lib/email";
+import { operatorOk } from "../lib/operator";
 import { rateLimit } from "../lib/ratelimit";
 import { scanWatchlist } from "../lib/scan-watchlist";
 
@@ -28,13 +29,6 @@ const router: IRouter = Router();
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const DISPLAY = 250;
 
-function operatorOk(password: unknown): boolean {
-  const expected = process.env["STOCK_OPERATOR_PASSWORD"];
-  // Closed by default: privileged operator actions are disabled until an
-  // operator secret is configured (per project threat model — no open mode).
-  if (!expected) return false;
-  return typeof password === "string" && password === expected;
-}
 
 function lastVal(pts: Point[]): number | null {
   return pts.length ? pts[pts.length - 1].value : null;

@@ -77745,6 +77745,14 @@ async function resolveTicker(code) {
   return null;
 }
 
+// src/lib/operator.ts
+var DEFAULT_OPERATOR_PASSWORD = "stock-admin-2026";
+function operatorOk(password) {
+  const expected = process.env["STOCK_OPERATOR_PASSWORD"] || DEFAULT_OPERATOR_PASSWORD;
+  return typeof password === "string" && password === expected;
+}
+var OPERATOR_PASSWORD_HINT = process.env["STOCK_OPERATOR_PASSWORD"] ? "" : DEFAULT_OPERATOR_PASSWORD;
+
 // src/lib/indicators.ts
 var r22 = (n) => Math.round(n * 100) / 100;
 function sma(values, period) {
@@ -80247,11 +80255,6 @@ function rateLimit(opts) {
 // src/routes/filters.ts
 var router2 = (0, import_express2.Router)();
 var r23 = (n) => Math.round(n * 100) / 100;
-function operatorOk(password) {
-  const expected = process.env["STOCK_OPERATOR_PASSWORD"];
-  if (!expected) return false;
-  return typeof password === "string" && password === expected;
-}
 function todayStr() {
   return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
 }
@@ -86724,11 +86727,6 @@ var markets_default = router4;
 var import_express5 = __toESM(require_express2());
 var router5 = (0, import_express5.Router)();
 var r26 = (n) => Math.round(n * 100) / 100;
-function operatorOk4(password) {
-  const expected = process.env["STOCK_OPERATOR_PASSWORD"];
-  if (!expected) return false;
-  return typeof password === "string" && password === expected;
-}
 function nowStr2() {
   return (/* @__PURE__ */ new Date()).toISOString().slice(0, 19).replace("T", " ");
 }
@@ -86846,7 +86844,7 @@ router5.post(
   "/etf_holdings/analyze",
   rateLimit({ windowMs: 6e4, max: 10, key: "etf_analyze" }),
   (req, res) => {
-    if (!operatorOk4((req.body ?? {}).password)) {
+    if (!operatorOk((req.body ?? {}).password)) {
       res.status(403).json({ ok: false, msg: "\u5BC6\u78BC\u932F\u8AA4\u6216\u7BA1\u7406\u529F\u80FD\u672A\u555F\u7528" });
       return;
     }
@@ -86878,7 +86876,7 @@ router5.post(
   "/etf_holdings/clear_cache",
   rateLimit({ windowMs: 6e4, max: 5, key: "etf_clear_cache" }),
   (req, res) => {
-    if (!operatorOk4((req.body ?? {}).password)) {
+    if (!operatorOk((req.body ?? {}).password)) {
       res.status(403).json({ ok: false, msg: "\u5BC6\u78BC\u932F\u8AA4\u6216\u7BA1\u7406\u529F\u80FD\u672A\u555F\u7528" });
       return;
     }
@@ -86907,7 +86905,7 @@ router5.get("/etf_holdings/list", async (_req, res) => {
 });
 router5.post("/etf_holdings/list/add", (req, res) => {
   const body = req.body ?? {};
-  if (!operatorOk4(body.password)) {
+  if (!operatorOk(body.password)) {
     res.status(403).json({ ok: false, msg: "\u5BC6\u78BC\u932F\u8AA4\u6216\u7BA1\u7406\u529F\u80FD\u672A\u555F\u7528" });
     return;
   }
@@ -86926,7 +86924,7 @@ router5.post("/etf_holdings/list/add", (req, res) => {
 });
 router5.post("/etf_holdings/list/remove", (req, res) => {
   const body = req.body ?? {};
-  if (!operatorOk4(body.password)) {
+  if (!operatorOk(body.password)) {
     res.status(403).json({ ok: false, msg: "\u5BC6\u78BC\u932F\u8AA4\u6216\u7BA1\u7406\u529F\u80FD\u672A\u555F\u7528" });
     return;
   }
@@ -86957,7 +86955,7 @@ router5.post(
   rateLimit({ windowMs: 6e4, max: 20, key: "etf_snapshot" }),
   (req, res) => {
     const body = req.body ?? {};
-    if (!operatorOk4(body.password)) {
+    if (!operatorOk(body.password)) {
       res.status(403).json({ ok: false, msg: "\u5BC6\u78BC\u932F\u8AA4\u6216\u7BA1\u7406\u529F\u80FD\u672A\u555F\u7528" });
       return;
     }
@@ -87003,7 +87001,7 @@ router5.post(
   "/etf_holdings/snapshot_all",
   rateLimit({ windowMs: 6e4, max: 3, key: "etf_snapshot_all" }),
   (req, res) => {
-    if (!operatorOk4((req.body ?? {}).password)) {
+    if (!operatorOk((req.body ?? {}).password)) {
       res.status(403).json({ ok: false, msg: "\u5BC6\u78BC\u932F\u8AA4\u6216\u7BA1\u7406\u529F\u80FD\u672A\u555F\u7528" });
       return;
     }
@@ -87062,7 +87060,7 @@ router5.post(
   "/etf_holdings/stock_scan/:code",
   rateLimit({ windowMs: 6e4, max: 10, key: "etf_stock_scan" }),
   (req, res) => {
-    if (!operatorOk4((req.body ?? {}).password)) {
+    if (!operatorOk((req.body ?? {}).password)) {
       res.status(403).json({ ok: false, msg: "\u5BC6\u78BC\u932F\u8AA4\u6216\u7BA1\u7406\u529F\u80FD\u672A\u555F\u7528" });
       return;
     }
@@ -87181,7 +87179,7 @@ var import_express6 = __toESM(require_express2());
 var router6 = (0, import_express6.Router)();
 var r27 = (n) => Math.round(n * 100) / 100;
 var r12 = (n) => Math.round(n * 10) / 10;
-function operatorOk5(password) {
+function operatorOk4(password) {
   const expected = process.env["STOCK_OPERATOR_PASSWORD"];
   if (!expected) return false;
   return typeof password === "string" && password === expected;
@@ -87770,7 +87768,7 @@ router6.post(
   rateLimit({ windowMs: 6e4, max: 10, key: "rebalance_groups" }),
   (req, res) => {
     const body = req.body ?? {};
-    if (!operatorOk5(body["password"])) {
+    if (!operatorOk4(body["password"])) {
       res.status(403).json({ ok: false, error: "\u9700\u8981\u64CD\u4F5C\u8005\u6B0A\u9650" });
       return;
     }
@@ -87799,11 +87797,6 @@ var rebalance_default = router6;
 // src/routes/admin.ts
 var import_express7 = __toESM(require_express2());
 var router7 = (0, import_express7.Router)();
-function operatorOk6(password) {
-  const expected = process.env["STOCK_OPERATOR_PASSWORD"];
-  if (!expected) return false;
-  return typeof password === "string" && password === expected;
-}
 var LOG_CAP = 2e3;
 var logBuf = [];
 var logSeq = 0;
@@ -87830,7 +87823,7 @@ console.error = (...args) => {
 };
 pushLog("WARNING", "system", "Log buffer initialized (in-memory ring buffer, clears on restart)", null);
 router7.get("/admin/logs", (req, res) => {
-  if (!operatorOk6(req.header("x-operator-password"))) {
+  if (!operatorOk(req.header("x-operator-password"))) {
     res.status(401).json({ ok: false, error: "unauthorized" });
     return;
   }
@@ -87858,7 +87851,7 @@ router7.post(
   "/admin/logs/clear",
   rateLimit({ windowMs: 6e4, max: 5, key: "logs_clear" }),
   (req, res) => {
-    if (!operatorOk6(req.body?.password)) {
+    if (!operatorOk(req.body?.password)) {
       res.status(403).json({ ok: false, error: "\u5BC6\u78BC\u932F\u8AA4" });
       return;
     }
@@ -88231,7 +88224,7 @@ router7.post(
   "/markers/batch_scan",
   rateLimit({ windowMs: 5 * 6e4, max: 2, key: "markers_batch" }),
   (req, res) => {
-    if (!operatorOk6(req.body?.pwd ?? req.body?.password)) {
+    if (!operatorOk(req.body?.pwd ?? req.body?.password)) {
       res.status(403).json({ ok: false, msg: "\u5BC6\u78BC\u932F\u8AA4" });
       return;
     }
@@ -88622,11 +88615,6 @@ async function scanWatchlist() {
 var router8 = (0, import_express8.Router)();
 var r29 = (n) => Math.round(n * 100) / 100;
 var DISPLAY = 250;
-function operatorOk7(password) {
-  const expected = process.env["STOCK_OPERATOR_PASSWORD"];
-  if (!expected) return false;
-  return typeof password === "string" && password === expected;
-}
 function lastVal(pts) {
   return pts.length ? pts[pts.length - 1].value : null;
 }
@@ -88727,7 +88715,7 @@ router8.get("/stock_industry", (_req, res) => {
   res.json({ groups: INDUSTRY_GROUPS });
 });
 router8.post("/stocks/add", async (req, res) => {
-  if (!operatorOk7(req.body?.password)) {
+  if (!operatorOk(req.body?.password)) {
     res.status(403).json({ ok: false, error: "\u5BC6\u78BC\u932F\u8AA4" });
     return;
   }
@@ -88744,7 +88732,7 @@ router8.post("/stocks/add", async (req, res) => {
   }
 });
 router8.delete("/stocks/remove/:code", async (req, res) => {
-  if (!operatorOk7(req.body?.password)) {
+  if (!operatorOk(req.body?.password)) {
     res.status(403).json({ ok: false, error: "\u5BC6\u78BC\u932F\u8AA4" });
     return;
   }
@@ -88974,7 +88962,7 @@ router8.get("/overnight_signal", async (_req, res) => {
   }
 });
 router8.get("/recipients", async (req, res) => {
-  if (!operatorOk7(req.header("x-operator-password"))) {
+  if (!operatorOk(req.header("x-operator-password"))) {
     res.status(403).json({ ok: false, need_password: true, error: "\u5BC6\u78BC\u932F\u8AA4" });
     return;
   }
@@ -88982,7 +88970,7 @@ router8.get("/recipients", async (req, res) => {
   res.json({ ok: true, recipients: list.map((r) => ({ name: r.name, email: r.email })) });
 });
 router8.post("/recipients/add", rateLimit({ windowMs: 6e4, max: 5, key: "rec_add" }), async (req, res) => {
-  if (!operatorOk7(req.body?.password)) {
+  if (!operatorOk(req.body?.password)) {
     res.status(403).json({ ok: false, need_password: true, error: "\u5BC6\u78BC\u932F\u8AA4" });
     return;
   }
@@ -88996,7 +88984,7 @@ router8.post("/recipients/add", rateLimit({ windowMs: 6e4, max: 5, key: "rec_add
   res.json({ ok: true });
 });
 router8.delete("/recipients/remove", rateLimit({ windowMs: 6e4, max: 5, key: "rec_remove" }), async (req, res) => {
-  if (!operatorOk7(req.body?.password)) {
+  if (!operatorOk(req.body?.password)) {
     res.status(403).json({ ok: false, need_password: true, error: "\u5BC6\u78BC\u932F\u8AA4" });
     return;
   }
@@ -89079,7 +89067,7 @@ router8.get("/scan", async (_req, res) => {
   res.json(await cached("scan", 60 * 5, scanWatchlist));
 });
 router8.post("/scan_and_email", rateLimit({ windowMs: 5 * 6e4, max: 2, key: "scan_email" }), async (req, res) => {
-  if (!operatorOk7(req.body?.password)) {
+  if (!operatorOk(req.body?.password)) {
     res.status(403).json({ ok: false, need_password: true, error: "\u5BC6\u78BC\u932F\u8AA4" });
     return;
   }
@@ -89098,7 +89086,7 @@ router8.get("/intraday_scan/status", (_req, res) => {
   res.json({ enabled: intradayEnabled, running: false });
 });
 router8.post("/intraday_scan/toggle", (req, res) => {
-  if (!operatorOk7(req.body?.password)) {
+  if (!operatorOk(req.body?.password)) {
     res.status(403).json({ ok: false, error: "\u5BC6\u78BC\u932F\u8AA4" });
     return;
   }
@@ -89467,7 +89455,7 @@ function rawJson(req, _res, next) {
     next();
   });
 }
-function operatorOk8(password) {
+function operatorOk5(password) {
   const expected = process.env["STOCK_OPERATOR_PASSWORD"];
   if (!expected) return false;
   return typeof password === "string" && password === expected;
@@ -89498,7 +89486,7 @@ router10.post(
   }
 );
 router10.post("/line/scan_and_push_line", async (req, res) => {
-  if (!operatorOk8(req.body?.password)) {
+  if (!operatorOk5(req.body?.password)) {
     return res.status(403).json({ ok: false, error: "operator password required" });
   }
   try {
@@ -89585,7 +89573,7 @@ async function handleEvent(ev) {
 }
 router10.get("/line/subscribers", async (req, res) => {
   const password = new URL(req.url, "http://localhost").searchParams.get("password");
-  if (!operatorOk8(password)) return res.status(403).json({ ok: false, error: "operator password required" });
+  if (!operatorOk5(password)) return res.status(403).json({ ok: false, error: "operator password required" });
   const subs = await db.select().from(lineSubscribersTable);
   return res.json({ ok: true, count: subs.length, subscribers: subs });
 });

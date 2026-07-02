@@ -68,23 +68,32 @@
     </div>
   </div>
   <script>
-    // 1. 後端維護 banner：除非使用者關閉，否則一律顯示
+    // 1. 後端維護 banner：先打 /api/healthz 探測，2s 內回 200 就隱藏。
+    //    失敗或超時才顯示「維護中」訊息（並在 user 手動關閉後記住）。
     (function() {
       const banner = document.getElementById('backendBanner');
       const dismissBtn = document.getElementById('backendBannerDismiss');
       if (!banner || !dismissBtn) return;
-      try {
-        if (localStorage.getItem('stockBackendBannerDismissed') !== '1') {
-          banner.hidden = false;
-        }
-      } catch (_) {
-        // localStorage 不可用時還是顯示 banner（無害）
-        banner.hidden = false;
-      }
+      const show = () => {
+        try {
+          if (localStorage.getItem('stockBackendBannerDismissed') !== '1') {
+            banner.hidden = false;
+          }
+        } catch (_) { banner.hidden = false; }
+      };
+      const hide = () => { banner.hidden = true; };
       dismissBtn.addEventListener('click', () => {
-        banner.hidden = true;
+        hide();
         try { localStorage.setItem('stockBackendBannerDismissed', '1'); } catch (_) {}
       });
+      // Probe the backend health endpoint. Vercel edge cache may briefly
+      // serve a stale 404 if a deploy is in flight, so we treat anything
+      // that isn't a 2xx as "backend down" and show the banner.
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 2500);
+      fetch('/api/healthz', { signal: ctl.signal, cache: 'no-store' })
+        .then(r => { clearTimeout(timer); if (r.ok) hide(); else show(); })
+        .catch(() => { clearTimeout(timer); show(); });
     })();
 
     // 2. iframe 載入失敗偵測：HTML 本身沒 load 才視為後端死透

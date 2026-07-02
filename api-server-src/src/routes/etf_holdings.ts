@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request } from "express";
 import { cached, cacheSet, cacheGet } from "../lib/cache";
+import { operatorOk } from "../lib/operator";
 import { rateLimit } from "../lib/ratelimit";
 import { fetchMeta } from "../lib/yahoo";
 
@@ -18,13 +19,7 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 // restart (no DB schema added, to avoid migration conflicts during parallel work).
 // ─────────────────────────────────────────────────────────────────────────────
 
-function operatorOk(password: unknown): boolean {
-  const expected = process.env["STOCK_OPERATOR_PASSWORD"];
-  // Closed by default: privileged operator actions are disabled until an
-  // operator secret is configured (per project threat model — no open mode).
-  if (!expected) return false;
-  return typeof password === "string" && password === expected;
-}
+// operatorOk is imported from "../lib/operator"
 
 function nowStr(): string {
   return new Date().toISOString().slice(0, 19).replace("T", " ");

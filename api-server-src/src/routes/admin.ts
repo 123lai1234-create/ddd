@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, markersTable } from "../_shims/db";
 import { and, desc, eq, gte, lte } from "drizzle-orm";
 import { fetchCandles } from "../lib/yahoo";
+import { operatorOk } from "../lib/operator";
 import { runStrategy } from "../lib/indicators";
 import { getWatchlist, resolveStock } from "../lib/stocks";
 import { fetchStockNews } from "../lib/news";
@@ -10,13 +11,7 @@ import { cached } from "../lib/cache";
 
 const router: IRouter = Router();
 
-function operatorOk(password: unknown): boolean {
-  const expected = process.env["STOCK_OPERATOR_PASSWORD"];
-  // Closed by default: privileged operator actions are disabled until an
-  // operator secret is configured (per project threat model — no open mode).
-  if (!expected) return false;
-  return typeof password === "string" && password === expected;
-}
+// operatorOk is imported from "../lib/operator"
 
 // ════════════════════════════════════════════════════════════════════
 // System log ring buffer (in-memory; cleared on restart)
