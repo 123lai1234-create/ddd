@@ -16,6 +16,7 @@ interface Props {
     pageStyles?: string[];
     pageScripts?: string[];
     headInline?: string;
+    noImmersive?: boolean;
 }
 
 const {
@@ -27,6 +28,7 @@ const {
     pageStyles = [],
     pageScripts = [],
     headInline = '',
+    noImmersive = false,
 } = Astro.props;
 
 const ogImageUrl = ogImage
@@ -121,7 +123,7 @@ const ogImageUrl = ogImage
     <Fragment set:html={headInline} />
 </head>
 <body data-page={bodyPage}>
-    <ImmersiveBackground />
+    {!noImmersive && <ImmersiveBackground />}
     <slot />
     {pageScripts.map((src) => <script is:inline src={src}></script>)}
 
