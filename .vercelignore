@@ -1,6 +1,7 @@
 site_api/
 hf-spaces/
-api/
+# (api/ removed 2026-07-02 — it now contains the stock backend serverless
+#  function at api/[...path].mjs which Vercel needs to build.)
 src/
 migrations/
 tests/
