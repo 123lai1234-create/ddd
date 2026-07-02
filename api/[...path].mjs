@@ -108,7 +108,15 @@ function installExpressHelpers(res) {
 
 // Convert a Web Request to a Node IncomingMessage-compatible object.
 async function webRequestToNode(req) {
-  const url = new URL(req.url);
+  // Vercel hands us the full URL in req.url for Function invocations
+  // (https://...) but the `new URL(req.url)` form below is safer — it
+  // tolerates either a full URL or a path-only string by always
+  // supplying a base. We've seen both shapes in the wild.
+  const incomingUrl = req.url;
+  const base = "http://localhost";
+  const url = incomingUrl.startsWith("http://") || incomingUrl.startsWith("https://")
+    ? new URL(incomingUrl)
+    : new URL(incomingUrl, base);
   // Build minimal Node req object
   const headers = {};
   req.headers.forEach((v, k) => {
