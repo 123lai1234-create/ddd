@@ -198,8 +198,11 @@ export default async function handler(request) {
 }
 
 // Vercel config — Node.js serverless function (not edge). We need fs/yahoo-
-// finance2 which aren't available in the edge runtime.
+// finance2 which aren't available in the edge runtime. Vercel accepts
+// `nodejs` (resolves to the project's pinned Node version) or the explicit
+// "nodejs20.x" / "nodejs22.x" form. Use the bare `nodejs` value to avoid
+// a build-time rejection on older CLI versions.
 export const config = {
-  runtime: "nodejs20.x",
+  runtime: "nodejs",
   maxDuration: 30,
 };
