@@ -459,6 +459,41 @@
     .compass-arrow { animation: none; }
 }
 
+/* Live wind direction arrow — fills in once forecast loads, pulses gently */
+.compass-live-arrow {
+    transform-box: fill-box;
+    transform-origin: 0 0;  /* rotate around the centre of the compass (0,0) */
+    animation: _compass-live-pulse 1.8s ease-in-out infinite;
+}
+.compass-live[data-loaded="false"] .compass-live-arrow { opacity: 0.15; }
+.compass-live[data-loaded="true"]  .compass-live-arrow { opacity: 1; }
+@keyframes _compass-live-pulse {
+    0%, 100% { transform: scale(1);    }
+    50%      { transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .compass-live-arrow { animation: none; }
+}
+
+/* Below the compass: "current wind" caption */
+.compass-current {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    align-items: baseline;
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+}
+.compass-current-val {
+    color: #58d7ff;
+    font-weight: 700;
+}
+.compass-current-dir {
+    color: var(--text);
+}
+
 .compass-legend {
     display: flex;
     flex-direction: column;
@@ -1379,6 +1414,26 @@
     color: #3a3f4b !important;
 }
 .fg-na .fg-cell-bar { display: none; }
+
+/* 「最佳時段」summary row — 在 heatmap 頂部, 每格只顯示時間, mark 最佳那格 */
+.fg-row-summary .fg-label {
+    background: linear-gradient(90deg, rgba(88,215,255,0.18), rgba(88,215,255,0.04)) !important;
+    color: #58d7ff !important;
+    letter-spacing: 0.05em;
+    font-size: 11px;
+}
+.fg-best-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: -0.02em;
+}
+.fg-best-cell-mark {
+    font-weight: 800;
+    outline: 1.5px solid #fff;
+    outline-offset: -2px;
+    box-shadow: 0 0 6px rgba(88, 215, 255, 0.6) inset;
+}
+.fg-best-cell .fg-cell-bar { display: none; }
 
 .fg-row-open .fg-cell {
     /* hover effect — informational */

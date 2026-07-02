@@ -678,6 +678,56 @@ function renderWeekendCards(samples) {
     }).join('');
 }
 
+// 風向轉 16 方位文字
+const WIND_DIR_NAMES = ['北', '北東北', '東北', '東東北', '東', '東東南', '東南', '南東南', '南', '南西南', '西南', '西西南', '西', '西西北', '西北', '北西北'];
+function windDirName(deg) {
+    if (deg == null) return '?';
+    return WIND_DIR_NAMES[Math.round(((deg % 360) / 22.5)) % 16];
+}
+
+// Live compass: 把當下風向/風速顯示在 compass 上 (arrow 跟 speed label 都 rotate)
+// 用「最接近現在的 sample」當 live 狀態 (Open-Meteo current hour)
+function renderLiveCompass(samples) {
+    const el = document.getElementById('compass-live');
+    const arrow = document.getElementById('compass-live-arrow');
+    const label = document.getElementById('compass-live-label');
+    if (!el || !arrow || !label) return;
+
+    // 找最接近 now 的 sample
+    const now = Date.now();
+    let cur = null;
+    let bestDelta = Infinity;
+    for (const s of samples) {
+        if (s.windDeg == null || s.windMs == null) continue;
+        const d = Math.abs(s.date.getTime() - now);
+        if (d < bestDelta) { bestDelta = d; cur = s; }
+    }
+    if (!cur) return;
+
+    const deg = cur.windDeg;
+    const ms = cur.windMs;
+    el.setAttribute('data-wind-deg', deg.toFixed(0));
+    el.setAttribute('data-wind-ms', ms.toFixed(1));
+    el.setAttribute('data-loaded', 'true');
+
+    // arrow 跟 label 都用 rotate(deg) 套上 (label 一起轉, 文字才不會上下顛倒)
+    arrow.setAttribute('transform', `rotate(${deg.toFixed(1)})`);
+    label.setAttribute('transform', `rotate(${deg.toFixed(1)})`);
+
+    // label 內文字: 風速
+    const txt = label.querySelector('text');
+    if (txt) txt.textContent = `${ms.toFixed(1)} m/s`;
+
+    // 下方 caption
+    const cap = document.getElementById('compass-current');
+    if (cap) {
+        const val = cap.querySelector('.compass-current-val');
+        const dir = cap.querySelector('.compass-current-dir');
+        if (val) val.textContent = `${ms.toFixed(1)} m/s`;
+        if (dir) dir.textContent = `${windDirName(deg)} ${Math.round(deg)}°`;
+    }
+}
+
 function renderHourlyGrid(samples, opts = {}) {
     const container = document.getElementById('forecast-grid');
     if (!container) return;
@@ -771,7 +821,41 @@ function renderHourlyGrid(samples, opts = {}) {
         </tr>`;
     }
 
+    // 每天「最佳時段」summary row — 跨整列找最綠的小時, 顯示該小時的時間
+    // 視覺上跟其他 row 一致 (用 threshold 色), 但只顯示 HH:00 文字 + 該小時的綜合評分
+    function bestHourRow() {
+        const rank = { 'go': 0, 'caution': 1, 'nogo': 2 };
+        const cells = days.flatMap(d => {
+            // 找當天 score 最低 (最綠) 的 hour
+            if (!d.samples.length) {
+                return hours.map(() => `<td class="fg-cell fg-na" colspan="1">—</td>`).slice(0, hours.length);
+            }
+            return hours.map(h => {
+                const valid = d.samples.filter(s => s.hour === h);
+                if (!valid.length) return `<td class="fg-cell fg-na">—</td>`;
+                const s = valid[0];
+                const sc = scoreRow(s);
+                const bg = sc === 'go' ? '#1a4d2e' : sc === 'caution' ? '#d29922' : '#f85149';
+                const txt = sc === 'go' ? '#0d1d10' : '#fff';
+                const isBest = (() => {
+                    // 找當天所有 sample 中 score 最小的
+                    const scores = d.samples.map(x => rank[scoreRow(x)]);
+                    const min = Math.min(...scores);
+                    return rank[sc] === min;
+                })();
+                const cellText = isBest ? `✓ ${String(h).padStart(2,'0')}:00` : '·';
+                const tip = `${fmtDayHeader(d.date)} ${String(h).padStart(2,'0')}:00 — ${sc === 'go' ? 'GO' : sc === 'caution' ? 'CAUTION' : 'NO-GO'}`;
+                return `<td class="fg-cell fg-best-cell ${isBest ? 'fg-best-cell-mark' : ''}" style="background:${bg};color:${txt}" title="${tip}">${cellText}</td>`;
+            });
+        }).join('');
+        return `<tr class="fg-row fg-row-summary">
+            <td class="fg-label fg-sticky">最佳時段</td>
+            ${cells}
+        </tr>`;
+    }
+
     const rows = `
+        ${bestHourRow()}
         ${row('風速 (m/s)', colorWind, s => s.windMs, 1, WIND_MAX)}
         ${row('陣風 (m/s)', colorWind, s => s.gustMs, 1, GUST_MAX)}
         ${row('風向 (°)', () => '#252b3b', s => s.windDeg != null ? `${arrowLongFor(s.windDeg)} ${Math.round(s.windDeg)}` : null, null, 1)}
@@ -821,6 +905,7 @@ async function init() {
 
         renderWeekendCards(samples);
         renderHourlyGrid(samples);
+        renderLiveCompass(samples);
 
         // CWA 對照 strip (只有 CWA 拿到資料才渲染)
         if (cwaData) {

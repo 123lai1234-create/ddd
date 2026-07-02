@@ -505,6 +505,26 @@ const metrics: Metric[] = [
                         </text>
                     </g>
 
+                    <!-- Live wind direction arrow (filled triangle pointing OUT toward the wind source) -->
+                    <g class="compass-live" id="compass-live" data-wind-deg="0" data-wind-ms="0" data-loaded="false">
+                        <g class="compass-live-arrow" id="compass-live-arrow">
+                            <!-- arrow points to N by default; JS rotates the group via transform="rotate(X)" -->
+                            <path
+                                d="M 0 -78 L 8 -62 L -8 -62 Z"
+                                fill="rgba(88,215,255,0.85)"
+                                stroke="#58d7ff"
+                                stroke-width="1.2"
+                                stroke-linejoin="round"
+                            />
+                            <line x1="0" y1="-62" x2="0" y2="-30" stroke="#58d7ff" stroke-width="1.5" opacity="0.6"/>
+                        </g>
+                        <!-- speed label, also rotated to follow arrow -->
+                        <g id="compass-live-label">
+                            <rect x="-15" y="-58" width="30" height="14" rx="3" fill="rgba(8,12,22,0.85)" stroke="rgba(88,215,255,0.5)" stroke-width="0.8"/>
+                            <text x="0" y="-48" text-anchor="middle" font-size="9" fill="#58d7ff" font-weight="700" font-family="'JetBrains Mono', monospace">-- m/s</text>
+                        </g>
+                    </g>
+
                     <!-- Centre: dive site icon + label -->
                     <g>
                         <circle r="14" fill="rgba(88,215,255,0.18)" stroke="rgba(88,215,255,0.5)" stroke-width="1" />
@@ -526,6 +546,14 @@ const metrics: Metric[] = [
                         <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(337.5)" />
                     </g>
                 </svg>
+
+                <!-- Live wind caption (filled by renderLiveCompass in diving-forecast.js) -->
+                <div class="compass-current" id="compass-current">
+                    <span>當下風向</span>
+                    <span class="compass-current-dir">—</span>
+                    <span>·</span>
+                    <span class="compass-current-val">— m/s</span>
+                </div>
 
                 <!-- Side legend (HTML for crisp typography + responsive wrap) -->
                 <div class="compass-legend">
