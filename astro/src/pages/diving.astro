@@ -273,6 +273,88 @@ const metrics: Metric[] = [
             </div>
         </section>
 
+        <!-- ─────── 互動式預報（Open-Meteo 自動 fetch, 週末 verdict + 7日×13h 逐時表） ─────── -->
+        <section class="section reveal" id="weekend-forecast">
+            <div class="section-head">
+                <span class="section-tag">互動式預報</span>
+                <h2>本週末 + 未來 7 日 即時查</h2>
+                <p>
+                    三層資料: <strong>週末卡</strong> (Sat/Sun verdict) → <strong>CWA 即時觀測對照</strong> (過去 vs 預報 Δ) → <strong>7 日逐時表</strong>。
+                    Open-Meteo (Marine ECMWF + WAVEWATCH III / Weather GFS) 免費 API, CWA 龍洞浮標 (MID 46694A) 過去 48 小時實況。
+                </p>
+            </div>
+
+            <!-- 週末建議卡 (Sat + Sun) -->
+            <div class="weekend-rec" id="weekend-rec">
+                <div class="ww-loader">載入 Open-Meteo 預報中…</div>
+            </div>
+
+            <!-- CWA 龍洞浮標 即時觀測 + 對 Open-Meteo 預報同期對照 -->
+            <div class="cwa-strip" id="cwa-strip">
+                <div class="cwa-loader">載入 CWA 龍洞浮標觀測中…</div>
+            </div>
+
+            <!-- 7 日逐時表 -->
+            <div class="forecast-grid" id="forecast-grid">
+                <div class="fg-loader">載入中…</div>
+            </div>
+
+            <!-- 圖例 -->
+            <div class="fg-legend">
+                <span class="fg-legend-title">圖例:</span>
+                <span class="fg-legend-row">
+                    <span class="fg-legend-label">風速</span>
+                    <span class="fg-legend-cell" style="background:#1a4d2e">&lt;2.5</span>
+                    <span class="fg-legend-cell" style="background:#3fb950; color:#0d1d10">2.5-5</span>
+                    <span class="fg-legend-cell" style="background:#d29922">5-8</span>
+                    <span class="fg-legend-cell" style="background:#db6d28">8-11</span>
+                    <span class="fg-legend-cell" style="background:#f85149">11+</span>
+                    <span class="fg-legend-unit">m/s</span>
+                </span>
+                <span class="fg-legend-row">
+                    <span class="fg-legend-label">浪高</span>
+                    <span class="fg-legend-cell" style="background:#1a4d2e">&lt;0.6</span>
+                    <span class="fg-legend-cell" style="background:#3fb950; color:#0d1d10">0.6-1.0</span>
+                    <span class="fg-legend-cell" style="background:#d29922">1.0-1.4</span>
+                    <span class="fg-legend-cell" style="background:#db6d28">1.4-1.8</span>
+                    <span class="fg-legend-cell" style="background:#f85149">1.8+</span>
+                    <span class="fg-legend-unit">m</span>
+                </span>
+                <span class="fg-legend-row">
+                    <span class="fg-legend-label">週期</span>
+                    <span class="fg-legend-cell" style="background:#f85149">&lt;5</span>
+                    <span class="fg-legend-cell" style="background:#db6d28">5-7</span>
+                    <span class="fg-legend-cell" style="background:#d29922">7-9</span>
+                    <span class="fg-legend-cell" style="background:#3fb950; color:#0d1d10">9-12</span>
+                    <span class="fg-legend-cell" style="background:#1a4d2e">12+</span>
+                    <span class="fg-legend-unit">s · 越長越整齊</span>
+                </span>
+                <span class="fg-legend-row fg-legend-dir">
+                    <span class="fg-legend-label">風向</span>
+                    <span class="fg-legend-cell" style="background:#1a4d2e">迎岸 (60-130°)</span>
+                    <span class="fg-legend-cell" style="background:#d29922">沿岸 (其他)</span>
+                    <span class="fg-legend-cell" style="background:#f85149">離岸 (240-300°)</span>
+                </span>
+            </div>
+
+            <details class="fg-help">
+                <summary>如何使用這張表？</summary>
+                <ol>
+                    <li>先看 <strong>本週末 Sat/Sun</strong> 兩張卡，verdict 跟你想去的時段直接給你。</li>
+                    <li>往下捲 <strong>CWA 龍洞浮標即時對照</strong> — 看過去 6 小時實況跟 Open-Meteo 預報同期的差 (Δ)。如果 Δ 都綠 (&lt;15%) 代表預報靠譜, 可以相信下面的週末卡; 如果很多紅 (&gt;30%) 代表預報跟實況偏離大, 改參考 CWA 實況判斷。</li>
+                    <li>下面 7 日×13h 表格：<strong>每一格 = 一個小時</strong>的綜合值。背景色對應決策矩陣的 🟢🟡🔴 分級。</li>
+                    <li><strong>Hover cell</strong> 看到風速/陣風/風向/浪高/週期/水溫的原始數值跟方向判定。</li>
+                    <li>週末用淺藍色 header (週六日) — 跟你想去的時段對齊。</li>
+                    <li>資料每小時自動 fetch 一次。要強制重抓，<code>Cmd/Ctrl+Shift+R</code> 跳過瀏覽器 cache。</li>
+                    <li>要看 Windguru 對照驗證，繼續看下面「即時資料來源」雙站外連。CWA 完整 48hr 時序圖另開新分頁 (MID 46694A)。</li>
+                </ol>
+            </details>
+        </section>
+
+        <script>
+            import '../scripts/diving-forecast.js';
+        </script>
+
         <!-- ─────── 即時資料來源（直接外連 — 兩站 CSP frame-ancestors 擋 iframe） ─────── -->
         <section class="section reveal">
             <div class="section-head">

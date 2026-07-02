@@ -884,3 +884,621 @@
         border-color: #ccc;
     }
 }
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  互動式預報 (週末卡 + 7日逐時表)                              ║
+   ║  — Windguru 風格逐時網格, 深色主題背景, cell 顏色即為分級    ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+.weekend-rec {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+    margin-bottom: 32px;
+}
+
+.ww-loader,
+.ww-error,
+.ww-empty {
+    background: var(--surface);
+    border: 1px dashed var(--border-hi);
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+    color: var(--muted);
+    grid-column: 1 / -1;
+}
+.ww-error { color: #f85149; border-color: rgba(248, 81, 73, 0.4); }
+
+.ww-day-card {
+    background: var(--surface-hi);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.ww-day-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.18;
+    border-radius: 14px;
+}
+.ww-day-card.ww-go::before      { background: radial-gradient(ellipse at top left, rgba(63,185,80,0.5), transparent 60%); }
+.ww-day-card.ww-caution::before { background: radial-gradient(ellipse at top left, rgba(210,153,34,0.5), transparent 60%); }
+.ww-day-card.ww-nogo::before    { background: radial-gradient(ellipse at top left, rgba(248,81,73,0.5), transparent 60%); }
+
+.ww-day-card.ww-go      { border-color: rgba(63,185,80,0.45); }
+.ww-day-card.ww-caution { border-color: rgba(210,153,34,0.45); }
+.ww-day-card.ww-nogo    { border-color: rgba(248,81,73,0.45); }
+
+.ww-day-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+}
+.ww-day-name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+}
+.ww-day-badge {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.05em;
+}
+.ww-day-badge.go      { background: rgba(63,185,80,0.18); color: #3fb950; border: 1px solid rgba(63,185,80,0.4); }
+.ww-day-badge.caution { background: rgba(210,153,34,0.18); color: #d29922; border: 1px solid rgba(210,153,34,0.4); }
+.ww-day-badge.nogo    { background: rgba(248,81,73,0.18); color: #f85149; border: 1px solid rgba(248,81,73,0.4); }
+
+.ww-day-site {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    margin: 6px 0 4px;
+    letter-spacing: -0.01em;
+}
+.ww-day-tip {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    line-height: 1.5;
+}
+.ww-day-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+.ww-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.ww-stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+.ww-stat-val {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--surface);
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+/* 24h verdict sparkline — 一眼看出「這天哪個時段能潛」 */
+.ww-spark {
+    width: 100%;
+    height: 48px;
+    display: block;
+    margin: 8px 0 12px;
+    background: rgba(8, 12, 22, 0.45);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+/* 6h 趨勢列 (週末卡底部) */
+.ww-day-trend {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(120, 180, 255, 0.15);
+    font-size: 11px;
+}
+.ww-trend-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.ww-trend-label {
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 10px;
+}
+.ww-trend-val {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 700;
+}
+
+.forecast-grid {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 18px;
+}
+
+/* ────────── CWA 龍洞浮標即時觀測 + 對照 strip ────────── */
+.cwa-strip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid #58a7ff;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin: 18px 0;
+    position: relative;
+}
+
+.cwa-loader,
+.cwa-error,
+.cwa-empty {
+    padding: 18px;
+    text-align: center;
+    color: var(--muted);
+}
+.cwa-error { color: #d29922; }
+
+.cwa-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+.cwa-head-l {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.cwa-station {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.01em;
+}
+.cwa-station-en {
+    font-size: 12px;
+    color: var(--accent);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.cwa-upd {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.cwa-head-r {
+    flex: 0 0 auto;
+}
+.cwa-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+.cwa-badge.go      { background: rgba(63,185,80,0.18); color: #3fb950; border: 1px solid rgba(63,185,80,0.4); }
+.cwa-badge.caution { background: rgba(210,153,34,0.18); color: #d29922; border: 1px solid rgba(210,153,34,0.4); }
+.cwa-badge.nogo    { background: rgba(248,81,73,0.18); color: #f85149; border: 1px solid rgba(248,81,73,0.4); }
+
+/* 最新一筆觀測 (5-cell row) */
+.cwa-latest {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 18px;
+}
+.cwa-cell {
+    background: rgba(20, 26, 38, 0.45);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.cwa-cell-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 700;
+}
+.cwa-cell-val {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.01em;
+}
+
+/* 對照表 */
+.cwa-cmp {
+    margin-top: 4px;
+}
+
+/* 6h 觀測 vs 預報 sparkline */
+.cwa-spark-wrap {
+    margin: 8px 0 16px;
+    background: rgba(8, 12, 22, 0.55);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+.cwa-spark-title {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+}
+.cwa-spark {
+    width: 100%;
+    height: 90px;
+    display: block;
+}
+.cwa-cmp-head {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+.cwa-cmp-table {
+    border-collapse: separate;
+    border-spacing: 2px;
+    width: 100%;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+}
+.cwa-cmp-th {
+    background: rgba(88, 167, 255, 0.12);
+    color: var(--accent);
+    padding: 6px 8px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+.cwa-cmp-time {
+    background: var(--surface);
+    color: var(--text);
+    padding: 6px 10px;
+    text-align: center;
+    font-weight: 700;
+    border-radius: 4px;
+}
+.cwa-cmp-cell {
+    padding: 6px 8px;
+    text-align: center;
+    font-weight: 800;
+    border-radius: 4px;
+}
+.cwa-cmp-delta {
+    padding: 6px 8px;
+    text-align: center;
+    font-weight: 800;
+    border-radius: 4px;
+}
+
+/* Footer with data source attribution */
+.cwa-foot {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted);
+}
+.cwa-foot a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--accent);
+}
+.cwa-foot a:hover {
+    background: rgba(88, 167, 255, 0.1);
+}
+
+@media (max-width: 720px) {
+    .cwa-latest {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .cwa-cmp-table {
+        font-size: 10px;
+    }
+    .cwa-cmp-th, .cwa-cmp-cell, .cwa-cmp-delta, .cwa-cmp-time {
+        padding: 4px 6px;
+    }
+}
+
+@media print {
+    .cwa-strip {
+        background: white !important;
+        color: black !important;
+        border-color: #ccc !important;
+        page-break-inside: avoid;
+    }
+}
+
+.fg-loader,
+.fg-error {
+    padding: 30px;
+    text-align: center;
+    color: var(--muted);
+}
+.fg-error { color: #f85149; }
+
+.fg-scroll {
+    overflow-x: auto;
+    overflow-y: visible;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #0d1018;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(120,180,255,0.25) transparent;
+}
+.fg-scroll::-webkit-scrollbar { height: 10px; }
+.fg-scroll::-webkit-scrollbar-thumb {
+    background: rgba(120,180,255,0.25);
+    border-radius: 10px;
+}
+
+.fg-table {
+    border-collapse: separate;
+    border-spacing: 1px;
+    width: max-content;
+    min-width: 100%;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    background: #0d1018;
+}
+
+.fg-table th,
+.fg-table td {
+    padding: 0;
+    text-align: center;
+    min-width: 38px;
+    height: 30px;
+    line-height: 30px;
+    background: #1a2030;
+    color: var(--text);
+    border: none;
+    position: relative;
+}
+
+.fg-table thead .fg-dayhead th {
+    height: 36px;
+    line-height: 36px;
+    background: rgba(88, 215, 255, 0.08);
+    color: var(--accent);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border-hi);
+}
+.fg-table thead .fg-hourhead th {
+    height: 22px;
+    line-height: 22px;
+    background: rgba(28, 36, 52, 0.6);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 600;
+}
+.fg-day {
+    border-left: 2px solid rgba(120,180,255,0.15);
+}
+.fg-weekend {
+    background: rgba(88, 215, 255, 0.12) !important;
+    color: #58d7ff !important;
+}
+
+.fg-label {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    text-align: left;
+    padding: 0 12px !important;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    background: #131826 !important;
+    color: var(--accent) !important;
+    border-right: 2px solid var(--border-hi);
+    min-width: 110px;
+    letter-spacing: 0.02em;
+}
+
+.fg-cell {
+    cursor: help;
+    transition: filter 0.15s ease, transform 0.15s ease;
+    font-weight: 700;
+    position: relative;
+    overflow: hidden;
+    vertical-align: middle;
+}
+.fg-cell:hover {
+    filter: brightness(1.25);
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    z-index: 3;
+}
+
+/* 每格底部的迷你 bar — 把指標值在 [0, max] 範圍內的相對位置視覺化 */
+.fg-cell-bar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.72);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    transition: width 0.3s ease;
+    pointer-events: none;
+}
+.fg-cell-num {
+    position: relative;
+    z-index: 1;
+    line-height: 30px;
+}
+
+.fg-na {
+    background: #131826 !important;
+    color: #3a3f4b !important;
+}
+.fg-na .fg-cell-bar { display: none; }
+
+.fg-row-open .fg-cell {
+    /* hover effect — informational */
+}
+
+.fg-foot {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 0 4px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+}
+
+/* 圖例 */
+.fg-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 18px;
+}
+.fg-legend-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    align-self: center;
+}
+.fg-legend-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+}
+.fg-legend-label {
+    color: var(--muted);
+    font-size: 12px;
+    margin-right: 4px;
+    font-weight: 700;
+}
+.fg-legend-cell {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.02em;
+    min-width: 36px;
+    text-align: center;
+}
+.fg-legend-unit {
+    color: var(--muted);
+    font-size: 11px;
+    margin-left: 4px;
+}
+
+/* Help */
+.fg-help {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 32px;
+}
+.fg-help summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 14px;
+    list-style: none;
+    user-select: none;
+}
+.fg-help summary::before {
+    content: '▶ ';
+    color: var(--muted);
+    display: inline-block;
+    transform: translateY(-1px);
+    margin-right: 4px;
+    transition: transform 0.2s;
+}
+.fg-help[open] summary::before {
+    transform: rotate(90deg) translateY(-1px);
+}
+.fg-help ol {
+    margin: 12px 0 0;
+    padding-left: 22px;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.7;
+}
+.fg-help code {
+    background: rgba(110, 118, 129, 0.18);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--accent);
+}
+
+/* 列印樣式 — 預報表可以印出帶著去潛水店 */
+@media print {
+    .weekend-rec,
+    .forecast-grid,
+    .fg-legend,
+    .fg-help {
+        background: white !important;
+        color: black !important;
+        border-color: #ccc !important;
+        page-break-inside: avoid;
+    }
+    .fg-cell { background: #ddd !important; color: black !important; }
+    .ww-day-card { background: white !important; color: black !important; }
+}
+
