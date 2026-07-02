@@ -7,7 +7,7 @@ const SPOT = { name: '龍洞和美國小', lat: 25.10, lon: 121.92, tz: 'Asia%2F
 
 const MARINE_URL =
     `https://marine-api.open-meteo.com/v1/marine?latitude=${SPOT.lat}&longitude=${SPOT.lon}` +
-    `&hourly=wave_height,wave_period,wave_direction&forecast_days=10&timezone=${SPOT.tz}`;
+    `&hourly=wave_height,wave_period,wave_direction,sea_surface_temperature&forecast_days=10&timezone=${SPOT.tz}`;
 
 const WEATHER_URL =
     `https://api.open-meteo.com/v1/forecast?latitude=${SPOT.lat}&longitude=${SPOT.lon}` +
@@ -118,6 +118,7 @@ async function loadForecast() {
             waveM:   marR.hourly.wave_height[i],
             wavePer: marR.hourly.wave_period[i],
             waveDir: marR.hourly.wave_direction[i],
+            sstC:   marR.hourly.sea_surface_temperature?.[i],
         });
     }
     return out;
@@ -206,7 +207,8 @@ function parseCWA(data) {
             wavePer: numify(waveP[i]),
             windMs: numify(windMS[i]),
             windDeg: windDeg[i],
-            tempC: numify(seaTemp[i]),
+            tempC: numify(seaTemp[i]),  // CWA sea temperature (for display)
+            sstC: numify(seaTemp[i]),   // alias 統一在比較函式裡用
             pressure: numify(pressure[i]),
         });
     }
@@ -246,8 +248,8 @@ function compareCWA(cwaSamples, omSamples) {
         const windDelta = (cwa.windMs != null && om.windMs != null)
             ? { obs: cwa.windMs, fcst: om.windMs, diff: cwa.windMs - om.windMs, pct: ((cwa.windMs - om.windMs) / om.windMs) * 100 }
             : null;
-        const tempDelta = (cwa.tempC != null && om.tempC != null)
-            ? { obs: cwa.tempC, fcst: om.tempC, diff: cwa.tempC - om.tempC, pct: ((cwa.tempC - om.tempC) / om.tempC) * 100 }
+        const tempDelta = (cwa.tempC != null && om.sstC != null)
+            ? { obs: cwa.tempC, fcst: om.sstC, diff: cwa.tempC - om.sstC, pct: ((cwa.tempC - om.sstC) / om.sstC) * 100 }
             : null;
 
         // Δ 顏色: |pct| ≤ 15% 綠 (預報準), ≤ 30% 黃 (有偏差), > 30% 紅 (不準)
@@ -280,33 +282,69 @@ function compareCWA(cwaSamples, omSamples) {
 }
 
 // ──────────── Render CWA 對照 strip ────────────
-// 6h 觀測 vs 預報 sparkline: 兩條曲線疊在一起, 一眼看出預報跟不跟得上實況
+// 6h 觀測 vs 預報 sparkline: 三 band split chart (上: 浪高, 中: 風速, 下: 水溫)
+// 實線=觀測, 虛線=Open-Meteo 預報; 一眼看出模型在哪些指標偏離實況
 function cwaCompareSparkline(pairs) {
     if (!pairs.length) return '';
-    const W = 700, H = 90, PAD_L = 36, PAD_R = 12, PAD_T = 8, PAD_B = 22;
+    const W = 700, H = 130, PAD_L = 38, PAD_R = 12, PAD_T = 8, PAD_B = 22;
     const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
+    const bandH = innerH / 3;
 
-    // Y 範圍: 同時 scale 浪高 (m) 跟 風速 (m/s) 兩條線, 各自用相對 scale
-    // 上半部畫浪高, 下半部畫風速 (split chart)
-    const midY = PAD_T + innerH / 2;
-
-    // 浪高: 0-2m scale
-    const waveMax = 2.0;
-    const yWave = (v) => midY - (Math.min(v, waveMax) / waveMax) * (innerH / 2 - 4);
-    // 風速: 0-12 m/s scale
-    const windMax = 12;
-    const yWind = (v) => H - PAD_B - (Math.min(v, windMax) / windMax) * (innerH / 2 - 4);
+    // 三個 band 的 Y range + 位置
+    // band 0 = top (wave), band 1 = mid (wind), band 2 = bot (temp)
+    const bands = [
+        { name: 'wave', max: 2.0, unit: 'm', color: '#58d7ff', desc: '浪高' },
+        { name: 'wind', max: 12,  unit: 'm/s', color: '#d29922', desc: '風速' },
+        { name: 'temp', min: 18, max: 32, unit: '°C', color: '#3fb950', desc: '水溫' },
+    ];
+    function bandY(name, v) {
+        const b = bands.find(b => b.name === name);
+        const idx = bands.indexOf(b);
+        const yTop = PAD_T + idx * bandH;
+        const yBot = yTop + bandH;
+        const inner = bandH - 4;
+        if (v == null) return null;
+        if (name === 'temp') {
+            const t = (Math.max(b.min, Math.min(b.max, v)) - b.min) / (b.max - b.min);
+            return yBot - t * inner - 2;  // bottom=min, top=max
+        }
+        const t = Math.max(0, Math.min(b.max, v)) / b.max;
+        return yBot - t * inner - 2;  // bottom=0, top=max
+    }
 
     // 取最近 6 筆
     const recent = pairs.slice(-6);
     const x = (i) => PAD_L + (i / Math.max(1, recent.length - 1)) * innerW;
 
-    // 浪高: 觀測 (cyan) 與 預報 (white-dash)
-    const waveObs = recent.map((p, i) => p.waveDelta?.obs).map((v, i) => v != null ? `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${yWave(v).toFixed(1)}` : '').filter(Boolean).join(' ');
-    const waveFcst = recent.map((p, i) => p.waveDelta?.fcst).map((v, i) => v != null ? `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${yWave(v).toFixed(1)}` : '').filter(Boolean).join(' ');
-    // 風速: 觀測 (orange) 與 預報 (white-dash)
-    const windObs = recent.map((p, i) => p.windDelta?.obs).map((v, i) => v != null ? `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${yWind(v).toFixed(1)}` : '').filter(Boolean).join(' ');
-    const windFcst = recent.map((p, i) => p.windDelta?.fcst).map((v, i) => v != null ? `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${yWind(v).toFixed(1)}` : '').filter(Boolean).join(' ');
+    // 三組 obs / fcst path
+    function path(field) {
+        return recent.map((p, i) => p[field]?.obs).map((v, i) => v != null ? `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${bandY('wave', v).toFixed(1)}` : '').filter(Boolean).join(' ');
+    }
+    function pathFcst(field) {
+        return recent.map((p, i) => p[field]?.fcst).map((v, i) => v != null ? `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${bandY('wave', v).toFixed(1)}` : '').filter(Boolean).join(' ');
+    }
+    // 三個 band 分別畫 obs / fcst (顏色不同)
+    const series = [
+        { field: 'waveDelta', yName: 'wave', obs: '#58d7ff', label: '浪高' },
+        { field: 'windDelta', yName: 'wind', obs: '#d29922', label: '風速' },
+        { field: 'tempDelta', yName: 'temp', obs: '#3fb950', label: '水溫' },
+    ];
+
+    // 背景分隔線
+    const dividers = [1, 2].map(i => {
+        const y = PAD_T + i * bandH;
+        return `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" stroke="rgba(120,180,255,0.18)" stroke-dasharray="3 3"/>`;
+    }).join('');
+
+    // 三 band 的 obs + fcst 路徑
+    const lines = series.flatMap(s => {
+        const obs = recent.map((p, i) => p[s.field]?.obs).map((v, i) => v != null ? `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${bandY(s.yName, v).toFixed(1)}` : '').filter(Boolean).join(' ');
+        const fcst = recent.map((p, i) => p[s.field]?.fcst).map((v, i) => v != null ? `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${bandY(s.yName, v).toFixed(1)}` : '').filter(Boolean).join(' ');
+        return [
+            obs ? `<path d="${obs}" fill="none" stroke="${s.obs}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>` : '',
+            fcst ? `<path d="${fcst}" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.3" stroke-dasharray="3 2"/>` : '',
+        ];
+    }).join('');
 
     // X 軸標籤 (時段)
     const xLabels = recent.map((p, i) => {
@@ -316,29 +354,26 @@ function cwaCompareSparkline(pairs) {
             : '';
     }).join('');
 
-    // Y 軸標籤 (上下兩半各自的 scale)
-    const yLabels = `
-        <text x="${PAD_L - 4}" y="${PAD_T + 8}" text-anchor="end" font-size="9" fill="#8b949e">${waveMax}m</text>
-        <text x="${PAD_L - 4}" y="${midY + 2}" text-anchor="end" font-size="9" fill="#8b949e">0</text>
-        <text x="${PAD_L - 4}" y="${H - PAD_B + 4}" text-anchor="end" font-size="9" fill="#8b949e">${windMax}</text>
-    `;
+    // Y 軸標籤 (三 band 各自的 scale)
+    const yLabels = bands.map((b, i) => {
+        const y = PAD_T + i * bandH + 10;
+        const label = b.name === 'temp' ? `${b.min}–${b.max}${b.unit}` : `${b.max}${b.unit}`;
+        return `<text x="${PAD_L - 4}" y="${y}" text-anchor="end" font-size="9" fill="#8b949e">${label}</text>`;
+    }).join('');
+
+    // Legend 精簡版: 三色 (obs 線 + 顏色標籤) 在右上
+    const legend = series.map((s, i) => {
+        const y = PAD_T + 6 + i * 12;
+        return `<line x1="${W - 130}" y1="${y}" x2="${W - 110}" y2="${y}" stroke="${s.obs}" stroke-width="1.8"/>
+            <text x="${W - 106}" y="${y + 3}" font-size="9" fill="#cdd9e5" font-family="Inter, sans-serif">${s.label} 觀</text>
+            <line x1="${W - 70}" y1="${y}" x2="${W - 50}" y2="${y}" stroke="rgba(255,255,255,0.4)" stroke-width="1.3" stroke-dasharray="3 2"/>
+            <text x="${W - 46}" y="${y + 3}" font-size="9" fill="#cdd9e5" font-family="Inter, sans-serif">${s.label} 預</text>`;
+    }).join('');
 
     return `<svg class="cwa-spark" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" aria-label="6h 觀測 vs 預報 sparkline">
-        <line x1="${PAD_L}" y1="${midY}" x2="${W - PAD_R}" y2="${midY}" stroke="rgba(120,180,255,0.25)" stroke-dasharray="3 3"/>
-        ${waveObs ? `<path d="${waveObs}" fill="none" stroke="#58d7ff" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
-        ${waveFcst ? `<path d="${waveFcst}" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.4" stroke-dasharray="3 2"/>` : ''}
-        ${windObs ? `<path d="${windObs}" fill="none" stroke="#d29922" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
-        ${windFcst ? `<path d="${windFcst}" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.4" stroke-dasharray="3 2"/>` : ''}
-        <g class="cwa-spark-legend">
-            <line x1="${W - 130}" y1="${PAD_T + 6}" x2="${W - 110}" y2="${PAD_T + 6}" stroke="#58d7ff" stroke-width="1.8"/>
-            <text x="${W - 106}" y="${PAD_T + 9}" font-size="9" fill="#cdd9e5" font-family="Inter, sans-serif">浪高 觀</text>
-            <line x1="${W - 70}" y1="${PAD_T + 6}" x2="${W - 50}" y2="${PAD_T + 6}" stroke="rgba(255,255,255,0.5)" stroke-width="1.4" stroke-dasharray="3 2"/>
-            <text x="${W - 46}" y="${PAD_T + 9}" font-size="9" fill="#cdd9e5" font-family="Inter, sans-serif">浪高 預</text>
-            <line x1="${W - 130}" y1="${PAD_T + 18}" x2="${W - 110}" y2="${PAD_T + 18}" stroke="#d29922" stroke-width="1.8"/>
-            <text x="${W - 106}" y="${PAD_T + 21}" font-size="9" fill="#cdd9e5" font-family="Inter, sans-serif">風速 觀</text>
-            <line x1="${W - 70}" y1="${PAD_T + 18}" x2="${W - 50}" y2="${PAD_T + 18}" stroke="rgba(255,255,255,0.5)" stroke-width="1.4" stroke-dasharray="3 2"/>
-            <text x="${W - 46}" y="${PAD_T + 21}" font-size="9" fill="#cdd9e5" font-family="Inter, sans-serif">風速 預</text>
-        </g>
+        ${dividers}
+        ${lines}
+        <g class="cwa-spark-legend">${legend}</g>
         ${yLabels}
         ${xLabels}
     </svg>`;
@@ -685,6 +720,76 @@ function windDirName(deg) {
     return WIND_DIR_NAMES[Math.round(((deg % 360) / 22.5)) % 16];
 }
 
+// 7-day 風向分布 wind rose: 8 方位 bin, 計算過去幾天的 sample 各佔多少小時
+function renderWindRose(samples) {
+    const petalsEl  = document.getElementById('windrose-petals');
+    const ringsEl   = document.getElementById('windrose-rings');
+    const labelsEl  = document.getElementById('windrose-labels');
+    if (!petalsEl || !ringsEl || !labelsEl) return;
+
+    // 8 方位 bin (0=N, 1=NE, ..., 7=NW), 角度 0=up 順時針
+    const bins = new Array(8).fill(0);
+    let maxCount = 0;
+    for (const s of samples) {
+        if (s.windDeg == null) continue;
+        // bin: 0=N (center 0°), 1=NE (center 45°), ..., idx = round((deg % 360) / 45) % 8
+        const idx = Math.round(((s.windDeg % 360) / 45)) % 8;
+        bins[idx]++;
+        if (bins[idx] > maxCount) maxCount = bins[idx];
+    }
+
+    const R = 50;  // max radius in viewBox 120x120 (centered)
+    const labels8 = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    // 安全配色: 依「該方位的代表角度」對應到 compass 上的色
+    // 0=N(cross-shore) 1=NE(onshore-ish) 2=E(SAFEST) 3=SE(cross) 4=S(cross) 5=SW(offshore) 6=W(MOST DANGEROUS) 7=NW(offshore)
+    const fillByBin = [
+        'rgba(210,153,34,0.55)',  // N cross-shore
+        'rgba(63,185,80,0.45)',    // NE onshore-ish
+        'rgba(63,185,80,0.65)',    // E SAFEST
+        'rgba(210,153,34,0.55)',  // SE cross-shore
+        'rgba(210,153,34,0.55)',  // S cross-shore
+        'rgba(248,81,73,0.45)',   // SW offshore-ish
+        'rgba(248,81,73,0.65)',   // W MOST DANGEROUS
+        'rgba(248,81,73,0.45)',   // NW offshore-ish
+    ];
+    const strokeByBin = ['#d29922', '#3fb950', '#3fb950', '#d29922', '#d29922', '#f85149', '#f85149', '#f85149'];
+
+    // 同心圓 ring (4 圈, 25/50/75/100%)
+    ringsEl.innerHTML = [0.25, 0.5, 0.75].map(f => {
+        const r = R * f;
+        return `<circle cx="0" cy="0" r="${r}" fill="none" stroke="rgba(120,180,255,0.18)" stroke-width="0.5" stroke-dasharray="1 2"/>`;
+    }).join('');
+
+    // 8 個 petal
+    petalsEl.innerHTML = bins.map((count, i) => {
+        if (count === 0) return '';
+        const angle = i * 45;  // 0=N, 45=NE, ...; 0=up, 順時針
+        const a1 = (angle - 22.5) * Math.PI / 180;
+        const a2 = (angle + 22.5) * Math.PI / 180;
+        // 計算 inner/outer radius (圓弧的兩個端點): 角從 up 開始, 順時針
+        // (0,0) 是中心, (x, y) = (r*sin(a), -r*cos(a))  (因為 SVG y 朝下, 北方是 -y)
+        const outerR = Math.max(4, (count / Math.max(1, maxCount)) * R);
+        const innerR = 5;  // 留個小空心
+        const x1o = outerR * Math.sin(a1), y1o = -outerR * Math.cos(a1);
+        const x2o = outerR * Math.sin(a2), y2o = -outerR * Math.cos(a2);
+        const x1i = innerR * Math.sin(a1), y1i = -innerR * Math.cos(a1);
+        const x2i = innerR * Math.sin(a2), y2i = -innerR * Math.cos(a2);
+        const largeArc = 0;  // 每片 45°, 小於 180° 用 0
+        // outer arc + return inner arc (donut slice)
+        const d = `M ${x1o.toFixed(1)} ${y1o.toFixed(1)} A ${outerR.toFixed(1)} ${outerR.toFixed(1)} 0 ${largeArc} 1 ${x2o.toFixed(1)} ${y2o.toFixed(1)} L ${x2i.toFixed(1)} ${y2i.toFixed(1)} A ${innerR.toFixed(1)} ${innerR.toFixed(1)} 0 ${largeArc} 0 ${x1i.toFixed(1)} ${y1i.toFixed(1)} Z`;
+        return `<path class="windrose-petal" d="${d}" fill="${fillByBin[i]}" stroke="${strokeByBin[i]}" stroke-width="0.8" stroke-linejoin="round"><title>${labels8[i]} · ${count} 小時</title></path>`;
+    }).join('');
+
+    // 8 方位 labels
+    const labelR = R + 10;
+    labelsEl.innerHTML = labels8.map((lbl, i) => {
+        const a = i * 45 * Math.PI / 180;
+        const x = labelR * Math.sin(a);
+        const y = -labelR * Math.cos(a);
+        return `<text x="${x.toFixed(1)}" y="${(y + 2.5).toFixed(1)}" text-anchor="middle" font-size="7" fill="#8b949e" font-family="'JetBrains Mono', monospace">${lbl}</text>`;
+    }).join('');
+}
+
 // Live compass: 把當下風向/風速顯示在 compass 上 (arrow 跟 speed label 都 rotate)
 // 用「最接近現在的 sample」當 live 狀態 (Open-Meteo current hour)
 function renderLiveCompass(samples) {
@@ -825,27 +930,44 @@ function renderHourlyGrid(samples, opts = {}) {
     // 視覺上跟其他 row 一致 (用 threshold 色), 但只顯示 HH:00 文字 + 該小時的綜合評分
     function bestHourRow() {
         const rank = { 'go': 0, 'caution': 1, 'nogo': 2 };
-        const cells = days.flatMap(d => {
+        // 找 Sat/Sun 對應在 days 裡的 index, 給 click → scroll 用
+        // Sat = getDay()=6, Sun = getDay()=0
+        const satDayIdx = days.findIndex(d => d.date.getDay() === 6);
+        const sunDayIdx = days.findIndex(d => d.date.getDay() === 0);
+        const cells = days.flatMap((d, dayIdx) => {
             // 找當天 score 最低 (最綠) 的 hour
             if (!d.samples.length) {
                 return hours.map(() => `<td class="fg-cell fg-na" colspan="1">—</td>`).slice(0, hours.length);
             }
+            // 先算當天所有 hour 的 score, 找最低; 最低相同時, 取小時最早的那個
+            const hourScores = hours.map(h => {
+                const valid = d.samples.find(s => s.hour === h);
+                return valid ? rank[scoreRow(valid)] : null;
+            });
+            const minScore = Math.min(...hourScores.filter(v => v != null));
+            const firstBestHour = hours[hourScores.findIndex(v => v === minScore)];
+
             return hours.map(h => {
-                const valid = d.samples.filter(s => s.hour === h);
-                if (!valid.length) return `<td class="fg-cell fg-na">—</td>`;
-                const s = valid[0];
+                const valid = d.samples.find(s => s.hour === h);
+                if (!valid) return `<td class="fg-cell fg-na">—</td>`;
+                const s = valid;
                 const sc = scoreRow(s);
                 const bg = sc === 'go' ? '#1a4d2e' : sc === 'caution' ? '#d29922' : '#f85149';
                 const txt = sc === 'go' ? '#0d1d10' : '#fff';
-                const isBest = (() => {
-                    // 找當天所有 sample 中 score 最小的
-                    const scores = d.samples.map(x => rank[scoreRow(x)]);
-                    const min = Math.min(...scores);
-                    return rank[sc] === min;
-                })();
+                const isBest = (h === firstBestHour);
                 const cellText = isBest ? `✓ ${String(h).padStart(2,'0')}:00` : '·';
                 const tip = `${fmtDayHeader(d.date)} ${String(h).padStart(2,'0')}:00 — ${sc === 'go' ? 'GO' : sc === 'caution' ? 'CAUTION' : 'NO-GO'}`;
-                return `<td class="fg-cell fg-best-cell ${isBest ? 'fg-best-cell-mark' : ''}" style="background:${bg};color:${txt}" title="${tip}">${cellText}</td>`;
+                // Sat/Sun 最佳 cell 變 clickable
+                const isWeekend = (dayIdx === satDayIdx || dayIdx === sunDayIdx);
+                const clickable = isBest && isWeekend;
+                const cls = `fg-cell fg-best-cell ${isBest ? 'fg-best-cell-mark' : ''} ${clickable ? 'fg-best-cell-clickable' : ''}`;
+                const dataAttrs = clickable
+                    ? `data-wday="${d.date.getDay()}" data-day-idx="${dayIdx}"`
+                    : '';
+                const tipWithAction = clickable
+                    ? `${tip} · 點擊跳到週末卡`
+                    : tip;
+                return `<td class="${cls}" style="background:${bg};color:${txt}" title="${tipWithAction}" ${dataAttrs}>${cellText}</td>`;
             });
         }).join('');
         return `<tr class="fg-row fg-row-summary">
@@ -906,6 +1028,7 @@ async function init() {
         renderWeekendCards(samples);
         renderHourlyGrid(samples);
         renderLiveCompass(samples);
+        renderWindRose(samples);
 
         // CWA 對照 strip (只有 CWA 拿到資料才渲染)
         if (cwaData) {
@@ -920,6 +1043,22 @@ async function init() {
         gridEl.querySelectorAll('.fg-row').forEach(row => {
             row.addEventListener('click', e => {
                 row.classList.toggle('fg-row-open');
+            });
+        });
+
+        // 點擊「最佳時段」的週末 ✓ cell → 滾動到對應的週末卡
+        gridEl.querySelectorAll('.fg-best-cell-clickable').forEach(cell => {
+            cell.addEventListener('click', e => {
+                e.stopPropagation();
+                const wday = cell.getAttribute('data-wday');
+                // wday 6 = Sat, 0 = Sun; 第一個 .ww-day-card 是 Sat, 第二個是 Sun
+                const idx = wday === '0' ? 1 : 0;
+                const target = document.querySelectorAll('.ww-day-card')[idx];
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    target.classList.add('ww-day-card-flash');
+                    setTimeout(() => target.classList.remove('ww-day-card-flash'), 1500);
+                }
             });
         });
     } catch (err) {

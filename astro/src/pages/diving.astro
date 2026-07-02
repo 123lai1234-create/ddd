@@ -417,6 +417,7 @@ const metrics: Metric[] = [
             </div>
 
             <div class="compass-wrap">
+                <div class="compass-stack">
                 <!--
                   8-direction wind compass for 龍洞 (Longdong).
                   Diver sits at the centre, dive site faces EAST.
@@ -554,6 +555,22 @@ const metrics: Metric[] = [
                     <span>·</span>
                     <span class="compass-current-val">— m/s</span>
                 </div>
+
+                <!-- 7-day wind rose (filled by renderWindRose in diving-forecast.js) -->
+                <div class="windrose-wrap">
+                    <div class="windrose-title">未來 7 日 風向分布 <span class="windrose-sub">— 8 方位小時數</span></div>
+                    <svg class="windrose-svg" id="windrose-svg" viewBox="-60 -60 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="未來 7 日 風向分布 8 方位 wind rose">
+                        <g id="windrose-petals"></g>
+                        <g id="windrose-rings"></g>
+                        <g id="windrose-labels"></g>
+                    </svg>
+                    <div class="windrose-legend">
+                        <span><span class="windrose-swatch" style="background:rgba(63,185,80,0.55);border-color:#3fb950"></span>迎岸</span>
+                        <span><span class="windrose-swatch" style="background:rgba(210,153,34,0.55);border-color:#d29922"></span>沿岸</span>
+                        <span><span class="windrose-swatch" style="background:rgba(248,81,73,0.55);border-color:#f85149"></span>離岸</span>
+                    </div>
+                </div>
+                </div> <!-- /compass-stack -->
 
                 <!-- Side legend (HTML for crisp typography + responsive wrap) -->
                 <div class="compass-legend">

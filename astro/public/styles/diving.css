@@ -494,6 +494,70 @@
     color: var(--text);
 }
 
+/* 7-day wind rose — 8 方位小時分布, 跟 compass 並排 */
+.compass-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    flex: 0 0 auto;
+}
+.windrose-wrap {
+    width: 100%;
+    max-width: 280px;
+    background: rgba(8, 12, 22, 0.55);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 8px 8px;
+    text-align: center;
+}
+.windrose-title {
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.windrose-sub {
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+.windrose-svg {
+    width: 160px;
+    height: 160px;
+    display: block;
+    margin: 0 auto;
+}
+.windrose-legend {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+}
+.windrose-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    border: 1px solid;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+/* Wind rose 進入動畫 */
+.windrose-petal {
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    transform-origin: 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+    .windrose-petal { transition: none; }
+}
+
 .compass-legend {
     display: flex;
     flex-direction: column;
@@ -1201,7 +1265,7 @@
 }
 .cwa-spark {
     width: 100%;
-    height: 90px;
+    height: 130px;
     display: block;
 }
 .cwa-cmp-head {
@@ -1434,6 +1498,35 @@
     box-shadow: 0 0 6px rgba(88, 215, 255, 0.6) inset;
 }
 .fg-best-cell .fg-cell-bar { display: none; }
+
+/* 「最佳時段」週末 ✓ cell: 加 hover/clickable 提示 */
+.fg-best-cell-clickable {
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+.fg-best-cell-clickable:hover {
+    transform: scale(1.15);
+    filter: brightness(1.3) saturate(1.2);
+    z-index: 4;
+}
+.fg-best-cell-clickable::after {
+    content: '↗';
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    font-size: 8px;
+    opacity: 0.7;
+}
+
+/* 週末卡被點擊時的 flash 動畫 */
+.ww-day-card-flash {
+    animation: _ww-flash 1.5s ease-out;
+}
+@keyframes _ww-flash {
+    0%   { box-shadow: 0 0 0 0 rgba(88, 215, 255, 0.7), 0 0 24px 4px rgba(88, 215, 255, 0.3); transform: scale(1); }
+    20%  { box-shadow: 0 0 0 4px rgba(88, 215, 255, 0.6), 0 0 32px 8px rgba(88, 215, 255, 0.5); transform: scale(1.02); }
+    100% { box-shadow: 0 0 0 0 rgba(88, 215, 255, 0); transform: scale(1); }
+}
 
 .fg-row-open .fg-cell {
     /* hover effect — informational */
