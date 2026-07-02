@@ -20,7 +20,12 @@ async function getApp() {
 
 export default async function handler(req, res) {
   const app = await getApp();
-  const url = new URL(req.url, "http://localhost");
+  // When the function is reached via a Vercel rewrite from /api/<anything>,
+  // `req.url` is the rewrite destination ('/api'). The original path is
+  // passed through the `x-vercel-original-path` header that Vercel adds
+  // for rewrite targets. Fall back to req.url when called directly.
+  const originalPath = req.headers["x-vercel-original-path"] || req.headers["x-original-url"] || req.url;
+  const url = new URL(originalPath, "http://localhost");
   const path = url.pathname + url.search;
 
   await new Promise((resolve) => {
