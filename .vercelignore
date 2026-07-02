@@ -17,3 +17,8 @@ scripts/
 astro/dist/
 # Sub-project with its own .git (old Replit React import), not used by Astro deploy.
 dontalk-import/
+# api-server-src/ is the source for the bundled stock backend. Vercel doesn't
+# build it (the prebuilt api/_backend.mjs is uploaded directly), so skip the
+# hundreds of generated/symlinked TS files and node_modules to keep uploads
+# fast. Only api/[...path].mjs and api/_backend.mjs are needed.
+api-server-src/
