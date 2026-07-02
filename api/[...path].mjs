@@ -156,7 +156,10 @@ async function webRequestToNode(req) {
   nodeReq.httpVersion = "1.1";
   nodeReq.httpVersionMajor = 1;
   nodeReq.httpVersionMinor = 1;
-  nodeReq.connection = { remoteAddress: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1" };
+  nodeReq.connection = {
+    remoteAddress:
+      headers["x-forwarded-for"]?.split(",")[0]?.trim() || "127.0.0.1",
+  };
   nodeReq.socket = nodeReq.connection;
   nodeReq.getHeader = (k) => headers[k.toLowerCase()];
   nodeReq.headersDistinct = headers;
