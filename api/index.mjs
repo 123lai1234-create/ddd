@@ -40,6 +40,7 @@ export default async function handler(req, res) {
   finalUrl.searchParams.delete("p");
   const path = finalUrl.pathname + finalUrl.search;
 
+  console.log("[api] req.url:", req.url, "p:", url.searchParams.get("p"), "x-vercel-original-path:", req.headers["x-vercel-original-path"], "reconstructed:", path);
   await new Promise((resolve) => {
     const server = createServer(app);
     let settled = false;
