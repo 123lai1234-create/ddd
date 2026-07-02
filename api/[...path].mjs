@@ -101,5 +101,5 @@ export default async function handler(webRequest) {
 
 export const config = {
   runtime: "nodejs",
-  maxDuration: 30,
+  maxDuration: 60,
 };
