@@ -118,10 +118,22 @@ async function webRequestToNode(req) {
     ? new URL(incomingUrl)
     : new URL(incomingUrl, base);
   // Build minimal Node req object
+  // Vercel passes `req.headers` as a plain object, NOT a `Headers` instance.
+  // Support both shapes for safety.
   const headers = {};
-  req.headers.forEach((v, k) => {
-    headers[k.toLowerCase()] = v;
-  });
+  if (req.headers && typeof req.headers.forEach === "function") {
+    req.headers.forEach((v, k) => {
+      headers[k.toLowerCase()] = v;
+    });
+  } else if (req.headers) {
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (typeof v === "string") {
+        headers[k.toLowerCase()] = v;
+      } else if (Array.isArray(v)) {
+        headers[k.toLowerCase()] = v.join(", ");
+      }
+    }
+  }
   const method = req.method;
   let body;
   if (method !== "GET" && method !== "HEAD") {
