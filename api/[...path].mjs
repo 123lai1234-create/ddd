@@ -99,7 +99,10 @@ export default async function handler(req, res) {
   });
 }
 
+// Vercel CLI 54 rejects explicit runtime strings in this project's
+// vercel.json (the 'functions must have at least one property' check is
+// tied to a runtime version mismatch). The .mjs extension is enough for
+// Vercel to auto-pick nodejs20.x as the runtime. Keep maxDuration only.
 export const config = {
-  runtime: "nodejs20.x@1.0.0",
   maxDuration: 60,
 };
