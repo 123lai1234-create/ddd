@@ -5,6 +5,10 @@
  * Each feature initializes only if its target DOM element exists on the page.
  * CDN libs are loaded lazily on demand.
  */
+// Wrapped in IIFE so accidental double-load (e.g. via stale SW cache) does
+// not redeclare module-level constants like `_loaded` and throw a
+// SyntaxError, leaving the page half-broken.
+(() => {
 
 /* ── Lazy CDN loader ──────────────────────────────────────────────────────── */
 
@@ -57,7 +61,11 @@ async function initVantaDNA() {
 /* ── 2. GSAP ScrollTrigger ────────────────────────────────────────────────── */
 
 async function initGSAP() {
-  const reveals = document.querySelectorAll('section, .card, .metric-card, .algo-card, .surface-card, .runtime-card, .explore-card, .img-card, .faq-item');
+  // Skip `section` selector and `.reveal` elements — those are handled by
+  // the global IntersectionObserver in Base.astro (no GSAP CDN dependency,
+  // no failure mode where content stays invisible).
+  const allCandidates = document.querySelectorAll('.card, .metric-card, .algo-card, .surface-card, .runtime-card, .explore-card, .img-card, .faq-item');
+  const reveals = Array.from(allCandidates).filter(el => !el.classList.contains('reveal'));
   if (!reveals.length) return;
   try {
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', 'gsap');
@@ -1357,3 +1365,4 @@ document.addEventListener('DOMContentLoaded', () => {
   initKeyboardShortcuts();
   initThemeToggle();
 });
+})();

@@ -131,7 +131,10 @@ async function initVantaDNA() {
 /* ── 2. GSAP ScrollTrigger (optimized) ────────────────────────────────────────── */
 
 async function initGSAP() {
-  const reveals = document.querySelectorAll('section, .card, .metric-card, .algo-card, .surface-card, .runtime-card, .explore-card, .img-card, .faq-item');
+  // Skip `section` selector and `.reveal` elements — those are handled by
+  // the global IntersectionObserver in Base.astro.
+  const allCandidates = document.querySelectorAll('.card, .metric-card, .algo-card, .surface-card, .runtime-card, .explore-card, .img-card, .faq-item');
+  const reveals = Array.from(allCandidates).filter(el => !el.classList.contains('reveal'));
   if (!reveals.length) return;
 
   try {

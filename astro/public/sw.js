@@ -1,14 +1,21 @@
-const CACHE_NAME = 'portfolio-v1';
+// Service worker for donttalk portfolio.
+// Bump CACHE_NAME to force clients to drop stale HTML/JS after a redeploy.
+const BUILD_TAG = '2026-07-02-v4';
+const CACHE_NAME = `portfolio-${BUILD_TAG}`;
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
+  '/manifest.json',
   '/styles/shared.css',
   '/styles/polish.css',
   '/styles/dynamic.css',
+  '/styles/immersive-experience.css',
   '/styles/index.css',
-  '/manifest.json',
 ];
 
+// On install: pre-cache the stable, hash-busted shell assets.
+// We deliberately do NOT pre-cache the root HTML ('/') or '/index.html' here,
+// because the SW served those last deploy and trapped users in the broken
+// version. Caching them only after a successful network fetch below gives
+// us a soft stale-while-revalidate behaviour.
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
@@ -32,6 +39,26 @@ self.addEventListener('fetch', event => {
   // Let external requests (CDN, Supabase, HF) pass through uncached
   if (url.origin !== location.origin) return;
 
+  // Network-first for HTML navigations so users always see the latest deploy
+  // and we do NOT hand back a stale cached page (which is what trapped us
+  // in the broken v1 cache with duplicate scripts + fly.dev + mp4).
+  if (request.mode === 'navigate' || request.destination === 'document') {
+    event.respondWith(
+      fetch(request)
+        .then(res => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then(c => c.put(request, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(request).then(cached => cached || caches.match('/')))
+    );
+    return;
+  }
+
+  // Cache-first for static assets (JS, CSS, fonts) — they are content-hashed
+  // by Astro so safe to cache aggressively.
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached;

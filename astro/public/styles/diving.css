@@ -184,12 +184,14 @@
 
 /* ────────── 決策矩陣 ────────── */
 .matrix-wrap {
-    overflow-x: auto;
+    /* overflow-x: visible so `position: sticky` on thead can pin to viewport.
+       Below the mobile breakpoint we replace the table with a card-stack,
+       so we never need horizontal scroll here. */
+    overflow: visible;
     border: 1px solid var(--border);
     border-radius: 14px;
     background: var(--surface);
     margin-bottom: 20px;
-    -webkit-overflow-scrolling: touch;
 }
 
 .matrix {
@@ -202,16 +204,22 @@
 .matrix thead th {
     text-align: left;
     padding: 14px 12px;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(8, 6, 14, 0.92);
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
     color: var(--muted);
     font-weight: 600;
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     border-bottom: 1px solid var(--border);
+    /* Pin below the global site nav. `var(--nav-h, 64px)` matches Base.astro's nav. */
     position: sticky;
-    top: 0;
-    z-index: 1;
+    top: var(--nav-h, 64px);
+    z-index: 5;
+    /* Subtle drop shadow so the pinned header visually lifts off the rows
+       scrolling under it. */
+    box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.6);
 }
 
 .matrix tbody td {
@@ -414,59 +422,105 @@
     color: var(--text);
 }
 
-/* ────────── Wind rose ────────── */
-.wind-rose {
+/* ────────── Wind compass (SVG) ────────── */
+.compass-wrap {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 14px;
+    grid-template-columns: minmax(260px, 320px) 1fr;
+    gap: 28px;
+    align-items: start;
 }
 
-.wind-card {
-    padding: 22px 18px;
-    border-radius: 14px;
+.compass-svg {
+    width: 100%;
+    height: auto;
+    max-width: 320px;
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
+    transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.compass-svg:hover {
+    transform: rotate(-3deg) scale(1.02);
+}
+
+/* Subtle pulse on the green "entry direction" arrow so the eye lands on
+   the safe direction immediately. Respects prefers-reduced-motion. */
+@keyframes _compass-arrow-pulse {
+    0%, 100% { opacity: 1;   }
+    50%      { opacity: 0.45; }
+}
+.compass-arrow {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: _compass-arrow-pulse 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .compass-arrow { animation: none; }
+}
+
+.compass-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.compass-legend .legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
     background: var(--surface);
     border: 1px solid var(--border);
-    text-align: center;
-    transition: transform 0.15s ease;
+    border-radius: 12px;
+    transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
-.wind-card:hover { transform: translateY(-2px); }
-
-.wind-offshore { border-left: 4px solid var(--nogo); }
-.wind-onshore  { border-left: 4px solid var(--go); }
-.wind-cross    { border-left: 4px solid var(--caution); }
-
-.wind-arrow {
-    font-size: 2.6rem;
-    margin-bottom: 8px;
+.compass-legend .legend-item:hover {
+    transform: translateX(2px);
+    border-color: var(--border-hi);
 }
 
-.wind-label {
+.compass-legend .legend-swatch {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    border: 2px solid;
+    margin-top: 2px;
+}
+
+.compass-legend .legend-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.compass-legend .legend-title {
     font-weight: 700;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
+    color: var(--text);
+    margin-bottom: 4px;
 }
 
-.wind-en {
-    font-size: 0.78rem;
-    color: var(--muted);
-    font-family: 'JetBrains Mono', monospace;
-    margin-bottom: 10px;
-}
-
-.wind-effect {
-    font-size: 0.92rem;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.wind-offshore .wind-effect { color: var(--nogo); }
-.wind-onshore  .wind-effect { color: var(--go); }
-.wind-cross    .wind-effect { color: var(--caution); }
-
-.wind-ex {
-    font-size: 0.82rem;
+.compass-legend .legend-sub {
+    font-size: 0.84rem;
     color: var(--muted);
     line-height: 1.5;
+}
+
+.compass-note {
+    margin-top: 4px;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+    border-left: 3px solid var(--accent);
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.compass-note strong {
+    color: var(--text);
 }
 
 /* ────────── Sites ────────── */
@@ -693,17 +747,105 @@
         grid-template-columns: 1fr;
     }
 
+    /* Drop the table layout on small screens; reflow as a vertical card stack.
+       No more horizontal scroll, no more squished columns. */
     .matrix {
-        font-size: 0.82rem;
+        display: block;
+        min-width: 0;
+        font-size: 0.86rem;
     }
 
-    .matrix thead th,
+    .matrix thead {
+        display: none;
+    }
+
+    .matrix tbody {
+        display: block;
+    }
+
+    .matrix tbody tr {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 6px 12px;
+        padding: 16px 14px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .matrix tbody tr:last-child {
+        border-bottom: none;
+    }
+
     .matrix tbody td {
-        padding: 10px 8px;
+        display: block;
+        padding: 0;
+        border: none;
+    }
+
+    .col-icon {
+        grid-row: 1 / 4;
+        align-self: start;
+        width: auto;
+    }
+
+    .col-name {
+        width: auto;
+        margin-bottom: 4px;
+    }
+
+    .col-go::before,
+    .col-caution::before,
+    .col-nogo::before {
+        display: inline-block;
+        font-family: inherit;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        margin-right: 8px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        vertical-align: 1px;
+    }
+
+    .col-go::before {
+        content: '🟢 GO';
+        background: rgba(63, 185, 80, 0.12);
+        color: #3fb950;
+    }
+    .col-caution::before {
+        content: '🟡 CAUTION';
+        background: rgba(210, 153, 34, 0.12);
+        color: #d29922;
+    }
+    .col-nogo::before {
+        content: '🔴 NO-GO';
+        background: rgba(248, 81, 73, 0.12);
+        color: #f85149;
+    }
+
+    .col-go code,
+    .col-caution code,
+    .col-nogo code {
+        font-size: 0.86rem;
+        font-weight: 600;
     }
 
     .col-why {
-        font-size: 0.78rem;
+        grid-column: 1 / -1;
+        font-size: 0.82rem;
+        line-height: 1.55;
+        margin-top: 4px;
+        padding-top: 8px;
+        border-top: 1px dashed var(--border);
+    }
+
+    /* Compass: stack legend below SVG instead of beside it */
+    .compass-wrap {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .compass-svg {
+        max-width: 260px;
     }
 
     .quick-check {
@@ -723,7 +865,8 @@
     .dive-hero .hero-cta,
     .source-grid,
     .hero-tip,
-    .dive-foot {
+    .dive-foot,
+    .compass-wrap {
         display: none;
     }
 

@@ -211,7 +211,7 @@ const metrics: Metric[] = [
         </header>
 
         <!-- ─────── 決策矩陣 ─────── -->
-        <section class="section">
+        <section class="section reveal">
             <div class="section-head">
                 <span class="section-tag">決策矩陣</span>
                 <h2>GO / CAUTION / NO-GO 閾值</h2>
@@ -274,7 +274,7 @@ const metrics: Metric[] = [
         </section>
 
         <!-- ─────── 即時資料來源（直接外連 — 兩站 CSP frame-ancestors 擋 iframe） ─────── -->
-        <section class="section">
+        <section class="section reveal">
             <div class="section-head">
                 <span class="section-tag">即時資料來源</span>
                 <h2>Windguru + CWA 雙查</h2>
@@ -327,40 +327,157 @@ const metrics: Metric[] = [
         </section>
 
         <!-- ─────── 風向圖示 ─────── -->
-        <section class="section">
+        <section class="section reveal">
             <div class="section-head">
                 <span class="section-tag">風向關鍵</span>
                 <h2>龍洞潛點的風向判讀</h2>
                 <p>東北角最大宗的事故原因：離岸風把人往外海吹。口訣背起來。</p>
             </div>
 
-            <div class="wind-rose">
-                <div class="wind-card wind-offshore">
-                    <div class="wind-arrow">⬅</div>
-                    <div class="wind-label">離岸風</div>
-                    <div class="wind-en">Offshore</div>
-                    <div class="wind-effect">🚫 危險 · 推向大海</div>
-                    <div class="wind-ex">西風、西北風 → 龍洞口朝東，這就是離岸</div>
-                </div>
-                <div class="wind-card wind-onshore">
-                    <div class="wind-arrow">➡</div>
-                    <div class="wind-label">迎岸風</div>
-                    <div class="wind-en">Onshore</div>
-                    <div class="wind-effect">✅ 安全但浪較亂</div>
-                    <div class="wind-ex">東風、東北風 → 海面有白沫但不把人推走</div>
-                </div>
-                <div class="wind-card wind-cross">
-                    <div class="wind-arrow">⬆</div>
-                    <div class="wind-label">沿岸風</div>
-                    <div class="wind-en">Cross-shore</div>
-                    <div class="wind-effect">⚠️ 中等 · 沿岸漂移</div>
-                    <div class="wind-ex">南風、北風 → 沿岸漂，要規劃出水點</div>
+            <div class="compass-wrap">
+                <!--
+                  8-direction wind compass for 龍洞 (Longdong).
+                  Diver sits at the centre, dive site faces EAST.
+                  Wind blows FROM the labeled direction (meteorological convention).
+
+                  Coloured zones:
+                    🟢 E (onshore)  → safe, whitecaps but not pushed out to sea
+                    🟡 N / S / SE / SW (cross-shore) → drift along coast, plan exit
+                    🔴 W / NW / SW (offshore) → pushed out to sea, most dangerous
+                -->
+                <svg
+                    class="compass-svg"
+                    viewBox="-110 -110 220 220"
+                    xmlns="http://www.w3.org/2000/svg"
+                    role="img"
+                    aria-label="龍洞潛點 8 方位風向安全分級 compass"
+                >
+                    <defs>
+                        <clipPath id="compass-clip">
+                            <circle r="100" />
+                        </clipPath>
+                        <radialGradient id="compass-bg" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#1c2438" stop-opacity="0.95" />
+                            <stop offset="100%" stop-color="#0a0d14" stop-opacity="0.6" />
+                        </radialGradient>
+                    </defs>
+
+                    <!-- Background disc -->
+                    <circle r="100" fill="url(#compass-bg)" />
+
+                    <!-- Coloured safety sectors (8 wedges, 45° each, starting from N going clockwise) -->
+                    <g clip-path="url(#compass-clip)">
+                        <path d="M 0 0 L 38.3 -92.4 L 92.4 -38.3 Z" fill="rgba(210,153,34,0.22)" />  <!-- N   cross-shore -->
+                        <path d="M 0 0 L 92.4 -38.3 L 92.4 38.3 Z"   fill="rgba(63,185,80,0.18)" />   <!-- NE  onshore-ish -->
+                        <path d="M 0 0 L 92.4 38.3 L 38.3 92.4 Z"   fill="rgba(63,185,80,0.32)" />   <!-- E   SAFEST -->
+                        <path d="M 0 0 L 38.3 92.4 L -38.3 92.4 Z"  fill="rgba(210,153,34,0.22)" />  <!-- SE  cross-shore -->
+                        <path d="M 0 0 L -38.3 92.4 L -92.4 38.3 Z" fill="rgba(210,153,34,0.22)" />  <!-- S   cross-shore -->
+                        <path d="M 0 0 L -92.4 38.3 L -92.4 -38.3 Z" fill="rgba(248,81,73,0.18)" /> <!-- SW  offshore-ish -->
+                        <path d="M 0 0 L -92.4 -38.3 L -38.3 -92.4 Z" fill="rgba(248,81,73,0.32)" /><!-- W   MOST DANGEROUS -->
+                        <path d="M 0 0 L -38.3 -92.4 L 38.3 -92.4 Z" fill="rgba(248,81,73,0.18)" />  <!-- NW  offshore-ish -->
+                    </g>
+
+                    <!-- Outer ring + inner ring -->
+                    <circle r="100" fill="none" stroke="rgba(120,180,255,0.4)" stroke-width="1" />
+                    <circle r="86"  fill="none" stroke="rgba(120,180,255,0.18)" stroke-width="1" />
+
+                    <!-- Cardinal spokes -->
+                    <g stroke="rgba(120,180,255,0.35)" stroke-width="1.2" stroke-linecap="round">
+                        <line x1="0" y1="-100" x2="0" y2="100" />
+                        <line x1="-100" y1="0" x2="100" y2="0" />
+                    </g>
+                    <!-- Intercardinal spokes (thinner) -->
+                    <g stroke="rgba(120,180,255,0.18)" stroke-width="0.8" stroke-linecap="round">
+                        <line x1="-70.7" y1="-70.7" x2="70.7" y2="70.7" />
+                        <line x1="-70.7" y1="70.7" x2="70.7" y2="-70.7" />
+                    </g>
+
+                    <!-- Compass labels (cardinal, larger) -->
+                    <g font-family="'JetBrains Mono', monospace" font-weight="700" text-anchor="middle">
+                        <text x="0"    y="-105" font-size="16" fill="#e6edf3">N</text>
+                        <text x="105"  y="0"    font-size="16" fill="#3fb950" dominant-baseline="middle">E</text>
+                        <text x="0"    y="115"  font-size="16" fill="#e6edf3" dominant-baseline="middle">S</text>
+                        <text x="-105" y="0"    font-size="16" fill="#f85149" dominant-baseline="middle">W</text>
+                    </g>
+
+                    <!-- Intercardinal labels (smaller, muted) -->
+                    <g font-family="'JetBrains Mono', monospace" font-size="9" fill="#8b949e" text-anchor="middle">
+                        <text x="74"  y="-71" dominant-baseline="middle">NE</text>
+                        <text x="74"  y="71"  dominant-baseline="middle">SE</text>
+                        <text x="-74" y="71"  dominant-baseline="middle">SW</text>
+                        <text x="-74" y="-71" dominant-baseline="middle">NW</text>
+                    </g>
+
+                    <!-- East-pointing dive arrow (where the entry faces) -->
+                    <g class="compass-arrow">
+                        <path
+                            d="M 18 0 L 86 0 M 86 0 L 76 -7 M 86 0 L 76 7"
+                            stroke="#3fb950"
+                            stroke-width="2.4"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            fill="none"
+                        />
+                        <text x="52" y="-9" text-anchor="middle" font-size="9" fill="#3fb950" font-weight="700">
+                            入水方向 →
+                        </text>
+                    </g>
+
+                    <!-- Centre: dive site icon + label -->
+                    <g>
+                        <circle r="14" fill="rgba(88,215,255,0.18)" stroke="rgba(88,215,255,0.5)" stroke-width="1" />
+                        <text x="0" y="-1" text-anchor="middle" font-size="14">🤿</text>
+                        <text x="0" y="14" text-anchor="middle" font-size="7" fill="#58d7ff" font-weight="600" letter-spacing="0.05em">
+                            龍洞口
+                        </text>
+                    </g>
+
+                    <!-- Minor tick marks every 22.5° -->
+                    <g stroke="rgba(120,180,255,0.5)" stroke-width="1">
+                        <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(22.5)" />
+                        <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(67.5)" />
+                        <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(112.5)" />
+                        <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(157.5)" />
+                        <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(202.5)" />
+                        <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(247.5)" />
+                        <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(292.5)" />
+                        <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(337.5)" />
+                    </g>
+                </svg>
+
+                <!-- Side legend (HTML for crisp typography + responsive wrap) -->
+                <div class="compass-legend">
+                    <div class="legend-item safe">
+                        <div class="legend-swatch" style="background:rgba(63,185,80,0.32);border-color:#3fb950"></div>
+                        <div class="legend-body">
+                            <div class="legend-title">🟢 迎岸風 Onshore</div>
+                            <div class="legend-sub">東風、東南東風 → 海面有白沫但不把人推走，最安全的潛水風</div>
+                        </div>
+                    </div>
+                    <div class="legend-item caution">
+                        <div class="legend-swatch" style="background:rgba(210,153,34,0.32);border-color:#d29922"></div>
+                        <div class="legend-body">
+                            <div class="legend-title">🟡 沿岸風 Cross-shore</div>
+                            <div class="legend-sub">南、北、東北、東南 → 沿岸漂移，要先規劃出水點</div>
+                        </div>
+                    </div>
+                    <div class="legend-item danger">
+                        <div class="legend-swatch" style="background:rgba(248,81,73,0.32);border-color:#f85149"></div>
+                        <div class="legend-body">
+                            <div class="legend-title">🔴 離岸風 Offshore</div>
+                            <div class="legend-sub">西、西北、西南風 → 推向外海，東北角溺水主因，請改期</div>
+                        </div>
+                    </div>
+                    <div class="compass-note">
+                        💡 <strong>口訣：</strong> 龍洞口朝東 → 看 Windguru 的風向箭頭，
+                        「箭頭從哪個方向吹過來」就是哪邊的風。吹西風就是吹你出海。
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- ─────── 潛點速查 ─────── -->
-        <section class="section">
+        <section class="section reveal">
             <div class="section-head">
                 <span class="section-tag">潛點速查</span>
                 <h2>東北角六個主要潛點</h2>
@@ -386,7 +503,7 @@ const metrics: Metric[] = [
         </section>
 
         <!-- ─────── 東北季風 vs 西南季風 ─────── -->
-        <section class="section">
+        <section class="section reveal">
             <div class="section-head">
                 <span class="section-tag">季節特性</span>
                 <h2>東北季風 vs 西南季風</h2>
@@ -418,7 +535,7 @@ const metrics: Metric[] = [
         </section>
 
         <!-- ─────── 裝備清單 ─────── -->
-        <section class="section">
+        <section class="section reveal">
             <div class="section-head">
                 <span class="section-tag">出門前</span>
                 <h2>東北角岸潛裝備 checklist</h2>
@@ -463,7 +580,7 @@ const metrics: Metric[] = [
         </section>
 
         <!-- ─────── 10 秒快速決策 ─────── -->
-        <section class="section">
+        <section class="section reveal">
             <div class="quick-check">
                 <div class="qc-tag">10 秒快速決策</div>
                 <h2>現在能不能下水？</h2>
