@@ -172,7 +172,8 @@ const metrics: Metric[] = [
     description={PAGE_DESC}
     ogTag={OG_TAG}
     bodyPage="diving"
-    pageStyles={["/styles/diving.css"]}
+    pageStyles={["/styles/diving.css", "/styles/diving-charts.css"]}
+    pageScripts={["/scripts/cwa-loader.js", "/scripts/diving-charts.js"]}
 >
     <div data-site-nav></div>
 
@@ -272,6 +273,72 @@ const metrics: Metric[] = [
                 </div>
             </div>
         </section>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             🤿 動態視覺化區塊(從 CWA 龍洞浮標 46694A 即時拉資料)
+             ════════════════════════════════════════════════════════════════ -->
+
+        <!-- ── 1. 即時指標儀表板 ── -->
+        <section class="section reveal dive-anim">
+            <div class="section-head">
+                <span class="section-tag">即時儀表板</span>
+                <h2>現在的潛水條件 — 一眼看完</h2>
+                <p>8 個指標即時判讀,綠黃紅三色直覺分級。資料來自 CWA 龍洞資料浮標 46694A。</p>
+            </div>
+            <div id="dive-dashboard">
+                <!-- JS 會注入:載入中 → 8 張儀表卡 -->
+            </div>
+
+            <div class="dash-summary" id="dive-dash-summary">
+                <!-- JS 會在這裡算出總體 GO/CAUTION/NO-GO -->
+            </div>
+
+            <p class="dash-foot">
+                💡 <strong>怎麼讀：</strong>每一張卡有 🟢🟡🔴 三段色帶,白色指針指到哪一段就是目前的等級。
+                任一指標 🔴 就改期;有 🟡 就看潛點經驗評估。
+                <strong>≈</strong> 標記代表該浮標無此觀測項,以相關指標推算;⚪ N/A 代表該浮標無對應設備。
+            </p>
+
+            <div id="dive-cwa-stamp" class="cwa-stamp"></div>
+        </section>
+
+        <!-- ── 2. 互動風向羅盤(取代/補充現有靜態 compass) ── -->
+        <section class="section reveal dive-anim">
+            <div class="section-head">
+                <span class="section-tag">風向關鍵</span>
+                <h2>龍洞潛點的風向判讀 — 互動版</h2>
+                <p>拖動圓盤上的箭頭(或點圓盤任一點)改變風向,看安全等級即時變化。</p>
+            </div>
+            <div id="dive-compass-interactive"></div>
+        </section>
+
+        <!-- ── 3. 24h 時序圖 ── -->
+        <section class="section reveal dive-anim">
+            <div class="section-head">
+                <span class="section-tag">24 小時預覽</span>
+                <h2>未來一天浪、風、流趨勢</h2>
+                <p>三條折線圖讓你挑最佳下水時段。紅色虛線 = 現在,紅色橫線 = NO-GO 警戒。</p>
+            </div>
+            <div id="dive-timeline"></div>
+        </section>
+
+        <!-- ── 4. 季節雷達圖 ── -->
+        <section class="section reveal dive-anim">
+            <div class="section-head">
+                <span class="section-tag">季節特性</span>
+                <h2>冬 vs 夏 — 六維比較雷達圖</h2>
+                <p>視覺化看東北季風期與西南季風期的差異。藍色 = 冬天、綠色 = 夏天。</p>
+            </div>
+            <div id="dive-season-radar"></div>
+            <div class="radar-tip">
+                <strong>怎麼讀：</strong>形狀越大 = 條件越好(注意「浪平」「風弱」「流弱」這些「負向指標」越大代表越好)。
+                夏天幾乎包住冬天 — 東北角夏天潛水勝過冬天是常識,但雷達圖讓你看到差多大。
+            </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             END 動態視覺化區塊
+             ════════════════════════════════════════════════════════════════ -->
 
         <!-- ─────── 即時資料來源（直接外連 — 兩站 CSP frame-ancestors 擋 iframe） ─────── -->
         <section class="section reveal">
