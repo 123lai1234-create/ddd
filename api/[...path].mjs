@@ -100,6 +100,6 @@ export default async function handler(req, res) {
 }
 
 export const config = {
-  runtime: "nodejs20.x",
+  runtime: "nodejs20.x@1.0.0",
   maxDuration: 60,
 };
