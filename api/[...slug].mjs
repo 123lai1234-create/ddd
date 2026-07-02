@@ -1,7 +1,12 @@
-// api/[...path].mjs — Vercel Serverless Function wrapping the bundled
-// Express app. We use the (req, res) signature Vercel uses to identify
-// Node.js functions. (A `(request)` signature would mark this as an Edge
-// function, which cannot use `node:http` / `node:stream`.)
+// api/[...slug].mjs — Vercel Serverless Function (catch-all).
+// The `[...slug]` filename is the Vercel convention for multi-segment
+// catch-all routes. Previously we used `[...path]` which Vercel
+// appears to interpret as a single-segment catch-all (matches /api/foo
+// but not /api/foo/bar).
+//
+// We boot a tiny in-process HTTP server, route the Node IncomingMessage
+// through it (so Express gets a real ServerResponse), capture the
+// response, and stream it back into res.
 
 import { createServer, request as httpRequest } from "node:http";
 
@@ -14,17 +19,10 @@ async function getApp() {
 }
 
 export default async function handler(req, res) {
-  // Translate the Vercel IncomingMessage into a request our in-process
-  // express server can handle. The simplest reliable way: spin up a tiny
-  // HTTP server, fire one request at it through http.request, capture the
-  // response, and stream it back into res.
-
   const app = await getApp();
   const url = new URL(req.url, "http://localhost");
   const path = url.pathname + url.search;
 
-  // Express expects (req, res) with a streaming body. Vercel's IncomingMessage
-  // is itself a Readable, so we can pass it through directly.
   await new Promise((resolve) => {
     const server = createServer(app);
     let settled = false;
@@ -49,7 +47,7 @@ export default async function handler(req, res) {
       const port = server.address().port;
       const headers = { ...req.headers };
       delete headers.host;
-      delete headers["content-length"]; // http.request sets it for us
+      delete headers["content-length"];
       const proxyReq = httpRequest({
         hostname: "127.0.0.1",
         port,
@@ -83,7 +81,6 @@ export default async function handler(req, res) {
           settle();
         });
       });
-      // Stream the incoming body through to the inner request.
       req.pipe(proxyReq);
       req.on("error", (e) => {
         console.error("[api] req error:", e?.message);
@@ -99,10 +96,8 @@ export default async function handler(req, res) {
   });
 }
 
-// Vercel CLI 54 rejects explicit runtime strings in this project's
-// vercel.json (the 'functions must have at least one property' check is
-// tied to a runtime version mismatch). The .mjs extension is enough for
-// Vercel to auto-pick nodejs20.x as the runtime. Keep maxDuration only.
+// maxDuration only — let Vercel auto-pick the runtime from the .mjs
+// extension (nodejs20.x on this project's pinned version).
 export const config = {
   maxDuration: 60,
 };
