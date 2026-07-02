@@ -20,25 +20,21 @@ async function getApp() {
 
 export default async function handler(req, res) {
   const app = await getApp();
-  // Vercel rewrites from /api/<path> to /api, with the original path
-  // delivered two ways:
-  //  - `p` query string (set explicitly in vercel.json: destination "/api?p=:path*")
-  //  - `x-vercel-original-path` / `x-original-url` headers (Vercel fallback)
-  // Prefer the explicit query param so the rewrite is self-documenting.
+  // The Vercel build emits this config.json route (see api-server-src/README):
+  //   "^/api(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$"  -> "/api?p=$1&path=$1"
+  // So req.url is something like "/api?p=healthz&path=healthz" for a
+  // request to /api/healthz. The wrapper reconstructs the full path by
+  // prepending "/api" to the p query param.
   const url = new URL(req.url, "http://localhost");
-  const originalPath = url.searchParams.get("p")
-    ? `/${url.searchParams.get("p")}${url.searchParams.toString().includes("=") ? "?" + url.searchParams.toString().split("&").filter(s => s.startsWith("p=") === false).join("&") : ""}`
-    : (req.headers["x-vercel-original-path"] || req.headers["x-original-url"] || req.url);
-  // Rebuild the URL preserving the original query string (drop the
-  // injected `p` param so it doesn't leak into backend route handlers).
-  const originalQs = req.headers["x-vercel-original-path"] || req.headers["x-original-url"]
-    ? new URL(originalPath, "http://localhost").search
-    : "";
-  const finalUrl = new URL(originalPath, "http://localhost");
-  if (originalQs) finalUrl.search = originalQs;
-  // Strip the injected `p` param if present.
-  finalUrl.searchParams.delete("p");
-  const path = finalUrl.pathname + finalUrl.search;
+  const p = url.searchParams.get("p");
+  const reconstructed = p ? `/api/${p}` : "/api";
+  // Preserve any other query params (e.g. ?days=5&strategy=...) but
+  // drop the routing p/path placeholders.
+  const preserved = new URLSearchParams(url.searchParams);
+  preserved.delete("p");
+  preserved.delete("path");
+  const qs = preserved.toString();
+  const path = reconstructed + (qs ? `?${qs}` : "");
 
   await new Promise((resolve) => {
     const server = createServer(app);
