@@ -8,7 +8,7 @@ import { createServer, request as httpRequest } from "node:http";
 let _appPromise = null;
 async function getApp() {
   if (!_appPromise) {
-    _appPromise = import("./_backend.mjs").then((m) => m.default || m.app);
+    _appPromise = import("../_backend.mjs").then((m) => m.default || m.app);
   }
   return _appPromise;
 }
