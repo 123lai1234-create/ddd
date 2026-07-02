@@ -3,13 +3,5 @@
   "framework": null,
   "outputDirectory": "astro/dist",
   "buildCommand": "cd astro && npm install --ignore-scripts && npm run build",
-  "installCommand": "cd astro && npm install --ignore-scripts",
-  "functions": {
-    "api/[...path].mjs": {
-      "maxDuration": 60
-    },
-    "api/lyrics.jsx": {},
-    "api/og.jsx": {},
-    "api/line/*.js": {}
-  }
+  "installCommand": "cd astro && npm install --ignore-scripts"
 }
