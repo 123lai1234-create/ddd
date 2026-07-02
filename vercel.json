@@ -6,17 +6,10 @@
   "installCommand": "cd astro && npm install --ignore-scripts",
   "functions": {
     "api/[...path].mjs": {
-      "runtime": "nodejs20.x@1.0.0",
       "maxDuration": 60
     },
-    "api/lyrics.jsx": {
-      "runtime": "edge"
-    },
-    "api/og.jsx": {
-      "runtime": "edge"
-    },
-    "api/line/*.js": {
-      "runtime": "nodejs20.x"
-    }
+    "api/lyrics.jsx": {},
+    "api/og.jsx": {},
+    "api/line/*.js": {}
   }
 }
