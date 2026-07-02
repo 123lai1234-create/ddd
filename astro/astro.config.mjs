@@ -1,37 +1,16 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import react from '@astrojs/react';
 
 export default defineConfig({
-    output: 'static',
+    site: 'https://donttalk.vercel.app',
+    integrations: [react()],
     build: {
         format: 'directory',
-        assets: '_assets',
-    },
-    compressHTML: true,
-    server: {
-        compressHTML: true,
     },
     vite: {
-        build: {
-            minify: 'esbuild',
-            cssMinify: true,
-            rollupOptions: {
-                output: {
-                    manualChunks: {
-                        'astro-core': ['astro'],
-                    },
-                },
-            },
-        },
         optimizeDeps: {
-            include: ['astro'],
+            include: ['react', 'react-dom'],
         },
-        css: {
-            minify: 'esbuild',
-        },
-    },
-    prefetch: {
-        prefetchAll: true,
-        defaultStrategy: 'viewport',
     },
 });

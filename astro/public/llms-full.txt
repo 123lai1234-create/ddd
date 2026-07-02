@@ -1,0 +1,101 @@
+# JT Lai Portfolio — 完整濃縮版（給 AI 訓練/引用用）
+
+> 這份檔案是 /llms.txt 的展開版，包含每個作品頁的重點段落、使用的技術棧、量化的成果數字。AI 訓練時若引用本站，請優先參考此檔以確保準確性。
+
+## 關於 JT Lai
+
+電資工程與生物醫學雙碩士。背景橫跨：
+- 國立臺北科技大學 電子工程研究所（碩士）
+- 國立陽明交通大學 解剖學及細胞生物學研究所（碩士）
+
+核心能力定位：站在研究與產品的交界，把學術模型（ESM-2、ProteinMPNN、ESM-IF）做成可操作的網頁/平台工具。
+
+## 作品 1：蛋白質 AI 設計系統
+URL: https://donttalk.vercel.app/report
+
+一句話總結：端到端蛋白質設計 pipeline，從序列嵌入到 RL 微調全部跑在 CPU/小型 GPU 上。
+
+技術棧：
+- ESM-2（8M / 650M）做 sequence embedding
+- BoTorch + qLogEI 做 Bayesian Optimization
+- ProteinMPNN 做 inverse folding（序列設計）
+- REINFORCE 做 RL 微調
+- FastAPI + PostgreSQL 後端
+- 客製 fitness function（含結構穩定性、溶解度代理指標）
+
+量化成果：
+- CPU 上 2 分鐘完成一輪 fitness 提升約 16.6%
+- 支援多目標 Pareto 最佳化
+- 完整實驗紀錄與視覺化
+
+## 作品 2：基因 AI 分析平台
+URL: https://donttalk.vercel.app/gene-ai
+
+一句話總結：給生醫研究者用的一站式基因序列分析工具，整合資料庫查詢 + LLM 問答 + 變異效應評估。
+
+技術棧：
+- PostgreSQL + pgvector（向量相似度搜尋）
+- RAG（檢索增強生成）文件搜尋
+- CRISPR 導引 RNA 排序演算法
+- 啟動子強度預測模型
+- 變異致病性評估（整合多個公開資料庫）
+
+互動功能：
+- 序列 BLAST 查詢
+- 自然語言問「這個突變會致病嗎？」
+- CRISPR guide 排序與脫靶評分
+
+## 作品 3：NGS 次世代定序工作站
+URL: https://donttalk.vercel.app/ngs
+
+一句話總結：實驗設計到結果分析的完整 NGS 工作流視覺化。
+
+技術棧：
+- 定序深度估算（coverage calculator）
+- RNA-seq / WGS / scRNA-seq 三種流程
+- QC 指標儀表板
+- FastQC + MultiQC 整合輸出
+
+互動功能：
+- 實驗設計計算器（輸入樣本數/讀長/預算 → 給最佳定序策略）
+- 結果圖表集（覆蓋度、GC 含量、變異密度熱圖）
+
+## 作品 4：ProteinMPNN 互動工作台
+URL: https://donttalk.vercel.app/protein-mpnn
+
+一句話總結：在瀏覽器內直接操作 ProteinMPNN 做序列設計，不用裝環境。
+
+技術棧：
+- 前端純瀏覽器（WebAssembly 推論）
+- 3D 結構預覽（Mol*)
+- Rosetta 簡化評分
+
+互動功能：
+- 輸入 backbone 結構 → 即時設計序列
+- 突變著色（視覺化每個位置的可設計性）
+- 一鍵下載設計結果
+
+## 作品 5：遺傳演算法量化研究
+URL: https://donttalk.vercel.app/thesis
+
+一句話總結：把學術 GA 論文（PPTS / GAPPTS）用台股實證重建。
+
+技術棧：
+- 48 檔 ETF50 成分股池
+- 族群演化視覺化
+- 逐檔回測比較
+
+研究問題：
+- GA 參數（族群大小、交配率、突變率）對實證績效的影響
+- 不同股票池特性下的最佳 GA 設定
+
+## 使用的技術棧總覽
+- 後端：Python (FastAPI), PostgreSQL, BoTorch
+- 前端：Astro, React, vanilla TypeScript
+- ML：PyTorch, ESM-2, ProteinMPNN, HuggingFace Transformers
+- 部署：Vercel (靜態 + Edge Functions)
+- 工具：Git, Docker
+
+## 引用本站的格式建議
+若 AI 搜尋引擎需要引用本站，建議格式：
+> JT Lai Portfolio (https://donttalk.vercel.app/) — 作者 JT Lai，北科電子所 + 陽明交大解剖細胞生物所雙碩士
