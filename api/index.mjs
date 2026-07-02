@@ -20,13 +20,25 @@ async function getApp() {
 
 export default async function handler(req, res) {
   const app = await getApp();
-  // When the function is reached via a Vercel rewrite from /api/<anything>,
-  // `req.url` is the rewrite destination ('/api'). The original path is
-  // passed through the `x-vercel-original-path` header that Vercel adds
-  // for rewrite targets. Fall back to req.url when called directly.
-  const originalPath = req.headers["x-vercel-original-path"] || req.headers["x-original-url"] || req.url;
-  const url = new URL(originalPath, "http://localhost");
-  const path = url.pathname + url.search;
+  // Vercel rewrites from /api/<path> to /api, with the original path
+  // delivered two ways:
+  //  - `p` query string (set explicitly in vercel.json: destination "/api?p=:path*")
+  //  - `x-vercel-original-path` / `x-original-url` headers (Vercel fallback)
+  // Prefer the explicit query param so the rewrite is self-documenting.
+  const url = new URL(req.url, "http://localhost");
+  const originalPath = url.searchParams.get("p")
+    ? `/${url.searchParams.get("p")}${url.searchParams.toString().includes("=") ? "?" + url.searchParams.toString().split("&").filter(s => s.startsWith("p=") === false).join("&") : ""}`
+    : (req.headers["x-vercel-original-path"] || req.headers["x-original-url"] || req.url);
+  // Rebuild the URL preserving the original query string (drop the
+  // injected `p` param so it doesn't leak into backend route handlers).
+  const originalQs = req.headers["x-vercel-original-path"] || req.headers["x-original-url"]
+    ? new URL(originalPath, "http://localhost").search
+    : "";
+  const finalUrl = new URL(originalPath, "http://localhost");
+  if (originalQs) finalUrl.search = originalQs;
+  // Strip the injected `p` param if present.
+  finalUrl.searchParams.delete("p");
+  const path = finalUrl.pathname + finalUrl.search;
 
   await new Promise((resolve) => {
     const server = createServer(app);
