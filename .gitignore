@@ -1,7 +1,8 @@
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
 # compiled output
-# dist  -- tracked for Vercel static deploy (2026-06-12, keep tracked)
+# dist/  -- NOT tracked; Vercel runs `npm run build` itself on git auto-deploy
+# (tracked dist interacted badly with Hobby-plan auto-deploy 2026-07-02)
 tmp
 out-tsc
 *.tsbuildinfo
@@ -47,6 +48,7 @@ artifacts/pip_install.log
 astro/__extract_bodies.py
 astro/_nav.json
 astro/.netlify/
+/astro/dist/
 
 # Astro lyrics-alignment experiments (scratch)
 astro/scripts/_align_*.txt

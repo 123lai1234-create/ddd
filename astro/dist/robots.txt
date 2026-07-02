@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /ingest.html
-Disallow: /report.html
-
-Sitemap: https://donttalk.vercel.app/sitemap.xml
