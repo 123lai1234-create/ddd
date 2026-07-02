@@ -6,6 +6,7 @@ import Base from '../layouts/Base.astro';
     description="電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。"
     ogTag="Portfolio"
     bodyPage="index"
+    schemaType="ProfilePage"
     pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css"]}
     pageScripts={["/scripts/app-config.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js"]}
 >
@@ -17,8 +18,12 @@ import Base from '../layouts/Base.astro';
             <div class="hero-badge"><span class="live-dot"></span>2026 · 開放洽談機會</div>
             <h1 class="hero-name" style="display:none">Portfolio</h1>
             <p class="hero-role" style="display:none">工程師 · 生醫研究者 · AI 平台設計</p>
-            <p class="hero-bio">
+            <!-- AEO direct answer: 1-2 sentence summary AI Overviews/Perplexity pick up first. -->
+            <p class="hero-bio" data-aeo-summary="true">
                 電資工程與生物醫學雙碩士，把蛋白質語言模型、基因分析工具與互動介面整合成可操作的研究平台。站在研究與產品的交界，做有真實意義的跨域系統。
+            </p>
+            <p class="hero-bio aeo-facts" style="font-size:.82rem;opacity:.7;margin-top:.5rem">
+                專長：ESM-2 / ProteinMPNN / Bayesian Optimization / REINFORCE / NGS / FastAPI / Astro。碩士：北科電子所 + 陽明交大解剖細胞生物所。
             </p>
             <div class="hero-links">
                 <a href="/about" class="btn btn-primary">認識我</a>
@@ -321,23 +326,24 @@ FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場�
             addMsg('user', text);
             history.push({ role: 'user', content: text });
             setBusy(true);
+            // SECURITY: 前端不能直連 Anthropic API（會洩漏 key / 401）。
+            // 改走站內 /api/chat proxy；proxy 失敗就誠實顯示，不要再嘗試直連外部 API。
             try {
-                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                const res = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        model: 'claude-sonnet-4-20250514',
-                        max_tokens: 1000,
                         system: SYSTEM,
-                        messages: history.slice(-10)
-                    })
+                        messages: history.slice(-10),
+                    }),
                 });
+                if (!res.ok) throw new Error(`proxy ${res.status}`);
                 const data = await res.json();
-                const reply = data.content?.[0]?.text ?? '抱歉，暫時無法回應。';
+                const reply = data.reply ?? data.content?.[0]?.text ?? '抱歉，暫時無法回應。';
                 history.push({ role: 'assistant', content: reply });
                 addMsg('bot', reply);
             } catch {
-                addMsg('bot', '⚠️ 連線失敗，請稍後再試。');
+                addMsg('bot', '⚠️ 聊天助理暫停服務，請稍後再試或直接到 [關於我] 頁面看聯絡方式。');
             } finally {
                 setBusy(false);
             }

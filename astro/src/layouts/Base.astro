@@ -13,6 +13,10 @@ interface Props {
     pageStyles?: string[];
     pageScripts?: string[];
     headInline?: string;
+    /** Override page type for Schema.org (defaults to 'WebPage'). Use 'ProfilePage' for /, 'Article' for blog posts. */
+    schemaType?: string;
+    /** Disable the global Person+WebSite JSON-LD (e.g. for legal pages that shouldn't assert identity). */
+    noPersonSchema?: boolean;
 }
 
 const {
@@ -24,10 +28,69 @@ const {
     pageStyles = [],
     pageScripts = [],
     headInline = '',
+    schemaType = 'WebPage',
+    noPersonSchema = false,
 } = Astro.props;
 
 const ogImageUrl = ogImage
     ?? `${SITE}/og?t=${encodeURIComponent(title)}&s=${encodeURIComponent(description || 'JT Lai 作品集')}&tag=${encodeURIComponent(ogTag)}`;
+
+// Canonical: strip query strings & hash, force trailing-slash consistency via Astro.site.
+const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? SITE).toString();
+
+// Person + WebSite JSON-LD (site-wide identity graph for AI crawlers).
+const personSchema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+        {
+            '@type': 'Person',
+            '@id': `${SITE}#person`,
+            name: 'JT Lai',
+            url: SITE,
+            image: `${SITE}/og-default.png`,
+            sameAs: [
+                'https://github.com/123lai1234-create',
+                'https://huggingface.co/Donttalk123',
+            ],
+            jobTitle: '全端工程師 / 生醫研究者',
+            description: '電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。',
+            knowsAbout: [
+                'Protein Language Model', 'ESM-2', 'ProteinMPNN',
+                'Bayesian Optimization', 'BoTorch', 'REINFORCE',
+                'NGS Analysis', 'RNA-seq', 'WGS', 'scRNA-seq',
+                'FastAPI', 'Astro', 'PostgreSQL', 'Python', 'TypeScript',
+            ],
+            alumniOf: [
+                { '@type': 'EducationalOrganization', name: '國立臺北科技大學 電子工程研究所' },
+                { '@type': 'EducationalOrganization', name: '國立陽明交通大學 解剖學及細胞生物學研究所' },
+            ],
+        },
+        {
+            '@type': 'WebSite',
+            '@id': `${SITE}#website`,
+            url: SITE,
+            name: 'JT Lai Portfolio',
+            inLanguage: 'zh-TW',
+            author: { '@id': `${SITE}#person` },
+            potentialAction: {
+                '@type': 'SearchAction',
+                target: `${SITE}/?q={search_term_string}`,
+                'query-input': 'required name=search_term_string',
+            },
+        },
+        {
+            '@type': 'WebPage',
+            '@id': `${canonicalURL}#webpage`,
+            url: canonicalURL,
+            name: title,
+            description: description,
+            inLanguage: 'zh-TW',
+            isPartOf: { '@id': `${SITE}#website` },
+            about: { '@id': `${SITE}#person` },
+            additionalType: schemaType,
+        },
+    ],
+};
 ---
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -42,7 +105,18 @@ const ogImageUrl = ogImage
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta property="og:image" content={ogImageUrl} />
-    <meta name="twitter:image" content={ogImageUrl} />
+        <meta name="twitter:image" content={ogImageUrl} />
+        <meta property="og:url" content={canonicalURL} />
+        <meta property="og:site_name" content="JT Lai Portfolio" />
+        <meta property="og:locale" content="zh_TW" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
+        <link rel="canonical" href={canonicalURL} />
+        <link rel="alternate" hreflang="zh-TW" href={canonicalURL} />
+        <link rel="alternate" hreflang="x-default" href={canonicalURL} />
+        <meta name="author" content="JT Lai" />
+            <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+            <meta name="googlebot" content="index, follow" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#08060e" />
@@ -78,6 +152,13 @@ const ogImageUrl = ogImage
     <script is:inline src="/scripts/dynamic-features.js" defer></script>
     <script is:inline src="/scripts/immersive.js" defer></script>
     <Fragment set:html={headInline} />
+    {!noPersonSchema && (
+        <script
+            type="application/ld+json"
+            set:html={JSON.stringify(personSchema)}
+            is:inline
+        />
+    )}
 </head>
 <body data-page={bodyPage}>
     <ImmersiveBackground />
