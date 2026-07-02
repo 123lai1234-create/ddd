@@ -23,14 +23,47 @@
     const defaultApiCandidates = [
         'https://donttalk-api-production.up.railway.app',
     ];
+
+    // ── Stale-cache scrub ────────────────────────────────────────────────────
+    // Older versions of this file (and the v1 service-worker-served pages)
+    // stored `fly.dev` candidates in `window.APP_CONFIG.API_CANDIDATES` and
+    // / or in the SW HTTP cache. When a stale HTML payload set
+    // `window.APP_CONFIG.API_CANDIDATES` from a previous session, this run
+    // would inherit those dead hosts and the resolve loop would burn timeouts
+    // on every page. Bumping APP_CONFIG_VERSION forces a one-time reset.
+    const APP_CONFIG_VERSION = 3;
+    const STORAGE_VERSION_KEY = '_app_config_version';
+    const STORAGE_API_BASE_KEY = '_app_config_api_base';
+    try {
+        const storedVersion = parseInt(localStorage.getItem(STORAGE_VERSION_KEY) || '0', 10);
+        if (storedVersion < APP_CONFIG_VERSION) {
+            localStorage.setItem(STORAGE_VERSION_KEY, String(APP_CONFIG_VERSION));
+            localStorage.removeItem(STORAGE_API_BASE_KEY);
+            // Force re-derivation from defaults even if a previous run cached
+            // candidates on `window.APP_CONFIG`.
+            if (window.APP_CONFIG) {
+                delete window.APP_CONFIG.API_CANDIDATES;
+                delete window.APP_CONFIG.API_BASE_URL;
+                delete window.APP_CONFIG.DEFAULT_API_BASE_URL;
+            }
+        }
+    } catch {
+        /* localStorage may be disabled — fall through to defaults. */
+    }
+
+    // Drop any dead hosts that older runs may have pushed into APP_CONFIG.
+    const DEAD_HOST_PATTERNS = ['fly.dev', 'onrender.com', 'herokuapp.com'];
+    const liveApiCandidatesFromExisting = normalizeList(existingConfig.API_CANDIDATES)
+        .filter(c => !DEAD_HOST_PATTERNS.some(dead => c.includes(dead)));
+
     const resolvedPortfolioServiceNames = normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES).length
         ? normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES)
         : defaultPortfolioServiceNames;
     const resolvedApiServiceNames = normalizeList(existingConfig.API_SERVICE_NAMES).length
         ? normalizeList(existingConfig.API_SERVICE_NAMES)
         : defaultApiServiceNames;
-    const resolvedApiCandidates = normalizeList(existingConfig.API_CANDIDATES).length
-        ? normalizeList(existingConfig.API_CANDIDATES)
+    const resolvedApiCandidates = liveApiCandidatesFromExisting.length
+        ? liveApiCandidatesFromExisting
         : defaultApiCandidates;
     const fallbackApiBase = ['localhost', '127.0.0.1'].includes(host)
         ? `http://${host}:8000`

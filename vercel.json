@@ -3,5 +3,20 @@
   "framework": null,
   "outputDirectory": "astro/dist",
   "buildCommand": "cd astro && npm install --ignore-scripts && npm run build",
-  "installCommand": "cd astro && npm install --ignore-scripts"
+  "installCommand": "cd astro && npm install --ignore-scripts",
+  "functions": {
+    "api/[...path].mjs": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    },
+    "api/lyrics.jsx": {
+      "runtime": "edge"
+    },
+    "api/og.jsx": {
+      "runtime": "edge"
+    },
+    "api/line/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  }
 }

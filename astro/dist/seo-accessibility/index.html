@@ -1,4 +1,40 @@
-<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><title></title><meta name="description" content="仙俠傳 - 經典回合制 RPG 遊戲，純瀏覽器遊玩。含 AI 敵人、動態難度、豐富劇情與精美特效。"><meta property="og:title" content><meta property="og:description" content="仙俠傳 - 經典回合制 RPG 遊戲，純瀏覽器遊玩。含 AI 敵人、動態難度、豐富劇情與精美特效。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og?t=&#38;s=%E4%BB%99%E4%BF%A0%E5%82%B3%20-%20%E7%B6%93%E5%85%B8%E5%9B%9E%E5%90%88%E5%88%B6%20RPG%20%E9%81%8A%E6%88%B2%EF%BC%8C%E7%B4%94%E7%80%8F%E8%A6%BD%E5%99%A8%E9%81%8A%E7%8E%A9%E3%80%82%E5%90%AB%20AI%20%E6%95%B5%E4%BA%BA%E3%80%81%E5%8B%95%E6%85%8B%E9%9B%A3%E5%BA%A6%E3%80%81%E8%B1%90%E5%AF%8C%E5%8A%87%E6%83%85%E8%88%87%E7%B2%BE%E7%BE%8E%E7%89%B9%E6%95%88%E3%80%82&#38;tag="><meta name="twitter:image" content="https://donttalk.vercel.app/og?t=&#38;s=%E4%BB%99%E4%BF%A0%E5%82%B3%20-%20%E7%B6%93%E5%85%B8%E5%9B%9E%E5%90%88%E5%88%B6%20RPG%20%E9%81%8A%E6%88%B2%EF%BC%8C%E7%B4%94%E7%80%8F%E8%A6%BD%E5%99%A8%E9%81%8A%E7%8E%A9%E3%80%82%E5%90%AB%20AI%20%E6%95%B5%E4%BA%BA%E3%80%81%E5%8B%95%E6%85%8B%E9%9B%A3%E5%BA%A6%E3%80%81%E8%B1%90%E5%AF%8C%E5%8A%87%E6%83%85%E8%88%87%E7%B2%BE%E7%BE%8E%E7%89%B9%E6%95%88%E3%80%82&#38;tag="><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><!--
+      Native IntersectionObserver fallback for `.reveal` fade-in.
+      Runs in addition to nav.js's local observer, so the page works
+      even if nav.js fails to load (network/CDN issue) — content stays
+      visible instead of getting stuck at opacity:0.
+    --><script>
+      (function() {
+        function bootReveal() {
+          var els = document.querySelectorAll('.reveal:not(.visible)');
+          if (!els.length) return;
+          if (typeof IntersectionObserver === 'undefined') {
+            els.forEach(function(el) { el.classList.add('visible'); });
+            return;
+          }
+          var io = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+              if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                io.unobserve(e.target);
+              }
+            });
+          }, { rootMargin: '0px 0px -8% 0px', threshold: 0.04 });
+          els.forEach(function(el) { io.observe(el); });
+          // Hard fallback: anything still hidden after 1.5s gets shown.
+          setTimeout(function() {
+            document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
+              el.classList.add('visible');
+            });
+          }, 1500);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bootReveal);
+        } else {
+          bootReveal();
+        }
+      })();
+    </script><title></title><meta name="description" content="仙俠傳 - 經典回合制 RPG 遊戲，純瀏覽器遊玩。含 AI 敵人、動態難度、豐富劇情與精美特效。"><meta property="og:title" content><meta property="og:description" content="仙俠傳 - 經典回合制 RPG 遊戲，純瀏覽器遊玩。含 AI 敵人、動態難度、豐富劇情與精美特效。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og?t=&#38;s=%E4%BB%99%E4%BF%A0%E5%82%B3%20-%20%E7%B6%93%E5%85%B8%E5%9B%9E%E5%90%88%E5%88%B6%20RPG%20%E9%81%8A%E6%88%B2%EF%BC%8C%E7%B4%94%E7%80%8F%E8%A6%BD%E5%99%A8%E9%81%8A%E7%8E%A9%E3%80%82%E5%90%AB%20AI%20%E6%95%B5%E4%BA%BA%E3%80%81%E5%8B%95%E6%85%8B%E9%9B%A3%E5%BA%A6%E3%80%81%E8%B1%90%E5%AF%8C%E5%8A%87%E6%83%85%E8%88%87%E7%B2%BE%E7%BE%8E%E7%89%B9%E6%95%88%E3%80%82&#38;tag="><meta name="twitter:image" content="https://donttalk.vercel.app/og?t=&#38;s=%E4%BB%99%E4%BF%A0%E5%82%B3%20-%20%E7%B6%93%E5%85%B8%E5%9B%9E%E5%90%88%E5%88%B6%20RPG%20%E9%81%8A%E6%88%B2%EF%BC%8C%E7%B4%94%E7%80%8F%E8%A6%BD%E5%99%A8%E9%81%8A%E7%8E%A9%E3%80%82%E5%90%AB%20AI%20%E6%95%B5%E4%BA%BA%E3%80%81%E5%8B%95%E6%85%8B%E9%9B%A3%E5%BA%A6%E3%80%81%E8%B1%90%E5%AF%8C%E5%8A%87%E6%83%85%E8%88%87%E7%B2%BE%E7%BE%8E%E7%89%B9%E6%95%88%E3%80%82&#38;tag="><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
       if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
     if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {

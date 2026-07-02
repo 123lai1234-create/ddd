@@ -99,10 +99,12 @@
         const addBtn = e.target.closest('.add-queue-btn');
         const repostBtn = e.target.closest('.repost-btn');
         const dlBtn = e.target.closest('.download-btn');
+        const mvBtn = e.target.closest('.mv-btn');
 
         if (dlBtn) { e.stopPropagation(); this.downloadTrack(parseInt(dlBtn.dataset.idx)); return; }
         if (repostBtn) { e.stopPropagation(); this.toggleRepost(parseInt(repostBtn.dataset.idx)); return; }
         if (addBtn) { e.stopPropagation(); this.addToQueue(parseInt(addBtn.dataset.idx)); return; }
+        if (mvBtn) { e.stopPropagation(); this.openMVModal(parseInt(mvBtn.dataset.idx)); return; }
         if (row) { const idx = parseInt(row.dataset.idx); this.queue = [idx]; this.queueIdx = 0; this.playTrack(idx); }
       });
 
@@ -304,6 +306,9 @@
           '<span class="track-album">' + (track.album || '--') + '</span>' +
           '<span class="track-duration">' + (track.duration || '--:--') + '</span>' +
           '<div class="track-actions">' +
+            '<button class="action-btn mv-btn" data-idx="' + i + '" title="觀看 MV">' +
+              '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>' +
+            '</button>' +
             '<button class="action-btn repost-btn ' + (isReposted ? 'reposted' : '') + '" data-idx="' + i + '" title="轉發">' +
               '<svg viewBox="0 0 24 24" fill="' + (isReposted ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>' +
             '</button>' +
@@ -644,6 +649,55 @@
 
     closePlayerModal() {
       document.getElementById('player-modal').classList.remove('open');
+    }
+
+    openMVModal(idx) {
+      const track = this.filteredTracks[idx] || this.tracks[idx];
+      if (!track || !track.mv) { this.showToast('這首歌沒有 MV'); return; }
+      let modal = document.getElementById('mv-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'mv-modal';
+        modal.className = 'mv-modal';
+        modal.innerHTML = '<div class="mv-modal-content"><button class="mv-modal-close" id="mv-modal-close" aria-label="關閉 MV">✕</button><video id="mv-video" controls autoplay playsinline preload="metadata"></video><div class="mv-modal-title" id="mv-modal-title"></div></div>';
+        document.body.appendChild(modal);
+        document.getElementById('mv-modal-close').addEventListener('click', () => this.closeMVModal());
+        modal.addEventListener('click', (e) => { if (e.target === modal) this.closeMVModal(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) this.closeMVModal(); });
+        const v = document.getElementById('mv-video');
+        v.addEventListener('error', () => this.showToast('MV 載入失敗，請稍後再試'));
+        v.addEventListener('loadedmetadata', () => { v._duration = v.duration; });
+      }
+      const video = document.getElementById('mv-video');
+      const src = track.mv.cdn || track.mv.local;
+      video.poster = track.cover?.cdn || track.cover?.local || '';
+      video.src = src;
+      video.currentTime = 0;
+      // Pause the background audio player so MV audio + music don't overlap
+      this._mvWasPlaying = !this.audio.paused && this.audio.src;
+      if (this._mvWasPlaying) this.audio.pause();
+      video.play().catch((err) => { if (err.name !== 'AbortError') this.showToast('MV 播放失敗，請點擊影片手動播放'); });
+      document.getElementById('mv-modal-title').textContent = track.name + ' · ' + (track.artist || '');
+      modal.classList.add('open');
+    }
+
+    closeMVModal() {
+      const modal = document.getElementById('mv-modal');
+      if (modal) {
+        const video = document.getElementById('mv-video');
+        if (video) {
+          video.pause();
+          video.removeAttribute('src');
+          video.load();
+          video.poster = '';
+        }
+        // Resume background audio if it was playing before MV opened
+        if (this._mvWasPlaying && this.audio.src) {
+          this.audio.play().catch(() => {});
+          this._mvWasPlaying = false;
+        }
+        modal.classList.remove('open');
+      }
     }
 
     toggleShortcuts() {

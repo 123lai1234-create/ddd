@@ -23,8 +23,9 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   NETLIFY_SITE_ID: 65af318c-45c6-413e-837b-685a4fc01444
-  VERCEL_ORG_ID: team_a3kKe1wDrxqQfuXTUnw4SUxw
-  VERCEL_PROJECT_ID: prj_bmqwjk7Bgm6C3Gukcv3u3DMOqWOb
+  # Vercel deployment is now handled by Vercel's Git integration, not this workflow.
+  # Real dontalk project ID: prj_tBt0PjAxmxanofy3YiJ1SHsfENVP.
+  # (prj_bmqwjk7Bgm6C3Gukcv3u3DMOqWOb from earlier revisions was wrong.)
 
 jobs:
   build-and-deploy:
