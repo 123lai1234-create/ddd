@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>資產再平衡建議</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+  <style>
+    :root{
+      --bg:#0d0f14; --panel:#161a22; --panel2:#1b212c; --bdr:#262d3a;
+      --txt:#e6eaf2; --txt2:#8b94a7; --green:#1fbf75; --red:#ef4d56;
+      --accent:#4da3ff; --amber:#e0a234;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--bg);color:var(--txt);
+      font-family:-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;font-size:14px;}
+    header{display:flex;align-items:center;gap:14px;padding:14px 20px;
+      border-bottom:1px solid var(--bdr);flex-wrap:wrap;}
+    h1{font-size:18px;margin:0;color:var(--accent);font-weight:700;}
+    .meta{color:var(--txt2);font-size:12px;}
+    .back{color:var(--txt2);text-decoration:none;border:1px solid var(--bdr);
+      padding:6px 12px;border-radius:8px;font-size:12px;margin-left:auto;}
+    .back:hover{color:var(--txt);}
+    .wrap{padding:16px 20px;max-width:1100px;margin:0 auto;}
+    .card{background:var(--panel);border:1px solid var(--bdr);border-radius:10px;
+      padding:16px 18px;margin-bottom:16px;}
+    .card h2{font-size:15px;margin:0 0 12px;color:var(--txt);}
+    .intro{color:var(--txt2);font-size:12.5px;line-height:1.7;}
+    label{display:block;color:var(--txt2);font-size:12px;margin:0 0 5px;}
+    textarea,input[type="text"],input[type="number"],input[type="date"]{
+      background:var(--panel2);color:var(--txt);border:1px solid var(--bdr);
+      border-radius:8px;padding:9px 11px;font-size:13px;width:100%;font-family:inherit;}
+    textarea{min-height:96px;resize:vertical;line-height:1.6;}
+    .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;}
+    .row > div{flex:1;min-width:150px;}
+    .hint{color:var(--txt2);font-size:11.5px;margin-top:5px;line-height:1.5;}
+    .btnbar{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    button.go{background:var(--accent);color:#06121f;border:none;padding:10px 22px;
+      border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;}
+    button.go:disabled{opacity:.5;cursor:default;}
+    button.ghost{background:transparent;color:var(--txt2);border:1px solid var(--bdr);
+      padding:9px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;}
+    .summary{display:flex;gap:22px;flex-wrap:wrap;}
+    .stat{min-width:120px;}
+    .stat .k{color:var(--txt2);font-size:11.5px;}
+    .stat .v{font-size:20px;font-weight:700;margin-top:3px;font-family:monospace;}
+    .badge{display:inline-block;padding:5px 12px;border-radius:20px;font-size:12.5px;font-weight:700;}
+    .badge.do{background:rgba(224,162,52,.16);color:var(--amber);border:1px solid rgba(224,162,52,.4);}
+    .badge.hold{background:rgba(31,191,117,.14);color:var(--green);border:1px solid rgba(31,191,117,.4);}
+    .gr{border-radius:9px;padding:11px 14px;margin-bottom:9px;font-size:12.8px;line-height:1.6;border:1px solid;}
+    .gr .t{font-weight:700;margin-bottom:3px;}
+    .gr.danger{background:rgba(239,77,86,.10);border-color:rgba(239,77,86,.45);color:#ffb3b8;}
+    .gr.warn{background:rgba(224,162,52,.10);border-color:rgba(224,162,52,.45);color:#f3cd8a;}
+    .gr.good{background:rgba(31,191,117,.10);border-color:rgba(31,191,117,.45);color:#9fe7c5;}
+    .gr.info{background:rgba(77,163,255,.08);border-color:rgba(77,163,255,.35);color:#bcd9ff;}
+    table{width:100%;border-collapse:collapse;}
+    th,td{padding:10px 11px;text-align:right;border-bottom:1px solid var(--bdr);font-size:13px;white-space:nowrap;}
+    th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left;}
+    th{color:var(--txt2);font-weight:600;background:var(--panel2);}
+    .mono{font-family:monospace;}
+    .pos{color:var(--red);} .neg{color:var(--green);} .neu{color:var(--txt2);}
+    .bestcol{background:rgba(77,163,255,.10);}
+    th.bestcol{color:var(--accent);}
+    .act-buy{color:var(--accent);font-weight:700;} .act-sell{color:var(--amber);font-weight:700;}
+    .tablewrap{overflow-x:auto;}
+    .col-actual{display:none;}
+    #dynTable.show-actual .col-suggest{display:none;}
+    #dynTable.show-actual .col-actual{display:table-cell;}
+    #dynTable .hold-in-cash{width:104px;}
+    .drow{display:grid;grid-template-columns:120px 1fr 70px 20px;align-items:center;gap:8px;}
+    .err{color:#ffb3b8;font-size:13px;}
+    .disclaimer{color:var(--txt2);font-size:11.5px;margin-top:8px;line-height:1.6;}
+    /* 宏觀配置專用 — CSS Grid 確保欄寬不受 input width:100% 影響 */
+    .macro-assets{display:flex;flex-direction:column;gap:6px;margin:12px 0;}
+    .mrow{display:grid;grid-template-columns:48px 120px 1fr 70px 20px;
+      align-items:center;gap:8px;}
+    .mrow.bond-row{grid-template-columns:48px 200px 1fr 70px 20px;}
+    .mlabel{font-size:12px;color:var(--txt2);text-align:right;}
+    .mcode,.mrow select{
+      background:var(--panel2);color:var(--txt);border:1px solid var(--bdr);
+      border-radius:7px;padding:7px 10px;font-size:13px;width:100%;box-sizing:border-box;}
+    .mcode[readonly]{color:var(--txt2);}
+    .mw-cell{display:flex;align-items:center;justify-content:flex-end;}
+    .mwn{background:var(--panel2);color:var(--txt);border:1px solid var(--bdr);
+      border-radius:7px;padding:7px 10px;font-size:13px;width:64px;text-align:right;box-sizing:border-box;}
+    .mpct{font-size:12px;color:var(--txt2);}
+    .mname{font-size:11.5px;color:var(--txt2);overflow:hidden;
+      white-space:nowrap;text-overflow:ellipsis;padding:0 4px;}
+    .macro-divider{border:0;border-top:1px solid var(--bdr);margin:18px 0;}
+    @media (max-width:640px){
+      .wrap{padding:12px 14px;} h1{font-size:16px;}
+      .summary{gap:14px;} .stat .v{font-size:17px;}
+      table{min-width:640px;}
+      .mrow{flex-wrap:wrap;}
+      #dynTable{min-width:0;}
+      #dynTable .dyn-hide-mobile{display:none;}
+      #dynTable .col-suggest{display:none;}
+      #dynTable .col-actual{display:table-cell;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>資產再平衡建議</h1>
+    <span class="meta">香農／屯幣寶概念 · 僅建議不下單</span>
+    <a class="back" href="index.html">← 回首頁</a>
+  </header>
+
+  <div class="wrap">
+    <div class="card">
+      <p class="intro">
+        模擬「在起始日依目標權重買進、之後持有未再平衡」到今天的權重偏離，給出回到目標權重的買賣建議。
+        這是<strong>純比例模擬</strong>（不需輸入實際持股），並依台股回測自動體檢籃子是否適合再平衡。
+      </p>
+    </div>
+
+    <!-- ★★★ 台股 ETF 動態再平衡（超額報酬組合）★★★ -->
+    <div class="card">
+      <h2>台股 ETF 動態再平衡
+        <span class="meta" style="font-size:12px;font-weight:400;margin-left:6px">超額報酬組合 · MA200 牛熊切換</span>
+      </h2>
+      <p class="intro" style="margin-top:0">
+        12 檔台股 ETF「超額報酬組合」，搭配 0050 的 200 日均線判斷牛熊：每月底檢查 0050 收盤是否高於其 200 日均線——
+        <strong>牛市</strong>（站上）保留 <strong>10% 現金</strong>，其餘 90% ETF 額度把成長三檔（00881／00891／00757）合計拉至 55%；
+        <strong>熊市</strong>（跌破）提高至 <strong>40% 現金</strong> 做防禦，其餘 60% ETF 額度把防禦三檔（00713／00635U／00719B）合計拉至 60%。
+        現金在同一牛熊狀態內持有不動（不計利息），切換時才重設。下方同步比較「動態切換 vs 靜態買持 vs 0050 基準」。
+        00719B（元大美債1-3）靜態為 0%，僅動態熊市才引入做防禦。
+      </p>
+      <p class="hint" style="margin-top:6px;color:#c08a3e">
+        說明：下方所有報酬皆以真實歷史收盤價即時試算。靜態買持與 0050 基準為 0% 現金的買進持有，可完全重現原始報告數字；
+        動態切換報酬則為「含現金部位」的實價試算結果（現金會在牛市拖累、熊市抗跌），與報告所列數字可能不同
+        （MA200 訊號實際上會出現噪音／時機不佳的牛熊切換），本頁以實際試算為準，僅供研究參考、不代表下單建議。
+      </p>
+
+      <div id="dynItems" class="macro-assets"></div>
+      <div class="hint" style="margin-top:0">
+        可修改各檔權重（百分比，加總不需恰好 100，系統自動正規化）。動態加碼群組與牛熊切換規則固定依報告設定。
+      </div>
+
+      <div class="row">
+        <div>
+          <label>投入總額（TWD）</label>
+          <input id="dynAmt" type="number" value="1000000" min="1000" step="10000">
+          <div class="hint" style="margin-top:4px">填「能 ALL IN 進這套策略的總資產」——已<strong>含欲保留的現金</strong>。系統會自動從中切出現金緩衝（牛市 10%／熊市 40%），不必另外加；現金那份會分到「現金部位」列。</div>
+        </div>
+        <div>
+          <label>起始日（留空 = 最早共同交易日，約 2021-05-20）</label>
+          <input id="dynStart" type="date">
+        </div>
+      </div>
+      <div class="btnbar">
+        <button class="go" id="dynBtn" onclick="runDynamic()">計算動態再平衡</button>
+        <button class="ghost" onclick="resetDynItems()">還原報告權重</button>
+        <span class="meta" id="dynStatus"></span>
+      </div>
+    </div>
+
+    <div id="dynResult"></div>
+
+    <hr class="macro-divider">
+
+    <!-- ★★★ 宏觀資產配置再平衡區塊 ★★★ -->
+    <div class="card">
+      <h2>宏觀資產配置再平衡
+        <span class="meta" style="font-size:12px;font-weight:400;margin-left:6px">股市 / 現金 / 黃金 / 美債</span>
+      </h2>
+      <p class="intro" style="margin-top:0">
+        四大資產類別的配置模擬。「現金」以 0% 報酬平盤序列計算（不含利息），其餘標的從市場資料取歷史收盤。
+        三個偏離門檻（10 / 20 / 30）同時回測，自動標示歷史再平衡績效最佳的門檻。
+      </p>
+
+      <div class="macro-assets">
+        <div class="mrow">
+          <div class="mlabel">股市</div>
+          <input id="mc0" class="mcode" value="006204">
+          <span class="mname">元大台灣加權</span>
+          <input id="mw0" class="mwn" type="number" value="40" min="0" max="100" step="1">
+          <span class="mpct">%</span>
+        </div>
+        <div class="mrow">
+          <div class="mlabel">現金</div>
+          <input id="mc1" class="mcode" value="CASH" readonly>
+          <span class="mname">現金（0% 平盤）</span>
+          <input id="mw1" class="mwn" type="number" value="15" min="0" max="100" step="1">
+          <span class="mpct">%</span>
+        </div>
+        <div class="mrow">
+          <div class="mlabel">黃金</div>
+          <input id="mc2" class="mcode" value="00635U">
+          <span class="mname">元大黃金</span>
+          <input id="mw2" class="mwn" type="number" value="15" min="0" max="100" step="1">
+          <span class="mpct">%</span>
+        </div>
+        <div class="mrow bond-row">
+          <div class="mlabel">美債</div>
+          <select id="mc3">
+            <option value="00719B">00719B 元大美債20年</option>
+            <option value="00679B">00679B 元大美債7-10年</option>
+          </select>
+          <span class="mname"></span>
+          <input id="mw3" class="mwn" type="number" value="15" min="0" max="100" step="1">
+          <span class="mpct">%</span>
+        </div>
+        <div class="mrow">
+          <div class="mlabel">石油</div>
+          <input id="mc4" class="mcode" value="00642U">
+          <span class="mname">元大石油</span>
+          <input id="mw4" class="mwn" type="number" value="15" min="0" max="100" step="1">
+          <span class="mpct">%</span>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:0">
+        可修改左側代號（股市可換成其他台股 ETF）及各欄權重（百分比，加總不需恰好 100，系統會自動正規化）。
+      </div>
+
+      <div class="row">
+        <div>
+          <label>投入總額（TWD）</label>
+          <input id="macroAmt" type="number" value="1000000" min="1000" step="10000">
+        </div>
+        <div>
+          <label>起始日（留空 = 可取得最早共同交易日）</label>
+          <input id="macroStart" type="date">
+        </div>
+      </div>
+      <div class="btnbar">
+        <button class="go" id="macroBtn" onclick="runMacro()">計算宏觀再平衡</button>
+        <span class="meta" id="macroStatus"></span>
+      </div>
+    </div>
+
+    <div id="macroResult"></div>
+
+    <hr class="macro-divider">
+
+    <!-- 原有自訂籃子區塊 -->
+    <div class="card">
+      <h2>自訂籃子再平衡</h2>
+      <label>一鍵帶入類股組合（選後會填入該產業全部成分，等權重；可再自行刪減）</label>
+      <select id="groupSel" onchange="fillGroup()" style="max-width:360px;">
+        <option value="">— 選擇產業類股 —</option>
+      </select>
+      <label style="margin-top:14px;">標的（每行一檔，可選填權重；格式：<code>代號 權重</code>，留空權重則等權）</label>
+      <textarea id="codes" placeholder="2344 1&#10;2408 1&#10;8299 1"></textarea>
+      <div class="hint">範例：記憶體三檔「2344 / 2408 / 8299」。可輸入代號或名稱；權重會自動正規化。</div>
+      <div class="row">
+        <div>
+          <label>投入總額（TWD）</label>
+          <input id="amount" type="number" value="1000000" min="1000" step="10000">
+        </div>
+        <div>
+          <label>起始日（留空＝可取得的最早共同交易日）</label>
+          <input id="start" type="date">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>偏離門檻①（百分點）</label>
+          <input id="th1" type="number" value="10" min="1" max="50" step="1">
+        </div>
+        <div>
+          <label>偏離門檻②（百分點）</label>
+          <input id="th2" type="number" value="20" min="1" max="50" step="1">
+        </div>
+        <div>
+          <label>偏離門檻③（百分點）</label>
+          <input id="th3" type="number" value="30" min="1" max="50" step="1">
+        </div>
+      </div>
+      <div class="hint">三個門檻會同時回測比較；「各標的偏離與建議」自動帶入「再平衡 − 買持」pp 最大的門檻。</div>
+      <div class="btnbar">
+        <button class="go" id="goBtn" onclick="run()">計算再平衡建議</button>
+        <button class="ghost" onclick="prefill()">填入範例</button>
+        <span class="meta" id="status"></span>
+      </div>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+<script>
+let GROUPS = [];
+const charts = {};
+let dynCashTargetPct = null;
+
+function prefill(){
+  document.getElementById('codes').value = "2344 1\n2408 1\n8299 1";
+}
+
+async function loadGroups(){
+  try{
+    const r = await fetch('/api/rebalance/groups');
+    const d = await r.json();
+    if(!d.ok) return;
+    GROUPS = d.groups || [];
+    const sel = document.getElementById('groupSel');
+    GROUPS.forEach((g, i)=>{
+      const o = document.createElement('option');
+      o.value = String(i);
+      o.textContent = `${g.label}（${g.count} 檔）`;
+      sel.appendChild(o);
+    });
+  }catch(e){ /* ignore */ }
+}
+
+function fillGroup(){
+  const sel = document.getElementById('groupSel');
+  const i = sel.value;
+  if(i === '') return;
+  const g = GROUPS[parseInt(i, 10)];
+  if(!g) return;
+  document.getElementById('codes').value =
+    g.codes.map(c => `${c.code}`).join('\n');
+}
+function fmtMoney(v){ return Number(v).toLocaleString('en-US'); }
+function pct(v){
+  const c = v > 0 ? 'pos' : (v < 0 ? 'neg' : 'neu');
+  const s = (v>0?'+':'') + Number(v).toFixed(2) + '%';
+  return `<span class="mono ${c}">${s}</span>`;
+}
+function pp(v){
+  const c = v > 0 ? 'pos' : (v < 0 ? 'neg' : 'neu');
+  const s = (v>0?'+':'') + Number(v).toFixed(2);
+  return `<span class="mono ${c}">${s}</span>`;
+}
+
+async function run(){
+  const raw = document.getElementById('codes').value.trim();
+  if(!raw){ alert('請至少輸入 2 檔標的'); return; }
+  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  const items = lines.map(l=>{
+    const parts = l.split(/\s+/);
+    return { code: parts[0], weight: parts[1] ? parseFloat(parts[1]) : null };
+  });
+  const thRaw = ['th1','th2','th3']
+    .map(id=>parseFloat(document.getElementById(id).value))
+    .filter(v=>!isNaN(v) && v>0);
+  const thresholds = [...new Set(thRaw)].sort((a,b)=>a-b);
+  const payload = {
+    items,
+    amount: parseFloat(document.getElementById('amount').value) || 1000000,
+    start_date: document.getElementById('start').value || null,
+    thresholds: thresholds.length ? thresholds : [10,20,30]
+  };
+  const btn = document.getElementById('goBtn');
+  const st = document.getElementById('status');
+  btn.disabled = true; st.textContent = '計算中…';
+  document.getElementById('result').innerHTML = '';
+  try{
+    const r = await fetch('/api/rebalance', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if(!data.ok){
+      document.getElementById('result').innerHTML =
+        `<div class="card"><div class="err">⚠ ${data.error || '計算失敗'}</div></div>`;
+    } else {
+      render(data, 'result', 'perfChart');
+    }
+  }catch(e){
+    document.getElementById('result').innerHTML =
+      `<div class="card"><div class="err">⚠ 連線失敗：${e}</div></div>`;
+  }finally{
+    btn.disabled = false; st.textContent = '';
+  }
+}
+
+async function runMacro(){
+  const items = [
+    { code: document.getElementById('mc0').value.trim(), weight: parseFloat(document.getElementById('mw0').value)||0 },
+    { code: 'CASH',                                      weight: parseFloat(document.getElementById('mw1').value)||0 },
+    { code: document.getElementById('mc2').value.trim(), weight: parseFloat(document.getElementById('mw2').value)||0 },
+    { code: document.getElementById('mc3').value.trim(), weight: parseFloat(document.getElementById('mw3').value)||0 },
+    { code: document.getElementById('mc4').value.trim(), weight: parseFloat(document.getElementById('mw4').value)||0 },
+  ].filter(i => i.code && i.weight > 0);
+
+  if(items.length < 2){ alert('請至少設定 2 個資產且權重 > 0'); return; }
+
+  const payload = {
+    items,
+    amount: parseFloat(document.getElementById('macroAmt').value) || 1000000,
+    start_date: document.getElementById('macroStart').value || null,
+    thresholds: [10, 20, 30]
+  };
+  const btn = document.getElementById('macroBtn');
+  const st  = document.getElementById('macroStatus');
+  btn.disabled = true; st.textContent = '計算中…';
+  document.getElementById('macroResult').innerHTML = '';
+  try{
+    const r = await fetch('/api/rebalance', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if(!data.ok){
+      document.getElementById('macroResult').innerHTML =
+        `<div class="card"><div class="err">⚠ ${data.error || '計算失敗'}</div></div>`;
+    } else {
+      render(data, 'macroResult', 'macroPerfChart');
+    }
+  }catch(e){
+    document.getElementById('macroResult').innerHTML =
+      `<div class="card"><div class="err">⚠ 連線失敗：${e}</div></div>`;
+  }finally{
+    btn.disabled = false; st.textContent = '';
+  }
+}
+
+function signed(v, digits){
+  const n = Number(v);
+  return (n>0?'+':'') + n.toFixed(digits==null?1:digits);
+}
+
+function render(d, resultId, chartId){
+  resultId = resultId || 'result';
+  chartId  = chartId  || 'perfChart';
+
+  const blocks = d.thresholds || [];
+  let best = null;
+  blocks.forEach(b=>{ if(best===null || b.diff_pp > best.diff_pp) best = b; });
+  const isBest = (b)=> best && b.threshold_pct===best.threshold_pct;
+
+  const corr = (d.avg_correlation==null) ? '—' : d.avg_correlation.toFixed(2);
+
+  const headCells = blocks.map(b=>
+    `<th class="${isBest(b)?'bestcol':''}">門檻 ${b.threshold_pct}${isBest(b)?' ★最佳':''}</th>`
+  ).join('');
+  const metricRow = (label, fn)=>
+    `<tr><td>${label}</td>` +
+    blocks.map(b=>`<td class="${isBest(b)?'bestcol':''}">${fn(b)}</td>`).join('') +
+    `</tr>`;
+  const ppCell = (v)=>{
+    const c = v>0?'pos':(v<0?'neg':'neu');
+    return `<span class="mono ${c}">${signed(v,2)} pp</span>`;
+  };
+  const verdictCell = (b)=> b.need_rebalance
+    ? `<span class="badge do">建議再平衡</span>`
+    : `<span class="badge hold">暫不需動作</span>`;
+
+  const cmpTable = `<div class="tablewrap"><table>
+    <thead><tr><th>指標</th>${headCells}</tr></thead>
+    <tbody>
+      ${metricRow('門檻再平衡 報酬', b=>`<span class="mono">${signed(b.rebalanced_return)}%</span>`)}
+      ${metricRow('再平衡 − 買持', b=>ppCell(b.diff_pp))}
+      ${metricRow('期間再平衡次數', b=>`<span class="mono">${b.rebalance_count}</span>`)}
+      ${metricRow('判定', b=>verdictCell(b))}
+    </tbody>
+  </table></div>`;
+
+  let grHtml = '';
+  (d.guardrails || []).forEach(g=>{
+    grHtml += `<div class="gr ${g.level}"><div class="t">${g.title}</div><div>${g.text}</div></div>`;
+  });
+
+  let rows = '';
+  d.holdings.forEach(h=>{
+    const actClass = h.action === '買入' ? 'act-buy' : (h.action === '賣出' ? 'act-sell' : 'neu');
+    const unitTxt = h.action_units >= 1 ? `${fmtMoney(h.action_units)} 股` : '<1 股';
+    const actText = h.action === '持平' ? '—'
+      : `${h.action} ${fmtMoney(h.action_amount)}<span class="meta"> · ${unitTxt}</span>`;
+    const vol = (h.volatility==null) ? '—' : (h.volatility.toFixed(1)+'%');
+    rows += `<tr>
+      <td>${h.code}</td>
+      <td>${h.name}<span class="meta"> · ${h.industry}</span></td>
+      <td class="mono">${h.target_weight.toFixed(1)}%</td>
+      <td class="mono">${h.current_weight.toFixed(1)}%</td>
+      <td>${pp(h.drift)}</td>
+      <td>${pct(h.period_return)}</td>
+      <td class="mono neu">${vol}</td>
+      <td class="${actClass}">${actText}</td>
+    </tr>`;
+  });
+
+  const bestTh = best ? best.threshold_pct : '—';
+
+  document.getElementById(resultId).innerHTML = `
+    <div class="card">
+      <h2>結果總覽</h2>
+      <div class="summary" style="margin-bottom:14px">
+        <div class="stat"><div class="k">期間</div><div class="v" style="font-size:14px">${d.start_date} ~ ${d.end_date}</div></div>
+        <div class="stat"><div class="k">交易日</div><div class="v">${d.trading_days}</div></div>
+        <div class="stat"><div class="k">投入總額</div><div class="v" style="font-size:15px">${fmtMoney(d.amount)}</div></div>
+        <div class="stat"><div class="k">買進持有 報酬</div><div class="v">${signed(d.buyhold_return)}%</div></div>
+        <div class="stat"><div class="k">目前最大偏離</div><div class="v">${d.max_drift.toFixed(1)}</div></div>
+        <div class="stat"><div class="k">平均相關係數</div><div class="v">${corr}</div></div>
+      </div>
+      ${cmpTable}
+      <p class="disclaimer">
+        買進持有報酬各門檻相同（門檻只影響再平衡模擬）。「★最佳」為「再平衡 − 買持」pp 最大的門檻；
+        門檻越高不代表 pp 越大——若期間偏離從未觸及該門檻，等於完全沒再平衡（pp = 0）。
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>績效走勢：買進持有 vs 門檻再平衡（最佳門檻 ${bestTh}　同額起點 ${fmtMoney(d.amount)}）</h2>
+      <div id="${chartId}" style="width:100%;height:380px;"></div>
+      <p class="disclaimer">
+        再平衡曲線：每日檢查偏離，超過門檻 ${bestTh} 個百分點即拉回目標權重（不計手續費／稅）。
+        若此線長期低於買進持有，代表這個籃子用再平衡反而吃虧——多半是因為有單一大贏家被持續賣掉。
+      </p>
+    </div>
+
+    ${grHtml ? `<div class="card"><h2>籃子體檢</h2>${grHtml}</div>` : ''}
+
+    <div class="card">
+      <h2>各標的偏離與建議　<span class="meta">（依最佳門檻 ${bestTh} 帶入）</span></h2>
+      <div class="tablewrap"><table>
+        <thead><tr>
+          <th>代號</th><th>名稱／產業</th><th>目標權重</th><th>目前權重</th>
+          <th>偏離(pp)</th><th>期間報酬</th><th>年化波動</th><th>建議動作</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <p class="disclaimer">
+        各標的偏離與建議為「當前權重 vs 目標權重」快照，與門檻選擇無關（門檻只決定整體是否建議動作）。
+        動作金額＝把各標的拉回目標權重所需的買／賣金額（未計手續費 0.1425% 與賣出證交稅 0.3%）；
+        股數＝動作金額 ÷ 最新收盤價（四捨五入至整股，零股可 1 股為單位）。
+        本頁為模擬建議，不代表實際下單；再平衡為風險控管工具，不保證提升總報酬。
+      </p>
+    </div>`;
+
+  drawChart(best ? best.curve : null, chartId);
+}
+
+function drawChart(c, chartId){
+  chartId = chartId || 'perfChart';
+  if(!c || !c.dates || !c.dates.length) return;
+  const el = document.getElementById(chartId);
+  if(!el) return;
+  if(charts[chartId]){ charts[chartId].dispose(); delete charts[chartId]; }
+  charts[chartId] = echarts.init(el, null, {renderer:'canvas'});
+  charts[chartId].setOption({
+    backgroundColor:'transparent',
+    tooltip:{trigger:'axis',
+      valueFormatter:(v)=> Number(v).toLocaleString('en-US'),
+      backgroundColor:'#1b212c',borderColor:'#262d3a',textStyle:{color:'#e6eaf2'}},
+    legend:{data:['買進持有','門檻再平衡'],top:0,textStyle:{color:'#8b94a7'}},
+    grid:{left:64,right:18,top:36,bottom:36},
+    xAxis:{type:'category',data:c.dates,boundaryGap:false,
+      axisLine:{lineStyle:{color:'#262d3a'}},
+      axisLabel:{color:'#8b94a7',fontSize:11},
+      splitLine:{show:false}},
+    yAxis:{type:'value',scale:true,
+      axisLabel:{color:'#8b94a7',fontSize:11,
+        formatter:(v)=> (v>=10000? (v/10000).toFixed(0)+'萬' : v)},
+      splitLine:{lineStyle:{color:'#1f2632'}}},
+    series:[
+      {name:'買進持有',type:'line',data:c.buyhold,showSymbol:false,
+        lineStyle:{width:2,color:'#4da3ff'},itemStyle:{color:'#4da3ff'}},
+      {name:'門檻再平衡',type:'line',data:c.rebalanced,showSymbol:false,
+        lineStyle:{width:2,color:'#e0a234'},itemStyle:{color:'#e0a234'}}
+    ]
+  });
+}
+
+/* ===== 台股 ETF 動態再平衡（超額報酬組合 · MA200 牛熊切換）===== */
+const DYN_DEFAULT = [
+  {code:'00881',  name:'國泰台灣5G+',      weight:15},
+  {code:'00891',  name:'中信關鍵半導體',  weight:12},
+  {code:'00757',  name:'統一FANG+',        weight:13},
+  {code:'00733',  name:'富邦臺灣中小',    weight:10},
+  {code:'0050',   name:'元大台灣50',      weight:8},
+  {code:'00646',  name:'元大S&P500',      weight:5},
+  {code:'00713',  name:'元大台灣高息低波', weight:12},
+  {code:'00878',  name:'國泰永續高股息',  weight:8},
+  {code:'00635U', name:'期元大S&P黃金',   weight:7},
+  {code:'00692',  name:'富邦公司治理',    weight:5},
+  {code:'00642U', name:'期元大S&P石油',   weight:3},
+  {code:'00728',  name:'第一金工業30',    weight:2},
+];
+const DYN_NAME = {};
+DYN_DEFAULT.forEach(it => { DYN_NAME[it.code] = it.name; });
+DYN_NAME['00719B'] = '元大美債1-3';
+
+function renderDynItems(){
+  const box = document.getElementById('dynItems');
+  if(!box) return;
+  box.innerHTML = DYN_DEFAULT.map((it,i)=>`
+    <div class="drow">
+      <input class="mcode" value="${it.code}" readonly>
+      <span class="mname">${it.name}</span>
+      <input id="dynw${i}" class="mwn" type="number" value="${it.weight}" min="0" max="100" step="1">
+      <span class="mpct">%</span>
+    </div>`).join('');
+}
+function resetDynItems(){ renderDynItems(); }
+
+async function runDynamic(){
+  const items = DYN_DEFAULT.map((it,i)=>({
+    code: it.code,
+    weight: parseFloat(document.getElementById('dynw'+i).value) || 0
+  }));
+  const payload = {
+    items,
+    amount: parseFloat(document.getElementById('dynAmt').value) || 1000000,
+    start_date: document.getElementById('dynStart').value || null
+  };
+  const btn = document.getElementById('dynBtn');
+  const st  = document.getElementById('dynStatus');
+  btn.disabled = true; st.textContent = '計算中…（首次抓取較久）';
+  document.getElementById('dynResult').innerHTML = '';
+  try{
+    const r = await fetch('/api/rebalance/dynamic', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if(!data.ok){
+      document.getElementById('dynResult').innerHTML =
+        `<div class="card"><div class="err">⚠ ${data.error || '計算失敗'}</div></div>`;
+    } else {
+      renderDynamic(data);
+    }
+  }catch(e){
+    document.getElementById('dynResult').innerHTML =
+      `<div class="card"><div class="err">⚠ 連線失敗：${e}</div></div>`;
+  }finally{
+    btn.disabled = false; st.textContent = '';
+  }
+}
+
+function renderDynamic(d){
+  const regBull = d.current_regime === 'bull';
+  const regBadge = `<span class="badge ${regBull?'hold':'do'}">目前：${d.current_regime_label}</span>`;
+  const sigTxt = (d.signal_close!=null && d.signal_ma!=null)
+    ? `0050 收盤 ${d.signal_close} ${regBull?'≥':'<'} MA${d.ma_window} ${d.signal_ma}` : '';
+
+  const benchRet  = (d.benchmark_return!=null) ? signed(d.benchmark_return)+'%' : '—';
+  const vsBench   = (d.dynamic_vs_benchmark_pp!=null) ? pp(d.dynamic_vs_benchmark_pp) : '—';
+  const vsStatic  = (d.dynamic_vs_static_pp!=null) ? pp(d.dynamic_vs_static_pp) : '—';
+  const dynRet    = (d.dynamic_return!=null) ? signed(d.dynamic_return)+'%' : '—';
+  const staRet    = (d.static_return!=null) ? signed(d.static_return)+'%' : '—';
+
+  dynCashTargetPct = (d.cash_target_pct!=null) ? Number(d.cash_target_pct) : null;
+
+  let rows='';
+  (d.holdings||[]).forEach(h=>{
+    const nm  = DYN_NAME[h.code] || h.name || h.code;
+    const lc  = (h.last_close!=null) ? Number(h.last_close).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+    const tw  = (h.target_weight!=null) ? Number(h.target_weight) : 0;
+    const tgtAmtN = Math.round((d.amount||0) * tw/100);
+    const tgtShares = (h.last_close && h.last_close>0) ? fmtMoney(Math.floor(tgtAmtN / h.last_close)) : '—';
+    const actClass = h.action === '買入' ? 'act-buy' : (h.action === '賣出' ? 'act-sell' : 'neu');
+    const unitTxt = h.action_units >= 1 ? `${fmtMoney(h.action_units)} 股` : '<1 股';
+    const actText = (h.action === '持平' || h.action == null) ? '—'
+      : `${h.action} ${fmtMoney(h.action_amount)}<span class="meta"> · ${unitTxt}</span>`;
+    rows += `<tr>
+      <td>${h.code}</td>
+      <td>${nm}</td>
+      <td class="mono dyn-hide-mobile">${(h.base_weight!=null)?Number(h.base_weight).toFixed(1)+'%':'—'}</td>
+      <td class="mono dyn-hide-mobile">${tw.toFixed(1)}%</td>
+      <td class="mono dyn-hide-mobile">${(h.current_weight!=null)?Number(h.current_weight).toFixed(1)+'%':'—'}</td>
+      <td class="dyn-hide-mobile">${(h.drift!=null)?pp(h.drift):'—'}</td>
+      <td class="mono dyn-hide-mobile">${lc}</td>
+      <td class="dyn-hide-mobile">${pct(h.period_return)}</td>
+      <td class="mono">${fmtMoney(tgtAmtN)}</td>
+      <td class="mono dyn-hide-mobile">${tgtShares}</td>
+      <td><input class="hold-in mwn" type="number" min="0" step="1" placeholder="股數" data-code="${h.code}" data-price="${(h.last_close!=null)?h.last_close:0}" data-tw="${tw}"></td>
+      <td class="col-suggest ${actClass}">${actText}</td>
+      <td class="col-actual neu" data-actual="${h.code}">—</td>
+    </tr>`;
+  });
+  if(d.cash_target_pct!=null){
+    const cTgt = Number(d.cash_target_pct);
+    const cCur = (d.cash_current_pct!=null) ? Number(d.cash_current_pct) : null;
+    const cAct = d.cash_action;
+    const cActClass = cAct === '增加現金' ? 'act-buy' : (cAct === '減少現金' ? 'act-sell' : 'neu');
+    const cActText = (cAct === '持平' || cAct == null) ? '—'
+      : `${cAct} ${fmtMoney(d.cash_action_amount)}`;
+    rows += `<tr style="background:rgba(77,163,255,.06)">
+      <td>現金</td>
+      <td>現金部位<span class="meta"> · 防禦緩衝</span></td>
+      <td class="mono dyn-hide-mobile">0.0%</td>
+      <td class="mono dyn-hide-mobile">${cTgt.toFixed(1)}%</td>
+      <td class="mono dyn-hide-mobile">${(cCur!=null)?cCur.toFixed(1)+'%':'—'}</td>
+      <td class="dyn-hide-mobile">${(cCur!=null)?pp(cCur-cTgt):'—'}</td>
+      <td class="mono dyn-hide-mobile">—</td>
+      <td class="dyn-hide-mobile">—</td>
+      <td class="mono">${fmtMoney(Math.round((d.amount||0)*cTgt/100))}</td>
+      <td class="mono dyn-hide-mobile">—</td>
+      <td><input class="hold-in-cash mwn" type="number" min="0" step="1000" placeholder="閒置資金"></td>
+      <td class="col-suggest ${cActClass}">${cActText}</td>
+      <td class="col-actual neu" data-actual="CASH">—</td>
+    </tr>`;
+  }
+
+  const cashTxt = (d.cash_target_pct!=null) ? `，現金部位 ${Number(d.cash_target_pct).toFixed(0)}%` : '';
+  const regimeNote = regBull
+    ? `目前為牛市，成長三檔（00881／00891／00757）於 ETF 額度內加碼至 ${d.bull_target}%${cashTxt}。`
+    : `目前為熊市，防禦三檔（00713／00635U／00719B）於 ETF 額度內加碼至 ${d.bear_target}%（含 00719B 美債）${cashTxt}。`;
+
+  document.getElementById('dynResult').innerHTML = `
+    <div class="card">
+      <h2>動態組合結果總覽　${regBadge}</h2>
+      <div class="summary" style="margin-bottom:12px">
+        <div class="stat"><div class="k">期間</div><div class="v" style="font-size:14px">${d.start_date} ~ ${d.end_date}</div></div>
+        <div class="stat"><div class="k">交易日</div><div class="v">${d.trading_days}</div></div>
+        <div class="stat"><div class="k">動態切換 報酬</div><div class="v">${dynRet}</div></div>
+        <div class="stat"><div class="k">靜態買持 報酬</div><div class="v">${staRet}</div></div>
+        <div class="stat"><div class="k">0050 基準</div><div class="v">${benchRet}</div></div>
+        <div class="stat"><div class="k">牛熊切換次數</div><div class="v">${d.n_switch}</div></div>
+        <div class="stat"><div class="k">目前現金部位</div><div class="v">${(d.cash_target_pct!=null)?Number(d.cash_target_pct).toFixed(0)+'%':'—'}</div></div>
+      </div>
+      <div class="gr info">
+        <div class="t">${sigTxt}</div>
+        <div>動態 − 0050：${vsBench} pp　·　動態 − 靜態：${vsStatic} pp。${regimeNote}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>績效走勢：動態切換 vs 靜態買持 vs 0050　<span class="meta">（同額起點 ${fmtMoney(d.amount)}）</span></h2>
+      <div id="dynChart" style="width:100%;height:400px;"></div>
+      <p class="disclaimer">
+        陰影區為「熊市」期間（0050 跌破 MA${d.ma_window}）。每月底檢查 0050 是否站上 MA${d.ma_window}，
+        僅在牛熊狀態改變時切換配置（熊市轉防禦、牛市轉成長），同一狀態內持有不動、讓贏家續跑（不計手續費／稅）。
+        回測結論詳見原始報告，本頁僅為純比例模擬。
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>目前應持有與建議調節　<span class="meta">（依目前 ${d.current_regime_label} 配置 · 目前組合市值 ${fmtMoney(d.current_total)}）</span><span class="meta" id="dynBaseInfo"></span></h2>
+      <div class="btnbar" style="margin:2px 0 12px">
+        <button class="go" onclick="calcDynHoldings()">計算我的調節</button>
+        <button class="ghost" onclick="resetDynHoldings()">清除</button>
+        <span class="meta">在「持有股數」欄輸入各 ETF 實際持股、現金列輸入閒置資金後按「計算我的調節」，將以您的總資產（含閒置資金）為基準算出各檔加減碼（按下後隱藏「建議動作」欄）。</span>
+      </div>
+      <div class="tablewrap"><table id="dynTable">
+        <thead><tr>
+          <th>代號</th><th>名稱</th><th class="dyn-hide-mobile">靜態基準權重</th><th class="dyn-hide-mobile">目標權重</th><th class="dyn-hide-mobile">目前權重</th><th class="dyn-hide-mobile">偏離(pp)</th><th class="dyn-hide-mobile">目前股價</th><th class="dyn-hide-mobile">期間報酬</th><th>目標金額</th><th class="dyn-hide-mobile">目標股數</th><th>持有股數</th><th class="col-suggest">建議動作</th><th class="col-actual">實際調節</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <p class="disclaimer">
+        「靜態基準權重」為報告原始 12 檔權重（00719B 靜態 0%，僅熊市引入）；「目標權重」為依今日牛熊狀態（每月底牛熊切換規則）建議的配置（含現金部位）；「目前權重」為動態組合自上次牛熊切換後漂移至今的實際權重。
+        「目標金額／目標股數」＝投入總額 ${fmtMoney(d.amount)} × 目標權重 ÷ 目前股價（無條件捨去到整股）。
+        <strong>建議動作</strong>＝把各標的（含現金）拉回目標權重所需的買／賣金額，基準為模擬目前組合市值 ${fmtMoney(d.current_total)}；股數＝動作金額 ÷ 目前股價（四捨五入至整股）。
+        於「持有股數」輸入各 ETF 實際持股、現金列輸入閒置資金並按「計算我的調節」後，改以您的總資產（ETF 市值＋閒置資金）為基準計算各檔加減碼與現金增減（顯示於「實際調節」欄），未計手續費 0.1425% 與賣出證交稅 0.3%。本頁為模擬建議，不代表實際下單。
+      </p>
+    </div>`;
+
+  drawDynChart(d.curve, d.regime_segments);
+}
+
+function toggleDynActionCols(showActual){
+  const t = document.getElementById('dynTable');
+  if(t) t.classList.toggle('show-actual', !!showActual);
+}
+function resetDynHoldings(){
+  document.querySelectorAll('#dynResult .hold-in, #dynResult .hold-in-cash').forEach(i=>{ i.value=''; });
+  document.querySelectorAll('#dynResult [data-actual]').forEach(c=>{ c.innerHTML='—'; c.className='col-actual neu'; });
+  const info = document.getElementById('dynBaseInfo'); if(info) info.textContent='';
+  toggleDynActionCols(false);
+}
+function calcDynHoldings(){
+  const inputs = document.querySelectorAll('#dynResult .hold-in');
+  const cashInput = document.querySelector('#dynResult .hold-in-cash');
+  let base = 0, anyInput = false;
+  inputs.forEach(inp=>{
+    const sh = parseFloat(inp.value);
+    const pr = parseFloat(inp.dataset.price);
+    if(!isNaN(sh) && sh>0 && pr>0){ base += sh*pr; anyInput = true; }
+  });
+  let cashHeld = 0;
+  if(cashInput){
+    const cv = parseFloat(cashInput.value);
+    if(!isNaN(cv) && cv>0){ cashHeld = cv; anyInput = true; }
+  }
+  base += cashHeld;
+  if(!anyInput || base<=0){ alert('請至少輸入一檔 ETF 的實際持有股數，或填入閒置資金'); return; }
+  inputs.forEach(inp=>{
+    const code = inp.dataset.code;
+    const pr = parseFloat(inp.dataset.price)||0;
+    const tw = parseFloat(inp.dataset.tw)||0;
+    const sh = parseFloat(inp.value)||0;
+    const cell = document.querySelector(`#dynResult [data-actual="${code}"]`);
+    if(!cell) return;
+    if(pr<=0){ cell.innerHTML='—'; cell.className='col-actual neu'; return; }
+    const delta = base*tw/100 - sh*pr;
+    const units = Math.round(Math.abs(delta)/pr);
+    if(units < 1){ cell.innerHTML='持平'; cell.className='col-actual neu'; }
+    else if(delta>0){ cell.innerHTML=`買入 ${fmtMoney(Math.round(delta))}<span class="meta"> · ${fmtMoney(units)} 股</span>`; cell.className='col-actual act-buy'; }
+    else { cell.innerHTML=`賣出 ${fmtMoney(Math.round(-delta))}<span class="meta"> · ${fmtMoney(units)} 股</span>`; cell.className='col-actual act-sell'; }
+  });
+  const cashCell = document.querySelector('#dynResult [data-actual="CASH"]');
+  if(cashCell){
+    if(dynCashTargetPct!=null){
+      const cashDelta = base*dynCashTargetPct/100 - cashHeld;
+      if(Math.abs(cashDelta) < 1){ cashCell.innerHTML='持平'; cashCell.className='col-actual neu'; }
+      else if(cashDelta>0){ cashCell.innerHTML=`增加現金 ${fmtMoney(Math.round(cashDelta))}`; cashCell.className='col-actual act-buy'; }
+      else { cashCell.innerHTML=`減少現金 ${fmtMoney(Math.round(-cashDelta))}`; cashCell.className='col-actual act-sell'; }
+    } else { cashCell.innerHTML='—'; cashCell.className='col-actual neu'; }
+  }
+  toggleDynActionCols(true);
+  const info = document.getElementById('dynBaseInfo');
+  if(info) info.textContent = ` · 您的資產總額 ${fmtMoney(Math.round(base))}（含閒置資金 ${fmtMoney(Math.round(cashHeld))}）`;
+}
+
+function drawDynChart(c, segments){
+  if(!c || !c.dates || !c.dates.length) return;
+  const el = document.getElementById('dynChart');
+  if(!el) return;
+  if(charts['dynChart']){ charts['dynChart'].dispose(); delete charts['dynChart']; }
+  charts['dynChart'] = echarts.init(el, null, {renderer:'canvas'});
+  const dates = c.dates;
+  const snap = (target, dir)=>{
+    if(dir==='start'){ for(const d of dates){ if(d>=target) return d; } return dates[dates.length-1]; }
+    let r=dates[0]; for(const d of dates){ if(d<=target) r=d; else break; } return r;
+  };
+  const bearAreas = (segments||[]).filter(s=>s.regime==='bear')
+    .map(s=>[{xAxis: snap(s.start,'start')}, {xAxis: snap(s.end,'end')}]);
+  const legend = ['動態切換','靜態買持'];
+  const series = [
+    {name:'動態切換',type:'line',data:c.dynamic,showSymbol:false,
+      lineStyle:{width:2.4,color:'#1fbf75'},itemStyle:{color:'#1fbf75'},
+      markArea: bearAreas.length ? {silent:true,itemStyle:{color:'rgba(239,77,86,.10)'},data:bearAreas} : undefined},
+    {name:'靜態買持',type:'line',data:c.static,showSymbol:false,
+      lineStyle:{width:1.8,color:'#e0a234'},itemStyle:{color:'#e0a234'}},
+  ];
+  if(c.benchmark){
+    legend.push('0050 基準');
+    series.push({name:'0050 基準',type:'line',data:c.benchmark,showSymbol:false,
+      lineStyle:{width:1.8,color:'#4da3ff',type:'dashed'},itemStyle:{color:'#4da3ff'}});
+  }
+  charts['dynChart'].setOption({
+    backgroundColor:'transparent',
+    tooltip:{trigger:'axis',
+      valueFormatter:(v)=> Number(v).toLocaleString('en-US'),
+      backgroundColor:'#1b212c',borderColor:'#262d3a',textStyle:{color:'#e6eaf2'}},
+    legend:{data:legend,top:0,textStyle:{color:'#8b94a7'}},
+    grid:{left:64,right:18,top:36,bottom:56},
+    xAxis:{type:'category',data:dates,boundaryGap:false,
+      axisLine:{lineStyle:{color:'#262d3a'}},
+      axisLabel:{color:'#8b94a7',fontSize:11},splitLine:{show:false}},
+    yAxis:{type:'value',scale:true,
+      axisLabel:{color:'#8b94a7',fontSize:11,
+        formatter:(v)=> (v>=10000? (v/10000).toFixed(0)+'萬' : v)},
+      splitLine:{lineStyle:{color:'#1f2632'}}},
+    dataZoom:[{type:'inside'},{type:'slider',height:16,bottom:16,
+      borderColor:'#262d3a',textStyle:{color:'#8b94a7'}}],
+    series
+  });
+}
+
+window.addEventListener('resize', ()=>{
+  Object.values(charts).forEach(c=>{ if(c) c.resize(); });
+});
+
+prefill();
+loadGroups();
+renderDynItems();
+</script>
+</body>
+</html>
