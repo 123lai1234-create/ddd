@@ -11,9 +11,15 @@
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif; }
   .frame-shell { position: fixed; inset: 0; display: flex; flex-direction: column; background: #0d1117; }
   .frame-bar { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #161b22; border-bottom: 1px solid #30363d; font-size: 13px; }
-  .frame-bar .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff5f56; box-shadow: 0 0 6px rgba(255,95,86,0.6); }
+  .frame-bar .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff5f56; box-shadow: 0 0 6px rgba(255,95,86,0.6); transition: background-color .2s, box-shadow .2s; }
+  .frame-bar .dot.dot-connecting { background: #8b949e; box-shadow: 0 0 6px rgba(139,148,158,0.4); animation: dot-pulse 1.4s ease-in-out infinite; }
+  .frame-bar .dot.dot-online { background: #3fb950; box-shadow: 0 0 6px rgba(63,185,80,0.55); }
+  .frame-bar .dot.dot-offline { background: #ff5f56; box-shadow: 0 0 6px rgba(255,95,86,0.6); }
+  @keyframes dot-pulse { 0%,100% { opacity: .55 } 50% { opacity: 1 } }
   .frame-bar .label { color: #e6edf3; font-weight: 600; }
-  .frame-bar .sub { color: #8b949e; }
+  .frame-bar .sub { color: #8b949e; transition: color .2s; }
+  .frame-bar .sub.health-online { color: #3fb950; }
+  .frame-bar .sub.health-offline { color: #ff7b72; }
   .frame-bar .spacer { flex: 1; }
   .frame-bar a { color: #58a6ff; text-decoration: none; }
   .frame-bar a:hover { text-decoration: underline; }
@@ -22,6 +28,7 @@
   .frame-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: #8b949e; }
   .frame-fallback code { color: #e6edf3; }
   .banner-warn { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: rgba(255, 145, 0, 0.12); border-bottom: 1px solid #ff9100; color: #ffb84d; font-size: 12px; line-height: 1.5; }
+  .banner-warn[hidden] { display: none; }
   .banner-warn .banner-icon { flex-shrink: 0; font-size: 14px; }
   .banner-warn .banner-text { flex: 1; min-width: 0; }
   .banner-warn .banner-text b { color: #fff; font-weight: 600; }
@@ -38,16 +45,16 @@
 <body>
   <div class="frame-shell">
     <div class="frame-bar">
-      <span class="dot"></span>
+      <span class="dot" id="healthDot"></span>
       <span class="label">📊 台股均線買賣訊號系統</span>
-      <span class="sub">資料即時同步</span>
+      <span class="sub" id="healthLabel">連線中…</span>
       <span class="spacer"></span>
       <a href="/stock-app/index.html" target="_blank" rel="noopener">在新分頁開啟 ↗</a>
     </div>
     <div class="banner-warn" id="backendBanner" hidden>
       <span class="banner-icon">📡</span>
       <span class="banner-text">
-        <b>後端服務維護中</b> — 頁面結構正常，但 <code>/api/*</code> 請求會失敗，自選股、圖表、新聞、掃描等資料功能暫時無法使用。詳見 <a href="https://github.com/123lai1234-create/ddd/issues" target="_blank" rel="noopener" style="color:#ffd89a">追蹤進度</a>。
+        <b id="backendBannerTitle">正在連線後端服務</b> — <span id="backendBannerMsg">首次探測 <code>/api/healthz</code> 失敗，系統每 5 秒自動重連。後端恢復後此訊息會自動消失。</span>
       </span>
       <button type="button" id="backendBannerDismiss" aria-label="關閉">✕</button>
     </div>
@@ -68,32 +75,107 @@
     </div>
   </div>
   <script>
-    // 1. 後端維護 banner：先打 /api/healthz 探測，2s 內回 200 就隱藏。
-    //    失敗或超時才顯示「維護中」訊息（並在 user 手動關閉後記住）。
+    // 1. 後端健康監測 + banner 控制 + frame-bar 狀態指示
+    //    - 預設 banner 隱藏；首次探測失敗才顯示「正在連線中」
+    //    - 每 5 秒自動重試，後端恢復時自動隱藏 banner
+    //    - 探測中 frame-bar 顯示「連線中…」、dot 灰色
+    //    - 成功 dot 變綠、label 改「後端在線」
+    //    - 失敗 dot 變紅、label 改「後端離線」
+    //    - 使用者手動 ✕ 後記住 30 分鐘不再自動彈，但保留 retry 邏輯
     (function() {
       const banner = document.getElementById('backendBanner');
       const dismissBtn = document.getElementById('backendBannerDismiss');
-      if (!banner || !dismissBtn) return;
-      const show = () => {
+      const dot = document.getElementById('healthDot');
+      const label = document.getElementById('healthLabel');
+      if (!banner || !dismissBtn || !dot || !label) return;
+
+      const HEALTHZ_URL = '/api/healthz';
+      const PROBE_TIMEOUT_MS = 2500;
+      const RETRY_INTERVAL_MS = 5000;
+      const DISMISS_TTL_MS = 30 * 60 * 1000; // 30 分鐘
+
+      const DISMISS_KEY = 'stockBackendBannerDismissedAt';
+      const wasDismissed = () => {
         try {
-          if (localStorage.getItem('stockBackendBannerDismissed') !== '1') {
-            banner.hidden = false;
-          }
-        } catch (_) { banner.hidden = false; }
+          const v = localStorage.getItem(DISMISS_KEY);
+          if (!v) return false;
+          const ts = parseInt(v, 10);
+          return Number.isFinite(ts) && (Date.now() - ts) < DISMISS_TTL_MS;
+        } catch (_) { return false; }
       };
-      const hide = () => { banner.hidden = true; };
+      const markDismissed = () => {
+        try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch (_) {}
+      };
+
+      const setState = (state) => {
+        // state: 'connecting' | 'online' | 'offline'
+        dot.classList.remove('dot-online', 'dot-offline', 'dot-connecting');
+        if (state === 'online') {
+          dot.classList.add('dot-online');
+          label.textContent = '後端在線';
+          label.classList.remove('health-offline');
+          label.classList.add('health-online');
+        } else if (state === 'offline') {
+          dot.classList.add('dot-offline');
+          label.textContent = '後端離線 · 自動重連中';
+          label.classList.remove('health-online');
+          label.classList.add('health-offline');
+        } else {
+          dot.classList.add('dot-connecting');
+          label.textContent = '連線中…';
+          label.classList.remove('health-online', 'health-offline');
+        }
+      };
+
+      const showBanner = () => {
+        if (wasDismissed()) return;
+        banner.hidden = false;
+      };
+      const hideBanner = () => { banner.hidden = true; };
+
       dismissBtn.addEventListener('click', () => {
-        hide();
-        try { localStorage.setItem('stockBackendBannerDismissed', '1'); } catch (_) {}
+        hideBanner();
+        markDismissed();
       });
-      // Probe the backend health endpoint. Vercel edge cache may briefly
-      // serve a stale 404 if a deploy is in flight, so we treat anything
-      // that isn't a 2xx as "backend down" and show the banner.
-      const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), 2500);
-      fetch('/api/healthz', { signal: ctl.signal, cache: 'no-store' })
-        .then(r => { clearTimeout(timer); if (r.ok) hide(); else show(); })
-        .catch(() => { clearTimeout(timer); show(); });
+
+      let retryTimer = null;
+      let inFlight = false;
+
+      const probe = async () => {
+        if (inFlight) return;
+        inFlight = true;
+        setState('connecting');
+        const ctl = new AbortController();
+        const timer = setTimeout(() => ctl.abort(), PROBE_TIMEOUT_MS);
+        try {
+          const r = await fetch(HEALTHZ_URL, { signal: ctl.signal, cache: 'no-store' });
+          clearTimeout(timer);
+          if (r.ok) {
+            setState('online');
+            hideBanner();
+            // 成功後慢一點再重試（純監測用，不再影響 banner）
+            if (retryTimer) clearTimeout(retryTimer);
+            retryTimer = setTimeout(probe, 30000);
+          } else {
+            setState('offline');
+            showBanner();
+            if (retryTimer) clearTimeout(retryTimer);
+            retryTimer = setTimeout(probe, RETRY_INTERVAL_MS);
+          }
+        } catch (_) {
+          clearTimeout(timer);
+          setState('offline');
+          showBanner();
+          if (retryTimer) clearTimeout(retryTimer);
+          retryTimer = setTimeout(probe, RETRY_INTERVAL_MS);
+        } finally {
+          inFlight = false;
+        }
+      };
+
+      // 啟動
+      setState('connecting');
+      probe();
     })();
 
     // 2. iframe 載入失敗偵測：HTML 本身沒 load 才視為後端死透
