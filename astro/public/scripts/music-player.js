@@ -300,7 +300,7 @@
         return '<div class="track-row ' + (isPlayingNow ? 'playing' : '') + '" data-idx="' + i + '">' +
           '<span class="track-num">' + (i + 1) + '</span>' +
           '<div class="track-wave"><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div></div>' +
-          '<div class="track-info"><p class="track-title">' + this.cleanTrackName(track.name) + '</p>' +
+          '<div class="track-info"><p class="track-title">' + this.cleanTrackName(track.name) + ' <span class="srt-badge" title="此曲有 SRT 同步字幕">CC</span></p>' +
           '<p class="track-artist-list"><span class="gender-badge ' + gCls + '" title="' + (track.gender === 'F' ? '女歌手' : track.gender === 'M' ? '男歌手' : '性別未標') + '">' + gIcon + '</span>' + (track.artist || '--') + '</p>' +
           '<div class="track-progress"><div class="track-progress-bar" style="width:' + (isPlayingNow ? progress : 0) + '%"></div></div></div>' +
           '<span class="track-album">' + (track.album || '--') + '</span>' +
@@ -378,6 +378,39 @@
       }
     }
 
+    /**
+     * 動態掛載 <track> 原生字幕（SRT 格式）到 this.audio。
+     * 瀏覽器原生 CC 按鈕可開關，無需額外 UI。
+     * 從 track.audio 路徑 /music/track_NNN.mp3 推出 /music/lyrics_NNN.srt
+     */
+    attachSubtitleTrack(track) {
+      // 移除舊的 <track>
+      const oldTracks = this.audio.querySelectorAll('track');
+      oldTracks.forEach((t) => t.remove());
+
+      // 從 audio 路徑推出 srt 路徑
+      const m = (track.audio || '').match(/track_(\d+)\.mp3$/);
+      if (!m) return;
+      const trackNum = m[1];
+      const srtPath = `/music/lyrics_${trackNum}.srt`;
+
+      // 語言代碼映射（playlist 的 lang -> srclang）
+      const langMap = { TW: 'zh', EN: 'en', JP: 'ja', KR: 'ko' };
+      const srclang = langMap[track.lang] || 'zh';
+      const labels = { zh: '中文', en: 'English', ja: '日本語', ko: '한국어' };
+
+      const trackEl = document.createElement('track');
+      trackEl.kind = 'subtitles';
+      trackEl.src = srtPath;
+      trackEl.srclang = srclang;
+      trackEl.label = labels[srclang] || srclang;
+      // 預設不開啟原生字幕（避免跟自製歌詞面板重疊）；要看原生 CC 點瀏覽器播放器按鈕
+      // trackEl.default = true;
+      this.audio.appendChild(trackEl);
+
+      console.log('[MusicPlayer] Subtitle track attached:', srtPath, srclang);
+    }
+
     playTrack(index) {
       if (this.filteredTracks.length === 0) return;
       this.currentIndex = Math.max(0, Math.min(index, this.filteredTracks.length - 1));
@@ -393,6 +426,9 @@
       this.audio.src = track.audio;
       this.audio.volume = this.savedVolume / 100;
       this.audio.playbackRate = this.playbackSpeed;
+
+      // 動態掛載 <track> 原生字幕（SRT）— 瀏覽器原生 CC 按鈕可開關
+      this.attachSubtitleTrack(track);
 
       console.log('[MusicPlayer] Track set:', this.cleanTrackName(track.name), 'src:', this.audio.src, 'volume:', this.audio.volume);
 

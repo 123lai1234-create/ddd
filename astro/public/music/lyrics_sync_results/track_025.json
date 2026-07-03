@@ -1,7 +1,1515 @@
 {
   "track": "025",
   "transcription": "Ooh ooh\nOh oh oh\nOh oh oh oh\n\nStreetlights paint the pavement gold\nAnother story to unfold\n3 a.m., the city sleeps\nBut my restless spirit leaps\nThrough empty avenues I roam\nThis concrete jungle is my home\nLost in the hum and neon glow\nWhere the lonely wanderers go\nA silent promise in the air\nNo one to see, no one to care\n\nYeah, I'm walking on the edge of night\nBathed in artificial light\nLonely, yes\nBut feeling free\nJust the city and me\nThis electric dream I chase\nAt my own determined pace\n\nShadows stretch and then recede\nPlanting a defiant seed\nIn this quiet, vast expanse\nI do my solitary dance\nSoft whispers on the breeze\nAmong the skeletal trees\nLost in the hum and neon glow\nWhere the lonely wanderers go\nA silent promise in the air\nNo one to see, no one to care\n\nYeah, I'm walking on the edge of night\nBathed in artificial light\nLonely, yes\nBut feeling free\nJust the city and me\nThis electric dream I chase\nAt my own determined pace\n\nNo destination, no clear plan\nJust the rhythm of a wandering man\nEach step a beat, each breath a rhyme\nLost and found in space and time\n\nOoh ooh\nOoh ooh\nOoh ooh\nOh oh oh\nOh oh... Yeah\n\nI'm walking on the edge of night\nBathed in artificial light\nLonely, yes\nBut feeling free\nJust the city and me\nThis electric dream I chase\nAt my own determined pace\n\nOoh ooh\nOoh ooh\nOoh ooh\nOh oh oh\nOh oh",
-  "lyrics": "【Late Night City / Edge of Night】\n\nYeah\nOh yeah\nStreetlights paint the pavement gold\nAnother story to unfold\n3 AM, the city sleeps\nBut my restless spirit leaps\nThrough empty avenues I roam\nThis concrete jungle is my home\n\nLost in the hum and neon glow\nWhere the lonely wanderers go\nA silent promise in the air\nNo one to see, no one to care\n\nYeah, I'm walking on the edge of night\nBathed in artificial light\nLonely, yes, but feeling free\nJust the city and me\nThis electric dream I chase\nAt my own determined pace\n\nShadows stretch and then recede\nPlanting a defiant seed\nIn this quiet, vast expanse\nI do my solitary dance\nWhispers on the breeze\nAmong the skeletal trees\n\nNo destination, no clear plan\nJust the rhythm of a wandering man\nEach step a beat, each breath a rhyme\nLost and found in space and time\n\nOoh\nOoh\nOh, oh, yeah",
-  "match_score": 80,
-  "notes": "與track_050同曲。轉換與歌詞主體匹配，'3 a.m.'vs'3 AM'、'3am'小寫格式差異；副歌有多次重複展現（副歌出現3次 vs 歌詞檔1次）。分數80因橋段重複導致轉換量比歌詞多。"
+  "lyrics": "Ooh ooh\nOh oh oh\nOh oh oh oh\n\nStreetlights paint the pavement gold\nAnother story to unfold\n3 a.m., the city sleeps\nBut my restless spirit leaps\nThrough empty avenues I roam\nThis concrete jungle is my home\nLost in the hum and neon glow\nWhere the lonely wanderers go\nA silent promise in the air\nNo one to see, no one to care\n\nYeah, I'm walking on the edge of night\nBathed in artificial light\nLonely, yes\nBut feeling free\nJust the city and me\nThis electric dream I chase\nAt my own determined pace\n\nShadows stretch and then recede\nPlanting a defiant seed\nIn this quiet, vast expanse\nI do my solitary dance\nSoft whispers on the breeze\nAmong the skeletal trees\nLost in the hum and neon glow\nWhere the lonely wanderers go\nA silent promise in the air\nNo one to see, no one to care\n\nYeah, I'm walking on the edge of night\nBathed in artificial light\nLonely, yes\nBut feeling free\nJust the city and me\nThis electric dream I chase\nAt my own determined pace\n\nNo destination, no clear plan\nJust the rhythm of a wandering man\nEach step a beat, each breath a rhyme\nLost and found in space and time\n\nOoh ooh\nOoh ooh\nOoh ooh\nOh oh oh\nOh oh... Yeah\n\nI'm walking on the edge of night\nBathed in artificial light\nLonely, yes\nBut feeling free\nJust the city and me\nThis electric dream I chase\nAt my own determined pace\n\nOoh ooh\nOoh ooh\nOoh ooh\nOh oh oh\nOh oh",
+  "match_score": 100.0,
+  "notes": "100 分 - 歌詞檔與 JSON 皆已對齊音檔（原歌詞備份於 lyrics_original）",
+  "lyrics_original": "[00:00.00]Music\n[00:15.39]Streetlights paint the pavement gold Another story to unfold\n[00:24.00]3 a.m.\n[00:26.60]the city sleeps but my restless spirit leaves\n[00:31.50]Through empty avenues I roam this concrete jungle is my home\n[00:40.96]Lost in the harmony on globe where the lonely wanderers go\n[00:45.28]A silent promise in the air no one to see no one to care\n[00:49.00]I'm walking on the edge of night bathing artificial\n[00:53.24]light loneliness but feeling free just the city and me\n[01:04.12]This electric dream I chase at my own determined pace\n[01:13.47]Shadow stretching in receipt planting a defiant seed\n[01:20.33]In this quiet vast expanse I do my solitary dance\n[01:28.26]Synth whispers on the breeze among the skeletal trees\n[01:33.78]Lost in the harmony on globe where the lonely wanderers go\n[01:38.00]A silent promise in the air no one to see no one to care\n[01:42.58]I'm walking on the edge of night bathing artificial\n[01:46.12]light loneliness but feeling free just the city and me\n[01:57.64]This electric dream I chase at my own determined pace\n[02:06.37]No destination,\n[02:08.46]no clear plan just the rhythm of a wandering man\n[02:14.50]Each step a beat,\n[02:16.66]each breath a rhyme lost and found in space and time",
+  "lyrics_original_source": "lyrics_025.txt",
+  "whisper_word_timestamps": {
+    "language": "en",
+    "segments": [
+      {
+        "id": 0,
+        "start": 3.52,
+        "end": 4.92,
+        "text": "За",
+        "words": [
+          {
+            "word": " Заツ",
+            "start": 3.52,
+            "end": 4.92,
+            "probability": 5.135898049957177e-06
+          }
+        ]
+      },
+      {
+        "id": 1,
+        "start": 17.16,
+        "end": 18.56,
+        "text": "ツ.",
+        "words": [
+          {
+            "word": ".ツ.",
+            "start": 17.16,
+            "end": 18.56,
+            "probability": 0.0033955832186620682
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "start": 29.9,
+        "end": 29.98,
+        "text": "ツ.",
+        "words": [
+          {
+            "word": " Feng",
+            "start": 29.9,
+            "end": 29.98,
+            "probability": 1.2441275430319365e-05
+          },
+          {
+            "word": " I",
+            "start": 29.98,
+            "end": 29.98,
+            "probability": 0.0026629038620740175
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "start": 29.98,
+        "end": 29.98,
+        "text": "",
+        "words": []
+      },
+      {
+        "id": 4,
+        "start": 31.72,
+        "end": 39.08,
+        "text": "Through empty avenues I roam This concrete jungle is my home",
+        "words": [
+          {
+            "word": " Through",
+            "start": 31.72,
+            "end": 32.36,
+            "probability": 0.0885196253657341
+          },
+          {
+            "word": " empty",
+            "start": 32.36,
+            "end": 32.98,
+            "probability": 0.9753093123435974
+          },
+          {
+            "word": " avenues",
+            "start": 32.98,
+            "end": 34.14,
+            "probability": 0.9673494696617126
+          },
+          {
+            "word": " I",
+            "start": 34.14,
+            "end": 34.52,
+            "probability": 0.6737232804298401
+          },
+          {
+            "word": " roam",
+            "start": 34.52,
+            "end": 34.92,
+            "probability": 0.997014045715332
+          },
+          {
+            "word": " This",
+            "start": 34.92,
+            "end": 36.46,
+            "probability": 0.858428418636322
+          },
+          {
+            "word": " concrete",
+            "start": 36.46,
+            "end": 37.06,
+            "probability": 0.9981725215911865
+          },
+          {
+            "word": " jungle",
+            "start": 37.06,
+            "end": 37.9,
+            "probability": 0.9977732300758362
+          },
+          {
+            "word": " is",
+            "start": 37.9,
+            "end": 38.34,
+            "probability": 0.9727349281311035
+          },
+          {
+            "word": " my",
+            "start": 38.34,
+            "end": 38.6,
+            "probability": 0.9983323216438293
+          },
+          {
+            "word": " home",
+            "start": 38.6,
+            "end": 39.08,
+            "probability": 0.9992850422859192
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "start": 40.44,
+        "end": 46.04,
+        "text": "Lost in the harmony on glow Where the lonely wanderers go, a silent promise",
+        "words": [
+          {
+            "word": " Lost",
+            "start": 40.44,
+            "end": 41.08,
+            "probability": 0.9724522233009338
+          },
+          {
+            "word": " in",
+            "start": 41.08,
+            "end": 41.44,
+            "probability": 0.9974793791770935
+          },
+          {
+            "word": " the",
+            "start": 41.44,
+            "end": 41.66,
+            "probability": 0.9043943881988525
+          },
+          {
+            "word": " harmony",
+            "start": 41.66,
+            "end": 42.06,
+            "probability": 0.7832635641098022
+          },
+          {
+            "word": " on",
+            "start": 42.06,
+            "end": 42.52,
+            "probability": 0.65529865026474
+          },
+          {
+            "word": " glow",
+            "start": 42.52,
+            "end": 42.88,
+            "probability": 0.45348867774009705
+          },
+          {
+            "word": " Where",
+            "start": 42.88,
+            "end": 43.44,
+            "probability": 0.938199520111084
+          },
+          {
+            "word": " the",
+            "start": 43.44,
+            "end": 43.58,
+            "probability": 0.9934102892875671
+          },
+          {
+            "word": " lonely",
+            "start": 43.58,
+            "end": 43.98,
+            "probability": 0.9788761138916016
+          },
+          {
+            "word": " wanderers",
+            "start": 43.98,
+            "end": 44.68,
+            "probability": 0.9060104787349701
+          },
+          {
+            "word": " go,",
+            "start": 44.68,
+            "end": 44.96,
+            "probability": 0.9660853743553162
+          },
+          {
+            "word": " a",
+            "start": 45.04,
+            "end": 45.18,
+            "probability": 0.316444993019104
+          },
+          {
+            "word": " silent",
+            "start": 45.18,
+            "end": 45.56,
+            "probability": 0.9965740442276001
+          },
+          {
+            "word": " promise",
+            "start": 45.56,
+            "end": 46.04,
+            "probability": 0.9944590330123901
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "start": 46.04,
+        "end": 51.54,
+        "text": "In the air, no one to see, no one to care Yeah, I'm walking on the edge of night,",
+        "words": [
+          {
+            "word": " In",
+            "start": 46.04,
+            "end": 46.38,
+            "probability": 0.05978154391050339
+          },
+          {
+            "word": " the",
+            "start": 46.38,
+            "end": 46.56,
+            "probability": 0.9977017045021057
+          },
+          {
+            "word": " air,",
+            "start": 46.56,
+            "end": 46.76,
+            "probability": 0.9956934452056885
+          },
+          {
+            "word": " no",
+            "start": 47.02,
+            "end": 47.18,
+            "probability": 0.9884939789772034
+          },
+          {
+            "word": " one",
+            "start": 47.18,
+            "end": 47.48,
+            "probability": 0.9232633113861084
+          },
+          {
+            "word": " to",
+            "start": 47.48,
+            "end": 47.62,
+            "probability": 0.9965589642524719
+          },
+          {
+            "word": " see,",
+            "start": 47.62,
+            "end": 47.82,
+            "probability": 0.5758537650108337
+          },
+          {
+            "word": " no",
+            "start": 48.04,
+            "end": 48.2,
+            "probability": 0.9905977845191956
+          },
+          {
+            "word": " one",
+            "start": 48.2,
+            "end": 48.54,
+            "probability": 0.9953989386558533
+          },
+          {
+            "word": " to",
+            "start": 48.54,
+            "end": 48.68,
+            "probability": 0.9585803151130676
+          },
+          {
+            "word": " care",
+            "start": 48.68,
+            "end": 48.92,
+            "probability": 0.988303542137146
+          },
+          {
+            "word": " Yeah,",
+            "start": 48.92,
+            "end": 49.36,
+            "probability": 0.3703281283378601
+          },
+          {
+            "word": " I'm",
+            "start": 49.5,
+            "end": 49.8,
+            "probability": 0.9900628924369812
+          },
+          {
+            "word": " walking",
+            "start": 49.8,
+            "end": 50.12,
+            "probability": 0.8712005615234375
+          },
+          {
+            "word": " on",
+            "start": 50.12,
+            "end": 50.44,
+            "probability": 0.9926142692565918
+          },
+          {
+            "word": " the",
+            "start": 50.44,
+            "end": 50.62,
+            "probability": 0.9918421506881714
+          },
+          {
+            "word": " edge",
+            "start": 50.62,
+            "end": 51.06,
+            "probability": 0.9994315505027771
+          },
+          {
+            "word": " of",
+            "start": 51.06,
+            "end": 51.28,
+            "probability": 0.8773283362388611
+          },
+          {
+            "word": " night,",
+            "start": 51.28,
+            "end": 51.54,
+            "probability": 0.9472235441207886
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "start": 51.54,
+        "end": 58.08,
+        "text": "Bathe in artificial light Lonely, yes, but feeling free",
+        "words": [
+          {
+            "word": " Bathe",
+            "start": 51.54,
+            "end": 52.0,
+            "probability": 0.45679402351379395
+          },
+          {
+            "word": " in",
+            "start": 52.0,
+            "end": 52.16,
+            "probability": 0.899842381477356
+          },
+          {
+            "word": " artificial",
+            "start": 52.16,
+            "end": 53.02,
+            "probability": 0.9635843634605408
+          },
+          {
+            "word": " light",
+            "start": 53.02,
+            "end": 53.72,
+            "probability": 0.9686209559440613
+          },
+          {
+            "word": " Lonely,",
+            "start": 53.72,
+            "end": 54.68,
+            "probability": 0.7018912583589554
+          },
+          {
+            "word": " yes,",
+            "start": 55.16,
+            "end": 55.82,
+            "probability": 0.8822044730186462
+          },
+          {
+            "word": " but",
+            "start": 55.94,
+            "end": 56.8,
+            "probability": 0.9730116724967957
+          },
+          {
+            "word": " feeling",
+            "start": 56.8,
+            "end": 57.36,
+            "probability": 0.867655873298645
+          },
+          {
+            "word": " free",
+            "start": 57.36,
+            "end": 58.08,
+            "probability": 0.9959463477134705
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "start": 58.08,
+        "end": 70.62,
+        "text": "Just the city and me This electric dream I chase at my own determined pace",
+        "words": [
+          {
+            "word": " Just",
+            "start": 58.08,
+            "end": 60.5,
+            "probability": 0.8741951584815979
+          },
+          {
+            "word": " the",
+            "start": 60.5,
+            "end": 60.84,
+            "probability": 0.9760121703147888
+          },
+          {
+            "word": " city",
+            "start": 60.84,
+            "end": 61.24,
+            "probability": 0.9589688777923584
+          },
+          {
+            "word": " and",
+            "start": 61.24,
+            "end": 61.66,
+            "probability": 0.9656705260276794
+          },
+          {
+            "word": " me",
+            "start": 61.66,
+            "end": 62.18,
+            "probability": 0.9991689920425415
+          },
+          {
+            "word": " This",
+            "start": 62.18,
+            "end": 64.74,
+            "probability": 0.7805229425430298
+          },
+          {
+            "word": " electric",
+            "start": 64.74,
+            "end": 65.58,
+            "probability": 0.992291271686554
+          },
+          {
+            "word": " dream",
+            "start": 65.58,
+            "end": 66.5,
+            "probability": 0.9860154390335083
+          },
+          {
+            "word": " I",
+            "start": 66.5,
+            "end": 67.62,
+            "probability": 0.7607372403144836
+          },
+          {
+            "word": " chase",
+            "start": 67.62,
+            "end": 68.26,
+            "probability": 0.9470322728157043
+          },
+          {
+            "word": " at",
+            "start": 68.26,
+            "end": 68.56,
+            "probability": 0.7575556039810181
+          },
+          {
+            "word": " my",
+            "start": 68.56,
+            "end": 68.84,
+            "probability": 0.9978615641593933
+          },
+          {
+            "word": " own",
+            "start": 68.84,
+            "end": 69.32,
+            "probability": 0.9978131055831909
+          },
+          {
+            "word": " determined",
+            "start": 69.32,
+            "end": 69.9,
+            "probability": 0.7330752015113831
+          },
+          {
+            "word": " pace",
+            "start": 69.9,
+            "end": 70.62,
+            "probability": 0.9988682270050049
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "start": 72.76,
+        "end": 79.7,
+        "text": "Shadow stretching in receipt Planting a defiant seed",
+        "words": [
+          {
+            "word": " Shadow",
+            "start": 72.76,
+            "end": 73.76,
+            "probability": 0.01574457250535488
+          },
+          {
+            "word": " stretching",
+            "start": 73.76,
+            "end": 74.46,
+            "probability": 0.4319705069065094
+          },
+          {
+            "word": " in",
+            "start": 74.46,
+            "end": 74.96,
+            "probability": 0.2697843611240387
+          },
+          {
+            "word": " receipt",
+            "start": 74.96,
+            "end": 75.62,
+            "probability": 0.8408678770065308
+          },
+          {
+            "word": " Planting",
+            "start": 75.62,
+            "end": 77.92,
+            "probability": 0.32247163355350494
+          },
+          {
+            "word": " a",
+            "start": 77.92,
+            "end": 78.42,
+            "probability": 0.5545641779899597
+          },
+          {
+            "word": " defiant",
+            "start": 78.42,
+            "end": 79.16,
+            "probability": 0.7766849398612976
+          },
+          {
+            "word": " seed",
+            "start": 79.16,
+            "end": 79.7,
+            "probability": 0.8341087102890015
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "start": 80.78,
+        "end": 87.94,
+        "text": "In this quiet, vast expanse I do my solitary dancing",
+        "words": [
+          {
+            "word": " In",
+            "start": 80.78,
+            "end": 81.78,
+            "probability": 0.9212293028831482
+          },
+          {
+            "word": " this",
+            "start": 81.78,
+            "end": 82.0,
+            "probability": 0.9921250939369202
+          },
+          {
+            "word": " quiet,",
+            "start": 82.0,
+            "end": 82.78,
+            "probability": 0.9942942261695862
+          },
+          {
+            "word": " vast",
+            "start": 83.12,
+            "end": 83.84,
+            "probability": 0.9905782341957092
+          },
+          {
+            "word": " expanse",
+            "start": 83.84,
+            "end": 84.64,
+            "probability": 0.9809828102588654
+          },
+          {
+            "word": " I",
+            "start": 84.64,
+            "end": 85.8,
+            "probability": 0.9647448658943176
+          },
+          {
+            "word": " do",
+            "start": 85.8,
+            "end": 86.06,
+            "probability": 0.8898254632949829
+          },
+          {
+            "word": " my",
+            "start": 86.06,
+            "end": 86.3,
+            "probability": 0.9979273080825806
+          },
+          {
+            "word": " solitary",
+            "start": 86.3,
+            "end": 87.1,
+            "probability": 0.9815117716789246
+          },
+          {
+            "word": " dancing",
+            "start": 87.1,
+            "end": 87.94,
+            "probability": 0.4287887513637543
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "start": 87.94,
+        "end": 93.56,
+        "text": "Whispers on debris Among the skeletal trees",
+        "words": [
+          {
+            "word": " Whispers",
+            "start": 87.94,
+            "end": 88.98,
+            "probability": 0.5752126276493073
+          },
+          {
+            "word": " on",
+            "start": 88.98,
+            "end": 89.48,
+            "probability": 0.9839364290237427
+          },
+          {
+            "word": " debris",
+            "start": 89.48,
+            "end": 89.86,
+            "probability": 0.7326757907867432
+          },
+          {
+            "word": " Among",
+            "start": 89.86,
+            "end": 92.08,
+            "probability": 0.8422351479530334
+          },
+          {
+            "word": " the",
+            "start": 92.08,
+            "end": 92.48,
+            "probability": 0.953597366809845
+          },
+          {
+            "word": " skeletal",
+            "start": 92.48,
+            "end": 93.06,
+            "probability": 0.9755043685436249
+          },
+          {
+            "word": " trees",
+            "start": 93.06,
+            "end": 93.56,
+            "probability": 0.987147867679596
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "start": 93.56,
+        "end": 98.92,
+        "text": "Lost in the harmony on glow Where the lonely wanderers go, a silent promise",
+        "words": [
+          {
+            "word": " Lost",
+            "start": 93.56,
+            "end": 93.94,
+            "probability": 0.950798511505127
+          },
+          {
+            "word": " in",
+            "start": 93.94,
+            "end": 94.32,
+            "probability": 0.9981752634048462
+          },
+          {
+            "word": " the",
+            "start": 94.32,
+            "end": 94.54,
+            "probability": 0.8814717531204224
+          },
+          {
+            "word": " harmony",
+            "start": 94.54,
+            "end": 94.9,
+            "probability": 0.8615589141845703
+          },
+          {
+            "word": " on",
+            "start": 94.9,
+            "end": 95.4,
+            "probability": 0.9177782535552979
+          },
+          {
+            "word": " glow",
+            "start": 95.4,
+            "end": 95.72,
+            "probability": 0.7848313450813293
+          },
+          {
+            "word": " Where",
+            "start": 95.72,
+            "end": 96.3,
+            "probability": 0.9679134488105774
+          },
+          {
+            "word": " the",
+            "start": 96.3,
+            "end": 96.44,
+            "probability": 0.9941775798797607
+          },
+          {
+            "word": " lonely",
+            "start": 96.44,
+            "end": 96.86,
+            "probability": 0.9874204993247986
+          },
+          {
+            "word": " wanderers",
+            "start": 96.86,
+            "end": 97.56,
+            "probability": 0.9912126660346985
+          },
+          {
+            "word": " go,",
+            "start": 97.56,
+            "end": 97.82,
+            "probability": 0.9786025881767273
+          },
+          {
+            "word": " a",
+            "start": 97.88,
+            "end": 98.04,
+            "probability": 0.5671975612640381
+          },
+          {
+            "word": " silent",
+            "start": 98.04,
+            "end": 98.44,
+            "probability": 0.9970148801803589
+          },
+          {
+            "word": " promise",
+            "start": 98.44,
+            "end": 98.92,
+            "probability": 0.9878711700439453
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "start": 98.92,
+        "end": 104.42,
+        "text": "In the air, no one to see, no one to care Yeah, I'm walking on the edge of night,",
+        "words": [
+          {
+            "word": " In",
+            "start": 98.92,
+            "end": 99.24,
+            "probability": 0.012880802154541016
+          },
+          {
+            "word": " the",
+            "start": 99.24,
+            "end": 99.42,
+            "probability": 0.8688021302223206
+          },
+          {
+            "word": " air,",
+            "start": 99.42,
+            "end": 99.68,
+            "probability": 0.866736888885498
+          },
+          {
+            "word": " no",
+            "start": 99.88,
+            "end": 100.08,
+            "probability": 0.9453303217887878
+          },
+          {
+            "word": " one",
+            "start": 100.08,
+            "end": 100.38,
+            "probability": 0.3831983208656311
+          },
+          {
+            "word": " to",
+            "start": 100.38,
+            "end": 100.52,
+            "probability": 0.9846147894859314
+          },
+          {
+            "word": " see,",
+            "start": 100.52,
+            "end": 100.7,
+            "probability": 0.7473853826522827
+          },
+          {
+            "word": " no",
+            "start": 100.9,
+            "end": 101.12,
+            "probability": 0.9783610105514526
+          },
+          {
+            "word": " one",
+            "start": 101.12,
+            "end": 101.44,
+            "probability": 0.9904967546463013
+          },
+          {
+            "word": " to",
+            "start": 101.44,
+            "end": 101.66,
+            "probability": 0.9199797511100769
+          },
+          {
+            "word": " care",
+            "start": 101.66,
+            "end": 101.8,
+            "probability": 0.9860727787017822
+          },
+          {
+            "word": " Yeah,",
+            "start": 101.8,
+            "end": 102.22,
+            "probability": 0.5070995688438416
+          },
+          {
+            "word": " I'm",
+            "start": 102.34,
+            "end": 102.66,
+            "probability": 0.9892397820949554
+          },
+          {
+            "word": " walking",
+            "start": 102.66,
+            "end": 103.0,
+            "probability": 0.6225602030754089
+          },
+          {
+            "word": " on",
+            "start": 103.0,
+            "end": 103.32,
+            "probability": 0.9944133162498474
+          },
+          {
+            "word": " the",
+            "start": 103.32,
+            "end": 103.52,
+            "probability": 0.9979010820388794
+          },
+          {
+            "word": " edge",
+            "start": 103.52,
+            "end": 103.96,
+            "probability": 0.9971634745597839
+          },
+          {
+            "word": " of",
+            "start": 103.96,
+            "end": 104.14,
+            "probability": 0.059476789087057114
+          },
+          {
+            "word": " night,",
+            "start": 104.14,
+            "end": 104.42,
+            "probability": 0.4816470146179199
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "start": 104.48,
+        "end": 110.86,
+        "text": "Bathe in artificial light Lonely, yes, but feeling free",
+        "words": [
+          {
+            "word": " Bathe",
+            "start": 104.48,
+            "end": 104.9,
+            "probability": 0.12853694334626198
+          },
+          {
+            "word": " in",
+            "start": 104.9,
+            "end": 105.08,
+            "probability": 0.6639606952667236
+          },
+          {
+            "word": " artificial",
+            "start": 105.08,
+            "end": 105.7,
+            "probability": 0.9711215496063232
+          },
+          {
+            "word": " light",
+            "start": 105.7,
+            "end": 106.62,
+            "probability": 0.988468587398529
+          },
+          {
+            "word": " Lonely,",
+            "start": 106.62,
+            "end": 107.48,
+            "probability": 0.9006859064102173
+          },
+          {
+            "word": " yes,",
+            "start": 107.86,
+            "end": 108.66,
+            "probability": 0.9122663140296936
+          },
+          {
+            "word": " but",
+            "start": 109.02,
+            "end": 109.66,
+            "probability": 0.9859234094619751
+          },
+          {
+            "word": " feeling",
+            "start": 109.66,
+            "end": 110.26,
+            "probability": 0.679923415184021
+          },
+          {
+            "word": " free",
+            "start": 110.26,
+            "end": 110.86,
+            "probability": 0.9568883776664734
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "start": 112.62,
+        "end": 123.48,
+        "text": "Just the city and me This electric dream I chase at my own determined pace",
+        "words": [
+          {
+            "word": " Just",
+            "start": 112.62,
+            "end": 113.34,
+            "probability": 0.9202486872673035
+          },
+          {
+            "word": " the",
+            "start": 113.34,
+            "end": 113.68,
+            "probability": 0.9158467054367065
+          },
+          {
+            "word": " city",
+            "start": 113.68,
+            "end": 114.12,
+            "probability": 0.9730528593063354
+          },
+          {
+            "word": " and",
+            "start": 114.12,
+            "end": 114.56,
+            "probability": 0.5422982573509216
+          },
+          {
+            "word": " me",
+            "start": 114.56,
+            "end": 114.96,
+            "probability": 0.998752236366272
+          },
+          {
+            "word": " This",
+            "start": 114.96,
+            "end": 117.64,
+            "probability": 0.7726035714149475
+          },
+          {
+            "word": " electric",
+            "start": 117.64,
+            "end": 118.42,
+            "probability": 0.9936675429344177
+          },
+          {
+            "word": " dream",
+            "start": 118.42,
+            "end": 119.42,
+            "probability": 0.8964965343475342
+          },
+          {
+            "word": " I",
+            "start": 119.42,
+            "end": 120.48,
+            "probability": 0.6345194578170776
+          },
+          {
+            "word": " chase",
+            "start": 120.48,
+            "end": 121.06,
+            "probability": 0.9483231902122498
+          },
+          {
+            "word": " at",
+            "start": 121.06,
+            "end": 121.44,
+            "probability": 0.526343047618866
+          },
+          {
+            "word": " my",
+            "start": 121.44,
+            "end": 121.74,
+            "probability": 0.9983987212181091
+          },
+          {
+            "word": " own",
+            "start": 121.74,
+            "end": 122.16,
+            "probability": 0.9982362985610962
+          },
+          {
+            "word": " determined",
+            "start": 122.16,
+            "end": 122.76,
+            "probability": 0.8012850880622864
+          },
+          {
+            "word": " pace",
+            "start": 122.76,
+            "end": 123.48,
+            "probability": 0.998015284538269
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "start": 125.32000000000001,
+        "end": 133.32,
+        "text": "No destination, no clear plan Just the rhythm of a wandering man",
+        "words": [
+          {
+            "word": " No",
+            "start": 125.32000000000001,
+            "end": 126.48,
+            "probability": 0.6987066864967346
+          },
+          {
+            "word": " destination,",
+            "start": 126.48,
+            "end": 127.34,
+            "probability": 0.977532148361206
+          },
+          {
+            "word": " no",
+            "start": 127.8,
+            "end": 128.52,
+            "probability": 0.9486417770385742
+          },
+          {
+            "word": " clear",
+            "start": 128.52,
+            "end": 128.78,
+            "probability": 0.9555680751800537
+          },
+          {
+            "word": " plan",
+            "start": 128.78,
+            "end": 129.24,
+            "probability": 0.8682292699813843
+          },
+          {
+            "word": " Just",
+            "start": 129.24,
+            "end": 130.58,
+            "probability": 0.8066408038139343
+          },
+          {
+            "word": " the",
+            "start": 130.58,
+            "end": 130.84,
+            "probability": 0.9629501104354858
+          },
+          {
+            "word": " rhythm",
+            "start": 130.84,
+            "end": 131.52,
+            "probability": 0.9933493733406067
+          },
+          {
+            "word": " of",
+            "start": 131.52,
+            "end": 131.96,
+            "probability": 0.9974651336669922
+          },
+          {
+            "word": " a",
+            "start": 131.96,
+            "end": 132.14,
+            "probability": 0.9914529323577881
+          },
+          {
+            "word": " wandering",
+            "start": 132.14,
+            "end": 132.72,
+            "probability": 0.9638055562973022
+          },
+          {
+            "word": " man",
+            "start": 132.72,
+            "end": 133.32,
+            "probability": 0.9691116213798523
+          }
+        ]
+      },
+      {
+        "id": 17,
+        "start": 133.32,
+        "end": 142.7,
+        "text": "Each step of being, each breath of rhyme Lost and found in space and time",
+        "words": [
+          {
+            "word": " Each",
+            "start": 133.32,
+            "end": 134.66,
+            "probability": 0.9519140124320984
+          },
+          {
+            "word": " step",
+            "start": 134.66,
+            "end": 134.9,
+            "probability": 0.9970738887786865
+          },
+          {
+            "word": " of",
+            "start": 134.9,
+            "end": 135.12,
+            "probability": 0.44896936416625977
+          },
+          {
+            "word": " being,",
+            "start": 135.12,
+            "end": 135.58,
+            "probability": 0.6136019229888916
+          },
+          {
+            "word": " each",
+            "start": 135.74,
+            "end": 136.7,
+            "probability": 0.9930465817451477
+          },
+          {
+            "word": " breath",
+            "start": 136.7,
+            "end": 136.92,
+            "probability": 0.997795820236206
+          },
+          {
+            "word": " of",
+            "start": 136.92,
+            "end": 137.12,
+            "probability": 0.8010659217834473
+          },
+          {
+            "word": " rhyme",
+            "start": 137.12,
+            "end": 137.78,
+            "probability": 0.3599884808063507
+          },
+          {
+            "word": " Lost",
+            "start": 137.78,
+            "end": 138.96,
+            "probability": 0.9531511664390564
+          },
+          {
+            "word": " and",
+            "start": 138.96,
+            "end": 139.22,
+            "probability": 0.9729658365249634
+          },
+          {
+            "word": " found",
+            "start": 139.22,
+            "end": 139.88,
+            "probability": 0.9883987307548523
+          },
+          {
+            "word": " in",
+            "start": 139.88,
+            "end": 140.4,
+            "probability": 0.966127872467041
+          },
+          {
+            "word": " space",
+            "start": 140.4,
+            "end": 141.08,
+            "probability": 0.9801672101020813
+          },
+          {
+            "word": " and",
+            "start": 141.08,
+            "end": 141.98,
+            "probability": 0.9906960725784302
+          },
+          {
+            "word": " time",
+            "start": 141.98,
+            "end": 142.7,
+            "probability": 0.9981790781021118
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "start": 158.18,
+        "end": 164.84,
+        "text": "Oh, oh, oh, oh, oh, yeah I'm walking on the edge of night,",
+        "words": [
+          {
+            "word": " Oh,",
+            "start": 158.18,
+            "end": 159.16,
+            "probability": 0.06102834641933441
+          },
+          {
+            "word": " oh,",
+            "start": 159.18,
+            "end": 159.5,
+            "probability": 0.284490704536438
+          },
+          {
+            "word": " oh,",
+            "start": 159.5,
+            "end": 161.14,
+            "probability": 0.8549706935882568
+          },
+          {
+            "word": " oh,",
+            "start": 161.14,
+            "end": 161.64,
+            "probability": 0.6568395495414734
+          },
+          {
+            "word": " oh,",
+            "start": 161.64,
+            "end": 161.7,
+            "probability": 0.34662893414497375
+          },
+          {
+            "word": " yeah",
+            "start": 161.7,
+            "end": 162.44,
+            "probability": 0.7213935256004333
+          },
+          {
+            "word": " I'm",
+            "start": 162.44,
+            "end": 163.24,
+            "probability": 0.5923963934183121
+          },
+          {
+            "word": " walking",
+            "start": 163.24,
+            "end": 163.5,
+            "probability": 0.6998103260993958
+          },
+          {
+            "word": " on",
+            "start": 163.5,
+            "end": 163.98,
+            "probability": 0.9914884567260742
+          },
+          {
+            "word": " the",
+            "start": 163.98,
+            "end": 164.14,
+            "probability": 0.9945303797721863
+          },
+          {
+            "word": " edge",
+            "start": 164.14,
+            "end": 164.34,
+            "probability": 0.9995075464248657
+          },
+          {
+            "word": " of",
+            "start": 164.34,
+            "end": 164.5,
+            "probability": 0.993202805519104
+          },
+          {
+            "word": " night,",
+            "start": 164.5,
+            "end": 164.84,
+            "probability": 0.871461033821106
+          }
+        ]
+      },
+      {
+        "id": 19,
+        "start": 164.98,
+        "end": 171.92,
+        "text": "Bathe in artificial light Lonely, yes, but feeling free",
+        "words": [
+          {
+            "word": " Bathe",
+            "start": 164.98,
+            "end": 165.92,
+            "probability": 0.08664213493466377
+          },
+          {
+            "word": " in",
+            "start": 165.92,
+            "end": 166.06,
+            "probability": 0.9712599515914917
+          },
+          {
+            "word": " artificial",
+            "start": 166.06,
+            "end": 166.32,
+            "probability": 0.8773935437202454
+          },
+          {
+            "word": " light",
+            "start": 166.32,
+            "end": 167.66,
+            "probability": 0.9906436800956726
+          },
+          {
+            "word": " Lonely,",
+            "start": 167.66,
+            "end": 168.52,
+            "probability": 0.5644573718309402
+          },
+          {
+            "word": " yes,",
+            "start": 169.04,
+            "end": 169.76,
+            "probability": 0.3378241956233978
+          },
+          {
+            "word": " but",
+            "start": 170.06,
+            "end": 170.7,
+            "probability": 0.9608187675476074
+          },
+          {
+            "word": " feeling",
+            "start": 170.7,
+            "end": 171.26,
+            "probability": 0.7896937727928162
+          },
+          {
+            "word": " free",
+            "start": 171.26,
+            "end": 171.92,
+            "probability": 0.9967284202575684
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "start": 173.4,
+        "end": 183.46,
+        "text": "Just the city and me This electric dream I chase at my own determined pace",
+        "words": [
+          {
+            "word": " Just",
+            "start": 173.4,
+            "end": 174.38,
+            "probability": 0.8485561609268188
+          },
+          {
+            "word": " the",
+            "start": 174.38,
+            "end": 174.72,
+            "probability": 0.855114758014679
+          },
+          {
+            "word": " city",
+            "start": 174.72,
+            "end": 175.14,
+            "probability": 0.9796905517578125
+          },
+          {
+            "word": " and",
+            "start": 175.14,
+            "end": 175.6,
+            "probability": 0.629138708114624
+          },
+          {
+            "word": " me",
+            "start": 175.6,
+            "end": 176.1,
+            "probability": 0.9993849992752075
+          },
+          {
+            "word": " This",
+            "start": 176.1,
+            "end": 178.64,
+            "probability": 0.7676340937614441
+          },
+          {
+            "word": " electric",
+            "start": 178.64,
+            "end": 179.48,
+            "probability": 0.9763398766517639
+          },
+          {
+            "word": " dream",
+            "start": 179.48,
+            "end": 180.54,
+            "probability": 0.9527627229690552
+          },
+          {
+            "word": " I",
+            "start": 180.54,
+            "end": 181.54,
+            "probability": 0.534228503704071
+          },
+          {
+            "word": " chase",
+            "start": 181.54,
+            "end": 182.06,
+            "probability": 0.8471878170967102
+          },
+          {
+            "word": " at",
+            "start": 182.06,
+            "end": 182.46,
+            "probability": 0.716357946395874
+          },
+          {
+            "word": " my",
+            "start": 182.46,
+            "end": 182.76,
+            "probability": 0.9982694387435913
+          },
+          {
+            "word": " own",
+            "start": 182.76,
+            "end": 183.18,
+            "probability": 0.9943292737007141
+          },
+          {
+            "word": " determined",
+            "start": 183.18,
+            "end": 183.46,
+            "probability": 0.004525579512119293
+          },
+          {
+            "word": " pace",
+            "start": 183.46,
+            "end": 183.46,
+            "probability": 0.04339095577597618
+          }
+        ]
+      },
+      {
+        "id": 21,
+        "start": 183.48,
+        "end": 184.64,
+        "text": "Turn in pace",
+        "words": [
+          {
+            "word": " Turn",
+            "start": 183.48,
+            "end": 183.8,
+            "probability": 0.10962823778390884
+          },
+          {
+            "word": " in",
+            "start": 183.8,
+            "end": 184.02,
+            "probability": 0.39557206630706787
+          },
+          {
+            "word": " pace",
+            "start": 184.02,
+            "end": 184.64,
+            "probability": 0.09155990928411484
+          }
+        ]
+      }
+    ]
+  }
 }

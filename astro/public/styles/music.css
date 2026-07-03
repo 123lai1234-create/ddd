@@ -201,6 +201,7 @@ select option { background: var(--bg-card); }
 
 .track-info { min-width: 0; }
 .track-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-title .srt-badge { display: inline-block; background: var(--accent); color: #000; font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; margin-left: 6px; vertical-align: middle; font-weight: 800; letter-spacing: 0.5px; }
 .track-row.playing .track-title { color: var(--accent); }
 .track-artist-list { font-size: 0.8rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
 .track-album { font-size: 0.82rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.75; }
@@ -330,9 +331,25 @@ select option { background: var(--bg-card); }
   font-weight: 600;
 }
 
-.lyrics-translate-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.lyrics-translate-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
 .translate-tab { padding: 8px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; background: var(--bg-card); color: var(--text-secondary); border: none; transition: all 0.2s; }
 .translate-tab.active { background: var(--accent); color: #000; }
+
+.lyrics-cc-hint {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(255,85,0,0.08);
+  border: 1px dashed var(--accent, #ff5500);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  text-align: center;
+  line-height: 1.4;
+}
+.lyrics-cc-hint b {
+  color: var(--accent, #ff5500);
+  font-weight: 700;
+}
 
 .lyrics-container { flex: 1; overflow-y: auto; padding: 8px 0; }
 .lyrics-container::-webkit-scrollbar { width: 4px; }
