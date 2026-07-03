@@ -7,8 +7,8 @@ import Base from '../layouts/Base.astro';
     ogTag="Portfolio"
     bodyPage="index"
     schemaType="ProfilePage"
-    pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css"]}
-    pageScripts={["https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js"]}
+    pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css", "/styles/chatbot.css"]}
+    pageScripts={["https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js", "/scripts/chatbot.js"]}
     noImmersive
 >
     <div data-site-nav></div>
@@ -288,89 +288,15 @@ import Base from '../layouts/Base.astro';
     <div id="chatbot-panel">
         <div class="chatbot-header">
             <h4>AI 助手</h4>
-            <button class="chatbot-close" aria-label="關閉">✕</button>
+            <div class="chatbot-header-actions">
+                <button id="chatbot-clear" class="chatbot-icon-btn" title="清除對話" aria-label="清除對話">↻</button>
+                <button id="chatbot-close" class="chatbot-icon-btn" aria-label="關閉">✕</button>
+            </div>
         </div>
-        <div id="chatbot-messages">
-            <div class="chat-msg chat-bot">你好！有什麼關於這個作品集的問題嗎？</div>
-        </div>
+        <div id="chatbot-messages"></div>
         <div class="chatbot-input-row">
-            <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off" />
+            <input id="chatbot-input" type="text" placeholder="講講蛋白質？基因？韌體？" autocomplete="off" />
             <button id="chatbot-send">送出</button>
         </div>
     </div>
-
-    <script>
-    (function() {
-        const SYSTEM = `你是這個作品集網站的 AI 助手。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師。
-專長：ESM-2 蛋白質語言模型、ProteinMPNN、Bayesian Optimization（BoTorch/qLogEI）、REINFORCE RL、
-FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場資料平台。
-請用繁體中文回答，保持專業友善，回答不超過 200 字。只回答與作品集相關的問題。`;
-
-        let history = [];
-        let busy = false;
-
-        const toggle = document.getElementById('chatbot-toggle');
-        const panel  = document.getElementById('chatbot-panel');
-        const close  = document.querySelector('.chatbot-close');
-        const msgs   = document.getElementById('chatbot-messages');
-        const input  = document.getElementById('chatbot-input');
-        const send   = document.getElementById('chatbot-send');
-
-        toggle.addEventListener('click', () => panel.classList.toggle('open'));
-        close.addEventListener('click',  () => panel.classList.remove('open'));
-        send.addEventListener('click', submit);
-        input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) submit(); });
-
-        async function submit() {
-            const text = input.value.trim();
-            if (!text || busy) return;
-            input.value = '';
-            addMsg('user', text);
-            history.push({ role: 'user', content: text });
-            setBusy(true);
-            // SECURITY: 前端不能直連 Anthropic API（會洩漏 key / 401）。
-            // 改走站內 /api/chat proxy；proxy 失敗就誠實顯示，不要再嘗試直連外部 API。
-            try {
-                const res = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        system: SYSTEM,
-                        messages: history.slice(-10),
-                    }),
-                });
-                if (!res.ok) throw new Error(`proxy ${res.status}`);
-                const data = await res.json();
-                const reply = data.reply ?? data.content?.[0]?.text ?? '抱歉，暫時無法回應。';
-                history.push({ role: 'assistant', content: reply });
-                addMsg('bot', reply);
-            } catch {
-                addMsg('bot', '⚠️ 聊天助理暫停服務，請稍後再試或直接到 [關於我] 頁面看聯絡方式。');
-            } finally {
-                setBusy(false);
-            }
-        }
-
-        function addMsg(role, text) {
-            const d = document.createElement('div');
-            d.className = `chat-msg chat-${role}`;
-            d.textContent = text;
-            msgs.appendChild(d);
-            msgs.scrollTop = msgs.scrollHeight;
-        }
-
-        function setBusy(v) {
-            busy = v; send.disabled = v; input.disabled = v;
-            document.getElementById('chat-typing')?.remove();
-            if (v) {
-                const t = document.createElement('div');
-                t.id = 'chat-typing';
-                t.className = 'chat-msg chat-bot chat-typing';
-                t.innerHTML = '<span></span><span></span><span></span>';
-                msgs.appendChild(t);
-                msgs.scrollTop = msgs.scrollHeight;
-            }
-        }
-    })();
-    </script>
 </Base>
