@@ -437,8 +437,12 @@
       document.getElementById('modal-title').textContent = this.cleanTrackName(track.name);
       document.getElementById('modal-artist').textContent = track.artist || '--';
 
-      if (track.cover) {
-        document.getElementById('album-img').src = track.cover;
+      // track.cover 可能是字串或 {cdn, local} 物件，統一抽出 URL
+      const coverUrl = typeof track.cover === 'string'
+        ? track.cover
+        : (track.cover?.cdn || track.cover?.local || '');
+      if (coverUrl) {
+        document.getElementById('album-img').src = coverUrl;
         document.getElementById('album-img').style.display = '';
         document.getElementById('album-fallback').style.display = 'none';
       } else {
