@@ -1,6 +1,6 @@
 // Service worker for donttalk portfolio.
 // Bump CACHE_NAME to force clients to drop stale HTML/JS after a redeploy.
-const BUILD_TAG = '2026-07-02-v4';
+const BUILD_TAG = '2026-07-04-v5';
 const CACHE_NAME = `portfolio-${BUILD_TAG}`;
 const STATIC_ASSETS = [
   '/manifest.json',
@@ -53,6 +53,23 @@ self.addEventListener('fetch', event => {
           return res;
         })
         .catch(() => caches.match(request).then(cached => cached || caches.match('/')))
+    );
+    return;
+  }
+
+  // Music/audio/lyrics files: network-first to avoid caching failed fetch responses
+  // (cache-first would permanently poison the cache if a single request fails).
+  if (url.pathname.startsWith('/music/')) {
+    event.respondWith(
+      fetch(request)
+        .then(res => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then(c => c.put(request, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(request))
     );
     return;
   }

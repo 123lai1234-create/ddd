@@ -4,6 +4,7 @@
 // spammed the console on Netlify. Re-add with a host-conditional wrapper if
 // analytics are needed on both hosts.
 import ImmersiveBackground from '../components/ImmersiveBackground.astro';
+import MaintenanceBanner from '../components/MaintenanceBanner.astro';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -233,6 +234,7 @@ const personSchema = {
 </head>
 <body data-page={bodyPage}>
     {!noImmersive && <ImmersiveBackground />}
+    <MaintenanceBanner />
     <slot />
     {pageScripts.map((src) => <script is:inline src={withCacheBuster(src)}></script>)}
 

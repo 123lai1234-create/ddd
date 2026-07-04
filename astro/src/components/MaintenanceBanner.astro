@@ -1,0 +1,141 @@
+---
+// Maintenance banner — shows when backend /api/* is unreachable.
+//
+// Two trigger modes (checked in order):
+//   1. FORCE: import.meta.env.PUBLIC_MAINTENANCE_MODE === 'true'
+//      Set in Vercel project env vars; renders immediately on every page.
+//   2. AUTO-DETECT (client): pings /api/healthz every 60s; shows after
+//      3 consecutive failures (so a single 5xx hiccup doesn't trigger).
+//
+// User can dismiss; dismissal is remembered in sessionStorage for 1 hour.
+//
+// The "tracking URL" link target is configured at runtime via
+// window.MAIN_BANNER.trackingUrl — set in any page-level script before
+// this component renders, or hard-code the default below.
+
+interface Props {
+    force?: boolean;
+}
+const { force = false } = Astro.props;
+---
+<div id="main-banner" hidden data-force={force ? 'true' : 'false'} role="status" aria-live="polite"
+     style="position:relative;z-index:10000;background:linear-gradient(90deg,#f59e0b 0%,#d97706 100%);color:#1f1300;padding:10px 16px;font-size:14px;line-height:1.5;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.25);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif">
+  <span aria-hidden="true" style="font-size:18px;flex-shrink:0">⚠️</span>
+  <span style="flex:1;min-width:0">
+    <strong style="font-weight:700">後端服務維護中</strong>
+    — 頁面結構正常，但 <code style="background:rgba(0,0,0,.12);padding:1px 5px;border-radius:4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em">/api/*</code> 請求會失敗，自選股、圖表、新聞、掃描等資料功能暫時無法使用。
+    詳見 <a id="mb-link" href="#" data-url-default="true"
+          style="color:#1f1300;text-decoration:underline;font-weight:600">追蹤進度</a>。
+  </span>
+  <button id="mb-close" type="button" aria-label="關閉維護通知"
+          style="background:transparent;border:1px solid rgba(0,0,0,.18);color:#1f1300;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;transition:background .15s"
+          onmouseover="this.style.background='rgba(0,0,0,.08)'"
+          onmouseout="this.style.background='transparent'">✕</button>
+</div>
+
+<style is:global>
+  /* Smooth entry when banner reveals itself */
+  #main-banner:not([hidden]) {
+    animation: mbSlideDown .35s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes mbSlideDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+  }
+  /* Mobile: stack icon/text vertically a bit tighter */
+  @media (max-width: 560px) {
+    #main-banner { font-size: 12.5px; padding: 8px 12px; gap: 8px; }
+    #main-banner code { font-size: .85em; }
+  }
+</style>
+
+<script is:inline>
+(function() {
+  const banner = document.getElementById('main-banner');
+  if (!banner) return;
+  const link   = document.getElementById('mb-link');
+  const btn    = document.getElementById('mb-close');
+
+  // ── Tracking URL config ──
+  // Set window.MAIN_BANNER = { trackingUrl: 'https://...' } anywhere before
+  // this script runs to override the default '#' placeholder.
+  const cfg = (typeof window.MAIN_BANNER === 'object' && window.MAIN_BANNER) || {};
+  if (cfg.trackingUrl) {
+    link.href = cfg.trackingUrl;
+    link.removeAttribute('data-url-default');
+    if (cfg.trackingLabel) link.textContent = cfg.trackingLabel;
+  }
+
+  // ── Dismiss state (sessionStorage, 1h TTL) ──
+  const DISMISS_KEY = 'main-banner-dismissed-at';
+  const TTL_MS = 60 * 60 * 1000;
+  const dismissedAt = parseInt(sessionStorage.getItem(DISMISS_KEY) || '0', 10);
+  if (dismissedAt && (Date.now() - dismissedAt) < TTL_MS) {
+    banner.dataset.userDismissed = '1';
+  }
+
+  // ── Show / hide ──
+  let visible = false;
+  function show(reason) {
+    if (banner.dataset.userDismissed === '1') return;
+    if (!visible) {
+      banner.removeAttribute('hidden');
+      banner.dataset.reason = reason;
+      visible = true;
+      // Push content down if banner is at top of body
+      try { document.body.style.scrollPaddingTop = '52px'; } catch(_) {}
+    }
+  }
+  function hide() {
+    if (visible) {
+      banner.setAttribute('hidden', '');
+      visible = false;
+    }
+  }
+
+  // ── 1. Force mode (server-rendered) ──
+  if (banner.dataset.force === 'true') {
+    show('forced');
+  }
+
+  // ── 2. Auto-detect: ping /api/healthz ──
+  let failCount = 0;
+  const FAIL_THRESHOLD = 3;
+  const CHECK_INTERVAL = 60_000;
+
+  async function checkHealth() {
+    // Skip if user dismissed or force-mode already showing
+    if (banner.dataset.force === 'true') return;
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 8000);
+      const r = await fetch('/api/healthz', { cache: 'no-store', signal: ctrl.signal });
+      clearTimeout(tid);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json().catch(() => ({}));
+      // Accept either {status:"ok"} or {ok:true} shapes
+      if (j.status === 'ok' || j.ok === true) {
+        failCount = 0;
+        if (visible && banner.dataset.reason === 'health-fail') hide();
+      } else {
+        throw new Error('bad payload: ' + JSON.stringify(j).slice(0, 60));
+      }
+    } catch (e) {
+      failCount++;
+      console.warn('[main-banner] /api/healthz fail #' + failCount + ':', e.message || e);
+      if (failCount >= FAIL_THRESHOLD) show('health-fail');
+    }
+  }
+
+  // First check after a short delay so it doesn't block initial paint
+  setTimeout(checkHealth, 1500);
+  setInterval(checkHealth, CHECK_INTERVAL);
+
+  // ── Close button ──
+  btn.addEventListener('click', () => {
+    sessionStorage.setItem(DISMISS_KEY, String(Date.now()));
+    banner.dataset.userDismissed = '1';
+    hide();
+  });
+})();
+</script>

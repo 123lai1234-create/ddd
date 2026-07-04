@@ -959,8 +959,9 @@ function bindTabs() {
         btn.addEventListener('click', () => {
             const id = btn.getAttribute('data-site-id');
             if (!id || id === currentSiteId) return;
-            // 更新 URL hash (不滾動)
+            // 更新 URL hash (不滾動) + 立刻切換視覺狀態
             history.replaceState(null, '', `#${id}`);
+            setActiveTab(id);  // 立刻更新 active class,不依賴 fetch 完成
             loadForSite(id);
         });
     });
