@@ -89357,7 +89357,10 @@ async function verifySignature(channelSecret, body, signature) {
 
 // src/lib/yahoo-extended.ts
 var UA5 = "Mozilla/5.0 (compatible; donttalk-line/1.0; +https://donttalk.vercel.app)";
-var fetchOpts = { headers: { "User-Agent": UA5, Accept: "application/json" } };
+var fetchOpts = {
+  headers: { "User-Agent": UA5, Accept: "application/json" },
+  signal: AbortSignal.timeout(5e3)
+};
 var YAHOO_CHART = "https://query1.finance.yahoo.com/v8/finance/chart";
 var FRANKFURTER = "https://api.frankfurter.app/latest";
 var TWSE_FUND = "https://www.twse.com.tw/rwd/zh/fund/BFI82U";
@@ -89415,29 +89418,31 @@ var CITY_CODES = {
   "\u9023\u6C5F": "F-D0047-045"
 };
 async function fetchRawCandles(ticker, days = 240) {
-  const range = days > 200 ? "1y" : days > 60 ? "6mo" : "3mo";
-  const url = `${YAHOO_CHART}/${encodeURIComponent(ticker)}?range=${range}&interval=1d`;
-  const res = await fetch(url, fetchOpts);
-  if (!res.ok) throw new Error(`yahoo chart ${ticker} ${res.status}`);
-  const json = await res.json();
-  const result = json?.chart?.result?.[0];
-  if (!result) throw new Error(`yahoo chart empty: ${ticker}`);
-  const ts = result.timestamp ?? [];
-  const q = result.indicators?.quote?.[0] ?? {};
-  const out = [];
-  for (let i = 0; i < ts.length; i++) {
-    const close = q.close?.[i];
-    if (close == null) continue;
-    out.push({
-      time: new Date(ts[i] * 1e3).toISOString().slice(0, 10),
-      open: q.open?.[i] ?? close,
-      high: q.high?.[i] ?? close,
-      low: q.low?.[i] ?? close,
-      close,
-      volume: q.volume?.[i] ?? 0
-    });
-  }
-  return out;
+  return cached(`yahoo:chart:${ticker}:${days}`, 60, async () => {
+    const range = days > 200 ? "1y" : days > 60 ? "6mo" : "3mo";
+    const url = `${YAHOO_CHART}/${encodeURIComponent(ticker)}?range=${range}&interval=1d`;
+    const res = await fetch(url, fetchOpts);
+    if (!res.ok) throw new Error(`yahoo chart ${ticker} ${res.status}`);
+    const json = await res.json();
+    const result = json?.chart?.result?.[0];
+    if (!result) throw new Error(`yahoo chart empty: ${ticker}`);
+    const ts = result.timestamp ?? [];
+    const q = result.indicators?.quote?.[0] ?? {};
+    const out = [];
+    for (let i = 0; i < ts.length; i++) {
+      const close = q.close?.[i];
+      if (close == null) continue;
+      out.push({
+        time: new Date(ts[i] * 1e3).toISOString().slice(0, 10),
+        open: q.open?.[i] ?? close,
+        high: q.high?.[i] ?? close,
+        low: q.low?.[i] ?? close,
+        close,
+        volume: q.volume?.[i] ?? 0
+      });
+    }
+    return out;
+  });
 }
 async function resolveTickerSuffix(code) {
   for (const suffix of [".TW", ".TWO"]) {
@@ -91153,9 +91158,23 @@ router10.post(
     logger.info({ count: events.length }, "LINE webhook events");
     res.status(200).json({ ok: true });
     setImmediate(() => {
-      events.forEach((ev) => {
-        handleEvent(ev).catch((err) => logger.error({ err, type: ev.type }, "LINE event handler failed"));
-      });
+      for (const ev of events) {
+        const HARD_TIMEOUT_MS = 8e3;
+        const cap = new Promise(
+          (_, reject) => setTimeout(() => reject(new Error("handler-timeout")), HARD_TIMEOUT_MS)
+        );
+        Promise.race([handleEvent(ev), cap]).catch(async (err) => {
+          logger.error({ err: err?.message ?? err, type: ev.type }, "LINE event handler failed");
+          if (ev.replyToken) {
+            try {
+              await replyMessage(ev.replyToken, [
+                { type: "text", text: "\u23F1\uFE0F \u8CC7\u6599\u53D6\u5F97\u903E\u6642\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u4E00\u6B21\uFF0C\u6216\u8F38\u5165 help \u770B\u6307\u4EE4\u3002" }
+              ]);
+            } catch (_) {
+            }
+          }
+        });
+      }
     });
     return;
   }

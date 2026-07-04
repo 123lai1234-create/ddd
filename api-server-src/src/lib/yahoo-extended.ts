@@ -9,7 +9,13 @@ import type { Candle } from "./yahoo";
 import { cached } from "./cache";
 
 const UA = "Mozilla/5.0 (compatible; donttalk-line/1.0; +https://donttalk.vercel.app)";
-const fetchOpts = { headers: { "User-Agent": UA, Accept: "application/json" } };
+// 5s hard cap on every Yahoo call. The LINE webhook survives 3s ack but
+// the serverless function can keep running past that; we still want
+// to bound network hangs so handler() reaches the replyMessage call.
+const fetchOpts = {
+  headers: { "User-Agent": UA, Accept: "application/json" },
+  signal: AbortSignal.timeout(5000),
+} as const;
 
 const YAHOO_CHART = "https://query1.finance.yahoo.com/v8/finance/chart";
 const FRANKFURTER = "https://api.frankfurter.app/latest";
@@ -71,33 +77,37 @@ interface YahooChartCandle {
   volume: number;
 }
 
-/** Raw daily candles via Yahoo chart endpoint. `days` controls the range hint. */
+/** Raw daily candles via Yahoo chart endpoint. `days` controls the range hint.
+ *  Cached aggressively (60s) — multi-stock commands previously hammered Yahoo
+ *  with 12 concurrent fetches per webhook event. */
 export async function fetchRawCandles(ticker: string, days = 240): Promise<YahooChartCandle[]> {
-  const range = days > 200 ? "1y" : days > 60 ? "6mo" : "3mo";
-  const url = `${YAHOO_CHART}/${encodeURIComponent(ticker)}?range=${range}&interval=1d`;
-  const res = await fetch(url, fetchOpts);
-  if (!res.ok) throw new Error(`yahoo chart ${ticker} ${res.status}`);
-  const json = (await res.json()) as {
-    chart?: { result?: { timestamp?: number[]; indicators?: { quote?: Array<{ open?: (number | null)[]; high?: (number | null)[]; low?: (number | null)[]; close?: (number | null)[]; volume?: (number | null)[] }> } }[] };
-  };
-  const result = json?.chart?.result?.[0];
-  if (!result) throw new Error(`yahoo chart empty: ${ticker}`);
-  const ts = result.timestamp ?? [];
-  const q = result.indicators?.quote?.[0] ?? {};
-  const out: YahooChartCandle[] = [];
-  for (let i = 0; i < ts.length; i++) {
-    const close = q.close?.[i];
-    if (close == null) continue;
-    out.push({
-      time: new Date(ts[i] * 1000).toISOString().slice(0, 10),
-      open: q.open?.[i] ?? close,
-      high: q.high?.[i] ?? close,
-      low: q.low?.[i] ?? close,
-      close,
-      volume: q.volume?.[i] ?? 0,
-    });
-  }
-  return out;
+  return cached(`yahoo:chart:${ticker}:${days}`, 60, async () => {
+    const range = days > 200 ? "1y" : days > 60 ? "6mo" : "3mo";
+    const url = `${YAHOO_CHART}/${encodeURIComponent(ticker)}?range=${range}&interval=1d`;
+    const res = await fetch(url, fetchOpts);
+    if (!res.ok) throw new Error(`yahoo chart ${ticker} ${res.status}`);
+    const json = (await res.json()) as {
+      chart?: { result?: { timestamp?: number[]; indicators?: { quote?: Array<{ open?: (number | null)[]; high?: (number | null)[]; low?: (number | null)[]; close?: (number | null)[]; volume?: (number | null)[] }> } }[] };
+    };
+    const result = json?.chart?.result?.[0];
+    if (!result) throw new Error(`yahoo chart empty: ${ticker}`);
+    const ts = result.timestamp ?? [];
+    const q = result.indicators?.quote?.[0] ?? {};
+    const out: YahooChartCandle[] = [];
+    for (let i = 0; i < ts.length; i++) {
+      const close = q.close?.[i];
+      if (close == null) continue;
+      out.push({
+        time: new Date(ts[i] * 1000).toISOString().slice(0, 10),
+        open: q.open?.[i] ?? close,
+        high: q.high?.[i] ?? close,
+        low: q.low?.[i] ?? close,
+        close,
+        volume: q.volume?.[i] ?? 0,
+      });
+    }
+    return out;
+  });
 }
 
 /** Try .TW then .TWO suffix; returns working ticker or null. */

@@ -116,9 +116,31 @@ router.post(
 
     res.status(200).json({ ok: true });
     setImmediate(() => {
-      events.forEach((ev: LineEvent) => {
-        handleEvent(ev).catch((err) => logger.error({ err, type: ev.type }, "LINE event handler failed"));
-      });
+      for (const ev of events) {
+        // Per-event 8s hard cap. LINE webhook will still 200-ACK quickly; but
+        // if our handler stalls (slow Yahoo / multi-stock cold cache / runaway
+        // fetcher), we drop it here and try a one-shot fallback message rather
+        // than tying up the serverless instance until Vercel cold-evicts it.
+        const HARD_TIMEOUT_MS = 8000;
+        const cap = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("handler-timeout")), HARD_TIMEOUT_MS),
+        );
+        Promise.race([handleEvent(ev), cap])
+          .catch(async (err) => {
+            logger.error({ err: err?.message ?? err, type: ev.type }, "LINE event handler failed");
+            // Best-effort: tell the user we couldn't answer in time so the
+            // conversation doesn't look stuck on their side.
+            if (ev.replyToken) {
+              try {
+                await replyMessage(ev.replyToken, [
+                  { type: "text", text: "⏱️ 資料取得逾時，請稍後再試一次，或輸入 help 看指令。" },
+                ]);
+              } catch (_) {
+                /* replyToken may already be spent; ignore */
+              }
+            }
+          });
+      }
     });
     return;
   },
