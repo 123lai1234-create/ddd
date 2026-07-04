@@ -1650,3 +1650,241 @@
     .ww-day-card { background: white !important; color: black !important; }
 }
 
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  多潛點切站 + 站點卡片 mini 海況 (新增 2026-07)            ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+/* ────────── 站點切換 tabs ────────── */
+.site-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+.site-tab {
+    flex: 1 1 auto;
+    min-width: 130px;
+    padding: 10px 14px;
+    background: transparent;
+    border: 1.5px solid transparent;
+    border-radius: 8px;
+    color: var(--muted);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.site-tab:hover {
+    background: rgba(88, 215, 255, 0.06);
+    border-color: var(--border);
+    color: var(--text);
+}
+.site-tab.is-active {
+    background: linear-gradient(135deg, rgba(88, 215, 255, 0.18) 0%, rgba(88, 215, 255, 0.04) 100%);
+    border-color: rgba(88, 215, 255, 0.55);
+    color: var(--text);
+    box-shadow: 0 0 12px rgba(88, 215, 255, 0.15);
+}
+.site-tab-name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+.site-tab-en {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.site-tab.is-active .site-tab-en {
+    color: var(--accent);
+}
+
+@media (max-width: 640px) {
+    .site-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(120,180,255,0.25) transparent;
+        -webkit-overflow-scrolling: touch;
+    }
+    .site-tabs::-webkit-scrollbar { height: 6px; }
+    .site-tabs::-webkit-scrollbar-thumb {
+        background: rgba(120,180,255,0.25);
+        border-radius: 10px;
+    }
+    .site-tab {
+        flex: 0 0 auto;
+        min-width: 120px;
+    }
+}
+
+/* ────────── CWA 浮標沒覆蓋時的 info 提示 ────────── */
+.cwa-info {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 12px 0;
+}
+
+/* ────────── 站點卡片 mini 海況 ────────── */
+.site-card {
+    display: flex;
+    flex-direction: column;
+}
+.site-card.is-current {
+    border-color: rgba(88, 215, 255, 0.55);
+    box-shadow: 0 0 0 1px rgba(88, 215, 255, 0.25), 0 8px 24px rgba(88, 215, 255, 0.1);
+}
+.site-mini {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+}
+.site-mini-loading {
+    /* 動畫可加, 預設無 */
+}
+.site-mini-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.site-mini-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 700;
+}
+.mini-verdict {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+}
+.mini-verdict.go      { background: rgba(63,185,80,0.18); color: #3fb950; border: 1px solid rgba(63,185,80,0.4); }
+.mini-verdict.caution { background: rgba(210,153,34,0.18); color: #d29922; border: 1px solid rgba(210,153,34,0.4); }
+.mini-verdict.nogo    { background: rgba(248,81,73,0.18); color: #f85149; border: 1px solid rgba(248,81,73,0.4); }
+.mini-verdict.unknown { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+
+.site-mini-loader {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    padding: 8px 0;
+    font-style: italic;
+}
+
+.site-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+.mini-cell {
+    padding: 6px 6px 7px;
+    border-radius: 6px;
+    text-align: center;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    min-height: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+.mini-cell-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.85;
+}
+.mini-cell-val {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+.mini-cell-unit {
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 2px;
+    opacity: 0.85;
+}
+.mini-cell-dir {
+    background: rgba(8, 12, 22, 0.7) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border);
+}
+.mini-arrow {
+    font-size: 16px;
+    line-height: 1;
+    display: inline-block;
+    vertical-align: -2px;
+}
+.mini-dir-name {
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 3px;
+    vertical-align: 1px;
+}
+.mini-dir-deg {
+    font-size: 9px;
+    color: var(--muted);
+    margin-left: 3px;
+    vertical-align: 1px;
+}
+
+.site-mini-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: var(--muted);
+    padding-top: 6px;
+    border-top: 1px dashed rgba(120, 180, 255, 0.12);
+}
+.mini-foot-item {
+    font-weight: 600;
+}
+.mini-foot-ts {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+}
+
+.site-mini-error-wrap {
+    border-color: rgba(248, 81, 73, 0.3);
+}
+.site-mini-error {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    padding: 8px;
+    background: rgba(248, 81, 73, 0.04);
+    border-radius: 6px;
+    line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+    .site-mini-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .mini-cell {
+        min-height: 56px;
+    }
+}
+

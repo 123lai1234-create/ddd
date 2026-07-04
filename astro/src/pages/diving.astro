@@ -9,64 +9,88 @@ const OG_TAG = 'diving';
 const WINDGURU_URL = 'https://www.windguru.cz/464009';   // 龍洞和美國小
 const CWA_URL = 'https://www.cwa.gov.tw/V8/C/M/OBS_Marine_plot.html?MID=46694A';
 
-// 東北角主要潛點（岸潛為主）
+// 東北角主要潛點（岸潛 + 龜山島船潛）
+// id: 切站/URL hash 用; lat/lon: Open-Meteo 預報用; buoy: 中央氣象署浮標 MID (有的才有)
 type Site = {
+  id: string;
   name: string;
   en: string;
   level: string;
   expose: string;       // 主要面對方向（浪湧來向）
   note: string;
   drive: string;
+  lat: number;
+  lon: number;
+  buoy?: string;        // CWA 浮標 MID, 例如 46694A
 };
 
 const sites: Site[] = [
   {
+    id: 'longdong',
     name: '龍洞（和美國小）',
     en: 'Longdong',
     level: '初階～進階',
     expose: '東/東北',
     note: '東北角最知名潛點，岸潛入門首選。潮間帶需走石階，水深 5–25m，珊瑚礁與魚群豐富。東北季風強時水況差。',
-    drive: '國道 1 號 → 台 2 線，約 40 分'
+    drive: '國道 1 號 → 台 2 線，約 40 分',
+    lat: 25.1133,
+    lon: 121.9199,
+    buoy: '46694A',
   },
   {
+    id: 'bitou',
     name: '鼻頭角',
     en: 'Bitou Cape',
     level: '中階以上',
     expose: '東北/東',
     note: '海階地形、峽谷與大礁。流較強，潛水經驗不足者易出事。需注意假日人潮與漁船活動。',
-    drive: '台 2 線 84K 處，與龍洞相鄰'
+    drive: '台 2 線 84K 處，與龍洞相鄰',
+    lat: 25.1280,
+    lon: 121.9225,
   },
   {
+    id: 'heping',
     name: '和平島',
     en: 'Heping Island',
     level: '初階',
     expose: '北/東北',
     note: '有天然泳池（需漲潮進入）與豆腐岩區域。地形遮蔽好，東北季風期相對穩；夏季為休閒潛水熱門。',
-    drive: '基隆市區 → 和平島，約 15 分'
+    drive: '基隆市區 → 和平島，約 15 分',
+    lat: 25.1557,
+    lon: 121.7633,
   },
   {
+    id: 'guishan',
     name: '龜山島',
     en: 'Guishan Island',
     level: '進階（船潛）',
     expose: '東/南',
     note: '需從烏石港搭船。溫差大、能見度變化劇烈；牛奶海、峽谷、花瓶嶼等著名潛點。每年 3–11 月開放。',
-    drive: '宜蘭烏石港搭船，船程 30–40 分'
+    drive: '宜蘭烏石港搭船，船程 30–40 分',
+    lat: 24.8431,
+    lon: 121.9525,
   },
   {
+    id: 'maoao',
     name: '卯澳',
     en: 'Maoao',
     level: '中階',
     expose: '東北',
-    note: '較冷門、人少。漁港旁小峽灣地形，能見度受降雨影響大。',
-    drive: '台 2 線 113K 附近'
+    note: '較冷門、人少。漁港旁小峽谷地形，能見度受降雨影響大。',
+    drive: '台 2 線 113K 附近',
+    lat: 25.1578,
+    lon: 121.9892,
   },
   {
+    id: 'aodi',
     name: '澳底',
     en: 'Aodi',
     level: '初階',
     expose: '東北/東',
     note: '小型漁港，岸潛點平緩，適合初學。秋冬有較強東北湧浪。',
-    drive: '台 2 線 91K 附近'
+    drive: '台 2 線 91K 附近',
+    lat: 25.0567,
+    lon: 121.9328,
   }
 ];
 
@@ -284,6 +308,26 @@ const metrics: Metric[] = [
                 </p>
             </div>
 
+            <!-- 站點切換器 (點切換主預報區的站點, URL hash 同步) -->
+            <div class="site-tabs" id="site-tabs" role="tablist" aria-label="切換預報站點">
+                {sites.map((s, i) => (
+                    <button
+                        type="button"
+                        class={`site-tab ${s.id === 'longdong' ? 'is-active' : ''}`}
+                        data-site-id={s.id}
+                        data-site-lat={s.lat}
+                        data-site-lon={s.lon}
+                        data-site-buoy={s.buoy ?? ''}
+                        data-site-name={s.name}
+                        role="tab"
+                        aria-selected={s.id === 'longdong' ? 'true' : 'false'}
+                    >
+                        <span class="site-tab-name">{s.name}</span>
+                        <span class="site-tab-en">{s.en}</span>
+                    </button>
+                ))}
+            </div>
+
             <!-- 週末建議卡 (Sat + Sun) -->
             <div class="weekend-rec" id="weekend-rec">
                 <div class="ww-loader">載入 Open-Meteo 預報中…</div>
@@ -353,6 +397,7 @@ const metrics: Metric[] = [
 
         <script>
             import '../scripts/diving-forecast.js';
+            import '../scripts/diving-sites-conditions.js';
         </script>
 
         <!-- ─────── 即時資料來源（直接外連 — 兩站 CSP frame-ancestors 擋 iframe） ─────── -->
@@ -608,12 +653,12 @@ const metrics: Metric[] = [
             <div class="section-head">
                 <span class="section-tag">潛點速查</span>
                 <h2>東北角六個主要潛點</h2>
-                <p>從入門到船潛進階，依程度挑點。</p>
+                <p>從入門到船潛進階，依程度挑點。每張卡下方都有 Open-Meteo 當下海況（風/浪/溫/向），自動 fetch。</p>
             </div>
 
             <div class="site-grid">
                 {sites.map((s) => (
-                    <article class="site-card">
+                    <article class="site-card" data-site-id={s.id}>
                         <header class="site-head">
                             <h3 class="site-name">{s.name}</h3>
                             <span class="site-en">{s.en}</span>
@@ -624,6 +669,10 @@ const metrics: Metric[] = [
                         </div>
                         <p class="site-note">{s.note}</p>
                         <div class="site-drive">🚗 {s.drive}</div>
+                        <!-- Mini 海況 (由 diving-sites-conditions.js 填入) -->
+                        <div class="site-mini" data-site-mini-id={s.id}>
+                            <div class="site-mini-loader">載入海況中…</div>
+                        </div>
                     </article>
                 ))}
             </div>
