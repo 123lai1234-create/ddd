@@ -6,9 +6,10 @@
 import type { Handler, Ctx } from "./dispatcher";
 import type { LineMessage } from "../lib/line";
 import {
-  menuCarousel, welcomeFlex, helpFlex, textBubble, okFlex,
+  menuCarousel, helpFlex, textBubble, okFlex,
   THEME, SITE_BASE, TOPICS, type Topic,
 } from "../lib/flex-topics";
+import { welcomeFlex } from "../lib/flex-templates";
 import { logger } from "../lib/logger";
 
 // ---- Menu -----------------------------------------------------------------

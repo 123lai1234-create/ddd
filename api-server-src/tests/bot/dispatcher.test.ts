@@ -12,14 +12,14 @@
 import { describe, it, expect, beforeAll } from "vitest";
 
 // Load all handlers (side-effect: registers them with the dispatcher)
-import "../api-server-src/src/bot/handlers/builtins";
-import "../api-server-src/src/bot/handlers/protein";
-import "../api-server-src/src/bot/handlers/gene";
-import "../api-server-src/src/bot/handlers/ngs";
-import "../api-server-src/src/bot/handlers/interview";
+import "../src/bot/handlers/builtins";
+import "../src/bot/handlers/protein";
+import "../src/bot/handlers/gene";
+import "../src/bot/handlers/ngs";
+import "../src/bot/handlers/interview";
 
-import { dispatch, handlers } from "../api-server-src/src/bot/dispatcher";
-import { menuCarousel, TOPICS } from "../api-server-src/src/lib/flex-topics";
+import { dispatch, handlers } from "../src/bot/dispatcher";
+import { menuCarousel, TOPICS } from "../src/lib/flex-topics";
 
 const ctx = (overrides: Partial<{ replyToken: string; userId: string }> = {}) => ({
   replyToken: overrides.replyToken ?? "tok",

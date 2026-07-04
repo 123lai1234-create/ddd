@@ -1,39 +1,44 @@
 /**
  * LINE Messaging API webhook — portfolio bot.
  *
- * Replaces the old monolithic line.ts. Logic now lives in src/bot/handlers/*.
- * This file owns:
- *   - signature verification
- *   - rate limiting
- *   - event parsing
- *   - 3-second reply window (respond 200 immediately, process async)
- *   - operator-protected push endpoint (for cron / admin)
- *   - subscriber listing (operator-protected)
+ * Architecture: webhook → follow/unfollow/welcome → dispatcher → handler.
  *
- * Handler routing is dispatched through `src/bot/dispatcher.ts`.
+ * Built-in handlers (priority 10-15): menu / help / about / works / site / qr / topic
+ * Topic handlers (priority 50): protein / gene / ngs / mpnn / stock / lyrics / search / interview / blog
+ * Fallback (priority 999): soft "輸入 help" message.
+ *
+ * The dispatcher is in `src/bot/dispatcher.ts` and registers handlers via
+ * side-effect imports at the bottom of this file.
+ *
+ * Why two layers:
+ *   - Built-in welcome / follow / unfollow stay here because they touch the DB
+ *     and need access to replyMessage (not just return messages)
+ *   - Text commands go through the dispatcher for unified routing + testability
  */
 
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, lineSubscribersTable } from "../_shims/db";
+import { eq } from "drizzle-orm";
 import { pushMessage, replyMessage, verifySignature } from "../lib/line";
-import { scanFlex } from "../lib/flex-templates";
+import { scanFlex, welcomeFlex } from "../lib/flex-templates";
 import { logger } from "../lib/logger";
 import { rateLimit } from "../lib/ratelimit";
 import { cached } from "../lib/cache";
 import { scanWatchlist } from "../lib/scan-watchlist";
 
-// Side-effect import: registers every handler with the dispatcher registry.
-import "../bot/handlers/builtins";
-import "../bot/handlers/topic";
-import "../bot/handlers/protein";
-import "../bot/handlers/gene";
-import "../bot/handlers/ngs";
-import "../bot/handlers/stock";
-import "../bot/handlers/blog";
-import "../bot/handlers/interview";
+// Side-effect imports: each registers handlers with the dispatcher.
+import "../bot/handlers/builtins";   // menu / help / about / works / site / qr / fallback
+import "../bot/handlers/topic";      // topic subscribe/unsubscribe (DB)
+import "../bot/handlers/protein";    // esm / mpnn
+import "../bot/handlers/gene";       // crispr / promoter
+import "../bot/handlers/ngs";        // depth
+import "../bot/handlers/stock";      // subscribe / unsubscribe / scan / stock-code
+import "../bot/handlers/lyrics";     // 隨機歌詞 / 歌詞 <q>
+import "../bot/handlers/search";     // 搜尋 <q>
+import "../bot/handlers/blog";       // blog / blog <kw>
+import "../bot/handlers/interview";  // interview start / hint / answer
 
 import { dispatch, type Ctx } from "../bot/dispatcher";
-import { welcomeFlex } from "../bot/handlers/builtins";
 
 const router: IRouter = Router();
 
@@ -108,7 +113,7 @@ async function handleEvent(ev: LineEvent): Promise<void> {
   const userId = ev.source?.userId;
   logger.info({ type: ev.type, userId, text: ev.message?.text }, "LINE event");
 
-  // follow → welcome + register
+  // follow → register + welcome
   if (ev.type === "follow" && userId) {
     await db.insert(lineSubscribersTable).values({ userId }).onConflictDoNothing();
     if (ev.replyToken) await replyMessage(ev.replyToken, [welcomeFlex()]);
