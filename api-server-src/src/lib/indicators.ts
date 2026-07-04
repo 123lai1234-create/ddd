@@ -5,6 +5,103 @@ export interface Point {
   value: number;
 }
 
+/** Wilder's RSI over the last `period` closes. Returns null if not enough data. */
+export function computeRSI(closes: number[], period = 14): number | null {
+  if (closes.length < period + 1) return null;
+  let gains = 0;
+  let losses = 0;
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const diff = closes[i] - closes[i - 1];
+    if (diff >= 0) gains += diff;
+    else losses -= diff;
+  }
+  const avgG = gains / period;
+  const avgL = losses / period;
+  if (avgL === 0) return 100;
+  const rs = avgG / avgL;
+  return 100 - 100 / (1 + rs);
+}
+
+/** Detect MA(fast)/MA(slow) crossovers in the last two bars. */
+export function detectCrossovers(
+  closes: number[],
+  fastP = 5,
+  slowP = 20,
+): { golden: boolean; death: boolean } {
+  if (closes.length < slowP + 1) return { golden: false, death: false };
+  const smaAt = (i: number, p: number): number | null => {
+    if (i < p - 1) return null;
+    let s = 0;
+    for (let j = i - p + 1; j <= i; j++) s += closes[j];
+    return s / p;
+  };
+  const i = closes.length - 1;
+  const prevI = i - 1;
+  const fast = smaAt(i, fastP);
+  const slow = smaAt(i, slowP);
+  const fastPrev = smaAt(prevI, fastP);
+  const slowPrev = smaAt(prevI, slowP);
+  if (fast == null || slow == null || fastPrev == null || slowPrev == null) {
+    return { golden: false, death: false };
+  }
+  return {
+    golden: fastPrev <= slowPrev && fast > slow,
+    death: fastPrev >= slowPrev && fast < slow,
+  };
+}
+
+export interface StockSignals {
+  ma5: number | null;
+  ma20: number | null;
+  ma60: number | null;
+  signals: string[];
+}
+
+/** Generate plain-language signal recommendations from recent closes + changePct. */
+export function analyzeSignals(closes: number[], changePct: number | null): StockSignals {
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const ma5 = (() => {
+    if (closes.length < 5) return null;
+    let s = 0;
+    for (let i = closes.length - 5; i < closes.length; i++) s += closes[i];
+    return r2(s / 5);
+  })();
+  const ma20 = (() => {
+    if (closes.length < 20) return null;
+    let s = 0;
+    for (let i = closes.length - 20; i < closes.length; i++) s += closes[i];
+    return r2(s / 20);
+  })();
+  const ma60 = (() => {
+    if (closes.length < 60) return null;
+    let s = 0;
+    for (let i = closes.length - 60; i < closes.length; i++) s += closes[i];
+    return r2(s / 60);
+  })();
+  const x = detectCrossovers(closes);
+  const signals: string[] = [];
+  if (ma5 != null && ma20 != null) {
+    if (ma5 > ma20) signals.push("MA5 > MA20 (短期偏多)");
+    else if (ma5 < ma20) signals.push("MA5 < MA20 (短期偏空)");
+  }
+  if (ma20 != null && ma60 != null) {
+    if (ma20 > ma60) signals.push("MA20 > MA60 (中期偏多)");
+    else if (ma20 < ma60) signals.push("MA20 < MA60 (中期偏空)");
+  }
+  if (x.golden) signals.push("🔔 黃金交叉 (MA5↑穿MA20)");
+  if (x.death) signals.push("⚠️ 死亡交叉 (MA5↓穿MA20)");
+  if (changePct != null) {
+    if (changePct > 5) signals.push("🚀 單日漲幅 > 5%");
+    else if (changePct < -5) signals.push("📉 單日跌幅 > 5%");
+  }
+  const rsi = computeRSI(closes, 14);
+  if (rsi != null) {
+    if (rsi > 70) signals.push(`RSI=${rsi.toFixed(1)} (超買)`);
+    else if (rsi < 30) signals.push(`RSI=${rsi.toFixed(1)} (超賣)`);
+  }
+  return { ma5, ma20, ma60, signals };
+}
+
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 export function sma(values: number[], period: number): (number | null)[] {

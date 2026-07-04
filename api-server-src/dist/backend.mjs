@@ -77754,6 +77754,86 @@ function operatorOk(password) {
 var OPERATOR_PASSWORD_HINT = process.env["STOCK_OPERATOR_PASSWORD"] ? "" : DEFAULT_OPERATOR_PASSWORD;
 
 // src/lib/indicators.ts
+function computeRSI(closes, period = 14) {
+  if (closes.length < period + 1) return null;
+  let gains = 0;
+  let losses = 0;
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const diff = closes[i] - closes[i - 1];
+    if (diff >= 0) gains += diff;
+    else losses -= diff;
+  }
+  const avgG = gains / period;
+  const avgL = losses / period;
+  if (avgL === 0) return 100;
+  const rs = avgG / avgL;
+  return 100 - 100 / (1 + rs);
+}
+function detectCrossovers(closes, fastP = 5, slowP = 20) {
+  if (closes.length < slowP + 1) return { golden: false, death: false };
+  const smaAt = (i2, p) => {
+    if (i2 < p - 1) return null;
+    let s = 0;
+    for (let j = i2 - p + 1; j <= i2; j++) s += closes[j];
+    return s / p;
+  };
+  const i = closes.length - 1;
+  const prevI = i - 1;
+  const fast = smaAt(i, fastP);
+  const slow = smaAt(i, slowP);
+  const fastPrev = smaAt(prevI, fastP);
+  const slowPrev = smaAt(prevI, slowP);
+  if (fast == null || slow == null || fastPrev == null || slowPrev == null) {
+    return { golden: false, death: false };
+  }
+  return {
+    golden: fastPrev <= slowPrev && fast > slow,
+    death: fastPrev >= slowPrev && fast < slow
+  };
+}
+function analyzeSignals(closes, changePct2) {
+  const r210 = (n) => Math.round(n * 100) / 100;
+  const ma5 = (() => {
+    if (closes.length < 5) return null;
+    let s = 0;
+    for (let i = closes.length - 5; i < closes.length; i++) s += closes[i];
+    return r210(s / 5);
+  })();
+  const ma20 = (() => {
+    if (closes.length < 20) return null;
+    let s = 0;
+    for (let i = closes.length - 20; i < closes.length; i++) s += closes[i];
+    return r210(s / 20);
+  })();
+  const ma60 = (() => {
+    if (closes.length < 60) return null;
+    let s = 0;
+    for (let i = closes.length - 60; i < closes.length; i++) s += closes[i];
+    return r210(s / 60);
+  })();
+  const x = detectCrossovers(closes);
+  const signals = [];
+  if (ma5 != null && ma20 != null) {
+    if (ma5 > ma20) signals.push("MA5 > MA20 (\u77ED\u671F\u504F\u591A)");
+    else if (ma5 < ma20) signals.push("MA5 < MA20 (\u77ED\u671F\u504F\u7A7A)");
+  }
+  if (ma20 != null && ma60 != null) {
+    if (ma20 > ma60) signals.push("MA20 > MA60 (\u4E2D\u671F\u504F\u591A)");
+    else if (ma20 < ma60) signals.push("MA20 < MA60 (\u4E2D\u671F\u504F\u7A7A)");
+  }
+  if (x.golden) signals.push("\u{1F514} \u9EC3\u91D1\u4EA4\u53C9 (MA5\u2191\u7A7FMA20)");
+  if (x.death) signals.push("\u26A0\uFE0F \u6B7B\u4EA1\u4EA4\u53C9 (MA5\u2193\u7A7FMA20)");
+  if (changePct2 != null) {
+    if (changePct2 > 5) signals.push("\u{1F680} \u55AE\u65E5\u6F32\u5E45 > 5%");
+    else if (changePct2 < -5) signals.push("\u{1F4C9} \u55AE\u65E5\u8DCC\u5E45 > 5%");
+  }
+  const rsi = computeRSI(closes, 14);
+  if (rsi != null) {
+    if (rsi > 70) signals.push(`RSI=${rsi.toFixed(1)} (\u8D85\u8CB7)`);
+    else if (rsi < 30) signals.push(`RSI=${rsi.toFixed(1)} (\u8D85\u8CE3)`);
+  }
+  return { ma5, ma20, ma60, signals };
+}
 var r22 = (n) => Math.round(n * 100) / 100;
 function sma(values, period) {
   const out = [];
@@ -78224,8 +78304,8 @@ var db = {
   insert(table) {
     const pending = [];
     const chain = {
-      values(row) {
-        const rows = Array.isArray(row) ? row : [row];
+      values(row2) {
+        const rows = Array.isArray(row2) ? row2 : [row2];
         for (const r of rows) pending.push(r);
         return chain;
       },
@@ -80202,8 +80282,8 @@ async function resolveStock(code) {
   if (TICKER_BY_CODE[code]) {
     return { name: NAME_BY_CODE[code] || code, ticker: TICKER_BY_CODE[code] };
   }
-  const row = await db.select().from(watchlistTable).where(eq(watchlistTable.code, code));
-  if (row.length) return { name: row[0].name, ticker: row[0].ticker };
+  const row2 = await db.select().from(watchlistTable).where(eq(watchlistTable.code, code));
+  if (row2.length) return { name: row2[0].name, ticker: row2[0].ticker };
   const ticker = await resolveTicker(code);
   if (!ticker) throw new Error(`Unknown stock code: ${code}`);
   const meta = await fetchMeta(ticker);
@@ -80962,16 +81042,16 @@ async function fetchInstitutional(code, days = 5) {
         const res = await fetch(url, { headers: UA });
         const j = await res.json();
         if (j.stat !== "OK" || !Array.isArray(j.data)) continue;
-        const row = j.data.find((r) => r[0]?.trim() === code);
+        const row2 = j.data.find((r) => r[0]?.trim() === code);
         const ds = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
-        if (!row) continue;
-        foreign.push({ date: ds, buy: Math.round(num(row[2]) / 1e3), sell: Math.round(num(row[3]) / 1e3), net: Math.round(num(row[4]) / 1e3) });
-        trust.push({ date: ds, buy: Math.round(num(row[8]) / 1e3), sell: Math.round(num(row[9]) / 1e3), net: Math.round(num(row[10]) / 1e3) });
+        if (!row2) continue;
+        foreign.push({ date: ds, buy: Math.round(num(row2[2]) / 1e3), sell: Math.round(num(row2[3]) / 1e3), net: Math.round(num(row2[4]) / 1e3) });
+        trust.push({ date: ds, buy: Math.round(num(row2[8]) / 1e3), sell: Math.round(num(row2[9]) / 1e3), net: Math.round(num(row2[10]) / 1e3) });
         dealer.push({
           date: ds,
-          buy: Math.round((num(row[12]) + num(row[15])) / 1e3),
-          sell: Math.round((num(row[13]) + num(row[16])) / 1e3),
-          net: Math.round(num(row[11]) / 1e3)
+          buy: Math.round((num(row2[12]) + num(row2[15])) / 1e3),
+          sell: Math.round((num(row2[13]) + num(row2[16])) / 1e3),
+          net: Math.round(num(row2[11]) / 1e3)
         });
       } catch {
       }
@@ -81002,9 +81082,9 @@ async function fetchIndexInstitutional(days = 5) {
         const ds = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
         let f = 0;
         let t = 0;
-        for (const row of j.data) {
-          const label = row[0] ?? "";
-          const diff = num(row[3]) / 1e8;
+        for (const row2 of j.data) {
+          const label = row2[0] ?? "";
+          const diff = num(row2[3]) / 1e8;
           if (label.includes("\u5916\u8CC7") || label.includes("\u9678\u8CC7")) f += diff;
           if (label.includes("\u6295\u4FE1")) t += diff;
         }
@@ -85805,8 +85885,8 @@ router3.post(
 var BH_UA = { "User-Agent": "Mozilla/5.0 (compatible; donttalk/1.0)" };
 var BH_TTL = 43200;
 var tdccHistory = /* @__PURE__ */ new Map();
-function fmtRocOrYmd(ymd2) {
-  const s = ymd2.trim();
+function fmtRocOrYmd(ymd3) {
+  const s = ymd3.trim();
   if (s.length === 8) return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
   return s;
 }
@@ -85866,10 +85946,10 @@ async function fetchTrust20d(codes) {
       const j = await res.json();
       if (j.stat !== "OK" || !Array.isArray(j.data)) continue;
       collected++;
-      for (const row of j.data) {
-        const code = (row[0] ?? "").trim();
+      for (const row2 of j.data) {
+        const code = (row2[0] ?? "").trim();
         if (!code || !codes.has(code)) continue;
-        const net = Number(String(row[10] ?? "").replace(/,/g, ""));
+        const net = Number(String(row2[10] ?? "").replace(/,/g, ""));
         if (!Number.isFinite(net)) continue;
         map.set(code, (map.get(code) ?? 0) + Math.round(net / 1e3));
       }
@@ -86034,10 +86114,10 @@ function rocChineseDate(s) {
   const y = Number(m[1]) + 1911;
   return `${y}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
 }
-function daysFromToday(ymd2) {
+function daysFromToday(ymd3) {
   const today = /* @__PURE__ */ new Date();
   today.setHours(0, 0, 0, 0);
-  const d = /* @__PURE__ */ new Date(`${ymd2}T00:00:00`);
+  const d = /* @__PURE__ */ new Date(`${ymd3}T00:00:00`);
   return Math.round((d.getTime() - today.getTime()) / 864e5);
 }
 var INDUSTRY_BY_CODE = /* @__PURE__ */ new Map();
@@ -86273,16 +86353,16 @@ async function fetchExdivSrc() {
   const iType = idx("\u9664\u6B0A\u606F");
   const iCash = idx("\u73FE\u91D1\u80A1\u5229");
   const out = [];
-  for (const row of j.data) {
-    if (!Array.isArray(row)) continue;
-    const code = String(iCode >= 0 ? row[iCode] ?? "" : "").trim();
+  for (const row2 of j.data) {
+    if (!Array.isArray(row2)) continue;
+    const code = String(iCode >= 0 ? row2[iCode] ?? "" : "").trim();
     if (!code) continue;
     out.push({
-      date: rocChineseDate(iDate >= 0 ? row[iDate] : ""),
+      date: rocChineseDate(iDate >= 0 ? row2[iDate] : ""),
       code,
-      name: String(iName >= 0 ? row[iName] ?? "" : "").trim(),
-      type: String(iType >= 0 ? row[iType] ?? "" : "").trim(),
-      cash: numOrNull(iCash >= 0 ? row[iCash] : null)
+      name: String(iName >= 0 ? row2[iName] ?? "" : "").trim(),
+      type: String(iType >= 0 ? row2[iType] ?? "" : "").trim(),
+      cash: numOrNull(iCash >= 0 ? row2[iCash] : null)
     });
   }
   return out;
@@ -89262,6 +89342,9 @@ async function replyMessage(replyToken, messages) {
     body: JSON.stringify({ replyToken, messages })
   });
 }
+async function getProfile(userId) {
+  return await call(`/v2/bot/profile/${userId}`);
+}
 async function verifySignature(channelSecret, body, signature) {
   if (!signature) return false;
   const { createHmac } = await import("node:crypto");
@@ -89272,6 +89355,373 @@ async function verifySignature(channelSecret, body, signature) {
   return diff === 0;
 }
 
+// src/lib/yahoo-extended.ts
+var UA5 = "Mozilla/5.0 (compatible; donttalk-line/1.0; +https://donttalk.vercel.app)";
+var fetchOpts = { headers: { "User-Agent": UA5, Accept: "application/json" } };
+var YAHOO_CHART = "https://query1.finance.yahoo.com/v8/finance/chart";
+var FRANKFURTER = "https://api.frankfurter.app/latest";
+var TWSE_FUND = "https://www.twse.com.tw/rwd/zh/fund/BFI82U";
+var TWSE_MARGIN = "https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN";
+var CWA_BASE = "https://opendata.cwa.gov.tw/api/v1/rest/datastore";
+var INDUSTRIES = {
+  "\u534A\u5C0E\u9AD4": ["2330", "2454", "2317", "2379", "3034", "6669", "3443", "3711", "5347"],
+  "AI": ["2330", "2382", "3231", "6669", "6756", "6121"],
+  "\u96FB\u5B50": ["2330", "2454", "2317", "2382", "2303", "2379", "3231"],
+  "\u91D1\u878D": ["2881", "2882", "2884", "2885", "2886", "2887", "2891", "2892"],
+  "\u5851\u5316": ["1301", "1303", "1326", "6505"],
+  "\u92FC\u9435": ["2002", "2007", "2014", "2027"],
+  "\u96FB\u4FE1": ["2412", "3045", "4904"],
+  "\u822A\u904B": ["2603", "2609", "2615", "2618"],
+  "\u89C0\u5149": ["2707", "2727", "5706"]
+};
+var WATCHLIST = [
+  "2330",
+  "2317",
+  "2454",
+  "2382",
+  "3231",
+  "6669",
+  "2881",
+  "2882",
+  "1303",
+  "2603",
+  "2303",
+  "2379",
+  "3034",
+  "0050",
+  "0056",
+  "2891"
+];
+var CITY_CODES = {
+  "\u81FA\u5317": "F-D0047-061",
+  "\u65B0\u5317": "F-D0047-007",
+  "\u6843\u5712": "F-D0047-005",
+  "\u81FA\u4E2D": "F-D0047-073",
+  "\u81FA\u5357": "F-D0047-079",
+  "\u9AD8\u96C4": "F-D0047-067",
+  "\u57FA\u9686": "F-D0047-051",
+  "\u65B0\u7AF9": "F-D0047-055",
+  "\u82D7\u6817": "F-D0047-013",
+  "\u5F70\u5316": "F-D0047-019",
+  "\u5357\u6295": "F-D0047-023",
+  "\u96F2\u6797": "F-D0047-027",
+  "\u5609\u7FA9": "F-D0047-031",
+  "\u5C4F\u6771": "F-D0047-035",
+  "\u5B9C\u862D": "F-D0047-003",
+  "\u82B1\u84EE": "F-D0047-015",
+  "\u81FA\u6771": "F-D0047-037",
+  "\u6F8E\u6E56": "F-D0047-041",
+  "\u91D1\u9580": "F-D0047-043",
+  "\u9023\u6C5F": "F-D0047-045"
+};
+async function fetchRawCandles(ticker, days = 240) {
+  const range = days > 200 ? "1y" : days > 60 ? "6mo" : "3mo";
+  const url = `${YAHOO_CHART}/${encodeURIComponent(ticker)}?range=${range}&interval=1d`;
+  const res = await fetch(url, fetchOpts);
+  if (!res.ok) throw new Error(`yahoo chart ${ticker} ${res.status}`);
+  const json = await res.json();
+  const result = json?.chart?.result?.[0];
+  if (!result) throw new Error(`yahoo chart empty: ${ticker}`);
+  const ts = result.timestamp ?? [];
+  const q = result.indicators?.quote?.[0] ?? {};
+  const out = [];
+  for (let i = 0; i < ts.length; i++) {
+    const close = q.close?.[i];
+    if (close == null) continue;
+    out.push({
+      time: new Date(ts[i] * 1e3).toISOString().slice(0, 10),
+      open: q.open?.[i] ?? close,
+      high: q.high?.[i] ?? close,
+      low: q.low?.[i] ?? close,
+      close,
+      volume: q.volume?.[i] ?? 0
+    });
+  }
+  return out;
+}
+async function resolveTickerSuffix(code) {
+  for (const suffix of [".TW", ".TWO"]) {
+    const ticker = `${code}${suffix}`;
+    try {
+      const candles = await fetchRawCandles(ticker, 30);
+      if (candles.length > 0) return ticker;
+    } catch {
+    }
+  }
+  return null;
+}
+function sma2(values, period) {
+  if (values.length < period) return null;
+  let s = 0;
+  for (let i = values.length - period; i < values.length; i++) s += values[i];
+  return Math.round(s / period * 100) / 100;
+}
+async function queryStock(code) {
+  return cached(`ext:query:${code}`, 60 * 5, async () => {
+    const ticker = await resolveTickerSuffix(code);
+    if (!ticker) return null;
+    const [quote2, candles] = await Promise.all([
+      fetchRawCandles(ticker, 240).then((all) => {
+        if (all.length < 2) return { close: null, changePct: null };
+        const last = all[all.length - 1].close;
+        const prev = all[all.length - 2].close;
+        return {
+          close: last,
+          changePct: prev ? Math.round((last - prev) / prev * 1e4) / 100 : null
+        };
+      }).catch(() => ({ close: null, changePct: null })),
+      fetchRawCandles(ticker, 240).catch(() => [])
+    ]);
+    const closes = candles.map((c) => c.close);
+    return {
+      code,
+      ticker,
+      name: ticker,
+      close: quote2.close,
+      changePct: quote2.changePct,
+      ma20: sma2(closes, 20),
+      ma60: sma2(closes, 60),
+      candles: candles.slice(-30)
+    };
+  });
+}
+async function fetchMultipleQuotes(codes) {
+  return cached(`ext:multi:${codes.join(",")}`, 60 * 5, async () => {
+    const results = await Promise.all(codes.map((c) => queryStock(c).catch(() => null)));
+    return codes.map((c, i) => {
+      const r = results[i];
+      return {
+        code: c,
+        name: r?.name ?? c,
+        close: r?.close ?? null,
+        changePct: r?.changePct ?? null
+      };
+    });
+  });
+}
+async function fetchIndices() {
+  return cached("ext:indices", 60 * 3, async () => {
+    const tickers = ["^TWSE", "^TWO", "^DJI", "^GSPC", "^IXIC", "^HSI", "^N225"];
+    const results = await Promise.all(tickers.map(async (t) => {
+      try {
+        const candles = await fetchRawCandles(t, 5);
+        if (candles.length < 2) return { symbol: t, close: null, changePct: null };
+        const last = candles[candles.length - 1].close;
+        const prev = candles[candles.length - 2].close;
+        return {
+          symbol: t,
+          close: last,
+          changePct: prev ? Math.round((last - prev) / prev * 1e4) / 100 : null
+        };
+      } catch {
+        return { symbol: t, close: null, changePct: null };
+      }
+    }));
+    const get = (s) => results.find((o) => o.symbol === s);
+    return [
+      { key: "\u52A0\u6B0A", ...get("^TWSE") ?? { symbol: "^TWSE", close: null, changePct: null } },
+      { key: "\u6AC3\u8CB7", ...get("^TWO") ?? { symbol: "^TWO", close: null, changePct: null } },
+      { key: "\u9053\u74CA", ...get("^DJI") ?? { symbol: "^DJI", close: null, changePct: null } },
+      { key: "S&P", ...get("^GSPC") ?? { symbol: "^GSPC", close: null, changePct: null } },
+      { key: "Nasdaq", ...get("^IXIC") ?? { symbol: "^IXIC", close: null, changePct: null } },
+      { key: "\u6046\u751F", ...get("^HSI") ?? { symbol: "^HSI", close: null, changePct: null } },
+      { key: "\u65E5\u7D93", ...get("^N225") ?? { symbol: "^N225", close: null, changePct: null } }
+    ];
+  });
+}
+async function fetchForex() {
+  return cached("ext:forex", 60 * 5, async () => {
+    const pairs = [
+      ["USD", "TWD"],
+      ["USD", "JPY"],
+      ["USD", "EUR"],
+      ["USD", "CNY"],
+      ["EUR", "USD"],
+      ["GBP", "USD"]
+    ];
+    const results = await Promise.all(pairs.map(async ([f, t]) => {
+      const ticker = `${f}${t}=X`;
+      try {
+        const candles = await fetchRawCandles(ticker, 5);
+        if (candles.length < 2) return { pair: `${f}/${t}`, rate: null, changePct: null };
+        const last = candles[candles.length - 1].close;
+        const prev = candles[candles.length - 2].close;
+        return {
+          pair: `${f}/${t}`,
+          rate: last,
+          changePct: prev ? Math.round((last - prev) / prev * 1e4) / 100 : null
+        };
+      } catch {
+        return { pair: `${f}/${t}`, rate: null, changePct: null };
+      }
+    }));
+    return results;
+  });
+}
+async function fetchCrypto() {
+  return cached("ext:crypto", 60 * 5, async () => {
+    const tickers = ["BTC-USD", "ETH-USD", "SOL-USD"];
+    const results = await Promise.all(tickers.map(async (t) => {
+      try {
+        const candles = await fetchRawCandles(t, 5);
+        if (candles.length < 2) return { symbol: t, close: null, changePct: null };
+        const last = candles[candles.length - 1].close;
+        const prev = candles[candles.length - 2].close;
+        return {
+          symbol: t,
+          close: last,
+          changePct: prev ? Math.round((last - prev) / prev * 1e4) / 100 : null
+        };
+      } catch {
+        return { symbol: t, close: null, changePct: null };
+      }
+    }));
+    return results;
+  });
+}
+async function convertCurrency(amount, from, to) {
+  return cached(`ext:convert:${from}:${to}:${amount}`, 60 * 30, async () => {
+    if (from === "TWD" || to === "TWD") {
+      const ticker = from === "USD" || to === "USD" ? "USDTWD=X" : `${from}TWD=X`;
+      const candles = await fetchRawCandles(ticker, 5).catch(() => []);
+      if (!candles.length) return null;
+      const rate2 = candles[candles.length - 1].close;
+      return { from, to, amount, rate: rate2, converted: amount * rate2 };
+    }
+    const url = `${FRANKFURTER}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=${amount}`;
+    const res = await fetch(url, fetchOpts);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const rate = json?.rates?.[to];
+    if (rate == null) return null;
+    return { from, to, amount, rate, converted: amount * rate };
+  });
+}
+function safeEval(expr) {
+  if (!/^[\d+\-*/().\s]+$/.test(expr)) throw new Error("invalid expression");
+  if (expr.length > 100) throw new Error("expression too long");
+  const fn = new Function(`"use strict"; return (${expr});`);
+  return fn();
+}
+async function fetchKLine(code, days = 5) {
+  return cached(`ext:kline:${code}:${days}`, 60 * 30, async () => {
+    const ticker = await resolveTickerSuffix(code);
+    if (!ticker) return null;
+    const candles = await fetchRawCandles(ticker, Math.max(days + 30, 60)).catch(() => []);
+    if (!candles.length) return null;
+    const recent = candles.slice(-days);
+    const summary = {
+      open: recent[0]?.open,
+      close: recent[recent.length - 1]?.close,
+      high: Math.max(...recent.map((c) => c.high)),
+      low: Math.min(...recent.map((c) => c.low)),
+      changePct: recent[recent.length - 1]?.close != null && recent[0]?.open ? Math.round((recent[recent.length - 1].close - recent[0].open) / recent[0].open * 1e4) / 100 : null,
+      avgVolume: Math.round(recent.reduce((s, c) => s + (c.volume || 0), 0) / recent.length)
+    };
+    return { code, ticker, candles: recent, summary };
+  });
+}
+function ymd2(d) {
+  return d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+}
+async function fetchInstitutional2(code) {
+  const date = /* @__PURE__ */ new Date();
+  date.setDate(date.getDate() - 1);
+  const d = ymd2(date);
+  return cached(`ext:inst:${code}:${d}`, 60 * 60 * 4, async () => {
+    const url = `${TWSE_FUND}?response=json&date=${d}&stockNo=${code}`;
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": UA5, Accept: "application/json" },
+        signal: AbortSignal.timeout(5e3)
+      });
+      if (!res.ok) return null;
+      const j = await res.json();
+      const data = j?.data?.[0] ?? [];
+      const fields = j?.fields ?? [];
+      if (!fields.length || !data.length) return null;
+      const idx = (k) => fields.indexOf(k);
+      const num3 = (s) => {
+        const n = Number(String(s ?? "").replace(/,/g, ""));
+        return Number.isFinite(n) ? n : 0;
+      };
+      return {
+        date: d,
+        foreign: num3(data[idx("\u5916\u9678\u8CC7\u8CB7\u8CE3\u8D85\u80A1\u6578")]),
+        trust: num3(data[idx("\u6295\u4FE1\u8CB7\u8CE3\u8D85\u80A1\u6578")]),
+        dealer: num3(data[idx("\u81EA\u71DF\u5546\u8CB7\u8CE3\u8D85\u80A1\u6578")]),
+        total: num3(data[idx("\u4E09\u5927\u6CD5\u4EBA\u8CB7\u8CE3\u8D85\u80A1\u6578")])
+      };
+    } catch {
+      return null;
+    }
+  });
+}
+async function fetchMargin(code) {
+  const date = /* @__PURE__ */ new Date();
+  date.setDate(date.getDate() - 1);
+  const d = ymd2(date);
+  return cached(`ext:mgn:${code}:${d}`, 60 * 60 * 4, async () => {
+    const url = `${TWSE_MARGIN}?response=json&date=${d}&stockNo=${code}`;
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": UA5, Accept: "application/json" },
+        signal: AbortSignal.timeout(5e3)
+      });
+      if (!res.ok) return null;
+      const j = await res.json();
+      const data = j?.data?.[0] ?? [];
+      const fields = j?.fields ?? [];
+      if (!fields.length || !data.length) return null;
+      const idx = (k) => fields.indexOf(k);
+      const num3 = (s) => {
+        const n = Number(String(s ?? "").replace(/,/g, ""));
+        return Number.isFinite(n) ? n : 0;
+      };
+      return {
+        date: d,
+        marginBalance: num3(data[idx("\u878D\u8CC7\u9918\u984D")]),
+        marginChange: num3(data[idx("\u878D\u8CC7\u589E\u6E1B")]),
+        shortBalance: num3(data[idx("\u878D\u5238\u9918\u984D")])
+      };
+    } catch {
+      return null;
+    }
+  });
+}
+async function fetchWeather(cityName) {
+  const loc = CITY_CODES[cityName];
+  if (!loc) return null;
+  const key = process.env["CWA_API_KEY"];
+  if (!key) return null;
+  return cached(`ext:cwa:${loc}`, 60 * 30, async () => {
+    const url = `${CWA_BASE}/${loc}?Authorization=${encodeURIComponent(key)}&ElementName=WeatherDescription,MaxTemperature,MinTemperature`;
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(6e3) });
+      if (!res.ok) return null;
+      const j = await res.json();
+      const firstLoc = j?.records?.locations?.[0]?.location?.[0];
+      if (!firstLoc) return null;
+      const weather = firstLoc.weatherElement?.find((e) => e.elementName === "WeatherDescription");
+      const maxT = firstLoc.weatherElement?.find((e) => e.elementName === "MaxTemperature");
+      const minT = firstLoc.weatherElement?.find((e) => e.elementName === "MinTemperature");
+      return {
+        city: cityName,
+        location: firstLoc.locationName ?? cityName,
+        forecast: (weather?.time ?? []).slice(0, 3).map((t) => ({
+          from: t.startTime ?? "",
+          to: t.endTime ?? "",
+          desc: t.elementValue?.[0]?.value ?? ""
+        })),
+        maxT: maxT?.time?.[0]?.elementValue?.[0]?.value ?? null,
+        minT: minT?.time?.[0]?.elementValue?.[0]?.value ?? null
+      };
+    } catch {
+      return null;
+    }
+  });
+}
+
 // src/lib/flex-templates.ts
 var DARK_BG = "#0d1117";
 var FG = "#e6edf3";
@@ -89279,6 +89729,111 @@ var MUTED = "#8b949e";
 var GREEN = "#3fb950";
 var RED = "#ff5f56";
 var BLUE = "#1f6feb";
+var BOT_NAME = "\u5C0F\u53F0";
+var BRAND_TAG = "\u{1F4CA} DontTalk";
+function quickReplies(items) {
+  return items.filter((it) => it && it.label && it.text).slice(0, 13).map((it) => ({
+    type: "action",
+    action: {
+      type: "message",
+      label: String(it.label).slice(0, 20),
+      text: it.text
+    }
+  }));
+}
+function withQuickReply(flexMsg, items) {
+  if (!flexMsg || typeof flexMsg !== "object") return flexMsg;
+  return { ...flexMsg, quickReply: { items: quickReplies(items) } };
+}
+var stockQuickReplies = (code) => [
+  { label: "\u{1F4CA} K\u7DDA", text: `${code} 5d` },
+  { label: "\u{1F3AF} \u8A0A\u865F", text: `\u8A0A\u865F ${code}` },
+  { label: "\u{1F4F0} \u65B0\u805E", text: `\u65B0\u805E ${code}` },
+  { label: "\u2696\uFE0F \u6BD4\u8F03", text: `${code} vs 2454` }
+];
+var marketQuickReplies = () => [
+  { label: "\u{1F525} \u6392\u884C", text: "\u6392\u884C" },
+  { label: "\u{1F3ED} \u534A\u5C0E\u9AD4", text: "\u534A\u5C0E\u9AD4" },
+  { label: "\u{1F4B1} \u532F\u7387", text: "\u532F\u7387" },
+  { label: "\u{1F4C5} \u6458\u8981", text: "\u4ECA\u65E5\u6458\u8981" }
+];
+var forexQuickReplies = () => [
+  { label: "\u{1FA99} \u52A0\u5BC6", text: "\u52A0\u5BC6\u8CA8\u5E63" },
+  { label: "\u{1F310} \u5927\u76E4", text: "\u5927\u76E4" },
+  { label: "\u{1F4B9} \u63DB\u7B97", text: "100 USD TWD" }
+];
+var newsQuickReplies = (query) => [
+  { label: "\u{1F4CA} K\u7DDA", text: `${query} 5d`.slice(0, 60) },
+  { label: "\u{1F525} \u6392\u884C", text: "\u6392\u884C" },
+  { label: "\u{1F4F0} \u66F4\u591A", text: `\u65B0\u805E ${query}` }
+];
+var defaultQuickReplies = () => [
+  { label: "\u{1F310} \u5927\u76E4", text: "\u5927\u76E4" },
+  { label: "\u{1F525} \u6392\u884C", text: "\u6392\u884C" },
+  { label: "\u{1F4B1} \u532F\u7387", text: "\u532F\u7387" },
+  { label: "\u2753 \u8AAA\u660E", text: "help" }
+];
+function renderSparkline(candles, width = 12) {
+  if (!candles || candles.length < 2) return "";
+  const closes = candles.map((c) => c.close);
+  const min = Math.min(...closes);
+  const max = Math.max(...closes);
+  const range = max - min || 1;
+  const recent = closes.slice(-width);
+  const BAR = ["\u2581", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2587", "\u2588"];
+  return recent.map((v) => {
+    const idx = Math.min(BAR.length - 1, Math.floor((v - min) / range * (BAR.length - 1)));
+    return BAR[idx];
+  }).join("");
+}
+function sparklineChange(candles) {
+  if (!candles || candles.length < 2) return null;
+  const first = candles[0].close;
+  const last = candles[candles.length - 1].close;
+  if (!first) return null;
+  return Math.round((last - first) / first * 1e4) / 100;
+}
+function brandHeader(title, subtitle = "", rightTag = BRAND_TAG) {
+  return {
+    type: "box",
+    layout: "vertical",
+    backgroundColor: DARK_BG,
+    paddingAll: "lg",
+    contents: [
+      {
+        type: "box",
+        layout: "horizontal",
+        margin: "none",
+        contents: [
+          {
+            type: "text",
+            text: title,
+            weight: "bold",
+            size: "lg",
+            color: "#ffffff",
+            flex: 4,
+            wrap: true
+          },
+          {
+            type: "text",
+            text: rightTag,
+            size: "xxs",
+            color: MUTED,
+            align: "end",
+            flex: 2
+          }
+        ]
+      },
+      subtitle ? {
+        type: "text",
+        text: subtitle,
+        size: "xs",
+        color: MUTED,
+        margin: "sm"
+      } : { type: "text", text: " ", size: "xs" }
+    ]
+  };
+}
 function scanFlex(rows, date) {
   const altText = rows.length ? `${date} \u53F0\u80A1\u5747\u7DDA\u8A0A\u865F ${rows.length} \u6A94` : `${date} \u4ECA\u65E5\u7121\u8A0A\u865F`;
   const bodyContents = rows.length ? rows.slice(0, 12).map((r) => ({
@@ -89329,57 +89884,66 @@ function scanFlex(rows, date) {
     }
   };
 }
-function welcomeFlex() {
+function welcomeFlex(displayName = "") {
+  const greeting = displayName ? `\u55E8 ${displayName} \u{1F44B}` : `\u55E8 \u{1F44B} \u6211\u662F ${BOT_NAME}`;
   return {
     type: "flex",
-    altText: "\u6B61\u8FCE\u52A0\u5165 dontalk-stock",
+    altText: `\u6B61\u8FCE\u4F7F\u7528 ${BOT_NAME}`,
     contents: {
       type: "bubble",
-      header: {
-        type: "box",
-        layout: "vertical",
-        backgroundColor: DARK_BG,
-        contents: [{ type: "text", text: "\u{1F44B} \u6B61\u8FCE\u52A0\u5165 dontalk-stock", weight: "bold", size: "lg", color: "#ffffff" }]
+      hero: {
+        type: "image",
+        url: "https://donttalk.vercel.app/favicon.svg",
+        size: "full",
+        aspectRatio: "20:13",
+        aspectMode: "cover"
       },
       body: {
         type: "box",
         layout: "vertical",
         spacing: "md",
         contents: [
-          { type: "text", text: "\u53EF\u7528\u6307\u4EE4\uFF1A", weight: "bold", size: "sm", color: FG },
-          { type: "text", text: "\u2022 2330 / \u53F0\u7A4D\u96FB \u2192 \u500B\u80A1\u67E5\u8A62", size: "sm", color: FG, wrap: true },
-          { type: "text", text: "\u2022 scan \u2192 \u7576\u65E5\u5747\u7DDA\u8A0A\u865F", size: "sm", color: FG, wrap: true },
-          { type: "text", text: "\u2022 \u96A8\u6A5F\u6B4C\u8A5E / \u6B4C\u8A5E <\u95DC\u9375\u5B57>", size: "sm", color: FG, wrap: true },
-          { type: "text", text: "\u2022 \u641C\u5C0B <\u95DC\u9375\u5B57> \u2192 \u7AD9\u5167\u5167\u5BB9", size: "sm", color: FG, wrap: true },
-          { type: "text", text: "\u2022 subscribe / \u53D6\u6D88 \u2192 \u8A02\u95B1\u76E4\u5F8C\u63A8\u64AD", size: "sm", color: FG, wrap: true },
-          { type: "text", text: "\u2022 help \u2192 \u6307\u4EE4\u6E05\u55AE", size: "sm", color: FG, wrap: true }
+          { type: "text", text: greeting, weight: "bold", size: "lg", wrap: true },
+          {
+            type: "text",
+            text: `\u6211\u662F ${BRAND_TAG} \u7684\u6295\u8CC7\u5C0F\u5E6B\u624B ${BOT_NAME}\u3002
+\u6703\u770B K \u7DDA\u3001\u7D66\u8A0A\u865F\u3001\u6293\u65B0\u805E\u3001\u63DB\u7B97\u532F\u7387\uFF0C\u9023\u5929\u6C23\u90FD\u6703\u5831 \u{1F913}`,
+            size: "sm",
+            color: MUTED,
+            wrap: true
+          },
+          { type: "separator" },
+          { type: "text", text: "\u{1F680} \u8A66\u8A66\u9019\u4E9B\uFF1A", size: "xs", color: GREEN, weight: "bold" },
+          {
+            type: "text",
+            text: "\u2022 2330 \u2014 \u770B\u53F0\u7A4D\u96FB\n\u2022 \u5927\u76E4 \u2014 \u5168\u7403\u6307\u6578\n\u2022 \u534A\u5C0E\u9AD4 \u2014 \u985E\u80A1\n\u2022 \u8A08\u7B97 100+200*3 \u2014 \u7B97\u6578",
+            size: "sm",
+            wrap: true
+          },
+          { type: "text", text: "\u8F38\u5165\u300Chelp\u300D\u770B\u5B8C\u6574\u6307\u4EE4", size: "xs", color: MUTED, align: "end" }
+        ]
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "button",
+            action: {
+              type: "uri",
+              label: "\u{1F310} \u6253\u958B DontTalk",
+              uri: "https://donttalk.vercel.app/"
+            },
+            style: "primary",
+            color: BLUE
+          }
         ]
       }
     }
   };
 }
 function helpFlex() {
-  return {
-    type: "flex",
-    altText: "\u6307\u4EE4\u8AAA\u660E",
-    contents: {
-      type: "bubble",
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "sm",
-        contents: [
-          { type: "text", text: "\u{1F4D6} \u6307\u4EE4", weight: "bold", size: "md", color: FG },
-          { type: "text", text: "\u500B\u80A1\uFF1A4-6 \u78BC\u80A1\u865F (2330)", size: "sm", color: FG, wrap: true },
-          { type: "text", text: "\u6383\u63CF\uFF1Ascan", size: "sm", color: FG, wrap: true },
-          { type: "text", text: "\u6B4C\u8A5E\uFF1A\u96A8\u6A5F\u6B4C\u8A5E / \u6B4C\u8A5E <\u95DC\u9375\u5B57>", size: "sm", color: FG, wrap: true },
-          { type: "text", text: "\u641C\u5C0B\uFF1A\u641C\u5C0B <\u95DC\u9375\u5B57>", size: "sm", color: FG, wrap: true },
-          { type: "text", text: "\u8A02\u95B1\uFF1Asubscribe / \u53D6\u6D88", size: "sm", color: FG, wrap: true },
-          { type: "text", text: "\u8AAA\u660E\uFF1Ahelp", size: "sm", color: FG, wrap: true }
-        ]
-      }
-    }
-  };
+  return helpFlexV2();
 }
 function okFlex(text, color = GREEN) {
   return {
@@ -89395,8 +89959,10 @@ function okFlex(text, color = GREEN) {
     }
   };
 }
-function stockFlex(code, name, last, ma) {
+function stockFlex(code, name, last, ma, candles) {
   const up = (last.changePct ?? 0) >= 0;
+  const spark = candles && candles.length >= 2 ? renderSparkline(candles, 12) : "";
+  const spkChange = candles && candles.length >= 2 ? sparklineChange(candles) : null;
   return {
     type: "flex",
     altText: `${code} ${name}`,
@@ -89406,13 +89972,727 @@ function stockFlex(code, name, last, ma) {
         type: "box",
         layout: "vertical",
         backgroundColor: DARK_BG,
+        paddingAll: "lg",
         contents: [
-          { type: "text", text: `${code} ${name}`, weight: "bold", size: "lg", color: "#ffffff" },
+          {
+            type: "box",
+            layout: "horizontal",
+            contents: [
+              { type: "text", text: `${code}`, weight: "bold", size: "xl", color: "#ffffff", flex: 2 },
+              { type: "text", text: name ?? "", size: "sm", color: MUTED, align: "end", flex: 3, wrap: true }
+            ]
+          },
           {
             type: "text",
-            text: `\u6536\u76E4 ${last.close}  (${up ? "+" : ""}${last.changePct}%)`,
+            text: `${last.close ?? "-"}  ${up ? "+" : ""}${(last.changePct ?? 0).toFixed(2)}%`,
+            size: "xl",
+            color: up ? GREEN : RED,
+            weight: "bold",
+            margin: "sm"
+          },
+          spark ? {
+            type: "text",
+            text: `${spark}  ${spkChange != null ? pctStr(spkChange) : ""}`,
             size: "sm",
-            color: up ? GREEN : RED
+            color: spkChange != null ? spkChange >= 0 ? GREEN : RED : FG,
+            margin: "sm"
+          } : { type: "text", text: " ", size: "xxs" }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "box",
+            layout: "horizontal",
+            contents: [
+              { type: "text", text: "MA20", size: "xs", color: MUTED, flex: 1 },
+              { type: "text", text: `${ma.ma20 ?? "-"}`, size: "sm", color: FG, flex: 2, align: "end" },
+              { type: "text", text: "MA60", size: "xs", color: MUTED, flex: 1, align: "end" },
+              { type: "text", text: `${ma.ma60 ?? "-"}`, size: "sm", color: FG, flex: 2, align: "end" }
+            ]
+          },
+          { type: "separator", margin: "md" },
+          { type: "text", text: "\u{1F4F0} \u65B0\u805E / \u{1F3AF} \u8A0A\u865F / \u2696\uFE0F \u6BD4\u8F03 / \u{1F4CA} K\u7DDA", size: "xxs", color: MUTED, align: "center" }
+        ]
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: BLUE,
+            action: {
+              type: "uri",
+              label: "\u{1F4C8} \u770B\u8A73\u7D30K\u7DDA",
+              uri: `https://donttalk.vercel.app/stock-app/index.html?stock=${code}`
+            }
+          }
+        ]
+      }
+    }
+  };
+}
+function errorFlex(text) {
+  return { type: "text", text };
+}
+function pctStr(pct3) {
+  if (pct3 == null) return "-";
+  const up = pct3 >= 0;
+  return `${up ? "\u25B2" : "\u25BC"} ${up ? "+" : ""}${pct3.toFixed(2)}%`;
+}
+function colorByPct(pct3) {
+  if (pct3 == null) return FG;
+  return pct3 >= 0 ? GREEN : RED;
+}
+function multiStockFlex(rows) {
+  return {
+    type: "flex",
+    altText: `${rows.length} \u6A94\u53F0\u80A1\u5831\u50F9`,
+    contents: {
+      type: "bubble",
+      header: brandHeader(`\u{1F4C8} \u53F0\u80A1 ${rows.length} \u6A94`),
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        contents: rows.slice(0, 6).map((r) => ({
+          type: "box",
+          layout: "horizontal",
+          contents: [
+            { type: "text", text: `${r.code}`, size: "sm", color: FG, flex: 2 },
+            { type: "text", text: `${r.name ?? r.code}`, size: "xs", color: MUTED, flex: 4, wrap: true },
+            { type: "text", text: `${r.close ?? "-"}`, size: "sm", color: FG, flex: 2, align: "end" },
+            { type: "text", text: pctStr(r.changePct), size: "sm", color: colorByPct(r.changePct), flex: 3, align: "end" }
+          ]
+        }))
+      }
+    }
+  };
+}
+function kLineFlex(code, days, candles, summary) {
+  const last5 = candles.slice(-Math.min(days, 5)).reverse();
+  const spark = renderSparkline(candles, 12);
+  const spkChange = sparklineChange(candles);
+  return {
+    type: "flex",
+    altText: `${code} ${days}\u65E5K\u7DDA`,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        paddingAll: "lg",
+        contents: [
+          {
+            type: "box",
+            layout: "horizontal",
+            contents: [
+              { type: "text", text: `\u{1F4CA} ${code}`, weight: "bold", size: "lg", color: "#ffffff", flex: 3 },
+              { type: "text", text: BRAND_TAG, size: "xxs", color: MUTED, align: "end", flex: 2 }
+            ]
+          },
+          summary?.close != null ? {
+            type: "text",
+            text: `\u6536\u76E4 ${summary.close}  ${pctStr(summary.changePct)}`,
+            size: "sm",
+            color: colorByPct(summary.changePct),
+            margin: "sm"
+          } : { type: "text", text: "\u8CC7\u6599\u4E0D\u8DB3", size: "xs", color: MUTED, margin: "sm" },
+          spark ? {
+            type: "text",
+            text: `${spark}  ${spkChange != null ? pctStr(spkChange) : ""}`,
+            size: "sm",
+            color: colorByPct(spkChange),
+            margin: "sm",
+            weight: "bold"
+          } : { type: "text", text: " ", size: "xxs" }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        contents: [
+          {
+            type: "text",
+            text: `${days}\u65E5\u5340\u9593  \u9AD8 ${summary?.high ?? "-"} / \u4F4E ${summary?.low ?? "-"} / \u5747\u91CF ${summary?.avgVolume ? String(Math.round(summary.avgVolume / 1e3)) + "k" : "-"}`,
+            size: "xxs",
+            color: MUTED
+          },
+          { type: "separator" },
+          ...last5.map((c) => ({
+            type: "box",
+            layout: "horizontal",
+            contents: [
+              { type: "text", text: c.time.slice(5), size: "xs", color: MUTED, flex: 2 },
+              { type: "text", text: `\u958B${c.open}`, size: "xs", color: FG, flex: 2 },
+              { type: "text", text: `\u6536${c.close}`, size: "xs", color: c.close >= c.open ? GREEN : RED, flex: 2 },
+              { type: "text", text: `\u91CF${Math.round((c.volume || 0) / 1e3)}k`, size: "xs", color: MUTED, flex: 3, align: "end" }
+            ]
+          }))
+        ]
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: BLUE,
+            action: {
+              type: "uri",
+              label: "\u{1F4C8} \u770B\u8A73\u7D30K\u7DDA",
+              uri: `https://donttalk.vercel.app/stock-app/index.html?stock=${code}`
+            }
+          }
+        ]
+      }
+    }
+  };
+}
+function signalFlex(code, sig) {
+  return {
+    type: "flex",
+    altText: `${code} \u6280\u8853\u8A0A\u865F`,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [
+          { type: "text", text: `\u{1F3AF} ${code} \u6280\u8853\u8A0A\u865F`, weight: "bold", size: "md", color: "#ffffff" }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        contents: [
+          { type: "text", text: `MA5  ${sig.ma5 ?? "-"}`, size: "sm", color: FG },
+          { type: "text", text: `MA20 ${sig.ma20 ?? "-"}`, size: "sm", color: FG },
+          { type: "text", text: `MA60 ${sig.ma60 ?? "-"}`, size: "sm", color: FG },
+          { type: "separator" },
+          ...sig.signals.length ? sig.signals.map((s) => ({ type: "text", text: `\u2022 ${s}`, size: "sm", color: FG, wrap: true })) : [{ type: "text", text: "\uFF08\u7121\u660E\u986F\u8A0A\u865F\uFF09", size: "sm", color: MUTED }]
+        ]
+      }
+    }
+  };
+}
+function indexFlex(rows) {
+  return {
+    type: "flex",
+    altText: "\u5168\u7403\u6307\u6578",
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [{ type: "text", text: "\u{1F310} \u5168\u7403\u6307\u6578", weight: "bold", size: "md", color: "#ffffff" }]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        contents: rows.map((r) => ({
+          type: "box",
+          layout: "horizontal",
+          contents: [
+            { type: "text", text: r.key ?? r.symbol ?? "?", size: "sm", color: FG, flex: 2 },
+            { type: "text", text: r.name ?? "", size: "xs", color: MUTED, flex: 4, wrap: true },
+            { type: "text", text: r.close != null ? r.close.toFixed(2) : "-", size: "sm", color: FG, flex: 2, align: "end" },
+            { type: "text", text: pctStr(r.changePct), size: "sm", color: colorByPct(r.changePct), flex: 3, align: "end" }
+          ]
+        }))
+      }
+    }
+  };
+}
+function forexFlex(rows) {
+  return {
+    type: "flex",
+    altText: "\u4E3B\u8981\u532F\u7387",
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [{ type: "text", text: "\u{1F4B1} \u4E3B\u8981\u532F\u7387", weight: "bold", size: "md", color: "#ffffff" }]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        contents: rows.map((r) => ({
+          type: "box",
+          layout: "horizontal",
+          contents: [
+            { type: "text", text: r.pair, size: "sm", color: FG, flex: 3 },
+            { type: "text", text: r.rate != null ? r.rate.toFixed(4) : "-", size: "sm", color: FG, flex: 4, align: "end" },
+            { type: "text", text: pctStr(r.changePct), size: "sm", color: colorByPct(r.changePct), flex: 3, align: "end" }
+          ]
+        }))
+      }
+    }
+  };
+}
+function cryptoFlex(rows) {
+  return {
+    type: "flex",
+    altText: "\u52A0\u5BC6\u8CA8\u5E63",
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [{ type: "text", text: "\u{1FA99} \u52A0\u5BC6\u8CA8\u5E63", weight: "bold", size: "md", color: "#ffffff" }]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        contents: rows.map((r) => ({
+          type: "box",
+          layout: "horizontal",
+          contents: [
+            { type: "text", text: r.symbol, size: "sm", color: FG, flex: 3 },
+            { type: "text", text: r.name ?? "", size: "xs", color: MUTED, flex: 4, wrap: true },
+            { type: "text", text: `$${r.close != null ? r.close.toFixed(2) : "-"}`, size: "sm", color: FG, flex: 3, align: "end" },
+            { type: "text", text: pctStr(r.changePct), size: "sm", color: colorByPct(r.changePct), flex: 3, align: "end" }
+          ]
+        }))
+      }
+    }
+  };
+}
+function newsFlex(query, items) {
+  return {
+    type: "flex",
+    altText: `${query} \u76F8\u95DC\u65B0\u805E`,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [
+          { type: "text", text: `\u{1F4F0} ${query} \u65B0\u805E`, weight: "bold", size: "md", color: "#ffffff" },
+          { type: "text", text: "\u8FD1 7 \u5929 \xB7 Google News", size: "xs", color: MUTED }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        contents: items.length ? items.slice(0, 5).map((it) => ({
+          type: "box",
+          layout: "vertical",
+          contents: [
+            {
+              type: "text",
+              text: it.title,
+              size: "sm",
+              color: FG,
+              wrap: true,
+              weight: "bold",
+              action: { type: "uri", label: "\u958B\u555F", uri: it.link }
+            },
+            { type: "text", text: `${it.source} \xB7 ${it.pubDate.slice(0, 16)}`, size: "xxs", color: MUTED }
+          ]
+        })) : [{ type: "text", text: "\u67E5\u7121\u76F8\u95DC\u65B0\u805E", size: "sm", color: MUTED }]
+      }
+    }
+  };
+}
+function compareFlex(a, b) {
+  const cells = (s) => [
+    { type: "text", text: `${s.code} ${s.name ?? ""}`, size: "sm", color: FG, weight: "bold" },
+    { type: "text", text: `\u73FE\u50F9 ${s.close ?? "-"} (${pctStr(s.changePct)})`, size: "xs", color: colorByPct(s.changePct) },
+    { type: "text", text: `MA20 ${s.ma20 ?? "-"} \xB7 MA60 ${s.ma60 ?? "-"}`, size: "xs", color: MUTED }
+  ];
+  return {
+    type: "flex",
+    altText: `${a.code} vs ${b.code}`,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [{ type: "text", text: `\u2696\uFE0F ${a.code} vs ${b.code}`, weight: "bold", size: "md", color: "#ffffff" }]
+      },
+      body: {
+        type: "box",
+        layout: "horizontal",
+        spacing: "md",
+        contents: [
+          { type: "box", layout: "vertical", flex: 1, spacing: "xs", contents: cells(a) },
+          { type: "separator" },
+          { type: "box", layout: "vertical", flex: 1, spacing: "xs", contents: cells(b) }
+        ]
+      }
+    }
+  };
+}
+function industryFlex(name, codes, rows) {
+  return {
+    type: "flex",
+    altText: `${name} \u985E\u80A1`,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [
+          { type: "text", text: `\u{1F3ED} ${name} (${codes.length}\u6A94)`, weight: "bold", size: "md", color: "#ffffff" }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        contents: rows.map((r) => ({
+          type: "box",
+          layout: "horizontal",
+          contents: [
+            { type: "text", text: r.code, size: "sm", color: FG, flex: 2 },
+            { type: "text", text: `${r.close ?? "-"}`, size: "sm", color: FG, flex: 2, align: "end" },
+            { type: "text", text: pctStr(r.changePct), size: "sm", color: colorByPct(r.changePct), flex: 3, align: "end" }
+          ]
+        }))
+      }
+    }
+  };
+}
+function rankingFlex(rows) {
+  const sorted = [...rows].filter((r) => r.changePct != null).sort((a, b) => (b.changePct ?? 0) - (a.changePct ?? 0));
+  const up = sorted.slice(0, 5);
+  const down = sorted.slice(-5).reverse();
+  return {
+    type: "flex",
+    altText: "\u53F0\u80A1\u6392\u884C",
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [{ type: "text", text: "\u{1F525} \u53F0\u80A1\u6F32\u8DCC\u6392\u884C", weight: "bold", size: "md", color: "#ffffff" }]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          { type: "text", text: "\u25B2 \u6F32\u5E45\u524D 5", size: "xs", color: GREEN, weight: "bold" },
+          ...up.map((r) => ({
+            type: "box",
+            layout: "horizontal",
+            contents: [
+              { type: "text", text: r.code, size: "xs", color: FG, flex: 2 },
+              { type: "text", text: pctStr(r.changePct), size: "xs", color: GREEN, flex: 3, align: "end" }
+            ]
+          })),
+          { type: "separator" },
+          { type: "text", text: "\u25BC \u8DCC\u5E45\u524D 5", size: "xs", color: RED, weight: "bold" },
+          ...down.map((r) => ({
+            type: "box",
+            layout: "horizontal",
+            contents: [
+              { type: "text", text: r.code, size: "xs", color: FG, flex: 2 },
+              { type: "text", text: pctStr(r.changePct), size: "xs", color: RED, flex: 3, align: "end" }
+            ]
+          }))
+        ]
+      }
+    }
+  };
+}
+function row(label, val, bold = false) {
+  return {
+    type: "box",
+    layout: "horizontal",
+    contents: [
+      { type: "text", text: label, size: "sm", color: FG, weight: bold ? "bold" : "regular", flex: 2 },
+      {
+        type: "text",
+        text: `${val >= 0 ? "+" : ""}${val.toLocaleString()}`,
+        size: "sm",
+        color: val >= 0 ? RED : GREEN,
+        flex: 5,
+        align: "end",
+        weight: bold ? "bold" : "regular"
+      }
+    ]
+  };
+}
+function institutionalFlex(code, data) {
+  if (!data) return errorFlex(`\u67E5\u7121 ${code} \u6CD5\u4EBA\u8CC7\u6599\uFF08\u53EF\u80FD\u975E\u4EA4\u6613\u65E5\uFF09`);
+  return {
+    type: "flex",
+    altText: `${code} \u6CD5\u4EBA\u8CB7\u8CE3\u8D85`,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [
+          {
+            type: "text",
+            text: `\u{1F3DB} ${code} \u4E09\u5927\u6CD5\u4EBA ${data.date.slice(0, 4)}/${data.date.slice(4, 6)}/${data.date.slice(6, 8)}`,
+            weight: "bold",
+            size: "md",
+            color: "#ffffff"
+          }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        contents: [
+          row("\u5916\u8CC7", data.foreign),
+          row("\u6295\u4FE1", data.trust),
+          row("\u81EA\u71DF", data.dealer),
+          { type: "separator" },
+          row("\u5408\u8A08", data.total, true)
+        ]
+      }
+    }
+  };
+}
+function marginFlex(code, data) {
+  if (!data) return errorFlex(`\u67E5\u7121 ${code} \u878D\u8CC7\u8CC7\u6599\uFF08\u53EF\u80FD\u975E\u4EA4\u6613\u65E5\uFF09`);
+  return {
+    type: "flex",
+    altText: `${code} \u878D\u8CC7\u878D\u5238`,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [
+          {
+            type: "text",
+            text: `\u{1F4B0} ${code} \u878D\u8CC7\u878D\u5238 ${data.date.slice(0, 4)}/${data.date.slice(4, 6)}/${data.date.slice(6, 8)}`,
+            weight: "bold",
+            size: "md",
+            color: "#ffffff"
+          }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        contents: [
+          { type: "text", text: `\u878D\u8CC7\u9918\u984D ${data.marginBalance.toLocaleString()}`, size: "sm", color: FG },
+          {
+            type: "text",
+            text: `\u878D\u8CC7\u589E\u6E1B ${data.marginChange >= 0 ? "+" : ""}${data.marginChange.toLocaleString()}`,
+            size: "xs",
+            color: data.marginChange >= 0 ? RED : GREEN
+          },
+          { type: "text", text: `\u878D\u5238\u9918\u984D ${data.shortBalance.toLocaleString()}`, size: "sm", color: FG }
+        ]
+      }
+    }
+  };
+}
+function convertFlex(result) {
+  return {
+    type: "flex",
+    altText: `\u532F\u7387\u63DB\u7B97 ${result.from} \u2192 ${result.to}`,
+    contents: {
+      type: "bubble",
+      header: brandHeader(`\u{1F4B1} ${result.from} \u2192 ${result.to}`),
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          { type: "text", text: `${result.amount} ${result.from}`, size: "md", color: MUTED, align: "center" },
+          { type: "text", text: "\u2193", size: "md", color: MUTED, align: "center" },
+          { type: "text", text: `${result.converted.toFixed(2)} ${result.to}`, size: "xl", color: FG, weight: "bold", align: "center" },
+          { type: "text", text: `\u532F\u7387 1 ${result.from} = ${result.rate.toFixed(4)} ${result.to}`, size: "xs", color: MUTED, align: "center" }
+        ]
+      }
+    }
+  };
+}
+function pnlFlex(code, buy, sell, shares = 1) {
+  const diff = sell - buy;
+  const pct3 = diff / buy * 100;
+  const profit = diff * shares;
+  return {
+    type: "flex",
+    altText: `${code} \u640D\u76CA\u8A66\u7B97`,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [{ type: "text", text: `\u{1F4B9} ${code} \u640D\u76CA\u8A66\u7B97`, weight: "bold", size: "md", color: "#ffffff" }]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          { type: "text", text: `\u8CB7 ${buy} / \u8CE3 ${sell} (${shares}\u5F35)`, size: "sm", color: FG },
+          { type: "separator" },
+          { type: "text", text: `\u6BCF\u80A1 ${diff >= 0 ? "+" : ""}${diff.toFixed(2)} (${pct3 >= 0 ? "+" : ""}${pct3.toFixed(2)}%)`, size: "md", color: diff >= 0 ? GREEN : RED, weight: "bold" },
+          { type: "text", text: `${shares >= 1e3 ? "\u7E3D\u640D\u76CA" : "\u6BCF\u5F35\u640D\u76CA"} ${profit >= 0 ? "+" : ""}${profit.toFixed(0)}`, size: "md", color: diff >= 0 ? GREEN : RED, weight: "bold" }
+        ]
+      }
+    }
+  };
+}
+function calcFlex(expr, result) {
+  return {
+    type: "flex",
+    altText: `\u8A08\u7B97 ${expr} = ${result}`,
+    contents: {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          { type: "text", text: `\u{1F9EE} \u8A08\u7B97`, size: "sm", color: MUTED },
+          { type: "text", text: expr, size: "md", color: FG, wrap: true },
+          { type: "text", text: "=", size: "md", color: MUTED },
+          { type: "text", text: String(result), size: "xl", color: GREEN, weight: "bold" }
+        ]
+      }
+    }
+  };
+}
+function weatherFlex(data) {
+  return {
+    type: "flex",
+    altText: `${data.city} \u5929\u6C23`,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [
+          { type: "text", text: `\u{1F324} ${data.city} \u5929\u6C23`, weight: "bold", size: "md", color: "#ffffff" },
+          { type: "text", text: data.location ?? "", size: "xs", color: MUTED }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          data.maxT && data.minT ? {
+            type: "text",
+            text: `\u6EAB\u5EA6 ${data.minT}\xB0 ~ ${data.maxT}\xB0C`,
+            size: "md",
+            color: FG,
+            weight: "bold"
+          } : { type: "text", text: "", size: "xs" },
+          { type: "separator" },
+          ...data.forecast.map((f) => ({
+            type: "box",
+            layout: "vertical",
+            contents: [
+              { type: "text", text: `${f.from.slice(5, 16)} ~ ${f.to.slice(11, 16)}`, size: "xxs", color: MUTED },
+              { type: "text", text: f.desc, size: "sm", color: FG, wrap: true }
+            ]
+          }))
+        ]
+      }
+    }
+  };
+}
+var HELP_LINES = [
+  "\u67E5\u500B\u80A1\uFF1A\u8F38\u5165 4-6 \u78BC\u80A1\u865F\uFF082330\uFF09",
+  "\u53F0\u80A1\u591A\u6A94\uFF1A\u53F0\u80A1 2330 2454 2317",
+  "K\u7DDA\uFF1A2330 5d \u6216 2330 10d",
+  "\u8A0A\u865F\uFF1A\u8A0A\u865F 2330 \u6216 2330 \u8A0A\u865F",
+  "\u5927\u76E4\uFF1A\u8F38\u5165\u300C\u5927\u76E4\u300D",
+  "\u532F\u7387\uFF1A\u8F38\u5165\u300C\u532F\u7387\u300D",
+  "\u65B0\u805E\uFF1A\u65B0\u805E \u53F0\u7A4D\u96FB / \u65B0\u805E 2330",
+  "\u6BD4\u8F03\uFF1A2330 vs 2454",
+  "\u7522\u696D\uFF1A\u534A\u5C0E\u9AD4 / \u91D1\u878D / AI / \u96FB\u5B50",
+  "\u6392\u884C\uFF1A\u8F38\u5165\u300C\u6392\u884C\u300D",
+  "\u7F8E\u80A1\uFF1A\u7F8E\u80A1 AAPL / \u7F8E\u80A1 TSLA",
+  "ETF\uFF1A0050 / 0056",
+  "\u6CD5\u4EBA\uFF1A2330 \u6CD5\u4EBA",
+  "\u878D\u8CC7\uFF1A2330 \u878D\u8CC7",
+  "\u532F\u7387\u63DB\u7B97\uFF1A100 USD TWD",
+  "\u640D\u76CA\uFF1A2330 \u8CB7600 \u8CE3720",
+  "\u4ECA\u65E5\u6458\u8981\uFF1A\u8F38\u5165\u300C\u4ECA\u65E5\u6458\u8981\u300D",
+  "\u8A08\u7B97\uFF1A100+200*3 \u6216 \u8A08\u7B97 100/3",
+  "\u5929\u6C23\uFF1A\u5929\u6C23 \u81FA\u5317 / \u5929\u6C23 \u9AD8\u96C4"
+];
+function helpFlexV2() {
+  return {
+    type: "flex",
+    altText: "\u6307\u4EE4\u8AAA\u660E",
+    contents: {
+      type: "bubble",
+      header: brandHeader("\u{1F4CA} DontTalk \u6307\u4EE4\u6E05\u55AE", "20 \u7A2E\u529F\u80FD\uFF0C\u8F38\u5165\u6587\u5B57\u5373\u53EF\u4F7F\u7528"),
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "xs",
+        contents: HELP_LINES.map((l) => ({
+          type: "text",
+          text: `\u2022 ${l}`,
+          size: "sm",
+          color: FG,
+          wrap: true
+        }))
+      }
+    }
+  };
+}
+function dailySummaryFlex(indices, rankings) {
+  const top = [...rankings].filter((r) => r.changePct != null).sort((a, b) => (b.changePct ?? 0) - (a.changePct ?? 0)).slice(0, 3);
+  return {
+    type: "flex",
+    altText: "\u4ECA\u65E5\u6458\u8981",
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        paddingAll: "lg",
+        contents: [
+          {
+            type: "box",
+            layout: "horizontal",
+            contents: [
+              { type: "text", text: "\u{1F4C5} \u4ECA\u65E5\u6458\u8981", weight: "bold", size: "lg", color: "#ffffff", flex: 4 },
+              { type: "text", text: BRAND_TAG, size: "xxs", color: MUTED, align: "end", flex: 2 }
+            ]
+          },
+          {
+            type: "text",
+            text: top.length ? `\u{1F525} \u6700\u5F37 ${top[0].code} +${(top[0].changePct ?? 0).toFixed(2)}%` : "\u{1F525} \u6700\u5F37 \u7121\u8CC7\u6599",
+            size: "xs",
+            color: GREEN,
+            margin: "sm"
           }
         ]
       },
@@ -89421,23 +90701,22 @@ function stockFlex(code, name, last, ma) {
         layout: "vertical",
         spacing: "sm",
         contents: [
-          { type: "text", text: `MA20 ${ma.ma20 ?? "-"}`, size: "sm", color: FG },
-          { type: "text", text: `MA60 ${ma.ma60 ?? "-"}`, size: "sm", color: FG }
+          { type: "text", text: "\u{1F310} \u5168\u7403\u6307\u6578", size: "xs", color: GREEN, weight: "bold" },
+          ...indices.slice(0, 5).map((r) => ({
+            type: "text",
+            text: `${(r.key ?? r.symbol ?? "?").padEnd(5)}  ${(r.close ?? 0).toFixed(2)}  (${(r.changePct ?? 0) >= 0 ? "+" : ""}${(r.changePct ?? 0).toFixed(2)}%)`,
+            size: "xs",
+            color: (r.changePct ?? 0) >= 0 ? GREEN : RED
+          })),
+          { type: "separator" },
+          { type: "text", text: "\u{1F525} \u6F32\u5E45\u524D 3", size: "xs", color: GREEN, weight: "bold" },
+          ...top.map((r) => ({
+            type: "text",
+            text: `${r.code} ${r.name ?? ""}  +${(r.changePct ?? 0).toFixed(2)}%`,
+            size: "xs",
+            color: FG
+          }))
         ]
-      },
-      footer: {
-        type: "box",
-        layout: "vertical",
-        contents: [{
-          type: "button",
-          style: "primary",
-          color: BLUE,
-          action: {
-            type: "uri",
-            label: "\u770B K \u7DDA",
-            uri: `https://donttalk.vercel.app/stock-app/index.html?stock=${code}`
-          }
-        }]
       }
     }
   };
@@ -89567,7 +90846,7 @@ function searchResultsFlex(query, results) {
 // src/lib/lyrics.ts
 var SITE = "https://donttalk.vercel.app";
 var PLAYLIST_URL = `${SITE}/music/playlist.json`;
-var UA5 = "Mozilla/5.0 (compatible; donttalk-line-ts/1.0; +https://donttalk.vercel.app)";
+var UA6 = "Mozilla/5.0 (compatible; donttalk-line-ts/1.0; +https://donttalk.vercel.app)";
 var INDEX_TTL_MS = 10 * 60 * 1e3;
 var TRACK_TTL_MS = 30 * 60 * 1e3;
 var indexCache = null;
@@ -89593,7 +90872,7 @@ async function loadIndex(timeoutMs = 4e3) {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(PLAYLIST_URL, {
-      headers: { "User-Agent": UA5, Accept: "application/json" },
+      headers: { "User-Agent": UA6, Accept: "application/json" },
       signal: controller.signal
     });
     clearTimeout(timer);
@@ -89619,7 +90898,7 @@ async function fetchTrackBody(track, timeoutMs = 4e3) {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(track.lyricsUrl, {
-      headers: { "User-Agent": UA5, Accept: "text/plain" },
+      headers: { "User-Agent": UA6, Accept: "text/plain" },
       signal: controller.signal
     });
     clearTimeout(timer);
@@ -89743,7 +91022,7 @@ async function searchLyrics(query, opts = {}) {
 // src/lib/site-search.ts
 var SITE2 = "https://donttalk.vercel.app";
 var INDEX_URL = `${SITE2}/llms-full.txt`;
-var UA6 = "Mozilla/5.0 (compatible; donttalk-line-ts/1.0; +https://donttalk.vercel.app)";
+var UA7 = "Mozilla/5.0 (compatible; donttalk-line-ts/1.0; +https://donttalk.vercel.app)";
 var cache = null;
 var TTL_MS = 5 * 60 * 1e3;
 async function fetchIndex(timeoutMs = 4e3) {
@@ -89754,7 +91033,7 @@ async function fetchIndex(timeoutMs = 4e3) {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(INDEX_URL, {
-      headers: { "User-Agent": UA6, Accept: "text/plain" },
+      headers: { "User-Agent": UA7, Accept: "text/plain" },
       signal: controller.signal
     });
     clearTimeout(timer);
@@ -89836,6 +91115,7 @@ async function searchSite(query, opts = {}) {
 }
 
 // src/routes/line.ts
+import { deflateSync, crc32 } from "node:zlib";
 var router10 = (0, import_express10.Router)();
 function rawJson(req, _res, next) {
   let data = "";
@@ -89908,12 +91188,209 @@ router10.post("/line/scan_and_push_line", async (req, res) => {
     return res.status(500).json({ ok: false, error: "internal error" });
   }
 });
+router10.get("/line/health", async (_req, res) => {
+  const secret = process.env["LINE_CHANNEL_SECRET"];
+  const token2 = process.env["LINE_CHANNEL_ACCESS_TOKEN"];
+  let apiLineReachable = false;
+  let apiLineStatus = null;
+  let apiLineErr = null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4e3);
+    const r = await fetch("https://api.line.me/v2/bot/info/", {
+      method: "GET",
+      headers: token2 ? { Authorization: `Bearer ${token2}` } : {},
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    apiLineReachable = true;
+    apiLineStatus = r.status;
+  } catch (err) {
+    apiLineErr = String(err?.cause ?? err?.message ?? err);
+  }
+  return res.status(200).json({
+    ok: true,
+    env: {
+      secretSet: Boolean(secret),
+      tokenSet: Boolean(token2),
+      secretLen: secret?.length ?? 0,
+      tokenLen: token2?.length ?? 0
+    },
+    apiLine: { reachable: apiLineReachable, status: apiLineStatus, err: apiLineErr },
+    checkedAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+});
+var RICH_MENU_CONFIG = {
+  size: { width: 2500, height: 1686 },
+  selected: false,
+  name: "DontTalk 6-cell menu",
+  chatBarText: "\u{1F4CA} DontTalk \u9078\u55AE",
+  areas: [
+    { bounds: { x: 0, y: 0, width: 833, height: 843 }, action: { type: "message", text: "\u5927\u76E4" } },
+    { bounds: { x: 833, y: 0, width: 834, height: 843 }, action: { type: "message", text: "\u534A\u5C0E\u9AD4" } },
+    { bounds: { x: 1667, y: 0, width: 833, height: 843 }, action: { type: "message", text: "\u6392\u884C" } },
+    { bounds: { x: 0, y: 843, width: 833, height: 843 }, action: { type: "message", text: "\u532F\u7387" } },
+    { bounds: { x: 833, y: 843, width: 834, height: 843 }, action: { type: "message", text: "\u4ECA\u65E5\u6458\u8981" } },
+    { bounds: { x: 1667, y: 843, width: 833, height: 843 }, action: { type: "message", text: "help" } }
+  ]
+};
+function buildDefaultMenuImage() {
+  const W = 2500, H = 1686;
+  const RAW = Buffer.alloc(W * H * 3);
+  const cells = [
+    { x: 0, y: 0, w: 833, h: 843, color: [13, 17, 23] },
+    { x: 833, y: 0, w: 834, h: 843, color: [22, 27, 34] },
+    { x: 1667, y: 0, w: 833, h: 843, color: [13, 17, 23] },
+    { x: 0, y: 843, w: 833, h: 843, color: [22, 27, 34] },
+    { x: 833, y: 843, w: 834, h: 843, color: [13, 17, 23] },
+    { x: 1667, y: 843, w: 833, h: 843, color: [22, 27, 34] }
+  ];
+  const accents = [
+    [63, 185, 80],
+    [31, 111, 235],
+    [163, 113, 247],
+    [255, 166, 87],
+    [63, 185, 80],
+    [163, 113, 247]
+  ];
+  const setPx = (x, y, r, g, b) => {
+    if (x < 0 || y < 0 || x >= W || y >= H) return;
+    const o = (y * W + x) * 3;
+    RAW[o] = r;
+    RAW[o + 1] = g;
+    RAW[o + 2] = b;
+  };
+  const fillR = (x0, y0, w, h, r, g, b) => {
+    for (let y = y0; y < y0 + h && y < H; y++) {
+      for (let x = x0; x < x0 + w && x < W; x++) setPx(x, y, r, g, b);
+    }
+  };
+  for (const c of cells) {
+    for (let dy = 0; dy < c.h; dy++) {
+      const t = dy / c.h;
+      const r = Math.round(c.color[0] + c.color[0] * 0.4 * (1 - t));
+      const g = Math.round(c.color[1] + c.color[1] * 0.4 * (1 - t));
+      const b = Math.round(c.color[2] + c.color[2] * 0.4 * (1 - t));
+      fillR(c.x, c.y + dy, c.w, 1, r, g, b);
+    }
+  }
+  for (let i = 0; i < cells.length; i++) {
+    const c = cells[i];
+    const [r, g, b] = accents[i];
+    fillR(c.x, c.y + c.h - 12, c.w, 12, r, g, b);
+  }
+  const drawCircle = (cx, cy, color) => {
+    for (let rad = 80; rad < 130; rad++) {
+      for (let a = 0; a < 2 * Math.PI; a += 0.03) {
+        setPx(Math.round(cx + rad * Math.cos(a)), Math.round(cy + rad * Math.sin(a)), color[0], color[1], color[2]);
+      }
+    }
+  };
+  drawCircle(416, 380, [63, 185, 80]);
+  fillR(1100, 350, 300, 200, [31, 111, 235]);
+  drawCircle(2083, 380, [255, 95, 86]);
+  fillR(380, 1100, 80, 200, [63, 185, 80]);
+  for (let i = 0; i < 80; i++) fillR(340 - i, 1100 - i, 80 + i * 2, 10, [63, 185, 80]);
+  fillR(1180, 1100, 250, 220, [255, 166, 87]);
+  fillR(1180, 1080, 30, 60, [255, 166, 87]);
+  fillR(1400, 1080, 30, 60, [255, 166, 87]);
+  drawCircle(2083, 1260, [163, 113, 247]);
+  fillR(2071, 1280, 24, 60, [163, 113, 247]);
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    const typeBuf = Buffer.from(type, "ascii");
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])));
+    return Buffer.concat([len, typeBuf, data, crc]);
+  };
+  const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(W, 0);
+  ihdr.writeUInt32BE(H, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 2;
+  ihdr[10] = 0;
+  ihdr[11] = 0;
+  ihdr[12] = 0;
+  const rowBytes = W * 3;
+  const filtered = Buffer.alloc(H * (rowBytes + 1));
+  for (let y = 0; y < H; y++) {
+    filtered[y * (rowBytes + 1)] = 0;
+    RAW.copy(filtered, y * (rowBytes + 1) + 1, y * rowBytes, (y + 1) * rowBytes);
+  }
+  const compressed = deflateSync(filtered);
+  return Buffer.concat([
+    sig,
+    chunk("IHDR", ihdr),
+    chunk("IDAT", compressed),
+    chunk("IEND", Buffer.alloc(0))
+  ]);
+}
+router10.get("/line/rich-menu", async (req, res) => {
+  const token2 = process.env["LINE_CHANNEL_ACCESS_TOKEN"];
+  if (!token2) {
+    return res.status(503).json({ ok: false, error: "LINE_CHANNEL_ACCESS_TOKEN not set" });
+  }
+  if (req.query?.image === "1") {
+    const png = buildDefaultMenuImage();
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Content-Length", String(png.length));
+    res.setHeader("Content-Disposition", 'attachment; filename="donttalk-rich-menu.png"');
+    return res.status(200).send(png);
+  }
+  try {
+    const r = await fetch("https://api.line.me/v2/bot/richmenu/list", {
+      headers: { Authorization: `Bearer ${token2}` }
+    });
+    const json = await r.json();
+    const imageB64 = buildDefaultMenuImage().toString("base64");
+    return res.status(200).json({
+      ok: true,
+      richmenus: json.richmenus ?? [],
+      config: RICH_MENU_CONFIG,
+      imageBase64: imageB64,
+      imageSize: Buffer.from(imageB64, "base64").length,
+      imageUrl: "https://donttalk.vercel.app/api/line/rich-menu?image=1"
+    });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: String(err?.message ?? err) });
+  }
+});
+router10.delete("/line/rich-menu", async (_req, res) => {
+  const token2 = process.env["LINE_CHANNEL_ACCESS_TOKEN"];
+  if (!token2) return res.status(503).json({ ok: false, error: "LINE_CHANNEL_ACCESS_TOKEN not set" });
+  try {
+    const listRes = await fetch("https://api.line.me/v2/bot/richmenu/list", {
+      headers: { Authorization: `Bearer ${token2}` }
+    });
+    const listJson = await listRes.json();
+    const results = await Promise.all(
+      (listJson.richmenus ?? []).map(async (rm) => {
+        const r = await fetch(`https://api.line.me/v2/bot/richmenu/${rm.richMenuId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token2}` }
+        });
+        return { id: rm.richMenuId, ok: r.ok };
+      })
+    );
+    return res.status(200).json({ ok: true, deleted: results });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: String(err?.message ?? err) });
+  }
+});
 async function handleEvent(ev) {
   const userId = ev.source?.userId;
   logger.info({ type: ev.type, userId, text: ev.message?.text }, "LINE event");
   if (ev.type === "follow" && userId) {
-    await db.insert(lineSubscribersTable).values({ userId }).onConflictDoNothing();
-    if (ev.replyToken) await replyMessage(ev.replyToken, [welcomeFlex()]);
+    let displayName = "";
+    try {
+      const profile = await getProfile(userId);
+      displayName = profile?.displayName ?? "";
+    } catch {
+    }
+    await db.insert(lineSubscribersTable).values({ userId, displayName }).onConflictDoNothing();
+    if (ev.replyToken) await replyMessage(ev.replyToken, [welcomeFlex(displayName)]);
     return;
   }
   if (ev.type === "unfollow" && userId) {
@@ -89922,29 +91399,29 @@ async function handleEvent(ev) {
   }
   if (ev.type !== "message" || ev.message?.type !== "text" || !ev.replyToken) return;
   const text = (ev.message.text ?? "").trim();
-  if (/^(help|說明)$/i.test(text)) {
-    return replyMessage(ev.replyToken, [helpFlex()]);
+  if (/^(help|說明|\?|\？|\/help)$/i.test(text)) {
+    return replyMessage(ev.replyToken, [withQuickReply(helpFlexV2(), defaultQuickReplies())]);
   }
   if (/^(subscribe|訂閱|我要收)$/.test(text)) {
     if (!userId) return;
     await db.insert(lineSubscribersTable).values({ userId }).onConflictDoNothing();
-    return replyMessage(ev.replyToken, [okFlex("\u2705 \u5DF2\u52A0\u5165\u53F0\u80A1\u5747\u7DDA\u8A0A\u865F\u63A8\u64AD")]);
+    return replyMessage(ev.replyToken, [withQuickReply(okFlex("\u2705 \u5DF2\u52A0\u5165\u53F0\u80A1\u5747\u7DDA\u8A0A\u865F\u63A8\u64AD"), defaultQuickReplies())]);
   }
   if (/^(unsubscribe|取消|退訂)$/.test(text)) {
     if (!userId) return;
     await db.delete(lineSubscribersTable).where(eq(lineSubscribersTable.userId, userId));
-    return replyMessage(ev.replyToken, [okFlex("\u{1F44B} \u5DF2\u505C\u6B62\u63A8\u64AD", "#8b949e")]);
+    return replyMessage(ev.replyToken, [withQuickReply(okFlex("\u{1F44B} \u5DF2\u505C\u6B62\u63A8\u64AD", "#8b949e"), defaultQuickReplies())]);
   }
   if (text === "\u96A8\u6A5F\u6B4C\u8A5E" || text === "random" || text === "\u6B4C\u8A5E") {
     try {
       const r = await randomLyrics({ timeoutMs: 4e3 });
       if (!r.ok || !r.tracks.length) {
-        return replyMessage(ev.replyToken, [{ type: "text", text: "\u6B4C\u8A5E\u670D\u52D9\u66AB\u6642\u7121\u6CD5\u4F7F\u7528\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002" }]);
+        return replyMessage(ev.replyToken, [errorFlex("\u6B4C\u8A5E\u670D\u52D9\u66AB\u6642\u7121\u6CD5\u4F7F\u7528\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002")]);
       }
       return replyMessage(ev.replyToken, [lyricsResultFlex(r.tracks[0])]);
     } catch (err) {
       logger.error({ err }, "lyrics random failed");
-      return replyMessage(ev.replyToken, [{ type: "text", text: "\u6B4C\u8A5E\u670D\u52D9\u932F\u8AA4\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002" }]);
+      return replyMessage(ev.replyToken, [errorFlex("\u6B4C\u8A5E\u670D\u52D9\u932F\u8AA4\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002")]);
     }
   }
   const lyricsMatch = text.match(/^(?:歌詞|lyrics?|lyric)\s+(.+)$/i);
@@ -89953,17 +91430,13 @@ async function handleEvent(ev) {
     try {
       const r = await searchLyrics(q, { limit: 5, timeoutMs: 8e3 });
       if (!r.ok || !r.count) {
-        return replyMessage(ev.replyToken, [
-          { type: "text", text: `\u5728 33 \u9996\u6B4C\u8A5E\u88E1\u627E\u4E0D\u5230\u300C${q}\u300D\u76F8\u95DC\u5167\u5BB9\u3002\u8A66\u8A66\u5225\u7684\u95DC\u9375\u5B57\uFF1F` }
-        ]);
+        return replyMessage(ev.replyToken, [errorFlex(`\u5728 33 \u9996\u6B4C\u8A5E\u88E1\u627E\u4E0D\u5230\u300C${q}\u300D\u76F8\u95DC\u5167\u5BB9\u3002\u8A66\u8A66\u5225\u7684\u95DC\u9375\u5B57\uFF1F`)]);
       }
-      if (r.tracks.length === 1) {
-        return replyMessage(ev.replyToken, [lyricsResultFlex(r.tracks[0])]);
-      }
+      if (r.tracks.length === 1) return replyMessage(ev.replyToken, [lyricsResultFlex(r.tracks[0])]);
       return replyMessage(ev.replyToken, [lyricsCarouselFlex(q, r.tracks)]);
     } catch (err) {
       logger.error({ err, q }, "lyrics search failed");
-      return replyMessage(ev.replyToken, [{ type: "text", text: "\u6B4C\u8A5E\u641C\u5C0B\u932F\u8AA4\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002" }]);
+      return replyMessage(ev.replyToken, [errorFlex("\u6B4C\u8A5E\u641C\u5C0B\u932F\u8AA4\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002")]);
     }
   }
   const searchMatch = text.match(/^(?:搜尋|search|找)\s+(.+)$/i);
@@ -89972,14 +91445,12 @@ async function handleEvent(ev) {
     try {
       const r = await searchSite(q, { limit: 5, timeoutMs: 4e3 });
       if (!r.ok || !r.results.length) {
-        return replyMessage(ev.replyToken, [
-          { type: "text", text: `\u7AD9\u5167\u627E\u4E0D\u5230\u300C${q}\u300D\u76F8\u95DC\u4F5C\u54C1\u3002\u8A66\u8A66\u300C\u86CB\u767D\u8CEA\u300D\u300C\u57FA\u56E0\u300D\u300CNGS\u300D\u300CRL\u300D\u300CBoTorch\u300D\u9019\u985E\u6280\u8853\u95DC\u9375\u5B57\u3002` }
-        ]);
+        return replyMessage(ev.replyToken, [errorFlex(`\u7AD9\u5167\u627E\u4E0D\u5230\u300C${q}\u300D\u76F8\u95DC\u4F5C\u54C1\u3002\u8A66\u8A66\u300C\u86CB\u767D\u8CEA\u300D\u300C\u57FA\u56E0\u300D\u300CNGS\u300D\u300CRL\u300D\u300CBoTorch\u300D\u9019\u985E\u6280\u8853\u95DC\u9375\u5B57\u3002`)]);
       }
       return replyMessage(ev.replyToken, [searchResultsFlex(q, r.results)]);
     } catch (err) {
       logger.error({ err, q }, "site search failed");
-      return replyMessage(ev.replyToken, [{ type: "text", text: "\u641C\u5C0B\u932F\u8AA4\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002" }]);
+      return replyMessage(ev.replyToken, [errorFlex("\u641C\u5C0B\u932F\u8AA4\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002")]);
     }
   }
   if (/^scan$/i.test(text)) {
@@ -89987,32 +91458,301 @@ async function handleEvent(ev) {
     const date = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
     return replyMessage(ev.replyToken, [scanFlex(results, date)]);
   }
-  const codeMatch = text.match(/^(\d{4,6})$/);
-  if (codeMatch && userId) {
-    const code = codeMatch[1];
-    const stock = await resolveStock(code).catch(() => null);
-    if (!stock) {
-      return replyMessage(ev.replyToken, [
-        { type: "text", text: `\u627E\u4E0D\u5230\u80A1\u865F ${code}\uFF0C\u8ACB\u7528 4-6 \u78BC\u53F0\u80A1\u4EE3\u865F` }
-      ]);
-    }
-    try {
-      const candles = await fetchCandles(stock.ticker, 240);
-      const last = candles[candles.length - 1];
-      const prev = candles[candles.length - 2] ?? last;
-      const changePct2 = prev.close ? +((last.close - prev.close) / prev.close * 100).toFixed(2) : 0;
-      const ma20 = maSeries(candles, 20).at(-1)?.value ?? null;
-      const ma60 = maSeries(candles, 60).at(-1)?.value ?? null;
-      return replyMessage(ev.replyToken, [stockFlex(code, stock.name, {
-        close: last.close,
-        changePct: changePct2
-      }, { ma20, ma60 })]);
-    } catch (err) {
-      logger.error({ err, code }, "stock query failed");
-      return replyMessage(ev.replyToken, [{ type: "text", text: `${code} \u67E5\u8A62\u5931\u6557\uFF0C\u7A0D\u5F8C\u518D\u8A66` }]);
-    }
+  const cmd = parseCommand(text);
+  try {
+    return await dispatchCommand(cmd, ev.replyToken);
+  } catch (err) {
+    logger.error({ err, cmd: cmd.type, text }, "LINE cmd dispatch failed");
+    return replyMessage(ev.replyToken, [errorFlex(`\u6307\u4EE4\u5931\u6557\uFF1A${String(err?.message ?? err)}`)]);
   }
-  return replyMessage(ev.replyToken, [{ type: "text", text: "\u770B\u4E0D\u61C2 \u{1F648} \u8F38\u5165 help \u770B\u6307\u4EE4" }]);
+}
+function parseCommand(text) {
+  const t = text.trim();
+  if (/^(大盤|指數|全球指數|台股大盤)$/.test(t)) return { type: "index" };
+  if (/^(匯率|外匯|forex)$/i.test(t)) return { type: "forex" };
+  if (/^(加密貨幣|加密|btc|crypto|虛擬貨幣)$/i.test(t)) return { type: "crypto" };
+  if (/^(排行|漲跌排行|排名|排行榜)$/.test(t)) return { type: "ranking" };
+  if (/^(今日摘要|摘要|今日|summary|日報)$/.test(t)) return { type: "daily_summary" };
+  const weatherMatch = t.match(/^天氣\s+(.+)$/);
+  if (weatherMatch) return { type: "weather", city: weatherMatch[1].trim() };
+  const calcMatch = t.match(/^計算\s+(.+)$/);
+  if (calcMatch) return { type: "calc", expr: calcMatch[1].trim() };
+  if (/^[\d+\-*/().\s]+$/.test(t) && /[+\-*/]/.test(t)) return { type: "calc", expr: t };
+  const convertMatch = t.match(/^(\d+(?:\.\d+)?)\s+([A-Z]{3})\s+([A-Z]{3})$/);
+  if (convertMatch) return { type: "convert", amount: Number(convertMatch[1]), from: convertMatch[2], to: convertMatch[3] };
+  const pnlMatch = t.match(/^(\d{4,6})\s+買\s*(\d+(?:\.\d+)?)\s+賣\s*(\d+(?:\.\d+)?)(?:\s+(\d+)張)?$/);
+  if (pnlMatch) {
+    return {
+      type: "pnl",
+      code: pnlMatch[1],
+      buy: Number(pnlMatch[2]),
+      sell: Number(pnlMatch[3]),
+      shares: Number(pnlMatch[4] ?? 1)
+    };
+  }
+  const compareMatch = t.match(/^(\d{4,6})\s+vs\s+(\d{4,6})$/i);
+  if (compareMatch) return { type: "compare", code: compareMatch[1], a: compareMatch[1], b: compareMatch[2] };
+  const klineMatch = t.match(/^(\d{4,6})\s+(\d+)d$/i);
+  if (klineMatch) return { type: "kline", code: klineMatch[1], days: Number(klineMatch[2]) };
+  const signalPrefix = t.match(/^(?:訊號|signal)\s+(\d{4,6})$/i);
+  if (signalPrefix) return { type: "signal", code: signalPrefix[1] };
+  const signalSuffix = t.match(/^(\d{4,6})\s+(?:訊號|signal)$/i);
+  if (signalSuffix) return { type: "signal", code: signalSuffix[1] };
+  const instMatch = t.match(/^(\d{4,6})\s+(?:法人|三大法人|institutional)$/i);
+  if (instMatch) return { type: "institutional", code: instMatch[1] };
+  const marginMatch = t.match(/^(\d{4,6})\s+(?:融資|margin)$/i);
+  if (marginMatch) return { type: "margin", code: marginMatch[1] };
+  const newsMatch = t.match(/^(?:新聞|news)\s+(.+)$/i);
+  if (newsMatch) return { type: "news", query: newsMatch[1].trim() };
+  const usMatch = t.match(/^美股\s+([A-Za-z]{1,5})$/);
+  if (usMatch) return { type: "us_stock", code: usMatch[1].toUpperCase(), symbol: usMatch[1].toUpperCase() };
+  const multiMatch = t.match(/^台股\s+(.+)$/);
+  if (multiMatch) {
+    const codes = multiMatch[1].match(/\d{4,6}/g) ?? [];
+    if (codes.length >= 2) return { type: "multi_stock", codes };
+  }
+  if (INDUSTRIES[t]) return { type: "industry", name: t, codes: INDUSTRIES[t] };
+  const stockMatch = t.match(/^(\d{4,6})$/);
+  if (stockMatch) {
+    if (/^00/.test(stockMatch[1])) return { type: "etf", code: stockMatch[1] };
+    return { type: "fallback_stock", code: stockMatch[1] };
+  }
+  return { type: "unknown" };
+}
+async function dispatchCommand(cmd, replyToken) {
+  switch (cmd.type) {
+    case "fallback_stock":
+    case "stock":
+    case "etf": {
+      const code = cmd.code;
+      const stock = await queryStock(code).catch(() => null);
+      if (stock && stock.close != null) {
+        const flex = stockFlex(
+          stock.code,
+          stock.name ?? stock.code,
+          { close: stock.close, changePct: stock.changePct ?? 0 },
+          { ma20: stock.ma20, ma60: stock.ma60 },
+          stock.candles
+        );
+        return replyMessage(replyToken, [withQuickReply(flex, stockQuickReplies(stock.code))]);
+      }
+      try {
+        const r = await resolveStock(code);
+        const candles = await fetchCandles(r.ticker, 240).catch(() => []);
+        const last = candles[candles.length - 1];
+        const prev = candles[candles.length - 2] ?? last;
+        const changePct2 = prev.close ? Math.round((last.close - prev.close) / prev.close * 1e4) / 100 : 0;
+        const ma20 = maSeries(candles, 20).at(-1)?.value ?? null;
+        const ma60 = maSeries(candles, 60).at(-1)?.value ?? null;
+        const flex = stockFlex(code, r.name, { close: last.close, changePct: changePct2 }, { ma20, ma60 }, candles.slice(-30));
+        return replyMessage(replyToken, [withQuickReply(flex, stockQuickReplies(code))]);
+      } catch {
+        return replyMessage(replyToken, [withQuickReply(errorFlex(`\u627E\u4E0D\u5230 ${code}\uFF0C\u8ACB\u78BA\u8A8D 4-6 \u78BC\u53F0\u80A1\u4EE3\u865F`), defaultQuickReplies())]);
+      }
+    }
+    case "multi_stock": {
+      const codes = cmd.codes.slice(0, 6);
+      const rows = await fetchMultipleQuotes(codes).catch(() => []);
+      const first = codes[0];
+      return replyMessage(replyToken, [withQuickReply(multiStockFlex(rows), [
+        { label: "\u{1F4CA} K\u7DDA", text: `${first} 5d` },
+        { label: "\u{1F525} \u6392\u884C", text: "\u6392\u884C" },
+        { label: "\u{1F310} \u5927\u76E4", text: "\u5927\u76E4" }
+      ])]);
+    }
+    case "kline": {
+      const data = await fetchKLine(cmd.code, cmd.days).catch(() => null);
+      if (!data || !data.candles.length) {
+        return replyMessage(replyToken, [withQuickReply(errorFlex(`K\u7DDA\u8CC7\u6599\u4E0D\u8DB3 ${cmd.code}`), defaultQuickReplies())]);
+      }
+      const candles = data.candles.map((c) => ({
+        time: c.time,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+        volume: c.volume
+      }));
+      return replyMessage(replyToken, [withQuickReply(kLineFlex(cmd.code, cmd.days, candles, data.summary), [
+        { label: "\u{1F3AF} \u8A0A\u865F", text: `\u8A0A\u865F ${cmd.code}` },
+        { label: "\u{1F4F0} \u65B0\u805E", text: `\u65B0\u805E ${cmd.code}` },
+        { label: "\u2696\uFE0F \u6BD4\u8F03", text: `${cmd.code} vs 2454` },
+        { label: "\u{1F4C8} \u73FE\u50F9", text: cmd.code }
+      ])]);
+    }
+    case "signal": {
+      const candles = (await queryStock(cmd.code))?.candles ?? [];
+      if (!candles.length) {
+        return replyMessage(replyToken, [withQuickReply(errorFlex(`\u67E5\u7121 ${cmd.code}`), defaultQuickReplies())]);
+      }
+      const closes = candles.map((c) => c.close);
+      const last = candles[candles.length - 1].close;
+      const prev = candles[candles.length - 2]?.close ?? last;
+      const changePct2 = prev ? Math.round((last - prev) / prev * 1e4) / 100 : 0;
+      const sig = analyzeSignals(closes, changePct2);
+      return replyMessage(replyToken, [withQuickReply(signalFlex(cmd.code, sig), [
+        { label: "\u{1F4CA} K\u7DDA", text: `${cmd.code} 10d` },
+        { label: "\u{1F4F0} \u65B0\u805E", text: `\u65B0\u805E ${cmd.code}` },
+        { label: "\u{1F4C8} \u73FE\u50F9", text: cmd.code }
+      ])]);
+    }
+    case "index": {
+      const rows = await fetchIndices().catch(() => []);
+      return replyMessage(replyToken, [withQuickReply(indexFlex(rows), marketQuickReplies())]);
+    }
+    case "forex": {
+      const rows = await fetchForex().catch(() => []);
+      return replyMessage(replyToken, [withQuickReply(forexFlex(rows), forexQuickReplies())]);
+    }
+    case "crypto": {
+      const rows = await fetchCrypto().catch(() => []);
+      return replyMessage(replyToken, [withQuickReply(cryptoFlex(rows), [
+        { label: "\u{1F4B1} \u532F\u7387", text: "\u532F\u7387" },
+        { label: "\u{1F310} \u5927\u76E4", text: "\u5927\u76E4" },
+        { label: "\u{1F525} \u6392\u884C", text: "\u6392\u884C" }
+      ])]);
+    }
+    case "news": {
+      const items = await fetchGoogleNews(cmd.query, 5).catch(() => []);
+      return replyMessage(replyToken, [withQuickReply(newsFlex(cmd.query, items), newsQuickReplies(cmd.query))]);
+    }
+    case "compare": {
+      const a = cmd.a;
+      const b = cmd.b;
+      const [sa, sb] = await Promise.all([queryStock(a).catch(() => null), queryStock(b).catch(() => null)]);
+      if (!sa || !sb) return replyMessage(replyToken, [withQuickReply(errorFlex(`\u6BD4\u8F03\u8CC7\u6599\u4E0D\u8DB3`), defaultQuickReplies())]);
+      return replyMessage(replyToken, [withQuickReply(compareFlex(sa, sb), [
+        { label: "\u{1F3AF} \u8A0A\u865F", text: `\u8A0A\u865F ${a}` },
+        { label: "\u{1F4F0} \u65B0\u805E", text: `\u65B0\u805E ${a}` },
+        { label: "\u{1F4C8} \u8A73\u7D30", text: a }
+      ])]);
+    }
+    case "industry": {
+      const rows = await fetchMultipleQuotes(cmd.codes).catch(() => []);
+      return replyMessage(replyToken, [withQuickReply(industryFlex(cmd.name, cmd.codes, rows), [
+        { label: "\u{1F525} \u6392\u884C", text: "\u6392\u884C" },
+        { label: "\u{1F310} \u5927\u76E4", text: "\u5927\u76E4" },
+        { label: "\u{1F3ED} AI", text: "AI" }
+      ])]);
+    }
+    case "ranking": {
+      const rows = await fetchMultipleQuotes(WATCHLIST).catch(() => []);
+      return replyMessage(replyToken, [withQuickReply(rankingFlex(rows), [
+        { label: "\u{1F310} \u5927\u76E4", text: "\u5927\u76E4" },
+        { label: "\u{1F3ED} \u534A\u5C0E\u9AD4", text: "\u534A\u5C0E\u9AD4" },
+        { label: "\u{1F4B1} \u532F\u7387", text: "\u532F\u7387" }
+      ])]);
+    }
+    case "us_stock": {
+      const candles = await fetchRawCandles(cmd.symbol, 30).catch(() => []);
+      if (!candles.length) {
+        return replyMessage(replyToken, [withQuickReply(errorFlex(`\u67E5\u7121\u7F8E\u80A1 ${cmd.symbol}`), defaultQuickReplies())]);
+      }
+      const last = candles[candles.length - 1].close;
+      const prev = candles[candles.length - 2]?.close ?? last;
+      const changePct2 = prev ? Math.round((last - prev) / prev * 1e4) / 100 : null;
+      const summary = {
+        open: candles[0].open,
+        close: last,
+        high: Math.max(...candles.map((c) => c.high)),
+        low: Math.min(...candles.map((c) => c.low)),
+        avgVolume: Math.round(candles.reduce((s, c) => s + (c.volume || 0), 0) / candles.length),
+        changePct: changePct2
+      };
+      return replyMessage(replyToken, [withQuickReply(kLineFlex(cmd.symbol, 30, candles, summary), [
+        { label: "\u{1F310} \u5927\u76E4", text: "\u5927\u76E4" },
+        { label: "\u{1F4B1} \u532F\u7387", text: "\u532F\u7387" },
+        { label: "\u{1FA99} \u52A0\u5BC6", text: "\u52A0\u5BC6\u8CA8\u5E63" }
+      ])]);
+    }
+    case "institutional": {
+      const data = await fetchInstitutional2(cmd.code).catch(() => null);
+      return replyMessage(replyToken, [withQuickReply(institutionalFlex(cmd.code, data), [
+        { label: "\u{1F4B0} \u878D\u8CC7", text: `${cmd.code} \u878D\u8CC7` },
+        { label: "\u{1F4C8} \u73FE\u50F9", text: cmd.code },
+        { label: "\u{1F4CA} K\u7DDA", text: `${cmd.code} 5d` }
+      ])]);
+    }
+    case "margin": {
+      const data = await fetchMargin(cmd.code).catch(() => null);
+      return replyMessage(replyToken, [withQuickReply(marginFlex(cmd.code, data), [
+        { label: "\u{1F3DB} \u6CD5\u4EBA", text: `${cmd.code} \u6CD5\u4EBA` },
+        { label: "\u{1F4C8} \u73FE\u50F9", text: cmd.code },
+        { label: "\u{1F3AF} \u8A0A\u865F", text: `\u8A0A\u865F ${cmd.code}` }
+      ])]);
+    }
+    case "convert": {
+      const result = await convertCurrency(cmd.amount, cmd.from, cmd.to).catch(() => null);
+      if (!result) return replyMessage(replyToken, [withQuickReply(errorFlex(`\u532F\u7387\u63DB\u7B97\u5931\u6557`), [
+        { label: "\u{1F4B1} \u532F\u7387", text: "\u532F\u7387" },
+        { label: "\u2753 \u8AAA\u660E", text: "help" }
+      ])]);
+      return replyMessage(replyToken, [withQuickReply(convertFlex(result), forexQuickReplies())]);
+    }
+    case "pnl": {
+      return replyMessage(replyToken, [withQuickReply(pnlFlex(cmd.code, cmd.buy, cmd.sell, cmd.shares), [
+        { label: "\u{1F4C8} \u73FE\u50F9", text: cmd.code },
+        { label: "\u{1F4CA} K\u7DDA", text: `${cmd.code} 5d` },
+        { label: "\u{1F3ED} \u985E\u80A1", text: "\u534A\u5C0E\u9AD4" }
+      ])]);
+    }
+    case "daily_summary": {
+      const [idx, ranks] = await Promise.all([
+        fetchIndices().catch(() => []),
+        fetchMultipleQuotes(WATCHLIST).catch(() => [])
+      ]);
+      return replyMessage(replyToken, [withQuickReply(dailySummaryFlex(idx, ranks), marketQuickReplies())]);
+    }
+    case "calc": {
+      let result;
+      try {
+        result = safeEval(cmd.expr);
+      } catch (err) {
+        return replyMessage(replyToken, [withQuickReply(errorFlex(`\u8A08\u7B97\u932F\u8AA4\uFF1A${err.message}`), defaultQuickReplies())]);
+      }
+      return replyMessage(replyToken, [withQuickReply(calcFlex(cmd.expr, result), [
+        { label: "\u{1F310} \u5927\u76E4", text: "\u5927\u76E4" },
+        { label: "\u{1F4B1} \u63DB\u7B97", text: "100 USD TWD" },
+        { label: "\u2753 \u8AAA\u660E", text: "help" }
+      ])]);
+    }
+    case "weather": {
+      if (!CITY_CODES[cmd.city]) {
+        return replyMessage(replyToken, [withQuickReply(errorFlex(`\u4E0D\u652F\u63F4\uFF1A${cmd.city}\u3002\u652F\u63F4\uFF1A${Object.keys(CITY_CODES).slice(0, 10).join("\u3001")}...`), defaultQuickReplies())]);
+      }
+      if (!process.env["CWA_API_KEY"]) {
+        return replyMessage(replyToken, [withQuickReply(errorFlex("\u5929\u6C23\u9700\u8981\u8A2D\u5B9A CWA_API_KEY\uFF08\u4E2D\u592E\u6C23\u8C61\u7F72\u514D\u8CBB\u7533\u8ACB\uFF09"), defaultQuickReplies())]);
+      }
+      const data = await fetchWeather(cmd.city).catch(() => null);
+      if (!data) return replyMessage(replyToken, [withQuickReply(errorFlex(`\u67E5\u7121 ${cmd.city} \u5929\u6C23`), defaultQuickReplies())]);
+      return replyMessage(replyToken, [withQuickReply(weatherFlex(data), [
+        { label: "\u{1F310} \u5927\u76E4", text: "\u5927\u76E4" },
+        { label: "\u{1F525} \u6392\u884C", text: "\u6392\u884C" },
+        { label: "\u{1F4C5} \u6458\u8981", text: "\u4ECA\u65E5\u6458\u8981" }
+      ])]);
+    }
+    default:
+      return replyMessage(replyToken, [withQuickReply(helpFlex(), defaultQuickReplies())]);
+  }
+}
+var UA8 = "Mozilla/5.0 (compatible; donttalk-line/1.0; +https://donttalk.vercel.app)";
+async function fetchGoogleNews(query, limit) {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}+stock+when:7d&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": UA8, Accept: "application/rss+xml" },
+    signal: AbortSignal.timeout(5e3)
+  });
+  if (!res.ok) throw new Error(`news ${res.status}`);
+  const xml = await res.text();
+  const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, limit).map((m) => {
+    const block = m[1];
+    const title = block.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.replace(/<!\[CDATA\[|\]\]>/g, "").trim() ?? "";
+    const link = block.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim() ?? "";
+    const pubDate = block.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1]?.trim() ?? "";
+    const source = block.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1]?.trim() ?? "";
+    return { title, link, pubDate, source };
+  });
+  return items;
 }
 router10.get("/line/subscribers", async (req, res) => {
   const password = new URL(req.url, "http://localhost").searchParams.get("password");
