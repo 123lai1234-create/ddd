@@ -44,11 +44,18 @@ artifacts/pip_install.log
 # Dogfood QA scratch space
 /dogfood-donttalk/
 
+# Replit-pushed monorepo (separate project, NOT part of ddd)
+/dontalk-import/
+
 # Astro build scratch
 astro/__extract_bodies.py
 astro/_nav.json
 astro/.netlify/
 /astro/dist/
+
+# mavis / playwright browser debug stash
+.tmp/
+.tmp*
 
 # Astro lyrics-alignment experiments (scratch)
 astro/scripts/_align_*.txt
