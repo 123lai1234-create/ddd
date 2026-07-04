@@ -64,7 +64,6 @@ import { resolveStock } from "../lib/stocks";
 import { scanWatchlist } from "../lib/scan-watchlist";
 import { randomLyrics, searchLyrics } from "../lib/lyrics";
 import { searchSite } from "../lib/site-search";
-import { deflateSync, crc32 } from "node:zlib";
 
 const router: IRouter = Router();
 
@@ -193,159 +192,12 @@ router.get("/line/health", async (_req, res) => {
   });
 });
 
-// ── Rich Menu endpoint (config + image gen + delete) ─────────────────────
-
-const RICH_MENU_CONFIG = {
-  size: { width: 2500, height: 1686 },
-  selected: false,
-  name: "DontTalk 6-cell menu",
-  chatBarText: "📊 DontTalk 選單",
-  areas: [
-    { bounds: { x: 0,    y: 0, width: 833, height: 843 }, action: { type: "message", text: "大盤"     } },
-    { bounds: { x: 833,  y: 0, width: 834, height: 843 }, action: { type: "message", text: "半導體"   } },
-    { bounds: { x: 1667, y: 0, width: 833, height: 843 }, action: { type: "message", text: "排行"     } },
-    { bounds: { x: 0,    y: 843, width: 833, height: 843 }, action: { type: "message", text: "匯率"     } },
-    { bounds: { x: 833,  y: 843, width: 834, height: 843 }, action: { type: "message", text: "今日摘要" } },
-    { bounds: { x: 1667, y: 843, width: 833, height: 843 }, action: { type: "message", text: "help"     } },
-  ],
-};
-
-function buildDefaultMenuImage(): Buffer {
-  const W = 2500, H = 1686;
-  const RAW = Buffer.alloc(W * H * 3);
-  const cells = [
-    { x: 0,    y: 0,   w: 833,  h: 843, color: [13, 17, 23] },
-    { x: 833,  y: 0,   w: 834,  h: 843, color: [22, 27, 34] },
-    { x: 1667, y: 0,   w: 833,  h: 843, color: [13, 17, 23] },
-    { x: 0,    y: 843, w: 833,  h: 843, color: [22, 27, 34] },
-    { x: 833,  y: 843, w: 834,  h: 843, color: [13, 17, 23] },
-    { x: 1667, y: 843, w: 833,  h: 843, color: [22, 27, 34] },
-  ];
-  const accents = [
-    [63, 185, 80], [31, 111, 235], [163, 113, 247],
-    [255, 166, 87], [63, 185, 80], [163, 113, 247],
-  ];
-  const setPx = (x: number, y: number, r: number, g: number, b: number) => {
-    if (x < 0 || y < 0 || x >= W || y >= H) return;
-    const o = (y * W + x) * 3;
-    RAW[o] = r; RAW[o + 1] = g; RAW[o + 2] = b;
-  };
-  const fillR = (x0: number, y0: number, w: number, h: number, r: number, g: number, b: number) => {
-    for (let y = y0; y < y0 + h && y < H; y++) {
-      for (let x = x0; x < x0 + w && x < W; x++) setPx(x, y, r, g, b);
-    }
-  };
-  for (const c of cells) {
-    for (let dy = 0; dy < c.h; dy++) {
-      const t = dy / c.h;
-      const r = Math.round(c.color[0] + c.color[0] * 0.4 * (1 - t));
-      const g = Math.round(c.color[1] + c.color[1] * 0.4 * (1 - t));
-      const b = Math.round(c.color[2] + c.color[2] * 0.4 * (1 - t));
-      fillR(c.x, c.y + dy, c.w, 1, r, g, b);
-    }
-  }
-  for (let i = 0; i < cells.length; i++) {
-    const c = cells[i];
-    const [r, g, b] = accents[i];
-    fillR(c.x, c.y + c.h - 12, c.w, 12, r, g, b);
-  }
-  const drawCircle = (cx: number, cy: number, color: number[]) => {
-    for (let rad = 80; rad < 130; rad++) {
-      for (let a = 0; a < 2 * Math.PI; a += 0.03) {
-        setPx(Math.round(cx + rad * Math.cos(a)), Math.round(cy + rad * Math.sin(a)), color[0], color[1], color[2]);
-      }
-    }
-  };
-  drawCircle(416, 380, [63, 185, 80]);
-  fillR(1100, 350, 300, 200, [31, 111, 235]);
-  drawCircle(2083, 380, [255, 95, 86]);
-  fillR(380, 1100, 80, 200, [63, 185, 80]);
-  for (let i = 0; i < 80; i++) fillR(340 - i, 1100 - i, 80 + i * 2, 10, [63, 185, 80]);
-  fillR(1180, 1100, 250, 220, [255, 166, 87]);
-  fillR(1180, 1080, 30, 60, [255, 166, 87]);
-  fillR(1400, 1080, 30, 60, [255, 166, 87]);
-  drawCircle(2083, 1260, [163, 113, 247]);
-  fillR(2071, 1280, 24, 60, [163, 113, 247]);
-  const chunk = (type: string, data: Buffer) => {
-    const len = Buffer.alloc(4);
-    len.writeUInt32BE(data.length);
-    const typeBuf = Buffer.from(type, "ascii");
-    const crc = Buffer.alloc(4);
-    crc.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])));
-    return Buffer.concat([len, typeBuf, data, crc]);
-  };
-  const sig = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4);
-  ihdr[8] = 8; ihdr[9] = 2; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
-  const rowBytes = W * 3;
-  const filtered = Buffer.alloc(H * (rowBytes + 1));
-  for (let y = 0; y < H; y++) {
-    filtered[y * (rowBytes + 1)] = 0;
-    RAW.copy(filtered, y * (rowBytes + 1) + 1, y * rowBytes, (y + 1) * rowBytes);
-  }
-  const compressed = deflateSync(filtered);
-  return Buffer.concat([
-    sig,
-    chunk("IHDR", ihdr),
-    chunk("IDAT", compressed),
-    chunk("IEND", Buffer.alloc(0)),
-  ]);
-}
-
-router.get("/line/rich-menu", async (req, res) => {
-  const token = process.env["LINE_CHANNEL_ACCESS_TOKEN"];
-  if (!token) {
-    return res.status(503).json({ ok: false, error: "LINE_CHANNEL_ACCESS_TOKEN not set" });
-  }
-  if (req.query?.image === "1") {
-    const png = buildDefaultMenuImage();
-    res.setHeader("Content-Type", "image/png");
-    res.setHeader("Content-Length", String(png.length));
-    res.setHeader("Content-Disposition", 'attachment; filename="donttalk-rich-menu.png"');
-    return res.status(200).send(png);
-  }
-  try {
-    const r = await fetch("https://api.line.me/v2/bot/richmenu/list", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const json = (await r.json()) as { richmenus?: Array<{ richMenuId: string }> };
-    const imageB64 = buildDefaultMenuImage().toString("base64");
-    return res.status(200).json({
-      ok: true,
-      richmenus: json.richmenus ?? [],
-      config: RICH_MENU_CONFIG,
-      imageBase64: imageB64,
-      imageSize: Buffer.from(imageB64, "base64").length,
-      imageUrl: "https://donttalk.vercel.app/api/line/rich-menu?image=1",
-    });
-  } catch (err) {
-    return res.status(500).json({ ok: false, error: String((err as Error)?.message ?? err) });
-  }
-});
-
-router.delete("/line/rich-menu", async (_req, res) => {
-  const token = process.env["LINE_CHANNEL_ACCESS_TOKEN"];
-  if (!token) return res.status(503).json({ ok: false, error: "LINE_CHANNEL_ACCESS_TOKEN not set" });
-  try {
-    const listRes = await fetch("https://api.line.me/v2/bot/richmenu/list", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const listJson = (await listRes.json()) as { richmenus?: Array<{ richMenuId: string }> };
-    const results = await Promise.all(
-      (listJson.richmenus ?? []).map(async (rm) => {
-        const r = await fetch(`https://api.line.me/v2/bot/richmenu/${rm.richMenuId}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        return { id: rm.richMenuId, ok: r.ok };
-      }),
-    );
-    return res.status(200).json({ ok: true, deleted: results });
-  } catch (err) {
-    return res.status(500).json({ ok: false, error: String((err as Error)?.message ?? err) });
-  }
-});
+// ── NOTE: Rich-menu endpoints removed 2026-07. LINE returns 404 for
+// unverified/basicId channels (e.g. @787wrtgy) regardless of payload
+// format or runtime (raw bytes / multipart / serverless / local). To
+// re-enable: (1) upgrade the channel to verified on LINE OA Manager,
+// (2) add back the routes here, (3) restore scripts/upload-rich-menu.mjs
+// from git history and re-run it once.
 
 // ── Event handlers ───────────────────────────────────────────────────────
 
