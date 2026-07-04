@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "questions": [
+    {
+      "id": "esm2-1",
+      "category": "Protein AI",
+      "question": "ESM-2 跟傳統 one-hot encoding 差在哪？為什麼 protein 領域適合用 LM embedding？",
+      "hint": "想想 transformer 怎麼學 context、evolutionary conservation。",
+      "answer": "ESM-2 是 transformer-based protein language model，從 2 億條 UniProt 序列 MLM 預訓練，得到 context-aware embedding。One-hot 只有位置資訊、無語意；ESM-2 隱含了演化保守性與結構傾向。Embedding 可直接用於相似度、結構預測、fitness 預測等下游任務。"
+    },
+    {
+      "id": "bo-1",
+      "category": "Optimization",
+      "question": "Bayesian Optimization 為什麼適合蛋白質設計這類黑盒函數？跟 random search 比起來樣本效率差多少？",
+      "hint": "想想 surrogate model + acquisition function 的角色。",
+      "answer": "BO 用 Gaussian Process 作 surrogate + acquisition function (EI/UCB) 在「探索 vs 利用」間取捨，適合樣本成本極高的濕實驗 oracle。蛋白質 fitness assay 一次要好幾小時甚至數天，BO 比 random search 樣本少 10-100x 就能找到最佳區域。"
+    },
+    {
+      "id": "reinforce-1",
+      "category": "RL",
+      "question": "REINFORCE 在蛋白質微調的 role reward 怎麼設計？policy gradient 為什麼會 high variance？",
+      "hint": "想想 baseline / advantage estimator。",
+      "answer": "REINFORCE 把 oracle fitness 當 reward，policy gradient ∇log π·R。但 R 隨機性高 → 高 variance。解法：subtract baseline (e.g. 平均 reward 或 value function V(s)) 變成 advantage，PPO 用 clipped objective 進一步穩定。蛋白質任務常用 self-critical baseline。"
+    },
+    {
+      "id": "crispr-1",
+      "category": "Gene",
+      "question": "CRISPR-Cas9 的 off-target 怎麼評估？in silico 跟 wet lab 怎麼對齊？",
+      "hint": "GUIDE-seq、CIRCLE-seq、CFD score、MIT specificity score。",
+      "answer": "Wet lab：GUIDE-seq / CIRCLE-seq / DISCOVER-seq 全基因體定序找 cleavage site。In silico：sgRNA 對基因體做 mismatch search（PAM = NGG），機器學習評分 (CFD / MIT score)。兩者會對齊，但 wet lab 是 ground truth，in silico 是快速預篩。"
+    },
+    {
+      "id": "ngs-1",
+      "category": "NGS",
+      "question": "Illumina WGS 的 coverage 怎麼估算？為什麼 PCR duplicate 會影響？",
+      "hint": "想想 Lander-Waterman 公式、PCR 偏誤。",
+      "answer": "Coverage = (reads × read_length × 2) / genome_size。WGS 30x 人類約 1 billion paired-end reads。PCR duplicate 來自文庫擴增，會過度代表高效率雜交區，造成 allele frequency 偏誤 → 變異 calling 假陽性。解法：BWA-MEM 對齊後用 Picard / samtools markdup 移除。"
+    },
+    {
+      "id": "ga-1",
+      "category": "Quant",
+      "question": "遺傳演算法在投資組合最佳化的 role 是什麼？跟 Markowitz mean-variance 差在哪？",
+      "hint": "想想非凸、約束、現實摩擦。",
+      "answer": "Markowitz 是凸最佳化，給定 μ/Σ 求最小 variance portfolio。實際上 μ 估計有 noise、Σ 不穩定、加上交易成本 / 換手率 / 行業上限等約束，整體變非凸。GA 在這類多模態約束問題上能跳出 local optimum，搭配族群策略保留多樣性。"
+    },
+    {
+      "id": "deploy-1",
+      "category": "DevOps",
+      "question": "Vercel 部署前端 + 後端 API rewrite 的常見坑？",
+      "hint": "想想 path、status code、static vs dynamic。",
+      "answer": "Vercel rewrite destination 必須是完整 backend URL（含 https://），不能寫本地路徑（會當靜態檔 404）。SPA 對 404 要有 fallback 否則 fetch 失敗會靜默吞。Prebuilt 用 vercel build --prod + vercel deploy --prebuilt --prod --yes，build 完用 curl 驗證 status code 確認 rewrite 通。"
+    },
+    {
+      "id": "db-1",
+      "category": "Backend",
+      "question": "PostgreSQL 用什麼隔離等級適合報表查詢？MVCC 在 transaction 怎麼運作？",
+      "hint": "想想 read committed vs repeatable read、snapshot。",
+      "answer": "報表查詢用 READ COMMITTED 即可；交易報表 / 月結需要一致快照用 REPEATABLE READ。PG MVCC 每筆 tuple 帶 xmin/xmax，update 不覆寫而是新增版本 + 標舊版 expired，讀者只看自己 snapshot 內可見版本。Vacuum 回收 expired tuple。"
+    }
+  ]
+}
