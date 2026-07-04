@@ -2,7 +2,16 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db, lineSubscribersTable } from "../_shims/db";
 import { eq } from "drizzle-orm";
 import { pushMessage, replyMessage, verifySignature, getProfile } from "../lib/line";
-import { scanFlex, welcomeFlex, helpFlex, okFlex, stockFlex } from "../lib/flex-templates";
+import {
+  scanFlex,
+  welcomeFlex,
+  helpFlex,
+  okFlex,
+  stockFlex,
+  lyricsResultFlex,
+  lyricsCarouselFlex,
+  searchResultsFlex,
+} from "../lib/flex-templates";
 import { logger } from "../lib/logger";
 import { rateLimit } from "../lib/ratelimit";
 import { runStrategy, maSeries } from "../lib/indicators";
@@ -10,6 +19,8 @@ import { fetchCandles } from "../lib/yahoo";
 import { resolveStock } from "../lib/stocks";
 import { cached } from "../lib/cache";
 import { scanWatchlist } from "../lib/scan-watchlist";
+import { randomLyrics, searchLyrics } from "../lib/lyrics";
+import { searchSite } from "../lib/site-search";
 
 const router: IRouter = Router();
 
@@ -144,6 +155,58 @@ async function handleEvent(ev: LineEvent): Promise<void> {
     await db.delete(lineSubscribersTable).where(eq(lineSubscribersTable.userId, userId));
     return replyMessage(ev.replyToken, [okFlex("👋 已停止推播", "#8b949e")]);
   }
+
+  // 隨機歌詞 / 歌詞 <keyword>
+  if (text === "隨機歌詞" || text === "random" || text === "歌詞") {
+    try {
+      const r = await randomLyrics({ timeoutMs: 4000 });
+      if (!r.ok || !r.tracks.length) {
+        return replyMessage(ev.replyToken, [{ type: "text", text: "歌詞服務暫時無法使用，請稍後再試。" }]);
+      }
+      return replyMessage(ev.replyToken, [lyricsResultFlex(r.tracks[0])]);
+    } catch (err) {
+      logger.error({ err }, "lyrics random failed");
+      return replyMessage(ev.replyToken, [{ type: "text", text: "歌詞服務錯誤，請稍後再試。" }]);
+    }
+  }
+  const lyricsMatch = text.match(/^(?:歌詞|lyrics?|lyric)\s+(.+)$/i);
+  if (lyricsMatch) {
+    const q = lyricsMatch[1].trim();
+    try {
+      const r = await searchLyrics(q, { limit: 5, timeoutMs: 8000 });
+      if (!r.ok || !r.count) {
+        return replyMessage(ev.replyToken, [
+          { type: "text", text: `在 33 首歌詞裡找不到「${q}」相關內容。試試別的關鍵字？` },
+        ]);
+      }
+      if (r.tracks.length === 1) {
+        return replyMessage(ev.replyToken, [lyricsResultFlex(r.tracks[0])]);
+      }
+      return replyMessage(ev.replyToken, [lyricsCarouselFlex(q, r.tracks)]);
+    } catch (err) {
+      logger.error({ err, q }, "lyrics search failed");
+      return replyMessage(ev.replyToken, [{ type: "text", text: "歌詞搜尋錯誤，請稍後再試。" }]);
+    }
+  }
+
+  // 搜尋 <keyword> — 站內內容搜尋 (/llms-full.txt 索引)
+  const searchMatch = text.match(/^(?:搜尋|search|找)\s+(.+)$/i);
+  if (searchMatch) {
+    const q = searchMatch[1].trim();
+    try {
+      const r = await searchSite(q, { limit: 5, timeoutMs: 4000 });
+      if (!r.ok || !r.results.length) {
+        return replyMessage(ev.replyToken, [
+          { type: "text", text: `站內找不到「${q}」相關作品。試試「蛋白質」「基因」「NGS」「RL」「BoTorch」這類技術關鍵字。` },
+        ]);
+      }
+      return replyMessage(ev.replyToken, [searchResultsFlex(q, r.results)]);
+    } catch (err) {
+      logger.error({ err, q }, "site search failed");
+      return replyMessage(ev.replyToken, [{ type: "text", text: "搜尋錯誤，請稍後再試。" }]);
+    }
+  }
+
   if (/^scan$/i.test(text)) {
     const results = await cached("scan", 60 * 5, scanWatchlist);
     const date = new Date().toISOString().slice(0, 10);

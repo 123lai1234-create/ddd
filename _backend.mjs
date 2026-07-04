@@ -21223,7 +21223,7 @@ var require_application = __commonJS({
       return this;
     };
     app2.render = function render(name, options3, callback) {
-      var cache = this.cache;
+      var cache2 = this.cache;
       var done = callback;
       var engines = this.engines;
       var opts = options3;
@@ -21237,7 +21237,7 @@ var require_application = __commonJS({
         renderOptions.cache = this.enabled("view cache");
       }
       if (renderOptions.cache) {
-        view = cache[name];
+        view = cache2[name];
       }
       if (!view) {
         var View3 = this.get("view");
@@ -21253,7 +21253,7 @@ var require_application = __commonJS({
           return done(err);
         }
         if (renderOptions.cache) {
-          cache[name] = view;
+          cache2[name] = view;
         }
       }
       tryRender(view, renderOptions, done);
@@ -89349,6 +89349,8 @@ function welcomeFlex() {
           { type: "text", text: "\u53EF\u7528\u6307\u4EE4\uFF1A", weight: "bold", size: "sm", color: FG },
           { type: "text", text: "\u2022 2330 / \u53F0\u7A4D\u96FB \u2192 \u500B\u80A1\u67E5\u8A62", size: "sm", color: FG, wrap: true },
           { type: "text", text: "\u2022 scan \u2192 \u7576\u65E5\u5747\u7DDA\u8A0A\u865F", size: "sm", color: FG, wrap: true },
+          { type: "text", text: "\u2022 \u96A8\u6A5F\u6B4C\u8A5E / \u6B4C\u8A5E <\u95DC\u9375\u5B57>", size: "sm", color: FG, wrap: true },
+          { type: "text", text: "\u2022 \u641C\u5C0B <\u95DC\u9375\u5B57> \u2192 \u7AD9\u5167\u5167\u5BB9", size: "sm", color: FG, wrap: true },
           { type: "text", text: "\u2022 subscribe / \u53D6\u6D88 \u2192 \u8A02\u95B1\u76E4\u5F8C\u63A8\u64AD", size: "sm", color: FG, wrap: true },
           { type: "text", text: "\u2022 help \u2192 \u6307\u4EE4\u6E05\u55AE", size: "sm", color: FG, wrap: true }
         ]
@@ -89370,6 +89372,8 @@ function helpFlex() {
           { type: "text", text: "\u{1F4D6} \u6307\u4EE4", weight: "bold", size: "md", color: FG },
           { type: "text", text: "\u500B\u80A1\uFF1A4-6 \u78BC\u80A1\u865F (2330)", size: "sm", color: FG, wrap: true },
           { type: "text", text: "\u6383\u63CF\uFF1Ascan", size: "sm", color: FG, wrap: true },
+          { type: "text", text: "\u6B4C\u8A5E\uFF1A\u96A8\u6A5F\u6B4C\u8A5E / \u6B4C\u8A5E <\u95DC\u9375\u5B57>", size: "sm", color: FG, wrap: true },
+          { type: "text", text: "\u641C\u5C0B\uFF1A\u641C\u5C0B <\u95DC\u9375\u5B57>", size: "sm", color: FG, wrap: true },
           { type: "text", text: "\u8A02\u95B1\uFF1Asubscribe / \u53D6\u6D88", size: "sm", color: FG, wrap: true },
           { type: "text", text: "\u8AAA\u660E\uFF1Ahelp", size: "sm", color: FG, wrap: true }
         ]
@@ -89436,6 +89440,398 @@ function stockFlex(code, name, last, ma) {
         }]
       }
     }
+  };
+}
+function lyricsResultFlex(track) {
+  const preview = (track.preview ?? "").slice(0, 220);
+  const title = track.title || `\u7B2C ${track.id} \u9996`;
+  const subtitle = [title, track.artist ? `\xB7 ${track.artist}` : ""].join(" ").trim();
+  return {
+    type: "flex",
+    altText: `\u{1F3B5} ${subtitle}`,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [
+          { type: "text", text: "\u{1F3B5} \u6B4C\u8A5E\u7247\u6BB5", weight: "bold", size: "md", color: "#ffffff" },
+          { type: "text", text: subtitle, size: "sm", color: MUTED, wrap: true }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [{ type: "text", text: preview, size: "sm", color: FG, wrap: true }]
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        contents: [{
+          type: "button",
+          style: "primary",
+          color: BLUE,
+          action: {
+            type: "uri",
+            label: "\u5B8C\u6574\u6B4C\u8A5E",
+            uri: `https://donttalk.vercel.app/music/?song=${track.id}`
+          }
+        }]
+      }
+    }
+  };
+}
+function lyricsCarouselFlex(query, tracks) {
+  const list = (tracks ?? []).slice(0, 10);
+  const bubbles = list.map((t) => {
+    const subtitle = [t.title || `\u7B2C ${t.id} \u9996`, t.artist ? `\xB7 ${t.artist}` : ""].join(" ").trim();
+    const preview = (t.preview ?? "").slice(0, 160);
+    return {
+      type: "bubble",
+      size: "kilo",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: DARK_BG,
+        contents: [
+          { type: "text", text: subtitle, weight: "bold", size: "sm", color: "#ffffff", wrap: true },
+          { type: "text", text: `score ${t.score ?? 0}`, size: "xs", color: MUTED }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [{ type: "text", text: preview, size: "sm", color: FG, wrap: true }]
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        contents: [{
+          type: "button",
+          style: "primary",
+          color: BLUE,
+          action: {
+            type: "uri",
+            label: "\u5B8C\u6574\u6B4C\u8A5E",
+            uri: `https://donttalk.vercel.app/music/?song=${t.id}`
+          }
+        }]
+      }
+    };
+  });
+  return {
+    type: "flex",
+    altText: `\u6B4C\u8A5E\u641C\u5C0B\uFF1A${query}\uFF08${list.length} \u9996\uFF09`,
+    contents: { type: "carousel", contents: bubbles }
+  };
+}
+function searchResultsFlex(query, results) {
+  const list = (results ?? []).slice(0, 10);
+  const bubbles = list.map((r) => ({
+    type: "bubble",
+    size: "kilo",
+    header: {
+      type: "box",
+      layout: "vertical",
+      backgroundColor: DARK_BG,
+      contents: [
+        { type: "text", text: r.title, weight: "bold", size: "sm", color: "#ffffff", wrap: true },
+        { type: "text", text: `score ${r.score}`, size: "xs", color: MUTED }
+      ]
+    },
+    body: {
+      type: "box",
+      layout: "vertical",
+      contents: [{ type: "text", text: r.excerpt ?? "", size: "sm", color: FG, wrap: true }]
+    },
+    footer: {
+      type: "box",
+      layout: "vertical",
+      contents: [{
+        type: "button",
+        style: "primary",
+        color: BLUE,
+        action: { type: "uri", label: "\u958B\u555F\u9801\u9762", uri: r.url }
+      }]
+    }
+  }));
+  return {
+    type: "flex",
+    altText: `\u7AD9\u5167\u641C\u5C0B\uFF1A${query}\uFF08${list.length} \u7B46\uFF09`,
+    contents: { type: "carousel", contents: bubbles }
+  };
+}
+
+// src/lib/lyrics.ts
+var SITE = "https://donttalk.vercel.app";
+var PLAYLIST_URL = `${SITE}/music/playlist.json`;
+var UA5 = "Mozilla/5.0 (compatible; donttalk-line-ts/1.0; +https://donttalk.vercel.app)";
+var INDEX_TTL_MS = 10 * 60 * 1e3;
+var TRACK_TTL_MS = 30 * 60 * 1e3;
+var indexCache = null;
+var trackCache = /* @__PURE__ */ new Map();
+function normalizeIndexEntry(t) {
+  const lyricsPath = typeof t["lyrics"] === "string" ? t["lyrics"] : "";
+  const m = lyricsPath.match(/lyrics_(\d+)\.txt$/);
+  const id = m ? Number(m[1]) : null;
+  if (!id) return null;
+  return {
+    id,
+    title: typeof t["title"] === "string" && t["title"] ? t["title"] : `\u7B2C ${id} \u9996`,
+    artist: typeof t["artist"] === "string" ? t["artist"] : "",
+    language: typeof t["language"] === "string" ? t["language"] : "",
+    lyricsUrl: lyricsPath.startsWith("http") ? lyricsPath : `${SITE}${lyricsPath.startsWith("/") ? "" : "/"}${lyricsPath}`
+  };
+}
+async function loadIndex(timeoutMs = 4e3) {
+  if (indexCache && Date.now() - indexCache.fetchedAt < INDEX_TTL_MS) {
+    return { tracks: indexCache.tracks, stale: false };
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(PLAYLIST_URL, {
+      headers: { "User-Agent": UA5, Accept: "application/json" },
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`playlist ${res.status}`);
+    const json = await res.json();
+    const rawTracks = Array.isArray(json?.tracks) ? json.tracks : [];
+    const tracks = rawTracks.map(normalizeIndexEntry).filter((t) => Boolean(t)).sort((a, b) => a.id - b.id);
+    indexCache = { fetchedAt: Date.now(), tracks };
+    return { tracks, stale: false };
+  } catch (err) {
+    clearTimeout(timer);
+    logger.warn({ err: String(err) }, "lyrics index load failed");
+    if (indexCache) return { tracks: indexCache.tracks, stale: true };
+    throw err;
+  }
+}
+async function fetchTrackBody(track, timeoutMs = 4e3) {
+  const hit = trackCache.get(track.id);
+  if (hit && Date.now() - hit.fetchedAt < TRACK_TTL_MS) {
+    return { body: hit.body, stale: false };
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(track.lyricsUrl, {
+      headers: { "User-Agent": UA5, Accept: "text/plain" },
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`lyrics ${track.id} ${res.status}`);
+    const body = await res.text();
+    trackCache.set(track.id, { fetchedAt: Date.now(), body });
+    return { body, stale: false };
+  } catch (err) {
+    clearTimeout(timer);
+    if (hit) return { body: hit.body, stale: true };
+    throw err;
+  }
+}
+function tokenize(text) {
+  const out = [];
+  for (const word of text.split(/\s+/)) {
+    if (!word) continue;
+    const hasCjk = /[一-鿿]/.test(word);
+    if (hasCjk) {
+      for (const ch of word) {
+        if (/[一-鿿]/.test(ch)) out.push(ch);
+      }
+    } else {
+      out.push(word.toLowerCase());
+    }
+  }
+  return out;
+}
+function scoreBody(body, tokens) {
+  if (!tokens.length) return 0;
+  const lower = body.toLowerCase();
+  let score = 0;
+  for (const t of tokens) {
+    if (t.length === 1) {
+      let i = 0;
+      while ((i = lower.indexOf(t, i)) !== -1) {
+        score++;
+        i += t.length;
+      }
+    } else if (lower.includes(t)) {
+      score += 3;
+    }
+  }
+  return score;
+}
+function previewLines(body, maxChars = 140) {
+  const lines = body.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const picked = [];
+  let len = 0;
+  for (const ln of lines) {
+    if (len + ln.length + 1 > maxChars) break;
+    picked.push(ln);
+    len += ln.length + 1;
+  }
+  return picked.join("\n");
+}
+function firstMatchLine(body, tokens) {
+  const lines = body.split(/\r?\n/);
+  for (const ln of lines) {
+    const lower = ln.toLowerCase();
+    if (tokens.some((t) => lower.includes(t))) return ln.trim();
+  }
+  return null;
+}
+async function randomLyrics(opts = {}) {
+  const { timeoutMs = 4e3 } = opts;
+  const { tracks, stale } = await loadIndex(timeoutMs);
+  if (!tracks.length) return { ok: false, kind: "random", count: 0, source: "error", tracks: [], error: "empty playlist" };
+  const track = tracks[Math.floor(Math.random() * tracks.length)];
+  const { body, stale: bodyStale } = await fetchTrackBody(track, timeoutMs);
+  return {
+    ok: true,
+    kind: "random",
+    count: 1,
+    source: stale || bodyStale ? "cache-stale" : "live",
+    tracks: [{ ...track, score: 0, preview: previewLines(body, 140) }]
+  };
+}
+async function searchLyrics(query, opts = {}) {
+  const { limit = 3, timeoutMs = 8e3 } = opts;
+  const q = (query ?? "").trim();
+  if (!q) return { ok: false, kind: "search", count: 0, source: "error", tracks: [], error: "empty query" };
+  const tokens = tokenize(q);
+  if (!tokens.length) return { ok: false, kind: "search", count: 0, source: "error", tracks: [], error: "no searchable tokens" };
+  const { tracks, stale } = await loadIndex(timeoutMs);
+  const CONCURRENCY = 6;
+  const PER_FETCH_MS = Math.max(1500, Math.floor((timeoutMs - 500) / Math.ceil(tracks.length / CONCURRENCY)));
+  const scored = [];
+  let cursor = 0;
+  async function worker() {
+    while (cursor < tracks.length) {
+      const idx = cursor++;
+      const t = tracks[idx];
+      try {
+        const { body } = await fetchTrackBody(t, PER_FETCH_MS);
+        const s = scoreBody(body, tokens);
+        if (s > 0) {
+          const highlight = firstMatchLine(body, tokens);
+          scored.push({
+            ...t,
+            score: s,
+            preview: highlight ? highlight : previewLines(body, 120)
+          });
+        }
+      } catch {
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, tracks.length) }, worker));
+  scored.sort((a, b) => b.score - a.score);
+  return {
+    ok: true,
+    kind: "search",
+    query: q,
+    count: scored.length,
+    source: stale ? "cache-stale" : "live",
+    tracks: scored.slice(0, limit)
+  };
+}
+
+// src/lib/site-search.ts
+var SITE2 = "https://donttalk.vercel.app";
+var INDEX_URL = `${SITE2}/llms-full.txt`;
+var UA6 = "Mozilla/5.0 (compatible; donttalk-line-ts/1.0; +https://donttalk.vercel.app)";
+var cache = null;
+var TTL_MS = 5 * 60 * 1e3;
+async function fetchIndex(timeoutMs = 4e3) {
+  if (cache && Date.now() - cache.fetchedAt < TTL_MS) {
+    return { body: cache.body, stale: false };
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(INDEX_URL, {
+      headers: { "User-Agent": UA6, Accept: "text/plain" },
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`llms-full ${res.status}`);
+    const body = await res.text();
+    cache = { fetchedAt: Date.now(), body };
+    return { body, stale: false };
+  } catch (err) {
+    clearTimeout(timer);
+    logger.warn({ err: String(err) }, "site-search index fetch failed");
+    if (cache) return { body: cache.body, stale: true };
+    throw err;
+  }
+}
+function parseSections(body) {
+  const sections = [];
+  let current = null;
+  for (const line of body.split(/\r?\n/)) {
+    const m = line.match(/^#{2,3}\s+(.+)/);
+    if (m) {
+      if (current) sections.push(finalizeSection(current));
+      current = { title: m[1].trim(), lines: [] };
+    } else if (current) {
+      current.lines.push(line);
+    }
+  }
+  if (current) sections.push(finalizeSection(current));
+  return sections.filter((s) => s.body.length > 0);
+}
+function finalizeSection(s) {
+  const text = s.lines.join("\n").trim();
+  const urlMatch = text.match(/https:\/\/donttalk\.vercel\.app\/[\w\-/]*/);
+  return {
+    title: s.title,
+    url: urlMatch ? urlMatch[0] : SITE2,
+    body: text
+  };
+}
+function buildExcerpt(text, query, max = 120) {
+  const lower = text.toLowerCase();
+  const idx = lower.indexOf(query.toLowerCase());
+  if (idx < 0) return text.slice(0, max) + (text.length > max ? "\u2026" : "");
+  const start = Math.max(0, idx - 30);
+  const end = Math.min(text.length, idx + max - 30);
+  const snippet = text.slice(start, end).replace(/\s+/g, " ").trim();
+  return (start > 0 ? "\u2026" : "") + snippet + (end < text.length ? "\u2026" : "");
+}
+function scoreSection(section, query) {
+  const lower = section.body.toLowerCase();
+  const q = query.toLowerCase();
+  let score = 0;
+  let i = 0;
+  while ((i = lower.indexOf(q, i)) !== -1) {
+    score++;
+    i += q.length;
+  }
+  if (section.title.toLowerCase().includes(q)) score += 2;
+  return score;
+}
+async function searchSite(query, opts = {}) {
+  const { limit = 3, timeoutMs = 4e3 } = opts;
+  const q = (query ?? "").trim();
+  if (!q) return { ok: false, query: "", results: [], source: "error", fetchedAt: null, error: "empty query" };
+  const { body, stale } = await fetchIndex(timeoutMs);
+  const sections = parseSections(body);
+  const scored = sections.map((s) => ({ ...s, score: scoreSection(s, q) })).filter((s) => s.score > 0).sort((a, b) => b.score - a.score).slice(0, limit).map((s) => ({
+    title: s.title,
+    url: s.url,
+    excerpt: buildExcerpt(s.body, q, 120),
+    score: s.score
+  }));
+  return {
+    ok: true,
+    query: q,
+    results: scored,
+    source: stale ? "cache-stale" : "live",
+    fetchedAt: cache?.fetchedAt ?? null
   };
 }
 
@@ -89538,6 +89934,53 @@ async function handleEvent(ev) {
     if (!userId) return;
     await db.delete(lineSubscribersTable).where(eq(lineSubscribersTable.userId, userId));
     return replyMessage(ev.replyToken, [okFlex("\u{1F44B} \u5DF2\u505C\u6B62\u63A8\u64AD", "#8b949e")]);
+  }
+  if (text === "\u96A8\u6A5F\u6B4C\u8A5E" || text === "random" || text === "\u6B4C\u8A5E") {
+    try {
+      const r = await randomLyrics({ timeoutMs: 4e3 });
+      if (!r.ok || !r.tracks.length) {
+        return replyMessage(ev.replyToken, [{ type: "text", text: "\u6B4C\u8A5E\u670D\u52D9\u66AB\u6642\u7121\u6CD5\u4F7F\u7528\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002" }]);
+      }
+      return replyMessage(ev.replyToken, [lyricsResultFlex(r.tracks[0])]);
+    } catch (err) {
+      logger.error({ err }, "lyrics random failed");
+      return replyMessage(ev.replyToken, [{ type: "text", text: "\u6B4C\u8A5E\u670D\u52D9\u932F\u8AA4\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002" }]);
+    }
+  }
+  const lyricsMatch = text.match(/^(?:歌詞|lyrics?|lyric)\s+(.+)$/i);
+  if (lyricsMatch) {
+    const q = lyricsMatch[1].trim();
+    try {
+      const r = await searchLyrics(q, { limit: 5, timeoutMs: 8e3 });
+      if (!r.ok || !r.count) {
+        return replyMessage(ev.replyToken, [
+          { type: "text", text: `\u5728 33 \u9996\u6B4C\u8A5E\u88E1\u627E\u4E0D\u5230\u300C${q}\u300D\u76F8\u95DC\u5167\u5BB9\u3002\u8A66\u8A66\u5225\u7684\u95DC\u9375\u5B57\uFF1F` }
+        ]);
+      }
+      if (r.tracks.length === 1) {
+        return replyMessage(ev.replyToken, [lyricsResultFlex(r.tracks[0])]);
+      }
+      return replyMessage(ev.replyToken, [lyricsCarouselFlex(q, r.tracks)]);
+    } catch (err) {
+      logger.error({ err, q }, "lyrics search failed");
+      return replyMessage(ev.replyToken, [{ type: "text", text: "\u6B4C\u8A5E\u641C\u5C0B\u932F\u8AA4\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002" }]);
+    }
+  }
+  const searchMatch = text.match(/^(?:搜尋|search|找)\s+(.+)$/i);
+  if (searchMatch) {
+    const q = searchMatch[1].trim();
+    try {
+      const r = await searchSite(q, { limit: 5, timeoutMs: 4e3 });
+      if (!r.ok || !r.results.length) {
+        return replyMessage(ev.replyToken, [
+          { type: "text", text: `\u7AD9\u5167\u627E\u4E0D\u5230\u300C${q}\u300D\u76F8\u95DC\u4F5C\u54C1\u3002\u8A66\u8A66\u300C\u86CB\u767D\u8CEA\u300D\u300C\u57FA\u56E0\u300D\u300CNGS\u300D\u300CRL\u300D\u300CBoTorch\u300D\u9019\u985E\u6280\u8853\u95DC\u9375\u5B57\u3002` }
+        ]);
+      }
+      return replyMessage(ev.replyToken, [searchResultsFlex(q, r.results)]);
+    } catch (err) {
+      logger.error({ err, q }, "site search failed");
+      return replyMessage(ev.replyToken, [{ type: "text", text: "\u641C\u5C0B\u932F\u8AA4\uFF0C\u8ACB\u7A0D\u5F8C\u518D\u8A66\u3002" }]);
+    }
   }
   if (/^scan$/i.test(text)) {
     const results = await cached("scan", 60 * 5, scanWatchlist);
