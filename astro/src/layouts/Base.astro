@@ -4,8 +4,36 @@
 // spammed the console on Netlify. Re-add with a host-conditional wrapper if
 // analytics are needed on both hosts.
 import ImmersiveBackground from '../components/ImmersiveBackground.astro';
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
 const SITE = 'https://dontalk.vercel.app';
+
+// ── Auto cache-buster ────────────────────────────────────────────────────────
+// Appends `?v=<8-char-content-hash>` to local /scripts/* and /styles/* URLs
+// so browsers always get the freshest file when content changes. Skips:
+//  - External URLs (http/https) — they're already versioned in the URL
+//  - URLs with existing query strings — respects caller's choice
+//  - Missing files — falls back to original URL so build doesn't break
+const PUBLIC_DIR = join(process.cwd(), 'public');
+
+function withCacheBuster(src: string): string {
+    if (!src.startsWith('/')) return src;          // external URL
+    if (src.includes('?')) return src;             // caller already set one
+    try {
+        const filePath = join(PUBLIC_DIR, src);
+        const hash = createHash('sha256')
+            .update(readFileSync(filePath))
+            .digest('hex')
+            .slice(0, 8);
+        return `${src}?v=${hash}`;
+    } catch (e) {
+        console.warn(`[Base] cache-buster skipped for ${src}:`, (e as Error).message);
+        return src;                                // file not found → no buster
+    }
+}
 
 interface Props {
     title: string;
@@ -173,8 +201,8 @@ const personSchema = {
     <link rel="stylesheet" href="/styles/shared.css" />
     <link rel="stylesheet" href="/styles/polish.css" />
     {!noImmersive && <link rel="stylesheet" href="/styles/dynamic.css" />}
-    {!noImmersive && <link rel="stylesheet" href="/styles/immersive-experience.css" />}
-    {pageStyles.map((href) => <link rel="stylesheet" href={href} />)}
+    {!noImmersive && <link rel="stylesheet" href={withCacheBuster('/styles/immersive-experience.css')} />}
+    {pageStyles.map((href) => <link rel="stylesheet" href={withCacheBuster(href)} />)}
     <!-- Sentry error monitoring (set SENTRY_DSN env var to activate) -->
     <script is:inline>
     if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
@@ -206,7 +234,7 @@ const personSchema = {
 <body data-page={bodyPage}>
     {!noImmersive && <ImmersiveBackground />}
     <slot />
-    {pageScripts.map((src) => <script is:inline src={src}></script>)}
+    {pageScripts.map((src) => <script is:inline src={withCacheBuster(src)}></script>)}
 
     <!-- ── Search modal (Pagefind) ── -->
     <div id="pf-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:10vh">
