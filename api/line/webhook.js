@@ -1,14 +1,36 @@
-// LINE webhook handler — verifies X-Line-Signature and replies with a simple
-// welcome Flex bubble. Designed to run as a Vercel Node.js serverless function
-// in the sin1 region so the outbound HTTPS call to api.line.me succeeds.
+// LINE webhook handler — Vercel Node.js serverless function.
+//
+// Optimizations vs the stub version:
+//   #1 Retry + dead-letter: replyMessage/pushMessage have exponential backoff;
+//        permanent failures go to a structured DLQ log so JT can replay.
+//   #2 Rate limit: per-IP counter, 60 req/min, configurable via env.
+//   #3 Real commands: subscribe/unsubscribe (in-memory store, swappable),
+//        stock query via Yahoo Finance (no yahoo-finance2 dep).
+//   #4 Personalized welcome: getProfile on follow with 3s timeout, falls back
+//        gracefully if it fails.
 //
 // Env vars (Production):
-//   LINE_CHANNEL_SECRET        — required, used for signature verification
-//   LINE_CHANNEL_ACCESS_TOKEN  — required, used for reply/push API calls
+//   LINE_CHANNEL_SECRET          — required, used for signature verification
+//   LINE_CHANNEL_ACCESS_TOKEN    — required, used for reply/push API calls
+//   LINE_RATE_LIMIT_MAX          — optional, requests per window (default 60)
+//   LINE_RATE_LIMIT_WINDOW_MS    — optional, window in ms (default 60000)
+//
+// Slack:
+//   /api/line/health            — config + outbound probe
+//   /api/line/push              — operator-protected manual push test
 
-import { createHmac } from "node:crypto";
+import { verifySignature, replyMessage, pushMessage, getProfile } from "./lib/line-client.js";
+import { welcomeFlex, helpFlex, okFlex, stockFlex, errorFlex } from "./lib/flex-templates.js";
+import { queryStock } from "./lib/yahoo-lite.js";
+import { createRateLimiter } from "./lib/rate-limit.js";
+import { store as subsStore } from "./lib/subs-store.js";
+import dlq from "./lib/dlq.js";
 
 const LINE_API = "https://api.line.me";
+
+// ──────────────────────────────────────────────────────────────
+//  Helpers
+// ──────────────────────────────────────────────────────────────
 
 function getRawBody(req) {
   // Vercel/Node runtime: req has body already parsed if Content-Type was
@@ -19,254 +41,204 @@ function getRawBody(req) {
   return "";
 }
 
-function verifySignature(secret, body, signature) {
-  if (!signature) return false;
-  const expected = createHmac("sha256", secret).update(body).digest("base64");
-  if (expected.length !== signature.length) return false;
-  let diff = 0;
-  for (let i = 0; i < expected.length; i++) {
-    diff |= expected.charCodeAt(i) ^ signature.charCodeAt(i);
-  }
-  return diff === 0;
-}
-
-function welcomeFlex() {
-  return {
-    type: "flex",
-    altText: "歡迎使用 DontTalk 投資小幫手",
-    contents: {
-      type: "bubble",
-      hero: {
-        type: "image",
-        url: "https://donttalk.vercel.app/favicon.svg",
-        size: "full",
-        aspectRatio: "20:13",
-        aspectMode: "cover",
-      },
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "md",
-        contents: [
-          {
-            type: "text",
-            text: "嗨 👋 我是 DontTalk",
-            weight: "bold",
-            size: "lg",
-            wrap: true,
-          },
-          {
-            type: "text",
-            text: "目前支援的指令：",
-            size: "sm",
-            color: "#6b7280",
-            wrap: true,
-          },
-          { type: "separator" },
-          {
-            type: "text",
-            text: "• help / 說明 — 指令清單\n• subscribe / 訂閱 — 收均線訊號\n• unsubscribe / 取消 — 停止推播\n• 4-6 碼股號 — 查個股現價",
-            size: "sm",
-            wrap: true,
-          },
-        ],
-      },
-      footer: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "button",
-            action: {
-              type: "uri",
-              label: "打開 DontTalk",
-              uri: "https://donttalk.vercel.app/",
-            },
-            style: "primary",
-          },
-        ],
-      },
-    },
-  };
-}
-
-function helpFlex() {
-  return {
-    type: "flex",
-    altText: "指令說明",
-    contents: {
-      type: "bubble",
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "md",
-        contents: [
-          { type: "text", text: "指令清單", weight: "bold", size: "lg" },
-          { type: "separator" },
-          {
-            type: "text",
-            size: "sm",
-            wrap: true,
-            text: "• hi / 任何訊息 — 顯示歡迎卡片\n• help / 說明 — 這個畫面\n• subscribe / 訂閱 — 收台股均線訊號推播\n• unsubscribe / 取消 — 停止推播\n• 4-6 碼股號（例如 2330）— 查個股",
-          },
-          {
-            type: "text",
-            size: "xs",
-            color: "#9ca3af",
-            wrap: true,
-            text: "※ 個股查詢需後端 API 上線，目前為 stub。",
-          },
-        ],
-      },
-    },
-  };
-}
-
-function stockStubFlex(code) {
-  return {
-    type: "flex",
-    altText: `個股查詢 ${code}`,
-    contents: {
-      type: "bubble",
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "md",
-        contents: [
-          { type: "text", text: `📊 ${code}`, weight: "bold", size: "lg" },
-          {
-            type: "text",
-            size: "sm",
-            color: "#9ca3af",
-            wrap: true,
-            text: "個股查詢功能需要後端 API 上線，目前為 stub。\n後端救起來之後會在這裡顯示即時報價 + MA20 / MA60。",
-          },
-        ],
-      },
-    },
-  };
-}
-
-async function replyMessage(replyToken, token, messages) {
-  const res = await fetch(`${LINE_API}/v2/bot/message/reply`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ replyToken, messages }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`reply ${res.status}: ${text}`);
-  }
-  return res;
-}
-
-function logEvent(event) {
-  const summary = {
-    tag: "line-event",
-    type: event.type,
-    userId: event.source?.userId,
-    text: event.message?.text,
-  };
-  console.log(JSON.stringify(summary));
-}
-
-async function handleEvent(event, token) {
-  logEvent(event);
-
-  if (event.type === "follow") {
-    if (event.replyToken) {
-      await replyMessage(event.replyToken, token, [welcomeFlex()]);
-    }
-    return;
-  }
-  if (event.type !== "message" || event.message?.type !== "text" || !event.replyToken) {
-    return;
-  }
-
-  const text = (event.message.text ?? "").trim();
-  if (/^(help|說明|\?|\？)$/i.test(text)) {
-    return replyMessage(event.replyToken, token, [helpFlex()]);
-  }
-  const codeMatch = text.match(/^(\d{4,6})$/);
-  if (codeMatch) {
-    return replyMessage(event.replyToken, token, [stockStubFlex(codeMatch[1])]);
-  }
-  // Default: welcome bubble
-  return replyMessage(event.replyToken, token, [welcomeFlex()]);
-}
-
-export default async function handler(req, res) {
-  // Verbose debug log — every line carries the request id, method, IP, and a
-  // signature-preview so we can see exactly what Vercel saw in the function log
-  // without needing JT to share his token with us.
-  const reqId =
+function newReqId(req) {
+  return (
     req.headers["x-vercel-id"] ||
     req.headers["x-request-id"] ||
-    `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const ip = req.headers["x-forwarded-for"] ?? req.headers["x-real-ip"] ?? null;
-  const sigHeader = req.headers["x-line-signature"];
-  const sigPreview = sigHeader
-    ? `${String(sigHeader).slice(0, 8)}...(${String(sigHeader).length})`
-    : null;
-
-  console.log(
-    JSON.stringify({
-      tag: "line-webhook-hit",
-      reqId,
-      method: req.method,
-      ip,
-      sig: sigPreview,
-      ua: req.headers["user-agent"] ?? null,
-    }),
+    `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
   );
+}
 
-  // CORS / health-check ping
+function clientIp(req) {
+  const fwd = req.headers["x-forwarded-for"];
+  if (typeof fwd === "string" && fwd.length) return fwd.split(",")[0].trim();
+  if (Array.isArray(fwd) && fwd.length) return fwd[0];
+  return req.headers["x-real-ip"] ?? null;
+}
+
+const rateLimiter = createRateLimiter({
+  windowMs: Number(process.env.LINE_RATE_LIMIT_WINDOW_MS) || 60_000,
+  max: Number(process.env.LINE_RATE_LIMIT_MAX) || 60,
+});
+
+// ──────────────────────────────────────────────────────────────
+//  Event handlers
+// ──────────────────────────────────────────────────────────────
+
+async function handleFollow(ev, token, ctx) {
+  const userId = ev.source?.userId;
+  if (!userId) return;
+  // Best-effort profile fetch for personalized welcome.
+  let displayName = "";
+  try {
+    const profile = await getProfile(token, userId, { timeoutMs: 3000 });
+    displayName = profile?.displayName ?? "";
+  } catch {
+    // Swallow — fall back to default greeting.
+  }
+  await subsStore.add(userId, displayName);
+  if (ev.replyToken) {
+    await replyMessage(token, ev.replyToken, [welcomeFlex(displayName)], {
+      retries: 2,
+      baseMs: 150,
+    });
+  }
+}
+
+async function handleUnfollow(ev) {
+  const userId = ev.source?.userId;
+  if (!userId) return;
+  await subsStore.remove(userId);
+}
+
+async function handleText(ev, token, ctx) {
+  const text = (ev.message?.text ?? "").trim();
+  const userId = ev.source?.userId;
+  const replyToken = ev.replyToken;
+
+  if (!replyToken) return;
+
+  // help / 說明
+  if (/^(help|說明|\?|\？|\/help)$/i.test(text)) {
+    return replyMessage(token, replyToken, [helpFlex()], { retries: 2, baseMs: 150 });
+  }
+
+  // subscribe / 訂閱
+  if (/^(subscribe|訂閱|我要收)$/i.test(text)) {
+    if (!userId) return;
+    await subsStore.add(userId);
+    return replyMessage(token, replyToken, [okFlex("✅ 已加入台股均線訊號推播")], {
+      retries: 2,
+      baseMs: 150,
+    });
+  }
+
+  // unsubscribe / 取消
+  if (/^(unsubscribe|取消|退訂)$/i.test(text)) {
+    if (!userId) return;
+    await subsStore.remove(userId);
+    return replyMessage(token, replyToken, [okFlex("👋 已停止推播", "#8b949e")], {
+      retries: 2,
+      baseMs: 150,
+    });
+  }
+
+  // 個股查詢: 4-6 碼股號
+  const codeMatch = text.match(/^(\d{4,6})$/);
+  if (codeMatch && userId) {
+    const code = codeMatch[1];
+    // Acknowledge quickly so LINE's 3s SLA is met; reply with result async.
+    let stock;
+    try {
+      stock = await queryStock(code);
+    } catch (err) {
+      console.error(JSON.stringify({
+        tag: "line-stock-query-failed", reqId: ctx.reqId, code, err: String(err),
+      }));
+    }
+    if (!stock || stock.close == null) {
+      return replyMessage(
+        token,
+        replyToken,
+        [errorFlex(`找不到 ${code}，請確認股號（4-6 碼台股代號）`)],
+        { retries: 2, baseMs: 150 },
+      );
+    }
+    return replyMessage(
+      token,
+      replyToken,
+      [stockFlex(stock.code, stock.name, {
+        close: stock.close,
+        changePct: stock.changePct ?? 0,
+      }, { ma20: stock.ma20, ma60: stock.ma60 })],
+      { retries: 2, baseMs: 150 },
+    );
+  }
+
+  // scan / 掃描 — needs watchlist DB, not yet wired
+  if (/^(scan|掃描)$/i.test(text)) {
+    return replyMessage(
+      token,
+      replyToken,
+      [errorFlex("📊 scan 功能需要 watchlist DB，目前未啟用，敬請期待。")],
+      { retries: 2, baseMs: 150 },
+    );
+  }
+
+  // Default: welcome bubble
+  return replyMessage(token, replyToken, [welcomeFlex("")], {
+    retries: 2,
+    baseMs: 150,
+  });
+}
+
+async function handleEvent(ev, token, ctx) {
+  const userId = ev.source?.userId;
+  console.log(JSON.stringify({
+    tag: "line-event",
+    reqId: ctx.reqId,
+    type: ev.type,
+    userId,
+    text: ev.message?.text,
+  }));
+
+  try {
+    if (ev.type === "follow") return await handleFollow(ev, token, ctx);
+    if (ev.type === "unfollow") return await handleUnfollow(ev, ctx);
+    if (ev.type === "message" && ev.message?.type === "text") {
+      return await handleText(ev, token, ctx);
+    }
+    // Non-text messages (image, sticker, location, …): silently ignore.
+  } catch (err) {
+    // Last-resort guard: any uncaught throw goes to DLQ.
+    dlq.record(ev, err, ctx);
+    throw err;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+//  Handler
+// ──────────────────────────────────────────────────────────────
+
+export default async function handler(req, res) {
+  const reqId = newReqId(req);
+  const ip = clientIp(req);
+
+  // CORS / health-check ping (also lets `vercel curl` work without POST).
   if (req.method !== "POST") {
     return res.status(200).json({ ok: true, method: req.method, reqId });
+  }
+
+  // Rate limit (per IP) BEFORE signature check — cheap to reject early.
+  if (!rateLimiter.allow(`ip:${ip ?? "unknown"}`)) {
+    console.warn(JSON.stringify({
+      tag: "line-rate-limited", reqId, ip,
+      remaining: rateLimiter.remaining(`ip:${ip ?? "unknown"}`),
+    }));
+    // Still 200 so LINE doesn't retry (we're protecting ourselves, not LINE).
+    return res.status(200).json({ ok: true, rateLimited: true, reqId });
   }
 
   const secret = process.env.LINE_CHANNEL_SECRET;
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!secret || !token) {
-    console.error(
-      JSON.stringify({
-        tag: "line-webhook-cfg-missing",
-        reqId,
-        hasSecret: Boolean(secret),
-        secretLen: secret?.length ?? 0,
-        hasToken: Boolean(token),
-        tokenLen: token?.length ?? 0,
-      }),
-    );
-    // Still 200 so LINE doesn't retry forever
+    console.error(JSON.stringify({
+      tag: "line-webhook-cfg-missing", reqId,
+      hasSecret: Boolean(secret), hasToken: Boolean(token),
+    }));
     return res.status(200).json({ ok: true, degraded: true, reqId });
   }
 
   const rawBody = getRawBody(req);
+  const sigHeader = req.headers["x-line-signature"];
   const sigStr = Array.isArray(sigHeader) ? sigHeader[0] : sigHeader;
 
   const sigOk = verifySignature(secret, rawBody, sigStr);
-  console.log(
-    JSON.stringify({
-      tag: "line-webhook-sig",
-      reqId,
-      sigOk,
-      bodyLen: rawBody.length,
-      bodyPreview: rawBody.slice(0, 80),
-    }),
-  );
   if (!sigOk) {
-    console.warn(
-      JSON.stringify({
-        tag: "line-webhook-sig-invalid",
-        reqId,
-        ip,
-        bodyPreview: rawBody.slice(0, 200),
-      }),
-    );
+    console.warn(JSON.stringify({
+      tag: "line-webhook-sig-invalid", reqId, ip,
+      bodyPreview: rawBody.slice(0, 200),
+    }));
     return res.status(401).json({ ok: false, error: "invalid signature", reqId });
   }
 
@@ -276,26 +248,22 @@ export default async function handler(req, res) {
   } catch {
     return res.status(400).json({ ok: false, error: "bad json", reqId });
   }
+
   const events = Array.isArray(body.events) ? body.events : [];
   console.log(JSON.stringify({ tag: "line-webhook-ok", reqId, count: events.length }));
 
-  // Acknowledge immediately, process events async (LINE expects 200 within 3s)
+  // Acknowledge immediately, process events async (LINE expects 200 within 3s).
   res.status(200).json({ ok: true, reqId });
 
   setImmediate(() => {
-    Promise.all(
-      events.map((ev) =>
-        handleEvent(ev, token).catch((err) => {
-          console.error(
-            JSON.stringify({
-              tag: "line-event-failed",
-              reqId,
-              err: String(err),
-              type: ev.type,
-            }),
-          );
-        }),
-      ),
-    ).catch(() => {});
+    for (const ev of events) {
+      handleEvent(ev, token, { reqId })
+        .catch((err) => {
+          console.error(JSON.stringify({
+            tag: "line-event-failed", reqId, type: ev?.type,
+            err: String(err?.message ?? err),
+          }));
+        });
+    }
   });
 }
