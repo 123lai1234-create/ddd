@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A0006 使用者權限管理 教育訓練</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; }
+        .endpoint { background: #ecf0f1; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .method { display: inline-block; padding: 3px 8px; border-radius: 3px; font-weight: bold; margin-right: 10px; }
+        .get { background: #27ae60; color: white; }
+        .post { background: #2980b9; color: white; }
+        .patch { background: #f39c12; color: white; }
+        .delete { background: #c0392b; color: white; }
+        .note { background: #fff3cd; padding: 10px; border-left: 4px solid #ffc107; margin: 10px 0; }
+        code { background: #2c3e50; color: #ecf0f1; padding: 2px 6px; border-radius: 3px; }
+        pre { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>A0006 使用者權限管理 教育訓練</h1>
+    
+    <h2>📋 系統概述</h2>
+    <p>A0006 模組提供使用者帳號與角色權限的 CRUD 管理功能，支援：</p>
+    <ul>
+        <li>查詢現有使用者及其角色</li>
+        <li>新增使用者（含密碼加密儲存）</li>
+        <li>修改使用者資料及角色</li>
+        <li>刪除使用者</li>
+        <li>取得角色選項清單</li>
+    </ul>
+
+    <h2>🔌 API 端點</h2>
+    
+    <h3>1. 取得角色選項</h3>
+    <div class="endpoint">
+        <span class="method get">GET</span> <code>/api/A0006/options</code>
+    </div>
+    <p><strong>說明：</strong>取得所有可用的角色選項（含角色代碼與描述）</p>
+    <pre>
+Response:
+{
+  "roles": [
+    { "roleCode": "ADMIN", "roleDesc": "系統管理者" },
+    { "roleCode": "USER", "roleDesc": "一般使用者" }
+  ]
+}
+    </pre>
+
+    <h3>2. 查詢使用者角色</h3>
+    <div class="endpoint">
+        <span class="method get">GET</span> <code>/api/A0006/userRole?userId=&isEnabled=</code>
+    </div>
+    <p><strong>參數：</strong></p>
+    <ul>
+        <li><code>userId</code> - 使用者帳號（模糊查詢）</li>
+        <li><code>isEnabled</code> - 啟用狀態（0: 停用, 1: 啟用）</li>
+    </ul>
+
+    <h3>3. 新增使用者</h3>
+    <div class="endpoint">
+        <span class="method post">POST</span> <code>/api/A0006/userRole</code>
+    </div>
+    <p><strong>必填欄位：</strong>userId, userType, userPwd, userEmail, userIsEnabled</p>
+    <pre>
+Request:
+{
+  "userId": "test001",
+  "userName": "測試使用者",
+  "userType": 1,
+  "userPwd": "Pass123!",
+  "userEmail": "test@example.com",
+  "userNote": "測試帳號",
+  "userIsEnabled": 1,
+  "roles": [
+    { "roleCode": "USER", "roleNote": "" }
+  ]
+}
+    </pre>
+
+    <h3>4. 修改使用者</h3>
+    <div class="endpoint">
+        <span class="method patch">PATCH</span> <code>/api/A0006/userRole</code>
+    </div>
+    <p><strong>必填欄位：</strong>userId, userType, userEmail, userIsEnabled</p>
+
+    <h3>5. 刪除使用者</h3>
+    <div class="endpoint">
+        <span class="method delete">DELETE</span> <code>/api/A0006/userRole</code>
+    </div>
+    <pre>
+Request:
+{ "userId": "test001" }
+    </pre>
+
+    <h2>⚠️ 注意事項</h2>
+    <div class="note">
+        <ul>
+            <li>密碼需符合 PasswordPolicy（長度、複雜度）</li>
+            <li>密碼會使用 AES-256-GCM 加密後儲存</li>
+            <li>刪除使用者會一併刪除其角色關聯</li>
+            <li>operator（操作人員）待從 Security Context 取得</li>
+        </ul>
+    </div>
+
+    <h2>📁 相關檔案</h2>
+    <ul>
+        <li>Controller: <code>controller/rbac/A0006Controller.java</code></li>
+        <li>Service: <code>service/rbac/A0006Service.java</code></li>
+        <li>DTO: <code>dto/a0006/</code></li>
+    </ul>
+</body>
+</html>

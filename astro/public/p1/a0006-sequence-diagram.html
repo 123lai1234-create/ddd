@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A0006 時序圖講解</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Microsoft JhengHei", "PingFang TC", Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #1a5f7a; border-bottom: 3px solid #1a5f7a; padding-bottom: 10px; margin-bottom: 20px; }
+        h2 { color: #2c7da0; border-left: 4px solid #2c7da0; padding-left: 10px; margin-top: 30px; margin-bottom: 15px; }
+        h3 { color: #4682b4; margin-top: 20px; margin-bottom: 10px; }
+        p { margin-bottom: 10px; }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        li { margin-bottom: 5px; }
+        code { background-color: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-family: "Consolas", "Monaco", monospace; font-size: 0.9em; color: #d63384; }
+        pre { background-color: #282c34; color: #abb2bf; padding: 15px; border-radius: 5px; overflow-x: auto; margin-bottom: 15px; font-family: "Consolas", "Monaco", monospace; font-size: 0.85em; line-height: 1.4; }
+        pre code { background-color: transparent; padding: 0; color: #abb2bf; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 0.9em; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #1a5f7a; color: white; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f0f8ff; }
+        hr { border: none; border-top: 1px solid #ddd; margin: 30px 0; }
+        .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em; }
+        .toc { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .toc ul { margin-left: 15px; }
+        .toc a { color: #1a5f7a; text-decoration: none; }
+        .mermaid { background-color: #fafafa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>A0006 時序圖講解</h1>
+        
+        <div class="toc">
+            <h3>目錄</h3>
+            <ul>
+                <li><a href="#1">1. Controller 層</a></li>
+                <li><a href="#2">2. Service 層</a></li>
+                <li><a href="#3">3. 資料流向圖</a></li>
+                <li><a href="#4">4. 重要程式碼片段總結</a></li>
+            </ul>
+        </div>
+
+        <hr>
+
+        <h2 id="1">1. Controller 層</h2>
+
+        <h3>1.1 檔案位置</h3>
+        <p><code>src/main/java/com/example/app/controller/rbac/A0006Controller.java</code></p>
+
+        <h3>1.2 主要功能</h3>
+        <table>
+            <tr>
+                <th>方法</th>
+                <th>API 路徑</th>
+                <th>HTTP 方法</th>
+                <th>功能說明</th>
+            </tr>
+            <tr>
+                <td>getOptions</td>
+                <td>/api/A0006/options</td>
+                <td>GET</td>
+                <td>取得角色選項</td>
+            </tr>
+            <tr>
+                <td>queryUserRole</td>
+                <td>/api/A0006/userRole</td>
+                <td>GET</td>
+                <td>查詢使用者及其角色</td>
+            </tr>
+            <tr>
+                <td>createUserRole</td>
+                <td>/api/A0006/userRole</td>
+                <td>POST</td>
+                <td>新增使用者</td>
+            </tr>
+            <tr>
+                <td>updateUserRole</td>
+                <td>/api/A0006/userRole</td>
+                <td>PATCH</td>
+                <td>修改使用者</td>
+            </tr>
+            <tr>
+                <td>deleteUserRole</td>
+                <td>/api/A0006/userRole</td>
+                <td>DELETE</td>
+                <td>刪除使用者</td>
+            </tr>
+        </table>
+
+        <hr>
+
+        <h2 id="2">2. Service 層</h2>
+
+        <h3>2.1 檔案位置</h3>
+        <p><code>src/main/java/com/example/app/service/rbac/A0006Service.java</code></p>
+
+        <h3>2.2 主要方法</h3>
+        <table>
+            <tr>
+                <th>方法</th>
+                <th>功能</th>
+                <th>CRUD 類型</th>
+            </tr>
+            <tr>
+                <td>getOptions()</td>
+                <td>取得角色選項清單</td>
+                <td>R (Read)</td>
+            </tr>
+            <tr>
+                <td>queryUserRole()</td>
+                <td>查詢使用者及角色</td>
+                <td>R (Read)</td>
+            </tr>
+            <tr>
+                <td>createUserRole()</td>
+                <td>新增使用者（含密碼加密）</td>
+                <td>C (Create)</td>
+            </tr>
+            <tr>
+                <td>updateUserRole()</td>
+                <td>修改使用者及角色</td>
+                <td>U (Update)</td>
+            </tr>
+            <tr>
+                <td>deleteUserRole()</td>
+                <td>刪除使用者及角色</td>
+                <td>D (Delete)</td>
+            </tr>
+        </table>
+
+        <hr>
+
+        <h2 id="3">3. 資料流向圖</h2>
+
+        <h3>查詢使用者角色流程</h3>
+        <div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Service
+    participant UserRepo
+    participant RoleRepo
+    participant DB
+
+    Client->>Controller: GET /api/A0006/userRole (userId, isEnabled)
+    Controller->>Service: queryUserRole(userId, isEnabled)
+    Service->>UserRepo: search(userId, enabled)
+    UserRepo->>DB: SELECT FROM tb_sys_user
+    DB-->>UserRepo: List of SysUser
+    UserRepo-->>Service: List of SysUser
+    Service->>RoleRepo: findByUserIdIn(userIds)
+    RoleRepo->>DB: SELECT FROM tb_sys_user_role
+    DB-->>RoleRepo: List of SysUserRole
+    RoleRepo-->>Service: List of SysUserRole
+    Service-->>Controller: List of A0006Dto
+    Controller-->>Client: HTTP 200 JSON
+        </div>
+
+        <h3>新增使用者流程</h3>
+        <div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Service
+    participant UserRepo
+    participant RoleRepo
+    participant Crypto
+    participant Policy
+    participant DB
+
+    Client->>Controller: POST /api/A0006/userRole
+    Controller->>Service: createUserRole(request, operator)
+    Service->>Policy: validatePassword(pwd)
+    alt password invalid
+        Service-->>Controller: ApiResponse.error()
+        Controller-->>Client: HTTP 400
+    end
+    Service->>UserRepo: existsById(userId)
+    alt user already exists
+        Service-->>Controller: ApiResponse.error()
+        Controller-->>Client: HTTP 400
+    end
+    Service->>Crypto: encryptToBase64(password)
+    Service->>UserRepo: save(user)
+    UserRepo->>DB: INSERT tb_sys_user
+    DB-->>UserRepo: SysUser
+    Service->>RoleRepo: deleteByUserId(userId)
+    Service->>RoleRepo: saveAll(roles)
+    RoleRepo->>DB: INSERT tb_sys_user_role
+    Service-->>Controller: ApiResponse.success()
+    Controller-->>Client: HTTP 200
+        </div>
+
+        <h3>修改使用者流程</h3>
+        <div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Service
+    participant UserRepo
+    participant RoleRepo
+    participant DB
+
+    Client->>Controller: PATCH /api/A0006/userRole
+    Controller->>Service: updateUserRole(request, operator)
+    Service->>UserRepo: findById(userId)
+    UserRepo->>DB: SELECT * FROM tb_sys_user
+    DB-->>UserRepo: SysUser
+    alt user not found
+        Service-->>Controller: ApiResponse.error()
+        Controller-->>Client: HTTP 400
+    end
+    Service->>UserRepo: save(user)
+    UserRepo->>DB: UPDATE tb_sys_user
+    Service->>RoleRepo: deleteByUserId(userId)
+    Service->>RoleRepo: saveAll(roles)
+    RoleRepo->>DB: INSERT tb_sys_user_role
+    Service-->>Controller: ApiResponse.success()
+    Controller-->>Client: HTTP 200
+        </div>
+
+        <h3>刪除使用者流程</h3>
+        <div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Service
+    participant UserRepo
+    participant RoleRepo
+    participant DB
+
+    Client->>Controller: DELETE /api/A0006/userRole
+    Controller->>Service: deleteUserRole(request)
+    Service->>RoleRepo: deleteByUserId(userId)
+    RoleRepo->>DB: DELETE tb_sys_user_role
+    Service->>UserRepo: existsById(userId)
+    alt user not found
+        Service-->>Controller: ApiResponse.error()
+        Controller-->>Client: HTTP 400
+    end
+    Service->>UserRepo: deleteById(userId)
+    UserRepo->>DB: DELETE tb_sys_user
+    Service-->>Controller: ApiResponse.success()
+    Controller-->>Client: HTTP 200
+        </div>
+
+        <h3>取得角色選項流程</h3>
+        <div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Service
+    participant FuncRepo
+    participant JdbcTemplate
+    participant DB
+
+    Client->>Controller: GET /api/A0006/options
+    Controller->>Service: getOptions()
+    Service->>FuncRepo: findDistinctRoleCodes()
+    FuncRepo->>DB: SELECT DISTINCT role_code FROM tb_sys_function_role
+    DB-->>FuncRepo: List of String
+    FuncRepo-->>Service: List of String
+    Service->>JdbcTemplate: queryForList(CDLEVEL SQL)
+    JdbcTemplate->>DB: SELECT FROM cossdb.dbo.CDLEVEL WHERE SysId=MS
+    DB-->>JdbcTemplate: List of Map
+    JdbcTemplate-->>Service: Map of roleCode to roleDesc
+    Service-->>Controller: A0006OptionsResponse
+    Controller-->>Client: HTTP 200 JSON
+        </div>
+
+        <hr>
+
+        <h2 id="4">4. 重要程式碼片段總結</h2>
+
+        <h3>4.1 資料庫操作</h3>
+        <table>
+            <tr>
+                <th>操作</th>
+                <th>方法</th>
+            </tr>
+            <tr>
+                <td>查詢使用者</td>
+                <td><code>sysUserRepository.search(userId, isEnabled)</code></td>
+            </tr>
+            <tr>
+                <td>查詢使用者角色</td>
+                <td><code>sysUserRoleRepository.findByUserIdIn(userIds)</code></td>
+            </tr>
+            <tr>
+                <td>查詢角色選項</td>
+                <td><code>sysFunctionRoleRepository.findDistinctRoleCodes()</code></td>
+            </tr>
+            <tr>
+                <td>新增使用者</td>
+                <td><code>sysUserRepository.save(user)</code></td>
+            </tr>
+            <tr>
+                <td>修改使用者</td>
+                <td><code>sysUserRepository.save(user)</code></td>
+            </tr>
+            <tr>
+                <td>刪除使用者</td>
+                <td><code>sysUserRepository.deleteById(userId)</code></td>
+            </tr>
+            <tr>
+                <td>刪除角色</td>
+                <td><code>sysUserRoleRepository.deleteByUserId(userId)</code></td>
+            </tr>
+            <tr>
+                <td>儲存角色</td>
+                <td><code>sysUserRoleRepository.saveAll(roles)</code></td>
+            </tr>
+        </table>
+
+        <h3>4.2 密碼處理</h3>
+        <table>
+            <tr>
+                <th>操作</th>
+                <th>方法</th>
+            </tr>
+            <tr>
+                <td>密碼驗證</td>
+                <td><code>PasswordPolicy.validateErrorMessage(pwd)</code></td>
+            </tr>
+            <tr>
+                <td>密碼加密</td>
+                <td><code>Aes256GcmCrypto.encryptToBase64(password)</code></td>
+            </tr>
+        </table>
+
+        <h3>4.3 使用的 Repository</h3>
+        <ul>
+            <li><code>SysUserRepository</code> - 使用者資料</li>
+            <li><code>SysUserRoleRepository</code> - 使用者角色關聯</li>
+            <li><code>SysFunctionRoleRepository</code> - 功能角色</li>
+        </ul>
+
+        <h3>4.4 外部資料來源</h3>
+        <ul>
+            <li><code>cossdb.dbo.CDLEVEL</code> - MS 角色別對照表（用於取得角色描述）</li>
+        </ul>
+
+        <hr>
+
+        <div class="footer">
+            <p><strong>文件版本：</strong> 1.0</p>
+            <p><strong>更新日期：</strong> 2026/06/18</p>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
+</body>
+</html>

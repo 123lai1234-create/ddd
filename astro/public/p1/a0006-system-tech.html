@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>A元件關係圖（Component Relationship Diagram）</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #1565c0;
+            --bg: #fafafa;
+            --card-bg: #ffffff;
+            --border: #e0e0e0;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px;
+            background: var(--bg);
+            color: #212121;
+            line-height: 1.6;
+        }
+        h1 {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 12px;
+            margin-bottom: 8px;
+        }
+        h2 {
+            color: #37474f;
+            margin-top: 40px;
+            padding: 8px 14px;
+            background: #eceff1;
+            border-left: 5px solid var(--primary);
+            border-radius: 4px;
+        }
+        .subtitle {
+            color: #757575;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        .diagram {
+            background: var(--card-bg);
+            padding: 24px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            overflow-x: auto;
+            text-align: center;
+        }
+        .diagram pre.mermaid {
+            text-align: center;
+            margin: 0;
+            font-size: 14px;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 20px;
+            padding: 12px 18px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 12px 0 16px;
+            font-size: 13px;
+        }
+        .legend-title {
+            font-weight: bold;
+            color: var(--primary);
+            margin-right: 4px;
+        }
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-swatch {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            border: 2px solid #555;
+        }
+        .legend-line {
+            display: inline-block;
+            width: 28px;
+            height: 0;
+            border-top: 3px solid #c62828;
+        }
+        .legend-line.dashed { border-top: 2px dashed #757575; }
+        .legend-line.normal { border-top: 2px solid #555; }
+        .flow-note {
+            background: #fff8e1;
+            border-left: 4px solid #f57f17;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .flow-note strong { color: #e65100; }
+        .related-files {
+            background: #e3f2fd;
+            border-left: 4px solid var(--primary);
+            padding: 12px 16px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .related-files strong { color: var(--primary); }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📘 A0006 系統技術文件 — Mermaid 圖</h1>
+    <p class="subtitle">元件關係圖（Component Relationship Diagram）</p>
+
+    <h2>① 元件關係圖（Component Relationship）</h2>
+    <p class="subtitle">
+        由左至右呈現分層架構：外部 → API → Service → DTO / Util → Repository → Model → DB。
+    </p>
+
+    <div class="legend">
+        <span class="legend-title">線條：</span>
+        <span class="legend-item"><span class="legend-line"></span>主流程（呼叫）</span>
+        <span class="legend-item"><span class="legend-line normal"></span>資料流</span>
+        <span class="legend-item"><span class="legend-line dashed"></span>依賴 / 工具</span>
+        <span style="width:12px"></span>
+        <span class="legend-title">節點：</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#fff3e0;border-color:#e65100"></span>API / Controller</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#e8f5e9;border-color:#2e7d32"></span>Service</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#f3e5f5;border-color:#6a1b9a"></span>DTO</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#fff8e1;border-color:#f57f17"></span>Util</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#fce4ec;border-color:#ad1457"></span>Repository</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#e0f7fa;border-color:#006064"></span>Model</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#eceff1;border-color:#37474f"></span>Database</span>
+    </div>
+
+    <div class="diagram">
+        <pre class="mermaid">
+flowchart LR
+    %% ==========================================================
+    %% ① 外部 (External)
+    %% ==========================================================
+    FE["🌐 瀏覽器<br/>API Client"]:::external
+
+    %% ==========================================================
+    %% ② API 層 (Controller)
+    %% ==========================================================
+    subgraph COL_API["📡 ① API 層 (Controller)"]
+        direction TB
+        CTRL["📦 A0006Controller<br/>@RestController"]:::controller
+        EP1[/"GET /options"/]:::endpoint
+        EP2[/"GET /userRole"/]:::endpoint
+        EP3[/"POST /userRole"/]:::endpoint
+        EP4[/"PATCH /userRole"/]:::endpoint
+        EP5[/"DELETE /userRole"/]:::endpoint
+        CTRL --- EP1 & EP2 & EP3 & EP4 & EP5
+    end
+
+    %% ==========================================================
+    %% ③ Service 層
+    %% ==========================================================
+    subgraph COL_SVC["⚙️ ② Service 層"]
+        direction TB
+        SVC["⚙️ A0006Service<br/>@Service"]:::service
+        M1[getOptions]:::method
+        M2[queryUserRole]:::method
+        M3[createUserRole]:::method
+        M4[updateUserRole]:::method
+        M5[deleteUserRole]:::method
+        SVC --- M1 & M2 & M3 & M4 & M5
+    end
+
+    %% ==========================================================
+    %% ④ DTO 層
+    %% ==========================================================
+    subgraph COL_DTO["📋 ③ DTO 層"]
+        direction TB
+        D1[A0006CreateRequest]:::dto
+        D2[A0006UpdateRequest]:::dto
+        D3[A0006DeleteRequest]:::dto
+        D4[A0006Dto]:::dto
+        D5[A0006RoleDto]:::dto
+        D6[A0006OptionsResponse]:::dto
+        D7[ApiResponse]:::dto
+    end
+
+    %% ==========================================================
+    %% ⑤ 工具類別
+    %% ==========================================================
+    subgraph COL_UTIL["🔧 ④ 工具類別"]
+        direction TB
+        U1["Aes256GcmCrypto<br/>密碼加密"]:::util
+        U2["PasswordPolicy<br/>密碼政策"]:::util
+        U3["TextEncodingFixer<br/>中文亂碼修復"]:::util
+        U4["JdbcTemplate<br/>primaryJdbcTemplate"]:::util
+    end
+
+    %% ==========================================================
+    %% ⑥ Repository 層
+    %% ==========================================================
+    subgraph COL_REPO["💾 ⑤ Repository 層"]
+        direction TB
+        R1[SysUserRepository]:::repo
+        R2[SysUserRoleRepository]:::repo
+        R3[SysFunctionRoleRepository]:::repo
+    end
+
+    %% ==========================================================
+    %% ⑦ Model 層
+    %% ==========================================================
+    subgraph COL_MDL["📦 ⑥ Model 層"]
+        direction TB
+        MD1[SysUser]:::model
+        MD2[SysUserRole]:::model
+    end
+
+    %% ==========================================================
+    %% ⑧ 資料表
+    %% ==========================================================
+    subgraph COL_DB["🗄️ ⑦ 資料表 (Database)"]
+        direction TB
+        DB1[("SysUser<br/><i>tb_sys_user</i>")]:::db
+        DB2[("SysUserRole<br/><i>tb_sys_user_role</i>")]:::db
+        DB3[("SysFunctionRole<br/><i>tb_sys_function_role</i>")]:::db
+        DB4[("CDLEVEL<br/><i>cossdb 外部表</i>")]:::db
+    end
+
+    %% ==========================================================
+    %% 主流程 (Main Flow) — 紅色粗箭頭
+    %% ==========================================================
+    FE ==>|"HTTP"| CTRL
+    CTRL ==>|"invoke"| SVC
+    SVC ==>|"JPA / SQL"| R1
+    SVC ==>|"JPA / SQL"| R2
+    SVC ==>|"JPA / SQL"| R3
+    R1 --> MD1
+    R2 --> MD2
+    R1 ==>|"讀 / 寫"| DB1
+    R2 ==>|"讀 / 寫"| DB2
+    R3 ==>|"讀 / 寫"| DB3
+    U4 ==>|"原生 SQL"| DB4
+
+    %% ==========================================================
+    %% 依賴 (Dependencies) — 虛線
+    %% ==========================================================
+    CTRL -.->|request| D1 & D2 & D3 & D7
+    SVC -.->|util| U1 & U2 & U3 & U4
+    SVC -.->|response| D4 & D5 & D6 & D7
+
+    %% ==========================================================
+    %% 樣式定義
+    %% ==========================================================
+    classDef external   fill:#e3f2fd,stroke:#1565c0,stroke-width:2.5px,color:#0d47a1
+    classDef controller fill:#fff3e0,stroke:#e65100,stroke-width:2.5px,color:#000
+    classDef endpoint   fill:#ffe0b2,stroke:#ef6c00,stroke-width:1.5px,color:#000
+    classDef service    fill:#e8f5e9,stroke:#2e7d32,stroke-width:2.5px,color:#000
+    classDef method     fill:#c8e6c9,stroke:#1b5e20,stroke-width:1px,color:#000
+    classDef util       fill:#fff8e1,stroke:#f57f17,stroke-width:2px,color:#000
+    classDef repo       fill:#fce4ec,stroke:#ad1457,stroke-width:2px,color:#000
+    classDef model      fill:#e0f7fa,stroke:#006064,stroke-width:2px,color:#000
+    classDef dto        fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    classDef db         fill:#eceff1,stroke:#37474f,stroke-width:2px,color:#000
+        </pre>
+    </div>
+
+    <div class="flow-note">
+        <strong>📌 閱讀順序：</strong> 由左至右：外部 → API Controller → Service →
+        視需要呼叫 <em>Utils</em>（加密/密碼/編碼）或透過 <em>Repository</em> 存取 <em>Model</em> 與 <em>DB</em>。<br>
+        <strong>圖例：</strong> 紅色粗箭頭 = 主要呼叫流程；細實線 = 資料流；虛線 = 物件或工具依賴。
+    </div>
+
+    <div class="related-files">
+        <strong>📎 相關文件：</strong>
+        查詢流程（Query）與新增流程（Create）的時序圖，請參考
+        <code>A0006_時序圖講解.html</code>。
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                htmlLabels: true,
+                curve: 'basis',
+                padding: 18,
+                nodeSpacing: 30,
+                rankSpacing: 60,
+                useMaxWidth: true
+            }
+        });
+    </script>
+</body>
+</html>

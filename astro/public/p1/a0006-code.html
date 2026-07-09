@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>A0006 程式碼結構 - Annotation 說明</title>
+    <style>
+        body { font-family: 'Microsoft JhengHei', 'PingFang TC', Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; line-height: 1.7; color: #333; background-color: #f5f5f5; }
+        h1 { color: #2c3e50; border-bottom: 3px solid #2c3e50; padding-bottom: 10px; }
+        h2 { color: #34495e; border-left: 5px solid #34495e; padding-left: 12px; margin-top: 35px; background: #ecf0f1; padding: 8px 12px; border-radius: 4px; }
+        h3 { color: #16a085; margin-top: 25px; }
+        .file { background: #f8f9fa; border: 1px solid #dee2e6; padding: 18px; margin: 18px 0; border-radius: 8px; }
+        .filename { font-weight: bold; color: #495057; margin-bottom: 12px; font-family: 'Consolas', monospace; font-size: 1.05em; }
+        pre { background: #2c3e50; color: #ecf0f1; padding: 18px; border-radius: 8px; overflow-x: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 0.88em; line-height: 1.6; }
+        .method { background: #fff; border-left: 4px solid #3498db; padding: 12px 18px; margin: 12px 0; border-radius: 4px; }
+        .method-name { font-family: 'Consolas', monospace; color: #2980b9; font-weight: bold; font-size: 1.05em; }
+        .method-desc { color: #555; margin-top: 6px; font-size: 0.95em; }
+        .call-list { margin: 10px 0 0 0; padding-left: 22px; }
+        .call-list li { margin-bottom: 4px; font-family: 'Consolas', monospace; font-size: 0.92em; color: #444; }
+        .public { border-left-color: #27ae60; }
+        .private { border-left-color: #95a5a6; }
+        .public .method-name { color: #27ae60; }
+        .private .method-name { color: #7f8c8d; }
+        .section-title { background: #34495e; color: white; padding: 10px 18px; border-radius: 6px; margin: 22px 0 12px 0; font-weight: bold; font-size: 1.1em; }
+
+        /* ============ Annotation 卡片樣式 ============ */
+        .anno-block { margin: 20px 0; }
+        .anno-title { background: linear-gradient(135deg, #16a085, #1abc9c); color: white; padding: 8px 14px; border-radius: 6px 6px 0 0; font-weight: bold; font-family: 'Consolas', monospace; font-size: 1em; display: flex; align-items: center; gap: 8px; }
+        .anno-title .tag { background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: normal; }
+        .anno-body { background: #ffffff; border: 1px solid #16a085; border-top: none; border-radius: 0 0 6px 6px; padding: 14px 18px; }
+        .anno-body table { width: 100%; border-collapse: collapse; }
+        .anno-body th { background: #ecf0f1; color: #2c3e50; padding: 8px 12px; text-align: left; width: 100px; font-weight: bold; vertical-align: top; }
+        .anno-body td { padding: 8px 12px; vertical-align: top; }
+        .anno-body tr + tr th, .anno-body tr + tr td { border-top: 1px solid #eee; }
+        .anno-package { font-family: 'Consolas', monospace; color: #7f8c8d; font-size: 0.9em; }
+        .anno-example { background: #fef9e7; border-left: 3px solid #f1c40f; padding: 8px 12px; margin-top: 8px; font-family: 'Consolas', monospace; font-size: 0.88em; }
+        .toc { background: #fff; border: 1px solid #bdc3c7; border-radius: 8px; padding: 16px 24px; margin: 20px 0; }
+        .toc h3 { margin-top: 0; color: #2c3e50; }
+        .toc ol { columns: 2; -webkit-columns: 2; -moz-columns: 2; }
+        .toc li { margin: 4px 0; }
+        .toc a { color: #2980b9; text-decoration: none; }
+        .toc a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>📘 A0006 程式碼結構 - Annotation 完整說明文件</h1>
+
+    <!-- ============================== 目錄 ============================== -->
+    <div class="toc">
+        <h3>📑 Annotation 速查表</h3>
+        <ol>
+            <li><a href="#anno-rest-controller">@RestController</a></li>
+            <li><a href="#anno-request-mapping">@RequestMapping</a></li>
+            <li><a href="#anno-get-mapping">@GetMapping</a></li>
+            <li><a href="#anno-post-mapping">@PostMapping</a></li>
+            <li><a href="#anno-patch-mapping">@PatchMapping</a></li>
+            <li><a href="#anno-delete-mapping">@DeleteMapping</a></li>
+            <li><a href="#anno-request-param">@RequestParam</a></li>
+            <li><a href="#anno-request-body">@RequestBody</a></li>
+            <li><a href="#anno-valid">@Valid</a></li>
+            <li><a href="#anno-service">@Service</a></li>
+            <li><a href="#anno-qualifier">@Qualifier</a></li>
+            <li><a href="#anno-transactional">@Transactional</a></li>
+        </ol>
+    </div>
+
+    <!-- ============================== 原始程式碼 ============================== -->
+    <div class="file">
+        <div class="filename">📁 src/main/java/com/example/app/controller/rbac/A0006Controller.java</div>
+        <pre>
+/**
+ * A0006 使用者角色管理 Controller
+ *
+ * <p>提供「使用者帳號」與「角色代碼」之間的指派維護作業 REST 介面,
+ * 對應前端的「角色權限管理」畫面。</p>
+ *
+ * <p>五大介面:
+ * <ul>
+ *   <li>GET    /api/A0006/options  - 取得角色選項</li>
+ *   <li>GET    /api/A0006/userRole - 查詢使用者(含角色)</li>
+ *   <li>PATCH  /api/A0006/userRole - 修改使用者與角色</li>
+ *   <li>DELETE /api/A0006/userRole - 刪除使用者與角色</li>
+ *   <li>POST   /api/A0006/userRole - 新增使用者與角色</li>
+ * </ul>
+ * </p>
+ */
+@RestController                                    // ⓐ 詳見下方說明
+@RequestMapping("/api/A0006")                      // ⓑ 詳見下方說明
+public class A0006Controller {
+
+    private final A0006Service a0006Service;
+
+    // ========== 介面 1: GET /api/A0006/options ==========
+    @GetMapping("/options")                        // ⓒ 詳見下方說明
+    public ResponseEntity<A0006OptionsResponse> getOptions() {
+        A0006OptionsResponse response = a0006Service.getOptions();
+        return ResponseEntity.ok(response);
+    }
+
+    // ========== 介面 2: GET /api/A0006/userRole ==========
+    @GetMapping("/userRole")                       // ⓒ 詳見下方說明
+    public ResponseEntity<List<A0006Dto>> queryUserRole(
+            @RequestParam(name = "userId", required = false) String userId,        // ⓓ
+            @RequestParam(name = "isEnabled", required = false) Integer isEnabled  // ⓓ
+    ) {
+        List<A0006Dto> result = a0006Service.queryUserRole(userId, isEnabled);
+        return ResponseEntity.ok(result);
+    }
+
+    // ========== 介面 3: PATCH /api/A0006/userRole ==========
+    @PatchMapping("/userRole")                      // ⓔ 詳見下方說明
+    public ResponseEntity<ApiResponse> updateUserRole(
+            @Valid @RequestBody A0006UpdateRequest request                          // ⓕ ⓖ
+    ) {
+        String operator = "admin";
+        ApiResponse response = a0006Service.updateUserRole(request, operator);
+        return response.getResponseCode() == 200
+                ? ResponseEntity.ok(response)
+                : ResponseEntity.badRequest().body(response);
+    }
+
+    // ========== 介面 4: DELETE /api/A0006/userRole ==========
+    @DeleteMapping("/userRole")                     // ⓗ 詳見下方說明
+    public ResponseEntity<ApiResponse> deleteUserRole(@Valid @RequestBody A0006DeleteRequest request) {
+        ApiResponse response = a0006Service.deleteUserRole(request);
+        return response.getResponseCode() == 200
+                ? ResponseEntity.ok(response)
+                : ResponseEntity.badRequest().body(response);
+    }
+
+    // ========== 介面 5: POST /api/A0006/userRole ==========
+    @PostMapping("/userRole")                       // ⓘ 詳見下方說明
+    public ResponseEntity<ApiResponse> createUserRole(@Valid @RequestBody A0006CreateRequest request) {
+        String operator = "admin";
+        ApiResponse response = a0006Service.createUserRole(request, operator);
+        return response.getResponseCode() == 200
+                ? ResponseEntity.ok(response)
+                : ResponseEntity.badRequest().body(response);
+    }
+}
+        </pre>
+    </div>
+
+    <div class="file">
+        <div class="filename">📁 src/main/java/com/example/app/service/rbac/A0006Service.java</div>
+        <pre>
+/**
+ * A0006 業務邏輯層。
+ *
+ * <p>負責組裝 Repository / JdbcTemplate 查詢結果為 DTO、
+ * 處理參數標準化、管理交易邊界、密碼加密、密碼政策檢核等。</p>
+ */
+@Service                                            // ⓙ 詳見下方說明
+public class A0006Service {
+
+    private final SysFunctionRoleRepository sysFunctionRoleRepository;
+    private final SysUserRepository            sysUserRepository;
+    private final SysUserRoleRepository        sysUserRoleRepository;
+    private final JdbcTemplate                 jdbcTemplate;
+    private final ObjectProvider<Aes256GcmCrypto> cryptoProvider;
+
+    public A0006Service(SysFunctionRoleRepository sysFunctionRoleRepository,
+                        SysUserRepository sysUserRepository,
+                        SysUserRoleRepository sysUserRoleRepository,
+                        @Qualifier("primaryJdbcTemplate") JdbcTemplate jdbcTemplate,  // ⓚ 詳見下方說明
+                        ObjectProvider<Aes256GcmCrypto> cryptoProvider) {
+        this.sysFunctionRoleRepository = sysFunctionRoleRepository;
+        this.sysUserRepository         = sysUserRepository;
+        this.sysUserRoleRepository     = sysUserRoleRepository;
+        this.jdbcTemplate              = jdbcTemplate;
+        this.cryptoProvider            = cryptoProvider;
+    }
+
+    @Transactional                                   // ⓛ 詳見下方說明
+    public ApiResponse updateUserRole(A0006UpdateRequest request, String operator) { /* ... */ }
+
+    @Transactional                                   // ⓛ
+    public ApiResponse deleteUserRole(A0006DeleteRequest request) { /* ... */ }
+
+    @Transactional                                   // ⓛ
+    public ApiResponse createUserRole(A0006CreateRequest request, String operator) { /* ... */ }
+}
+        </pre>
+    </div>
+
+    <!-- ============================== Annotation 說明區 ============================== -->
+    <h2>📖 Annotation 詳細說明</h2>
+
+    <!-- ⓐ @RestController -->
+    <div class="anno-block" id="anno-rest-controller">
+        <div class="anno-title">ⓐ @RestController <span class="tag">Spring Web · 類別層級</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>宣告此類別為 <b>REST 風格的 Controller</b>,等同於同時加上 <code>@Controller</code> + <code>@ResponseBody</code>。</td></tr>
+                <tr><th>效果</th><td>方法回傳值會透過 <code>HttpMessageConverter</code>(預設為 Jackson)直接序列化為 JSON / XML,<b>不再走 ViewResolver</b>(不會解析 JSP / Thymeleaf)。</td></tr>
+                <tr><th>套件</th><td class="anno-package">org.springframework.web.bind.annotation.RestController</td></tr>
+                <tr><th>範例</th><td>
+                    <div class="anno-example">@RestController<br>public class A0006Controller { ... }</div>
+                </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ⓑ @RequestMapping -->
+    <div class="anno-block" id="anno-request-mapping">
+        <div class="anno-title">ⓑ @RequestMapping <span class="tag">Spring Web · 類別/方法層級</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>設定 <b>URL 路徑</b> 與 <b>HTTP 方法</b> 的對應。可加在類別(共同前綴)或方法(個別端點)上。</td></tr>
+                <tr><th>效果</th><td>類別層級:此 Controller 內所有端點都會繼承此路徑前綴。<br>方法層級:可省略 <code>method</code> 屬性,改用具名註解(如 <code>@GetMapping</code>)。</td></tr>
+                <tr><th>常用屬性</th><td>
+                    <code>value / path</code> — URL 路徑<br>
+                    <code>method</code> — HTTP 方法(GET/POST/PUT/DELETE/PATCH)<br>
+                    <code>produces</code> — 設定 response 的 Content-Type<br>
+                    <code>consumes</code> — 限制 request 的 Content-Type
+                </td></tr>
+                <tr><th>套件</th><td class="anno-package">org.springframework.web.bind.annotation.RequestMapping</td></tr>
+                <tr><th>範例</th><td>
+                    <div class="anno-example">@RequestMapping("/api/A0006")   // 共同前綴<br>public class A0006Controller { ... }</div>
+                </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ⓒ @GetMapping -->
+    <div class="anno-block" id="anno-get-mapping">
+        <div class="anno-title">ⓒ @GetMapping <span class="tag">Spring Web · 方法層級 · HTTP GET</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>將 <b>HTTP GET</b> 請求綁定到此方法。語意上等同於 <code>@RequestMapping(method = RequestMethod.GET)</code>。</td></tr>
+                <tr><th>效果</th><td>僅接受 GET 請求。<b>GET 為安全(safe)且冪等(idempotent)</b>,適合查詢、不改變伺服器狀態、可被快取。</td></tr>
+                <tr><th>屬性</th><td>
+                    <code>value / path</code> — 子路徑;完整路徑 = 類別前綴 + 此屬性<br>
+                    <code>params</code> — 限制 query 必須包含特定參數<br>
+                    <code>headers</code> — 限制 request header
+                </td></tr>
+                <tr><th>套件</th><td class="anno-package">org.springframework.web.bind.annotation.GetMapping</td></tr>
+                <tr><th>本檔使用</th><td>
+                    <div class="anno-example">@GetMapping("/options")    → GET /api/A0006/options<br>@GetMapping("/userRole")   → GET /api/A0006/userRole</div>
+                </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ⓓ @RequestParam -->
+    <div class="anno-block" id="anno-request-param">
+        <div class="anno-title">ⓓ @RequestParam <span class="tag">Spring Web · 參數層級</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>將 <b>URL Query String</b>(或 form data)中的參數綁定到方法參數。</td></tr>
+                <tr><th>效果</th><td>Spring 在呼叫方法前,會從 request 中取出對應名稱的參數值,自動做型別轉換(字串 → Integer / Boolean 等)。</td></tr>
+                <tr><th>常用屬性</th><td>
+                    <code>name / value</code> — 對應 query 參數名稱<br>
+                    <code>required</code> — 是否必填(預設 <code>true</code>);<code>false</code> 時省略則為 null<br>
+                    <code>defaultValue</code> — 預設值(<code>required=false</code> 時常用)
+                </td></tr>
+                <tr><th>套件</th><td class="anno-package">org.springframework.web.bind.annotation.RequestParam</td></tr>
+                <tr><th>本檔範例</th><td>
+                    <div class="anno-example">GET /api/A0006/userRole?userId=admin&isEnabled=1<br><br>@RequestParam(name = "userId", required = false) String userId<br>@RequestParam(name = "isEnabled", required = false) Integer isEnabled</div>
+                </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ⓔ @PatchMapping -->
+    <div class="anno-block" id="anno-patch-mapping">
+        <div class="anno-title">ⓔ @PatchMapping <span class="tag">Spring Web · 方法層級 · HTTP PATCH</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>綁定 <b>HTTP PATCH</b> 請求,語意為「<b>部分更新</b>」。</td></tr>
+                <tr><th>效果</th><td>PATCH 與 PUT 的差異:<b>PUT</b> 是「整體取代」,<b>PATCH</b> 是「只更新部分欄位」。本介面用 PATCH 表示只更新部分使用者欄位。</td></tr>
+                <tr><th>屬性</th><td>
+                    <code>value / path</code> — 子路徑;完整路徑 = 類別前綴 + 此屬性 = <code>/api/A0006/userRole</code>
+                </td></tr>
+                <tr><th>套件</th><td class="anno-package">org.springframework.web.bind.annotation.PatchMapping</td></tr>
+                <tr><th>本檔範例</th><td>
+                    <div class="anno-example">@PatchMapping("/userRole")  → PATCH /api/A0006/userRole</div>
+                </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ⓕ @Valid -->
+    <div class="anno-block" id="anno-valid">
+        <div class="anno-title">ⓕ @Valid <span class="tag">Bean Validation · 參數層級</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>觸發 <b>Bean Validation(Jakarta Validation)</b>,對方法參數(或物件內的欄位)進行約束條件驗證。</td></tr>
+                <tr><th>效果</th><td>在進入方法本體前,先依 DTO 內的 <code>@NotBlank</code> / <code>@Email</code> / <code>@Size</code> / <code>@Pattern</code> 等約束檢查欄位。</td></tr>
+                <tr><th>失敗處理</th><td>驗證失敗時拋出 <code>MethodArgumentNotValidException</code>(或 <code>ConstraintViolationException</code>),通常由 <code>@ControllerAdvice</code> + <code>@ExceptionHandler</code> 統一接住。</td></tr>
+                <tr><th>套件</th><td class="anno-package">jakarta.validation.Valid</td></tr>
+                <tr><th>範例</th><td>
+                    <div class="anno-example">public class A0006UpdateRequest {<br>&nbsp;&nbsp;@NotBlank private String userId;<br>&nbsp;&nbsp;@Email&nbsp;&nbsp;private String userEmail;<br>}<br><br>public ResponseEntity<?> update(@Valid @RequestBody A0006UpdateRequest req) { ... }</div>
+                </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ⓖ @RequestBody -->
+    <div class="anno-block" id="anno-request-body">
+        <div class="anno-title">ⓖ @RequestBody <span class="tag">Spring Web · 參數層級</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>將 <b>HTTP 請求主體(Body)</b>反序列化為 Java 物件(預設讀取 JSON)。</td></tr>
+                <tr><th>效果</th><td>透過 <code>HttpMessageConverter</code>(Spring Boot 內建 Jackson)自動將 JSON 字串轉成對應的 DTO。搭配 <code>@Valid</code> 會在反序列化後做欄位驗證。</td></tr>
+                <tr><th>常用屬性</th><td>
+                    <code>required</code> — Body 是否必填(預設 <code>true</code>)<br>
+                    <code>consumes</code> — 限制 Content-Type(例如 <code>application/json</code>)
+                </td></tr>
+                <tr><th>套件</th><td class="anno-package">org.springframework.web.bind.annotation.RequestBody</td></tr>
+                <tr><th>範例</th><td>
+                    <div class="anno-example">@PostMapping("/userRole")<br>public ResponseEntity<?> create(@Valid @RequestBody A0006CreateRequest req) { ... }<br><br>// 對應 JSON:<br>// { "userId":"mike", "userPwd":"...", "userType":"A", "userEmail":"mike@x.com", "userIsEnabled":1, "roles":[...] }</div>
+                </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ⓗ @DeleteMapping -->
+    <div class="anno-block" id="anno-delete-mapping">
+        <div class="anno-title">ⓗ @DeleteMapping <span class="tag">Spring Web · 方法層級 · HTTP DELETE</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>綁定 <b>HTTP DELETE</b> 請求,語意為「<b>刪除資源</b>」。</td></tr>
+                <tr><th>效果</th><td>HTTP 規範上 DELETE 應為 <b>冪等(Idempotent)</b>:重複呼叫結果應一致(都是「已刪除」)。</td></tr>
+                <tr><th>注意</th><td>嚴格 REST 會將識別值放在 Path(如 <code>/users/{id}</code>),本介面實作為透過 <code>@RequestBody</code> 傳遞 userId。</td></tr>
+                <tr><th>套件</th><td class="anno-package">org.springframework.web.bind.annotation.DeleteMapping</td></tr>
+                <tr><th>本檔範例</th><td>
+                    <div class="anno-example">@DeleteMapping("/userRole")  → DELETE /api/A0006/userRole</div>
+                </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ⓘ @PostMapping -->
+    <div class="anno-block" id="anno-post-mapping">
+        <div class="anno-title">ⓘ @PostMapping <span class="tag">Spring Web · 方法層級 · HTTP POST</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>綁定 <b>HTTP POST</b> 請求,語意為「<b>新增資源</b>」或「觸發動作」。</td></tr>
+                <tr><th>效果</th><td>POST 屬於 <b>非冪等(Non-idempotent)</b>:重複呼叫會建立多筆資料。若需冪等(避免重複新增),請改用 PUT 或加入唯一性檢查。</td></tr>
+                <tr><th>屬性</th><td>
+                    <code>value / path</code> — 子路徑<br>
+                    <code>consumes</code> — 限制 Content-Type<br>
+                    <code>produces</code> — 設定 response 的 Content-Type
+                </td></tr>
+                <tr><th>套件</th><td class="anno-package">org.springframework.web.bind.annotation.PostMapping</td></tr>
+                <tr><th>本檔範例</th><td>
+                    <div class="anno-example">@PostMapping("/userRole")   → POST /api/A0006/userRole</div>
+                </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ⓙ @Service -->
+    <div class="anno-block" id="anno-service">
+        <div class="anno-title">ⓙ @Service <span class="tag">Spring Stereotype · 類別層級</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>把此類別註冊為 Spring IoC 容器中的「<b>服務層 Bean</b>」。</td></tr>
+                <tr><th>效果</th><td>啟動時 Spring 會透過 <code>@ComponentScan</code> 掃描並自動建立實例,供 <code>@Autowired</code> / 建構子注入使用。</td></tr>
+                <tr><th>Stereotype 比較</th><td>
+                    <table style="margin-top:6px; font-size:0.92em;">
+                        <tr><th style="background:#34495e; color:white;">註解</th><th style="background:#34495e; color:white;">用途</th></tr>
+                        <tr><td><code>@Controller</code></td><td>表現層(處理 HTTP 請求)</td></tr>
+                        <tr><td><code>@Service</code></td><td>服務層(業務邏輯,<b>本類別使用</b>)</td></tr>
+                        <tr><td><code>@Repository</code></td><td>資料層(DAO,具備例外轉譯為 DataAccessException)</td></tr>
+                        <tr><td><code>@Component</code></td><td>通用元件(以上皆不適用時)</td></tr>
+                    </table>
+                </td></tr>
+                <tr><th>套件</th><td class="anno-package">org.springframework.stereotype.Service</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ⓚ @Qualifier -->
+    <div class="anno-block" id="anno-qualifier">
+        <div class="anno-title">ⓚ @Qualifier <span class="tag">Spring DI · 參數層級</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>當容器中 <b>同一型別有多個 Bean</b> 時,用「Bean 名稱」明確指定要注入哪一個。</td></tr>
+                <tr><th>使用情境</th><td>專案內可能同時存在多個 <code>JdbcTemplate</code>(如 <code>primaryJdbcTemplate</code>、<code>sitJdbcTemplate</code>、<code>uatJdbcTemplate</code>...),僅靠型別無法決定注入哪個,需搭配 <code>@Qualifier</code>。</td></tr>
+                <tr><th>套件</th><td class="anno-package">org.springframework.beans.factory.annotation.Qualifier</td></tr>
+                <tr><th>範例</th><td>
+                    <div class="anno-example">public A0006Service(<br>&nbsp;&nbsp;...,<br>&nbsp;&nbsp;@Qualifier("primaryJdbcTemplate") JdbcTemplate jdbcTemplate<br>) { ... }</div>
+                </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ⓛ @Transactional -->
+    <div class="anno-block" id="anno-transactional">
+        <div class="anno-title">ⓛ @Transactional <span class="tag">Spring Transaction · 方法/類別層級</span></div>
+        <div class="anno-body">
+            <table>
+                <tr><th>用途</th><td>宣告此方法(或整個類別)需在 <b>資料庫交易(Transaction)</b> 內執行。</td></tr>
+                <tr><th>效果</th><td>
+                    方法開始時<b>自動開啟交易</b>;<br>
+                    正常返回時 <b>commit</b>;<br>
+                    拋出 <b>RuntimeException</b>(未捕捉)時 <b>自動 rollback</b>;<br>
+                    拋出 Checked Exception 時<b>不會</b>自動 rollback(需透過 <code>rollbackFor</code> 設定)。
+                </td></tr>
+                <tr><th>常用屬性</th><td>
+                    <code>rollbackFor</code> — 指定哪些例外要觸發 rollback(如 <code>Exception.class</code> 涵蓋所有)<br>
+                    <code>noRollbackFor</code> — 指定哪些例外不要 rollback<br>
+                    <code>propagation</code> — 交易傳播行為,預設 <code>REQUIRED</code>(沿用或新開)<br>
+                    <code>isolation</code> — 交易隔離等級(如 <code>READ_COMMITTED</code>)<br>
+                    <code>timeout</code> — 交易逾時秒數<br>
+                    <code>readOnly</code> — 是否為唯讀交易(可提升效能)
+                </td></tr>
+                <tr><th>套件</th><td class="anno-package">org.springframework.transaction.annotation.Transactional</td></tr>
+                <tr><th>本檔使用</th><td>套用於 <code>updateUserRole</code>、<code>deleteUserRole</code>、<code>createUserRole</code>,確保多步驟寫入的一致性。</td></tr>
+                <tr><th>範例</th><td>
+                    <div class="anno-example">@Transactional<br>public ApiResponse createUserRole(A0006CreateRequest req, String operator) {<br>&nbsp;&nbsp;// 任一步驟失敗,前面已執行的 DB 操作都會 rollback<br>&nbsp;&nbsp;sysUserRepository.save(user);<br>&nbsp;&nbsp;replaceRoles(userId, req.roles(), operator);<br>}</div>
+                </td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============================== 方法說明區 ============================== -->
+    <h2>🔧 A0006Service 公開方法(5 個 API)</h2>
+
+    <div class="method public">
+        <div class="method-name">① getOptions()</div>
+        <div class="method-desc">GET /api/A0006/options — 載入角色選項清單(給前端下拉選單使用)</div>
+        <ul class="call-list">
+            <li>loadMsRoleDescMap() → 讀取 cossdb.dbo.CDLEVEL 對照表(外部 MS)</li>
+            <li>sysFunctionRoleRepository.findDistinctRoleCodes() → 取得系統內所有角色代碼</li>
+            <li>TextEncodingFixer.repairUtf8MojibakeIfLikely(roleDesc) → 修復中文亂碼</li>
+            <li>TextEncodingFixer.defaultIfBlank(roleDesc, code) → 空白時以代碼代替</li>
+            <li>return new A0006OptionsResponse(roles) → 組裝 DTO 回傳</li>
+        </ul>
+    </div>
+
+    <div class="method public">
+        <div class="method-name">② queryUserRole(String userId, Integer isEnabled)</div>
+        <div class="method-desc">GET /api/A0006/userRole — 查詢使用者及其角色(支援條件過濾)</div>
+        <ul class="call-list">
+            <li>normalizeNullableString(userId) → 標準化使用者帳號(trim、空字串轉 null)</li>
+            <li>normalizeEnabledBool(isEnabled) → 將 0/1 轉為 Boolean;null 維持 null</li>
+            <li>sysUserRepository.search(normalizedUserId, enabled) → 條件查詢使用者</li>
+            <li>sysUserRoleRepository.findByUserIdIn(userIds) → 批次查詢對應角色(避免 N+1)</li>
+            <li>groupRoles(rows) → 依 userId 分組成 Map<String, List<SysUserRole>></li>
+            <li>過濾掉「無角色指派」的使用者(依業務規則)</li>
+            <li>逐筆組裝 A0006Dto(含 12 個使用者欄位 + 角色列表)並回傳</li>
+        </ul>
+    </div>
+
+    <div class="method public">
+        <div class="method-name">③ updateUserRole(A0006UpdateRequest request, String operator)</div>
+        <div class="method-desc">PATCH /api/A0006/userRole — 修改使用者及其角色(ⓛ @Transactional)</div>
+        <ul class="call-list">
+            <li>logger.info(...) 記錄開始 log(含 userId、rolesCount、operator)以便稽核</li>
+            <li>hasText(...) 必填欄位驗證:userId / userType / userEmail / userIsEnabled</li>
+            <li>sysUserRepository.findById(userId) → 查找使用者;若不存在則回 400</li>
+            <li>user.setUsername / setUserType / setEmail / setNote / setIsEnabled / setUpdateTime / setUpdateEmp → 設定更新欄位</li>
+            <li>sysUserRepository.save(user) → 寫回 DB(Hibernate 髒檢查 + 動態 UPDATE)</li>
+            <li>replaceRoles(userId, request.roles(), operator) → 替換角色關聯(先刪後增)</li>
+            <li>例外時 logger.error + ApiResponse.error 回傳;@Transactional 自動 rollback</li>
+        </ul>
+    </div>
+
+    <div class="method public">
+        <div class="method-name">④ deleteUserRole(A0006DeleteRequest request)</div>
+        <div class="method-desc">DELETE /api/A0006/userRole — 刪除使用者及其角色(ⓛ @Transactional)</div>
+        <ul class="call-list">
+            <li>logger.info(...) 記錄開始 log(含 userId)</li>
+            <li>hasText(request.userId()) → 必填欄位驗證</li>
+            <li>sysUserRoleRepository.deleteByUserId(userId) → 先刪除角色關聯(避免 FK 約束失敗)</li>
+            <li>sysUserRepository.existsById(userId) → 確認使用者存在</li>
+            <li>sysUserRepository.deleteById(userId) → 刪除使用者主檔</li>
+            <li>例外時 logger.error + ApiResponse.error 回傳</li>
+        </ul>
+    </div>
+
+    <div class="method public">
+        <div class="method-name">⑤ createUserRole(A0006CreateRequest request, String operator)</div>
+        <div class="method-desc">POST /api/A0006/userRole — 新增使用者及其角色(ⓛ @Transactional)</div>
+        <ul class="call-list">
+            <li>logger.info(...) 記錄開始 log</li>
+            <li>hasText(...) 必填欄位驗證:userId、userPwd、userType、userEmail、userIsEnabled</li>
+            <li>PasswordPolicy.validateErrorMessage(request.userPwd()) → 密碼政策驗證(長度、複雜度)</li>
+            <li>sysUserRepository.existsById(userId) → 檢查帳號是否已存在</li>
+            <li>requireCrypto() → 取得 AES 加密器;未設定時拋 IllegalStateException</li>
+            <li>crypto.encryptToBase64(request.userPwd()) → 密碼加密(AES-256-GCM → Base64)</li>
+            <li>new SysUser() → 建立使用者實體(含 createTime/createEmp/updateTime/updateEmp)</li>
+            <li>sysUserRepository.save(user) → 寫入使用者主檔</li>
+            <li>replaceRoles(userId, request.roles(), actor) → 寫入角色關聯</li>
+            <li>例外時 logger.error + ApiResponse.error 回傳</li>
+        </ul>
+    </div>
+
+    <h2>🔒 A0006Service 內部方法(private)</h2>
+
+    <div class="method private">
+        <div class="method-name">replaceRoles(String userId, List<A0006RoleDto> roles, String actor)</div>
+        <div class="method-desc">替換指定使用者的角色(先刪後增),給 create / update 共用</div>
+        <ul class="call-list">
+            <li>sysUserRoleRepository.deleteByUserId(userId) → 先刪除舊角色關聯</li>
+            <li>hasText(role.roleCode()) → 過濾空白角色代碼(避免寫入空字串)</li>
+            <li>new SysUserRole() → 建立角色關聯實體(含 createEmp/updateEmp)</li>
+            <li>sysUserRoleRepository.saveAll(rows) → 批次寫入新角色(單一交易)</li>
+        </ul>
+    </div>
+
+    <div class="method private">
+        <div class="method-name">groupRoles(Collection<SysUserRole> rows)</div>
+        <div class="method-desc">將角色清單依 userId 分組為 LinkedHashMap(保留插入順序)</div>
+        <ul class="call-list">
+            <li>map.computeIfAbsent(r.getUserId(), k -> new ArrayList<>()).add(r)</li>
+            <li>回傳 Map<String, List<SysUserRole>>,key = userId、value = 該使用者的所有角色</li>
+        </ul>
+    </div>
+
+    <div class="method private">
+        <div class="method-name">requireCrypto()</div>
+        <div class="method-desc">從 ObjectProvider 取得 AES 加密器,若未設定則拋出例外(fail-fast)</div>
+        <ul class="call-list">
+            <li>cryptoProvider.getIfAvailable() → 嘗試取得 Bean;可能為 null</li>
+            <li>throw new IllegalStateException("AES key not configured...") → 明確告知缺失的金鑰設定</li>
+        </ul>
+    </div>
+
+    <div class="method private">
+        <div class="method-name">loadMsRoleDescMap()</div>
+        <div class="method-desc">載入 MS 角色別對照表(cossdb.dbo.CDLEVEL,SysId='MS')</div>
+        <ul class="call-list">
+            <li>jdbcTemplate.queryForList(sql) → 查詢 CDLevel / LevelDesc</li>
+            <li>TextEncodingFixer.repairUtf8MojibakeIfLikely(roleDesc) → 修復亂碼</li>
+            <li>String.valueOf(codeObj) / String.valueOf(descObj) → 轉字串(防 NPE)</li>
+            <li>map.put(roleCode, roleDesc) → 組裝 LinkedHashMap(保留 DB 順序)</li>
+            <li>例外時 throw new IllegalStateException("無法查詢 cossdb.dbo.CDLEVEL...")</li>
+        </ul>
+    </div>
+
+    <div class="method private">
+        <div class="method-name">normalizeEnabledBool(Integer isEnabled)</div>
+        <div class="method-desc">將 Integer (0/1) 轉為 Boolean;null 維持 null(給查詢條件用)</div>
+        <ul class="call-list">
+            <li>return isEnabled == null ? null : isEnabled != 0;  // 0 → false;非 0 → true</li>
+        </ul>
+    </div>
+
+    <div class="method private">
+        <div class="method-name">normalizeNullableString(String value)</div>
+        <div class="method-desc">去除前後空白;若為空字串則回傳 null(避免空白誤判為有效值)</div>
+        <ul class="call-list">
+            <li>return trimmed.isBlank() ? null : trimmed;</li>
+        </ul>
+    </div>
+
+    <div class="method private">
+        <div class="method-name">hasText(String value)</div>
+        <div class="method-desc">檢查字串是否非 null 且 trim 後不為空(必填欄位驗證)</div>
+        <ul class="call-list">
+            <li>return value != null && !value.trim().isBlank();</li>
+        </ul>
+    </div>
+
+    <div class="method private">
+        <div class="method-name">normalizeActor(String actor)</div>
+        <div class="method-desc">標準化操作人員名稱;空白時預設為 "system"(避免 NULL 寫入稽核欄位)</div>
+        <ul class="call-list">
+            <li>return normalized.isBlank() ? "system" : normalized;</li>
+        </ul>
+    </div>
+
+    <h2>📦 相關 DTO / Repository / 工具類別</h2>
+
+    <div class="file">
+        <div class="filename">📁 src/main/java/com/example/app/dto/a0006/</div>
+        <pre>
+A0006Dto.java              - 查詢回應(含 12 個使用者欄位 + List<A0006RoleDto> roles)
+A0006RoleDto.java          - 角色項目(roleCode、roleNote)
+A0006OptionsResponse.java  - 角色選項回應(List<RoleOptionDto> roles)
+A0006CreateRequest.java    - 新增請求(userId、userPwd、userType、userEmail、userIsEnabled、roles)
+A0006UpdateRequest.java    - 修改請求(userId、userName、userType、userEmail、userIsEnabled、roles)
+A0006DeleteRequest.java    - 刪除請求(userId)
+        </pre>
+    </div>
+
+    <div class="file">
+        <div class="filename">📁 使用的 Repository(資料存取層)</div>
+        <pre>
+SysFunctionRoleRepository
+    - findDistinctRoleCodes()                // 取得所有角色代碼(distinct)
+
+SysUserRepository
+    - search(userId, enabled)                // 查詢使用者(支援條件過濾)
+    - findById(userId)                       // 依 ID 查找
+    - existsById(userId)                     // 檢查使用者是否存在
+    - save(user)                             // 新增/修改使用者
+    - deleteById(userId)                     // 刪除使用者
+
+SysUserRoleRepository
+    - findByUserIdIn(userIds)                // 批次查詢角色(避免 N+1)
+    - deleteByUserId(userId)                 // 刪除指定使用者所有角色
+    - saveAll(rows)                          // 批次寫入角色關聯
+        </pre>
+    </div>
+
+    <div class="file">
+        <div class="filename">📁 使用的工具類別</div>
+        <pre>
+Aes256GcmCrypto
+    - encryptToBase64(plainText)             // 密碼加密(AES-256-GCM → Base64)
+
+PasswordPolicy
+    - validateErrorMessage(password)         // 密碼政策驗證(長度、複雜度)
+
+TextEncodingFixer
+    - repairUtf8MojibakeIfLikely(text)       // 修復 UTF-8 Mojibake 亂碼
+    - defaultIfBlank(text, defaultValue)     // 空白時使用預設值
+
+JdbcTemplate (primaryJdbcTemplate)
+    - queryForList(sql)                      // 查詢外部 MS 角色對照表
+        </pre>
+    </div>
+</body>
+</html>
