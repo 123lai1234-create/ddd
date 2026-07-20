@@ -24,7 +24,7 @@ try {
   description={PAGE_DESC}
   bodyPage="music"
   pageStyles={["/styles/music.css"]}
-  pageScripts={["/scripts/music-player.js", "/scripts/music-ai-analysis.js"]}
+  pageScripts={["/scripts/music-player.js", "/scripts/music-upload.js"]}
 >
   <div class="bg-gradient"></div>
 
@@ -55,8 +55,7 @@ try {
     </div>
 
     <div class="nav-actions">
-      <button class="nav-btn nav-btn-outline" id="ai-analyze-btn">🤖 AI 分析</button>
-      <button class="nav-btn nav-btn-primary">登入</button>
+      <button class="nav-btn nav-btn-primary" id="upload-btn">📤 上傳歌曲</button>
     </div>
   </nav>
 
@@ -153,80 +152,78 @@ try {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
   </button>
 
-  <!-- AI 分析 Modal -->
-  <div class="ai-modal" id="ai-modal">
-    <div class="ai-modal-content">
-      <button class="ai-modal-close" id="ai-modal-close">✕</button>
-      <div class="ai-modal-header">
-        <h2>🤖 AI 音樂分析</h2>
-        <p>上傳音頻檔案或輸入歌曲名稱，讓 AI 幫你分析歌詞和歌手性別</p>
+  <!-- 上傳歌曲 Modal -->
+  <div class="upload-modal" id="upload-modal">
+    <div class="upload-modal-content">
+      <button class="upload-modal-close" id="upload-modal-close">✕</button>
+      <div class="upload-modal-header">
+        <h2>📤 上傳歌曲</h2>
+        <p>選一個 MP3 跟歌詞檔（.txt / .srt / .lrc），就能直接加到播放清單</p>
       </div>
-      
-      <div class="ai-tabs">
-        <button class="ai-tab active" data-tab="upload">📤 上傳音頻</button>
-        <button class="ai-tab" data-tab="text">✏️ 輸入名稱</button>
-      </div>
-      
-      <!-- 上傳音頻 Tab -->
-      <div class="ai-tab-content active" id="ai-upload-tab">
-        <div class="ai-dropzone" id="ai-dropzone">
-          <div class="ai-dropzone-icon">🎵</div>
-          <p class="ai-dropzone-text">拖放音頻檔案到此處</p>
-          <p class="ai-dropzone-subtext">或點擊選擇檔案 (MP3, WAV, OGG, M4A)</p>
-          <input type="file" id="ai-file-input" accept="audio/*" hidden>
-        </div>
-        <div class="ai-file-preview" id="ai-file-preview" style="display: none;">
-          <span class="ai-file-name" id="ai-file-name"></span>
-          <button class="ai-remove-file" id="ai-remove-file">✕</button>
-        </div>
-        <button class="ai-analyze-btn" id="ai-analyze-upload-btn" disabled>
-          <span class="ai-btn-text">🔍 開始分析</span>
-          <span class="ai-btn-loading" style="display: none;">分析中...</span>
-        </button>
-      </div>
-      
-      <!-- 輸入名稱 Tab -->
-      <div class="ai-tab-content" id="ai-text-tab">
+
+      <!-- 密碼驗證 -->
+      <div class="upload-gate" id="upload-gate">
         <div class="ai-form-group">
-          <label for="ai-song-name">歌曲名稱</label>
-          <input type="text" id="ai-song-name" placeholder="例如：不服輸、城市裡的我們、Late Night City">
+          <label for="upload-password">🔒 密碼</label>
+          <input type="password" id="upload-password" placeholder="輸入上傳密碼" autocomplete="off">
+        </div>
+        <button class="ai-analyze-btn" id="upload-unlock-btn">解鎖</button>
+        <p class="upload-gate-hint">這頁是私人空間，不對外開放上傳</p>
+      </div>
+
+      <!-- 上傳表單（解鎖後才顯示） -->
+      <div class="upload-form" id="upload-form" style="display: none;">
+        <div class="ai-form-group">
+          <label for="upload-track-name">🎵 歌曲名稱</label>
+          <input type="text" id="upload-track-name" placeholder="例：我的新歌">
         </div>
         <div class="ai-form-group">
-          <label for="ai-artist">歌手名稱（可選）</label>
-          <input type="text" id="ai-artist" placeholder="例如：TW男歌手、EN女歌手">
+          <label for="upload-artist">🎤 歌手（可選）</label>
+          <input type="text" id="upload-artist" placeholder="例：獨立歌手">
         </div>
-        <button class="ai-analyze-btn" id="ai-analyze-text-btn">
-          <span class="ai-btn-text">🔍 開始分析</span>
-          <span class="ai-btn-loading" style="display: none;">分析中...</span>
+
+        <div class="ai-form-group">
+          <label>🎧 MP3 音訊</label>
+          <div class="ai-dropzone" id="upload-audio-drop">
+            <div class="ai-dropzone-icon">🎵</div>
+            <p class="ai-dropzone-text">拖放 MP3 到此處</p>
+            <p class="ai-dropzone-subtext">或點擊選擇檔案</p>
+            <input type="file" id="upload-audio-input" accept="audio/mpeg,audio/mp3,audio/*" hidden>
+          </div>
+          <div class="ai-file-preview" id="upload-audio-preview" style="display: none;">
+            <span class="ai-file-name" id="upload-audio-name"></span>
+            <button class="ai-remove-file" id="upload-audio-remove">✕</button>
+          </div>
+        </div>
+
+        <div class="ai-form-group">
+          <label>📝 歌詞（.txt / .srt / .lrc）</label>
+          <div class="ai-dropzone" id="upload-lyrics-drop">
+            <div class="ai-dropzone-icon">📝</div>
+            <p class="ai-dropzone-text">拖放歌詞到此處</p>
+            <p class="ai-dropzone-subtext">或點擊選擇檔案</p>
+            <input type="file" id="upload-lyrics-input" accept=".txt,.srt,.lrc,text/plain" hidden>
+          </div>
+          <div class="ai-file-preview" id="upload-lyrics-preview" style="display: none;">
+            <span class="ai-file-name" id="upload-lyrics-name"></span>
+            <button class="ai-remove-file" id="upload-lyrics-remove">✕</button>
+          </div>
+          <details class="upload-lyrics-hint">
+            <summary>歌詞格式說明</summary>
+            <div class="upload-lyrics-help">
+              <p><b>.txt</b>：每行一句，按行數順序播放</p>
+              <p><b>.srt / .lrc</b>：帶時間碼的字幕格式（推薦）</p>
+              <p>範例 LRC：</p>
+              <pre>[00:00.00] 這是第一句歌詞
+[00:05.30] 這是第二句歌詞</pre>
+            </div>
+          </details>
+        </div>
+
+        <button class="ai-analyze-btn" id="upload-submit-btn" disabled>
+          <span class="ai-btn-text">✅ 加到播放清單</span>
+          <span class="ai-btn-loading" style="display: none;">處理中...</span>
         </button>
-      </div>
-      
-      <!-- 分析結果 -->
-      <div class="ai-result" id="ai-result" style="display: none;">
-        <h3>📊 分析結果</h3>
-        <div class="ai-result-grid">
-          <div class="ai-result-item">
-            <span class="ai-result-label">🎤 歌手性別</span>
-            <span class="ai-result-value" id="ai-result-gender">--</span>
-          </div>
-          <div class="ai-result-item">
-            <span class="ai-result-label">🌐 語言</span>
-            <span class="ai-result-value" id="ai-result-language">--</span>
-          </div>
-          <div class="ai-result-item">
-            <span class="ai-result-label">🎵 曲風</span>
-            <span class="ai-result-value" id="ai-result-style">--</span>
-          </div>
-          <div class="ai-result-item">
-            <span class="ai-result-label">📈 置信度</span>
-            <span class="ai-result-value" id="ai-result-confidence">--</span>
-          </div>
-        </div>
-        <div class="ai-lyrics-section">
-          <h4>📝 歌詞內容</h4>
-          <pre class="ai-lyrics-content" id="ai-lyrics-content"></pre>
-        </div>
-        <button class="ai-apply-btn" id="ai-apply-btn">✅ 套用到歌曲</button>
       </div>
     </div>
   </div>
@@ -399,8 +396,8 @@ try {
 </Base>
 
 <style>
-/* AI Modal Styles */
-.ai-modal {
+/* Upload Modal Styles */
+.upload-modal {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.8);
@@ -410,9 +407,9 @@ try {
   justify-content: center;
   backdrop-filter: blur(10px);
 }
-.ai-modal.open { display: flex; }
+.upload-modal.open { display: flex; }
 
-.ai-modal-content {
+.upload-modal-content {
   background: var(--bg-card, #222);
   border-radius: 20px;
   padding: 32px;
@@ -425,7 +422,7 @@ try {
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
 
-.ai-modal-close {
+.upload-modal-close {
   position: absolute;
   top: 16px;
   right: 16px;
@@ -436,65 +433,45 @@ try {
   font-size: 1.5rem;
   padding: 4px 8px;
 }
-.ai-modal-close:hover { color: var(--text-primary, #fff); }
+.upload-modal-close:hover { color: var(--text-primary, #fff); }
 
-.ai-modal-header {
+.upload-modal-header {
   text-align: center;
   margin-bottom: 24px;
 }
-.ai-modal-header h2 {
+.upload-modal-header h2 {
   font-size: 1.5rem;
   color: var(--text-primary, #fff);
   margin-bottom: 8px;
 }
-.ai-modal-header p {
+.upload-modal-header p {
   color: var(--text-tertiary, #999);
   font-size: 0.85rem;
 }
 
-.ai-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+.upload-gate-hint {
+  text-align: center;
+  color: var(--text-tertiary, #999);
+  font-size: 0.78rem;
+  margin-top: 12px;
+  margin-bottom: 0;
 }
-.ai-tab {
-  flex: 1;
-  padding: 12px 20px;
-  background: var(--bg-elevated, #2a2a2a);
-  border: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
-  border-radius: 12px;
-  color: var(--text-secondary, #e0e0e0);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.ai-tab.active {
-  background: var(--accent, #ff5500);
-  color: #000;
-  border-color: var(--accent, #ff5500);
-}
-.ai-tab:hover:not(.active) {
-  background: var(--bg-hover, rgba(255,85,0,0.08));
-}
-
-.ai-tab-content { display: none; }
-.ai-tab-content.active { display: block; }
+.upload-gate { text-align: center; }
 
 .ai-dropzone {
   border: 2px dashed var(--border-secondary, rgba(255,255,255,0.12));
   border-radius: 16px;
-  padding: 40px 20px;
+  padding: 32px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .ai-dropzone:hover, .ai-dropzone.dragover {
   border-color: var(--accent, #ff5500);
   background: var(--bg-hover, rgba(255,85,0,0.08));
 }
-.ai-dropzone-icon { font-size: 3rem; margin-bottom: 12px; }
+.ai-dropzone-icon { font-size: 2.5rem; margin-bottom: 8px; }
 .ai-dropzone-text { color: var(--text-primary, #fff); font-weight: 600; margin-bottom: 4px; }
 .ai-dropzone-subtext { color: var(--text-tertiary, #999); font-size: 0.8rem; }
 
@@ -502,18 +479,20 @@ try {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 10px 14px;
   background: var(--bg-elevated, #2a2a2a);
-  border-radius: 12px;
-  margin-bottom: 16px;
+  border-radius: 10px;
+  margin-bottom: 12px;
 }
-.ai-file-name { color: var(--text-primary, #fff); font-size: 0.9rem; }
+.ai-file-name { color: var(--text-primary, #fff); font-size: 0.88rem; word-break: break-all; }
 .ai-remove-file {
   background: none;
   border: none;
   color: var(--text-tertiary, #999);
   cursor: pointer;
   font-size: 1rem;
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 .ai-remove-file:hover { color: #ef4444; }
 
@@ -563,74 +542,32 @@ try {
 }
 .ai-btn-loading { display: none; }
 
-.ai-result {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
-}
-.ai-result h3 {
-  color: var(--text-primary, #fff);
-  font-size: 1.1rem;
-  margin-bottom: 16px;
-}
-.ai-result-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-.ai-result-item {
-  background: var(--bg-elevated, #2a2a2a);
-  padding: 12px 16px;
-  border-radius: 12px;
-}
-.ai-result-label {
-  display: block;
+.upload-lyrics-hint {
+  margin-top: 6px;
   color: var(--text-tertiary, #999);
-  font-size: 0.75rem;
-  margin-bottom: 4px;
+  font-size: 0.8rem;
 }
-.ai-result-value {
-  color: var(--accent, #ff5500);
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.ai-lyrics-section {
-  margin-top: 16px;
-}
-.ai-lyrics-section h4 {
-  color: var(--text-secondary, #e0e0e0);
-  font-size: 0.9rem;
-  margin-bottom: 8px;
-}
-.ai-lyrics-content {
-  background: var(--bg-elevated, #2a2a2a);
-  padding: 16px;
-  border-radius: 12px;
-  color: var(--text-secondary, #e0e0e0);
-  font-size: 0.85rem;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.ai-apply-btn {
-  width: 100%;
-  padding: 12px 24px;
-  background: var(--bg-elevated, #2a2a2a);
-  border: 1px solid var(--accent, #ff5500);
-  border-radius: 12px;
-  color: var(--accent, #ff5500);
-  font-size: 0.9rem;
-  font-weight: 600;
+.upload-lyrics-hint summary {
   cursor: pointer;
-  margin-top: 16px;
-  transition: all 0.2s;
+  padding: 4px 0;
+  user-select: none;
 }
-.ai-apply-btn:hover {
-  background: var(--accent, #ff5500);
-  color: #000;
+.upload-lyrics-hint summary:hover { color: var(--text-secondary, #ccc); }
+.upload-lyrics-help {
+  background: var(--bg-elevated, #2a2a2a);
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+.upload-lyrics-help p { margin: 0 0 6px 0; }
+.upload-lyrics-help pre {
+  background: rgba(0,0,0,0.3);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 4px 0 0 0;
 }
 </style>

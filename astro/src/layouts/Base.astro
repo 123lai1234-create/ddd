@@ -234,7 +234,7 @@ const personSchema = {
 </head>
 <body data-page={bodyPage}>
     {!noImmersive && <ImmersiveBackground />}
-    <MaintenanceBanner />
+    {/* <MaintenanceBanner /> -- 2026-07-06 後端已恢復,暫時拿掉。後端真的壞掉時再加回來:移除此行註解 + 把 /api/healthz 在 production 驗證一下 */}
     <slot />
     {pageScripts.map((src) => <script is:inline src={withCacheBuster(src)}></script>)}
 

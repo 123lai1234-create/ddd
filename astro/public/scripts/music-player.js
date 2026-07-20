@@ -761,10 +761,25 @@
       if (!name) return '--';
       return name.replace(/\.mp3$/i, '').replace(/_/g, ' ');
     }
+
+    // 由 upload script 呼叫，把使用者上傳的歌曲加到清單
+    addCustomTrack(track) {
+      if (!track || !track.audio) {
+        console.error('[MusicPlayer] addCustomTrack: missing audio', track);
+        return null;
+      }
+      this.tracks.push(track);
+      this.filteredTracks = [...this.tracks];
+      this.renderTrackList();
+      this.updateStats();
+      console.log('[MusicPlayer] Custom track added:', track.name);
+      return this.tracks.length - 1;
+    }
   }
 
   // 啟動：DOM 已就緒就直接建實例；否則等 DOMContentLoaded
-  function start() { window.musicPlayer = new MusicPlayer(); }
+    window.MusicPlayer = MusicPlayer;
+function start() { window.musicPlayer = new MusicPlayer(); window.musicPlayerReady = true; document.dispatchEvent(new CustomEvent('musicplayerready')); }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', start);
   } else {

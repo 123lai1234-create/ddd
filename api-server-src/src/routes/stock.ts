@@ -13,7 +13,7 @@ import {
   volumeBars,
   type Point,
 } from "../lib/indicators";
-import { getWatchlist, resolveStock, addStock, removeStock } from "../lib/stocks";
+import { getWatchlist, resolveStock, addStock, removeStock, normalizeCode } from "../lib/stocks";
 import { INDUSTRY_GROUPS } from "../lib/seed-data";
 import { fetchInstitutional, fetchIndexInstitutional } from "../lib/twse";
 import { fetchForeignFutures } from "../lib/taifex";
@@ -168,9 +168,10 @@ router.delete("/stocks/remove/:code", async (req, res) => {
 // ---- Core stock data ----
 router.get("/stock/:code", async (req, res) => {
   try {
-    const { name, ticker } = await resolveStock(req.params.code);
-    const payload = await cached(`payload:${req.params.code}`, 60 * 5, () =>
-      buildStockPayload(req.params.code, name, ticker),
+    const code = normalizeCode(req.params.code);
+    const { name, ticker } = await resolveStock(code);
+    const payload = await cached(`payload:${code}`, 60 * 5, () =>
+      buildStockPayload(code, name, ticker),
     );
     res.json(payload);
   } catch (e) {

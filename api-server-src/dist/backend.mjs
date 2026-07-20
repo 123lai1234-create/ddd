@@ -80258,6 +80258,12 @@ var NAME_BY_CODE = Object.fromEntries(SEED_WATCHLIST.map((s) => [s.code, s.name]
 var TICKER_BY_CODE = Object.fromEntries(SEED_WATCHLIST.map((s) => [s.code, s.ticker]));
 
 // src/lib/stocks.ts
+var TAIWAN_CODE_RE = /^\d{4,6}$/;
+function normalizeCode(code) {
+  const trimmed = String(code ?? "").trim();
+  const stripped = trimmed.replace(/\.(TW|TWO)$/i, "");
+  return stripped;
+}
 var seeded = false;
 async function ensureSeeded() {
   if (seeded) return;
@@ -80279,22 +80285,29 @@ async function getWatchlist() {
   return db.select().from(watchlistTable).orderBy(asc(watchlistTable.sortOrder));
 }
 async function resolveStock(code) {
-  if (TICKER_BY_CODE[code]) {
-    return { name: NAME_BY_CODE[code] || code, ticker: TICKER_BY_CODE[code] };
+  const normalized = normalizeCode(code);
+  if (!TAIWAN_CODE_RE.test(normalized)) {
+    throw new Error(
+      `Invalid stock code: ${JSON.stringify(code)} (expected 4-6 digit Taiwan code)`
+    );
   }
-  const row2 = await db.select().from(watchlistTable).where(eq(watchlistTable.code, code));
+  if (TICKER_BY_CODE[normalized]) {
+    return { name: NAME_BY_CODE[normalized] || normalized, ticker: TICKER_BY_CODE[normalized] };
+  }
+  const row2 = await db.select().from(watchlistTable).where(eq(watchlistTable.code, normalized));
   if (row2.length) return { name: row2[0].name, ticker: row2[0].ticker };
-  const ticker = await resolveTicker(code);
-  if (!ticker) throw new Error(`Unknown stock code: ${code}`);
+  const ticker = await resolveTicker(normalized);
+  if (!ticker) throw new Error(`Unknown stock code: ${normalized}`);
   const meta = await fetchMeta(ticker);
-  return { name: meta?.name && meta.name !== ticker ? meta.name : code, ticker };
+  return { name: meta?.name && meta.name !== ticker ? meta.name : normalized, ticker };
 }
 async function addStock(code) {
-  const { name, ticker } = await resolveStock(code);
+  const normalized = normalizeCode(code);
+  const { name, ticker } = await resolveStock(normalized);
   const max = await db.select().from(watchlistTable);
   const order = max.length;
-  await db.insert(watchlistTable).values({ code, name, ticker, sortOrder: order }).onConflictDoNothing();
-  return { code, name, ticker };
+  await db.insert(watchlistTable).values({ code: normalized, name, ticker, sortOrder: order }).onConflictDoNothing();
+  return { code: normalized, name, ticker };
 }
 async function removeStock(code) {
   await db.delete(watchlistTable).where(eq(watchlistTable.code, code));
@@ -88821,11 +88834,12 @@ router8.delete("/stocks/remove/:code", async (req, res) => {
 });
 router8.get("/stock/:code", async (req, res) => {
   try {
-    const { name, ticker } = await resolveStock(req.params.code);
+    const code = normalizeCode(req.params.code);
+    const { name, ticker } = await resolveStock(code);
     const payload = await cached(
-      `payload:${req.params.code}`,
+      `payload:${code}`,
       60 * 5,
-      () => buildStockPayload(req.params.code, name, ticker)
+      () => buildStockPayload(code, name, ticker)
     );
     res.json(payload);
   } catch (e) {
