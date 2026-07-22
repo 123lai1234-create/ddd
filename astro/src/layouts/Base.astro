@@ -5,6 +5,7 @@
 // analytics are needed on both hosts.
 import ImmersiveBackground from '../components/ImmersiveBackground.astro';
 import MaintenanceBanner from '../components/MaintenanceBanner.astro';
+import ChatWidget from '../components/ChatWidget.astro';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -296,6 +297,18 @@ const personSchema = {
         debounce = setTimeout(() => doSearch(input.value), 250);
       });
     })();
+    </script>
+
+    <!-- ── AI Chat Widget (floating, bottom-left, hides on media pages) ── -->
+    <ChatWidget title="AI 助手" subtitle="問我任何關於這個網站的問題" />
+    <script is:inline>
+      // DEPLOY_MARKER: 2026-07-21T16:50:00-chat-render-v3
+      // Resolve Chat Widget API URL.
+      // In dev (localhost) → http://localhost:8765/chat (FastAPI backend)
+      // In prod → Render directly (Vercel proxy buffers SSE → broken streaming)
+      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8765/chat'
+        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
     </script>
 </body>
 </html>

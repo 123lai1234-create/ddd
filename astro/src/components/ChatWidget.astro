@@ -1,0 +1,481 @@
+---
+/**
+ * ChatWidget — 浮動 AI 助手（左下角，避開 Pagefind 搜尋按鈕的右下角）
+ *
+ * Features:
+ *  - 浮動圓鈕，hover 提示 "AI 助手"
+ *  - 點開 → 聊天視窗，支援 SSE 串流顯示
+ *  - 多輪對話（localStorage 保存最近 20 輪）
+ *  - 打擾防護：music / video 頁面自動隱藏；video / audio 播放時隱藏
+ *  - 鍵盤：Esc 關閉，Enter 送出，Shift+Enter 換行
+ *
+ * 後端：透過 window.CHAT_BOT_API 注入；預設指向同源 /api/chat-bot 代理或直連。
+ */
+export interface Props {
+  /** 後端 SSE 端點，預設同源 /api/chat */
+  apiUrl?: string;
+  /** 顯示標題 */
+  title?: string;
+  /** 顯示副標 */
+  subtitle?: string;
+  /** 隱藏的頁面路徑前綴（逗號分隔） */
+  hideOnPaths?: string;
+}
+
+const {
+  apiUrl = '/api/chat',
+  title = 'AI 助手',
+  subtitle = '問我任何關於這個網站的問題',
+  hideOnPaths = '/music,/video-gen,/interactive-showcase',
+} = Astro.props;
+
+const hidePaths = hideOnPaths.split(',').map(s => s.trim()).filter(Boolean);
+---
+<style is:global>
+  /* Chat widget core styles - scoped via .cw- prefix to avoid collisions */
+  .cw-btn {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    z-index: 500;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6e56cf 0%, #b08eee 100%);
+    border: 1px solid rgba(255,255,255,.18);
+    color: #fff;
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(110,86,207,.45);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .cw-btn:hover { transform: scale(1.06); box-shadow: 0 10px 32px rgba(110,86,207,.6); }
+  .cw-btn::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,.78);
+    color: #fff;
+    font-size: .78rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s;
+  }
+  .cw-btn:hover::after { opacity: 1; }
+  .cw-btn[data-hidden="1"] { display: none !important; }
+
+  .cw-panel {
+    position: fixed;
+    bottom: 88px;
+    left: 24px;
+    width: min(380px, calc(100vw - 48px));
+    max-height: min(560px, calc(100vh - 120px));
+    z-index: 501;
+    background: var(--bg, #0d1117);
+    border: 1px solid var(--border, rgba(255,255,255,.12));
+    border-radius: 14px;
+    box-shadow: 0 16px 48px rgba(0,0,0,.6);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: inherit;
+  }
+  .cw-panel[data-open="1"] { display: flex; }
+  .cw-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .cw-title { font-size: .95rem; font-weight: 600; color: var(--text, #e6edf3); }
+  .cw-sub { font-size: .72rem; color: var(--muted, #8b949e); margin-top: 2px; }
+  .cw-close {
+    background: none; border: none; color: var(--muted, #8b949e);
+    font-size: 1.2rem; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+  }
+  .cw-close:hover { background: rgba(255,255,255,.06); color: var(--text, #e6edf3); }
+
+  .cw-msgs {
+    flex: 1; overflow-y: auto; padding: 12px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .cw-msg {
+    max-width: 85%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: .85rem;
+    line-height: 1.5;
+    word-wrap: break-word;
+  }
+  .cw-msg-user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #6e56cf 0%, #b08eee 100%);
+    color: #fff;
+  }
+  .cw-msg-bot {
+    align-self: flex-start;
+    background: rgba(255,255,255,.06);
+    color: var(--text, #e6edf3);
+    border: 1px solid var(--border, rgba(255,255,255,.08));
+  }
+  .cw-msg-error {
+    align-self: stretch;
+    background: rgba(255, 100, 100, .12);
+    color: #ff8b8b;
+    border: 1px solid rgba(255, 100, 100, .25);
+    font-size: .78rem;
+  }
+  .cw-msg-bot pre { background: rgba(0,0,0,.3); padding: 6px 8px; border-radius: 4px; overflow-x: auto; font-size: .78rem; }
+  .cw-msg-bot code { background: rgba(0,0,0,.3); padding: 1px 4px; border-radius: 3px; font-size: .82em; }
+  .cw-msg-bot a { color: #b08eee; text-decoration: underline; }
+  .cw-msg-bot .cw-cite {
+    display: inline-block; font-size: .65rem; padding: 1px 4px; border-radius: 3px;
+    background: rgba(176,142,238,.15); color: #b08eee; vertical-align: super; margin-left: 1px;
+  }
+  .cw-msg-bot .cw-tools {
+    margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,.1);
+    font-size: .72rem; color: var(--muted, #8b949e);
+  }
+  .cw-msg-bot .cw-tool-pill {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    background: rgba(110,86,207,.18); color: #b08eee; margin-right: 4px;
+  }
+  .cw-msg-bot .cw-rag-sources {
+    margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,.1);
+    font-size: .72rem; color: var(--muted, #8b949e);
+  }
+  .cw-msg-bot .cw-rag-sources a { color: #b08eee; text-decoration: none; }
+  .cw-msg-bot .cw-rag-sources a:hover { text-decoration: underline; }
+
+  .cw-typing {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted, #8b949e); margin: 0 2px; animation: cw-blink 1.2s infinite;
+  }
+  .cw-typing:nth-child(2) { animation-delay: .2s; }
+  .cw-typing:nth-child(3) { animation-delay: .4s; }
+  @keyframes cw-blink { 0%, 60%, 100% { opacity: .3; } 30% { opacity: 1; } }
+
+  .cw-input-row {
+    display: flex; gap: 8px; padding: 10px 12px;
+    border-top: 1px solid var(--border, rgba(255,255,255,.08));
+    background: rgba(0,0,0,.15);
+  }
+  .cw-input {
+    flex: 1; resize: none; min-height: 36px; max-height: 120px;
+    background: rgba(255,255,255,.04); border: 1px solid var(--border, rgba(255,255,255,.1));
+    border-radius: 8px; padding: 8px 10px; color: var(--text, #e6edf3);
+    font-family: inherit; font-size: .85rem; line-height: 1.4; outline: none;
+  }
+  .cw-input:focus { border-color: #6e56cf; }
+  .cw-send {
+    background: linear-gradient(135deg, #6e56cf 0%, #b08eee 100%);
+    color: #fff; border: none; border-radius: 8px;
+    padding: 0 14px; font-size: .85rem; font-weight: 600; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .cw-send:disabled { opacity: .45; cursor: not-allowed; }
+
+  .cw-welcome {
+    color: var(--muted, #8b949e); font-size: .82rem; line-height: 1.5;
+    text-align: center; padding: 24px 12px;
+  }
+  .cw-welcome .cw-chip {
+    display: inline-block; margin: 4px 4px 0;
+    padding: 6px 12px; border: 1px solid var(--border, rgba(255,255,255,.12));
+    border-radius: 16px; font-size: .78rem; cursor: pointer;
+    transition: all .15s; color: var(--text, #e6edf3);
+  }
+  .cw-welcome .cw-chip:hover { background: rgba(110,86,207,.18); border-color: #6e56cf; }
+</style>
+
+<button
+  class="cw-btn"
+  id="cw-btn"
+  data-tip="AI 助手"
+  data-cw-api={apiUrl}
+  data-cw-hide-paths={hideOnPaths}
+  aria-label="開啟 AI 助手"
+>💬</button>
+
+<aside class="cw-panel" id="cw-panel" role="dialog" aria-label="AI 助手對話" aria-hidden="true">
+  <header class="cw-header">
+    <div>
+      <div class="cw-title">{title}</div>
+      <div class="cw-sub">{subtitle}</div>
+    </div>
+    <button class="cw-close" id="cw-close" aria-label="關閉">×</button>
+  </header>
+  <div class="cw-msgs" id="cw-msgs">
+    <div class="cw-welcome" id="cw-welcome">
+      <p>嗨！我是你的 AI 助手 👋</p>
+      <p style="margin: 8px 0 12px; font-size: .78rem">問我關於這個網站、音樂、基因、AI、或股票的任何問題：</p>
+      <div id="cw-suggestions"></div>
+    </div>
+  </div>
+  <form class="cw-input-row" id="cw-form" autocomplete="off">
+    <textarea
+      class="cw-input"
+      id="cw-input"
+      placeholder="輸入訊息… (Enter 送出 / Shift+Enter 換行)"
+      rows="1"
+      maxlength="2000"
+    ></textarea>
+    <button class="cw-send" id="cw-send" type="submit">送出</button>
+  </form>
+</aside>
+
+<script is:inline>
+(function() {
+  'use strict';
+  if (window.__cw_loaded) return;
+  window.__cw_loaded = true;
+
+  const btn = document.getElementById('cw-btn');
+  if (!btn) return;
+  const apiUrl = btn.getAttribute('data-cw-api') || '/api/chat';
+  const hideOnPaths = btn.getAttribute('data-cw-hide-paths') || '';
+  const hidePaths = hideOnPaths.split(',').map(function(s){return s.trim();}).filter(Boolean);
+
+  // Resolve API endpoint: window.CHAT_BOT_API > prop > default
+  const resolvedApiUrl = window.CHAT_BOT_API || apiUrl || '/api/chat';
+
+  const btn = document.getElementById('cw-btn');
+  const panel = document.getElementById('cw-panel');
+  const closeBtn = document.getElementById('cw-close');
+  const msgs = document.getElementById('cw-msgs');
+  const form = document.getElementById('cw-form');
+  const input = document.getElementById('cw-input');
+  const sendBtn = document.getElementById('cw-send');
+  const welcome = document.getElementById('cw-welcome');
+  const suggestions = document.getElementById('cw-suggestions');
+
+  if (!btn || !panel) return;
+
+  const STORAGE_KEY = 'cw.history.v1';
+  const MAX_HISTORY = 20;
+  const SUGGESTIONS = [
+    '這個網站是什麼？',
+    '介紹一下你的音樂作品',
+    '你有做哪些 AI 工具？',
+    '幫我查台積電股價',
+  ];
+
+  // ── Hide on certain paths + during media playback ─────────────
+  function shouldHide() {
+    const p = location.pathname;
+    if (hidePaths.some(h => p.startsWith(h))) return true;
+    // Hide if any <video> or <audio> is playing
+    const media = document.querySelectorAll('video, audio');
+    for (const m of media) {
+      if (!m.paused && m.readyState > 1) return true;
+    }
+    return false;
+  }
+  function applyHide() {
+    btn.setAttribute('data-hidden', shouldHide() ? '1' : '0');
+  }
+  applyHide();
+  // Re-check every 1.5s (cheap; covers SPA-ish nav + media start/stop)
+  setInterval(applyHide, 1500);
+  document.addEventListener('play', applyHide, true);
+  document.addEventListener('pause', applyHide, true);
+
+  // ── Open/close ────────────────────────────────────────────────
+  function open() {
+    panel.setAttribute('data-open', '1');
+    panel.setAttribute('aria-hidden', 'false');
+    if (welcome && suggestions && suggestions.children.length === 0) {
+      SUGGESTIONS.forEach(s => {
+        const c = document.createElement('span');
+        c.className = 'cw-chip';
+        c.textContent = s;
+        c.addEventListener('click', () => sendUser(s));
+        suggestions.appendChild(c);
+      });
+    }
+    setTimeout(() => input.focus(), 50);
+  }
+  function close() {
+    panel.removeAttribute('data-open');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+  btn.addEventListener('click', () => {
+    panel.getAttribute('data-open') === '1' ? close() : open();
+  });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && panel.getAttribute('data-open') === '1') close();
+  });
+
+  // ── History persistence ───────────────────────────────────────
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h.slice(-MAX_HISTORY))); }
+    catch {}
+  }
+  let history = loadHistory();
+  // render prior history
+  history.forEach(m => renderBubble(m.role, m.content, false));
+
+  // ── Markdown mini-renderer (very small, no deps) ──────────────
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function md(s) {
+    if (!s) return '';
+    // citations [1] [2] → sup pill
+    s = s.replace(/\[(\d+)\]/g, (_, n) => `<span class="cw-cite">[${n}]</span>`);
+    // code blocks
+    s = s.replace(/```([\s\S]*?)```/g, (_, c) => `<pre>${escapeHtml(c.trim())}</pre>`);
+    // inline code
+    s = s.replace(/`([^`]+)`/g, function(_, c) { return '<code>' + escapeHtml(c) + '</code>'; });
+    // links [text](url)
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // internal links /path
+    s = s.replace(/(^|\s)(\/[a-z0-9_\-/]+)/gi, (m, pre, p) => `${pre}<a href="${p}">${p}</a>`);
+    // bold
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // line breaks
+    s = s.replace(/\n/g, '<br>');
+    return s;
+  }
+
+  // ── Bubbles ───────────────────────────────────────────────────
+  let activeBotBubble = null; // currently streaming
+  function renderBubble(role, content, isHtml = false) {
+    const div = document.createElement('div');
+    div.className = 'cw-msg cw-msg-' + (role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot');
+    if (role === 'typing') {
+      div.innerHTML = '<span class="cw-typing"></span><span class="cw-typing"></span><span class="cw-typing"></span>';
+    } else {
+      div.innerHTML = isHtml ? content : md(content);
+    }
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  // ── Send / stream ─────────────────────────────────────────────
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  form.addEventListener('submit', e => { e.preventDefault(); sendUser(input.value); });
+
+  async function sendUser(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    if (welcome && welcome.parentNode) welcome.parentNode.removeChild(welcome);
+
+    input.value = '';
+    input.style.height = 'auto';
+    renderBubble('user', text);
+    history.push({ role: 'user', content: text });
+
+    // typing indicator
+    const typing = renderBubble('typing');
+    sendBtn.disabled = true;
+
+    let botText = '';
+    let tools = [];
+    let ragSources = [];
+    try {
+      const resp = await fetch(resolvedApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+      });
+      if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        // SSE: events separated by \n\n, lines start with `event: ` and `data: `
+        let idx;
+        while ((idx = buf.indexOf('\n\n')) !== -1) {
+          const chunk = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          const evLine = chunk.split('\n').find(l => l.startsWith('event:'));
+          const dataLine = chunk.split('\n').find(l => l.startsWith('data:'));
+          if (!dataLine) continue;
+          const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
+          const dataStr = dataLine.replace(/^data:\s*/, '');
+          let data = {};
+          try { data = JSON.parse(dataStr); } catch {}
+          if (evt === 'token' && data.content) {
+            if (typing.parentNode) typing.parentNode.removeChild(typing);
+            if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
+            botText += data.content;
+            activeBotBubble.innerHTML = md(botText);
+            msgs.scrollTop = msgs.scrollHeight;
+          } else if (evt === 'tool_call') {
+            tools.push({ name: data.name, args: data.arguments });
+          } else if (evt === 'tool_result') {
+            const last = tools[tools.length - 1];
+            if (last) last.result = data.result;
+          } else if (evt === 'rag') {
+            (data.chunks || []).forEach(c => ragSources.push(c));
+          } else if (evt === 'error') {
+            if (typing.parentNode) typing.parentNode.removeChild(typing);
+            renderBubble('error', '⚠️ ' + (data.message || 'unknown error'));
+          }
+        }
+      }
+    } catch (err) {
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      renderBubble('error', '⚠️ 連線失敗：' + (err && err.message ? err.message : err));
+    } finally {
+      sendBtn.disabled = false;
+      activeBotBubble = null;
+    }
+
+    // append tool/rag footnotes to last bot bubble
+    if (activeBotBubble === null) {
+      // already finalized; we need the *last* bot bubble
+      const lastBot = [...msgs.querySelectorAll('.cw-msg-bot')].pop();
+      if (lastBot) {
+        if (tools.length) {
+          const div = document.createElement('div');
+          div.className = 'cw-tools';
+          div.innerHTML = tools.map(t => `<span class="cw-tool-pill">🔧 ${escapeHtml(t.name)}</span>`).join('');
+          lastBot.appendChild(div);
+        }
+        if (ragSources.length) {
+          const div = document.createElement('div');
+          div.className = 'cw-rag-sources';
+          const uniq = [];
+          const seen = new Set();
+          ragSources.forEach(s => {
+            const key = s.url || s.title;
+            if (!seen.has(key)) { seen.add(key); uniq.push(s); }
+          });
+          div.innerHTML = '📚 引用：' + uniq.slice(0, 5).map(s => {
+            const url = s.url || '#';
+            const title = s.title || url;
+            return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(title)}</a>`;
+          }).join(' · ');
+          lastBot.appendChild(div);
+        }
+      }
+    }
+    if (botText) history.push({ role: 'assistant', content: botText });
+    saveHistory(history);
+  }
+})();
+</script>
