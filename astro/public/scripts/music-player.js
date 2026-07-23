@@ -100,7 +100,9 @@
         const repostBtn = e.target.closest('.repost-btn');
         const dlBtn = e.target.closest('.download-btn');
         const mvBtn = e.target.closest('.mv-btn');
+        const delBtn = e.target.closest('.delete-btn');
 
+        if (delBtn) { e.stopPropagation(); this.deleteTrack(parseInt(delBtn.dataset.idx)); return; }
         if (dlBtn) { e.stopPropagation(); this.downloadTrack(parseInt(dlBtn.dataset.idx)); return; }
         if (repostBtn) { e.stopPropagation(); this.toggleRepost(parseInt(repostBtn.dataset.idx)); return; }
         if (addBtn) { e.stopPropagation(); this.addToQueue(parseInt(addBtn.dataset.idx)); return; }
@@ -176,6 +178,22 @@
       document.getElementById('lyrics-offset-reset')?.addEventListener('click', () => {
         this.lyricsOffset = 0;
         this.updateLyricsOffsetUI();
+      });
+
+      document.getElementById('lyrics-offset-auto')?.addEventListener('click', () => {
+        if (this.lyrics.length === 0) {
+          this.showToast('歌詞還沒讀入，稍後再試');
+          return;
+        }
+        const lastLyric = this.lyrics.filter(l => l.time > 0).pop();
+        if (!lastLyric || !this.audio.duration) {
+          this.showToast('無法計算同步偏移');
+          return;
+        }
+        const offset = Math.round((this.audio.duration - lastLyric.time) * 10) / 10;
+        this.lyricsOffset = offset;
+        this.updateLyricsOffsetUI();
+        this.showToast('🔧 已同步歌詞（偏移 ' + offset + 's）');
       });
 
       this.audio.addEventListener('timeupdate', () => {
@@ -306,6 +324,7 @@
           '<span class="track-album">' + (track.album || '--') + '</span>' +
           '<span class="track-duration">' + (track.duration || '--:--') + '</span>' +
           '<div class="track-actions">' +
+            (track._isCustom && (typeof window._isAdmin === 'function' ? window._isAdmin() : false) ? '<button class="action-btn delete-btn" data-idx="' + i + '" title="刪除歌曲">✕</button>' : '') +
             '<button class="action-btn mv-btn" data-idx="' + i + '" title="觀看 MV">' +
               '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>' +
             '</button>' +
@@ -351,6 +370,35 @@
       a.download = track.name + '.mp3';
       a.click();
       this.showToast('開始下載：' + this.cleanTrackName(track.name));
+    }
+
+    async deleteTrack(idx) {
+      const track = this.tracks[idx];
+      if (!track || !track._isCustom) return;
+      const id = track._dbId;
+      if (typeof window._isAdmin === 'function' && !window._isAdmin()) {
+        // 觸發 admin login dialog（Ctrl+Shift+L 會觸發同一個）
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'L', ctrlKey: true, shiftKey: true, bubbles: true }));
+        this.showToast('請先登入管理員（Ctrl+Shift+L）');
+        return;
+      }
+      if (!confirm('確定刪除「' + (track.name || '') + '」？')) return;
+      try {
+        const res = await fetch('/api/music-upload?action=delete&id=' + encodeURIComponent(id), {
+          method: 'POST',
+          headers: { 'x-upload-password': '123' },
+        });
+        if (!res.ok) throw new Error(await res.text());
+        // 從 player 清單移除
+        this.tracks.splice(idx, 1);
+        this.filteredTracks = [...this.tracks];
+        if (this.currentIndex >= this.tracks.length) this.currentIndex = Math.max(0, this.tracks.length - 1);
+        this.renderTrackList();
+        this.showToast('已刪除：' + this.cleanTrackName(track.name));
+      } catch (err) {
+        console.error('[MusicPlayer] delete failed', err);
+        this.showToast('刪除失敗');
+      }
     }
 
     toggleRepost(idx) {
@@ -491,11 +539,41 @@
         this.lyrics = this.parseLyrics(text);
         this.renderLyrics();
         this.lyricsCount.textContent = this.lyrics.length + ' 句';
+        // 自動同步：LRClib 的時間戳是對 LRClib 歌曲長度，
+        // 需要算 offset 才能對到實際音檔長度
+        this._autoSyncLyricsOffset();
       } catch (err) {
         console.error('Failed to load lyrics:', err);
         this.lyrics = [];
         this.renderLyrics();
         this.lyricsCount.textContent = '載入失敗';
+      }
+    }
+
+    // 自動算 offset = actual_audio_duration - last_lrc_timestamp
+    // 只在還沒手動調過 offset 時自動套用（lyricsOffset 仍是 0）
+    _autoSyncLyricsOffset() {
+      const dur = this.audio.duration;
+      if (!dur || !Number.isFinite(dur)) {
+        // duration 還沒好，等 loadedmetadata 再試
+        const once = () => {
+          this._autoSyncLyricsOffset();
+          this.audio.removeEventListener('loadedmetadata', once);
+        };
+        this.audio.addEventListener('loadedmetadata', once);
+        return;
+      }
+      const timed = this.lyrics.filter(l => l.time > 0);
+      if (!timed.length) return;
+      const lastTime = timed[timed.length - 1].time;
+      // 已經調過 offset 了（lyricsOffset != 0 且不是 localStorage殘留）
+      // → 不覆蓋，只在 offset 仍是 0 時自動算
+      if (Math.abs(this.lyricsOffset) > 0.1) return;
+      const offset = Math.round((dur - lastTime) * 10) / 10;
+      if (Math.abs(offset) > 0.1 && Number.isFinite(offset)) {
+        this.lyricsOffset = offset;
+        this.updateLyricsOffsetUI();
+        console.log('[MusicPlayer] Auto-synced lyrics offset:', offset + 's', '(dur=' + dur + ', last=' + lastTime + ')');
       }
     }
 

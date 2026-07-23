@@ -55,6 +55,7 @@ try {
     </div>
 
     <div class="nav-actions">
+      <button class="nav-btn" id="admin-btn" title="管理（刪除上傳歌曲）">🔒</button>
       <button class="nav-btn nav-btn-primary" id="upload-btn">📤 上傳歌曲</button>
     </div>
   </nav>
@@ -132,6 +133,7 @@ try {
           <span class="lyrics-offset-value" id="lyrics-offset-value">0s</span>
           <button class="lyrics-offset-btn" id="lyrics-offset-plus" title="歌詞延後 0.5s">+</button>
           <button class="lyrics-offset-btn" id="lyrics-offset-reset" title="重置偏移" style="font-size: 0.7rem;">↺</button>
+          <button class="lyrics-offset-btn" id="lyrics-offset-auto" title="自動對齊歌詞時間" style="font-size: 0.65rem; padding: 3px 7px;">🔧</button>
         </div>
         
         <div class="lyrics-translate-toggle">
@@ -156,9 +158,9 @@ try {
   <div class="upload-modal" id="upload-modal">
     <div class="upload-modal-content">
       <button class="upload-modal-close" id="upload-modal-close">✕</button>
-      <div class="upload-modal-header">
-        <h2>📤 上傳歌曲</h2>
-        <p>選一個 MP3 跟歌詞檔（.txt / .srt / .lrc），就能直接加到播放清單</p>
+      <div class="upload-modal-header" id="modal-header">
+        <h2 id="modal-header-title">📤 上傳歌曲</h2>
+        <p id="modal-header-desc">選一個 MP3 跟歌詞檔（.txt / .srt / .lrc），就能直接加到播放清單</p>
       </div>
 
       <!-- 密碼驗證 -->
@@ -208,6 +210,10 @@ try {
             <span class="ai-file-name" id="upload-lyrics-name"></span>
             <button class="ai-remove-file" id="upload-lyrics-remove">✕</button>
           </div>
+          <label class="upload-no-id3-label">
+            <input type="checkbox" id="upload-no-id3" checked>
+            <span>不使用 MP3 內嵌歌詞（推薦勾選，避免抓到別的歌詞）</span>
+          </label>
           <details class="upload-lyrics-hint">
             <summary>歌詞格式說明</summary>
             <div class="upload-lyrics-help">
@@ -224,6 +230,17 @@ try {
           <span class="ai-btn-text">✅ 加到播放清單</span>
           <span class="ai-btn-loading" style="display: none;">處理中...</span>
         </button>
+        <div class="upload-progress-bar-wrap" id="upload-progress-wrap" style="display: none;">
+          <div class="upload-progress-bar" id="upload-progress-bar"></div>
+          <span class="upload-progress-text" id="upload-progress-text"></span>
+        </div>
+      </div>
+
+      <!-- 管理面板（管理模式） -->
+      <div class="upload-form" id="admin-panel" style="display: none;">
+        <div class="admin-track-list" id="admin-track-list">
+          <p style="color: var(--text-tertiary); text-align: center; padding: 24px;">載入中...</p>
+        </div>
       </div>
     </div>
   </div>
@@ -396,6 +413,85 @@ try {
 </Base>
 
 <style>
+/* Admin button */
+#admin-btn {
+  background: var(--bg-elevated, #2a2a2a);
+  border: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
+  color: var(--text-tertiary, #999);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+#admin-btn:hover {
+  background: var(--bg-hover, rgba(255,85,0,0.1));
+  color: var(--accent, #ff5500);
+  border-color: var(--accent, #ff5500);
+}
+#admin-btn.logged-in {
+  color: var(--accent, #ff5500);
+  border-color: var(--accent, #ff5500);
+  background: rgba(255,85,0,0.08);
+}
+
+/* Admin panel */
+.admin-track-list {
+  max-height: 420px;
+  overflow-y: auto;
+}
+.admin-track-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--bg-elevated, #2a2a2a);
+  margin-bottom: 8px;
+  transition: background 0.2s;
+}
+.admin-track-item:hover {
+  background: var(--bg-hover, rgba(255,85,0,0.08));
+}
+.admin-track-info {
+  flex: 1;
+  min-width: 0;
+}
+.admin-track-name {
+  color: var(--text-primary, #fff);
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-track-artist {
+  color: var(--text-tertiary, #999);
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+.admin-delete-btn {
+  background: none;
+  border: 1px solid rgba(239,68,68,0.4);
+  color: #ef4444;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.admin-delete-btn:hover {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+}
+.admin-no-tracks {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-tertiary, #999);
+  font-size: 0.88rem;
+}
+
 /* Upload Modal Styles */
 .upload-modal {
   position: fixed;
@@ -457,6 +553,31 @@ try {
   margin-bottom: 0;
 }
 .upload-gate { text-align: center; }
+
+.upload-progress-bar-wrap {
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 6px;
+  margin-top: 12px;
+  overflow: hidden;
+  position: relative;
+}
+.upload-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ff5500 0%, #ff8533 100%);
+  border-radius: 6px;
+  transition: width 0.25s ease;
+  width: 0%;
+  box-shadow: 0 0 8px rgba(255,85,0,0.5);
+}
+.upload-progress-text {
+  display: block;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--accent, #ff5500);
+  margin-top: 6px;
+  font-weight: 600;
+}
 
 .ai-dropzone {
   border: 2px dashed var(--border-secondary, rgba(255,255,255,0.12));
