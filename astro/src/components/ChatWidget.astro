@@ -422,7 +422,7 @@ const hidePaths = hideOnPaths.split(',').map(s => s.trim()).filter(Boolean);
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
       });
-      console.log('[ChatWidget] fetch done, status:', resp.status, 'body=', !!resp.body);
+      console.log('[ChatWidget] fetch done, status:', resp.status, 'body=', !!resp.body, 'type=', resp.headers.get('content-type'));
       if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
       const reader = resp.body.getReader();
       const dec = new TextDecoder();
@@ -439,6 +439,7 @@ const hidePaths = hideOnPaths.split(',').map(s => s.trim()).filter(Boolean);
         const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
         let data = {};
         try { data = JSON.parse(dataLine.replace(/^data:\s*/, '')); } catch {}
+        console.log('[ChatWidget] SSE evt=' + evt + ' data=' + JSON.stringify(data));
         if (evt === 'token' && data.content) {
           if (typing.parentNode) typing.parentNode.removeChild(typing);
           if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
@@ -468,6 +469,7 @@ const hidePaths = hideOnPaths.split(',').map(s => s.trim()).filter(Boolean);
           // Stream exhausted — process any trailing data still in buf (no \n\n needed)
           buf = buf.trim();
           if (buf) processBuf();
+          console.log('[ChatWidget] stream done, botText=' + JSON.stringify(botText) + ' tools=' + tools.length + ' ragSources=' + ragSources.length);
           break;
         }
         buf += dec.decode(value, { stream: true });
