@@ -118,3 +118,4 @@ Thumbs.db
 .vercel
 .env*
 .vercel/output/
+.trash-nested-git/
