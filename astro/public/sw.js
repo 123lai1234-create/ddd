@@ -1,6 +1,6 @@
 // Service worker for donttalk portfolio.
 // Bump CACHE_NAME to force clients to drop stale HTML/JS after a redeploy.
-const BUILD_TAG = '2026-07-22-v6';
+const BUILD_TAG = '2026-07-23-v4';
 const CACHE_NAME = `portfolio-${BUILD_TAG}`;
 const STATIC_ASSETS = [
   '/manifest.json',
