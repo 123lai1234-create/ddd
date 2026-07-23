@@ -96,6 +96,18 @@ testem.log
 .DS_Store
 Thumbs.db
 
+# Archived legacy projects (Phase 2 cleanup 2026-07-23)
+/api.disabled/
+/api.disabled/**
+/dontalk-redirect/
+/donttalk-redirect/**
+
+# chat-bot is a separate sub-repo with its own .git/ (carried over from clone).
+# Its files are NOT part of ddd. Ignore the whole tree to prevent accidental
+# commits leaking donttalk-scraper source into this repo.
+/chat-bot/
+/chat-bot/**
+
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
