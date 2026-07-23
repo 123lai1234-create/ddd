@@ -1,0 +1,304 @@
+name: Deploy Platforms
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  RAILWAY_PROJECT_ID: 098c670f-4a87-475e-b934-ca8b7dc74f4e
+  RAILWAY_ENVIRONMENT_ID: ea437d7d-5e2d-4a84-92e5-afd344389170
+  RAILWAY_SERVICE_ID: 29c6f948-a536-4f11-a317-dad1293a66ac
+  NETLIFY_SITE_ID: 65af318c-45c6-413e-837b-685a4fc01444
+  CLOUDFLARE_ACCOUNT_ID: 3c09721dfbc2ab9071ccd45f257813af
+  CLOUDFLARE_PAGES_PROJECT: donttalk
+  VERCEL_ORG_ID: team_a3kKe1wDrxqQfuXTUnw4SUxw
+  VERCEL_PROJECT_ID: prj_Knbnl6axKI8AQJApFYlIx2sQ4aXV
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check changed paths
+        id: filter
+        run: |
+          git fetch origin main --depth=2 2>/dev/null || true
+          changed=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "all")
+          echo "backend=false" >> "$GITHUB_OUTPUT"
+          echo "frontend=false" >> "$GITHUB_OUTPUT"
+          echo "$changed" | grep -qE '^(site_api/|Dockerfile|src/)' && echo "backend=true" >> "$GITHUB_OUTPUT" || true
+          echo "$changed" | grep -qE '^(astro/|frontend/)' && echo "frontend=true" >> "$GITHUB_OUTPUT" || true
+          # If detection failed (initial commit etc.), run everything
+          [ "$changed" = "all" ] && echo "backend=true" >> "$GITHUB_OUTPUT" && echo "frontend=true" >> "$GITHUB_OUTPUT" || true
+
+  lint-and-test:
+    name: Lint & Tests
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv pip install -r site_api/requirements.txt pytest ruff httpx requests
+
+      - name: Lint with ruff
+        run: uv run ruff check site_api/ src/ tests/ --output-format=github
+
+      - name: Run tests
+        run: uv run pytest tests/ -q --tb=short
+
+  deploy-railway:
+    name: Deploy Railway API
+    needs: [lint-and-test, changes]
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy backend to Railway
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: |
+          if [ -z "$RAILWAY_API_TOKEN" ]; then
+            echo "::warning::RAILWAY_API_TOKEN is not set, skipping Railway deploy"
+            exit 0
+          fi
+          npx --yes @railway/cli up --ci \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID"
+
+      - name: Sync database environment variables
+        continue-on-error: true
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          DB_NEON: ${{ secrets.DATABASE_URL_NEON }}
+          DB_SUPABASE: ${{ secrets.DATABASE_URL_SUPABASE }}
+          DB_COCKROACH: ${{ secrets.DATABASE_URL_COCKROACH }}
+          DB_AIVEN: ${{ secrets.DATABASE_URL_AIVEN }}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          if [ -z "$RAILWAY_API_TOKEN" ]; then
+            echo "::warning::RAILWAY_API_TOKEN not set, skipping variable sync"
+            exit 0
+          fi
+          npx --yes @railway/cli link \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID"
+          vars=""
+          [ -n "$DB_NEON" ]      && vars="$vars DATABASE_URL_NEON=$DB_NEON"
+          [ -n "$DB_SUPABASE" ]  && vars="$vars DATABASE_URL_SUPABASE=$DB_SUPABASE"
+          [ -n "$DB_COCKROACH" ] && vars="$vars DATABASE_URL_COCKROACH=$DB_COCKROACH"
+          [ -n "$DB_AIVEN" ]     && vars="$vars DATABASE_URL_AIVEN=$DB_AIVEN"
+          [ -n "$SYNC_SECRET" ]  && vars="$vars SYNC_SECRET=$SYNC_SECRET"
+          [ -n "$GEMINI_API_KEY" ]    && vars="$vars GEMINI_API_KEY=$GEMINI_API_KEY"
+          [ -n "$DEEPSEEK_API_KEY" ]  && vars="$vars DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY"
+          [ -n "$OPENROUTER_API_KEY" ] && vars="$vars OPENROUTER_API_KEY=$OPENROUTER_API_KEY"
+          if [ -n "$vars" ]; then
+            npx --yes @railway/cli variables set $vars --skip-deploys
+            echo "Database and sync variables synced to Railway"
+          else
+            echo "::warning::No database or sync secrets configured in GitHub"
+          fi
+
+      - name: Resolve Railway public domain
+        id: railway_domain
+        continue-on-error: true
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: |
+          if [ -z "$RAILWAY_API_TOKEN" ]; then
+            echo "domain=https://donttalk-api-production.up.railway.app" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          response=$(curl -sS https://backboard.railway.com/graphql/v2 \
+            -H "Authorization: Bearer $RAILWAY_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"query":"query($projectId:String!,$environmentId:String!,$serviceId:String!){ domains(projectId:$projectId, environmentId:$environmentId, serviceId:$serviceId){ serviceDomains { domain } } }","variables":{"projectId":"'"$RAILWAY_PROJECT_ID"'","environmentId":"'"$RAILWAY_ENVIRONMENT_ID"'","serviceId":"'"$RAILWAY_SERVICE_ID"'"}}')
+          railway_domain=$(echo "$response" | node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync(0,'utf8')); const domain=data?.data?.domains?.serviceDomains?.[0]?.domain; process.stdout.write(domain ? 'https://' + domain : 'https://donttalk-api-production.up.railway.app');")
+          echo "domain=$railway_domain" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for Railway health
+        continue-on-error: true
+        env:
+          API_BASE_URL: ${{ steps.railway_domain.outputs.domain }}
+        run: |
+          base_url="${API_BASE_URL:-https://donttalk-api-production.up.railway.app}"
+          for attempt in 1 2 3; do
+            if curl -fsS "$base_url/healthz" >/dev/null; then
+              echo "Railway health check passed at $base_url"
+              exit 0
+            fi
+            echo "Waiting for Railway health check ($attempt/3) ..."
+            sleep 10
+          done
+          echo "::warning::Railway health did not return 200 before timeout"
+
+      - name: Seed OpenTargets evidence on Railway
+        continue-on-error: true
+        env:
+          API_BASE_URL: ${{ steps.railway_domain.outputs.domain }}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+        run: |
+          if [ -z "$SYNC_SECRET" ]; then
+            echo "::warning::SYNC_SECRET is not set, skipping live OpenTargets seed"
+            exit 0
+          fi
+          base_url="${API_BASE_URL:-https://donttalk-api-production.up.railway.app}"
+          curl -fsS "$base_url/api/opentargets/sync" \
+            -H "Content-Type: application/json" \
+            -H "X-Sync-Secret: $SYNC_SECRET" \
+            -d '{"gene_symbol":"TP53","limit":3}'
+
+      - name: Verify live OpenTargets summary on Railway
+        continue-on-error: true
+        env:
+          API_BASE_URL: ${{ steps.railway_domain.outputs.domain }}
+        run: |
+          base_url="${API_BASE_URL:-https://donttalk-api-production.up.railway.app}"
+          curl -fsS "$base_url/api/opentargets/summary"
+
+  build-frontend:
+    name: Build Frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache node_modules
+        id: cache-node
+        uses: actions/cache@v4
+        with:
+          path: astro/node_modules
+          key: node-${{ hashFiles('astro/package-lock.json') }}
+
+      - name: Install (cache miss only)
+        if: steps.cache-node.outputs.cache-hit != 'true'
+        run: cd astro && npm ci
+
+      - name: Build
+        run: cd astro && npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: astro-dist
+          path: astro/dist/
+          retention-days: 1
+
+  deploy-vercel:
+    name: Deploy Vercel Frontend
+    needs: [lint-and-test, build-frontend]
+    if: always() && needs.build-frontend.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: astro-dist
+          path: astro/dist/
+
+      - name: Prepare Vercel output directory
+        run: |
+          mkdir -p .vercel/output/static
+          cp -r astro/dist/. .vercel/output/static/
+          node ./scripts/write_vercel_output_config.mjs
+
+      - name: Check Vercel credentials
+        id: vercel_preflight
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::VERCEL_TOKEN is not set, skipping Vercel deploy"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy frontend to Vercel
+        if: steps.vercel_preflight.outputs.enabled == 'true'
+        continue-on-error: true
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx --yes vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+
+      - name: Warn about Vercel permissions
+        if: steps.vercel_preflight.outputs.enabled == 'true' && failure()
+        run: echo "::warning::Vercel deploy failed. Verify VERCEL_TOKEN can access project $VERCEL_PROJECT_ID in org $VERCEL_ORG_ID."
+
+  deploy-netlify:
+    name: Deploy Netlify Frontend
+    needs: [lint-and-test, build-frontend]
+    if: always() && needs.build-frontend.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: astro-dist
+          path: astro/dist/
+
+      - name: Deploy frontend to Netlify
+        id: netlify_deploy
+        continue-on-error: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
+            echo "::warning::NETLIFY_AUTH_TOKEN is not set, skipping Netlify deploy"
+            exit 0
+          fi
+          npx --yes netlify-cli deploy \
+            --dir=astro/dist \
+            --prod \
+            --site="$NETLIFY_SITE_ID" \
+            --auth="$NETLIFY_AUTH_TOKEN"
+
+      - name: Warn about Netlify permissions
+        if: steps.netlify_deploy.outcome == 'failure'
+        run: |
+          echo "::warning::Netlify deploy failed. Verify NETLIFY_AUTH_TOKEN belongs to the Netlify user or team that owns site $NETLIFY_SITE_ID and can create production deploys for that site. A 403 Forbidden usually means the token cannot access the target site."
+
+# Cloudflare Pages is handled by the Cloudflare GitHub App (PR-merge flow),
+# not this workflow — keeping CLOUDFLARE_* env only for reference.
