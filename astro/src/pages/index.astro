@@ -7,8 +7,8 @@ import Base from '../layouts/Base.astro';
     ogTag="Portfolio"
     bodyPage="index"
     schemaType="ProfilePage"
-    pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css", "/styles/chatbot.css"]}
-    pageScripts={["https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js", "/scripts/chatbot.js"]}
+    pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css"]}
+    pageScripts={["https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js"]}
     noImmersive
 >
     <div data-site-nav></div>
@@ -252,51 +252,4 @@ import Base from '../layouts/Base.astro';
     <div data-site-footer></div>
     <button class="scroll-top" aria-label="返回頂部">↑</button>
     <div id="tsparticles"></div>
-
-    <!-- AI 助手人偶按鈕 -->
-    <button id="chatbot-toggle" aria-label="AI 助手" style="position:fixed;bottom:90px;right:24px;z-index:500;background:transparent;border:none;border-radius:50%;width:70px;height:70px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,filter .2s;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));overflow:visible"
-      onmouseover="this.style.transform='scale(1.15)';this.style.filter='drop-shadow(0 8px 20px rgba(88,215,255,.4))'"
-      onmouseout="this.style.transform='scale(1)';this.style.filter='drop-shadow(0 4px 12px rgba(0,0,0,.4))'">
-      <img src="https://minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com/ccv2%2F2026-05-22%2FMiniMax-M2.7%2F2051828084830642340%2F18cdb762f4fb37677829d88cc42a72cf5921a1222c8e165ca47d835d7fb74b6f..png?Expires=1779508593&OSSAccessKeyId=LTAI5tGLnRTkBjLuYPjNcKQ8&Signature=x06WLj8eeG5RsBtxEU6nN10yUd4%3D" 
-           alt="AI 助手" 
-           style="width:100%;height:100%;object-fit:contain;border-radius:50%;animation:avatar-bounce 3s ease-in-out infinite"
-           id="chatbot-avatar" />
-    </button>
-    <style>
-      @keyframes avatar-bounce {
-        0%, 100% { transform: translateY(0) rotate(0deg); }
-        25% { transform: translateY(-6px) rotate(-3deg); }
-        50% { transform: translateY(0) rotate(0deg); }
-        75% { transform: translateY(-3px) rotate(3deg); }
-      }
-      @keyframes avatar-nod {
-        0%, 100% { transform: translateY(0) rotate(0deg); }
-        50% { transform: translateY(-4px) rotate(-5deg); }
-      }
-      #chatbot-toggle:hover #chatbot-avatar {
-        animation: avatar-nod 0.4s ease-in-out infinite;
-      }
-      #chatbot-toggle:active #chatbot-avatar {
-        animation: avatar-jump 0.3s ease-out;
-      }
-      @keyframes avatar-jump {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.2) translateY(-10px); }
-        100% { transform: scale(1); }
-      }
-    </style>
-    <div id="chatbot-panel">
-        <div class="chatbot-header">
-            <h4>AI 助手</h4>
-            <div class="chatbot-header-actions">
-                <button id="chatbot-clear" class="chatbot-icon-btn" title="清除對話" aria-label="清除對話">↻</button>
-                <button id="chatbot-close" class="chatbot-icon-btn" aria-label="關閉">✕</button>
-            </div>
-        </div>
-        <div id="chatbot-messages"></div>
-        <div class="chatbot-input-row">
-            <input id="chatbot-input" type="text" placeholder="講講蛋白質？基因？韌體？" autocomplete="off" />
-            <button id="chatbot-send">送出</button>
-        </div>
-    </div>
 </Base>

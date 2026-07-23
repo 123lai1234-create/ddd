@@ -133,6 +133,15 @@ const personSchema = {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script is:inline>document.documentElement.classList.add('js-reveal');</script>
+    <!-- DEPLOY_MARKER: 2026-07-22T12:25:00-chat-render-v4 -->
+    <script is:inline>
+      // Set Chat Bot API URL before any inline scripts run.
+      // Dev (localhost) → FastAPI on port 8765
+      // Prod → Render directly (Vercel proxy buffers SSE → broken streaming)
+      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8765/chat'
+        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
+    </script>
     <!--
       Native IntersectionObserver fallback for `.reveal` fade-in.
       Runs in addition to nav.js's local observer, so the page works
@@ -301,14 +310,5 @@ const personSchema = {
 
     <!-- ── AI Chat Widget (floating, bottom-left, hides on media pages) ── -->
     <ChatWidget title="AI 助手" subtitle="問我任何關於這個網站的問題" />
-    <script is:inline>
-      // DEPLOY_MARKER: 2026-07-21T16:50:00-chat-render-v3
-      // Resolve Chat Widget API URL.
-      // In dev (localhost) → http://localhost:8765/chat (FastAPI backend)
-      // In prod → Render directly (Vercel proxy buffers SSE → broken streaming)
-      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-        ? 'http://localhost:8765/chat'
-        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
-    </script>
 </body>
 </html>
