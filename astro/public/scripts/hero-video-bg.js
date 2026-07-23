@@ -6,14 +6,14 @@
 (function () {
     // 影片列表（從 D:\project\videos 目錄）
     const VIDEOS = [
-        '/videos/5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.webm',
-        '/videos/6b95a3b8-no-watermark_watermarked.webm',
-        '/videos/179f1b00-2727-47ec-81d3-591d8405c762_watermarked.webm',
-        '/videos/314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.webm',
-        '/videos/a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.webm',
-        '/videos/bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.webm',
-        '/videos/ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.webm',
-        '/videos/cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.webm'
+        '/videos/5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.mp4',
+        '/videos/6b95a3b8-no-watermark_watermarked.mp4',
+        '/videos/179f1b00-2727-47ec-81d3-591d8405c762_watermarked.mp4',
+        '/videos/314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.mp4',
+        '/videos/a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.mp4',
+        '/videos/bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.mp4',
+        '/videos/ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.mp4',
+        '/videos/cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.mp4'
     ];
 
     // 切換間隔（毫秒）- 15秒切換一次
