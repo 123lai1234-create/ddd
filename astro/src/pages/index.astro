@@ -162,67 +162,31 @@ import Base from '../layouts/Base.astro';
 
     <!-- ════════ GitHub Live Stats ════════ -->
     <section id="github-stats" style="max-width:800px;margin:0 auto;padding:40px 24px">
-        <div class="section-label">Live · GitHub</div>
+        <div class="section-label">GitHub</div>
         <h2 class="section-title">開源活動</h2>
         <div id="gh-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-top:24px">
-            <div class="gh-stat-card" id="gh-repos"><div class="gh-val">—</div><div class="gh-lbl">Public Repos</div></div>
-            <div class="gh-stat-card" id="gh-stars"><div class="gh-val">—</div><div class="gh-lbl">Total Stars</div></div>
-            <div class="gh-stat-card" id="gh-followers"><div class="gh-val">—</div><div class="gh-lbl">Followers</div></div>
-            <div class="gh-stat-card" id="gh-updated"><div class="gh-val" style="font-size:.85rem">—</div><div class="gh-lbl">最近推送</div></div>
+            <a class="gh-stat-card" href="https://github.com/123lai1234-create?tab=repositories" target="_blank" rel="noreferrer">
+                <div class="gh-val">Repositories</div><div class="gh-lbl">查看公開專案</div>
+            </a>
+            <a class="gh-stat-card" href="https://github.com/123lai1234-create" target="_blank" rel="noreferrer">
+                <div class="gh-val">GitHub</div><div class="gh-lbl">前往個人頁面</div>
+            </a>
         </div>
-        <div id="gh-recent" style="margin-top:20px;display:flex;flex-direction:column;gap:8px"></div>
     </section>
     <style>
     .gh-stat-card {
+        display: block;
         background: var(--surface, rgba(255,255,255,.04));
         border: 1px solid var(--border, rgba(255,255,255,.08));
         border-radius: 10px; padding: 18px 20px; text-align: center;
+        text-decoration: none;
+        color: inherit;
+        transition: border-color .15s, transform .15s;
     }
-    .gh-val { font-size: 1.6rem; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+    .gh-stat-card:hover { border-color: var(--accent, #58d7ff); transform: translateY(-2px); }
+    .gh-val { font-size: 1.25rem; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
     .gh-lbl { font-size: .75rem; color: var(--muted); margin-top: 4px; }
-    .gh-repo-row {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 10px 14px;
-        background: var(--surface, rgba(255,255,255,.03));
-        border: 1px solid var(--border, rgba(255,255,255,.06));
-        border-radius: 8px; text-decoration: none; color: var(--text);
-        transition: border-color .15s;
-    }
-    .gh-repo-row:hover { border-color: var(--accent, #58d7ff); }
-    .gh-repo-name { font-size: .9rem; font-weight: 500; }
-    .gh-repo-meta { font-size: .78rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
     </style>
-    <script>
-    (async () => {
-        const base = 'https://api.github.com';
-        const user = 'jtlai0921';
-        try {
-            const [uRes, rRes] = await Promise.all([
-                fetch(`${base}/users/${user}`),
-                fetch(`${base}/users/${user}/repos?sort=pushed&per_page=5&type=owner`),
-            ]);
-            if (!uRes.ok || !rRes.ok) return;
-            const [u, repos] = await Promise.all([uRes.json(), rRes.json()]);
-            document.querySelector('#gh-repos .gh-val').textContent = u.public_repos ?? '—';
-            document.querySelector('#gh-followers .gh-val').textContent = u.followers ?? '—';
-            const stars = repos.reduce((s, r) => s + (r.stargazers_count || 0), 0);
-            document.querySelector('#gh-stars .gh-val').textContent = stars;
-            const latest = repos[0]?.pushed_at ? new Date(repos[0].pushed_at).toLocaleDateString('zh-TW') : '—';
-            document.querySelector('#gh-updated .gh-val').textContent = latest;
-            const container = document.getElementById('gh-recent');
-            repos.slice(0, 4).forEach(r => {
-                const a = document.createElement('a');
-                a.href = r.html_url; a.target = '_blank'; a.rel = 'noreferrer';
-                a.className = 'gh-repo-row';
-                a.innerHTML = `
-                    <span class="gh-repo-name">${r.name}</span>
-                    <span class="gh-repo-meta">★ ${r.stargazers_count} · ${r.language || '—'} · ${new Date(r.pushed_at).toLocaleDateString('zh-TW')}</span>
-                `;
-                container.appendChild(a);
-            });
-        } catch(e) {}
-    })();
-    </script>
 
     <hr class="divider" />
 
