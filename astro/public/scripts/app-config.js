@@ -5,24 +5,33 @@
     const normalizeList = (values) => Array.isArray(values)
         ? values.map(normalizeUrl).filter(Boolean)
         : [];
+    const DEAD_HOST_PATTERNS = [
+        'fly.dev',
+        'onrender.com',
+        'herokuapp.com',
+        'up.railway.app',
+        'donttalk-api.vercel.app',
+        'railway.app',
+    ];
+    const isDeadApiBase = (value) => DEAD_HOST_PATTERNS.some((dead) => value.includes(dead));
 
     const rawInjectedApiBase = '__API_BASE_URL__';
-    const injectedApiBase = rawInjectedApiBase === '__API_BASE_URL__'
+    const injectedApiBaseCandidate = rawInjectedApiBase === '__API_BASE_URL__'
         ? ''
         : normalizeUrl(rawInjectedApiBase);
-    const configuredApiBase = typeof existingConfig.API_BASE_URL === 'string'
+    const injectedApiBase = isDeadApiBase(injectedApiBaseCandidate) ? '' : injectedApiBaseCandidate;
+    const configuredApiBaseCandidate = typeof existingConfig.API_BASE_URL === 'string'
         ? normalizeUrl(existingConfig.API_BASE_URL)
         : '';
+    const configuredApiBase = isDeadApiBase(configuredApiBaseCandidate) ? '' : configuredApiBaseCandidate;
     const host = window.location.hostname;
-    const defaultPortfolioServiceNames = ['donttalk'];
-    const defaultApiServiceNames = ['donttalk-api'];
-    // Canonical backend (Railway). fly.dev / netlify-app variants are kept as
-    // graceful fallbacks if they ever come back online, but probing them costs
-    // a DNS lookup + timeout per candidate, so we short-circuit on the first
-    // resolvable host via the resolveApiBase loop below.
-    const defaultApiCandidates = [
-        'https://donttalk-api-production.up.railway.app',
-    ];
+    const isLocalhost = ['localhost', '127.0.0.1'].includes(host);
+    // The portfolio API deployment is currently offline. Keep production
+    // discovery empty so every page fails closed instead of probing stale
+    // Vercel/Railway hosts and filling DevTools with 404/CORS errors.
+    const defaultApiCandidates = isLocalhost
+        ? [`http://${host}:8000`]
+        : [];
 
     // ── Stale-cache scrub ────────────────────────────────────────────────────
     // Older versions of this file (and the v1 service-worker-served pages)
@@ -52,22 +61,17 @@
     }
 
     // Drop any dead hosts that older runs may have pushed into APP_CONFIG.
-    const DEAD_HOST_PATTERNS = ['fly.dev', 'onrender.com', 'herokuapp.com'];
     const liveApiCandidatesFromExisting = normalizeList(existingConfig.API_CANDIDATES)
-        .filter(c => !DEAD_HOST_PATTERNS.some(dead => c.includes(dead)));
+        .filter((candidate) => !isDeadApiBase(candidate));
+    const existingDefaultApiBase = normalizeUrl(existingConfig.DEFAULT_API_BASE_URL);
+    const liveDefaultApiBase = isDeadApiBase(existingDefaultApiBase) ? '' : existingDefaultApiBase;
 
-    const resolvedPortfolioServiceNames = normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES).length
-        ? normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES)
-        : defaultPortfolioServiceNames;
-    const resolvedApiServiceNames = normalizeList(existingConfig.API_SERVICE_NAMES).length
-        ? normalizeList(existingConfig.API_SERVICE_NAMES)
-        : defaultApiServiceNames;
+    const resolvedPortfolioServiceNames = normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES);
+    const resolvedApiServiceNames = normalizeList(existingConfig.API_SERVICE_NAMES);
     const resolvedApiCandidates = liveApiCandidatesFromExisting.length
         ? liveApiCandidatesFromExisting
         : defaultApiCandidates;
-    const fallbackApiBase = ['localhost', '127.0.0.1'].includes(host)
-        ? `http://${host}:8000`
-        : (resolvedApiCandidates[resolvedApiCandidates.length - 1] || '');
+    const fallbackApiBase = resolvedApiCandidates[resolvedApiCandidates.length - 1] || '';
     const resolutionCache = new Map();
 
     const pushCandidate = (candidates, value) => {
@@ -81,9 +85,9 @@
         const candidates = [];
         pushCandidate(candidates, configuredApiBase);
         pushCandidate(candidates, injectedApiBase);
-        pushCandidate(candidates, existingConfig.DEFAULT_API_BASE_URL);
+        pushCandidate(candidates, liveDefaultApiBase);
 
-        if (options.includeCurrentOrigin !== false) {
+        if (options.includeCurrentOrigin !== false && (isLocalhost || configuredApiBase || injectedApiBase)) {
             const currentOrigin = normalizeUrl(window.location.origin);
             pushCandidate(candidates, currentOrigin);
             for (const portfolioServiceName of resolvedPortfolioServiceNames) {
