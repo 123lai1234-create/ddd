@@ -6,12 +6,19 @@ services:
     dockerfilePath: ./Dockerfile
     healthCheckPath: /healthz
     envVars:
+      # 2026-07-27 從 fe8.cn 切到 MiniMax 直連 — 見 config.py 與 memory
+      - key: MINIMAX_API_KEY
+        sync: false
+      - key: MINIMAX_BASE_URL
+        value: https://api.minimaxi.com/v1
+      - key: MINIMAX_MODEL
+        value: MiniMax-M2
+      # Embedding 仍走 OpenAI 直接（MiniMax 沒公開 embedding endpoint）
+      # 沒設也不會 crash：RAG retrieve 會 fail → agent 走 KB fallback
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_BASE_URL
-        value: https://api.fe8.cn/v1
-      - key: OPENAI_MODEL
-        value: gpt-4o-mini
+        value: https://api.openai.com/v1
       - key: EMBEDDING_MODEL
         value: text-embedding-3-small
       - key: SITE_URL

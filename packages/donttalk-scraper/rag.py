@@ -57,12 +57,12 @@ def _get_collection():
 
 
 async def embed_query(q: str) -> list[float]:
-    if not config.OPENAI_API_KEY:
-        raise RuntimeError("OPENAI_API_KEY not set")
+    if not config.EMBEDDING_API_KEY:
+        raise RuntimeError("EMBEDDING_API_KEY (or OPENAI_API_KEY) not set")
     async with httpx.AsyncClient(timeout=30.0) as c:
         r = await c.post(
-            f"{config.OPENAI_BASE_URL}/embeddings",
-            headers={"Authorization": f"Bearer {config.OPENAI_API_KEY}"},
+            f"{config.EMBEDDING_BASE_URL}/embeddings",
+            headers={"Authorization": f"Bearer {config.EMBEDDING_API_KEY}"},
             json={"model": config.EMBEDDING_MODEL, "input": q},
         )
         r.raise_for_status()
