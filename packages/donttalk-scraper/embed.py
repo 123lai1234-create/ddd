@@ -74,8 +74,8 @@ async def _embed_batch(client: httpx.AsyncClient, texts: list[str]) -> list[list
     for i in range(0, len(texts), BATCH):
         batch = texts[i : i + BATCH]
         r = await client.post(
-            f"{config.OPENAI_BASE_URL}/embeddings",
-            headers={"Authorization": f"Bearer {config.OPENAI_API_KEY}"},
+            f"{config.EMBEDDING_BASE_URL}/embeddings",
+            headers={"Authorization": f"Bearer {config.EMBEDDING_API_KEY}"},
             json={"model": config.EMBEDDING_MODEL, "input": batch},
             timeout=60.0,
         )
@@ -97,8 +97,8 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=0, help="only embed first N pages (debug)")
     args = ap.parse_args()
 
-    if not config.OPENAI_API_KEY:
-        log.error("OPENAI_API_KEY is empty; set env first")
+    if not config.EMBEDDING_API_KEY:
+        log.error("EMBEDDING_API_KEY (or OPENAI_API_KEY) is empty; set env first")
         return 2
     if not Path(args.input).exists():
         log.error("missing input: %s (run scraper first)", args.input)

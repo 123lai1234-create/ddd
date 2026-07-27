@@ -53,9 +53,9 @@ async def healthz():
     return {
         "ok": True,
         "site": config.SITE_NAME,
-        "model": config.OPENAI_MODEL,
-        "base_url": config.OPENAI_BASE_URL,
-        "has_key": bool(config.OPENAI_API_KEY),
+        "model": config.LLM_MODEL,
+        "base_url": config.LLM_BASE_URL,
+        "has_key": bool(config.LLM_API_KEY),
     }
 
 

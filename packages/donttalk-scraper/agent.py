@@ -55,8 +55,8 @@ def _to_openai_messages(history: list[dict], user_msg: str, rag_context: str = "
 
 async def stream_chat(history: list[dict], user_msg: str) -> AsyncIterator[dict]:
     """Yield SSE events. Each event is a dict that the caller serializes."""
-    if not config.OPENAI_API_KEY:
-        yield {"type": "error", "message": "OPENAI_API_KEY is not configured"}
+    if not config.LLM_API_KEY:
+        yield {"type": "error", "message": "LLM_API_KEY (MINIMAX_API_KEY or OPENAI_API_KEY) is not configured"}
         return
 
     messages = _to_openai_messages(history, user_msg)
@@ -73,7 +73,7 @@ async def stream_chat(history: list[dict], user_msg: str) -> AsyncIterator[dict]
 
     max_tool_loops = 5
     headers = {
-        "Authorization": f"Bearer {config.OPENAI_API_KEY}",
+        "Authorization": f"Bearer {config.LLM_API_KEY}",
         "Content-Type": "application/json",
     }
 
@@ -86,7 +86,7 @@ async def stream_chat(history: list[dict], user_msg: str) -> AsyncIterator[dict]
     async with httpx.AsyncClient(timeout=60.0) as client:
         for loop_idx in range(max_tool_loops + 1):
             payload = {
-                "model": config.OPENAI_MODEL,
+                "model": config.LLM_MODEL,
                 "messages": messages,
                 "stream": True,
                 "temperature": 0.5,
@@ -99,7 +99,7 @@ async def stream_chat(history: list[dict], user_msg: str) -> AsyncIterator[dict]
             try:
                 async with client.stream(
                     "POST",
-                    f"{config.OPENAI_BASE_URL}/chat/completions",
+                    f"{config.LLM_BASE_URL}/chat/completions",
                     headers=headers,
                     json=payload,
                 ) as resp:
