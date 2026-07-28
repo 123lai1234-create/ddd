@@ -474,6 +474,12 @@
         });
       }
 
+      // Custom track：每次播放時把 offset 重置為 0，讓 _autoSyncLyricsOffset() 能自動算正確的偏移
+      if (track._isCustom) {
+        this.lyricsOffset = 0;
+        this.updateLyricsOffsetUI();
+      }
+
       this.loadLyrics(track.lyrics);
     }
 

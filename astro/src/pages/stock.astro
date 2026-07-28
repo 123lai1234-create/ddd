@@ -51,12 +51,11 @@
       <span class="spacer"></span>
       <a href="/stock-app/index.html" target="_blank" rel="noopener">在新分頁開啟 ↗</a>
     </div>
-    <div class="banner-warn" id="backendBanner" hidden>
+    <div class="banner-warn" id="backendBanner">
       <span class="banner-icon">📡</span>
       <span class="banner-text">
-        <b id="backendBannerTitle">正在連線後端服務</b> — <span id="backendBannerMsg">首次探測 <code>/api/healthz</code> 失敗，系統每 5 秒自動重連。後端恢復後此訊息會自動消失。</span>
+        <b id="backendBannerTitle">後端服務已下線</b> — <span id="backendBannerMsg">個股 API 已於 2026-07-01 停用，詳見 <a href="https://donttalk.vercel.app/blog" style="color:#ffd89a;text-decoration:underline">技術文章</a>。</span>
       </span>
-      <button type="button" id="backendBannerDismiss" aria-label="關閉">✕</button>
     </div>
     <div class="frame-host">
       <iframe
@@ -75,125 +74,19 @@
     </div>
   </div>
   <script>
-    // 1. 後端健康監測 + banner 控制 + frame-bar 狀態指示
-    //    - 預設 banner 隱藏；首次探測失敗才顯示「正在連線中」
-    //    - 每 5 秒自動重試，後端恢復時自動隱藏 banner
-    //    - 探測中 frame-bar 顯示「連線中…」、dot 灰色
-    //    - 成功 dot 變綠、label 改「後端在線」
-    //    - 失敗 dot 變紅、label 改「後端離線」
-    //    - 使用者手動 ✕ 後記住 30 分鐘不再自動彈，但保留 retry 邏輯
+    // Stock backend permanently offline since 2026-07-01.
+    // Health probe removed — always show offline state.
     (function() {
-      const banner = document.getElementById('backendBanner');
-      const dismissBtn = document.getElementById('backendBannerDismiss');
       const dot = document.getElementById('healthDot');
       const label = document.getElementById('healthLabel');
-      if (!banner || !dismissBtn || !dot || !label) return;
-
-      const HEALTHZ_URL = '/api/healthz';
-      const PROBE_TIMEOUT_MS = 2500;
-      const RETRY_INTERVAL_MS = 5000;
-      const DISMISS_TTL_MS = 30 * 60 * 1000; // 30 分鐘
-
-      const DISMISS_KEY = 'stockBackendBannerDismissedAt';
-      const wasDismissed = () => {
-        try {
-          const v = localStorage.getItem(DISMISS_KEY);
-          if (!v) return false;
-          const ts = parseInt(v, 10);
-          return Number.isFinite(ts) && (Date.now() - ts) < DISMISS_TTL_MS;
-        } catch (_) { return false; }
-      };
-      const markDismissed = () => {
-        try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch (_) {}
-      };
-
-      const setState = (state) => {
-        // state: 'connecting' | 'online' | 'offline'
-        dot.classList.remove('dot-online', 'dot-offline', 'dot-connecting');
-        if (state === 'online') {
-          dot.classList.add('dot-online');
-          label.textContent = '後端在線';
-          label.classList.remove('health-offline');
-          label.classList.add('health-online');
-        } else if (state === 'offline') {
-          dot.classList.add('dot-offline');
-          label.textContent = '後端離線 · 自動重連中';
-          label.classList.remove('health-online');
-          label.classList.add('health-offline');
-        } else {
-          dot.classList.add('dot-connecting');
-          label.textContent = '連線中…';
-          label.classList.remove('health-online', 'health-offline');
-        }
-      };
-
-      const showBanner = () => {
-        if (wasDismissed()) return;
-        banner.hidden = false;
-      };
-      const hideBanner = () => { banner.hidden = true; };
-
-      dismissBtn.addEventListener('click', () => {
-        hideBanner();
-        markDismissed();
-      });
-
-      let retryTimer = null;
-      let inFlight = false;
-
-      const probe = async () => {
-        if (inFlight) return;
-        inFlight = true;
-        setState('connecting');
-        const ctl = new AbortController();
-        const timer = setTimeout(() => ctl.abort(), PROBE_TIMEOUT_MS);
-        try {
-          const r = await fetch(HEALTHZ_URL, { signal: ctl.signal, cache: 'no-store' });
-          clearTimeout(timer);
-          if (r.ok) {
-            setState('online');
-            hideBanner();
-            // 成功後慢一點再重試（純監測用，不再影響 banner）
-            if (retryTimer) clearTimeout(retryTimer);
-            retryTimer = setTimeout(probe, 30000);
-          } else {
-            setState('offline');
-            showBanner();
-            if (retryTimer) clearTimeout(retryTimer);
-            retryTimer = setTimeout(probe, RETRY_INTERVAL_MS);
-          }
-        } catch (_) {
-          clearTimeout(timer);
-          setState('offline');
-          showBanner();
-          if (retryTimer) clearTimeout(retryTimer);
-          retryTimer = setTimeout(probe, RETRY_INTERVAL_MS);
-        } finally {
-          inFlight = false;
-        }
-      };
-
-      // 啟動
-      setState('connecting');
-      probe();
-    })();
-
-    // 2. iframe 載入失敗偵測：HTML 本身沒 load 才視為後端死透
-    (function() {
-      const iframe = document.querySelector('.frame-host iframe');
-      const host = document.querySelector('.frame-host');
-      if (!iframe || !host) return;
-      let loaded = false;
-      iframe.addEventListener('load', () => { loaded = true; });
-      // 一般 5s 內會有回應，10s 沒 load 視為失敗
-      setTimeout(() => {
-        if (!loaded) {
-          const fb = document.createElement('div');
-          fb.className = 'frame-fallback';
-          fb.innerHTML = '<div><p>⚠️ 後端服務暫時無法回應（部署中或維護中）。</p><p>請稍後再試，或<a href="/stock-app/index.html" target="_blank" rel="noopener">直接開啟 ↗</a>。</p></div>';
-          host.appendChild(fb);
-        }
-      }, 10000);
+      if (dot) {
+        dot.classList.add('dot-offline');
+        dot.style.boxShadow = '0 0 6px rgba(255,95,86,0.6)';
+      }
+      if (label) {
+        label.textContent = '後端已下線';
+        label.classList.add('health-offline');
+      }
     })();
   </script>
 </body>

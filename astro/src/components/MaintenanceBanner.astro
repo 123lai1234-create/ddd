@@ -4,7 +4,7 @@
 // Two trigger modes (checked in order):
 //   1. FORCE: import.meta.env.PUBLIC_MAINTENANCE_MODE === 'true'
 //      Set in Vercel project env vars; renders immediately on every page.
-//   2. AUTO-DETECT (client): pings /api/healthz every 60s; shows after
+//   2. AUTO-DETECT (client): pings Render /healthz every 60s; shows after
 //      3 consecutive failures (so a single 5xx hiccup doesn't trigger).
 //
 // User can dismiss; dismissal is remembered in sessionStorage for 1 hour.
@@ -98,10 +98,11 @@ const { force = false } = Astro.props;
     show('forced');
   }
 
-  // ── 2. Auto-detect: ping /api/healthz ──
+  // ── 2. Auto-detect: ping Render backend /healthz ──
   let failCount = 0;
   const FAIL_THRESHOLD = 3;
   const CHECK_INTERVAL = 60_000;
+  const RENDER_HEALTHZ = 'https://donttalk-chat-bot-xc4e.onrender.com/healthz';
 
   async function checkHealth() {
     // Skip if user dismissed or force-mode already showing
@@ -109,7 +110,7 @@ const { force = false } = Astro.props;
     try {
       const ctrl = new AbortController();
       const tid = setTimeout(() => ctrl.abort(), 8000);
-      const r = await fetch('/api/healthz', { cache: 'no-store', signal: ctrl.signal });
+      const r = await fetch(RENDER_HEALTHZ, { mode: 'cors', cache: 'no-store', signal: ctrl.signal });
       clearTimeout(tid);
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const j = await r.json().catch(() => ({}));
@@ -122,7 +123,7 @@ const { force = false } = Astro.props;
       }
     } catch (e) {
       failCount++;
-      console.warn('[main-banner] /api/healthz fail #' + failCount + ':', e.message || e);
+      console.warn('[main-banner] Render /healthz fail #' + failCount + ':', e.message || e);
       if (failCount >= FAIL_THRESHOLD) show('health-fail');
     }
   }

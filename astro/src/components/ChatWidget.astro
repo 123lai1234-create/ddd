@@ -413,6 +413,10 @@ const hidePaths = hideOnPaths.split(',').map(s => s.trim()).filter(Boolean);
     // track the final bot bubble so we can append footnotes to it after finally
     let finalBubble = null;
 
+    // Timeout guard: fe8.cn may return non-streaming JSON (no SSE) → reader hangs forever
+    let gotToken = false;
+    var timeoutId;
+
     try {
       console.log('[ChatWidget] sending fetch to', resolvedApiUrl);
       // No abort timeout — Render Free tier cold-starts can take 30-60s.
@@ -427,19 +431,24 @@ const hidePaths = hideOnPaths.split(',').map(s => s.trim()).filter(Boolean);
       const reader = resp.body.getReader();
       const dec = new TextDecoder();
       let buf = '';
+      gotToken = false;
+      timeoutId = setTimeout(function() { if (!gotToken) { console.log('[ChatWidget] TIMEOUT: no token in 30s'); reader.cancel(); } }, 30000);
       // Process one complete SSE event from the front of buf
+      // Render backend uses CRLF (\r\n) line endings — must match or we'll never split events
       function processBuf() {
-        let idx = buf.indexOf('\n\n');
+        let idx = buf.indexOf('\r\n\r\n');
         if (idx === -1) return;
         const raw = buf.slice(0, idx);
-        buf = buf.slice(idx + 2);
-        const evLine = raw.split('\n').find(function(l) { return l.startsWith('event:'); });
-        const dataLine = raw.split('\n').find(function(l) { return l.startsWith('data:'); });
+        buf = buf.slice(idx + 4);
+        const evLine = raw.split('\r\n').find(function(l) { return l.startsWith('event:'); });
+        const dataLine = raw.split('\r\n').find(function(l) { return l.startsWith('data:'); });
         if (!dataLine) return;
         const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
         let data = {};
         try { data = JSON.parse(dataLine.replace(/^data:\s*/, '')); } catch {}
         if (evt === 'token' && data.content) {
+          gotToken = true;
+          clearTimeout(timeoutId);
           if (typing.parentNode) typing.parentNode.removeChild(typing);
           if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
           botText += data.content;
@@ -453,6 +462,7 @@ const hidePaths = hideOnPaths.split(',').map(s => s.trim()).filter(Boolean);
         } else if (evt === 'rag') {
           (data.chunks || []).forEach(function(c) { ragSources.push(c); });
         } else if (evt === 'done') {
+          clearTimeout(timeoutId);
           if (typing.parentNode) typing.parentNode.removeChild(typing);
           if (!activeBotBubble) activeBotBubble = renderBubble('bot', md(botText));
           finalBubble = activeBotBubble;
@@ -471,8 +481,8 @@ const hidePaths = hideOnPaths.split(',').map(s => s.trim()).filter(Boolean);
           break;
         }
         buf += dec.decode(value, { stream: true });
-        // Drain all complete events in buf
-        while (buf.indexOf('\n\n') !== -1) processBuf();
+        // Drain all complete events in buf (CRLF-separated)
+        while (buf.indexOf('\r\n\r\n') !== -1) processBuf();
       }
     } catch (err) {
       if (typing.parentNode) typing.parentNode.removeChild(typing);
@@ -482,6 +492,7 @@ const hidePaths = hideOnPaths.split(',').map(s => s.trim()).filter(Boolean);
         : '⚠️ 連線失敗：' + (err && err.message ? err.message : String(err)));
       finalBubble = null;
     } finally {
+      clearTimeout(timeoutId);
       sendBtn.disabled = false;
       activeBotBubble = null;
     }
