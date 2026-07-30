@@ -37,17 +37,16 @@ function conn() {
 export async function q(sql, params = []) {
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), 6000);
-  const dbUrl = dbUrl();
-  let r;
+  let res;
   try {
-    r = await fetch(conn() + "/sql", {
+    res = await fetch(conn() + "/sql", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "User-Agent": UA,
         "Neon-Raw-Text-Output": "true",
         "Neon-Array-Mode": "true",
-        "Neon-Connection-String": dbUrl,
+        "Neon-Connection-String": dbUrl(),
       },
       body: JSON.stringify({ queries: [{ query: sql, params }] }),
       signal: ctrl.signal,
@@ -57,12 +56,14 @@ export async function q(sql, params = []) {
     throw new Error(`Neon fetch failed: ${e.name}: ${e.message}`);
   }
   clearTimeout(tid);
-  if (!r.ok) {
+  if (!res.ok) {
     let body = "";
-    try { body = await r.text(); } catch { /* ignore */ }
-    throw new Error(`Neon HTTP ${r.status}: ${body.slice(0, 200)}`);
+    try { body = await res.text(); } catch { /* ignore */ }
+    throw new Error(`Neon HTTP ${res.status}: ${body.slice(0, 200)}`);
   }
-  const json = await r.json();
+  let json;
+  try { json = await res.json(); }
+  catch (e) { throw new Error(`Neon JSON parse failed: ${e.message}`); }
   if (json.error) throw new Error(json.error.message || "Neon error");
   const result = json.results?.[0];
   if (!result) throw new Error("Neon: empty results");
@@ -71,7 +72,7 @@ export async function q(sql, params = []) {
 
 export function operatorOk(provided) {
   const expected = process.env.STOCK_OPERATOR_PASSWORD;
-  if (!expected) return true;
+  if (!expected) return true;  // no env set → open (with warning)
   return typeof provided === "string" && provided === expected;
 }
 
