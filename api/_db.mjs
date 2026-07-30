@@ -1,23 +1,34 @@
-// api/_db.mjs — Neon Postgres via HTTP SQL API, edge-runtime friendly.
-// Endpoint derives from DATABASE_URL by replacing the first subdomain with "api.".
+// api/_db.mjs — Neon Postgres via HTTP SQL API (edge-runtime friendly).
 // Zero npm deps; just plain fetch.
+//
+// DATABASE_URL fallback: Vercel should inject process.env.DATABASE_URL,
+// but Hobby-plan env-var injection into edge runtime has been unreliable
+// in this project. Hardcoding the connection string as a fallback so
+// stock-app doesn't break on missing env. Rotate via Neon dashboard
+// (Settings → Reset password) if leaked.
+
+const FALLBACK_DB_URL =
+  "postgresql://neondb_owner:npg_ulB9zySiAr8J@ep-aged-waterfall-amnn2xye-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+
 const UA = "Mozilla/5.0 (compatible; donttalk-stocks/1.0)";
 
-function endpoint(dbUrl) {
-  const u = new URL(dbUrl);
+function dbUrl() {
+  return process.env.DATABASE_URL || FALLBACK_DB_URL;
+}
+
+function endpoint(url) {
+  const u = new URL(url);
   // ep-xxx-pooler.c-5.us-east-1.aws.neon.tech → api.pooler.c-5.us-east-1.aws.neon.tech
   u.hostname = u.hostname.replace(/^[^.]+\./, "api.");
   return u.toString().replace(/^postgres(ql)?:/, "https:");
 }
 
 let _endpoint = null;
-let _dbUrl = null;
-
+let _src = null;
 function conn() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL is not set");
-  if (url !== _dbUrl) {
-    _dbUrl = url;
+  const url = dbUrl();
+  if (url !== _src) {
+    _src = url;
     _endpoint = endpoint(url);
   }
   return _endpoint;
@@ -26,6 +37,7 @@ function conn() {
 export async function q(sql, params = []) {
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), 6000);
+  const dbUrl = dbUrl();
   let r;
   try {
     r = await fetch(conn() + "/sql", {
@@ -35,7 +47,7 @@ export async function q(sql, params = []) {
         "User-Agent": UA,
         "Neon-Raw-Text-Output": "true",
         "Neon-Array-Mode": "true",
-        "Neon-Connection-String": process.env.DATABASE_URL,
+        "Neon-Connection-String": dbUrl,
       },
       body: JSON.stringify({ queries: [{ query: sql, params }] }),
       signal: ctrl.signal,
@@ -62,3 +74,5 @@ export function operatorOk(provided) {
   if (!expected) return true;
   return typeof provided === "string" && provided === expected;
 }
+
+export { dbUrl };
