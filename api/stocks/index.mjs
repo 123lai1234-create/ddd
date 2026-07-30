@@ -1,7 +1,5 @@
-// api/stocks/index.mjs — GET /api/stocks
-// Reads the watchlist from Neon (DATABASE_URL) and returns it as JSON.
-// Falls back to a hard-coded seed if the DB call fails (so the page never
-// renders empty even if Neon is down).
+// api/stocks/index.mjs — GET /api/stocks (diag version)
+// Tries outbound to Neon; falls back to seed on any failure.
 
 import { q } from "../_db.mjs";
 
@@ -19,29 +17,46 @@ function json(body, init = {}) {
   });
 }
 
+async function probe(url, ms = 4000) {
+  const t0 = Date.now();
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, { method: "GET", signal: ctrl.signal });
+    return { ok: r.ok, status: r.status, ms: Date.now() - t0 };
+  } catch (e) {
+    return { error: e?.name + ": " + e?.message, ms: Date.now() - t0 };
+  } finally {
+    clearTimeout(tid);
+  }
+}
+
 export default async function () {
-  // Debug: surface env state so we can see if DATABASE_URL is wired up.
   const raw = process.env.DATABASE_URL ?? "";
   const info = {
-    has_url: !!raw,
-    url_len: raw.length,
-    url_prefix: raw.slice(0, 35),
-    node_version: process.version,
+    node: process.version,
+    has_db: !!raw,
+    db_len: raw.length,
+    db_prefix: raw.slice(0, 30),
   };
+  // Outbound probes
   const t0 = Date.now();
+  info.probes = {
+    httpbin: await probe("https://httpbin.org/get", 5000),
+    twse:    await probe("https://www.twse.com.tw/exchangeReport/STOCK_DAY?date=20260101&stockNo=2330&response=json", 5000),
+    neon:    await probe("https://api.pooler.c-5.us-east-1.aws.neon.tech/sql", 5000),
+  };
+  info.probe_total_ms = Date.now() - t0;
+
   try {
     const { rows } = await q(
       "SELECT code, name, ticker FROM watchlist ORDER BY sort_order ASC, code ASC LIMIT 500"
     );
-    return json({
-      ok: true, source: "db", count: rows.length, stocks: rows,
-      ms: Date.now() - t0, info,
-    });
+    return json({ ok: true, source: "db", count: rows.length, stocks: rows, info });
   } catch (e) {
     return json({
       ok: true, source: "seed", count: SEED.length, stocks: SEED,
-      db_error: e?.message, db_code: e?.code, db_name: e?.name,
-      ms: Date.now() - t0, info,
+      db_error: e?.message, db_name: e?.name, info,
     }, { status: 200 });
   }
 }
