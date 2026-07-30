@@ -17,19 +17,24 @@ function json(body, init = {}) {
 
 export default async function () {
   const t0 = Date.now();
+  const envCheck = {
+    has_db: !!process.env.DATABASE_URL,
+    db_len: (process.env.DATABASE_URL ?? "").length,
+    db_prefix: (process.env.DATABASE_URL ?? "").slice(0, 25),
+  };
   try {
     const { rows } = await q(
       "SELECT code, name, ticker FROM watchlist ORDER BY sort_order ASC, code ASC LIMIT 500"
     );
     return json({
       ok: true, source: "db", count: rows.length, stocks: rows,
-      ms: Date.now() - t0,
+      ms: Date.now() - t0, env: envCheck,
     });
   } catch (e) {
     return json({
       ok: true, source: "seed", count: SEED.length, stocks: SEED,
       db_error: e?.message, db_name: e?.name,
-      ms: Date.now() - t0,
+      ms: Date.now() - t0, env: envCheck,
     });
   }
 }
