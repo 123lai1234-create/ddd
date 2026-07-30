@@ -1,31 +1,22 @@
-// api/stocks/add.mjs — POST /api/stocks/add
-// Body: { password, code, name? }
-// Inserts (or upserts) a row in watchlist. Requires STOCK_OPERATOR_PASSWORD.
-
+// api/stocks/add.mjs — POST /api/stocks/add (Express-style)
 import { q, operatorOk } from "../_db.mjs";
 
-function json(body, init = {}) {
-  return new Response(JSON.stringify(body), {
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
-  });
-}
-
-export default async function (req) {
+export default async function (req, res) {
   if (req.method !== "POST") {
-    return json({ ok: false, error: "method not allowed" }, { status: 405 });
+    return res.status(405).json({ ok: false, error: "method not allowed" });
   }
-  let body;
-  try { body = await req.json(); } catch { body = {}; }
+  let body = {};
+  try { body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {}); }
+  catch { body = {}; }
 
-  if (!operatorOk(body?.password)) {
-    return json({ ok: false, need_password: true, error: "密碼錯誤" }, { status: 403 });
+  if (!operatorOk(body.password)) {
+    return res.status(403).json({ ok: false, need_password: true, error: "密碼錯誤" });
   }
-  const code = String(body?.code ?? "").trim();
+  const code = String(body.code ?? "").trim();
   if (!/^\d{4,6}$/.test(code)) {
-    return json({ ok: false, error: "缺少或無效的代號" }, { status: 400 });
+    return res.status(400).json({ ok: false, error: "缺少或無效的代號" });
   }
-  const name = String(body?.name ?? "").trim() || code;
+  const name = String(body.name ?? "").trim() || code;
   const ticker = `${code}.TW`;
 
   try {
@@ -35,9 +26,9 @@ export default async function (req) {
        ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, ticker = EXCLUDED.ticker`,
       [code, name, ticker],
     );
-    return json({ ok: true, code, name, ticker });
+    res.status(200).json({ ok: true, code, name, ticker });
   } catch (e) {
-    return json({ ok: false, error: e?.message ?? "db error" }, { status: 500 });
+    res.status(500).json({ ok: false, error: e?.message ?? "db error" });
   }
 }
 

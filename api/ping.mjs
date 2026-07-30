@@ -1,7 +1,5 @@
-// api/ping.mjs — super simple, zero imports, instant response.
-export default function () {
-  return new Response(JSON.stringify({
-    ok: true, node: process.version, t: Date.now(), runtime: "ping-min",
-  }), { headers: { "Content-Type": "application/json" } });
+// api/ping.mjs — super simple (Express-style, matches healthz)
+export default function (req, res) {
+  res.status(200).json({ ok: true, node: process.version, t: Date.now(), runtime: "ping-express" });
 }
-export const config = { maxDuration: 15 };
+export const config = { maxDuration: 10 };
