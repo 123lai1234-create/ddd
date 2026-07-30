@@ -1,5 +1,6 @@
-// api/neon-test.mjs — probe Neon endpoint format from Vercel edge runtime.
-import { q } from "./_db.mjs";
+// api/neon-test.mjs — probe all reasonable Neon endpoint variants
+const FALLBACK =
+  "postgresql://neondb_owner:npg_ulB9zySiAr8J@ep-aged-waterfall-amnn2xye-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
 
 function json(body, init = {}) {
   return new Response(JSON.stringify(body), {
@@ -8,40 +9,40 @@ function json(body, init = {}) {
   });
 }
 
-const url = process.env.DATABASE_URL || "FALLBACK";
-const ep = (() => {
-  try { return q("SELECT 1").then(r => "ok").catch(e => `q-err: ${e.message}`); }
-  catch (e) { return `sync-err: ${e.message}`; }
-})();
+async function probe(name, url, headers, body) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 5000);
+  try {
+    const r = await fetch(url, { method: "POST", headers, body, signal: ctrl.signal });
+    const t = await r.text();
+    return { status: r.status, body: t.slice(0, 300) };
+  } catch (e) {
+    return { error: e.name + ": " + e.message };
+  } finally {
+    clearTimeout(tid);
+  }
+}
 
 export default async function () {
-  const out = { url_prefix: url.slice(0, 40), probes: {} };
-  // Probe 1: bare /sql
-  for (const [name, payload, headers] of [
-    ["bare", '{"query":"SELECT 1","params":[]}', { "Content-Type": "application/json" }],
-    ["cs-header", '{"query":"SELECT 1","params":[]}', {
+  const out = { probes: {} };
+  const u = new URL(FALLBACK);
+  const host = u.hostname;
+  const body = '{"query":"SELECT 1","params":[]}';
+  const connStr = FALLBACK;
+
+  const variants = [
+    ["no-prefix /sql",           `https://${host}/sql`],
+    ["no-prefix no-slash",       `https://${host}`],
+    ["api-prefix /sql",          `https://api.${host.replace(/^[^.]+\./, "")}/sql`],
+    ["ep-prefix direct",         `https://${host.replace(/-pooler\./, ".")}/sql`],
+    ["with-path /neondb/sql",    `https://${host}/neondb/sql`],
+  ];
+
+  for (const [name, url] of variants) {
+    out.probes[name] = await probe(name, url, {
       "Content-Type": "application/json",
-      "Neon-Connection-String": process.env.DATABASE_URL || (await import("./_db.mjs")).dbUrl(),
-    }],
-    ["queries-array", '{"queries":[{"query":"SELECT 1","params":[]}]}', {
-      "Content-Type": "application/json",
-      "Neon-Connection-String": process.env.DATABASE_URL || (await import("./_db.mjs")).dbUrl(),
-    }],
-  ]) {
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 5000);
-    const u = new URL(process.env.DATABASE_URL || (await import("./_db.mjs")).dbUrl());
-    u.hostname = u.hostname.replace(/^[^.]+\./, "api.");
-    const endpoint = u.toString().replace(/^postgres(ql)?:/, "https:") + "/sql";
-    try {
-      const r = await fetch(endpoint, { method: "POST", headers, body: payload, signal: ctrl.signal });
-      const t = await r.text();
-      out.probes[name] = { status: r.status, body: t.slice(0, 400) };
-    } catch (e) {
-      out.probes[name] = { error: e.name + ": " + e.message };
-    } finally {
-      clearTimeout(tid);
-    }
+      "Neon-Connection-String": connStr,
+    }, body);
   }
   return json(out);
 }
