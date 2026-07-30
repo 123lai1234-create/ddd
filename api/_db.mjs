@@ -1,18 +1,60 @@
-// api/_db.mjs — Neon HTTP SQL API helper.
-// Active only when the neon-serverless driver is available and DATABASE_URL is
-// present. Right now we ship without the driver (zero-deps), so the functions
-// just gracefully fall back to a hard-coded seed.
-//
-// To enable real DB writes/reads, install @neondatabase/serverless in
-// package.json and replace the `q` stub below with `neon(DATABASE_URL)`.
+// api/_db.mjs — Neon Postgres via HTTP SQL API, edge-runtime friendly.
+// Endpoint derives from DATABASE_URL by replacing the first subdomain with "api.".
+// Zero npm deps; just plain fetch.
+const UA = "Mozilla/5.0 (compatible; donttalk-stocks/1.0)";
 
-function dbUrl() {
-  return process.env.DATABASE_URL || process.env.DATABASE_URL_NEON || "";
+function endpoint(dbUrl) {
+  const u = new URL(dbUrl);
+  // ep-xxx-pooler.c-5.us-east-1.aws.neon.tech → api.pooler.c-5.us-east-1.aws.neon.tech
+  u.hostname = u.hostname.replace(/^[^.]+\./, "api.");
+  return u.toString().replace(/^postgres(ql)?:/, "https:");
 }
 
-export async function q(_sql, _params = []) {
-  // Driver not loaded. Caller should catch and fall back to seed.
-  throw new Error("Neon driver not installed — using seed fallback");
+let _endpoint = null;
+let _dbUrl = null;
+
+function conn() {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL is not set");
+  if (url !== _dbUrl) {
+    _dbUrl = url;
+    _endpoint = endpoint(url);
+  }
+  return _endpoint;
+}
+
+export async function q(sql, params = []) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 6000);
+  let r;
+  try {
+    r = await fetch(conn() + "/sql", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": UA,
+        "Neon-Raw-Text-Output": "true",
+        "Neon-Array-Mode": "true",
+        "Neon-Connection-String": process.env.DATABASE_URL,
+      },
+      body: JSON.stringify({ queries: [{ query: sql, params }] }),
+      signal: ctrl.signal,
+    });
+  } catch (e) {
+    clearTimeout(tid);
+    throw new Error(`Neon fetch failed: ${e.name}: ${e.message}`);
+  }
+  clearTimeout(tid);
+  if (!r.ok) {
+    let body = "";
+    try { body = await r.text(); } catch { /* ignore */ }
+    throw new Error(`Neon HTTP ${r.status}: ${body.slice(0, 200)}`);
+  }
+  const json = await r.json();
+  if (json.error) throw new Error(json.error.message || "Neon error");
+  const result = json.results?.[0];
+  if (!result) throw new Error("Neon: empty results");
+  return { rows: result.rows ?? [] };
 }
 
 export function operatorOk(provided) {
@@ -20,5 +62,3 @@ export function operatorOk(provided) {
   if (!expected) return true;
   return typeof provided === "string" && provided === expected;
 }
-
-export { dbUrl };

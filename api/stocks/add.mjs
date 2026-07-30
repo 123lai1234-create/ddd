@@ -1,37 +1,30 @@
-// api/stocks/add.mjs — POST /api/stocks/add (Express-style).
+// api/stocks/add.mjs — POST /api/stocks/add (edge runtime, Web Fetch API)
 import { q, operatorOk } from "../_db.mjs";
 
-function bodyOf(req) {
-  return new Promise((resolve) => {
-    let raw = "";
-    req.on("data", (c) => (raw += c));
-    req.on("end", () => {
-      try { resolve(raw ? JSON.parse(raw) : {}); }
-      catch { resolve({}); }
-    });
+function json(body, init = {}) {
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
   });
 }
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Content-Type", "application/json");
-    res.status(405).json({ ok: false, error: "method not allowed" });
-    return;
+export default async function (request) {
+  if (request.method !== "POST") {
+    return json({ ok: false, error: "method not allowed" }, { status: 405 });
   }
-  const body = await bodyOf(req);
+  let body = {};
+  try { body = await request.json(); } catch { /* empty body is OK */ }
+
   if (!operatorOk(body?.password)) {
-    res.setHeader("Content-Type", "application/json");
-    res.status(403).json({ ok: false, need_password: true, error: "密碼錯誤" });
-    return;
+    return json({ ok: false, need_password: true, error: "密碼錯誤" }, { status: 403 });
   }
   const code = String(body?.code ?? "").trim();
   if (!/^\d{4,6}$/.test(code)) {
-    res.setHeader("Content-Type", "application/json");
-    res.status(400).json({ ok: false, error: "缺少或無效的代號" });
-    return;
+    return json({ ok: false, error: "缺少或無效的代號" }, { status: 400 });
   }
   const name = String(body?.name ?? "").trim() || code;
   const ticker = `${code}.TW`;
+
   try {
     await q(
       `INSERT INTO watchlist (code, name, ticker, sort_order)
@@ -39,12 +32,10 @@ export default async function handler(req, res) {
        ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, ticker = EXCLUDED.ticker`,
       [code, name, ticker],
     );
-    res.setHeader("Content-Type", "application/json");
-    res.status(200).json({ ok: true, code, name, ticker });
+    return json({ ok: true, code, name, ticker });
   } catch (e) {
-    res.setHeader("Content-Type", "application/json");
-    res.status(500).json({ ok: false, error: e?.message ?? "db error" });
+    return json({ ok: false, error: e?.message ?? "db error", name: e?.name }, { status: 500 });
   }
 }
 
-export const config = { maxDuration: 15 };
+export const config = { runtime: "edge", maxDuration: 25 };

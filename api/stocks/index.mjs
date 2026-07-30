@@ -1,6 +1,5 @@
-// api/stocks/index.mjs — GET /api/stocks
-// Tries Neon (5s budget); falls back to SEED on any failure.
-// Vercel Node.js runtime uses Express-style (req, res) — returns are ignored.
+// api/stocks/index.mjs — GET /api/stocks (edge runtime, Web Fetch API)
+import { q } from "../_db.mjs";
 
 const SEED = [
   { code: "2330", name: "台積電", ticker: "2330.TW" },
@@ -9,45 +8,30 @@ const SEED = [
   { code: "0050", name: "元大台灣50", ticker: "0050.TW" },
 ];
 
-let _q;
-async function loadQ() {
-  if (_q) return _q;
-  const m = await import("../_db.mjs");
-  _q = m.q;
-  return _q;
+function json(body, init = {}) {
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+  });
 }
 
-function withTimeout(promise, ms, label) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timeout ${ms}ms`)), ms)
-    ),
-  ]);
-}
-
-export default async function handler(req, res) {
+export default async function () {
   const t0 = Date.now();
   try {
-    const q = await loadQ();
-    const { rows } = await withTimeout(
-      q("SELECT code, name, ticker FROM watchlist ORDER BY sort_order ASC, code ASC LIMIT 500"),
-      5000,
-      "neon"
+    const { rows } = await q(
+      "SELECT code, name, ticker FROM watchlist ORDER BY sort_order ASC, code ASC LIMIT 500"
     );
-    res.setHeader("Content-Type", "application/json");
-    res.status(200).json({
+    return json({
       ok: true, source: "db", count: rows.length, stocks: rows,
       ms: Date.now() - t0,
     });
   } catch (e) {
-    res.setHeader("Content-Type", "application/json");
-    res.status(200).json({
+    return json({
       ok: true, source: "seed", count: SEED.length, stocks: SEED,
-      db_error: e?.message,
+      db_error: e?.message, db_name: e?.name,
       ms: Date.now() - t0,
     });
   }
 }
 
-export const config = { maxDuration: 15 };
+export const config = { runtime: "edge", maxDuration: 25 };

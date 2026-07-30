@@ -1,44 +1,35 @@
-// api/stocks/remove/[[...slug]].mjs — DELETE /api/stocks/remove/<code> (Express-style).
+// api/stocks/remove/[[...slug]].mjs — DELETE /api/stocks/remove/<code> (edge runtime)
 import { q, operatorOk } from "../../_db.mjs";
 
-function bodyOf(req) {
-  return new Promise((resolve) => {
-    let raw = "";
-    req.on("data", (c) => (raw += c));
-    req.on("end", () => {
-      try { resolve(raw ? JSON.parse(raw) : {}); }
-      catch { resolve({}); }
-    });
+function json(body, init = {}) {
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
   });
 }
 
-export default async function handler(req, res) {
-  if (req.method !== "DELETE" && req.method !== "POST") {
-    res.setHeader("Content-Type", "application/json");
-    res.status(405).json({ ok: false, error: "method not allowed" });
-    return;
+export default async function (request) {
+  if (request.method !== "DELETE" && request.method !== "POST") {
+    return json({ ok: false, error: "method not allowed" }, { status: 405 });
   }
-  const m = (req.url ?? "").match(/^\/api\/stocks\/remove\/([^/?]+)\/?/);
+  const url = new URL(request.url);
+  const m = url.pathname.match(/^\/api\/stocks\/remove\/([^/]+)\/?$/);
   const code = m ? m[1] : "";
-  const body = await bodyOf(req);
+
+  let body = {};
+  try { body = await request.json(); } catch { /* empty body is OK */ }
   if (!operatorOk(body?.password)) {
-    res.setHeader("Content-Type", "application/json");
-    res.status(403).json({ ok: false, need_password: true, error: "密碼錯誤" });
-    return;
+    return json({ ok: false, need_password: true, error: "密碼錯誤" }, { status: 403 });
   }
   if (!code) {
-    res.setHeader("Content-Type", "application/json");
-    res.status(400).json({ ok: false, error: "缺少代號" });
-    return;
+    return json({ ok: false, error: "缺少代號" }, { status: 400 });
   }
   try {
     await q("DELETE FROM watchlist WHERE code = $1", [code]);
-    res.setHeader("Content-Type", "application/json");
-    res.status(200).json({ ok: true, code });
+    return json({ ok: true, code });
   } catch (e) {
-    res.setHeader("Content-Type", "application/json");
-    res.status(500).json({ ok: false, error: e?.message ?? "db error" });
+    return json({ ok: false, error: e?.message ?? "db error", name: e?.name }, { status: 500 });
   }
 }
 
-export const config = { maxDuration: 15 };
+export const config = { runtime: "edge", maxDuration: 25 };
