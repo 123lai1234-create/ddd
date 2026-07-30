@@ -3,5 +3,5 @@
   "outputDirectory": "astro/dist",
   "buildCommand": "cd astro && npm install --ignore-scripts && npm run build",
   "installCommand": "cd astro && npm install --ignore-scripts",
-  "trailingSlash": true
+  "trailingSlash": false
 }
