@@ -1,6 +1,5 @@
-// api/stocks/index.mjs — GET /api/stocks
-// Try Neon, fall back to seed on any failure.
-
+// api/stocks/index.mjs — GET /api/stocks (Express-style).
+// Tries Neon via _db.mjs, falls back to a hard-coded seed.
 import { q } from "../_db.mjs";
 
 const SEED = [
@@ -24,16 +23,14 @@ export default async function (req, res) {
   try {
     const { rows } = await withTimeout(
       q("SELECT code, name, ticker FROM watchlist ORDER BY sort_order ASC, code ASC LIMIT 500"),
-      5000,
+      4000,
       "neon"
     );
-    res.status(200).json({
-      ok: true, source: "db", count: rows.length, stocks: rows, ms: Date.now() - t0,
-    });
+    res.status(200).json({ ok: true, source: "db", count: rows.length, stocks: rows, ms: Date.now() - t0 });
   } catch (e) {
     res.status(200).json({
       ok: true, source: "seed", count: SEED.length, stocks: SEED,
-      db_error: e?.message, db_name: e?.name, ms: Date.now() - t0,
+      db_error: e?.message, ms: Date.now() - t0,
     });
   }
 }
