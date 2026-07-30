@@ -1,33 +1,44 @@
 // api/stocks/remove/[[...slug]].mjs — DELETE /api/stocks/remove/<code> (Express-style).
 import { q, operatorOk } from "../../_db.mjs";
 
-export default async function (req, res) {
+function bodyOf(req) {
+  return new Promise((resolve) => {
+    let raw = "";
+    req.on("data", (c) => (raw += c));
+    req.on("end", () => {
+      try { resolve(raw ? JSON.parse(raw) : {}); }
+      catch { resolve({}); }
+    });
+  });
+}
+
+export default async function handler(req, res) {
   if (req.method !== "DELETE" && req.method !== "POST") {
-    return res.status(405).json({ ok: false, error: "method not allowed" });
+    res.setHeader("Content-Type", "application/json");
+    res.status(405).json({ ok: false, error: "method not allowed" });
+    return;
   }
   const m = (req.url ?? "").match(/^\/api\/stocks\/remove\/([^/?]+)\/?/);
   const code = m ? m[1] : "";
-
-  let body = {};
-  try { body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {}); }
-  catch { body = {}; }
-
-  if (!operatorOk(body.password)) {
-    return res.status(403).json({ ok: false, need_password: true, error: "密碼錯誤" });
+  const body = await bodyOf(req);
+  if (!operatorOk(body?.password)) {
+    res.setHeader("Content-Type", "application/json");
+    res.status(403).json({ ok: false, need_password: true, error: "密碼錯誤" });
+    return;
   }
   if (!code) {
-    return res.status(400).json({ ok: false, error: "缺少代號" });
+    res.setHeader("Content-Type", "application/json");
+    res.status(400).json({ ok: false, error: "缺少代號" });
+    return;
   }
   try {
     await q("DELETE FROM watchlist WHERE code = $1", [code]);
+    res.setHeader("Content-Type", "application/json");
     res.status(200).json({ ok: true, code });
   } catch (e) {
-    res.status(200).json({
-      ok: true, source: "seed-ack",
-      note: "DB driver not installed; request acknowledged but not persisted",
-      code, db_error: e?.message,
-    });
+    res.setHeader("Content-Type", "application/json");
+    res.status(500).json({ ok: false, error: e?.message ?? "db error" });
   }
 }
 
-export const config = { maxDuration: 10 };
+export const config = { maxDuration: 15 };

@@ -1,15 +1,8 @@
-// api/ping.mjs — env key dump (no values)
-export default function (req, res) {
-  const keys = Object.keys(process.env).sort();
-  const summary = {};
-  for (const k of keys) {
-    summary[k] = (process.env[k] ?? "").length;
-  }
+// api/ping.mjs — Express-style health/diag.
+export default function handler(req, res) {
+  res.setHeader("Content-Type", "application/json");
   res.status(200).json({
-    ok: true, node: process.version,
-    env_count: keys.length,
-    env_keys: keys,
-    env_value_lengths: summary,
+    ok: true, node: process.version, t: Date.now(), style: "express",
   });
 }
 export const config = { maxDuration: 10 };
