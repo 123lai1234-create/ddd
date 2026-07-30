@@ -38,8 +38,6 @@ export async function q(sql, params = []) {
       headers: {
         "Content-Type": "application/json",
         "User-Agent": UA,
-        "Neon-Raw-Text-Output": "true",
-        "Neon-Array-Mode": "true",
         "Neon-Connection-String": dbUrl(),
       },
       body: JSON.stringify({ queries: [{ query: sql, params }] }),
@@ -54,9 +52,24 @@ export async function q(sql, params = []) {
   }
   const json = await r.json();
   if (json.error) throw new Error(json.error.message || "Neon error");
-  const result = json.results?.[0];
-  if (!result) throw new Error("Neon: empty results");
-  return { rows: result.rows ?? [] };
+  // Neon's default response wraps rows as objects {col: val, ...}.
+  // Each query may return multiple result sets.
+  const out = [];
+  for (const result of json.results ?? []) {
+    const fields = result.fields ?? [];
+    const rows = result.rows ?? [];
+    for (const row of rows) {
+      if (Array.isArray(row)) {
+        // Array-mode (Neon-Array-Mode: true) → positional mapping
+        const obj = {};
+        fields.forEach((f, i) => { obj[f.name] = row[i]; });
+        out.push(obj);
+      } else if (row && typeof row === "object") {
+        out.push(row);
+      }
+    }
+  }
+  return { rows: out };
 }
 
 export function operatorOk(provided) {
