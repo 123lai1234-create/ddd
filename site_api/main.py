@@ -22,7 +22,7 @@ from slowapi.util import get_remote_address
 from site_api.db import (
     get_allowed_origins,
 )
-from site_api.routes import router
+from site_api.routes_aggregator import router
 from site_api.routes_minimax import router as minimax_router
 from site_api.routes.music_analysis import router as music_analysis_router
 

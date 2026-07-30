@@ -1,5 +1,32 @@
+from __future__ import annotations
 
-from fastapi import APIRouter
+from typing import Any
+
+import psycopg
+from fastapi import APIRouter, Header, HTTPException
+
+from site_api.db import (
+    _require_sync_secret,
+    ensure_schema,
+    get_database_url,
+)
+from site_api.knowledge_sources import (
+    fetch_geo_datasets,
+    fetch_interpro_annotations,
+    fetch_openalex_works,
+    fetch_pubmed_knowledge,
+    fetch_scholar_knowledge,
+    fetch_uniprot_knowledge,
+)
+from site_api.models import KnowledgeSyncRequest
+from site_api.services import (
+    build_knowledge_rag_documents,
+    build_sequence_rag_documents,
+    fetch_knowledge_rows,
+    fetch_sequence_rows_for_search,
+    knowledge_summary,
+    upsert_knowledge_records,
+)
 
 router = APIRouter()
 
@@ -201,7 +228,5 @@ def list_rag_documents(
             detail="Database is not reachable right now.",
         ) from error
 
-
-@router.get("/api/sequences/summary")
 
 __all__ = ["router"]

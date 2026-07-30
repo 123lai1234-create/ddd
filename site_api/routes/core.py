@@ -226,3 +226,5 @@ def db_status(x_admin_token: str | None = Header(default=None)) -> dict[str, Any
 
 
 @router.get("/api/structures/pdb/{pdb_id}")
+def get_pdb_structure(pdb_id: str) -> dict[str, Any]:
+    return fetch_structure_payload(pdb_id)
