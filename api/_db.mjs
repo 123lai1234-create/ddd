@@ -7,6 +7,10 @@ function endpoint(dbUrl) {
   const u = new URL(dbUrl);
   // ep-xxx-pooler.c-5.us-east-1.aws.neon.tech → api.pooler.c-5.us-east-1.aws.neon.tech
   u.hostname = u.hostname.replace(/^[^.]+\./, "api.");
+  // Strip credentials from URL — `Neon-Connection-String` header carries
+  // the full connection string; fetch() refuses URLs with embedded creds.
+  u.username = "";
+  u.password = "";
   return u.toString().replace(/^postgres(ql)?:/, "https:");
 }
 
