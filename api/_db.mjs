@@ -14,8 +14,10 @@ function dbUrl() {
 }
 
 function endpoint(url) {
-  // ep-xxx-pooler.c-5.us-east-1.aws.neon.tech → keep as-is, hit /sql directly
-  return url.replace(/^postgres(ql)?:/, "https:").replace(/\/?(\?.*)?$/, "/sql$1");
+  // Strip postgres:// → https://, drop user:pass and path/dbname, hit /sql.
+  // Credentials are sent via Neon-Connection-String header instead.
+  const u = new URL(url);
+  return `https://${u.hostname}/sql`;
 }
 
 let _endpoint = null;
