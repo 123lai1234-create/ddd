@@ -28,13 +28,13 @@ export default async function () {
     );
     return json({
       ok: true, source: "db", count: rows.length, stocks: rows,
-      ms: Date.now() - t0, env: envCheck,
+      ms: Date.now() - t0, env: envCheck, build: "force-1",
     });
   } catch (e) {
     return json({
       ok: true, source: "seed", count: SEED.length, stocks: SEED,
       db_error: e?.message, db_name: e?.name,
-      ms: Date.now() - t0, env: envCheck,
+      ms: Date.now() - t0, env: envCheck, build: "force-1",
     });
   }
 }

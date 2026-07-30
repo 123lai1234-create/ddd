@@ -1,4 +1,4 @@
-// api/stocks/add.mjs — POST /api/stocks/add (edge runtime, Web Fetch API)
+// api/stocks/add.mjs — POST /api/stocks/add (edge runtime)
 import { q, operatorOk } from "../_db.mjs";
 
 function json(body, init = {}) {
@@ -32,9 +32,9 @@ export default async function (request) {
        ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, ticker = EXCLUDED.ticker`,
       [code, name, ticker],
     );
-    return json({ ok: true, code, name, ticker });
+    return json({ ok: true, code, name, ticker, build: "force-1" });
   } catch (e) {
-    return json({ ok: false, error: e?.message ?? "db error", name: e?.name }, { status: 500 });
+    return json({ ok: false, error: e?.message ?? "db error", name: e?.name, build: "force-1" }, { status: 500 });
   }
 }
 

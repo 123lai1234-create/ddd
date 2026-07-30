@@ -26,9 +26,9 @@ export default async function (request) {
   }
   try {
     await q("DELETE FROM watchlist WHERE code = $1", [code]);
-    return json({ ok: true, code });
+    return json({ ok: true, code, build: "force-1" });
   } catch (e) {
-    return json({ ok: false, error: e?.message ?? "db error", name: e?.name }, { status: 500 });
+    return json({ ok: false, error: e?.message ?? "db error", name: e?.name, build: "force-1" }, { status: 500 });
   }
 }
 
