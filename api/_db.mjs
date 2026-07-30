@@ -12,10 +12,16 @@ function endpoint(dbUrl) {
 
 let _endpoint = null;
 
+function dbUrl() {
+  // Accept both names so we work with `npx vercel env add DATABASE_URL` AND
+  // the Vercel Neon integration (which auto-injects DATABASE_URL_NEON).
+  return process.env.DATABASE_URL || process.env.DATABASE_URL_NEON || "";
+}
+
 function conn() {
   if (_endpoint) return _endpoint;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL is not set");
+  const url = dbUrl();
+  if (!url) throw new Error("DATABASE_URL (or DATABASE_URL_NEON) is not set");
   _endpoint = endpoint(url);
   return _endpoint;
 }
@@ -30,7 +36,7 @@ export async function q(sql, params = []) {
         "User-Agent": UA,
         "Neon-Raw-Text-Output": "true",
         "Neon-Array-Mode": "true",
-        "Neon-Connection-String": process.env.DATABASE_URL,
+        "Neon-Connection-String": dbUrl(),
       },
       body: JSON.stringify({ queries: [{ query: sql, params }] }),
     });
