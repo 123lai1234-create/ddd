@@ -20,20 +20,30 @@ function json(body, init = {}) {
 }
 
 export default async function () {
+  // Debug: surface env state so we can see if DATABASE_URL is wired up.
+  const raw = process.env.DATABASE_URL ?? "";
+  const info = {
+    has_url: !!raw,
+    url_len: raw.length,
+    url_prefix: raw.slice(0, 35),
+    node_version: process.version,
+  };
+  const t0 = Date.now();
   try {
     const { rows } = await q(
       "SELECT code, name, ticker FROM watchlist ORDER BY sort_order ASC, code ASC LIMIT 500"
     );
-    return json({ ok: true, source: "db", count: rows.length, stocks: rows });
+    return json({
+      ok: true, source: "db", count: rows.length, stocks: rows,
+      ms: Date.now() - t0, info,
+    });
   } catch (e) {
     return json({
-      ok: true,
-      source: "seed",
-      count: SEED.length,
-      stocks: SEED,
-      db_error: e?.message,
-    });
+      ok: true, source: "seed", count: SEED.length, stocks: SEED,
+      db_error: e?.message, db_code: e?.code, db_name: e?.name,
+      ms: Date.now() - t0, info,
+    }, { status: 200 });
   }
 }
 
-export const config = { maxDuration: 10 };
+export const config = { maxDuration: 30 };
