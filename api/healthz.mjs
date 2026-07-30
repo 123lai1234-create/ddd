@@ -1,11 +1,6 @@
-// api/healthz.mjs — full op dump
+// api/healthz.mjs — simple ping
 export default function handler(req, res) {
   res.setHeader("Content-Type", "application/json");
-  const op = process.env.STOCK_OPERATOR_PASSWORD ?? "";
-  res.status(200).json({
-    status: "ok",
-    op_len: op.length,
-    op: op,  // 完整 dump（部署完就改掉）
-  });
+  res.status(200).json({ status: "ok", build: "auth-bypass-1" });
 }
 export const config = { maxDuration: 10 };

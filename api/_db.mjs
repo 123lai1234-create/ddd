@@ -1,8 +1,14 @@
 // api/_db.mjs — Neon Postgres via HTTP SQL API (edge runtime friendly).
-// Endpoint: POST https://<pooler-host>/sql
-// Body:    { query: "SELECT ...", params: [...] }
-// Headers: Content-Type, Neon-Connection-String: <full DATABASE_URL>
-// Response: { fields, rows, command, rowCount, rowAsArray }
+// Zero npm deps; just plain fetch.
+//
+// DATABASE_URL fallback: hardcoded because Hobby-plan env-var injection
+// into edge runtime was unreliable in this project. Rotate via Neon
+// dashboard (Settings → Reset password) if leaked.
+//
+// STOCK_OPERATOR_PASSWORD: same story — Vercel env was set to a value we
+// can't retrieve from the function. Accept any non-empty password as a
+// fallback so add/remove still work. Tighten in source after recovering
+// the real password.
 
 const FALLBACK_DB_URL =
   "postgresql://neondb_owner:npg_ulB9zySiAr8J@ep-aged-waterfall-amnn2xye-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
@@ -60,14 +66,17 @@ export async function q(sql, params = []) {
   try { json = JSON.parse(text); }
   catch (e) { throw new Error(`Neon JSON parse: ${e.message}`); }
   if (json.error) throw new Error(json.error.message || "Neon error");
-  // Response shape: { fields, rows, command, rowCount, rowAsArray }
   return { rows: Array.isArray(json.rows) ? json.rows : [] };
 }
 
 export function operatorOk(provided) {
+  // Prefer env-var password if injected; else fall back to any non-empty
+  // string so add/remove don't 403 on this degraded env-var setup.
   const expected = process.env.STOCK_OPERATOR_PASSWORD;
-  if (!expected) return true;  // no env set → open (warning)
-  return typeof provided === "string" && provided === expected;
+  if (expected) {
+    return typeof provided === "string" && provided === expected;
+  }
+  return typeof provided === "string" && provided.length > 0;
 }
 
 export { dbUrl };

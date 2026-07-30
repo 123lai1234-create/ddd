@@ -32,9 +32,9 @@ export default async function (request) {
        ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, ticker = EXCLUDED.ticker`,
       [code, name, ticker],
     );
-    return json({ ok: true, code, name, ticker, build: "force-1" });
+    return json({ ok: true, code, name, ticker });
   } catch (e) {
-    return json({ ok: false, error: e?.message ?? "db error", name: e?.name, build: "force-1" }, { status: 500 });
+    return json({ ok: false, error: e?.message ?? "db error", name: e?.name }, { status: 500 });
   }
 }
 
