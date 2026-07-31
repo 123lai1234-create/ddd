@@ -1,0 +1,103 @@
+﻿
+> astro@0.0.1 build
+> astro build && npx pagefind --site dist --output-path dist/pagefind
+
+[33m[1m08:46:53[22m [WARN][39m Unsupported file type [1mD:\project\astro\src\pages\api\lyrics.jsx[22m found in pages directory. Only Astro files can be used as pages. Prefix filename with an underscore (`_`) to ignore this warning, or move the file outside of the pages directory.
+[33m[1m08:46:53[22m [WARN][39m Unsupported file type [1mD:\project\astro\src\pages\api\og.jsx[22m found in pages directory. Only Astro files can be used as pages. Prefix filename with an underscore (`_`) to ignore this warning, or move the file outside of the pages directory.
+[33m[1m08:46:53[22m [WARN][39m Unsupported file type [1mD:\project\astro\src\pages\api\lyrics.jsx[22m found in pages directory. Only Astro files can be used as pages. Prefix filename with an underscore (`_`) to ignore this warning, or move the file outside of the pages directory.
+[33m[1m08:46:53[22m [WARN][39m Unsupported file type [1mD:\project\astro\src\pages\api\og.jsx[22m found in pages directory. Only Astro files can be used as pages. Prefix filename with an underscore (`_`) to ignore this warning, or move the file outside of the pages directory.
+[2m08:46:54[22m [34m[content][39m Syncing content
+[2m08:46:54[22m [34m[content][39m Synced content
+[2m08:46:54[22m [34m[types][39m Generated [2m1.08s[22m
+[2m08:46:54[22m [34m[build][39m output: [34m"static"[39m
+[2m08:46:54[22m [34m[build][39m mode: [34m"static"[39m
+[2m08:46:54[22m [34m[build][39m directory: [34mD:\project\astro\dist\[39m
+[2m08:46:54[22m [34m[build][39m Collecting build info...
+[2m08:46:54[22m [34m[build][39m [32m✓ Completed in 1.13s.[39m
+[2m08:46:54[22m [34m[build][39m Building static entrypoints...
+[2m08:46:58[22m [34m[vite][39m [32m✓ built in 3.34s[39m
+[2m08:46:59[22m [34m[vite][39m [32m✓ built in 1.47s[39m
+[2m08:46:59[22m [34m[build][39m Rearranging server assets...
+
+[42m[30m generating static routes [39m[49m
+[2m08:46:59[22m   [34m├─[39m [2m/about/index.html[22m [2m(+25ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/about_me/index.html[22m [2m(+9ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/blog/esm2-protein-language-model/index.html[22m [2m(+7ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/blog/genetic-algorithm-trading/index.html[22m [2m(+5ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/blog/ngs-sequencing-design/index.html[22m [2m(+5ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/blog/index.html[22m [2m(+7ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/diving/index.html[22m [2m(+9ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/firmware/index.html[22m [2m(+8ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/games/index.html[22m [2m(+6ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/gene_ai/index.html[22m [2m(+8ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/gene-ai/index.html[22m [2m(+9ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/ingest/index.html[22m [2m(+6ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/interactive-showcase/index.html[22m [2m(+8ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/interview/index.html[22m [2m(+9ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/interview_prep/index.html[22m [2m(+8ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/music/index.html[22m [2m(+10ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/ngs/index.html[22m [2m(+9ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/privacy/index.html[22m [2m(+5ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/protein_mpnn/index.html[22m [2m(+9ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/protein-mpnn/index.html[22m [2m(+9ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/report/index.html[22m [2m(+7ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/search/index.html[22m [2m(+5ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/seo-accessibility/index.html[22m [2m(+6ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/stem-cell/index.html[22m [2m(+7ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/stock/index.html[22m [2m(+4ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/terms/index.html[22m [2m(+5ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/thesis/index.html[22m [2m(+8ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/tools/index.html[22m [2m(+6ms)[22m 
+[2m08:46:59[22m   [34m├─[39m [2m/video-gen/index.html[22m [2m(+7ms)[22m 
+[2m08:47:00[22m   [34m├─[39m [2m/works/index.html[22m [2m(+8ms)[22m 
+[2m08:47:00[22m   [34m├─[39m [2m/xian-godot/index.html[22m [2m(+7ms)[22m 
+[2m08:47:00[22m   [34m├─[39m [2m/index.html[22m [2m(+12ms)[22m 
+[2m08:47:00[22m [32m✓ Completed in 317ms.
+[39m
+[2m08:47:00[22m [34m[build][39m [32m✓ Completed in 5.23s.[39m
+[2m08:47:00[22m [34m[build][39m 32 page(s) built in [1m6.47s[22m
+[2m08:47:00[22m [34m[build][39m [1mComplete![22m
+
+Running Pagefind v1.5.2 (Extended)
+Running from: "D:\\project\\astro"
+Source:       "dist"
+Output:       "dist/pagefind"
+
+[Walking source directory]
+Found 64 files matching **/*.{html}
+
+[Parsing files]
+Did not find a data-pagefind-body element on the site.
+↳ Indexing all <body> elements on the site.
+
+[Reading languages]
+npm.cmd : 2 pages found without an <html> element. 
+位於 線路:4 字元:1
++ npm.cmd run build 2>&1 | Out-File -FilePath data\build.log -Encoding  ...
++ ~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2 pages found w...html> element. :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Pages without an outer <html> element will not be processed by default. 
+If adding this element is not possible, use the root selector config to target a different root element.
+  * "/templates/common-head-optimized.html" has no <html> element
+  * "/templates/common-head.html" has no <html> element
+Discovered 2 languages: zh-hant, zh-tw
+
+[Building search indexes]
+Total: 
+  Indexed 2 languages
+  Indexed 61 pages
+  Indexed 6358 words
+  Indexed 0 filters
+  Indexed 0 sorts
+Note: Pagefind doesn't support stemming for the language zh-hant. 
+Search will still work, but will not match across root words.
+Note: Pagefind doesn't support stemming for the language zh-tw. 
+Search will still work, but will not match across root words.
+Note: Pagefind doesn't support stemming for the language zh-hant. 
+Search will still work, but will not match across root words.
+Note: Pagefind doesn't support stemming for the language zh-tw. 
+Search will still work, but will not match across root words.
+
+Finished in 3.499 seconds

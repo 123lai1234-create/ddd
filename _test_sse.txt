@@ -1,0 +1,135 @@
+event: rag
+data: {"type": "rag", "chunks": [{"url": "(built-in KB)", "title": "Project knowledge base", "score": 1.0}, {"url": "(no-LLM mode)", "title": "⚠️ LLM did not return SSE stream (content-type='application/json;'); falling back", "score": 0}]}
+
+event: token
+data: {"type": "token", "content": "嗨！我是"}
+
+event: token
+data: {"type": "token", "content": "這個站的"}
+
+event: token
+data: {"type": "token", "content": " AI "}
+
+event: token
+data: {"type": "token", "content": "助手 👋"}
+
+event: token
+data: {"type": "token", "content": "\n\n我可"}
+
+event: token
+data: {"type": "token", "content": "以幫你："}
+
+event: token
+data: {"type": "token", "content": "\n- 查"}
+
+event: token
+data: {"type": "token", "content": "站內作品"}
+
+event: token
+data: {"type": "token", "content": "（蛋白質"}
+
+event: token
+data: {"type": "token", "content": " AI "}
+
+event: token
+data: {"type": "token", "content": "/ 基因"}
+
+event: token
+data: {"type": "token", "content": " / N"}
+
+event: token
+data: {"type": "token", "content": "GS /"}
+
+event: token
+data: {"type": "token", "content": " 音樂 "}
+
+event: token
+data: {"type": "token", "content": "/ 股票"}
+
+event: token
+data: {"type": "token", "content": "…）\n-"}
+
+event: token
+data: {"type": "token", "content": " 查股票"}
+
+event: token
+data: {"type": "token", "content": "即時報價"}
+
+event: token
+data: {"type": "token", "content": "（直接給"}
+
+event: token
+data: {"type": "token", "content": " tic"}
+
+event: token
+data: {"type": "token", "content": "ker）"}
+
+event: token
+data: {"type": "token", "content": "\n- 回"}
+
+event: token
+data: {"type": "token", "content": "答關於本"}
+
+event: token
+data: {"type": "token", "content": "站的任何"}
+
+event: token
+data: {"type": "token", "content": "問題\n\n"}
+
+event: token
+data: {"type": "token", "content": "問我任何"}
+
+event: token
+data: {"type": "token", "content": "東西試試"}
+
+event: token
+data: {"type": "token", "content": "？\n\n_"}
+
+event: token
+data: {"type": "token", "content": "註：目前"}
+
+event: token
+data: {"type": "token", "content": " LLM"}
+
+event: token
+data: {"type": "token", "content": " 連線異"}
+
+event: token
+data: {"type": "token", "content": "常（ke"}
+
+event: token
+data: {"type": "token", "content": "y 被平"}
+
+event: token
+data: {"type": "token", "content": "台標記）"}
+
+event: token
+data: {"type": "token", "content": "，先用站"}
+
+event: token
+data: {"type": "token", "content": "內知識庫"}
+
+event: token
+data: {"type": "token", "content": " fal"}
+
+event: token
+data: {"type": "token", "content": "lbac"}
+
+event: token
+data: {"type": "token", "content": "k。Ke"}
+
+event: token
+data: {"type": "token", "content": "y 通了"}
+
+event: token
+data: {"type": "token", "content": "會自動切"}
+
+event: token
+data: {"type": "token", "content": "到 LL"}
+
+event: token
+data: {"type": "token", "content": "M。_"}
+
+event: done
+data: {"type": "done", "content": "嗨！我是這個站的 AI 助手 👋\n\n我可以幫你：\n- 查站內作品（蛋白質 AI / 基因 / NGS / 音樂 / 股票…）\n- 查股票即時報價（直接給 ticker）\n- 回答關於本站的任何問題\n\n問我任何東西試試？\n\n_註：目前 LLM 連線異常（key 被平台標記），先用站內知識庫 fallback。Key 通了會自動切到 LLM。_", "loops": 0, "fallback": true}
+

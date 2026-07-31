@@ -1,0 +1,327 @@
+﻿node.exe : Vercel CLI 56.4.1 (Node.js 24.14.1)
+位於 線路:1 字元:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Vercel CLI 56.4.1 (Node.js 24.14.1):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+> [debug] [2026-07-21T00:49:25.316Z] Agent/TTY/nonInteractive: isAgent=false agentName=none stdin.isTTY=undefined --non
+-interactive=false explicitFalse=false => nonInteractive=false
+> [debug] [2026-07-21T00:49:25.318Z] user supplied known subcommand: "deploy"
+> [debug] [2026-07-21T00:49:25.423Z] Using token from VERCEL_TOKEN environment variable, skipping token refresh.
+FETCH 26388: connecting to api.vercel.com using https:undefined
+> [debug] [2026-07-21T00:49:25.459Z] #1 → GET https://api.vercel.com/v2/user
+> [debug] [2026-07-21T00:49:25.464Z] Setting target to production
+> [debug] [2026-07-21T00:49:25.473Z] Found ".vercel\repo.json" - detected "D:\project" as repo root
+> [debug] [2026-07-21T00:49:25.474Z] Spinner invoked (Retrieving project…) with a 1000ms delay
+FETCH 26388: connecting to api.vercel.com using https:undefined
+> [debug] [2026-07-21T00:49:25.476Z] #2 → GET https://api.vercel.com/teams/team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: connecting to api.vercel.com using https:undefined
+> [debug] [2026-07-21T00:49:25.478Z] #3 → GET https://api.vercel.com/v9/projects/prj_vcjSm78uyB2LGkEMYJBEArC3c5It?teamI
+d=team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: connected to api.vercel.com using https:h1
+FETCH 26388: sending request to GET https://api.vercel.com/v2/user
+FETCH 26388: connected to api.vercel.com using https:h1
+FETCH 26388: sending request to GET https://api.vercel.com/teams/team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: connected to api.vercel.com using https:h1
+FETCH 26388: sending request to GET https://api.vercel.com/v9/projects/prj_vcjSm78uyB2LGkEMYJBEArC3c5It?teamId=team_a3k
+Ke1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v2/user - HTTP 200
+> [debug] [2026-07-21T00:49:26.022Z] #1 ← 200 OK: sfo1::g4qrj-1784594966888-3876db7ad664 [563ms]
+FETCH 26388: trailers received from GET https://api.vercel.com/v2/user
+FETCH 26388: received response to GET https://api.vercel.com/teams/team_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+> [debug] [2026-07-21T00:49:26.050Z] #2 ← 200 OK: sfo1::8fcr7-1784594966897-f3b91240c096 [574ms]
+FETCH 26388: trailers received from GET https://api.vercel.com/teams/team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v9/projects/prj_vcjSm78uyB2LGkEMYJBEArC3c5It?teamId=team_a
+3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+> [debug] [2026-07-21T00:49:26.058Z] #3 ← 200 OK: sfo1::9nstb-1784594966901-d07eb3712f09 [579ms]
+FETCH 26388: trailers received from GET https://api.vercel.com/v9/projects/prj_vcjSm78uyB2LGkEMYJBEArC3c5It?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+> [debug] [2026-07-21T00:49:26.363Z] Spinner invoked (Deploying donttalk/donttalk) with a 0ms delay
+[client-debug] 2026-07-21T00:49:26.364Z Creating deployment...
+[client-debug] 2026-07-21T00:49:26.365Z Provided 'path' is a directory.
+[client-debug] 2026-07-21T00:49:26.367Z Found 4 rules in .vercelignore
+[client-debug] 2026-07-21T00:49:26.367Z Building file tree...
+[client-debug] 2026-07-21T00:49:26.987Z Error detecting microfrontend config: MicrofrontendsError: Could not infer the 
+location of the `microfrontends.json` file for application "donttalk" starting in directory "D:\project".
+[client-debug] 2026-07-21T00:49:26.988Z Found 671 files in the specified directory
+[client-debug] 2026-07-21T00:49:27.443Z Yielding a 'hashes-calculated' event with 556 hashes
+[client-debug] 2026-07-21T00:49:27.444Z Using provided API URL: https://api.vercel.com
+[client-debug] 2026-07-21T00:49:27.445Z Using provided user agent: vercel 56.4.1 node-v24.14.1 win32 (x64)
+[client-debug] 2026-07-21T00:49:27.445Z Setting platform version to harcoded value 2
+[client-debug] 2026-07-21T00:49:27.445Z Creating the deployment and starting upload...
+[client-debug] 2026-07-21T00:49:27.445Z Determining necessary files for upload...
+[client-debug] 2026-07-21T00:49:27.445Z Creating deployment
+[client-debug] 2026-07-21T00:49:27.450Z Sending deployment creation API request
+FETCH 26388: sending request to POST https://api.vercel.com/v13/deployments?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw&skipAu
+toDetectionConfirmation=1&prebuilt=1
+FETCH 26388: received response to POST https://api.vercel.com/v13/deployments?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw&skip
+AutoDetectionConfirmation=1&prebuilt=1 - HTTP 400
+FETCH 26388: trailers received from POST https://api.vercel.com/v13/deployments?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw&sk
+ipAutoDetectionConfirmation=1&prebuilt=1
+[client-debug] 2026-07-21T00:49:28.480Z Deployment response: {"error":{"code":"missing_files","message":"Missing files"
+,"missing":["576bde08e70f5e85a420f603035d0526be006aee","6aa44cdda74ed5e40da804525eee9cc6c88f6c0c","86c1c5398fc94b49f7d6
+477928032e286cf4b863","8b6ed35efeaef107e878b747bdd98d2fd82af044","95e9fa20693c70f172d2ee0fb5d29bc9eec71d11"]}}
+[client-debug] 2026-07-21T00:49:28.480Z Error: Deployment request status is 400
+[client-debug] 2026-07-21T00:49:28.480Z 5 files are required to upload
+[client-debug] 2026-07-21T00:49:28.480Z Yielding a 'file-count' event
+> [debug] [2026-07-21T00:49:28.480Z] Total files 556, 5 changed
+> [debug] [2026-07-21T00:49:28.480Z] Spinner invoked (Uploading [--------------------] (0.0B/100.9KB)) with a 0ms delay
+[client-debug] 2026-07-21T00:49:28.480Z Building an upload list...
+[client-debug] 2026-07-21T00:49:28.481Z Starting upload
+[client-debug] 2026-07-21T00:49:28.481Z POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+[client-debug] 2026-07-21T00:49:28.482Z POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+[client-debug] 2026-07-21T00:49:28.483Z POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+[client-debug] 2026-07-21T00:49:28.483Z POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+[client-debug] 2026-07-21T00:49:28.483Z POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: sending request to POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: sending request to POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: connecting to api.vercel.com using https:undefined
+FETCH 26388: connecting to api.vercel.com using https:undefined
+FETCH 26388: connecting to api.vercel.com using https:undefined
+> [debug] [2026-07-21T00:49:28.486Z] Spinner invoked (Uploading [======--------------] (33.2KB/100.9KB)) with a 0ms del
+ay
+> [debug] [2026-07-21T00:49:28.486Z] Spinner invoked (Uploading [==========----------] (55.2KB/100.9KB)) with a 0ms del
+ay
+> [debug] [2026-07-21T00:49:28.487Z] Spinner invoked (Uploading [===============-----] (79.0KB/100.9KB)) with a 0ms del
+ay
+FETCH 26388: received response to POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+[client-debug] 2026-07-21T00:49:28.818Z DONE in 336ms: POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuX
+TUnw4SUxw
+[client-debug] 2026-07-21T00:49:28.818Z File 6aa44cdda74ed5e40da804525eee9cc6c88f6c0c (D:\project\.vercel\output\static
+\pagefind\fragment\zh-tw_f1cc94c.pf_fragment) uploaded
+[client-debug] 2026-07-21T00:49:28.818Z Yielding a 'file-uploaded' event
+> [debug] [2026-07-21T00:49:28.818Z] Uploaded: D:\project\.vercel\output\static\pagefind\fragment\zh-tw_f1cc94c.pf_frag
+ment (1.23KB)
+FETCH 26388: trailers received from POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: connected to api.vercel.com using https:h1
+FETCH 26388: sending request to POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: connected to api.vercel.com using https:h1
+FETCH 26388: sending request to POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: connected to api.vercel.com using https:h1
+FETCH 26388: sending request to POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+> [debug] [2026-07-21T00:49:28.917Z] Spinner invoked (Uploading [====================] (100.9KB/100.9KB)) with a 0ms de
+lay
+FETCH 26388: received response to POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+[client-debug] 2026-07-21T00:49:29.008Z DONE in 526ms: POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuX
+TUnw4SUxw
+[client-debug] 2026-07-21T00:49:29.008Z File 576bde08e70f5e85a420f603035d0526be006aee (D:\project\.vercel\output\diagno
+stics\deploy-manifest.json) uploaded
+[client-debug] 2026-07-21T00:49:29.008Z Yielding a 'file-uploaded' event
+> [debug] [2026-07-21T00:49:29.008Z] Uploaded: D:\project\.vercel\output\diagnostics\deploy-manifest.json (39.75KB)
+FETCH 26388: trailers received from POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+[client-debug] 2026-07-21T00:49:29.207Z DONE in 724ms: POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuX
+TUnw4SUxw
+[client-debug] 2026-07-21T00:49:29.207Z File 95e9fa20693c70f172d2ee0fb5d29bc9eec71d11 (D:\project\.vercel\output\static
+\pagefind\fragment\zh-tw_fae97ea.pf_fragment) uploaded
+[client-debug] 2026-07-21T00:49:29.207Z Yielding a 'file-uploaded' event
+> [debug] [2026-07-21T00:49:29.207Z] Uploaded: D:\project\.vercel\output\static\pagefind\fragment\zh-tw_fae97ea.pf_frag
+ment (5.99KB)
+FETCH 26388: trailers received from POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+[client-debug] 2026-07-21T00:49:29.388Z DONE in 905ms: POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuX
+TUnw4SUxw
+[client-debug] 2026-07-21T00:49:29.388Z File 86c1c5398fc94b49f7d6477928032e286cf4b863 (D:\project\.vercel\output\static
+\seo-accessibility\index.html) uploaded
+[client-debug] 2026-07-21T00:49:29.388Z Yielding a 'file-uploaded' event
+> [debug] [2026-07-21T00:49:29.388Z] Uploaded: D:\project\.vercel\output\static\seo-accessibility\index.html (27.05KB)
+FETCH 26388: trailers received from POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+[client-debug] 2026-07-21T00:49:29.390Z DONE in 907ms: POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuX
+TUnw4SUxw
+[client-debug] 2026-07-21T00:49:29.390Z File 8b6ed35efeaef107e878b747bdd98d2fd82af044 (D:\project\.vercel\output\static
+\search\index.html) uploaded
+[client-debug] 2026-07-21T00:49:29.390Z Yielding a 'file-uploaded' event
+> [debug] [2026-07-21T00:49:29.390Z] Uploaded: D:\project\.vercel\output\static\search\index.html (26.83KB)
+[client-debug] 2026-07-21T00:49:29.390Z All files uploaded
+[client-debug] 2026-07-21T00:49:29.390Z Yielding a 'all-files-uploaded' event
+[client-debug] 2026-07-21T00:49:29.390Z Starting deployment creation
+[client-debug] 2026-07-21T00:49:29.390Z Creating deployment
+[client-debug] 2026-07-21T00:49:29.392Z Sending deployment creation API request
+FETCH 26388: sending request to POST https://api.vercel.com/v13/deployments?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw&skipAu
+toDetectionConfirmation=1&prebuilt=1
+FETCH 26388: trailers received from POST https://api.vercel.com/v2/files?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to POST https://api.vercel.com/v13/deployments?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw&skip
+AutoDetectionConfirmation=1&prebuilt=1 - HTTP 200
+FETCH 26388: trailers received from POST https://api.vercel.com/v13/deployments?teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw&sk
+ipAutoDetectionConfirmation=1&prebuilt=1
+[client-debug] 2026-07-21T00:49:30.359Z Deployment response: {"alias":["donttalk-donttalk.vercel.app","donttalk-jtlai09
+21-8797-donttalk.vercel.app"],"aliasAssigned":false,"automaticAliases":["donttalk-donttalk.vercel.app","donttalk-jtlai0
+921-8797-donttalk.vercel.app"],"bootedAt":1784594970798,"buildingAt":1784594970798,"buildSkipped":false,"createdAt":178
+4594970798,"creator":{"uid":"rXOdVxyQ0JncTw9lW2sunSwN","username":"jtlai0921-8797"},"id":"dpl_5HSzYcQQupNsHwvs5EiTZXRmP
+rca","name":"donttalk","meta":{"githubCommitAuthorName":"JT Lai","githubCommitAuthorEmail":"jtlai0921@gmail.com","githu
+bCommitMessage":"chore: update _backend.mjs","githubCommitOrg":"123lai1234-create","githubCommitRef":"main","githubComm
+itRepo":"ddd","githubCommitSha":"c5f18f62c039323f69dc95181f127d74f5f0eee9","githubDeployment":"1","githubOrg":"123lai12
+34-create","githubRepo":"ddd","gitDirty":"1"},"originCacheRegion":"iad1","project":{"id":"prj_vcjSm78uyB2LGkEMYJBEArC3c
+5It","name":"donttalk","framework":"astro"},"public":false,"prebuilt":true,"readyState":"INITIALIZING","regions":["iad1
+"],"source":"cli","status":"INITIALIZING","target":"production","team":{"id":"team_a3kKe1wDrxqQfuXTUnw4SUxw","name":"do
+nttalk","slug":"donttalk"},"type":"LAMBDAS","url":"donttalk-6a6r00fkl-donttalk.vercel.app","version":2,"previewComments
+Enabled":true,"oidcTokenClaims":{"sub":"owner:donttalk:project:donttalk:environment:production","iss":"https://oidc.ver
+cel.com/donttalk","scope":"owner:donttalk:project:donttalk:environment:production","aud":"https://vercel.com/donttalk",
+"owner":"donttalk","owner_id":"team_a3kKe1wDrxqQfuXTUnw4SUxw","project":"donttalk","project_id":"prj_vcjSm78uyB2LGkEMYJ
+BEArC3c5It","environment":"production","plan":"hobby"},"lambdas":[{"id":"bld_ji0zvxwds","createdAt":1784594970722,"entr
+ypoint":".","readyState":"READY","readyStateAt":1784594970722,"output":[]}],"aliasAssignedAt":null,"build":{"env":[]},"
+builds":[],"createdIn":"sfo1","env":[],"functions":null,"inspectorUrl":"https://vercel.com/donttalk/donttalk/5HSzYcQQup
+NsHwvs5EiTZXRmPrca","isInConcurrentBuildsQueue":false,"isInSystemBuildsQueue":true,"ownerId":"team_a3kKe1wDrxqQfuXTUnw4
+SUxw","plan":"hobby","projectId":"prj_vcjSm78uyB2LGkEMYJBEArC3c5It","projectSettings":{"buildCommand":"cd astro && npm 
+install --ignore-scripts && npm run build","devCommand":null,"framework":"astro","commandForIgnoringBuildStep":null,"in
+stallCommand":"cd astro && npm install --ignore-scripts","outputDirectory":"astro/dist","speedInsights":{"id":"GXb59sSK
+nDS97Gn11kdoJFyjnaB","hasData":false},"webAnalytics":{"id":"8oGH1N7RtZMgfC2yTyDbnC7Ll"},"nodeVersion":"24.x"},"routes":
+null,"config":{"version":1,"secureComputePrimaryRegion":null,"secureComputeFallbackRegion":null,"functionTimeout":300,"
+functionType":"fluid","functionMemoryType":"standard","isUsingActiveCPU":true,"resourceConfig":{"buildMachine":{"defaul
+tPurchaseType":"standard","purchaseType":"standard","machineSelectionType":"fixed"},"buildQueue":{"configuration":"SKIP
+_NAMESPACE_QUEUE"}}},"attribution":{"commitMeta":{"name":"JT Lai","email":"jtlai0921@gmail.com","isVerified":false}}}
+[client-debug] 2026-07-21T00:49:30.359Z Deployment created
+[client-debug] 2026-07-21T00:49:30.359Z Yielding a 'created' event
+  Inspect         https://vercel.com/donttalk/donttalk/5HSzYcQQupNsHwvs5EiTZXRmPrca
+  Production      https://donttalk-6a6r00fkl-donttalk.vercel.app
+> [debug] [2026-07-21T00:49:30.360Z] Spinner invoked (Building…) with a 0ms delay
+FETCH 26388: sending request to GET https://api.vercel.com/v3/now/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca/events?d
+irection=forward&follow=1&format=lines&teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+> [debug] [2026-07-21T00:49:30.360Z] #4 → GET https://api.vercel.com/v3/now/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrc
+a/events?direction=forward&follow=1&format=lines&teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw
+[client-debug] 2026-07-21T00:49:30.361Z Waiting for deployment to be ready...
+[client-debug] 2026-07-21T00:49:30.361Z Waiting for builds and the deployment to complete...
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+[client-debug] 2026-07-21T00:49:32.175Z Deployment state changed to BUILDING
+[client-debug] 2026-07-21T00:49:32.175Z Yielding a 'building' event
+> [debug] [2026-07-21T00:49:32.175Z] Spinner invoked (Building…) with a 0ms delay
+FETCH 26388: received response to GET https://api.vercel.com/v3/now/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca/events
+?direction=forward&follow=1&format=lines&teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+> [debug] [2026-07-21T00:49:32.726Z] #4 ← 200 OK: sfo1::fjjrc-1784594971428-c1bd82645205 [2.37s]
+> [debug] [2026-07-21T00:49:32.728Z] Spinner invoked (Running build in Washington, D.C., USA (East) – iad1) with a 0ms 
+delay
+> [debug] [2026-07-21T00:49:32.728Z] Spinner invoked (Build machine configuration: 2 cores, 8 GB) with a 0ms delay
+> [debug] [2026-07-21T00:49:32.728Z] Spinner invoked (Retrieving list of deployment files...) with a 0ms delay
+> [debug] [2026-07-21T00:49:32.728Z] Spinner invoked (Downloading 671 deployment files...) with a 0ms delay
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+> [debug] [2026-07-21T00:49:43.255Z] Spinner invoked (Using prebuilt build artifacts from .vercel/output) with a 0ms de
+lay
+> [debug] [2026-07-21T00:49:43.255Z] Spinner invoked (Learn more: https://vercel.link/build-output-api) with a 0ms dela
+y
+> [debug] [2026-07-21T00:49:43.255Z] Spinner invoked (Deploying outputs...) with a 0ms delay
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: sending request to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=team
+_a3kKe1wDrxqQfuXTUnw4SUxw
+FETCH 26388: received response to GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=te
+am_a3kKe1wDrxqQfuXTUnw4SUxw - HTTP 200
+FETCH 26388: trailers received from GET https://api.vercel.com/v13/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca?teamId=
+team_a3kKe1wDrxqQfuXTUnw4SUxw
+[client-debug] 2026-07-21T00:49:50.118Z Deployment state changed to READY
+[client-debug] 2026-07-21T00:49:50.118Z Yielding a 'ready' event
+[2K[1A[2K[G  Production      https://donttalk-6a6r00fkl-donttalk.vercel.app
+> [debug] [2026-07-21T00:49:50.118Z] Spinner invoked (Completing…) with a 0ms delay
+[client-debug] 2026-07-21T00:49:50.118Z Deployment alias assigned from event stream
+[client-debug] 2026-07-21T00:49:50.118Z Deployment is ready
+[client-debug] 2026-07-21T00:49:50.118Z Yielding a 'alias-assigned' event
+FETCH 26388: request to GET https://api.vercel.com/v3/now/deployments/dpl_5HSzYcQQupNsHwvs5EiTZXRmPrca/events?direction
+=forward&follow=1&format=lines&teamId=team_a3kKe1wDrxqQfuXTUnw4SUxw errored - This operation was aborted
+▲ Aliased         https://donttalk.vercel.app
+FETCH 26388: connecting to api.vercel.com using https:undefined
+
+✓ Ready in 24s
+FETCH 26388: connected to api.vercel.com using https:h1
+> [debug] [2026-07-21T00:49:50.788Z] Vercel CLI 56.4.1 (Node.js 24.14.1)
+
+> [debug] [2026-07-21T00:49:51.113Z] FETCH 22452: connecting to api.vercel.com using https:undefined
+
+> [debug] [2026-07-21T00:49:51.113Z] FETCH 22452: connecting to api.vercel.com using https:undefined
+
+> [debug] [2026-07-21T00:49:51.127Z] FETCH 22452: connecting to telemetry.vercel.com using https:undefined
+FETCH 22452: connecting to telemetry.vercel.com using https:undefined
+
+> [debug] [2026-07-21T00:49:51.278Z] FETCH 22452: connected to telemetry.vercel.com using https:h1
+FETCH 22452: connected to telemetry.vercel.com using https:h1
+
+> [debug] [2026-07-21T00:49:51.279Z] FETCH 22452: sending request to POST https://telemetry.vercel.com/api/vercel-cli/v
+1/events
+FETCH 22452: sending request to POST https://telemetry.vercel.com//api/vercel-cli/v1/events
+
+> [debug] [2026-07-21T00:49:51.480Z] FETCH 22452: connected to api.vercel.com using https:h1
+FETCH 22452: connected to api.vercel.com using https:h1
+
+> [debug] [2026-07-21T00:49:51.480Z] FETCH 22452: sending request to GET https://api.vercel.com/v2/user
+FETCH 22452: sending request to GET https://api.vercel.com//v2/user
+
+> [debug] [2026-07-21T00:49:51.676Z] FETCH 22452: received response to GET https://api.vercel.com/v2/user - HTTP 200
+FETCH 22452: received response to GET https://api.vercel.com//v2/user - HTTP 200
+
+> [debug] [2026-07-21T00:49:51.681Z] FETCH 22452: trailers received from GET https://api.vercel.com/v2/user
+
+> [debug] [2026-07-21T00:49:51.681Z] FETCH 22452: trailers received from GET https://api.vercel.com//v2/user
+
+> [debug] [2026-07-21T00:49:51.684Z] FETCH 22452: received response to POST https://telemetry.vercel.com/api/vercel-cli
+/v1/events - HTTP 204
+
+> [debug] [2026-07-21T00:49:51.684Z] FETCH 22452: received response to POST https://telemetry.vercel.com//api/vercel-cl
+i/v1/events - HTTP 204
+FETCH 22452: trailers received from POST https://telemetry.vercel.com/api/vercel-cli/v1/events
+FETCH 22452: trailers received from POST https://telemetry.vercel.com//api/vercel-cli/v1/events
+
+> [debug] [2026-07-21T00:49:51.684Z] Telemetry event tracked
+> [debug] [2026-07-21T00:49:51.768Z] Telemetry subprocess exited with code 0
+https://donttalk-6a6r00fkl-donttalk.vercel.app
