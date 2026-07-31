@@ -1,12 +1,4 @@
-﻿{
+{
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "astro",
-  "outputDirectory": "astro/dist",
-  "buildCommand": "cd astro && npm install --ignore-scripts && npm run build",
-  "installCommand": "cd astro && npm install --ignore-scripts",
-  "trailingSlash": true,
-  "rewrites": [
-    { "source": "/api/stock/:ticker*", "destination": "/api/stock/[ticker]?ticker=:ticker" },
-    { "source": "/api/stocks/remove/:code*", "destination": "/api/stocks/remove/[code]?code=:code" }
-  ]
+  "framework": "astro"
 }
