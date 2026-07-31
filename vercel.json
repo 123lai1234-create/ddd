@@ -1,10 +1,23 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": "astro/dist",
-  "buildCommand": "cd astro && npm install --ignore-scripts && npm run build",
-  "installCommand": "cd astro && npm install --ignore-scripts",
+  "buildCommand": "echo 'no build needed — prebuilt _backend.mjs in root'",
+  "installCommand": "echo 'no install needed — api/ functions are self-contained'",
   "trailingSlash": false,
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api?p=:path*" }
-  ]
+  ],
+  "functions": {
+    "api/[...slug].mjs": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/lyrics.jsx": {
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "api/og.jsx": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
 }
