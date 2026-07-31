@@ -3087,7 +3087,8 @@ function loadStockList() {
 
   function loadIndustryMap() {
     fetch("/api/stock_industry")
-      .then(function(r){ return r.json(); })
+      .then(function(r){ return r.ok ? r.json() : { mapping: {} }; })
+      .catch(function(e){ console.warn("[stock-app] stock_industry endpoint deprecated, falling back to empty mapping"); return { mapping: {} }; })
       .then(function(d){
         INDUSTRY_MAP = (d && d.mapping) || {};
         // 驗證 localStorage 持久值仍存在於最新標籤集合中，過期自動清除
@@ -3674,7 +3675,7 @@ function openAddStockModal() {
 function populateIndustryOptions() {
   var sel=document.getElementById("addStockIndustry");
   if(!sel) return;
-  fetch("/api/stock_industry").then(function(r){return r.json();}).then(function(d){
+  fetch("/api/stock_industry").then(function(r){return r.ok ? r.json() : { mapping: {} };}).catch(function(e){ console.warn("[stock-app] stock_industry endpoint deprecated, falling back to empty labels"); return { mapping: {} }; }).then(function(d){
     var mapping=(d && d.mapping) || {};
     var labels=[];
     var seen={};
