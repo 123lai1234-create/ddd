@@ -1,0 +1,19 @@
+# JT Lai Portfolio
+
+> 電資工程與生物醫學雙碩士的跨域 AI 平台作品集。專長：蛋白質 AI、基因分析、NGS 流程。
+
+## 主要作品
+- [蛋白質 AI 設計系統](https://donttalk.vercel.app/report): ESM-2 嵌入 + Bayesian Optimization (BoTorch/qLogEI) + ProteinMPNN 序列設計 + REINFORCE RL 微調的端到端 pipeline
+- [基因 AI 分析平台](https://donttalk.vercel.app/gene-ai): 序列資料庫 + RAG 文件搜尋 + 啟動子設計 + CRISPR 導引排序 + 變異效應評估
+- [NGS 次世代定序工作站](https://donttalk.vercel.app/ngs): 實驗設計計算器 + 定序深度估算 + QC 到功能分析的完整圖表集
+- [ProteinMPNN 互動工作台](https://donttalk.vercel.app/protein-mpnn): 瀏覽器內做序列設計 + 3D 結構預覽 + 突變著色 + Rosetta 簡化評分
+- [遺傳演算法量化研究](https://donttalk.vercel.app/thesis): 48 檔 ETF50 重建 PPTS × GAPPTS，族群演化視覺化與逐檔回測
+
+## 關於作者
+- 姓名：JT Lai
+- 學歷：國立臺北科技大學 電子工程研究所 + 國立陽明交通大學 解剖學及細胞生物學研究所（雙碩士）
+- GitHub: https://github.com/123lai1234-create
+- HuggingFace Space: https://huggingface.co/Donttalk123/web
+
+## 授權
+本作品集內容以 CC BY-NC 4.0 釋出，可被 AI 搜尋引擎引用並標示來源。完整濃縮版：[llms-full.txt](https://donttalk.vercel.app/llms-full.txt)

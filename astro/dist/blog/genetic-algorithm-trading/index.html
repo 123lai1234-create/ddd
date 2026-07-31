@@ -1,0 +1,404 @@
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><!--
+      Native IntersectionObserver fallback for `.reveal` fade-in.
+      Runs in addition to nav.js's local observer, so the page works
+      even if nav.js fails to load (network/CDN issue) — content stays
+      visible instead of getting stuck at opacity:0.
+    --><script>
+      (function() {
+        function bootReveal() {
+          var els = document.querySelectorAll('.reveal:not(.visible)');
+          if (!els.length) return;
+          if (typeof IntersectionObserver === 'undefined') {
+            els.forEach(function(el) { el.classList.add('visible'); });
+            return;
+          }
+          var io = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+              if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                io.unobserve(e.target);
+              }
+            });
+          }, { rootMargin: '0px 0px -8% 0px', threshold: 0.04 });
+          els.forEach(function(el) { io.observe(el); });
+          // Hard fallback: anything still hidden after 1.5s gets shown.
+          setTimeout(function() {
+            document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
+              el.classList.add('visible');
+            });
+          }, 1500);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bootReveal);
+        } else {
+          bootReveal();
+        }
+      })();
+    </script><title>用遺傳演算法尋找股票最佳交易參數 | Portfolio</title><meta name="description" content="PPTS 利潤價格分布策略結合 GA 參數搜尋，在 ETF50 的 48 檔股票上做逐檔最佳化，記錄設計決策與實驗結果。"><meta property="og:title" content="用遺傳演算法尋找股票最佳交易參數 | Portfolio"><meta property="og:description" content="PPTS 利潤價格分布策略結合 GA 參數搜尋，在 ETF50 的 48 檔股票上做逐檔最佳化，記錄設計決策與實驗結果。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://dontalk.vercel.app/og?t=%E7%94%A8%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E5%B0%8B%E6%89%BE%E8%82%A1%E7%A5%A8%E6%9C%80%E4%BD%B3%E4%BA%A4%E6%98%93%E5%8F%83%E6%95%B8%20%7C%20Portfolio&#38;s=PPTS%20%E5%88%A9%E6%BD%A4%E5%83%B9%E6%A0%BC%E5%88%86%E5%B8%83%E7%AD%96%E7%95%A5%E7%B5%90%E5%90%88%20GA%20%E5%8F%83%E6%95%B8%E6%90%9C%E5%B0%8B%EF%BC%8C%E5%9C%A8%20ETF50%20%E7%9A%84%2048%20%E6%AA%94%E8%82%A1%E7%A5%A8%E4%B8%8A%E5%81%9A%E9%80%90%E6%AA%94%E6%9C%80%E4%BD%B3%E5%8C%96%EF%BC%8C%E8%A8%98%E9%8C%84%E8%A8%AD%E8%A8%88%E6%B1%BA%E7%AD%96%E8%88%87%E5%AF%A6%E9%A9%97%E7%B5%90%E6%9E%9C%E3%80%82&#38;tag=Portfolio"><meta name="twitter:image" content="https://dontalk.vercel.app/og?t=%E7%94%A8%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E5%B0%8B%E6%89%BE%E8%82%A1%E7%A5%A8%E6%9C%80%E4%BD%B3%E4%BA%A4%E6%98%93%E5%8F%83%E6%95%B8%20%7C%20Portfolio&#38;s=PPTS%20%E5%88%A9%E6%BD%A4%E5%83%B9%E6%A0%BC%E5%88%86%E5%B8%83%E7%AD%96%E7%95%A5%E7%B5%90%E5%90%88%20GA%20%E5%8F%83%E6%95%B8%E6%90%9C%E5%B0%8B%EF%BC%8C%E5%9C%A8%20ETF50%20%E7%9A%84%2048%20%E6%AA%94%E8%82%A1%E7%A5%A8%E4%B8%8A%E5%81%9A%E9%80%90%E6%AA%94%E6%9C%80%E4%BD%B3%E5%8C%96%EF%BC%8C%E8%A8%98%E9%8C%84%E8%A8%AD%E8%A8%88%E6%B1%BA%E7%AD%96%E8%88%87%E5%AF%A6%E9%A9%97%E7%B5%90%E6%9E%9C%E3%80%82&#38;tag=Portfolio"><meta property="og:url" content="https://donttalk.vercel.app/blog/genetic-algorithm-trading/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="用遺傳演算法尋找股票最佳交易參數 | Portfolio"><meta name="twitter:description" content="PPTS 利潤價格分布策略結合 GA 參數搜尋，在 ETF50 的 48 檔股票上做逐檔最佳化，記錄設計決策與實驗結果。"><link rel="canonical" href="https://donttalk.vercel.app/blog/genetic-algorithm-trading/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/blog/genetic-algorithm-trading/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/blog/genetic-algorithm-trading/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css?v=03bbf2c2"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><script src="/scripts/immersive-experience.js" defer></script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://dontalk.vercel.app#person","name":"JT Lai","url":"https://dontalk.vercel.app","image":"https://dontalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://dontalk.vercel.app#website","url":"https://dontalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://dontalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://dontalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/blog/genetic-algorithm-trading/#webpage","url":"https://donttalk.vercel.app/blog/genetic-algorithm-trading/","name":"用遺傳演算法尋找股票最佳交易參數 | Portfolio","description":"PPTS 利潤價格分布策略結合 GA 參數搜尋，在 ETF50 的 48 檔股票上做逐檔最佳化，記錄設計決策與實驗結果。","inLanguage":"zh-TW","isPartOf":{"@id":"https://dontalk.vercel.app#website"},"about":{"@id":"https://dontalk.vercel.app#person"},"additionalType":"WebPage"}]}</script><link rel="stylesheet" href="/_astro/Base.BhTaoyI2.css">
+<style>.blog-prose[data-astro-cid-4sn4zg3r]{color:var(--text, #e6edf3);line-height:1.8;font-size:.95rem}.blog-prose[data-astro-cid-4sn4zg3r] h2[data-astro-cid-4sn4zg3r]{font-size:1.25rem;font-weight:700;margin:2em 0 .75em;color:var(--text);border-bottom:1px solid var(--border, rgba(255,255,255,.08));padding-bottom:.4em}.blog-prose[data-astro-cid-4sn4zg3r] h3[data-astro-cid-4sn4zg3r]{font-size:1.05rem;font-weight:600;margin:1.5em 0 .5em;color:var(--text)}.blog-prose[data-astro-cid-4sn4zg3r] p[data-astro-cid-4sn4zg3r]{margin:0 0 1.2em}.blog-prose[data-astro-cid-4sn4zg3r] ul[data-astro-cid-4sn4zg3r],.blog-prose[data-astro-cid-4sn4zg3r] ol[data-astro-cid-4sn4zg3r]{margin:0 0 1.2em 1.4em}.blog-prose[data-astro-cid-4sn4zg3r] li[data-astro-cid-4sn4zg3r]{margin-bottom:.35em}.blog-prose[data-astro-cid-4sn4zg3r] a[data-astro-cid-4sn4zg3r]{color:var(--accent, #58d7ff);text-underline-offset:3px}.blog-prose[data-astro-cid-4sn4zg3r] code[data-astro-cid-4sn4zg3r]{background:#ffffff0f;border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:1px 6px;font-family:JetBrains Mono,monospace;font-size:.85em}.blog-prose[data-astro-cid-4sn4zg3r] pre[data-astro-cid-4sn4zg3r]{background:#0006;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:0 0 1.4em}.blog-prose[data-astro-cid-4sn4zg3r] pre[data-astro-cid-4sn4zg3r] code[data-astro-cid-4sn4zg3r]{background:none;border:none;padding:0;font-size:.85rem}.blog-prose[data-astro-cid-4sn4zg3r] blockquote[data-astro-cid-4sn4zg3r]{border-left:3px solid var(--accent, #58d7ff);padding:.4em 0 .4em 1.2em;margin:0 0 1.2em;color:var(--muted);font-style:italic}.blog-prose[data-astro-cid-4sn4zg3r] table[data-astro-cid-4sn4zg3r]{width:100%;border-collapse:collapse;margin:0 0 1.4em;font-size:.875rem}.blog-prose[data-astro-cid-4sn4zg3r] th[data-astro-cid-4sn4zg3r],.blog-prose[data-astro-cid-4sn4zg3r] td[data-astro-cid-4sn4zg3r]{padding:8px 12px;border:1px solid rgba(255,255,255,.1);text-align:left}.blog-prose[data-astro-cid-4sn4zg3r] th[data-astro-cid-4sn4zg3r]{background:#ffffff0a;font-weight:600}.blog-prose[data-astro-cid-4sn4zg3r] strong[data-astro-cid-4sn4zg3r]{color:var(--text);font-weight:600}
+</style></head> <body data-page="blog-post"> <div class="immersive-bg" id="immersive-bg" data-astro-cid-3guv64em> <video id="bg-video" class="bg-video" autoplay muted loop playsinline data-astro-cid-3guv64em> <source id="video-source" type="video/webm" data-astro-cid-3guv64em> </video> <div class="bg-overlay" data-astro-cid-3guv64em></div> </div>  <script type="module">class n{constructor(){this.container=document.getElementById("immersive-bg"),this.video=document.getElementById("bg-video"),this.particles=[],this.init()}init(){this.createParticles(),this.setupEventListeners(),this.setupVideo()}setupVideo(){if(!this.video)return;const a=["179f1b00-2727-47ec-81d3-591d8405c762_watermarked.webm","314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.webm","5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.webm","6b95a3b8-no-watermark_watermarked.webm","a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.webm","bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.webm","ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.webm","cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.webm"],t=a[Math.floor(Math.random()*a.length)],e=document.getElementById("video-source");e&&(e.src="/videos/"+t),this.video.play().catch(()=>{this.video.style.display="none"})}createParticles(){if(!this.container)return;const a=Math.min(80,Math.floor(window.innerWidth/15));for(let t=0;t<a;t++){const e=document.createElement("div");e.className="particle",e.style.left=Math.random()*100+"%",e.style.top=Math.random()*100+"%";const i=Math.random()*3+1;e.style.width=i+"px",e.style.height=i+"px",e.style.animationDuration=Math.random()*10+15+"s",e.style.animationDelay=Math.random()*5+"s",this.container.appendChild(e),this.particles.push(e)}}setupEventListeners(){window.addEventListener("resize",()=>this.handleResize())}handleResize(){Math.min(80,Math.floor(window.innerWidth/15))!==this.particles.length&&(this.particles.forEach(t=>t.remove()),this.particles=[],this.createParticles())}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",()=>{new n}):new n;</script>   <div data-site-nav data-astro-cid-4sn4zg3r></div> <main style="max-width:720px;margin:0 auto;padding:60px 24px" data-astro-cid-4sn4zg3r> <a href="/blog" style="font-size:.85rem;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:32px" data-astro-cid-4sn4zg3r>← 所有文章</a> <header style="margin-bottom:40px" data-astro-cid-4sn4zg3r> <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px" data-astro-cid-4sn4zg3r> <span style="font-size:.72rem;padding:2px 8px;background:rgba(88,215,255,.08);border:1px solid rgba(88,215,255,.2);border-radius:99px;color:var(--cyan,#58d7ff)" data-astro-cid-4sn4zg3r>遺傳演算法</span><span style="font-size:.72rem;padding:2px 8px;background:rgba(88,215,255,.08);border:1px solid rgba(88,215,255,.2);border-radius:99px;color:var(--cyan,#58d7ff)" data-astro-cid-4sn4zg3r>量化交易</span><span style="font-size:.72rem;padding:2px 8px;background:rgba(88,215,255,.08);border:1px solid rgba(88,215,255,.2);border-radius:99px;color:var(--cyan,#58d7ff)" data-astro-cid-4sn4zg3r>機器學習</span><span style="font-size:.72rem;padding:2px 8px;background:rgba(88,215,255,.08);border:1px solid rgba(88,215,255,.2);border-radius:99px;color:var(--cyan,#58d7ff)" data-astro-cid-4sn4zg3r>研究筆記</span> </div> <h1 style="font-size:clamp(1.5rem,4vw,2.1rem);font-weight:700;line-height:1.3;color:var(--text);margin:0 0 12px" data-astro-cid-4sn4zg3r>用遺傳演算法尋找股票最佳交易參數</h1> <p style="color:var(--muted);font-size:.9rem;margin:0 0 8px" data-astro-cid-4sn4zg3r>PPTS 利潤價格分布策略結合 GA 參數搜尋，在 ETF50 的 48 檔股票上做逐檔最佳化，記錄設計決策與實驗結果。</p> <time style="font-size:.8rem;color:var(--muted);font-family:'JetBrains Mono',monospace" data-astro-cid-4sn4zg3r> 2026年3月5日 </time> </header> <article class="blog-prose" data-astro-cid-4sn4zg3r> <h2 id="研究動機">研究動機</h2>
+<p>傳統技術分析指標（MA、RSI）的參數通常是「業界慣例」，缺乏對個別標的的適應性。
+我的碩論想探討：<strong>能不能用演化式搜尋，替每檔股票找到統計上更優的進出場參數？</strong></p>
+<h2 id="ppts-策略架構">PPTS 策略架構</h2>
+<p>PPTS（Price Profit Trading Strategy）的核心假設是：</p>
+<blockquote>
+<p>股價在特定價格區間內的分布有可預測的均值回歸傾向。</p>
+</blockquote>
+<p>四個主要參數：</p>
+<ul>
+<li><strong>n_bins</strong>：價格區間分割數</li>
+<li><strong>hold_days</strong>：持有天數上限</li>
+<li><strong>profit_target</strong>：目標利潤率（%）</li>
+<li><strong>entry_threshold</strong>：進場門檻（區間內相對位置）</li>
+</ul>
+<p>參數空間的搜尋維度是 4，但每個維度的有效範圍很大，
+純粹 grid search 的計算量不可行 → 這就是為什麼用 GA。</p>
+<h2 id="遺傳演算法設計">遺傳演算法設計</h2>
+<h3 id="染色體編碼">染色體編碼</h3>
+<p>每個個體是一個 4-tuple：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="python"><code><span class="line"><span style="color:#E1E4E8">individual </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> [n_bins, hold_days, profit_target, entry_threshold]</span></span>
+<span class="line"><span style="color:#6A737D"># 例如: [8, 15, 0.03, 0.25]</span></span></code></pre>
+<h3 id="適應度函數">適應度函數</h3>
+<p>在訓練集（2010–2018）上回測，計算：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>fitness = Sharpe_ratio × (1 + win_rate) - max_drawdown_penalty</span></span></code></pre>
+<p>Sharpe ratio 負數時直接回傳 0，避免負適應度污染選擇壓力。</p>
+<h3 id="演化操作">演化操作</h3>
+<ul>
+<li><strong>選擇</strong>：Tournament selection（k=5），比賽制比輪盤更穩定。</li>
+<li><strong>交叉</strong>：Two-point crossover，保留局部參數搭配。</li>
+<li><strong>突變</strong>：Gaussian mutation，每個參數有 10% 機率加上小擾動。</li>
+<li><strong>世代</strong>：100 世代，族群大小 50。</li>
+</ul>
+<h2 id="結果觀察">結果觀察</h2>
+<p>本站的<a href="/thesis">論文互動展示</a> 可以即時觀察族群演化：</p>
+<ul>
+<li>前 20 世代：最佳個體的 Sharpe ratio 快速提升（探索期）</li>
+<li>20–60 世代：族群多樣性下降，趨向收斂（開採期）</li>
+<li>60+ 世代：局部最優，偶爾突變跳出</li>
+</ul>
+<p><strong>跨標的差異</strong>：台積電（2330）的最佳 hold_days 集中在 5–10 天，
+而鴻海（2317）的最佳配置更傾向更長持有（20–30 天）。這說明個別股票的最佳策略
+差異顯著，支持了逐檔最佳化的必要性。</p>
+<h2 id="限制與未來方向">限制與未來方向</h2>
+<ol>
+<li><strong>前視偏差</strong>：訓練集和測試集切分需要更嚴格的 walk-forward 驗證。</li>
+<li><strong>交易成本</strong>：目前模型未考慮滑價和手續費。</li>
+<li><strong>多因子整合</strong>：目前只用價格資訊，加入成交量或基本面可能改善。</li>
+</ol>
+<p>完整程式碼和互動圖表在<a href="/thesis">論文頁面</a>。</p> </article> </main> <div data-site-footer data-astro-cid-4sn4zg3r></div>   <!-- ── Hide Vercel Toolbar (auto-injected when logged in to Vercel) ── --> <style>
+      vercel-toolbar { display: none !important; visibility: hidden !important; }
+    </style> <!-- ── AI Chat Widget (floating, bottom-left, hides on media pages) ── --> <button class="cw-btn" id="cw-btn" data-tip="AI 助手" data-cw-api="/api/chat" data-cw-hide-paths="/music,/video-gen,/interactive-showcase" aria-label="開啟 AI 助手">💬</button> <aside class="cw-panel" id="cw-panel" role="dialog" aria-label="AI 助手對話" aria-hidden="true"> <header class="cw-header"> <div> <div class="cw-title">AI 助手</div> <div class="cw-sub">問我任何關於這個網站的問題</div> </div> <button class="cw-close" id="cw-close" aria-label="關閉">×</button> </header> <div class="cw-msgs" id="cw-msgs"> <div class="cw-welcome" id="cw-welcome"> <p>嗨！我是你的 AI 助手 👋</p> <p style="margin: 8px 0 12px; font-size: .78rem">問我關於這個網站、音樂、基因、AI、或股票的任何問題：</p> <div id="cw-suggestions"></div> </div> </div> <form class="cw-input-row" id="cw-form" autocomplete="off"> <textarea class="cw-input" id="cw-input" placeholder="輸入訊息… (Enter 送出 / Shift+Enter 換行)" rows="1" maxlength="2000"></textarea> <button class="cw-send" id="cw-send" type="submit">送出</button> </form> </aside> <script>
+(function() {
+  'use strict';
+  if (window.__cw_loaded) return;
+  window.__cw_loaded = true;
+
+  // ── API URL resolution (hardcode Render to avoid SW-cache HTML issues) ─
+  const RENDER_URL = 'https://donttalk-chat-bot-xc4e.onrender.com';
+  // Prefer window.CHAT_BOT_API (set by Base.astro <head>) for local dev overrides;
+  // fall back to hardcoded Render on production where HTML may be SW-cached.
+  const CHAT_BOT_API = window.CHAT_BOT_API;
+  const resolvedApiUrl = (CHAT_BOT_API && CHAT_BOT_API.startsWith('http'))
+    ? CHAT_BOT_API
+    : RENDER_URL + '/chat';
+  console.log('[ChatWidget] resolvedApiUrl =', resolvedApiUrl);
+
+  const btn = document.getElementById('cw-btn');
+  if (!btn) return;
+  const apiUrl = btn.getAttribute('data-cw-api') || '/api/chat';
+  const hideOnPaths = btn.getAttribute('data-cw-hide-paths') || '';
+  const hidePaths = hideOnPaths.split(',').map(function(s){return s.trim();}).filter(Boolean);
+
+  // ── Keep backend warm: ping /healthz when button is first interacted ─
+  // (Render Free tier sleeps after 15 min; this wakes it before the user sends a message)
+  let warmedUp = false;
+  function warmUp() {
+    if (warmedUp) return;
+    warmedUp = true;
+    // Always ping Render directly — never a relative path (avoids SW/HTML-cache mismatch)
+    fetch(RENDER_URL + '/healthz', { mode: 'cors' }).catch(function() {});
+  }
+  btn.addEventListener('mouseenter', warmUp, { once: true });
+  btn.addEventListener('focus', warmUp, { once: true });
+
+  const panel = document.getElementById('cw-panel');
+  const closeBtn = document.getElementById('cw-close');
+  const msgs = document.getElementById('cw-msgs');
+  const form = document.getElementById('cw-form');
+  const input = document.getElementById('cw-input');
+  const sendBtn = document.getElementById('cw-send');
+  const welcome = document.getElementById('cw-welcome');
+  const suggestions = document.getElementById('cw-suggestions');
+
+  if (!btn || !panel) return;
+
+  const STORAGE_KEY = 'cw.history.v1';
+  const MAX_HISTORY = 20;
+  const SUGGESTIONS = [
+    '這個網站是什麼？',
+    '介紹一下你的音樂作品',
+    '你有做哪些 AI 工具？',
+    '幫我查台積電股價',
+  ];
+
+  // ── Hide on certain paths + during media playback ─────────────
+  function shouldHide() {
+    const p = location.pathname;
+    if (hidePaths.some(h => p.startsWith(h))) return true;
+    // Hide if any <video> or <audio> is playing
+    const media = document.querySelectorAll('video, audio');
+    for (const m of media) {
+      if (!m.paused && m.readyState > 1) return true;
+    }
+    return false;
+  }
+  function applyHide() {
+    btn.setAttribute('data-hidden', shouldHide() ? '1' : '0');
+  }
+  applyHide();
+  // Re-check every 1.5s (cheap; covers SPA-ish nav + media start/stop)
+  setInterval(applyHide, 1500);
+  document.addEventListener('play', applyHide, true);
+  document.addEventListener('pause', applyHide, true);
+
+  // ── Open/close ────────────────────────────────────────────────
+  function open() {
+    panel.setAttribute('data-open', '1');
+    panel.setAttribute('aria-hidden', 'false');
+    if (welcome && suggestions && suggestions.children.length === 0) {
+      SUGGESTIONS.forEach(s => {
+        const c = document.createElement('span');
+        c.className = 'cw-chip';
+        c.textContent = s;
+        c.addEventListener('click', () => sendUser(s));
+        suggestions.appendChild(c);
+      });
+    }
+    setTimeout(() => input.focus(), 50);
+  }
+  function close() {
+    panel.removeAttribute('data-open');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+  btn.addEventListener('click', () => {
+    panel.getAttribute('data-open') === '1' ? close() : open();
+  });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && panel.getAttribute('data-open') === '1') close();
+  });
+
+  // ── History persistence ───────────────────────────────────────
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h.slice(-MAX_HISTORY))); }
+    catch {}
+  }
+  let history = loadHistory();
+  // render prior history
+  history.forEach(m => renderBubble(m.role, m.content, false));
+
+  // ── Markdown mini-renderer (very small, no deps) ──────────────
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function md(s) {
+    if (!s) return '';
+    // citations [1] [2] → sup pill
+    s = s.replace(/\[(\d+)\]/g, (_, n) => `<span class="cw-cite">[${n}]</span>`);
+    // code blocks
+    s = s.replace(/```([\s\S]*?)```/g, (_, c) => `<pre>${escapeHtml(c.trim())}</pre>`);
+    // inline code
+    s = s.replace(/`([^`]+)`/g, function(_, c) { return '<code>' + escapeHtml(c) + '</code>'; });
+    // links [text](url)
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // internal links /path
+    s = s.replace(/(^|\s)(\/[a-z0-9_\-/]+)/gi, (m, pre, p) => `${pre}<a href="${p}">${p}</a>`);
+    // bold
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // line breaks
+    s = s.replace(/\n/g, '<br>');
+    return s;
+  }
+
+  // ── Bubbles ───────────────────────────────────────────────────
+  let activeBotBubble = null; // currently streaming
+  function renderBubble(role, content, isHtml = false) {
+    const div = document.createElement('div');
+    div.className = 'cw-msg cw-msg-' + (role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot');
+    if (role === 'typing') {
+      div.innerHTML = '<span class="cw-typing"></span><span class="cw-typing"></span><span class="cw-typing"></span>';
+    } else {
+      div.innerHTML = isHtml ? content : md(content);
+    }
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  // ── Send / stream ─────────────────────────────────────────────
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  form.addEventListener('submit', e => { e.preventDefault(); sendUser(input.value); });
+
+  async function sendUser(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    if (welcome && welcome.parentNode) welcome.parentNode.removeChild(welcome);
+
+    input.value = '';
+    input.style.height = 'auto';
+    renderBubble('user', text);
+    history.push({ role: 'user', content: text });
+
+    // typing indicator
+    const typing = renderBubble('typing');
+    sendBtn.disabled = true;
+
+    let botText = '';
+    let tools = [];
+    let ragSources = [];
+    // track the final bot bubble so we can append footnotes to it after finally
+    let finalBubble = null;
+
+    // Timeout guard: fe8.cn may return non-streaming JSON (no SSE) → reader hangs forever
+    let gotToken = false;
+    var timeoutId;
+
+    try {
+      console.log('[ChatWidget] sending fetch to', resolvedApiUrl);
+      // No abort timeout — Render Free tier cold-starts can take 30-60s.
+      // warmUp() on hover should wake it before the user sends a message.
+      const resp = await fetch(resolvedApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+      });
+      console.log('[ChatWidget] fetch done, status:', resp.status, 'body=', !!resp.body);
+      if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      gotToken = false;
+      timeoutId = setTimeout(function() { if (!gotToken) { console.log('[ChatWidget] TIMEOUT: no token in 30s'); reader.cancel(); } }, 30000);
+      // Process one complete SSE event from the front of buf
+      // Render backend uses CRLF (\r\n) line endings — must match or we'll never split events
+      function processBuf() {
+        let idx = buf.indexOf('\r\n\r\n');
+        if (idx === -1) return;
+        const raw = buf.slice(0, idx);
+        buf = buf.slice(idx + 4);
+        const evLine = raw.split('\r\n').find(function(l) { return l.startsWith('event:'); });
+        const dataLine = raw.split('\r\n').find(function(l) { return l.startsWith('data:'); });
+        if (!dataLine) return;
+        const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
+        let data = {};
+        try { data = JSON.parse(dataLine.replace(/^data:\s*/, '')); } catch {}
+        if (evt === 'token' && data.content) {
+          gotToken = true;
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
+          botText += data.content;
+          activeBotBubble.innerHTML = md(botText);
+          msgs.scrollTop = msgs.scrollHeight;
+        } else if (evt === 'tool_call') {
+          tools.push({ name: data.name, args: data.arguments });
+        } else if (evt === 'tool_result') {
+          const last = tools[tools.length - 1];
+          if (last) last.result = data.result;
+        } else if (evt === 'rag') {
+          (data.chunks || []).forEach(function(c) { ragSources.push(c); });
+        } else if (evt === 'done') {
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', md(botText));
+          finalBubble = activeBotBubble;
+        } else if (evt === 'error') {
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          renderBubble('error', '⚠️ ' + (data.message || 'unknown error'));
+          finalBubble = null;
+        }
+      }
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          // Stream exhausted — process any trailing data still in buf (no \n\n needed)
+          buf = buf.trim();
+          if (buf) processBuf();
+          break;
+        }
+        buf += dec.decode(value, { stream: true });
+        // Drain all complete events in buf (CRLF-separated)
+        while (buf.indexOf('\r\n\r\n') !== -1) processBuf();
+      }
+    } catch (err) {
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      const isAbort = err && (err.name === 'AbortError' || (err.message && err.message.includes('abort')));
+      renderBubble('error', isAbort
+        ? '⚠️ 連線逾時（後端服務喚醒中，請稍候後再試）'
+        : '⚠️ 連線失敗：' + (err && err.message ? err.message : String(err)));
+      finalBubble = null;
+    } finally {
+      clearTimeout(timeoutId);
+      sendBtn.disabled = false;
+      activeBotBubble = null;
+    }
+
+    // append footnotes to the final bot bubble (runs after finally so we have a stable ref)
+    if (finalBubble) {
+      if (tools.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-tools';
+        div.innerHTML = tools.map(function(t) { return '<span class="cw-tool-pill">🔧 ' + escapeHtml(t.name) + '</span>'; }).join('');
+        finalBubble.appendChild(div);
+      }
+      if (ragSources.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-rag-sources';
+        const uniq = [];
+        const seen = new Set();
+        ragSources.forEach(function(s) {
+          const key = s.url || s.title;
+          if (!seen.has(key)) { seen.add(key); uniq.push(s); }
+        });
+        div.innerHTML = '📚 引用：' + uniq.slice(0, 5).map(function(s) {
+          const url = s.url || '#';
+          const title = s.title || url;
+          return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(title) + '</a>';
+        }).join(' · ');
+        finalBubble.appendChild(div);
+      }
+    }
+    if (botText) history.push({ role: 'assistant', content: botText });
+    saveHistory(history);
+  }
+})();
+</script> <script>
+      // DEPLOY_MARKER: 2026-07-21T16:50:00-chat-render-v3
+      // Resolve Chat Widget API URL.
+      // In dev (localhost) → http://localhost:8765/chat (FastAPI backend)
+      // In prod → Render directly (Vercel proxy buffers SSE → broken streaming)
+      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8765/chat'
+        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
+    </script> </body> </html>

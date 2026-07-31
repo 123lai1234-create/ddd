@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRT 時間軸驗證報告 — Whisper word_timestamps</title>
+<style>
+  :root {
+    --bg: #0f0f12;
+    --card: #1a1a1f;
+    --border: rgba(255,255,255,0.08);
+    --text: #e0e0e5;
+    --text-dim: #9999a3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC",
+                 "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    padding: 32px 16px;
+    line-height: 1.6;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 {
+    font-size: 2rem;
+    margin: 0 0 8px;
+    background: linear-gradient(135deg, #ff5500, #ffaa00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .subtitle { color: var(--text-dim); margin-bottom: 32px; font-size: 0.95rem; }
+  .intro {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 32px;
+  }
+  .intro h3 { margin: 0 0 12px; color: #ffaa00; }
+  .intro p { margin: 0 0 8px; font-size: 0.9rem; color: var(--text-dim); }
+  .intro ul { margin: 8px 0 0; padding-left: 20px; font-size: 0.85rem; color: var(--text-dim); }
+
+  .track-block {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--c);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+  .track-header { margin-bottom: 20px; }
+  .track-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+  }
+  .track-num {
+    background: var(--c);
+    color: #000;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Consolas', monospace;
+  }
+  .track-lang {
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+  }
+  .track-block h2 { margin: 0 0 12px; font-size: 1.4rem; }
+  .stats { display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-dim); }
+  .stats b { color: var(--c); }
+
+  .timeline-wrap {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .timeline {
+    position: relative;
+    height: 130px;
+  }
+  .timeline-track {
+    position: relative;
+    height: 90px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    border: 1px dashed rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .cue {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    background: var(--c);
+    opacity: 0.85;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    min-width: 8px;
+  }
+  .cue:hover {
+    opacity: 1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    z-index: 10;
+  }
+  .cue-text {
+    font-size: 0.6rem;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    font-weight: 600;
+  }
+  .cue-time {
+    position: absolute;
+    bottom: 1px;
+    left: 4px;
+    font-size: 0.55rem;
+    color: rgba(0,0,0,0.7);
+    pointer-events: none;
+    font-family: 'SF Mono', monospace;
+  }
+
+  .timeline-ticks {
+    position: relative;
+    height: 30px;
+    margin-top: 4px;
+  }
+  .tick {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 6px;
+    background: rgba(255,255,255,0.2);
+  }
+  .tick span {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    font-family: 'SF Mono', monospace;
+    white-space: nowrap;
+  }
+
+  details {
+    margin-top: 12px;
+  }
+  details summary {
+    cursor: pointer;
+    color: var(--c);
+    font-size: 0.9rem;
+    padding: 8px 0;
+    user-select: none;
+  }
+  .cue-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    margin-top: 8px;
+  }
+  .cue-table th, .cue-table td {
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cue-table th { color: var(--text-dim); font-weight: 600; }
+  .cue-table .n { width: 50px; color: var(--text-dim); font-family: monospace; }
+  .cue-table .t { width: 140px; font-family: monospace; color: var(--c); }
+  .cue-table .d { width: 70px; font-family: monospace; color: var(--text-dim); }
+  .cue-table .more { text-align: center; color: var(--text-dim); padding: 12px; }
+
+  footer {
+    margin-top: 40px;
+    padding: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🎬 SRT 時間軸驗證報告</h1>
+  <p class="subtitle">3 軌抽樣視覺化 — 來源：Whisper word_timestamps (small model, CPU)</p>
+
+  <div class="intro">
+    <h3>📖 怎麼讀這張圖</h3>
+    <p><b>時間軸</b>（長條）橫向是時間（左到右 = 音檔開頭到結尾），<b>彩色方塊</b>是字幕出現的時段。</p>
+    <ul>
+      <li>方塊位置 = 字幕開始時間（相對音檔百分比）</li>
+      <li>方塊寬度 = 字幕持續長度</li>
+      <li>方塊顏色 = 語言（橘=中文、藍=英文、粉=日文）</li>
+      <li>滑鼠 hover 方塊看完整字幕內容</li>
+      <li>展開下方「完整字幕清單」看每一句時間</li>
+    </ul>
+    <p><b>驗證重點：</b>方塊要均勻分佈，不要全部擠在前 1/3 或後 1/3。</p>
+  </div>
+
+  
+  <section class="track-block" style="--c: #ff5500;">
+    <div class="track-header">
+      <div class="track-meta">
+        <span class="track-num">track_001</span>
+        <span class="track-lang">中文 TW</span>
+      </div>
+      <h2>兄弟本色</h2>
+      <div class="stats">
+        <span><b>52</b> 字幕軌</span>
+        <span>音檔 <b>155.5s</b></span>
+        <span>字幕覆蓋 <b>67.7%</b></span>
+        <span>每句平均 <b>2.02s</b></span>
+      </div>
+    </div>
+
+    <div class="timeline-wrap">
+      <div class="timeline">
+        <div class="timeline-track">
+          <div class="cue" style="left:0.57%; width:0.41%;" data-start="0.880" data-end="1.520" data-text="Yeah" title="[0.88s - 1.52s] Yeah"><span class="cue-text">Yeah</span><span class="cue-time">0.9s</span></div>
+      <div class="cue" style="left:3.53%; width:0.41%;" data-start="5.480" data-end="6.120" data-text="Oh" title="[5.48s - 6.12s] Oh"><span class="cue-text">Oh</span><span class="cue-time">5.5s</span></div>
+      <div class="cue" style="left:6.10%; width:0.41%;" data-start="9.480" data-end="10.120" data-text="Yeah" title="[9.48s - 10.12s] Yeah"><span class="cue-text">Yeah</span><span class="cue-time">9.5s</span></div>
+      <div class="cue" style="left:8.01%; width:1.54%;" data-start="12.460" data-end="14.860" data-text="那年我們在路邊吃冰" title="[12.46s - 14.86s] 那年我們在路邊吃冰"><span class="cue-text">那年我們在路邊吃冰</span><span class="cue-time">12.5s</span></div>
+      <div class="cue" style="left:9.56%; width:1.16%;" data-start="14.860" data-end="16.660" data-text="了解未來不會怕" title="[14.86s - 16.66s] 了解未來不會怕"><span class="cue-text">了解未來不會怕</span><span class="cue-time">14.9s</span></div>
+      <div class="cue" style="left:11.40%; width:0.87%;" data-start="17.720" data-end="19.080" data-text="世界很大" title="[17.72s - 19.08s] 世界很大"><span class="cue-text">世界很大</span><span class="cue-time">17.7s</span></div>
+      <div class="cue" style="left:12.27%; width:1.76%;" data-start="19.080" data-end="21.820" data-text="但我們又彼此什麼都不堅決" title="[19.08s - 21.82s] 但我們又彼此什麼都不堅決"><span class="cue-text">但我們又彼此什麼都不堅決</span><span class="cue-time">19.1s</span></div>
+      <div class="cue" style="left:14.81%; width:1.87%;" data-start="23.020" data-end="25.920" data-text="就算那天走散了" title="[23.02s - 25.92s] 就算那天走散了"><span class="cue-text">就算那天走散了</span><span class="cue-time">23.0s</span></div>
+      <div class="cue" style="left:16.67%; width:1.44%;" data-start="25.920" data-end="28.160" data-text="你還在我身後" title="[25.92s - 28.16s] 你還在我身後"><span class="cue-text">你還在我身後</span><span class="cue-time">25.9s</span></div>
+      <div class="cue" style="left:18.50%; width:1.24%;" data-start="28.760" data-end="30.680" data-text="電話拿起來不許多說" title="[28.76s - 30.68s] 電話拿起來不許多說"><span class="cue-text">電話拿起來不許多說</span><span class="cue-time">28.8s</span></div>
+      <div class="cue" style="left:19.73%; width:1.30%;" data-start="30.680" data-end="32.700" data-text="你懂我的那個朋友" title="[30.68s - 32.70s] 你懂我的那個朋友"><span class="cue-text">你懂我的那個朋友</span><span class="cue-time">30.7s</span></div>
+      <div class="cue" style="left:21.64%; width:1.16%;" data-start="33.640" data-end="35.440" data-text="這條路在南走" title="[33.64s - 35.44s] 這條路在南走"><span class="cue-text">這條路在南走</span><span class="cue-time">33.6s</span></div>
+      <div class="cue" style="left:22.80%; width:1.58%;" data-start="35.440" data-end="37.900" data-text="有你在就不孤單" title="[35.44s - 37.90s] 有你在就不孤單"><span class="cue-text">有你在就不孤單</span><span class="cue-time">35.4s</span></div>
+      <div class="cue" style="left:25.21%; width:2.16%;" data-start="39.199" data-end="42.560" data-text="一個不過強兩個人唱幾片天" title="[39.20s - 42.56s] 一個不過強兩個人唱幾片天"><span class="cue-text">一個不過強兩個人唱幾片天</span><span class="cue-time">39.2s</span></div>
+      <div class="cue" style="left:28.30%; width:2.48%;" data-start="44.000" data-end="47.860" data-text="兄弟本色一起哭過的笑過的" title="[44.00s - 47.86s] 兄弟本色一起哭過的笑過的"><span class="cue-text">兄弟本色一起哭過的笑過的</span><span class="cue-time">44.0s</span></div>
+      <div class="cue" style="left:30.79%; width:1.67%;" data-start="47.860" data-end="50.460" data-text="管他社會怎麼說我們就是我們" title="[47.86s - 50.46s] 管他社會怎麼說我們就是我們"><span class="cue-text">管他社會怎麼說我們就是我們</span><span class="cue-time">47.9s</span></div>
+      <div class="cue" style="left:32.46%; width:1.78%;" data-start="50.460" data-end="53.220" data-text="兄弟本色喝醉了就大聲說" title="[50.46s - 53.22s] 兄弟本色喝醉了就大聲說"><span class="cue-text">兄弟本色喝醉了就大聲說</span><span class="cue-time">50.5s</span></div>
+      <div class="cue" style="left:34.23%; width:2.20%;" data-start="53.220" data-end="56.640" data-text="這輩子有你在吃了" title="[53.22s - 56.64s] 這輩子有你在吃了"><span class="cue-text">這輩子有你在吃了</span><span class="cue-time">53.2s</span></div>
+      <div class="cue" style="left:37.76%; width:0.36%;" data-start="58.699" data-end="59.260" data-text="Oh" title="[58.70s - 59.26s] Oh"><span class="cue-text">Oh</span><span class="cue-time">58.7s</span></div>
+      <div class="cue" style="left:39.80%; width:0.36%;" data-start="61.879" data-end="62.440" data-text="Oh" title="[61.88s - 62.44s] Oh"><span class="cue-text">Oh</span><span class="cue-time">61.9s</span></div>
+      <div class="cue" style="left:40.16%; width:3.00%;" data-start="62.440" data-end="67.100" data-text="Oh Yeah" title="[62.44s - 67.10s] Oh Yeah"><span class="cue-text">Oh Yeah</span><span class="cue-time">62.4s</span></div>
+      <div class="cue" style="left:43.16%; width:1.52%;" data-start="67.100" data-end="69.460" data-text="你結婚那天我當班廊" title="[67.10s - 69.46s] 你結婚那天我當班廊"><span class="cue-text">你結婚那天我當班廊</span><span class="cue-time">67.1s</span></div>
+      <div class="cue" style="left:44.68%; width:1.31%;" data-start="69.460" data-end="71.500" data-text="喝到短皮也不放開" title="[69.46s - 71.50s] 喝到短皮也不放開"><span class="cue-text">喝到短皮也不放開</span><span class="cue-time">69.5s</span></div>
+      <div class="cue" style="left:46.48%; width:1.30%;" data-start="72.259" data-end="74.280" data-text="你失敗的時候打給我" title="[72.26s - 74.28s] 你失敗的時候打給我"><span class="cue-text">你失敗的時候打給我</span><span class="cue-time">72.3s</span></div>
+      <div class="cue" style="left:47.78%; width:1.43%;" data-start="74.280" data-end="76.500" data-text="凌晨三點我都會見" title="[74.28s - 76.50s] 凌晨三點我都會見"><span class="cue-text">凌晨三點我都會見</span><span class="cue-time">74.3s</span></div>
+      <div class="cue" style="left:50.02%; width:1.45%;" data-start="77.759" data-end="80.020" data-text="時間會把很多人帶走" title="[77.76s - 80.02s] 時間會把很多人帶走"><span class="cue-text">時間會把很多人帶走</span><span class="cue-time">77.8s</span></div>
+      <div class="cue" style="left:51.47%; width:1.51%;" data-start="80.020" data-end="82.360" data-text="但帶不走這一切" title="[80.02s - 82.36s] 但帶不走這一切"><span class="cue-text">但帶不走這一切</span><span class="cue-time">80.0s</span></div>
+      <div class="cue" style="left:53.36%; width:2.61%;" data-start="82.960" data-end="87.020" data-text="等到老了我們還要一起去看海" title="[82.96s - 87.02s] 等到老了我們還要一起去看海"><span class="cue-text">等到老了我們還要一起去看海</span><span class="cue-time">83.0s</span></div>
+      <div class="cue" style="left:56.98%; width:1.04%;" data-start="88.580" data-end="90.200" data-text="不用常見面" title="[88.58s - 90.20s] 不用常見面"><span class="cue-text">不用常見面</span><span class="cue-time">88.6s</span></div>
+      <div class="cue" style="left:58.02%; width:1.66%;" data-start="90.200" data-end="92.780" data-text="心裡有你就夠了" title="[90.20s - 92.78s] 心裡有你就夠了"><span class="cue-text">心裡有你就夠了</span><span class="cue-time">90.2s</span></div>
+      <div class="cue" style="left:59.68%; width:1.22%;" data-start="92.780" data-end="94.680" data-text="這就是兄弟" title="[92.78s - 94.68s] 這就是兄弟"><span class="cue-text">這就是兄弟</span><span class="cue-time">92.8s</span></div>
+      <div class="cue" style="left:61.60%; width:2.55%;" data-start="95.760" data-end="99.720" data-text="兄弟本色一起哭過的笑過的" title="[95.76s - 99.72s] 兄弟本色一起哭過的笑過的"><span class="cue-text">兄弟本色一起哭過的笑過的</span><span class="cue-time">95.8s</span></div>
+      <div class="cue" style="left:64.15%; width:1.66%;" data-start="99.720" data-end="102.300" data-text="管他社會怎麼說我們就是我們" title="[99.72s - 102.30s] 管他社會怎麼說我們就是我們"><span class="cue-text">管他社會怎麼說我們就是我們</span><span class="cue-time">99.7s</span></div>
+      <div class="cue" style="left:65.80%; width:1.80%;" data-start="102.300" data-end="105.100" data-text="兄弟本色喝醉了就大聲說" title="[102.30s - 105.10s] 兄弟本色喝醉了就大聲說"><span class="cue-text">兄弟本色喝醉了就大聲說</span><span class="cue-time">102.3s</span></div>
+      <div class="cue" style="left:67.61%; width:2.21%;" data-start="105.100" data-end="108.540" data-text="這輩子有你在吃了" title="[105.10s - 108.54s] 這輩子有你在吃了"><span class="cue-text">這輩子有你在吃了</span><span class="cue-time">105.1s</span></div>
+      <div class="cue" style="left:71.09%; width:0.41%;" data-start="110.520" data-end="111.160" data-text="Oh" title="[110.52s - 111.16s] Oh"><span class="cue-text">Oh</span><span class="cue-time">110.5s</span></div>
+      <div class="cue" style="left:71.99%; width:0.41%;" data-start="111.920" data-end="112.560" data-text="Oh" title="[111.92s - 112.56s] Oh"><span class="cue-text">Oh</span><span class="cue-time">111.9s</span></div>
+      <div class="cue" style="left:72.79%; width:0.49%;" data-start="113.160" data-end="113.920" data-text="Oh" title="[113.16s - 113.92s] Oh"><span class="cue-text">Oh</span><span class="cue-time">113.2s</span></div>
+      <div class="cue" style="left:73.28%; width:0.87%;" data-start="113.920" data-end="115.280" data-text="Oh" title="[113.92s - 115.28s] Oh"><span class="cue-text">Oh</span><span class="cue-time">113.9s</span></div>
+      <div class="cue" style="left:74.15%; width:2.38%;" data-start="115.280" data-end="118.980" data-text="Oh Yeah" title="[115.28s - 118.98s] Oh Yeah"><span class="cue-text">Oh Yeah</span><span class="cue-time">115.3s</span></div>
+      <div class="cue" style="left:76.53%; width:0.50%;" data-start="118.980" data-end="119.760" data-text="Oh" title="[118.98s - 119.76s] Oh"><span class="cue-text">Oh</span><span class="cue-time">119.0s</span></div>
+      <div class="cue" style="left:79.66%; width:0.90%;" data-start="123.839" data-end="125.240" data-text="Oh" title="[123.84s - 125.24s] Oh"><span class="cue-text">Oh</span><span class="cue-time">123.8s</span></div>
+      <div class="cue" style="left:80.56%; width:0.19%;" data-start="125.240" data-end="125.540" data-text="Oh" title="[125.24s - 125.54s] Oh"><span class="cue-text">Oh</span><span class="cue-time">125.2s</span></div>
+      <div class="cue" style="left:83.08%; width:0.41%;" data-start="129.160" data-end="129.800" data-text="兄弟" title="[129.16s - 129.80s] 兄弟"><span class="cue-text">兄弟</span><span class="cue-time">129.2s</span></div>
+      <div class="cue" style="left:83.49%; width:0.89%;" data-start="129.800" data-end="131.180" data-text="兄弟" title="[129.80s - 131.18s] 兄弟"><span class="cue-text">兄弟</span><span class="cue-time">129.8s</span></div>
+      <div class="cue" style="left:84.38%; width:0.94%;" data-start="131.180" data-end="132.640" data-text="兄弟" title="[131.18s - 132.64s] 兄弟"><span class="cue-text">兄弟</span><span class="cue-time">131.2s</span></div>
+      <div class="cue" style="left:85.32%; width:0.87%;" data-start="132.640" data-end="134.000" data-text="兄弟" title="[132.64s - 134.00s] 兄弟"><span class="cue-text">兄弟</span><span class="cue-time">132.6s</span></div>
+      <div class="cue" style="left:86.20%; width:0.90%;" data-start="134.000" data-end="135.400" data-text="兄弟" title="[134.00s - 135.40s] 兄弟"><span class="cue-text">兄弟</span><span class="cue-time">134.0s</span></div>
+      <div class="cue" style="left:87.10%; width:1.71%;" data-start="135.400" data-end="138.060" data-text="兄弟" title="[135.40s - 138.06s] 兄弟"><span class="cue-text">兄弟</span><span class="cue-time">135.4s</span></div>
+      <div class="cue" style="left:89.45%; width:1.24%;" data-start="139.060" data-end="140.980" data-text="兄弟" title="[139.06s - 140.98s] 兄弟"><span class="cue-text">兄弟</span><span class="cue-time">139.1s</span></div>
+      <div class="cue" style="left:96.53%; width:1.20%;" data-start="150.060" data-end="151.920" data-text="兄弟" title="[150.06s - 151.92s] 兄弟"><span class="cue-text">兄弟</span><span class="cue-time">150.1s</span></div>
+      <div class="cue" style="left:99.10%; width:0.90%;" data-start="154.060" data-end="155.460" data-text="兄弟" title="[154.06s - 155.46s] 兄弟"><span class="cue-text">兄弟</span><span class="cue-time">154.1s</span></div>
+        </div>
+        <div class="timeline-ticks">
+          <div class="tick" style="left:0%"><span>0s</span></div>
+        <div class="tick" style="left:10%"><span>16s</span></div>
+        <div class="tick" style="left:20%"><span>31s</span></div>
+        <div class="tick" style="left:30%"><span>47s</span></div>
+        <div class="tick" style="left:40%"><span>62s</span></div>
+        <div class="tick" style="left:50%"><span>78s</span></div>
+        <div class="tick" style="left:60%"><span>93s</span></div>
+        <div class="tick" style="left:70%"><span>109s</span></div>
+        <div class="tick" style="left:80%"><span>124s</span></div>
+        <div class="tick" style="left:90%"><span>140s</span></div>
+        <div class="tick" style="left:100%"><span>155s</span></div>
+        </div>
+      </div>
+    </div>
+
+    <details>
+      <summary>📋 完整字幕清單 (52 句)</summary>
+      <table class="cue-table">
+        <thead><tr><th>#</th><th>時間軸</th><th>長度</th><th>字幕</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1</td><td class="t">0.88 → 1.52s</td><td class="d">0.64s</td><td class="x">Yeah</td></tr>
+          <tr><td class="n">2</td><td class="t">5.48 → 6.12s</td><td class="d">0.64s</td><td class="x">Oh</td></tr>
+          <tr><td class="n">3</td><td class="t">9.48 → 10.12s</td><td class="d">0.64s</td><td class="x">Yeah</td></tr>
+          <tr><td class="n">4</td><td class="t">12.46 → 14.86s</td><td class="d">2.40s</td><td class="x">那年我們在路邊吃冰</td></tr>
+          <tr><td class="n">5</td><td class="t">14.86 → 16.66s</td><td class="d">1.80s</td><td class="x">了解未來不會怕</td></tr>
+          <tr><td class="n">6</td><td class="t">17.72 → 19.08s</td><td class="d">1.36s</td><td class="x">世界很大</td></tr>
+          <tr><td class="n">7</td><td class="t">19.08 → 21.82s</td><td class="d">2.74s</td><td class="x">但我們又彼此什麼都不堅決</td></tr>
+          <tr><td class="n">8</td><td class="t">23.02 → 25.92s</td><td class="d">2.90s</td><td class="x">就算那天走散了</td></tr>
+          <tr><td class="n">9</td><td class="t">25.92 → 28.16s</td><td class="d">2.24s</td><td class="x">你還在我身後</td></tr>
+          <tr><td class="n">10</td><td class="t">28.76 → 30.68s</td><td class="d">1.92s</td><td class="x">電話拿起來不許多說</td></tr>
+          <tr><td class="n">11</td><td class="t">30.68 → 32.70s</td><td class="d">2.02s</td><td class="x">你懂我的那個朋友</td></tr>
+          <tr><td class="n">12</td><td class="t">33.64 → 35.44s</td><td class="d">1.80s</td><td class="x">這條路在南走</td></tr>
+          <tr><td class="n">13</td><td class="t">35.44 → 37.90s</td><td class="d">2.46s</td><td class="x">有你在就不孤單</td></tr>
+          <tr><td class="n">14</td><td class="t">39.20 → 42.56s</td><td class="d">3.36s</td><td class="x">一個不過強兩個人唱幾片天</td></tr>
+          <tr><td class="n">15</td><td class="t">44.00 → 47.86s</td><td class="d">3.86s</td><td class="x">兄弟本色一起哭過的笑過的</td></tr>
+          <tr><td class="n">16</td><td class="t">47.86 → 50.46s</td><td class="d">2.60s</td><td class="x">管他社會怎麼說我們就是我們</td></tr>
+          <tr><td class="n">17</td><td class="t">50.46 → 53.22s</td><td class="d">2.76s</td><td class="x">兄弟本色喝醉了就大聲說</td></tr>
+          <tr><td class="n">18</td><td class="t">53.22 → 56.64s</td><td class="d">3.42s</td><td class="x">這輩子有你在吃了</td></tr>
+          <tr><td class="n">19</td><td class="t">58.70 → 59.26s</td><td class="d">0.56s</td><td class="x">Oh</td></tr>
+          <tr><td class="n">20</td><td class="t">61.88 → 62.44s</td><td class="d">0.56s</td><td class="x">Oh</td></tr>
+          <tr><td class="n">21</td><td class="t">62.44 → 67.10s</td><td class="d">4.66s</td><td class="x">Oh Yeah</td></tr>
+          <tr><td class="n">22</td><td class="t">67.10 → 69.46s</td><td class="d">2.36s</td><td class="x">你結婚那天我當班廊</td></tr>
+          <tr><td class="n">23</td><td class="t">69.46 → 71.50s</td><td class="d">2.04s</td><td class="x">喝到短皮也不放開</td></tr>
+          <tr><td class="n">24</td><td class="t">72.26 → 74.28s</td><td class="d">2.02s</td><td class="x">你失敗的時候打給我</td></tr>
+          <tr><td class="n">25</td><td class="t">74.28 → 76.50s</td><td class="d">2.22s</td><td class="x">凌晨三點我都會見</td></tr>
+          <tr><td class="n">26</td><td class="t">77.76 → 80.02s</td><td class="d">2.26s</td><td class="x">時間會把很多人帶走</td></tr>
+          <tr><td class="n">27</td><td class="t">80.02 → 82.36s</td><td class="d">2.34s</td><td class="x">但帶不走這一切</td></tr>
+          <tr><td class="n">28</td><td class="t">82.96 → 87.02s</td><td class="d">4.06s</td><td class="x">等到老了我們還要一起去看海</td></tr>
+          <tr><td class="n">29</td><td class="t">88.58 → 90.20s</td><td class="d">1.62s</td><td class="x">不用常見面</td></tr>
+          <tr><td class="n">30</td><td class="t">90.20 → 92.78s</td><td class="d">2.58s</td><td class="x">心裡有你就夠了</td></tr>
+          <tr><td colspan="4" class="more">... 還有 22 句</td></tr>
+        </tbody>
+      </table>
+    </details>
+  </section>
+
+  <section class="track-block" style="--c: #00aaff;">
+    <div class="track-header">
+      <div class="track-meta">
+        <span class="track-num">track_023</span>
+        <span class="track-lang">English</span>
+      </div>
+      <h2>Coffee Shop Dreams</h2>
+      <div class="stats">
+        <span><b>36</b> 字幕軌</span>
+        <span>音檔 <b>137.6s</b></span>
+        <span>字幕覆蓋 <b>65.2%</b></span>
+        <span>每句平均 <b>2.49s</b></span>
+      </div>
+    </div>
+
+    <div class="timeline-wrap">
+      <div class="timeline">
+        <div class="timeline-track">
+          <div class="cue" style="left:9.82%; width:4.04%;" data-start="13.520" data-end="19.080" data-text="有一个失眠的晚上想着你现在在谁身旁" title="[13.52s - 19.08s] 有一个失眠的晚上想着你现在在谁身旁"><span class="cue-text">有一个失眠的晚上想着你现在在谁身旁</span><span class="cue-time">13.5s</span></div>
+      <div class="cue" style="left:13.86%; width:2.59%;" data-start="19.080" data-end="22.640" data-text="窗外的天色慢慢凉了" title="[19.08s - 22.64s] 窗外的天色慢慢凉了"><span class="cue-text">窗外的天色慢慢凉了</span><span class="cue-time">19.1s</span></div>
+      <div class="cue" style="left:16.45%; width:2.11%;" data-start="22.640" data-end="25.540" data-text="而我还困在昨天的悲伤" title="[22.64s - 25.54s] 而我还困在昨天的悲伤"><span class="cue-text">而我还困在昨天的悲伤</span><span class="cue-time">22.6s</span></div>
+      <div class="cue" style="left:19.04%; width:2.37%;" data-start="26.200" data-end="29.460" data-text="黑夜让人脆弱黑夜让人坦白" title="[26.20s - 29.46s] 黑夜让人脆弱黑夜让人坦白"><span class="cue-text">黑夜让人脆弱黑夜让人坦白</span><span class="cue-time">26.2s</span></div>
+      <div class="cue" style="left:21.41%; width:2.19%;" data-start="29.460" data-end="32.479" data-text="我在黑夜里和自己纠缠" title="[29.46s - 32.48s] 我在黑夜里和自己纠缠"><span class="cue-text">我在黑夜里和自己纠缠</span><span class="cue-time">29.5s</span></div>
+      <div class="cue" style="left:23.60%; width:1.80%;" data-start="32.479" data-end="34.960" data-text="等天亮就会好了吧" title="[32.48s - 34.96s] 等天亮就会好了吧"><span class="cue-text">等天亮就会好了吧</span><span class="cue-time">32.5s</span></div>
+      <div class="cue" style="left:25.97%; width:2.19%;" data-start="35.740" data-end="38.760" data-text="等天亮悲伤就会过去" title="[35.74s - 38.76s] 等天亮悲伤就会过去"><span class="cue-text">等天亮悲伤就会过去</span><span class="cue-time">35.7s</span></div>
+      <div class="cue" style="left:28.16%; width:1.64%;" data-start="38.760" data-end="41.020" data-text="我告诉自己会好的" title="[38.76s - 41.02s] 我告诉自己会好的"><span class="cue-text">我告诉自己会好的</span><span class="cue-time">38.8s</span></div>
+      <div class="cue" style="left:30.18%; width:1.83%;" data-start="41.540" data-end="44.060" data-text="可是这个夜晚真的好长" title="[41.54s - 44.06s] 可是这个夜晚真的好长"><span class="cue-text">可是这个夜晚真的好长</span><span class="cue-time">41.5s</span></div>
+      <div class="cue" style="left:32.02%; width:2.28%;" data-start="44.060" data-end="47.200" data-text="等天亮我就笑着说没事" title="[44.06s - 47.20s] 等天亮我就笑着说没事"><span class="cue-text">等天亮我就笑着说没事</span><span class="cue-time">44.1s</span></div>
+      <div class="cue" style="left:38.67%; width:2.21%;" data-start="53.220" data-end="56.260" data-text="天亮了太阳很自艳" title="[53.22s - 56.26s] 天亮了太阳很自艳"><span class="cue-text">天亮了太阳很自艳</span><span class="cue-time">53.2s</span></div>
+      <div class="cue" style="left:40.88%; width:2.05%;" data-start="56.260" data-end="59.080" data-text="我带着墨镜说是因为失伤" title="[56.26s - 59.08s] 我带着墨镜说是因为失伤"><span class="cue-text">我带着墨镜说是因为失伤</span><span class="cue-time">56.3s</span></div>
+      <div class="cue" style="left:42.93%; width:2.37%;" data-start="59.080" data-end="62.340" data-text="其实是不想让人看见" title="[59.08s - 62.34s] 其实是不想让人看见"><span class="cue-text">其实是不想让人看见</span><span class="cue-time">59.1s</span></div>
+      <div class="cue" style="left:45.30%; width:2.41%;" data-start="62.340" data-end="65.660" data-text="昨晚哭哄的霜也和书掉的倔强" title="[62.34s - 65.66s] 昨晚哭哄的霜也和书掉的倔强"><span class="cue-text">昨晚哭哄的霜也和书掉的倔强</span><span class="cue-time">62.3s</span></div>
+      <div class="cue" style="left:47.71%; width:2.72%;" data-start="65.660" data-end="69.400" data-text="白天让人无妆白天让人假装" title="[65.66s - 69.40s] 白天让人无妆白天让人假装"><span class="cue-text">白天让人无妆白天让人假装</span><span class="cue-time">65.7s</span></div>
+      <div class="cue" style="left:50.43%; width:2.12%;" data-start="69.400" data-end="72.320" data-text="我把眼泪藏进办公室的厕所" title="[69.40s - 72.32s] 我把眼泪藏进办公室的厕所"><span class="cue-text">我把眼泪藏进办公室的厕所</span><span class="cue-time">69.4s</span></div>
+      <div class="cue" style="left:52.55%; width:1.89%;" data-start="72.320" data-end="74.920" data-text="等天亮就会好了吧" title="[72.32s - 74.92s] 等天亮就会好了吧"><span class="cue-text">等天亮就会好了吧</span><span class="cue-time">72.3s</span></div>
+      <div class="cue" style="left:54.85%; width:2.37%;" data-start="75.480" data-end="78.740" data-text="等天亮就假装没事了" title="[75.48s - 78.74s] 等天亮就假装没事了"><span class="cue-text">等天亮就假装没事了</span><span class="cue-time">75.5s</span></div>
+      <div class="cue" style="left:57.22%; width:2.31%;" data-start="78.740" data-end="81.920" data-text="我在黑夜里却会和自己相处" title="[78.74s - 81.92s] 我在黑夜里却会和自己相处"><span class="cue-text">我在黑夜里却会和自己相处</span><span class="cue-time">78.7s</span></div>
+      <div class="cue" style="left:59.53%; width:1.48%;" data-start="81.920" data-end="83.960" data-text="等天亮天亮了" title="[81.92s - 83.96s] 等天亮天亮了"><span class="cue-text">等天亮天亮了</span><span class="cue-time">81.9s</span></div>
+      <div class="cue" style="left:61.01%; width:1.19%;" data-start="83.960" data-end="85.600" data-text="我心得一天开始了" title="[83.96s - 85.60s] 我心得一天开始了"><span class="cue-text">我心得一天开始了</span><span class="cue-time">84.0s</span></div>
+      <div class="cue" style="left:62.20%; width:2.08%;" data-start="85.600" data-end="88.460" data-text="我还在只是更强了一点" title="[85.60s - 88.46s] 我还在只是更强了一点"><span class="cue-text">我还在只是更强了一点</span><span class="cue-time">85.6s</span></div>
+      <div class="cue" style="left:64.73%; width:1.54%;" data-start="89.080" data-end="91.200" data-text="黑夜教会我坦白" title="[89.08s - 91.20s] 黑夜教会我坦白"><span class="cue-text">黑夜教会我坦白</span><span class="cue-time">89.1s</span></div>
+      <div class="cue" style="left:66.87%; width:1.60%;" data-start="92.020" data-end="94.220" data-text="白天教会我假装" title="[92.02s - 94.22s] 白天教会我假装"><span class="cue-text">白天教会我假装</span><span class="cue-time">92.0s</span></div>
+      <div class="cue" style="left:68.46%; width:3.12%;" data-start="94.220" data-end="98.520" data-text="我在亮着指尖或者学会在天亮" title="[94.22s - 98.52s] 我在亮着指尖或者学会在天亮"><span class="cue-text">我在亮着指尖或者学会在天亮</span><span class="cue-time">94.2s</span></div>
+      <div class="cue" style="left:71.59%; width:1.70%;" data-start="98.520" data-end="100.860" data-text="时常好伤口" title="[98.52s - 100.86s] 时常好伤口"><span class="cue-text">时常好伤口</span><span class="cue-time">98.5s</span></div>
+      <div class="cue" style="left:74.28%; width:1.00%;" data-start="102.220" data-end="103.600" data-text="等天亮" title="[102.22s - 103.60s] 等天亮"><span class="cue-text">等天亮</span><span class="cue-time">102.2s</span></div>
+      <div class="cue" style="left:75.86%; width:0.18%;" data-start="104.399" data-end="104.640" data-text="了" title="[104.40s - 104.64s] 了"><span class="cue-text">了</span><span class="cue-time">104.4s</span></div>
+      <div class="cue" style="left:76.04%; width:0.99%;" data-start="104.640" data-end="106.000" data-text="Oh" title="[104.64s - 106.00s] Oh"><span class="cue-text">Oh</span><span class="cue-time">104.6s</span></div>
+      <div class="cue" style="left:93.18%; width:1.61%;" data-start="128.239" data-end="130.460" data-text="沒聽說君愣" title="[128.24s - 130.46s] 沒聽說君愣"><span class="cue-text">沒聽說君愣</span><span class="cue-time">128.2s</span></div>
+      <div class="cue" style="left:94.80%; width:1.85%;" data-start="130.460" data-end="133.000" data-text="沒找讓愛 十里" title="[130.46s - 133.00s] 沒找讓愛 十里"><span class="cue-text">沒找讓愛 十里</span><span class="cue-time">130.5s</span></div>
+      <div class="cue" style="left:96.64%; width:0.01%;" data-start="133.000" data-end="133.020" data-text="沒認識妳 五老 一個冒覺得" title="[133.00s - 133.02s] 沒認識妳 五老 一個冒覺得"><span class="cue-text">沒認識妳 五老 一個冒覺得</span><span class="cue-time">133.0s</span></div>
+      <div class="cue" style="left:96.66%; width:0.55%;" data-start="133.020" data-end="133.780" data-text="摔人�� smell" title="[133.02s - 133.78s] 摔人�� smell"><span class="cue-text">摔人�� smell</span><span class="cue-time">133.0s</span></div>
+      <div class="cue" style="left:97.21%; width:0.12%;" data-start="133.780" data-end="133.940" data-text="油水血液 摔洗器" title="[133.78s - 133.94s] 油水血液 摔洗器"><span class="cue-text">油水血液 摔洗器</span><span class="cue-time">133.8s</span></div>
+      <div class="cue" style="left:97.33%; width:0.92%;" data-start="133.940" data-end="135.200" data-text="妳在拿 least" title="[133.94s - 135.20s] 妳在拿 least"><span class="cue-text">妳在拿 least</span><span class="cue-time">133.9s</span></div>
+      <div class="cue" style="left:98.24%; width:1.76%;" data-start="135.200" data-end="137.620" data-text="我又成功了一天了" title="[135.20s - 137.62s] 我又成功了一天了"><span class="cue-text">我又成功了一天了</span><span class="cue-time">135.2s</span></div>
+        </div>
+        <div class="timeline-ticks">
+          <div class="tick" style="left:0%"><span>0s</span></div>
+        <div class="tick" style="left:10%"><span>14s</span></div>
+        <div class="tick" style="left:20%"><span>28s</span></div>
+        <div class="tick" style="left:30%"><span>41s</span></div>
+        <div class="tick" style="left:40%"><span>55s</span></div>
+        <div class="tick" style="left:50%"><span>69s</span></div>
+        <div class="tick" style="left:60%"><span>83s</span></div>
+        <div class="tick" style="left:70%"><span>96s</span></div>
+        <div class="tick" style="left:80%"><span>110s</span></div>
+        <div class="tick" style="left:90%"><span>124s</span></div>
+        <div class="tick" style="left:100%"><span>138s</span></div>
+        </div>
+      </div>
+    </div>
+
+    <details>
+      <summary>📋 完整字幕清單 (36 句)</summary>
+      <table class="cue-table">
+        <thead><tr><th>#</th><th>時間軸</th><th>長度</th><th>字幕</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1</td><td class="t">13.52 → 19.08s</td><td class="d">5.56s</td><td class="x">有一个失眠的晚上想着你现在在谁身旁</td></tr>
+          <tr><td class="n">2</td><td class="t">19.08 → 22.64s</td><td class="d">3.56s</td><td class="x">窗外的天色慢慢凉了</td></tr>
+          <tr><td class="n">3</td><td class="t">22.64 → 25.54s</td><td class="d">2.90s</td><td class="x">而我还困在昨天的悲伤</td></tr>
+          <tr><td class="n">4</td><td class="t">26.20 → 29.46s</td><td class="d">3.26s</td><td class="x">黑夜让人脆弱黑夜让人坦白</td></tr>
+          <tr><td class="n">5</td><td class="t">29.46 → 32.48s</td><td class="d">3.02s</td><td class="x">我在黑夜里和自己纠缠</td></tr>
+          <tr><td class="n">6</td><td class="t">32.48 → 34.96s</td><td class="d">2.48s</td><td class="x">等天亮就会好了吧</td></tr>
+          <tr><td class="n">7</td><td class="t">35.74 → 38.76s</td><td class="d">3.02s</td><td class="x">等天亮悲伤就会过去</td></tr>
+          <tr><td class="n">8</td><td class="t">38.76 → 41.02s</td><td class="d">2.26s</td><td class="x">我告诉自己会好的</td></tr>
+          <tr><td class="n">9</td><td class="t">41.54 → 44.06s</td><td class="d">2.52s</td><td class="x">可是这个夜晚真的好长</td></tr>
+          <tr><td class="n">10</td><td class="t">44.06 → 47.20s</td><td class="d">3.14s</td><td class="x">等天亮我就笑着说没事</td></tr>
+          <tr><td class="n">11</td><td class="t">53.22 → 56.26s</td><td class="d">3.04s</td><td class="x">天亮了太阳很自艳</td></tr>
+          <tr><td class="n">12</td><td class="t">56.26 → 59.08s</td><td class="d">2.82s</td><td class="x">我带着墨镜说是因为失伤</td></tr>
+          <tr><td class="n">13</td><td class="t">59.08 → 62.34s</td><td class="d">3.26s</td><td class="x">其实是不想让人看见</td></tr>
+          <tr><td class="n">14</td><td class="t">62.34 → 65.66s</td><td class="d">3.32s</td><td class="x">昨晚哭哄的霜也和书掉的倔强</td></tr>
+          <tr><td class="n">15</td><td class="t">65.66 → 69.40s</td><td class="d">3.74s</td><td class="x">白天让人无妆白天让人假装</td></tr>
+          <tr><td class="n">16</td><td class="t">69.40 → 72.32s</td><td class="d">2.92s</td><td class="x">我把眼泪藏进办公室的厕所</td></tr>
+          <tr><td class="n">17</td><td class="t">72.32 → 74.92s</td><td class="d">2.60s</td><td class="x">等天亮就会好了吧</td></tr>
+          <tr><td class="n">18</td><td class="t">75.48 → 78.74s</td><td class="d">3.26s</td><td class="x">等天亮就假装没事了</td></tr>
+          <tr><td class="n">19</td><td class="t">78.74 → 81.92s</td><td class="d">3.18s</td><td class="x">我在黑夜里却会和自己相处</td></tr>
+          <tr><td class="n">20</td><td class="t">81.92 → 83.96s</td><td class="d">2.04s</td><td class="x">等天亮天亮了</td></tr>
+          <tr><td class="n">21</td><td class="t">83.96 → 85.60s</td><td class="d">1.64s</td><td class="x">我心得一天开始了</td></tr>
+          <tr><td class="n">22</td><td class="t">85.60 → 88.46s</td><td class="d">2.86s</td><td class="x">我还在只是更强了一点</td></tr>
+          <tr><td class="n">23</td><td class="t">89.08 → 91.20s</td><td class="d">2.12s</td><td class="x">黑夜教会我坦白</td></tr>
+          <tr><td class="n">24</td><td class="t">92.02 → 94.22s</td><td class="d">2.20s</td><td class="x">白天教会我假装</td></tr>
+          <tr><td class="n">25</td><td class="t">94.22 → 98.52s</td><td class="d">4.30s</td><td class="x">我在亮着指尖或者学会在天亮</td></tr>
+          <tr><td class="n">26</td><td class="t">98.52 → 100.86s</td><td class="d">2.34s</td><td class="x">时常好伤口</td></tr>
+          <tr><td class="n">27</td><td class="t">102.22 → 103.60s</td><td class="d">1.38s</td><td class="x">等天亮</td></tr>
+          <tr><td class="n">28</td><td class="t">104.40 → 104.64s</td><td class="d">0.24s</td><td class="x">了</td></tr>
+          <tr><td class="n">29</td><td class="t">104.64 → 106.00s</td><td class="d">1.36s</td><td class="x">Oh</td></tr>
+          <tr><td class="n">30</td><td class="t">128.24 → 130.46s</td><td class="d">2.22s</td><td class="x">沒聽說君愣</td></tr>
+          <tr><td colspan="4" class="more">... 還有 6 句</td></tr>
+        </tbody>
+      </table>
+    </details>
+  </section>
+
+  <section class="track-block" style="--c: #ff66cc;">
+    <div class="track-header">
+      <div class="track-meta">
+        <span class="track-num">track_028</span>
+        <span class="track-lang">日本語</span>
+      </div>
+      <h2>雨夜東京</h2>
+      <div class="stats">
+        <span><b>48</b> 字幕軌</span>
+        <span>音檔 <b>212.2s</b></span>
+        <span>字幕覆蓋 <b>64.2%</b></span>
+        <span>每句平均 <b>2.84s</b></span>
+      </div>
+    </div>
+
+    <div class="timeline-wrap">
+      <div class="timeline">
+        <div class="timeline-track">
+          <div class="cue" style="left:8.42%; width:2.41%;" data-start="17.860" data-end="22.980" data-text="This small room, a lonely view," title="[17.86s - 22.98s] This small room, a lonely view,"><span class="cue-text">This small room, a lonely view,</span><span class="cue-time">17.9s</span></div>
+      <div class="cue" style="left:10.83%; width:1.58%;" data-start="22.980" data-end="26.340" data-text="grey skies over Shibuya," title="[22.98s - 26.34s] grey skies over Shibuya,"><span class="cue-text">grey skies over Shibuya,</span><span class="cue-time">23.0s</span></div>
+      <div class="cue" style="left:13.62%; width:1.30%;" data-start="28.900" data-end="31.660" data-text="raindrops on the window pane," title="[28.90s - 31.66s] raindrops on the window pane,"><span class="cue-text">raindrops on the window pane,</span><span class="cue-time">28.9s</span></div>
+      <div class="cue" style="left:15.27%; width:1.57%;" data-start="32.400" data-end="35.740" data-text="a familiar, soft refrain," title="[32.40s - 35.74s] a familiar, soft refrain,"><span class="cue-text">a familiar, soft refrain,</span><span class="cue-time">32.4s</span></div>
+      <div class="cue" style="left:17.27%; width:1.01%;" data-start="36.640" data-end="38.780" data-text="whispering your name again" title="[36.64s - 38.78s] whispering your name again"><span class="cue-text">whispering your name again</span><span class="cue-time">36.6s</span></div>
+      <div class="cue" style="left:18.28%; width:2.08%;" data-start="38.780" data-end="43.200" data-text="across the miles, across the pane." title="[38.78s - 43.20s] across the miles, across the pane."><span class="cue-text">across the miles, across the pane.</span><span class="cue-time">38.8s</span></div>
+      <div class="cue" style="left:21.01%; width:1.13%;" data-start="44.580" data-end="46.980" data-text="Tokyo lights begin to gleam," title="[44.58s - 46.98s] Tokyo lights begin to gleam,"><span class="cue-text">Tokyo lights begin to gleam,</span><span class="cue-time">44.6s</span></div>
+      <div class="cue" style="left:22.47%; width:0.95%;" data-start="47.680" data-end="49.700" data-text="lost inside a waking dream," title="[47.68s - 49.70s] lost inside a waking dream,"><span class="cue-text">lost inside a waking dream,</span><span class="cue-time">47.7s</span></div>
+      <div class="cue" style="left:23.42%; width:1.48%;" data-start="49.700" data-end="52.840" data-text="every drop of memory of you," title="[49.70s - 52.84s] every drop of memory of you,"><span class="cue-text">every drop of memory of you,</span><span class="cue-time">49.7s</span></div>
+      <div class="cue" style="left:24.96%; width:0.91%;" data-start="52.960" data-end="54.900" data-text="so far from me." title="[52.96s - 54.90s] so far from me."><span class="cue-text">so far from me.</span><span class="cue-time">53.0s</span></div>
+      <div class="cue" style="left:25.89%; width:1.93%;" data-start="54.940" data-end="59.040" data-text="Oh, the city rain falls down" title="[54.94s - 59.04s] Oh, the city rain falls down"><span class="cue-text">Oh, the city rain falls down</span><span class="cue-time">54.9s</span></div>
+      <div class="cue" style="left:27.83%; width:1.16%;" data-start="59.040" data-end="61.500" data-text="on this quiet Tokyo town," title="[59.04s - 61.50s] on this quiet Tokyo town,"><span class="cue-text">on this quiet Tokyo town,</span><span class="cue-time">59.0s</span></div>
+      <div class="cue" style="left:29.12%; width:1.41%;" data-start="61.780" data-end="64.780" data-text="each drop of tear I can't explain," title="[61.78s - 64.78s] each drop of tear I can't explain,"><span class="cue-text">each drop of tear I can't explain,</span><span class="cue-time">61.8s</span></div>
+      <div class="cue" style="left:31.11%; width:1.58%;" data-start="66.000" data-end="69.360" data-text="wishing you were here again," title="[66.00s - 69.36s] wishing you were here again,"><span class="cue-text">wishing you were here again,</span><span class="cue-time">66.0s</span></div>
+      <div class="cue" style="left:32.91%; width:2.05%;" data-start="69.820" data-end="74.160" data-text="my heart aches with this sweet, sad strain." title="[69.82s - 74.16s] my heart aches with this sweet, sad strain."><span class="cue-text">my heart aches with this sweet, sad strain.</span><span class="cue-time">69.8s</span></div>
+      <div class="cue" style="left:37.15%; width:1.20%;" data-start="78.820" data-end="81.360" data-text="Neon signs and blurry streaks," title="[78.82s - 81.36s] Neon signs and blurry streaks,"><span class="cue-text">Neon signs and blurry streaks,</span><span class="cue-time">78.8s</span></div>
+      <div class="cue" style="left:38.38%; width:0.95%;" data-start="81.440" data-end="83.460" data-text="reflecting on the wet streets," title="[81.44s - 83.46s] reflecting on the wet streets,"><span class="cue-text">reflecting on the wet streets,</span><span class="cue-time">81.4s</span></div>
+      <div class="cue" style="left:39.38%; width:1.23%;" data-start="83.560" data-end="86.180" data-text="umbrellas pass a hurry pace," title="[83.56s - 86.18s] umbrellas pass a hurry pace,"><span class="cue-text">umbrellas pass a hurry pace,</span><span class="cue-time">83.6s</span></div>
+      <div class="cue" style="left:40.80%; width:1.13%;" data-start="86.560" data-end="88.960" data-text="no one sees my lonely face," title="[86.56s - 88.96s] no one sees my lonely face,"><span class="cue-text">no one sees my lonely face,</span><span class="cue-time">86.6s</span></div>
+      <div class="cue" style="left:42.09%; width:1.74%;" data-start="89.300" data-end="93.000" data-text="lost in time, lost in this place," title="[89.30s - 93.00s] lost in time, lost in this place,"><span class="cue-text">lost in time, lost in this place,</span><span class="cue-time">89.3s</span></div>
+      <div class="cue" style="left:44.18%; width:1.29%;" data-start="93.740" data-end="96.480" data-text="searching for your gentle grace." title="[93.74s - 96.48s] searching for your gentle grace."><span class="cue-text">searching for your gentle grace.</span><span class="cue-time">93.7s</span></div>
+      <div class="cue" style="left:46.29%; width:1.22%;" data-start="98.220" data-end="100.800" data-text="Tokyo lights begin to gleam," title="[98.22s - 100.80s] Tokyo lights begin to gleam,"><span class="cue-text">Tokyo lights begin to gleam,</span><span class="cue-time">98.2s</span></div>
+      <div class="cue" style="left:47.64%; width:0.93%;" data-start="101.080" data-end="103.060" data-text="lost inside a waking dream," title="[101.08s - 103.06s] lost inside a waking dream,"><span class="cue-text">lost inside a waking dream,</span><span class="cue-time">101.1s</span></div>
+      <div class="cue" style="left:48.57%; width:1.52%;" data-start="103.060" data-end="106.280" data-text="every drop of memory of you," title="[103.06s - 106.28s] every drop of memory of you,"><span class="cue-text">every drop of memory of you,</span><span class="cue-time">103.1s</span></div>
+      <div class="cue" style="left:50.14%; width:0.90%;" data-start="106.380" data-end="108.300" data-text="so far from me." title="[106.38s - 108.30s] so far from me."><span class="cue-text">so far from me.</span><span class="cue-time">106.4s</span></div>
+      <div class="cue" style="left:51.07%; width:1.89%;" data-start="108.360" data-end="112.380" data-text="Oh, the city rain falls down" title="[108.36s - 112.38s] Oh, the city rain falls down"><span class="cue-text">Oh, the city rain falls down</span><span class="cue-time">108.4s</span></div>
+      <div class="cue" style="left:52.96%; width:1.17%;" data-start="112.380" data-end="114.860" data-text="on this quiet Tokyo town," title="[112.38s - 114.86s] on this quiet Tokyo town,"><span class="cue-text">on this quiet Tokyo town,</span><span class="cue-time">112.4s</span></div>
+      <div class="cue" style="left:54.28%; width:1.40%;" data-start="115.180" data-end="118.140" data-text="each drop of tear I can't explain," title="[115.18s - 118.14s] each drop of tear I can't explain,"><span class="cue-text">each drop of tear I can't explain,</span><span class="cue-time">115.2s</span></div>
+      <div class="cue" style="left:56.39%; width:1.43%;" data-start="119.640" data-end="122.680" data-text="wishing you were here again," title="[119.64s - 122.68s] wishing you were here again,"><span class="cue-text">wishing you were here again,</span><span class="cue-time">119.6s</span></div>
+      <div class="cue" style="left:58.07%; width:2.04%;" data-start="123.220" data-end="127.540" data-text="my heart aches with this sweet, sad strain." title="[123.22s - 127.54s] my heart aches with this sweet, sad strain."><span class="cue-text">my heart aches with this sweet, sad strain.</span><span class="cue-time">123.2s</span></div>
+      <div class="cue" style="left:62.08%; width:1.34%;" data-start="131.720" data-end="134.560" data-text="The piano plays a soft lemon," title="[131.72s - 134.56s] The piano plays a soft lemon,"><span class="cue-text">The piano plays a soft lemon,</span><span class="cue-time">131.7s</span></div>
+      <div class="cue" style="left:63.56%; width:0.92%;" data-start="134.860" data-end="136.820" data-text="a gentle, mournful sentiment," title="[134.86s - 136.82s] a gentle, mournful sentiment,"><span class="cue-text">a gentle, mournful sentiment,</span><span class="cue-time">134.9s</span></div>
+      <div class="cue" style="left:64.61%; width:1.09%;" data-start="137.100" data-end="139.420" data-text="my acoustic guitar weeps low," title="[137.10s - 139.42s] my acoustic guitar weeps low,"><span class="cue-text">my acoustic guitar weeps low,</span><span class="cue-time">137.1s</span></div>
+      <div class="cue" style="left:65.79%; width:1.10%;" data-start="139.600" data-end="141.940" data-text="where did our happy moments go," title="[139.60s - 141.94s] where did our happy moments go,"><span class="cue-text">where did our happy moments go,</span><span class="cue-time">139.6s</span></div>
+      <div class="cue" style="left:66.99%; width:0.31%;" data-start="142.140" data-end="142.800" data-text="this longing?" title="[142.14s - 142.80s] this longing?"><span class="cue-text">this longing?</span><span class="cue-time">142.1s</span></div>
+      <div class="cue" style="left:68.15%; width:1.30%;" data-start="144.600" data-end="147.360" data-text="It continues to grow." title="[144.60s - 147.36s] It continues to grow."><span class="cue-text">It continues to grow.</span><span class="cue-time">144.6s</span></div>
+      <div class="cue" style="left:71.48%; width:1.13%;" data-start="151.660" data-end="154.060" data-text="Empty chair beside me now," title="[151.66s - 154.06s] Empty chair beside me now,"><span class="cue-text">Empty chair beside me now,</span><span class="cue-time">151.7s</span></div>
+      <div class="cue" style="left:72.72%; width:1.03%;" data-start="154.300" data-end="156.480" data-text="I trace your smile upon my brow," title="[154.30s - 156.48s] I trace your smile upon my brow,"><span class="cue-text">I trace your smile upon my brow,</span><span class="cue-time">154.3s</span></div>
+      <div class="cue" style="left:73.75%; width:1.19%;" data-start="156.480" data-end="159.000" data-text="this apartment feels so vast," title="[156.48s - 159.00s] this apartment feels so vast,"><span class="cue-text">this apartment feels so vast,</span><span class="cue-time">156.5s</span></div>
+      <div class="cue" style="left:75.12%; width:0.94%;" data-start="159.380" data-end="161.380" data-text="shadows from a fading past," title="[159.38s - 161.38s] shadows from a fading past,"><span class="cue-text">shadows from a fading past,</span><span class="cue-time">159.4s</span></div>
+      <div class="cue" style="left:76.13%; width:0.99%;" data-start="161.540" data-end="163.640" data-text="how long will this feeling last?" title="[161.54s - 163.64s] how long will this feeling last?"><span class="cue-text">how long will this feeling last?</span><span class="cue-time">161.5s</span></div>
+      <div class="cue" style="left:77.34%; width:1.46%;" data-start="164.100" data-end="167.200" data-text="My anchor, you're my mask." title="[164.10s - 167.20s] My anchor, you're my mask."><span class="cue-text">My anchor, you're my mask.</span><span class="cue-time">164.1s</span></div>
+      <div class="cue" style="left:80.66%; width:2.05%;" data-start="171.140" data-end="175.500" data-text="Oh, the city rain falls down" title="[171.14s - 175.50s] Oh, the city rain falls down"><span class="cue-text">Oh, the city rain falls down</span><span class="cue-time">171.1s</span></div>
+      <div class="cue" style="left:82.71%; width:1.16%;" data-start="175.500" data-end="177.960" data-text="on this quiet Tokyo town," title="[175.50s - 177.96s] on this quiet Tokyo town,"><span class="cue-text">on this quiet Tokyo town,</span><span class="cue-time">175.5s</span></div>
+      <div class="cue" style="left:84.10%; width:1.41%;" data-start="178.440" data-end="181.440" data-text="each drop of tear I can't explain," title="[178.44s - 181.44s] each drop of tear I can't explain,"><span class="cue-text">each drop of tear I can't explain,</span><span class="cue-time">178.4s</span></div>
+      <div class="cue" style="left:85.98%; width:1.63%;" data-start="182.440" data-end="185.900" data-text="wishing you were here again," title="[182.44s - 185.90s] wishing you were here again,"><span class="cue-text">wishing you were here again,</span><span class="cue-time">182.4s</span></div>
+      <div class="cue" style="left:87.72%; width:2.13%;" data-start="186.120" data-end="190.640" data-text="my heart aches with this sweet, sad strain." title="[186.12s - 190.64s] my heart aches with this sweet, sad strain."><span class="cue-text">my heart aches with this sweet, sad strain.</span><span class="cue-time">186.1s</span></div>
+      <div class="cue" style="left:99.65%; width:0.35%;" data-start="211.440" data-end="212.180" data-text="Thank you for watching!" title="[211.44s - 212.18s] Thank you for watching!"><span class="cue-text">Thank you for watching!</span><span class="cue-time">211.4s</span></div>
+        </div>
+        <div class="timeline-ticks">
+          <div class="tick" style="left:0%"><span>0s</span></div>
+        <div class="tick" style="left:10%"><span>21s</span></div>
+        <div class="tick" style="left:20%"><span>42s</span></div>
+        <div class="tick" style="left:30%"><span>64s</span></div>
+        <div class="tick" style="left:40%"><span>85s</span></div>
+        <div class="tick" style="left:50%"><span>106s</span></div>
+        <div class="tick" style="left:60%"><span>127s</span></div>
+        <div class="tick" style="left:70%"><span>149s</span></div>
+        <div class="tick" style="left:80%"><span>170s</span></div>
+        <div class="tick" style="left:90%"><span>191s</span></div>
+        <div class="tick" style="left:100%"><span>212s</span></div>
+        </div>
+      </div>
+    </div>
+
+    <details>
+      <summary>📋 完整字幕清單 (48 句)</summary>
+      <table class="cue-table">
+        <thead><tr><th>#</th><th>時間軸</th><th>長度</th><th>字幕</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1</td><td class="t">17.86 → 22.98s</td><td class="d">5.12s</td><td class="x">This small room, a lonely view,</td></tr>
+          <tr><td class="n">2</td><td class="t">22.98 → 26.34s</td><td class="d">3.36s</td><td class="x">grey skies over Shibuya,</td></tr>
+          <tr><td class="n">3</td><td class="t">28.90 → 31.66s</td><td class="d">2.76s</td><td class="x">raindrops on the window pane,</td></tr>
+          <tr><td class="n">4</td><td class="t">32.40 → 35.74s</td><td class="d">3.34s</td><td class="x">a familiar, soft refrain,</td></tr>
+          <tr><td class="n">5</td><td class="t">36.64 → 38.78s</td><td class="d">2.14s</td><td class="x">whispering your name again</td></tr>
+          <tr><td class="n">6</td><td class="t">38.78 → 43.20s</td><td class="d">4.42s</td><td class="x">across the miles, across the pane.</td></tr>
+          <tr><td class="n">7</td><td class="t">44.58 → 46.98s</td><td class="d">2.40s</td><td class="x">Tokyo lights begin to gleam,</td></tr>
+          <tr><td class="n">8</td><td class="t">47.68 → 49.70s</td><td class="d">2.02s</td><td class="x">lost inside a waking dream,</td></tr>
+          <tr><td class="n">9</td><td class="t">49.70 → 52.84s</td><td class="d">3.14s</td><td class="x">every drop of memory of you,</td></tr>
+          <tr><td class="n">10</td><td class="t">52.96 → 54.90s</td><td class="d">1.94s</td><td class="x">so far from me.</td></tr>
+          <tr><td class="n">11</td><td class="t">54.94 → 59.04s</td><td class="d">4.10s</td><td class="x">Oh, the city rain falls down</td></tr>
+          <tr><td class="n">12</td><td class="t">59.04 → 61.50s</td><td class="d">2.46s</td><td class="x">on this quiet Tokyo town,</td></tr>
+          <tr><td class="n">13</td><td class="t">61.78 → 64.78s</td><td class="d">3.00s</td><td class="x">each drop of tear I can't explain,</td></tr>
+          <tr><td class="n">14</td><td class="t">66.00 → 69.36s</td><td class="d">3.36s</td><td class="x">wishing you were here again,</td></tr>
+          <tr><td class="n">15</td><td class="t">69.82 → 74.16s</td><td class="d">4.34s</td><td class="x">my heart aches with this sweet, sad strain.</td></tr>
+          <tr><td class="n">16</td><td class="t">78.82 → 81.36s</td><td class="d">2.54s</td><td class="x">Neon signs and blurry streaks,</td></tr>
+          <tr><td class="n">17</td><td class="t">81.44 → 83.46s</td><td class="d">2.02s</td><td class="x">reflecting on the wet streets,</td></tr>
+          <tr><td class="n">18</td><td class="t">83.56 → 86.18s</td><td class="d">2.62s</td><td class="x">umbrellas pass a hurry pace,</td></tr>
+          <tr><td class="n">19</td><td class="t">86.56 → 88.96s</td><td class="d">2.40s</td><td class="x">no one sees my lonely face,</td></tr>
+          <tr><td class="n">20</td><td class="t">89.30 → 93.00s</td><td class="d">3.70s</td><td class="x">lost in time, lost in this place,</td></tr>
+          <tr><td class="n">21</td><td class="t">93.74 → 96.48s</td><td class="d">2.74s</td><td class="x">searching for your gentle grace.</td></tr>
+          <tr><td class="n">22</td><td class="t">98.22 → 100.80s</td><td class="d">2.58s</td><td class="x">Tokyo lights begin to gleam,</td></tr>
+          <tr><td class="n">23</td><td class="t">101.08 → 103.06s</td><td class="d">1.98s</td><td class="x">lost inside a waking dream,</td></tr>
+          <tr><td class="n">24</td><td class="t">103.06 → 106.28s</td><td class="d">3.22s</td><td class="x">every drop of memory of you,</td></tr>
+          <tr><td class="n">25</td><td class="t">106.38 → 108.30s</td><td class="d">1.92s</td><td class="x">so far from me.</td></tr>
+          <tr><td class="n">26</td><td class="t">108.36 → 112.38s</td><td class="d">4.02s</td><td class="x">Oh, the city rain falls down</td></tr>
+          <tr><td class="n">27</td><td class="t">112.38 → 114.86s</td><td class="d">2.48s</td><td class="x">on this quiet Tokyo town,</td></tr>
+          <tr><td class="n">28</td><td class="t">115.18 → 118.14s</td><td class="d">2.96s</td><td class="x">each drop of tear I can't explain,</td></tr>
+          <tr><td class="n">29</td><td class="t">119.64 → 122.68s</td><td class="d">3.04s</td><td class="x">wishing you were here again,</td></tr>
+          <tr><td class="n">30</td><td class="t">123.22 → 127.54s</td><td class="d">4.32s</td><td class="x">my heart aches with this sweet, sad strain.</td></tr>
+          <tr><td colspan="4" class="more">... 還有 18 句</td></tr>
+        </tbody>
+      </table>
+    </details>
+  </section>
+
+
+  <footer>
+    <p>🚀 用 <code>whisper.transcribe(word_timestamps=True, language=None)</code> 對 33 軌音檔全跑</p>
+    <p>完整檔案位置：<code>D:\projectstro\public\music\lyrics_XXX.srt</code></p>
+  </footer>
+</div>
+</body>
+</html>

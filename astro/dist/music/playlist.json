@@ -1,0 +1,796 @@
+{
+  "tracks": [
+    {
+      "name": "兄弟本色",
+      "audio": "/music/track_001.mp3",
+      "lyrics": "/music/lyrics_001.txt",
+      "lang": "TW",
+      "style": "嘻哈",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "2:36",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_001_v2.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782919687_cea6705b.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/001_cover.png",
+        "style_key": "ballad",
+        "style_label": "嘻哈"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_001.json",
+      "lyricsLRC": "/music/lyrics_001.txt"
+    },
+    {
+      "name": "不服",
+      "audio": "/music/track_002.mp3",
+      "lyrics": "/music/lyrics_002.txt",
+      "lang": "TW",
+      "style": "流行",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "1:56",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_002.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878332_3e9ed0cb.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/pop.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/002_cover.png",
+        "style_key": "pop",
+        "style_label": "流行"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_002.json",
+      "lyricsLRC": "/music/lyrics_002.txt"
+    },
+    {
+      "name": "不服輸",
+      "audio": "/music/track_003.mp3",
+      "lyrics": "/music/lyrics_003.txt",
+      "lang": "TW",
+      "style": "流行",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "2:06",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_003.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878368_419b4945.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/pop.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/003_cover.png",
+        "style_key": "pop",
+        "style_label": "流行"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_003.json",
+      "lyricsLRC": "/music/lyrics_003.txt"
+    },
+    {
+      "name": "再站起來",
+      "audio": "/music/track_004.mp3",
+      "lyrics": "/music/lyrics_004.txt",
+      "lang": "TW",
+      "style": "搖滾",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "3:15",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_004.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878404_9271bcca.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/rock.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/004_cover.png",
+        "style_key": "rock",
+        "style_label": "搖滾"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_004.json",
+      "lyricsLRC": "/music/lyrics_004.txt"
+    },
+    {
+      "name": "水泥森林",
+      "audio": "/music/track_005.mp3",
+      "lyrics": "/music/lyrics_005.txt",
+      "lang": "TW",
+      "style": "搖滾",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "1:53",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_005.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878449_03483be3.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/rock.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/005_cover.png",
+        "style_key": "rock",
+        "style_label": "搖滾"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_005.json",
+      "lyricsLRC": "/music/lyrics_005.txt"
+    },
+    {
+      "name": "老家的巷子",
+      "audio": "/music/track_006.mp3",
+      "lyrics": "/music/lyrics_006.txt",
+      "lang": "TW",
+      "style": "民謠",
+      "artist": "獨立歌手",
+      "gender": "F",
+      "album": "原創專輯",
+      "duration": "1:31",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_006.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878470_562504c3.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/folk.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/006_cover.png",
+        "style_key": "folk",
+        "style_label": "民謠"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_006.json",
+      "lyricsLRC": "/music/lyrics_006.txt"
+    },
+    {
+      "name": "趁現在",
+      "audio": "/music/track_007.mp3",
+      "lyrics": "/music/lyrics_007.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "2:15",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_007.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878484_88e77154.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/007_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_007.json",
+      "lyricsLRC": "/music/lyrics_007.txt"
+    },
+    {
+      "name": "雨夜出租",
+      "audio": "/music/track_008.mp3",
+      "lyrics": "/music/lyrics_008.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "F",
+      "album": "原創專輯",
+      "duration": "2:31",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_008.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878529_2180094e.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/008_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_008.json",
+      "lyricsLRC": "/music/lyrics_008.txt"
+    },
+    {
+      "name": "一個人的房間",
+      "audio": "/music/track_009.mp3",
+      "lyrics": "/music/lyrics_009.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "2:03",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_009.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878585_a4994b99.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/009_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_009.json",
+      "lyricsLRC": "/music/lyrics_009.txt"
+    },
+    {
+      "name": "愛的模樣",
+      "audio": "/music/track_010.mp3",
+      "lyrics": "/music/lyrics_010.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "1:53",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_010.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878620_c558f213.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/010_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_010.json",
+      "lyricsLRC": "/music/lyrics_010.txt"
+    },
+    {
+      "name": "三十歲的懸賞令",
+      "audio": "/music/track_011.mp3",
+      "lyrics": "/music/lyrics_011.txt",
+      "lang": "TW",
+      "style": "嘻哈",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "2:10",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_011.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878669_af625fde.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/011_cover.png",
+        "style_key": "ballad",
+        "style_label": "嘻哈"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_011.json",
+      "lyricsLRC": "/music/lyrics_011.txt"
+    },
+    {
+      "name": "來不及說再見",
+      "audio": "/music/track_012.mp3",
+      "lyrics": "/music/lyrics_012.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "1:32",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_012.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878718_54471335.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/012_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_012.json",
+      "lyricsLRC": "/music/lyrics_012.txt"
+    },
+    {
+      "name": "機場的最後一夜",
+      "audio": "/music/track_013.mp3",
+      "lyrics": "/music/lyrics_013.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "2:12",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_013.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878742_ce74ecb8.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/013_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_013.json",
+      "lyricsLRC": "/music/lyrics_013.txt"
+    },
+    {
+      "name": "給爸媽的電話",
+      "audio": "/music/track_014.mp3",
+      "lyrics": "/music/lyrics_014.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "1:13",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_014.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878767_268c1be2.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/014_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_014.json",
+      "lyricsLRC": "/music/lyrics_014.txt"
+    },
+    {
+      "name": "我一個人也很好",
+      "audio": "/music/track_015.mp3",
+      "lyrics": "/music/lyrics_015.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "F",
+      "album": "原創專輯",
+      "duration": "2:59",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_015.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878797_31a9de0c.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/015_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_015.json",
+      "lyricsLRC": "/music/lyrics_015.txt"
+    },
+    {
+      "name": "城市的夜",
+      "audio": "/music/track_016.mp3",
+      "lyrics": "/music/lyrics_016.txt",
+      "lang": "TW",
+      "style": "流行",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "1:50",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_016.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878826_3a6f9825.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/pop.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/016_cover.png",
+        "style_key": "pop",
+        "style_label": "流行"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_016.json",
+      "lyricsLRC": "/music/lyrics_016.txt"
+    },
+    {
+      "name": "如果有一天",
+      "audio": "/music/track_017.mp3",
+      "lyrics": "/music/lyrics_017.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "2:40",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_017.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878836_476365c8.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/017_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_017.json",
+      "lyricsLRC": "/music/lyrics_017.txt"
+    },
+    {
+      "name": "故鄉的雲",
+      "audio": "/music/track_018.mp3",
+      "lyrics": "/music/lyrics_018.txt",
+      "lang": "TW",
+      "style": "民謠",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "1:05",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_018.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878888_d5bd5ef4.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/folk.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/018_cover.png",
+        "style_key": "folk",
+        "style_label": "民謠"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_018.json",
+      "lyricsLRC": "/music/lyrics_018.txt"
+    },
+    {
+      "name": "午夜出租",
+      "audio": "/music/track_019.mp3",
+      "lyrics": "/music/lyrics_019.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "1:08",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_019.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878921_0b1e93de.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/019_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_019.json",
+      "lyricsLRC": "/music/lyrics_019.txt"
+    },
+    {
+      "name": "遇見你之前",
+      "audio": "/music/track_020.mp3",
+      "lyrics": "/music/lyrics_020.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "F",
+      "album": "原創專輯",
+      "duration": "2:25",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_020.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878951_8eed6d70.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/020_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_020.json",
+      "lyricsLRC": "/music/lyrics_020.txt"
+    },
+    {
+      "name": "等天亮",
+      "audio": "/music/track_021.mp3",
+      "lyrics": "/music/lyrics_021.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "F",
+      "album": "原創專輯",
+      "duration": "1:35",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_021.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878981_40771ed1.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/021_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_021.json",
+      "lyricsLRC": "/music/lyrics_021.txt"
+    },
+    {
+      "name": "Late Night City",
+      "audio": "/music/track_022.mp3",
+      "lyrics": "/music/lyrics_022.txt",
+      "lang": "EN",
+      "style": "Lo-fi",
+      "artist": "Independent Artist",
+      "gender": "M",
+      "album": "Original Album",
+      "duration": "3:09",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_022.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879039_9a2ce310.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/lofi.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/022_cover.png",
+        "style_key": "lofi",
+        "style_label": "Lo-fi"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_022.json",
+      "lyricsLRC": "/music/lyrics_022.txt"
+    },
+    {
+      "name": "Coffee Shop Dreams",
+      "audio": "/music/track_023.mp3",
+      "lyrics": "/music/lyrics_023.txt",
+      "lang": "EN",
+      "style": "Lo-fi",
+      "artist": "Independent Artist",
+      "gender": "F",
+      "album": "Original Album",
+      "duration": "3:14",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_023.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879071_a0b52b6b.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/lofi.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/023_cover.png",
+        "style_key": "lofi",
+        "style_label": "Lo-fi"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_023.json",
+      "lyricsLRC": "/music/lyrics_023.txt"
+    },
+    {
+      "name": "Dive Bar Stage",
+      "audio": "/music/track_024.mp3",
+      "lyrics": "/music/lyrics_024.txt",
+      "lang": "EN",
+      "style": "Lo-fi",
+      "artist": "Independent Artist",
+      "gender": "M",
+      "album": "Original Album",
+      "duration": "3:32",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_024.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879112_deb5e009.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/lofi.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/024_cover.png",
+        "style_key": "lofi",
+        "style_label": "Lo-fi"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_024.json",
+      "lyricsLRC": "/music/lyrics_024.txt"
+    },
+    {
+      "name": "Tokyo Rain",
+      "audio": "/music/track_025.mp3",
+      "lyrics": "/music/lyrics_025.txt",
+      "lang": "JP",
+      "style": "J-Pop",
+      "artist": "Independent Artist",
+      "gender": "F",
+      "album": "オリジナルアルバム",
+      "duration": "2:47",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_025.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879485_79568d66.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/jpop.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/025_cover.png",
+        "style_key": "jpop",
+        "style_label": "J-Pop"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_025.json",
+      "lyricsLRC": "/music/lyrics_025.txt"
+    },
+    {
+      "name": "昭和写真館",
+      "audio": "/music/track_026.mp3",
+      "lyrics": "/music/lyrics_026.txt",
+      "lang": "JP",
+      "style": "J-Pop",
+      "artist": "Independent Artist",
+      "gender": "F",
+      "album": "オリジナルアルバム",
+      "duration": "2:59",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_026.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879224_7bdf46b1.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/jpop.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/026_cover.png",
+        "style_key": "jpop",
+        "style_label": "J-Pop"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_026.json",
+      "lyricsLRC": "/music/lyrics_026.txt"
+    },
+    {
+      "name": "富士之影",
+      "audio": "/music/track_027.mp3",
+      "lyrics": "/music/lyrics_027.txt",
+      "lang": "JP",
+      "style": "J-Pop",
+      "artist": "Independent Artist",
+      "gender": "M",
+      "album": "オリジナルアルバム",
+      "duration": "2:47",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_027.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879291_3b909999.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/jpop.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/027_cover.png",
+        "style_key": "jpop",
+        "style_label": "J-Pop"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_027.json",
+      "lyricsLRC": "/music/lyrics_027.txt"
+    },
+    {
+      "name": "屋台英雄",
+      "audio": "/music/track_028.mp3",
+      "lyrics": "/music/lyrics_028.txt",
+      "lang": "JP",
+      "style": "J-Pop",
+      "artist": "Independent Artist",
+      "gender": "M",
+      "album": "オリジナルアルバム",
+      "duration": "3:05",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_028.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879333_92db13d1.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/jpop.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/028_cover.png",
+        "style_key": "jpop",
+        "style_label": "J-Pop"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_028.json",
+      "lyricsLRC": "/music/lyrics_028.txt"
+    },
+    {
+      "name": "首爾地鐵",
+      "audio": "/music/track_029.mp3",
+      "lyrics": "/music/lyrics_029.txt",
+      "lang": "KR",
+      "style": "K-Pop",
+      "artist": "Independent Artist",
+      "gender": "M",
+      "album": "오리지널 앨범",
+      "duration": "2:23",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_029.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879369_ae2a2eb8.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/kpop.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/029_cover.png",
+        "style_key": "kpop",
+        "style_label": "K-Pop"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_029.json",
+      "lyricsLRC": "/music/lyrics_029.txt"
+    },
+    {
+      "name": "市場的春日",
+      "audio": "/music/track_030.mp3",
+      "lyrics": "/music/lyrics_030.txt",
+      "lang": "KR",
+      "style": "K-Pop",
+      "artist": "Independent Artist",
+      "gender": "F",
+      "album": "오리지널 앨범",
+      "duration": "2:36",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_030.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879385_87494661.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/kpop.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/030_cover.png",
+        "style_key": "kpop",
+        "style_label": "K-Pop"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_030.json",
+      "lyricsLRC": "/music/lyrics_030.txt"
+    },
+    {
+      "name": "梨泰院之夜",
+      "audio": "/music/track_031.mp3",
+      "lyrics": "/music/lyrics_031.txt",
+      "lang": "KR",
+      "style": "K-Pop",
+      "artist": "Independent Artist",
+      "gender": "M",
+      "album": "오리지널 앨범",
+      "duration": "2:36",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_031.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879398_0c09b93a.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/kpop.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/031_cover.png",
+        "style_key": "kpop",
+        "style_label": "K-Pop"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_031.json",
+      "lyricsLRC": "/music/lyrics_031.txt"
+    },
+    {
+      "name": "最後的溫柔",
+      "audio": "/music/track_032.mp3",
+      "lyrics": "/music/lyrics_032.txt",
+      "lang": "TW",
+      "style": "抒情",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "1:32",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_032.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879404_b53c8f57.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/ballad.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/032_cover.png",
+        "style_key": "ballad",
+        "style_label": "抒情"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_032.json",
+      "lyricsLRC": "/music/lyrics_032.txt"
+    },
+    {
+      "name": "不死的腳",
+      "audio": "/music/track_033.mp3",
+      "lyrics": "/music/lyrics_033.txt",
+      "lang": "TW",
+      "style": "搖滾",
+      "artist": "獨立歌手",
+      "gender": "M",
+      "album": "原創專輯",
+      "duration": "2:25",
+      "lyricsOffset": 0,
+      "mv": {
+        "local": "/music/mv/mv_033.mp4",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879408_15ee2bcb.mp4"
+      },
+      "cover": {
+        "local": "/music/covers/rock.png",
+        "cdn": "https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/033_cover.png",
+        "style_key": "rock",
+        "style_label": "搖滾"
+      },
+      "lyricsSync": "/music/lyrics_sync_results/track_033.json",
+      "lyricsLRC": "/music/lyrics_033.txt"
+    }
+  ]
+}

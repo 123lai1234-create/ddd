@@ -1,0 +1,751 @@
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><!--
+      Native IntersectionObserver fallback for `.reveal` fade-in.
+      Runs in addition to nav.js's local observer, so the page works
+      even if nav.js fails to load (network/CDN issue) — content stays
+      visible instead of getting stuck at opacity:0.
+    --><script>
+      (function() {
+        function bootReveal() {
+          var els = document.querySelectorAll('.reveal:not(.visible)');
+          if (!els.length) return;
+          if (typeof IntersectionObserver === 'undefined') {
+            els.forEach(function(el) { el.classList.add('visible'); });
+            return;
+          }
+          var io = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+              if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                io.unobserve(e.target);
+              }
+            });
+          }, { rootMargin: '0px 0px -8% 0px', threshold: 0.04 });
+          els.forEach(function(el) { io.observe(el); });
+          // Hard fallback: anything still hidden after 1.5s gets shown.
+          setTimeout(function() {
+            document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
+              el.classList.add('visible');
+            });
+          }, 1500);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bootReveal);
+        } else {
+          bootReveal();
+        }
+      })();
+    </script><title>ProteinMPNN 互動展示 | 工程 × 生醫 × AI</title><meta name="description" content="獨立的 ProteinMPNN 互動工作台，提供序列設計、PDB 結構預覽、ESMFold 與簡化 Rosetta 評分。"><meta property="og:title" content="ProteinMPNN 互動展示 | 工程 × 生醫 × AI"><meta property="og:description" content="獨立的 ProteinMPNN 互動工作台，提供序列設計、PDB 結構預覽、ESMFold 與簡化 Rosetta 評分。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://dontalk.vercel.app/og?t=ProteinMPNN%20%E4%BA%92%E5%8B%95%E5%B1%95%E7%A4%BA%20%7C%20%E5%B7%A5%E7%A8%8B%20%C3%97%20%E7%94%9F%E9%86%AB%20%C3%97%20AI&#38;s=%E7%8D%A8%E7%AB%8B%E7%9A%84%20ProteinMPNN%20%E4%BA%92%E5%8B%95%E5%B7%A5%E4%BD%9C%E5%8F%B0%EF%BC%8C%E6%8F%90%E4%BE%9B%E5%BA%8F%E5%88%97%E8%A8%AD%E8%A8%88%E3%80%81PDB%20%E7%B5%90%E6%A7%8B%E9%A0%90%E8%A6%BD%E3%80%81ESMFold%20%E8%88%87%E7%B0%A1%E5%8C%96%20Rosetta%20%E8%A9%95%E5%88%86%E3%80%82&#38;tag="><meta name="twitter:image" content="https://dontalk.vercel.app/og?t=ProteinMPNN%20%E4%BA%92%E5%8B%95%E5%B1%95%E7%A4%BA%20%7C%20%E5%B7%A5%E7%A8%8B%20%C3%97%20%E7%94%9F%E9%86%AB%20%C3%97%20AI&#38;s=%E7%8D%A8%E7%AB%8B%E7%9A%84%20ProteinMPNN%20%E4%BA%92%E5%8B%95%E5%B7%A5%E4%BD%9C%E5%8F%B0%EF%BC%8C%E6%8F%90%E4%BE%9B%E5%BA%8F%E5%88%97%E8%A8%AD%E8%A8%88%E3%80%81PDB%20%E7%B5%90%E6%A7%8B%E9%A0%90%E8%A6%BD%E3%80%81ESMFold%20%E8%88%87%E7%B0%A1%E5%8C%96%20Rosetta%20%E8%A9%95%E5%88%86%E3%80%82&#38;tag="><meta property="og:url" content="https://donttalk.vercel.app/protein-mpnn/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="ProteinMPNN 互動展示 | 工程 × 生醫 × AI"><meta name="twitter:description" content="獨立的 ProteinMPNN 互動工作台，提供序列設計、PDB 結構預覽、ESMFold 與簡化 Rosetta 評分。"><link rel="canonical" href="https://donttalk.vercel.app/protein-mpnn/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/protein-mpnn/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/protein-mpnn/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css?v=03bbf2c2"><link rel="stylesheet" href="/styles/index.css?v=852006c0"><link rel="stylesheet" href="/styles/index-mpnn.css?v=babfd3a7"><link rel="stylesheet" href="/styles/protein_mpnn.css?v=cf6346f7"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><script src="/scripts/immersive-experience.js" defer></script><script is:inline>window._3dmolLoaded = false;
+        window._3dmolLoading = false;
+        window._3dmolLoadError = null;
+        window._3dmolCallbacks = [];
+        window._3dmolSources = [
+            'https://cdn.jsdelivr.net/npm/3dmol@2.4.2/build/3Dmol-min.js',
+            'https://unpkg.com/3dmol@2.4.2/build/3Dmol-min.js',
+            'https://3dmol.org/build/3Dmol-min.js'
+        ];
+
+        window.load3Dmol = function (callback) {
+            if (window._3dmolLoaded && typeof window.$3Dmol !== 'undefined') {
+                if (callback) callback(null, window.$3Dmol);
+                return;
+            }
+
+            if (callback) window._3dmolCallbacks.push(callback);
+
+            if (window._3dmolLoading) return;
+            window._3dmolLoading = true;
+            window._3dmolLoadError = null;
+
+            var sources = window._3dmolSources.slice();
+
+            function finish(err) {
+                window._3dmolLoading = false;
+                window._3dmolLoadError = err || null;
+                var callbacks = window._3dmolCallbacks.slice();
+                window._3dmolCallbacks.length = 0;
+                callbacks.forEach(function (cb) {
+                    try { cb(err || null, window.$3Dmol); } catch (e) { }
+                });
+            }
+
+            function tryNext() {
+                if (!sources.length) {
+                    finish(new Error('3Dmol.js 載入失敗'));
+                    return;
+                }
+
+                var src = sources.shift();
+                var s = document.createElement('script');
+                s.src = src;
+                s.async = true;
+                s.onload = function () {
+                    if (typeof window.$3Dmol === 'undefined') {
+                        tryNext();
+                        return;
+                    }
+
+                    window._3dmolLoaded = true;
+                    finish(null);
+                };
+                s.onerror = function () {
+                    s.remove();
+                    tryNext();
+                };
+                document.head.appendChild(s);
+            }
+
+            tryNext();
+        };</script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://dontalk.vercel.app#person","name":"JT Lai","url":"https://dontalk.vercel.app","image":"https://dontalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://dontalk.vercel.app#website","url":"https://dontalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://dontalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://dontalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/protein-mpnn/#webpage","url":"https://donttalk.vercel.app/protein-mpnn/","name":"ProteinMPNN 互動展示 | 工程 × 生醫 × AI","description":"獨立的 ProteinMPNN 互動工作台，提供序列設計、PDB 結構預覽、ESMFold 與簡化 Rosetta 評分。","inLanguage":"zh-TW","isPartOf":{"@id":"https://dontalk.vercel.app#website"},"about":{"@id":"https://dontalk.vercel.app#person"},"additionalType":"WebPage"}]}</script><link rel="stylesheet" href="/_astro/Base.BhTaoyI2.css"></head> <body data-page="protein_mpnn"> <div class="immersive-bg" id="immersive-bg" data-astro-cid-3guv64em> <video id="bg-video" class="bg-video" autoplay muted loop playsinline data-astro-cid-3guv64em> <source id="video-source" type="video/webm" data-astro-cid-3guv64em> </video> <div class="bg-overlay" data-astro-cid-3guv64em></div> </div>  <script type="module">class n{constructor(){this.container=document.getElementById("immersive-bg"),this.video=document.getElementById("bg-video"),this.particles=[],this.init()}init(){this.createParticles(),this.setupEventListeners(),this.setupVideo()}setupVideo(){if(!this.video)return;const a=["179f1b00-2727-47ec-81d3-591d8405c762_watermarked.webm","314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.webm","5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.webm","6b95a3b8-no-watermark_watermarked.webm","a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.webm","bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.webm","ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.webm","cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.webm"],t=a[Math.floor(Math.random()*a.length)],e=document.getElementById("video-source");e&&(e.src="/videos/"+t),this.video.play().catch(()=>{this.video.style.display="none"})}createParticles(){if(!this.container)return;const a=Math.min(80,Math.floor(window.innerWidth/15));for(let t=0;t<a;t++){const e=document.createElement("div");e.className="particle",e.style.left=Math.random()*100+"%",e.style.top=Math.random()*100+"%";const i=Math.random()*3+1;e.style.width=i+"px",e.style.height=i+"px",e.style.animationDuration=Math.random()*10+15+"s",e.style.animationDelay=Math.random()*5+"s",this.container.appendChild(e),this.particles.push(e)}}setupEventListeners(){window.addEventListener("resize",()=>this.handleResize())}handleResize(){Math.min(80,Math.floor(window.innerWidth/15))!==this.particles.length&&(this.particles.forEach(t=>t.remove()),this.particles=[],this.createParticles())}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",()=>{new n}):new n;</script>   
+    <div data-site-nav></div>
+
+    <header class="demo-hero">
+        <div class="demo-hero-inner">
+            <div class="demo-hero-copy">
+                <div class="demo-kicker"><span class="live-dot"></span>Standalone Interactive Lab · Protein Design × Structure Preview</div>
+                <h1 class="demo-title">ProteinMPNN 互動展示</h1>
+                <p class="demo-sub">序列設計、PDB 結構預覽、ESMFold 與簡化 Rosetta 評分，集中在同一個操作面。</p>
+                <div class="demo-actions">
+                    <a href="#workspace" class="btn btn-primary">開始設計</a>
+                    <a href="/report/" class="btn btn-outline">看技術報告</a>
+                    <a href="demo_notebook.ipynb" class="btn btn-outline">互動筆記本</a>
+                </div>
+                <div class="demo-chip-row">
+                    <span class="demo-chip">Browser-side sampling</span>
+                    <span class="demo-chip">RCSB / ESMFold structure</span>
+                    <span class="demo-chip">Rosetta-style scoring</span>
+                </div>
+            </div>
+
+            <aside class="demo-summary-panel">
+                <div class="demo-summary-head">Workspace Snapshot</div>
+                <div class="demo-summary-grid">
+                    <div class="demo-metric">
+                        <span class="demo-metric-label">Input</span>
+                        <strong>Sequence + fixed positions</strong>
+                    </div>
+                    <div class="demo-metric">
+                        <span class="demo-metric-label">Sampling</span>
+                        <strong>ESM-2 or BLOSUM62 × temperature</strong>
+                    </div>
+                    <div class="demo-metric">
+                        <span class="demo-metric-label">Structure</span>
+                        <strong>PDB / mmCIF fallback + 3Dmol.js</strong>
+                    </div>
+                    <div class="demo-metric">
+                        <span class="demo-metric-label">Output</span>
+                        <strong>Mutation coloring + Rosetta panel</strong>
+                    </div>
+                </div>
+                <p class="demo-summary-note">
+                    結構載入流程會先嘗試站內 proxy，再備援 RCSB 的 mmCIF 與 PDB 端點。若來源回應異常，頁面會保留錯誤訊息，但不影響序列設計工作台本身使用。
+                </p>
+            </aside>
+        </div>
+    </header>
+
+    <main class="demo-main">
+        <section class="demo-context-grid">
+            <article class="demo-context-card demo-context-card-wide">
+                <div class="section-label">使用情境</div>
+                <h2 class="section-title">把設計、搜尋與結構預覽放在同一頁</h2>
+                <p class="section-sub">
+                    這個工作台適合快速展示逆折疊設計流程：先用序列或 preset 啟動設計，再即時比對結構、切換著色模式，最後用簡化能量分數做初步排序。
+                </p>
+                <div class="demo-flow-grid">
+                    <div class="demo-flow-card">
+                        <span class="demo-flow-index">01</span>
+                        <h3>輸入序列</h3>
+                        <p>支援 preset、手動輸入與固定殘基區段，直接模擬 ProteinMPNN 的設計約束。</p>
+                    </div>
+                    <div class="demo-flow-card">
+                        <span class="demo-flow-index">02</span>
+                        <h3>載入結構</h3>
+                        <p>可手動輸入 PDB ID，或讓系統嘗試從相似序列與資料庫快取自動配對。</p>
+                    </div>
+                    <div class="demo-flow-card">
+                        <span class="demo-flow-index">03</span>
+                        <h3>檢視結果</h3>
+                        <p>檢查多條設計序列、突變位置與 Rosetta 近似分數，快速做第一輪比較。</p>
+                    </div>
+                </div>
+            </article>
+
+            <article class="demo-context-card">
+                <div class="demo-side-label">What This Page Keeps</div>
+                <ul class="demo-side-list">
+                    <li>保留首頁原本的互動設計體驗，不需要跳回首頁捲動操作。</li>
+                    <li>結構視窗與結果表格同頁，分享連結時脈絡更完整。</li>
+                    <li>後續若要加 API proxy、快取或更多模型，不會再讓首頁過重。</li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="demo-workspace-heading">
+            <div class="section-label">Interactive Workspace</div>
+            <h2 class="section-title">直接操作 ProteinMPNN 工作台</h2>
+            <p class="section-sub">以下保留完整互動區塊，包含序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</p>
+        </section>
+
+        <section id="workspace" class="demo-workspace">
+            <div class="mpnn-layout">
+                <div class="mpnn-panel">
+                    <div class="mpnn-panel-title">⚙ 輸入參數</div>
+                    <div class="mpnn-field"><label class="mpnn-label">蛋白質序列 <span class="mpnn-badge">1
+                                字母代碼</span></label>
+                        <div class="mpnn-presets">
+                            <select class="mpnn-input" onchange="if(this.value){loadPreset(this.value);this.selectedIndex=0;}">
+                                <option value="">選擇預設序列…</option>
+                                <optgroup label="超小型 (<40 aa)">
+                                    <option value="trpcage">Trp-cage (20 aa)</option>
+                                    <option value="insulin_a">Insulin A chain (21 aa)</option>
+                                    <option value="melittin">Melittin (26 aa)</option>
+                                    <option value="defensin">α-Defensin (30 aa)</option>
+                                    <option value="insulin_b">Insulin B chain (30 aa)</option>
+                                    <option value="hp35">Villin HP35 (35 aa)</option>
+                                </optgroup>
+                                <optgroup label="小型摺疊 (40–70 aa)">
+                                    <option value="crambim">Crambin (46 aa)</option>
+                                    <option value="gb1">GB1 β-hairpin (56 aa)</option>
+                                    <option value="bpti">BPTI (58 aa)</option>
+                                    <option value="protein_a">Protein A B-domain (59 aa)</option>
+                                    <option value="ci2">CI2 (64 aa)</option>
+                                </optgroup>
+                                <optgroup label="中型蛋白 (70–150 aa)">
+                                    <option value="ubq">Ubiquitin (76 aa)</option>
+                                    <option value="cyc">Cytochrome c (104 aa)</option>
+                                    <option value="thioredoxin">Thioredoxin (108 aa)</option>
+                                    <option value="barnase">Barnase (110 aa)</option>
+                                    <option value="rnasea">RNase A (124 aa)</option>
+                                    <option value="lyz">Lysozyme (129 aa)</option>
+                                    <option value="hbb">Hemoglobin β-chain (146 aa)</option>
+                                    <option value="calmodulin">Calmodulin (148 aa)</option>
+                                </optgroup>
+                                <optgroup label="大型蛋白 (>150 aa)">
+                                    <option value="myo">Myoglobin (153 aa)</option>
+                                    <option value="streptavidin">Streptavidin (159 aa)</option>
+                                    <option value="hras">H-Ras (166 aa)</option>
+                                    <option value="p53_dbd">p53 DNA-binding (219 aa)</option>
+                                    <option value="gfp">GFP (238 aa)</option>
+                                    <option value="carbonic_anhydrase">Carbonic Anhydrase II (259 aa)</option>
+                                </optgroup>
+                            </select>
+                        </div><textarea id="mpnnSeq" spellcheck="false"
+                            placeholder="輸入胺基酸序列，例: ACDEFGHIKLMN..."></textarea>
+                        <div class="mpnn-seq-info"><span id="mpnnLen">0 殘基</span><span id="mpnnValid"
+                                class="mpnn-valid"></span></div>
+                        <div id="seqPdbSuggest" class="seq-pdb-suggest" style="display:none"></div>
+                    </div>
+                    <div class="mpnn-field"><label class="mpnn-label">固定位置 <span class="mpnn-hint">逗號分隔，支援範圍
+                                (1-10)</span></label><input id="mpnnFixed" type="text" class="mpnn-input"
+                            placeholder="例: 1,5,10-15（空白 = 全序列設計）"></div>
+                    <div class="mpnn-field"><label class="mpnn-label">生成序列數 <span class="mpnn-val-badge"
+                                id="numSeqBadge">5</span></label><input type="range" id="mpnnNumSeq" min="1" max="10"
+                            value="5" oninput="document.getElementById('numSeqBadge').textContent=this.value">
+                        <div class="range-meta"><span>1</span><span>10</span></div>
+                    </div>
+                    <div class="mpnn-field"><label class="mpnn-label">取樣溫度 <span class="mpnn-val-badge"
+                                id="tempBadge">0.10</span></label><input type="range" id="mpnnTemp" min="0.05"
+                            max="1.50" step="0.05" value="0.10"
+                            oninput="document.getElementById('tempBadge').textContent=parseFloat(this.value).toFixed(2)">
+                        <div class="range-meta"><span>低溫 (保守)</span><span>高溫 (多樣)</span></div>
+                    </div>
+                    <div class="mpnn-field"><label class="mpnn-label">模型版本</label>
+                        <div class="mpnn-model-btns" id="modelBtns"><button class="mpnn-model-btn active"
+                                onclick="selectModel(this,'v_48_020')">v_48_020</button><button class="mpnn-model-btn"
+                                onclick="selectModel(this,'v_48_030')">v_48_030</button><button class="mpnn-model-btn"
+                                onclick="selectModel(this,'soluble')">SolubleMPNN</button>
+                        </div>
+                        <div class="mpnn-model-desc" id="modelDesc">邊緣數 48，偏差 0.2Å — 標準精確度模型（論文推薦）</div>
+                    </div>
+                    <div class="mpnn-field">
+                        <label class="mpnn-label">
+                            推論引擎
+                            <span class="mpnn-hint">由後端 ESM-2 代理服務即時評分</span>
+                        </label>
+                        <div style="display:flex;gap:8px;align-items:center">
+                            <span id="engineLabel" style="font-size:.72rem;padding:3px 10px;border-radius:20px;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.4);color:#3fb950;white-space:nowrap">ESM-2</span>
+                            <span style="font-size:.68rem;color:var(--dim)">facebook/esm2_t6_8M_UR50D · 後端代理 · 無需設定</span>
+                        </div>
+                    </div>
+                    <button class="mpnn-run-btn" id="mpnnRunBtn" onclick="runMPNN()"><span id="mpnnBtnText">▶
+                            設計序列</span></button>
+                </div>
+                <div class="demo-results-column">
+                    <div class="mpnn-output-panel">
+                        <div class="mpnn-panel-title">🔬 蛋白質 3D 結構預覽</div>
+                        <div style="position:relative;border-radius:10px;overflow:hidden">
+                            <div id="mpnnStruct3d" style="height:340px;width:100%"></div>
+                            <div id="mpnnStructPlaceholder"
+                                style="position:absolute;inset:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center;border-radius:10px">
+                                <div style="font-size:2rem">🔬</div>
+                                <div style="font-size:.88rem;color:var(--muted)">
+                                    輸入 PDB ID 或點擊下方標籤載入結構</div>
+                                <div style="font-size:.72rem;color:var(--dim)">
+                                    支援任意公開 PDB 檔案 · 3Dmol.js 渲染引擎</div>
+                            </div>
+                        </div>
+                        <div id="mpnnStructInfo" class="mpnn-struct-info" style="display:none"></div>
+                    </div>
+
+                    <div class="mpnn-output-panel">
+                        <div class="mpnn-panel-title">📊 設計結果</div>
+                        <div id="mpnnPlaceholder" class="mpnn-placeholder">
+                            <div class="mpnn-placeholder-icon">🧬</div>
+                            <div>設定參數後點擊「設計序列」</div>
+                            <div class="mpnn-placeholder-sub">
+                                ProteinMPNN 演算法將在瀏覽器中即時執行<br>基於 BLOSUM62 × 溫度控制 Softmax 取樣
+                            </div>
+                        </div>
+                        <div id="mpnnProgress" style="display:none">
+                            <div class="mpnn-progress-label" id="mpnnProgressLabel">初始化模型...</div>
+                            <div class="mpnn-progress-bar">
+                                <div class="mpnn-progress-fill" id="mpnnProgressFill"></div>
+                            </div>
+                            <div class="mpnn-log" id="mpnnLog"></div>
+                        </div>
+                        <div id="mpnnResults" style="display:none">
+                            <div class="mpnn-stats-row">
+                                <div class="mpnn-stat-pill" id="statSeqs">-</div>
+                                <div class="mpnn-stat-pill" id="statAvgId">-</div>
+                                <div class="mpnn-stat-pill" id="statBestScore">-</div>
+                                <div class="mpnn-stat-pill" id="statTemp">-</div>
+                            </div>
+                            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+                                <button id="esmFoldBtn" onclick="toggleDesignColor(this)"
+                                    style="flex:1;min-width:190px;padding:9px 14px;background:linear-gradient(135deg,#0d1f0d,#1a3a1a);border:1px solid #3fb950;color:#3fb950;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;letter-spacing:.3px;transition:all .2s"
+                                    onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">🎨
+                                    突變著色
+                                </button><button id="rosettaBtn" onclick="showRosettaScore()"
+                                    style="flex:1;min-width:190px;padding:9px 14px;background:linear-gradient(135deg,#1f150d,#3a2a0d);border:1px solid #f0883e;color:#f0883e;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;letter-spacing:.3px;transition:opacity .2s"
+                                    onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">⚡
+                                    Rosetta 能量評分
+                                </button>
+                            </div>
+                            <div class="mpnn-table-wrap">
+                                <table class="mpnn-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>設計序列</th>
+                                            <th>序列相似度</th>
+                                            <th>平均 log-likelihood</th>
+                                            <th>3D</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="mpnnTableBody"></tbody>
+                                </table>
+                            </div>
+                            <div id="mpnnResiduePanel" class="mpnn-residue-panel" style="display:none">
+                                <div class="mpnn-residue-title">
+                                    殘基詳情 — <span id="residuePanelInfo"></span>
+                                </div>
+                                <div class="aa-legend">
+                                    <span class="aa-legend-item"><span
+                                            class="aa-chip aa-hydrophobic">A</span>疏水性</span><span
+                                        class="aa-legend-item"><span class="aa-chip aa-polar">S</span>極性</span><span
+                                        class="aa-legend-item"><span class="aa-chip aa-positive">K</span>帶正電</span><span
+                                        class="aa-legend-item"><span class="aa-chip aa-negative">D</span>帶負電</span><span
+                                        class="aa-legend-item"><span class="aa-chip aa-special">G</span>特殊</span><span
+                                        class="aa-legend-item" style="margin-left:4px;opacity:.5">虛線框=固定位置</span>
+                                </div>
+                                <div class="mpnn-seq-display" id="residueSeqDisplay"></div>
+                                <div class="mpnn-heatmap-label">
+                                    Per-residue log-likelihood 熱圖（紅=低信心 → 綠=高信心）</div>
+                                <div class="mpnn-heatmap" id="residueHeatmap"></div>
+                                <div class="mpnn-legend">
+                                    <div class="mpnn-legend-bar"></div><span>低 → 高 log-likelihood</span>
+                                </div>
+                            </div>
+                            <div id="rosettaPanel" class="rosetta-panel" style="display:none">
+                                <div style="font-size:.9rem;font-weight:600;color:var(--fg);margin-bottom:12px">
+                                    ⚡ Rosetta REF2015 能量評分（簡化版）
+                                </div>
+                                <div id="rosettaContent"></div>
+                                <div style="font-size:.68rem;color:var(--dim);margin-top:10px">
+                                    * 基於 REF2015 殘基傾向性+疏水溶解能+氫鍵估算，單位 REU。負值代表更穩定的序列。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- A-Frame VR Molecular Scene -->
+    <section class="reveal" style="padding:60px 0;max-width:960px;margin:0 auto;padding-inline:clamp(16px,5vw,48px)">
+        <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:8px">VR 分子空間展示</h2>
+        <p style="color:var(--muted,#8892a4);font-size:.85rem;margin-bottom:20px">點擊下方區域進入 WebXR 沉浸式分子結構場景（支援 VR 頭顯與滑鼠拖曳瀏覽）</p>
+        <div style="border:1px solid var(--border,rgba(255,255,255,.08));border-radius:16px;overflow:hidden;position:relative">
+            <a-scene id="vr-scene" embedded style="height:420px;display:block"
+                vr-mode-ui="enabled:true"
+                renderer="antialias:true;colorManagement:true"
+                loading-screen="enabled:false">
+                <a-sky color="#060d14"></a-sky>
+                <!-- Rotating protein backbone wireframe via torus knots -->
+                <a-entity id="mol-root" position="0 1.6 -4" rotation="0 0 0"
+                    animation="property:rotation;to:0 360 0;dur:18000;loop:true;easing:linear">
+                    <!-- Alpha helix approximation: stack of circles -->
+                    <a-torus-knot radius="0.6" radius-tubular="0.035" p="2" q="3"
+                        color="#58d7ff" opacity="0.85" wireframe="true"
+                        animation="property:rotation;to:360 0 360;dur:9000;loop:true;easing:linear">
+                    </a-torus-knot>
+                    <a-torus-knot radius="0.42" radius-tubular="0.022" p="3" q="5"
+                        color="#b59cff" opacity="0.6" wireframe="true" position="0 0.05 0"
+                        animation="property:rotation;to:-180 360 180;dur:12000;loop:true;easing:linear">
+                    </a-torus-knot>
+                    <!-- Amino acid residue spheres -->
+                    <a-sphere radius="0.07" color="#ff6b9d" position="0.6 0 0"></a-sphere>
+                    <a-sphere radius="0.07" color="#58d7ff" position="-0.6 0 0"></a-sphere>
+                    <a-sphere radius="0.07" color="#7bf0be" position="0 0 0.6"></a-sphere>
+                    <a-sphere radius="0.07" color="#ffd166" position="0 0.6 0"></a-sphere>
+                    <a-sphere radius="0.07" color="#ff6b9d" position="0 -0.6 0"></a-sphere>
+                    <a-sphere radius="0.07" color="#b59cff" position="0 0 -0.6"></a-sphere>
+                </a-entity>
+                <!-- Grid floor -->
+                <a-grid-helper args="20,20,#1a2a3a,#0d1a26" position="0 0 -4" rotation="-90 0 0" opacity="0.3"></a-grid-helper>
+                <!-- Orbit controls via mouse drag -->
+                <a-camera position="0 1.6 0" look-controls wasd-controls>
+                    <a-cursor color="#58d7ff" fuse="false"></a-cursor>
+                </a-camera>
+                <!-- Ambient + directional lighting -->
+                <a-light type="ambient" color="#112233" intensity="0.8"></a-light>
+                <a-light type="directional" position="2 4 -2" color="#58d7ff" intensity="0.6"></a-light>
+                <a-light type="point" position="-2 2 -4" color="#b59cff" intensity="0.5"></a-light>
+            </a-scene>
+            <div style="position:absolute;bottom:12px;right:14px;font-size:.72rem;color:rgba(255,255,255,.3);pointer-events:none">🥽 拖曳旋轉 · 滾輪縮放</div>
+        </div>
+    </section>
+    <script>
+    (function(){
+        if (document.querySelector('a-scene')) {
+            const aframeScript = document.createElement('script');
+            aframeScript.src = 'https://aframe.io/releases/1.6.0/aframe.min.js';
+            aframeScript.onload = function() { console.log('A-Frame loaded'); };
+            document.head.appendChild(aframeScript);
+        }
+    })();
+    </script>
+
+    <div data-site-footer></div>
+
+    <script src="/scripts/app-config.js"></script>
+    <script src="/scripts/index.js"></script>
+  <script src="/scripts/index.js?v=90a97ce7"></script> <!-- ── Hide Vercel Toolbar (auto-injected when logged in to Vercel) ── --> <style>
+      vercel-toolbar { display: none !important; visibility: hidden !important; }
+    </style> <!-- ── AI Chat Widget (floating, bottom-left, hides on media pages) ── --> <button class="cw-btn" id="cw-btn" data-tip="AI 助手" data-cw-api="/api/chat" data-cw-hide-paths="/music,/video-gen,/interactive-showcase" aria-label="開啟 AI 助手">💬</button> <aside class="cw-panel" id="cw-panel" role="dialog" aria-label="AI 助手對話" aria-hidden="true"> <header class="cw-header"> <div> <div class="cw-title">AI 助手</div> <div class="cw-sub">問我任何關於這個網站的問題</div> </div> <button class="cw-close" id="cw-close" aria-label="關閉">×</button> </header> <div class="cw-msgs" id="cw-msgs"> <div class="cw-welcome" id="cw-welcome"> <p>嗨！我是你的 AI 助手 👋</p> <p style="margin: 8px 0 12px; font-size: .78rem">問我關於這個網站、音樂、基因、AI、或股票的任何問題：</p> <div id="cw-suggestions"></div> </div> </div> <form class="cw-input-row" id="cw-form" autocomplete="off"> <textarea class="cw-input" id="cw-input" placeholder="輸入訊息… (Enter 送出 / Shift+Enter 換行)" rows="1" maxlength="2000"></textarea> <button class="cw-send" id="cw-send" type="submit">送出</button> </form> </aside> <script>
+(function() {
+  'use strict';
+  if (window.__cw_loaded) return;
+  window.__cw_loaded = true;
+
+  // ── API URL resolution (hardcode Render to avoid SW-cache HTML issues) ─
+  const RENDER_URL = 'https://donttalk-chat-bot-xc4e.onrender.com';
+  // Prefer window.CHAT_BOT_API (set by Base.astro <head>) for local dev overrides;
+  // fall back to hardcoded Render on production where HTML may be SW-cached.
+  const CHAT_BOT_API = window.CHAT_BOT_API;
+  const resolvedApiUrl = (CHAT_BOT_API && CHAT_BOT_API.startsWith('http'))
+    ? CHAT_BOT_API
+    : RENDER_URL + '/chat';
+  console.log('[ChatWidget] resolvedApiUrl =', resolvedApiUrl);
+
+  const btn = document.getElementById('cw-btn');
+  if (!btn) return;
+  const apiUrl = btn.getAttribute('data-cw-api') || '/api/chat';
+  const hideOnPaths = btn.getAttribute('data-cw-hide-paths') || '';
+  const hidePaths = hideOnPaths.split(',').map(function(s){return s.trim();}).filter(Boolean);
+
+  // ── Keep backend warm: ping /healthz when button is first interacted ─
+  // (Render Free tier sleeps after 15 min; this wakes it before the user sends a message)
+  let warmedUp = false;
+  function warmUp() {
+    if (warmedUp) return;
+    warmedUp = true;
+    // Always ping Render directly — never a relative path (avoids SW/HTML-cache mismatch)
+    fetch(RENDER_URL + '/healthz', { mode: 'cors' }).catch(function() {});
+  }
+  btn.addEventListener('mouseenter', warmUp, { once: true });
+  btn.addEventListener('focus', warmUp, { once: true });
+
+  const panel = document.getElementById('cw-panel');
+  const closeBtn = document.getElementById('cw-close');
+  const msgs = document.getElementById('cw-msgs');
+  const form = document.getElementById('cw-form');
+  const input = document.getElementById('cw-input');
+  const sendBtn = document.getElementById('cw-send');
+  const welcome = document.getElementById('cw-welcome');
+  const suggestions = document.getElementById('cw-suggestions');
+
+  if (!btn || !panel) return;
+
+  const STORAGE_KEY = 'cw.history.v1';
+  const MAX_HISTORY = 20;
+  const SUGGESTIONS = [
+    '這個網站是什麼？',
+    '介紹一下你的音樂作品',
+    '你有做哪些 AI 工具？',
+    '幫我查台積電股價',
+  ];
+
+  // ── Hide on certain paths + during media playback ─────────────
+  function shouldHide() {
+    const p = location.pathname;
+    if (hidePaths.some(h => p.startsWith(h))) return true;
+    // Hide if any <video> or <audio> is playing
+    const media = document.querySelectorAll('video, audio');
+    for (const m of media) {
+      if (!m.paused && m.readyState > 1) return true;
+    }
+    return false;
+  }
+  function applyHide() {
+    btn.setAttribute('data-hidden', shouldHide() ? '1' : '0');
+  }
+  applyHide();
+  // Re-check every 1.5s (cheap; covers SPA-ish nav + media start/stop)
+  setInterval(applyHide, 1500);
+  document.addEventListener('play', applyHide, true);
+  document.addEventListener('pause', applyHide, true);
+
+  // ── Open/close ────────────────────────────────────────────────
+  function open() {
+    panel.setAttribute('data-open', '1');
+    panel.setAttribute('aria-hidden', 'false');
+    if (welcome && suggestions && suggestions.children.length === 0) {
+      SUGGESTIONS.forEach(s => {
+        const c = document.createElement('span');
+        c.className = 'cw-chip';
+        c.textContent = s;
+        c.addEventListener('click', () => sendUser(s));
+        suggestions.appendChild(c);
+      });
+    }
+    setTimeout(() => input.focus(), 50);
+  }
+  function close() {
+    panel.removeAttribute('data-open');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+  btn.addEventListener('click', () => {
+    panel.getAttribute('data-open') === '1' ? close() : open();
+  });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && panel.getAttribute('data-open') === '1') close();
+  });
+
+  // ── History persistence ───────────────────────────────────────
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h.slice(-MAX_HISTORY))); }
+    catch {}
+  }
+  let history = loadHistory();
+  // render prior history
+  history.forEach(m => renderBubble(m.role, m.content, false));
+
+  // ── Markdown mini-renderer (very small, no deps) ──────────────
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function md(s) {
+    if (!s) return '';
+    // citations [1] [2] → sup pill
+    s = s.replace(/\[(\d+)\]/g, (_, n) => `<span class="cw-cite">[${n}]</span>`);
+    // code blocks
+    s = s.replace(/```([\s\S]*?)```/g, (_, c) => `<pre>${escapeHtml(c.trim())}</pre>`);
+    // inline code
+    s = s.replace(/`([^`]+)`/g, function(_, c) { return '<code>' + escapeHtml(c) + '</code>'; });
+    // links [text](url)
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // internal links /path
+    s = s.replace(/(^|\s)(\/[a-z0-9_\-/]+)/gi, (m, pre, p) => `${pre}<a href="${p}">${p}</a>`);
+    // bold
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // line breaks
+    s = s.replace(/\n/g, '<br>');
+    return s;
+  }
+
+  // ── Bubbles ───────────────────────────────────────────────────
+  let activeBotBubble = null; // currently streaming
+  function renderBubble(role, content, isHtml = false) {
+    const div = document.createElement('div');
+    div.className = 'cw-msg cw-msg-' + (role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot');
+    if (role === 'typing') {
+      div.innerHTML = '<span class="cw-typing"></span><span class="cw-typing"></span><span class="cw-typing"></span>';
+    } else {
+      div.innerHTML = isHtml ? content : md(content);
+    }
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  // ── Send / stream ─────────────────────────────────────────────
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  form.addEventListener('submit', e => { e.preventDefault(); sendUser(input.value); });
+
+  async function sendUser(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    if (welcome && welcome.parentNode) welcome.parentNode.removeChild(welcome);
+
+    input.value = '';
+    input.style.height = 'auto';
+    renderBubble('user', text);
+    history.push({ role: 'user', content: text });
+
+    // typing indicator
+    const typing = renderBubble('typing');
+    sendBtn.disabled = true;
+
+    let botText = '';
+    let tools = [];
+    let ragSources = [];
+    // track the final bot bubble so we can append footnotes to it after finally
+    let finalBubble = null;
+
+    // Timeout guard: fe8.cn may return non-streaming JSON (no SSE) → reader hangs forever
+    let gotToken = false;
+    var timeoutId;
+
+    try {
+      console.log('[ChatWidget] sending fetch to', resolvedApiUrl);
+      // No abort timeout — Render Free tier cold-starts can take 30-60s.
+      // warmUp() on hover should wake it before the user sends a message.
+      const resp = await fetch(resolvedApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+      });
+      console.log('[ChatWidget] fetch done, status:', resp.status, 'body=', !!resp.body);
+      if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      gotToken = false;
+      timeoutId = setTimeout(function() { if (!gotToken) { console.log('[ChatWidget] TIMEOUT: no token in 30s'); reader.cancel(); } }, 30000);
+      // Process one complete SSE event from the front of buf
+      // Render backend uses CRLF (\r\n) line endings — must match or we'll never split events
+      function processBuf() {
+        let idx = buf.indexOf('\r\n\r\n');
+        if (idx === -1) return;
+        const raw = buf.slice(0, idx);
+        buf = buf.slice(idx + 4);
+        const evLine = raw.split('\r\n').find(function(l) { return l.startsWith('event:'); });
+        const dataLine = raw.split('\r\n').find(function(l) { return l.startsWith('data:'); });
+        if (!dataLine) return;
+        const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
+        let data = {};
+        try { data = JSON.parse(dataLine.replace(/^data:\s*/, '')); } catch {}
+        if (evt === 'token' && data.content) {
+          gotToken = true;
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
+          botText += data.content;
+          activeBotBubble.innerHTML = md(botText);
+          msgs.scrollTop = msgs.scrollHeight;
+        } else if (evt === 'tool_call') {
+          tools.push({ name: data.name, args: data.arguments });
+        } else if (evt === 'tool_result') {
+          const last = tools[tools.length - 1];
+          if (last) last.result = data.result;
+        } else if (evt === 'rag') {
+          (data.chunks || []).forEach(function(c) { ragSources.push(c); });
+        } else if (evt === 'done') {
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', md(botText));
+          finalBubble = activeBotBubble;
+        } else if (evt === 'error') {
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          renderBubble('error', '⚠️ ' + (data.message || 'unknown error'));
+          finalBubble = null;
+        }
+      }
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          // Stream exhausted — process any trailing data still in buf (no \n\n needed)
+          buf = buf.trim();
+          if (buf) processBuf();
+          break;
+        }
+        buf += dec.decode(value, { stream: true });
+        // Drain all complete events in buf (CRLF-separated)
+        while (buf.indexOf('\r\n\r\n') !== -1) processBuf();
+      }
+    } catch (err) {
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      const isAbort = err && (err.name === 'AbortError' || (err.message && err.message.includes('abort')));
+      renderBubble('error', isAbort
+        ? '⚠️ 連線逾時（後端服務喚醒中，請稍候後再試）'
+        : '⚠️ 連線失敗：' + (err && err.message ? err.message : String(err)));
+      finalBubble = null;
+    } finally {
+      clearTimeout(timeoutId);
+      sendBtn.disabled = false;
+      activeBotBubble = null;
+    }
+
+    // append footnotes to the final bot bubble (runs after finally so we have a stable ref)
+    if (finalBubble) {
+      if (tools.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-tools';
+        div.innerHTML = tools.map(function(t) { return '<span class="cw-tool-pill">🔧 ' + escapeHtml(t.name) + '</span>'; }).join('');
+        finalBubble.appendChild(div);
+      }
+      if (ragSources.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-rag-sources';
+        const uniq = [];
+        const seen = new Set();
+        ragSources.forEach(function(s) {
+          const key = s.url || s.title;
+          if (!seen.has(key)) { seen.add(key); uniq.push(s); }
+        });
+        div.innerHTML = '📚 引用：' + uniq.slice(0, 5).map(function(s) {
+          const url = s.url || '#';
+          const title = s.title || url;
+          return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(title) + '</a>';
+        }).join(' · ');
+        finalBubble.appendChild(div);
+      }
+    }
+    if (botText) history.push({ role: 'assistant', content: botText });
+    saveHistory(history);
+  }
+})();
+</script> <script>
+      // DEPLOY_MARKER: 2026-07-21T16:50:00-chat-render-v3
+      // Resolve Chat Widget API URL.
+      // In dev (localhost) → http://localhost:8765/chat (FastAPI backend)
+      // In prod → Render directly (Vercel proxy buffers SSE → broken streaming)
+      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8765/chat'
+        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
+    </script> </body> </html>

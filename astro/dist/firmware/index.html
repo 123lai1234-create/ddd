@@ -1,0 +1,991 @@
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><!--
+      Native IntersectionObserver fallback for `.reveal` fade-in.
+      Runs in addition to nav.js's local observer, so the page works
+      even if nav.js fails to load (network/CDN issue) — content stays
+      visible instead of getting stuck at opacity:0.
+    --><script>
+      (function() {
+        function bootReveal() {
+          var els = document.querySelectorAll('.reveal:not(.visible)');
+          if (!els.length) return;
+          if (typeof IntersectionObserver === 'undefined') {
+            els.forEach(function(el) { el.classList.add('visible'); });
+            return;
+          }
+          var io = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+              if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                io.unobserve(e.target);
+              }
+            });
+          }, { rootMargin: '0px 0px -8% 0px', threshold: 0.04 });
+          els.forEach(function(el) { io.observe(el); });
+          // Hard fallback: anything still hidden after 1.5s gets shown.
+          setTimeout(function() {
+            document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
+              el.classList.add('visible');
+            });
+          }, 1500);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bootReveal);
+        } else {
+          bootReveal();
+        }
+      })();
+    </script><title>韌體工程 · MCU Firmware · 作品集</title><meta name="description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><meta property="og:title" content="韌體工程 · MCU Firmware · 作品集"><meta property="og:description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://dontalk.vercel.app/og?t=%E9%9F%8C%E9%AB%94%E5%B7%A5%E7%A8%8B%20%C2%B7%20MCU%20Firmware%20%C2%B7%20%E4%BD%9C%E5%93%81%E9%9B%86&#38;s=Nuvoton%20Nano130KE3BN%20Cortex-M0%20%E9%9F%8C%E9%AB%94%E9%96%8B%E7%99%BC%E5%AF%A6%E4%BD%9C%EF%BC%9ATFT%20EBI%20%E9%A9%85%E5%8B%95%E3%80%81RGB565%20%E9%A1%AF%E7%A4%BA%E3%80%81Keil%20%2B%20J-Link%20%E5%B7%A5%E4%BD%9C%E6%B5%81%EF%BC%8C%E5%90%AB%20YouTube%20%E5%AE%8C%E6%95%B4%E6%95%99%E5%AD%B8%E6%92%AD%E6%94%BE%E6%B8%85%E5%96%AE%E3%80%82&#38;tag="><meta name="twitter:image" content="https://dontalk.vercel.app/og?t=%E9%9F%8C%E9%AB%94%E5%B7%A5%E7%A8%8B%20%C2%B7%20MCU%20Firmware%20%C2%B7%20%E4%BD%9C%E5%93%81%E9%9B%86&#38;s=Nuvoton%20Nano130KE3BN%20Cortex-M0%20%E9%9F%8C%E9%AB%94%E9%96%8B%E7%99%BC%E5%AF%A6%E4%BD%9C%EF%BC%9ATFT%20EBI%20%E9%A9%85%E5%8B%95%E3%80%81RGB565%20%E9%A1%AF%E7%A4%BA%E3%80%81Keil%20%2B%20J-Link%20%E5%B7%A5%E4%BD%9C%E6%B5%81%EF%BC%8C%E5%90%AB%20YouTube%20%E5%AE%8C%E6%95%B4%E6%95%99%E5%AD%B8%E6%92%AD%E6%94%BE%E6%B8%85%E5%96%AE%E3%80%82&#38;tag="><meta property="og:url" content="https://donttalk.vercel.app/firmware/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="韌體工程 · MCU Firmware · 作品集"><meta name="twitter:description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><link rel="canonical" href="https://donttalk.vercel.app/firmware/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/firmware/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/firmware/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css?v=03bbf2c2"><link rel="stylesheet" href="/styles/firmware.css?v=756efc58"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><script src="/scripts/immersive-experience.js" defer></script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://dontalk.vercel.app#person","name":"JT Lai","url":"https://dontalk.vercel.app","image":"https://dontalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://dontalk.vercel.app#website","url":"https://dontalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://dontalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://dontalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/firmware/#webpage","url":"https://donttalk.vercel.app/firmware/","name":"韌體工程 · MCU Firmware · 作品集","description":"Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。","inLanguage":"zh-TW","isPartOf":{"@id":"https://dontalk.vercel.app#website"},"about":{"@id":"https://dontalk.vercel.app#person"},"additionalType":"WebPage"}]}</script><link rel="stylesheet" href="/_astro/Base.BhTaoyI2.css"></head> <body data-page="firmware"> <div class="immersive-bg" id="immersive-bg" data-astro-cid-3guv64em> <video id="bg-video" class="bg-video" autoplay muted loop playsinline data-astro-cid-3guv64em> <source id="video-source" type="video/webm" data-astro-cid-3guv64em> </video> <div class="bg-overlay" data-astro-cid-3guv64em></div> </div>  <script type="module">class n{constructor(){this.container=document.getElementById("immersive-bg"),this.video=document.getElementById("bg-video"),this.particles=[],this.init()}init(){this.createParticles(),this.setupEventListeners(),this.setupVideo()}setupVideo(){if(!this.video)return;const a=["179f1b00-2727-47ec-81d3-591d8405c762_watermarked.webm","314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.webm","5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.webm","6b95a3b8-no-watermark_watermarked.webm","a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.webm","bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.webm","ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.webm","cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.webm"],t=a[Math.floor(Math.random()*a.length)],e=document.getElementById("video-source");e&&(e.src="/videos/"+t),this.video.play().catch(()=>{this.video.style.display="none"})}createParticles(){if(!this.container)return;const a=Math.min(80,Math.floor(window.innerWidth/15));for(let t=0;t<a;t++){const e=document.createElement("div");e.className="particle",e.style.left=Math.random()*100+"%",e.style.top=Math.random()*100+"%";const i=Math.random()*3+1;e.style.width=i+"px",e.style.height=i+"px",e.style.animationDuration=Math.random()*10+15+"s",e.style.animationDelay=Math.random()*5+"s",this.container.appendChild(e),this.particles.push(e)}}setupEventListeners(){window.addEventListener("resize",()=>this.handleResize())}handleResize(){Math.min(80,Math.floor(window.innerWidth/15))!==this.particles.length&&(this.particles.forEach(t=>t.remove()),this.particles=[],this.createParticles())}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",()=>{new n}):new n;</script>   
+    <div data-site-nav></div>
+
+    <section class="fw-hero fw">
+        <span class="fw-eyebrow">Firmware Engineer · MCU Development</span>
+        <h1>從 Datasheet 到<br><span class="grad">實機驅動</span>的完整流程</h1>
+        <p class="sub">Nuvoton Cortex-M0 韌體開發實作：EBI 並列匯流排、RGB565 圖像顯示、精準記憶體規劃、Keil 工具鏈 + J-Link 下載。</p>
+        <div class="fw-hero-tags">
+            <span class="fw-tag accent">Cortex-M0</span>
+            <span class="fw-tag">Nano130KE3BN</span>
+            <span class="fw-tag">Keil µVision 5</span>
+            <span class="fw-tag">J-Link SWD</span>
+            <span class="fw-tag">EBI / SPI / I2C / UART</span>
+            <span class="fw-tag">RGB565</span>
+            <span class="fw-tag">128 KB Flash</span>
+            <span class="fw-tag">16 KB SRAM</span>
+        </div>
+        <div class="fw-chip-viz">
+            <svg viewBox="0 0 460 300" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="chipBg" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="#1a1f3a"/>
+                        <stop offset="1" stop-color="#0a0d1f"/>
+                    </linearGradient>
+                    <linearGradient id="traceGrad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0" stop-color="#00e5ff" stop-opacity="0"/>
+                        <stop offset=".5" stop-color="#00e5ff" stop-opacity=".9"/>
+                        <stop offset="1" stop-color="#a855f7" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <g stroke="url(#traceGrad)" stroke-width="1.5" fill="none" opacity=".7">
+                    <path d="M20 60 L140 60 L150 80"/>
+                    <path d="M20 120 L130 120 L145 140"/>
+                    <path d="M20 180 L135 180"/>
+                    <path d="M20 240 L140 240 L150 220"/>
+                    <path d="M440 60 L320 60 L310 80"/>
+                    <path d="M440 120 L330 120 L315 140"/>
+                    <path d="M440 180 L325 180"/>
+                    <path d="M440 240 L320 240 L310 220"/>
+                </g>
+                <rect x="150" y="80" width="160" height="140" rx="8" fill="url(#chipBg)" stroke="#00e5ff" stroke-width="1.5"/>
+                <rect x="162" y="92" width="136" height="116" rx="4" fill="none" stroke="#00e5ff" stroke-width=".5" opacity=".4"/>
+                <text x="230" y="140" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="14" fill="#00e5ff" font-weight="700">NANO130</text>
+                <text x="230" y="158" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#22ffa7">KE3BN</text>
+                <text x="230" y="178" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#a8b0cc" opacity=".7">Cortex-M0 · 42 MHz</text>
+                <text x="230" y="195" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#6b7399">128K FLASH · 16K SRAM</text>
+                <g fill="#6b7399">
+                    <rect x="140" y="95" width="10" height="3"/><rect x="140" y="110" width="10" height="3"/>
+                    <rect x="140" y="125" width="10" height="3"/><rect x="140" y="140" width="10" height="3"/>
+                    <rect x="140" y="155" width="10" height="3"/><rect x="140" y="170" width="10" height="3"/>
+                    <rect x="140" y="185" width="10" height="3"/><rect x="140" y="200" width="10" height="3"/>
+                    <rect x="310" y="95" width="10" height="3"/><rect x="310" y="110" width="10" height="3"/>
+                    <rect x="310" y="125" width="10" height="3"/><rect x="310" y="140" width="10" height="3"/>
+                    <rect x="310" y="155" width="10" height="3"/><rect x="310" y="170" width="10" height="3"/>
+                    <rect x="310" y="185" width="10" height="3"/><rect x="310" y="200" width="10" height="3"/>
+                </g>
+                <circle cx="165" cy="96" r="2" fill="#22ffa7"><animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite"/></circle>
+                <circle cx="165" cy="171" r="2" fill="#ff2d95"><animate attributeName="opacity" values="0;1;0" dur="1.5s" begin=".5s" repeatCount="indefinite"/></circle>
+                <circle cx="295" cy="126" r="2" fill="#fde047"><animate attributeName="opacity" values="0;1;0" dur="1.5s" begin="1s" repeatCount="indefinite"/></circle>
+                <text x="20" y="55" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">EBI[0:15]</text>
+                <text x="20" y="115" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">SPI0 MOSI</text>
+                <text x="20" y="175" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">I2C SDA</text>
+                <text x="20" y="235" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">UART TX</text>
+                <text x="440" y="55" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">TFT RS</text>
+                <text x="440" y="115" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">GPIO LED</text>
+                <text x="440" y="175" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">PWM</text>
+                <text x="440" y="235" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">ADC</text>
+            </svg>
+        </div>
+    </section>
+
+    <div class="fw">
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">01</span><h2>核心技術規格</h2><span class="note">bill of materials / datasheet</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">🧠</span><div class="lbl">MCU Core</div><div class="val">Cortex-M0</div><div class="sub">42 MHz · Thumb-2 · NVIC</div></div>
+                <div class="fw-spec"><span class="ico">💾</span><div class="lbl">Flash / SRAM</div><div class="val">128 KB / 16 KB</div><div class="sub">ISP · ICP · Data Flash</div></div>
+                <div class="fw-spec"><span class="ico">⚡</span><div class="lbl">Supply Voltage</div><div class="val">1.8 V – 3.6 V</div><div class="sub">-40°C to 85°C</div></div>
+                <div class="fw-spec"><span class="ico">🔌</span><div class="lbl">Display Bus</div><div class="val">EBI Parallel</div><div class="sub">memory-mapped I/O · 16/8-bit</div></div>
+                <div class="fw-spec"><span class="ico">🎨</span><div class="lbl">Pixel Format</div><div class="val">RGB565</div><div class="sub">16-bit · 2 B/px</div></div>
+                <div class="fw-spec"><span class="ico">📐</span><div class="lbl">Max Resolution</div><div class="val">200 × 220</div><div class="sub">~86 KB image payload</div></div>
+                <div class="fw-spec"><span class="ico">🛠</span><div class="lbl">Toolchain</div><div class="val">Keil + J-Link</div><div class="sub">ARMCC · ELF · SWD flash</div></div>
+                <div class="fw-spec"><span class="ico">📦</span><div class="lbl">Package</div><div class="val">LQFP 48/64/128</div><div class="sub">選 LQFP64 for EBI + LCD</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">02</span><h2>超低功耗模式</h2><span class="note">ultra-low power · wearable target</span></div>
+            <div class="fw-mem-card">
+                <h3>// NANO130 Power Profile — 設計目標：穿戴式 / 可攜式醫療量測</h3>
+                <div class="fw-mem-row">
+                    <span class="name">Normal Mode</span>
+                    <div class="bar"><div class="fill" style="animation-delay:0s;--w:100%"></div></div>
+                    <span class="pct"><b>200 μA/MHz</b></span>
+                </div>
+                <div class="fw-mem-row">
+                    <span class="name">Idle Mode</span>
+                    <div class="bar"><div class="fill" style="animation-delay:.15s"></div></div>
+                    <span class="pct"><b>75 μA/MHz</b></span>
+                </div>
+                <div class="fw-mem-row warn">
+                    <span class="name">Power-down + RTC</span>
+                    <div class="bar"><div class="fill warn" style="animation-delay:.3s"></div></div>
+                    <span class="pct"><b>2.5 μA</b></span>
+                </div>
+                <div class="fw-mem-row warn">
+                    <span class="name">Power-down + RAM</span>
+                    <div class="bar"><div class="fill warn" style="animation-delay:.45s"></div></div>
+                    <span class="pct"><b>1 μA</b></span>
+                </div>
+                <div class="fw-mem-row">
+                    <span class="name">Wake-up latency</span>
+                    <div class="bar"><div class="fill" style="animation-delay:.6s"></div></div>
+                    <span class="pct"><b>&lt; 7 μs</b></span>
+                </div>
+            </div>
+            <style>
+                .fw-mem-row .fill { animation: fwFill 1.2s cubic-bezier(.22,.61,.36,1) forwards; transform-origin: left; }
+                .fw-mem-row:nth-child(1) .fill { width: 100%; }
+                .fw-mem-row:nth-child(2) .fill { width: 37.5%; }
+                .fw-mem-row:nth-child(3) .fill { width: 1.25%; }
+                .fw-mem-row:nth-child(4) .fill { width: 0.5%; }
+                .fw-mem-row:nth-child(5) .fill { width: 8%; }
+            </style>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">03</span><h2>周邊矩陣</h2><span class="note">peripheral overview · datasheet §4</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">📡</span><div class="lbl">ADC</div><div class="val">12-ch · 12-bit</div><div class="sub">2 MSPS · 內建溫度感測器 ±1°C</div></div>
+                <div class="fw-spec"><span class="ico">🔁</span><div class="lbl">PWM</div><div class="val">4 × 16-bit</div><div class="sub">8 輸出 或 4 組互補對 · 死區控制</div></div>
+                <div class="fw-spec"><span class="ico">🖥</span><div class="lbl">LCD Controller</div><div class="val">4×40 / 6×38</div><div class="sub">COM/SEG 段碼顯示器驅動</div></div>
+                <div class="fw-spec"><span class="ico">🔗</span><div class="lbl">USB</div><div class="val">USB 2.0 FS</div><div class="sub">Full-Speed Device · 12 Mbps</div></div>
+                <div class="fw-spec"><span class="ico">🔄</span><div class="lbl">SPI</div><div class="val">× 3 ports</div><div class="sub">最高 32 MHz · Master/Slave</div></div>
+                <div class="fw-spec"><span class="ico">🔀</span><div class="lbl">I²C / UART</div><div class="val">2 / 5 ports</div><div class="sub">I²C 1 MHz · UART 1 Mbps × 2</div></div>
+                <div class="fw-spec"><span class="ico">🕐</span><div class="lbl">Oscillators</div><div class="val">4–24 MHz XTAL</div><div class="sub">12 MHz IRC (±1%) · 10 kHz IRC</div></div>
+                <div class="fw-spec"><span class="ico">🔒</span><div class="lbl">Programming</div><div class="val">ISP · ICP</div><div class="sub">Data Flash · Bootloader 支援</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">02</span><h2>記憶體預算計算機</h2><span class="note">flash budget · interactive</span></div>
+            <div class="fw-calc">
+                <div class="fw-calc-grid">
+                    <div class="fw-calc-inputs">
+                        <div class="fw-calc-field">
+                            <label>Width (px) <b id="calcWV">200</b></label>
+                            <input type="range" id="calcW" min="80" max="320" value="200">
+                        </div>
+                        <div class="fw-calc-field">
+                            <label>Height (px) <b id="calcHV">220</b></label>
+                            <input type="range" id="calcH" min="60" max="320" value="220">
+                        </div>
+                        <div class="fw-calc-field">
+                            <label style="margin-bottom:8px">Color depth</label>
+                            <div class="fw-calc-toggle">
+                                <button data-bpp="8">8-bit</button>
+                                <button data-bpp="16" class="active">16-bit RGB565</button>
+                                <button data-bpp="24">24-bit</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="fw-calc-output">
+                        <div class="fw-calc-row"><span class="name">Code / Data</span><div class="bar"><span class="fill" id="calcFillCode"></span></div><span class="pct" id="calcValCode"></span></div>
+                        <div class="fw-calc-row"><span class="name">Image</span><div class="bar"><span class="fill" id="calcFillImg"></span></div><span class="pct" id="calcValImg"></span></div>
+                        <div class="fw-calc-row"><span class="name">Total</span><div class="bar"><span class="fill" id="calcFillTotal"></span></div><span class="pct" id="calcValTotal"></span></div>
+                        <div class="fw-calc-row"><span class="name">剩餘 Flash</span><div class="bar"><span class="fill" id="calcFillRemain"></span></div><span class="pct" id="calcValRemain"></span></div>
+                        <div class="fw-calc-verdict ok" id="calcVerdict"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">04</span><h2>Flash-resident 影像 + EBI blit</h2><span class="note">img2.c · main.c</span></div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>img2.c — 200×220 RGB565 · Flash-resident</span></div>
+                <pre class="fw-code"><span class="c-cm">/* Generated from PNG via Rinky-Dink RGB565 converter
+   const 讓編譯器鎖在 Flash，零 SRAM 執行時分配 */</span>
+<span class="c-key">const</span> <span class="c-type">unsigned short</span> img2[<span class="c-num">44000</span>] = {
+    <span class="c-num">0x0000</span>, <span class="c-num">0x0000</span>, <span class="c-num">0x1082</span>, <span class="c-num">0x2965</span>, <span class="c-num">0x41A7</span>, <span class="c-num">0x62AB</span>,
+    <span class="c-num">0x832F</span>, <span class="c-num">0xA4B3</span>, <span class="c-num">0xC636</span>, <span class="c-num">0xE7BA</span>, <span class="c-num">0xFFFF</span>, <span class="c-num">0xFFDE</span>,
+    <span class="c-cm">/* ... 44 K entries, each 16-bit RGB565 pixel ... */</span>
+};</pre>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>main.c — EBI blit loop</span></div>
+                <pre class="fw-code"><span class="c-cm">/* memory-mapped I/O: 寫到 EBI address = 送一個像素到 TFT */</span>
+<span class="c-type">void</span> <span class="c-fn">tft_blit</span>(<span class="c-key">const</span> <span class="c-type">uint16_t</span> *buf, <span class="c-type">uint32_t</span> n) {
+    <span class="c-key">for</span> (<span class="c-type">uint32_t</span> i = <span class="c-num">0</span>; i &lt; n; i++) {
+        EBI_WRITE_DATA(buf[i]);    <span class="c-cm">// triggers CS/WR strobe</span>
+    }
+}
+
+<span class="c-type">int</span> <span class="c-fn">main</span>(<span class="c-type">void</span>) {
+    <span class="c-fn">SYS_Init</span>();         <span class="c-cm">// clock tree + multifunction pins</span>
+    <span class="c-fn">EBI_Open</span>(<span class="c-num">0</span>, <span class="c-num">16</span>);   <span class="c-cm">// 16-bit bus, bank 0</span>
+    <span class="c-fn">TFT_Init</span>();         <span class="c-cm">// controller reset + init sequence</span>
+    <span class="c-fn">tft_blit</span>(img2, <span class="c-num">44000</span>);
+    <span class="c-key">while</span> (<span class="c-num">1</span>) { <span class="c-fn">__WFI</span>(); } <span class="c-cm">// sleep, wake on interrupt</span>
+}</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">05</span><h2>PNG → MCU 流程</h2><span class="note">5-step toolchain</span></div>
+            <div class="fw-pipe">
+                <div class="fw-step"><div class="t">影像輸入</div><div class="d">PNG / JPG &lt; 300 KB，建議 200 × 220</div></div>
+                <div class="fw-step"><div class="t">RGB565 轉換</div><div class="d">Rinky-Dink converter 輸出 C header</div></div>
+                <div class="fw-step"><div class="t">加入專案</div><div class="d">替換 img2.c，以 const 鎖進 Flash</div></div>
+                <div class="fw-step"><div class="t">EBI 時序對齊</div><div class="d">設 tAS / tAH 匹配 TFT setup/hold</div></div>
+                <div class="fw-step"><div class="t">J-Link 下載</div><div class="d">SWD flash + 邏輯分析儀驗證</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">06</span><h2>技術難點 &amp; 解決</h2><span class="note">problem → mitigation</span></div>
+            <div class="fw-diff">
+                <div class="fw-diff-card"><div class="title">✕ Flash 空間爆表</div><div class="desc">一張 200×220 RGB565 約 86 KB，加上 code 只剩 12 KB 餘裕。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ 外掛 SPI Flash</div><div class="desc">影像搬到外部 W25Q 系列，MCU 以 SPI DMA 逐行讀取。</div></div>
+                <div class="fw-diff-card"><div class="title">✕ EBI 時序不對</div><div class="desc">TFT 亂碼或部分列遺失，通常是 setup/hold 沒對齊。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ 邏輯分析儀校正</div><div class="desc">量 CS/WR/RD 波形反推 tAS/tAH 調到穩定。</div></div>
+                <div class="fw-diff-card"><div class="title">✕ Keil 32 KB 上限</div><div class="desc">免費版無法編譯大型 image。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ PSN 註冊碼</div><div class="desc">申請免費教育版完整授權解除限制。</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">07</span><h2>RGB565 互動計算機</h2><span class="note">即時轉換 · 位元視覺化</span></div>
+            <div class="fw-rgb-wrap">
+                <div class="fw-rgb-sliders">
+                    <div class="fw-rgb-field">
+                        <label>R（5-bit · bits [15:11]）</label>
+                        <div class="fw-rgb-slider-row">
+                            <input type="range" id="rgbR" min="0" max="31" value="15">
+                            <input type="number" id="rgbRn" min="0" max="31" value="15">
+                        </div>
+                    </div>
+                    <div class="fw-rgb-field">
+                        <label>G（6-bit · bits [10:5]）</label>
+                        <div class="fw-rgb-slider-row">
+                            <input type="range" id="rgbG" min="0" max="63" value="32">
+                            <input type="number" id="rgbGn" min="0" max="63" value="32">
+                        </div>
+                    </div>
+                    <div class="fw-rgb-field">
+                        <label>B（5-bit · bits [4:0]）</label>
+                        <div class="fw-rgb-slider-row">
+                            <input type="range" id="rgbB" min="0" max="31" value="15">
+                            <input type="number" id="rgbBn" min="0" max="31" value="15">
+                        </div>
+                    </div>
+                </div>
+                <div class="fw-rgb-out">
+                    <div class="fw-rgb-preview" id="rgbPreview"></div>
+                    <div class="fw-rgb-row"><span>HEX 16-bit</span><code id="rgbHex">0x7BEF</code></div>
+                    <div class="fw-rgb-row"><span>C literal</span><code id="rgbC">0x7BEFU</code></div>
+                    <div class="fw-rgb-row"><span>RGB888</span><code id="rgb888">#787878</code></div>
+                    <div class="fw-rgb-bits" id="rgbBits"></div>
+                    <div class="fw-bit-legend">
+                        <span class="lr">R[4:0]</span><span class="lg">G[5:0]</span><span class="lb">B[4:0]</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">08</span><h2>EBI 時序波形</h2><span class="note">WRITE / READ cycle · tAS / tAH</span></div>
+            <div class="fw-timing">
+                <div class="fw-timing-head">
+                    <span class="fw-timing-title">// EBI bus cycle @ 42 MHz HCLK (23.8 ns/cycle)</span>
+                    <div class="fw-timing-toggle">
+                        <button data-cycle="write" class="active">WRITE</button>
+                        <button data-cycle="read">READ</button>
+                    </div>
+                </div>
+                <svg id="fwTimingSvg" viewBox="0 0 580 270" xmlns="http://www.w3.org/2000/svg" style="background:#07091a;border-radius:8px">
+                    <defs>
+                        <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6b7399"/></marker>
+                        <marker id="arrl" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse"><path d="M0,0 L6,3 L0,6 Z" fill="#6b7399"/></marker>
+                    </defs>
+                    <!-- labels -->
+                    <text x="78" y="42"  text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">CS_n</text>
+                    <text x="78" y="102" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3" id="fwSig2Lbl">WR_n</text>
+                    <text x="78" y="162" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">RS</text>
+                    <text x="78" y="222" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">D[15:0]</text>
+                    <!-- CS_n (shared) -->
+                    <polyline points="88,24 130,24 130,56 430,56 430,24 560,24" fill="none" stroke="#00e5ff" stroke-width="1.8"/>
+                    <!-- Strobe signal (WR_n / RD_n): toggled by JS -->
+                    <polyline id="fwStrobeLine" points="88,84 200,84 200,116 340,116 340,84 560,84" fill="none" stroke="#22ffa7" stroke-width="1.8"/>
+                    <!-- RS: stays HIGH -->
+                    <line x1="88" y1="144" x2="560" y2="144" stroke="#a855f7" stroke-width="1.8"/>
+                    <!-- DATA group: write vs read swapped by JS -->
+                    <g id="fwDataWrite">
+                        <polyline points="88,214 88,230 200,230" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <rect x="200" y="206" width="140" height="32" rx="4" fill="rgba(253,224,71,.08)" stroke="#fde047" stroke-width="1.8"/>
+                        <text x="270" y="226" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#fde047">DATA VALID (output)</text>
+                        <polyline points="340,230 390,230 390,214" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <line x1="390" y1="222" x2="560" y2="222" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                    </g>
+                    <g id="fwDataRead" style="display:none">
+                        <line x1="88" y1="222" x2="230" y2="222" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <rect x="230" y="206" width="130" height="32" rx="4" fill="rgba(253,224,71,.08)" stroke="#fde047" stroke-width="1.8"/>
+                        <text x="295" y="226" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#fde047">DATA VALID (input)</text>
+                        <polyline points="360,230 400,230 400,214" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <line x1="400" y1="222" x2="560" y2="222" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                    </g>
+                    <!-- tAS -->
+                    <line x1="130" y1="245" x2="200" y2="245" stroke="#6b7399" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)"/>
+                    <text x="165" y="258" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#6b7399">tAS</text>
+                    <!-- tAH -->
+                    <line x1="340" y1="245" x2="390" y2="245" stroke="#6b7399" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)" id="fwTahLine"/>
+                    <text x="365" y="258" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#6b7399">tAH</text>
+                    <!-- strobe width -->
+                    <line x1="200" y1="132" x2="340" y2="132" stroke="#22ffa7" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)" opacity=".6" id="fwDlyLine"/>
+                    <text x="270" y="143" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#22ffa7" opacity=".8" id="fwDlyLbl">W_DLY</text>
+                </svg>
+                <div class="fw-timing-readout" id="fwTimingReadout">
+                    <div><span class="k">tAS</span> — <span class="v good" id="fwRtAs">2 × HCLK = 47.6 ns</span></div>
+                    <div><span class="k" id="fwRtDlyK">W_DLY</span> — <span class="v good" id="fwRtDly">6 × HCLK = 142.8 ns</span></div>
+                    <div><span class="k">tAH</span> — <span class="v good" id="fwRtAh">2 × HCLK = 47.6 ns</span></div>
+                    <div><span class="k">cycle</span> — <span class="v" id="fwRtCycle">~10 × HCLK = 238 ns</span></div>
+                </div>
+            </div>
+            <div class="fw-reg-wrap" style="margin-top:16px">
+                <table class="fw-reg-table">
+                    <thead>
+                        <tr><th>Register</th><th>Offset</th><th>Reset</th><th>Key Fields</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="rname">EBI_CTL</td><td class="rval">0x00</td><td class="rval">0x0000_0000</td><td class="rdesc">ENABLE[0]：EBI 致能；DATA_WIDTH[17:16]：匯流排寬度（00=8b, 01=16b）</td></tr>
+                        <tr><td class="rname">EBI_TCTL0</td><td class="rval">0x04</td><td class="rval">0x03FF_FFFF</td><td class="rdesc">tAS[27:24]：address setup；tAH[19:16]：address hold；W_DLY[11:8]：WR 脈寬（× HCLK）</td></tr>
+                        <tr><td class="rname">SYS_GPA_MFP</td><td class="rval">SYS+0x30</td><td class="rval">0x0000_0000</td><td class="rdesc">PA[15:0] multifunction：設為 EBI bus，覆蓋 GPIO 預設值</td></tr>
+                        <tr><td class="rname">SYS_GPB_MFP</td><td class="rval">SYS+0x34</td><td class="rval">0x0000_0000</td><td class="rdesc">PB[10:8] → EBI_ALE / CS0 / WR；PB[7] → EBI_RD</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">09</span><h2>理論基礎 — MIT 6.004 計算機結構</h2><span class="note">Computation Structures · Cortex-M0 原理對應</span></div>
+            <div class="fw-callout" style="margin-bottom:20px">
+                <h3>為什麼看 6.004？</h3>
+                <p>
+                    MIT 6.004《Computation Structures》從數位邏輯、有限狀態機、到 Beta RISC 處理器的完整設計，
+                    正是理解 Cortex-M0 如何執行 Thumb-2 指令的理論骨架——
+                    Fetch → Decode → Execute 三級管線、暫存器檔案、ALU 設計、記憶體映射 I/O（MMIO）
+                    在 Nano130 的 EBI 實作中都有直接對應。
+                    第 13 講深入有限狀態機（FSM），
+                    是理解韌體 State Machine Pattern 的理論起點。
+                </p>
+            </div>
+            <div class="fw-yt" style="margin-bottom:16px">
+                <iframe src="https://www.youtube.com/embed/EvhITMTTl48?list=PLUl_fzAL8tWIqU_zk0u1_18sf1LF-ym91" title="MIT 6.004 Lecture 13 — Finite State Machines" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div class="fw-pipe" style="margin-top:16px">
+                <div class="fw-step"><div class="t">數位邏輯 → GPIO</div><div class="d">組合邏輯閘映射到 Nano130 的 PA/PB multifunction 腳位設定</div></div>
+                <div class="fw-step"><div class="t">FSM → 韌體狀態機</div><div class="d">6.004 FSM 模型直接對應 display init state machine（RESET → CMD → DATA → IDLE）</div></div>
+                <div class="fw-step"><div class="t">Beta ISA → Thumb-2</div><div class="d">Beta 32-bit RISC 與 Cortex-M0 Thumb-2 16/32-bit 混合 ISA 的結構對比</div></div>
+                <div class="fw-step"><div class="t">MMIO → EBI Write</div><div class="d">6.004 的 memory-mapped I/O 概念直接解釋 EBI_WRITE_DATA() 為何等同「送像素」</div></div>
+                <div class="fw-step"><div class="t">中斷 → NVIC</div><div class="d">Cortex-M0 NVIC 優先權仲裁對應 6.004 的中斷向量與 supervisor call</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">10</span><h2>完整韌體教學播放清單</h2><span class="note">YouTube · Nano MCU series</span></div>
+            <div class="fw-yt">
+                <iframe src="https://www.youtube.com/embed/videoseries?list=PLUl_fzAL8tWIqU_zk0u1_18sf1LF-ym91" title="Nuvoton Firmware Playlist" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">11</span><h2>技術文章</h2><span class="note">blog</span></div>
+            <div class="fw-articles">
+                <a href="https://jtlai0921.wixsite.com/mysite/post/%E7%8C%B4%E5%AD%90%E9%83%BD%E8%83%BD%E8%AE%80%E6%87%82%E7%9A%84%E7%94%A8tft%E9%A1%AF%E7%A4%BA%E5%9C%96%E7%89%87" target="_blank" rel="noopener"><span class="bullet">01 ▸</span><span class="title">猴子都能讀懂：用 TFT 顯示圖片（EBI + RGB565 完整教學）</span><span class="arrow">↗</span></a>
+                <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noopener"><span class="bullet">02 ▸</span><span class="title">更多韌體與工程筆記 · 個人部落格</span><span class="arrow">↗</span></a>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">12</span><h2>跨域延伸</h2><span class="note">DSP × biomed</span></div>
+            <div class="fw-callout">
+                <h3>從 Bit 到分子：一條完整的工程線</h3>
+                <p>以韌體底層為基礎，整合生醫研究專業：MCU 上實作 ECG / PPG 訊號 FIR / IIR 濾波、心率擷取演算法，結合站內已展示的 <a href="/report/">蛋白質 AI</a>、<a href="/ngs/">NGS</a>、<a href="/gene_ai/">基因 AI</a> 平台，形成「硬體 ↔ 韌體 ↔ 演算法 ↔ 系統」同一條技術線。</p>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">13</span><h2>NVIC 向量中斷控制器</h2><span class="note">Nested Vectored Interrupt Controller · Cortex-M0</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">⚡</span><div class="lbl">中斷通道</div><div class="val">32 個外部 IRQ</div><div class="sub">+ 16 個系統例外（HardFault / SysTick …）</div></div>
+                <div class="fw-spec"><span class="ico">🎯</span><div class="lbl">優先級位元</div><div class="val">2-bit（4 級）</div><div class="sub">M0 最小化實作 · 低延遲搶佔</div></div>
+                <div class="fw-spec"><span class="ico">🕐</span><div class="lbl">進入延遲</div><div class="val">12 cycles</div><div class="sub">自動 push 8 個暫存器 → 無需 prologue</div></div>
+                <div class="fw-spec"><span class="ico">🔒</span><div class="lbl">Tail-chaining</div><div class="val">6 cycles</div><div class="sub">連續 ISR 切換省去 push/pop overhead</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>irq_setup.c — EBI / GPIO 中斷配置</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 啟用 EINT0（EBI 資料就緒信號）與 UART0 接收中斷 */</span>
+NVIC_SetPriority(EINT0_IRQn, <span class="c-num">0</span>);   <span class="c-cm">/* 最高優先 — 顯示撕裂修復 */</span>
+NVIC_SetPriority(UART0_IRQn, <span class="c-num">1</span>);
+NVIC_EnableIRQ(EINT0_IRQn);
+NVIC_EnableIRQ(UART0_IRQn);
+
+<span class="c-type">void</span> <span class="c-fn">EINT0_IRQHandler</span>(<span class="c-type">void</span>) {
+    GPIO_CLR_INT_FLAG(PB, BIT14);     <span class="c-cm">/* 清 pending bit */</span>
+    <span class="c-fn">tft_vsync_cb</span>();                   <span class="c-cm">/* 觸發下一幀 blit */</span>
+}</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">14</span><h2>PDMA 直接記憶體傳輸</h2><span class="note">Peripheral DMA · zero-CPU pixel blit</span></div>
+            <div class="fw-callout">
+                <h3>為什麼需要 PDMA？</h3>
+                <p>CPU 迴圈搬運 44,000 個像素（200×220）需要 ~88,000 個 load/store cycle，佔滿 2 ms。改用 PDMA burst-transfer 讓 CPU 在搬圖期間執行其他任務（ADC 採樣、UART 輸出），有效實現「軟性多工」。</p>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>pdma_blit.c — Flash → EBI 零 CPU 傳輸</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 設定 PDMA Ch0：Flash 圖陣 → EBI data 暫存器 */</span>
+PDMA_Open(<span class="c-num">1</span> &lt;&lt; <span class="c-num">0</span>);
+PDMA_SetTransferCnt(PDMA, <span class="c-num">0</span>, PDMA_WIDTH_16, <span class="c-num">44000</span>);
+PDMA_SetTransferAddr(PDMA, <span class="c-num">0</span>,
+    (<span class="c-type">uint32_t</span>)img2,          PDMA_SAR_INC,  <span class="c-cm">/* src: Flash array */</span>
+    EBI_BANK0_BASE_ADDR,    PDMA_DAR_FIX); <span class="c-cm">/* dst: TFT EBI 位址（固定） */</span>
+PDMA_SetBurstType(PDMA, <span class="c-num">0</span>, PDMA_REQ_BURST, PDMA_BURST_128);
+PDMA_EnableInt(PDMA, <span class="c-num">0</span>, PDMA_INT_TRANS_DONE);
+NVIC_EnableIRQ(PDMA_IRQn);
+PDMA_Trigger(PDMA, <span class="c-num">0</span>);  <span class="c-cm">/* 啟動 — CPU 可繼續跑其他邏輯 */</span></pre>
+            </div>
+            <div class="fw-diff">
+                <div class="fw-diff-card"><div class="title">✕ CPU 迴圈搬運</div><div class="desc">~88,000 cycle · CPU 100% 忙碌 · UART / ADC 延遲 2 ms 以上</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ PDMA Burst-128</div><div class="desc">~690 cycle 觸發後 CPU 釋放 · 傳完觸發 IRQ 通知主迴圈</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">15</span><h2>Timer / BPWM 多頻道配置</h2><span class="note">backlight · heartbeat LED · scan clock</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">🕐</span><div class="lbl">Timer 0 / 1</div><div class="val">系統節拍 1 ms</div><div class="sub">SysTick + 應用層軟體 timer 佇列</div></div>
+                <div class="fw-spec"><span class="ico">🔄</span><div class="lbl">Timer 2</div><div class="val">ADC 觸發 250 Hz</div><div class="sub">每 4 ms 啟動一次 ECG/PPG 採樣</div></div>
+                <div class="fw-spec"><span class="ico">💡</span><div class="lbl">BPWM0 Ch0</div><div class="val">LCD 背光 500 Hz</div><div class="sub">Duty 0–100% 調光 · 低頻閃爍避免感測雜訊</div></div>
+                <div class="fw-spec"><span class="ico">❤️</span><div class="lbl">BPWM0 Ch1</div><div class="val">心跳 LED 1 Hz</div><div class="sub">互補輸出 · dead-band 200 ns 防橋臂直通</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>pwm_init.c — 背光 + ADC 觸發配置</span></div>
+                <pre class="fw-code"><span class="c-cm">/* BPWM0 Ch0: LCD 背光 500 Hz，初始 duty 80% */</span>
+BPWM_ConfigOutputChannel(BPWM0, <span class="c-num">0</span>,
+    <span class="c-num">500</span>,   <span class="c-cm">/* freq Hz  */</span>
+    <span class="c-num">80</span>);   <span class="c-cm">/* duty %   */</span>
+BPWM_EnableOutput(BPWM0, BPWM_CH_0_MASK);
+BPWM_Start(BPWM0, BPWM_CH_0_MASK);
+
+<span class="c-cm">/* Timer2: 每 4 ms 觸發 ADC（250 SPS for ECG） */</span>
+TIMER_Open(TIMER2, TIMER_PERIODIC_MODE, <span class="c-num">250</span>);
+TIMER_SetTriggerSource(TIMER2, TIMER_TRGSRC_TIMEOUT_EVENT);
+TIMER_SetTriggerTarget(TIMER2, TIMER_TRG_TO_ADC);
+TIMER_Start(TIMER2);</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">16</span><h2>SPI Flash 外部影像儲存</h2><span class="note">W25Q64 · 64 Mbit · XIP-ready</span></div>
+            <div class="fw-diff">
+                <div class="fw-diff-card"><div class="title">✕ 影像鎖在 MCU Flash</div><div class="desc">128 KB 只能放 1 張 200×220（86 KB），程式碼加 heap 幾乎爆表，無法做多圖輪播。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ 外掛 W25Q64 SPI Flash</div><div class="desc">64 Mbit = 8 MB，可存 ~93 張全彩圖，透過 SPI0 以 32 MHz DMA 讀取，每幀 &lt;3 ms。</div></div>
+                <div class="fw-diff-card"><div class="title">✕ SPI 讀取阻塞 CPU</div><div class="desc">同步輪詢 64 KB Sector 讀取需 ~5 ms 忙等待，顯示幀率下降。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ SPI + PDMA double-buffer</div><div class="desc">前景顯示 buf[0] 時，PDMA 搬 buf[1]；切換時 swap pointer，CPU 始終零等待。</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>spi_flash.c — W25Q64 讀取啟動</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 發 Read Data (0x03) 指令，從 sector 0 讀 86 KB */</span>
+<span class="c-type">void</span> <span class="c-fn">spiflash_read</span>(<span class="c-type">uint32_t</span> addr, <span class="c-type">uint8_t</span> *dst, <span class="c-type">uint32_t</span> len) {
+    SPI_SET_SS_LOW(SPI0);
+    <span class="c-fn">SPI_WriteData</span>(SPI0, <span class="c-num">0x03</span>);           <span class="c-cm">/* Read cmd */</span>
+    <span class="c-fn">SPI_WriteData</span>(SPI0, (addr &gt;&gt; <span class="c-num">16</span>) &amp; <span class="c-num">0xFF</span>);
+    <span class="c-fn">SPI_WriteData</span>(SPI0, (addr &gt;&gt;  <span class="c-num">8</span>) &amp; <span class="c-num">0xFF</span>);
+    <span class="c-fn">SPI_WriteData</span>(SPI0,  addr        &amp; <span class="c-num">0xFF</span>);
+    PDMA_SetTransferAddr(PDMA, <span class="c-num">1</span>,
+        SPI0_BASE + <span class="c-num">0x20</span>, PDMA_SAR_FIX,  <span class="c-cm">/* SPI RX FIFO */</span>
+        (<span class="c-type">uint32_t</span>)dst,      PDMA_DAR_INC);
+    PDMA_SetTransferCnt(PDMA, <span class="c-num">1</span>, PDMA_WIDTH_8, len);
+    PDMA_Trigger(PDMA, <span class="c-num">1</span>);
+}</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">17</span><h2>完整系統主迴圈架構</h2><span class="note">boot → init → main loop · full picture</span></div>
+            <div class="fw-callout">
+                <h3>從上電到畫面：完整啟動流程</h3>
+                <p>NANO130 上電後執行 ROM Bootloader 自我測試，跳入使用者 Reset Handler，依序初始化時脈樹（PLL → HCLK 42 MHz）、周邊（EBI / SPI / ADC / BPWM / PDMA）、TFT 驅動 IC 初始化序列，最後進入主迴圈。</p>
+            </div>
+            <div class="fw-steps">
+                <div class="fw-step"><div class="t">Power-on Reset + ROM Bootloader</div><div class="d">自我測試 Flash CRC、讀取 Config0 Boot 設定（ISP / ICP / User Flash），決定跳轉目標。</div></div>
+                <div class="fw-step"><div class="t">CLK_SetCoreClock(42000000)</div><div class="d">外部 12 MHz XTAL → PLL × 3.5 → 42 MHz HCLK。PCLK = HCLK / 2 = 21 MHz 供 ADC / SPI。</div></div>
+                <div class="fw-step"><div class="t">周邊初始化</div><div class="d">EBI 時序（tAS=2, tAH=1, tACC=6）→ SPI0 32 MHz → BPWM0 500 Hz → Timer2 250 Hz ADC trigger → PDMA Ch0/1 → NVIC 優先級。</div></div>
+                <div class="fw-step"><div class="t">TFT ILI9225 驅動初始化</div><div class="d">透過 EBI 發送 ~20 條暫存器設定指令（電源、Gamma、掃描方向、色彩模式 RGB565），等待 120 ms Vcom 穩定。</div></div>
+                <div class="fw-step"><div class="t">主迴圈 — while(1)</div><div class="d">PDMA 搬圖（非阻塞）→ ADC 結果處理（ECG/PPG）→ UART 輸出數據 → 低功耗 Sleep 等 SysTick 喚醒（1 ms），迴圈週期 &lt; 4 ms。</div></div>
+            </div>
+        </section>
+    </div>
+
+    <hr class="divider" style="margin-top:60px">
+    <div data-site-footer></div>
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+    <script>
+    // Flash budget calculator
+    (function () {
+        const w = document.getElementById('calcW'), wv = document.getElementById('calcWV');
+        const h = document.getElementById('calcH'), hv = document.getElementById('calcHV');
+        const btns = document.querySelectorAll('[data-bpp]');
+        if (!w) return;
+        let bpp = 16;
+        const CODE = 30, FLASH = 128;
+        function bar(id, ratio, warn) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.style.width = Math.min(100, ratio * 100).toFixed(1) + '%';
+            el.style.background = warn ? 'var(--accent-amber,#fde047)' : 'var(--accent-cyan,#00e5ff)';
+        }
+        function run() {
+            const wd = +w.value, ht = +h.value;
+            const imgKB = Math.ceil(wd * ht * bpp / 8 / 1024);
+            const tot = CODE + imgKB, rem = FLASH - tot;
+            wv.textContent = wd; hv.textContent = ht;
+            bar('calcFillCode',   CODE / FLASH, false);
+            bar('calcFillImg',    imgKB / FLASH, imgKB > 90);
+            bar('calcFillTotal',  tot / FLASH,   tot > FLASH * 0.88);
+            bar('calcFillRemain', Math.max(0, rem) / FLASH, rem < 10);
+            document.getElementById('calcValCode').textContent   = CODE   + ' / ' + FLASH + ' KB';
+            document.getElementById('calcValImg').textContent    = imgKB  + ' / ' + FLASH + ' KB';
+            document.getElementById('calcValTotal').textContent  = tot    + ' / ' + FLASH + ' KB';
+            document.getElementById('calcValRemain').textContent = rem    + ' KB';
+            const v = document.getElementById('calcVerdict');
+            if (rem < 0)   { v.className = 'fw-calc-verdict bad';  v.textContent = '✕ 超出 Flash ' + (-rem) + ' KB — 需外掛 SPI Flash 或降低解析度'; }
+            else if (rem < 10) { v.className = 'fw-calc-verdict warn'; v.textContent = '⚠ 僅剩 ' + rem + ' KB — 建議保留 ≥ 12 KB 供 ISR + heap'; }
+            else               { v.className = 'fw-calc-verdict ok';   v.textContent = '✓ 餘裕 ' + rem + ' KB — Flash 規劃合理'; }
+        }
+        [w, h].forEach(el => el.addEventListener('input', run));
+        btns.forEach(btn => btn.addEventListener('click', () => {
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            bpp = +btn.dataset.bpp;
+            run();
+        }));
+        run();
+    })();
+
+    // RGB565 calculator
+    (function () {
+        const r = document.getElementById('rgbR'), rn = document.getElementById('rgbRn');
+        const g = document.getElementById('rgbG'), gn = document.getElementById('rgbGn');
+        const b = document.getElementById('rgbB'), bn = document.getElementById('rgbBn');
+        if (!r) return;
+        function update() {
+            const rv = +r.value, gv = +g.value, bv = +b.value;
+            const val = (rv << 11) | (gv << 5) | bv;
+            const hex = '0x' + val.toString(16).toUpperCase().padStart(4, '0');
+            const r8 = Math.round(rv * 255 / 31), g8 = Math.round(gv * 255 / 63), b8 = Math.round(bv * 255 / 31);
+            document.getElementById('rgbPreview').style.background = `rgb(${r8},${g8},${b8})`;
+            document.getElementById('rgbHex').textContent = hex;
+            document.getElementById('rgbC').textContent = hex + 'U';
+            document.getElementById('rgb888').textContent = '#' + [r8, g8, b8].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+            const bits = document.getElementById('rgbBits');
+            bits.innerHTML = '';
+            for (let i = 15; i >= 0; i--) {
+                const span = document.createElement('span');
+                span.className = 'fw-bit';
+                const on = (val >> i) & 1;
+                span.textContent = on;
+                if (i >= 11) span.classList.add(on ? 'r1' : 'off');
+                else if (i >= 5) span.classList.add(on ? 'g1' : 'off');
+                else span.classList.add(on ? 'b1' : 'off');
+                bits.appendChild(span);
+            }
+        }
+        [[r, rn], [g, gn], [b, bn]].forEach(([sl, num]) => {
+            sl.addEventListener('input', () => { num.value = sl.value; update(); });
+            num.addEventListener('input', () => { sl.value = num.value; update(); });
+        });
+        update();
+    })();
+
+    // EBI timing toggle
+    (function () {
+        const btns = document.querySelectorAll('[data-cycle]');
+        if (!btns.length) return;
+        const CYCLES = {
+            write: {
+                strobePts: '88,84 200,84 200,116 340,116 340,84 560,84',
+                strobeLabel: 'WR_n',
+                dlyLabel: 'W_DLY',
+                tahX1: 340, tahX2: 390,
+                dlyX1: 200, dlyX2: 340,
+                readout: { dlyK: 'W_DLY', dly: '6 × HCLK = 142.8 ns', cycle: '~10 × HCLK = 238 ns' }
+            },
+            read: {
+                strobePts: '88,84 200,84 200,116 360,116 360,84 560,84',
+                strobeLabel: 'RD_n',
+                dlyLabel: 'R_DLY',
+                tahX1: 360, tahX2: 410,
+                dlyX1: 200, dlyX2: 360,
+                readout: { dlyK: 'R_DLY', dly: '6 × HCLK = 142.8 ns', cycle: '~11 × HCLK = 262 ns' }
+            }
+        };
+        function apply(mode) {
+            const c = CYCLES[mode];
+            document.getElementById('fwStrobeLine').setAttribute('points', c.strobePts);
+            document.getElementById('fwSig2Lbl').textContent = c.strobeLabel;
+            document.getElementById('fwDlyLbl').textContent = c.dlyLabel;
+            document.getElementById('fwDlyLine').setAttribute('x1', c.dlyX1);
+            document.getElementById('fwDlyLine').setAttribute('x2', c.dlyX2);
+            document.getElementById('fwTahLine').setAttribute('x1', c.tahX1);
+            document.getElementById('fwTahLine').setAttribute('x2', c.tahX2);
+            document.getElementById('fwDataWrite').style.display = mode === 'write' ? '' : 'none';
+            document.getElementById('fwDataRead').style.display  = mode === 'read'  ? '' : 'none';
+            document.getElementById('fwRtDlyK').textContent  = c.readout.dlyK;
+            document.getElementById('fwRtDly').textContent   = c.readout.dly;
+            document.getElementById('fwRtCycle').textContent = c.readout.cycle;
+        }
+        btns.forEach(btn => btn.addEventListener('click', () => {
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            apply(btn.dataset.cycle);
+        }));
+        apply('write');
+    })();
+
+    // Scroll reveal
+    (function () {
+        if (!('IntersectionObserver' in window)) return;
+        document.querySelector('.fw')?.classList.add('fw-animate');
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('fw-visible'); io.unobserve(e.target); } });
+        }, { threshold: 0.08 });
+        document.querySelectorAll('.fw-section').forEach(el => io.observe(el));
+    })();
+    </script>
+   <!-- ── Hide Vercel Toolbar (auto-injected when logged in to Vercel) ── --> <style>
+      vercel-toolbar { display: none !important; visibility: hidden !important; }
+    </style> <!-- ── AI Chat Widget (floating, bottom-left, hides on media pages) ── --> <button class="cw-btn" id="cw-btn" data-tip="AI 助手" data-cw-api="/api/chat" data-cw-hide-paths="/music,/video-gen,/interactive-showcase" aria-label="開啟 AI 助手">💬</button> <aside class="cw-panel" id="cw-panel" role="dialog" aria-label="AI 助手對話" aria-hidden="true"> <header class="cw-header"> <div> <div class="cw-title">AI 助手</div> <div class="cw-sub">問我任何關於這個網站的問題</div> </div> <button class="cw-close" id="cw-close" aria-label="關閉">×</button> </header> <div class="cw-msgs" id="cw-msgs"> <div class="cw-welcome" id="cw-welcome"> <p>嗨！我是你的 AI 助手 👋</p> <p style="margin: 8px 0 12px; font-size: .78rem">問我關於這個網站、音樂、基因、AI、或股票的任何問題：</p> <div id="cw-suggestions"></div> </div> </div> <form class="cw-input-row" id="cw-form" autocomplete="off"> <textarea class="cw-input" id="cw-input" placeholder="輸入訊息… (Enter 送出 / Shift+Enter 換行)" rows="1" maxlength="2000"></textarea> <button class="cw-send" id="cw-send" type="submit">送出</button> </form> </aside> <script>
+(function() {
+  'use strict';
+  if (window.__cw_loaded) return;
+  window.__cw_loaded = true;
+
+  // ── API URL resolution (hardcode Render to avoid SW-cache HTML issues) ─
+  const RENDER_URL = 'https://donttalk-chat-bot-xc4e.onrender.com';
+  // Prefer window.CHAT_BOT_API (set by Base.astro <head>) for local dev overrides;
+  // fall back to hardcoded Render on production where HTML may be SW-cached.
+  const CHAT_BOT_API = window.CHAT_BOT_API;
+  const resolvedApiUrl = (CHAT_BOT_API && CHAT_BOT_API.startsWith('http'))
+    ? CHAT_BOT_API
+    : RENDER_URL + '/chat';
+  console.log('[ChatWidget] resolvedApiUrl =', resolvedApiUrl);
+
+  const btn = document.getElementById('cw-btn');
+  if (!btn) return;
+  const apiUrl = btn.getAttribute('data-cw-api') || '/api/chat';
+  const hideOnPaths = btn.getAttribute('data-cw-hide-paths') || '';
+  const hidePaths = hideOnPaths.split(',').map(function(s){return s.trim();}).filter(Boolean);
+
+  // ── Keep backend warm: ping /healthz when button is first interacted ─
+  // (Render Free tier sleeps after 15 min; this wakes it before the user sends a message)
+  let warmedUp = false;
+  function warmUp() {
+    if (warmedUp) return;
+    warmedUp = true;
+    // Always ping Render directly — never a relative path (avoids SW/HTML-cache mismatch)
+    fetch(RENDER_URL + '/healthz', { mode: 'cors' }).catch(function() {});
+  }
+  btn.addEventListener('mouseenter', warmUp, { once: true });
+  btn.addEventListener('focus', warmUp, { once: true });
+
+  const panel = document.getElementById('cw-panel');
+  const closeBtn = document.getElementById('cw-close');
+  const msgs = document.getElementById('cw-msgs');
+  const form = document.getElementById('cw-form');
+  const input = document.getElementById('cw-input');
+  const sendBtn = document.getElementById('cw-send');
+  const welcome = document.getElementById('cw-welcome');
+  const suggestions = document.getElementById('cw-suggestions');
+
+  if (!btn || !panel) return;
+
+  const STORAGE_KEY = 'cw.history.v1';
+  const MAX_HISTORY = 20;
+  const SUGGESTIONS = [
+    '這個網站是什麼？',
+    '介紹一下你的音樂作品',
+    '你有做哪些 AI 工具？',
+    '幫我查台積電股價',
+  ];
+
+  // ── Hide on certain paths + during media playback ─────────────
+  function shouldHide() {
+    const p = location.pathname;
+    if (hidePaths.some(h => p.startsWith(h))) return true;
+    // Hide if any <video> or <audio> is playing
+    const media = document.querySelectorAll('video, audio');
+    for (const m of media) {
+      if (!m.paused && m.readyState > 1) return true;
+    }
+    return false;
+  }
+  function applyHide() {
+    btn.setAttribute('data-hidden', shouldHide() ? '1' : '0');
+  }
+  applyHide();
+  // Re-check every 1.5s (cheap; covers SPA-ish nav + media start/stop)
+  setInterval(applyHide, 1500);
+  document.addEventListener('play', applyHide, true);
+  document.addEventListener('pause', applyHide, true);
+
+  // ── Open/close ────────────────────────────────────────────────
+  function open() {
+    panel.setAttribute('data-open', '1');
+    panel.setAttribute('aria-hidden', 'false');
+    if (welcome && suggestions && suggestions.children.length === 0) {
+      SUGGESTIONS.forEach(s => {
+        const c = document.createElement('span');
+        c.className = 'cw-chip';
+        c.textContent = s;
+        c.addEventListener('click', () => sendUser(s));
+        suggestions.appendChild(c);
+      });
+    }
+    setTimeout(() => input.focus(), 50);
+  }
+  function close() {
+    panel.removeAttribute('data-open');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+  btn.addEventListener('click', () => {
+    panel.getAttribute('data-open') === '1' ? close() : open();
+  });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && panel.getAttribute('data-open') === '1') close();
+  });
+
+  // ── History persistence ───────────────────────────────────────
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h.slice(-MAX_HISTORY))); }
+    catch {}
+  }
+  let history = loadHistory();
+  // render prior history
+  history.forEach(m => renderBubble(m.role, m.content, false));
+
+  // ── Markdown mini-renderer (very small, no deps) ──────────────
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function md(s) {
+    if (!s) return '';
+    // citations [1] [2] → sup pill
+    s = s.replace(/\[(\d+)\]/g, (_, n) => `<span class="cw-cite">[${n}]</span>`);
+    // code blocks
+    s = s.replace(/```([\s\S]*?)```/g, (_, c) => `<pre>${escapeHtml(c.trim())}</pre>`);
+    // inline code
+    s = s.replace(/`([^`]+)`/g, function(_, c) { return '<code>' + escapeHtml(c) + '</code>'; });
+    // links [text](url)
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // internal links /path
+    s = s.replace(/(^|\s)(\/[a-z0-9_\-/]+)/gi, (m, pre, p) => `${pre}<a href="${p}">${p}</a>`);
+    // bold
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // line breaks
+    s = s.replace(/\n/g, '<br>');
+    return s;
+  }
+
+  // ── Bubbles ───────────────────────────────────────────────────
+  let activeBotBubble = null; // currently streaming
+  function renderBubble(role, content, isHtml = false) {
+    const div = document.createElement('div');
+    div.className = 'cw-msg cw-msg-' + (role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot');
+    if (role === 'typing') {
+      div.innerHTML = '<span class="cw-typing"></span><span class="cw-typing"></span><span class="cw-typing"></span>';
+    } else {
+      div.innerHTML = isHtml ? content : md(content);
+    }
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  // ── Send / stream ─────────────────────────────────────────────
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  form.addEventListener('submit', e => { e.preventDefault(); sendUser(input.value); });
+
+  async function sendUser(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    if (welcome && welcome.parentNode) welcome.parentNode.removeChild(welcome);
+
+    input.value = '';
+    input.style.height = 'auto';
+    renderBubble('user', text);
+    history.push({ role: 'user', content: text });
+
+    // typing indicator
+    const typing = renderBubble('typing');
+    sendBtn.disabled = true;
+
+    let botText = '';
+    let tools = [];
+    let ragSources = [];
+    // track the final bot bubble so we can append footnotes to it after finally
+    let finalBubble = null;
+
+    // Timeout guard: fe8.cn may return non-streaming JSON (no SSE) → reader hangs forever
+    let gotToken = false;
+    var timeoutId;
+
+    try {
+      console.log('[ChatWidget] sending fetch to', resolvedApiUrl);
+      // No abort timeout — Render Free tier cold-starts can take 30-60s.
+      // warmUp() on hover should wake it before the user sends a message.
+      const resp = await fetch(resolvedApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+      });
+      console.log('[ChatWidget] fetch done, status:', resp.status, 'body=', !!resp.body);
+      if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      gotToken = false;
+      timeoutId = setTimeout(function() { if (!gotToken) { console.log('[ChatWidget] TIMEOUT: no token in 30s'); reader.cancel(); } }, 30000);
+      // Process one complete SSE event from the front of buf
+      // Render backend uses CRLF (\r\n) line endings — must match or we'll never split events
+      function processBuf() {
+        let idx = buf.indexOf('\r\n\r\n');
+        if (idx === -1) return;
+        const raw = buf.slice(0, idx);
+        buf = buf.slice(idx + 4);
+        const evLine = raw.split('\r\n').find(function(l) { return l.startsWith('event:'); });
+        const dataLine = raw.split('\r\n').find(function(l) { return l.startsWith('data:'); });
+        if (!dataLine) return;
+        const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
+        let data = {};
+        try { data = JSON.parse(dataLine.replace(/^data:\s*/, '')); } catch {}
+        if (evt === 'token' && data.content) {
+          gotToken = true;
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
+          botText += data.content;
+          activeBotBubble.innerHTML = md(botText);
+          msgs.scrollTop = msgs.scrollHeight;
+        } else if (evt === 'tool_call') {
+          tools.push({ name: data.name, args: data.arguments });
+        } else if (evt === 'tool_result') {
+          const last = tools[tools.length - 1];
+          if (last) last.result = data.result;
+        } else if (evt === 'rag') {
+          (data.chunks || []).forEach(function(c) { ragSources.push(c); });
+        } else if (evt === 'done') {
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', md(botText));
+          finalBubble = activeBotBubble;
+        } else if (evt === 'error') {
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          renderBubble('error', '⚠️ ' + (data.message || 'unknown error'));
+          finalBubble = null;
+        }
+      }
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          // Stream exhausted — process any trailing data still in buf (no \n\n needed)
+          buf = buf.trim();
+          if (buf) processBuf();
+          break;
+        }
+        buf += dec.decode(value, { stream: true });
+        // Drain all complete events in buf (CRLF-separated)
+        while (buf.indexOf('\r\n\r\n') !== -1) processBuf();
+      }
+    } catch (err) {
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      const isAbort = err && (err.name === 'AbortError' || (err.message && err.message.includes('abort')));
+      renderBubble('error', isAbort
+        ? '⚠️ 連線逾時（後端服務喚醒中，請稍候後再試）'
+        : '⚠️ 連線失敗：' + (err && err.message ? err.message : String(err)));
+      finalBubble = null;
+    } finally {
+      clearTimeout(timeoutId);
+      sendBtn.disabled = false;
+      activeBotBubble = null;
+    }
+
+    // append footnotes to the final bot bubble (runs after finally so we have a stable ref)
+    if (finalBubble) {
+      if (tools.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-tools';
+        div.innerHTML = tools.map(function(t) { return '<span class="cw-tool-pill">🔧 ' + escapeHtml(t.name) + '</span>'; }).join('');
+        finalBubble.appendChild(div);
+      }
+      if (ragSources.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-rag-sources';
+        const uniq = [];
+        const seen = new Set();
+        ragSources.forEach(function(s) {
+          const key = s.url || s.title;
+          if (!seen.has(key)) { seen.add(key); uniq.push(s); }
+        });
+        div.innerHTML = '📚 引用：' + uniq.slice(0, 5).map(function(s) {
+          const url = s.url || '#';
+          const title = s.title || url;
+          return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(title) + '</a>';
+        }).join(' · ');
+        finalBubble.appendChild(div);
+      }
+    }
+    if (botText) history.push({ role: 'assistant', content: botText });
+    saveHistory(history);
+  }
+})();
+</script> <script>
+      // DEPLOY_MARKER: 2026-07-21T16:50:00-chat-render-v3
+      // Resolve Chat Widget API URL.
+      // In dev (localhost) → http://localhost:8765/chat (FastAPI backend)
+      // In prod → Render directly (Vercel proxy buffers SSE → broken streaming)
+      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8765/chat'
+        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
+    </script> </body> </html>

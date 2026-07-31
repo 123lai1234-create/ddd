@@ -1,0 +1,373 @@
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><!--
+      Native IntersectionObserver fallback for `.reveal` fade-in.
+      Runs in addition to nav.js's local observer, so the page works
+      even if nav.js fails to load (network/CDN issue) — content stays
+      visible instead of getting stuck at opacity:0.
+    --><script>
+      (function() {
+        function bootReveal() {
+          var els = document.querySelectorAll('.reveal:not(.visible)');
+          if (!els.length) return;
+          if (typeof IntersectionObserver === 'undefined') {
+            els.forEach(function(el) { el.classList.add('visible'); });
+            return;
+          }
+          var io = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+              if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                io.unobserve(e.target);
+              }
+            });
+          }, { rootMargin: '0px 0px -8% 0px', threshold: 0.04 });
+          els.forEach(function(el) { io.observe(el); });
+          // Hard fallback: anything still hidden after 1.5s gets shown.
+          setTimeout(function() {
+            document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
+              el.classList.add('visible');
+            });
+          }, 1500);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bootReveal);
+        } else {
+          bootReveal();
+        }
+      })();
+    </script><title>🎵 音樂播放器</title><meta name="description" content="一個優質的音樂播放器，支援歌詞同步、佇列管理、波形視覺化，打造流暢的音樂體驗。"><meta property="og:title" content="🎵 音樂播放器"><meta property="og:description" content="一個優質的音樂播放器，支援歌詞同步、佇列管理、波形視覺化，打造流暢的音樂體驗。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://dontalk.vercel.app/og?t=%F0%9F%8E%B5%20%E9%9F%B3%E6%A8%82%E6%92%AD%E6%94%BE%E5%99%A8&#38;s=%E4%B8%80%E5%80%8B%E5%84%AA%E8%B3%AA%E7%9A%84%E9%9F%B3%E6%A8%82%E6%92%AD%E6%94%BE%E5%99%A8%EF%BC%8C%E6%94%AF%E6%8F%B4%E6%AD%8C%E8%A9%9E%E5%90%8C%E6%AD%A5%E3%80%81%E4%BD%87%E5%88%97%E7%AE%A1%E7%90%86%E3%80%81%E6%B3%A2%E5%BD%A2%E8%A6%96%E8%A6%BA%E5%8C%96%EF%BC%8C%E6%89%93%E9%80%A0%E6%B5%81%E6%9A%A2%E7%9A%84%E9%9F%B3%E6%A8%82%E9%AB%94%E9%A9%97%E3%80%82&#38;tag="><meta name="twitter:image" content="https://dontalk.vercel.app/og?t=%F0%9F%8E%B5%20%E9%9F%B3%E6%A8%82%E6%92%AD%E6%94%BE%E5%99%A8&#38;s=%E4%B8%80%E5%80%8B%E5%84%AA%E8%B3%AA%E7%9A%84%E9%9F%B3%E6%A8%82%E6%92%AD%E6%94%BE%E5%99%A8%EF%BC%8C%E6%94%AF%E6%8F%B4%E6%AD%8C%E8%A9%9E%E5%90%8C%E6%AD%A5%E3%80%81%E4%BD%87%E5%88%97%E7%AE%A1%E7%90%86%E3%80%81%E6%B3%A2%E5%BD%A2%E8%A6%96%E8%A6%BA%E5%8C%96%EF%BC%8C%E6%89%93%E9%80%A0%E6%B5%81%E6%9A%A2%E7%9A%84%E9%9F%B3%E6%A8%82%E9%AB%94%E9%A9%97%E3%80%82&#38;tag="><meta property="og:url" content="https://donttalk.vercel.app/music/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="🎵 音樂播放器"><meta name="twitter:description" content="一個優質的音樂播放器，支援歌詞同步、佇列管理、波形視覺化，打造流暢的音樂體驗。"><link rel="canonical" href="https://donttalk.vercel.app/music/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/music/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/music/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css?v=03bbf2c2"><link rel="stylesheet" href="/styles/music.css?v=adff75a8"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><script src="/scripts/immersive-experience.js" defer></script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://dontalk.vercel.app#person","name":"JT Lai","url":"https://dontalk.vercel.app","image":"https://dontalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://dontalk.vercel.app#website","url":"https://dontalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://dontalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://dontalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/music/#webpage","url":"https://donttalk.vercel.app/music/","name":"🎵 音樂播放器","description":"一個優質的音樂播放器，支援歌詞同步、佇列管理、波形視覺化，打造流暢的音樂體驗。","inLanguage":"zh-TW","isPartOf":{"@id":"https://dontalk.vercel.app#website"},"about":{"@id":"https://dontalk.vercel.app#person"},"additionalType":"WebPage"}]}</script><link rel="stylesheet" href="/_astro/Base.BhTaoyI2.css">
+<link rel="stylesheet" href="/_astro/music@_@astro._RTmkReR.css"></head> <body data-page="music"> <div class="immersive-bg" id="immersive-bg" data-astro-cid-3guv64em> <video id="bg-video" class="bg-video" autoplay muted loop playsinline data-astro-cid-3guv64em> <source id="video-source" type="video/webm" data-astro-cid-3guv64em> </video> <div class="bg-overlay" data-astro-cid-3guv64em></div> </div>  <script type="module">class n{constructor(){this.container=document.getElementById("immersive-bg"),this.video=document.getElementById("bg-video"),this.particles=[],this.init()}init(){this.createParticles(),this.setupEventListeners(),this.setupVideo()}setupVideo(){if(!this.video)return;const a=["179f1b00-2727-47ec-81d3-591d8405c762_watermarked.webm","314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.webm","5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.webm","6b95a3b8-no-watermark_watermarked.webm","a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.webm","bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.webm","ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.webm","cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.webm"],t=a[Math.floor(Math.random()*a.length)],e=document.getElementById("video-source");e&&(e.src="/videos/"+t),this.video.play().catch(()=>{this.video.style.display="none"})}createParticles(){if(!this.container)return;const a=Math.min(80,Math.floor(window.innerWidth/15));for(let t=0;t<a;t++){const e=document.createElement("div");e.className="particle",e.style.left=Math.random()*100+"%",e.style.top=Math.random()*100+"%";const i=Math.random()*3+1;e.style.width=i+"px",e.style.height=i+"px",e.style.animationDuration=Math.random()*10+15+"s",e.style.animationDelay=Math.random()*5+"s",this.container.appendChild(e),this.particles.push(e)}}setupEventListeners(){window.addEventListener("resize",()=>this.handleResize())}handleResize(){Math.min(80,Math.floor(window.innerWidth/15))!==this.particles.length&&(this.particles.forEach(t=>t.remove()),this.particles=[],this.createParticles())}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",()=>{new n}):new n;</script>   <div class="bg-gradient" data-astro-cid-klhljcvd></div> <nav class="top-nav" data-astro-cid-klhljcvd> <div class="nav-logo" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="currentColor" data-astro-cid-klhljcvd> <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" data-astro-cid-klhljcvd></path> </svg>
+Music
+</div> <div class="nav-search" data-astro-cid-klhljcvd> <span class="nav-search-icon" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><circle cx="11" cy="11" r="8" data-astro-cid-klhljcvd></circle><line x1="21" y1="21" x2="16.65" y2="16.65" data-astro-cid-klhljcvd></line></svg> </span> <input type="text" id="track-search" class="nav-search-box" placeholder="搜尋歌曲、藝人或專輯..." data-astro-cid-klhljcvd> </div> <div class="stats-row" data-astro-cid-klhljcvd> <span class="stats-badge" id="stats-total" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><path d="M9 18V5l12-2v13" data-astro-cid-klhljcvd></path><circle cx="6" cy="18" r="3" data-astro-cid-klhljcvd></circle><circle cx="18" cy="16" r="3" data-astro-cid-klhljcvd></circle></svg> <span id="total-tracks" data-astro-cid-klhljcvd>0</span> 首歌
+</span> <span class="stats-badge" id="stats-liked" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" data-astro-cid-klhljcvd><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" data-astro-cid-klhljcvd></path></svg> <span id="liked-count" data-astro-cid-klhljcvd>0</span> 喜歡
+</span> </div> <div class="nav-actions" data-astro-cid-klhljcvd> <button class="nav-btn nav-btn-primary" id="upload-btn" data-astro-cid-klhljcvd>📤 上傳歌曲</button> </div> </nav> <section class="main-content" data-astro-cid-klhljcvd> <div style="display: grid; grid-template-columns: 1fr 380px; gap: 24px;" data-astro-cid-klhljcvd> <div data-astro-cid-klhljcvd> <div class="hero-banner" data-astro-cid-klhljcvd> <div class="hero-content" data-astro-cid-klhljcvd> <span class="hero-tag" data-astro-cid-klhljcvd>線上音樂</span> <h1 class="hero-title" data-astro-cid-klhljcvd>探索音樂世界</h1> <p class="hero-subtitle" data-astro-cid-klhljcvd>盡情播放、分享你喜愛的音樂</p> </div> <div class="hero-waveform" data-astro-cid-klhljcvd> <div class="hero-wave-bar" data-astro-cid-klhljcvd></div><div class="hero-wave-bar" data-astro-cid-klhljcvd></div><div class="hero-wave-bar" data-astro-cid-klhljcvd></div><div class="hero-wave-bar" data-astro-cid-klhljcvd></div><div class="hero-wave-bar" data-astro-cid-klhljcvd></div><div class="hero-wave-bar" data-astro-cid-klhljcvd></div><div class="hero-wave-bar" data-astro-cid-klhljcvd></div><div class="hero-wave-bar" data-astro-cid-klhljcvd></div><div class="hero-wave-bar" data-astro-cid-klhljcvd></div><div class="hero-wave-bar" data-astro-cid-klhljcvd></div><div class="hero-wave-bar" data-astro-cid-klhljcvd></div><div class="hero-wave-bar" data-astro-cid-klhljcvd></div> </div> </div> <div class="filter-row" data-astro-cid-klhljcvd> <select id="lang-filter" data-astro-cid-klhljcvd> <option value="all" data-astro-cid-klhljcvd>🌐 全部語言</option> <option value="TW" data-astro-cid-klhljcvd>🇹🇼 台灣</option> <option value="EN" data-astro-cid-klhljcvd>🇺🇸 英文</option> <option value="JP" data-astro-cid-klhljcvd>🇯🇵 日文</option> <option value="KR" data-astro-cid-klhljcvd>🇰🇷 韓文</option> </select> <select id="style-filter" data-astro-cid-klhljcvd> <option value="all" data-astro-cid-klhljcvd>🎵 全部曲風</option> <option value="流行" data-astro-cid-klhljcvd>流行</option> <option value="抒情" data-astro-cid-klhljcvd>抒情</option> <option value="嘻哈" data-astro-cid-klhljcvd>嘻哈</option> <option value="搖滾" data-astro-cid-klhljcvd>搖滾</option> <option value="Lo-fi" data-astro-cid-klhljcvd>Lo-fi</option> <option value="電子" data-astro-cid-klhljcvd>電子</option> <option value="R&B" data-astro-cid-klhljcvd>R&B</option> </select> <select id="gender-filter" data-astro-cid-klhljcvd> <option value="all" data-astro-cid-klhljcvd>👤 全部歌手</option> <option value="M" data-astro-cid-klhljcvd>♂ 男歌手</option> <option value="F" data-astro-cid-klhljcvd>♀ 女歌手</option> </select> </div> <div class="track-list-container" data-astro-cid-klhljcvd> <div class="track-list-header" data-astro-cid-klhljcvd> <span data-astro-cid-klhljcvd>🎵</span> <span data-astro-cid-klhljcvd>標題</span> <span data-astro-cid-klhljcvd>🎤 歌手</span> <span data-astro-cid-klhljcvd>💿 專輯</span> <span data-astro-cid-klhljcvd>⏱ 時長</span> <span data-astro-cid-klhljcvd>操作</span> </div> <div class="track-scroll" data-astro-cid-klhljcvd> <div id="track-list" data-astro-cid-klhljcvd> <p style="color: var(--text-tertiary); text-align: center; padding: 50px;" data-astro-cid-klhljcvd>載入中...</p> </div> </div> </div> </div> <div class="lyrics-panel" data-astro-cid-klhljcvd> <button class="mobile-lyrics-close" id="mobile-lyrics-close" data-astro-cid-klhljcvd>✕ 關閉</button> <div class="lyrics-header" data-astro-cid-klhljcvd> <div class="lyrics-title" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><path d="M9 18V5l12-2v13" data-astro-cid-klhljcvd></path><circle cx="6" cy="18" r="3" data-astro-cid-klhljcvd></circle><circle cx="18" cy="16" r="3" data-astro-cid-klhljcvd></circle></svg>
+歌詞
+</div> <span class="lyrics-badge" id="lyrics-count" data-astro-cid-klhljcvd>0 句</span> </div> <!-- 歌詞偏移控制 UI --> <div class="lyrics-offset-controls" data-astro-cid-klhljcvd> <button class="lyrics-offset-btn" id="lyrics-offset-minus" title="歌詞提前 0.5s" data-astro-cid-klhljcvd>−</button> <span class="lyrics-offset-value" id="lyrics-offset-value" data-astro-cid-klhljcvd>0s</span> <button class="lyrics-offset-btn" id="lyrics-offset-plus" title="歌詞延後 0.5s" data-astro-cid-klhljcvd>+</button> <button class="lyrics-offset-btn" id="lyrics-offset-reset" title="重置偏移" style="font-size: 0.7rem;" data-astro-cid-klhljcvd>↺</button> </div> <div class="lyrics-translate-toggle" data-astro-cid-klhljcvd> <button class="translate-tab active" data-mode="original" data-astro-cid-klhljcvd>原文</button> <button class="translate-tab" data-mode="roman" data-astro-cid-klhljcvd>羅馬拼音</button> </div> <div class="lyrics-cc-hint" title="點瀏覽器播放器右下 CC 按鈕開啟/關閉原生字幕" data-astro-cid-klhljcvd>
+💬 SRT 字幕已掛載 → 點播放器右下 <b data-astro-cid-klhljcvd>CC</b> 開啟原生字幕
+</div> <div class="lyrics-container" id="lyrics-container" data-astro-cid-klhljcvd> <p style="color: var(--text-tertiary); text-align: center; padding: 50px;" data-astro-cid-klhljcvd>選擇歌曲以顯示歌詞<br data-astro-cid-klhljcvd><span style="font-size: 0.75rem;" data-astro-cid-klhljcvd>按 J/K 鍵調整歌詞時間偏移</span></p> </div> </div> </div> </section> <button class="mobile-lyrics-toggle" id="mobile-lyrics-toggle" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><path d="M9 18V5l12-2v13" data-astro-cid-klhljcvd></path><circle cx="6" cy="18" r="3" data-astro-cid-klhljcvd></circle><circle cx="18" cy="16" r="3" data-astro-cid-klhljcvd></circle></svg> </button>  <div class="upload-modal" id="upload-modal" data-astro-cid-klhljcvd> <div class="upload-modal-content" data-astro-cid-klhljcvd> <button class="upload-modal-close" id="upload-modal-close" data-astro-cid-klhljcvd>✕</button> <div class="upload-modal-header" data-astro-cid-klhljcvd> <h2 data-astro-cid-klhljcvd>📤 上傳歌曲</h2> <p data-astro-cid-klhljcvd>選一個 MP3 跟歌詞檔（.txt / .srt / .lrc），就能直接加到播放清單</p> </div> <!-- 密碼驗證 --> <div class="upload-gate" id="upload-gate" data-astro-cid-klhljcvd> <div class="ai-form-group" data-astro-cid-klhljcvd> <label for="upload-password" data-astro-cid-klhljcvd>🔒 密碼</label> <input type="password" id="upload-password" placeholder="輸入上傳密碼" autocomplete="off" data-astro-cid-klhljcvd> </div> <button class="ai-analyze-btn" id="upload-unlock-btn" data-astro-cid-klhljcvd>解鎖</button> <p class="upload-gate-hint" data-astro-cid-klhljcvd>這頁是私人空間，不對外開放上傳</p> </div> <!-- 上傳表單（解鎖後才顯示） --> <div class="upload-form" id="upload-form" style="display: none;" data-astro-cid-klhljcvd> <div class="ai-form-group" data-astro-cid-klhljcvd> <label for="upload-track-name" data-astro-cid-klhljcvd>🎵 歌曲名稱</label> <input type="text" id="upload-track-name" placeholder="例：我的新歌" data-astro-cid-klhljcvd> </div> <div class="ai-form-group" data-astro-cid-klhljcvd> <label for="upload-artist" data-astro-cid-klhljcvd>🎤 歌手（可選）</label> <input type="text" id="upload-artist" placeholder="例：獨立歌手" data-astro-cid-klhljcvd> </div> <div class="ai-form-group" data-astro-cid-klhljcvd> <label data-astro-cid-klhljcvd>🎧 MP3 音訊</label> <div class="ai-dropzone" id="upload-audio-drop" data-astro-cid-klhljcvd> <div class="ai-dropzone-icon" data-astro-cid-klhljcvd>🎵</div> <p class="ai-dropzone-text" data-astro-cid-klhljcvd>拖放 MP3 到此處</p> <p class="ai-dropzone-subtext" data-astro-cid-klhljcvd>或點擊選擇檔案</p> <input type="file" id="upload-audio-input" accept="audio/mpeg,audio/mp3,audio/*" hidden data-astro-cid-klhljcvd> </div> <div class="ai-file-preview" id="upload-audio-preview" style="display: none;" data-astro-cid-klhljcvd> <span class="ai-file-name" id="upload-audio-name" data-astro-cid-klhljcvd></span> <button class="ai-remove-file" id="upload-audio-remove" data-astro-cid-klhljcvd>✕</button> </div> </div> <div class="ai-form-group" data-astro-cid-klhljcvd> <label data-astro-cid-klhljcvd>📝 歌詞（.txt / .srt / .lrc）</label> <div class="ai-dropzone" id="upload-lyrics-drop" data-astro-cid-klhljcvd> <div class="ai-dropzone-icon" data-astro-cid-klhljcvd>📝</div> <p class="ai-dropzone-text" data-astro-cid-klhljcvd>拖放歌詞到此處</p> <p class="ai-dropzone-subtext" data-astro-cid-klhljcvd>或點擊選擇檔案</p> <input type="file" id="upload-lyrics-input" accept=".txt,.srt,.lrc,text/plain" hidden data-astro-cid-klhljcvd> </div> <div class="ai-file-preview" id="upload-lyrics-preview" style="display: none;" data-astro-cid-klhljcvd> <span class="ai-file-name" id="upload-lyrics-name" data-astro-cid-klhljcvd></span> <button class="ai-remove-file" id="upload-lyrics-remove" data-astro-cid-klhljcvd>✕</button> </div> <details class="upload-lyrics-hint" data-astro-cid-klhljcvd> <summary data-astro-cid-klhljcvd>歌詞格式說明</summary> <div class="upload-lyrics-help" data-astro-cid-klhljcvd> <p data-astro-cid-klhljcvd><b data-astro-cid-klhljcvd>.txt</b>：每行一句，按行數順序播放</p> <p data-astro-cid-klhljcvd><b data-astro-cid-klhljcvd>.srt / .lrc</b>：帶時間碼的字幕格式（推薦）</p> <p data-astro-cid-klhljcvd>範例 LRC：</p> <pre data-astro-cid-klhljcvd>[00:00.00] 這是第一句歌詞
+[00:05.30] 這是第二句歌詞</pre> </div> </details> </div> <button class="ai-analyze-btn" id="upload-submit-btn" disabled data-astro-cid-klhljcvd> <span class="ai-btn-text" data-astro-cid-klhljcvd>✅ 加到播放清單</span> <span class="ai-btn-loading" style="display: none;" data-astro-cid-klhljcvd>處理中...</span> </button> </div> </div> </div> <div class="bottom-bar" data-astro-cid-klhljcvd> <div class="bar-left" data-astro-cid-klhljcvd> <div class="bar-album" id="bar-album" title="點擊展開播放器" data-astro-cid-klhljcvd> <img id="album-img" src="" alt="" style="display: none;" data-astro-cid-klhljcvd> <svg id="album-fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><circle cx="12" cy="12" r="10" data-astro-cid-klhljcvd></circle><path d="M9 18V5l12-2v13" data-astro-cid-klhljcvd></path><circle cx="6" cy="18" r="3" data-astro-cid-klhljcvd></circle><circle cx="18" cy="16" r="3" data-astro-cid-klhljcvd></circle></svg> </div> <div class="bar-track-info" data-astro-cid-klhljcvd> <p class="bar-track-name" id="bar-track-name" data-astro-cid-klhljcvd>未播放</p> <p class="bar-track-artist" id="bar-track-artist" data-astro-cid-klhljcvd>--</p> </div> <button class="bar-like-btn" id="bar-like-btn" title="喜歡" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" data-astro-cid-klhljcvd></path></svg> </button> <button class="bar-icon-btn" id="bar-share-btn" title="分享" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><circle cx="18" cy="5" r="3" data-astro-cid-klhljcvd></circle><circle cx="6" cy="12" r="3" data-astro-cid-klhljcvd></circle><circle cx="18" cy="19" r="3" data-astro-cid-klhljcvd></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" data-astro-cid-klhljcvd></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" data-astro-cid-klhljcvd></line></svg> </button> </div> <div class="bar-center" data-astro-cid-klhljcvd> <div class="bar-controls" data-astro-cid-klhljcvd> <button class="bar-ctrl-btn mode-btn" id="bar-mode" title="播放模式" data-astro-cid-klhljcvd> <svg id="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><polyline points="23 4 23 10 17 10" data-astro-cid-klhljcvd></polyline><polyline points="1 20 1 14 7 14" data-astro-cid-klhljcvd></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" data-astro-cid-klhljcvd></path></svg> <div class="mode-dropdown" data-astro-cid-klhljcvd> <div class="mode-option active" data-mode="sequence" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><line x1="8" y1="6" x2="21" y2="6" data-astro-cid-klhljcvd></line><line x1="8" y1="12" x2="21" y2="12" data-astro-cid-klhljcvd></line><line x1="8" y1="18" x2="21" y2="18" data-astro-cid-klhljcvd></line><line x1="3" y1="6" x2="3.01" y2="6" data-astro-cid-klhljcvd></line><line x1="3" y1="12" x2="3.01" y2="12" data-astro-cid-klhljcvd></line><line x1="3" y1="18" x2="3.01" y2="18" data-astro-cid-klhljcvd></line></svg>
+順序播放
+</div> <div class="mode-option" data-mode="shuffle" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><polyline points="16 3 21 3 21 8" data-astro-cid-klhljcvd></polyline><line x1="4" y1="20" x2="21" y2="3" data-astro-cid-klhljcvd></line><polyline points="21 16 21 21 16 21" data-astro-cid-klhljcvd></polyline><line x1="15" y1="15" x2="21" y2="21" data-astro-cid-klhljcvd></line><line x1="4" y1="4" x2="9" y2="9" data-astro-cid-klhljcvd></line></svg>
+隨機播放
+</div> <div class="mode-option" data-mode="repeat" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><polyline points="17 1 21 5 17 9" data-astro-cid-klhljcvd></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14" data-astro-cid-klhljcvd></path><polyline points="7 23 3 19 7 15" data-astro-cid-klhljcvd></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3" data-astro-cid-klhljcvd></path></svg>
+全部循環
+</div> <div class="mode-option" data-mode="repeat-one" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><polyline points="17 1 21 5 17 9" data-astro-cid-klhljcvd></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14" data-astro-cid-klhljcvd></path><polyline points="7 23 3 19 7 15" data-astro-cid-klhljcvd></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3" data-astro-cid-klhljcvd></path><line x1="12" y1="8" x2="12" y2="16" data-astro-cid-klhljcvd></line><line x1="9" y1="12" x2="15" y2="12" data-astro-cid-klhljcvd></line></svg>
+單曲循環
+</div> </div> </button> <button class="bar-ctrl-btn" id="bar-prev" title="上一首" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><polygon points="19 20 9 12 19 4 19 20" data-astro-cid-klhljcvd></polygon><line x1="5" y1="19" x2="5" y2="5" data-astro-cid-klhljcvd></line></svg> </button> <button class="bar-play-btn" id="bar-play" title="播放" data-astro-cid-klhljcvd> <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none" data-astro-cid-klhljcvd><polygon points="5 3 19 12 5 21 5 3" data-astro-cid-klhljcvd></polygon></svg> <svg id="pause-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none" data-astro-cid-klhljcvd><rect x="6" y="4" width="4" height="16" data-astro-cid-klhljcvd></rect><rect x="14" y="4" width="4" height="16" data-astro-cid-klhljcvd></rect></svg> </button> <button class="bar-ctrl-btn" id="bar-next" title="下一首" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><polygon points="5 4 15 12 5 20 5 4" data-astro-cid-klhljcvd></polygon><line x1="19" y1="5" x2="19" y2="19" data-astro-cid-klhljcvd></line></svg> </button> <button class="bar-ctrl-btn speed-btn" id="bar-speed" title="播放速度" data-astro-cid-klhljcvd> <span id="speed-label" data-astro-cid-klhljcvd>1x</span> <div class="speed-dropdown" data-astro-cid-klhljcvd> <div class="speed-option" data-speed="0.5" data-astro-cid-klhljcvd>0.5x</div> <div class="speed-option" data-speed="0.75" data-astro-cid-klhljcvd>0.75x</div> <div class="speed-option active" data-speed="1" data-astro-cid-klhljcvd>1x</div> <div class="speed-option" data-speed="1.25" data-astro-cid-klhljcvd>1.25x</div> <div class="speed-option" data-speed="1.5" data-astro-cid-klhljcvd>1.5x</div> <div class="speed-option" data-speed="2" data-astro-cid-klhljcvd>2x</div> </div> </button> </div> <div class="bar-progress" data-astro-cid-klhljcvd> <span class="bar-time" id="bar-current-time" data-astro-cid-klhljcvd>0:00</span> <input type="range" class="bar-progress-slider" id="bar-progress" min="0" max="100" value="0" style="--progress: 0%" data-astro-cid-klhljcvd> <span class="bar-time" id="bar-duration" data-astro-cid-klhljcvd>0:00</span> </div> </div> <div class="bar-right" data-astro-cid-klhljcvd> <button class="shortcuts-btn" id="shortcuts-btn" title="快捷鍵" data-astro-cid-klhljcvd>?</button> <button class="bar-icon-btn" id="bar-eq-btn" title="等化器" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><line x1="4" y1="21" x2="4" y2="14" data-astro-cid-klhljcvd></line><line x1="4" y1="10" x2="4" y2="3" data-astro-cid-klhljcvd></line><line x1="12" y1="21" x2="12" y2="12" data-astro-cid-klhljcvd></line><line x1="12" y1="8" x2="12" y2="3" data-astro-cid-klhljcvd></line><line x1="20" y1="21" x2="20" y2="16" data-astro-cid-klhljcvd></line><line x1="20" y1="12" x2="20" y2="3" data-astro-cid-klhljcvd></line><line x1="1" y1="14" x2="7" y2="14" data-astro-cid-klhljcvd></line><line x1="9" y1="8" x2="15" y2="8" data-astro-cid-klhljcvd></line><line x1="17" y1="16" x2="23" y2="16" data-astro-cid-klhljcvd></line></svg> </button> <button class="bar-icon-btn" id="bar-vol-btn" title="靜音" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="vol-icon" data-astro-cid-klhljcvd><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" data-astro-cid-klhljcvd></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" data-astro-cid-klhljcvd></path></svg> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="vol-mute-icon" style="display:none" data-astro-cid-klhljcvd><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" data-astro-cid-klhljcvd></polygon><line x1="23" y1="9" x2="17" y2="15" data-astro-cid-klhljcvd></line><line x1="17" y1="9" x2="23" y2="15" data-astro-cid-klhljcvd></line></svg> </button> <input type="range" class="bar-volume-slider" id="bar-volume" min="0" max="100" value="80" data-astro-cid-klhljcvd> </div> </div> <div class="eq-panel" id="eq-panel" data-astro-cid-klhljcvd> <div class="eq-title" data-astro-cid-klhljcvd>
+等化器
+<button class="eq-close" id="eq-close" data-astro-cid-klhljcvd>✕</button> </div> <div class="eq-slider-row" data-astro-cid-klhljcvd> <span class="eq-label" data-astro-cid-klhljcvd>低音</span> <input type="range" class="eq-slider" id="eq-bass" min="-10" max="10" value="0" data-astro-cid-klhljcvd> <span class="eq-value" id="eq-bass-val" data-astro-cid-klhljcvd>0</span> </div> <div class="eq-slider-row" data-astro-cid-klhljcvd> <span class="eq-label" data-astro-cid-klhljcvd>中音</span> <input type="range" class="eq-slider" id="eq-mid" min="-10" max="10" value="0" data-astro-cid-klhljcvd> <span class="eq-value" id="eq-mid-val" data-astro-cid-klhljcvd>0</span> </div> <div class="eq-slider-row" data-astro-cid-klhljcvd> <span class="eq-label" data-astro-cid-klhljcvd>高音</span> <input type="range" class="eq-slider" id="eq-treble" min="-10" max="10" value="0" data-astro-cid-klhljcvd> <span class="eq-value" id="eq-treble-val" data-astro-cid-klhljcvd>0</span> </div> <div class="eq-slider-row" data-astro-cid-klhljcvd> <span class="eq-label" data-astro-cid-klhljcvd>音量</span> <input type="range" class="eq-slider" id="eq-gain" min="-10" max="10" value="0" data-astro-cid-klhljcvd> <span class="eq-value" id="eq-gain-val" data-astro-cid-klhljcvd>0</span> </div> </div> <div class="shortcuts-overlay" id="shortcuts-overlay" data-astro-cid-klhljcvd></div> <div class="shortcuts-panel" id="shortcuts-panel" data-astro-cid-klhljcvd> <button class="close-shortcuts" id="close-shortcuts" data-astro-cid-klhljcvd>✕</button> <div class="shortcuts-title" data-astro-cid-klhljcvd>⌨️ 快捷鍵</div> <div class="shortcuts-grid" data-astro-cid-klhljcvd> <div class="shortcut-item" data-astro-cid-klhljcvd><span class="shortcut-key" data-astro-cid-klhljcvd>Space</span><span class="shortcut-desc" data-astro-cid-klhljcvd>播放/暫停</span></div> <div class="shortcut-item" data-astro-cid-klhljcvd><span class="shortcut-key" data-astro-cid-klhljcvd>←</span><span class="shortcut-desc" data-astro-cid-klhljcvd>倒回 10 秒</span></div> <div class="shortcut-item" data-astro-cid-klhljcvd><span class="shortcut-key" data-astro-cid-klhljcvd>→</span><span class="shortcut-desc" data-astro-cid-klhljcvd>快轉 10 秒</span></div> <div class="shortcut-item" data-astro-cid-klhljcvd><span class="shortcut-key" data-astro-cid-klhljcvd>↑</span><span class="shortcut-desc" data-astro-cid-klhljcvd>音量 +10</span></div> <div class="shortcut-item" data-astro-cid-klhljcvd><span class="shortcut-key" data-astro-cid-klhljcvd>↓</span><span class="shortcut-desc" data-astro-cid-klhljcvd>音量 -10</span></div> <div class="shortcut-item" data-astro-cid-klhljcvd><span class="shortcut-key" data-astro-cid-klhljcvd>M</span><span class="shortcut-desc" data-astro-cid-klhljcvd>靜音切換</span></div> <div class="shortcut-item" data-astro-cid-klhljcvd><span class="shortcut-key" data-astro-cid-klhljcvd>S</span><span class="shortcut-desc" data-astro-cid-klhljcvd>隨機播放</span></div> <div class="shortcut-item" data-astro-cid-klhljcvd><span class="shortcut-key" data-astro-cid-klhljcvd>L</span><span class="shortcut-desc" data-astro-cid-klhljcvd>喜歡/取消</span></div> <div class="shortcut-item" data-astro-cid-klhljcvd><span class="shortcut-key" data-astro-cid-klhljcvd>J</span><span class="shortcut-desc" data-astro-cid-klhljcvd>歌詞提前 0.5s</span></div> <div class="shortcut-item" data-astro-cid-klhljcvd><span class="shortcut-key" data-astro-cid-klhljcvd>K</span><span class="shortcut-desc" data-astro-cid-klhljcvd>歌詞延後 0.5s</span></div> </div> </div> <div class="player-modal" id="player-modal" data-astro-cid-klhljcvd> <div class="player-modal-content" data-astro-cid-klhljcvd> <button class="close-modal-btn" id="close-modal-btn" data-astro-cid-klhljcvd>✕</button> <div class="player-modal-album" id="modal-album" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><circle cx="12" cy="12" r="10" data-astro-cid-klhljcvd></circle><path d="M9 18V5l12-2v13" data-astro-cid-klhljcvd></path><circle cx="6" cy="18" r="3" data-astro-cid-klhljcvd></circle><circle cx="18" cy="16" r="3" data-astro-cid-klhljcvd></circle></svg> </div> <h2 class="player-modal-title" id="modal-title" data-astro-cid-klhljcvd>未播放</h2> <p class="player-modal-artist" id="modal-artist" data-astro-cid-klhljcvd>--</p> <div class="player-modal-controls" data-astro-cid-klhljcvd> <button class="bar-ctrl-btn" id="modal-prev" title="上一首" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><polygon points="19 20 9 12 19 4 19 20" data-astro-cid-klhljcvd></polygon><line x1="5" y1="19" x2="5" y2="5" data-astro-cid-klhljcvd></line></svg> </button> <button class="bar-play-btn" id="modal-play" data-astro-cid-klhljcvd> <svg id="modal-play-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none" data-astro-cid-klhljcvd><polygon points="5 3 19 12 5 21 5 3" data-astro-cid-klhljcvd></polygon></svg> <svg id="modal-pause-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="display:none" data-astro-cid-klhljcvd><rect x="6" y="4" width="4" height="16" data-astro-cid-klhljcvd></rect><rect x="14" y="4" width="4" height="16" data-astro-cid-klhljcvd></rect></svg> </button> <button class="bar-ctrl-btn" id="modal-next" title="下一首" data-astro-cid-klhljcvd> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" data-astro-cid-klhljcvd><polygon points="5 4 15 12 5 20 5 4" data-astro-cid-klhljcvd></polygon><line x1="19" y1="5" x2="19" y2="19" data-astro-cid-klhljcvd></line></svg> </button> </div> <div class="player-modal-progress" data-astro-cid-klhljcvd> <span class="bar-time" id="modal-current-time" data-astro-cid-klhljcvd>0:00</span> <input type="range" class="bar-progress-slider" id="modal-progress" min="0" max="100" value="0" style="--progress: 0%" data-astro-cid-klhljcvd> <span class="bar-time" id="modal-duration" data-astro-cid-klhljcvd>0:00</span> </div> </div> </div> <div id="toast-container" data-astro-cid-klhljcvd></div>  <script type="application/json" id="music-tracks">[{"name":"兄弟本色","audio":"/music/track_001.mp3","lyrics":"/music/lyrics_001.txt","lang":"TW","style":"嘻哈","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"2:36","lyricsOffset":0,"mv":{"local":"/music/mv/mv_001_v2.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782919687_cea6705b.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/001_cover.png","style_key":"ballad","style_label":"嘻哈"},"lyricsSync":"/music/lyrics_sync_results/track_001.json","lyricsLRC":"/music/lyrics_001.txt"},{"name":"不服","audio":"/music/track_002.mp3","lyrics":"/music/lyrics_002.txt","lang":"TW","style":"流行","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"1:56","lyricsOffset":0,"mv":{"local":"/music/mv/mv_002.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878332_3e9ed0cb.mp4"},"cover":{"local":"/music/covers/pop.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/002_cover.png","style_key":"pop","style_label":"流行"},"lyricsSync":"/music/lyrics_sync_results/track_002.json","lyricsLRC":"/music/lyrics_002.txt"},{"name":"不服輸","audio":"/music/track_003.mp3","lyrics":"/music/lyrics_003.txt","lang":"TW","style":"流行","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"2:06","lyricsOffset":0,"mv":{"local":"/music/mv/mv_003.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878368_419b4945.mp4"},"cover":{"local":"/music/covers/pop.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/003_cover.png","style_key":"pop","style_label":"流行"},"lyricsSync":"/music/lyrics_sync_results/track_003.json","lyricsLRC":"/music/lyrics_003.txt"},{"name":"再站起來","audio":"/music/track_004.mp3","lyrics":"/music/lyrics_004.txt","lang":"TW","style":"搖滾","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"3:15","lyricsOffset":0,"mv":{"local":"/music/mv/mv_004.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878404_9271bcca.mp4"},"cover":{"local":"/music/covers/rock.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/004_cover.png","style_key":"rock","style_label":"搖滾"},"lyricsSync":"/music/lyrics_sync_results/track_004.json","lyricsLRC":"/music/lyrics_004.txt"},{"name":"水泥森林","audio":"/music/track_005.mp3","lyrics":"/music/lyrics_005.txt","lang":"TW","style":"搖滾","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"1:53","lyricsOffset":0,"mv":{"local":"/music/mv/mv_005.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878449_03483be3.mp4"},"cover":{"local":"/music/covers/rock.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/005_cover.png","style_key":"rock","style_label":"搖滾"},"lyricsSync":"/music/lyrics_sync_results/track_005.json","lyricsLRC":"/music/lyrics_005.txt"},{"name":"老家的巷子","audio":"/music/track_006.mp3","lyrics":"/music/lyrics_006.txt","lang":"TW","style":"民謠","artist":"獨立歌手","gender":"F","album":"原創專輯","duration":"1:31","lyricsOffset":0,"mv":{"local":"/music/mv/mv_006.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878470_562504c3.mp4"},"cover":{"local":"/music/covers/folk.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/006_cover.png","style_key":"folk","style_label":"民謠"},"lyricsSync":"/music/lyrics_sync_results/track_006.json","lyricsLRC":"/music/lyrics_006.txt"},{"name":"趁現在","audio":"/music/track_007.mp3","lyrics":"/music/lyrics_007.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"2:15","lyricsOffset":0,"mv":{"local":"/music/mv/mv_007.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878484_88e77154.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/007_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_007.json","lyricsLRC":"/music/lyrics_007.txt"},{"name":"雨夜出租","audio":"/music/track_008.mp3","lyrics":"/music/lyrics_008.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"F","album":"原創專輯","duration":"2:31","lyricsOffset":0,"mv":{"local":"/music/mv/mv_008.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878529_2180094e.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/008_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_008.json","lyricsLRC":"/music/lyrics_008.txt"},{"name":"一個人的房間","audio":"/music/track_009.mp3","lyrics":"/music/lyrics_009.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"2:03","lyricsOffset":0,"mv":{"local":"/music/mv/mv_009.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878585_a4994b99.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/009_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_009.json","lyricsLRC":"/music/lyrics_009.txt"},{"name":"愛的模樣","audio":"/music/track_010.mp3","lyrics":"/music/lyrics_010.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"1:53","lyricsOffset":0,"mv":{"local":"/music/mv/mv_010.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878620_c558f213.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/010_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_010.json","lyricsLRC":"/music/lyrics_010.txt"},{"name":"三十歲的懸賞令","audio":"/music/track_011.mp3","lyrics":"/music/lyrics_011.txt","lang":"TW","style":"嘻哈","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"2:10","lyricsOffset":0,"mv":{"local":"/music/mv/mv_011.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878669_af625fde.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/011_cover.png","style_key":"ballad","style_label":"嘻哈"},"lyricsSync":"/music/lyrics_sync_results/track_011.json","lyricsLRC":"/music/lyrics_011.txt"},{"name":"來不及說再見","audio":"/music/track_012.mp3","lyrics":"/music/lyrics_012.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"1:32","lyricsOffset":0,"mv":{"local":"/music/mv/mv_012.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878718_54471335.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/012_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_012.json","lyricsLRC":"/music/lyrics_012.txt"},{"name":"機場的最後一夜","audio":"/music/track_013.mp3","lyrics":"/music/lyrics_013.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"2:12","lyricsOffset":0,"mv":{"local":"/music/mv/mv_013.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878742_ce74ecb8.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/013_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_013.json","lyricsLRC":"/music/lyrics_013.txt"},{"name":"給爸媽的電話","audio":"/music/track_014.mp3","lyrics":"/music/lyrics_014.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"1:13","lyricsOffset":0,"mv":{"local":"/music/mv/mv_014.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878767_268c1be2.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/014_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_014.json","lyricsLRC":"/music/lyrics_014.txt"},{"name":"我一個人也很好","audio":"/music/track_015.mp3","lyrics":"/music/lyrics_015.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"F","album":"原創專輯","duration":"2:59","lyricsOffset":0,"mv":{"local":"/music/mv/mv_015.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878797_31a9de0c.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/015_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_015.json","lyricsLRC":"/music/lyrics_015.txt"},{"name":"城市的夜","audio":"/music/track_016.mp3","lyrics":"/music/lyrics_016.txt","lang":"TW","style":"流行","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"1:50","lyricsOffset":0,"mv":{"local":"/music/mv/mv_016.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878826_3a6f9825.mp4"},"cover":{"local":"/music/covers/pop.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/016_cover.png","style_key":"pop","style_label":"流行"},"lyricsSync":"/music/lyrics_sync_results/track_016.json","lyricsLRC":"/music/lyrics_016.txt"},{"name":"如果有一天","audio":"/music/track_017.mp3","lyrics":"/music/lyrics_017.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"2:40","lyricsOffset":0,"mv":{"local":"/music/mv/mv_017.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878836_476365c8.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/017_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_017.json","lyricsLRC":"/music/lyrics_017.txt"},{"name":"故鄉的雲","audio":"/music/track_018.mp3","lyrics":"/music/lyrics_018.txt","lang":"TW","style":"民謠","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"1:05","lyricsOffset":0,"mv":{"local":"/music/mv/mv_018.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878888_d5bd5ef4.mp4"},"cover":{"local":"/music/covers/folk.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/018_cover.png","style_key":"folk","style_label":"民謠"},"lyricsSync":"/music/lyrics_sync_results/track_018.json","lyricsLRC":"/music/lyrics_018.txt"},{"name":"午夜出租","audio":"/music/track_019.mp3","lyrics":"/music/lyrics_019.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"1:08","lyricsOffset":0,"mv":{"local":"/music/mv/mv_019.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878921_0b1e93de.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/019_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_019.json","lyricsLRC":"/music/lyrics_019.txt"},{"name":"遇見你之前","audio":"/music/track_020.mp3","lyrics":"/music/lyrics_020.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"F","album":"原創專輯","duration":"2:25","lyricsOffset":0,"mv":{"local":"/music/mv/mv_020.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878951_8eed6d70.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/020_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_020.json","lyricsLRC":"/music/lyrics_020.txt"},{"name":"等天亮","audio":"/music/track_021.mp3","lyrics":"/music/lyrics_021.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"F","album":"原創專輯","duration":"1:35","lyricsOffset":0,"mv":{"local":"/music/mv/mv_021.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782878981_40771ed1.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/021_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_021.json","lyricsLRC":"/music/lyrics_021.txt"},{"name":"Late Night City","audio":"/music/track_022.mp3","lyrics":"/music/lyrics_022.txt","lang":"EN","style":"Lo-fi","artist":"Independent Artist","gender":"M","album":"Original Album","duration":"3:09","lyricsOffset":0,"mv":{"local":"/music/mv/mv_022.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879039_9a2ce310.mp4"},"cover":{"local":"/music/covers/lofi.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/022_cover.png","style_key":"lofi","style_label":"Lo-fi"},"lyricsSync":"/music/lyrics_sync_results/track_022.json","lyricsLRC":"/music/lyrics_022.txt"},{"name":"Coffee Shop Dreams","audio":"/music/track_023.mp3","lyrics":"/music/lyrics_023.txt","lang":"EN","style":"Lo-fi","artist":"Independent Artist","gender":"F","album":"Original Album","duration":"3:14","lyricsOffset":0,"mv":{"local":"/music/mv/mv_023.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879071_a0b52b6b.mp4"},"cover":{"local":"/music/covers/lofi.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/023_cover.png","style_key":"lofi","style_label":"Lo-fi"},"lyricsSync":"/music/lyrics_sync_results/track_023.json","lyricsLRC":"/music/lyrics_023.txt"},{"name":"Dive Bar Stage","audio":"/music/track_024.mp3","lyrics":"/music/lyrics_024.txt","lang":"EN","style":"Lo-fi","artist":"Independent Artist","gender":"M","album":"Original Album","duration":"3:32","lyricsOffset":0,"mv":{"local":"/music/mv/mv_024.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879112_deb5e009.mp4"},"cover":{"local":"/music/covers/lofi.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/024_cover.png","style_key":"lofi","style_label":"Lo-fi"},"lyricsSync":"/music/lyrics_sync_results/track_024.json","lyricsLRC":"/music/lyrics_024.txt"},{"name":"Tokyo Rain","audio":"/music/track_025.mp3","lyrics":"/music/lyrics_025.txt","lang":"JP","style":"J-Pop","artist":"Independent Artist","gender":"F","album":"オリジナルアルバム","duration":"2:47","lyricsOffset":0,"mv":{"local":"/music/mv/mv_025.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879485_79568d66.mp4"},"cover":{"local":"/music/covers/jpop.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/025_cover.png","style_key":"jpop","style_label":"J-Pop"},"lyricsSync":"/music/lyrics_sync_results/track_025.json","lyricsLRC":"/music/lyrics_025.txt"},{"name":"昭和写真館","audio":"/music/track_026.mp3","lyrics":"/music/lyrics_026.txt","lang":"JP","style":"J-Pop","artist":"Independent Artist","gender":"F","album":"オリジナルアルバム","duration":"2:59","lyricsOffset":0,"mv":{"local":"/music/mv/mv_026.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879224_7bdf46b1.mp4"},"cover":{"local":"/music/covers/jpop.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/026_cover.png","style_key":"jpop","style_label":"J-Pop"},"lyricsSync":"/music/lyrics_sync_results/track_026.json","lyricsLRC":"/music/lyrics_026.txt"},{"name":"富士之影","audio":"/music/track_027.mp3","lyrics":"/music/lyrics_027.txt","lang":"JP","style":"J-Pop","artist":"Independent Artist","gender":"M","album":"オリジナルアルバム","duration":"2:47","lyricsOffset":0,"mv":{"local":"/music/mv/mv_027.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879291_3b909999.mp4"},"cover":{"local":"/music/covers/jpop.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/027_cover.png","style_key":"jpop","style_label":"J-Pop"},"lyricsSync":"/music/lyrics_sync_results/track_027.json","lyricsLRC":"/music/lyrics_027.txt"},{"name":"屋台英雄","audio":"/music/track_028.mp3","lyrics":"/music/lyrics_028.txt","lang":"JP","style":"J-Pop","artist":"Independent Artist","gender":"M","album":"オリジナルアルバム","duration":"3:05","lyricsOffset":0,"mv":{"local":"/music/mv/mv_028.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879333_92db13d1.mp4"},"cover":{"local":"/music/covers/jpop.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/028_cover.png","style_key":"jpop","style_label":"J-Pop"},"lyricsSync":"/music/lyrics_sync_results/track_028.json","lyricsLRC":"/music/lyrics_028.txt"},{"name":"首爾地鐵","audio":"/music/track_029.mp3","lyrics":"/music/lyrics_029.txt","lang":"KR","style":"K-Pop","artist":"Independent Artist","gender":"M","album":"오리지널 앨범","duration":"2:23","lyricsOffset":0,"mv":{"local":"/music/mv/mv_029.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879369_ae2a2eb8.mp4"},"cover":{"local":"/music/covers/kpop.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/029_cover.png","style_key":"kpop","style_label":"K-Pop"},"lyricsSync":"/music/lyrics_sync_results/track_029.json","lyricsLRC":"/music/lyrics_029.txt"},{"name":"市場的春日","audio":"/music/track_030.mp3","lyrics":"/music/lyrics_030.txt","lang":"KR","style":"K-Pop","artist":"Independent Artist","gender":"F","album":"오리지널 앨범","duration":"2:36","lyricsOffset":0,"mv":{"local":"/music/mv/mv_030.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879385_87494661.mp4"},"cover":{"local":"/music/covers/kpop.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/030_cover.png","style_key":"kpop","style_label":"K-Pop"},"lyricsSync":"/music/lyrics_sync_results/track_030.json","lyricsLRC":"/music/lyrics_030.txt"},{"name":"梨泰院之夜","audio":"/music/track_031.mp3","lyrics":"/music/lyrics_031.txt","lang":"KR","style":"K-Pop","artist":"Independent Artist","gender":"M","album":"오리지널 앨범","duration":"2:36","lyricsOffset":0,"mv":{"local":"/music/mv/mv_031.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879398_0c09b93a.mp4"},"cover":{"local":"/music/covers/kpop.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/031_cover.png","style_key":"kpop","style_label":"K-Pop"},"lyricsSync":"/music/lyrics_sync_results/track_031.json","lyricsLRC":"/music/lyrics_031.txt"},{"name":"最後的溫柔","audio":"/music/track_032.mp3","lyrics":"/music/lyrics_032.txt","lang":"TW","style":"抒情","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"1:32","lyricsOffset":0,"mv":{"local":"/music/mv/mv_032.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879404_b53c8f57.mp4"},"cover":{"local":"/music/covers/ballad.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/032_cover.png","style_key":"ballad","style_label":"抒情"},"lyricsSync":"/music/lyrics_sync_results/track_032.json","lyricsLRC":"/music/lyrics_032.txt"},{"name":"不死的腳","audio":"/music/track_033.mp3","lyrics":"/music/lyrics_033.txt","lang":"TW","style":"搖滾","artist":"獨立歌手","gender":"M","album":"原創專輯","duration":"2:25","lyricsOffset":0,"mv":{"local":"/music/mv/mv_033.mp4","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/general/1782879408_15ee2bcb.mp4"},"cover":{"local":"/music/covers/rock.png","cdn":"https://cdn.hailuoai.com/mcp/u508255234162569221/image_tool/output/033_cover.png","style_key":"rock","style_label":"搖滾"},"lyricsSync":"/music/lyrics_sync_results/track_033.json","lyricsLRC":"/music/lyrics_033.txt"}]</script>  <script src="/scripts/music-player.js?v=0fc6b761"></script><script src="/scripts/music-upload.js?v=e3cd583a"></script> <!-- ── Hide Vercel Toolbar (auto-injected when logged in to Vercel) ── --> <style>
+      vercel-toolbar { display: none !important; visibility: hidden !important; }
+    </style> <!-- ── AI Chat Widget (floating, bottom-left, hides on media pages) ── --> <button class="cw-btn" id="cw-btn" data-tip="AI 助手" data-cw-api="/api/chat" data-cw-hide-paths="/music,/video-gen,/interactive-showcase" aria-label="開啟 AI 助手">💬</button> <aside class="cw-panel" id="cw-panel" role="dialog" aria-label="AI 助手對話" aria-hidden="true"> <header class="cw-header"> <div> <div class="cw-title">AI 助手</div> <div class="cw-sub">問我任何關於這個網站的問題</div> </div> <button class="cw-close" id="cw-close" aria-label="關閉">×</button> </header> <div class="cw-msgs" id="cw-msgs"> <div class="cw-welcome" id="cw-welcome"> <p>嗨！我是你的 AI 助手 👋</p> <p style="margin: 8px 0 12px; font-size: .78rem">問我關於這個網站、音樂、基因、AI、或股票的任何問題：</p> <div id="cw-suggestions"></div> </div> </div> <form class="cw-input-row" id="cw-form" autocomplete="off"> <textarea class="cw-input" id="cw-input" placeholder="輸入訊息… (Enter 送出 / Shift+Enter 換行)" rows="1" maxlength="2000"></textarea> <button class="cw-send" id="cw-send" type="submit">送出</button> </form> </aside> <script>
+(function() {
+  'use strict';
+  if (window.__cw_loaded) return;
+  window.__cw_loaded = true;
+
+  // ── API URL resolution (hardcode Render to avoid SW-cache HTML issues) ─
+  const RENDER_URL = 'https://donttalk-chat-bot-xc4e.onrender.com';
+  // Prefer window.CHAT_BOT_API (set by Base.astro <head>) for local dev overrides;
+  // fall back to hardcoded Render on production where HTML may be SW-cached.
+  const CHAT_BOT_API = window.CHAT_BOT_API;
+  const resolvedApiUrl = (CHAT_BOT_API && CHAT_BOT_API.startsWith('http'))
+    ? CHAT_BOT_API
+    : RENDER_URL + '/chat';
+  console.log('[ChatWidget] resolvedApiUrl =', resolvedApiUrl);
+
+  const btn = document.getElementById('cw-btn');
+  if (!btn) return;
+  const apiUrl = btn.getAttribute('data-cw-api') || '/api/chat';
+  const hideOnPaths = btn.getAttribute('data-cw-hide-paths') || '';
+  const hidePaths = hideOnPaths.split(',').map(function(s){return s.trim();}).filter(Boolean);
+
+  // ── Keep backend warm: ping /healthz when button is first interacted ─
+  // (Render Free tier sleeps after 15 min; this wakes it before the user sends a message)
+  let warmedUp = false;
+  function warmUp() {
+    if (warmedUp) return;
+    warmedUp = true;
+    // Always ping Render directly — never a relative path (avoids SW/HTML-cache mismatch)
+    fetch(RENDER_URL + '/healthz', { mode: 'cors' }).catch(function() {});
+  }
+  btn.addEventListener('mouseenter', warmUp, { once: true });
+  btn.addEventListener('focus', warmUp, { once: true });
+
+  const panel = document.getElementById('cw-panel');
+  const closeBtn = document.getElementById('cw-close');
+  const msgs = document.getElementById('cw-msgs');
+  const form = document.getElementById('cw-form');
+  const input = document.getElementById('cw-input');
+  const sendBtn = document.getElementById('cw-send');
+  const welcome = document.getElementById('cw-welcome');
+  const suggestions = document.getElementById('cw-suggestions');
+
+  if (!btn || !panel) return;
+
+  const STORAGE_KEY = 'cw.history.v1';
+  const MAX_HISTORY = 20;
+  const SUGGESTIONS = [
+    '這個網站是什麼？',
+    '介紹一下你的音樂作品',
+    '你有做哪些 AI 工具？',
+    '幫我查台積電股價',
+  ];
+
+  // ── Hide on certain paths + during media playback ─────────────
+  function shouldHide() {
+    const p = location.pathname;
+    if (hidePaths.some(h => p.startsWith(h))) return true;
+    // Hide if any <video> or <audio> is playing
+    const media = document.querySelectorAll('video, audio');
+    for (const m of media) {
+      if (!m.paused && m.readyState > 1) return true;
+    }
+    return false;
+  }
+  function applyHide() {
+    btn.setAttribute('data-hidden', shouldHide() ? '1' : '0');
+  }
+  applyHide();
+  // Re-check every 1.5s (cheap; covers SPA-ish nav + media start/stop)
+  setInterval(applyHide, 1500);
+  document.addEventListener('play', applyHide, true);
+  document.addEventListener('pause', applyHide, true);
+
+  // ── Open/close ────────────────────────────────────────────────
+  function open() {
+    panel.setAttribute('data-open', '1');
+    panel.setAttribute('aria-hidden', 'false');
+    if (welcome && suggestions && suggestions.children.length === 0) {
+      SUGGESTIONS.forEach(s => {
+        const c = document.createElement('span');
+        c.className = 'cw-chip';
+        c.textContent = s;
+        c.addEventListener('click', () => sendUser(s));
+        suggestions.appendChild(c);
+      });
+    }
+    setTimeout(() => input.focus(), 50);
+  }
+  function close() {
+    panel.removeAttribute('data-open');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+  btn.addEventListener('click', () => {
+    panel.getAttribute('data-open') === '1' ? close() : open();
+  });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && panel.getAttribute('data-open') === '1') close();
+  });
+
+  // ── History persistence ───────────────────────────────────────
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h.slice(-MAX_HISTORY))); }
+    catch {}
+  }
+  let history = loadHistory();
+  // render prior history
+  history.forEach(m => renderBubble(m.role, m.content, false));
+
+  // ── Markdown mini-renderer (very small, no deps) ──────────────
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function md(s) {
+    if (!s) return '';
+    // citations [1] [2] → sup pill
+    s = s.replace(/\[(\d+)\]/g, (_, n) => `<span class="cw-cite">[${n}]</span>`);
+    // code blocks
+    s = s.replace(/```([\s\S]*?)```/g, (_, c) => `<pre>${escapeHtml(c.trim())}</pre>`);
+    // inline code
+    s = s.replace(/`([^`]+)`/g, function(_, c) { return '<code>' + escapeHtml(c) + '</code>'; });
+    // links [text](url)
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // internal links /path
+    s = s.replace(/(^|\s)(\/[a-z0-9_\-/]+)/gi, (m, pre, p) => `${pre}<a href="${p}">${p}</a>`);
+    // bold
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // line breaks
+    s = s.replace(/\n/g, '<br>');
+    return s;
+  }
+
+  // ── Bubbles ───────────────────────────────────────────────────
+  let activeBotBubble = null; // currently streaming
+  function renderBubble(role, content, isHtml = false) {
+    const div = document.createElement('div');
+    div.className = 'cw-msg cw-msg-' + (role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot');
+    if (role === 'typing') {
+      div.innerHTML = '<span class="cw-typing"></span><span class="cw-typing"></span><span class="cw-typing"></span>';
+    } else {
+      div.innerHTML = isHtml ? content : md(content);
+    }
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  // ── Send / stream ─────────────────────────────────────────────
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  form.addEventListener('submit', e => { e.preventDefault(); sendUser(input.value); });
+
+  async function sendUser(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    if (welcome && welcome.parentNode) welcome.parentNode.removeChild(welcome);
+
+    input.value = '';
+    input.style.height = 'auto';
+    renderBubble('user', text);
+    history.push({ role: 'user', content: text });
+
+    // typing indicator
+    const typing = renderBubble('typing');
+    sendBtn.disabled = true;
+
+    let botText = '';
+    let tools = [];
+    let ragSources = [];
+    // track the final bot bubble so we can append footnotes to it after finally
+    let finalBubble = null;
+
+    // Timeout guard: fe8.cn may return non-streaming JSON (no SSE) → reader hangs forever
+    let gotToken = false;
+    var timeoutId;
+
+    try {
+      console.log('[ChatWidget] sending fetch to', resolvedApiUrl);
+      // No abort timeout — Render Free tier cold-starts can take 30-60s.
+      // warmUp() on hover should wake it before the user sends a message.
+      const resp = await fetch(resolvedApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+      });
+      console.log('[ChatWidget] fetch done, status:', resp.status, 'body=', !!resp.body);
+      if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      gotToken = false;
+      timeoutId = setTimeout(function() { if (!gotToken) { console.log('[ChatWidget] TIMEOUT: no token in 30s'); reader.cancel(); } }, 30000);
+      // Process one complete SSE event from the front of buf
+      // Render backend uses CRLF (\r\n) line endings — must match or we'll never split events
+      function processBuf() {
+        let idx = buf.indexOf('\r\n\r\n');
+        if (idx === -1) return;
+        const raw = buf.slice(0, idx);
+        buf = buf.slice(idx + 4);
+        const evLine = raw.split('\r\n').find(function(l) { return l.startsWith('event:'); });
+        const dataLine = raw.split('\r\n').find(function(l) { return l.startsWith('data:'); });
+        if (!dataLine) return;
+        const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
+        let data = {};
+        try { data = JSON.parse(dataLine.replace(/^data:\s*/, '')); } catch {}
+        if (evt === 'token' && data.content) {
+          gotToken = true;
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
+          botText += data.content;
+          activeBotBubble.innerHTML = md(botText);
+          msgs.scrollTop = msgs.scrollHeight;
+        } else if (evt === 'tool_call') {
+          tools.push({ name: data.name, args: data.arguments });
+        } else if (evt === 'tool_result') {
+          const last = tools[tools.length - 1];
+          if (last) last.result = data.result;
+        } else if (evt === 'rag') {
+          (data.chunks || []).forEach(function(c) { ragSources.push(c); });
+        } else if (evt === 'done') {
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', md(botText));
+          finalBubble = activeBotBubble;
+        } else if (evt === 'error') {
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          renderBubble('error', '⚠️ ' + (data.message || 'unknown error'));
+          finalBubble = null;
+        }
+      }
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          // Stream exhausted — process any trailing data still in buf (no \n\n needed)
+          buf = buf.trim();
+          if (buf) processBuf();
+          break;
+        }
+        buf += dec.decode(value, { stream: true });
+        // Drain all complete events in buf (CRLF-separated)
+        while (buf.indexOf('\r\n\r\n') !== -1) processBuf();
+      }
+    } catch (err) {
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      const isAbort = err && (err.name === 'AbortError' || (err.message && err.message.includes('abort')));
+      renderBubble('error', isAbort
+        ? '⚠️ 連線逾時（後端服務喚醒中，請稍候後再試）'
+        : '⚠️ 連線失敗：' + (err && err.message ? err.message : String(err)));
+      finalBubble = null;
+    } finally {
+      clearTimeout(timeoutId);
+      sendBtn.disabled = false;
+      activeBotBubble = null;
+    }
+
+    // append footnotes to the final bot bubble (runs after finally so we have a stable ref)
+    if (finalBubble) {
+      if (tools.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-tools';
+        div.innerHTML = tools.map(function(t) { return '<span class="cw-tool-pill">🔧 ' + escapeHtml(t.name) + '</span>'; }).join('');
+        finalBubble.appendChild(div);
+      }
+      if (ragSources.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-rag-sources';
+        const uniq = [];
+        const seen = new Set();
+        ragSources.forEach(function(s) {
+          const key = s.url || s.title;
+          if (!seen.has(key)) { seen.add(key); uniq.push(s); }
+        });
+        div.innerHTML = '📚 引用：' + uniq.slice(0, 5).map(function(s) {
+          const url = s.url || '#';
+          const title = s.title || url;
+          return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(title) + '</a>';
+        }).join(' · ');
+        finalBubble.appendChild(div);
+      }
+    }
+    if (botText) history.push({ role: 'assistant', content: botText });
+    saveHistory(history);
+  }
+})();
+</script> <script>
+      // DEPLOY_MARKER: 2026-07-21T16:50:00-chat-render-v3
+      // Resolve Chat Widget API URL.
+      // In dev (localhost) → http://localhost:8765/chat (FastAPI backend)
+      // In prod → Render directly (Vercel proxy buffers SSE → broken streaming)
+      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8765/chat'
+        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
+    </script> </body> </html>

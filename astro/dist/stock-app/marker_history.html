@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K 線 Marker 歷史紀錄</title>
+<style>
+  :root { --bg:#0f0f23; --bg2:#1a1a3a; --bdr:#2a2a5a; --txt:#e0e0e0; --txt2:#9090b0; --acc:#ab47bc; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font-family:-apple-system,"Segoe UI",sans-serif; }
+  .topbar { padding:12px 16px; background:var(--bg2); border-bottom:1px solid var(--bdr); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .topbar h1 { margin:0; font-size:18px; }
+  .topbar a { color:var(--acc); text-decoration:none; font-size:14px; }
+  .topbar a:hover { text-decoration:underline; }
+  .filters { padding:12px 16px; background:var(--bg2); border-bottom:1px solid var(--bdr); display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .filters label { font-size:12px; color:var(--txt2); }
+  .filters input, .filters select { background:var(--bg); color:var(--txt); border:1px solid var(--bdr); border-radius:4px; padding:6px 8px; font-size:13px; }
+  .filters button { background:var(--acc); color:#fff; border:none; border-radius:4px; padding:7px 16px; cursor:pointer; font-size:13px; }
+  .filters button:hover { opacity:.85; }
+  .meta { padding:6px 16px; color:var(--txt2); font-size:12px; }
+  .tablewrap { overflow:auto; max-height:calc(100vh - 160px); }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  thead { position:sticky; top:0; background:var(--bg2); z-index:1; }
+  th, td { padding:6px 10px; border-bottom:1px solid var(--bdr); text-align:left; white-space:nowrap; }
+  th { color:var(--txt2); font-weight:600; font-size:11px; }
+  tr:hover td { background:rgba(171,71,188,.08); }
+  .src-trade { color:#ffb74d; }
+  .src-event { color:#ab47bc; }
+  .pos-above { color:#ff5252; }
+  .pos-below { color:#69f0ae; }
+  td.num { font-family:Consolas,Menlo,monospace; text-align:right; }
+  .empty { text-align:center; padding:40px; color:var(--txt2); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>📌 K 線 Marker 歷史紀錄</h1>
+    <a href="index.html">← 回主頁</a>
+  </div>
+  <div class="filters">
+    <label>代碼<input id="fCode" placeholder="2330" style="width:90px"></label>
+    <label>來源
+      <select id="fSource">
+        <option value="">全部</option>
+        <option value="trade">交易訊號</option>
+        <option value="event">事件</option>
+      </select>
+    </label>
+    <label>起<input id="fFrom" type="date"></label>
+    <label>迄<input id="fTo" type="date"></label>
+    <label>筆數<input id="fLimit" type="number" value="500" min="10" max="5000" style="width:80px"></label>
+    <button onclick="load()">查詢</button>
+    <button onclick="resetFilters()" style="background:#555">重設</button>
+    <button onclick="exportCSV()" style="background:#26a69a">📥 匯出 CSV</button>
+    <button onclick="batchScan()" id="btnBatch" style="background:#ff7043">🔄 一鍵掃描全部股票（事件）</button>
+    <span id="batchStatus" style="font-size:12px;color:#9090b0"></span>
+  </div>
+  <div class="meta" id="meta">尚未查詢</div>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>日期</th><th>代碼</th><th>來源</th><th>位置</th>
+          <th>標記文字</th>
+          <th>收盤</th><th>5MA</th><th>10MA</th><th>20MA</th><th>60MA</th>
+          <th>建立時間</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="11" class="empty">點「查詢」載入資料</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+<script>
+function n(v){ return (v===null||v===undefined)?"-":(typeof v==="number"?v.toFixed(2):v); }
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function load(){
+  const code = document.getElementById("fCode").value.trim();
+  const src  = document.getElementById("fSource").value;
+  const from = document.getElementById("fFrom").value;
+  const to   = document.getElementById("fTo").value;
+  const lim  = document.getElementById("fLimit").value || 500;
+  const qs = new URLSearchParams();
+  if (code) qs.append("code", code);
+  if (src)  qs.append("source", src);
+  if (from) qs.append("from", from);
+  if (to)   qs.append("to", to);
+  qs.append("limit", lim);
+  document.getElementById("meta").textContent = "查詢中...";
+  fetch("/api/markers/history?" + qs.toString())
+    .then(r=>r.json())
+    .then(d=>{
+      if (!d.ok) { document.getElementById("meta").textContent = "失敗: "+(d.msg||""); return; }
+      const rows = d.rows || [];
+      document.getElementById("meta").textContent = "共 "+rows.length+" 筆";
+      const tb = document.getElementById("tbody");
+      if (!rows.length) { tb.innerHTML = '<tr><td colspan="11" class="empty">無資料</td></tr>'; return; }
+      tb.innerHTML = rows.map(r=>{
+        const srcCls = r.source==="trade"?"src-trade":"src-event";
+        const srcLab = r.source==="trade"?"交易":"事件";
+        const posCls = r.position==="aboveBar"?"pos-above":(r.position==="belowBar"?"pos-below":"");
+        const posLab = r.position==="aboveBar"?"上":(r.position==="belowBar"?"下":"");
+        return `<tr>
+          <td>${esc(r.scan_date)}</td>
+          <td><a href="index.html?code=${encodeURIComponent(r.code||"")}" style="color:#64b5f6">${esc(r.code)}</a></td>
+          <td class="${srcCls}">${srcLab}</td>
+          <td class="${posCls}">${posLab}</td>
+          <td>${esc(r.marker_text)}</td>
+          <td class="num">${n(r.close)}</td>
+          <td class="num">${n(r.ma5)}</td>
+          <td class="num">${n(r.ma10)}</td>
+          <td class="num">${n(r.ma20)}</td>
+          <td class="num">${n(r.ma60)}</td>
+          <td style="color:#888">${esc(r.created_at)}</td>
+        </tr>`;
+      }).join("");
+    })
+    .catch(e=>{ document.getElementById("meta").textContent = "失敗: "+e; });
+}
+function resetFilters(){
+  document.getElementById("fCode").value="";
+  document.getElementById("fSource").value="";
+  document.getElementById("fFrom").value="";
+  document.getElementById("fTo").value="";
+  document.getElementById("fLimit").value=500;
+}
+function exportCSV(){
+  const pwd = prompt("請輸入管理密碼以匯出 CSV：");
+  if (!pwd) return;
+  const code = document.getElementById("fCode").value.trim();
+  const src  = document.getElementById("fSource").value;
+  const from = document.getElementById("fFrom").value;
+  const to   = document.getElementById("fTo").value;
+  const qs = new URLSearchParams();
+  if (code) qs.append("code", code);
+  if (src)  qs.append("source", src);
+  if (from) qs.append("from", from);
+  if (to)   qs.append("to", to);
+  qs.append("limit", 20000);
+  qs.append("pwd", pwd);
+  window.location.href = "/api/markers/export.csv?" + qs.toString();
+}
+function batchScan(){
+  const pwd = prompt("確定批次掃描全部股票「事件 markers」？\n（交易訊號 markers 需逐檔瀏覽才會記錄）\n預計數分鐘，請輸入管理密碼：");
+  if (!pwd) return;
+  const btn = document.getElementById("btnBatch");
+  const st  = document.getElementById("batchStatus");
+  btn.disabled = true;
+  st.textContent = "啟動中...";
+  fetch("/api/markers/batch_scan", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({days: 250, pwd: pwd})
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if (!d.ok) { st.textContent = "失敗: "+(d.msg||""); btn.disabled=false; return; }
+    if (d.already_running) st.textContent = "已有掃描在跑，接續顯示進度...";
+    pollBatch(d.task_id);
+  })
+  .catch(e=>{ st.textContent = "失敗: "+e; btn.disabled=false; });
+}
+function pollBatch(taskId){
+  const btn = document.getElementById("btnBatch");
+  const st  = document.getElementById("batchStatus");
+  fetch("/api/markers/batch_scan/status/"+taskId)
+    .then(r=>r.json())
+    .then(d=>{
+      if (!d.ok) { st.textContent = "狀態失敗"; btn.disabled=false; return; }
+      const t = d.task;
+      const pct = t.total ? Math.round(t.done/t.total*100) : 0;
+      st.textContent = `進度 ${t.done}/${t.total} (${pct}%) | 寫入 ${t.recorded} 筆 | 失敗 ${t.errors}`;
+      if (t.status === "completed") {
+        st.textContent += " ✓ 完成";
+        btn.disabled = false;
+        load();
+      } else {
+        setTimeout(()=>pollBatch(taskId), 2000);
+      }
+    })
+    .catch(e=>{ setTimeout(()=>pollBatch(taskId), 3000); });
+}
+// 自動載入一次（預設無 filter，最多 500 筆）
+load();
+</script>
+</body>
+</html>

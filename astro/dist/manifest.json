@@ -1,0 +1,39 @@
+{
+  "name": "工程 × 生醫 × AI 作品集",
+  "short_name": "JT Portfolio",
+  "description": "工程與生醫雙碩士背景，整合蛋白質 AI、基因分析、NGS 與互動平台的全端作品集。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08060e",
+  "theme_color": "#08060e",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "zh-TW",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%2308060e'/><text y='400' x='56' font-size='360'>🧬</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "仙俠傳 RPG",
+      "url": "/games/xian/",
+      "description": "回合制仙劍風格 RPG"
+    },
+    {
+      "name": "蛋白質 AI",
+      "url": "/report.html",
+      "description": "蛋白質 AI 專案報告"
+    },
+    {
+      "name": "基因 AI 平台",
+      "url": "/gene_ai.html",
+      "description": "序列分析與 CRISPR 設計"
+    }
+  ],
+  "categories": ["education", "utilities"],
+  "screenshots": []
+}

@@ -1,0 +1,355 @@
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><!--
+      Native IntersectionObserver fallback for `.reveal` fade-in.
+      Runs in addition to nav.js's local observer, so the page works
+      even if nav.js fails to load (network/CDN issue) — content stays
+      visible instead of getting stuck at opacity:0.
+    --><script>
+      (function() {
+        function bootReveal() {
+          var els = document.querySelectorAll('.reveal:not(.visible)');
+          if (!els.length) return;
+          if (typeof IntersectionObserver === 'undefined') {
+            els.forEach(function(el) { el.classList.add('visible'); });
+            return;
+          }
+          var io = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+              if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                io.unobserve(e.target);
+              }
+            });
+          }, { rootMargin: '0px 0px -8% 0px', threshold: 0.04 });
+          els.forEach(function(el) { io.observe(el); });
+          // Hard fallback: anything still hidden after 1.5s gets shown.
+          setTimeout(function() {
+            document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
+              el.classList.add('visible');
+            });
+          }, 1500);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bootReveal);
+        } else {
+          bootReveal();
+        }
+      })();
+    </script><title>隱私權政策 | Portfolio</title><meta name="description" content="本站隱私權政策。"><meta property="og:title" content="隱私權政策 | Portfolio"><meta property="og:description" content="本站隱私權政策。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://dontalk.vercel.app/og?t=%E9%9A%B1%E7%A7%81%E6%AC%8A%E6%94%BF%E7%AD%96%20%7C%20Portfolio&#38;s=%E6%9C%AC%E7%AB%99%E9%9A%B1%E7%A7%81%E6%AC%8A%E6%94%BF%E7%AD%96%E3%80%82&#38;tag=Legal"><meta name="twitter:image" content="https://dontalk.vercel.app/og?t=%E9%9A%B1%E7%A7%81%E6%AC%8A%E6%94%BF%E7%AD%96%20%7C%20Portfolio&#38;s=%E6%9C%AC%E7%AB%99%E9%9A%B1%E7%A7%81%E6%AC%8A%E6%94%BF%E7%AD%96%E3%80%82&#38;tag=Legal"><meta property="og:url" content="https://donttalk.vercel.app/privacy/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="隱私權政策 | Portfolio"><meta name="twitter:description" content="本站隱私權政策。"><link rel="canonical" href="https://donttalk.vercel.app/privacy/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/privacy/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/privacy/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css?v=03bbf2c2"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><script src="/scripts/immersive-experience.js" defer></script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://dontalk.vercel.app#person","name":"JT Lai","url":"https://dontalk.vercel.app","image":"https://dontalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://dontalk.vercel.app#website","url":"https://dontalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://dontalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://dontalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/privacy/#webpage","url":"https://donttalk.vercel.app/privacy/","name":"隱私權政策 | Portfolio","description":"本站隱私權政策。","inLanguage":"zh-TW","isPartOf":{"@id":"https://dontalk.vercel.app#website"},"about":{"@id":"https://dontalk.vercel.app#person"},"additionalType":"WebPage"}]}</script><style>.legal-prose[data-astro-cid-fb3qbcs3]{color:var(--text, #e6edf3);line-height:1.8;font-size:.95rem}.legal-prose[data-astro-cid-fb3qbcs3] h2[data-astro-cid-fb3qbcs3]{font-size:1.15rem;font-weight:700;margin:1.8em 0 .6em;color:var(--text);border-bottom:1px solid var(--border, rgba(255,255,255,.08));padding-bottom:.3em}.legal-prose[data-astro-cid-fb3qbcs3] p[data-astro-cid-fb3qbcs3]{margin:0 0 1em}.legal-prose[data-astro-cid-fb3qbcs3] ul[data-astro-cid-fb3qbcs3]{margin:0 0 1em 1.4em}.legal-prose[data-astro-cid-fb3qbcs3] li[data-astro-cid-fb3qbcs3]{margin-bottom:.35em}.legal-prose[data-astro-cid-fb3qbcs3] a[data-astro-cid-fb3qbcs3]{color:var(--accent, #58d7ff)}
+</style>
+<link rel="stylesheet" href="/_astro/Base.BhTaoyI2.css"></head> <body data-page="legal"> <div class="immersive-bg" id="immersive-bg" data-astro-cid-3guv64em> <video id="bg-video" class="bg-video" autoplay muted loop playsinline data-astro-cid-3guv64em> <source id="video-source" type="video/webm" data-astro-cid-3guv64em> </video> <div class="bg-overlay" data-astro-cid-3guv64em></div> </div>  <script type="module">class n{constructor(){this.container=document.getElementById("immersive-bg"),this.video=document.getElementById("bg-video"),this.particles=[],this.init()}init(){this.createParticles(),this.setupEventListeners(),this.setupVideo()}setupVideo(){if(!this.video)return;const a=["179f1b00-2727-47ec-81d3-591d8405c762_watermarked.webm","314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.webm","5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.webm","6b95a3b8-no-watermark_watermarked.webm","a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.webm","bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.webm","ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.webm","cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.webm"],t=a[Math.floor(Math.random()*a.length)],e=document.getElementById("video-source");e&&(e.src="/videos/"+t),this.video.play().catch(()=>{this.video.style.display="none"})}createParticles(){if(!this.container)return;const a=Math.min(80,Math.floor(window.innerWidth/15));for(let t=0;t<a;t++){const e=document.createElement("div");e.className="particle",e.style.left=Math.random()*100+"%",e.style.top=Math.random()*100+"%";const i=Math.random()*3+1;e.style.width=i+"px",e.style.height=i+"px",e.style.animationDuration=Math.random()*10+15+"s",e.style.animationDelay=Math.random()*5+"s",this.container.appendChild(e),this.particles.push(e)}}setupEventListeners(){window.addEventListener("resize",()=>this.handleResize())}handleResize(){Math.min(80,Math.floor(window.innerWidth/15))!==this.particles.length&&(this.particles.forEach(t=>t.remove()),this.particles=[],this.createParticles())}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",()=>{new n}):new n;</script>   <div data-site-nav data-astro-cid-fb3qbcs3></div> <main style="max-width:720px;margin:0 auto;padding:60px 24px" data-astro-cid-fb3qbcs3> <div class="section-label" data-astro-cid-fb3qbcs3>Legal</div> <h1 style="font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;margin:8px 0 24px;color:var(--text)" data-astro-cid-fb3qbcs3>隱私權政策</h1> <article class="legal-prose" data-astro-cid-fb3qbcs3> <p data-astro-cid-fb3qbcs3><strong data-astro-cid-fb3qbcs3>最後更新：</strong>2026-06-25</p> <h2 data-astro-cid-fb3qbcs3>1. 資料收集</h2> <p data-astro-cid-fb3qbcs3>本作品集網站不會主動收集個人識別資料。所有瀏覽活動均為匿名，且不會與第三方分享。</p> <h2 data-astro-cid-fb3qbcs3>2. Cookie 使用</h2> <p data-astro-cid-fb3qbcs3>本站僅使用功能性 cookie 來記憶介面偏好（例如深色／淺色主題）。不使用追蹤或廣告 cookie。</p> <h2 data-astro-cid-fb3qbcs3>3. 第三方服務</h2> <p data-astro-cid-fb3qbcs3>本站可能內嵌或連結到以下第三方服務：</p> <ul data-astro-cid-fb3qbcs3> <li data-astro-cid-fb3qbcs3><strong data-astro-cid-fb3qbcs3>YouTube</strong> — 嵌入作品展示影片時載入，受 YouTube 隱私政策規範。</li> <li data-astro-cid-fb3qbcs3><strong data-astro-cid-fb3qbcs3>GitHub</strong> — 連結到開源專案時受 GitHub 隱私政策規範。</li> <li data-astro-cid-fb3qbcs3><strong data-astro-cid-fb3qbcs3>Google Fonts</strong> — 用於字型載入，可能會收集 IP 位址等基本瀏覽資訊。</li> </ul> <h2 data-astro-cid-fb3qbcs3>4. 聯絡表單</h2> <p data-astro-cid-fb3qbcs3>若透過聯絡表單提交訊息，相關內容僅用於回覆您的來信，不會用於行銷或轉交第三方。</p> <h2 data-astro-cid-fb3qbcs3>5. 您的權利</h2> <p data-astro-cid-fb3qbcs3>您可隨時來信要求查閱、更正或刪除我們持有的關於您的任何資料。</p> <h2 data-astro-cid-fb3qbcs3>6. 政策更新</h2> <p data-astro-cid-fb3qbcs3>本政策可能不定期更新，更新日期會標示於頁面頂端。</p> <p style="margin-top:2em" data-astro-cid-fb3qbcs3><a href="/seo-accessibility/" data-astro-cid-fb3qbcs3>← 回到無障礙聲明</a> · <a href="/terms/" data-astro-cid-fb3qbcs3>使用條款</a></p> </article> </main> <div data-site-footer data-astro-cid-fb3qbcs3></div>   <!-- ── Hide Vercel Toolbar (auto-injected when logged in to Vercel) ── --> <style>
+      vercel-toolbar { display: none !important; visibility: hidden !important; }
+    </style> <!-- ── AI Chat Widget (floating, bottom-left, hides on media pages) ── --> <button class="cw-btn" id="cw-btn" data-tip="AI 助手" data-cw-api="/api/chat" data-cw-hide-paths="/music,/video-gen,/interactive-showcase" aria-label="開啟 AI 助手">💬</button> <aside class="cw-panel" id="cw-panel" role="dialog" aria-label="AI 助手對話" aria-hidden="true"> <header class="cw-header"> <div> <div class="cw-title">AI 助手</div> <div class="cw-sub">問我任何關於這個網站的問題</div> </div> <button class="cw-close" id="cw-close" aria-label="關閉">×</button> </header> <div class="cw-msgs" id="cw-msgs"> <div class="cw-welcome" id="cw-welcome"> <p>嗨！我是你的 AI 助手 👋</p> <p style="margin: 8px 0 12px; font-size: .78rem">問我關於這個網站、音樂、基因、AI、或股票的任何問題：</p> <div id="cw-suggestions"></div> </div> </div> <form class="cw-input-row" id="cw-form" autocomplete="off"> <textarea class="cw-input" id="cw-input" placeholder="輸入訊息… (Enter 送出 / Shift+Enter 換行)" rows="1" maxlength="2000"></textarea> <button class="cw-send" id="cw-send" type="submit">送出</button> </form> </aside> <script>
+(function() {
+  'use strict';
+  if (window.__cw_loaded) return;
+  window.__cw_loaded = true;
+
+  // ── API URL resolution (hardcode Render to avoid SW-cache HTML issues) ─
+  const RENDER_URL = 'https://donttalk-chat-bot-xc4e.onrender.com';
+  // Prefer window.CHAT_BOT_API (set by Base.astro <head>) for local dev overrides;
+  // fall back to hardcoded Render on production where HTML may be SW-cached.
+  const CHAT_BOT_API = window.CHAT_BOT_API;
+  const resolvedApiUrl = (CHAT_BOT_API && CHAT_BOT_API.startsWith('http'))
+    ? CHAT_BOT_API
+    : RENDER_URL + '/chat';
+  console.log('[ChatWidget] resolvedApiUrl =', resolvedApiUrl);
+
+  const btn = document.getElementById('cw-btn');
+  if (!btn) return;
+  const apiUrl = btn.getAttribute('data-cw-api') || '/api/chat';
+  const hideOnPaths = btn.getAttribute('data-cw-hide-paths') || '';
+  const hidePaths = hideOnPaths.split(',').map(function(s){return s.trim();}).filter(Boolean);
+
+  // ── Keep backend warm: ping /healthz when button is first interacted ─
+  // (Render Free tier sleeps after 15 min; this wakes it before the user sends a message)
+  let warmedUp = false;
+  function warmUp() {
+    if (warmedUp) return;
+    warmedUp = true;
+    // Always ping Render directly — never a relative path (avoids SW/HTML-cache mismatch)
+    fetch(RENDER_URL + '/healthz', { mode: 'cors' }).catch(function() {});
+  }
+  btn.addEventListener('mouseenter', warmUp, { once: true });
+  btn.addEventListener('focus', warmUp, { once: true });
+
+  const panel = document.getElementById('cw-panel');
+  const closeBtn = document.getElementById('cw-close');
+  const msgs = document.getElementById('cw-msgs');
+  const form = document.getElementById('cw-form');
+  const input = document.getElementById('cw-input');
+  const sendBtn = document.getElementById('cw-send');
+  const welcome = document.getElementById('cw-welcome');
+  const suggestions = document.getElementById('cw-suggestions');
+
+  if (!btn || !panel) return;
+
+  const STORAGE_KEY = 'cw.history.v1';
+  const MAX_HISTORY = 20;
+  const SUGGESTIONS = [
+    '這個網站是什麼？',
+    '介紹一下你的音樂作品',
+    '你有做哪些 AI 工具？',
+    '幫我查台積電股價',
+  ];
+
+  // ── Hide on certain paths + during media playback ─────────────
+  function shouldHide() {
+    const p = location.pathname;
+    if (hidePaths.some(h => p.startsWith(h))) return true;
+    // Hide if any <video> or <audio> is playing
+    const media = document.querySelectorAll('video, audio');
+    for (const m of media) {
+      if (!m.paused && m.readyState > 1) return true;
+    }
+    return false;
+  }
+  function applyHide() {
+    btn.setAttribute('data-hidden', shouldHide() ? '1' : '0');
+  }
+  applyHide();
+  // Re-check every 1.5s (cheap; covers SPA-ish nav + media start/stop)
+  setInterval(applyHide, 1500);
+  document.addEventListener('play', applyHide, true);
+  document.addEventListener('pause', applyHide, true);
+
+  // ── Open/close ────────────────────────────────────────────────
+  function open() {
+    panel.setAttribute('data-open', '1');
+    panel.setAttribute('aria-hidden', 'false');
+    if (welcome && suggestions && suggestions.children.length === 0) {
+      SUGGESTIONS.forEach(s => {
+        const c = document.createElement('span');
+        c.className = 'cw-chip';
+        c.textContent = s;
+        c.addEventListener('click', () => sendUser(s));
+        suggestions.appendChild(c);
+      });
+    }
+    setTimeout(() => input.focus(), 50);
+  }
+  function close() {
+    panel.removeAttribute('data-open');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+  btn.addEventListener('click', () => {
+    panel.getAttribute('data-open') === '1' ? close() : open();
+  });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && panel.getAttribute('data-open') === '1') close();
+  });
+
+  // ── History persistence ───────────────────────────────────────
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h.slice(-MAX_HISTORY))); }
+    catch {}
+  }
+  let history = loadHistory();
+  // render prior history
+  history.forEach(m => renderBubble(m.role, m.content, false));
+
+  // ── Markdown mini-renderer (very small, no deps) ──────────────
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function md(s) {
+    if (!s) return '';
+    // citations [1] [2] → sup pill
+    s = s.replace(/\[(\d+)\]/g, (_, n) => `<span class="cw-cite">[${n}]</span>`);
+    // code blocks
+    s = s.replace(/```([\s\S]*?)```/g, (_, c) => `<pre>${escapeHtml(c.trim())}</pre>`);
+    // inline code
+    s = s.replace(/`([^`]+)`/g, function(_, c) { return '<code>' + escapeHtml(c) + '</code>'; });
+    // links [text](url)
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // internal links /path
+    s = s.replace(/(^|\s)(\/[a-z0-9_\-/]+)/gi, (m, pre, p) => `${pre}<a href="${p}">${p}</a>`);
+    // bold
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // line breaks
+    s = s.replace(/\n/g, '<br>');
+    return s;
+  }
+
+  // ── Bubbles ───────────────────────────────────────────────────
+  let activeBotBubble = null; // currently streaming
+  function renderBubble(role, content, isHtml = false) {
+    const div = document.createElement('div');
+    div.className = 'cw-msg cw-msg-' + (role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot');
+    if (role === 'typing') {
+      div.innerHTML = '<span class="cw-typing"></span><span class="cw-typing"></span><span class="cw-typing"></span>';
+    } else {
+      div.innerHTML = isHtml ? content : md(content);
+    }
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  // ── Send / stream ─────────────────────────────────────────────
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  form.addEventListener('submit', e => { e.preventDefault(); sendUser(input.value); });
+
+  async function sendUser(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    if (welcome && welcome.parentNode) welcome.parentNode.removeChild(welcome);
+
+    input.value = '';
+    input.style.height = 'auto';
+    renderBubble('user', text);
+    history.push({ role: 'user', content: text });
+
+    // typing indicator
+    const typing = renderBubble('typing');
+    sendBtn.disabled = true;
+
+    let botText = '';
+    let tools = [];
+    let ragSources = [];
+    // track the final bot bubble so we can append footnotes to it after finally
+    let finalBubble = null;
+
+    // Timeout guard: fe8.cn may return non-streaming JSON (no SSE) → reader hangs forever
+    let gotToken = false;
+    var timeoutId;
+
+    try {
+      console.log('[ChatWidget] sending fetch to', resolvedApiUrl);
+      // No abort timeout — Render Free tier cold-starts can take 30-60s.
+      // warmUp() on hover should wake it before the user sends a message.
+      const resp = await fetch(resolvedApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+      });
+      console.log('[ChatWidget] fetch done, status:', resp.status, 'body=', !!resp.body);
+      if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      gotToken = false;
+      timeoutId = setTimeout(function() { if (!gotToken) { console.log('[ChatWidget] TIMEOUT: no token in 30s'); reader.cancel(); } }, 30000);
+      // Process one complete SSE event from the front of buf
+      // Render backend uses CRLF (\r\n) line endings — must match or we'll never split events
+      function processBuf() {
+        let idx = buf.indexOf('\r\n\r\n');
+        if (idx === -1) return;
+        const raw = buf.slice(0, idx);
+        buf = buf.slice(idx + 4);
+        const evLine = raw.split('\r\n').find(function(l) { return l.startsWith('event:'); });
+        const dataLine = raw.split('\r\n').find(function(l) { return l.startsWith('data:'); });
+        if (!dataLine) return;
+        const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
+        let data = {};
+        try { data = JSON.parse(dataLine.replace(/^data:\s*/, '')); } catch {}
+        if (evt === 'token' && data.content) {
+          gotToken = true;
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
+          botText += data.content;
+          activeBotBubble.innerHTML = md(botText);
+          msgs.scrollTop = msgs.scrollHeight;
+        } else if (evt === 'tool_call') {
+          tools.push({ name: data.name, args: data.arguments });
+        } else if (evt === 'tool_result') {
+          const last = tools[tools.length - 1];
+          if (last) last.result = data.result;
+        } else if (evt === 'rag') {
+          (data.chunks || []).forEach(function(c) { ragSources.push(c); });
+        } else if (evt === 'done') {
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', md(botText));
+          finalBubble = activeBotBubble;
+        } else if (evt === 'error') {
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          renderBubble('error', '⚠️ ' + (data.message || 'unknown error'));
+          finalBubble = null;
+        }
+      }
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          // Stream exhausted — process any trailing data still in buf (no \n\n needed)
+          buf = buf.trim();
+          if (buf) processBuf();
+          break;
+        }
+        buf += dec.decode(value, { stream: true });
+        // Drain all complete events in buf (CRLF-separated)
+        while (buf.indexOf('\r\n\r\n') !== -1) processBuf();
+      }
+    } catch (err) {
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      const isAbort = err && (err.name === 'AbortError' || (err.message && err.message.includes('abort')));
+      renderBubble('error', isAbort
+        ? '⚠️ 連線逾時（後端服務喚醒中，請稍候後再試）'
+        : '⚠️ 連線失敗：' + (err && err.message ? err.message : String(err)));
+      finalBubble = null;
+    } finally {
+      clearTimeout(timeoutId);
+      sendBtn.disabled = false;
+      activeBotBubble = null;
+    }
+
+    // append footnotes to the final bot bubble (runs after finally so we have a stable ref)
+    if (finalBubble) {
+      if (tools.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-tools';
+        div.innerHTML = tools.map(function(t) { return '<span class="cw-tool-pill">🔧 ' + escapeHtml(t.name) + '</span>'; }).join('');
+        finalBubble.appendChild(div);
+      }
+      if (ragSources.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-rag-sources';
+        const uniq = [];
+        const seen = new Set();
+        ragSources.forEach(function(s) {
+          const key = s.url || s.title;
+          if (!seen.has(key)) { seen.add(key); uniq.push(s); }
+        });
+        div.innerHTML = '📚 引用：' + uniq.slice(0, 5).map(function(s) {
+          const url = s.url || '#';
+          const title = s.title || url;
+          return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(title) + '</a>';
+        }).join(' · ');
+        finalBubble.appendChild(div);
+      }
+    }
+    if (botText) history.push({ role: 'assistant', content: botText });
+    saveHistory(history);
+  }
+})();
+</script> <script>
+      // DEPLOY_MARKER: 2026-07-21T16:50:00-chat-render-v3
+      // Resolve Chat Widget API URL.
+      // In dev (localhost) → http://localhost:8765/chat (FastAPI backend)
+      // In prod → Render directly (Vercel proxy buffers SSE → broken streaming)
+      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8765/chat'
+        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
+    </script> </body> </html>

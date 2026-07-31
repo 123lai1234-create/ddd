@@ -1,8 +1,10 @@
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
 # compiled output
-# dist/  -- NOT tracked; Vercel runs `npm run build` itself on git auto-deploy
-# (tracked dist interacted badly with Hobby-plan auto-deploy 2026-07-02)
+# astro/dist/ IS tracked for Vercel static deploy (2026-07-31 fix after 404):
+# Vercel Hobby auto-deploy + framework:null cache is broken; we ship
+# prebuilt dist in git so Vercel doesn't need to run npm install / build
+# itself. See vercel.json buildCommand:null.
 tmp
 out-tsc
 *.tsbuildinfo
@@ -51,7 +53,6 @@ artifacts/pip_install.log
 astro/__extract_bodies.py
 astro/_nav.json
 astro/.netlify/
-/astro/dist/
 
 # mavis / playwright browser debug stash
 .tmp/

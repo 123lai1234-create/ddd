@@ -1,0 +1,982 @@
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><!--
+      Native IntersectionObserver fallback for `.reveal` fade-in.
+      Runs in addition to nav.js's local observer, so the page works
+      even if nav.js fails to load (network/CDN issue) — content stays
+      visible instead of getting stuck at opacity:0.
+    --><script>
+      (function() {
+        function bootReveal() {
+          var els = document.querySelectorAll('.reveal:not(.visible)');
+          if (!els.length) return;
+          if (typeof IntersectionObserver === 'undefined') {
+            els.forEach(function(el) { el.classList.add('visible'); });
+            return;
+          }
+          var io = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+              if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                io.unobserve(e.target);
+              }
+            });
+          }, { rootMargin: '0px 0px -8% 0px', threshold: 0.04 });
+          els.forEach(function(el) { io.observe(el); });
+          // Hard fallback: anything still hidden after 1.5s gets shown.
+          setTimeout(function() {
+            document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
+              el.classList.add('visible');
+            });
+          }, 1500);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bootReveal);
+        } else {
+          bootReveal();
+        }
+      })();
+    </script><title>基因資料平台 | 序列資料庫 × 知識庫 × RAG</title><meta name="description" content="基因資料平台——保留真實可用的 Sequence Vault、Knowledge Vault 與 RAG-ready documents，直接連接 FastAPI 與資料庫。"><meta property="og:title" content="基因資料平台 | 序列資料庫 × 知識庫 × RAG"><meta property="og:description" content="基因資料平台——保留真實可用的 Sequence Vault、Knowledge Vault 與 RAG-ready documents，直接連接 FastAPI 與資料庫。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://dontalk.vercel.app/og?t=%E5%9F%BA%E5%9B%A0%E8%B3%87%E6%96%99%E5%B9%B3%E5%8F%B0%20%7C%20%E5%BA%8F%E5%88%97%E8%B3%87%E6%96%99%E5%BA%AB%20%C3%97%20%E7%9F%A5%E8%AD%98%E5%BA%AB%20%C3%97%20RAG&#38;s=%E5%9F%BA%E5%9B%A0%E8%B3%87%E6%96%99%E5%B9%B3%E5%8F%B0%E2%80%94%E2%80%94%E4%BF%9D%E7%95%99%E7%9C%9F%E5%AF%A6%E5%8F%AF%E7%94%A8%E7%9A%84%20Sequence%20Vault%E3%80%81Knowledge%20Vault%20%E8%88%87%20RAG-ready%20documents%EF%BC%8C%E7%9B%B4%E6%8E%A5%E9%80%A3%E6%8E%A5%20FastAPI%20%E8%88%87%E8%B3%87%E6%96%99%E5%BA%AB%E3%80%82&#38;tag="><meta name="twitter:image" content="https://dontalk.vercel.app/og?t=%E5%9F%BA%E5%9B%A0%E8%B3%87%E6%96%99%E5%B9%B3%E5%8F%B0%20%7C%20%E5%BA%8F%E5%88%97%E8%B3%87%E6%96%99%E5%BA%AB%20%C3%97%20%E7%9F%A5%E8%AD%98%E5%BA%AB%20%C3%97%20RAG&#38;s=%E5%9F%BA%E5%9B%A0%E8%B3%87%E6%96%99%E5%B9%B3%E5%8F%B0%E2%80%94%E2%80%94%E4%BF%9D%E7%95%99%E7%9C%9F%E5%AF%A6%E5%8F%AF%E7%94%A8%E7%9A%84%20Sequence%20Vault%E3%80%81Knowledge%20Vault%20%E8%88%87%20RAG-ready%20documents%EF%BC%8C%E7%9B%B4%E6%8E%A5%E9%80%A3%E6%8E%A5%20FastAPI%20%E8%88%87%E8%B3%87%E6%96%99%E5%BA%AB%E3%80%82&#38;tag="><meta property="og:url" content="https://donttalk.vercel.app/gene-ai/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="基因資料平台 | 序列資料庫 × 知識庫 × RAG"><meta name="twitter:description" content="基因資料平台——保留真實可用的 Sequence Vault、Knowledge Vault 與 RAG-ready documents，直接連接 FastAPI 與資料庫。"><link rel="canonical" href="https://donttalk.vercel.app/gene-ai/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/gene-ai/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/gene-ai/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css?v=03bbf2c2"><link rel="stylesheet" href="/styles/gene_ai.css?v=59603fd6"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><script src="/scripts/immersive-experience.js" defer></script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://dontalk.vercel.app#person","name":"JT Lai","url":"https://dontalk.vercel.app","image":"https://dontalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://dontalk.vercel.app#website","url":"https://dontalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://dontalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://dontalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/gene-ai/#webpage","url":"https://donttalk.vercel.app/gene-ai/","name":"基因資料平台 | 序列資料庫 × 知識庫 × RAG","description":"基因資料平台——保留真實可用的 Sequence Vault、Knowledge Vault 與 RAG-ready documents，直接連接 FastAPI 與資料庫。","inLanguage":"zh-TW","isPartOf":{"@id":"https://dontalk.vercel.app#website"},"about":{"@id":"https://dontalk.vercel.app#person"},"additionalType":"WebPage"}]}</script><link rel="stylesheet" href="/_astro/Base.BhTaoyI2.css"></head> <body data-page="gene_ai"> <div class="immersive-bg" id="immersive-bg" data-astro-cid-3guv64em> <video id="bg-video" class="bg-video" autoplay muted loop playsinline data-astro-cid-3guv64em> <source id="video-source" type="video/webm" data-astro-cid-3guv64em> </video> <div class="bg-overlay" data-astro-cid-3guv64em></div> </div>  <script type="module">class n{constructor(){this.container=document.getElementById("immersive-bg"),this.video=document.getElementById("bg-video"),this.particles=[],this.init()}init(){this.createParticles(),this.setupEventListeners(),this.setupVideo()}setupVideo(){if(!this.video)return;const a=["179f1b00-2727-47ec-81d3-591d8405c762_watermarked.webm","314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.webm","5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.webm","6b95a3b8-no-watermark_watermarked.webm","a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.webm","bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.webm","ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.webm","cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.webm"],t=a[Math.floor(Math.random()*a.length)],e=document.getElementById("video-source");e&&(e.src="/videos/"+t),this.video.play().catch(()=>{this.video.style.display="none"})}createParticles(){if(!this.container)return;const a=Math.min(80,Math.floor(window.innerWidth/15));for(let t=0;t<a;t++){const e=document.createElement("div");e.className="particle",e.style.left=Math.random()*100+"%",e.style.top=Math.random()*100+"%";const i=Math.random()*3+1;e.style.width=i+"px",e.style.height=i+"px",e.style.animationDuration=Math.random()*10+15+"s",e.style.animationDelay=Math.random()*5+"s",this.container.appendChild(e),this.particles.push(e)}}setupEventListeners(){window.addEventListener("resize",()=>this.handleResize())}handleResize(){Math.min(80,Math.floor(window.innerWidth/15))!==this.particles.length&&(this.particles.forEach(t=>t.remove()),this.particles=[],this.createParticles())}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",()=>{new n}):new n;</script>   
+    <!-- Immersive Background -->
+    <div class="immersive-bg"></div>
+    <div data-site-nav></div>
+
+    <header class="hero">
+        <video class="hero-video" autoplay muted loop playsinline
+            poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3Crect fill='%230a1116'/%3E%3C/svg%3E">
+            <source src="/videos/5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.webm" type="video/webm">
+        </video>
+        <div class="hero-video-overlay"></div>
+        <div class="hero-canvas"></div>
+        <div class="grid-bg"></div>
+        <canvas id="hero-sparkle" aria-hidden="true"></canvas>
+        <div class="hero-grid">
+            <div>
+                <div class="eyebrow"><span class="live-dot"></span>Genome Data Platform · Live Sequence + Knowledge +
+                    RAG</div>
+                <h1>把序列資料、知識檢索與 RAG 文件<br><span>收進同一個基因資料平台</span></h1>
+                <p class="hero-sub">真接後端的基因資料平台：序列快取、知識庫與 RAG 文件，三層同步、全部可驗證。</p>
+                <div class="hero-note">全 API-backed，無前端模擬介面。</div>
+                <div class="hero-cta-row">
+                    <a href="#product-overview" class="btn btn-primary">查看產品能力</a>
+                    <a href="#sequence-vault" class="btn btn-secondary">進入 Sequence Vault</a>
+                    <a href="#rag-layer" class="btn btn-secondary">查看 RAG 輸出</a>
+                </div>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="value">2 Live APIs</div>
+                        <div class="label">序列 + 知識 · FastAPI 後端</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="value">DB-backed</div>
+                        <div class="label">資料庫快取即時讀取</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="value">RAG-ready</div>
+                        <div class="label">chunks + metadata 直接輸出</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="signal-card">
+                <div class="signal-top">
+                    <div class="signal-title">Product Runtime Snapshot</div>
+                    <div class="status-pill">Live Data</div>
+                </div>
+                <div class="signal-matrix">
+                    <div class="signal-block">
+                        <div class="k">Live Data Layer</div>
+                        <div class="v">Sequence Cache · Knowledge Cache</div>
+                    </div>
+                    <div class="signal-block">
+                        <div class="k">Knowledge Retrieval</div>
+                        <div class="v">Evidence Search · Source Metadata</div>
+                    </div>
+                    <div class="signal-block">
+                        <div class="k">RAG Output</div>
+                        <div class="v">Chunk Preview · Retrieval-ready Docs</div>
+                    </div>
+                    <div class="signal-block">
+                        <div class="k">Operations</div>
+                        <div class="v">Sync · Search · Filter · Delete</div>
+                    </div>
+                </div>
+                <div class="signal-list">
+                    <div class="signal-item">
+                        <div class="left">Sequence sync</div>
+                        <div class="right">UniProt / Ensembl → Render DB</div>
+                    </div>
+                    <div class="signal-item">
+                        <div class="left">Knowledge sync</div>
+                        <div class="right">UniProt / PubMed → RAG-ready docs</div>
+                    </div>
+                    <div class="signal-item">
+                        <div class="left">RAG export</div>
+                        <div class="right">Chunk + metadata preview from backend</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <nav class="module-nav">
+            <a href="#sequence-vault" class="module-nav-item">
+                <div class="module-nav-icon">🧬</div>
+                <div>
+                    <div class="module-nav-name">Sequence Vault</div>
+                    <div class="module-nav-sub">UniProt · Ensembl → DB cache</div>
+                </div>
+            </a>
+            <div class="module-nav-arrow">→</div>
+            <a href="#sequencing-run-vault" class="module-nav-item">
+                <div class="module-nav-icon">🔬</div>
+                <div>
+                    <div class="module-nav-name">Sequencing Runs</div>
+                    <div class="module-nav-sub">ENA metadata · Study · Sample</div>
+                </div>
+            </a>
+            <div class="module-nav-arrow">→</div>
+            <a href="#knowledge-vault" class="module-nav-item">
+                <div class="module-nav-icon">📚</div>
+                <div>
+                    <div class="module-nav-name">Knowledge + RAG</div>
+                    <div class="module-nav-sub">UniProt · PubMed → RAG docs</div>
+                </div>
+            </a>
+        </nav>
+
+        <section id="sequence-vault" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Live Interface · Data Cache</div>
+                    <h2 class="section-title">把公開蛋白質與基因序列爬進 DB，直接在平台內動態展示</h2>
+                    <p class="section-sub">
+                        這個模組會從 UniProt 與 Ensembl 抓取 protein / gene sequence，寫進 Render PostgreSQL，之後頁面就直接從 DB
+                        讀快取，不再只是靜態示範卡片。
+                    </p>
+                </div>
+                <div class="section-badge badge-live">Live API · UniProt + Ensembl + Render Postgres</div>
+            </div>
+
+            <div class="sequence-grid">
+                <aside class="panel control-panel">
+                    <div class="cp-header">
+                        <div class="control-title">🧬 Sequence Vault</div>
+                        <div class="control-sub">從 UniProt / Ensembl 同步序列到 DB，右側即可搜尋與瀏覽。</div>
+                    </div>
+
+                    <div class="cp-step">
+                        <div class="cp-step-num">1</div>
+                        <div class="cp-step-body">
+                            <div class="field">
+                                <label for="sequenceProteinQuery">UniProt 蛋白質關鍵字</label>
+                                <input id="sequenceProteinQuery" type="text" value="kinase" list="proteinQueryPresets"
+                                    placeholder="如 kinase、receptor、CRISPR…" autocomplete="off">
+                                <datalist id="proteinQueryPresets">
+                                    <option value="kinase">kinase — 激酶（EGFR、MAPK）</option>
+                                    <option value="phosphatase">phosphatase — 磷酸酶</option>
+                                    <option value="protease">protease — 蛋白酶</option>
+                                    <option value="polymerase">polymerase — 聚合酶</option>
+                                    <option value="helicase">helicase — 解旋酶</option>
+                                    <option value="receptor">receptor — 受體</option>
+                                    <option value="G protein-coupled receptor">G protein-coupled receptor — GPCR
+                                    </option>
+                                    <option value="ion channel">ion channel — 離子通道</option>
+                                    <option value="antibody">antibody — 抗體</option>
+                                    <option value="cytokine">cytokine — 細胞因子</option>
+                                    <option value="insulin">insulin — 胰島素</option>
+                                    <option value="hemoglobin">hemoglobin — 血紅蛋白</option>
+                                    <option value="transcription factor">transcription factor — 轉錄因子</option>
+                                    <option value="tumor suppressor">tumor suppressor — 腫瘤抑制因子</option>
+                                    <option value="CRISPR">CRISPR — 基因編輯蛋白</option>
+                                    <option value="spike glycoprotein">spike glycoprotein — 病毒刺突蛋白</option>
+                                </datalist>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cp-step">
+                        <div class="cp-step-num">2</div>
+                        <div class="cp-step-body">
+                            <div class="field">
+                                <label for="sequenceGeneSymbols">Gene symbols（逗號分隔，最多 8 個）</label>
+                                <textarea id="sequenceGeneSymbols" rows="2">TP53, BRCA1, EGFR, APOE</textarea>
+                            </div>
+                            <div class="gene-picker-row">
+                                <input id="geneSymbolPicker" type="text" list="geneSymbolPresets"
+                                    placeholder="輸入或選取基因符號加入…" autocomplete="off">
+                                <button id="geneSymbolAdd" type="button" class="btn btn-secondary btn-sm">＋</button>
+                                <datalist id="geneSymbolPresets">
+                                    <option value="TP53">TP53 — 腫瘤抑制蛋白 p53</option>
+                                    <option value="BRCA1">BRCA1 — 乳癌易感基因 1</option>
+                                    <option value="BRCA2">BRCA2 — 乳癌易感基因 2</option>
+                                    <option value="EGFR">EGFR — 表皮生長因子受體</option>
+                                    <option value="APOE">APOE — 載脂蛋白 E</option>
+                                    <option value="KRAS">KRAS — 致癌基因 KRAS</option>
+                                    <option value="MYC">MYC — 轉錄因子 c-Myc</option>
+                                    <option value="PTEN">PTEN — 磷酸酶腫瘤抑制因子</option>
+                                    <option value="BRAF">BRAF — B-Raf 激酶</option>
+                                    <option value="ALK">ALK — 間變性淋巴瘤激酶</option>
+                                    <option value="HER2">HER2 — ERBB2 受體</option>
+                                    <option value="VEGFA">VEGFA — 血管內皮生長因子 A</option>
+                                    <option value="TNF">TNF — 腫瘤壞死因子</option>
+                                    <option value="IL6">IL6 — 白細胞介素 6</option>
+                                    <option value="INS">INS — 胰島素</option>
+                                    <option value="HBB">HBB — 血紅蛋白 β 亞基</option>
+                                    <option value="ACE2">ACE2 — 血管緊張素轉換酶 2</option>
+                                    <option value="PDCD1">PDCD1 — PD-1 免疫檢查點</option>
+                                    <option value="CD274">CD274 — PD-L1 免疫檢查點</option>
+                                    <option value="GAPDH">GAPDH — 管家基因</option>
+                                    <option value="ACTB">ACTB — β-肌動蛋白（管家基因）</option>
+                                    <option value="CFTR">CFTR — 囊性纖維化調節因子</option>
+                                    <option value="HTT">HTT — 亨丁頓蛋白</option>
+                                    <option value="SOD1">SOD1 — 超氧化物歧化酶 1</option>
+                                    <option value="APP">APP — 澱粉樣前體蛋白</option>
+                                </datalist>
+                            </div>
+                        </div>
+                    </div>
+
+                    <details class="cp-advanced">
+                        <summary>進階設定</summary>
+                        <div class="cp-advanced-body">
+                            <div class="field">
+                                <label for="sequenceSpecies">Ensembl species</label>
+                                <select id="sequenceSpecies">
+                                    <option value="homo_sapiens">Homo sapiens</option>
+                                    <option value="mus_musculus">Mus musculus</option>
+                                    <option value="danio_rerio">Danio rerio</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="sequenceLimit">每次同步筆數</label>
+                                <select id="sequenceLimit">
+                                    <option value="4">4</option>
+                                    <option value="6">6</option>
+                                    <option value="8">8</option>
+                                </select>
+                            </div>
+                        </div>
+                    </details>
+
+                    <div class="cp-actions">
+                        <button id="sequenceSync" class="btn btn-primary admin-only" type="button">⬆ 同步到 DB</button>
+                        <button id="sequenceReload" class="btn btn-secondary" type="button">↺ 重新載入</button>
+                    </div>
+                    <div id="sequenceStatus" class="status-banner" data-state="info">正在載入序列快取...</div>
+                    <div class="small-note admin-only">API: <span id="sequenceApiLabel" class="mono">detecting...</span>
+                    </div>
+                </aside>
+
+                <div class="panel result-panel">
+                    <div class="result-top">
+                        <div>
+                            <h3>Render Sequence Cache</h3>
+                            <p>切換 protein / gene cache，查看最新入庫紀錄與來源 metadata。</p>
+                        </div>
+                        <div class="section-badge">DB-backed Interactive Feed</div>
+                    </div>
+
+                    <div id="sequenceSummary" class="summary-strip"></div>
+
+                    <div class="sequence-toolbar">
+                        <div class="field">
+                            <label for="sequenceSearch">搜尋名稱 / accession / query</label>
+                            <div class="voice-input-wrap">
+                                <input id="sequenceSearch" type="text" placeholder="例如 TP53, kinase, P24941">
+                                <button class="voice-btn" data-voice-target="sequenceSearch" title="語音輸入">🎙️</button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="sequenceOrganismFilter">物種篩選</label>
+                            <select id="sequenceOrganismFilter">
+                                <option value="">全部物種</option>
+                            </select>
+                        </div>
+                        <button id="sequenceDelete" class="btn btn-danger" type="button" disabled>刪除選取紀錄</button>
+                        <div id="sequenceFilterMeta" class="sequence-filter-meta">顯示 0 筆</div>
+                    </div>
+
+                    <div class="sequence-tabs">
+                        <button class="sequence-tab active" type="button" data-sequence-type="protein">Protein Cache
+                            <span>0</span></button>
+                        <button class="sequence-tab" type="button" data-sequence-type="gene">Gene Cache
+                            <span>0</span></button>
+                    </div>
+
+                    <div id="sequenceFeed" class="sequence-feed"></div>
+
+                    <div class="detail-card sequence-detail-shell">
+                        <div class="detail-head">Sequence Detail</div>
+                        <div id="sequenceDetail" class="sequence-empty">尚未選取資料列。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="sequencing-run-vault" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Live Interface · ENA Metadata Cache</div>
+                    <h2 class="section-title">把 ENA sequencing run metadata 收進 DB，直接查 study / sample / instrument</h2>
+                    <p class="section-sub">
+                        這個模組會從 ENA Portal API 抓取 sequencing run metadata，寫進 Render PostgreSQL，之後頁面就能直接查詢 study
+                        accession、sample accession、library strategy、instrument model 與 FASTQ metadata。
+                    </p>
+                </div>
+                <div class="section-badge badge-live">Live API · ENA Portal API + Render Postgres</div>
+            </div>
+
+            <div class="sequence-grid">
+                <aside class="panel control-panel">
+                    <div class="cp-header">
+                        <div class="control-title">🔬 Sequencing Runs</div>
+                        <div class="control-sub">從 ENA Portal API 抓 run metadata，查 study / sample / instrument 分布。</div>
+                    </div>
+
+                    <div class="cp-step">
+                        <div class="cp-step-num">1</div>
+                        <div class="cp-step-body">
+                            <div class="field">
+                                <label for="sequencingRunQuery">ENA query</label>
+                                <textarea id="sequencingRunQuery"
+                                    rows="3">tax_name("Homo sapiens") AND library_strategy="RNA-Seq"</textarea>
+                                <div class="field-hint">支援 ENA Portal API 語法，如 tax_name / library_strategy /
+                                    instrument_model</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <details class="cp-advanced">
+                        <summary>進階設定</summary>
+                        <div class="cp-advanced-body">
+                            <div class="field">
+                                <label for="sequencingRunLimit">每次同步筆數</label>
+                                <select id="sequencingRunLimit">
+                                    <option value="4">4</option>
+                                    <option value="6">6</option>
+                                    <option value="8">8</option>
+                                    <option value="12">12</option>
+                                </select>
+                            </div>
+                        </div>
+                    </details>
+
+                    <div class="cp-actions">
+                        <button id="sequencingRunSync" class="btn btn-primary admin-only" type="button">⬆ 同步到
+                            DB</button>
+                        <button id="sequencingRunReload" class="btn btn-secondary" type="button">↺ 重新載入</button>
+                    </div>
+                    <div id="sequencingRunStatus" class="status-banner" data-state="info">正在讀取 sequencing run metadata
+                        快取...</div>
+                    <div class="small-note admin-only">API: <span id="sequencingRunApiLabel"
+                            class="mono">detecting...</span></div>
+                </aside>
+
+                <div class="panel result-panel">
+                    <div class="result-top">
+                        <div>
+                            <h3>Sequencing Run Cache</h3>
+                            <p>查看 ENA run metadata、library strategy 與 instrument 分布，直接驗證資料有沒有正確落進 DB。</p>
+                        </div>
+                        <div class="section-badge">Study + Sample + Run Metadata</div>
+                    </div>
+
+                    <div id="sequencingRunSummary" class="summary-strip summary-strip-4"></div>
+
+                    <div class="sequence-toolbar">
+                        <div class="field">
+                            <label for="sequencingRunSearch">搜尋 run / study / sample / organism</label>
+                            <input id="sequencingRunSearch" type="text" placeholder="例如 DRR000897, PRJNA, Homo sapiens">
+                        </div>
+                        <div class="field">
+                            <label for="sequencingRunStrategyFilter">library strategy</label>
+                            <select id="sequencingRunStrategyFilter">
+                                <option value="">全部 strategy</option>
+                            </select>
+                        </div>
+                        <div id="sequencingRunFilterMeta" class="sequence-filter-meta">顯示 0 筆</div>
+                    </div>
+
+                    <div id="sequencingRunFeed" class="knowledge-feed"></div>
+
+                    <div class="detail-card knowledge-detail-shell">
+                        <div class="detail-head">Sequencing Run Detail</div>
+                        <div id="sequencingRunDetail" class="knowledge-empty">尚未選取 sequencing run 紀錄。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="knowledge-vault" class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Live Interface · Evidence Cache</div>
+                    <h2 class="section-title">把 UniProt 註釋與 PubMed 摘要整理成可查詢、可匯出的知識庫</h2>
+                    <p class="section-sub">
+                        這個模組把蛋白質功能註釋和 NCBI 文獻摘要存進 Render PostgreSQL，再整理成 RAG-ready documents。前端可直接搜尋證據，後端可直接輸出 chunk 與
+                        metadata 給檢索流程。
+                    </p>
+                </div>
+                <div class="section-badge badge-live">Live API · UniProt + NCBI E-utilities + RAG-ready</div>
+            </div>
+
+            <div class="sequence-grid">
+                <aside class="panel control-panel">
+                    <div class="cp-header">
+                        <div class="control-title">📚 Knowledge + RAG</div>
+                        <div class="control-sub">UniProt 蛋白質註釋 + PubMed 文獻，整合成可檢索的知識庫與 RAG 文件。</div>
+                    </div>
+
+                    <div class="cp-step">
+                        <div class="cp-step-num">1</div>
+                        <div class="cp-step-body">
+                            <div class="field">
+                                <label for="knowledgeProteinQuery">UniProt annotation query</label>
+                                <input id="knowledgeProteinQuery" type="text" value="kinase"
+                                    placeholder="如 kinase、receptor…">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cp-step">
+                        <div class="cp-step-num">2</div>
+                        <div class="cp-step-body">
+                            <div class="field">
+                                <label for="knowledgeLiteratureQuery">PubMed query</label>
+                                <textarea id="knowledgeLiteratureQuery" rows="2">kinase AND cancer</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <details class="cp-advanced">
+                        <summary>進階設定</summary>
+                        <div class="cp-advanced-body">
+                            <div class="field">
+                                <label for="knowledgeLimit">每次同步筆數</label>
+                                <select id="knowledgeLimit">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="4">4</option>
+                                    <option value="6">6</option>
+                                </select>
+                            </div>
+                        </div>
+                    </details>
+
+                    <div class="cp-actions">
+                        <button id="knowledgeSync" class="btn btn-primary admin-only" type="button">⬆ 同步到 DB</button>
+                        <button id="knowledgeReload" class="btn btn-secondary" type="button">↺ 重新載入</button>
+                        <button id="knowledgeRagRefresh" class="btn btn-secondary admin-only" type="button">⟳ 更新
+                            RAG</button>
+                    </div>
+                    <div id="knowledgeStatus" class="status-banner" data-state="info">正在讀取知識庫與 RAG 文件預覽...</div>
+                    <div class="small-note admin-only">API: <span id="knowledgeApiLabel"
+                            class="mono">detecting...</span></div>
+                </aside>
+
+                <div class="panel result-panel">
+                    <div class="result-top">
+                        <div>
+                            <h3>Knowledge Search Surface</h3>
+                            <p>切換 protein annotation / literature，查看 DB 快取與對應的 RAG chunk 預覽。</p>
+                        </div>
+                        <div class="section-badge">Search + Evidence + Documents</div>
+                    </div>
+
+                    <div id="knowledgeSummary" class="summary-strip"></div>
+
+                    <div class="sequence-toolbar">
+                        <div class="field">
+                            <label for="knowledgeSearch">搜尋 title / source / keyword / query</label>
+                            <div class="voice-input-wrap">
+                                <input id="knowledgeSearch" type="text" placeholder="例如 kinase, TP53, cancer fusion">
+                                <button class="voice-btn" data-voice-target="knowledgeSearch" title="語音輸入">🎙️</button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="knowledgeSourceFilter">來源篩選</label>
+                            <select id="knowledgeSourceFilter">
+                                <option value="">全部來源</option>
+                            </select>
+                        </div>
+                        <div id="knowledgeFilterMeta" class="sequence-filter-meta">顯示 0 筆</div>
+                    </div>
+
+                    <div class="sequence-tabs">
+                        <button class="sequence-tab knowledge-tab active" type="button"
+                            data-record-type="protein_annotation">Protein Annotation <span>0</span></button>
+                        <button class="sequence-tab knowledge-tab" type="button"
+                            data-record-type="literature">Literature <span>0</span></button>
+                    </div>
+
+                    <div id="knowledgeFeed" class="knowledge-feed"></div>
+
+                    <div class="detail-grid">
+                        <div class="detail-card knowledge-detail-shell">
+                            <div class="detail-head">Knowledge Detail</div>
+                            <div id="knowledgeDetail" class="knowledge-empty">尚未選取知識紀錄。</div>
+                        </div>
+                        <div id="rag-layer" class="detail-card knowledge-rag-shell">
+                            <div class="detail-head">RAG-ready Documents</div>
+                            <div class="detail-copy">這裡顯示的是後端整理好的 chunk 與 metadata，可直接餵進向量資料庫或檢索流程。</div>
+                            <div id="knowledgeRagMeta" class="sequence-link-row" style="margin:14px 0">尚未產生文件預覽。</div>
+                            <div id="knowledgeRagPreview" class="rag-preview-list">
+                                <div class="knowledge-empty">目前還沒有 RAG 文件預覽。先同步知識資料或按「更新 RAG 預覽」。</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ════════ PROTEIN INTERACTION NETWORK ════════ -->
+        <section class="section">
+            <div class="section-head">
+                <div>
+                    <div class="section-label">Protein Network</div>
+                    <h2 class="section-title">蛋白質交互作用網路</h2>
+                    <p class="section-sub">STRING DB 真實數據，可拖曳、縮放。</p>
+                </div>
+            </div>
+            <div id="cytoscape-network"></div>
+        </section>
+    </main>
+
+    <div data-site-footer></div>
+
+    <script src="/scripts/app-config.js"></script>
+    <script src="/scripts/hero-video-bg.js"></script>
+
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+
+    <!-- Chatbot widget -->
+    <button id="chatbot-toggle" aria-label="AI 助手">💬</button>
+    <div id="chatbot-panel">
+        <div class="chatbot-header">
+            <h4>AI 助手</h4><button class="chatbot-close" aria-label="關閉">✕</button>
+        </div>
+        <div id="chatbot-messages">
+            <div class="chat-msg chat-bot">你好！有什麼關於基因 AI 平台的問題嗎？</div>
+        </div>
+        <div class="chatbot-input-row">
+            <div class="voice-input-wrap" style="flex:1">
+                <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off" style="width:100%">
+                <button class="voice-btn" data-voice-target="chatbot-input" title="語音輸入">🎙️</button>
+            </div>
+            <button id="chatbot-send">送出</button>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const canvas = document.getElementById('hero-sparkle');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let W, H, particles = [];
+
+            const COLORS = ['#58d7ff', '#b59cff', '#7bf0be', '#ffffff', '#c8aaff'];
+            const COUNT = 70;
+
+            function resize() {
+                const hero = canvas.parentElement;
+                W = canvas.width = hero.offsetWidth;
+                H = canvas.height = hero.offsetHeight;
+            }
+
+            function rand(a, b) { return a + Math.random() * (b - a); }
+
+            function spawn() {
+                return {
+                    x: rand(0, W),
+                    y: rand(0, H),
+                    vx: rand(-0.18, 0.18),
+                    vy: rand(-0.22, -0.06),
+                    size: rand(2.5, 7.5),
+                    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                    phase: rand(0, Math.PI * 2),
+                    speed: rand(0.6, 1.4),
+                    twinkleSpeed: rand(0.8, 2.2),
+                };
+            }
+
+            function drawStar(x, y, r, alpha, color) {
+                if (r < 0.5) return;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = r * 9;
+                ctx.fillStyle = color;
+                ctx.translate(x, y);
+
+                ctx.beginPath();
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
+                    const rad = i % 2 === 0 ? r : r * 0.22;
+                    i === 0
+                        ? ctx.moveTo(Math.cos(angle) * rad, Math.sin(angle) * rad)
+                        : ctx.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.shadowBlur = r * 3;
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = alpha * 0.9;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.18, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            function init() {
+                resize();
+                particles = Array.from({ length: COUNT }, spawn);
+            }
+
+            function tick() {
+                ctx.clearRect(0, 0, W, H);
+                const t = performance.now() / 1000;
+
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    if (p.y < -20) { p.y = H + 10; p.x = rand(0, W); }
+                    if (p.x < -20) p.x = W + 10;
+                    if (p.x > W + 20) p.x = -10;
+
+                    const alpha = (0.55 + 0.45 * Math.abs(Math.sin(t * p.twinkleSpeed + p.phase))) *
+                        Math.min(1, Math.min(p.y / 60, (H - p.y) / 60));
+                    drawStar(p.x, p.y, p.size, alpha, p.color);
+                });
+
+                requestAnimationFrame(tick);
+            }
+
+            init();
+            window.addEventListener('resize', () => { resize(); });
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) requestAnimationFrame(tick);
+            });
+            requestAnimationFrame(tick);
+        })();
+    </script>
+  <script src="/scripts/hero-video-bg.js?v=64b8e7a0"></script><script src="/scripts/gene_ai.js?v=30f4291f"></script> <!-- ── Hide Vercel Toolbar (auto-injected when logged in to Vercel) ── --> <style>
+      vercel-toolbar { display: none !important; visibility: hidden !important; }
+    </style> <!-- ── AI Chat Widget (floating, bottom-left, hides on media pages) ── --> <button class="cw-btn" id="cw-btn" data-tip="AI 助手" data-cw-api="/api/chat" data-cw-hide-paths="/music,/video-gen,/interactive-showcase" aria-label="開啟 AI 助手">💬</button> <aside class="cw-panel" id="cw-panel" role="dialog" aria-label="AI 助手對話" aria-hidden="true"> <header class="cw-header"> <div> <div class="cw-title">AI 助手</div> <div class="cw-sub">問我任何關於這個網站的問題</div> </div> <button class="cw-close" id="cw-close" aria-label="關閉">×</button> </header> <div class="cw-msgs" id="cw-msgs"> <div class="cw-welcome" id="cw-welcome"> <p>嗨！我是你的 AI 助手 👋</p> <p style="margin: 8px 0 12px; font-size: .78rem">問我關於這個網站、音樂、基因、AI、或股票的任何問題：</p> <div id="cw-suggestions"></div> </div> </div> <form class="cw-input-row" id="cw-form" autocomplete="off"> <textarea class="cw-input" id="cw-input" placeholder="輸入訊息… (Enter 送出 / Shift+Enter 換行)" rows="1" maxlength="2000"></textarea> <button class="cw-send" id="cw-send" type="submit">送出</button> </form> </aside> <script>
+(function() {
+  'use strict';
+  if (window.__cw_loaded) return;
+  window.__cw_loaded = true;
+
+  // ── API URL resolution (hardcode Render to avoid SW-cache HTML issues) ─
+  const RENDER_URL = 'https://donttalk-chat-bot-xc4e.onrender.com';
+  // Prefer window.CHAT_BOT_API (set by Base.astro <head>) for local dev overrides;
+  // fall back to hardcoded Render on production where HTML may be SW-cached.
+  const CHAT_BOT_API = window.CHAT_BOT_API;
+  const resolvedApiUrl = (CHAT_BOT_API && CHAT_BOT_API.startsWith('http'))
+    ? CHAT_BOT_API
+    : RENDER_URL + '/chat';
+  console.log('[ChatWidget] resolvedApiUrl =', resolvedApiUrl);
+
+  const btn = document.getElementById('cw-btn');
+  if (!btn) return;
+  const apiUrl = btn.getAttribute('data-cw-api') || '/api/chat';
+  const hideOnPaths = btn.getAttribute('data-cw-hide-paths') || '';
+  const hidePaths = hideOnPaths.split(',').map(function(s){return s.trim();}).filter(Boolean);
+
+  // ── Keep backend warm: ping /healthz when button is first interacted ─
+  // (Render Free tier sleeps after 15 min; this wakes it before the user sends a message)
+  let warmedUp = false;
+  function warmUp() {
+    if (warmedUp) return;
+    warmedUp = true;
+    // Always ping Render directly — never a relative path (avoids SW/HTML-cache mismatch)
+    fetch(RENDER_URL + '/healthz', { mode: 'cors' }).catch(function() {});
+  }
+  btn.addEventListener('mouseenter', warmUp, { once: true });
+  btn.addEventListener('focus', warmUp, { once: true });
+
+  const panel = document.getElementById('cw-panel');
+  const closeBtn = document.getElementById('cw-close');
+  const msgs = document.getElementById('cw-msgs');
+  const form = document.getElementById('cw-form');
+  const input = document.getElementById('cw-input');
+  const sendBtn = document.getElementById('cw-send');
+  const welcome = document.getElementById('cw-welcome');
+  const suggestions = document.getElementById('cw-suggestions');
+
+  if (!btn || !panel) return;
+
+  const STORAGE_KEY = 'cw.history.v1';
+  const MAX_HISTORY = 20;
+  const SUGGESTIONS = [
+    '這個網站是什麼？',
+    '介紹一下你的音樂作品',
+    '你有做哪些 AI 工具？',
+    '幫我查台積電股價',
+  ];
+
+  // ── Hide on certain paths + during media playback ─────────────
+  function shouldHide() {
+    const p = location.pathname;
+    if (hidePaths.some(h => p.startsWith(h))) return true;
+    // Hide if any <video> or <audio> is playing
+    const media = document.querySelectorAll('video, audio');
+    for (const m of media) {
+      if (!m.paused && m.readyState > 1) return true;
+    }
+    return false;
+  }
+  function applyHide() {
+    btn.setAttribute('data-hidden', shouldHide() ? '1' : '0');
+  }
+  applyHide();
+  // Re-check every 1.5s (cheap; covers SPA-ish nav + media start/stop)
+  setInterval(applyHide, 1500);
+  document.addEventListener('play', applyHide, true);
+  document.addEventListener('pause', applyHide, true);
+
+  // ── Open/close ────────────────────────────────────────────────
+  function open() {
+    panel.setAttribute('data-open', '1');
+    panel.setAttribute('aria-hidden', 'false');
+    if (welcome && suggestions && suggestions.children.length === 0) {
+      SUGGESTIONS.forEach(s => {
+        const c = document.createElement('span');
+        c.className = 'cw-chip';
+        c.textContent = s;
+        c.addEventListener('click', () => sendUser(s));
+        suggestions.appendChild(c);
+      });
+    }
+    setTimeout(() => input.focus(), 50);
+  }
+  function close() {
+    panel.removeAttribute('data-open');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+  btn.addEventListener('click', () => {
+    panel.getAttribute('data-open') === '1' ? close() : open();
+  });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && panel.getAttribute('data-open') === '1') close();
+  });
+
+  // ── History persistence ───────────────────────────────────────
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h.slice(-MAX_HISTORY))); }
+    catch {}
+  }
+  let history = loadHistory();
+  // render prior history
+  history.forEach(m => renderBubble(m.role, m.content, false));
+
+  // ── Markdown mini-renderer (very small, no deps) ──────────────
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function md(s) {
+    if (!s) return '';
+    // citations [1] [2] → sup pill
+    s = s.replace(/\[(\d+)\]/g, (_, n) => `<span class="cw-cite">[${n}]</span>`);
+    // code blocks
+    s = s.replace(/```([\s\S]*?)```/g, (_, c) => `<pre>${escapeHtml(c.trim())}</pre>`);
+    // inline code
+    s = s.replace(/`([^`]+)`/g, function(_, c) { return '<code>' + escapeHtml(c) + '</code>'; });
+    // links [text](url)
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // internal links /path
+    s = s.replace(/(^|\s)(\/[a-z0-9_\-/]+)/gi, (m, pre, p) => `${pre}<a href="${p}">${p}</a>`);
+    // bold
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // line breaks
+    s = s.replace(/\n/g, '<br>');
+    return s;
+  }
+
+  // ── Bubbles ───────────────────────────────────────────────────
+  let activeBotBubble = null; // currently streaming
+  function renderBubble(role, content, isHtml = false) {
+    const div = document.createElement('div');
+    div.className = 'cw-msg cw-msg-' + (role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot');
+    if (role === 'typing') {
+      div.innerHTML = '<span class="cw-typing"></span><span class="cw-typing"></span><span class="cw-typing"></span>';
+    } else {
+      div.innerHTML = isHtml ? content : md(content);
+    }
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  // ── Send / stream ─────────────────────────────────────────────
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  form.addEventListener('submit', e => { e.preventDefault(); sendUser(input.value); });
+
+  async function sendUser(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    if (welcome && welcome.parentNode) welcome.parentNode.removeChild(welcome);
+
+    input.value = '';
+    input.style.height = 'auto';
+    renderBubble('user', text);
+    history.push({ role: 'user', content: text });
+
+    // typing indicator
+    const typing = renderBubble('typing');
+    sendBtn.disabled = true;
+
+    let botText = '';
+    let tools = [];
+    let ragSources = [];
+    // track the final bot bubble so we can append footnotes to it after finally
+    let finalBubble = null;
+
+    // Timeout guard: fe8.cn may return non-streaming JSON (no SSE) → reader hangs forever
+    let gotToken = false;
+    var timeoutId;
+
+    try {
+      console.log('[ChatWidget] sending fetch to', resolvedApiUrl);
+      // No abort timeout — Render Free tier cold-starts can take 30-60s.
+      // warmUp() on hover should wake it before the user sends a message.
+      const resp = await fetch(resolvedApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+      });
+      console.log('[ChatWidget] fetch done, status:', resp.status, 'body=', !!resp.body);
+      if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      gotToken = false;
+      timeoutId = setTimeout(function() { if (!gotToken) { console.log('[ChatWidget] TIMEOUT: no token in 30s'); reader.cancel(); } }, 30000);
+      // Process one complete SSE event from the front of buf
+      // Render backend uses CRLF (\r\n) line endings — must match or we'll never split events
+      function processBuf() {
+        let idx = buf.indexOf('\r\n\r\n');
+        if (idx === -1) return;
+        const raw = buf.slice(0, idx);
+        buf = buf.slice(idx + 4);
+        const evLine = raw.split('\r\n').find(function(l) { return l.startsWith('event:'); });
+        const dataLine = raw.split('\r\n').find(function(l) { return l.startsWith('data:'); });
+        if (!dataLine) return;
+        const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
+        let data = {};
+        try { data = JSON.parse(dataLine.replace(/^data:\s*/, '')); } catch {}
+        if (evt === 'token' && data.content) {
+          gotToken = true;
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
+          botText += data.content;
+          activeBotBubble.innerHTML = md(botText);
+          msgs.scrollTop = msgs.scrollHeight;
+        } else if (evt === 'tool_call') {
+          tools.push({ name: data.name, args: data.arguments });
+        } else if (evt === 'tool_result') {
+          const last = tools[tools.length - 1];
+          if (last) last.result = data.result;
+        } else if (evt === 'rag') {
+          (data.chunks || []).forEach(function(c) { ragSources.push(c); });
+        } else if (evt === 'done') {
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', md(botText));
+          finalBubble = activeBotBubble;
+        } else if (evt === 'error') {
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          renderBubble('error', '⚠️ ' + (data.message || 'unknown error'));
+          finalBubble = null;
+        }
+      }
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          // Stream exhausted — process any trailing data still in buf (no \n\n needed)
+          buf = buf.trim();
+          if (buf) processBuf();
+          break;
+        }
+        buf += dec.decode(value, { stream: true });
+        // Drain all complete events in buf (CRLF-separated)
+        while (buf.indexOf('\r\n\r\n') !== -1) processBuf();
+      }
+    } catch (err) {
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      const isAbort = err && (err.name === 'AbortError' || (err.message && err.message.includes('abort')));
+      renderBubble('error', isAbort
+        ? '⚠️ 連線逾時（後端服務喚醒中，請稍候後再試）'
+        : '⚠️ 連線失敗：' + (err && err.message ? err.message : String(err)));
+      finalBubble = null;
+    } finally {
+      clearTimeout(timeoutId);
+      sendBtn.disabled = false;
+      activeBotBubble = null;
+    }
+
+    // append footnotes to the final bot bubble (runs after finally so we have a stable ref)
+    if (finalBubble) {
+      if (tools.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-tools';
+        div.innerHTML = tools.map(function(t) { return '<span class="cw-tool-pill">🔧 ' + escapeHtml(t.name) + '</span>'; }).join('');
+        finalBubble.appendChild(div);
+      }
+      if (ragSources.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-rag-sources';
+        const uniq = [];
+        const seen = new Set();
+        ragSources.forEach(function(s) {
+          const key = s.url || s.title;
+          if (!seen.has(key)) { seen.add(key); uniq.push(s); }
+        });
+        div.innerHTML = '📚 引用：' + uniq.slice(0, 5).map(function(s) {
+          const url = s.url || '#';
+          const title = s.title || url;
+          return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(title) + '</a>';
+        }).join(' · ');
+        finalBubble.appendChild(div);
+      }
+    }
+    if (botText) history.push({ role: 'assistant', content: botText });
+    saveHistory(history);
+  }
+})();
+</script> <script>
+      // DEPLOY_MARKER: 2026-07-21T16:50:00-chat-render-v3
+      // Resolve Chat Widget API URL.
+      // In dev (localhost) → http://localhost:8765/chat (FastAPI backend)
+      // In prod → Render directly (Vercel proxy buffers SSE → broken streaming)
+      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8765/chat'
+        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
+    </script> </body> </html>

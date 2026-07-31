@@ -1,0 +1,1185 @@
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><!--
+      Native IntersectionObserver fallback for `.reveal` fade-in.
+      Runs in addition to nav.js's local observer, so the page works
+      even if nav.js fails to load (network/CDN issue) — content stays
+      visible instead of getting stuck at opacity:0.
+    --><script>
+      (function() {
+        function bootReveal() {
+          var els = document.querySelectorAll('.reveal:not(.visible)');
+          if (!els.length) return;
+          if (typeof IntersectionObserver === 'undefined') {
+            els.forEach(function(el) { el.classList.add('visible'); });
+            return;
+          }
+          var io = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+              if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                io.unobserve(e.target);
+              }
+            });
+          }, { rootMargin: '0px 0px -8% 0px', threshold: 0.04 });
+          els.forEach(function(el) { io.observe(el); });
+          // Hard fallback: anything still hidden after 1.5s gets shown.
+          setTimeout(function() {
+            document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
+              el.classList.add('visible');
+            });
+          }, 1500);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bootReveal);
+        } else {
+          bootReveal();
+        }
+      })();
+    </script><title>幹細胞研究 · 國防醫學院 · 神經血管修復</title><meta name="description" content="國防醫學院幹細胞研究——基因改造間質幹細胞、神經幹細胞移植、腦創傷後神經血管再生修復，2018 精準醫療創新獎。"><meta property="og:title" content="幹細胞研究 · 國防醫學院 · 神經血管修復"><meta property="og:description" content="國防醫學院幹細胞研究——基因改造間質幹細胞、神經幹細胞移植、腦創傷後神經血管再生修復，2018 精準醫療創新獎。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://dontalk.vercel.app/og?t=%E5%B9%B9%E7%B4%B0%E8%83%9E%E7%A0%94%E7%A9%B6%20%C2%B7%20%E5%9C%8B%E9%98%B2%E9%86%AB%E5%AD%B8%E9%99%A2%20%C2%B7%20%E7%A5%9E%E7%B6%93%E8%A1%80%E7%AE%A1%E4%BF%AE%E5%BE%A9&#38;s=%E5%9C%8B%E9%98%B2%E9%86%AB%E5%AD%B8%E9%99%A2%E5%B9%B9%E7%B4%B0%E8%83%9E%E7%A0%94%E7%A9%B6%E2%80%94%E2%80%94%E5%9F%BA%E5%9B%A0%E6%94%B9%E9%80%A0%E9%96%93%E8%B3%AA%E5%B9%B9%E7%B4%B0%E8%83%9E%E3%80%81%E7%A5%9E%E7%B6%93%E5%B9%B9%E7%B4%B0%E8%83%9E%E7%A7%BB%E6%A4%8D%E3%80%81%E8%85%A6%E5%89%B5%E5%82%B7%E5%BE%8C%E7%A5%9E%E7%B6%93%E8%A1%80%E7%AE%A1%E5%86%8D%E7%94%9F%E4%BF%AE%E5%BE%A9%EF%BC%8C2018%20%E7%B2%BE%E6%BA%96%E9%86%AB%E7%99%82%E5%89%B5%E6%96%B0%E7%8D%8E%E3%80%82&#38;tag="><meta name="twitter:image" content="https://dontalk.vercel.app/og?t=%E5%B9%B9%E7%B4%B0%E8%83%9E%E7%A0%94%E7%A9%B6%20%C2%B7%20%E5%9C%8B%E9%98%B2%E9%86%AB%E5%AD%B8%E9%99%A2%20%C2%B7%20%E7%A5%9E%E7%B6%93%E8%A1%80%E7%AE%A1%E4%BF%AE%E5%BE%A9&#38;s=%E5%9C%8B%E9%98%B2%E9%86%AB%E5%AD%B8%E9%99%A2%E5%B9%B9%E7%B4%B0%E8%83%9E%E7%A0%94%E7%A9%B6%E2%80%94%E2%80%94%E5%9F%BA%E5%9B%A0%E6%94%B9%E9%80%A0%E9%96%93%E8%B3%AA%E5%B9%B9%E7%B4%B0%E8%83%9E%E3%80%81%E7%A5%9E%E7%B6%93%E5%B9%B9%E7%B4%B0%E8%83%9E%E7%A7%BB%E6%A4%8D%E3%80%81%E8%85%A6%E5%89%B5%E5%82%B7%E5%BE%8C%E7%A5%9E%E7%B6%93%E8%A1%80%E7%AE%A1%E5%86%8D%E7%94%9F%E4%BF%AE%E5%BE%A9%EF%BC%8C2018%20%E7%B2%BE%E6%BA%96%E9%86%AB%E7%99%82%E5%89%B5%E6%96%B0%E7%8D%8E%E3%80%82&#38;tag="><meta property="og:url" content="https://donttalk.vercel.app/stem-cell/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="幹細胞研究 · 國防醫學院 · 神經血管修復"><meta name="twitter:description" content="國防醫學院幹細胞研究——基因改造間質幹細胞、神經幹細胞移植、腦創傷後神經血管再生修復，2018 精準醫療創新獎。"><link rel="canonical" href="https://donttalk.vercel.app/stem-cell/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/stem-cell/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/stem-cell/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css?v=03bbf2c2"><link rel="stylesheet" href="/styles/stem_cell.css?v=dfefa865"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><script src="/scripts/immersive-experience.js" defer></script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://dontalk.vercel.app#person","name":"JT Lai","url":"https://dontalk.vercel.app","image":"https://dontalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://dontalk.vercel.app#website","url":"https://dontalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://dontalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://dontalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/stem-cell/#webpage","url":"https://donttalk.vercel.app/stem-cell/","name":"幹細胞研究 · 國防醫學院 · 神經血管修復","description":"國防醫學院幹細胞研究——基因改造間質幹細胞、神經幹細胞移植、腦創傷後神經血管再生修復，2018 精準醫療創新獎。","inLanguage":"zh-TW","isPartOf":{"@id":"https://dontalk.vercel.app#website"},"about":{"@id":"https://dontalk.vercel.app#person"},"additionalType":"WebPage"}]}</script><link rel="stylesheet" href="/_astro/Base.BhTaoyI2.css"></head> <body data-page="stem_cell"> <div class="immersive-bg" id="immersive-bg" data-astro-cid-3guv64em> <video id="bg-video" class="bg-video" autoplay muted loop playsinline data-astro-cid-3guv64em> <source id="video-source" type="video/webm" data-astro-cid-3guv64em> </video> <div class="bg-overlay" data-astro-cid-3guv64em></div> </div>  <script type="module">class n{constructor(){this.container=document.getElementById("immersive-bg"),this.video=document.getElementById("bg-video"),this.particles=[],this.init()}init(){this.createParticles(),this.setupEventListeners(),this.setupVideo()}setupVideo(){if(!this.video)return;const a=["179f1b00-2727-47ec-81d3-591d8405c762_watermarked.webm","314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.webm","5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.webm","6b95a3b8-no-watermark_watermarked.webm","a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.webm","bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.webm","ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.webm","cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.webm"],t=a[Math.floor(Math.random()*a.length)],e=document.getElementById("video-source");e&&(e.src="/videos/"+t),this.video.play().catch(()=>{this.video.style.display="none"})}createParticles(){if(!this.container)return;const a=Math.min(80,Math.floor(window.innerWidth/15));for(let t=0;t<a;t++){const e=document.createElement("div");e.className="particle",e.style.left=Math.random()*100+"%",e.style.top=Math.random()*100+"%";const i=Math.random()*3+1;e.style.width=i+"px",e.style.height=i+"px",e.style.animationDuration=Math.random()*10+15+"s",e.style.animationDelay=Math.random()*5+"s",this.container.appendChild(e),this.particles.push(e)}}setupEventListeners(){window.addEventListener("resize",()=>this.handleResize())}handleResize(){Math.min(80,Math.floor(window.innerWidth/15))!==this.particles.length&&(this.particles.forEach(t=>t.remove()),this.particles=[],this.createParticles())}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",()=>{new n}):new n;</script>   
+    <div data-site-nav></div>
+
+    <header class="sc-hero">
+    <!-- Parallax layers -->
+    <canvas class="sc-parallax-canvas" id="sc-parallax-canvas" aria-hidden="true"></canvas>
+        <div class="sc-hero-inner">
+            <div class="sc-eyebrow"><span class="live-dot"></span>國防醫學院 · 生物及解剖學科 · Stem Cell Lab</div>
+            <h1>幹細胞研究<br><span>神經血管再生 × 腦創傷修復</span></h1>
+            <p class="sc-hero-sub">
+                以基因改造間質幹細胞與細胞層片技術介入腦創傷後神經血管修復，結合活體影像觀察腦組織血流與神經行為恢復的相關性，並於 2018 年獲精準醫療創新獎與未來科技突破獎。
+            </p>
+            <div class="sc-badges">
+                <span class="sc-badge">基因改造 MSC</span>
+                <span class="sc-badge">細胞層片技術</span>
+                <span class="sc-badge">神經血管再生</span>
+                <span class="sc-badge">腦創傷 TBI</span>
+                <span class="sc-badge">活體影像分析</span>
+                <span class="sc-badge sc-badge-award">🏆 2018 精準醫療創新獎</span>
+            </div>
+        </div>
+        <div class="sc-meta-card">
+            <div class="sc-meta-row"><span class="sc-meta-k">機構</span><span class="sc-meta-v">國防醫學院 · 臺北榮民總醫院</span></div>
+            <div class="sc-meta-row"><span class="sc-meta-k">研究方向</span><span class="sc-meta-v">幹細胞 · 神經科學 · 再生醫學 · 血管生成</span></div>
+            <div class="sc-meta-row"><span class="sc-meta-k">計畫數</span><span class="sc-meta-v">5 項幹細胞 + 3 項榮總研究</span></div>
+            <div class="sc-meta-row"><span class="sc-meta-k">核心技術</span><span class="sc-meta-v">MSC · NSC · Cell Sheet · HUVEC · Integrin</span></div>
+            <div class="sc-meta-row"><span class="sc-meta-k">獎項</span><span class="sc-meta-v">2018 精準醫療創新獎 · 未來科技突破獎</span></div>
+        </div>
+    </header>
+
+    <div class="sc-container">
+
+        <!-- Awards banner -->
+        <section class="sc-section reveal">
+            <div class="sc-award-strip">
+                <div class="sc-award-item">
+                    <div class="sc-award-year">2018</div>
+                    <div class="sc-award-name">第 15 屆創新獎</div>
+                    <div class="sc-award-cat">精準醫療類</div>
+                    <div class="sc-award-org">生策會 · 精準醫療卓越創新獎</div>
+                </div>
+                <div class="sc-award-divider">✦</div>
+                <div class="sc-award-item">
+                    <div class="sc-award-year">2018</div>
+                    <div class="sc-award-name">未來科技突破獎</div>
+                    <div class="sc-award-cat">醫療與未來科技展</div>
+                    <div class="sc-award-org">Taiwan Innotech Expo · 未來科技館</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Research overview -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">研究背景</div>
+            <h2 class="sc-section-title">腦創傷後的神經血管修復挑戰</h2>
+            <p class="sc-section-sub">
+                創傷性腦損傷（TBI）發生後，腦組織的神經血管單元（NVU）遭到破壞，血腦屏障失調、神經元大量死亡。
+                傳統藥物治療對急性期後的功能修復效果有限。幹細胞治療提供了一個促進神經血管再生的新方向——
+                透過細胞層片技術將幹細胞貼附到損傷部位，並以基因改造強化其分化與修復能力。
+            </p>
+
+            <div class="sc-overview-grid">
+                <div class="sc-overview-card">
+                    <div class="sc-ov-icon">🧠</div>
+                    <div class="sc-ov-title">創傷性腦損傷 TBI</div>
+                    <p>腦部受到外力衝擊後，腦組織出血、水腫與神經元死亡。神經血管單元受損導致腦功能障礙，傳統治療難以完全修復。</p>
+                </div>
+                <div class="sc-overview-card">
+                    <div class="sc-ov-icon">🔬</div>
+                    <div class="sc-ov-title">間質幹細胞 MSC</div>
+                    <p>具多能分化潛能的成體幹細胞，可分泌神經營養因子、調控免疫反應。經基因改造後可強化特定分化路徑與組織整合能力。</p>
+                </div>
+                <div class="sc-overview-card">
+                    <div class="sc-ov-icon">🧬</div>
+                    <div class="sc-ov-title">神經幹細胞 NSC</div>
+                    <p>能分化為神經元、星狀細胞與少突膠質細胞。移植後配合整合素訊號可促進軸突再生與突觸重塑，加速神經功能恢復。</p>
+                </div>
+                <div class="sc-overview-card">
+                    <div class="sc-ov-icon">🩹</div>
+                    <div class="sc-ov-title">細胞層片技術</div>
+                    <p>以溫感高分子培養皿製備細胞層片，保留細胞外基質與細胞間連結，直接貼附到損傷腦組織表面，提高細胞存活率與功能整合。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5 Research projects -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">執行計畫</div>
+            <h2 class="sc-section-title">五項核心研究計畫</h2>
+            <p class="sc-section-sub">每項計畫聚焦神經血管修復的不同機制與技術面向，從基因改造、整合素訊號到活體影像觀察，形成完整的研究鏈。</p>
+
+            <div class="sc-projects">
+                <div class="sc-project">
+                    <div class="sc-project-num">01</div>
+                    <div class="sc-project-body">
+                        <div class="sc-project-title">基因改造間質幹細胞以最佳化重建創傷後腦組織之細胞層片</div>
+                        <p class="sc-project-desc">
+                            透過病毒載體或非病毒系統對 MSC 進行基因工程改造，過量表現神經營養因子（如 BDNF、VEGF）或抗凋亡基因，
+                            再利用溫感材料技術製備成細胞層片。層片保留完整的細胞外基質，直接覆蓋於腦損傷部位，提升細胞存活率與整合效率。
+                        </p>
+                        <div class="sc-project-tags">
+                            <span>Gene Engineering</span><span>Cell Sheet</span><span>BDNF</span><span>VEGF</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sc-project">
+                    <div class="sc-project-num">02</div>
+                    <div class="sc-project-body">
+                        <div class="sc-project-title">整合素與神經幹細胞移植於腦創傷後神經血管再生修復之應用</div>
+                        <p class="sc-project-desc">
+                            整合素（Integrin）是細胞與細胞外基質之間的關鍵訊號橋樑。研究探討特定整合素亞型（如 αvβ3、α5β1）如何調控
+                            神經幹細胞移植後的黏附、遷移與分化，以及對新生血管生成與神經軸突延伸的影響。
+                        </p>
+                        <div class="sc-project-tags">
+                            <span>Integrin αvβ3</span><span>NSC Transplantation</span><span>Angiogenesis</span><span>Axon Regrowth</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sc-project">
+                    <div class="sc-project-num">03</div>
+                    <div class="sc-project-body">
+                        <div class="sc-project-title">凝血功能對於神經血管修復之影響</div>
+                        <p class="sc-project-desc">
+                            腦創傷伴隨凝血級聯反應異常，局部血栓形成阻礙新生血管建立。本計畫評估凝血因子、血小板活化與纖維蛋白沉積
+                            對幹細胞介入後神經血管再生效率的影響，並研究抗凝血介入是否能提升細胞治療的療效窗口。
+                        </p>
+                        <div class="sc-project-tags">
+                            <span>Coagulation Cascade</span><span>Platelet Activation</span><span>Fibrin</span><span>NVU Repair</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sc-project">
+                    <div class="sc-project-num">04</div>
+                    <div class="sc-project-body">
+                        <div class="sc-project-title">神經幹細胞分化對腦創傷後神經血管再生修復的影響</div>
+                        <p class="sc-project-desc">
+                            研究 NSC 在損傷微環境中分化為神經元、星狀細胞或少突膠質細胞的比例如何影響修復結果。
+                            探討 Notch、Wnt 等分化訊號路徑的調控策略，以及預先誘導分化的 NSC 與未分化 NSC 在移植效能上的差異。
+                        </p>
+                        <div class="sc-project-tags">
+                            <span>NSC Differentiation</span><span>Notch Signaling</span><span>Wnt Pathway</span><span>Gliogenesis</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sc-project">
+                    <div class="sc-project-num">05</div>
+                    <div class="sc-project-body">
+                        <div class="sc-project-title">活體觀察分析腦創傷接受細胞層片治療後新生之腦組織血流與神經行為恢復之關聯性</div>
+                        <p class="sc-project-desc">
+                            以雙光子顯微鏡與雷射散斑對比成像（LSCI）技術，對活體動物進行腦部血流動力學的非侵入性縱向追蹤，
+                            結合神經行為學評估（Morris water maze、Rotarod test），建立血流恢復時間曲線與功能恢復評分的相關模型。
+                        </p>
+                        <div class="sc-project-tags">
+                            <span>Two-Photon Microscopy</span><span>LSCI</span><span>Cerebral Blood Flow</span><span>Behavioral Assessment</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Research pipeline -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">研究流程</div>
+            <h2 class="sc-section-title">從細胞製備到活體驗證</h2>
+            <div class="sc-pipeline">
+                <div class="sc-pipe-step">
+                    <div class="sc-pipe-icon">🧫</div>
+                    <div class="sc-pipe-title">細胞製備</div>
+                    <div class="sc-pipe-sub">分離、培養 MSC / NSC；基因改造；細胞層片製備</div>
+                </div>
+                <div class="sc-pipe-arrow">→</div>
+                <div class="sc-pipe-step">
+                    <div class="sc-pipe-icon">⚗️</div>
+                    <div class="sc-pipe-title">體外驗證</div>
+                    <div class="sc-pipe-sub">分化能力 · 分泌因子定量 · 整合素表現 · 凝血交互作用</div>
+                </div>
+                <div class="sc-pipe-arrow">→</div>
+                <div class="sc-pipe-step">
+                    <div class="sc-pipe-icon">🐭</div>
+                    <div class="sc-pipe-title">動物模型</div>
+                    <div class="sc-pipe-sub">TBI 大鼠模型建立；細胞層片移植手術</div>
+                </div>
+                <div class="sc-pipe-arrow">→</div>
+                <div class="sc-pipe-step">
+                    <div class="sc-pipe-icon">🔭</div>
+                    <div class="sc-pipe-title">活體影像</div>
+                    <div class="sc-pipe-sub">雙光子 / LSCI 腦血流追蹤；縱向觀測</div>
+                </div>
+                <div class="sc-pipe-arrow">→</div>
+                <div class="sc-pipe-step">
+                    <div class="sc-pipe-icon">📊</div>
+                    <div class="sc-pipe-title">行為評估</div>
+                    <div class="sc-pipe-sub">Water Maze · Rotarod · 神經功能評分</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Key concepts -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">核心技術概念</div>
+            <h2 class="sc-section-title">研究關鍵術語解析</h2>
+            <div class="sc-concepts">
+                <div class="sc-concept-card">
+                    <div class="sc-concept-term">神經血管單元 NVU</div>
+                    <p>神經元、星狀細胞、微血管內皮細胞與周細胞的功能耦合體。TBI 後 NVU 完整性破壞是功能障礙的核心機制。</p>
+                </div>
+                <div class="sc-concept-card">
+                    <div class="sc-concept-term">細胞層片技術 Cell Sheet</div>
+                    <p>以溫感聚合物（PNIPAAm）培養細胞至匯流後降溫脫附，保留細胞外基質與缺口連接，較注射法更高存活率。</p>
+                </div>
+                <div class="sc-concept-card">
+                    <div class="sc-concept-term">整合素訊號 Integrin Signaling</div>
+                    <p>細胞與 ECM 之間的雙向跨膜訊號。αvβ3 與 α5β1 整合素調控幹細胞的存活、遷移與血管生成誘導能力。</p>
+                </div>
+                <div class="sc-concept-card">
+                    <div class="sc-concept-term">雷射散斑對比成像 LSCI</div>
+                    <p>利用雷射散斑干涉原理量化腦部微循環血流速度，可對活體進行連續非侵入性的 2D 血流動力學監測。</p>
+                </div>
+                <div class="sc-concept-card">
+                    <div class="sc-concept-term">間質幹細胞旁分泌 MSC Paracrine</div>
+                    <p>MSC 治療效果主要來自旁分泌機制：分泌 BDNF、GDNF、VEGF 等因子，而非直接分化替換神經細胞。</p>
+                </div>
+                <div class="sc-concept-card">
+                    <div class="sc-concept-term">精準醫療 Precision Medicine</div>
+                    <p>依個體基因型、損傷程度與生物標記客製化幹細胞治療策略，提升治療響應率、降低排斥與副作用風險。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- IF Image Gallery -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">實驗圖像</div>
+            <h2 class="sc-section-title">免疫螢光切片圖庫</h2>
+            <p class="sc-section-sub">點擊圖片可放大查看。圓點代表螢光染色通道：<span style="color:#4a9eff">■ DAPI</span>　<span style="color:#7bf0be">■ Nestin / GFAP</span>　<span style="color:#ff8392">■ CD144 / CD31</span></p>
+
+            <div class="sc-gallery-tabs">
+                <button class="sc-gtab active" data-gallery="integrin">整合素 × NSC 血管新生</button>
+                <button class="sc-gtab" data-gallery="atms">ATMS Boxer 機械刺激</button>
+                <button class="sc-gtab" data-gallery="transplant">細胞層片移植 × MRI</button>
+            </div>
+
+            <!-- Integrin/NSC IF gallery -->
+            <div class="sc-gallery-panel active" id="gallery-integrin">
+                <div class="sc-if-grid" id="ifGridIntegrin"></div>
+            </div>
+            <!-- ATMS gallery -->
+            <div class="sc-gallery-panel" id="gallery-atms">
+                <div class="sc-if-grid" id="ifGridAtms"></div>
+            </div>
+            <!-- Transplant gallery -->
+            <div class="sc-gallery-panel" id="gallery-transplant">
+                <div class="sc-if-grid" id="ifGridTransplant"></div>
+            </div>
+
+            <!-- Lightbox -->
+            <div class="sc-lightbox" id="scLightbox">
+                <button class="sc-lb-close" id="scLbClose">×</button>
+                <div class="sc-lb-img-wrap"><img id="scLbImg" src="" alt=""></div>
+                <div class="sc-lb-caption" id="scLbCaption"></div>
+                <div class="sc-lb-nav">
+                    <button class="sc-lb-btn" id="scLbPrev">‹ 上一張</button>
+                    <button class="sc-lb-btn" id="scLbNext">下一張 ›</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive charts -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">研究數據視覺化</div>
+            <h2 class="sc-section-title">實驗結果互動圖表</h2>
+            <p class="sc-section-sub">滑鼠 hover 查看各點數值。腦損傷體積與 Ang-1 ELISA 為真實量測數據，其餘為代表性結果。</p>
+
+            <div class="sc-chart-tabs">
+                <button class="sc-tab active" data-tab="lesion">腦損傷體積恢復</button>
+                <button class="sc-tab" data-tab="angio">Ang-1 血管新生</button>
+                <button class="sc-tab" data-tab="diff">NSC 分化比例</button>
+                <button class="sc-tab" data-tab="survival">細胞存活率</button>
+                <button class="sc-tab" data-tab="behav">神經行為評分</button>
+            </div>
+
+            <!-- Lesion Volume (real data) -->
+            <div class="sc-chart-panel active" id="tab-lesion">
+                <div class="sc-chart-header">
+                    <div>
+                        <div class="sc-chart-title">腦損傷體積恢復曲線</div>
+                        <div class="sc-chart-sub">MRI 量測 · Co 組 vs TBI 組 · Day 7 → Day 28</div>
+                    </div>
+                    <div class="sc-chart-legend">
+                        <span class="sc-leg-dot" style="background:var(--sc-green)"></span>Co 組（細胞層片治療）
+                        <span class="sc-leg-dot" style="background:var(--sc-rose)"></span>TBI 組（未治療）
+                    </div>
+                </div>
+                <div class="sc-metric-toggle">
+                    <button class="sc-mtbtn active" data-metric="volume">Volume (mm³)</button>
+                    <button class="sc-mtbtn" data-metric="area">Area (mm²)</button>
+                    <button class="sc-mtbtn" data-metric="depth">Depth (mm)</button>
+                    <button class="sc-mtbtn" data-metric="width">Width (mm)</button>
+                </div>
+                <div class="sc-chart-wrap"><canvas id="chartLesion"></canvas></div>
+            </div>
+
+            <!-- Ang-1 ELISA (real data) -->
+            <div class="sc-chart-panel" id="tab-angio">
+                <div class="sc-chart-header">
+                    <div>
+                        <div class="sc-chart-title">Angiopoietin-1 分泌量（ELISA）</div>
+                        <div class="sc-chart-sub">不同 Ang-1 濃度刺激下，50k / 100k / 250k 細胞分泌量 · pg/mL</div>
+                    </div>
+                    <div class="sc-chart-legend">
+                        <span class="sc-leg-dot" style="background:var(--sc-green)"></span>50k cells
+                        <span class="sc-leg-dot" style="background:var(--sc-blue)"></span>100k cells
+                        <span class="sc-leg-dot" style="background:var(--sc-amber)"></span>250k cells
+                    </div>
+                </div>
+                <div class="sc-metric-toggle" id="angToggle">
+                    <button class="sc-mtbtn active" data-ang="0">0 ng/mL Ang-1</button>
+                    <button class="sc-mtbtn" data-ang="1">1 ng/mL Ang-1</button>
+                    <button class="sc-mtbtn" data-ang="10">10 ng/mL Ang-1</button>
+                </div>
+                <div class="sc-chart-wrap"><canvas id="chartAngio"></canvas></div>
+            </div>
+
+            <!-- NSC Differentiation -->
+            <div class="sc-chart-panel" id="tab-diff">
+                <div class="sc-chart-header">
+                    <div>
+                        <div class="sc-chart-title">NSC 分化比例</div>
+                        <div class="sc-chart-sub">移植後第 14 天各組細胞分化命運（免疫螢光染色定量）</div>
+                    </div>
+                    <div class="sc-chart-legend">
+                        <span class="sc-leg-dot" style="background:var(--sc-blue)"></span>神經元 (NeuN+)
+                        <span class="sc-leg-dot" style="background:var(--sc-purple)"></span>星狀細胞 (GFAP+)
+                        <span class="sc-leg-dot" style="background:var(--sc-amber)"></span>少突膠質 (Olig2+)
+                        <span class="sc-leg-dot" style="background:#6b7399"></span>未分化
+                    </div>
+                </div>
+                <div class="sc-chart-wrap"><canvas id="chartDiff"></canvas></div>
+            </div>
+
+            <!-- Cell Survival -->
+            <div class="sc-chart-panel" id="tab-survival">
+                <div class="sc-chart-header">
+                    <div>
+                        <div class="sc-chart-title">細胞存活率比較</div>
+                        <div class="sc-chart-sub">細胞層片 vs 注射法 · 移植後各時間點存活細胞百分比</div>
+                    </div>
+                    <div class="sc-chart-legend">
+                        <span class="sc-leg-dot" style="background:var(--sc-green)"></span>Cell Sheet 法
+                        <span class="sc-leg-dot" style="background:var(--sc-rose)"></span>注射法
+                    </div>
+                </div>
+                <div class="sc-chart-wrap"><canvas id="chartSurvival"></canvas></div>
+            </div>
+
+            <!-- Behavioral Assessment -->
+            <div class="sc-chart-panel" id="tab-behav">
+                <div class="sc-chart-header">
+                    <div>
+                        <div class="sc-chart-title">神經行為評分恢復曲線</div>
+                        <div class="sc-chart-sub">Morris Water Maze 逃脫潛伏期（秒）· 越低越好</div>
+                    </div>
+                    <div class="sc-chart-legend">
+                        <span class="sc-leg-dot" style="background:var(--sc-green)"></span>Cell Sheet 治療組
+                        <span class="sc-leg-dot" style="background:var(--sc-blue)"></span>MSC 注射組
+                        <span class="sc-leg-dot" style="background:var(--sc-rose)"></span>Sham 組
+                        <span class="sc-leg-dot" style="background:#6b7399"></span>TBI 未治療
+                    </div>
+                </div>
+                <div class="sc-chart-wrap"><canvas id="chartBehav"></canvas></div>
+            </div>
+        </section>
+
+        <!-- Veterans General Hospital experience -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">相關工作經歷</div>
+            <h2 class="sc-section-title">臺北榮民總醫院 · 器官移植團隊</h2>
+            <p class="sc-section-sub">
+                在國防醫學院幹細胞研究之前，於臺北榮民總醫院器官移植團隊擔任研究助理，負責心血管組織採集、冷凍保存系統管理與組織庫運作，
+                並直接參與移植手術研究記錄，為後續幹細胞與血管再生研究奠定臨床基礎。
+            </p>
+
+            <div class="sc-overview-grid">
+                <div class="sc-overview-card">
+                    <div class="sc-ov-icon">🏥</div>
+                    <div class="sc-ov-title">組織庫管理</div>
+                    <p>於手術室採集器官捐贈者的心血管組織，維護冷凍保存系統，供應移植手術所需組織並管理庫存與設備。</p>
+                </div>
+                <div class="sc-overview-card">
+                    <div class="sc-ov-icon">📸</div>
+                    <div class="sc-ov-title">手術研究記錄</div>
+                    <p>全程拍攝移植手術流程，建立影像資料庫，協助推動多項移植外科研究計畫，支援廠商研究合作。</p>
+                </div>
+                <div class="sc-overview-card">
+                    <div class="sc-ov-icon">🏆</div>
+                    <div class="sc-ov-title">台灣最年輕胎兒肝臟移植</div>
+                    <p>協助臺北榮總與國立成功大學合作完成「台灣最年輕胎兒肝臟移植手術」，獲 Apple Daily 2019 年 5 月報導。</p>
+                </div>
+            </div>
+
+            <div class="sc-section-label" style="margin-top:2rem">榮總期間研究計畫</div>
+            <div class="sc-projects">
+                <div class="sc-project">
+                    <div class="sc-project-num">A</div>
+                    <div class="sc-project-body">
+                        <div class="sc-project-title">Endothelin 拮抗劑對非酒精性脂肪肝之影響</div>
+                        <p class="sc-project-desc">
+                            探討 Endothelin 受體拮抗劑對非酒精性脂肪肝病（NAFLD）肝細胞脂質蓄積與發炎反應的調控機制，
+                            評估其作為 NAFLD 治療標靶的潛力。
+                        </p>
+                        <div class="sc-project-tags">
+                            <span>Endothelin Antagonist</span><span>NAFLD</span><span>Hepatocyte</span><span>Lipid Metabolism</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sc-project">
+                    <div class="sc-project-num">B</div>
+                    <div class="sc-project-body">
+                        <div class="sc-project-title">人類臍靜脈內皮細胞血管生成最佳化</div>
+                        <p class="sc-project-desc">
+                            以人類臍靜脈內皮細胞（HUVEC）為模型，系統性優化體外血管生成條件，
+                            包含生長因子濃度、基質膠配方與剪切應力參數，直接對應後續幹細胞研究中的血管新生評估方法（Ang-1 ELISA、CD31 染色）。
+                        </p>
+                        <div class="sc-project-tags">
+                            <span>HUVEC</span><span>Angiogenesis</span><span>Matrigel</span><span>VEGF</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sc-project">
+                    <div class="sc-project-num">C</div>
+                    <div class="sc-project-body">
+                        <div class="sc-project-title">鼻咽癌藥物預測與基因發現電腦建模</div>
+                        <p class="sc-project-desc">
+                            運用機器學習與生物資訊方法，建立鼻咽癌藥物響應預測模型，並挖掘潛在治療靶點基因，
+                            為後續基因 AI 平台整合臨床腫瘤資料奠定方法論基礎。
+                        </p>
+                        <div class="sc-project-tags">
+                            <span>Nasopharyngeal Cancer</span><span>Drug Prediction</span><span>Bioinformatics</span><span>Gene Discovery</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Treatment comparison table -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">方法比較</div>
+            <h2 class="sc-section-title">細胞治療策略比較</h2>
+            <p class="sc-section-sub">Cell Sheet 法在細胞存活率、ECM 保留與侵入性三個關鍵維度上優於傳統 MSC 注射法。</p>
+            <div class="sc-table-wrap">
+                <table class="sc-compare-table">
+                    <thead>
+                        <tr>
+                            <th>指標</th>
+                            <th>Cell Sheet 法</th>
+                            <th>MSC 注射法</th>
+                            <th>TBI 未治療</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="sc-row-label">細胞存活率（Day 14）</td>
+                            <td class="sc-good">61%</td>
+                            <td class="sc-bad">19%</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">腦損傷體積（Day 28）</td>
+                            <td class="sc-good">6.9 mm³</td>
+                            <td class="sc-mid">~14 mm³</td>
+                            <td class="sc-bad">10.7 mm³ ↓</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">ECM / 細胞間連結保留</td>
+                            <td class="sc-good">完整</td>
+                            <td class="sc-bad">無</td>
+                            <td class="sc-bad">無</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">NVU 完整性恢復</td>
+                            <td class="sc-good">高</td>
+                            <td class="sc-mid">中等</td>
+                            <td class="sc-bad">低</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">神經行為恢復（Week 8）</td>
+                            <td class="sc-good">16 秒（Water Maze）</td>
+                            <td class="sc-mid">24 秒</td>
+                            <td class="sc-bad">48 秒</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">手術侵入性</td>
+                            <td class="sc-good">低（表面貼附）</td>
+                            <td class="sc-mid">中（顱骨穿刺）</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td class="sc-row-label">旁分泌因子分泌</td>
+                            <td class="sc-good">持續高量</td>
+                            <td class="sc-mid">初期高、快速衰減</td>
+                            <td class="sc-bad">無</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Connection to other work -->
+        <section class="sc-section reveal">
+            <div class="sc-section-label">研究延伸</div>
+            <h2 class="sc-section-title">與現有平台的交叉應用</h2>
+            <div class="sc-crossref-grid">
+                <a href="/gene-ai" class="sc-crossref-card">
+                    <div class="sc-crossref-icon">🧬</div>
+                    <div>
+                        <div class="sc-crossref-title">基因 AI 平台</div>
+                        <p>幹細胞基因改造涉及的 BDNF / VEGF / 整合素基因序列可透過基因 AI 平台進行序列快取、知識庫整理與 RAG 文件輸出。</p>
+                    </div>
+                </a>
+                <a href="/ngs" class="sc-crossref-card">
+                    <div class="sc-crossref-icon">🔬</div>
+                    <div>
+                        <div class="sc-crossref-title">NGS 定序</div>
+                        <p>轉錄體定序（RNA-Seq）可追蹤幹細胞移植後基因表現的動態變化，並鑑定分化標記物與修復相關基因網路。</p>
+                    </div>
+                </a>
+                <a href="/protein-mpnn" class="sc-crossref-card">
+                    <div class="sc-crossref-icon">🏗️</div>
+                    <div>
+                        <div class="sc-crossref-title">蛋白質設計 AI</div>
+                        <p>整合素配體、神經營養因子的結構設計與親和力優化，可透過 ProteinMPNN 工具探索序列–結構–功能關係。</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+    </div>
+
+    <div data-site-footer></div>
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+    <script>
+    // ── Chart tab switching ────────────────────────────────────
+    document.querySelectorAll('.sc-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.sc-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sc-chart-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        });
+    });
+
+    // ── IF Gallery ─────────────────────────────────────────────
+    const IF_DATA = {
+        integrin: [
+            { label: '0 ng/mL ang · 50k', channels: ['#4a9eff','#ff8392'], stain: 'DAPI · CD31(488)', src: '/stem-cell/if_ang0_50k_cd31.jpg' },
+            { label: '0 ng/mL ang · 100k', channels: ['#4a9eff','#ff8392'], stain: 'DAPI · CD31(488) 100×', src: '/stem-cell/if_ang0_100k_cd31.jpg' },
+            { label: '0 ng/mL ang · 50k', channels: ['#4a9eff'], stain: 'DAPI 100×', src: '/stem-cell/if_ang0_100k_dapi.jpg' },
+            { label: '1 ng/mL ang · 50k', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · Nestin(488) · CD144(555) 100×', src: '/stem-cell/if_ang1_50k_nestin.jpg' },
+            { label: '1 ng/mL ang · 100k', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · Nestin(488) · CD144(555) 100×', src: '/stem-cell/if_ang1_100k_nestin.jpg' },
+            { label: '1 ng/mL ang · 250k', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · Nestin(488) · CD144(555) 100×', src: '/stem-cell/if_ang1_250k_nestin.jpg' },
+            { label: '10 ng/mL ang · 50k', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · Nestin(488) · CD144(555) 100×', src: '/stem-cell/if_ang10_50k_nestin.jpg' },
+            { label: '10 ng/mL ang · 100k', channels: ['#4a9eff','#ff8392'], stain: 'DAPI · CD31(488) 100×', src: '/stem-cell/if_ang10_100k_cd31.jpg' },
+            { label: '10 ng/mL ang · 250k', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · Nestin(488) · CD144(555) 100×', src: '/stem-cell/if_ang10_250k_nestin.jpg' },
+        ],
+        atms: [
+            { label: 'Control · 5 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+            { label: '24v(2H2) 25% · 5 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+            { label: 'Control · 16 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+            { label: '24v(7H2) 25% · 16 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+            { label: 'Control · 24 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+            { label: '24v(2H2) 25% · 16 hrs', channels: ['#4a9eff','#7bf0be','#ff8392'], stain: 'DAPI · GFAP · CD144', src: '' },
+        ],
+        transplant: [
+            { label: 'Cell Sheet 移植手術', channels: [], stain: '手術操作流程', src: '' },
+            { label: 'Cell Sheet 示意', channels: ['#7bf0be','#ff8392'], stain: 'Cell Sheet 結構示意', src: '' },
+            { label: 'MRI Pre-op', channels: [], stain: 'T2-weighted MRI', src: '' },
+            { label: 'MRI Day 28', channels: [], stain: 'T2-weighted MRI · 術後', src: '' },
+            { label: '病理切片 A (治療組)', channels: ['#7bf0be'], stain: 'Neo-Vascularized Brain Tissue', src: '' },
+            { label: '病理切片 B (對照組)', channels: [], stain: 'Permanent Brain Tissue Loss', src: '' },
+        ]
+    };
+
+    let lbItems = [], lbIdx = 0;
+
+    function buildGallery(gridId, items) {
+        const grid = document.getElementById(gridId);
+        if (!grid) return;
+        grid.innerHTML = '';
+        const withImg = items.filter(it => it.src);
+        if (!withImg.length) return;
+        withImg.forEach((item, i) => {
+            const div = document.createElement('div');
+            div.className = 'sc-if-item';
+            div.innerHTML = `<img src="${item.src}" alt="${item.label}" loading="lazy">
+                <div class="sc-if-caption">${item.label}</div>`;
+            div.addEventListener('click', () => openLightbox(withImg, i));
+            grid.appendChild(div);
+        });
+    }
+
+    function openLightbox(items, idx) {
+        lbItems = items; lbIdx = idx;
+        showLbItem();
+        document.getElementById('scLightbox').classList.add('open');
+    }
+    function showLbItem() {
+        const item = lbItems[lbIdx];
+        const img = document.getElementById('scLbImg');
+        if (item.src) { img.src = item.src; img.style.display = ''; }
+        else { img.style.display = 'none'; }
+        document.getElementById('scLbCaption').textContent = item.label + '　' + item.stain;
+    }
+    document.getElementById('scLbClose').addEventListener('click', () => document.getElementById('scLightbox').classList.remove('open'));
+    document.getElementById('scLbPrev').addEventListener('click', () => { lbIdx = (lbIdx - 1 + lbItems.length) % lbItems.length; showLbItem(); });
+    document.getElementById('scLbNext').addEventListener('click', () => { lbIdx = (lbIdx + 1) % lbItems.length; showLbItem(); });
+    document.getElementById('scLightbox').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+    document.querySelectorAll('.sc-gtab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.sc-gtab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sc-gallery-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('gallery-' + btn.dataset.gallery).classList.add('active');
+        });
+    });
+
+    ['integrin','atms','transplant'].forEach(key => {
+        buildGallery('ifGrid' + key.charAt(0).toUpperCase() + key.slice(1), IF_DATA[key]);
+        if (!IF_DATA[key].some(it => it.src)) {
+            const btn = document.querySelector(`.sc-gtab[data-gallery="${key}"]`);
+            const panel = document.getElementById('gallery-' + key);
+            if (btn) btn.style.display = 'none';
+            if (panel) panel.style.display = 'none';
+        }
+    });
+
+    // ── Charts ─────────────────────────────────────────────────
+    function waitChartJs(cb) {
+        if (typeof Chart !== 'undefined') cb();
+        else document.querySelector('script[src*="chart.js"]').addEventListener('load', cb);
+    }
+
+    waitChartJs(() => {
+        Chart.defaults.color = '#94a59f';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.font.size = 12;
+        const gridColor = 'rgba(151,190,181,0.08)';
+        const ttBg = '#131f1a';
+        const baseOpts = {
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { display: false }, tooltip: { backgroundColor: ttBg, borderColor: 'rgba(123,240,190,.2)', borderWidth: 1, titleColor: '#e9f0ec', bodyColor: '#94a59f', padding: 10, mode: 'index', intersect: false } },
+            scales: { x: { grid: { color: gridColor }, ticks: { color: '#5a716b' } }, y: { grid: { color: gridColor }, ticks: { color: '#5a716b' } } }
+        };
+
+        // ── Chart 1: Brain Lesion Volume (REAL DATA from MRI table) ──
+        const lesionData = {
+            volume: { co: [38.026, 20.238, 10.957, 6.868], tbi: [30.472, 26.654, 16.534, 10.681], unit: 'mm³' },
+            area:   { co: [6.5,    3.469,  1.67,   2.29],  tbi: [6.92,   5.487,  3.67,   2.65],  unit: 'mm²' },
+            depth:  { co: [1.574,  0.951,  0.670,  1.230], tbi: [2.114,  1.358,  1.248,  1.290], unit: 'mm' },
+            width:  { co: [4.496,  4.332,  3.988,  2.520], tbi: [3.834,  4.479,  3.677,  2.940], unit: 'mm' }
+        };
+        const lesionLabels = ['Day 7', 'Day 14', 'Day 21', 'Day 28'];
+        let lesionChart = null;
+
+        function buildLesionChart(metric) {
+            const d = lesionData[metric];
+            const cfg = {
+                type: 'line',
+                data: {
+                    labels: lesionLabels,
+                    datasets: [
+                        { label: 'Co 組', data: d.co, borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.12)', pointBackgroundColor: '#7bf0be', tension: .3, fill: true, borderWidth: 2, pointRadius: 5 },
+                        { label: 'TBI 組', data: d.tbi, borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.08)', pointBackgroundColor: '#ff8392', tension: .3, fill: true, borderWidth: 2, pointRadius: 5, borderDash: [5,4] }
+                    ]
+                },
+                options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, title: { display: true, text: metric.charAt(0).toUpperCase()+metric.slice(1)+' ('+d.unit+')', color: '#5a716b' } } } }
+            };
+            if (lesionChart) lesionChart.destroy();
+            lesionChart = new Chart(document.getElementById('chartLesion'), cfg);
+        }
+        buildLesionChart('volume');
+
+        document.querySelectorAll('.sc-mtbtn[data-metric]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.sc-mtbtn[data-metric]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                buildLesionChart(btn.dataset.metric);
+            });
+        });
+
+        // ── Chart 2: Ang-1 ELISA (REAL DATA approximate from ELISA graphs) ──
+        const angData = {
+            '0':  { '50k':  [250, 400, 900, 2500], '100k': [300, 600, 1200, 3200], '250k': [400, 800, 1800, 5500] },
+            '1':  { '50k':  [350, 700, 1800, 4500], '100k': [500, 900, 2500, 6000], '250k': [600, 1100, 3500, 8000] },
+            '10': { '50k':  [400, 900, 2200, 5800], '100k': [700, 1400, 3800, 7500], '250k': [900, 2000, 6000, 9800] }
+        };
+        let angioChart = null;
+
+        function buildAngioChart(dose) {
+            const d = angData[dose];
+            const cfg = {
+                type: 'line',
+                data: {
+                    labels: ['Day 1', 'Day 3', 'Day 5', 'Day 7'],
+                    datasets: [
+                        { label: '50k cells',  data: d['50k'],  borderColor: '#7bf0be', pointBackgroundColor: '#7bf0be', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 },
+                        { label: '100k cells', data: d['100k'], borderColor: '#58d7ff', pointBackgroundColor: '#58d7ff', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 },
+                        { label: '250k cells', data: d['250k'], borderColor: '#ffbc72', pointBackgroundColor: '#ffbc72', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 }
+                    ]
+                },
+                options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, title: { display: true, text: 'Ang-1 (pg/mL)', color: '#5a716b' } } } }
+            };
+            if (angioChart) angioChart.destroy();
+            angioChart = new Chart(document.getElementById('chartAngio'), cfg);
+        }
+        buildAngioChart('0');
+
+        document.querySelectorAll('[data-ang]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-ang]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                buildAngioChart(btn.dataset.ang);
+            });
+        });
+
+        // ── Chart 3: NSC Differentiation ──────────────────────
+        new Chart(document.getElementById('chartDiff'), {
+            type: 'bar',
+            data: {
+                labels: ['正常培養基', 'Integrin αvβ3', 'Notch 抑制', 'Wnt 活化', 'TBI 微環境'],
+                datasets: [
+                    { label: '神經元 NeuN+', data: [22, 34, 18, 41, 28], backgroundColor: 'rgba(88,215,255,.75)', borderRadius: 3 },
+                    { label: '星狀細胞 GFAP+', data: [35, 28, 42, 22, 38], backgroundColor: 'rgba(181,156,255,.75)', borderRadius: 3 },
+                    { label: '少突膠質 Olig2+', data: [18, 22, 15, 20, 14], backgroundColor: 'rgba(255,188,114,.75)', borderRadius: 3 },
+                    { label: '未分化', data: [25, 16, 25, 17, 20], backgroundColor: 'rgba(107,115,153,.5)', borderRadius: 3 }
+                ]
+            },
+            options: { ...baseOpts, plugins: { ...baseOpts.plugins }, scales: { x: { ...baseOpts.scales.x, stacked: true }, y: { ...baseOpts.scales.y, stacked: true, title: { display: true, text: '細胞比例 (%)', color: '#5a716b' }, max: 100 } } }
+        });
+
+        // ── Chart 4: Cell Survival ─────────────────────────────
+        new Chart(document.getElementById('chartSurvival'), {
+            type: 'line',
+            data: {
+                labels: ['1 hr', '6 hr', 'Day 1', 'Day 3', 'Day 7', 'Day 14'],
+                datasets: [
+                    { label: 'Cell Sheet 法', data: [96, 91, 84, 76, 68, 61], borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.12)', pointBackgroundColor: '#7bf0be', tension: .3, fill: true, borderWidth: 2 },
+                    { label: '注射法', data: [82, 64, 48, 35, 26, 19], borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.08)', pointBackgroundColor: '#ff8392', tension: .3, fill: true, borderWidth: 2, borderDash: [5,4] }
+                ]
+            },
+            options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, title: { display: true, text: '存活細胞 (%)', color: '#5a716b' }, min: 0, max: 100 } } }
+        });
+
+        // ── Chart 5: Behavioral (Water Maze) ──────────────────
+        new Chart(document.getElementById('chartBehav'), {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 6', 'Week 8'],
+                datasets: [
+                    { label: 'Cell Sheet 治療組', data: [58, 48, 37, 28, 21, 16], borderColor: '#7bf0be', pointBackgroundColor: '#7bf0be', tension: .35, fill: false, borderWidth: 2 },
+                    { label: 'MSC 注射組', data: [60, 52, 43, 35, 29, 24], borderColor: '#58d7ff', pointBackgroundColor: '#58d7ff', tension: .35, fill: false, borderWidth: 2 },
+                    { label: 'Sham 組', data: [18, 14, 12, 11, 10, 10], borderColor: '#b59cff', pointBackgroundColor: '#b59cff', tension: .35, fill: false, borderWidth: 1.5, borderDash: [3,3] },
+                    { label: 'TBI 未治療', data: [62, 58, 55, 52, 50, 48], borderColor: '#6b7399', pointBackgroundColor: '#6b7399', tension: .35, fill: false, borderWidth: 1.5, borderDash: [5,4] }
+                ]
+            },
+            options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, title: { display: true, text: '逃脫潛伏期 (秒)', color: '#5a716b' }, reverse: true, min: 8, max: 70 } } }
+        });
+    });
+    </script>
+<script>
+(function(){
+  const canvas = document.getElementById('sc-parallax-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, cells = [];
+
+  function resize() {
+    const hdr = canvas.parentElement;
+    W = canvas.width = hdr.offsetWidth;
+    H = canvas.height = hdr.offsetHeight;
+    spawnCells();
+  }
+
+  function spawnCells() {
+    cells = Array.from({length: 22}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: 18 + Math.random() * 32,
+      speed: 0.15 + Math.random() * 0.35,
+      opacity: 0.04 + Math.random() * 0.07,
+      phase: Math.random() * Math.PI * 2,
+      color: Math.random() > 0.5 ? '#7bf0be' : '#b59cff',
+    }));
+  }
+
+  let scrollY = 0;
+  window.addEventListener('scroll', () => { scrollY = window.scrollY; }, {passive:true});
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const t = performance.now() / 1000;
+    cells.forEach((c, i) => {
+      const py = ((c.y - scrollY * c.speed * 0.6) % H + H) % H;
+      const px = c.x + Math.sin(t * 0.4 + c.phase) * 12;
+      ctx.save();
+      ctx.globalAlpha = c.opacity + Math.sin(t * 0.7 + c.phase) * 0.015;
+      ctx.strokeStyle = c.color;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(px, py, c.r, 0, Math.PI * 2);
+      ctx.stroke();
+      // nucleus
+      ctx.globalAlpha = (c.opacity + 0.02) * 0.7;
+      ctx.fillStyle = c.color;
+      ctx.beginPath();
+      ctx.arc(px, py, c.r * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+})();
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script> <!-- ── Hide Vercel Toolbar (auto-injected when logged in to Vercel) ── --> <style>
+      vercel-toolbar { display: none !important; visibility: hidden !important; }
+    </style> <!-- ── AI Chat Widget (floating, bottom-left, hides on media pages) ── --> <button class="cw-btn" id="cw-btn" data-tip="AI 助手" data-cw-api="/api/chat" data-cw-hide-paths="/music,/video-gen,/interactive-showcase" aria-label="開啟 AI 助手">💬</button> <aside class="cw-panel" id="cw-panel" role="dialog" aria-label="AI 助手對話" aria-hidden="true"> <header class="cw-header"> <div> <div class="cw-title">AI 助手</div> <div class="cw-sub">問我任何關於這個網站的問題</div> </div> <button class="cw-close" id="cw-close" aria-label="關閉">×</button> </header> <div class="cw-msgs" id="cw-msgs"> <div class="cw-welcome" id="cw-welcome"> <p>嗨！我是你的 AI 助手 👋</p> <p style="margin: 8px 0 12px; font-size: .78rem">問我關於這個網站、音樂、基因、AI、或股票的任何問題：</p> <div id="cw-suggestions"></div> </div> </div> <form class="cw-input-row" id="cw-form" autocomplete="off"> <textarea class="cw-input" id="cw-input" placeholder="輸入訊息… (Enter 送出 / Shift+Enter 換行)" rows="1" maxlength="2000"></textarea> <button class="cw-send" id="cw-send" type="submit">送出</button> </form> </aside> <script>
+(function() {
+  'use strict';
+  if (window.__cw_loaded) return;
+  window.__cw_loaded = true;
+
+  // ── API URL resolution (hardcode Render to avoid SW-cache HTML issues) ─
+  const RENDER_URL = 'https://donttalk-chat-bot-xc4e.onrender.com';
+  // Prefer window.CHAT_BOT_API (set by Base.astro <head>) for local dev overrides;
+  // fall back to hardcoded Render on production where HTML may be SW-cached.
+  const CHAT_BOT_API = window.CHAT_BOT_API;
+  const resolvedApiUrl = (CHAT_BOT_API && CHAT_BOT_API.startsWith('http'))
+    ? CHAT_BOT_API
+    : RENDER_URL + '/chat';
+  console.log('[ChatWidget] resolvedApiUrl =', resolvedApiUrl);
+
+  const btn = document.getElementById('cw-btn');
+  if (!btn) return;
+  const apiUrl = btn.getAttribute('data-cw-api') || '/api/chat';
+  const hideOnPaths = btn.getAttribute('data-cw-hide-paths') || '';
+  const hidePaths = hideOnPaths.split(',').map(function(s){return s.trim();}).filter(Boolean);
+
+  // ── Keep backend warm: ping /healthz when button is first interacted ─
+  // (Render Free tier sleeps after 15 min; this wakes it before the user sends a message)
+  let warmedUp = false;
+  function warmUp() {
+    if (warmedUp) return;
+    warmedUp = true;
+    // Always ping Render directly — never a relative path (avoids SW/HTML-cache mismatch)
+    fetch(RENDER_URL + '/healthz', { mode: 'cors' }).catch(function() {});
+  }
+  btn.addEventListener('mouseenter', warmUp, { once: true });
+  btn.addEventListener('focus', warmUp, { once: true });
+
+  const panel = document.getElementById('cw-panel');
+  const closeBtn = document.getElementById('cw-close');
+  const msgs = document.getElementById('cw-msgs');
+  const form = document.getElementById('cw-form');
+  const input = document.getElementById('cw-input');
+  const sendBtn = document.getElementById('cw-send');
+  const welcome = document.getElementById('cw-welcome');
+  const suggestions = document.getElementById('cw-suggestions');
+
+  if (!btn || !panel) return;
+
+  const STORAGE_KEY = 'cw.history.v1';
+  const MAX_HISTORY = 20;
+  const SUGGESTIONS = [
+    '這個網站是什麼？',
+    '介紹一下你的音樂作品',
+    '你有做哪些 AI 工具？',
+    '幫我查台積電股價',
+  ];
+
+  // ── Hide on certain paths + during media playback ─────────────
+  function shouldHide() {
+    const p = location.pathname;
+    if (hidePaths.some(h => p.startsWith(h))) return true;
+    // Hide if any <video> or <audio> is playing
+    const media = document.querySelectorAll('video, audio');
+    for (const m of media) {
+      if (!m.paused && m.readyState > 1) return true;
+    }
+    return false;
+  }
+  function applyHide() {
+    btn.setAttribute('data-hidden', shouldHide() ? '1' : '0');
+  }
+  applyHide();
+  // Re-check every 1.5s (cheap; covers SPA-ish nav + media start/stop)
+  setInterval(applyHide, 1500);
+  document.addEventListener('play', applyHide, true);
+  document.addEventListener('pause', applyHide, true);
+
+  // ── Open/close ────────────────────────────────────────────────
+  function open() {
+    panel.setAttribute('data-open', '1');
+    panel.setAttribute('aria-hidden', 'false');
+    if (welcome && suggestions && suggestions.children.length === 0) {
+      SUGGESTIONS.forEach(s => {
+        const c = document.createElement('span');
+        c.className = 'cw-chip';
+        c.textContent = s;
+        c.addEventListener('click', () => sendUser(s));
+        suggestions.appendChild(c);
+      });
+    }
+    setTimeout(() => input.focus(), 50);
+  }
+  function close() {
+    panel.removeAttribute('data-open');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+  btn.addEventListener('click', () => {
+    panel.getAttribute('data-open') === '1' ? close() : open();
+  });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && panel.getAttribute('data-open') === '1') close();
+  });
+
+  // ── History persistence ───────────────────────────────────────
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h.slice(-MAX_HISTORY))); }
+    catch {}
+  }
+  let history = loadHistory();
+  // render prior history
+  history.forEach(m => renderBubble(m.role, m.content, false));
+
+  // ── Markdown mini-renderer (very small, no deps) ──────────────
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function md(s) {
+    if (!s) return '';
+    // citations [1] [2] → sup pill
+    s = s.replace(/\[(\d+)\]/g, (_, n) => `<span class="cw-cite">[${n}]</span>`);
+    // code blocks
+    s = s.replace(/```([\s\S]*?)```/g, (_, c) => `<pre>${escapeHtml(c.trim())}</pre>`);
+    // inline code
+    s = s.replace(/`([^`]+)`/g, function(_, c) { return '<code>' + escapeHtml(c) + '</code>'; });
+    // links [text](url)
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // internal links /path
+    s = s.replace(/(^|\s)(\/[a-z0-9_\-/]+)/gi, (m, pre, p) => `${pre}<a href="${p}">${p}</a>`);
+    // bold
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // line breaks
+    s = s.replace(/\n/g, '<br>');
+    return s;
+  }
+
+  // ── Bubbles ───────────────────────────────────────────────────
+  let activeBotBubble = null; // currently streaming
+  function renderBubble(role, content, isHtml = false) {
+    const div = document.createElement('div');
+    div.className = 'cw-msg cw-msg-' + (role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot');
+    if (role === 'typing') {
+      div.innerHTML = '<span class="cw-typing"></span><span class="cw-typing"></span><span class="cw-typing"></span>';
+    } else {
+      div.innerHTML = isHtml ? content : md(content);
+    }
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  // ── Send / stream ─────────────────────────────────────────────
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  form.addEventListener('submit', e => { e.preventDefault(); sendUser(input.value); });
+
+  async function sendUser(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    if (welcome && welcome.parentNode) welcome.parentNode.removeChild(welcome);
+
+    input.value = '';
+    input.style.height = 'auto';
+    renderBubble('user', text);
+    history.push({ role: 'user', content: text });
+
+    // typing indicator
+    const typing = renderBubble('typing');
+    sendBtn.disabled = true;
+
+    let botText = '';
+    let tools = [];
+    let ragSources = [];
+    // track the final bot bubble so we can append footnotes to it after finally
+    let finalBubble = null;
+
+    // Timeout guard: fe8.cn may return non-streaming JSON (no SSE) → reader hangs forever
+    let gotToken = false;
+    var timeoutId;
+
+    try {
+      console.log('[ChatWidget] sending fetch to', resolvedApiUrl);
+      // No abort timeout — Render Free tier cold-starts can take 30-60s.
+      // warmUp() on hover should wake it before the user sends a message.
+      const resp = await fetch(resolvedApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+      });
+      console.log('[ChatWidget] fetch done, status:', resp.status, 'body=', !!resp.body);
+      if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      gotToken = false;
+      timeoutId = setTimeout(function() { if (!gotToken) { console.log('[ChatWidget] TIMEOUT: no token in 30s'); reader.cancel(); } }, 30000);
+      // Process one complete SSE event from the front of buf
+      // Render backend uses CRLF (\r\n) line endings — must match or we'll never split events
+      function processBuf() {
+        let idx = buf.indexOf('\r\n\r\n');
+        if (idx === -1) return;
+        const raw = buf.slice(0, idx);
+        buf = buf.slice(idx + 4);
+        const evLine = raw.split('\r\n').find(function(l) { return l.startsWith('event:'); });
+        const dataLine = raw.split('\r\n').find(function(l) { return l.startsWith('data:'); });
+        if (!dataLine) return;
+        const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
+        let data = {};
+        try { data = JSON.parse(dataLine.replace(/^data:\s*/, '')); } catch {}
+        if (evt === 'token' && data.content) {
+          gotToken = true;
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
+          botText += data.content;
+          activeBotBubble.innerHTML = md(botText);
+          msgs.scrollTop = msgs.scrollHeight;
+        } else if (evt === 'tool_call') {
+          tools.push({ name: data.name, args: data.arguments });
+        } else if (evt === 'tool_result') {
+          const last = tools[tools.length - 1];
+          if (last) last.result = data.result;
+        } else if (evt === 'rag') {
+          (data.chunks || []).forEach(function(c) { ragSources.push(c); });
+        } else if (evt === 'done') {
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', md(botText));
+          finalBubble = activeBotBubble;
+        } else if (evt === 'error') {
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          renderBubble('error', '⚠️ ' + (data.message || 'unknown error'));
+          finalBubble = null;
+        }
+      }
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          // Stream exhausted — process any trailing data still in buf (no \n\n needed)
+          buf = buf.trim();
+          if (buf) processBuf();
+          break;
+        }
+        buf += dec.decode(value, { stream: true });
+        // Drain all complete events in buf (CRLF-separated)
+        while (buf.indexOf('\r\n\r\n') !== -1) processBuf();
+      }
+    } catch (err) {
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      const isAbort = err && (err.name === 'AbortError' || (err.message && err.message.includes('abort')));
+      renderBubble('error', isAbort
+        ? '⚠️ 連線逾時（後端服務喚醒中，請稍候後再試）'
+        : '⚠️ 連線失敗：' + (err && err.message ? err.message : String(err)));
+      finalBubble = null;
+    } finally {
+      clearTimeout(timeoutId);
+      sendBtn.disabled = false;
+      activeBotBubble = null;
+    }
+
+    // append footnotes to the final bot bubble (runs after finally so we have a stable ref)
+    if (finalBubble) {
+      if (tools.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-tools';
+        div.innerHTML = tools.map(function(t) { return '<span class="cw-tool-pill">🔧 ' + escapeHtml(t.name) + '</span>'; }).join('');
+        finalBubble.appendChild(div);
+      }
+      if (ragSources.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-rag-sources';
+        const uniq = [];
+        const seen = new Set();
+        ragSources.forEach(function(s) {
+          const key = s.url || s.title;
+          if (!seen.has(key)) { seen.add(key); uniq.push(s); }
+        });
+        div.innerHTML = '📚 引用：' + uniq.slice(0, 5).map(function(s) {
+          const url = s.url || '#';
+          const title = s.title || url;
+          return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(title) + '</a>';
+        }).join(' · ');
+        finalBubble.appendChild(div);
+      }
+    }
+    if (botText) history.push({ role: 'assistant', content: botText });
+    saveHistory(history);
+  }
+})();
+</script> <script>
+      // DEPLOY_MARKER: 2026-07-21T16:50:00-chat-render-v3
+      // Resolve Chat Widget API URL.
+      // In dev (localhost) → http://localhost:8765/chat (FastAPI backend)
+      // In prod → Render directly (Vercel proxy buffers SSE → broken streaming)
+      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8765/chat'
+        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
+    </script> </body> </html>

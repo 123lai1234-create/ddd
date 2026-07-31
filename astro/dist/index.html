@@ -1,0 +1,361 @@
+<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><!--
+      Native IntersectionObserver fallback for `.reveal` fade-in.
+      Runs in addition to nav.js's local observer, so the page works
+      even if nav.js fails to load (network/CDN issue) — content stays
+      visible instead of getting stuck at opacity:0.
+    --><script>
+      (function() {
+        function bootReveal() {
+          var els = document.querySelectorAll('.reveal:not(.visible)');
+          if (!els.length) return;
+          if (typeof IntersectionObserver === 'undefined') {
+            els.forEach(function(el) { el.classList.add('visible'); });
+            return;
+          }
+          var io = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+              if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                io.unobserve(e.target);
+              }
+            });
+          }, { rootMargin: '0px 0px -8% 0px', threshold: 0.04 });
+          els.forEach(function(el) { io.observe(el); });
+          // Hard fallback: anything still hidden after 1.5s gets shown.
+          setTimeout(function() {
+            document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
+              el.classList.add('visible');
+            });
+          }, 1500);
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bootReveal);
+        } else {
+          bootReveal();
+        }
+      })();
+    </script><title>工程 × 生醫 × AI 平台作品集</title><meta name="description" content="電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。"><meta property="og:title" content="工程 × 生醫 × AI 平台作品集"><meta property="og:description" content="電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://dontalk.vercel.app/og?t=%E5%B7%A5%E7%A8%8B%20%C3%97%20%E7%94%9F%E9%86%AB%20%C3%97%20AI%20%E5%B9%B3%E5%8F%B0%E4%BD%9C%E5%93%81%E9%9B%86&#38;s=%E9%9B%BB%E8%B3%87%E5%B7%A5%E7%A8%8B%E8%88%87%E7%94%9F%E7%89%A9%E9%86%AB%E5%AD%B8%E9%9B%99%E7%A2%A9%E5%A3%AB%EF%BC%8C%E6%95%B4%E5%90%88%E8%9B%8B%E7%99%BD%E8%B3%AA%20AI%20%E8%A8%AD%E8%A8%88%E3%80%81%E5%9F%BA%E5%9B%A0%E5%88%86%E6%9E%90%E3%80%81NGS%20%E6%B5%81%E7%A8%8B%E8%88%87%E4%BA%92%E5%8B%95%E5%B9%B3%E5%8F%B0%E9%96%8B%E7%99%BC%E7%9A%84%E5%85%A8%E7%AB%AF%E8%B7%A8%E5%9F%9F%E4%BD%9C%E5%93%81%E9%9B%86%E3%80%82&#38;tag=Portfolio"><meta name="twitter:image" content="https://dontalk.vercel.app/og?t=%E5%B7%A5%E7%A8%8B%20%C3%97%20%E7%94%9F%E9%86%AB%20%C3%97%20AI%20%E5%B9%B3%E5%8F%B0%E4%BD%9C%E5%93%81%E9%9B%86&#38;s=%E9%9B%BB%E8%B3%87%E5%B7%A5%E7%A8%8B%E8%88%87%E7%94%9F%E7%89%A9%E9%86%AB%E5%AD%B8%E9%9B%99%E7%A2%A9%E5%A3%AB%EF%BC%8C%E6%95%B4%E5%90%88%E8%9B%8B%E7%99%BD%E8%B3%AA%20AI%20%E8%A8%AD%E8%A8%88%E3%80%81%E5%9F%BA%E5%9B%A0%E5%88%86%E6%9E%90%E3%80%81NGS%20%E6%B5%81%E7%A8%8B%E8%88%87%E4%BA%92%E5%8B%95%E5%B9%B3%E5%8F%B0%E9%96%8B%E7%99%BC%E7%9A%84%E5%85%A8%E7%AB%AF%E8%B7%A8%E5%9F%9F%E4%BD%9C%E5%93%81%E9%9B%86%E3%80%82&#38;tag=Portfolio"><meta property="og:url" content="https://donttalk.vercel.app/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="工程 × 生醫 × AI 平台作品集"><meta name="twitter:description" content="電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。"><link rel="canonical" href="https://donttalk.vercel.app/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/index.css?v=852006c0"><link rel="stylesheet" href="/styles/index-live.css?v=9094204b"><link rel="stylesheet" href="/styles/index-content.css?v=793ab57d"><link rel="stylesheet" href="/styles/chatbot.css?v=09074609"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://dontalk.vercel.app#person","name":"JT Lai","url":"https://dontalk.vercel.app","image":"https://dontalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://dontalk.vercel.app#website","url":"https://dontalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://dontalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://dontalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/#webpage","url":"https://donttalk.vercel.app/","name":"工程 × 生醫 × AI 平台作品集","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。","inLanguage":"zh-TW","isPartOf":{"@id":"https://dontalk.vercel.app#website"},"about":{"@id":"https://dontalk.vercel.app#person"},"additionalType":"ProfilePage"}]}</script><style>.gh-stat-card[data-astro-cid-j7pv25f6]{display:block;background:var(--surface, rgba(255,255,255,.04));border:1px solid var(--border, rgba(255,255,255,.08));border-radius:10px;padding:18px 20px;text-align:center;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}.gh-stat-card[data-astro-cid-j7pv25f6]:hover{border-color:var(--accent, #58d7ff);transform:translateY(-2px)}.gh-val[data-astro-cid-j7pv25f6]{font-size:1.25rem;font-weight:700;color:var(--text);font-family:JetBrains Mono,monospace}.gh-lbl[data-astro-cid-j7pv25f6]{font-size:.75rem;color:var(--muted);margin-top:4px}@keyframes avatar-bounce{0%,to{transform:translateY(0) rotate(0)}25%{transform:translateY(-6px) rotate(-3deg)}50%{transform:translateY(0) rotate(0)}75%{transform:translateY(-3px) rotate(3deg)}}@keyframes avatar-nod{0%,to{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-5deg)}}#chatbot-toggle[data-astro-cid-j7pv25f6]:hover #chatbot-avatar[data-astro-cid-j7pv25f6]{animation:avatar-nod .4s ease-in-out infinite}#chatbot-toggle[data-astro-cid-j7pv25f6]:active #chatbot-avatar[data-astro-cid-j7pv25f6]{animation:avatar-jump .3s ease-out}@keyframes avatar-jump{0%{transform:scale(1)}50%{transform:scale(1.2) translateY(-10px)}to{transform:scale(1)}}
+</style>
+<link rel="stylesheet" href="/_astro/Base.BhTaoyI2.css"></head> <body data-page="index">    <div data-site-nav data-astro-cid-j7pv25f6></div>  <section id="hero" data-astro-cid-j7pv25f6> <div class="hero-canvas" data-astro-cid-j7pv25f6></div> <div class="hero-content" data-astro-cid-j7pv25f6> <div class="hero-eyebrow" data-astro-cid-j7pv25f6><span class="live-dot" data-astro-cid-j7pv25f6></span>2026 · 開放洽談機會</div> <h1 class="hero-title" data-astro-cid-j7pv25f6>Portfolio</h1> <p class="hero-sub" data-astro-cid-j7pv25f6>工程師 · 生醫研究者 · AI 平台設計</p> <p class="hero-sub" style="max-width:600px;margin:1rem auto;font-size:.95rem;opacity:.85" data-astro-cid-j7pv25f6>
+電資工程與生物醫學雙碩士，把蛋白質語言模型、基因分析工具與互動介面整合成可操作的研究平台。站在研究與產品的交界，做有真實意義的跨域系統。
+</p> <!-- AEO direct answer: AI Overviews/Perplexity pick this up first. --> <p class="hero-sub aeo-facts" style="max-width:600px;margin:.5rem auto;font-size:.82rem;opacity:.7" data-astro-cid-j7pv25f6>
+專長：ESM-2 / ProteinMPNN / Bayesian Optimization / REINFORCE / NGS / FastAPI / Astro。碩士：北科電子所 + 陽明交大解剖細胞生物所。
+</p> <div class="hero-links" data-astro-cid-j7pv25f6> <a href="/about" class="btn btn-primary" data-astro-cid-j7pv25f6>認識我</a> <a href="/works" class="btn btn-outline" data-astro-cid-j7pv25f6>全部作品 →</a> <a href="/gene-ai" class="btn btn-ghost" data-astro-cid-j7pv25f6>基因 AI 平台 ↗</a> </div> </div> </section> <hr class="divider" data-astro-cid-j7pv25f6>  <section id="selected" data-astro-cid-j7pv25f6> <div class="sel-header reveal" data-astro-cid-j7pv25f6> <span class="section-label" data-astro-cid-j7pv25f6>代表作品</span> </div> <div class="sel-list reveal" data-astro-cid-j7pv25f6> <a href="/report" class="sel-item" data-astro-cid-j7pv25f6> <div class="sel-left" data-astro-cid-j7pv25f6> <span class="sel-title" data-astro-cid-j7pv25f6>蛋白質 AI 設計系統</span> <span class="sel-desc" data-astro-cid-j7pv25f6>端到端 Pipeline：ESM-2 嵌入、Bayesian Optimization、ProteinMPNN 序列設計、REINFORCE RL 微調。</span> </div> <span class="sel-tag" data-astro-cid-j7pv25f6>Protein AI</span> <span class="sel-arrow" data-astro-cid-j7pv25f6>→</span> </a> <a href="/gene-ai" class="sel-item" data-astro-cid-j7pv25f6> <div class="sel-left" data-astro-cid-j7pv25f6> <span class="sel-title" data-astro-cid-j7pv25f6>基因 AI 分析平台</span> <span class="sel-desc" data-astro-cid-j7pv25f6>序列資料庫、RAG 文件搜尋、啟動子設計、CRISPR 導引排序、變異效應評估一站整合。</span> </div> <span class="sel-tag" data-astro-cid-j7pv25f6>Gene AI</span> <span class="sel-arrow" data-astro-cid-j7pv25f6>→</span> </a> <a href="/ngs" class="sel-item" data-astro-cid-j7pv25f6> <div class="sel-left" data-astro-cid-j7pv25f6> <span class="sel-title" data-astro-cid-j7pv25f6>NGS 次世代定序工作站</span> <span class="sel-desc" data-astro-cid-j7pv25f6>實驗設計計算器、定序深度估算、QC 到功能分析的完整結果圖表集。</span> </div> <span class="sel-tag" data-astro-cid-j7pv25f6>NGS</span> <span class="sel-arrow" data-astro-cid-j7pv25f6>→</span> </a> <a href="/protein-mpnn" class="sel-item" data-astro-cid-j7pv25f6> <div class="sel-left" data-astro-cid-j7pv25f6> <span class="sel-title" data-astro-cid-j7pv25f6>ProteinMPNN 互動工作台</span> <span class="sel-desc" data-astro-cid-j7pv25f6>直接操作序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</span> </div> <span class="sel-tag" data-astro-cid-j7pv25f6>Interactive</span> <span class="sel-arrow" data-astro-cid-j7pv25f6>→</span> </a> <a href="/thesis" class="sel-item" data-astro-cid-j7pv25f6> <div class="sel-left" data-astro-cid-j7pv25f6> <span class="sel-title" data-astro-cid-j7pv25f6>遺傳演算法量化研究</span> <span class="sel-desc" data-astro-cid-j7pv25f6>以 48 檔 ETF50 股票池重建 PPTS × GAPPTS，族群演化視覺化與逐檔回測比較。</span> </div> <span class="sel-tag" data-astro-cid-j7pv25f6>Research</span> <span class="sel-arrow" data-astro-cid-j7pv25f6>→</span> </a> </div> </section> <hr class="divider" data-astro-cid-j7pv25f6>  <section id="about-strip" data-astro-cid-j7pv25f6> <div class="strip-grid reveal" data-astro-cid-j7pv25f6> <div class="strip-item" data-astro-cid-j7pv25f6> <div class="strip-val" data-astro-cid-j7pv25f6>雙碩士</div> <div class="strip-lbl" data-astro-cid-j7pv25f6>電資工程 × 生物醫學</div> </div> <div class="strip-item" data-astro-cid-j7pv25f6> <div class="strip-val" data-astro-cid-j7pv25f6>2014–Now</div> <div class="strip-lbl" data-astro-cid-j7pv25f6>研究 → 產品 → 平台</div> </div> <div class="strip-item" data-astro-cid-j7pv25f6> <div class="strip-val" data-astro-cid-j7pv25f6>3 AI 平台</div> <div class="strip-lbl" data-astro-cid-j7pv25f6>Protein · Gene · NGS</div> </div> <div class="strip-item strip-item-text" data-astro-cid-j7pv25f6> <p data-astro-cid-j7pv25f6>電資工程與生醫的雙碩士訓練，加上臨床與研究場景的第一線經驗，讓作品集裡每個系統都有真實問題的背景支撐。</p> <a href="/about" class="strip-link" data-astro-cid-j7pv25f6>完整背景 →</a> </div> </div> </section> <hr class="divider" data-astro-cid-j7pv25f6>  <section id="explore" data-astro-cid-j7pv25f6> <div class="reveal" data-astro-cid-j7pv25f6> <div class="section-label" data-astro-cid-j7pv25f6>深入探索</div> <h2 class="section-title" data-astro-cid-j7pv25f6>各主題專頁</h2> <p class="section-sub" data-astro-cid-j7pv25f6>每個主題都有獨立頁面，包含完整技術細節、互動圖表與操作介面。</p> </div> <div class="explore-groups reveal" data-astro-cid-j7pv25f6> <div class="explore-group" data-astro-cid-j7pv25f6> <div class="explore-group-head" data-astro-cid-j7pv25f6> <span class="explore-group-label" data-astro-cid-j7pv25f6>Protein</span> <span class="explore-group-title" data-astro-cid-j7pv25f6>蛋白質設計與分析</span> <span class="explore-group-sub" data-astro-cid-j7pv25f6>技術報告 + 可操作工作台兩頁互補</span> </div> <div class="explore-grid explore-grid-2" data-astro-cid-j7pv25f6> <a href="/report" class="explore-card ec-bio" data-astro-cid-j7pv25f6><div class="explore-icon" data-astro-cid-j7pv25f6>🧬</div><h3 data-astro-cid-j7pv25f6>蛋白質 AI 專案報告</h3><p data-astro-cid-j7pv25f6>端到端 Pipeline 架構、實驗結果圖表、核心演算法數學推導、程式碼庫結構一覽。</p><div class="explore-footer" data-astro-cid-j7pv25f6><span class="explore-tag" data-astro-cid-j7pv25f6>Protein AI</span><span class="explore-arrow" data-astro-cid-j7pv25f6>→</span></div></a> <a href="/protein-mpnn" class="explore-card ec-bio" data-astro-cid-j7pv25f6><div class="explore-icon" data-astro-cid-j7pv25f6>🧪</div><h3 data-astro-cid-j7pv25f6>ProteinMPNN 互動展示</h3><p data-astro-cid-j7pv25f6>獨立工作台頁面，直接操作序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</p><div class="explore-footer" data-astro-cid-j7pv25f6><span class="explore-tag" data-astro-cid-j7pv25f6>Interactive</span><span class="explore-arrow" data-astro-cid-j7pv25f6>→</span></div></a> </div> </div> <div class="explore-group" data-astro-cid-j7pv25f6> <div class="explore-group-head" data-astro-cid-j7pv25f6> <span class="explore-group-label" data-astro-cid-j7pv25f6>Genomics</span> <span class="explore-group-title" data-astro-cid-j7pv25f6>基因 AI 與 NGS 定序</span> <span class="explore-group-sub" data-astro-cid-j7pv25f6>從序列快取到實驗設計的完整工作流</span> </div> <div class="explore-grid explore-grid-2" data-astro-cid-j7pv25f6> <a href="/gene-ai" class="explore-card ec-gene" data-astro-cid-j7pv25f6><div class="explore-icon" data-astro-cid-j7pv25f6>🔬</div><h3 data-astro-cid-j7pv25f6>基因 AI 平台</h3><p data-astro-cid-j7pv25f6>序列資料庫、知識庫、RAG 文件搜尋、啟動子設計、CRISPR 導引排序、變異效應評估。</p><div class="explore-footer" data-astro-cid-j7pv25f6><span class="explore-tag" data-astro-cid-j7pv25f6>Gene AI</span><span class="explore-arrow" data-astro-cid-j7pv25f6>→</span></div></a> <a href="/ngs" class="explore-card ec-gene" data-astro-cid-j7pv25f6><div class="explore-icon" data-astro-cid-j7pv25f6>📊</div><h3 data-astro-cid-j7pv25f6>NGS 次世代定序</h3><p data-astro-cid-j7pv25f6>實驗設計計算器、定序深度估算、QC 到功能分析的完整結果圖表集。</p><div class="explore-footer" data-astro-cid-j7pv25f6><span class="explore-tag" data-astro-cid-j7pv25f6>NGS</span><span class="explore-arrow" data-astro-cid-j7pv25f6>→</span></div></a> </div> </div> <div class="explore-group" data-astro-cid-j7pv25f6> <div class="explore-group-head" data-astro-cid-j7pv25f6> <span class="explore-group-label" data-astro-cid-j7pv25f6>Other</span> <span class="explore-group-title" data-astro-cid-j7pv25f6>其他資源</span> <span class="explore-group-sub" data-astro-cid-j7pv25f6>面試準備、作品集總覽、研究論文</span> </div> <div class="explore-grid explore-grid-3" data-astro-cid-j7pv25f6> <a href="/interview" class="explore-card ec-study" data-astro-cid-j7pv25f6><div class="explore-icon" data-astro-cid-j7pv25f6>🎯</div><h3 data-astro-cid-j7pv25f6>面試準備手冊</h3><p data-astro-cid-j7pv25f6>模擬面試問答、數學推導筆記、Mini Project 完整程式碼、六週衝刺計劃。</p><div class="explore-footer" data-astro-cid-j7pv25f6><span class="explore-tag" data-astro-cid-j7pv25f6>Study</span><span class="explore-arrow" data-astro-cid-j7pv25f6>→</span></div></a> <a href="/works" class="explore-card ec-study" data-astro-cid-j7pv25f6><div class="explore-icon" data-astro-cid-j7pv25f6>💼</div><h3 data-astro-cid-j7pv25f6>作品總覽</h3><p data-astro-cid-j7pv25f6>所有專案卡片篩選、即時 API 統計、跨域作品集一覽。</p><div class="explore-footer" data-astro-cid-j7pv25f6><span class="explore-tag" data-astro-cid-j7pv25f6>Portfolio</span><span class="explore-arrow" data-astro-cid-j7pv25f6>→</span></div></a> <a href="/blog" class="explore-card ec-research" data-astro-cid-j7pv25f6><div class="explore-icon" data-astro-cid-j7pv25f6>📖</div><h3 data-astro-cid-j7pv25f6>技術文章</h3><p data-astro-cid-j7pv25f6>蛋白質 AI、NGS 定序、量化交易等研究筆記與技術解析。</p><div class="explore-footer" data-astro-cid-j7pv25f6><span class="explore-tag" data-astro-cid-j7pv25f6>Blog</span><span class="explore-arrow" data-astro-cid-j7pv25f6>→</span></div></a> <a href="/thesis" class="explore-card ec-research" data-astro-cid-j7pv25f6><div class="explore-icon" data-astro-cid-j7pv25f6>📝</div><h3 data-astro-cid-j7pv25f6>論文 · 遺傳演算法</h3><p data-astro-cid-j7pv25f6>以 48 檔 ETF50 股票池重建 PPTS × GAPPTS，逐檔觀察族群演化、逐檔回測與方法比較。</p><div class="explore-footer" data-astro-cid-j7pv25f6><span class="explore-tag" data-astro-cid-j7pv25f6>Research</span><span class="explore-arrow" data-astro-cid-j7pv25f6>→</span></div></a> </div> </div> </div> </section> <hr class="divider" data-astro-cid-j7pv25f6>  <section id="github-stats" style="max-width:800px;margin:0 auto;padding:40px 24px" data-astro-cid-j7pv25f6> <div class="section-label" data-astro-cid-j7pv25f6>GitHub</div> <h2 class="section-title" data-astro-cid-j7pv25f6>開源活動</h2> <div id="gh-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-top:24px" data-astro-cid-j7pv25f6> <a class="gh-stat-card" href="https://github.com/123lai1234-create?tab=repositories" target="_blank" rel="noreferrer" data-astro-cid-j7pv25f6> <div class="gh-val" data-astro-cid-j7pv25f6>Repositories</div><div class="gh-lbl" data-astro-cid-j7pv25f6>查看公開專案</div> </a> <a class="gh-stat-card" href="https://github.com/123lai1234-create" target="_blank" rel="noreferrer" data-astro-cid-j7pv25f6> <div class="gh-val" data-astro-cid-j7pv25f6>GitHub</div><div class="gh-lbl" data-astro-cid-j7pv25f6>前往個人頁面</div> </a> </div> </section>  <hr class="divider" data-astro-cid-j7pv25f6>  <section id="esm-demo" style="max-width:800px;margin:0 auto;padding:48px 24px" data-astro-cid-j7pv25f6> <div class="section-label" data-astro-cid-j7pv25f6>Live Demo · ESM-2</div> <h2 class="section-title" data-astro-cid-j7pv25f6>蛋白質序列相似度分析</h2> <p class="section-sub" style="margin-bottom:28px" data-astro-cid-j7pv25f6>輸入兩段胺基酸序列，透過 ESM-2（8M）embedding 計算語意相似度。由 <a href="https://huggingface.co/spaces/Donttalk123/web" target="_blank" rel="noreferrer" style="color:var(--accent)" data-astro-cid-j7pv25f6>HuggingFace Space</a> 即時推論。</p> <div style="display:flex;flex-direction:column;gap:12px" data-astro-cid-j7pv25f6> <label style="font-size:.85rem;color:var(--muted)" data-astro-cid-j7pv25f6>序列 A</label> <input id="esm-seq-a" type="text" value="MKTIIALSYIFCLVFA" placeholder="MKTIIALSYIFCLVFA" style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:.9rem" data-astro-cid-j7pv25f6> <label style="font-size:.85rem;color:var(--muted)" data-astro-cid-j7pv25f6>序列 B</label> <input id="esm-seq-b" type="text" value="MKTIIALSYIFCLVFAFF" placeholder="MKTIIALSYIFCLVFAFF" style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:.9rem" data-astro-cid-j7pv25f6> <button id="esm-run-btn" style="align-self:flex-start;padding:10px 28px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.95rem" data-astro-cid-j7pv25f6>
+計算相似度
+</button> </div> <div id="esm-result" style="margin-top:20px;min-height:60px" data-astro-cid-j7pv25f6></div> </section> <hr class="divider" data-astro-cid-j7pv25f6> <div data-site-footer data-astro-cid-j7pv25f6></div> <button class="scroll-top" aria-label="返回頂部" data-astro-cid-j7pv25f6>↑</button> <div id="tsparticles" data-astro-cid-j7pv25f6></div>  <button id="chatbot-toggle" aria-label="AI 助手" style="position:fixed;bottom:90px;right:24px;z-index:500;background:transparent;border:none;border-radius:50%;width:70px;height:70px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,filter .2s;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));overflow:visible" onmouseover="this.style.transform='scale(1.15)';this.style.filter='drop-shadow(0 8px 20px rgba(88,215,255,.4))'" onmouseout="this.style.transform='scale(1)';this.style.filter='drop-shadow(0 4px 12px rgba(0,0,0,.4))'" data-astro-cid-j7pv25f6> <img src="https://minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com/ccv2%2F2026-05-22%2FMiniMax-M2.7%2F2051828084830642340%2F18cdb762f4fb37677829d88cc42a72cf5921a1222c8e165ca47d835d7fb74b6f..png?Expires=1779508593&OSSAccessKeyId=LTAI5tGLnRTkBjLuYPjNcKQ8&Signature=x06WLj8eeG5RsBtxEU6nN10yUd4%3D" alt="AI 助手" style="width:100%;height:100%;object-fit:contain;border-radius:50%;animation:avatar-bounce 3s ease-in-out infinite" id="chatbot-avatar" data-astro-cid-j7pv25f6> </button>  <div id="chatbot-panel" data-astro-cid-j7pv25f6> <div class="chatbot-header" data-astro-cid-j7pv25f6> <h4 data-astro-cid-j7pv25f6>AI 助手</h4> <div class="chatbot-header-actions" data-astro-cid-j7pv25f6> <button id="chatbot-clear" class="chatbot-icon-btn" title="清除對話" aria-label="清除對話" data-astro-cid-j7pv25f6>↻</button> <button id="chatbot-close" class="chatbot-icon-btn" aria-label="關閉" data-astro-cid-j7pv25f6>✕</button> </div> </div> <div id="chatbot-messages" data-astro-cid-j7pv25f6></div> <div class="chatbot-input-row" data-astro-cid-j7pv25f6> <input id="chatbot-input" type="text" placeholder="講講蛋白質？基因？韌體？" autocomplete="off" data-astro-cid-j7pv25f6> <button id="chatbot-send" data-astro-cid-j7pv25f6>送出</button> </div> </div>  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script><script src="/scripts/index-ui.js?v=672c0e39"></script><script src="/scripts/index-live.js?v=f319be5a"></script><script src="/scripts/index-charts.js?v=24063f42"></script><script src="/scripts/chatbot.js?v=69d0bba1"></script> <!-- ── Hide Vercel Toolbar (auto-injected when logged in to Vercel) ── --> <style>
+      vercel-toolbar { display: none !important; visibility: hidden !important; }
+    </style> <!-- ── AI Chat Widget (floating, bottom-left, hides on media pages) ── --> <button class="cw-btn" id="cw-btn" data-tip="AI 助手" data-cw-api="/api/chat" data-cw-hide-paths="/music,/video-gen,/interactive-showcase" aria-label="開啟 AI 助手">💬</button> <aside class="cw-panel" id="cw-panel" role="dialog" aria-label="AI 助手對話" aria-hidden="true"> <header class="cw-header"> <div> <div class="cw-title">AI 助手</div> <div class="cw-sub">問我任何關於這個網站的問題</div> </div> <button class="cw-close" id="cw-close" aria-label="關閉">×</button> </header> <div class="cw-msgs" id="cw-msgs"> <div class="cw-welcome" id="cw-welcome"> <p>嗨！我是你的 AI 助手 👋</p> <p style="margin: 8px 0 12px; font-size: .78rem">問我關於這個網站、音樂、基因、AI、或股票的任何問題：</p> <div id="cw-suggestions"></div> </div> </div> <form class="cw-input-row" id="cw-form" autocomplete="off"> <textarea class="cw-input" id="cw-input" placeholder="輸入訊息… (Enter 送出 / Shift+Enter 換行)" rows="1" maxlength="2000"></textarea> <button class="cw-send" id="cw-send" type="submit">送出</button> </form> </aside> <script>
+(function() {
+  'use strict';
+  if (window.__cw_loaded) return;
+  window.__cw_loaded = true;
+
+  // ── API URL resolution (hardcode Render to avoid SW-cache HTML issues) ─
+  const RENDER_URL = 'https://donttalk-chat-bot-xc4e.onrender.com';
+  // Prefer window.CHAT_BOT_API (set by Base.astro <head>) for local dev overrides;
+  // fall back to hardcoded Render on production where HTML may be SW-cached.
+  const CHAT_BOT_API = window.CHAT_BOT_API;
+  const resolvedApiUrl = (CHAT_BOT_API && CHAT_BOT_API.startsWith('http'))
+    ? CHAT_BOT_API
+    : RENDER_URL + '/chat';
+  console.log('[ChatWidget] resolvedApiUrl =', resolvedApiUrl);
+
+  const btn = document.getElementById('cw-btn');
+  if (!btn) return;
+  const apiUrl = btn.getAttribute('data-cw-api') || '/api/chat';
+  const hideOnPaths = btn.getAttribute('data-cw-hide-paths') || '';
+  const hidePaths = hideOnPaths.split(',').map(function(s){return s.trim();}).filter(Boolean);
+
+  // ── Keep backend warm: ping /healthz when button is first interacted ─
+  // (Render Free tier sleeps after 15 min; this wakes it before the user sends a message)
+  let warmedUp = false;
+  function warmUp() {
+    if (warmedUp) return;
+    warmedUp = true;
+    // Always ping Render directly — never a relative path (avoids SW/HTML-cache mismatch)
+    fetch(RENDER_URL + '/healthz', { mode: 'cors' }).catch(function() {});
+  }
+  btn.addEventListener('mouseenter', warmUp, { once: true });
+  btn.addEventListener('focus', warmUp, { once: true });
+
+  const panel = document.getElementById('cw-panel');
+  const closeBtn = document.getElementById('cw-close');
+  const msgs = document.getElementById('cw-msgs');
+  const form = document.getElementById('cw-form');
+  const input = document.getElementById('cw-input');
+  const sendBtn = document.getElementById('cw-send');
+  const welcome = document.getElementById('cw-welcome');
+  const suggestions = document.getElementById('cw-suggestions');
+
+  if (!btn || !panel) return;
+
+  const STORAGE_KEY = 'cw.history.v1';
+  const MAX_HISTORY = 20;
+  const SUGGESTIONS = [
+    '這個網站是什麼？',
+    '介紹一下你的音樂作品',
+    '你有做哪些 AI 工具？',
+    '幫我查台積電股價',
+  ];
+
+  // ── Hide on certain paths + during media playback ─────────────
+  function shouldHide() {
+    const p = location.pathname;
+    if (hidePaths.some(h => p.startsWith(h))) return true;
+    // Hide if any <video> or <audio> is playing
+    const media = document.querySelectorAll('video, audio');
+    for (const m of media) {
+      if (!m.paused && m.readyState > 1) return true;
+    }
+    return false;
+  }
+  function applyHide() {
+    btn.setAttribute('data-hidden', shouldHide() ? '1' : '0');
+  }
+  applyHide();
+  // Re-check every 1.5s (cheap; covers SPA-ish nav + media start/stop)
+  setInterval(applyHide, 1500);
+  document.addEventListener('play', applyHide, true);
+  document.addEventListener('pause', applyHide, true);
+
+  // ── Open/close ────────────────────────────────────────────────
+  function open() {
+    panel.setAttribute('data-open', '1');
+    panel.setAttribute('aria-hidden', 'false');
+    if (welcome && suggestions && suggestions.children.length === 0) {
+      SUGGESTIONS.forEach(s => {
+        const c = document.createElement('span');
+        c.className = 'cw-chip';
+        c.textContent = s;
+        c.addEventListener('click', () => sendUser(s));
+        suggestions.appendChild(c);
+      });
+    }
+    setTimeout(() => input.focus(), 50);
+  }
+  function close() {
+    panel.removeAttribute('data-open');
+    panel.setAttribute('aria-hidden', 'true');
+  }
+  btn.addEventListener('click', () => {
+    panel.getAttribute('data-open') === '1' ? close() : open();
+  });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && panel.getAttribute('data-open') === '1') close();
+  });
+
+  // ── History persistence ───────────────────────────────────────
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h.slice(-MAX_HISTORY))); }
+    catch {}
+  }
+  let history = loadHistory();
+  // render prior history
+  history.forEach(m => renderBubble(m.role, m.content, false));
+
+  // ── Markdown mini-renderer (very small, no deps) ──────────────
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function md(s) {
+    if (!s) return '';
+    // citations [1] [2] → sup pill
+    s = s.replace(/\[(\d+)\]/g, (_, n) => `<span class="cw-cite">[${n}]</span>`);
+    // code blocks
+    s = s.replace(/```([\s\S]*?)```/g, (_, c) => `<pre>${escapeHtml(c.trim())}</pre>`);
+    // inline code
+    s = s.replace(/`([^`]+)`/g, function(_, c) { return '<code>' + escapeHtml(c) + '</code>'; });
+    // links [text](url)
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // internal links /path
+    s = s.replace(/(^|\s)(\/[a-z0-9_\-/]+)/gi, (m, pre, p) => `${pre}<a href="${p}">${p}</a>`);
+    // bold
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // line breaks
+    s = s.replace(/\n/g, '<br>');
+    return s;
+  }
+
+  // ── Bubbles ───────────────────────────────────────────────────
+  let activeBotBubble = null; // currently streaming
+  function renderBubble(role, content, isHtml = false) {
+    const div = document.createElement('div');
+    div.className = 'cw-msg cw-msg-' + (role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot');
+    if (role === 'typing') {
+      div.innerHTML = '<span class="cw-typing"></span><span class="cw-typing"></span><span class="cw-typing"></span>';
+    } else {
+      div.innerHTML = isHtml ? content : md(content);
+    }
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  // ── Send / stream ─────────────────────────────────────────────
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  form.addEventListener('submit', e => { e.preventDefault(); sendUser(input.value); });
+
+  async function sendUser(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    if (welcome && welcome.parentNode) welcome.parentNode.removeChild(welcome);
+
+    input.value = '';
+    input.style.height = 'auto';
+    renderBubble('user', text);
+    history.push({ role: 'user', content: text });
+
+    // typing indicator
+    const typing = renderBubble('typing');
+    sendBtn.disabled = true;
+
+    let botText = '';
+    let tools = [];
+    let ragSources = [];
+    // track the final bot bubble so we can append footnotes to it after finally
+    let finalBubble = null;
+
+    // Timeout guard: fe8.cn may return non-streaming JSON (no SSE) → reader hangs forever
+    let gotToken = false;
+    var timeoutId;
+
+    try {
+      console.log('[ChatWidget] sending fetch to', resolvedApiUrl);
+      // No abort timeout — Render Free tier cold-starts can take 30-60s.
+      // warmUp() on hover should wake it before the user sends a message.
+      const resp = await fetch(resolvedApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+      });
+      console.log('[ChatWidget] fetch done, status:', resp.status, 'body=', !!resp.body);
+      if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      gotToken = false;
+      timeoutId = setTimeout(function() { if (!gotToken) { console.log('[ChatWidget] TIMEOUT: no token in 30s'); reader.cancel(); } }, 30000);
+      // Process one complete SSE event from the front of buf
+      // Render backend uses CRLF (\r\n) line endings — must match or we'll never split events
+      function processBuf() {
+        let idx = buf.indexOf('\r\n\r\n');
+        if (idx === -1) return;
+        const raw = buf.slice(0, idx);
+        buf = buf.slice(idx + 4);
+        const evLine = raw.split('\r\n').find(function(l) { return l.startsWith('event:'); });
+        const dataLine = raw.split('\r\n').find(function(l) { return l.startsWith('data:'); });
+        if (!dataLine) return;
+        const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
+        let data = {};
+        try { data = JSON.parse(dataLine.replace(/^data:\s*/, '')); } catch {}
+        if (evt === 'token' && data.content) {
+          gotToken = true;
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
+          botText += data.content;
+          activeBotBubble.innerHTML = md(botText);
+          msgs.scrollTop = msgs.scrollHeight;
+        } else if (evt === 'tool_call') {
+          tools.push({ name: data.name, args: data.arguments });
+        } else if (evt === 'tool_result') {
+          const last = tools[tools.length - 1];
+          if (last) last.result = data.result;
+        } else if (evt === 'rag') {
+          (data.chunks || []).forEach(function(c) { ragSources.push(c); });
+        } else if (evt === 'done') {
+          clearTimeout(timeoutId);
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!activeBotBubble) activeBotBubble = renderBubble('bot', md(botText));
+          finalBubble = activeBotBubble;
+        } else if (evt === 'error') {
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          renderBubble('error', '⚠️ ' + (data.message || 'unknown error'));
+          finalBubble = null;
+        }
+      }
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          // Stream exhausted — process any trailing data still in buf (no \n\n needed)
+          buf = buf.trim();
+          if (buf) processBuf();
+          break;
+        }
+        buf += dec.decode(value, { stream: true });
+        // Drain all complete events in buf (CRLF-separated)
+        while (buf.indexOf('\r\n\r\n') !== -1) processBuf();
+      }
+    } catch (err) {
+      if (typing.parentNode) typing.parentNode.removeChild(typing);
+      const isAbort = err && (err.name === 'AbortError' || (err.message && err.message.includes('abort')));
+      renderBubble('error', isAbort
+        ? '⚠️ 連線逾時（後端服務喚醒中，請稍候後再試）'
+        : '⚠️ 連線失敗：' + (err && err.message ? err.message : String(err)));
+      finalBubble = null;
+    } finally {
+      clearTimeout(timeoutId);
+      sendBtn.disabled = false;
+      activeBotBubble = null;
+    }
+
+    // append footnotes to the final bot bubble (runs after finally so we have a stable ref)
+    if (finalBubble) {
+      if (tools.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-tools';
+        div.innerHTML = tools.map(function(t) { return '<span class="cw-tool-pill">🔧 ' + escapeHtml(t.name) + '</span>'; }).join('');
+        finalBubble.appendChild(div);
+      }
+      if (ragSources.length) {
+        const div = document.createElement('div');
+        div.className = 'cw-rag-sources';
+        const uniq = [];
+        const seen = new Set();
+        ragSources.forEach(function(s) {
+          const key = s.url || s.title;
+          if (!seen.has(key)) { seen.add(key); uniq.push(s); }
+        });
+        div.innerHTML = '📚 引用：' + uniq.slice(0, 5).map(function(s) {
+          const url = s.url || '#';
+          const title = s.title || url;
+          return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(title) + '</a>';
+        }).join(' · ');
+        finalBubble.appendChild(div);
+      }
+    }
+    if (botText) history.push({ role: 'assistant', content: botText });
+    saveHistory(history);
+  }
+})();
+</script> <script>
+      // DEPLOY_MARKER: 2026-07-21T16:50:00-chat-render-v3
+      // Resolve Chat Widget API URL.
+      // In dev (localhost) → http://localhost:8765/chat (FastAPI backend)
+      // In prod → Render directly (Vercel proxy buffers SSE → broken streaming)
+      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:8765/chat'
+        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
+    </script> </body> </html>

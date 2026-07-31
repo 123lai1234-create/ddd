@@ -1,0 +1,1952 @@
+{
+  "track": "028",
+  "transcription": "This small room, a lonely view, grey skies over Shibuya, raindrops on the window pane, a familiar, soft refrain, whispering your name again, across the miles, across the pane. Tokyo lights begin to gleam, lost inside a waking dream, every drop of memory of you, so far from me. Oh, the city rain falls down, on this quiet Tokyo town, each drop of tear I can't explain, wishing you were here again, my heart aches with this sweet, sad strain. Neon signs and blurry streaks, reflecting on the wet streets, umbrellas pass a hurry pace, no one sees my lonely face, lost in time, lost in this place, searching for your gentle grace. Tokyo lights begin to gleam, lost inside a waking dream, every drop of memory of you, so far from me. Oh, the city rain falls down, on this quiet Tokyo town, each drop of tear I can't explain, wishing you were here again, my heart aches with this sweet, sad strain. The piano plays a soft lemon, a gentle, mournful sentiment, my acoustic guitar weeps low, where did our happy moments go, this longing, it continues to grow. Empty chair beside me now, I trace your smile upon my brow, this apartment feels so vast, shadows from a fading past, how long will this feeling last? My anchor, you're my mess. Oh, the city rain falls down, on this quiet Tokyo town, each drop of tear I can't explain, wishing you were here again, my heart aches with this sweet, sad strain.",
+  "match_score": 100.0,
+  "notes": "100 分 - 歌詞檔與 JSON 皆已對齊音檔（原歌詞備份於 lyrics_original）",
+  "lyrics": "This small room, a lonely view, grey skies over Shibuya, raindrops on the window pane, a familiar, soft refrain, whispering your name again, across the miles, across the pane. Tokyo lights begin to gleam, lost inside a waking dream, every drop of memory of you, so far from me. Oh, the city rain falls down, on this quiet Tokyo town, each drop of tear I can't explain, wishing you were here again, my heart aches with this sweet, sad strain. Neon signs and blurry streaks, reflecting on the wet streets, umbrellas pass a hurry pace, no one sees my lonely face, lost in time, lost in this place, searching for your gentle grace. Tokyo lights begin to gleam, lost inside a waking dream, every drop of memory of you, so far from me. Oh, the city rain falls down, on this quiet Tokyo town, each drop of tear I can't explain, wishing you were here again, my heart aches with this sweet, sad strain. The piano plays a soft lemon, a gentle, mournful sentiment, my acoustic guitar weeps low, where did our happy moments go, this longing, it continues to grow. Empty chair beside me now, I trace your smile upon my brow, this apartment feels so vast, shadows from a fading past, how long will this feeling last? My anchor, you're my mess. Oh, the city rain falls down, on this quiet Tokyo town, each drop of tear I can't explain, wishing you were here again, my heart aches with this sweet, sad strain.",
+  "lyrics_original": "[00:13.34]This small room, a lonely view,\n[00:24.20]gray skies over Shibuya\n[00:30.08]Raindrops on the window pane,\n[00:32.44]a familiar,\n[00:34.92]soft refrain\n[00:36.96]Whispering your name again across the miles,\n[00:41.68]across the pain\n[00:45.70]Tokyo lights begin to gleam,\n[00:47.86]lost inside a waking dream\n[00:50.30]Every drop a memory of you so far from me\n[00:54.96]Oh,\n[00:57.06]the city rain falls down on this quiet Tokyo town\n[01:01.76]Each drop a tear I can't explain,\n[01:06.92]wishing you were here again\n[01:09.70]My heart aches with this sweet, sad strain\n[01:19.58]Neon signs and blurry streaks reflecting on the wet streets\n[01:24.30]Umbrellas pass a hurry pace,\n[01:26.70]no one sees my lonely face\n[01:29.28]Lost in time,\n[01:31.52]lost in this place,\n[01:34.14]searching for your gentle grace\n[01:38.88]Tokyo lights begin to gleam,\n[01:41.18]lost inside a waking dream\n[01:43.76]Every drop a memory of you so far from me\n[01:48.40]Oh,\n[01:50.46]the city rain falls down on this quiet\n[01:53.86]Tokyo town Each drop a tear I can't explain,\n[02:00.16]wishing you were here again My heart aches with this sweet,\n[02:06.50]sad strain\n[02:12.45]The piano plays a soft lament,\n[02:15.12]a gentle mournful sentiment My acoustic guitar weeps low,\n[02:19.66]where did our happy moments go?\n[02:22.28]This longing,\n[02:24.82]it continues to grow\n[02:32.35]Empty chair beside me now,\n[02:34.24]I trace your smile upon my brow This apartment feels so vast,\n[02:39.70]shadows from a fading past How long will this feeling last?\n[02:44.16]My anchor,\n[02:45.54]you're my mask\n[02:47.40]Oh,\n[02:53.62]the city rain falls down on this quiet\n[02:56.96]Tokyo town Each drop a tear I can't explain,\n[03:03.36]wishing you were here again My heart aches with this sweet,\n[03:09.58]sad strain",
+  "lyrics_original_source": "lyrics_028.txt",
+  "whisper_word_timestamps": {
+    "language": "en",
+    "segments": [
+      {
+        "id": 0,
+        "start": 17.86,
+        "end": 22.98,
+        "text": "This small room, a lonely view,",
+        "words": [
+          {
+            "word": " This",
+            "start": 17.86,
+            "end": 19.16,
+            "probability": 0.06358111649751663
+          },
+          {
+            "word": " small",
+            "start": 19.16,
+            "end": 19.72,
+            "probability": 0.7914667129516602
+          },
+          {
+            "word": " room,",
+            "start": 19.72,
+            "end": 20.54,
+            "probability": 0.9964798092842102
+          },
+          {
+            "word": " a",
+            "start": 21.28,
+            "end": 21.64,
+            "probability": 0.7231401801109314
+          },
+          {
+            "word": " lonely",
+            "start": 21.64,
+            "end": 22.02,
+            "probability": 0.9983548521995544
+          },
+          {
+            "word": " view,",
+            "start": 22.02,
+            "end": 22.98,
+            "probability": 0.9960665106773376
+          }
+        ]
+      },
+      {
+        "id": 1,
+        "start": 22.98,
+        "end": 26.34,
+        "text": "grey skies over Shibuya,",
+        "words": [
+          {
+            "word": " grey",
+            "start": 22.98,
+            "end": 24.18,
+            "probability": 0.0034478316083550453
+          },
+          {
+            "word": " skies",
+            "start": 24.18,
+            "end": 24.56,
+            "probability": 0.7178004384040833
+          },
+          {
+            "word": " over",
+            "start": 24.56,
+            "end": 25.12,
+            "probability": 0.9359615445137024
+          },
+          {
+            "word": " Shibuya,",
+            "start": 25.12,
+            "end": 26.34,
+            "probability": 0.8331311742464701
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "start": 28.9,
+        "end": 31.66,
+        "text": "raindrops on the window pane,",
+        "words": [
+          {
+            "word": " raindrops",
+            "start": 28.9,
+            "end": 30.02,
+            "probability": 0.8591793179512024
+          },
+          {
+            "word": " on",
+            "start": 30.02,
+            "end": 30.48,
+            "probability": 0.9916776418685913
+          },
+          {
+            "word": " the",
+            "start": 30.48,
+            "end": 30.66,
+            "probability": 0.9403753280639648
+          },
+          {
+            "word": " window",
+            "start": 30.66,
+            "end": 31.0,
+            "probability": 0.9874402284622192
+          },
+          {
+            "word": " pane,",
+            "start": 31.0,
+            "end": 31.66,
+            "probability": 0.6466971635818481
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "start": 32.4,
+        "end": 35.74,
+        "text": "a familiar, soft refrain,",
+        "words": [
+          {
+            "word": " a",
+            "start": 32.4,
+            "end": 32.58,
+            "probability": 0.9284533858299255
+          },
+          {
+            "word": " familiar,",
+            "start": 32.58,
+            "end": 33.28,
+            "probability": 0.9981787204742432
+          },
+          {
+            "word": " soft",
+            "start": 34.46,
+            "end": 34.96,
+            "probability": 0.6688786745071411
+          },
+          {
+            "word": " refrain,",
+            "start": 34.96,
+            "end": 35.74,
+            "probability": 0.8170933723449707
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "start": 36.64,
+        "end": 38.78,
+        "text": "whispering your name again",
+        "words": [
+          {
+            "word": " whispering",
+            "start": 36.64,
+            "end": 37.28,
+            "probability": 0.9576589465141296
+          },
+          {
+            "word": " your",
+            "start": 37.28,
+            "end": 37.78,
+            "probability": 0.9827193021774292
+          },
+          {
+            "word": " name",
+            "start": 37.78,
+            "end": 38.22,
+            "probability": 0.9975605010986328
+          },
+          {
+            "word": " again",
+            "start": 38.22,
+            "end": 38.78,
+            "probability": 0.9676876068115234
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "start": 38.78,
+        "end": 43.2,
+        "text": "across the miles, across the pane.",
+        "words": [
+          {
+            "word": " across",
+            "start": 38.78,
+            "end": 39.4,
+            "probability": 0.534204363822937
+          },
+          {
+            "word": " the",
+            "start": 39.4,
+            "end": 40.06,
+            "probability": 0.990439772605896
+          },
+          {
+            "word": " miles,",
+            "start": 40.06,
+            "end": 40.82,
+            "probability": 0.9112843871116638
+          },
+          {
+            "word": " across",
+            "start": 41.4,
+            "end": 41.84,
+            "probability": 0.9944800138473511
+          },
+          {
+            "word": " the",
+            "start": 41.84,
+            "end": 42.48,
+            "probability": 0.9967408776283264
+          },
+          {
+            "word": " pane.",
+            "start": 42.48,
+            "end": 43.2,
+            "probability": 0.6946874260902405
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "start": 44.580000000000005,
+        "end": 46.980000000000004,
+        "text": "Tokyo lights begin to gleam,",
+        "words": [
+          {
+            "word": " Tokyo",
+            "start": 44.580000000000005,
+            "end": 45.7,
+            "probability": 0.8843656778335571
+          },
+          {
+            "word": " lights",
+            "start": 45.7,
+            "end": 46.18,
+            "probability": 0.971836507320404
+          },
+          {
+            "word": " begin",
+            "start": 46.18,
+            "end": 46.54,
+            "probability": 0.9880742430686951
+          },
+          {
+            "word": " to",
+            "start": 46.54,
+            "end": 46.88,
+            "probability": 0.998967170715332
+          },
+          {
+            "word": " gleam,",
+            "start": 46.88,
+            "end": 47.440000000000005,
+            "probability": 0.979318380355835
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "start": 47.68,
+        "end": 49.7,
+        "text": "lost inside a waking dream,",
+        "words": [
+          {
+            "word": " lost",
+            "start": 47.68,
+            "end": 47.98,
+            "probability": 0.9738566279411316
+          },
+          {
+            "word": " inside",
+            "start": 47.98,
+            "end": 48.56,
+            "probability": 0.9788024425506592
+          },
+          {
+            "word": " a",
+            "start": 48.56,
+            "end": 48.9,
+            "probability": 0.8999171257019043
+          },
+          {
+            "word": " waking",
+            "start": 48.9,
+            "end": 49.2,
+            "probability": 0.888577401638031
+          },
+          {
+            "word": " dream,",
+            "start": 49.2,
+            "end": 49.7,
+            "probability": 0.99689781665802
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "start": 49.7,
+        "end": 52.84,
+        "text": "every drop of memory of you,",
+        "words": [
+          {
+            "word": " every",
+            "start": 49.7,
+            "end": 50.64,
+            "probability": 0.04202752560377121
+          },
+          {
+            "word": " drop",
+            "start": 50.64,
+            "end": 51.0,
+            "probability": 0.9960777163505554
+          },
+          {
+            "word": " of",
+            "start": 51.0,
+            "end": 51.26,
+            "probability": 0.7969018220901489
+          },
+          {
+            "word": " memory",
+            "start": 51.26,
+            "end": 51.86,
+            "probability": 0.9785349369049072
+          },
+          {
+            "word": " of",
+            "start": 51.86,
+            "end": 52.46,
+            "probability": 0.9849669337272644
+          },
+          {
+            "word": " you,",
+            "start": 52.46,
+            "end": 52.84,
+            "probability": 0.9738636016845703
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "start": 52.96,
+        "end": 54.9,
+        "text": "so far from me.",
+        "words": [
+          {
+            "word": " so",
+            "start": 52.96,
+            "end": 53.42,
+            "probability": 0.9450438618659973
+          },
+          {
+            "word": " far",
+            "start": 53.42,
+            "end": 53.94,
+            "probability": 0.9990705847740173
+          },
+          {
+            "word": " from",
+            "start": 53.94,
+            "end": 54.34,
+            "probability": 0.9936785101890564
+          },
+          {
+            "word": " me.",
+            "start": 54.34,
+            "end": 54.9,
+            "probability": 0.9898012280464172
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "start": 54.94,
+        "end": 59.04,
+        "text": "Oh, the city rain falls down",
+        "words": [
+          {
+            "word": " Oh,",
+            "start": 54.94,
+            "end": 55.64,
+            "probability": 0.5163300633430481
+          },
+          {
+            "word": " the",
+            "start": 57.02,
+            "end": 57.3,
+            "probability": 0.93117755651474
+          },
+          {
+            "word": " city",
+            "start": 57.3,
+            "end": 57.72,
+            "probability": 0.9623008966445923
+          },
+          {
+            "word": " rain",
+            "start": 57.72,
+            "end": 58.14,
+            "probability": 0.9431795477867126
+          },
+          {
+            "word": " falls",
+            "start": 58.14,
+            "end": 58.48,
+            "probability": 0.9851240515708923
+          },
+          {
+            "word": " down",
+            "start": 58.48,
+            "end": 59.04,
+            "probability": 0.9928799271583557
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "start": 59.04,
+        "end": 61.5,
+        "text": "on this quiet Tokyo town,",
+        "words": [
+          {
+            "word": " on",
+            "start": 59.04,
+            "end": 59.52,
+            "probability": 0.8590108156204224
+          },
+          {
+            "word": " this",
+            "start": 59.52,
+            "end": 59.78,
+            "probability": 0.990448534488678
+          },
+          {
+            "word": " quiet",
+            "start": 59.78,
+            "end": 60.28,
+            "probability": 0.9956764578819275
+          },
+          {
+            "word": " Tokyo",
+            "start": 60.28,
+            "end": 60.86,
+            "probability": 0.9293473362922668
+          },
+          {
+            "word": " town,",
+            "start": 60.86,
+            "end": 61.5,
+            "probability": 0.9824609160423279
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "start": 61.78,
+        "end": 64.78,
+        "text": "each drop of tear I can't explain,",
+        "words": [
+          {
+            "word": " each",
+            "start": 61.78,
+            "end": 62.24,
+            "probability": 0.949148416519165
+          },
+          {
+            "word": " drop",
+            "start": 62.24,
+            "end": 62.54,
+            "probability": 0.9763912558555603
+          },
+          {
+            "word": " of",
+            "start": 62.54,
+            "end": 62.8,
+            "probability": 0.7353261709213257
+          },
+          {
+            "word": " tear",
+            "start": 62.8,
+            "end": 63.02,
+            "probability": 0.9635261297225952
+          },
+          {
+            "word": " I",
+            "start": 63.02,
+            "end": 63.38,
+            "probability": 0.8971889615058899
+          },
+          {
+            "word": " can't",
+            "start": 63.38,
+            "end": 64.1,
+            "probability": 0.9609896838665009
+          },
+          {
+            "word": " explain,",
+            "start": 64.1,
+            "end": 64.78,
+            "probability": 0.9947953820228577
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "start": 66.0,
+        "end": 69.36,
+        "text": "wishing you were here again,",
+        "words": [
+          {
+            "word": " wishing",
+            "start": 66.0,
+            "end": 66.9,
+            "probability": 0.9698871374130249
+          },
+          {
+            "word": " you",
+            "start": 66.9,
+            "end": 67.54,
+            "probability": 0.9916723370552063
+          },
+          {
+            "word": " were",
+            "start": 67.54,
+            "end": 68.04,
+            "probability": 0.9719663262367249
+          },
+          {
+            "word": " here",
+            "start": 68.04,
+            "end": 68.44,
+            "probability": 0.9950246214866638
+          },
+          {
+            "word": " again,",
+            "start": 68.44,
+            "end": 69.36,
+            "probability": 0.9937440752983093
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "start": 69.82,
+        "end": 74.16,
+        "text": "my heart aches with this sweet, sad strain.",
+        "words": [
+          {
+            "word": " my",
+            "start": 69.82,
+            "end": 70.1,
+            "probability": 0.9712457656860352
+          },
+          {
+            "word": " heart",
+            "start": 70.1,
+            "end": 70.52,
+            "probability": 0.9990239143371582
+          },
+          {
+            "word": " aches",
+            "start": 70.52,
+            "end": 70.84,
+            "probability": 0.9590932130813599
+          },
+          {
+            "word": " with",
+            "start": 70.84,
+            "end": 71.1,
+            "probability": 0.9897302389144897
+          },
+          {
+            "word": " this",
+            "start": 71.1,
+            "end": 71.5,
+            "probability": 0.891944408416748
+          },
+          {
+            "word": " sweet,",
+            "start": 71.5,
+            "end": 72.52,
+            "probability": 0.9965382814407349
+          },
+          {
+            "word": " sad",
+            "start": 72.52,
+            "end": 73.34,
+            "probability": 0.998975396156311
+          },
+          {
+            "word": " strain.",
+            "start": 73.34,
+            "end": 74.16,
+            "probability": 0.748203456401825
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "start": 78.82000000000001,
+        "end": 81.36,
+        "text": "Neon signs and blurry streaks,",
+        "words": [
+          {
+            "word": " Neon",
+            "start": 78.82000000000001,
+            "end": 79.68,
+            "probability": 0.476732955314219
+          },
+          {
+            "word": " signs",
+            "start": 79.68,
+            "end": 80.02,
+            "probability": 0.9664309620857239
+          },
+          {
+            "word": " and",
+            "start": 80.02,
+            "end": 80.4,
+            "probability": 0.7661405801773071
+          },
+          {
+            "word": " blurry",
+            "start": 80.4,
+            "end": 80.76,
+            "probability": 0.9941166639328003
+          },
+          {
+            "word": " streaks,",
+            "start": 80.76,
+            "end": 81.36,
+            "probability": 0.9915253520011902
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "start": 81.44,
+        "end": 83.46,
+        "text": "reflecting on the wet streets,",
+        "words": [
+          {
+            "word": " reflecting",
+            "start": 81.44,
+            "end": 81.92,
+            "probability": 0.8508468270301819
+          },
+          {
+            "word": " on",
+            "start": 81.92,
+            "end": 82.56,
+            "probability": 0.9903806447982788
+          },
+          {
+            "word": " the",
+            "start": 82.56,
+            "end": 82.88,
+            "probability": 0.8813384771347046
+          },
+          {
+            "word": " wet",
+            "start": 82.88,
+            "end": 83.04,
+            "probability": 0.9825459718704224
+          },
+          {
+            "word": " streets,",
+            "start": 83.04,
+            "end": 83.46,
+            "probability": 0.970562756061554
+          }
+        ]
+      },
+      {
+        "id": 17,
+        "start": 83.56,
+        "end": 86.18,
+        "text": "umbrellas pass a hurry pace,",
+        "words": [
+          {
+            "word": " umbrellas",
+            "start": 83.56,
+            "end": 84.54,
+            "probability": 0.9767869710922241
+          },
+          {
+            "word": " pass",
+            "start": 84.54,
+            "end": 84.88,
+            "probability": 0.7459989786148071
+          },
+          {
+            "word": " a",
+            "start": 84.88,
+            "end": 85.28,
+            "probability": 0.8110214471817017
+          },
+          {
+            "word": " hurry",
+            "start": 85.28,
+            "end": 85.66,
+            "probability": 0.6929474472999573
+          },
+          {
+            "word": " pace,",
+            "start": 85.66,
+            "end": 86.18,
+            "probability": 0.9827519059181213
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "start": 86.56,
+        "end": 88.96,
+        "text": "no one sees my lonely face,",
+        "words": [
+          {
+            "word": " no",
+            "start": 86.56,
+            "end": 86.82,
+            "probability": 0.9077170491218567
+          },
+          {
+            "word": " one",
+            "start": 86.82,
+            "end": 87.08,
+            "probability": 0.9466922879219055
+          },
+          {
+            "word": " sees",
+            "start": 87.08,
+            "end": 87.38,
+            "probability": 0.986151397228241
+          },
+          {
+            "word": " my",
+            "start": 87.38,
+            "end": 87.66,
+            "probability": 0.9975409507751465
+          },
+          {
+            "word": " lonely",
+            "start": 87.66,
+            "end": 88.24,
+            "probability": 0.9969158172607422
+          },
+          {
+            "word": " face,",
+            "start": 88.24,
+            "end": 88.96,
+            "probability": 0.9887949228286743
+          }
+        ]
+      },
+      {
+        "id": 19,
+        "start": 89.3,
+        "end": 93.0,
+        "text": "lost in time, lost in this place,",
+        "words": [
+          {
+            "word": " lost",
+            "start": 89.3,
+            "end": 89.56,
+            "probability": 0.8951056599617004
+          },
+          {
+            "word": " in",
+            "start": 89.56,
+            "end": 90.08,
+            "probability": 0.9985415935516357
+          },
+          {
+            "word": " time,",
+            "start": 90.08,
+            "end": 90.56,
+            "probability": 0.9965110421180725
+          },
+          {
+            "word": " lost",
+            "start": 91.22,
+            "end": 91.68,
+            "probability": 0.9758066534996033
+          },
+          {
+            "word": " in",
+            "start": 91.68,
+            "end": 92.2,
+            "probability": 0.9982779026031494
+          },
+          {
+            "word": " this",
+            "start": 92.2,
+            "end": 92.5,
+            "probability": 0.9905139207839966
+          },
+          {
+            "word": " place,",
+            "start": 92.5,
+            "end": 93.0,
+            "probability": 0.9982333183288574
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "start": 93.74,
+        "end": 96.48,
+        "text": "searching for your gentle grace.",
+        "words": [
+          {
+            "word": " searching",
+            "start": 93.74,
+            "end": 94.22,
+            "probability": 0.9847016930580139
+          },
+          {
+            "word": " for",
+            "start": 94.22,
+            "end": 94.7,
+            "probability": 0.9985321760177612
+          },
+          {
+            "word": " your",
+            "start": 94.7,
+            "end": 94.96,
+            "probability": 0.9937673807144165
+          },
+          {
+            "word": " gentle",
+            "start": 94.96,
+            "end": 95.56,
+            "probability": 0.9946799874305725
+          },
+          {
+            "word": " grace.",
+            "start": 95.56,
+            "end": 96.48,
+            "probability": 0.9904668927192688
+          }
+        ]
+      },
+      {
+        "id": 21,
+        "start": 98.22,
+        "end": 100.8,
+        "text": "Tokyo lights begin to gleam,",
+        "words": [
+          {
+            "word": " Tokyo",
+            "start": 98.22,
+            "end": 99.08,
+            "probability": 0.937825083732605
+          },
+          {
+            "word": " lights",
+            "start": 99.08,
+            "end": 99.52,
+            "probability": 0.9817695021629333
+          },
+          {
+            "word": " begin",
+            "start": 99.52,
+            "end": 99.88,
+            "probability": 0.980330765247345
+          },
+          {
+            "word": " to",
+            "start": 99.88,
+            "end": 100.26,
+            "probability": 0.999226450920105
+          },
+          {
+            "word": " gleam,",
+            "start": 100.26,
+            "end": 100.8,
+            "probability": 0.9544132649898529
+          }
+        ]
+      },
+      {
+        "id": 22,
+        "start": 101.08,
+        "end": 103.06,
+        "text": "lost inside a waking dream,",
+        "words": [
+          {
+            "word": " lost",
+            "start": 101.08,
+            "end": 101.36,
+            "probability": 0.986401379108429
+          },
+          {
+            "word": " inside",
+            "start": 101.36,
+            "end": 101.94,
+            "probability": 0.9762682914733887
+          },
+          {
+            "word": " a",
+            "start": 101.94,
+            "end": 102.24,
+            "probability": 0.9259004592895508
+          },
+          {
+            "word": " waking",
+            "start": 102.24,
+            "end": 102.56,
+            "probability": 0.8668699860572815
+          },
+          {
+            "word": " dream,",
+            "start": 102.56,
+            "end": 103.06,
+            "probability": 0.9978587031364441
+          }
+        ]
+      },
+      {
+        "id": 23,
+        "start": 103.06,
+        "end": 106.28,
+        "text": "every drop of memory of you,",
+        "words": [
+          {
+            "word": " every",
+            "start": 103.06,
+            "end": 103.98,
+            "probability": 0.04495943337678909
+          },
+          {
+            "word": " drop",
+            "start": 103.98,
+            "end": 104.38,
+            "probability": 0.9973399043083191
+          },
+          {
+            "word": " of",
+            "start": 104.38,
+            "end": 104.6,
+            "probability": 0.8099992871284485
+          },
+          {
+            "word": " memory",
+            "start": 104.6,
+            "end": 105.14,
+            "probability": 0.987166702747345
+          },
+          {
+            "word": " of",
+            "start": 105.14,
+            "end": 105.86,
+            "probability": 0.9796293377876282
+          },
+          {
+            "word": " you,",
+            "start": 105.86,
+            "end": 106.28,
+            "probability": 0.9888226985931396
+          }
+        ]
+      },
+      {
+        "id": 24,
+        "start": 106.38,
+        "end": 108.3,
+        "text": "so far from me.",
+        "words": [
+          {
+            "word": " so",
+            "start": 106.38,
+            "end": 106.74,
+            "probability": 0.9834290146827698
+          },
+          {
+            "word": " far",
+            "start": 106.74,
+            "end": 107.3,
+            "probability": 0.9989542961120605
+          },
+          {
+            "word": " from",
+            "start": 107.3,
+            "end": 107.7,
+            "probability": 0.9897040724754333
+          },
+          {
+            "word": " me.",
+            "start": 107.7,
+            "end": 108.3,
+            "probability": 0.9977103471755981
+          }
+        ]
+      },
+      {
+        "id": 25,
+        "start": 108.36,
+        "end": 112.38,
+        "text": "Oh, the city rain falls down",
+        "words": [
+          {
+            "word": " Oh,",
+            "start": 108.36,
+            "end": 109.12,
+            "probability": 0.6060342192649841
+          },
+          {
+            "word": " the",
+            "start": 109.78,
+            "end": 110.66,
+            "probability": 0.9395782351493835
+          },
+          {
+            "word": " city",
+            "start": 110.66,
+            "end": 111.1,
+            "probability": 0.9628025889396667
+          },
+          {
+            "word": " rain",
+            "start": 111.1,
+            "end": 111.48,
+            "probability": 0.9370558261871338
+          },
+          {
+            "word": " falls",
+            "start": 111.48,
+            "end": 111.86,
+            "probability": 0.9840096831321716
+          },
+          {
+            "word": " down",
+            "start": 111.86,
+            "end": 112.38,
+            "probability": 0.9944137334823608
+          }
+        ]
+      },
+      {
+        "id": 26,
+        "start": 112.38,
+        "end": 114.86,
+        "text": "on this quiet Tokyo town,",
+        "words": [
+          {
+            "word": " on",
+            "start": 112.38,
+            "end": 112.9,
+            "probability": 0.771202027797699
+          },
+          {
+            "word": " this",
+            "start": 112.9,
+            "end": 113.14,
+            "probability": 0.9946624636650085
+          },
+          {
+            "word": " quiet",
+            "start": 113.14,
+            "end": 113.64,
+            "probability": 0.9950030446052551
+          },
+          {
+            "word": " Tokyo",
+            "start": 113.64,
+            "end": 114.2,
+            "probability": 0.9076417088508606
+          },
+          {
+            "word": " town,",
+            "start": 114.2,
+            "end": 114.86,
+            "probability": 0.975435733795166
+          }
+        ]
+      },
+      {
+        "id": 27,
+        "start": 115.18,
+        "end": 118.14,
+        "text": "each drop of tear I can't explain,",
+        "words": [
+          {
+            "word": " each",
+            "start": 115.18,
+            "end": 115.6,
+            "probability": 0.9004979133605957
+          },
+          {
+            "word": " drop",
+            "start": 115.6,
+            "end": 115.9,
+            "probability": 0.996723473072052
+          },
+          {
+            "word": " of",
+            "start": 115.9,
+            "end": 116.18,
+            "probability": 0.5227993726730347
+          },
+          {
+            "word": " tear",
+            "start": 116.18,
+            "end": 116.4,
+            "probability": 0.977871835231781
+          },
+          {
+            "word": " I",
+            "start": 116.4,
+            "end": 116.76,
+            "probability": 0.8879885077476501
+          },
+          {
+            "word": " can't",
+            "start": 116.76,
+            "end": 117.48,
+            "probability": 0.9155554473400116
+          },
+          {
+            "word": " explain,",
+            "start": 117.48,
+            "end": 118.14,
+            "probability": 0.9968773126602173
+          }
+        ]
+      },
+      {
+        "id": 28,
+        "start": 119.64,
+        "end": 122.68,
+        "text": "wishing you were here again,",
+        "words": [
+          {
+            "word": " wishing",
+            "start": 119.64,
+            "end": 120.28,
+            "probability": 0.9410929679870605
+          },
+          {
+            "word": " you",
+            "start": 120.28,
+            "end": 120.9,
+            "probability": 0.9908384680747986
+          },
+          {
+            "word": " were",
+            "start": 120.9,
+            "end": 121.34,
+            "probability": 0.9805712699890137
+          },
+          {
+            "word": " here",
+            "start": 121.34,
+            "end": 121.86,
+            "probability": 0.9938655495643616
+          },
+          {
+            "word": " again,",
+            "start": 121.86,
+            "end": 122.68,
+            "probability": 0.9904569983482361
+          }
+        ]
+      },
+      {
+        "id": 29,
+        "start": 123.22,
+        "end": 127.54,
+        "text": "my heart aches with this sweet, sad strain.",
+        "words": [
+          {
+            "word": " my",
+            "start": 123.22,
+            "end": 123.54,
+            "probability": 0.9682415127754211
+          },
+          {
+            "word": " heart",
+            "start": 123.54,
+            "end": 123.88,
+            "probability": 0.9972183704376221
+          },
+          {
+            "word": " aches",
+            "start": 123.88,
+            "end": 124.2,
+            "probability": 0.8592109680175781
+          },
+          {
+            "word": " with",
+            "start": 124.2,
+            "end": 124.48,
+            "probability": 0.9890747666358948
+          },
+          {
+            "word": " this",
+            "start": 124.48,
+            "end": 124.84,
+            "probability": 0.6688884496688843
+          },
+          {
+            "word": " sweet,",
+            "start": 124.84,
+            "end": 125.88,
+            "probability": 0.9956814050674438
+          },
+          {
+            "word": " sad",
+            "start": 125.88,
+            "end": 126.7,
+            "probability": 0.9894423484802246
+          },
+          {
+            "word": " strain.",
+            "start": 126.7,
+            "end": 127.54,
+            "probability": 0.7455927133560181
+          }
+        ]
+      },
+      {
+        "id": 30,
+        "start": 131.72,
+        "end": 134.56,
+        "text": "The piano plays a soft lemon,",
+        "words": [
+          {
+            "word": " The",
+            "start": 131.72,
+            "end": 132.54,
+            "probability": 0.27045851945877075
+          },
+          {
+            "word": " piano",
+            "start": 132.54,
+            "end": 133.06,
+            "probability": 0.9843356609344482
+          },
+          {
+            "word": " plays",
+            "start": 133.06,
+            "end": 133.58,
+            "probability": 0.9906746745109558
+          },
+          {
+            "word": " a",
+            "start": 133.58,
+            "end": 133.78,
+            "probability": 0.9387678503990173
+          },
+          {
+            "word": " soft",
+            "start": 133.78,
+            "end": 134.14,
+            "probability": 0.8910754919052124
+          },
+          {
+            "word": " lemon,",
+            "start": 134.14,
+            "end": 134.56,
+            "probability": 0.3671509921550751
+          }
+        ]
+      },
+      {
+        "id": 31,
+        "start": 134.86,
+        "end": 136.82,
+        "text": "a gentle, mournful sentiment,",
+        "words": [
+          {
+            "word": " a",
+            "start": 134.86,
+            "end": 135.1,
+            "probability": 0.7616710066795349
+          },
+          {
+            "word": " gentle,",
+            "start": 135.1,
+            "end": 135.48,
+            "probability": 0.9917379021644592
+          },
+          {
+            "word": " mournful",
+            "start": 135.74,
+            "end": 136.18,
+            "probability": 0.9594366153081259
+          },
+          {
+            "word": " sentiment,",
+            "start": 136.18,
+            "end": 136.82,
+            "probability": 0.9216156005859375
+          }
+        ]
+      },
+      {
+        "id": 32,
+        "start": 137.1,
+        "end": 139.42,
+        "text": "my acoustic guitar weeps low,",
+        "words": [
+          {
+            "word": " my",
+            "start": 137.1,
+            "end": 137.4,
+            "probability": 0.5873916149139404
+          },
+          {
+            "word": " acoustic",
+            "start": 137.4,
+            "end": 137.78,
+            "probability": 0.998102605342865
+          },
+          {
+            "word": " guitar",
+            "start": 137.78,
+            "end": 138.56,
+            "probability": 0.9959238767623901
+          },
+          {
+            "word": " weeps",
+            "start": 138.56,
+            "end": 139.06,
+            "probability": 0.9252411127090454
+          },
+          {
+            "word": " low,",
+            "start": 139.06,
+            "end": 139.42,
+            "probability": 0.8061431646347046
+          }
+        ]
+      },
+      {
+        "id": 33,
+        "start": 139.6,
+        "end": 141.94,
+        "text": "where did our happy moments go,",
+        "words": [
+          {
+            "word": " where",
+            "start": 139.6,
+            "end": 139.86,
+            "probability": 0.76544588804245
+          },
+          {
+            "word": " did",
+            "start": 139.86,
+            "end": 140.12,
+            "probability": 0.9948541522026062
+          },
+          {
+            "word": " our",
+            "start": 140.12,
+            "end": 140.48,
+            "probability": 0.9916844367980957
+          },
+          {
+            "word": " happy",
+            "start": 140.48,
+            "end": 140.92,
+            "probability": 0.9977096319198608
+          },
+          {
+            "word": " moments",
+            "start": 140.92,
+            "end": 141.4,
+            "probability": 0.9802985787391663
+          },
+          {
+            "word": " go,",
+            "start": 141.4,
+            "end": 141.94,
+            "probability": 0.993064820766449
+          }
+        ]
+      },
+      {
+        "id": 34,
+        "start": 142.14,
+        "end": 142.8,
+        "text": "this longing?",
+        "words": [
+          {
+            "word": " this",
+            "start": 142.14,
+            "end": 142.3,
+            "probability": 0.9828494191169739
+          },
+          {
+            "word": " longing?",
+            "start": 142.3,
+            "end": 142.8,
+            "probability": 0.9896118640899658
+          }
+        ]
+      },
+      {
+        "id": 35,
+        "start": 144.6,
+        "end": 147.36,
+        "text": "It continues to grow.",
+        "words": [
+          {
+            "word": " It",
+            "start": 144.6,
+            "end": 145.02,
+            "probability": 0.9018609523773193
+          },
+          {
+            "word": " continues",
+            "start": 145.02,
+            "end": 145.88,
+            "probability": 0.9965730905532837
+          },
+          {
+            "word": " to",
+            "start": 145.88,
+            "end": 146.8,
+            "probability": 0.9954692125320435
+          },
+          {
+            "word": " grow.",
+            "start": 146.8,
+            "end": 147.36,
+            "probability": 0.991949200630188
+          }
+        ]
+      },
+      {
+        "id": 36,
+        "start": 151.66,
+        "end": 154.06,
+        "text": "Empty chair beside me now,",
+        "words": [
+          {
+            "word": " Empty",
+            "start": 151.66,
+            "end": 152.48,
+            "probability": 0.8329260051250458
+          },
+          {
+            "word": " chair",
+            "start": 152.48,
+            "end": 152.88,
+            "probability": 0.9713914394378662
+          },
+          {
+            "word": " beside",
+            "start": 152.88,
+            "end": 153.2,
+            "probability": 0.9766311049461365
+          },
+          {
+            "word": " me",
+            "start": 153.2,
+            "end": 153.64,
+            "probability": 0.9973752498626709
+          },
+          {
+            "word": " now,",
+            "start": 153.64,
+            "end": 154.06,
+            "probability": 0.9200464487075806
+          }
+        ]
+      },
+      {
+        "id": 37,
+        "start": 154.3,
+        "end": 156.48,
+        "text": "I trace your smile upon my brow,",
+        "words": [
+          {
+            "word": " I",
+            "start": 154.3,
+            "end": 154.36,
+            "probability": 0.9817926287651062
+          },
+          {
+            "word": " trace",
+            "start": 154.36,
+            "end": 154.68,
+            "probability": 0.9760065078735352
+          },
+          {
+            "word": " your",
+            "start": 154.68,
+            "end": 154.94,
+            "probability": 0.989194393157959
+          },
+          {
+            "word": " smile",
+            "start": 154.94,
+            "end": 155.22,
+            "probability": 0.998146653175354
+          },
+          {
+            "word": " upon",
+            "start": 155.22,
+            "end": 155.66,
+            "probability": 0.9911428689956665
+          },
+          {
+            "word": " my",
+            "start": 155.66,
+            "end": 156.08,
+            "probability": 0.9978176355361938
+          },
+          {
+            "word": " brow,",
+            "start": 156.08,
+            "end": 156.48,
+            "probability": 0.99642014503479
+          }
+        ]
+      },
+      {
+        "id": 38,
+        "start": 156.48,
+        "end": 159.0,
+        "text": "this apartment feels so vast,",
+        "words": [
+          {
+            "word": " this",
+            "start": 156.48,
+            "end": 157.2,
+            "probability": 0.07370659708976746
+          },
+          {
+            "word": " apartment",
+            "start": 157.2,
+            "end": 157.74,
+            "probability": 0.9839338660240173
+          },
+          {
+            "word": " feels",
+            "start": 157.74,
+            "end": 158.18,
+            "probability": 0.9434055089950562
+          },
+          {
+            "word": " so",
+            "start": 158.18,
+            "end": 158.52,
+            "probability": 0.9988941550254822
+          },
+          {
+            "word": " vast,",
+            "start": 158.52,
+            "end": 159.0,
+            "probability": 0.996057391166687
+          }
+        ]
+      },
+      {
+        "id": 39,
+        "start": 159.38,
+        "end": 161.38,
+        "text": "shadows from a fading past,",
+        "words": [
+          {
+            "word": " shadows",
+            "start": 159.38,
+            "end": 159.68,
+            "probability": 0.9641960859298706
+          },
+          {
+            "word": " from",
+            "start": 159.68,
+            "end": 160.12,
+            "probability": 0.9936712980270386
+          },
+          {
+            "word": " a",
+            "start": 160.12,
+            "end": 160.42,
+            "probability": 0.9209230542182922
+          },
+          {
+            "word": " fading",
+            "start": 160.42,
+            "end": 160.82,
+            "probability": 0.9981979727745056
+          },
+          {
+            "word": " past,",
+            "start": 160.82,
+            "end": 161.38,
+            "probability": 0.9978711605072021
+          }
+        ]
+      },
+      {
+        "id": 40,
+        "start": 161.54,
+        "end": 163.64,
+        "text": "how long will this feeling last?",
+        "words": [
+          {
+            "word": " how",
+            "start": 161.54,
+            "end": 161.7,
+            "probability": 0.933743417263031
+          },
+          {
+            "word": " long",
+            "start": 161.7,
+            "end": 162.08,
+            "probability": 0.9983401298522949
+          },
+          {
+            "word": " will",
+            "start": 162.08,
+            "end": 162.32,
+            "probability": 0.9975199103355408
+          },
+          {
+            "word": " this",
+            "start": 162.32,
+            "end": 162.62,
+            "probability": 0.9974699020385742
+          },
+          {
+            "word": " feeling",
+            "start": 162.62,
+            "end": 163.0,
+            "probability": 0.9972787499427795
+          },
+          {
+            "word": " last?",
+            "start": 163.0,
+            "end": 163.64,
+            "probability": 0.9991511106491089
+          }
+        ]
+      },
+      {
+        "id": 41,
+        "start": 164.1,
+        "end": 167.2,
+        "text": "My anchor, you're my mask.",
+        "words": [
+          {
+            "word": " My",
+            "start": 164.1,
+            "end": 164.34,
+            "probability": 0.6702067255973816
+          },
+          {
+            "word": " anchor,",
+            "start": 164.34,
+            "end": 164.68,
+            "probability": 0.8998945355415344
+          },
+          {
+            "word": " you're",
+            "start": 165.52,
+            "end": 165.86,
+            "probability": 0.9615543484687805
+          },
+          {
+            "word": " my",
+            "start": 165.86,
+            "end": 166.26,
+            "probability": 0.9773191809654236
+          },
+          {
+            "word": " mask.",
+            "start": 166.26,
+            "end": 167.2,
+            "probability": 0.45053261518478394
+          }
+        ]
+      },
+      {
+        "id": 42,
+        "start": 171.14,
+        "end": 175.5,
+        "text": "Oh, the city rain falls down",
+        "words": [
+          {
+            "word": " Oh,",
+            "start": 171.14,
+            "end": 171.98,
+            "probability": 0.6744115352630615
+          },
+          {
+            "word": " the",
+            "start": 173.28,
+            "end": 173.74,
+            "probability": 0.960602343082428
+          },
+          {
+            "word": " city",
+            "start": 173.74,
+            "end": 174.16,
+            "probability": 0.9741180539131165
+          },
+          {
+            "word": " rain",
+            "start": 174.16,
+            "end": 174.54,
+            "probability": 0.9472898840904236
+          },
+          {
+            "word": " falls",
+            "start": 174.54,
+            "end": 174.92,
+            "probability": 0.9720497727394104
+          },
+          {
+            "word": " down",
+            "start": 174.92,
+            "end": 175.5,
+            "probability": 0.9970490336418152
+          }
+        ]
+      },
+      {
+        "id": 43,
+        "start": 175.5,
+        "end": 177.96,
+        "text": "on this quiet Tokyo town,",
+        "words": [
+          {
+            "word": " on",
+            "start": 175.5,
+            "end": 176.02,
+            "probability": 0.8528075218200684
+          },
+          {
+            "word": " this",
+            "start": 176.02,
+            "end": 176.24,
+            "probability": 0.996760904788971
+          },
+          {
+            "word": " quiet",
+            "start": 176.24,
+            "end": 176.72,
+            "probability": 0.9971972703933716
+          },
+          {
+            "word": " Tokyo",
+            "start": 176.72,
+            "end": 177.38,
+            "probability": 0.9477218389511108
+          },
+          {
+            "word": " town,",
+            "start": 177.38,
+            "end": 177.96,
+            "probability": 0.986096203327179
+          }
+        ]
+      },
+      {
+        "id": 44,
+        "start": 178.44,
+        "end": 181.44,
+        "text": "each drop of tear I can't explain,",
+        "words": [
+          {
+            "word": " each",
+            "start": 178.44,
+            "end": 178.7,
+            "probability": 0.8566999435424805
+          },
+          {
+            "word": " drop",
+            "start": 178.7,
+            "end": 178.96,
+            "probability": 0.9762446880340576
+          },
+          {
+            "word": " of",
+            "start": 178.96,
+            "end": 179.24,
+            "probability": 0.47974893450737
+          },
+          {
+            "word": " tear",
+            "start": 179.24,
+            "end": 179.5,
+            "probability": 0.9858521223068237
+          },
+          {
+            "word": " I",
+            "start": 179.5,
+            "end": 179.84,
+            "probability": 0.8967102766036987
+          },
+          {
+            "word": " can't",
+            "start": 179.84,
+            "end": 180.58,
+            "probability": 0.9583806991577148
+          },
+          {
+            "word": " explain,",
+            "start": 180.58,
+            "end": 181.44,
+            "probability": 0.9979852437973022
+          }
+        ]
+      },
+      {
+        "id": 45,
+        "start": 182.44,
+        "end": 185.9,
+        "text": "wishing you were here again,",
+        "words": [
+          {
+            "word": " wishing",
+            "start": 182.44,
+            "end": 183.34,
+            "probability": 0.07978293299674988
+          },
+          {
+            "word": " you",
+            "start": 183.34,
+            "end": 183.96,
+            "probability": 0.9869521856307983
+          },
+          {
+            "word": " were",
+            "start": 183.96,
+            "end": 184.4,
+            "probability": 0.84452223777771
+          },
+          {
+            "word": " here",
+            "start": 184.4,
+            "end": 184.94,
+            "probability": 0.9901567697525024
+          },
+          {
+            "word": " again,",
+            "start": 184.94,
+            "end": 185.9,
+            "probability": 0.9910090565681458
+          }
+        ]
+      },
+      {
+        "id": 46,
+        "start": 186.12,
+        "end": 190.64,
+        "text": "my heart aches with this sweet, sad strain.",
+        "words": [
+          {
+            "word": " my",
+            "start": 186.12,
+            "end": 186.62,
+            "probability": 0.9375807642936707
+          },
+          {
+            "word": " heart",
+            "start": 186.62,
+            "end": 186.96,
+            "probability": 0.9967141151428223
+          },
+          {
+            "word": " aches",
+            "start": 186.96,
+            "end": 187.28,
+            "probability": 0.9247274100780487
+          },
+          {
+            "word": " with",
+            "start": 187.28,
+            "end": 187.52,
+            "probability": 0.9882733821868896
+          },
+          {
+            "word": " this",
+            "start": 187.52,
+            "end": 187.9,
+            "probability": 0.9287275671958923
+          },
+          {
+            "word": " sweet,",
+            "start": 187.9,
+            "end": 188.82,
+            "probability": 0.9938150644302368
+          },
+          {
+            "word": " sad",
+            "start": 188.92,
+            "end": 189.86,
+            "probability": 0.9975802898406982
+          },
+          {
+            "word": " strain.",
+            "start": 189.86,
+            "end": 190.64,
+            "probability": 0.892187774181366
+          }
+        ]
+      },
+      {
+        "id": 47,
+        "start": 211.44,
+        "end": 212.18,
+        "text": "Thank you for watching!",
+        "words": [
+          {
+            "word": " Thank",
+            "start": 211.44,
+            "end": 211.44,
+            "probability": 0.01041313074529171
+          },
+          {
+            "word": " you",
+            "start": 211.44,
+            "end": 211.54,
+            "probability": 0.9384279847145081
+          },
+          {
+            "word": " for",
+            "start": 211.54,
+            "end": 211.64,
+            "probability": 0.19089579582214355
+          },
+          {
+            "word": " watching!",
+            "start": 211.64,
+            "end": 212.18,
+            "probability": 0.6791403889656067
+          }
+        ]
+      }
+    ]
+  }
+}
