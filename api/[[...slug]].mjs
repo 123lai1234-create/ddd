@@ -1607,6 +1607,231 @@ async function etfByCode(request, code) {
   }
 }
 
+// ── data loaders (fetch from TWSE public API → insert into Neon) ────
+function twseDateStr(d) {
+  // input: Date object → "YYYYMMDD" (民國年自動轉西元)
+  return d.getFullYear().toString() +
+    String(d.getMonth() + 1).padStart(2, "0") +
+    String(d.getDate()).padStart(2, "0");
+}
+function rocToIsoDate(rocStr) {
+  // "115年07月31日" → "2026-07-31"
+  const m = /(\d+)年(\d+)月(\d+)日/.exec(rocStr);
+  if (!m) return null;
+  return `${parseInt(m[1], 10) + 1911}-${m[2]}-${m[3]}`;
+}
+function numFromStr(s) {
+  if (typeof s !== "string") return Number(s) || 0;
+  return Number(s.replace(/,/g, "")) || 0;
+}
+
+async function fetchTwse(url) {
+  // Retry with exponential backoff on 403/429/5xx
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
+    "Referer": "https://www.twse.com.tw/",
+    "Origin": "https://www.twse.com.tw",
+  };
+  let lastErr;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 12000);
+    try {
+      const r = await fetch(url, { headers, signal: ctrl.signal });
+      clearTimeout(tid);
+      if (r.ok) return await r.json();
+      const text = await r.text().catch(() => "");
+      lastErr = new Error(`TWSE HTTP ${r.status}: ${text.slice(0, 80)}`);
+      // 4xx except 429: don't retry (means bad request)
+      if (r.status >= 400 && r.status < 500 && r.status !== 429) throw lastErr;
+    } catch (e) {
+      clearTimeout(tid);
+      lastErr = e;
+      // abort or non-retryable → rethrow
+      if (e.name === "AbortError") throw e;
+      if (e.message && e.message.includes("TWSE HTTP 4") && !e.message.includes("429")) throw e;
+    }
+    const delay = 3000 * Math.pow(2, attempt);
+    await new Promise((res) => setTimeout(res, delay));
+  }
+  throw lastErr;
+}
+
+async function loadInstitutionalForDate(dateYmd) {
+  // dateYmd: "YYYY-MM-DD" or "YYYYMMDD"
+  const ymd = dateYmd.replace(/-/g, "");
+  const url = `https://www.twse.com.tw/rwd/zh/fund/T86?date=${ymd}&selectType=ALL&response=json`;
+  const data = await fetchTwse(url);
+  if (data.stat !== "OK" || !Array.isArray(data.data)) {
+    return { ok: false, source: "twse", error: data.stat || "no data", date: ymd, count: 0 };
+  }
+  // TWSE T86 欄位順序(2026 確認):
+  // 0: 證券代號, 1: 證券名稱
+  // 2-4: 外陸資買進/賣出/買賣超(不含外資自營商)
+  // 5-7: 外資自營商買進/賣出/買賣超
+  // 8-10: 投信買進/賣出/買賣超
+  // 11: 自營商買賣超(總)
+  // 12-14: 自營商(自行)買進/賣出/買賣超
+  // 15-17: 自營商(避險)買進/賣出/買賣超
+  // 18: 三大法人買賣超
+  const symbols = [];
+  const foreignBuy = [], foreignSell = [], foreignNet = [];
+  const trustBuy = [], trustSell = [], trustNet = [];
+  const dealerBuy = [], dealerSell = [], dealerNet = [];
+  for (const r of data.data) {
+    const sym = String(r[0] || "").trim();
+    if (!/^\d{4,6}$/.test(sym)) continue; // 只收純股票代號
+    symbols.push(sym);
+    foreignBuy.push(numFromStr(r[2]) + numFromStr(r[5]));   // 外陸資 + 外資自營
+    foreignSell.push(numFromStr(r[3]) + numFromStr(r[6]));
+    foreignNet.push(numFromStr(r[4]) + numFromStr(r[7]));
+    trustBuy.push(numFromStr(r[8]));
+    trustSell.push(numFromStr(r[9]));
+    trustNet.push(numFromStr(r[10]));
+    // dealer = 自行 + 避險
+    dealerBuy.push(numFromStr(r[12]) + numFromStr(r[15]));
+    dealerSell.push(numFromStr(r[13]) + numFromStr(r[16]));
+    dealerNet.push(numFromStr(r[11])); // 已是總買賣超
+  }
+  if (!symbols.length) return { ok: true, source: "twse", date: ymd, count: 0, message: "no stock rows" };
+  // Bulk upsert via UNNEST JOIN
+  const trade_date_iso = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
+  const arrays = [symbols, foreignBuy, foreignSell, foreignNet, trustBuy, trustSell, trustNet, dealerBuy, dealerSell, dealerNet];
+  const sql = `
+    INSERT INTO institutional
+      (symbol, trade_date, foreign_buy, foreign_sell, foreign_net,
+       trust_buy, trust_sell, trust_net, dealer_buy, dealer_sell, dealer_net, source)
+    SELECT s, $11::date, fb, fs, fn, tb, ts, tn, db, ds, dn, 'twse_T86'
+    FROM UNNEST($1::text[]) WITH ORDINALITY AS x(s, ord)
+    JOIN UNNEST($2::numeric[]) WITH ORDINALITY AS a(fb, ord) USING (ord)
+    JOIN UNNEST($3::numeric[]) WITH ORDINALITY AS b(fs, ord) USING (ord)
+    JOIN UNNEST($4::numeric[]) WITH ORDINALITY AS c(fn, ord) USING (ord)
+    JOIN UNNEST($5::numeric[]) WITH ORDINALITY AS d(tb, ord) USING (ord)
+    JOIN UNNEST($6::numeric[]) WITH ORDINALITY AS e(ts, ord) USING (ord)
+    JOIN UNNEST($7::numeric[]) WITH ORDINALITY AS f(tn, ord) USING (ord)
+    JOIN UNNEST($8::numeric[]) WITH ORDINALITY AS g(db, ord) USING (ord)
+    JOIN UNNEST($9::numeric[]) WITH ORDINALITY AS h(ds, ord) USING (ord)
+    JOIN UNNEST($10::numeric[]) WITH ORDINALITY AS i(dn, ord) USING (ord)
+    ON CONFLICT (symbol, trade_date) DO UPDATE SET
+      foreign_buy = EXCLUDED.foreign_buy,
+      foreign_sell = EXCLUDED.foreign_sell,
+      foreign_net = EXCLUDED.foreign_net,
+      trust_buy = EXCLUDED.trust_buy,
+      trust_sell = EXCLUDED.trust_sell,
+      trust_net = EXCLUDED.trust_net,
+      dealer_buy = EXCLUDED.dealer_buy,
+      dealer_sell = EXCLUDED.dealer_sell,
+      dealer_net = EXCLUDED.dealer_net,
+      fetched_at = now()`;
+  const { rows } = await q(sql, [symbols, foreignBuy, foreignSell, foreignNet, trustBuy, trustSell, trustNet, dealerBuy, dealerSell, dealerNet, trade_date_iso]);
+  return { ok: true, source: "twse_T86", date: trade_date_iso, count: symbols.length };
+}
+
+async function loadExdivForDate(dateYmd) {
+  // dateYmd: "YYYY-MM-DD" (exdiv API is date-range based, returns all exdivs up to date)
+  const ymd = dateYmd.replace(/-/g, "");
+  const url = `https://www.twse.com.tw/rwd/zh/exRight/TWT49U?date=${ymd}&response=json`;
+  const data = await fetchTwse(url);
+  if (data.stat !== "OK" || !Array.isArray(data.data)) {
+    return { ok: false, source: "twse", error: data.stat || "no data", date: ymd, count: 0 };
+  }
+  // Field order: 資料日期, 股票代號, 股票名稱, 除權息前收盤價, 除權息參考價, 權值+息值, 權/息, ...
+  const symbols = [], ex_dates = [], cash = [], stock = [], types = [];
+  for (const r of data.data) {
+    const sym = String(r[1] || "").trim();
+    if (!/^\d{4,6}$/.test(sym)) continue;
+    const ex_date = rocToIsoDate(String(r[0] || ""));
+    if (!ex_date) continue;
+    const kind = String(r[6] || ""); // 息 / 權 / 權息
+    symbols.push(sym);
+    ex_dates.push(ex_date);
+    cash.push(kind.includes("息") ? numFromStr(r[5]) : 0);
+    stock.push(kind.includes("權") ? numFromStr(r[5]) : 0);
+    types.push(kind);
+  }
+  if (!symbols.length) return { ok: true, source: "twse", date: ymd, count: 0, message: "no exdiv rows" };
+  const sql = `
+    INSERT INTO dividend_calendar (symbol, ex_date, cash_dividend, stock_dividend, source)
+    SELECT s, d::date, c, st, 'twse_TWT49U'
+    FROM UNNEST($1::text[]) WITH ORDINALITY AS x(s, ord)
+    JOIN UNNEST($2::text[]) WITH ORDINALITY AS y(d, ord) USING (ord)
+    JOIN UNNEST($3::numeric[]) WITH ORDINALITY AS z(c, ord) USING (ord)
+    JOIN UNNEST($4::numeric[]) WITH ORDINALITY AS w(st, ord) USING (ord)
+    ON CONFLICT DO NOTHING`;
+  await q(sql, [symbols, ex_dates, cash, stock]);
+  return { ok: true, source: "twse_TWT49U", date: ymd, count: symbols.length };
+}
+
+async function loadInstitutional(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  // Vercel Cron 不送 body,也不帶 password → 接受 GET (公開 cron trigger)
+  // 手動 trigger 仍可 POST + 帶 password
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  const dateParam = pickStr(body?.date || u.searchParams.get("date") || "").trim();
+  const days = Math.min(30, Math.max(1, parseInt(body?.days || u.searchParams.get("days") || "1", 10) || 1));
+  const startDate = dateParam || (() => {
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+  const results = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(startDate); d.setDate(d.getDate() - i);
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    try {
+      const r = await loadInstitutionalForDate(ymd);
+      results.push(r);
+    } catch (e) {
+      results.push({ ok: false, date: ymd, error: e?.message });
+    }
+    if (i < days - 1) await new Promise((res) => setTimeout(res, 2500));
+  }
+  const okCount = results.filter((r) => r.ok).length;
+  return json({ ok: true, source: "loader", requested: days, succeeded: okCount, results });
+}
+
+async function loadExdiv(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  const dateParam = pickStr(body?.date || u.searchParams.get("date") || "").trim();
+  const date = dateParam || (() => {
+    const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+  try {
+    const r = await loadExdivForDate(date);
+    return json({ ok: true, source: "loader", ...r });
+  } catch (e) {
+    return json({ ok: false, source: "loader", error: e?.message, date });
+  }
+}
+
+async function loadAll(request) {
+  if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
+  const body = await readJson(request);
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
+  const days = Math.min(30, Math.max(1, parseInt(body?.days || "3", 10) || 3));
+  const instiResults = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(); d.setDate(d.getDate() - 1 - i);
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    try { instiResults.push(await loadInstitutionalForDate(ymd)); } catch (e) { instiResults.push({ ok: false, date: ymd, error: e?.message }); }
+  }
+  const exdivResults = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    try { exdivResults.push(await loadExdivForDate(ymd)); } catch (e) { exdivResults.push({ ok: false, date: ymd, error: e?.message }); }
+  }
+  return json({ ok: true, source: "loader", institutional: instiResults, exdiv: exdivResults });
+}
+
 // ── placeholders (return helpful shape, not pure stub) ───────────────
 function placeholder(name, hint) {
   return json({ ok: true, source: "stub", tier: 1, endpoint: name, hint, value: null, items: [] });
@@ -1733,6 +1958,11 @@ const TABLE = [
   ["GET",  /^\/admin\/logs\/?$/,             adminLogs],
   ["POST", /^\/admin\/logs\/clear\/?$/,      adminLogsClear],
   ["GET",  /^\/admin\/logs\/([^/]+?)\/?$/,   adminLogs],
+  ["GET",  /^\/admin\/load\/institutional\/?$/, loadInstitutional],
+  ["POST", /^\/admin\/load\/institutional\/?$/, loadInstitutional],
+  ["GET",  /^\/admin\/load\/exdiv\/?$/,      loadExdiv],
+  ["POST", /^\/admin\/load\/exdiv\/?$/,      loadExdiv],
+  ["POST", /^\/admin\/load\/all\/?$/,        loadAll],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
@@ -1787,4 +2017,4 @@ export default async function handler(request) {
   }
 }
 
-export const config = { runtime: "edge", maxDuration: 25 };
+export const config = { runtime: "edge", maxDuration: 60 };
