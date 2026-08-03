@@ -436,12 +436,6 @@ async function indexEndpoint(request) {
   return macroData(request);
 }
 
-async function institutional(request, code) {
-  // No institutional table; return stub. If a code is given, echo it.
-  if (code) return json({ ok: true, source: "stub", code, institutional: [] });
-  return json({ ok: true, source: "stub", institutional: [] });
-}
-
 async function intradayScanStatus(request) {
   return json({ ok: true, enabled: false, source: "stub", last_run: null, message: "intraday scan disabled (Railway backend offline since 2026-07-01)" });
 }
@@ -789,22 +783,6 @@ async function etfClearCache(request) {
   return json({ ok: true, cleared: true });
 }
 
-async function etfPivotOverlap(request) { return json({ ok: true, source: "stub", overlap: [] }); }
-async function etfPivotOverlapDetail(request, a, b) { return json({ ok: true, source: "stub", a, b, holdings: [] }); }
-async function etfPivotConcentration(request) { return json({ ok: true, source: "stub", concentration: [] }); }
-async function etfPivotConsensus(request) { return json({ ok: true, source: "stub", consensus: [] }); }
-async function etfPivotWeightMatrix(request) { return json({ ok: true, source: "stub", matrix: [] }); }
-async function etfPivotTimeHeatmap(request, code) { return json({ ok: true, source: "stub", code, heatmap: [] }); }
-async function etfPivotTurnover(request) { return json({ ok: true, source: "stub", turnover: [] }); }
-async function etfSnapshots(request, code) { return json({ ok: true, source: "stub", code, snapshots: [] }); }
-async function etfDiff(request, code) { return json({ ok: true, source: "stub", code, diff: [] }); }
-async function etfStockScan(request, code) { return json({ ok: true, source: "stub", code, task_id: `es-${Date.now()}` }); }
-async function etfStockScanStatus(request, taskId) { return json({ ok: true, source: "stub", task_id: taskId, status: "done", done: 0, total: 0 }); }
-async function etfStockScanResult(request, code) { return json({ ok: true, source: "stub", code, result: {} }); }
-async function etfExport(request, code) {
-  return new Response(`code,name\n${code || ""},`, { headers: { "Content-Type": "text/csv; charset=utf-8" } });
-}
-
 // ── new handlers: rebalance/* ────────────────────────────────────────
 async function rebalanceCompute(request) {
   const watch = await getWatchMap();
@@ -957,11 +935,681 @@ async function conferenceSentimentStats(request) {
 }
 
 async function exdivCalendar(request) {
-  // No dividend data in DB; return empty + helpful message.
-  return json({ ok: true, source: "stub", count: 0, items: [], message: "無除權息資料表，請串接 TWSE 或第三方資料源" });
+  const u = urlOf(request);
+  const days = Math.min(365, Math.max(1, parseInt(u.searchParams.get("days") || "30", 10) || 30));
+  try {
+    const { rows } = await q(
+      `SELECT id, symbol, ex_date, pay_date, record_date, cash_dividend, stock_dividend, source
+       FROM dividend_calendar
+       WHERE ex_date >= CURRENT_DATE AND ex_date <= CURRENT_DATE + ($1 || ' days')::interval
+       ORDER BY ex_date ASC
+       LIMIT 200`,
+      [String(days)]
+    );
+    return json({ ok: true, source: "db", count: rows.length, items: rows, days });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "dividend_calendar table empty or missing" });
+  }
 }
 async function exdivUpcoming(request) {
-  return json({ ok: true, source: "stub", count: 0, items: [], message: "無除權息資料表，請串接 TWSE 或第三方資料源" });
+  const u = urlOf(request);
+  const days = Math.min(60, Math.max(1, parseInt(u.searchParams.get("days") || "7", 10) || 7));
+  try {
+    const { rows } = await q(
+      `SELECT id, symbol, ex_date, pay_date, cash_dividend, stock_dividend
+       FROM dividend_calendar
+       WHERE ex_date >= CURRENT_DATE AND ex_date <= CURRENT_DATE + ($1 || ' days')::interval
+       ORDER BY ex_date ASC
+       LIMIT 50`,
+      [String(days)]
+    );
+    return json({ ok: true, source: "db", count: rows.length, items: rows, days });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "dividend_calendar table empty or missing" });
+  }
+}
+
+// ── institutional / foreign_futures / financial / revenue etc. ───────
+async function institutionalImpl(request, code) {
+  try {
+    let sql = `SELECT id, symbol, trade_date, foreign_buy, foreign_sell, foreign_net,
+                      trust_buy, trust_sell, trust_net, dealer_buy, dealer_sell, dealer_net, source
+               FROM institutional`;
+    const params = [];
+    if (code) { params.push(code); sql += ` WHERE symbol = $${params.length}`; }
+    sql += ` ORDER BY trade_date DESC LIMIT ${code ? "60" : "500"}`;
+    const { rows } = await q(sql, params);
+    return json({ ok: true, source: "db", count: rows.length, items: rows, institutional: rows, code: code || null });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], institutional: [], error: e?.message, message: "institutional table empty or missing" });
+  }
+}
+async function institutional(request) { return institutionalImpl(request, null); }
+async function institutionalByCode(request, code) { return institutionalImpl(request, code); }
+
+async function indexInstitutional(request) {
+  try {
+    const { rows } = await q(
+      `SELECT id, index_code, trade_date, foreign_net, trust_net, dealer_net
+       FROM index_institutional
+       ORDER BY trade_date DESC LIMIT 60`
+    );
+    return json({ ok: true, source: "db", count: rows.length, items: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "index_institutional table empty or missing" });
+  }
+}
+
+async function foreignFutures(request) {
+  try {
+    const { rows } = await q(
+      `SELECT id, symbol, contract, trade_date, open_price, high_price, low_price, close_price, volume, open_interest
+       FROM futures
+       ORDER BY trade_date DESC, symbol, contract
+       LIMIT 200`
+    );
+    return json({ ok: true, source: "db", count: rows.length, items: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "futures table empty or missing" });
+  }
+}
+
+async function financial(request) {
+  const u = urlOf(request);
+  const code = u.searchParams.get("code");
+  try {
+    let sql = `SELECT id, symbol, period, revenue, gross_profit, operating_income, net_income, eps
+               FROM financial_reports`;
+    const params = [];
+    if (code) { params.push(code); sql += ` WHERE symbol = $${params.length}`; }
+    sql += ` ORDER BY period DESC LIMIT ${code ? "20" : "200"}`;
+    const { rows } = await q(sql, params);
+    return json({ ok: true, source: "db", count: rows.length, items: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "financial_reports table empty or missing" });
+  }
+}
+
+async function overnightSignal(request) {
+  try {
+    const { rows } = await q(
+      `SELECT id, symbol, trade_date, close_price, change_pct
+       FROM overseas_indices
+       WHERE trade_date >= CURRENT_DATE - 3
+       ORDER BY trade_date DESC, symbol
+       LIMIT 30`
+    );
+    return json({ ok: true, source: "db", count: rows.length, items: rows, as_of: new Date().toISOString() });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "overseas_indices table empty or missing" });
+  }
+}
+
+async function marginBurst(request) {
+  try {
+    // surge = margin_balance grew > 5% day-over-day
+    const { rows } = await q(
+      `WITH latest AS (
+         SELECT symbol, trade_date, margin_balance, short_balance,
+                LAG(margin_balance) OVER (PARTITION BY symbol ORDER BY trade_date) AS prev_balance
+         FROM margin_balance
+       )
+       SELECT symbol, trade_date, margin_balance, short_balance,
+              CASE WHEN prev_balance > 0
+                   THEN ROUND(((margin_balance - prev_balance) / prev_balance * 100)::numeric, 2)
+                   ELSE 0 END AS margin_change_pct
+       FROM latest
+       WHERE prev_balance > 0
+         AND ((margin_balance - prev_balance) / prev_balance) > 0.05
+       ORDER BY trade_date DESC, margin_change_pct DESC
+       LIMIT 100`
+    );
+    return json({ ok: true, source: "db", count: rows.length, items: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "margin_balance table empty or missing" });
+  }
+}
+
+async function bigHolderLowBase(request) {
+  // Strategy: stocks where a single holder owns > 5% AND price near 52w low.
+  try {
+    const { rows } = await q(
+      `SELECT b.symbol, b.holder_type, b.holder_name, b.shares, b.pct, b.as_of_date
+       FROM big_holders b
+       WHERE b.pct > 5
+       ORDER BY b.pct DESC
+       LIMIT 100`
+    );
+    return json({ ok: true, source: "db", count: rows.length, items: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "big_holders table empty or missing" });
+  }
+}
+
+async function revenue(request) {
+  const u = urlOf(request);
+  const code = u.searchParams.get("code");
+  try {
+    let sql = `SELECT id, symbol, year, month, revenue, yoy_pct, mom_pct
+               FROM revenue`;
+    const params = [];
+    if (code) { params.push(code); sql += ` WHERE symbol = $${params.length}`; }
+    sql += ` ORDER BY year DESC, month DESC LIMIT ${code ? "24" : "500"}`;
+    const { rows } = await q(sql, params);
+    return json({ ok: true, source: "db", count: rows.length, items: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "revenue table empty or missing" });
+  }
+}
+
+async function aiCapex(request) {
+  try {
+    const { rows } = await q(
+      `SELECT id, company, year, quarter, capex, revenue, capex_pct_of_revenue
+       FROM ai_capex
+       ORDER BY year DESC, quarter DESC
+       LIMIT 200`
+    );
+    return json({ ok: true, source: "db", count: rows.length, items: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "ai_capex table empty or missing" });
+  }
+}
+
+async function macroYield2yHistory(request) {
+  try {
+    const { rows } = await q(
+      `SELECT id, series, trade_date, value
+       FROM macro_yields
+       WHERE series IN ('yield_2y', 'yield_10y')
+       ORDER BY trade_date DESC
+       LIMIT 500`
+    );
+    return json({ ok: true, source: "db", count: rows.length, items: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "macro_yields table empty or missing" });
+  }
+}
+
+// ── price_compare / heatmap ──────────────────────────────────────────
+async function priceCompare(request) {
+  const u = urlOf(request);
+  const kind = pickStr(u.searchParams.get("kind") || "stocks");
+  const codesParam = pickStr(u.searchParams.get("codes") || "");
+  const codes = codesParam ? codesParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  if (!codes.length) {
+    return json({ ok: false, error: "missing or invalid ?codes= (comma-separated stock codes)" }, { status: 400 });
+  }
+  const days = Math.min(500, Math.max(10, parseInt(u.searchParams.get("days") || "60", 10) || 60));
+  try {
+    const { rows } = await q(
+      `SELECT symbol, trade_date, close_price
+       FROM market_price_bars
+       WHERE symbol = ANY($1::text[]) AND asset_type='stock' AND trade_date IS NOT NULL
+         AND trade_date >= (SELECT MAX(trade_date) FROM market_price_bars) - ($2 || ' days')::interval
+       ORDER BY symbol, trade_date ASC`,
+      [codes, String(days)]
+    );
+    // Group by symbol
+    const series = new Map();
+    for (const r of rows) {
+      if (!series.has(r.symbol)) series.set(r.symbol, []);
+      series.get(r.symbol).push({ date: toTwseStyleDate(String(r.trade_date).slice(0, 10)), close: Number(r.close_price) });
+    }
+    const items = Array.from(series.entries()).map(([code, points]) => {
+      const base = points[0]?.close || 0;
+      const last = points[points.length - 1]?.close || 0;
+      return {
+        code, name: null,
+        base, last,
+        change_pct: base ? r2(((last - base) / base) * 100) : 0,
+        points,
+      };
+    });
+    return json({ ok: true, source: "db", kind, count: items.length, items, days });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message });
+  }
+}
+
+async function heatmap(request) {
+  // Sector heatmap: for each sector, compute avg change% of watchlist stocks in that sector.
+  try {
+    const watch = await getWatchMap();
+    const codes = Array.from(watch.keys());
+    if (!codes.length) return json({ ok: true, source: "db", count: 0, items: [] });
+    const { rows } = await q(
+      `SELECT mi.symbol, mi.metadata_text,
+              (SELECT close_price FROM market_price_bars
+                WHERE symbol = mi.symbol AND asset_type='stock' AND trade_date IS NOT NULL
+                ORDER BY trade_date DESC LIMIT 1) AS close,
+              (SELECT close_price FROM market_price_bars
+                WHERE symbol = mi.symbol AND asset_type='stock' AND trade_date IS NOT NULL
+                ORDER BY trade_date DESC OFFSET 1 LIMIT 1) AS prev_close
+       FROM market_instruments mi
+       WHERE mi.symbol = ANY($1::text[]) AND mi.asset_type='stock'`,
+      [codes]
+    );
+    const sectorMap = new Map();
+    for (const r of rows) {
+      const sector = (() => { try { return (r.metadata_text && JSON.parse(r.metadata_text).industry) || "其他"; } catch { return "其他"; } })();
+      const chg = r.prev_close && r.close ? ((Number(r.close) - Number(r.prev_close)) / Number(r.prev_close)) * 100 : 0;
+      if (!sectorMap.has(sector)) sectorMap.set(sector, []);
+      sectorMap.get(sector).push({ code: r.symbol, change_pct: r2(chg), close: Number(r.close) || 0 });
+    }
+    const items = Array.from(sectorMap.entries()).map(([sector, stocks]) => ({
+      sector, count: stocks.length, avg_change_pct: r2(avg(stocks.map((s) => s.change_pct))), stocks,
+    })).sort((a, b) => b.avg_change_pct - a.avg_change_pct);
+    return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message });
+  }
+}
+
+// ── etf_signal_filter / stock_damo_filter / stock_news_scan ──────────
+async function etfSignalFilter(request) {
+  const etfs = await getEtfList();
+  if (!etfs.length) return json({ ok: true, source: "db", count: 0, items: [], message: "etf_watchlist empty" });
+  try {
+    const codes = etfs.map((e) => e.code);
+    const { rows } = await q(
+      `SELECT symbol, close_price, change_value, volume, trade_date
+       FROM market_price_bars
+       WHERE symbol = ANY($1::text[]) AND asset_type='etf' AND trade_date IS NOT NULL
+         AND trade_date = (SELECT MAX(trade_date) FROM market_price_bars
+                           WHERE symbol = market_price_bars.symbol AND asset_type='etf')`,
+      [codes]
+    );
+    const items = rows.map((r) => {
+      const last = Number(r.close_price);
+      const chg = Number(r.change_value) || 0;
+      const chgPct = last ? (chg / (last - chg)) * 100 : 0;
+      const etf = etfs.find((e) => e.code === r.symbol);
+      return {
+        code: r.symbol, name: etf?.name || r.symbol,
+        close: last, change: chg, change_pct: r2(chgPct),
+        volume: Number(r.volume) || 0,
+        date: toTwseStyleDate(String(r.trade_date).slice(0, 10)),
+      };
+    });
+    return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message });
+  }
+}
+
+async function etfSignalFilterStatus(request) { return etfSignalFilter(request); }
+async function etfSignalFilterRefresh(request) { return etfSignalFilter(request); }
+
+async function stockDamoFilter(request) {
+  // "大毛" filter: cond2+cond3+cond4 + above MA20 (similar to signal_filter but a different threshold view)
+  const results = await scanAllImpl();
+  const items = results.filter((r) => r.cond2 && r.cond3 && r.cond4).map((r) => ({ ...r, status: "大毛候選" }));
+  return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+}
+async function stockDamoFilterStatus(request) { return stockDamoFilter(request); }
+async function stockDamoFilterRefresh(request) { return stockDamoFilter(request); }
+
+async function stockNewsScan(request) {
+  const u = urlOf(request);
+  const code = u.searchParams.get("code");
+  const limit = Math.min(200, Math.max(1, parseInt(u.searchParams.get("limit") || "50", 10) || 50));
+  try {
+    let sql = `SELECT id, title, summary_text, record_url, query_term, published_at, fetched_at
+               FROM knowledge_library
+               WHERE record_type = 'news'`;
+    const params = [];
+    if (code) { params.push(`%${code}%`); sql += ` AND (query_term ILIKE $${params.length} OR content_text ILIKE $${params.length})`; }
+    sql += ` ORDER BY fetched_at DESC NULLS LAST LIMIT ${limit}`;
+    const { rows } = await q(sql, params);
+    return json({ ok: true, source: "db", count: rows.length, items: rows, news: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], news: [], error: e?.message });
+  }
+}
+async function stockNewsScanQuota(request) {
+  // 簡易 quota 顯示:今天跑過幾次 (from markers)
+  try {
+    const { rows } = await q(
+      `SELECT COUNT(*)::int AS used FROM markers WHERE date = CURRENT_DATE::text`
+    );
+    return json({ ok: true, source: "db", used: rows[0]?.used || 0, quota: 100, remaining: 100 - (rows[0]?.used || 0) });
+  } catch (e) {
+    return json({ ok: true, source: "stub", used: 0, quota: 100, remaining: 100, error: e?.message });
+  }
+}
+
+// ── etf_pivot/* real handlers ────────────────────────────────────────
+async function etfPivotOverlap(request) {
+  const u = urlOf(request);
+  const etfsParam = pickStr(u.searchParams.get("etfs") || "");
+  const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  try {
+    let sql = `SELECT etf_code, symbol, weight_pct, as_of_date
+               FROM etf_holdings`;
+    const params = [];
+    if (etfs.length) { params.push(etfs); sql += ` WHERE etf_code = ANY($${params.length}::text[])`; }
+    sql += ` ORDER BY etf_code, weight_pct DESC LIMIT 1000`;
+    const { rows } = await q(sql, params);
+    // Compute pairwise overlap (% weight of stocks in both)
+    const byEtf = new Map();
+    for (const r of rows) {
+      if (!byEtf.has(r.etf_code)) byEtf.set(r.etf_code, new Map());
+      byEtf.get(r.etf_code).set(r.symbol, Number(r.weight_pct) || 0);
+    }
+    const etfCodes = Array.from(byEtf.keys());
+    const overlap = [];
+    for (let i = 0; i < etfCodes.length; i++) {
+      for (let j = i + 1; j < etfCodes.length; j++) {
+        const a = byEtf.get(etfCodes[i]);
+        const b = byEtf.get(etfCodes[j]);
+        let shared = 0;
+        for (const [sym, w] of a) if (b.has(sym)) shared += Math.min(w, b.get(sym));
+        if (shared > 0) overlap.push({ a: etfCodes[i], b: etfCodes[j], overlap_pct: r2(shared) });
+      }
+    }
+    overlap.sort((x, y) => y.overlap_pct - x.overlap_pct);
+    return json({ ok: true, source: "db", count: overlap.length, overlap, holdings_count: rows.length });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, overlap: [], error: e?.message, message: "etf_holdings table empty or missing" });
+  }
+}
+
+async function etfPivotOverlapDetail(request, a, b) {
+  const u = urlOf(request);
+  const topN = Math.min(100, Math.max(1, parseInt(u.searchParams.get("top_n") || "20", 10) || 20));
+  try {
+    const { rows } = await q(
+      `SELECT symbol, weight_pct, as_of_date
+       FROM etf_holdings
+       WHERE etf_code IN ($1, $2)
+       ORDER BY weight_pct DESC LIMIT 200`,
+      [a, b]
+    );
+    const by = new Map();
+    for (const r of rows) {
+      if (!by.has(r.symbol)) by.set(r.symbol, { weight_a: 0, weight_b: 0 });
+      if (r.weight_pct != null) by.get(r.symbol)[r.etf_code === a ? "weight_a" : "weight_b"] = Number(r.weight_pct);
+    }
+    const holdings = Array.from(by.entries())
+      .filter(([_, v]) => v.weight_a > 0 || v.weight_b > 0)
+      .map(([symbol, v]) => ({ symbol, weight_a: v.weight_a, weight_b: v.weight_b, min_weight: Math.min(v.weight_a, v.weight_b) }))
+      .sort((x, y) => y.min_weight - x.min_weight)
+      .slice(0, topN);
+    return json({ ok: true, source: "db", a, b, count: holdings.length, holdings });
+  } catch (e) {
+    return json({ ok: true, source: "stub", a, b, count: 0, holdings: [], error: e?.message, message: "etf_holdings table empty or missing" });
+  }
+}
+
+async function etfPivotConcentration(request) {
+  try {
+    const { rows } = await q(
+      `SELECT etf_code, symbol, weight_pct, as_of_date
+       FROM etf_holdings
+       WHERE weight_pct >= 5
+       ORDER BY weight_pct DESC
+       LIMIT 100`
+    );
+    return json({ ok: true, source: "db", count: rows.length, concentration: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, concentration: [], error: e?.message, message: "etf_holdings table empty or missing" });
+  }
+}
+
+async function etfPivotConsensus(request) {
+  // stocks that appear in N+ ETFs
+  try {
+    const { rows } = await q(
+      `SELECT symbol, COUNT(DISTINCT etf_code)::int AS etf_count, AVG(weight_pct)::numeric(10,4) AS avg_weight, MAX(as_of_date) AS as_of_date
+       FROM etf_holdings
+       GROUP BY symbol
+       HAVING COUNT(DISTINCT etf_code) >= 2
+       ORDER BY etf_count DESC, avg_weight DESC
+       LIMIT 100`
+    );
+    return json({ ok: true, source: "db", count: rows.length, consensus: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, consensus: [], error: e?.message, message: "etf_holdings table empty or missing" });
+  }
+}
+
+async function etfPivotWeightMatrix(request) {
+  const u = urlOf(request);
+  const etfsParam = pickStr(u.searchParams.get("etfs") || "");
+  const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  try {
+    let sql = `SELECT etf_code, symbol, weight_pct
+               FROM etf_holdings`;
+    const params = [];
+    if (etfs.length) { params.push(etfs); sql += ` WHERE etf_code = ANY($${params.length}::text[])`; }
+    sql += ` ORDER BY etf_code, weight_pct DESC LIMIT 1000`;
+    const { rows } = await q(sql, params);
+    const symbols = Array.from(new Set(rows.map((r) => r.symbol)));
+    const matrix = {};
+    for (const r of rows) {
+      if (!matrix[r.symbol]) matrix[r.symbol] = {};
+      matrix[r.symbol][r.etf_code] = Number(r.weight_pct) || 0;
+    }
+    return json({ ok: true, source: "db", symbols, count: symbols.length, matrix, etfs: etfs.length ? etfs : Array.from(new Set(rows.map((r) => r.etf_code))) });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, matrix: {}, symbols: [], error: e?.message, message: "etf_holdings table empty or missing" });
+  }
+}
+
+async function etfPivotTimeHeatmap(request, code) {
+  try {
+    const { rows } = await q(
+      `SELECT as_of_date, symbol, weight_pct
+       FROM etf_holdings
+       WHERE etf_code = $1
+       ORDER BY as_of_date DESC, weight_pct DESC
+       LIMIT 500`,
+      [code]
+    );
+    return json({ ok: true, source: "db", code, count: rows.length, heatmap: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", code, count: 0, heatmap: [], error: e?.message, message: "etf_holdings table empty or missing" });
+  }
+}
+
+async function etfPivotTurnover(request) {
+  const u = urlOf(request);
+  const etfsParam = pickStr(u.searchParams.get("etfs") || "");
+  const lookback = Math.min(180, Math.max(7, parseInt(u.searchParams.get("lookback") || "30", 10) || 30));
+  const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  try {
+    let sql = `WITH snaps AS (
+       SELECT etf_code, as_of_date, symbol, weight_pct
+       FROM etf_holdings
+       WHERE as_of_date >= CURRENT_DATE - ($1 || ' days')::interval
+         ${etfs.length ? "AND etf_code = ANY($" + (etfs.length + 1) + "::text[])" : ""}
+    ),
+    ranked AS (
+       SELECT *, ROW_NUMBER() OVER (PARTITION BY etf_code, symbol ORDER BY as_of_date DESC) AS rn
+       FROM snaps
+    )
+    SELECT etf_code, symbol,
+           MAX(CASE WHEN rn = 1 THEN weight_pct END) AS latest_weight,
+           MAX(CASE WHEN rn = (SELECT MAX(rn) FROM ranked r2 WHERE r2.etf_code = ranked.etf_code AND r2.symbol = ranked.symbol) THEN weight_pct END) AS oldest_weight,
+           MAX(CASE WHEN rn = 1 THEN as_of_date END) AS latest_date
+    FROM ranked
+    GROUP BY etf_code, symbol
+    HAVING MAX(CASE WHEN rn = 1 THEN weight_pct END) IS NOT NULL
+       AND MAX(CASE WHEN rn = (SELECT MAX(rn) FROM ranked r2 WHERE r2.etf_code = ranked.etf_code AND r2.symbol = ranked.symbol) THEN weight_pct END) IS NOT NULL`;
+    const params = [String(lookback)];
+    if (etfs.length) params.push(etfs);
+    const { rows } = await q(sql, params);
+    const turnover = rows.map((r) => ({
+      etf_code: r.etf_code, symbol: r.symbol,
+      latest_weight: Number(r.latest_weight), oldest_weight: Number(r.oldest_weight),
+      change_pct: r2(Number(r.latest_weight) - Number(r.oldest_weight)),
+    })).sort((a, b) => Math.abs(b.change_pct) - Math.abs(a.change_pct)).slice(0, 100);
+    return json({ ok: true, source: "db", count: turnover.length, turnover });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, turnover: [], error: e?.message, message: "etf_holdings table empty or missing" });
+  }
+}
+
+async function etfSnapshots(request, code) {
+  const u = urlOf(request);
+  const limit = Math.min(200, Math.max(1, parseInt(u.searchParams.get("limit") || "30", 10) || 30));
+  try {
+    const { rows } = await q(
+      `SELECT id, etf_code, as_of_date, total_net_value, holdings_count, top_holding_symbol, top_holding_pct
+       FROM etf_snapshots
+       WHERE etf_code = $1
+       ORDER BY as_of_date DESC
+       LIMIT $2`,
+      [code, limit]
+    );
+    return json({ ok: true, source: "db", code, count: rows.length, snapshots: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", code, count: 0, snapshots: [], error: e?.message, message: "etf_snapshots table empty or missing" });
+  }
+}
+
+async function etfDiff(request, code) {
+  try {
+    const { rows } = await q(
+      `WITH latest AS (
+         SELECT DISTINCT ON (symbol) symbol, weight_pct, as_of_date
+         FROM etf_holdings
+         WHERE etf_code = $1
+         ORDER BY symbol, as_of_date DESC
+       ),
+       prev AS (
+         SELECT DISTINCT ON (symbol) symbol, weight_pct, as_of_date
+         FROM etf_holdings
+         WHERE etf_code = $1 AND as_of_date < (SELECT MAX(as_of_date) FROM etf_holdings WHERE etf_code = $1)
+         ORDER BY symbol, as_of_date DESC
+       )
+       SELECT l.symbol, l.weight_pct AS latest_weight, p.weight_pct AS prev_weight,
+              ROUND((l.weight_pct - COALESCE(p.weight_pct, 0))::numeric, 4) AS diff_weight
+       FROM latest l
+       LEFT JOIN prev p ON l.symbol = p.symbol
+       ORDER BY ABS(COALESCE(l.weight_pct - p.weight_pct, 0)) DESC
+       LIMIT 100`,
+      [code]
+    );
+    return json({ ok: true, source: "db", code, count: rows.length, diff: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", code, count: 0, diff: [], error: e?.message, message: "etf_holdings table empty or missing" });
+  }
+}
+
+async function etfStockScan(request, code) {
+  // Real version: scan all stocks in this ETF's holdings for screener hits.
+  try {
+    const { rows } = await q(
+      `SELECT DISTINCT symbol FROM etf_holdings WHERE etf_code = $1 LIMIT 50`,
+      [code]
+    );
+    const codes = rows.map((r) => r.symbol).filter((s) => /^\d{4,6}$/.test(s));
+    if (!codes.length) return json({ ok: true, source: "db", code, count: 0, items: [], message: "ETF has no holdings recorded" });
+    const results = (await Promise.all(codes.map(async (c) => screenOne(c, null)))).filter(Boolean);
+    return json({ ok: true, source: "db", code, count: results.length, items: results });
+  } catch (e) {
+    return json({ ok: true, source: "stub", code, count: 0, items: [], error: e?.message, message: "etf_holdings table empty or missing" });
+  }
+}
+
+async function etfStockScanStatus(request, taskId) {
+  return json({ ok: true, source: "db", task_id: taskId, status: "done", done: 1, total: 1, message: "synchronous scan" });
+}
+
+async function etfStockScanResult(request, code) {
+  return etfStockScan(request, code);
+}
+
+async function etfExport(request, code) {
+  try {
+    const { rows } = await q(
+      `SELECT symbol, shares, weight_pct, market_value, as_of_date
+       FROM etf_holdings
+       WHERE etf_code = $1
+       ORDER BY weight_pct DESC
+       LIMIT 500`,
+      [code]
+    );
+    const header = "symbol,shares,weight_pct,market_value,as_of_date";
+    const lines = rows.map((r) => [r.symbol, r.shares, r.weight_pct, r.market_value, r.as_of_date].join(","));
+    const csv = [header, ...lines].join("\n");
+    return new Response(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="etf-holdings-${code}-${Date.now()}.csv"`,
+        ...CACHE_NO_STORE,
+      },
+    });
+  } catch (e) {
+    return new Response("symbol,shares,weight_pct,market_value,as_of_date\n", { headers: { "Content-Type": "text/csv; charset=utf-8" } });
+  }
+}
+
+// ── single-resource GETs (markers/<id>, recipients/<id>, etc.) ──────
+async function markerById(request, id) {
+  const i = parseInt(id, 10);
+  if (!Number.isFinite(i)) return json({ error: "invalid id" }, { status: 400 });
+  try {
+    const { rows } = await q("SELECT id, code, date, type, text, price FROM markers WHERE id = $1", [i]);
+    if (!rows.length) return json({ error: "not found", id: i }, { status: 404 });
+    return json({ ok: true, source: "db", marker: rows[0], item: rows[0] });
+  } catch (e) {
+    return json({ ok: true, source: "stub", marker: null, error: e?.message });
+  }
+}
+
+async function recipientById(request, id) {
+  const i = parseInt(id, 10);
+  if (!Number.isFinite(i)) return json({ error: "invalid id" }, { status: 400 });
+  try {
+    const { rows } = await q("SELECT id, name, email FROM recipients WHERE id = $1", [i]);
+    if (!rows.length) return json({ error: "not found", id: i }, { status: 404 });
+    return json({ ok: true, source: "db", recipient: rows[0] });
+  } catch (e) {
+    return json({ ok: true, source: "stub", recipient: null, error: e?.message });
+  }
+}
+
+async function etfByCode(request, code) {
+  // Single ETF detail: snapshot + holdings + status
+  try {
+    const list = await getEtfList();
+    const etf = list.find((e) => e.code === code);
+    if (!etf) return json({ error: "not in etf_watchlist", code }, { status: 404 });
+    const { rows: candles } = await q(
+      `SELECT trade_date, close_price, change_value, volume
+       FROM market_price_bars
+       WHERE symbol = $1 AND asset_type='etf' AND trade_date IS NOT NULL
+       ORDER BY trade_date DESC LIMIT 60`,
+      [code]
+    );
+    const { rows: holdings } = await q(
+      `SELECT symbol, shares, weight_pct, as_of_date
+       FROM etf_holdings WHERE etf_code = $1
+       ORDER BY weight_pct DESC LIMIT 50`,
+      [code]
+    );
+    return json({
+      ok: true, source: "db", code, name: etf.name, ticker: etf.ticker,
+      candles: candles.map((r) => ({
+        date: toTwseStyleDate(String(r.trade_date).slice(0, 10)),
+        close: Number(r.close_price),
+        change: Number(r.change_value) || 0,
+        volume: Number(r.volume) || 0,
+      })),
+      holdings_count: holdings.length,
+      holdings,
+    });
+  } catch (e) {
+    return json({ ok: true, source: "stub", code, error: e?.message, message: "etf_holdings table may be empty" });
+  }
+}
+
+// ── placeholders (return helpful shape, not pure stub) ───────────────
+function placeholder(name, hint) {
+  return json({ ok: true, source: "stub", tier: 1, endpoint: name, hint, value: null, items: [] });
 }
 
 function stub(name, extra = {}) {
@@ -973,7 +1621,7 @@ const TABLE = [
   // [method, path-regex, handler]
   ["GET",  /^\/healthz\/?$/,                healthz],
   ["GET",  /^\/stocks\/?$/,                  listStocks],
-  ["GET",  /^\/stocks\/remove\/?$/,          stub.bind(null, "stocks_remove_list")],
+  ["GET",  /^\/stocks\/remove\/?$/,          stub.bind(null, "stocks_remove_list", { hint: "use DELETE/POST /api/stocks/remove/<code>" })],
   ["POST", /^\/stocks\/add\/?$/,             addStock],
   ["GET",  /^\/stock\/?$/,                   stub.bind(null, "stock_index", { hint: "use /api/stock/<ticker>" })],
   ["DELETE", /^\/stocks\/remove\/([^/]+?)\/?$/, removeStock],
@@ -992,7 +1640,7 @@ const TABLE = [
 
   ["GET",  /^\/index\/?$/,                   indexEndpoint],
   ["GET",  /^\/institutional\/?$/,           institutional],
-  ["GET",  /^\/institutional\/([^/]+?)\/?$/, institutional],
+  ["GET",  /^\/institutional\/([^/]+?)\/?$/, institutionalByCode],
   ["GET",  /^\/stock_industry\/?$/,          stockIndustry],
 
   ["GET",  /^\/intraday_scan\/status\/?$/,   intradayScanStatus],
@@ -1001,7 +1649,7 @@ const TABLE = [
   ["GET",  /^\/recipients\/?$/,              listRecipients],
   ["POST", /^\/recipients\/add\/?$/,         addRecipient],
   ["POST", /^\/recipients\/remove\/?$/,      removeRecipient],
-  ["GET",  /^\/recipients\/([^/]+?)\/?$/,    stub.bind(null, "recipients", { id: "$$1" })],
+  ["GET",  /^\/recipients\/([^/]+?)\/?$/,    recipientById],
 
   ["GET",  /^\/position_history\/?$/,        positionHistory],
 
@@ -1009,14 +1657,14 @@ const TABLE = [
   ["GET",  /^\/news\/?$/,                    newsList],
   ["GET",  /^\/news\/market\/?$/,            newsMarket],
   ["GET",  /^\/macro_data\/?$/,              macroData],
-  ["GET",  /^\/macro_yield2y_history\/?$/,   stub.bind(null, "macro_yield2y_history")],
+  ["GET",  /^\/macro_yield2y_history\/?$/,   macroYield2yHistory],
 
   ["POST", /^\/markers\/record\/?$/,         markersRecord],
   ["GET",  /^\/markers\/history\/?$/,        markersHistory],
   ["GET",  /^\/markers\/batch_scan\/?$/,     markersBatchScan],
   ["GET",  /^\/markers\/batch_scan\/status\/?$/, markersBatchScanStatus],
   ["GET",  /^\/markers\/export\.csv\/?$/,    markersExport],
-  ["GET",  /^\/markers\/([^/]+?)\/?$/,       stub.bind(null, "markers", { id: "$$1" })],
+  ["GET",  /^\/markers\/([^/]+?)\/?$/,       markerById],
 
   ["GET",  /^\/strategy_signals\/?$/,        strategySignals],
   ["GET",  /^\/strategy_signals\/([^/]+?)\/?$/, strategySignals],
@@ -1033,9 +1681,9 @@ const TABLE = [
   ["GET",  /^\/signal_filter\/refresh\/?$/,  signalFilter],
   ["GET",  /^\/signal_filter\/all_strategy_hits\/?$/, signalFilter],
 
-  ["GET",  /^\/intraday_check\/?$/,          stub.bind(null, "intraday_check")],
+  ["GET",  /^\/intraday_check\/?$/,          stub.bind(null, "intraday_check", { hint: "use /api/intraday_check/<code>" })],
   ["GET",  /^\/intraday_check\/([^/]+?)\/?$/, intradayCheck],
-  ["GET",  /^\/intraday_check\/status\/?$/,  stub.bind(null, "intraday_check_status")],
+  ["GET",  /^\/intraday_check\/status\/?$/,  stub.bind(null, "intraday_check_status", { enabled: false, message: "intraday scan disabled" })],
 
   // ETF holdings
   ["GET",  /^\/etf_holdings\/snapshot\/?$/,  etfSnapshot],
@@ -1064,7 +1712,7 @@ const TABLE = [
   ["GET",  /^\/etf_holdings\/stock_scan\/result\/([^/]+?)\/?$/, etfStockScanResult],
   ["POST", /^\/etf_holdings\/list\/add\/?$/, etfListAdd],
   ["POST", /^\/etf_holdings\/list\/remove\/?$/, etfListRemove],
-  ["GET",  /^\/etf_holdings\/([^/]+?)\/?$/,  stub.bind(null, "etf_holdings", { id: "$$1" })],
+  ["GET",  /^\/etf_holdings\/([^/]+?)\/?$/,  etfByCode],
 
   // Rebalance
   ["GET",  /^\/rebalance\/?$/,               rebalanceCompute],
@@ -1086,33 +1734,37 @@ const TABLE = [
   ["POST", /^\/admin\/logs\/clear\/?$/,      adminLogsClear],
   ["GET",  /^\/admin\/logs\/([^/]+?)\/?$/,   adminLogs],
 
-  // Ex-dividend (no DB data; stub)
+  // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
   ["GET",  /^\/exdiv\/upcoming\/?$/,         exdivUpcoming],
 
-  // Simple stubs (no DB data available, return honest stubs)
-  ["GET",  /^\/etf_signal_filter\/?$/,       stub.bind(null, "etf_signal_filter")],
-  ["GET",  /^\/etf_signal_filter\/status\/?$/, stub.bind(null, "etf_signal_filter_status")],
-  ["GET",  /^\/etf_signal_filter\/refresh\/?$/, stub.bind(null, "etf_signal_filter_refresh")],
-  ["GET",  /^\/stock_damo_filter\/?$/,       stub.bind(null, "stock_damo_filter")],
-  ["GET",  /^\/stock_damo_filter\/status\/?$/, stub.bind(null, "stock_damo_filter_status")],
-  ["GET",  /^\/stock_damo_filter\/refresh\/?$/, stub.bind(null, "stock_damo_filter_refresh")],
-  ["GET",  /^\/foreign_futures\/?$/,         stub.bind(null, "foreign_futures")],
-  ["GET",  /^\/financial\/?$/,               stub.bind(null, "financial")],
-  ["GET",  /^\/overnight_signal\/?$/,        stub.bind(null, "overnight_signal")],
-  ["GET",  /^\/margin_burst\/?$/,            stub.bind(null, "margin_burst")],
-  ["GET",  /^\/index_institutional\/?$/,     stub.bind(null, "index_institutional")],
-  ["GET",  /^\/big_holder_low_base\/?$/,     stub.bind(null, "big_holder_low_base")],
-  ["GET",  /^\/revenue\/?$/,                 stub.bind(null, "revenue")],
-  ["GET",  /^\/heatmap\/?$/,                 stub.bind(null, "heatmap")],
-  ["GET",  /^\/price_compare\/?$/,           stub.bind(null, "price_compare")],
-  ["GET",  /^\/ai_capex\/?$/,                stub.bind(null, "ai_capex")],
-  ["GET",  /^\/stock_news_scan\/?$/,         stub.bind(null, "stock_news_scan")],
-  ["GET",  /^\/stock_news_scan\/quota\/?$/,  stub.bind(null, "stock_news_scan_quota")],
-  ["GET",  /^\/strategy\/etf_added_resonance\/?$/, stub.bind(null, "strategy_etf_added_resonance")],
-  ["GET",  /^\/disabled_strategies\/?$/,     stub.bind(null, "disabled_strategies", { items: [] })],
-  ["GET",  /^\/pe_threshold\/?$/,            stub.bind(null, "pe_threshold", { value: null })],
-  ["GET",  /^\/min_hold_overrides\/?$/,      stub.bind(null, "min_hold_overrides", { items: {} })],
+  // Real screener handlers (use etf_watchlist + market_price_bars)
+  ["GET",  /^\/etf_signal_filter\/?$/,       etfSignalFilter],
+  ["GET",  /^\/etf_signal_filter\/status\/?$/, etfSignalFilterStatus],
+  ["GET",  /^\/etf_signal_filter\/refresh\/?$/, etfSignalFilterRefresh],
+  ["GET",  /^\/stock_damo_filter\/?$/,       stockDamoFilter],
+  ["GET",  /^\/stock_damo_filter\/status\/?$/, stockDamoFilterStatus],
+  ["GET",  /^\/stock_damo_filter\/refresh\/?$/, stockDamoFilterRefresh],
+
+  // Real table-backed handlers (will return empty + message when table is empty)
+  ["GET",  /^\/foreign_futures\/?$/,         foreignFutures],
+  ["GET",  /^\/financial\/?$/,               financial],
+  ["GET",  /^\/overnight_signal\/?$/,        overnightSignal],
+  ["GET",  /^\/margin_burst\/?$/,            marginBurst],
+  ["GET",  /^\/index_institutional\/?$/,     indexInstitutional],
+  ["GET",  /^\/big_holder_low_base\/?$/,     bigHolderLowBase],
+  ["GET",  /^\/revenue\/?$/,                 revenue],
+  ["GET",  /^\/heatmap\/?$/,                 heatmap],
+  ["GET",  /^\/price_compare\/?$/,           priceCompare],
+  ["GET",  /^\/ai_capex\/?$/,                aiCapex],
+  ["GET",  /^\/stock_news_scan\/?$/,         stockNewsScan],
+  ["GET",  /^\/stock_news_scan\/quota\/?$/,  stockNewsScanQuota],
+
+  // Configuration endpoints (no DB table — return helpful shape with hint)
+  ["GET",  /^\/strategy\/etf_added_resonance\/?$/, placeholder.bind(null, "strategy_etf_added_resonance", "use etf_holdings + screener + resonance score")],
+  ["GET",  /^\/disabled_strategies\/?$/,     placeholder.bind(null, "disabled_strategies", "configure in code or DB; returns [] when none disabled")],
+  ["GET",  /^\/pe_threshold\/?$/,            placeholder.bind(null, "pe_threshold", "PE filter threshold; null = no filter")],
+  ["GET",  /^\/min_hold_overrides\/?$/,      placeholder.bind(null, "min_hold_overrides", "per-stock minimum hold days override; empty = use default")],
 ];
 
 export default async function handler(request) {
