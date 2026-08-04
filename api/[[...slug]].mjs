@@ -2813,9 +2813,13 @@ async function loadAiCapex(request) {
   return json({ ok: true, source: "loader", refreshed: okCount, total: AI_CAPEX_COMPANIES.length, results });
 }
 
-// ── etf_holdings loader: per-issuer scraping → etf_holdings table ──────
-// Tries multiple URL patterns per issuer in parallel. All 4 ETFs probed
-// in one go (8 URLs in parallel, 5s each) → worst case 5s wall time.
+// ── etf_holdings loader: per-issuer scraping (PROBE ONLY) + manual seed ──
+// Per-issuer scraping not viable: yuanta.com.tw / cathaysite.com.tw /
+// dcbfund.com.tw all unreachable from Vercel edge (timeout or 403).
+// Fallback: POST seed endpoint accepts manually-pasted holdings data.
+//   curl -X POST -H "Content-Type: application/json" -d @seed.json \
+//        https://donttalk.vercel.app/api/admin/load/etf_holdings/seed
+//   body shape: { etf_code, as_of_date, source, holdings: [{symbol, weight_pct, market_value?}] }
 const ETF_ISSUERS = {
   "0050": { issuer: "yuanta", urls: [
     "https://www.yuantafunds.com.tw/eFund/fund/portfolio.aspx?fund=0050",
@@ -2834,6 +2838,47 @@ const ETF_ISSUERS = {
     "https://www.dcbfund.com.tw/Funds/Composition/00918",
   ]},
 };
+
+// Manual seed endpoint — POST { etf_code, as_of_date, source, holdings: [...] }
+async function seedEtfHoldings(request) {
+  if (request.method !== "POST") return json({ error: "method not allowed (use POST)" }, { status: 405 });
+  const body = await readJson(request);
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
+  const etfCode = String(body?.etf_code || "").trim();
+  const asOf = String(body?.as_of_date || "").trim();
+  const source = String(body?.source || "manual").trim();
+  const holdings = Array.isArray(body?.holdings) ? body.holdings : [];
+  if (!etfCode || !asOf || holdings.length === 0) {
+    return json({ error: "缺少必要欄位：etf_code, as_of_date (YYYY-MM-DD), holdings[]" }, { status: 400 });
+  }
+  let inserted = 0, updated = 0;
+  for (const h of holdings) {
+    const symbol = String(h.symbol || "").trim();
+    if (!symbol) continue;
+    const weight = h.weight_pct != null ? Number(h.weight_pct) : null;
+    const marketValue = h.market_value != null ? Number(h.market_value) : null;
+    const shares = h.shares != null ? Number(h.shares) : null;
+    // Upsert by (etf_code, symbol, as_of_date)
+    const ex = await q(
+      `SELECT id FROM etf_holdings WHERE etf_code = $1 AND symbol = $2 AND as_of_date = $3 LIMIT 1`,
+      [etfCode, symbol, asOf]
+    );
+    if (ex.rows && ex.rows.length > 0) {
+      await q(
+        `UPDATE etf_holdings SET weight_pct = $1, market_value = $2, shares = $3, source = $4, fetched_at = NOW() WHERE id = $5`,
+        [weight, marketValue, shares, source, ex.rows[0].id]
+      );
+      updated++;
+    } else {
+      await q(
+        `INSERT INTO etf_holdings (etf_code, symbol, weight_pct, market_value, shares, as_of_date, source, fetched_at) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+        [etfCode, symbol, weight, marketValue, shares, asOf, source]
+      );
+      inserted++;
+    }
+  }
+  return json({ ok: true, source: "seed", etf_code: etfCode, as_of_date: asOf, inserted, updated, total: holdings.length });
+}
 
 async function _etfFetch(url) {
   const ctrl = new AbortController();
@@ -3056,6 +3101,7 @@ const TABLE = [
   ["POST", /^\/admin\/load\/market_prices\/?$/, loadMarketPrices],
   ["GET",  /^\/admin\/load\/etf_holdings\/?$/,  loadEtfHoldings],
   ["POST", /^\/admin\/load\/etf_holdings\/?$/,  loadEtfHoldings],
+  ["POST", /^\/admin\/load\/etf_holdings\/seed\/?$/, seedEtfHoldings],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
