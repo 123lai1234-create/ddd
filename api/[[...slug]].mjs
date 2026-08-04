@@ -2290,7 +2290,7 @@ async function loadMarketPrices(request) {
              (source_name, symbol, asset_type, market, trade_date, open_price, high_price, low_price,
               close_price, change_value, volume, turnover, fetched_at)
            VALUES ($1, $2, $3, 'TWSE', $4, $5, $6, $7, $8, $9, $10, $11, NOW())
-           ON CONFLICT (symbol, trade_date, asset_type) DO UPDATE SET
+           ON CONFLICT (source_name, symbol, contract_month, trade_date) DO UPDATE SET
              open_price = EXCLUDED.open_price,
              high_price = EXCLUDED.high_price,
              low_price = EXCLUDED.low_price,
@@ -2298,6 +2298,7 @@ async function loadMarketPrices(request) {
              change_value = EXCLUDED.change_value,
              volume = EXCLUDED.volume,
              turnover = EXCLUDED.turnover,
+             asset_type = EXCLUDED.asset_type,
              fetched_at = NOW()`,
           ["twse_STOCK_DAY_ALL", code, assetType, isoDate, open, high, low, close, change, volume, turnover]
         )
