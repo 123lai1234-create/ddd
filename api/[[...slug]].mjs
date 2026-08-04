@@ -2484,17 +2484,23 @@ function _aiPickOriginals(records) {
 }
 
 async function _aiLoadOne(co) {
-  // Fetch capex + revenue, all concepts
+  // Fetch capex + revenue, all concepts (parallel by type to save wall time)
   let allCapex = [], allRev = [];
+  // Sequential: capex concepts
   for (const c of AI_CAPEX_C) {
     const d = await _secFetch(co.cik, c);
-    if (d && d.units && d.units.USD) for (const x of d.units.USD) allCapex.push({ ...x, _c: c });
-    await new Promise(r => setTimeout(r, 80));
+    if (d && d.units && d.units.USD) {
+      for (const x of d.units.USD) allCapex.push({ ...x, _c: c });
+      break; // first hit wins, no need to try rest
+    }
   }
+  // Sequential: revenue concepts
   for (const c of AI_CAPEX_R) {
     const d = await _secFetch(co.cik, c);
-    if (d && d.units && d.units.USD) for (const x of d.units.USD) allRev.push({ ...x, _c: c });
-    await new Promise(r => setTimeout(r, 80));
+    if (d && d.units && d.units.USD) {
+      for (const x of d.units.USD) allRev.push({ ...x, _c: c });
+      break;
+    }
   }
   if (allCapex.length === 0) return { ok: false, code: co.code, error: "no capex data" };
   const capexByFp = _aiPickOriginals(allCapex);
@@ -2551,15 +2557,15 @@ async function loadAiCapex(request) {
   if (request.method === "POST" && !operatorOk(body?.password)) {
     return json({ error: "密碼錯誤" }, { status: 403 });
   }
-  const results = [];
-  for (const co of AI_CAPEX_COMPANIES) {
+  // Fetch all 6 companies in parallel — each one does 2 SEC fetches + 4 DB upserts
+  // (sequential within one company to avoid SEC rate limit hits)
+  const results = await Promise.all(AI_CAPEX_COMPANIES.map(async (co) => {
     try {
-      const r = await _aiLoadOne(co);
-      results.push(r);
+      return await _aiLoadOne(co);
     } catch (e) {
-      results.push({ ok: false, code: co.code, error: e?.message });
+      return { ok: false, code: co.code, error: e?.message };
     }
-  }
+  }));
   const okCount = results.filter(r => r.ok).length;
   return json({ ok: true, source: "loader", refreshed: okCount, total: AI_CAPEX_COMPANIES.length, results });
 }
