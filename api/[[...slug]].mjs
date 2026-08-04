@@ -2813,6 +2813,80 @@ async function loadAiCapex(request) {
   return json({ ok: true, source: "loader", refreshed: okCount, total: AI_CAPEX_COMPANIES.length, results });
 }
 
+// ── etf_holdings loader: per-issuer scraping → etf_holdings table ──────
+// Tries multiple URL patterns per issuer. Edge runtime; limited to ~10s
+// per ETF (3 URLs × 3s each). Yuanta covers 0050/0056; Cathay covers
+// 00878; Dachen covers 00918. Tries them all in parallel.
+const ETF_ISSUERS = {
+  "0050": { issuer: "yuanta", urls: [
+    "https://www.yuantafunds.com.tw/eFund/fund/portfolio.aspx?fund=0050",
+    "https://www.yuantafunds.com.tw/eFund/Fund/Composition?fundId=1103",
+  ]},
+  "0056": { issuer: "yuanta", urls: [
+    "https://www.yuantafunds.com.tw/eFund/fund/portfolio.aspx?fund=0056",
+    "https://www.yuantafunds.com.tw/eFund/Fund/Composition?fundId=1101",
+  ]},
+  "00878": { issuer: "cathay", urls: [
+    "https://www.cathaysite.com.tw/funds/portfolio/00878",
+    "https://www.cathaysite.com.tw/funds/detail/00878",
+  ]},
+  "00918": { issuer: "dachen", urls: [
+    "https://www.dcbfund.com.tw/Fund/Detail/00918",
+    "https://www.dcbfund.com.tw/Funds/Composition/00918",
+  ]},
+};
+
+async function _etfFetch(url) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const r = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible: donttalk-stock-app/1.0; contact: donttalk@example.com)",
+        "Accept": "text/html,application/xhtml+xml,*/*;q=0.9",
+        "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.7",
+      },
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    if (!r.ok) return { ok: false, status: r.status, body_len: 0 };
+    const text = await r.text();
+    return { ok: true, status: r.status, body_len: text.length, body: text };
+  } catch (e) {
+    clearTimeout(tid);
+    return { ok: false, error: e.name + ": " + e.message };
+  }
+}
+
+async function loadEtfHoldings(request) {
+  // Probe-only for now: tries each issuer's known URL patterns and reports
+  // what we can reach. Does NOT yet parse + insert; that's a follow-up
+  // once we confirm which issuer URLs are reachable from edge runtime.
+  const u = urlOf(request);
+  const onlyCode = u.searchParams.get("code") || null;
+  const results = [];
+  for (const [code, cfg] of Object.entries(ETF_ISSUERS)) {
+    if (onlyCode && onlyCode !== code) continue;
+    const urlResults = [];
+    for (const url of cfg.urls) {
+      const r = await _etfFetch(url);
+      urlResults.push({ url, status: r.status, ok: r.ok, body_len: r.body_len, error: r.error });
+      if (r.ok && r.body_len > 1000) {
+        // Got a real page; no need to try other URLs for this ETF
+        break;
+      }
+    }
+    results.push({ code, issuer: cfg.issuer, urls: urlResults });
+  }
+  return json({
+    ok: true,
+    source: "probe",
+    as_of: new Date().toISOString().slice(0, 10),
+    message: "Probe only — reports which issuer URLs are reachable from edge. Real parsing TBD.",
+    results,
+  });
+}
+
 async function loadAll(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
@@ -2974,6 +3048,8 @@ const TABLE = [
   ["POST", /^\/admin\/load\/ai_capex\/?$/,    loadAiCapex],
   ["GET",  /^\/admin\/load\/market_prices\/?$/, loadMarketPrices],
   ["POST", /^\/admin\/load\/market_prices\/?$/, loadMarketPrices],
+  ["GET",  /^\/admin\/load\/etf_holdings\/?$/,  loadEtfHoldings],
+  ["POST", /^\/admin\/load\/etf_holdings\/?$/,  loadEtfHoldings],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
