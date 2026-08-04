@@ -2200,6 +2200,97 @@ async function loadExdiv(request) {
   }
 }
 
+// ── loadMarketPrices: TWSE STOCK_DAY_ALL → market_price_bars ────────
+// Refreshes the latest trading day's close for all stocks in watchlist +
+// all ETFs in etf_watchlist. Edge-friendly: 1 HTTP fetch + N parallel
+// DB upserts. Designed for daily Mon-Fri cron.
+async function loadMarketPrices(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  const UA = "Mozilla/5.0 (compatible: donttalk-stock-app/1.0; contact: donttalk@example.com)";
+  try {
+    // 1. Pull target codes: union of watchlist (stocks) + etf_watchlist (ETFs)
+    const [wlRes, ewRes] = await Promise.all([
+      q(`SELECT code FROM watchlist`),
+      q(`SELECT code FROM etf_watchlist`),
+    ]);
+    const targets = new Set();
+    for (const r of wlRes.rows) targets.add(String(r[0]));
+    for (const r of ewRes.rows) targets.add(String(r[0]));
+    if (targets.size === 0) {
+      return json({ ok: true, source: "stub", count: 0, message: "watchlist + etf_watchlist 為空" });
+    }
+    // 2. Fetch TWSE daily report (CSV; latest trading day)
+    const url = "https://www.twse.com.tw/exchangeReport/STOCK_DAY_ALL?response=json";
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 12000);
+    const r = await fetch(url, { headers: { "User-Agent": UA, "Accept-Encoding": "gzip" } });
+    clearTimeout(tid);
+    if (!r.ok) throw new Error(`TWSE HTTP ${r.status}`);
+    const j = await r.json();
+    // j.data is array of arrays: [date, code, name, shares, turnover, open, high, low, close, change, transactions]
+    const rows = j.data || [];
+    if (rows.length === 0) {
+      return json({ ok: false, source: "loader", error: "TWSE 回傳空資料（可能非交易日）" });
+    }
+    // 3. Filter & upsert
+    const todayRoc = String(rows[0][0]).replace(/"/g, ""); // e.g. "1150804"
+    // Convert ROC date YYYMMDD → ISO YYYY-MM-DD (ROC year + 1911)
+    const rocYear = parseInt(todayRoc.slice(0, 3), 10);
+    const mmdd = todayRoc.slice(3);
+    const isoDate = `${rocYear + 1911}-${mmdd.slice(0, 2)}-${mmdd.slice(2)}`;
+    const upserts = [];
+    const skipped = [];
+    for (const row of rows) {
+      const code = String(row[1]).replace(/"/g, "");
+      if (!targets.has(code)) continue;
+      const isEtf = ewRes.rows.some(r => String(r[0]) === code);
+      const assetType = isEtf ? "etf" : "stock";
+      const open = parseFloat(String(row[5]).replace(/"/g, "")) || null;
+      const high = parseFloat(String(row[6]).replace(/"/g, "")) || null;
+      const low = parseFloat(String(row[7]).replace(/"/g, "")) || null;
+      const close = parseFloat(String(row[8]).replace(/"/g, "")) || null;
+      const change = parseFloat(String(row[9]).replace(/"/g, "")) || null;
+      const volume = parseInt(String(row[3]).replace(/"/g, "").replace(/,/g, ""), 10) || null;
+      const turnover = parseFloat(String(row[4]).replace(/"/g, "").replace(/,/g, "")) || null;
+      if (close == null) { skipped.push({ code, reason: "no close" }); continue; }
+      upserts.push(
+        q(
+          `INSERT INTO market_price_bars
+             (source_name, symbol, asset_type, market, trade_date, open_price, high_price, low_price,
+              close_price, change_value, volume, turnover, fetched_at)
+           VALUES ($1, $2, $3, 'TWSE', $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+           ON CONFLICT (symbol, trade_date, asset_type) DO UPDATE SET
+             open_price = EXCLUDED.open_price,
+             high_price = EXCLUDED.high_price,
+             low_price = EXCLUDED.low_price,
+             close_price = EXCLUDED.close_price,
+             change_value = EXCLUDED.change_value,
+             volume = EXCLUDED.volume,
+             turnover = EXCLUDED.turnover,
+             fetched_at = NOW()`,
+          ["twse_STOCK_DAY_ALL", code, assetType, isoDate, open, high, low, close, change, volume, turnover]
+        )
+      );
+    }
+    const results = await Promise.all(upserts);
+    return json({
+      ok: true,
+      source: "loader",
+      trade_date: isoDate,
+      requested: targets.size,
+      upserted: results.length,
+      skipped: skipped.length,
+      skipped_detail: skipped,
+    });
+  } catch (e) {
+    return json({ ok: false, source: "loader", error: e?.message });
+  }
+}
+
 // ── MOPS revenue loader (月營收 from 公開資訊觀測站) ──────────────
 // Flow:
 //   1. POST https://mops.twse.com.tw/mops/api/redirectToOld
@@ -2853,6 +2944,8 @@ const TABLE = [
   ["POST", /^\/admin\/load\/futures\/?$/,     loadFutures],
   ["GET",  /^\/admin\/load\/ai_capex\/?$/,    loadAiCapex],
   ["POST", /^\/admin\/load\/ai_capex\/?$/,    loadAiCapex],
+  ["GET",  /^\/admin\/load\/market_prices\/?$/, loadMarketPrices],
+  ["POST", /^\/admin\/load\/market_prices\/?$/, loadMarketPrices],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
