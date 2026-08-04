@@ -2239,14 +2239,26 @@ async function loadMarketPrices(request) {
     });
     clearTimeout(tid);
     if (!r.ok) throw new Error(`TWSE HTTP ${r.status}`);
-    const j = await r.json();
-    // j.data is array of arrays: [date, code, name, shares, turnover, open, high, low, close, change, transactions]
-    const rows = j.data || [];
-    if (rows.length === 0) {
+    const csv = await r.text();
+    // Parse CSV: line 1 = header, rest = quoted rows
+    // "1150804","00400A","name",...,"close","change","transactions"
+    const lines = csv.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length < 2) {
       return json({ ok: false, source: "loader", error: "TWSE 回傳空資料（可能非交易日）" });
     }
+    // Skip header (line 0). Parse each line by splitting on '","' (no edge cases for TWSE format).
+    const rows = lines.slice(1).map(l => {
+      const parts = l.split('","');
+      // Strip leading and trailing quote
+      if (parts[0] && parts[0].startsWith('"')) parts[0] = parts[0].slice(1);
+      if (parts[parts.length - 1] && parts[parts.length - 1].endsWith('"')) parts[parts.length - 1] = parts[parts.length - 1].slice(0, -1);
+      return parts;
+    });
+    if (rows.length === 0 || !rows[0][0]) {
+      return json({ ok: false, source: "loader", error: "TWSE CSV 解析失敗" });
+    }
     // 3. Filter & upsert
-    const todayRoc = String(rows[0][0]).replace(/"/g, ""); // e.g. "1150804"
+    const todayRoc = String(rows[0][0]); // e.g. "1150804"
     // Convert ROC date YYYMMDD → ISO YYYY-MM-DD (ROC year + 1911)
     const rocYear = parseInt(todayRoc.slice(0, 3), 10);
     const mmdd = todayRoc.slice(3);
@@ -2254,17 +2266,17 @@ async function loadMarketPrices(request) {
     const upserts = [];
     const skipped = [];
     for (const row of rows) {
-      const code = String(row[1]).replace(/"/g, "");
+      const code = String(row[1] || "").trim();
       if (!targets.has(code)) continue;
       const isEtf = ewRes.rows.some(r => String(r[0]) === code);
       const assetType = isEtf ? "etf" : "stock";
-      const open = parseFloat(String(row[5]).replace(/"/g, "")) || null;
-      const high = parseFloat(String(row[6]).replace(/"/g, "")) || null;
-      const low = parseFloat(String(row[7]).replace(/"/g, "")) || null;
-      const close = parseFloat(String(row[8]).replace(/"/g, "")) || null;
-      const change = parseFloat(String(row[9]).replace(/"/g, "")) || null;
-      const volume = parseInt(String(row[3]).replace(/"/g, "").replace(/,/g, ""), 10) || null;
-      const turnover = parseFloat(String(row[4]).replace(/"/g, "").replace(/,/g, "")) || null;
+      const open = parseFloat(row[5]) || null;
+      const high = parseFloat(row[6]) || null;
+      const low = parseFloat(row[7]) || null;
+      const close = parseFloat(row[8]) || null;
+      const change = parseFloat(row[9]) || null;
+      const volume = parseInt(String(row[3] || "").replace(/,/g, ""), 10) || null;
+      const turnover = parseFloat(String(row[4] || "").replace(/,/g, "")) || null;
       if (close == null) { skipped.push({ code, reason: "no close" }); continue; }
       upserts.push(
         q(
