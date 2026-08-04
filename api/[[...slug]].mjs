@@ -1089,16 +1089,47 @@ async function bigHolderLowBase(request) {
 async function revenue(request) {
   const u = urlOf(request);
   const code = u.searchParams.get("code");
+  const ymParam = (u.searchParams.get("year_month") || "").trim();
   try {
-    let sql = `SELECT id, symbol, year, month, revenue, yoy_pct, mom_pct
-               FROM revenue`;
+    // Shape: { code, name, year_month, revenue_current, mom_pct, yoy_pct, ytd_revenue, ytd_yoy_pct }
+    // JOIN watchlist for company name. year_month formatted as `${year}/${month}` (no zero pad)
+    // to match the dropdown in stock-app/revenue.html.
     const params = [];
-    if (code) { params.push(code); sql += ` WHERE symbol = $${params.length}`; }
-    sql += ` ORDER BY year DESC, month DESC LIMIT ${code ? "24" : "500"}`;
+    let where = "";
+    if (code) { params.push(code); where = ` WHERE r.symbol = $${params.length}`; }
+    if (ymParam) {
+      const m = /^(\d{4})\/(\d{1,2})$/.exec(ymParam);
+      if (m) {
+        params.push(parseInt(m[1], 10));
+        const py = `$${params.length}`;
+        params.push(parseInt(m[2], 10));
+        const pm = `$${params.length}`;
+        where += (where ? " AND " : " WHERE ") + `r.year = ${py} AND r.month = ${pm}`;
+      }
+    }
+    const lim = code ? "24" : "500";
+    const sql = `
+      SELECT r.id, r.symbol AS code,
+             COALESCE(w.name, '') AS name,
+             r.year || '/' || r.month AS year_month,
+             r.revenue AS revenue_current,
+             r.mom_pct,
+             r.yoy_pct,
+             r.ytd_revenue,
+             r.ytd_yoy_pct,
+             r.source,
+             r.fetched_at
+      FROM revenue r
+      LEFT JOIN watchlist w ON w.code = r.symbol
+      ${where}
+      ORDER BY r.year DESC, r.month DESC, r.symbol ASC
+      LIMIT ${lim}`;
     const { rows } = await q(sql, params);
-    return json({ ok: true, source: "db", count: rows.length, items: rows });
+    // The HTML uses d.data (not d.items), so expose both for compatibility.
+    const last = rows[0]?.fetched_at || null;
+    return json({ ok: true, source: "db", count: rows.length, items: rows, data: rows, last_update: last });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "revenue table empty or missing" });
+    return json({ ok: true, source: "stub", count: 0, items: [], data: [], error: e?.message, message: "revenue table empty or missing" });
   }
 }
 
@@ -2039,23 +2070,25 @@ async function loadRevenueForMonth(yearRoc, month, typek = "sii") {
   if (lines.length < 2) return { ok: true, source: "mops_t21sc04", typek, year: yearRoc, month, count: 0, message: "empty CSV" };
   const year = yearRoc + 1911;
   const seen = new Set();
-  const symbols = [], revenues = [], yoys = [], moms = [];
+  const symbols = [], revenues = [], yoys = [], moms = [], ytdRevenues = [], ytdYoys = [];
   for (let i = 1; i < lines.length; i++) {
     // Strip surrounding quotes, split on '","'
     const line = lines[i];
     if (!line.startsWith('"')) continue;
     const parts = line.slice(1, -1).split('","');
-    if (parts.length < 11) continue;
+    if (parts.length < 13) continue;
     const sym = (parts[2] || "").trim();
     if (!/^\d{4,6}$/.test(sym)) continue;
     const key = `${sym}-${year}-${month}`;
     if (seen.has(key)) continue;
     seen.add(key);
     symbols.push(sym);
-    // cols: 5=當月營收, 8=MoM%, 9=YoY%
+    // cols: 5=當月營收, 8=MoM%, 9=YoY%, 10=YTD 累計營收, 12=YTD YoY%
     revenues.push(numFromStr(parts[5]));
     moms.push(numFromStr(parts[8]));
     yoys.push(numFromStr(parts[9]));
+    ytdRevenues.push(numFromStr(parts[10]));
+    ytdYoys.push(numFromStr(parts[12]));
   }
   if (symbols.length === 0) {
     return { ok: true, source: "mops_t21sc04", typek, year, month, count: 0, message: "no valid rows parsed" };
@@ -2063,19 +2096,23 @@ async function loadRevenueForMonth(yearRoc, month, typek = "sii") {
   // Bulk upsert via UNNEST JOIN (mirrors the institutional pattern)
   const sourceTag = `mops_t21sc04_${typek}`;
   const sql = `
-    INSERT INTO revenue (symbol, year, month, revenue, yoy_pct, mom_pct, source)
-    SELECT s, $5::int, $6::int, r, y, m, $7
+    INSERT INTO revenue (symbol, year, month, revenue, yoy_pct, mom_pct, ytd_revenue, ytd_yoy_pct, source)
+    SELECT s, $7::int, $8::int, r, y, m, yr, yy, $9
     FROM UNNEST($1::text[]) WITH ORDINALITY AS x(s, ord)
     JOIN UNNEST($2::numeric[]) WITH ORDINALITY AS a(r, ord) USING (ord)
     JOIN UNNEST($3::numeric[]) WITH ORDINALITY AS b(y, ord) USING (ord)
     JOIN UNNEST($4::numeric[]) WITH ORDINALITY AS c(m, ord) USING (ord)
+    JOIN UNNEST($5::numeric[]) WITH ORDINALITY AS d(yr, ord) USING (ord)
+    JOIN UNNEST($6::numeric[]) WITH ORDINALITY AS e(yy, ord) USING (ord)
     ON CONFLICT (symbol, year, month) DO UPDATE SET
       revenue = EXCLUDED.revenue,
       yoy_pct = EXCLUDED.yoy_pct,
       mom_pct = EXCLUDED.mom_pct,
+      ytd_revenue = EXCLUDED.ytd_revenue,
+      ytd_yoy_pct = EXCLUDED.ytd_yoy_pct,
       source  = EXCLUDED.source,
       fetched_at = now()`;
-  await q(sql, [symbols, revenues, yoys, moms, year, month, sourceTag]);
+  await q(sql, [symbols, revenues, yoys, moms, ytdRevenues, ytdYoys, year, month, sourceTag]);
   return { ok: true, source: sourceTag, typek, year, month, count: symbols.length };
 }
 
