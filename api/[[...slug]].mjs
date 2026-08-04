@@ -1924,10 +1924,19 @@ async function loadRevenueForMonth(yearRoc, month, typek = "sii") {
   if (csvBytes.length < 200) {
     return { ok: false, source: "mops_t21sc04", typek, year: yearRoc, month, count: 0, error: `CSV too small (${csvBytes.length} bytes)` };
   }
-  // Decode Big5 → text
-  const csvText = (typeof Buffer !== "undefined")
-    ? Buffer.from(csvBytes).toString("big5")
-    : new TextDecoder("big5").decode(csvBytes);
+  // Decode as latin-1 (1 byte = 1 char). MOPS CSV is Big5-encoded, but we only need
+  // ASCII columns (symbol, year, month, numbers). Chinese company names + industry
+  // come out as garbled but we never read them, so this avoids the need for a Big5
+  // decoder in the edge runtime (where TextDecoder has no 'big5' support).
+  // Vercel edge runtime does not ship the big5 encoding; even `new TextDecoder("big5")`
+  // throws. The fallback maps every byte to a single Unicode code point, so splitting
+  // on \n and ","" still works because those bytes are < 0x80.
+  let csvText;
+  try {
+    csvText = new TextDecoder("big5", { fatal: false }).decode(csvBytes);
+  } catch {
+    csvText = new TextDecoder("latin1").decode(csvBytes);
+  }
 
   // Parse CSV: 14 cols, fields are double-quoted, no embedded quotes inside fields
   // 出表日期,資料年月,公司代號,公司名稱,產業別,營業收入-當月營收,營業收入-上月營收,營業收入-去年當月營收,營業收入-上月比較增減(%),營業收入-去年同月增減(%),累計營業收入-當月累計營收,累計營業收入-去年累計營收,累計營業收入-前期比較增減(%),備註
