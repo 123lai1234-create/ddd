@@ -2427,6 +2427,137 @@ async function loadFutures(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results: allResults });
 }
 
+// ── ai_capex loader: SEC EDGAR companyconcept API → ai_capex table ─────
+// Companies: NVDA / MSFT / AMZN / GOOGL / META / ORCL (TSM is 20-F, skipped)
+// Designed to refresh the LATEST 1-2 quarters per company, runs in <30s
+// on Vercel edge (60s budget). Per-cron daily is safe (Hobby: 1/day/cron).
+const AI_CAPEX_COMPANIES = [
+  { code: "NVDA",  cik: "0001045810" },
+  { code: "MSFT",  cik: "0000789019" },
+  { code: "AMZN",  cik: "0001018724" },
+  { code: "GOOGL", cik: "0001652044" },
+  { code: "META",  cik: "0001326801" },
+  { code: "ORCL",  cik: "0001341439" },
+];
+const AI_CAPEX_C = [
+  "PaymentsToAcquirePropertyPlantAndEquipment",
+  "PaymentsToAcquireProductiveAssets",
+  "PurchaseOfPropertyAndEquipment",
+  "PurchaseOfPropertyPlantAndEquipment",
+];
+const AI_CAPEX_R = [
+  "RevenueFromContractWithCustomerExcludingAssessedTax",
+  "Revenues",
+  "RevenueFromContractWithCustomerIncludingAssessedTax",
+  "SalesRevenueNet",
+  "RevenuesNetOfInterestExpense",
+];
+
+async function _secFetch(cik, concept) {
+  try {
+    const r = await fetch(`https://data.sec.gov/api/xbrl/companyconcept/CIK${cik}/us-gaap/${concept}.json`, {
+      headers: { "User-Agent": "donttalk-stock-app/1.0 (contact: donttalk@example.com)" },
+    });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (e) { return null; }
+}
+
+function _aiCalQuarter(endDate) {
+  const d = new Date(endDate);
+  return { year: d.getUTCFullYear(), quarter: Math.floor(d.getUTCMonth() / 3) + 1 };
+}
+
+function _aiPickOriginals(records) {
+  // Per (fy, fp), keep the EARLIEST filed value (avoid restated)
+  const byKey = new Map();
+  for (const r of records) {
+    if (!['Q1', 'Q2', 'Q3', 'FY'].includes(r.fp)) continue;
+    if (r.form !== '10-Q' && r.form !== '10-K') continue;
+    if (r.val == null || r.val <= 0) continue;
+    if (new Date(r.end) < new Date('2020-01-01')) continue;
+    const k = `${r.fy}-${r.fp}`;
+    const ex = byKey.get(k);
+    if (!ex || r.filed < ex.filed) byKey.set(k, r);
+  }
+  return byKey;
+}
+
+async function _aiLoadOne(co) {
+  // Fetch capex + revenue, all concepts
+  let allCapex = [], allRev = [];
+  for (const c of AI_CAPEX_C) {
+    const d = await _secFetch(co.cik, c);
+    if (d && d.units && d.units.USD) for (const x of d.units.USD) allCapex.push({ ...x, _c: c });
+    await new Promise(r => setTimeout(r, 80));
+  }
+  for (const c of AI_CAPEX_R) {
+    const d = await _secFetch(co.cik, c);
+    if (d && d.units && d.units.USD) for (const x of d.units.USD) allRev.push({ ...x, _c: c });
+    await new Promise(r => setTimeout(r, 80));
+  }
+  if (allCapex.length === 0) return { ok: false, code: co.code, error: "no capex data" };
+  const capexByFp = _aiPickOriginals(allCapex);
+  const revByFp = _aiPickOriginals(allRev);
+
+  // Build (year, quarter) rows
+  const rows = [];
+  for (const [k, cr] of capexByFp.entries()) {
+    const rr = revByFp.get(k);
+    const cal = _aiCalQuarter(cr.end);
+    rows.push({
+      year: cal.year, quarter: cal.quarter,
+      capex: cr.val, revenue: rr ? rr.val : null,
+      end: cr.end, form: cr.form, concept: cr._c,
+    });
+  }
+  // Dedupe by (year, quarter): prefer rows with revenue, then latest end
+  const byYQ = new Map();
+  for (const r of rows) {
+    const k = `${r.year}-Q${r.quarter}`;
+    const ex = byYQ.get(k);
+    if (!ex) byYQ.set(k, r);
+    else if (r.revenue && !ex.revenue) byYQ.set(k, r);
+    else if (r.end > ex.end) byYQ.set(k, r);
+  }
+  // Take last 4 quarters (just for refresh; first load will do 12)
+  const last4 = Array.from(byYQ.values())
+    .sort((a, b) => a.year - b.year || a.quarter - b.quarter)
+    .slice(-4);
+  let inserted = 0;
+  for (const r of last4) {
+    const pct = r.revenue ? (r.capex / r.revenue) * 100 : null;
+    const src = `sec_${r.concept}_${r.form}`;
+    const ex = await q(`SELECT id FROM ai_capex WHERE company = $1 AND year = $2 AND quarter = $3 LIMIT 1`, [co.code, r.year, r.quarter]);
+    if (ex.length > 0) {
+      await q(`UPDATE ai_capex SET capex = $1, revenue = $2, capex_pct_of_revenue = $3, source = $4, fetched_at = NOW() WHERE id = $5`, [r.capex, r.revenue, pct, src, ex[0][0]]);
+    } else {
+      await q(`INSERT INTO ai_capex (company, year, quarter, capex, revenue, capex_pct_of_revenue, source) VALUES ($1, $2, $3, $4, $5, $6, $7)`, [co.code, r.year, r.quarter, r.capex, r.revenue, pct, src]);
+    }
+    inserted++;
+  }
+  return { ok: true, code: co.code, quarters: last4.length, latest: last4[last4.length - 1] ? `${last4[last4.length - 1].year} Q${last4[last4.length - 1].quarter}` : null };
+}
+
+async function loadAiCapex(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  const results = [];
+  for (const co of AI_CAPEX_COMPANIES) {
+    try {
+      const r = await _aiLoadOne(co);
+      results.push(r);
+    } catch (e) {
+      results.push({ ok: false, code: co.code, error: e?.message });
+    }
+  }
+  const okCount = results.filter(r => r.ok).length;
+  return json({ ok: true, source: "loader", refreshed: okCount, total: AI_CAPEX_COMPANIES.length, results });
+}
+
 async function loadAll(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
@@ -2584,6 +2715,8 @@ const TABLE = [
   ["POST", /^\/admin\/load\/overseas\/?$/,    loadOverseasIndices],
   ["GET",  /^\/admin\/load\/futures\/?$/,     loadFutures],
   ["POST", /^\/admin\/load\/futures\/?$/,     loadFutures],
+  ["GET",  /^\/admin\/load\/ai_capex\/?$/,    loadAiCapex],
+  ["POST", /^\/admin\/load\/ai_capex\/?$/,    loadAiCapex],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
