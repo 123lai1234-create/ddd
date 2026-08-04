@@ -2484,23 +2484,16 @@ function _aiPickOriginals(records) {
 }
 
 async function _aiLoadOne(co) {
-  // Fetch capex + revenue, all concepts (parallel by type to save wall time)
+  // Fetch capex + revenue across all concepts (some companies use different
+  // concepts depending on fiscal year; we want the union of all valid records).
   let allCapex = [], allRev = [];
-  // Sequential: capex concepts
   for (const c of AI_CAPEX_C) {
     const d = await _secFetch(co.cik, c);
-    if (d && d.units && d.units.USD) {
-      for (const x of d.units.USD) allCapex.push({ ...x, _c: c });
-      break; // first hit wins, no need to try rest
-    }
+    if (d && d.units && d.units.USD) for (const x of d.units.USD) allCapex.push({ ...x, _c: c });
   }
-  // Sequential: revenue concepts
   for (const c of AI_CAPEX_R) {
     const d = await _secFetch(co.cik, c);
-    if (d && d.units && d.units.USD) {
-      for (const x of d.units.USD) allRev.push({ ...x, _c: c });
-      break;
-    }
+    if (d && d.units && d.units.USD) for (const x of d.units.USD) allRev.push({ ...x, _c: c });
   }
   if (allCapex.length === 0) return { ok: false, code: co.code, error: "no capex data" };
   const capexByFp = _aiPickOriginals(allCapex);
