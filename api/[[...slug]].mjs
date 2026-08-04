@@ -761,8 +761,8 @@ async function etfSnapshotAllStatus(request) {
 async function etfStatus(request) {
   // Return shape compatible with the front-end pollStatus() contract:
   //   { running, done, total, last_refresh, count, error?, result? }
-  // When etf_holdings is empty, return running=false + last_refresh=null
-  // so the frontend poll exits immediately with a "no data" state.
+  // When etf_holdings has data, do a synchronous run and include `result`
+  // so the frontend can render the analysis immediately.
   try {
     const [{ rows: snapRows }, { rows: holdRows }] = await Promise.all([
       q(`SELECT MAX(fetched_at) AS last_refresh FROM knowledge_library WHERE record_type = 'etf_snapshot'`),
@@ -770,18 +770,32 @@ async function etfStatus(request) {
     ]);
     const lastRefresh = snapRows[0]?.last_refresh || null;
     const holdingsCount = holdRows[0]?.n || 0;
+    if (holdingsCount === 0) {
+      return json({
+        ok: true,
+        source: "db",
+        running: false,
+        done: 0,
+        total: 0,
+        last_refresh: lastRefresh,
+        count: 0,
+        no_data: true,
+        message: "etf_holdings 表為空，無 bulk data source（需 per-issuer 爬）",
+      });
+    }
+    // Has data — do sync analysis and return result inline
+    const result = await _runEtfAnalysis();
     return json({
       ok: true,
       source: "db",
       running: false,
-      done: 0,
-      total: 0,
+      done: 1,
+      total: 1,
       last_refresh: lastRefresh,
       count: holdingsCount,
-      no_data: holdingsCount === 0,
-      message: holdingsCount === 0
-        ? "etf_holdings 表為空，無 bulk data source（需 per-issuer 爬）"
-        : null,
+      no_data: false,
+      result,
+      finished_at: new Date().toISOString(),
     });
   } catch (e) {
     return json({ ok: true, source: "stub", running: false, done: 0, total: 0, last_refresh: null, count: 0, no_data: true, error: e?.message });
@@ -789,24 +803,84 @@ async function etfStatus(request) {
 }
 
 async function etfAnalyze(request) {
-  // No bulk data source for ETF holdings (per-issuer scraping required).
-  // Return an immediate "no data" state so the frontend doesn't loop.
+  // Synchronous analysis: for each ETF in etf_watchlist, fetch latest
+  // snapshot, compute top holdings, find common across ETFs. Runs in <5s.
   try {
-    const { rows } = await q(`SELECT COUNT(*)::int AS n FROM etf_holdings`);
-    const n = rows[0]?.n || 0;
-    if (n > 0) {
-      return json({ ok: true, source: "db", task_id: `etf-${Date.now()}`, status: "queued", count: n });
+    const { rows: cntRows } = await q(`SELECT COUNT(*)::int AS n FROM etf_holdings`);
+    const n = cntRows[0]?.n || 0;
+    if (n === 0) {
+      return json({
+        ok: true,
+        source: "stub",
+        no_data: true,
+        count: 0,
+        message: "etf_holdings 表為空（無 bulk source；需 per-issuer 爬或手動 seed）",
+      });
     }
-    return json({
-      ok: true,
-      source: "stub",
-      no_data: true,
-      count: 0,
-      message: "etf_holdings 表為空（無 bulk source；需 per-issuer 爬或手動 seed）",
-    });
+    // Run real analysis
+    const { etfAnalyzeRun } = await import("./_etf_analyze.mjs").catch(() => ({ etfAnalyzeRun: null }));
+    // Inline analysis (avoid extra import for edge runtime)
+    const result = await _runEtfAnalysis();
+    return json({ ok: true, source: "db", count: n, status: "done", ...result });
   } catch (e) {
     return json({ ok: false, source: "stub", error: e?.message, no_data: true });
   }
+}
+
+// Inline ETF analysis: top holdings per ETF + cross-ETF common
+async function _runEtfAnalysis() {
+  const { rows: etfs } = await q(`SELECT code, name FROM etf_watchlist ORDER BY code`);
+  const byEtf = new Map();
+  let prev_compared_at = null;
+  for (const e of (etfs || [])) {
+    const code = String(e.code ?? e[0] ?? "");
+    if (!code) continue;
+    const { rows: h } = await q(
+      `SELECT symbol, weight_pct, as_of_date::text
+       FROM etf_holdings
+       WHERE etf_code = $1
+       ORDER BY as_of_date DESC, weight_pct DESC NULLS LAST
+       LIMIT 50`,
+      [code]
+    );
+    const holdings = (h || []).map(r => ({
+      stock_code: String(r.symbol ?? r[0] ?? ""),
+      weight: r.weight_pct != null ? Number(r.weight_pct) : null,
+      as_of: r.as_of_date ?? r[2] ?? null,
+    })).filter(h => h.stock_code);
+    byEtf.set(code, holdings);
+    if (holdings.length > 0 && (!prev_compared_at || holdings[0].as_of > prev_compared_at)) {
+      prev_compared_at = holdings[0].as_of;
+    }
+  }
+  // Find common holdings (top 20 by avg weight)
+  const allSymbols = new Set();
+  for (const list of byEtf.values()) for (const h of list) allSymbols.add(h.stock_code);
+  const common = [];
+  for (const sym of allSymbols) {
+    const appearances = [];
+    for (const [code, list] of byEtf) {
+      const h = list.find(x => x.stock_code === sym);
+      if (h) appearances.push({ code, weight: h.weight });
+    }
+    if (appearances.length >= 2) {
+      const avg = appearances.reduce((s, a) => s + (a.weight || 0), 0) / appearances.length;
+      const max = Math.max(...appearances.map(a => a.weight || 0));
+      common.push({ stock_code: sym, stock_name: sym, etf_count: appearances.length, avg_weight: +avg.toFixed(2), max_weight: +max.toFixed(2), etf_list: appearances.map(a => a.code) });
+    }
+  }
+  common.sort((a, b) => b.avg_weight - a.avg_weight);
+  // Per-ETF stats
+  let success = 0, failed = 0;
+  for (const list of byEtf.values()) if (list.length > 0) success++; else failed++;
+  return {
+    total_etf: byEtf.size,
+    success_etf: success,
+    failed_etf: failed,
+    top_holdings: common.slice(0, 20),
+    source_stats: { "manual_seed": success },
+    prev_compared_at,
+  };
 }
 
 async function etfClearCache(request) {
