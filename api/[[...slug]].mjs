@@ -1812,6 +1812,208 @@ async function loadExdiv(request) {
   }
 }
 
+// ── MOPS revenue loader (月營收 from 公開資訊觀測站) ──────────────
+// Flow:
+//   1. POST https://mops.twse.com.tw/mops/api/redirectToOld
+//      body: {apiName:"ajax_t21sc04_ifrs", parameters:{year, month, encodeURIComponent:1, step:1, firstin:1, off:1, TYPEK}}
+//      → returns {result:{url: <mopsov URL>}}
+//   2. GET <mopsov URL> → HTML containing `window.open('/nas/t21/<sii|otc|all>/t21sc03_<year>_<month>.html')`
+//   3. POST https://mopsov.twse.com.tw/server-java/FileDownLoad
+//      body: step=9&functionName=show_file2&filePath=/t21/<sii|otc|all>/&fileName=t21sc03_<year>_<month>.csv
+//      → Big5-encoded CSV with 14 cols
+async function loadRevenueForMonth(yearRoc, month, typek = "sii") {
+  const yearMonthStr = `${yearRoc}-${String(month).padStart(2, "0")}`;
+  const mopsPath = typek === "otc" ? "otc" : typek === "all" ? "all" : "sii";
+  // Step 1: hit the redirect endpoint to get a mopsov session URL
+  const ctrl1 = new AbortController();
+  const tid1 = setTimeout(() => ctrl1.abort(), 15000);
+  let apiRespText;
+  try {
+    const r = await fetch("https://mops.twse.com.tw/mops/api/redirectToOld", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+        "Referer": "https://mops.twse.com.tw/mops/",
+        "Origin": "https://mops.twse.com.tw",
+        "Accept": "application/json, text/plain, */*",
+      },
+      body: JSON.stringify({
+        apiName: "ajax_t21sc04_ifrs",
+        parameters: {
+          year: String(yearRoc),
+          month: String(month).padStart(2, "0"),
+          encodeURIComponent: 1,
+          step: 1,
+          firstin: 1,
+          off: 1,
+          TYPEK: typek,
+        },
+      }),
+      signal: ctrl1.signal,
+    });
+    clearTimeout(tid1);
+    if (!r.ok) throw new Error(`MOPS redirect HTTP ${r.status}`);
+    apiRespText = await r.text();
+  } catch (e) {
+    clearTimeout(tid1);
+    if (e.name === "AbortError") throw new Error("MOPS redirect: timeout");
+    throw e;
+  }
+  let apiResp;
+  try { apiResp = JSON.parse(apiRespText); }
+  catch (e) { throw new Error(`MOPS JSON parse: ${apiRespText.slice(0, 120)}`); }
+  if (apiResp.code !== 200) {
+    return { ok: false, source: "mops_t21sc04", typek, year: yearRoc, month, count: 0, error: apiResp.message || "MOPS returned non-200" };
+  }
+  const mopsUrl = apiResp?.result?.url;
+  if (!mopsUrl) return { ok: false, source: "mops_t21sc04", typek, year: yearRoc, month, count: 0, error: "no url in MOPS response" };
+
+  // Step 2: fetch the mopsov page to discover the per-market HTML file
+  const ctrl2 = new AbortController();
+  const tid2 = setTimeout(() => ctrl2.abort(), 15000);
+  let html;
+  try {
+    const r = await fetch(mopsUrl, {
+      headers: { "User-Agent": "Mozilla/5.0", "Accept": "text/html" },
+      signal: ctrl2.signal,
+    });
+    clearTimeout(tid2);
+    if (!r.ok) throw new Error(`mopsov HTML HTTP ${r.status}`);
+    html = await r.text();
+  } catch (e) {
+    clearTimeout(tid2);
+    if (e.name === "AbortError") throw new Error("mopsov HTML: timeout");
+    throw e;
+  }
+  const m = /window\.open\(['"]([^'"]+)['"]/.exec(html);
+  if (!m) {
+    return { ok: false, source: "mops_t21sc04", typek, year: yearRoc, month, count: 0, error: "no download link found in MOPS page (data may not be available yet)" };
+  }
+  const relativePath = m[1]; // e.g. "/nas/t21/sii/t21sc03_115_5.html"
+  const fileName = relativePath.split("/").pop().replace(/\.html$/, ".csv");
+  // form's filePath is /t21/<market>/, NOT /nas/t21/<market>/
+  const filePath = relativePath.replace(/^\/nas/, "").replace(/[^/]+$/, "");
+
+  // Step 3: POST to FileDownLoad to get the Big5 CSV
+  const ctrl3 = new AbortController();
+  const tid3 = setTimeout(() => ctrl3.abort(), 30000);
+  let csvBytes;
+  try {
+    const form = new URLSearchParams({ step: "9", functionName: "show_file2", filePath, fileName }).toString();
+    const r = await fetch("https://mopsov.twse.com.tw/server-java/FileDownLoad", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "User-Agent": "Mozilla/5.0",
+        "Referer": `https://mopsov.twse.com.tw${relativePath}`,
+        "Origin": "https://mopsov.twse.com.tw",
+        "Accept": "text/csv,*/*",
+      },
+      body: form,
+      signal: ctrl3.signal,
+    });
+    clearTimeout(tid3);
+    if (!r.ok) throw new Error(`mopsov FileDownLoad HTTP ${r.status}`);
+    csvBytes = new Uint8Array(await r.arrayBuffer());
+  } catch (e) {
+    clearTimeout(tid3);
+    if (e.name === "AbortError") throw new Error("mopsov CSV: timeout");
+    throw e;
+  }
+  if (csvBytes.length < 200) {
+    return { ok: false, source: "mops_t21sc04", typek, year: yearRoc, month, count: 0, error: `CSV too small (${csvBytes.length} bytes)` };
+  }
+  // Decode Big5 → text
+  const csvText = (typeof Buffer !== "undefined")
+    ? Buffer.from(csvBytes).toString("big5")
+    : new TextDecoder("big5").decode(csvBytes);
+
+  // Parse CSV: 14 cols, fields are double-quoted, no embedded quotes inside fields
+  // 出表日期,資料年月,公司代號,公司名稱,產業別,營業收入-當月營收,營業收入-上月營收,營業收入-去年當月營收,營業收入-上月比較增減(%),營業收入-去年同月增減(%),累計營業收入-當月累計營收,累計營業收入-去年累計營收,累計營業收入-前期比較增減(%),備註
+  const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  if (lines.length < 2) return { ok: true, source: "mops_t21sc04", typek, year: yearRoc, month, count: 0, message: "empty CSV" };
+  const year = yearRoc + 1911;
+  const seen = new Set();
+  const symbols = [], revenues = [], yoys = [], moms = [];
+  for (let i = 1; i < lines.length; i++) {
+    // Strip surrounding quotes, split on '","'
+    const line = lines[i];
+    if (!line.startsWith('"')) continue;
+    const parts = line.slice(1, -1).split('","');
+    if (parts.length < 11) continue;
+    const sym = (parts[2] || "").trim();
+    if (!/^\d{4,6}$/.test(sym)) continue;
+    const key = `${sym}-${year}-${month}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    symbols.push(sym);
+    // cols: 5=當月營收, 8=MoM%, 9=YoY%
+    revenues.push(numFromStr(parts[5]));
+    moms.push(numFromStr(parts[8]));
+    yoys.push(numFromStr(parts[9]));
+  }
+  if (symbols.length === 0) {
+    return { ok: true, source: "mops_t21sc04", typek, year, month, count: 0, message: "no valid rows parsed" };
+  }
+  // Bulk upsert via UNNEST JOIN (mirrors the institutional pattern)
+  const sourceTag = `mops_t21sc04_${typek}`;
+  const sql = `
+    INSERT INTO revenue (symbol, year, month, revenue, yoy_pct, mom_pct, source)
+    SELECT s, $5::int, $6::int, r, y, m, $7
+    FROM UNNEST($1::text[]) WITH ORDINALITY AS x(s, ord)
+    JOIN UNNEST($2::numeric[]) WITH ORDINALITY AS a(r, ord) USING (ord)
+    JOIN UNNEST($3::numeric[]) WITH ORDINALITY AS b(y, ord) USING (ord)
+    JOIN UNNEST($4::numeric[]) WITH ORDINALITY AS c(m, ord) USING (ord)
+    ON CONFLICT (symbol, year, month) DO UPDATE SET
+      revenue = EXCLUDED.revenue,
+      yoy_pct = EXCLUDED.yoy_pct,
+      mom_pct = EXCLUDED.mom_pct,
+      source  = EXCLUDED.source,
+      fetched_at = now()`;
+  await q(sql, [symbols, revenues, yoys, moms, year, month, sourceTag]);
+  return { ok: true, source: sourceTag, typek, year, month, count: symbols.length };
+}
+
+async function loadRevenue(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  // Param priority: body > query > default (previous month)
+  const yearRocParam = parseInt(body?.yearRoc || u.searchParams.get("yearRoc") || "", 10);
+  const monthParam = parseInt(body?.month || u.searchParams.get("month") || "", 10);
+  const typeksParam = pickStr(body?.typeks || u.searchParams.get("typeks") || "sii,otc").trim();
+  const typeks = typeksParam.split(",").map((s) => s.trim()).filter((s) => ["sii", "otc", "all"].includes(s));
+  const safeTypeks = typeks.length ? typeks : ["sii", "otc"];
+
+  const targets = [];
+  if (Number.isFinite(yearRocParam) && Number.isFinite(monthParam) && monthParam >= 1 && monthParam <= 12) {
+    targets.push({ yearRoc: yearRocParam, month: monthParam });
+  } else {
+    // Default: previous month (companies file by the 10th, so previous month is the freshest)
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    targets.push({ yearRoc: d.getFullYear() - 1911, month: d.getMonth() + 1 });
+  }
+  const results = [];
+  for (const t of targets) {
+    for (const typek of safeTypeks) {
+      try {
+        const r = await loadRevenueForMonth(t.yearRoc, t.month, typek);
+        results.push(r);
+      } catch (e) {
+        results.push({ ok: false, source: "mops_t21sc04", typek, ...t, count: 0, error: e?.message });
+      }
+      // Rate-limit MOPS between calls
+      await new Promise((res) => setTimeout(res, 1500));
+    }
+  }
+  const okCount = results.filter((r) => r.ok).reduce((s, r) => s + (r.count || 0), 0);
+  return json({ ok: true, source: "loader", inserted: okCount, results });
+}
+
 async function loadAll(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
@@ -1963,6 +2165,8 @@ const TABLE = [
   ["GET",  /^\/admin\/load\/exdiv\/?$/,      loadExdiv],
   ["POST", /^\/admin\/load\/exdiv\/?$/,      loadExdiv],
   ["POST", /^\/admin\/load\/all\/?$/,        loadAll],
+  ["GET",  /^\/admin\/load\/revenue\/?$/,    loadRevenue],
+  ["POST", /^\/admin\/load\/revenue\/?$/,    loadRevenue],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],

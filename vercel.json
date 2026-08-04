@@ -9,7 +9,8 @@
   ],
   "crons": [
     { "path": "/api/admin/load/institutional", "schedule": "0 14 * * 1-5" },
-    { "path": "/api/admin/load/exdiv", "schedule": "0 15 * * 1-5" }
+    { "path": "/api/admin/load/exdiv", "schedule": "0 15 * * 1-5" },
+    { "path": "/api/admin/load/revenue", "schedule": "0 14 12 * *" }
   ]
 }
 
