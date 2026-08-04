@@ -2814,9 +2814,8 @@ async function loadAiCapex(request) {
 }
 
 // ── etf_holdings loader: per-issuer scraping → etf_holdings table ──────
-// Tries multiple URL patterns per issuer. Edge runtime; limited to ~10s
-// per ETF (3 URLs × 3s each). Yuanta covers 0050/0056; Cathay covers
-// 00878; Dachen covers 00918. Tries them all in parallel.
+// Tries multiple URL patterns per issuer in parallel. All 4 ETFs probed
+// in one go (8 URLs in parallel, 5s each) → worst case 5s wall time.
 const ETF_ISSUERS = {
   "0050": { issuer: "yuanta", urls: [
     "https://www.yuantafunds.com.tw/eFund/fund/portfolio.aspx?fund=0050",
@@ -2838,7 +2837,7 @@ const ETF_ISSUERS = {
 
 async function _etfFetch(url) {
   const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 8000);
+  const tid = setTimeout(() => ctrl.abort(), 5000);
   try {
     const r = await fetch(url, {
       headers: {
@@ -2859,31 +2858,38 @@ async function _etfFetch(url) {
 }
 
 async function loadEtfHoldings(request) {
-  // Probe-only for now: tries each issuer's known URL patterns and reports
-  // what we can reach. Does NOT yet parse + insert; that's a follow-up
-  // once we confirm which issuer URLs are reachable from edge runtime.
+  // Probe-only: tries each issuer's known URL patterns in PARALLEL.
+  // All 8 URLs fire at once; 5s timeout each → worst case 5s wall time.
+  // For each ETF, picks the first URL that returns 200 with body > 1000 bytes.
   const u = urlOf(request);
   const onlyCode = u.searchParams.get("code") || null;
-  const results = [];
+  // Collect all (code, url) pairs to fetch in parallel
+  const tasks = [];
   for (const [code, cfg] of Object.entries(ETF_ISSUERS)) {
     if (onlyCode && onlyCode !== code) continue;
-    const urlResults = [];
     for (const url of cfg.urls) {
-      const r = await _etfFetch(url);
-      urlResults.push({ url, status: r.status, ok: r.ok, body_len: r.body_len, error: r.error });
-      if (r.ok && r.body_len > 1000) {
-        // Got a real page; no need to try other URLs for this ETF
-        break;
-      }
+      tasks.push({ code, issuer: cfg.issuer, url });
     }
-    results.push({ code, issuer: cfg.issuer, urls: urlResults });
+  }
+  const fetches = await Promise.all(tasks.map(t => _etfFetch(t.url).then(r => ({ ...t, ...r }))));
+  // Group by code; pick best URL per code
+  const byCode = new Map();
+  for (const f of fetches) {
+    if (!byCode.has(f.code)) byCode.set(f.code, { code: f.code, issuer: f.issuer, urls: [] });
+    byCode.get(f.code).urls.push({
+      url: f.url,
+      ok: f.ok,
+      status: f.status,
+      body_len: f.body_len,
+      error: f.error,
+    });
   }
   return json({
     ok: true,
     source: "probe",
     as_of: new Date().toISOString().slice(0, 10),
-    message: "Probe only — reports which issuer URLs are reachable from edge. Real parsing TBD.",
-    results,
+    message: "Probe only — reports which issuer URLs are reachable. Real parsing TBD.",
+    results: Array.from(byCode.values()),
   });
 }
 
