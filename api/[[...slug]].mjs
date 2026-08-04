@@ -2528,12 +2528,18 @@ async function _aiLoadOne(co) {
   for (const r of last4) {
     const pct = r.revenue ? (r.capex / r.revenue) * 100 : null;
     const src = `sec_${r.concept}_${r.form}`;
-    const ex = await q(`SELECT id FROM ai_capex WHERE company = $1 AND year = $2 AND quarter = $3 LIMIT 1`, [co.code, r.year, r.quarter]);
-    if (ex.length > 0) {
-      await q(`UPDATE ai_capex SET capex = $1, revenue = $2, capex_pct_of_revenue = $3, source = $4, fetched_at = NOW() WHERE id = $5`, [r.capex, r.revenue, pct, src, ex[0][0]]);
-    } else {
-      await q(`INSERT INTO ai_capex (company, year, quarter, capex, revenue, capex_pct_of_revenue, source) VALUES ($1, $2, $3, $4, $5, $6, $7)`, [co.code, r.year, r.quarter, r.capex, r.revenue, pct, src]);
-    }
+    // UPSERT via ON CONFLICT — robust against select/insert races
+    await q(
+      `INSERT INTO ai_capex (company, year, quarter, capex, revenue, capex_pct_of_revenue, source)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (company, year, quarter) DO UPDATE SET
+         capex = EXCLUDED.capex,
+         revenue = EXCLUDED.revenue,
+         capex_pct_of_revenue = EXCLUDED.capex_pct_of_revenue,
+         source = EXCLUDED.source,
+         fetched_at = NOW()`,
+      [co.code, r.year, r.quarter, r.capex, r.revenue, pct, src]
+    );
     inserted++;
   }
   return { ok: true, code: co.code, quarters: last4.length, latest: last4[last4.length - 1] ? `${last4[last4.length - 1].year} Q${last4[last4.length - 1].quarter}` : null };
