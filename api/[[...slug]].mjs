@@ -1188,7 +1188,8 @@ async function soldTooEarly(request) {
   const lookback = days + 30; // extra padding for MA20
   try {
     // 1. Pull all watchlist stocks (codes + names)
-    const wl = await q(`SELECT code, name FROM watchlist ORDER BY code`);
+    const wlRes = await q(`SELECT code, name FROM watchlist ORDER BY code`);
+    const wl = wlRes.rows;
     if (wl.length === 0) {
       return json({ ok: true, source: "stub", as_of: new Date().toISOString().slice(0, 10),
         scanned: 0, count: 0, rows: [],
@@ -1196,21 +1197,21 @@ async function soldTooEarly(request) {
     }
     // 2. For each stock, fetch last `lookback` days of price bars
     const hits = [];
-    const today = new Date();
     let asOf = null;
     for (const w of wl) {
-      const code = w.code;
-      const name = w.name || "";
-      const bars = await q(
+      const code = w[0];        // array-mode: [code, name]
+      const name = w[1] || "";
+      const barRes = await q(
         `SELECT trade_date::text, close_price
          FROM market_price_bars
          WHERE symbol = $1 AND asset_type = 'stock' AND close_price IS NOT NULL
          ORDER BY trade_date DESC LIMIT $2`,
         [code, lookback]
       );
+      const bars = barRes.rows;
       if (bars.length < 25) continue; // need at least MA20 + buffer
       // bars is DESC; reverse to ASC for MA calculation
-      const series = bars.slice().reverse();
+      const series = bars.slice().reverse().map(b => ({ d: b[0], c: Number(b[1]) }));
       // MA helper
       const ma = (arr, n) => {
         if (arr.length < n) return null;
@@ -1220,7 +1221,7 @@ async function soldTooEarly(request) {
       // Annotate each bar with MA5/10/20
       const enriched = series.map((b, i) => ({
         d: b.d,
-        c: Number(b.c),
+        c: b.c,
         ma5: i >= 4 ? ma(series.slice(0, i + 1), 5) : null,
         ma10: i >= 9 ? ma(series.slice(0, i + 1), 10) : null,
         ma20: i >= 19 ? ma(series.slice(0, i + 1), 20) : null,
