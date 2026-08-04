@@ -2227,7 +2227,16 @@ async function loadMarketPrices(request) {
     const url = "https://www.twse.com.tw/exchangeReport/STOCK_DAY_ALL?response=json";
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), 12000);
-    const r = await fetch(url, { headers: { "User-Agent": UA, "Accept-Encoding": "gzip" } });
+    const r = await fetch(url, {
+      headers: {
+        "User-Agent": UA,
+        "Accept-Encoding": "gzip",
+        "Accept": "application/json,text/plain,*/*",
+        "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://www.twse.com.tw/",
+        "Origin": "https://www.twse.com.tw",
+      },
+    });
     clearTimeout(tid);
     if (!r.ok) throw new Error(`TWSE HTTP ${r.status}`);
     const j = await r.json();
