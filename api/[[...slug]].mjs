@@ -1133,15 +1133,146 @@ async function revenue(request) {
   }
 }
 
+// ai_capex dashboard aggregation. Loads raw rows and computes:
+//   per-company: latest_capex, latest_quarter, qoq_pct, yoy_pct, ttm, ttm_yoy_pct, spark
+//   aggregate (5 hyperscalers, NVDA excluded as it's a chip designer not a buyer):
+//     agg_ttm_usd_bn, agg_yoy_pct, accel_pp, chart (last 8 quarters)
+const AI_CAPEX_CORE = ["MSFT", "AMZN", "GOOGL", "META", "ORCL"];
+const AI_CAPEX_ALL = ["MSFT", "AMZN", "GOOGL", "META", "ORCL", "NVDA"]; // "ext" group label
+const AI_CAPEX_NAMES = {
+  NVDA: "NVIDIA", MSFT: "Microsoft", AMZN: "Amazon",
+  GOOGL: "Alphabet", META: "Meta Platforms", ORCL: "Oracle",
+};
+
+function _aiCapexQuartetKey(y, q) { return y * 10 + q; }
+
 async function aiCapex(request) {
   try {
     const { rows } = await q(
-      `SELECT id, company, year, quarter, capex, revenue, capex_pct_of_revenue
+      `SELECT company, year, quarter, capex, revenue, capex_pct_of_revenue, source, fetched_at
        FROM ai_capex
-       ORDER BY year DESC, quarter DESC
-       LIMIT 200`
+       WHERE year >= 2020
+       ORDER BY company, year, quarter`
     );
-    return json({ ok: true, source: "db", count: rows.length, items: rows });
+    if (rows.length === 0) {
+      return json({ ok: true, source: "stub", count: 0, items: [], as_of: new Date().toISOString().slice(0, 10),
+        message: "ai_capex table empty — run SEC EDGAR loader",
+        companies: [], chart: { labels: [], agg_ttm: [], agg_yoy: [] },
+        agg_ttm_usd_bn: null, agg_yoy_pct: null, accel_pp: null,
+        light: "gray", headline: "ai_capex 表為空，請跑 SEC EDGAR loader" });
+    }
+    // Normalize → array of objects
+    const raw = rows.map(r => ({
+      company: r.company,
+      year: Number(r.year),
+      quarter: Number(r.quarter),
+      capex: Number(r.capex),
+      revenue: r.revenue != null ? Number(r.revenue) : null,
+      pct: r.capex_pct_of_revenue != null ? Number(r.capex_pct_of_revenue) : null,
+    }));
+    // Group by company
+    const byCo = new Map();
+    for (const r of raw) {
+      if (!byCo.has(r.company)) byCo.set(r.company, []);
+      byCo.get(r.company).push(r);
+    }
+    // For each company, sort ascending and compute aggregates
+    const companies = [];
+    for (const [co, list] of byCo.entries()) {
+      list.sort((a, b) => _aiCapexQuartetKey(a.year, a.quarter) - _aiCapexQuartetKey(b.year, b.quarter));
+      const last = list[list.length - 1];
+      const prev = list.length >= 2 ? list[list.length - 2] : null;
+      const yoyAgo = list.length >= 5 ? list[list.length - 5] : null;
+      // TTM = sum of last 4 quarters
+      const last4 = list.slice(-4);
+      const ttm = last4.reduce((s, r) => s + r.capex, 0);
+      const yoyTtm4 = list.slice(-8, -4);
+      const ttmYoyAgo = yoyTtm4.length === 4 ? yoyTtm4.reduce((s, r) => s + r.capex, 0) : null;
+      const ttmYoyPct = (ttmYoyAgo && ttmYoyAgo > 0) ? ((ttm - ttmYoyAgo) / ttmYoyAgo) * 100 : null;
+      const qoqPct = (prev && prev.capex > 0) ? ((last.capex - prev.capex) / prev.capex) * 100 : null;
+      const yoyPct = (yoyAgo && yoyAgo.capex > 0) ? ((last.capex - yoyAgo.capex) / yoyAgo.capex) * 100 : null;
+      companies.push({
+        code: co,
+        name: AI_CAPEX_NAMES[co] || co,
+        group: AI_CAPEX_CORE.includes(co) ? "core" : "ext",
+        latest_capex: last.capex,
+        latest_quarter: `${last.year} Q${last.quarter}`,
+        qoq_pct: qoqPct != null ? +qoqPct.toFixed(1) : null,
+        yoy_pct: yoyPct != null ? +yoyPct.toFixed(1) : null,
+        ttm,
+        ttm_yoy_pct: ttmYoyPct != null ? +ttmYoyPct.toFixed(1) : null,
+        spark: list.map(r => +(r.capex / 1e9).toFixed(2)),
+      });
+    }
+    companies.sort((a, b) => AI_CAPEX_ALL.indexOf(a.code) - AI_CAPEX_ALL.indexOf(b.code));
+
+    // Aggregate: sum across core 5 (TTM per quarter aligned by quarter)
+    // First, build a (year, quarter) → total capex map for core
+    const coreAgg = new Map();
+    for (const r of raw) {
+      if (!AI_CAPEX_CORE.includes(r.company)) continue;
+      const k = `${r.year}-Q${r.quarter}`;
+      coreAgg.set(k, (coreAgg.get(k) || 0) + r.capex);
+    }
+    // Sort quarters and compute TTM rolling
+    const quarters = Array.from(coreAgg.keys()).sort((a, b) => {
+      const [ay, aq] = a.split('-Q').map(Number);
+      const [by, bq] = b.split('-Q').map(Number);
+      return ay - by || aq - bq;
+    });
+    // TTM for each quarter (sum of last 4)
+    const ttmByQ = [];
+    for (let i = 0; i < quarters.length; i++) {
+      if (i < 3) { ttmByQ.push(null); continue; }
+      const sum = quarters.slice(i - 3, i + 1).reduce((s, k) => s + (coreAgg.get(k) || 0), 0);
+      ttmByQ.push(sum);
+    }
+    // Last 8 quarters for chart
+    const chartStart = Math.max(4, quarters.length - 8);
+    const chartLabels = quarters.slice(chartStart);
+    const chartTtm = ttmByQ.slice(chartStart);
+    const chartYoy = ttmByQ.map((v, i) => {
+      if (i < 8) return null;
+      const yearAgo = ttmByQ[i - 4];
+      if (!v || !yearAgo) return null;
+      return +(((v - yearAgo) / yearAgo) * 100).toFixed(1);
+    }).slice(chartStart);
+
+    const lastTtm = ttmByQ[ttmByQ.length - 1];
+    const yearAgoTtm = ttmByQ.length >= 5 ? ttmByQ[ttmByQ.length - 5] : null;
+    const aggYoyPct = (lastTtm && yearAgoTtm && yearAgoTtm > 0)
+      ? +(((lastTtm - yearAgoTtm) / yearAgoTtm) * 100).toFixed(1)
+      : null;
+    // Acceleration: change in YoY % (current YoY - YoY from 4 quarters ago)
+    let accelPp = null;
+    if (chartYoy.length >= 5) {
+      const latest = chartYoy[chartYoy.length - 1];
+      const prior = chartYoy[chartYoy.length - 5];
+      if (latest != null && prior != null) accelPp = +(latest - prior).toFixed(1);
+    }
+    // Light signal
+    let light = "gray";
+    let headline = "資料不足";
+    if (aggYoyPct != null) {
+      if (aggYoyPct > 15 && (accelPp == null || accelPp >= 0)) { light = "green"; headline = `合計 capex TTM 仍擴張（YoY +${aggYoyPct}%）`; }
+      else if (aggYoyPct > 0) { light = "yellow"; headline = `擴張但動能轉弱（YoY +${aggYoyPct}%${accelPp != null ? `，${accelPp > 0 ? '+' : ''}${accelPp}pp` : ''}）`; }
+      else { light = "red"; headline = `合計 capex TTM 轉收縮（YoY ${aggYoyPct}%）`; }
+    }
+    const asOf = new Date().toISOString().slice(0, 10);
+    return json({
+      ok: true,
+      source: "db",
+      count: raw.length,
+      items: raw.slice(-50),
+      as_of: asOf,
+      data_stale: false,
+      light, headline,
+      agg_ttm_usd_bn: lastTtm ? +(lastTtm / 1e9).toFixed(1) : null,
+      agg_yoy_pct: aggYoyPct,
+      accel_pp: accelPp,
+      chart: { labels: chartLabels, agg_ttm: chartTtm.map(v => v ? +(v / 1e9).toFixed(1) : null), agg_yoy: chartYoy },
+      companies,
+    });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "ai_capex table empty or missing" });
   }
