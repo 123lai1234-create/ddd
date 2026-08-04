@@ -1189,7 +1189,7 @@ async function soldTooEarly(request) {
   try {
     // 1. Pull all watchlist stocks (codes + names)
     const wlRes = await q(`SELECT code, name FROM watchlist ORDER BY code`);
-    const wl = wlRes.rows;
+    const wl = wlRes.rows || [];
     if (wl.length === 0) {
       return json({ ok: true, source: "stub", as_of: new Date().toISOString().slice(0, 10),
         scanned: 0, count: 0, rows: [],
@@ -1199,8 +1199,10 @@ async function soldTooEarly(request) {
     const hits = [];
     let asOf = null;
     for (const w of wl) {
-      const code = w[0];        // array-mode: [code, name]
-      const name = w[1] || "";
+      // q() returns object-mode rows by default in edge runtime
+      const code = String(w.code ?? w[0] ?? "").trim();
+      const name = String(w.name ?? w[1] ?? "").trim();
+      if (!code) continue;
       const barRes = await q(
         `SELECT trade_date::text, close_price
          FROM market_price_bars
@@ -1208,10 +1210,13 @@ async function soldTooEarly(request) {
          ORDER BY trade_date DESC LIMIT $2`,
         [code, lookback]
       );
-      const bars = barRes.rows;
+      const bars = barRes.rows || [];
       if (bars.length < 25) continue; // need at least MA20 + buffer
       // bars is DESC; reverse to ASC for MA calculation
-      const series = bars.slice().reverse().map(b => ({ d: b[0], c: Number(b[1]) }));
+      const series = bars.slice().reverse().map(b => ({
+        d: b.trade_date ?? b[0],
+        c: Number(b.close_price ?? b[1]),
+      }));
       // MA helper
       const ma = (arr, n) => {
         if (arr.length < n) return null;
@@ -2217,9 +2222,10 @@ async function loadMarketPrices(request) {
       q(`SELECT code FROM watchlist`),
       q(`SELECT code FROM etf_watchlist`),
     ]);
+    // q() returns {rows: [...]} in OBJECT mode (no Neon-Array-Mode header) by default
     const targets = new Set();
-    for (const r of wlRes.rows) targets.add(String(r[0]));
-    for (const r of ewRes.rows) targets.add(String(r[0]));
+    for (const r of (wlRes.rows || [])) targets.add(String(r.code ?? r[0]));
+    for (const r of (ewRes.rows || [])) targets.add(String(r.code ?? r[0]));
     if (targets.size === 0) {
       return json({ ok: true, source: "stub", count: 0, message: "watchlist + etf_watchlist 為空" });
     }
@@ -2268,7 +2274,7 @@ async function loadMarketPrices(request) {
     for (const row of rows) {
       const code = String(row[1] || "").trim();
       if (!targets.has(code)) continue;
-      const isEtf = ewRes.rows.some(r => String(r[0]) === code);
+      const isEtf = (ewRes.rows || []).some(r => String(r.code ?? r[0]) === code);
       const assetType = isEtf ? "etf" : "stock";
       const open = parseFloat(row[5]) || null;
       const high = parseFloat(row[6]) || null;
