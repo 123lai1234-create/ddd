@@ -1729,6 +1729,101 @@ async function loadInstitutionalForDate(dateYmd) {
   return { ok: true, source: "twse_T86", date: trade_date_iso, count: symbols.length };
 }
 
+// ── overseas indices loader (Yahoo Finance unofficial chart API) ──
+// Symbols cover: S&P 500, Dow, Nasdaq, Nikkei, KOSPI, Hang Seng, CSI 300, FTSE, DAX, CAC 40.
+// Range: 5d daily. Updates a few times a day during US/EU/Asia market hours.
+const OVERSEAS_INDEX_SYMBOLS = [
+  { symbol: "^GSPC", name: "S&P 500" },
+  { symbol: "^DJI", name: "Dow Jones Industrial" },
+  { symbol: "^IXIC", name: "Nasdaq Composite" },
+  { symbol: "^N225", name: "Nikkei 225" },
+  { symbol: "^KS11", name: "KOSPI" },
+  { symbol: "^HSI", name: "Hang Seng" },
+  { symbol: "000300.SS", name: "CSI 300" },
+  { symbol: "^FTSE", name: "FTSE 100" },
+  { symbol: "^GDAXI", name: "DAX" },
+  { symbol: "^FCHI", name: "CAC 40" },
+];
+async function loadOverseasIndicesForSymbol(sym) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 12000);
+  let resp;
+  try {
+    resp = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+  } catch (e) {
+    clearTimeout(tid);
+    if (e.name === "AbortError") throw new Error("yahoo timeout");
+    throw e;
+  }
+  if (!resp.ok) throw new Error(`yahoo HTTP ${resp.status}`);
+  const data = await resp.json();
+  const result = data?.chart?.result?.[0];
+  if (!result) throw new Error("yahoo: no result");
+  const ts = result.timestamp || [];
+  const closes = result.indicators?.quote?.[0]?.close || [];
+  const prevClose = result.meta?.chartPreviousClose;
+  if (ts.length === 0 || closes.length === 0) return { ok: true, symbol: sym, count: 0 };
+  const rows = [];
+  for (let i = 0; i < ts.length; i++) {
+    const c = closes[i];
+    if (c == null || !Number.isFinite(c)) continue;
+    const d = new Date(ts[i] * 1000);
+    const isoDate = d.toISOString().slice(0, 10);
+    // change_pct vs previous trading day close
+    let pct = null;
+    const prev = i > 0 ? closes[i - 1] : prevClose;
+    if (prev != null && Number.isFinite(prev) && prev !== 0) {
+      pct = Math.round(((c - prev) / prev) * 10000) / 100; // 2 decimals
+    }
+    rows.push({ date: isoDate, close: c, pct });
+  }
+  if (rows.length === 0) return { ok: true, symbol: sym, count: 0 };
+  // Bulk upsert
+  const dates = rows.map((r) => r.date);
+  const closes2 = rows.map((r) => r.close);
+  const pcts = rows.map((r) => r.pct);
+  const sql = `
+    INSERT INTO overseas_indices (symbol, trade_date, close_price, change_pct, source)
+    SELECT $1, unnest($2::date[]), unnest($3::numeric[]), unnest($4::numeric[]), 'yahoo_v8'
+    ON CONFLICT (symbol, trade_date) DO UPDATE SET
+      close_price = EXCLUDED.close_price,
+      change_pct = EXCLUDED.change_pct,
+      source = EXCLUDED.source,
+      fetched_at = now()`;
+  await q(sql, [sym, dates, closes2, pcts]);
+  return { ok: true, symbol: sym, count: rows.length };
+}
+async function loadOverseasIndices(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  // Optional symbols override (comma-separated)
+  const symParam = pickStr(body?.symbols || u.searchParams.get("symbols") || "").trim();
+  const symbols = symParam
+    ? symParam.split(",").map((s) => s.trim()).filter(Boolean)
+    : OVERSEAS_INDEX_SYMBOLS.map((x) => x.symbol);
+  const results = [];
+  for (const sym of symbols) {
+    try {
+      const r = await loadOverseasIndicesForSymbol(sym);
+      results.push(r);
+    } catch (e) {
+      results.push({ ok: false, symbol: sym, count: 0, error: e?.message });
+    }
+    // Rate-limit Yahoo (no official limit, but be nice)
+    await new Promise((res) => setTimeout(res, 400));
+  }
+  const okCount = results.filter((r) => r.ok).reduce((s, r) => s + (r.count || 0), 0);
+  return json({ ok: true, source: "loader", inserted: okCount, results });
+}
+
 async function loadExdivForDate(dateYmd) {
   // dateYmd: "YYYY-MM-DD" (exdiv API is date-range based, returns all exdivs up to date)
   const ymd = dateYmd.replace(/-/g, "");
@@ -2023,6 +2118,147 @@ async function loadRevenue(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
+// ── TAIFEX futures loader (大台/小台/電子/金融/微型) ──
+// Endpoint: https://www.taifex.com.tw/cht/3/dlFutDataDown?down_type=1&commodity_id=<TX>&queryStartDate=YYYY/MM/DD&queryEndDate=YYYY/MM/DD
+// CSV: Big5 encoded. Columns: 交易日期,契約,到期月份(週別),開盤價,最高價,最低價,收盤價,漲跌價,漲跌%,成交量,結算價,未沖銷契約數,...
+// Map: contract=契約 (TX), maturity=到期月份, all others as-is.
+const TAIFEX_FUTURE_CONTRACTS = [
+  { id: "TX", name: "臺股期貨" },
+  { id: "MTX", name: "小型臺股期貨" },
+  { id: "TE", name: "電子期貨" },
+  { id: "TF", name: "金融期貨" },
+  { id: "ZEF", name: "微型臺指期貨" },
+];
+function toAdDate(ymd) {
+  // "2026-08-03" -> "2026/08/03"
+  return ymd.replace(/-/g, "/");
+}
+async function loadFuturesForDate(dateYmd) {
+  const adDate = toAdDate(dateYmd);
+  const results = [];
+  for (const c of TAIFEX_FUTURE_CONTRACTS) {
+    const url = `https://www.taifex.com.tw/cht/3/dlFutDataDown?down_type=1&commodity_id=${c.id}&queryStartDate=${adDate}&queryEndDate=${adDate}`;
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 12000);
+    let csvText = "";
+    let respOk = false;
+    let status = 0;
+    try {
+      const r = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0", "Referer": "https://www.taifex.com.tw/cht/3/futDailyMarketView" },
+        signal: ctrl.signal,
+      });
+      clearTimeout(tid);
+      status = r.status;
+      if (r.ok) {
+        const bytes = new Uint8Array(await r.arrayBuffer());
+        // Big5 with latin-1 fallback (only need ASCII columns: trade_date, contract, maturity, OHLC, vol, OI)
+        try { csvText = new TextDecoder("big5", { fatal: false }).decode(bytes); }
+        catch { csvText = new TextDecoder("latin1").decode(bytes); }
+        respOk = true;
+      }
+    } catch (e) {
+      clearTimeout(tid);
+      results.push({ ok: false, contract: c.id, error: e?.message || "fetch error" });
+      continue;
+    }
+    if (!respOk) { results.push({ ok: false, contract: c.id, error: `HTTP ${status}` }); continue; }
+    if (!csvText || csvText.length < 50) { results.push({ ok: false, contract: c.id, error: "empty response" }); continue; }
+    const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    if (lines.length < 2) { results.push({ ok: true, contract: c.id, count: 0, message: "no data rows" }); continue; }
+    // Parse: header + rows. Each line: tradeDate,contract,maturity,open,high,low,close,change,changePct,vol,settle,oi,...
+    // TAIFEX CSV uses "," but the contract "TX" doesn't have a comma. We split on "," plain.
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(",");
+      if (cols.length < 18) continue;
+      // Date: "2026/08/03" -> "2026-08-03"
+      const ad = (cols[0] || "").trim();
+      const m = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(ad);
+      if (!m) continue;
+      const isoDate = `${m[1]}-${m[2]}-${m[3]}`;
+      const sym = (cols[1] || "").trim();
+      const maturity = (cols[2] || "").trim();
+      if (sym !== c.id) continue; // safety
+      // Filter to "一般" (regular session) only — the CSV also has 盤後 (after-hours) and 夜盤
+      // entries for the same (symbol, contract, date) which would violate the unique constraint.
+      const session = (cols[17] || "").trim();
+      if (session && session !== "一般") continue;
+      const open = numFromStr(cols[3]);
+      const high = numFromStr(cols[4]);
+      const low = numFromStr(cols[5]);
+      const close = numFromStr(cols[6]);
+      const vol = numFromStr(cols[9]);
+      const oi = numFromStr(cols[11]);
+      if (!Number.isFinite(close) || close === 0) continue; // skip empty rows
+      rows.push({ sym, maturity, isoDate, open, high, low, close, vol, oi });
+    }
+    if (rows.length === 0) { results.push({ ok: true, contract: c.id, count: 0, message: "no valid rows" }); continue; }
+    // Bulk upsert
+    const dates = rows.map((r) => r.isoDate);
+    const contracts = rows.map((r) => r.maturity);
+    const opens = rows.map((r) => r.open);
+    const highs = rows.map((r) => r.high);
+    const lows = rows.map((r) => r.low);
+    const closes = rows.map((r) => r.close);
+    const vols = rows.map((r) => r.vol);
+    const ois = rows.map((r) => r.oi);
+    const sql = `
+      INSERT INTO futures
+        (symbol, contract, trade_date, open_price, high_price, low_price, close_price, volume, open_interest, source)
+      SELECT s, c, d::date, o, h, l, cl, v, oi, 'taifex_dlFutDataDown'
+      FROM UNNEST(
+        $1::text[], $2::text[], $3::date[],
+        $4::numeric[], $5::numeric[], $6::numeric[], $7::numeric[],
+        $8::bigint[], $9::bigint[]
+      ) AS x(s, c, d, o, h, l, cl, v, oi)
+      ON CONFLICT (symbol, contract, trade_date) DO UPDATE SET
+        open_price = EXCLUDED.open_price,
+        high_price = EXCLUDED.high_price,
+        low_price = EXCLUDED.low_price,
+        close_price = EXCLUDED.close_price,
+        volume = EXCLUDED.volume,
+        open_interest = EXCLUDED.open_interest,
+        source = EXCLUDED.source,
+        fetched_at = now()`;
+    await q(sql, [rows.map((r) => r.sym), contracts, dates, opens, highs, lows, closes, vols, ois]);
+    results.push({ ok: true, contract: c.id, count: rows.length });
+    // Rate-limit TAIFEX
+    await new Promise((res) => setTimeout(res, 300));
+  }
+  return results;
+}
+async function loadFutures(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  // Param priority: body > query > default (yesterday, since TAIFEX settles same day but
+  // a same-day morning call may be missing intraday data)
+  const dateParam = pickStr(body?.date || u.searchParams.get("date") || "").trim();
+  const dates = dateParam
+    ? [dateParam]
+    : (() => {
+        const d = new Date(); d.setDate(d.getDate() - 1);
+        return [`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`];
+      })();
+  const allResults = [];
+  for (const d of dates) {
+    try {
+      const r = await loadFuturesForDate(d);
+      allResults.push({ date: d, contracts: r });
+    } catch (e) {
+      allResults.push({ date: d, error: e?.message });
+    }
+  }
+  const okCount = allResults.reduce((s, day) => {
+    if (day.contracts) return s + day.contracts.reduce((s2, c) => s2 + (c.count || 0), 0);
+    return s;
+  }, 0);
+  return json({ ok: true, source: "loader", inserted: okCount, results: allResults });
+}
+
 async function loadAll(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
@@ -2176,6 +2412,10 @@ const TABLE = [
   ["POST", /^\/admin\/load\/all\/?$/,        loadAll],
   ["GET",  /^\/admin\/load\/revenue\/?$/,    loadRevenue],
   ["POST", /^\/admin\/load\/revenue\/?$/,    loadRevenue],
+  ["GET",  /^\/admin\/load\/overseas\/?$/,    loadOverseasIndices],
+  ["POST", /^\/admin\/load\/overseas\/?$/,    loadOverseasIndices],
+  ["GET",  /^\/admin\/load\/futures\/?$/,     loadFutures],
+  ["POST", /^\/admin\/load\/futures\/?$/,     loadFutures],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],

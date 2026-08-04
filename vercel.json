@@ -11,7 +11,9 @@
     { "path": "/api/admin/load/institutional", "schedule": "0 14 * * 1-5" },
     { "path": "/api/admin/load/exdiv", "schedule": "0 15 * * 1-5" },
     { "path": "/api/admin/load/revenue?typeks=sii", "schedule": "0 14 12 * *" },
-    { "path": "/api/admin/load/revenue?typeks=otc", "schedule": "30 14 12 * *" }
+    { "path": "/api/admin/load/revenue?typeks=otc", "schedule": "30 14 12 * *" },
+    { "path": "/api/admin/load/futures", "schedule": "15 14 * * 1-5" },
+    { "path": "/api/admin/load/overseas", "schedule": "0 */6 * * 1-5" }
   ]
 }
 
