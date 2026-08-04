@@ -1349,7 +1349,15 @@
           const r = await fetch('/api/macro_news', {cache:'no-store'});
           if (!r.ok) throw new Error('HTTP '+r.status);
           const d = await r.json();
-          renderTicker(d.items || []);
+          const items = d.items || [];
+          renderTicker(items);
+          // 沒資料時塞一條說明，避免使用者以為是 bug
+          if (items.length === 0) {
+            const track = document.getElementById('macroTickerTrack');
+            if (track) {
+              track.innerHTML = '<span class="macro-ticker-loading" style="color:#ffb74d">⚠ macro_news 表為空，跑馬燈暫無新聞 (需 loader；目前尚未實作)</span>';
+            }
+          }
         }catch(e){
           console.warn('[macro_news] load fail', e);
           const track = document.getElementById('macroTickerTrack');
