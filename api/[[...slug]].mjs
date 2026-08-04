@@ -759,23 +759,54 @@ async function etfSnapshotAllStatus(request) {
 }
 
 async function etfStatus(request) {
+  // Return shape compatible with the front-end pollStatus() contract:
+  //   { running, done, total, last_refresh, count, error?, result? }
+  // When etf_holdings is empty, return running=false + last_refresh=null
+  // so the frontend poll exits immediately with a "no data" state.
   try {
-    const { rows } = await q(
-      `SELECT MAX(fetched_at) AS last_refresh FROM knowledge_library WHERE record_type = 'etf_snapshot'`
-    );
+    const [{ rows: snapRows }, { rows: holdRows }] = await Promise.all([
+      q(`SELECT MAX(fetched_at) AS last_refresh FROM knowledge_library WHERE record_type = 'etf_snapshot'`),
+      q(`SELECT COUNT(*)::int AS n FROM etf_holdings`),
+    ]);
+    const lastRefresh = snapRows[0]?.last_refresh || null;
+    const holdingsCount = holdRows[0]?.n || 0;
     return json({
-      ok: true, source: "db",
-      last_refresh: rows[0]?.last_refresh || null,
-      count: (await getEtfList()).length,
+      ok: true,
+      source: "db",
+      running: false,
+      done: 0,
+      total: 0,
+      last_refresh: lastRefresh,
+      count: holdingsCount,
+      no_data: holdingsCount === 0,
+      message: holdingsCount === 0
+        ? "etf_holdings 表為空，無 bulk data source（需 per-issuer 爬）"
+        : null,
     });
   } catch (e) {
-    return json({ ok: true, source: "stub", last_refresh: null, count: 0 });
+    return json({ ok: true, source: "stub", running: false, done: 0, total: 0, last_refresh: null, count: 0, no_data: true, error: e?.message });
   }
 }
 
 async function etfAnalyze(request) {
-  // Trigger: return task id (no real async work — DB-backed scan only)
-  return json({ ok: true, source: "stub", task_id: `etf-${Date.now()}`, status: "queued" });
+  // No bulk data source for ETF holdings (per-issuer scraping required).
+  // Return an immediate "no data" state so the frontend doesn't loop.
+  try {
+    const { rows } = await q(`SELECT COUNT(*)::int AS n FROM etf_holdings`);
+    const n = rows[0]?.n || 0;
+    if (n > 0) {
+      return json({ ok: true, source: "db", task_id: `etf-${Date.now()}`, status: "queued", count: n });
+    }
+    return json({
+      ok: true,
+      source: "stub",
+      no_data: true,
+      count: 0,
+      message: "etf_holdings 表為空（無 bulk source；需 per-issuer 爬或手動 seed）",
+    });
+  } catch (e) {
+    return json({ ok: false, source: "stub", error: e?.message, no_data: true });
+  }
 }
 
 async function etfClearCache(request) {
@@ -1145,6 +1176,105 @@ const AI_CAPEX_NAMES = {
 };
 
 function _aiCapexQuartetKey(y, q) { return y * 10 + q; }
+
+// ── sold_too_early: heuristic "potentially sold too early" detector ──
+// No trade history. Heuristic: for each watchlist stock, find cases where
+// the price recently BROKE BELOW MA20 (sell signal territory), then later
+// re-crossed ABOVE MA5/MA10/MA20 (sold signal invalidated). Bigger bounce
+// = more "sold too early" feel.
+async function soldTooEarly(request) {
+  const u = urlOf(request);
+  const days = Math.max(20, Math.min(180, parseInt(u.searchParams.get("days") || "60", 10) || 60));
+  const lookback = days + 30; // extra padding for MA20
+  try {
+    // 1. Pull all watchlist stocks (codes + names)
+    const wl = await q(`SELECT code, name FROM watchlist ORDER BY code`);
+    if (wl.length === 0) {
+      return json({ ok: true, source: "stub", as_of: new Date().toISOString().slice(0, 10),
+        scanned: 0, count: 0, rows: [],
+        message: "watchlist 為空，請先在主系統新增自選股" });
+    }
+    // 2. For each stock, fetch last `lookback` days of price bars
+    const hits = [];
+    const today = new Date();
+    let asOf = null;
+    for (const w of wl) {
+      const code = w.code;
+      const name = w.name || "";
+      const bars = await q(
+        `SELECT trade_date::text, close_price
+         FROM market_price_bars
+         WHERE symbol = $1 AND asset_type = 'stock' AND close_price IS NOT NULL
+         ORDER BY trade_date DESC LIMIT $2`,
+        [code, lookback]
+      );
+      if (bars.length < 25) continue; // need at least MA20 + buffer
+      // bars is DESC; reverse to ASC for MA calculation
+      const series = bars.slice().reverse();
+      // MA helper
+      const ma = (arr, n) => {
+        if (arr.length < n) return null;
+        const slice = arr.slice(-n);
+        return slice.reduce((s, x) => s + x.c, 0) / n;
+      };
+      // Annotate each bar with MA5/10/20
+      const enriched = series.map((b, i) => ({
+        d: b.d,
+        c: Number(b.c),
+        ma5: i >= 4 ? ma(series.slice(0, i + 1), 5) : null,
+        ma10: i >= 9 ? ma(series.slice(0, i + 1), 10) : null,
+        ma20: i >= 19 ? ma(series.slice(0, i + 1), 20) : null,
+      }));
+      const last = enriched[enriched.length - 1];
+      if (!last.ma20) continue;
+      if (!asOf || last.d > asOf) asOf = last.d;
+      // Check: currently above all 3 MAs
+      const aboveAll = last.c > last.ma5 && last.c > last.ma10 && last.c > last.ma20;
+      if (!aboveAll) continue;
+      // Find the most recent day in last `days` where close was below MA20
+      const recentSlice = enriched.slice(-days);
+      let sellBar = null;
+      for (let i = recentSlice.length - 2; i >= 0; i--) {
+        const b = recentSlice[i];
+        if (b.ma20 != null && b.c < b.ma20) { sellBar = b; break; }
+      }
+      if (!sellBar) continue; // never sold/broke MA20 in window
+      // Find the recent low (since sellBar)
+      const sinceSell = enriched.slice(enriched.indexOf(sellBar));
+      const lowBar = sinceSell.reduce((min, b) => b.c < min.c ? b : min, sinceSell[0]);
+      const gain = ((last.c - lowBar.c) / lowBar.c) * 100;
+      if (gain < 3) continue; // not a meaningful bounce
+      // Days since "sell" (below MA20) signal
+      const daysSince = enriched.length - 1 - enriched.indexOf(sellBar);
+      hits.push({
+        code, name,
+        sell_date: sellBar.d,
+        sell_price: +sellBar.c.toFixed(2),
+        current_price: +last.c.toFixed(2),
+        gain_since_sell_pct: +gain.toFixed(2),
+        low_date: lowBar.d,
+        low_price: +lowBar.c.toFixed(2),
+        ma5: +last.ma5.toFixed(2),
+        ma10: +last.ma10.toFixed(2),
+        ma20: +last.ma20.toFixed(2),
+        days_since_sell: daysSince,
+      });
+    }
+    // Sort by gain desc
+    hits.sort((a, b) => b.gain_since_sell_pct - a.gain_since_sell_pct);
+    return json({
+      ok: true,
+      source: "db",
+      as_of: asOf || new Date().toISOString().slice(0, 10),
+      scanned: wl.length,
+      count: hits.length,
+      rows: hits,
+      note: "啟發式：股價曾跌破 MA20（賣出訊號），後來又站回 MA5/10/20，但無實際交易紀錄",
+    });
+  } catch (e) {
+    return json({ ok: false, source: "stub", error: e?.message });
+  }
+}
 
 async function aiCapex(request) {
   try {
@@ -2746,6 +2876,7 @@ const TABLE = [
   ["GET",  /^\/heatmap\/?$/,                 heatmap],
   ["GET",  /^\/price_compare\/?$/,           priceCompare],
   ["GET",  /^\/ai_capex\/?$/,                aiCapex],
+  ["GET",  /^\/sold_too_early\/?$/,          soldTooEarly],
   ["GET",  /^\/stock_news_scan\/?$/,         stockNewsScan],
   ["GET",  /^\/stock_news_scan\/quota\/?$/,  stockNewsScanQuota],
 
