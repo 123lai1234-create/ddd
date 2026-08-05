@@ -49,7 +49,7 @@ function sma(values, period) {
   return values.slice(-period).reduce((s, v) => s + v, 0) / period;
 }
 function smaSeries(closes, candles, period) {
-  // Returns [{time, value}] where time is ISO date string, value is the rolling SMA.
+  // Returns [{time, value}] where time is unix-seconds (UTCTimestamp) for chart.
   // Only emits points where there are enough history bars to compute the SMA.
   const out = [];
   for (let i = period - 1; i < closes.length; i++) {
@@ -220,15 +220,18 @@ async function stockKlines(request, ticker) {
     );
     if (!rows.length) return json({ error: "查無資料", code: ticker }, { status: 404 });
     const asc = rows.slice().reverse();
-    // Build candles with BOTH ROC date (for display) AND ISO time (for chart)
-    // - date: "115/07/09" (ROC, existing)
-    // - time: "2026-07-09" (ISO, used by lightweight-charts)
-    // - volume: same as before
+    // Build candles with:
+    // - date: "115/07/09" (ROC, for display)
+    // - time: <unix-seconds> UTCTimestamp (numeric, what lightweight-charts v4 wants)
+    // - time_iso: "2026-07-09" (ISO, for display/formatting)
     const candles = asc.map((r) => {
       const isoDate = String(r.trade_date).slice(0, 10);
+      const [y, m, d] = isoDate.split("-").map(Number);
+      const timeTs = Math.floor(Date.UTC(y, m - 1, d) / 1000);
       return {
         date: toTwseStyleDate(isoDate),
-        time: isoDate,
+        time: timeTs,
+        time_iso: isoDate,
         volume: Number(r.volume) || 0,
         open: Number(r.open_price),
         high: Number(r.high_price),
@@ -237,9 +240,8 @@ async function stockKlines(request, ticker) {
       };
     }).filter((c) => Number.isFinite(c.close));
     const closes = candles.map((c) => c.close);
-    // volumes array for chart: [{time, value}]
+    // volumes + ma use unix timestamp (numeric) for chart
     const volumes = candles.map((c) => ({ time: c.time, value: c.volume }));
-    // MA series as arrays of {time, value} (only include points with enough history)
     const ma5Series = smaSeries(closes, candles, 5);
     const ma10Series = smaSeries(closes, candles, 10);
     const ma20Series = smaSeries(closes, candles, 20);
