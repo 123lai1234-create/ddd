@@ -48,6 +48,17 @@ function sma(values, period) {
   if (values.length < period) return null;
   return values.slice(-period).reduce((s, v) => s + v, 0) / period;
 }
+function smaSeries(closes, candles, period) {
+  // Returns [{time, value}] where time is ISO date string, value is the rolling SMA.
+  // Only emits points where there are enough history bars to compute the SMA.
+  const out = [];
+  for (let i = period - 1; i < closes.length; i++) {
+    const slice = closes.slice(i - period + 1, i + 1);
+    const v = slice.reduce((s, x) => s + x, 0) / period;
+    out.push({ time: candles[i].time, value: r2(v) });
+  }
+  return out;
+}
 const r2 = (n) => Math.round(Number(n) * 100) / 100;
 const r1 = (n) => Math.round(Number(n) * 10) / 10;
 function toTwseStyleDate(s) {
@@ -209,25 +220,41 @@ async function stockKlines(request, ticker) {
     );
     if (!rows.length) return json({ error: "查無資料", code: ticker }, { status: 404 });
     const asc = rows.slice().reverse();
-    const candles = asc.map((r) => ({
-      date: toTwseStyleDate(String(r.trade_date).slice(0, 10)),
-      volume: Number(r.volume) || 0,
-      open: Number(r.open_price),
-      high: Number(r.high_price),
-      low: Number(r.low_price),
-      close: Number(r.close_price),
-    })).filter((c) => Number.isFinite(c.close));
+    // Build candles with BOTH ROC date (for display) AND ISO time (for chart)
+    // - date: "115/07/09" (ROC, existing)
+    // - time: "2026-07-09" (ISO, used by lightweight-charts)
+    // - volume: same as before
+    const candles = asc.map((r) => {
+      const isoDate = String(r.trade_date).slice(0, 10);
+      return {
+        date: toTwseStyleDate(isoDate),
+        time: isoDate,
+        volume: Number(r.volume) || 0,
+        open: Number(r.open_price),
+        high: Number(r.high_price),
+        low: Number(r.low_price),
+        close: Number(r.close_price),
+      };
+    }).filter((c) => Number.isFinite(c.close));
     const closes = candles.map((c) => c.close);
+    // volumes array for chart: [{time, value}]
+    const volumes = candles.map((c) => ({ time: c.time, value: c.volume }));
+    // MA series as arrays of {time, value} (only include points with enough history)
+    const ma5Series = smaSeries(closes, candles, 5);
+    const ma10Series = smaSeries(closes, candles, 10);
+    const ma20Series = smaSeries(closes, candles, 20);
+    const ma60Series = smaSeries(closes, candles, 60);
+    const ma240Series = smaSeries(closes, candles, 240);
     const last = candles[candles.length - 1];
     const prev = candles[candles.length - 2] ?? last;
     return json({
-      ok: true, source: "db", code: ticker, strategy, strategy_profile: strategyProfile, count: candles.length, candles,
+      ok: true, source: "db", code: ticker, strategy, strategy_profile: strategyProfile, count: candles.length, candles, volumes,
       ma: {
-        ma5: r2(sma(closes, 5)),
-        ma10: r2(sma(closes, 10)),
-        ma20: r2(sma(closes, 20)),
-        ma60: r2(sma(closes, 60)),
-        ma240: r2(sma(closes, 240)),
+        ma5: ma5Series,
+        ma10: ma10Series,
+        ma20: ma20Series,
+        ma60: ma60Series,
+        ma240: ma240Series,
       },
       latest: {
         close: last.close,
