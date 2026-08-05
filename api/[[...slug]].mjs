@@ -270,6 +270,67 @@ async function stockKlines(request, ticker) {
   }
 }
 
+// Index klines: returns same shape as /api/stock/<ticker> for index symbols
+// (^TWII, ^TWOII, etc.) — since we don't have index data in market_price_bars,
+// we use 2330 (TSMC) as a proxy. The frontend page renders this in TWII/大盤 mode.
+async function indexKlines(request, ticker) {
+  // Proxy symbol (TSMC for any index request; can refine later)
+  const proxy = "2330";
+  try {
+    const { rows } = await q(
+      `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
+       FROM market_price_bars
+       WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
+       ORDER BY trade_date DESC LIMIT 200`,
+      [proxy]
+    );
+    if (!rows.length) return json({ error: "查無資料 (proxy " + proxy + ")", ticker }, { status: 404 });
+    const asc = rows.slice().reverse();
+    const candles = asc.map((r) => {
+      const isoDate = String(r.trade_date).slice(0, 10);
+      const [y, m, d] = isoDate.split("-").map(Number);
+      const timeTs = Math.floor(Date.UTC(y, m - 1, d) / 1000);
+      return {
+        date: toTwseStyleDate(isoDate),
+        time: timeTs,
+        time_iso: isoDate,
+        volume: Number(r.volume) || 0,
+        open: Number(r.open_price),
+        high: Number(r.high_price),
+        low: Number(r.low_price),
+        close: Number(r.close_price),
+      };
+    }).filter((c) => Number.isFinite(c.close));
+    const closes = candles.map((c) => c.close);
+    const volumes = candles.map((c) => ({ time: c.time, value: c.volume }));
+    const ma5Series = smaSeries(closes, candles, 5);
+    const ma10Series = smaSeries(closes, candles, 10);
+    const ma20Series = smaSeries(closes, candles, 20);
+    const ma60Series = smaSeries(closes, candles, 60);
+    const ma240Series = smaSeries(closes, candles, 240);
+    const last = candles[candles.length - 1];
+    const prev = candles[candles.length - 2] ?? last;
+    return json({
+      ok: true, source: "db", code: ticker, proxy, count: candles.length, candles, volumes,
+      ma: {
+        ma5: ma5Series,
+        ma10: ma10Series,
+        ma20: ma20Series,
+        ma60: ma60Series,
+        ma240: ma240Series,
+      },
+      latest: {
+        close: last.close,
+        change: r2(last.close - prev.close),
+        change_pct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
+        date: last.date,
+      },
+    });
+  } catch (e) {
+    return json({ error: e?.message }, { status: 500 });
+  }
+}
+
 // ── screener core: score one stock ───────────────────────────────────
 async function screenOne(code, name) {
   const candles = await getCandles(code, 200);
@@ -3081,6 +3142,7 @@ const TABLE = [
   ["DELETE", /^\/stocks\/remove\/([^/]+?)\/?$/, removeStock],
   ["POST",    /^\/stocks\/remove\/([^/]+?)\/?$/, removeStock],
   ["GET",   /^\/stock\/([^/]+?)\/?$/,        stockKlines],
+  ["GET",   /^\/index\/([^/]+?)\/?$/,        indexKlines],
 
   ["GET",  /^\/market_gaps\/?$/,             marketGaps],
 
