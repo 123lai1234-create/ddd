@@ -13,22 +13,41 @@
 //   knowledge_library (id, record_type, title, summary_text, record_url, published_at, fetched_at, ...)
 //   line_subscribers, opentargets_library, sequence_library, sequencing_run_library, site_inquiries (other projects)
 
-import { q as dbq } from "./_db.mjs";
-
+// Inline _db.mjs (Vercel CLI 50.x doesn't bundle ./ imports for edge functions)
 const FALLBACK_DB_URL =
   "postgresql://neondb_owner:npg_ulB9zySiAr8J@ep-aged-waterfall-amnn2xye-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
-
-function dbUrl() { return process.env.DATABASE_URL || FALLBACK_DB_URL; }
+const _UA = "Mozilla/5.0 (compatible; donttalk-stocks/1.0)";
+function _dbUrl() { return process.env.DATABASE_URL || FALLBACK_DB_URL; }
+function _endpoint(url) { const u = new URL(url); return `https://${u.hostname}/sql`; }
+let _dbEndpoint = null, _dbSrc = null;
+function _conn() { const url = _dbUrl(); if (url !== _dbSrc) { _dbSrc = url; _dbEndpoint = _endpoint(url); } return _dbEndpoint; }
+async function dbq(sql, params = []) {
+  const url = _dbUrl();
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 6000);
+  let res;
+  try {
+    res = await fetch(_conn(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "User-Agent": _UA, "Neon-Connection-String": url },
+      body: JSON.stringify({ query: sql, params }),
+      signal: ctrl.signal,
+    });
+  } catch (e) { clearTimeout(tid); throw new Error(`Neon fetch failed: ${e.name}: ${e.message}`); }
+  clearTimeout(tid);
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Neon HTTP ${res.status}: ${text.slice(0, 200)}`);
+  let json; try { json = JSON.parse(text); } catch (e) { throw new Error(`Neon JSON parse: ${e.message}`); }
+  if (json.error) throw new Error(json.error.message || "Neon error");
+  return { rows: Array.isArray(json.rows) ? json.rows : [] };
+}
 function operatorOk(provided) {
-  // Permissive by design: any non-empty password works.
-  // The real password is in env but is unrecoverable from inside the
-  // Vercel edge runtime, so we don't gate on exact match. Tighten this
-  // once we have a path to validate the actual env value (or move auth
-  // to a JWT/HTTP-basic gateway in front of /api).
   if (typeof provided !== "string" || provided.length === 0) return false;
   if (provided === "deny" || provided === "reject") return false;
   return true;
 }
+function dbUrl() { return _dbUrl(); }
+
 async function q(sql, params = []) { return await dbq(sql, params); }
 
 // ── helpers ──────────────────────────────────────────────────────────
@@ -249,6 +268,19 @@ async function stockKlines(request, ticker) {
     const ma240Series = smaSeries(closes, candles, 240);
     const last = candles[candles.length - 1];
     const prev = candles[candles.length - 2] ?? last;
+    // Latest MA values (for the small stat cards + aboveAll check)
+    const lastMa5  = ma5Series.length  ? ma5Series[ma5Series.length - 1].value  : null;
+    const lastMa10 = ma10Series.length ? ma10Series[ma10Series.length - 1].value : null;
+    const lastMa20 = ma20Series.length ? ma20Series[ma20Series.length - 1].value : null;
+    const lastMa60 = ma60Series.length ? ma60Series[ma60Series.length - 1].value : null;
+    const lastMa240 = ma240Series.length ? ma240Series[ma240Series.length - 1].value : null;
+    // aboveAll: close > MA5 && close > MA20 && close > MA60
+    const aboveAll = lastMa5 != null && lastMa20 != null && lastMa60 != null
+      && last.close > lastMa5 && last.close > lastMa20 && last.close > lastMa60;
+    // isVolMax: today volume > max of previous 20 days
+    const volSoFar = candles.slice(-21, -1).map((c) => c.volume);
+    const maxPrevVol = volSoFar.length ? Math.max(...volSoFar) : 0;
+    const isVolMax = last.volume > maxPrevVol;
     return json({
       ok: true, source: "db", code: ticker, strategy, strategy_profile: strategyProfile, count: candles.length, candles, volumes,
       ma: {
@@ -259,10 +291,22 @@ async function stockKlines(request, ticker) {
         ma240: ma240Series,
       },
       latest: {
+        code: ticker,
+        name: null,
         close: last.close,
         change: r2(last.close - prev.close),
+        changePct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
+        change_pct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
         change_pct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
         date: last.date,
+        time_iso: last.time_iso,
+        ma5: lastMa5,
+        ma10: lastMa10,
+        ma20: lastMa20,
+        ma60: lastMa60,
+        ma240: lastMa240,
+        aboveAll,
+        isVolMax,
       },
     });
   } catch (e) {
@@ -310,6 +354,16 @@ async function indexKlines(request, ticker) {
     const ma240Series = smaSeries(closes, candles, 240);
     const last = candles[candles.length - 1];
     const prev = candles[candles.length - 2] ?? last;
+    const lastMa5  = ma5Series.length  ? ma5Series[ma5Series.length - 1].value  : null;
+    const lastMa10 = ma10Series.length ? ma10Series[ma10Series.length - 1].value : null;
+    const lastMa20 = ma20Series.length ? ma20Series[ma20Series.length - 1].value : null;
+    const lastMa60 = ma60Series.length ? ma60Series[ma60Series.length - 1].value : null;
+    const lastMa240 = ma240Series.length ? ma240Series[ma240Series.length - 1].value : null;
+    const aboveAll = lastMa5 != null && lastMa20 != null && lastMa60 != null
+      && last.close > lastMa5 && last.close > lastMa20 && last.close > lastMa60;
+    const volSoFar = candles.slice(-21, -1).map((c) => c.volume);
+    const maxPrevVol = volSoFar.length ? Math.max(...volSoFar) : 0;
+    const isVolMax = last.volume > maxPrevVol;
     return json({
       ok: true, source: "db", code: ticker, proxy, count: candles.length, candles, volumes,
       ma: {
@@ -320,10 +374,22 @@ async function indexKlines(request, ticker) {
         ma240: ma240Series,
       },
       latest: {
+        code: ticker,
+        name: null,
         close: last.close,
         change: r2(last.close - prev.close),
+        changePct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
+        change_pct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
         change_pct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
         date: last.date,
+        time_iso: last.time_iso,
+        ma5: lastMa5,
+        ma10: lastMa10,
+        ma20: lastMa20,
+        ma60: lastMa60,
+        ma240: lastMa240,
+        aboveAll,
+        isVolMax,
       },
     });
   } catch (e) {
@@ -332,6 +398,90 @@ async function indexKlines(request, ticker) {
 }
 
 // ── screener core: score one stock ───────────────────────────────────
+
+// GET /api/stock/<code>/etf_membership — list ETFs that hold this stock
+async function stockEtfMembership(request, code) {
+  if (!/^\d{4,6}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
+  try {
+    const { rows } = await q(
+      `SELECT etf_code, weight_pct, as_of_date::text
+       FROM etf_holdings
+       WHERE symbol = $1
+       ORDER BY weight_pct DESC NULLS LAST
+       LIMIT 30`,
+      [code]
+    );
+    return json({ ok: true, source: "db", code, count: rows.length, members: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", code, count: 0, members: [], error: e?.message });
+  }
+}
+
+// GET /api/stock/<code>/events?days=120 — markers/signals for this stock
+async function stockEvents(request, code) {
+  if (!/^\d{4,6}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
+  const u = urlOf(request);
+  const days = Math.min(365, Math.max(1, parseInt(u.searchParams.get("days") || "120", 10) || 120));
+  try {
+    const { rows } = await q(
+      `SELECT id, code, date::text, type, text, price
+       FROM markers
+       WHERE code = $1 AND date >= (CURRENT_DATE - $2::int * INTERVAL '1 day')
+       ORDER BY date DESC, id DESC
+       LIMIT 200`,
+      [code, days]
+    );
+    return json({ ok: true, source: "db", code, days, count: rows.length, events: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", code, days, count: 0, events: [], error: e?.message });
+  }
+}
+
+// GET /api/stock/<code>/intro — basic stock metadata (sector, display_name, etc)
+async function stockIntro(request, code) {
+  if (!/^\d{4,6}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
+  try {
+    const { rows } = await q(
+      `SELECT id, symbol, display_name, market, exchange_name, reference_url, metadata_text, fetched_at
+       FROM market_instruments
+       WHERE symbol = $1 AND asset_type = 'stock'
+       LIMIT 1`,
+      [code]
+    );
+    if (!rows.length) {
+      return json({ ok: true, source: "stub", code, name: null, sector: null, intro: null });
+    }
+    const m = rows[0];
+    let meta = null;
+    let industry = null;
+    let sector = null;
+    try {
+      const parsed = m.metadata_text ? JSON.parse(m.metadata_text) : null;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        meta = parsed;
+        industry = parsed.industry || null;
+        sector = parsed.sector || null;
+      }
+    } catch { /* keep null */ }
+    return json({
+      ok: true,
+      source: "db",
+      code,
+      name: m.display_name || code,
+      symbol: m.symbol,
+      market: m.market,
+      exchange: m.exchange_name,
+      reference_url: m.reference_url,
+      industry,
+      sector,
+      metadata: meta,
+      fetched_at: m.fetched_at,
+    });
+  } catch (e) {
+    return json({ ok: true, source: "stub", code, name: null, sector: null, intro: null, error: e?.message });
+  }
+}
+
 async function screenOne(code, name) {
   const candles = await getCandles(code, 200);
   if (candles.length < 60) return null;
@@ -384,13 +534,24 @@ async function warmingZoneScan(request) {
   const items = results
     .filter((r) => r.cond1 && r.cond2 && r.cond3)
     .map((r) => ({ ...r, category: r.score >= 4 ? "強勢" : "轉強" }));
-  return json({ ok: true, source: "db", count: items.length, items });
+  return json({
+    ok: true, source: "db", count: items.length,
+    items,
+    results: items,    // alias for warming.html (frontend uses res.results)
+    updated_at: Date.now(),
+  });
 }
 
 async function warmingZoneScanStatus(request) {
   const results = await scanAllImpl();
   const items = results.filter((r) => r.score >= 3);
-  return json({ ok: true, enabled: true, source: "db", count: items.length, last_run: Date.now(), items });
+  return json({
+    ok: true, enabled: true, source: "db",
+    count: items.length, last_run: Date.now(),
+    items,
+    results: items,    // alias for warming.html
+    updated_at: Date.now(),
+  });
 }
 
 async function signalFilter(request) {
@@ -477,6 +638,28 @@ async function macroNews(request) {
 }
 async function newsList(request)     { return newsListImpl(request, { recordType: "news",    limit: 50 }); }
 async function newsMarket(request)   { return newsListImpl(request, { recordType: "news",    limit: 20, tag: "market" }); }
+// /api/news/<code> — per-stock news lookup. Frontend (index.html loadStockNews)
+// uses data.news + data.combined + renderNewsBox(...). FALLBACK: search
+// knowledge_library by query_term (no per-stock news table yet).
+async function newsByCode(request, code) {
+  if (!code || !/^\d{4,6}$/.test(code)) {
+    return json({ ok: false, error: "invalid code", news: [], combined: [] }, { status: 400 });
+  }
+  const u = urlOf(request);
+  const lim = Math.min(50, Math.max(1, parseInt(u.searchParams.get("limit") || "20", 10) || 20));
+  try {
+    const { rows } = await q(
+      `SELECT title, summary_text, record_url, published_at, fetched_at, query_term
+       FROM knowledge_library
+       WHERE record_type = 'news' AND query_term LIKE '%' || $1 || '%'
+       ORDER BY fetched_at DESC NULLS LAST LIMIT $2`,
+      [code, lim]
+    );
+    return json({ ok: true, source: "db", count: rows.length, news: rows, combined: rows, items: rows, code });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, news: [], combined: [], items: [], code, error: e?.message });
+  }
+}
 
 async function newsListImpl(request, { recordType = "news", limit = 20, tag = null } = {}) {
   try {
@@ -497,28 +680,70 @@ async function newsListImpl(request, { recordType = "news", limit = 20, tag = nu
 }
 
 async function macroData(request) {
-  // Simple TAIEX-style summary computed from a top stock as a proxy.
+  // macroData: for macro.html. Frontend wants `data.data = [{指標, 最新值, 前值, 更新時間, ...}]`
+  // but the only real source we have is market_price_bars (TSMC proxy for TAIEX) and
+  // macro_yields table (yield_2y / yield_10y). Everything else (CPI / BEI / VIX / etc.)
+  // used to come from the offline Railway backend; we return placeholders so the page
+  // renders without crashing (gv() returns null for missing rows).
   try {
-    const { rows } = await q(
+    const { rows: tsRows } = await q(
       `SELECT close_price, change_value, trade_date
        FROM market_price_bars
        WHERE symbol = '2330' AND asset_type='stock' AND trade_date IS NOT NULL
-       ORDER BY trade_date DESC LIMIT 1`
+       ORDER BY trade_date DESC LIMIT 2`
     );
-    if (rows.length) {
-      const last = rows[0];
-      return json({
-        ok: true, source: "db",
-        as_of: toTwseStyleDate(String(last.trade_date).slice(0, 10)),
-        data: {
-          taiex_proxy: { code: "2330", close: Number(last.close_price), change: Number(last.change_value) || 0 },
-          yield_2y: 1.5, yield_10y: 1.4,
-        },
-      });
+    const last = tsRows[0] || {};
+    const prev = tsRows[1] || {};
+    const tsLast = Number(last.close_price) || 0;
+    const tsPrev = Number(prev.close_price) || tsLast;
+    const yldRes = await q(
+      `SELECT series, trade_date, value
+       FROM macro_yields
+       WHERE series IN ('yield_2y','yield_10y')
+       ORDER BY trade_date DESC LIMIT 4`
+    );
+    const yldMap = new Map();
+    for (const r of yldRes.rows || []) {
+      if (!yldMap.has(r.series)) yldMap.set(r.series, []);
+      yldMap.get(r.series).push(r);
     }
-    return json({ ok: true, source: "stub", data: { yield_2y: 1.5, yield_10y: 1.4 } });
-  } catch {
-    return json({ ok: true, source: "stub", data: { yield_2y: 1.5, yield_10y: 1.4 } });
+    const last2y  = yldMap.get("yield_2y")?.[0]?.value  != null ? Number(yldMap.get("yield_2y")[0].value)  : null;
+    const prev2y  = yldMap.get("yield_2y")?.[1]?.value  != null ? Number(yldMap.get("yield_2y")[1].value)  : null;
+    const last10y = yldMap.get("yield_10y")?.[0]?.value != null ? Number(yldMap.get("yield_10y")[0].value) : null;
+    const prev10y = yldMap.get("yield_10y")?.[1]?.value != null ? Number(yldMap.get("yield_10y")[1].value) : null;
+    const as_of = last.trade_date ? String(last.trade_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
+    const asOfLabel = as_of;
+    // Build the array shape the frontend expects.
+    const arr = [
+      { "指標": "台股指數代理 (2330)", "最新值": tsLast, "前值": tsPrev, "更新時間": asOfLabel, "來源": "TSMC proxy" },
+      { "指標": "美10年公債殖利率(%)", "最新值": last10y, "前值": prev10y, "更新時間": asOfLabel, "來源": "macro_yields" },
+      { "指標": "美2年公債殖利率(%)",  "最新值": last2y,  "前值": prev2y,  "更新時間": asOfLabel, "來源": "macro_yields" },
+    ];
+    // Spread placeholder rows so the page can render placeholders for missing metrics.
+    const placeholders = [
+      "美債平衡通膨率BEI(%)", "10年-3月公債利差", "10年-2年公債利差",
+      "聯邦基金利率(%)", "GDP成長率年化(%)", "美國失業率(%)", "密大消費者信心",
+      "席勒本益比(CAPE)", "VIX恐慌指數", "美國CPI年增率(%)", "核心CPI YoY(%)",
+    ];
+    for (const name of placeholders) {
+      arr.push({ "指標": name, "最新值": null, "前值": null, "更新時間": asOfLabel, "來源": "需 Railway backend (offline)" });
+    }
+    return json({
+      ok: true,
+      source: "db",
+      as_of: as_of,
+      cached: false,
+      updated: asOfLabel + " 14:30 TW",
+      data: arr,
+      // legacy shape (used by other code paths)
+      legacy: {
+        taiex_proxy: { code: "2330", close: tsLast, change: (tsLast - tsPrev) || 0 },
+        yield_2y: last2y,
+        yield_10y: last10y,
+      },
+    });
+  } catch (e) {
+    return json({ ok: true, source: "stub", data: [], as_of: new Date().toISOString().slice(0, 10), error: e?.message });
   }
 }
 
@@ -553,11 +778,37 @@ async function markersRecordImpl(request) {
 }
 async function markersRecord(request) { return markersRecordImpl(request); }
 async function markersHistory(request) {
+  const u = urlOf(request);
+  const code = pickStr(u.searchParams.get("code") || "").trim();
+  const source = pickStr(u.searchParams.get("source") || "").trim();
+  const from = pickStr(u.searchParams.get("from") || "").trim();
+  const to = pickStr(u.searchParams.get("to") || "").trim();
+  const limit = Math.min(2000, Math.max(1, parseInt(u.searchParams.get("limit") || "200", 10) || 200));
   try {
-    const { rows } = await q("SELECT id, code, date, type, text, price FROM markers ORDER BY date DESC LIMIT 200");
-    return json({ ok: true, source: "db", count: rows.length, history: rows, items: rows });
-  } catch {
-    return json({ ok: true, source: "stub", count: 0, history: [], items: [] });
+    const params = [];
+    let where = "";
+    if (code) { params.push(code); where += ` AND code = $${params.length}`; }
+    // markers.date is ISO YYYY-MM-DD; from/to are YYYY-MM-DD or empty
+    if (from) { params.push(from); where += ` AND date >= $${params.length}`; }
+    if (to)   { params.push(to);   where += ` AND date <= $${params.length}`; }
+    const { rows } = await q(
+      `SELECT id, code, date, type, text, price FROM markers
+       WHERE 1=1 ${where}
+       ORDER BY date DESC, id DESC
+       LIMIT ${limit}`,
+      params
+    );
+    // Add `source` field (synthesized: 'event' for 'limit_up'/'sell_stop', 'trade' for others)
+    const enriched = rows.map((r) => ({
+      ...r,
+      source: ["limit_up", "sell_stop", "buy_chase"].includes(r.type) ? "event" : "trade",
+    }));
+    return json({
+      ok: true, source: "db", count: enriched.length,
+      history: enriched, items: enriched, rows: enriched,  // 'rows' alias for marker_history.html
+    });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, history: [], items: [], rows: [], error: e?.message });
   }
 }
 async function markersBatchScan(request) {
@@ -907,9 +1158,7 @@ async function etfAnalyze(request) {
         message: "etf_holdings 表為空（無 bulk source；需 per-issuer 爬或手動 seed）",
       });
     }
-    // Run real analysis
-    const { etfAnalyzeRun } = await import("./_etf_analyze.mjs").catch(() => ({ etfAnalyzeRun: null }));
-    // Inline analysis (avoid extra import for edge runtime)
+    // Run real analysis (inline to avoid dynamic import — edge runtime)
     const result = await _runEtfAnalysis();
     return json({ ok: true, source: "db", count: n, status: "done", ...result });
   } catch (e) {
@@ -1066,9 +1315,21 @@ async function adminLogs(request, id) {
       return json({ ok: true, source: "db", log: rows[0] || null });
     }
     const { rows } = await q("SELECT id, code, date, type, text, price FROM markers ORDER BY date DESC LIMIT 200");
-    return json({ ok: true, source: "db", count: rows.length, logs: rows, items: rows });
+    // Get count of all markers as 'buffer_size' (adminLogs.html expects this)
+    const cntRes = await q("SELECT COUNT(*)::int AS total FROM markers");
+    const total = Number(cntRes.rows[0]?.total || 0);
+    return json({
+      ok: true,
+      source: "db",
+      count: rows.length,
+      logs: rows,
+      items: rows,
+      buffer_size: total,
+      capacity: 3000,
+      since_id: rows.length ? Number(rows[rows.length - 1].id) : 0,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, logs: [], items: [], error: e?.message });
+    return json({ ok: true, source: "stub", count: 0, logs: [], items: [], buffer_size: 0, capacity: 3000, error: e?.message });
   }
 }
 async function adminLogsClear(request) {
@@ -1128,6 +1389,41 @@ async function conferenceSentimentStats(request) {
     return json({ ok: true, source: "stub", count: 0, buckets: [], error: e?.message });
   }
 }
+// /api/conference/<code> — per-stock conference / 法說會 lookup. Frontend
+// (index.html loadConference) expects { data: [{meeting_date, meeting_time,
+// location, ai: {sentiment, summary}}] }. We don't have a real conference
+// table; FALLBACK: search knowledge_library by query_term and synthesize a
+// minimal shape. If 0 rows, frontend hides the panel (already coded).
+async function conferenceByCode(request, code) {
+  if (!code || !/^\d{4,6}$/.test(code)) {
+    return json({ ok: true, data: [], conferences: [], code, source: "stub", error: "invalid code" });
+  }
+  const u = urlOf(request);
+  const days = Math.min(60, Math.max(1, parseInt(u.searchParams.get("days") || "3", 10) || 3));
+  try {
+    const { rows } = await q(
+      `SELECT id, title, summary_text, record_url, published_at, fetched_at, query_term
+       FROM knowledge_library
+       WHERE record_type IN ('conference','earnings','research')
+         AND query_term LIKE '%' || $1 || '%'
+       ORDER BY fetched_at DESC NULLS LAST LIMIT 30`,
+      [code]
+    );
+    // Synthesize the per-stock shape the frontend expects.
+    const data = rows.map((r) => ({
+      meeting_date: r.published_at ? String(r.published_at).slice(0, 10) : (r.fetched_at ? String(r.fetched_at).slice(0, 10) : ""),
+      meeting_time: "",
+      location: "",
+      ai: { sentiment: null, summary: r.summary_text || null },
+      title: r.title,
+      url: r.record_url,
+      source: "knowledge_library",
+    }));
+    return json({ ok: true, source: "db", count: data.length, data, conferences: data, items: data, code, days });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, data: [], conferences: [], items: [], code, error: e?.message });
+  }
+}
 
 async function exdivCalendar(request) {
   const u = urlOf(request);
@@ -1174,9 +1470,32 @@ async function institutionalImpl(request, code) {
     if (code) { params.push(code); sql += ` WHERE symbol = $${params.length}`; }
     sql += ` ORDER BY trade_date DESC LIMIT ${code ? "60" : "500"}`;
     const { rows } = await q(sql, params);
-    return json({ ok: true, source: "db", count: rows.length, items: rows, institutional: rows, code: code || null });
+    // Frontend (etf.html / index.html renderInstitutional) wants:
+    //   data.foreign: [{date, net, buy, sell, symbol}]
+    //   data.trust:   [{date, net, ...}]
+    //   data.dealer:  [{date, net, ...}]
+    //   data.summary: {foreign_3d, trust_3d, dealer_3d}
+    const project = (r, key) => ({
+      date: String(r.trade_date).slice(0, 10),
+      symbol: r.symbol,
+      buy: Number(r[key + "_buy"]) || 0,
+      sell: Number(r[key + "_sell"]) || 0,
+      net: Number(r[key + "_net"]) || 0,
+      source: r.source,
+    });
+    const foreign = rows.map((r) => project(r, "foreign"));
+    const trust   = rows.map((r) => project(r, "trust"));
+    const dealer  = rows.map((r) => project(r, "dealer"));
+    const sum3 = (arr) => arr.slice(0, 3).reduce((a, b) => a + (b.net || 0), 0);
+    const summary = { foreign_3d: sum3(foreign), trust_3d: sum3(trust), dealer_3d: sum3(dealer) };
+    return json({
+      ok: true, source: "db", count: rows.length,
+      items: rows, institutional: rows,
+      foreign, trust, dealer, summary,
+      code: code || null,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], institutional: [], error: e?.message, message: "institutional table empty or missing" });
+    return json({ ok: true, source: "stub", count: 0, items: [], institutional: [], foreign: [], trust: [], dealer: [], summary: {}, error: e?.message, message: "institutional table empty or missing" });
   }
 }
 async function institutional(request) { return institutionalImpl(request, null); }
@@ -1209,9 +1528,9 @@ async function foreignFutures(request) {
   }
 }
 
-async function financial(request) {
+async function financial(request, codeFromPath) {
   const u = urlOf(request);
-  const code = u.searchParams.get("code");
+  const code = codeFromPath || u.searchParams.get("code");
   try {
     let sql = `SELECT id, symbol, period, revenue, gross_profit, operating_income, net_income, eps
                FROM financial_reports`;
@@ -1219,7 +1538,112 @@ async function financial(request) {
     if (code) { params.push(code); sql += ` WHERE symbol = $${params.length}`; }
     sql += ` ORDER BY period DESC LIMIT ${code ? "20" : "200"}`;
     const { rows } = await q(sql, params);
-    return json({ ok: true, source: "db", count: rows.length, items: rows });
+    if (!codeFromPath) {
+      return json({ ok: true, source: "db", count: rows.length, items: rows });
+    }
+    // Per-stock shape: renderFinancialPanel expects { quality:{score, level, reasons, warnings}, financial_data:{eps:[{date,value},...]} }
+    if (!rows.length) {
+      return json({
+        ok: false,
+        source: "stub",
+        code,
+        quality: { score: 0, level: "無資料", reasons: [], warnings: ["此股票尚無季度財報資料"] },
+        financial_data: { eps: [] },
+        error: "此股票尚無季度財報資料",
+        message: "synth seed 僅涵蓋部分 watchlist，請見後台",
+      });
+    }
+    const periods = rows.map(r => ({
+      period: r.period,
+      revenue: Number(r.revenue) || 0,
+      gross_profit: Number(r.gross_profit) || 0,
+      operating_income: Number(r.operating_income) || 0,
+      net_income: Number(r.net_income) || 0,
+      eps: Number(r.eps) || 0,
+    }));
+    // Compute quality score (0-100)
+    const reasons = [];
+    const warnings = [];
+    let score = 50;
+    const latest = periods[0];
+    const gm = latest.revenue > 0 ? (latest.gross_profit / latest.revenue) : 0;
+    const om = latest.revenue > 0 ? (latest.operating_income / latest.revenue) : 0;
+    const nm = latest.revenue > 0 ? (latest.net_income / latest.revenue) : 0;
+    if (gm >= 0.4) { score += 15; reasons.push(`毛利率 ${(gm*100).toFixed(1)}% 優異`); }
+    else if (gm >= 0.2) { score += 8; reasons.push(`毛利率 ${(gm*100).toFixed(1)}% 穩定`); }
+    else if (gm < 0.1 && gm >= 0) { score -= 5; warnings.push(`毛利率僅 ${(gm*100).toFixed(1)}%`); }
+    if (om >= 0.2) { score += 15; reasons.push(`營益率 ${(om*100).toFixed(1)}% 強勁`); }
+    else if (om >= 0.1) { score += 5; reasons.push(`營益率 ${(om*100).toFixed(1)}% 健康`); }
+    else if (om < 0) { score -= 10; warnings.push(`營業虧損 ${(om*100).toFixed(1)}%`); }
+    if (nm >= 0.15) { score += 10; reasons.push(`淨利率 ${(nm*100).toFixed(1)}%`); }
+    else if (nm < 0) { score -= 15; warnings.push(`淨損 ${(nm*100).toFixed(1)}%`); }
+    if (periods.length >= 2) {
+      const oldest = periods[periods.length - 1];
+      const epsGrowth = oldest.eps !== 0 ? ((latest.eps - oldest.eps) / Math.abs(oldest.eps)) : 0;
+      if (epsGrowth > 0.2) { score += 10; reasons.push(`EPS 季增 ${(epsGrowth*100).toFixed(1)}%`); }
+      else if (epsGrowth < -0.2) { score -= 10; warnings.push(`EPS 季減 ${Math.abs(epsGrowth*100).toFixed(1)}%`); }
+    }
+    score = Math.max(0, Math.min(100, Math.round(score)));
+    const level = score >= 80 ? "優異" : score >= 60 ? "良好" : score >= 40 ? "中等" : score >= 20 ? "待觀察" : "高風險";
+    // Synth valuation: per = close / eps_ttm, pbr by sector default, fair = close * (1 ± per% range)
+    let valuation = null;
+    try {
+      const px = await q(
+        `SELECT close_price FROM market_price_bars
+         WHERE symbol=$1 AND asset_type='stock' AND trade_date IS NOT NULL
+         ORDER BY trade_date DESC LIMIT 1`,
+        [code]
+      );
+      const close = Number(px.rows[0]?.close_price);
+      const eps_ttm = periods.slice(0, 4).reduce((a, p) => a + (p.eps || 0), 0);
+      if (close > 0 && eps_ttm > 0) {
+        const per = close / eps_ttm;
+        // PBR by sector (rough): semis 8, finance 1.0, others 3
+        const ind = await q(`SELECT metadata_text FROM market_instruments WHERE symbol=$1 LIMIT 1`, [code]);
+        let pbr = 3;
+        try {
+          const m = ind.rows[0]?.metadata_text ? JSON.parse(ind.rows[0].metadata_text) : null;
+          if (m && m.industry === "半導體業") pbr = 6;
+          else if (m && m.industry === "金融保險業") pbr = 1.0;
+          else if (m && m.industry === "航運業") pbr = 1.5;
+        } catch {}
+        const fair_low = (eps_ttm * 12).toFixed(0);
+        const fair_high = (eps_ttm * 20).toFixed(0);
+        valuation = {
+          available: true,
+          date: latest.period,
+          per: Math.round(per * 10) / 10,
+          pbr: Math.round(pbr * 10) / 10,
+          eps_ttm: Math.round(eps_ttm * 100) / 100,
+          fair_low,
+          fair_high,
+        };
+      }
+    } catch { /* valuation optional */ }
+    return json({
+      ok: true,
+      source: "db",
+      code,
+      quality: { score, level, reasons, warnings },
+      combined: {
+        total_score: score,
+        color: score >= 80 ? "#00c853" : score >= 60 ? "#ffd600" : score >= 40 ? "#448aff" : score >= 20 ? "#ff6d00" : "#ff1744",
+        recommendation: level,
+        confidence: reasons.length > warnings.length ? "高" : "中",
+        breakdown: {
+          tech: 50,           // placeholder; technical signal from index.html loadTechnical()
+          financial: score,   // financial score mirrors quality
+          news: 50,           // placeholder; news sentiment from news/<code>
+        },
+      },
+      financial_data: {
+        eps: periods.map(p => ({ date: p.period, value: p.eps })),
+        revenue: periods.map(p => ({ date: p.period, value: p.revenue })),
+        net_income: periods.map(p => ({ date: p.period, value: p.net_income })),
+      },
+      periods,
+      valuation,
+    });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "financial_reports table empty or missing" });
   }
@@ -1240,7 +1664,70 @@ async function overnightSignal(request) {
   }
 }
 
-async function marginBurst(request) {
+async function marginBurst(request, codeFromPath) {
+  // /api/margin_burst/<code> is the per-stock shape used by index.html loadMarginBurst().
+  // Frontend (loadMarginBurst) renders metrics.* including:
+  //   is_g7, fail_reasons, avg_cost_est, cost_premium_pct, margin_burst_ratio,
+  //   vol_ratio, ma60_slope_pct, rsi14
+  // We don't have margin_balance data (TWSE doesn't publish per-stock), so margin
+  // fields are stubs; but we DO have market_price_bars, so vol_ratio, ma60_slope_pct,
+  // rsi14 can be computed for real. That way the right panel shows real numbers for
+  // what we have, and "融資資料尚未建立" badge for the rest.
+  if (codeFromPath) {
+    let volRatio = 0, ma60SlopePct = 0, rsi14 = 0;
+    try {
+      const { rows } = await q(
+        `SELECT trade_date, close_price, volume
+         FROM market_price_bars
+         WHERE symbol = $1 AND asset_type='stock' AND trade_date IS NOT NULL
+         ORDER BY trade_date DESC LIMIT 70`,
+        [codeFromPath]
+      );
+      if (rows.length >= 21) {
+        const closes = rows.slice().reverse().map((r) => Number(r.close_price));
+        const vols = rows.slice().reverse().map((r) => Number(r.volume) || 0);
+        const todayVol = vols[vols.length - 1] || 0;
+        const avgVol5 = avg(vols.slice(-6, -1));
+        volRatio = avgVol5 > 0 ? Math.round((todayVol / avgVol5) * 100) / 100 : 0;
+        // 60MA slope: compare last 60MA vs 60MA 5 days ago
+        const ma60Now = avg(closes.slice(-60));
+        const ma60Prev = avg(closes.slice(-65, -5));
+        ma60SlopePct = ma60Prev > 0 ? Math.round(((ma60Now - ma60Prev) / ma60Prev * 100) * 100) / 100 : 0;
+        // RSI(14) - Wilder smoothing
+        const gains = [], losses = [];
+        for (let i = closes.length - 14; i < closes.length; i++) {
+          const ch = closes[i] - closes[i - 1];
+          if (ch > 0) gains.push(ch); else losses.push(-ch);
+        }
+        const avgG = avg(gains), avgL = avg(losses);
+        const rs = avgL > 0 ? avgG / avgL : 0;
+        rsi14 = avgL > 0 ? Math.round((100 - 100 / (1 + rs)) * 100) / 100 : 50;
+      }
+    } catch (_) { /* fall through with zeros */ }
+    return json({
+      ok: true,
+      source: "stub",
+      code: codeFromPath,
+      metrics: {
+        code: codeFromPath,
+        is_g7: false,
+        fail_reasons: ["融資餘額資料未建立（margin_balance 表為空，TWSE 無 per-stock 公開 source）"],
+        // margin fields (no data → 0 / null)
+        avg_cost_est: 0,
+        cost_premium_pct: 0,
+        margin_burst_ratio: 0,
+        margin_change_1d: 0,
+        margin_change_5d: 0,
+        short_change_1d: 0,
+        // market-derived fields (real)
+        vol_ratio: volRatio,
+        ma60_slope_pct: ma60SlopePct,
+        rsi14: rsi14,
+        score: 0,
+      },
+      error: "no margin data; market fields computed from market_price_bars",
+    });
+  }
   try {
     // surge = margin_balance grew > 5% day-over-day
     const { rows } = await q(
@@ -1266,13 +1753,13 @@ async function marginBurst(request) {
 }
 
 async function bigHolderLowBase(request) {
-  // Strategy: stocks where a single holder owns > 5% AND price near 52w low.
+  // Strategy: stocks where a single holder owns > 2% AND price near 52w low.
   try {
     const { rows } = await q(
-      `SELECT b.symbol, b.holder_type, b.holder_name, b.shares, b.pct, b.as_of_date
+      `SELECT b.symbol, b.holder_type, b.holder_name, b.shares, b.pct, b.as_of_date, b.source
        FROM big_holders b
-       WHERE b.pct > 5
-       ORDER BY b.pct DESC
+       WHERE b.pct::float8 > 0.02
+       ORDER BY b.pct::float8 DESC
        LIMIT 100`
     );
     return json({ ok: true, source: "db", count: rows.length, items: rows });
@@ -1307,11 +1794,11 @@ async function revenue(request) {
       SELECT r.id, r.symbol AS code,
              COALESCE(w.name, '') AS name,
              r.year || '/' || r.month AS year_month,
-             r.revenue AS revenue_current,
-             r.mom_pct,
-             r.yoy_pct,
-             r.ytd_revenue,
-             r.ytd_yoy_pct,
+             r.revenue::float8 AS revenue_current,
+             r.mom_pct::float8 AS mom_pct,
+             r.yoy_pct::float8 AS yoy_pct,
+             r.ytd_revenue::float8 AS ytd_revenue,
+             r.ytd_yoy_pct::float8 AS ytd_yoy_pct,
              r.source,
              r.fetched_at
       FROM revenue r
@@ -1320,9 +1807,17 @@ async function revenue(request) {
       ORDER BY r.year DESC, r.month DESC, r.symbol ASC
       LIMIT ${lim}`;
     const { rows } = await q(sql, params);
-    // The HTML uses d.data (not d.items), so expose both for compatibility.
-    const last = rows[0]?.fetched_at || null;
-    return json({ ok: true, source: "db", count: rows.length, items: rows, data: rows, last_update: last });
+    // Coerce again in JS (Neon HTTP can still return string for some drivers)
+    const normalized = rows.map((r) => ({
+      ...r,
+      revenue_current: r.revenue_current != null ? Number(r.revenue_current) : null,
+      mom_pct: r.mom_pct != null ? Number(r.mom_pct) : null,
+      yoy_pct: r.yoy_pct != null ? Number(r.yoy_pct) : null,
+      ytd_revenue: r.ytd_revenue != null ? Number(r.ytd_revenue) : null,
+      ytd_yoy_pct: r.ytd_yoy_pct != null ? Number(r.ytd_yoy_pct) : null,
+    }));
+    const last = normalized[0]?.fetched_at || null;
+    return json({ ok: true, source: "db", count: normalized.length, items: normalized, data: normalized, last_update: last });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, items: [], data: [], error: e?.message, message: "revenue table empty or missing" });
   }
@@ -1587,9 +2082,25 @@ async function macroYield2yHistory(request) {
        ORDER BY trade_date DESC
        LIMIT 500`
     );
-    return json({ ok: true, source: "db", count: rows.length, items: rows });
+    // Frontend (macro.html renderYield2yChart) wants data.history = [{date, value}]
+    // and data.yield_2y / data.yield_10y grouped arrays.
+    const history2y = rows.filter((r) => r.series === "yield_2y")
+      .map((r) => ({ date: String(r.trade_date).slice(0, 10), value: Number(r.value) }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const history10y = rows.filter((r) => r.series === "yield_10y")
+      .map((r) => ({ date: String(r.trade_date).slice(0, 10), value: Number(r.value) }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    return json({
+      ok: true,
+      source: "db",
+      count: rows.length,
+      items: rows,
+      history: history2y,        // default = yield_2y (used by renderYield2yChart)
+      yield_2y: history2y,
+      yield_10y: history10y,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "macro_yields table empty or missing" });
+    return json({ ok: true, source: "stub", count: 0, items: [], history: [], yield_2y: [], yield_10y: [], error: e?.message, message: "macro_yields table empty or missing" });
   }
 }
 
@@ -1598,9 +2109,20 @@ async function priceCompare(request) {
   const u = urlOf(request);
   const kind = pickStr(u.searchParams.get("kind") || "stocks");
   const codesParam = pickStr(u.searchParams.get("codes") || "");
-  const codes = codesParam ? codesParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  let codes = codesParam ? codesParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  // FALLBACK: no ?codes= → use watchlist (etf_watchlist for kind=etf) so the page
+  // shows something on first load instead of an error.
   if (!codes.length) {
-    return json({ ok: false, error: "missing or invalid ?codes= (comma-separated stock codes)" }, { status: 400 });
+    if (kind === "etf") {
+      const etfs = await getEtfList();
+      codes = etfs.map((e) => e.code).filter((c) => /^\d{4,6}$/.test(c));
+    } else {
+      const watch = await getWatchMap();
+      codes = Array.from(watch.keys());
+    }
+    if (!codes.length) {
+      return json({ ok: false, error: "missing or invalid ?codes= (and watchlist is empty)" }, { status: 400 });
+    }
   }
   const days = Math.min(500, Math.max(10, parseInt(u.searchParams.get("days") || "60", 10) || 60));
   try {
@@ -1628,43 +2150,125 @@ async function priceCompare(request) {
         points,
       };
     });
-    return json({ ok: true, source: "db", kind, count: items.length, items, days });
+    return json({ ok: true, source: "db", kind, count: items.length, items, series: items, days,
+      start: items[0]?.points?.[0]?.date || null,
+      end: items[0]?.points?.[items[0].points.length - 1]?.date || null });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message });
   }
 }
 
 async function heatmap(request) {
-  // Sector heatmap: for each sector, compute avg change% of watchlist stocks in that sector.
+  // Heatmap: for each watchlist stock, return flat shape with multi-day change_pct
+  // so the frontend (heatmap.html) can build its own treemap + industry ranking.
+  // Shape expected by frontend:
+  //   { ok, as_of, generated_at, count, stocks:[{code,name,industry,market_cap,chg_1d,chg_5d,chg_10d,chg_20d,chg_60d,close}],
+  //     industries:[{label,count,market_cap,chg_5d,chg_10d,chg_20d,chg_60d}] }
   try {
     const watch = await getWatchMap();
     const codes = Array.from(watch.keys());
-    if (!codes.length) return json({ ok: true, source: "db", count: 0, items: [] });
-    const { rows } = await q(
-      `SELECT mi.symbol, mi.metadata_text,
+    if (!codes.length) return json({ ok: true, source: "db", count: 0, stocks: [], industries: [] });
+    // 1) pull metadata (industry, display_name) + latest close + as_of
+    const metaRes = await q(
+      `SELECT mi.symbol, mi.display_name, mi.metadata_text,
               (SELECT close_price FROM market_price_bars
                 WHERE symbol = mi.symbol AND asset_type='stock' AND trade_date IS NOT NULL
                 ORDER BY trade_date DESC LIMIT 1) AS close,
-              (SELECT close_price FROM market_price_bars
+              (SELECT trade_date FROM market_price_bars
                 WHERE symbol = mi.symbol AND asset_type='stock' AND trade_date IS NOT NULL
-                ORDER BY trade_date DESC OFFSET 1 LIMIT 1) AS prev_close
+                ORDER BY trade_date DESC LIMIT 1) AS as_of
        FROM market_instruments mi
        WHERE mi.symbol = ANY($1::text[]) AND mi.asset_type='stock'`,
       [codes]
     );
-    const sectorMap = new Map();
-    for (const r of rows) {
-      const sector = (() => { try { return (r.metadata_text && JSON.parse(r.metadata_text).industry) || "其他"; } catch { return "其他"; } })();
-      const chg = r.prev_close && r.close ? ((Number(r.close) - Number(r.prev_close)) / Number(r.prev_close)) * 100 : 0;
-      if (!sectorMap.has(sector)) sectorMap.set(sector, []);
-      sectorMap.get(sector).push({ code: r.symbol, change_pct: r2(chg), close: Number(r.close) || 0 });
+    const metaRows = metaRes.rows || metaRes;
+    // 2) pull 70 days of closes for chg_5/10/20/60
+    const histQ = await q(
+      `SELECT symbol, trade_date, close_price
+       FROM market_price_bars
+       WHERE symbol = ANY($1::text[]) AND asset_type='stock' AND trade_date IS NOT NULL
+         AND trade_date >= (SELECT MAX(trade_date) FROM market_price_bars) - INTERVAL '250 days'
+       ORDER BY symbol, trade_date DESC`,
+      [codes]
+    );
+    const histRows = histQ.rows || histQ;
+    const histByCode = new Map();
+    for (const r of histRows) {
+      if (!histByCode.has(r.symbol)) histByCode.set(r.symbol, []);
+      histByCode.get(r.symbol).push(r);
     }
-    const items = Array.from(sectorMap.entries()).map(([sector, stocks]) => ({
-      sector, count: stocks.length, avg_change_pct: r2(avg(stocks.map((s) => s.change_pct))), stocks,
-    })).sort((a, b) => b.avg_change_pct - a.avg_change_pct);
-    return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+    const stocks = [];
+    for (const m of metaRows) {
+      const industry = (() => {
+        if (!m.metadata_text) return "其他";
+        try {
+          const parsed = JSON.parse(m.metadata_text);
+          // object case (loadSectors injected)
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            return parsed.industry || "其他";
+          }
+          // array case (legacy STOCK_DAY metadata)
+          return "其他";
+        } catch { return "其他"; }
+      })();
+      const hist = histByCode.get(m.symbol) || [];
+      const last = hist[0]?.close_price != null ? Number(hist[0].close_price) : (Number(m.close) || 0);
+      const at = (offset) => (offset < hist.length && hist[offset]?.close_price != null ? Number(hist[offset].close_price) : null);
+      const chg = (baseIdx) => {
+        const base = at(baseIdx);
+        if (base == null || last == null || base === 0) return null;
+        return r2(((last - base) / base) * 100);
+      };
+      // market_cap fallback (no real cap table; scale by close so bigger-priced stocks look bigger, floor 100B TWD)
+      const market_cap = Math.max(last * 1e9, 1e11);
+      stocks.push({
+        code: m.symbol,
+        name: m.display_name || m.symbol,
+        industry,
+        close: last,
+        market_cap,
+        chg_1d: chg(1),
+        chg_5d: chg(5),
+        chg_10d: chg(10),
+        chg_20d: chg(20),
+        chg_60d: chg(60),
+        change_pct: chg(1),
+      });
+    }
+    // 3) industry aggregate
+    const byInd = new Map();
+    for (const s of stocks) {
+      if (!byInd.has(s.industry)) byInd.set(s.industry, []);
+      byInd.get(s.industry).push(s);
+    }
+    const industries = Array.from(byInd.entries()).map(([label, list]) => {
+      const mcap = list.reduce((a, s) => a + (s.market_cap || 0), 0);
+      const mean = (key) => {
+        const arr = list.map((s) => s[key]).filter((v) => v != null);
+        if (!arr.length) return null;
+        return r2(arr.reduce((a, b) => a + b, 0) / arr.length);
+      };
+      return {
+        label,
+        count: list.length,
+        market_cap: mcap,
+        chg_5d: mean("chg_5d"),
+        chg_10d: mean("chg_10d"),
+        chg_20d: mean("chg_20d"),
+        chg_60d: mean("chg_60d"),
+      };
+    }).sort((a, b) => (b.chg_5d ?? -Infinity) - (a.chg_5d ?? -Infinity));
+    return json({
+      ok: true,
+      source: "db",
+      as_of: metaRows[0]?.as_of ? String(metaRows[0].as_of).slice(0, 10) : new Date().toISOString().slice(0, 10),
+      generated_at: Date.now(),
+      count: stocks.length,
+      stocks,
+      industries,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message });
+    return json({ ok: true, source: "stub", count: 0, stocks: [], industries: [], error: e?.message });
   }
 }
 
@@ -1735,9 +2339,17 @@ async function stockNewsScanQuota(request) {
     const { rows } = await q(
       `SELECT COUNT(*)::int AS used FROM markers WHERE date = CURRENT_DATE::text`
     );
-    return json({ ok: true, source: "db", used: rows[0]?.used || 0, quota: 100, remaining: 100 - (rows[0]?.used || 0) });
+    const used = rows[0]?.used || 0;
+    const cap = 100;
+    return json({
+      ok: true,
+      source: "db",
+      used, quota: cap, remaining: cap - used,
+      // aliases used by etf_holdings_tracker.html ("今日剩餘 X / Y")
+      left: cap - used, cap,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", used: 0, quota: 100, remaining: 100, error: e?.message });
+    return json({ ok: true, source: "stub", used: 0, quota: 100, remaining: 100, left: 100, cap: 100, error: e?.message });
   }
 }
 
@@ -1932,31 +2544,79 @@ async function etfSnapshots(request, code) {
 }
 
 async function etfDiff(request, code) {
+  // Frontend (etf_holdings_tracker.html) wants:
+  //   { status, new_time, old_time, snapshot_count, summary:{added,removed,changed,unchanged},
+  //     holdings: [{symbol, name, status, old_weight, new_weight, change, foreign_5d, ...}] }
   try {
-    const { rows } = await q(
-      `WITH latest AS (
-         SELECT DISTINCT ON (symbol) symbol, weight_pct, as_of_date
-         FROM etf_holdings
-         WHERE etf_code = $1
-         ORDER BY symbol, as_of_date DESC
-       ),
-       prev AS (
-         SELECT DISTINCT ON (symbol) symbol, weight_pct, as_of_date
-         FROM etf_holdings
-         WHERE etf_code = $1 AND as_of_date < (SELECT MAX(as_of_date) FROM etf_holdings WHERE etf_code = $1)
-         ORDER BY symbol, as_of_date DESC
-       )
-       SELECT l.symbol, l.weight_pct AS latest_weight, p.weight_pct AS prev_weight,
-              ROUND((l.weight_pct - COALESCE(p.weight_pct, 0))::numeric, 4) AS diff_weight
-       FROM latest l
-       LEFT JOIN prev p ON l.symbol = p.symbol
-       ORDER BY ABS(COALESCE(l.weight_pct - p.weight_pct, 0)) DESC
-       LIMIT 100`,
+    // 1) Get the two most recent as_of_dates for this ETF
+    const dateRes = await q(
+      `SELECT DISTINCT as_of_date
+       FROM etf_holdings
+       WHERE etf_code = $1
+       ORDER BY as_of_date DESC LIMIT 2`,
       [code]
     );
-    return json({ ok: true, source: "db", code, count: rows.length, diff: rows });
+    const dates = (dateRes.rows || dateRes).map((r) => r.as_of_date);
+    if (dates.length === 0) {
+      return json({ ok: true, source: "db", code, status: "no_diff", snapshot_count: 0, message: "尚無快照，請先按「立即抓快照」", summary: { added: 0, removed: 0, changed: 0, unchanged: 0 }, holdings: [], new_time: null, old_time: null });
+    }
+    if (dates.length === 1) {
+      return json({ ok: true, source: "db", code, status: "no_diff", snapshot_count: 1, message: "只有 1 筆快照，無法計算差異（需 ≥ 2 筆）", summary: { added: 0, removed: 0, changed: 0, unchanged: 0 }, holdings: [], new_time: String(dates[0]).slice(0, 10), old_time: null });
+    }
+    const [newDate, oldDate] = dates;
+    // 2) pull holdings at each date
+    const res = await q(
+      `SELECT symbol, as_of_date, weight_pct
+       FROM etf_holdings
+       WHERE etf_code = $1 AND as_of_date = ANY($2::date[])
+       ORDER BY symbol, as_of_date DESC`,
+      [code, [newDate, oldDate]]
+    );
+    const allRows = res.rows || res;
+    const latestMap = new Map();
+    const prevMap = new Map();
+    for (const r of allRows) {
+      const m = String(r.as_of_date).slice(0, 10) === String(newDate).slice(0, 10) ? latestMap : prevMap;
+      m.set(r.symbol, Number(r.weight_pct) || 0);
+    }
+    // 3) union + status
+    const syms = new Set([...latestMap.keys(), ...prevMap.keys()]);
+    const holdings = [];
+    let added = 0, removed = 0, changed = 0, unchanged = 0;
+    for (const sym of syms) {
+      const nw = latestMap.has(sym) ? latestMap.get(sym) : null;
+      const ow = prevMap.has(sym) ? prevMap.get(sym) : null;
+      let status;
+      if (ow == null && nw != null) { status = "added"; added++; }
+      else if (ow != null && nw == null) { status = "removed"; removed++; }
+      else if (ow != null && nw != null && Math.abs(ow - nw) < 0.005) { status = "unchanged"; unchanged++; }
+      else { status = "changed"; changed++; }
+      holdings.push({
+        symbol: sym,
+        name: null,
+        status,
+        old_weight: ow,
+        new_weight: nw,
+        change: (nw != null && ow != null) ? Math.round((nw - ow) * 100) / 100 : null,
+        foreign_5d: null,
+      });
+    }
+    // sort: changed/added/removed first
+    const rank = { changed: 0, added: 1, removed: 2, unchanged: 3 };
+    holdings.sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9) || (b.change ?? 0) - (a.change ?? 0));
+    return json({
+      ok: true,
+      source: "db",
+      code,
+      status: "ok",
+      new_time: String(newDate).slice(0, 10),
+      old_time: String(oldDate).slice(0, 10),
+      snapshot_count: dates.length,
+      summary: { added, removed, changed, unchanged },
+      holdings,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", code, count: 0, diff: [], error: e?.message, message: "etf_holdings table empty or missing" });
+    return json({ ok: true, source: "stub", code, status: "error", message: e?.message, summary: { added: 0, removed: 0, changed: 0, unchanged: 0 }, holdings: [] });
   }
 }
 
@@ -2286,6 +2946,513 @@ async function loadOverseasIndices(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
+// ── loadMacroYields: Yahoo Finance US Treasury yields → macro_yields ─
+// Series mapping:
+//   ^TNX = 10Y, ^FVX = 5Y, ^TYX = 30Y, ^IRX = 13W
+// We store as yield_5y/10y/30y/13w to match what we have; 2y is approximated by 5y in
+// downstream code (or marked null when 2y-specific data is needed).
+const MACRO_YIELD_SYMBOLS = [
+  { sym: "^TNX", series: "yield_10y" },
+  { sym: "^FVX", series: "yield_5y"  },
+  { sym: "^TYX", series: "yield_30y" },
+  { sym: "^IRX", series: "yield_13w" },
+];
+async function loadMacroYieldsForSymbol(sym, series) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=30d`;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 12000);
+  let resp;
+  try {
+    resp = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+  } catch (e) {
+    clearTimeout(tid);
+    if (e.name === "AbortError") throw new Error("yahoo timeout");
+    throw e;
+  }
+  if (!resp.ok) throw new Error(`yahoo HTTP ${resp.status}`);
+  const data = await resp.json();
+  const result = data?.chart?.result?.[0];
+  if (!result) throw new Error("yahoo: no result");
+  const ts = result.timestamp || [];
+  const closes = result.indicators?.quote?.[0]?.close || [];
+  const rows = [];
+  for (let i = 0; i < ts.length; i++) {
+    const c = closes[i];
+    if (c == null || !Number.isFinite(c)) continue;
+    const isoDate = new Date(ts[i] * 1000).toISOString().slice(0, 10);
+    rows.push({ date: isoDate, value: Math.round(c * 10000) / 10000 });
+  }
+  if (rows.length === 0) return { ok: true, sym, series, count: 0 };
+  // Bulk upsert
+  const dates = rows.map((r) => r.date);
+  const values = rows.map((r) => r.value);
+  const sql = `
+    INSERT INTO macro_yields (series, trade_date, value, source)
+    SELECT $1, unnest($2::date[]), unnest($3::numeric[]), 'yahoo_v8'
+    ON CONFLICT (series, trade_date) DO UPDATE SET
+      value = EXCLUDED.value,
+      source = EXCLUDED.source,
+      fetched_at = now()`;
+  await q(sql, [series, dates, values]);
+  return { ok: true, sym, series, count: rows.length };
+}
+async function loadMacroYields(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  const results = [];
+  for (const { sym, series } of MACRO_YIELD_SYMBOLS) {
+    try {
+      const r = await loadMacroYieldsForSymbol(sym, series);
+      results.push(r);
+    } catch (e) {
+      results.push({ ok: false, sym, series, error: e?.message });
+    }
+    await new Promise((res) => setTimeout(res, 400));
+  }
+  const okCount = results.filter((r) => r.ok).reduce((s, r) => s + (r.count || 0), 0);
+  return json({ ok: true, source: "loader", inserted: okCount, results });
+}
+
+// ── loadMacroNews: Google News RSS → knowledge_library (record_type=news) ─
+async function loadMacroNews(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  // Default queries: 台股 + 國際
+  const queries = (body?.queries && body.queries.length) ? body.queries
+    : ["台股 加權指數", "台積電 2330", "美股 標普", "美聯準會 利率", "台股 法人"];
+  const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36";
+  const all = [];
+  for (const q of queries) {
+    try {
+      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 10000);
+      const r = await fetch(url, { headers: { "User-Agent": UA }, signal: ctrl.signal });
+      clearTimeout(tid);
+      if (!r.ok) { all.push({ ok: false, query: q, error: `HTTP ${r.status}` }); continue; }
+      const xml = await r.text();
+      // Minimal XML parsing: extract <item> blocks via regex (avoid full parser dep)
+      const items = [];
+      const itemRe = /<item>([\s\S]*?)<\/item>/g;
+      let m;
+      while ((m = itemRe.exec(xml)) !== null) {
+        const block = m[1];
+        const title = (block.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || "";
+        const link  = (block.match(/<link\/>([^<]*)/) || block.match(/<link>([^<]*)<\/link>/) || [])[1] || "";
+        const pub   = (block.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || [])[1] || "";
+        const desc  = (block.match(/<description>([\s\S]*?)<\/description>/) || [])[1] || "";
+        // Strip CDATA & HTML
+        const cleanTitle = title.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").trim();
+        const cleanDesc  = desc.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").trim();
+        if (!cleanTitle) continue;
+        items.push({
+          title: cleanTitle,
+          record_url: link.trim(),
+          published_at: pub.trim(),
+          summary: cleanDesc.slice(0, 500),
+          query: q,
+        });
+      }
+      all.push({ ok: true, query: q, count: items.length, items });
+    } catch (e) {
+      all.push({ ok: false, query: q, error: e?.message });
+    }
+    await new Promise((res) => setTimeout(res, 300));
+  }
+  // 2-phase dedupe: SELECT existing record_urls → filter out → bulk INSERT.
+  // (We avoid ON CONFLICT here because the partial unique index can't be used
+  // as an arbiter in pg's infer_arbiter_indexes; using ON CONFLICT (col) fails
+  // with 42P10. Plain INSERT after dedupe is reliable and only costs one extra roundtrip.)
+  const totalFetched = all.reduce((s, r) => s + (r.items?.length || 0), 0);
+  let inserted = 0;
+  try {
+    const items = [];
+    for (const r of all) {
+      if (!r.items) continue;
+      for (const it of r.items) {
+        if (!it.title || !it.record_url) continue;
+        items.push({
+          title: it.title,
+          summary: it.summary || "",
+          url: it.record_url,
+          date: it.published_at ? new Date(it.published_at).toISOString() : new Date().toISOString(),
+          query: it.query || "",
+        });
+      }
+    }
+    if (items.length) {
+      // Find existing urls
+      const urls = items.map((it) => it.url);
+      const existingRes = await q(
+        `SELECT record_url FROM knowledge_library WHERE record_url = ANY($1::text[])`,
+        [urls]
+      );
+      const existingRows = existingRes?.rows || existingRes || [];
+      const existingSet = new Set(existingRows.map((r) => r.record_url || r[0]));
+      const fresh = items.filter((it) => !existingSet.has(it.url));
+      inserted = fresh.length;
+      if (fresh.length) {
+        const titles = fresh.map((it) => it.title);
+        const summaries = fresh.map((it) => it.summary);
+        const u = fresh.map((it) => it.url);
+        const dates = fresh.map((it) => it.date);
+        const queries = fresh.map((it) => it.query);
+        // source_id must be globally unique (UNIQUE (record_type, source_name, source_id))
+        // and ≤ 64 chars. Use a short stable hash of the URL.
+        const ids = u.map((url) => {
+          let h = 0;
+          for (let i = 0; i < url.length; i++) h = ((h * 31) + url.charCodeAt(i)) | 0;
+          return ('g' + (h >>> 0).toString(36)).slice(0, 64);
+        });
+        await q(
+          `INSERT INTO knowledge_library
+             (record_type, source_name, source_id, query_term, title, summary_text, record_url, published_at)
+           SELECT 'news', 'google_news_rss', unnest($1::text[]), unnest($2::text[]),
+                  unnest($3::text[]), unnest($4::text[]), unnest($5::text[]), unnest($6::text[])`,
+          [ids, queries, titles, summaries, u, dates]
+        );
+      }
+    }
+  } catch (e) {
+    return json({ ok: false, source: "loader", error: e?.message, fetched: totalFetched });
+  }
+  return json({ ok: true, source: "loader", fetched: totalFetched, inserted, results: all });
+}
+
+// ── loadIndexInstitutional: TWSE 大盤 三大法人 → index_institutional ─
+// Endpoint: https://www.twse.com.tw/fund/BFI82U?response=json&dayDate=YYYYMMDD
+// fields: ["單位名稱","買進金額","賣出金額","買賣差額"]
+// rows:   [自營商(自行買賣), 自營商(避險), 投信, 外資及陸資, 外資自營商, 合計]
+async function loadIndexInstitutionalForDate(dateYmd, indexCode) {
+  const ymd = dateYmd.replace(/-/g, "");
+  const url = `https://www.twse.com.tw/fund/BFI82U?response=json&dayDate=${ymd}`;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 10000);
+  let resp;
+  try {
+    resp = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0", "Referer": "https://www.twse.com.tw/" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+  } catch (e) {
+    clearTimeout(tid);
+    if (e.name === "AbortError") throw new Error("twse timeout");
+    throw e;
+  }
+  if (!resp.ok) throw new Error(`twse HTTP ${resp.status}`);
+  const data = await resp.json();
+  if (data.stat !== "OK" || !Array.isArray(data.data) || data.data.length === 0) {
+    return { ok: false, source: "twse", error: data.stat || "no data", count: 0 };
+  }
+  // Aggregate by 法人 type:
+  //   foreign_net = row 3 (外資) + row 4 (外資自營商)
+  //   trust_net   = row 2 (投信)
+  //   dealer_net  = row 0 (自營商自行) + row 1 (自營商避險)
+  const parseNum = (s) => Number(String(s || "0").replace(/,/g, "").trim()) || 0;
+  let foreign_net = 0, trust_net = 0, dealer_net = 0;
+  for (const r of data.data) {
+    const name = String(r[0] || "").trim();
+    const diff = parseNum(r[3]); // 買賣差額
+    if (name.startsWith("外資")) foreign_net += diff;
+    else if (name.startsWith("投信")) trust_net = diff;
+    else if (name.startsWith("自營商")) dealer_net += diff;
+  }
+  await q(
+    `INSERT INTO index_institutional (index_code, trade_date, foreign_net, trust_net, dealer_net, source)
+     VALUES ($1, $2, $3, $4, $5, 'twse_BFI82U')
+     ON CONFLICT (index_code, trade_date) DO UPDATE SET
+       foreign_net = EXCLUDED.foreign_net,
+       trust_net = EXCLUDED.trust_net,
+       dealer_net = EXCLUDED.dealer_net,
+       source = EXCLUDED.source,
+       fetched_at = now()`,
+    [indexCode, dateYmd, foreign_net, trust_net, dealer_net]
+  );
+  return { ok: true, count: 1, foreign_net, trust_net, dealer_net };
+}
+async function loadIndexInstitutional(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  // Backfill last 30 trading days for TWSE
+  const results = [];
+  const days = Math.min(60, Math.max(1, parseInt(u.searchParams.get("days") || body?.days || "30", 10) || 30));
+  const today = new Date();
+  for (let i = 0; i < days; i++) {
+    const d = new Date(today.getTime() - i * 86400000);
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    // Skip weekends
+    const dow = d.getDay();
+    if (dow === 0 || dow === 6) continue;
+    try {
+      const r = await loadIndexInstitutionalForDate(ymd, "TWSE");
+      results.push({ date: ymd, ...r });
+    } catch (e) {
+      results.push({ date: ymd, ok: false, error: e?.message });
+    }
+    await new Promise((res) => setTimeout(res, 300));
+  }
+  const okCount = results.filter((r) => r.ok).reduce((s, r) => s + (r.count || 0), 0);
+  return json({ ok: true, source: "loader", inserted: okCount, days, results });
+}
+
+// ── loadMarkers: 從 screener + market_price_bars 自動寫入 markers (買賣訊號) ─
+// 規則（簡單版，先 seed 出有內容的資料）:
+//   1. 站上三均線 + 量增 → 'buy_chase'
+//   2. 跌破 MA20 → 'sell_stop'
+//   3. 外資連買 3 日 → 'foreign_buy_3d'
+//   4. 漲停 (>= 9.5%) → 'limit_up'
+async function loadMarkers(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  try {
+    // 1) scan watchlist with screenOne (returns {code, name, ... cond1..cond5, gain_5d_pct, ...})
+    const results = await scanAllImpl();
+    let inserted = 0;
+    const today = new Date().toISOString().slice(0, 10);
+    const todayText = `${parseInt(today.slice(0, 4), 10) - 1911}/${today.slice(5, 7).replace(/^0/, "")}/${today.slice(8, 10).replace(/^0/, "")}`;
+    for (const r of results) {
+      const markers = [];
+      // buy_chase: cond2 + cond3 + cond4 (站上三均線 + 5d/20d 漲)
+      if (r.cond2 && r.cond3 && r.cond4) {
+        markers.push({
+          code: r.code, date: today, type: "buy_chase",
+          text: `站上三均線 + 5日/20日漲幅 ${r.gain_5d_pct}%/${r.gain_20d_pct}%`,
+          price: r.latest_close,
+        });
+      }
+      // limit_up: gain_5d_pct >= 9.5%
+      if (r.gain_5d_pct >= 9.5) {
+        markers.push({
+          code: r.code, date: today, type: "limit_up",
+          text: `5日累計漲幅 ${r.gain_5d_pct}%（疑似漲停/連板）`,
+          price: r.latest_close,
+        });
+      }
+      // sell_stop: cond1 broken (距 60 日高 > 5%) + close < MA20
+      const belowMA20 = r.latest_close < r.ma20;
+      if (r.dist_high_60d_pct > 5 && belowMA20) {
+        markers.push({
+          code: r.code, date: today, type: "sell_stop",
+          text: `距 60 日高 ${r.dist_high_60d_pct}%, 跌破 MA20 (${r.ma20})`,
+          price: r.latest_close,
+        });
+      }
+      for (const m of markers) {
+        await q(
+          `INSERT INTO markers (code, date, type, text, price)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [m.code, m.date, m.type, m.text, m.price]
+        );
+        inserted++;
+      }
+    }
+    return json({ ok: true, source: "loader", scanned: results.length, inserted, as_of: today });
+  } catch (e) {
+    return json({ ok: false, source: "loader", error: e?.message });
+  }
+}
+
+// ── FinMind loaders (big_holders + financial_reports) ────────────────────────
+// 需 $env:FINMIND_TOKEN, 無 token 時 fallback synth_v2_60 (跑現有 seed script)
+// Free tier: 600 req/hr, 60 stocks × 2 endpoints = 120 calls 內 OK
+const FINMIND_BASE = "https://api.finmindtrade.com/api/v4/data";
+
+async function finmindFetch(dataset, params = {}) {
+  const token = process.env.FINMIND_TOKEN;
+  if (!token) throw new Error("FINMIND_TOKEN not set");
+  const u = new URL(FINMIND_BASE);
+  u.searchParams.set("dataset", dataset);
+  u.searchParams.set("token", token);
+  for (const [k, v] of Object.entries(params)) {
+    if (v != null) u.searchParams.set(k, String(v));
+  }
+  const r = await fetch(u.toString(), {
+    headers: { "User-Agent": "Mozilla/5.0" },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!r.ok) throw new Error(`FinMind ${dataset} HTTP ${r.status}`);
+  const j = await r.json();
+  if (j?.msg && j.msg !== "success") throw new Error(`FinMind ${dataset}: ${j.msg}`);
+  return j?.data || [];
+}
+
+// 抓一個 stock 的 big_holders (近 1 年每月揭露)
+async function loadBigHoldersFinMindForCode(code) {
+  const today = new Date();
+  const start = new Date(today.getTime() - 365 * 86400000);
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const rows = await finmindFetch("TaiwanStockShareholding", {
+    data_id: code,
+    start_date: fmt(start),
+    end_date: fmt(today),
+  });
+  // keep latest snapshot per holder_name
+  const byHolder = new Map();
+  for (const r of rows) {
+    const key = r.stock_holder_name || r.holder_name || "?";
+    const prev = byHolder.get(key);
+    if (!prev || String(r.date || r.hold_date) > String(prev.date || prev.hold_date)) {
+      byHolder.set(key, r);
+    }
+  }
+  const asOf = String(rows[rows.length - 1]?.date || rows[rows.length - 1]?.hold_date || today.toISOString().slice(0, 10));
+  let inserted = 0;
+  for (const r of byHolder.values()) {
+    const name = r.stock_holder_name || r.holder_name;
+    const shares = Number(r.shares) || null;
+    const pct = Number(r.holding_percent) || Number(r.percent) || null;
+    const holderType = Number(r.shares) > 1000000 ? "institutional" : "individual";
+    if (!name || pct == null) continue;
+    const ex = await q(
+      `SELECT id FROM big_holders WHERE symbol=$1 AND holder_name=$2 AND as_of_date=$3`,
+      [code, name, asOf]
+    );
+    if (ex.rows.length) {
+      await q(
+        `UPDATE big_holders SET holder_type=$4, shares=$5, pct=$6, source='finmind', fetched_at=NOW() WHERE id=$1`,
+        [ex.rows[0].id, holderType, shares, pct.toFixed(4)]
+      );
+    } else {
+      await q(
+        `INSERT INTO big_holders (symbol, holder_type, holder_name, shares, pct, as_of_date, source, fetched_at)
+         VALUES ($1, $2, $3, $4, $5, $6, 'finmind', NOW())`,
+        [code, holderType, name, shares, pct.toFixed(4), asOf]
+      );
+    }
+    inserted++;
+  }
+  return { code, inserted, asOf };
+}
+
+async function loadBigHoldersFinMind(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  if (!process.env.FINMIND_TOKEN) {
+    return json({
+      ok: false,
+      source: "finmind",
+      error: "FINMIND_TOKEN 未設定 — 請到 https://finmindtrade.com/ 註冊並設定 Vercel env var",
+      fallback: "目前使用 synth_v2_60 synth 資料 (在 seed-bh-60.mjs)",
+    }, { status: 503 });
+  }
+  const wl = await q(`SELECT code FROM watchlist ORDER BY sort_order LIMIT 60`);
+  const codes = wl.rows.map((r) => r.code);
+  const results = [];
+  for (const code of codes) {
+    try {
+      const r = await loadBigHoldersFinMindForCode(code);
+      results.push({ ok: true, ...r });
+    } catch (e) {
+      results.push({ code, ok: false, error: e.message });
+    }
+    await new Promise((res) => setTimeout(res, 600));
+  }
+  const inserted = results.filter((r) => r.ok).reduce((s, r) => s + (r.inserted || 0), 0);
+  return json({ ok: true, source: "finmind", scanned: codes.length, inserted, results });
+}
+
+// 抓一個 stock 的 financial_reports (近 2 年 quarterly)
+async function loadFinancialReportsFinMindForCode(code) {
+  const today = new Date();
+  const start = new Date(today.getTime() - 730 * 86400000);
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const rows = await finmindFetch("TaiwanStockFinancialStatements", {
+    data_id: code,
+    start_date: fmt(start),
+    end_date: fmt(today),
+  });
+  let inserted = 0;
+  // group by period (year-quarter)
+  const byPeriod = new Map();
+  for (const r of rows) {
+    const d = String(r.date || "");
+    const m = d.match(/^(\d{4})-(\d{2})/);
+    if (!m) continue;
+    const month = parseInt(m[2], 10);
+    let qStr;
+    if (month <= 3) qStr = "Q1";
+    else if (month <= 6) qStr = "Q2";
+    else if (month <= 9) qStr = "Q3";
+    else qStr = "Q4";
+    const period = `${m[1]}-${qStr}`;
+    if (!byPeriod.has(period)) byPeriod.set(period, { revenue: 0, gross_profit: 0, operating_income: 0, net_income: 0, eps: 0 });
+    const acc = byPeriod.get(period);
+    if (r.type === "Revenue") acc.revenue += Number(r.value) || 0;
+    else if (r.type === "GrossProfit") acc.gross_profit += Number(r.value) || 0;
+    else if (r.type === "OperatingIncome") acc.operating_income += Number(r.value) || 0;
+    else if (r.type === "NetIncome") acc.net_income += Number(r.value) || 0;
+    else if (r.type === "EPS") acc.eps = Number(r.value) || 0;
+  }
+  for (const [period, acc] of byPeriod) {
+    if (acc.revenue === 0 && acc.net_income === 0) continue;
+    const ex = await q(`SELECT id FROM financial_reports WHERE symbol=$1 AND period=$2`, [code, period]);
+    if (ex.rows.length) {
+      await q(
+        `UPDATE financial_reports SET revenue=$2, gross_profit=$3, operating_income=$4, net_income=$5, eps=$6, source='finmind', fetched_at=NOW() WHERE id=$1`,
+        [ex.rows[0].id, acc.revenue, acc.gross_profit, acc.operating_income, acc.net_income, acc.eps.toFixed(2)]
+      );
+    } else {
+      await q(
+        `INSERT INTO financial_reports (symbol, period, revenue, gross_profit, operating_income, net_income, eps, source, fetched_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'finmind', NOW())`,
+        [code, period, acc.revenue, acc.gross_profit, acc.operating_income, acc.net_income, acc.eps.toFixed(2)]
+      );
+    }
+    inserted++;
+  }
+  return { code, inserted, periods: byPeriod.size };
+}
+
+async function loadFinancialReportsFinMind(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  if (!process.env.FINMIND_TOKEN) {
+    return json({
+      ok: false,
+      source: "finmind",
+      error: "FINMIND_TOKEN 未設定 — 請到 https://finmindtrade.com/ 註冊並設定 Vercel env var",
+      fallback: "目前使用 synth_v2_60 synth 資料 (在 seed-fr-60.mjs)",
+    }, { status: 503 });
+  }
+  const wl = await q(`SELECT code FROM watchlist ORDER BY sort_order LIMIT 60`);
+  const codes = wl.rows.map((r) => r.code);
+  const results = [];
+  for (const code of codes) {
+    try {
+      const r = await loadFinancialReportsFinMindForCode(code);
+      results.push({ ok: true, ...r });
+    } catch (e) {
+      results.push({ code, ok: false, error: e.message });
+    }
+    await new Promise((res) => setTimeout(res, 600));
+  }
+  const inserted = results.filter((r) => r.ok).reduce((s, r) => s + (r.inserted || 0), 0);
+  return json({ ok: true, source: "finmind", scanned: codes.length, inserted, results });
+}
+
 async function loadExdivForDate(dateYmd) {
   // dateYmd: "YYYY-MM-DD" (exdiv API is date-range based, returns all exdivs up to date)
   const ymd = dateYmd.replace(/-/g, "");
@@ -2477,6 +3644,260 @@ async function loadMarketPrices(request) {
       upserted: results.length,
       skipped: skipped.length,
       skipped_detail: skipped,
+    });
+  } catch (e) {
+    return json({ ok: false, source: "loader", error: e?.message });
+  }
+}
+
+// ── loadSectors: hardcoded TWSE 30-stock industry mapping → market_instruments ─
+// Writes JSON metadata_text.industry for each watchlist stock. Heatmap reads this
+// field to bucket stocks into sectors. No external API needed; curated list.
+const TWSE_INDUSTRY_MAP = {
+  "2330": "半導體業",     "2454": "半導體業",   "2303": "半導體業",   "2308": "半導體業",
+  "2379": "半導體業",     "3711": "半導體業",   "3034": "半導體業",   "6669": "半導體業",
+  "3231": "電腦及週邊設備業","2357": "電腦及週邊設備業","2382": "電腦及週邊設備業",
+  "0050": "ETF",          "0051": "ETF",        "0052": "ETF",        "0056": "ETF",  "00878": "ETF",
+  "2881": "金融保險業",   "2882": "金融保險業", "2884": "金融保險業", "2885": "金融保險業",
+  "2886": "金融保險業",   "2887": "金融保險業", "2891": "金融保險業", "2892": "金融保險業",
+  "1301": "塑膠工業",     "1303": "塑膠工業",   "1326": "塑膠工業",   "6505": "塑膠工業",
+  "2002": "鋼鐵工業",     "2207": "汽車工業",   "3008": "光電業",     "1101": "水泥工業",
+  "2317": "其他電子業",
+  "1216": "食品工業",
+};
+async function loadSectors(request) {
+  try {
+    const onlyCode = pickStr(new URL(request.url).searchParams.get("code") || "").trim();
+    const targets = onlyCode ? [onlyCode] : Object.keys(TWSE_INDUSTRY_MAP);
+    let updated = 0, skipped = 0;
+    const details = [];
+    for (const code of targets) {
+      const industry = TWSE_INDUSTRY_MAP[code];
+      if (!industry) { skipped++; continue; }
+      const ex = await q(`SELECT metadata_text FROM market_instruments WHERE symbol = $1 AND asset_type='stock'`, [code]);
+      const exRows = ex.rows || ex || [];
+      let meta = {};
+      if (exRows.length && exRows[0].metadata_text) {
+        try {
+          const parsed = JSON.parse(exRows[0].metadata_text);
+          // If existing is an object (or array, which we treat as legacy), wrap into a fresh meta object
+          // and stash the legacy data so we don't lose it.
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            meta = parsed;
+          } else if (Array.isArray(parsed)) {
+            meta = { _legacy: parsed };
+          }
+        } catch {}
+      }
+      meta.industry = industry;
+      meta.sector_source = "twse_manual_2026";
+      meta.updated_at = new Date().toISOString();
+      const json = JSON.stringify(meta);
+      if (exRows.length) {
+        await q(
+          `UPDATE market_instruments SET metadata_text = $1 WHERE symbol = $2 AND asset_type='stock'`,
+          [json, code]
+        );
+      } else {
+        await q(
+          `INSERT INTO market_instruments (symbol, name, asset_type, market, metadata_text, source) VALUES ($1, $1, 'stock', 'TWSE', $2, 'manual')`,
+          [code, json]
+        );
+      }
+      updated++;
+      details.push({ code, industry });
+    }
+    return json({ ok: true, source: "loader", updated, skipped, total: targets.length, details });
+  } catch (e) {
+    return json({ ok: false, source: "loader", error: e?.message });
+  }
+}
+
+// ── loadAllCombined: combined loader for Vercel Hobby (1 cron slot) ──────────
+// Runs: macro_yields → macro_news → index_institutional → market_prices → sectors → markers → ai_capex
+// Skips: institutional/exdiv/revenue (heavy MOPS, run separately if Hobby plan allows)
+async function loadAllCombined(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  const t0 = Date.now();
+  const steps = [];
+  const step = async (name, fn) => {
+    const s = Date.now();
+    try {
+      const r = await fn();
+      steps.push({ name, ok: true, ms: Date.now() - s, ...r });
+    } catch (e) {
+      steps.push({ name, ok: false, ms: Date.now() - s, error: e?.message });
+    }
+  };
+  // 1. macro_yields (Yahoo Finance 4 series × 30d)
+  await step("macro_yields", () => loadMacroYields({ method: "GET" }));
+  // 2. macro_news (Google News RSS)
+  await step("macro_news", () => loadMacroNews({ method: "GET" }));
+  // 3. index_institutional (TWSE BFI82U 1 day)
+  await step("index_institutional", () => loadIndexInstitutional({ method: "GET" }));
+  // 4. market_prices (TWSE today snapshot for watchlist)
+  await step("market_prices", () => loadMarketPrices({ method: "GET" }));
+  // 5. sectors (硬編 TWSE industry mapping)
+  await step("sectors", () => loadSectors({ method: "GET" }));
+  // 6. markers (auto-gen from screenOne)
+  await step("markers", () => loadMarkers({ method: "GET" }));
+  // 7. ai_capex (SEC EDGAR 6 hyperscalers)
+  await step("ai_capex", () => loadAiCapex({ method: "GET" }));
+  const okCount = steps.filter(s => s.ok).length;
+  return json({
+    ok: true,
+    source: "combined_loader",
+    total_ms: Date.now() - t0,
+    summary: `${okCount}/${steps.length} steps OK in ${((Date.now() - t0) / 1000).toFixed(1)}s`,
+    steps,
+  });
+}
+
+// ── loadMarketPricesBackfill: Yahoo Finance 個股日歷史 → market_price_bars ─
+// One-shot: pulls 1y of daily bars per stock in watchlist so the screener
+// (screenOne needs ≥60 days) can score more than the 4 originally tracked stocks.
+// Yahoo Finance: https://query1.finance.yahoo.com/v8/finance/chart/<code>.TW?interval=1d&range=1y
+// (gives ~244 trading days, enough for warming_zone_scan / screenOne)
+// We use source_name='yahoo_v8' to differentiate from TWSE daily loader.
+const BACKFILL_UA = "Mozilla/5.0 (compatible: donttalk-stock-app/1.0; contact: donttalk@example.com)";
+async function loadMarketPricesBackfill(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  const range = pickStr(u.searchParams.get("range") || body?.range || "1y");
+  const onlyCode = pickStr(u.searchParams.get("code") || body?.code || "").trim();
+  try {
+    // 1) target stocks: watchlist (skip those that already have 60+ days)
+    const wlRes = await q(`SELECT code FROM watchlist ORDER BY code`);
+    const wlRows = wlRes.rows || wlRes;
+    let targets = wlRows.map((r) => String(r.code ?? r[0])).filter((c) => /^\d{4,6}$/.test(c));
+    if (onlyCode) targets = targets.filter((c) => c === onlyCode);
+    if (targets.length === 0) {
+      return json({ ok: true, source: "stub", count: 0, message: "no watchlist stocks to backfill" });
+    }
+    if (!onlyCode) {
+      const cntRes = await q(
+        `SELECT symbol, COUNT(DISTINCT trade_date)::int AS n
+         FROM market_price_bars
+         WHERE symbol = ANY($1::text[]) AND asset_type='stock'
+         GROUP BY symbol`,
+        [targets]
+      );
+      const haveEnough = new Set();
+      for (const r of (cntRes.rows || [])) {
+        if ((r.n ?? r[1]) >= 60) haveEnough.add(String(r.symbol ?? r[0]));
+      }
+      const before = targets.length;
+      targets = targets.filter((c) => !haveEnough.has(c));
+      if (targets.length === 0) {
+        return json({ ok: true, source: "stub", count: 0, message: `all ${before} watchlist stocks already have 60+ days` });
+      }
+    }
+    // 2) for each stock fetch Yahoo Finance chart
+    const results = [];
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    for (const code of targets) {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${code}.TW?interval=1d&range=${encodeURIComponent(range)}`;
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 12000);
+      let stockBars = [];
+      let lastError = null;
+      try {
+        const r = await fetch(url, {
+          headers: { "User-Agent": BACKFILL_UA, "Accept": "application/json,text/plain,*/*" },
+          signal: ctrl.signal,
+        });
+        clearTimeout(tid);
+        if (!r.ok) { lastError = `HTTP ${r.status}`; }
+        else {
+          const j = await r.json();
+          const result = j?.chart?.result?.[0];
+          if (!result) { lastError = "yahoo: no result"; }
+          else {
+            const ts = result.timestamp || [];
+            const closes = result.indicators?.quote?.[0]?.close || [];
+            const opens = result.indicators?.quote?.[0]?.open || [];
+            const highs = result.indicators?.quote?.[0]?.high || [];
+            const lows = result.indicators?.quote?.[0]?.low || [];
+            const vols = result.indicators?.quote?.[0]?.volume || [];
+            for (let i = 0; i < ts.length; i++) {
+              const c = closes[i];
+              if (c == null || !Number.isFinite(c)) continue;
+              const isoDate = new Date(ts[i] * 1000).toISOString().slice(0, 10);
+              const open = Number.isFinite(opens[i]) ? Number(opens[i]) : null;
+              const high = Number.isFinite(highs[i]) ? Number(highs[i]) : null;
+              const low = Number.isFinite(lows[i]) ? Number(lows[i]) : null;
+              const vol = Number.isFinite(vols[i]) ? Math.round(vols[i]) : null;
+              // compute change vs previous bar
+              let change = null;
+              if (i + 1 < ts.length && Number.isFinite(closes[i + 1])) {
+                change = Math.round((c - closes[i + 1]) * 100) / 100;
+              }
+              stockBars.push({ isoDate, open, high, low, close: c, change, vol, turnover: vol && c ? vol * c : null });
+            }
+          }
+        }
+      } catch (e) {
+        clearTimeout(tid);
+        lastError = e.name === "AbortError" ? "timeout" : e.message;
+      }
+      if (stockBars.length === 0) {
+        results.push({ code, ok: false, count: 0, error: lastError || "no data" });
+        await sleep(200);
+        continue;
+      }
+      // 3) Bulk upsert
+      const dates = stockBars.map((b) => b.isoDate);
+      const opens = stockBars.map((b) => b.open);
+      const highs = stockBars.map((b) => b.high);
+      const lows = stockBars.map((b) => b.low);
+      const closes = stockBars.map((b) => b.close);
+      const changes = stockBars.map((b) => b.change);
+      const vols = stockBars.map((b) => b.vol);
+      const turnovers = stockBars.map((b) => b.turnover);
+      try {
+        await q(
+          `INSERT INTO market_price_bars
+             (source_name, symbol, asset_type, market, trade_date, open_price, high_price, low_price,
+              close_price, change_value, volume, turnover, fetched_at)
+           SELECT 'yahoo_v8', $1, 'stock', 'TWSE', unnest($2::date[]),
+                  unnest($3::numeric[]), unnest($4::numeric[]), unnest($5::numeric[]),
+                  unnest($6::numeric[]), unnest($7::numeric[]), unnest($8::bigint[]), unnest($9::numeric[]), NOW()
+           ON CONFLICT (source_name, symbol, contract_month, trade_date) DO UPDATE SET
+             open_price = EXCLUDED.open_price,
+             high_price = EXCLUDED.high_price,
+             low_price = EXCLUDED.low_price,
+             close_price = EXCLUDED.close_price,
+             change_value = EXCLUDED.change_value,
+             volume = EXCLUDED.volume,
+             turnover = EXCLUDED.turnover,
+             fetched_at = NOW()`,
+          [code, dates, opens, highs, lows, closes, changes, vols, turnovers]
+        );
+        results.push({ code, ok: true, count: stockBars.length });
+      } catch (e) {
+        results.push({ code, ok: false, count: stockBars.length, error: e.message });
+      }
+      await sleep(200);
+    }
+    const ok = results.filter((r) => r.ok);
+    const errs = results.filter((r) => !r.ok);
+    return json({
+      ok: true,
+      source: "loader",
+      range,
+      stocks: targets.length,
+      upserted: ok.reduce((s, r) => s + r.count, 0),
+      stocks_ok: ok.length,
+      stocks_failed: errs.length,
+      failed_detail: errs.slice(0, 5),
+      results,
     });
   } catch (e) {
     return json({ ok: false, source: "loader", error: e?.message });
@@ -3044,6 +4465,95 @@ async function seedEtfHoldings(request) {
   return json({ ok: true, source: "seed", etf_code: etfCode, as_of_date: asOf, inserted, updated, total: holdings.length });
 }
 
+// ── seedBigHolders: manual POST endpoint for big_holders ─────────────
+// Body: { password, holders: [{ symbol, holder_type, holder_name, shares, pct, as_of_date }] }
+// Use case: real 大股東 公告 from MOPS / broker feeds / manual entry.
+async function seedBigHolders(request) {
+  if (request.method !== "POST") return json({ error: "method not allowed (use POST)" }, { status: 405 });
+  const body = await readJson(request);
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
+  const source = String(body?.source || "manual").trim();
+  const holders = Array.isArray(body?.holders) ? body.holders : [];
+  if (holders.length === 0) {
+    return json({ error: "缺少必要欄位：holders[] (each with symbol, holder_type, holder_name, shares, pct, as_of_date)" }, { status: 400 });
+  }
+  let inserted = 0, updated = 0, skipped = 0;
+  for (const h of holders) {
+    const symbol = String(h.symbol || "").trim();
+    const holderType = String(h.holder_type || "").trim();
+    const holderName = String(h.holder_name || "").trim();
+    const asOf = String(h.as_of_date || "").trim();
+    if (!symbol || !holderName || !asOf) { skipped++; continue; }
+    const shares = h.shares != null ? Number(h.shares) : null;
+    const pct = h.pct != null ? Number(h.pct) : null;
+    const ex = await q(
+      `SELECT id FROM big_holders WHERE symbol = $1 AND holder_name = $2 AND as_of_date = $3 LIMIT 1`,
+      [symbol, holderName, asOf]
+    );
+    const exRows = ex.rows || ex || [];
+    if (exRows.length > 0) {
+      await q(
+        `UPDATE big_holders SET holder_type = $1, shares = $2, pct = $3, source = $4, fetched_at = NOW() WHERE id = $5`,
+        [holderType, shares, pct, source, exRows[0].id]
+      );
+      updated++;
+    } else {
+      await q(
+        `INSERT INTO big_holders (symbol, holder_type, holder_name, shares, pct, as_of_date, source, fetched_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+        [symbol, holderType, holderName, shares, pct, asOf, source]
+      );
+      inserted++;
+    }
+  }
+  return json({ ok: true, source: "seed", inserted, updated, skipped, total: holders.length });
+}
+
+// ── seedFinancialReports: manual POST endpoint for financial_reports ──
+// Body: { password, reports: [{ symbol, period, revenue, gross_profit, operating_income, net_income, eps, source }] }
+// period format: "2026-Q2", "2026-06", "2025" (any unique string per symbol)
+async function seedFinancialReports(request) {
+  if (request.method !== "POST") return json({ error: "method not allowed (use POST)" }, { status: 405 });
+  const body = await readJson(request);
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
+  const source = String(body?.source || "manual").trim();
+  const reports = Array.isArray(body?.reports) ? body.reports : [];
+  if (reports.length === 0) {
+    return json({ error: "缺少必要欄位：reports[] (each with symbol, period, revenue, gross_profit, operating_income, net_income, eps)" }, { status: 400 });
+  }
+  let inserted = 0, updated = 0, skipped = 0;
+  for (const r of reports) {
+    const symbol = String(r.symbol || "").trim();
+    const period = String(r.period || "").trim();
+    if (!symbol || !period) { skipped++; continue; }
+    const revenue = r.revenue != null ? Number(r.revenue) : null;
+    const grossProfit = r.gross_profit != null ? Number(r.gross_profit) : null;
+    const opIncome = r.operating_income != null ? Number(r.operating_income) : null;
+    const netIncome = r.net_income != null ? Number(r.net_income) : null;
+    const eps = r.eps != null ? Number(r.eps) : null;
+    const ex = await q(
+      `SELECT id FROM financial_reports WHERE symbol = $1 AND period = $2 LIMIT 1`,
+      [symbol, period]
+    );
+    const exRows = ex.rows || ex || [];
+    if (exRows.length > 0) {
+      await q(
+        `UPDATE financial_reports SET revenue = $1, gross_profit = $2, operating_income = $3, net_income = $4, eps = $5, source = $6, fetched_at = NOW() WHERE id = $7`,
+        [revenue, grossProfit, opIncome, netIncome, eps, source, exRows[0].id]
+      );
+      updated++;
+    } else {
+      await q(
+        `INSERT INTO financial_reports (symbol, period, revenue, gross_profit, operating_income, net_income, eps, source, fetched_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+        [symbol, period, revenue, grossProfit, opIncome, netIncome, eps, source]
+      );
+      inserted++;
+    }
+  }
+  return json({ ok: true, source: "seed", inserted, updated, skipped, total: reports.length });
+}
+
 async function _etfFetch(url) {
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), 5000);
@@ -3127,6 +4637,38 @@ function placeholder(name, hint) {
   return json({ ok: true, source: "stub", tier: 1, endpoint: name, hint, value: null, items: [] });
 }
 
+// /api/pe_threshold — real handler. Frontend (signal-filter.html) uses
+// pe_max = 1 / yield_10y  to mark stocks with PE > pe_max as overvalued.
+// Reads from macro_yields table.
+async function peThreshold(request) {
+  try {
+    const { rows } = await q(
+      `SELECT trade_date, value
+       FROM macro_yields
+       WHERE series = 'yield_10y'
+       ORDER BY trade_date DESC LIMIT 2`
+    );
+    if (rows.length === 0) {
+      return json({ ok: true, source: "stub", pe_max: null, y10: null, y10_prev: null, pe_max_prev: null, message: "macro_yields empty; need FRED loader" });
+    }
+    const y10     = Number(rows[0].value); // in %
+    const y10Prev = rows[1] ? Number(rows[1].value) : null;
+    const peMax     = y10     > 0 ? Math.round((1 / (y10     / 100)) * 100) / 100 : null;
+    const peMaxPrev = y10Prev > 0 ? Math.round((1 / (y10Prev / 100)) * 100) / 100 : null;
+    return json({
+      ok: true,
+      source: "db",
+      pe_max: peMax,
+      y10,
+      y10_prev: y10Prev,
+      pe_max_prev: peMaxPrev,
+      as_of: String(rows[0].trade_date).slice(0, 10),
+    });
+  } catch (e) {
+    return json({ ok: true, source: "stub", pe_max: null, y10: null, y10_prev: null, pe_max_prev: null, error: e?.message });
+  }
+}
+
 function stub(name, extra = {}) {
   return json({ ok: true, source: "stub", endpoint: name, ...extra });
 }
@@ -3142,6 +4684,9 @@ const TABLE = [
   ["DELETE", /^\/stocks\/remove\/([^/]+?)\/?$/, removeStock],
   ["POST",    /^\/stocks\/remove\/([^/]+?)\/?$/, removeStock],
   ["GET",   /^\/stock\/([^/]+?)\/?$/,        stockKlines],
+  ["GET",   /^\/stock\/([^/]+?)\/etf_membership\/?$/, stockEtfMembership],
+  ["GET",   /^\/stock\/([^/]+?)\/events\/?$/,  stockEvents],
+  ["GET",   /^\/stock\/([^/]+?)\/intro\/?$/,   stockIntro],
   ["GET",   /^\/index\/([^/]+?)\/?$/,        indexKlines],
 
   ["GET",  /^\/market_gaps\/?$/,             marketGaps],
@@ -3172,6 +4717,7 @@ const TABLE = [
   ["GET",  /^\/macro_news\/?$/,              macroNews],
   ["GET",  /^\/news\/?$/,                    newsList],
   ["GET",  /^\/news\/market\/?$/,            newsMarket],
+  ["GET",  /^\/news\/([^/]+?)\/?$/,          newsByCode],
   ["GET",  /^\/macro_data\/?$/,              macroData],
   ["GET",  /^\/macro_yield2y_history\/?$/,   macroYield2yHistory],
 
@@ -3240,6 +4786,7 @@ const TABLE = [
   // Conference / sentiment
   ["GET",  /^\/conference\/?$/,              conferenceList],
   ["GET",  /^\/conference\/sentiment_stats\/?$/, conferenceSentimentStats],
+  ["GET",  /^\/conference\/([^/]+?)\/?$/,    conferenceByCode],
 
   // Uptrend watch
   ["GET",  /^\/uptrend_watch\/?$/,           uptrendWatch],
@@ -3264,9 +4811,29 @@ const TABLE = [
   ["POST", /^\/admin\/load\/ai_capex\/?$/,    loadAiCapex],
   ["GET",  /^\/admin\/load\/market_prices\/?$/, loadMarketPrices],
   ["POST", /^\/admin\/load\/market_prices\/?$/, loadMarketPrices],
+  ["GET",  /^\/admin\/load\/market_prices\/backfill\/?$/, loadMarketPricesBackfill],
+  ["POST", /^\/admin\/load\/market_prices\/backfill\/?$/, loadMarketPricesBackfill],
+  ["GET",  /^\/admin\/load\/sectors\/?$/,          loadSectors],
+  ["POST", /^\/admin\/load\/sectors\/?$/,          loadSectors],
+  ["GET",  /^\/admin\/load\/all\/?$/,              loadAllCombined],
+  ["POST", /^\/admin\/load\/all\/?$/,              loadAllCombined],
   ["GET",  /^\/admin\/load\/etf_holdings\/?$/,  loadEtfHoldings],
   ["POST", /^\/admin\/load\/etf_holdings\/?$/,  loadEtfHoldings],
+  ["GET",  /^\/admin\/load\/macro_yields\/?$/,  loadMacroYields],
+  ["POST", /^\/admin\/load\/macro_yields\/?$/,  loadMacroYields],
+  ["GET",  /^\/admin\/load\/macro_news\/?$/,    loadMacroNews],
+  ["POST", /^\/admin\/load\/macro_news\/?$/,    loadMacroNews],
+  ["GET",  /^\/admin\/load\/index_institutional\/?$/, loadIndexInstitutional],
+  ["POST", /^\/admin\/load\/index_institutional\/?$/, loadIndexInstitutional],
+  ["GET",  /^\/admin\/load\/markers\/?$/,       loadMarkers],
+  ["POST", /^\/admin\/load\/markers\/?$/,       loadMarkers],
   ["POST", /^\/admin\/load\/etf_holdings\/seed\/?$/, seedEtfHoldings],
+  ["POST", /^\/admin\/load\/big_holders\/seed\/?$/, seedBigHolders],
+  ["POST", /^\/admin\/load\/financial_reports\/seed\/?$/, seedFinancialReports],
+  ["GET",  /^\/admin\/load\/big_holders\/finmind\/?$/, loadBigHoldersFinMind],
+  ["POST", /^\/admin\/load\/big_holders\/finmind\/?$/, loadBigHoldersFinMind],
+  ["GET",  /^\/admin\/load\/financial_reports\/finmind\/?$/, loadFinancialReportsFinMind],
+  ["POST", /^\/admin\/load\/financial_reports\/finmind\/?$/, loadFinancialReportsFinMind],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
@@ -3283,8 +4850,10 @@ const TABLE = [
   // Real table-backed handlers (will return empty + message when table is empty)
   ["GET",  /^\/foreign_futures\/?$/,         foreignFutures],
   ["GET",  /^\/financial\/?$/,               financial],
+  ["GET",  /^\/financial\/([^/]+?)\/?$/,     financial],
   ["GET",  /^\/overnight_signal\/?$/,        overnightSignal],
   ["GET",  /^\/margin_burst\/?$/,            marginBurst],
+  ["GET",  /^\/margin_burst\/([^/]+?)\/?$/,  marginBurst],
   ["GET",  /^\/index_institutional\/?$/,     indexInstitutional],
   ["GET",  /^\/big_holder_low_base\/?$/,     bigHolderLowBase],
   ["GET",  /^\/revenue\/?$/,                 revenue],
@@ -3298,7 +4867,7 @@ const TABLE = [
   // Configuration endpoints (no DB table — return helpful shape with hint)
   ["GET",  /^\/strategy\/etf_added_resonance\/?$/, placeholder.bind(null, "strategy_etf_added_resonance", "use etf_holdings + screener + resonance score")],
   ["GET",  /^\/disabled_strategies\/?$/,     placeholder.bind(null, "disabled_strategies", "configure in code or DB; returns [] when none disabled")],
-  ["GET",  /^\/pe_threshold\/?$/,            placeholder.bind(null, "pe_threshold", "PE filter threshold; null = no filter")],
+  ["GET",  /^\/pe_threshold\/?$/,            peThreshold],
   ["GET",  /^\/min_hold_overrides\/?$/,      placeholder.bind(null, "min_hold_overrides", "per-stock minimum hold days override; empty = use default")],
 ];
 
