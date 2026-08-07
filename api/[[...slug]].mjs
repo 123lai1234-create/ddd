@@ -426,7 +426,7 @@ async function stockEvents(request, code) {
     const { rows } = await q(
       `SELECT id, code, date::text, type, text, price
        FROM markers
-       WHERE code = $1 AND date >= (CURRENT_DATE - $2::int * INTERVAL '1 day')
+       WHERE code = $1 AND date::timestamp >= (CURRENT_TIMESTAMP - ($2::int || ' days')::interval)
        ORDER BY date DESC, id DESC
        LIMIT 200`,
       [code, days]
