@@ -2311,6 +2311,27 @@ function recordMarkersToDB(code, data){
     }).catch(function(e){ console.warn("recordMarkersToDB 失敗:", e); });
   } catch(e) { console.warn("recordMarkersToDB 例外:", e); }
 }
+
+// 2026-08-10 fix: lightweight-charts v4 only accepts UTCTimestamp (number) or BusinessDay (object)
+//                  for `time` field, NOT ISO string. Railway backend returns time as "2026-08-10"
+//                  which causes chart to silent fail (no K-bars render). Convert here.
+function _toUtcTs(t) { return typeof t === "string" ? Math.floor(new Date(t).getTime() / 1000) : t; }
+function _fixTime(arr) { return (arr || []).map(function(d) { return Object.assign({}, d, { time: _toUtcTs(d.time) }); }); }
+function _fixChartTimes(data) {
+  if (!data) return data;
+  if (Array.isArray(data.candles))  data.candles  = _fixTime(data.candles);
+  if (Array.isArray(data.volumes))  data.volumes  = _fixTime(data.volumes);
+  if (data.ma) {
+    ["ma5","ma10","ma20","ma60","ma240"].forEach(function(k) {
+      if (Array.isArray(data.ma[k])) data.ma[k] = _fixTime(data.ma[k]);
+    });
+  }
+  ["channelHigh","channelLow","supportLine"].forEach(function(k) {
+    if (Array.isArray(data[k])) data[k] = _fixTime(data[k]);
+  });
+  return data;
+}
+
 function loadStockEvents(code, days, stockData){
   _eventMarkers = [];
   _eventsReqCode = code;
@@ -2606,6 +2627,8 @@ function switchToIndexMode(ticker) {
           showToast("❌ " + name + " 回傳空資料", "sell");
           return;
         }
+        // 2026-08-10: convert ISO time strings to UTCTimestamp
+        _fixChartTimes(indexData);
         if(indexData.error){
           showToast("❌ " + name + " 錯誤：" + indexData.error, "sell");
           return;
@@ -3846,6 +3869,8 @@ function loadStock(code, days) {
 
       // ★ 快取供 Volume Profile 使用
       window._currentStockData = data;
+      // 2026-08-10: convert ISO time strings to UTCTimestamp (lightweight-charts v4 silent fail on strings)
+      _fixChartTimes(data);
 
       candleSeries.setData(data.candles);
       volumeSeries.setData(data.volumes);
