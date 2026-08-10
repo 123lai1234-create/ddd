@@ -153,7 +153,8 @@
       let up = 0, down = 0, flat = 0;
       const movers = [];
       for (const s of stocks) {
-        const c = Number(s.change_pct);
+        // 2026-08-10: heatmap source 欄位可能叫 change_pct 或 chg_1d，兩種都吃
+        const c = Number(s.change_pct ?? s.chg_1d ?? 0);
         if (c > 0.1) up++;
         else if (c < -0.1) down++;
         else flat++;
