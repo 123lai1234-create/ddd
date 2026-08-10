@@ -2669,8 +2669,9 @@ function switchToIndexMode(ticker) {
         _baseMarkers = []; _eventMarkers = []; _eventsReqCode = null;
 
         candleSeries.setMarkers(indexData.markers);
-        // 2026-08-10: same fix for index mode (candle-only autoscale)
-        candleSeries.applyOptions({
+        // 2026-08-10: same fix for index mode (price-scale level autoscale)
+        chart.priceScale("right").applyOptions({
+          autoScale: true,
           autoscaleInfoProvider: function() {
             try {
               var arr = candleSeries.data();
@@ -2687,8 +2688,6 @@ function switchToIndexMode(ticker) {
             } catch(e) { return null; }
           }
         });
-        // ★ 切換個股時強制重新自動縮放價格軸（避免使用者拖曳後價格軸卡住）
-        chart.priceScale("right").applyOptions({ autoScale: true });
         chart.timeScale().fitContent();
 
         // ★ 歷史建議持股水位折線（僅加權指數，左軸 0~100%）
@@ -3914,10 +3913,11 @@ function loadStock(code, days) {
       // ⚡ V4 爆量低點水平線（動態更新；無持倉或 V4 關閉時不畫）
       drawRollingLowLine(data.rollingVolLow);
 
-      // 2026-08-10: override autoscale to ONLY use candle data range (not channel/support lines)
-      // Without this, channelHigh/channelLow/supportLine (default priceScaleId='right') pull
-      // the price scale to a wider range (e.g. 0-1200 instead of true 1155-2405 for TSMC).
-      candleSeries.applyOptions({
+      // 2026-08-10: override at priceScale LEVEL (not series level) so it covers all series
+      // (candle + channel + support + ...) on the right axis. Without this, the chart unions
+      // all series ranges → Y axis shows 0-1200 instead of true 1155-2405 for TSMC.
+      chart.priceScale("right").applyOptions({
+        autoScale: true,
         autoscaleInfoProvider: function() {
           try {
             var arr = candleSeries.data();
@@ -3935,7 +3935,6 @@ function loadStock(code, days) {
         }
       });
       // ★ 切換個股時強制重新自動縮放價格軸（避免使用者拖曳後價格軸卡住）
-      chart.priceScale("right").applyOptions({ autoScale: true });
       chart.timeScale().fitContent();
 
       updateSupportPanel(data.supportPrice, lt.close);
