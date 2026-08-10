@@ -1,6 +1,7 @@
 // api/[[...slug]].mjs — mega edge-runtime router for all /api/* endpoints.
 // Vercel catch-all: any /api/<anything> hits this file, dispatched via small table.
 // Uses Neon HTTP SQL API (no pg driver). Edge runtime for fast cold start.
+// 2026-08-10 build marker (force Vercel edge function rebuild — cache stuck on polish-final version)
 //
 // Schema (Neon Postgres, schema `public`):
 //   watchlist        (code, name, ticker, sort_order)         — stock watchlist
