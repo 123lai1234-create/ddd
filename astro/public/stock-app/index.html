@@ -3075,7 +3075,10 @@ function loadStockList() {
   fetch("/api/stocks")
     .then(function(r){ return r.json(); })
     .then(function(d){
-      stockListData = d;
+      // ★ 2026-08-10 fix: API 回 {ok, source, count, stocks: [...]}
+      // 之前直接 stockListData = d 會把 object 當 array，導致 .length=undefined
+      // 全部 .stock-item 不 render、sidebar 空白、刪除 fallback 壞
+      stockListData = (d && d.stocks) ? d.stocks : (Array.isArray(d) ? d : []);
       // 首次載入：若已有持久產業篩選但 map 還沒到，延後到 loadIndustryMap
       // 完成後再 render，避免出現「0 檔」閃爍
       if (!industryFilter || Object.keys(INDUSTRY_MAP).length > 0) {
