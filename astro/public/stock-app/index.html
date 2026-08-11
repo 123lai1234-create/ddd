@@ -2500,6 +2500,29 @@ function initChart() {
     title: "支撐線"
   });
 
+  // 2026-08-10: unified Y-axis autoscale across all 'right'-axis series.
+  // lightweight-charts unions all series' autoscaleInfoProvider results,
+  // so channel/support lines were pulling the range to 0-1600 instead of true 1155-2405.
+  // This callback returns candle range (lo-5%, hi+5%) — all series get the same range.
+  window._candleAutoscaleFn = function() {
+    try {
+      var arr = candleSeries.data();
+      if (!arr || !arr.length) return null;
+      var lo = Infinity, hi = -Infinity;
+      for (var i=0; i<arr.length; i++) {
+        var c = arr[i];
+        if (typeof c.low === 'number' && c.low < lo) lo = c.low;
+        if (typeof c.high === 'number' && c.high > hi) hi = c.high;
+      }
+      if (!isFinite(lo) || !isFinite(hi) || hi <= lo) return null;
+      var pad = Math.max((hi - lo) * 0.05, hi * 0.005, 1);
+      return { priceRange: { minValue: lo - pad, maxValue: hi + pad } };
+    } catch(e) { return null; }
+  };
+  [ma5Line, ma10Line, ma20Line, ma60Line, ma240Line, channelHighLine, channelLowLine, supportLine].forEach(function(s) {
+    if (s) s.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
+  });
+
   new ResizeObserver(function() {
     if (chart) chart.applyOptions({ width:c.clientWidth, height:c.clientHeight });
   }).observe(c);
@@ -2669,25 +2692,11 @@ function switchToIndexMode(ticker) {
         _baseMarkers = []; _eventMarkers = []; _eventsReqCode = null;
 
         candleSeries.setMarkers(indexData.markers);
-        // 2026-08-10: same fix for index mode (price-scale level autoscale)
-        chart.priceScale("right").applyOptions({
-          autoScale: true,
-          autoscaleInfoProvider: function() {
-            try {
-              var arr = candleSeries.data();
-              if (!arr || !arr.length) return null;
-              var lo = Infinity, hi = -Infinity;
-              for (var i=0; i<arr.length; i++) {
-                var c = arr[i];
-                if (typeof c.low === 'number' && c.low < lo) lo = c.low;
-                if (typeof c.high === 'number' && c.high > hi) hi = c.high;
-              }
-              if (!isFinite(lo) || !isFinite(hi) || hi <= lo) return null;
-              var pad = Math.max((hi - lo) * 0.05, hi * 0.005, 1);
-              return { priceRange: { minValue: lo - pad, maxValue: hi + pad } };
-            } catch(e) { return null; }
-          }
-        });
+        // 2026-08-10: same unified autoscale for index mode
+        if (window._candleAutoscaleFn) {
+          candleSeries.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
+        }
+        chart.priceScale("right").applyOptions({ autoScale: true });
         chart.timeScale().fitContent();
 
         // ★ 歷史建議持股水位折線（僅加權指數，左軸 0~100%）
@@ -3913,28 +3922,14 @@ function loadStock(code, days) {
       // ⚡ V4 爆量低點水平線（動態更新；無持倉或 V4 關閉時不畫）
       drawRollingLowLine(data.rollingVolLow);
 
-      // 2026-08-10: override at priceScale LEVEL (not series level) so it covers all series
-      // (candle + channel + support + ...) on the right axis. Without this, the chart unions
-      // all series ranges → Y axis shows 0-1200 instead of true 1155-2405 for TSMC.
-      chart.priceScale("right").applyOptions({
-        autoScale: true,
-        autoscaleInfoProvider: function() {
-          try {
-            var arr = candleSeries.data();
-            if (!arr || !arr.length) return null;
-            var lo = Infinity, hi = -Infinity;
-            for (var i=0; i<arr.length; i++) {
-              var c = arr[i];
-              if (typeof c.low === 'number' && c.low < lo) lo = c.low;
-              if (typeof c.high === 'number' && c.high > hi) hi = c.high;
-            }
-            if (!isFinite(lo) || !isFinite(hi) || hi <= lo) return null;
-            var pad = Math.max((hi - lo) * 0.05, hi * 0.005, 1);
-            return { priceRange: { minValue: lo - pad, maxValue: hi + pad } };
-          } catch(e) { return null; }
-        }
-      });
+      // 2026-08-10: unify Y-axis autoscale for ALL right-axis series.
+      // lightweight-charts unions all series' autoscaleInfoProvider results; without
+      // unifying, channel/support pull the range to 0-1600 instead of 1155-2405.
+      if (window._candleAutoscaleFn) {
+        candleSeries.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
+      }
       // ★ 切換個股時強制重新自動縮放價格軸（避免使用者拖曳後價格軸卡住）
+      chart.priceScale("right").applyOptions({ autoScale: true });
       chart.timeScale().fitContent();
 
       updateSupportPanel(data.supportPrice, lt.close);
