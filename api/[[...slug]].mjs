@@ -2,6 +2,7 @@
 // Vercel catch-all: any /api/<anything> hits this file, dispatched via small table.
 // Uses Neon HTTP SQL API (no pg driver). Edge runtime for fast cold start.
 // 2026-08-10 build marker (force Vercel edge function rebuild — cache stuck on polish-final version)
+// 2026-08-11 v2 marker (Railway 棄用, 改用 Vercel edge function; force rebuild)
 //
 // Schema (Neon Postgres, schema `public`):
 //   watchlist        (code, name, ticker, sort_order)         — stock watchlist
