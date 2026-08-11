@@ -4879,8 +4879,10 @@ export default async function handler(request) {
     const raw = u.pathname || "";
     let path = raw.replace(/^\/api\/?/, "").replace(/\/+$/, "");
     const fullPath = "/" + (path || "");
-    // DEBUG: log to see if function is invoked
-    console.log("[DEBUG] handler invoked:", request.method, "->", raw, "fullPath:", fullPath, "t:", Date.now());
+    // DEBUG: return 200 for ALL requests to see if function is invoked
+    if (path === "debug-all-200") {
+      return new Response("DEBUG: function invoked for path: " + raw, { status: 200 });
+    }
     for (const [method, re, fn] of TABLE) {
       if (method !== request.method) continue;
       const m = re.exec(fullPath);
@@ -4889,7 +4891,7 @@ export default async function handler(request) {
         return await fn(request, ...args);
       }
     }
-    return json({ ok: false, error: "not found", path: "/api/" + path, method: request.method, debug: "edge function ran, no route matched" }, { status: 404 });
+    return json({ ok: false, error: "not found", path: "/api/" + path, method: request.method }, { status: 404 });
   } catch (e) {
     return json({ ok: false, error: e?.message, stack: e?.stack }, { status: 500 });
   }
