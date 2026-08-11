@@ -3,7 +3,7 @@
   "installCommand": "npm ci",
   "buildCommand": "npx --no-install astro build && npx --no-install pagefind --site dist --output-path dist/pagefind",
   "outputDirectory": "dist",
-  "cleanUrls": true,
+  "cleanUrls": false,
   "trailingSlash": false,
   "env": {
     "API_PROXY_TARGET": "https://vercel-edge-function"

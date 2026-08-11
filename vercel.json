@@ -1,6 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "cleanUrls": true,
+  "installCommand": "npm ci",
+  "buildCommand": "npx --no-install astro build && npx --no-install pagefind --site dist --output-path dist/pagefind",
+  "outputDirectory": "dist",
+  "cleanUrls": false,
   "trailingSlash": false,
   "env": {
     "API_PROXY_TARGET": "https://vercel-edge-function"
