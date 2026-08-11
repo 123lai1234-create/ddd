@@ -6,7 +6,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "env": {
-    "API_PROXY_TARGET": "https://api-server-production-676d.up.railway.app"
+    "API_PROXY_TARGET": "https://vercel-edge-function"
   },
   "headers": [
     {
@@ -39,11 +39,7 @@
     },
     {
       "source": "/healthz",
-      "destination": "https://api-server-production-676d.up.railway.app/healthz"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "https://api-server-production-676d.up.railway.app/api/:path*"
+      "destination": "/api/healthz"
     }
   ],
   "redirects": [
