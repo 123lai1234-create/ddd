@@ -22,6 +22,50 @@
     })();
   </script>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+  <!-- ★ Console noise filter (Chrome extensions: jQuery unload, Built-In AI, Immersive Translate) -->
+  <script>
+    (function() {
+      if (window.__consoleFilterInstalled) return;
+      window.__consoleFilterInstalled = true;
+      var NOISE_PATTERNS = [
+        /Built-In AI features/i,
+        /Immersive Translate (ERROR|version mismatch)/i,
+        /content_main\.js/,
+        /content_guard\.js/,
+        /chrome-extension:/,
+        /chrome\.googleapis\.com/,
+        /jquery\.js.*Permissions policy violation/i,
+        /jquery\.js.*\[Violation\]/i,
+        /Page Lifecycle API.*unload/i,
+        /\[Violation\]/,
+      ];
+      function shouldFilter(args) {
+        for (var i = 0; i < args.length; i++) {
+          var s = (args[i] != null) ? String(args[i]) : "";
+          for (var j = 0; j < NOISE_PATTERNS.length; j++) {
+            if (NOISE_PATTERNS[j].test(s)) return true;
+          }
+          // Also check args[0..n] for objects with stack/message
+          if (args[i] && typeof args[i] === 'object') {
+            try {
+              var dump = JSON.stringify(args[i]) || "";
+              for (var k = 0; k < NOISE_PATTERNS.length; k++) {
+                if (NOISE_PATTERNS[k].test(dump)) return true;
+              }
+            } catch (_) {}
+          }
+        }
+        return false;
+      }
+      ['log', 'warn', 'error', 'info', 'debug'].forEach(function(level) {
+        var orig = console[level];
+        console[level] = function() {
+          if (shouldFilter(arguments)) return;
+          return orig.apply(console, arguments);
+        };
+      });
+    })();
+  </script>
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="static/favicon.svg">
   <link rel="shortcut icon" href="static/favicon.svg">
@@ -8071,7 +8115,17 @@ function showTradeDetail() {
           console.log("[監控] 後端已啟用，等待開盤自動輪詢...");
           _scheduleNextCheck();
         } else {
-          console.log("[監控] 後端已手動停用，盤中即時掃描將不執行");
+          // ★ 2026-08-12 UX: 前端仍自動啟動盤中輪詢（純前端，不影響後端 cron/email）
+          //    原因：stock-app 是 demo 性質，預設想看到「盤中即時監控」運作
+          //    後端 OFF 仍然能 scan 個股訊號，只是不寄信
+          //    想真正停止，按右上角「停止監控」按鈕即可
+          if (isTradingHours()) {
+            console.log("[監控] 後端 cron 已停用，但前端仍啟動本機輪詢（盤中）");
+            _startMonitorIfNotRunning();
+          } else {
+            console.log("[監控] 後端 cron 已停用，等待開盤自動輪詢...");
+            _scheduleNextCheck();
+          }
         }
       })
       .catch(function(e) {
