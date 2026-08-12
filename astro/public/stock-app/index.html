@@ -2307,6 +2307,12 @@ function _mergeAndSetMarkers(){
   if (!candleSeries) return;
   var ev = _showEventMarkers ? (_eventMarkers||[]) : [];
   var all = (_baseMarkers||[]).concat(ev).concat(_macdDivMarkers||[]);
+  // ★ 2026-08-12 fix: 過濾掉 time 缺失或無效的 markers，避免 lightweight-charts setMarkers 拋 "Cannot read properties of undefined (reading 'year')"
+  all = all.filter(function(m){
+    if (!m || m.time == null) return false;
+    if (typeof m.time === 'object' && (m.time.year == null || m.time.month == null || m.time.day == null)) return false;
+    return true;
+  });
   all.sort(function(a,b){ return (a.time<b.time)?-1:((a.time>b.time)?1:0); });
   try { candleSeries.setMarkers(all); } catch(e) { console.warn("setMarkers 失敗:", e); }
 }
