@@ -792,17 +792,30 @@ async function markersRecordImpl(request) {
     try {
       // Normalize ALL rows first; skip ones with invalid type instead of failing the whole batch.
       const todayIso = new Date().toISOString().slice(0, 10);
+      // safeIsoDate: convert any value to ISO YYYY-MM-DD or return null. Handles
+      // numbers, numeric strings, ISO strings, Date objects, and bogus values.
+      const safeIsoDate = (v) => {
+        if (v == null) return null;
+        let d;
+        if (v instanceof Date) d = v;
+        else if (typeof v === "number") d = new Date(v * 1000);
+        else if (typeof v === "string") {
+          // numeric string → seconds; non-numeric string → try as ISO/native
+          if (/^\d+(\.\d+)?$/.test(v.trim())) d = new Date(Number(v) * 1000);
+          else d = new Date(v);
+        } else {
+          d = new Date(v);
+        }
+        if (!(d instanceof Date) || isNaN(d.getTime())) return null;
+        return d.toISOString().slice(0, 10);
+      };
       const rows = [];
       for (const it of items) {
-        const t = Number(it?.time);
-        let isoDate = null;
-        if (Number.isFinite(t) && t > 0) {
-          const d = new Date(t * 1000);
-          if (!isNaN(d.getTime())) isoDate = d.toISOString().slice(0, 10);
-        }
+        let isoDate = safeIsoDate(it?.time);
         if (!isoDate) isoDate = todayIso;  // fallback to today when time is missing/invalid
         const type = pickStr(it?.source || "auto", "auto");        // "trade" | "event" | "auto"
         const textMain = pickStr(it?.text);
+        const t = Number(it?.time);
         // 序列化額外欄位(close/ma5/10/20/60/position/shape/color)塞進 text
         const extra = {
           close:    it?.close  != null ? Number(it.close)  : null,
