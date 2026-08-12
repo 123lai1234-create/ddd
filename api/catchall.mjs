@@ -1922,74 +1922,88 @@ async function soldTooEarly(request) {
         scanned: 0, count: 0, rows: [],
         message: "watchlist 為空，請先在主系統新增自選股" });
     }
-    // 2. For each stock, fetch last `lookback` days of price bars
+    // 2. Single batched query: pull all bars in one shot
+    //    Use window function to get the last `lookback` bars per code
+    const codeList = wl.map(w => String(w.code ?? w[0] ?? "").trim()).filter(Boolean);
+    if (codeList.length === 0) {
+      return json({ ok: true, source: "stub", as_of: new Date().toISOString().slice(0, 10),
+        scanned: 0, count: 0, rows: [] });
+    }
+    const barRes = await q(
+      `WITH ranked AS (
+         SELECT symbol, trade_date::text AS d, close_price::numeric AS c,
+                ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY trade_date DESC) AS rn
+         FROM market_price_bars
+         WHERE asset_type = 'stock' AND close_price IS NOT NULL
+           AND symbol = ANY($1::text[])
+       )
+       SELECT symbol, d, c FROM ranked WHERE rn <= $2 ORDER BY symbol, d DESC`,
+      [codeList, lookback]
+    );
+    const allBars = barRes.rows || [];
+    // Group by code
+    const byCode = new Map();
+    for (const b of allBars) {
+      const sym = String(b.symbol ?? b[0] ?? "").trim();
+      const d   = String(b.d ?? b[1] ?? "").trim();
+      const c   = Number(b.c ?? b[2]);
+      if (!byCode.has(sym)) byCode.set(sym, []);
+      byCode.get(sym).push({ d, c });
+    }
+    // 3. For each stock, compute MA + check sold-too-early
     const hits = [];
     let asOf = null;
-    for (const w of wl) {
-      // q() returns object-mode rows by default in edge runtime
-      const code = String(w.code ?? w[0] ?? "").trim();
-      const name = String(w.name ?? w[1] ?? "").trim();
-      if (!code) continue;
-      const barRes = await q(
-        `SELECT trade_date::text, close_price
-         FROM market_price_bars
-         WHERE symbol = $1 AND asset_type = 'stock' AND close_price IS NOT NULL
-         ORDER BY trade_date DESC LIMIT $2`,
-        [code, lookback]
-      );
-      const bars = barRes.rows || [];
+    const nameByCode = new Map(wl.map(w => [String(w.code ?? w[0] ?? "").trim(), String(w.name ?? w[1] ?? "").trim()]));
+    for (const [code, bars] of byCode) {
       if (bars.length < 25) continue; // need at least MA20 + buffer
       // bars is DESC; reverse to ASC for MA calculation
-      const series = bars.slice().reverse().map(b => ({
-        d: b.trade_date ?? b[0],
-        c: Number(b.close_price ?? b[1]),
-      }));
+      const series = bars.slice().reverse();
       // MA helper
-      const ma = (arr, n) => {
-        if (arr.length < n) return null;
-        const slice = arr.slice(-n);
+      const ma = (n) => {
+        if (series.length < n) return null;
+        const slice = series.slice(-n);
         return slice.reduce((s, x) => s + x.c, 0) / n;
       };
-      // Annotate each bar with MA5/10/20
-      const enriched = series.map((b, i) => ({
-        d: b.d,
-        c: b.c,
-        ma5: i >= 4 ? ma(series.slice(0, i + 1), 5) : null,
-        ma10: i >= 9 ? ma(series.slice(0, i + 1), 10) : null,
-        ma20: i >= 19 ? ma(series.slice(0, i + 1), 20) : null,
-      }));
-      const last = enriched[enriched.length - 1];
-      if (!last.ma20) continue;
+      // Last bar
+      const last = series[series.length - 1];
+      const lastMa5  = ma(5);
+      const lastMa10 = ma(10);
+      const lastMa20 = ma(20);
+      if (!lastMa20) continue;
       if (!asOf || last.d > asOf) asOf = last.d;
       // Check: currently above all 3 MAs
-      const aboveAll = last.c > last.ma5 && last.c > last.ma10 && last.c > last.ma20;
+      const aboveAll = last.c > lastMa5 && last.c > lastMa10 && last.c > lastMa20;
       if (!aboveAll) continue;
       // Find the most recent day in last `days` where close was below MA20
-      const recentSlice = enriched.slice(-days);
-      let sellBar = null;
+      const recentSlice = series.slice(-days);
+      let sellIdx = -1;
       for (let i = recentSlice.length - 2; i >= 0; i--) {
-        const b = recentSlice[i];
-        if (b.ma20 != null && b.c < b.ma20) { sellBar = b; break; }
+        // compute MA20 for this bar
+        const upto = series.slice(0, series.length - recentSlice.length + i + 1);
+        if (upto.length < 20) continue;
+        const ma20_i = upto.slice(-20).reduce((s, x) => s + x.c, 0) / 20;
+        if (recentSlice[i].c < ma20_i) { sellIdx = i; break; }
       }
-      if (!sellBar) continue; // never sold/broke MA20 in window
-      // Find the recent low (since sellBar)
-      const sinceSell = enriched.slice(enriched.indexOf(sellBar));
-      const lowBar = sinceSell.reduce((min, b) => b.c < min.c ? b : min, sinceSell[0]);
+      if (sellIdx < 0) continue;
+      // Find the recent low (since sellIdx)
+      const sinceSell = recentSlice.slice(sellIdx);
+      let lowBar = sinceSell[0];
+      for (const b of sinceSell) if (b.c < lowBar.c) lowBar = b;
       const gain = ((last.c - lowBar.c) / lowBar.c) * 100;
       if (gain < 3) continue; // not a meaningful bounce
-      // Days since "sell" (below MA20) signal
-      const daysSince = enriched.length - 1 - enriched.indexOf(sellBar);
+      const daysSince = recentSlice.length - 1 - sellIdx;
       hits.push({
-        code, name,
-        sell_date: sellBar.d,
-        sell_price: +sellBar.c.toFixed(2),
+        code,
+        name: nameByCode.get(code) || code,
+        sell_date: recentSlice[sellIdx].d,
+        sell_price: +recentSlice[sellIdx].c.toFixed(2),
         current_price: +last.c.toFixed(2),
         gain_since_sell_pct: +gain.toFixed(2),
         low_date: lowBar.d,
         low_price: +lowBar.c.toFixed(2),
-        ma5: +last.ma5.toFixed(2),
-        ma10: +last.ma10.toFixed(2),
-        ma20: +last.ma20.toFixed(2),
+        ma5: +lastMa5.toFixed(2),
+        ma10: +lastMa10.toFixed(2),
+        ma20: +lastMa20.toFixed(2),
         days_since_sell: daysSince,
       });
     }
