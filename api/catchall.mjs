@@ -1,4 +1,4 @@
-﻿// api/[catchall].mjs — mega edge-runtime router for all /api/* endpoints.
+// api/[catchall].mjs — mega edge-runtime router for all /api/* endpoints.
 // Vercel catch-all: any /api/<anything> hits this file, dispatched via small table.
 // Uses Neon HTTP SQL API (no pg driver). Edge runtime for fast cold start.
 // 2026-08-10 build marker (force Vercel edge function rebuild — cache stuck on polish-final version)
@@ -765,18 +765,64 @@ async function intradayScanToggle(request) {
 async function markersRecordImpl(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const code = pickStr(body?.code).trim();
   if (!/^\d{4,6}$/.test(code)) return json({ error: "invalid code" }, { status: 400 });
-  try {
-    await q(
-      `INSERT INTO markers (code, date, type, text, price) VALUES ($1, $2, $3, $4, $5)`,
-      [code, pickStr(body?.date), pickStr(body?.type ?? "note", "note"), pickStr(body?.text), Number(body?.price) || null]
-    );
-    return json({ ok: true, code });
-  } catch (e) {
-    return json({ error: e?.message }, { status: 500 });
+
+  // 兩種寫入模式:
+  //   A) 管理員手動:body 帶 password + 單筆 (date/type/text/price)    → 需要密碼
+  //   B) 前端自動記錄:body.items[] 陣列                                → 免密碼(公開頁面事件記錄)
+  const items = Array.isArray(body?.items) ? body.items : null;
+  const hasPassword = operatorOk(body?.password);
+
+  // 模式 A:管理員手動記錄(向後相容)
+  if (!items && hasPassword) {
+    try {
+      await q(
+        `INSERT INTO markers (code, date, type, text, price) VALUES ($1, $2, $3, $4, $5)`,
+        [code, pickStr(body?.date), pickStr(body?.type ?? "note", "note"), pickStr(body?.text), Number(body?.price) || null]
+      );
+      return json({ ok: true, code, mode: "single", inserted: 1 });
+    } catch (e) {
+      return json({ error: e?.message }, { status: 500 });
+    }
   }
+
+  // 模式 B:前端自動記錄 markers(免密碼)
+  if (items && items.length > 0) {
+    try {
+      let inserted = 0;
+      for (const it of items) {
+        const t = Number(it?.time) || 0;
+        const isoDate = t > 0 ? new Date(t * 1000).toISOString().slice(0, 10) : null;
+        const type = pickStr(it?.source || "auto", "auto");        // "trade" | "event" | "auto"
+        const textMain = pickStr(it?.text);
+        // 序列化額外欄位(close/ma5/10/20/60/position/shape/color)塞進 text
+        const extra = {
+          close:    it?.close  != null ? Number(it.close)  : null,
+          ma5:      it?.ma5    != null ? Number(it.ma5)    : null,
+          ma10:     it?.ma10   != null ? Number(it.ma10)   : null,
+          ma20:     it?.ma20   != null ? Number(it.ma20)   : null,
+          ma60:     it?.ma60   != null ? Number(it.ma60)   : null,
+          position: pickStr(it?.position, ""),
+          shape:    pickStr(it?.shape, ""),
+          color:    pickStr(it?.color, ""),
+          time:     t || null,
+        };
+        const text = textMain + " || " + JSON.stringify(extra);
+        await q(
+          `INSERT INTO markers (code, date, type, text, price) VALUES ($1, $2, $3, $4, $5)`,
+          [code, isoDate, type, text, null]
+        );
+        inserted++;
+      }
+      return json({ ok: true, code, mode: "batch", inserted });
+    } catch (e) {
+      return json({ error: e?.message }, { status: 500 });
+    }
+  }
+
+  // 都沒有 → 提示用法
+  return json({ error: "missing password (single mode) or items[] (batch mode)" }, { status: 400 });
 }
 async function markersRecord(request) { return markersRecordImpl(request); }
 async function markersHistory(request) {
