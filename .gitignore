@@ -8,6 +8,7 @@ __pycache__/
 
 outputs/*.pt
 .vercel
+.vercel_python_packages/
 .netlify/
 .wrangler/
 .railway/
@@ -15,3 +16,4 @@ outputs/*.pt
 .env*.local
 .hftoken
 .env*
+.trash-nested-git/
