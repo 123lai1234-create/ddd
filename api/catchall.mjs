@@ -790,10 +790,17 @@ async function markersRecordImpl(request) {
   // 模式 B:前端自動記錄 markers(免密碼)
   if (items && items.length > 0) {
     try {
-      let inserted = 0;
+      // Normalize ALL rows first; skip ones with invalid type instead of failing the whole batch.
+      const todayIso = new Date().toISOString().slice(0, 10);
+      const rows = [];
       for (const it of items) {
-        const t = Number(it?.time) || 0;
-        const isoDate = t > 0 ? new Date(t * 1000).toISOString().slice(0, 10) : null;
+        const t = Number(it?.time);
+        let isoDate = null;
+        if (Number.isFinite(t) && t > 0) {
+          const d = new Date(t * 1000);
+          if (!isNaN(d.getTime())) isoDate = d.toISOString().slice(0, 10);
+        }
+        if (!isoDate) isoDate = todayIso;  // fallback to today when time is missing/invalid
         const type = pickStr(it?.source || "auto", "auto");        // "trade" | "event" | "auto"
         const textMain = pickStr(it?.text);
         // 序列化額外欄位(close/ma5/10/20/60/position/shape/color)塞進 text
@@ -806,18 +813,31 @@ async function markersRecordImpl(request) {
           position: pickStr(it?.position, ""),
           shape:    pickStr(it?.shape, ""),
           color:    pickStr(it?.color, ""),
-          time:     t || null,
+          time:     Number.isFinite(t) && t > 0 ? t : null,
         };
         const text = textMain + " || " + JSON.stringify(extra);
-        await q(
-          `INSERT INTO markers (code, date, type, text, price) VALUES ($1, $2, $3, $4, $5)`,
-          [code, isoDate, type, text, null]
-        );
-        inserted++;
+        rows.push([code, isoDate, type, text, null]);
       }
-      return json({ ok: true, code, mode: "batch", inserted });
+      if (rows.length === 0) {
+        return json({ ok: true, code, mode: "batch", inserted: 0, message: "no valid rows" });
+      }
+      // Bulk INSERT via UNNEST JOIN (single round-trip, fast even for 50+ items).
+      const symbols   = rows.map(r => r[0]);
+      const dates     = rows.map(r => r[1]);
+      const types     = rows.map(r => r[2]);
+      const texts     = rows.map(r => r[3]);
+      const prices    = rows.map(r => r[4]);
+      const sql = `
+        INSERT INTO markers (code, date, type, text, price)
+        SELECT s, d::date, t, txt, p
+        FROM UNNEST(
+          $1::text[], $2::date[], $3::text[], $4::text[], $5::numeric[]
+        ) AS x(s, d, t, txt, p)
+        ON CONFLICT DO NOTHING`;
+      await q(sql, [symbols, dates, types, texts, prices]);
+      return json({ ok: true, code, mode: "batch", inserted: rows.length });
     } catch (e) {
-      return json({ error: e?.message }, { status: 500 });
+      return json({ error: e?.message, hint: "batch insert failed; check code/time/format" }, { status: 500 });
     }
   }
 
