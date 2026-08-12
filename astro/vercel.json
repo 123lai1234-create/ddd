@@ -42,6 +42,12 @@
       "destination": "/api/healthz"
     }
   ],
+  "routes": [
+    {
+      "src": "/api/.*",
+      "dest": "/api/catchall"
+    }
+  ],
   "redirects": [
     {
       "source": "/about_me.html",
