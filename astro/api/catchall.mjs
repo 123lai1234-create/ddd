@@ -435,7 +435,9 @@ async function indexKlines(request, ticker) {
       rows = dbRes.rows;
     }
     if (!rows.length) return json({ error: "查無資料 (proxy " + proxy + ")", ticker }, { status: 404 });
-    const asc = rows.slice().reverse();
+    // 2026-08-13: Yahoo 資料是 ascending (oldest first)，DB 資料是 descending (newest first)
+    //             用 actualSource 判斷要不要再 reverse
+    const asc = (actualSource === "yahoo_chart") ? rows : rows.slice().reverse();
     const candles = asc.map((r) => {
       const isoDate = String(r.trade_date).slice(0, 10);
       const [y, m, d] = isoDate.split("-").map(Number);
