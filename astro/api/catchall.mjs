@@ -390,13 +390,27 @@ async function indexKlines(request, ticker) {
     const gapLookback = Math.min(180, Math.max(10, parseInt(u.searchParams.get("lookback") || "60", 10) || 60));
     const minGap      = Math.max(0.1, parseFloat(u.searchParams.get("min_gap") || "0.3") || 0.3);
     let rows;
+    let yahooDebug = null;
     if (isTwii) {
-      const yahooRows = await fetchYahooCandlesAsRows("^TWII", "1y");
-      if (yahooRows && yahooRows.length > 0) {
-        rows = yahooRows;
-        actualSource = "yahoo_chart";
-      } else {
-        // Yahoo 失敗 → fallback DB 2330
+      try {
+        const yahooRows = await fetchYahooCandlesAsRows("^TWII", "1y");
+        yahooDebug = yahooRows ? `OK len=${yahooRows.length}` : "null returned";
+        if (yahooRows && yahooRows.length > 0) {
+          rows = yahooRows;
+          actualSource = "yahoo_chart";
+        } else {
+          // Yahoo 失敗 → fallback DB 2330
+          const dbRes = await q(
+            `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
+             FROM market_price_bars
+             WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
+             ORDER BY trade_date DESC LIMIT 200`,
+            [proxy]
+          );
+          rows = dbRes.rows;
+        }
+      } catch (ye) {
+        yahooDebug = `THROW: ${ye?.message}`;
         const dbRes = await q(
           `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
            FROM market_price_bars
@@ -530,7 +544,7 @@ async function indexKlines(request, ticker) {
     };
 
     return json({
-      ok: true, source: actualSource, code: ticker, proxy, build_marker: buildMarker, count: candles.length, candles, volumes,
+      ok: true, source: actualSource, code: ticker, proxy, build_marker: buildMarker, yahoo_debug: yahooDebug, count: candles.length, candles, volumes,
       ma: {
         ma5: ma5Series,
         ma10: ma10Series,
