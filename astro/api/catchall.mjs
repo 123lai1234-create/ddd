@@ -317,27 +317,105 @@ async function stockKlines(request, ticker) {
 
 // Index klines: returns same shape as /api/stock/<ticker> for index symbols
 // (^TWII, ^TWOII, etc.) — since we don't have index data in market_price_bars,
-// we use 2330 (TSMC) as a proxy. The frontend page renders this in TWII/大盤 mode.
+// we use 2330 (TSMC) as a fallback proxy. For ^TWII we try Yahoo Finance first
+// (real TAIEX data, free, no key needed). The frontend page renders this in TWII/大盤 mode.
 //
 // 2026-08-13: 新增 summary / gaps / dipSignal / markers 欄位（前端 loadIndexChart 期待這 4 個）
 //   - summary: 大盤狀態面板（openGapUp/Down, bias, nearestSupport/Resist）
 //   - gaps: 缺口清單面板（type, gap_bottom/top, gap_pct, filled, fill_date）
 //   - dipSignal: 抄底訊號面板（triggered, drop_pct, is_vol_max, has_bearish_gap）
 //   - markers: 個股交易訊號 markers 不適用於指數（資料是 2330 proxy），保持空 array
+//
+// 2026-08-13: ^TWII 改用 Yahoo Finance ^TWII 真實指數（取代 2330 proxy）。Yahoo 5d/min rate limit
+//   但 Vercel edge IP 散佈，user 量低不會撞。失敗 fallback 2330。
+
+// Helper: 抓 Yahoo Finance 指數/個股日 K，回傳 row-shaped 陣列
+// 形狀對齊 Neon `market_price_bars` 查詢結果：每個元素 {trade_date: "YYYY-MM-DD", open_price, high_price, low_price, close_price, volume, change_value}
+async function fetchYahooCandlesAsRows(symbol, range = "1y") {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=${range}`;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const r = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; donttalk-stocks/1.0)" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    if (!r.ok) return null;
+    const j = await r.json();
+    const result = j?.chart?.result?.[0];
+    if (!result) return null;
+    const ts = result.timestamp || [];
+    const q = result.indicators?.quote?.[0] || {};
+    const closes = q.close || [];
+    const opens = q.open || [];
+    const highs = q.high || [];
+    const lows = q.low || [];
+    const vols = q.volume || [];
+    const prevClose = Number(result.meta?.chartPreviousClose) || 0;
+    const out = [];
+    let prevC = prevClose;
+    for (let i = 0; i < ts.length; i++) {
+      const close = closes[i];
+      const open = opens[i];
+      if (!Number.isFinite(close) || !Number.isFinite(open)) { prevC = closes[i - 1] || prevC; continue; }
+      const isoDate = new Date(ts[i] * 1000).toISOString().slice(0, 10);
+      const change = Number.isFinite(prevC) ? close - prevC : 0;
+      out.push({
+        trade_date: isoDate,
+        open_price: open,
+        high_price: Number.isFinite(highs[i]) ? highs[i] : open,
+        low_price: Number.isFinite(lows[i]) ? lows[i] : open,
+        close_price: close,
+        volume: Number.isFinite(vols[i]) ? vols[i] : 0,
+        change_value: change,
+      });
+      prevC = close;
+    }
+    return out.length > 0 ? out : null;
+  } catch (e) {
+    clearTimeout(tid);
+    return null;
+  }
+}
+
 async function indexKlines(request, ticker) {
-  // Proxy symbol (TSMC for any index request; can refine later)
-  const proxy = "2330";
+  // 2026-08-13: ^TWII 用 Yahoo Finance 真實指數；^TWOII 跟其他 fallback 2330 (Yahoo 沒 ^TWOII)
+  const isTwii = ticker === "^TWII";
+  const proxy = "2330";  // fallback proxy (TSMC 當大盤近似)
+  let actualSource = "db";
   try {
     const u = urlOf(request);
     const gapLookback = Math.min(180, Math.max(10, parseInt(u.searchParams.get("lookback") || "60", 10) || 60));
     const minGap      = Math.max(0.1, parseFloat(u.searchParams.get("min_gap") || "0.3") || 0.3);
-    const { rows } = await q(
-      `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
-       FROM market_price_bars
-       WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
-       ORDER BY trade_date DESC LIMIT 200`,
-      [proxy]
-    );
+    let rows;
+    if (isTwii) {
+      const yahooRows = await fetchYahooCandlesAsRows("^TWII", "1y");
+      if (yahooRows && yahooRows.length > 0) {
+        rows = yahooRows;
+        actualSource = "yahoo_chart";
+      } else {
+        // Yahoo 失敗 → fallback DB 2330
+        const dbRes = await q(
+          `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
+           FROM market_price_bars
+           WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
+           ORDER BY trade_date DESC LIMIT 200`,
+          [proxy]
+        );
+        rows = dbRes.rows;
+      }
+    } else {
+      // ^TWOII / 其他 → 直接用 2330 proxy
+      const dbRes = await q(
+        `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
+         FROM market_price_bars
+         WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
+         ORDER BY trade_date DESC LIMIT 200`,
+        [proxy]
+      );
+      rows = dbRes.rows;
+    }
     if (!rows.length) return json({ error: "查無資料 (proxy " + proxy + ")", ticker }, { status: 404 });
     const asc = rows.slice().reverse();
     const candles = asc.map((r) => {
@@ -451,7 +529,7 @@ async function indexKlines(request, ticker) {
     };
 
     return json({
-      ok: true, source: "db", code: ticker, proxy, count: candles.length, candles, volumes,
+      ok: true, source: actualSource, code: ticker, proxy, count: candles.length, candles, volumes,
       ma: {
         ma5: ma5Series,
         ma10: ma10Series,
@@ -461,7 +539,7 @@ async function indexKlines(request, ticker) {
       },
       latest: {
         code: ticker,
-        name: null,
+        name: ticker === "^TWII" ? "加權指數" : (ticker === "^TWOII" ? "櫃買指數" : null),
         close: last.close,
         change: r2(last.close - prev.close),
         changePct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
