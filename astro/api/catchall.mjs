@@ -299,7 +299,6 @@ async function stockKlines(request, ticker) {
         change: r2(last.close - prev.close),
         changePct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
         change_pct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
-        change_pct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
         date: last.date,
         time_iso: last.time_iso,
         ma5: lastMa5,
@@ -381,7 +380,6 @@ async function indexKlines(request, ticker) {
         close: last.close,
         change: r2(last.close - prev.close),
         changePct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
-        change_pct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
         change_pct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
         date: last.date,
         time_iso: last.time_iso,
@@ -666,7 +664,7 @@ async function newsByCode(request, code) {
 async function newsListImpl(request, { recordType = "news", limit = 20, tag = null } = {}) {
   try {
     const u = urlOf(request);
-    const lim = Math.min(200, Math.max(1, parseInt(u.searchParams.get("limit") || limit, 10) || limit));
+    const lim = Math.min(200, Math.max(1, parseInt(String(u.searchParams.get("limit") || limit), 10) || Number(limit)));
     const { rows } = await q(
       `SELECT title, summary_text, record_url, published_at, fetched_at, query_term
        FROM knowledge_library
@@ -1055,9 +1053,10 @@ async function fibonacciFor(request, code) {
     const signals = [];
     for (const [label, price] of [["38.2%", fib382], ["50.0%", fib500], ["61.8%", fib618]]) {
       // "near" = within 1.5% of level; "crossdown" = crossed down recently
-      const distPct = Math.abs((lastClose - price) / price) * 100;
-      if (distPct < 1.5 || (lastClose < price && candles[candles.length - 2]?.close >= price)) {
-        signals.push({ level: label, type: lastClose < price ? "crossdown" : "near", price: r2(price), volume: lastVol });
+      const pNum = Number(price);
+      const distPct = pNum > 0 ? Math.abs((lastClose - pNum) / pNum) * 100 : 0;
+      if (distPct < 1.5 || (lastClose < pNum && candles[candles.length - 2]?.close >= pNum)) {
+        signals.push({ level: label, type: lastClose < pNum ? "crossdown" : "near", price: r2(pNum), volume: lastVol });
       }
     }
     return json({
@@ -2607,7 +2606,7 @@ async function etfPivotTurnover(request) {
     HAVING MAX(CASE WHEN rn = 1 THEN weight_pct END) IS NOT NULL
        AND MAX(CASE WHEN rn = (SELECT MAX(rn) FROM ranked r2 WHERE r2.etf_code = ranked.etf_code AND r2.symbol = ranked.symbol) THEN weight_pct END) IS NOT NULL`;
     const params = [String(lookback)];
-    if (etfs.length) params.push(etfs);
+    if (etfs.length) params.push(etfs.join(","));
     const { rows } = await q(sql, params);
     const turnover = rows.map((r) => ({
       etf_code: r.etf_code, symbol: r.symbol,
@@ -3037,7 +3036,7 @@ async function loadOverseasIndices(request) {
     // Rate-limit Yahoo (no official limit, but be nice)
     await new Promise((res) => setTimeout(res, 400));
   }
-  const okCount = results.filter((r) => r.ok).reduce((s, r) => s + (r.count || 0), 0);
+  const okCount = results.map(r => ({ok: r.ok, count: (r && r.count) || 0})).filter(x => x.ok).reduce((s, x) => s + x.count, 0);
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
@@ -3111,7 +3110,7 @@ async function loadMacroYields(request) {
     }
     await new Promise((res) => setTimeout(res, 400));
   }
-  const okCount = results.filter((r) => r.ok).reduce((s, r) => s + (r.count || 0), 0);
+  const okCount = results.map(r => ({ok: r.ok, count: (r && r.count) || 0})).filter(x => x.ok).reduce((s, x) => s + x.count, 0);
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
@@ -3300,7 +3299,7 @@ async function loadIndexInstitutional(request) {
     }
     await new Promise((res) => setTimeout(res, 300));
   }
-  const okCount = results.filter((r) => r.ok).reduce((s, r) => s + (r.count || 0), 0);
+  const okCount = results.map(r => ({ok: r.ok, count: (r && r.count) || 0})).filter(x => x.ok).reduce((s, x) => s + x.count, 0);
   return json({ ok: true, source: "loader", inserted: okCount, days, results });
 }
 
@@ -3462,7 +3461,7 @@ async function loadBigHoldersFinMind(request) {
     }
     await new Promise((res) => setTimeout(res, 600));
   }
-  const inserted = results.filter((r) => r.ok).reduce((s, r) => s + (r.inserted || 0), 0);
+  const inserted = results.map(r => ({ok: r.ok, inserted: (r && r.inserted) || 0})).filter(x => x.ok).reduce((s, x) => s + x.inserted, 0);
   return json({ ok: true, source: "finmind", scanned: codes.length, inserted, results });
 }
 
@@ -3544,7 +3543,7 @@ async function loadFinancialReportsFinMind(request) {
     }
     await new Promise((res) => setTimeout(res, 600));
   }
-  const inserted = results.filter((r) => r.ok).reduce((s, r) => s + (r.inserted || 0), 0);
+  const inserted = results.map(r => ({ok: r.ok, inserted: (r && r.inserted) || 0})).filter(x => x.ok).reduce((s, x) => s + x.inserted, 0);
   return json({ ok: true, source: "finmind", scanned: codes.length, inserted, results });
 }
 
@@ -3780,7 +3779,7 @@ async function loadSectors(request) {
           if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
             meta = parsed;
           } else if (Array.isArray(parsed)) {
-            meta = { _legacy: parsed };
+            const _legacy = parsed; meta = { _legacy: _legacy, industry: "", sector_source: "", updated_at: "" };;
           }
         } catch {}
       }
@@ -4212,7 +4211,7 @@ async function loadRevenue(request) {
       await new Promise((res) => setTimeout(res, 1500));
     }
   }
-  const okCount = results.filter((r) => r.ok).reduce((s, r) => s + (r.count || 0), 0);
+  const okCount = results.map(r => ({ok: r.ok, count: (r && r.count) || 0})).filter(x => x.ok).reduce((s, x) => s + x.count, 0);
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
@@ -4966,6 +4965,20 @@ const TABLE = [
   ["GET",  /^\/min_hold_overrides\/?$/,      placeholder.bind(null, "min_hold_overrides", "per-stock minimum hold days override; empty = use default")],
 ];
 
+const CACHEABLE_RE = /^\/(stock|instruments|quote|chips|macro|index|movers|industries|list\/)/;
+// Read-only public lookups are safe to cache at the Vercel edge for 60s and
+// serve stale-while-revalidate for 10 minutes afterward. Post requests and
+// anything with user-specific mutations stay uncached.
+function maybeCacheHeaders(path, method, response) {
+  if (method !== "GET") return response;
+  if (!CACHEABLE_RE.test("/" + path)) return response;
+  // Don't cache error responses (so users see fresh errors).
+  if (response.status >= 400) return response;
+  const headers = new Headers(response.headers);
+  headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 export default async function handler(request) {
   try {
     const u = new URL(request.url);
@@ -4981,7 +4994,8 @@ export default async function handler(request) {
       const m = re.exec(fullPath);
       if (m) {
         const args = m.slice(1);
-        return await fn(request, ...args);
+        const res = await fn(request, ...args);
+        return maybeCacheHeaders(path, request.method, res);
       }
     }
     return json({ ok: false, error: "not found", path: "/api/" + path, method: request.method }, { status: 404 });

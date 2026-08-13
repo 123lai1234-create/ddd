@@ -3676,7 +3676,14 @@ function fallbackCopy(text, cb) {
   } catch (e) { cb(false); }
 }
 
+// 2026-08-13 perf: 250ms debounce — 避免 100+ 股票清單每次按鍵都 O(N×M) 重算 DOM style
+var _filterStocksTimer = null;
 function filterStocks() {
+  if (_filterStocksTimer) clearTimeout(_filterStocksTimer);
+  _filterStocksTimer = setTimeout(_filterStocksNow, 250);
+}
+function _filterStocksNow() {
+  _filterStocksTimer = null;
   var q=document.getElementById("searchInput").value.toLowerCase();
   var items=document.querySelectorAll(".stock-item");
   for (var i=0;i<items.length;i++) {
