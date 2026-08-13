@@ -380,12 +380,14 @@ async function fetchYahooCandlesAsRows(symbol, range = "1y") {
 }
 
 async function indexKlines(request, ticker) {
-  // 2026-08-13: ^TWII 用 Yahoo Finance 真實指數；^TWOII 跟其他 fallback 2330 (Yahoo 沒 ^TWOII)
-  const isTwii = ticker === "^TWII";
+  // 2026-08-13: Vercel 路由 regex 沒 decodeURL，ticker 拿到的是 "%5ETWII" 而不是 "^TWII"
+  //             先 decode 再比對
+  const decodedTicker = (() => { try { return decodeURIComponent(ticker); } catch { return ticker; } })();
+  const isTwii = decodedTicker === "^TWII";
   const proxy = "2330";  // fallback proxy (TSMC 當大盤近似)
   let actualSource = "db";
   const buildMarker = "yahoo-fetcher-2026-08-13-v1";  // 驗證部署有沒有拿到新 code
-  const debugTicker = `ticker=${JSON.stringify(ticker)} len=${ticker?.length} isTwii=${isTwii}`;
+  const debugTicker = `raw=${JSON.stringify(ticker)} decoded=${JSON.stringify(decodedTicker)} isTwii=${isTwii}`;
   try {
     const u = urlOf(request);
     const gapLookback = Math.min(180, Math.max(10, parseInt(u.searchParams.get("lookback") || "60", 10) || 60));
@@ -545,7 +547,7 @@ async function indexKlines(request, ticker) {
     };
 
     return json({
-      ok: true, source: actualSource, code: ticker, proxy, build_marker: buildMarker, yahoo_debug: yahooDebug, debug_ticker: debugTicker, count: candles.length, candles, volumes,
+      ok: true, source: actualSource, code: decodedTicker, proxy, build_marker: buildMarker, yahoo_debug: yahooDebug, debug_ticker: debugTicker, count: candles.length, candles, volumes,
       ma: {
         ma5: ma5Series,
         ma10: ma10Series,
@@ -554,8 +556,8 @@ async function indexKlines(request, ticker) {
         ma240: ma240Series,
       },
       latest: {
-        code: ticker,
-        name: ticker === "^TWII" ? "加權指數" : (ticker === "^TWOII" ? "櫃買指數" : null),
+        code: decodedTicker,
+        name: decodedTicker === "^TWII" ? "加權指數" : (decodedTicker === "^TWOII" ? "櫃買指數" : null),
         close: last.close,
         change: r2(last.close - prev.close),
         changePct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
