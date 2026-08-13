@@ -375,6 +375,11 @@ async function indexKlines(request, ticker) {
         ma60: ma60Series,
         ma240: ma240Series,
       },
+      // ★ 2026-08-13 fix: 補齊前端需要的欄位，避免前端讀 .map / .summary 時 throw
+      markers: [],
+      summary: null,
+      gaps: [],
+      dipSignal: {},
       latest: {
         code: ticker,
         name: null,

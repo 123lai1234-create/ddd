@@ -318,10 +318,19 @@ async function stockKlines(request, ticker) {
 // Index klines: returns same shape as /api/stock/<ticker> for index symbols
 // (^TWII, ^TWOII, etc.) — since we don't have index data in market_price_bars,
 // we use 2330 (TSMC) as a proxy. The frontend page renders this in TWII/大盤 mode.
+//
+// 2026-08-13: 新增 summary / gaps / dipSignal / markers 欄位（前端 loadIndexChart 期待這 4 個）
+//   - summary: 大盤狀態面板（openGapUp/Down, bias, nearestSupport/Resist）
+//   - gaps: 缺口清單面板（type, gap_bottom/top, gap_pct, filled, fill_date）
+//   - dipSignal: 抄底訊號面板（triggered, drop_pct, is_vol_max, has_bearish_gap）
+//   - markers: 個股交易訊號 markers 不適用於指數（資料是 2330 proxy），保持空 array
 async function indexKlines(request, ticker) {
   // Proxy symbol (TSMC for any index request; can refine later)
   const proxy = "2330";
   try {
+    const u = urlOf(request);
+    const gapLookback = Math.min(180, Math.max(10, parseInt(u.searchParams.get("lookback") || "60", 10) || 60));
+    const minGap      = Math.max(0.1, parseFloat(u.searchParams.get("min_gap") || "0.3") || 0.3);
     const { rows } = await q(
       `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
        FROM market_price_bars
@@ -365,6 +374,82 @@ async function indexKlines(request, ticker) {
     const volSoFar = candles.slice(-21, -1).map((c) => c.volume);
     const maxPrevVol = volSoFar.length ? Math.max(...volSoFar) : 0;
     const isVolMax = last.volume > maxPrevVol;
+
+    // ★ 缺口偵測（與 computeGapsForSymbol 共用邏輯，但用 inline candles 不重查 DB）
+    const gapStart = Math.max(1, candles.length - gapLookback);
+    const gaps = [];
+    for (let i = 1; i < candles.length; i++) {
+      if (i < gapStart) continue;
+      const cPrev = candles[i - 1];
+      const cCur  = candles[i];
+      const gap_pct = ((cCur.open - cPrev.close) / cPrev.close) * 100;
+      if (Math.abs(gap_pct) < minGap) continue;
+      const isUp = gap_pct > 0;
+      const gap_bottom = isUp ? cPrev.close : cCur.open;
+      const gap_top    = isUp ? cCur.open   : cPrev.close;
+      let filled = false, fillDate = null;
+      for (let j = i + 1; j < candles.length; j++) {
+        const later = candles[j];
+        if (isUp ? later.low <= gap_bottom : later.high >= gap_top) {
+          filled = true; fillDate = later.date; break;
+        }
+      }
+      const gapKind = Math.abs(gap_pct) >= 3 ? "runaway" : "normal";
+      gaps.push({
+        date: cCur.date,
+        type: isUp ? "up" : "down",
+        gapKind,
+        gap_bottom: r2(gap_bottom),
+        gap_top: r2(gap_top),
+        gap_pct: r2(Math.abs(gap_pct)),
+        filled,
+        fill_date: fillDate,
+      });
+    }
+    gaps.reverse();
+    const openUpGaps    = gaps.filter((g) => g.type === "up"   && !g.filled).length;
+    const openDownGaps  = gaps.filter((g) => g.type === "down" && !g.filled).length;
+    const nearestResist  = gaps.filter((g) => g.type === "up"   && !g.filled).map((g) => g.gap_bottom).pop() ?? null;
+    const nearestSupport = gaps.filter((g) => g.type === "down" && !g.filled).map((g) => g.gap_top).pop() ?? null;
+    const bias = openUpGaps > openDownGaps ? "bullish" : (openDownGaps > openUpGaps ? "bearish" : "neutral");
+    const summary = {
+      latestDate: last.date,
+      latestClose: r2(last.close),
+      bias,
+      nearestSupport: nearestSupport != null ? r2(nearestSupport) : null,
+      nearestResist:  nearestResist  != null ? r2(nearestResist)  : null,
+      openGapUp: openUpGaps,
+      openGapDown: openDownGaps,
+    };
+
+    // ★ 抄底訊號（dip signal）：3 條件 = 未回補向下缺口 + 近 7 日跌幅 ≥ 8% + 今日成交量為近 7 日最大
+    // 注意：candles 是 ascending（舊→新），所以最後一根是今天，倒數第 1 根是昨天
+    const dipLookback = 7;
+    const dipWindowAll  = candles.slice(-Math.min(dipLookback, candles.length));  // 最近 N 日含今日
+    const dipWindowPrev = candles.slice(-(Math.min(dipLookback, candles.length) + 1), -1);  // 最近 N 日不含今日
+    const firstClose7 = dipWindowAll.length ? dipWindowAll[0].close : last.close;
+    const todayVol    = last.volume;
+    const maxVol7d    = dipWindowAll.length  ? Math.max(...dipWindowAll.map((c)  => c.volume)) : 0;
+    const maxVol7dPrev = dipWindowPrev.length ? Math.max(...dipWindowPrev.map((c) => c.volume)) : 0;
+    // drop_pct 是「正值」表示下跌（前端 UI 顯示為 "-X%"）
+    const drop_pct = firstClose7 > 0 ? r2(((firstClose7 - last.close) / firstClose7) * 100) : 0;
+    const is_vol_max     = todayVol > 0 && todayVol >= maxVol7dPrev;
+    const has_bearish_gap = openDownGaps > 0;
+    const triggered = has_bearish_gap && drop_pct >= 8.0 && is_vol_max;
+    const dipSignal = {
+      triggered,
+      has_bearish_gap,
+      drop_pct,
+      is_vol_max,
+      today_vol: todayVol,
+      max_vol_7d: maxVol7d,
+      last_close: r2(last.close),
+      first_close: r2(firstClose7),
+      today_vol_yi: r2(todayVol / 1e8),
+      max_vol_7d_yi: r2(maxVol7d / 1e8),
+      lookback_days: dipLookback,
+    };
+
     return json({
       ok: true, source: "db", code: ticker, proxy, count: candles.length, candles, volumes,
       ma: {
@@ -391,6 +476,11 @@ async function indexKlines(request, ticker) {
         aboveAll,
         isVolMax,
       },
+      // ★ 2026-08-13: 新增四個欄位
+      markers: [],          // 個股交易訊號 markers（buy/sell signals）不適用於指數 proxy 資料，保持空 array
+      summary,              // 大盤狀態面板
+      gaps,                 // 缺口清單面板
+      dipSignal,            // 抄底訊號面板
     });
   } catch (e) {
     return json({ error: e?.message }, { status: 500 });
