@@ -3930,7 +3930,129 @@ async function loadMarketPrices(request) {
   }
 }
 
-// ── loadSectors: hardcoded TWSE 30-stock industry mapping → market_instruments ─
+// ── loadMarketPricesFinMind: FinMind TaiwanStockPrice → market_price_bars ──
+// 2026-08-13: backup source for 個股 OHLC (free, no token needed).
+// FinMind provides trading_money + trading_turnover which Yahoo Finance 沒有。
+// Per-stock API call (FinMind 不支援 batch via query string), parallel with 8-slot throttle.
+// Usage: GET /api/admin/load/finmind_price?code=2330
+//        GET /api/admin/load/finmind_price?codes=2330,2454,2317&days=120
+async function loadMarketPricesFinMind(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  const days = Math.min(500, Math.max(1, parseInt(u.searchParams.get("days") || body?.days || "120", 10) || 120));
+  // 決定要處理的 codes
+  let codes = [];
+  if (u.searchParams.get("code")) {
+    codes = [u.searchParams.get("code")];
+  } else if (u.searchParams.get("codes")) {
+    codes = u.searchParams.get("codes").split(",").map(s => s.trim()).filter(Boolean);
+  } else if (body?.codes && Array.isArray(body.codes)) {
+    codes = body.codes;
+  } else {
+    // 沒指定 → 拉 watchlist + etf_watchlist
+    const [wl, ew] = await Promise.all([
+      q(`SELECT code FROM watchlist`),
+      q(`SELECT code FROM etf_watchlist`),
+    ]);
+    for (const r of (wl.rows || [])) codes.push(String(r.code ?? r[0]));
+    for (const r of (ew.rows || [])) codes.push(String(r.code ?? r[0]));
+  }
+  if (codes.length === 0) {
+    return json({ ok: true, source: "stub", count: 0, message: "沒有 code 可處理" });
+  }
+  // 計算 start_date
+  const endDate = new Date();
+  const startDate = new Date(endDate.getTime() - days * 86400000);
+  const fmt = (d) => d.toISOString().slice(0, 10);
+  const startStr = fmt(startDate);
+  const endStr = fmt(endDate);
+  // 平行 8 個 in-flight (FinMind 沒官方 limit 但保守一點)
+  const PARALLEL = 8;
+  const results = [];
+  const errors = [];
+  for (let i = 0; i < codes.length; i += PARALLEL) {
+    const batch = codes.slice(i, i + PARALLEL);
+    const batchRes = await Promise.all(batch.map(async (code) => {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 6000);
+      try {
+        const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${encodeURIComponent(code)}&start_date=${startStr}&end_date=${endStr}`;
+        const r = await fetch(url, { signal: ctrl.signal });
+        clearTimeout(tid);
+        if (!r.ok) {
+          errors.push({ code, status: r.status });
+          return null;
+        }
+        const j = await r.json();
+        if (!j.data || !Array.isArray(j.data) || j.data.length === 0) {
+          return { code, count: 0 };
+        }
+        // 抓 watchlist 跟 etf_watchlist 對應的 asset_type
+        const [wl, ew] = await Promise.all([
+          q(`SELECT code FROM watchlist WHERE code = $1`, [code]),
+          q(`SELECT code FROM etf_watchlist WHERE code = $1`, [code]),
+        ]);
+        const isEtf = (ew.rows || []).length > 0;
+        const assetType = isEtf ? "etf" : "stock";
+        // 用 unnest 一次 upsert
+        const rows = j.data.map(d => ({
+          date: d.date,
+          open: d.open,
+          high: d.max,
+          low: d.min,
+          close: d.close,
+          volume: d.Trading_Volume,
+          turnover: d.Trading_money,
+          spread: d.spread,
+        }));
+        const dates = rows.map(r => r.date);
+        const opens = rows.map(r => r.open);
+        const highs = rows.map(r => r.high);
+        const lows  = rows.map(r => r.low);
+        const closes = rows.map(r => r.close);
+        const volumes = rows.map(r => r.volume);
+        const turnovers = rows.map(r => r.turnover);
+        await q(
+          `INSERT INTO market_price_bars
+             (source_name, symbol, asset_type, market, trade_date, open_price, high_price, low_price,
+              close_price, change_value, volume, turnover, fetched_at)
+           SELECT 'finmind_daily', $1, $2, 'TWSE', d::date, o, h, l, c, 0, v, t, NOW()
+           FROM unnest($3::text[], $4::float8[], $5::float8[], $6::float8[], $7::float8[], $8::bigint[], $9::float8[]) AS x(d, o, h, l, c, v, t)
+           ON CONFLICT (source_name, symbol, contract_month, trade_date) DO UPDATE SET
+             open_price = EXCLUDED.open_price,
+             high_price = EXCLUDED.high_price,
+             low_price = EXCLUDED.low_price,
+             close_price = EXCLUDED.close_price,
+             volume = EXCLUDED.volume,
+             turnover = EXCLUDED.turnover,
+             fetched_at = NOW()`,
+          [code, assetType, dates, opens, highs, lows, closes, volumes, turnovers]
+        );
+        return { code, count: rows.length, latest: rows[rows.length - 1] };
+      } catch (e) {
+        clearTimeout(tid);
+        errors.push({ code, error: e?.message });
+        return null;
+      }
+    }));
+    for (const r of batchRes) if (r) results.push(r);
+  }
+  return json({
+    ok: true,
+    source: "finmind",
+    requested: codes.length,
+    ok_count: results.length,
+    error_count: errors.length,
+    days,
+    start_date: startStr,
+    end_date: endStr,
+    results,
+    errors,
+  });
+}
 // Writes JSON metadata_text.industry for each watchlist stock. Heatmap reads this
 // field to bucket stocks into sectors. No external API needed; curated list.
 const TWSE_INDUSTRY_MAP = {
@@ -5093,6 +5215,8 @@ const TABLE = [
   ["POST", /^\/admin\/load\/market_prices\/?$/, loadMarketPrices],
   ["GET",  /^\/admin\/load\/market_prices\/backfill\/?$/, loadMarketPricesBackfill],
   ["POST", /^\/admin\/load\/market_prices\/backfill\/?$/, loadMarketPricesBackfill],
+  ["GET",  /^\/admin\/load\/finmind_price\/?$/,     loadMarketPricesFinMind],
+  ["POST", /^\/admin\/load\/finmind_price\/?$/,     loadMarketPricesFinMind],
   ["GET",  /^\/admin\/load\/sectors\/?$/,          loadSectors],
   ["POST", /^\/admin\/load\/sectors\/?$/,          loadSectors],
   ["GET",  /^\/admin\/load\/all\/?$/,              loadAllCombined],
