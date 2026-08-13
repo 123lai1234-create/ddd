@@ -386,8 +386,6 @@ async function indexKlines(request, ticker) {
   const isTwii = decodedTicker === "^TWII";
   const proxy = "2330";  // fallback proxy (TSMC 當大盤近似)
   let actualSource = "db";
-  const buildMarker = "yahoo-fetcher-2026-08-13-v1";  // 驗證部署有沒有拿到新 code
-  const debugTicker = `raw=${JSON.stringify(ticker)} decoded=${JSON.stringify(decodedTicker)} isTwii=${isTwii}`;
   try {
     const u = urlOf(request);
     const gapLookback = Math.min(180, Math.max(10, parseInt(u.searchParams.get("lookback") || "60", 10) || 60));
@@ -549,7 +547,7 @@ async function indexKlines(request, ticker) {
     };
 
     return json({
-      ok: true, source: actualSource, code: decodedTicker, proxy, build_marker: buildMarker, yahoo_debug: yahooDebug, debug_ticker: debugTicker, count: candles.length, candles, volumes,
+      ok: true, source: actualSource, code: decodedTicker, proxy, count: candles.length, candles, volumes,
       ma: {
         ma5: ma5Series,
         ma10: ma10Series,
