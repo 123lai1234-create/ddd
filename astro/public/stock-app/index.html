@@ -1391,18 +1391,36 @@
         }).join('');
         track.innerHTML = html + html;
       }
+      // ★ 2026-08-13: 加入 fallback — 當 macro_news 沒有資料時，
+      //    自動改用 /api/news/market 的大盤新聞填充跑馬燈，
+      //    確保使用者不會看到「表為空」的內部訊息。
       async function loadMacroNews(){
         try{
           const r = await fetch('/api/macro_news', {cache:'no-store'});
           if (!r.ok) throw new Error('HTTP '+r.status);
           const d = await r.json();
-          const items = d.items || [];
+          let items = d.items || [];
+          // ★ Fallback: macro_news 為空時，改用大盤新聞
+          if (items.length === 0) {
+            try {
+              const r2 = await fetch('/api/news/market', {cache:'no-store'});
+              if (r2.ok) {
+                const d2 = await r2.json();
+                const fallback = (d2.news || []).slice(0, 8).map(n => ({
+                  topic: '大盤',
+                  title: n.title || '',
+                  link: n.link || '',
+                  severe: false,
+                }));
+                items = fallback;
+              }
+            } catch(_) { /* fallback 失敗仍走友善提示 */ }
+          }
           renderTicker(items);
-          // 沒資料時塞一條說明，避免使用者以為是 bug
           if (items.length === 0) {
             const track = document.getElementById('macroTickerTrack');
             if (track) {
-              track.innerHTML = '<span class="macro-ticker-loading" style="color:#ffb74d">⚠ macro_news 表為空，跑馬燈暫無新聞 (需 loader；目前尚未實作)</span>';
+              track.innerHTML = '<span class="macro-ticker-loading" style="color:var(--txt2)">📡 國際財經新聞載入中，請稍候…</span>';
             }
           }
         }catch(e){
