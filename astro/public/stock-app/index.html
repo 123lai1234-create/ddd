@@ -22,7 +22,7 @@
     })();
   </script>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
-  <!-- ★ Console noise filter (Chrome extensions: jQuery unload, Built-In AI, Immersive Translate) — v2026-08-12-1555 -->
+  <!-- ★ Console noise filter (Chrome extensions: jQuery unload, Built-In AI, Immersive Translate) — v2026-08-13-1530 (force Vercel CDN refresh + chart setVisibleRange/_safeArr fixes deployed) -->
   <script>
     (function() {
       if (window.__consoleFilterInstalled) return;
@@ -2401,7 +2401,15 @@ function _toUtcTs(t) {
   }
   return t;
 }
-function _fixTime(arr) { return (arr || []).map(function(d) { return Object.assign({}, d, { time: _toUtcTs(d.time) }); }); }
+// ★ 2026-08-13 fix: 過濾掉 time/value 為 null 的項目，避免 lightweight-charts 拋 "Value is null"
+//   同時為每個項目補上預設 value=0（MA 線等）
+function _fixTime(arr) {
+  return (arr || [])
+    .filter(function(d) { return d && d.time != null && d.value != null; })
+    .map(function(d) {
+      return Object.assign({}, d, { time: _toUtcTs(d.time), value: Number(d.value) || 0 });
+    });
+}
 function _fixChartTimes(data) {
   if (!data) return data;
   if (Array.isArray(data.candles))  data.candles  = _fixTime(data.candles);
@@ -2759,15 +2767,20 @@ function switchToIndexMode(ticker) {
           + (isUp ? "▲" : "▼") + " " + Math.abs(lt.change).toFixed(2)
           + " (" + sign + lt.changePct + "%)</span>";
 
-        candleSeries.setData(indexData.candles);
-        volumeSeries.setData(indexData.volumes);
-        ma5Line.setData(indexData.ma.ma5);
-        ma10Line.setData([]);
-        ma20Line.setData(indexData.ma.ma20);
-        ma60Line.setData(indexData.ma.ma60);
-        ma240Line.setData([]);
-        channelHighLine.setData([]);
-        channelLowLine.setData([]);
+        // ★ 2026-08-13 防呆：API 不回傳 candles/volumes/ma 欄位時，全部兜底為空陣列
+        //   否則 lightweight-charts 內部會拋 "Cannot read properties of undefined (reading 'map')"。
+        var _safeArr = function(a) { return Array.isArray(a) ? a : []; };
+        var _safeObj = function(o) { return (o && typeof o === 'object') ? o : {}; };
+        var maObj = _safeObj(indexData.ma);
+        try { candleSeries.setData(_safeArr(indexData.candles)); } catch(e) { console.warn("[index] setData candles 失敗:", e); }
+        try { volumeSeries.setData(_safeArr(indexData.volumes)); } catch(e) { console.warn("[index] setData volumes 失敗:", e); }
+        try { ma5Line.setData(_safeArr(maObj.ma5)); } catch(e) {}
+        try { ma10Line.setData([]); } catch(e) {}
+        try { ma20Line.setData(_safeArr(maObj.ma20)); } catch(e) {}
+        try { ma60Line.setData(_safeArr(maObj.ma60)); } catch(e) {}
+        try { ma240Line.setData([]); } catch(e) {}
+        try { channelHighLine.setData([]); } catch(e) {}
+        try { channelLowLine.setData([]); } catch(e) {}
 
         // ★ 指數模式不顯示建議停利 / 停損水平線
         clearTradePlanLines();
@@ -3991,18 +4004,24 @@ function loadStock(code, days) {
       // 2026-08-10: convert ISO time strings to UTCTimestamp (lightweight-charts v4 silent fail on strings)
       _fixChartTimes(data);
 
-      candleSeries.setData(data.candles);
-      volumeSeries.setData(data.volumes);
-      ma5Line.setData(data.ma.ma5);
-      ma10Line.setData(data.ma.ma10);
-      ma20Line.setData(data.ma.ma20);
-      ma60Line.setData(data.ma.ma60);
-      ma240Line.setData(data.ma.ma240 || []);
+      // ★ 2026-08-13 防呆：API 不回傳 candles/volumes/ma 欄位時，全部兜底為空陣列
+      //   否則 lightweight-charts 內部會拋 "Uncaught Error: Value is null"，把整個 .then 後面
+      //   右側 panel 渲染全部打斷（與 index 模式同樣的 guard，補上避免換股崩潰）。
+      var _safeArr = function(a) { return Array.isArray(a) ? a : []; };
+      var _safeObj = function(o) { return (o && typeof o === 'object') ? o : {}; };
+      var _maObj   = _safeObj(data.ma);
+      try { candleSeries.setData(_safeArr(data.candles)); } catch(e) { console.warn("[stock] setData candles 失敗:", e); }
+      try { volumeSeries.setData(_safeArr(data.volumes)); } catch(e) { console.warn("[stock] setData volumes 失敗:", e); }
+      try { ma5Line.setData(_safeArr(_maObj.ma5)); } catch(e) {}
+      try { ma10Line.setData(_safeArr(_maObj.ma10)); } catch(e) {}
+      try { ma20Line.setData(_safeArr(_maObj.ma20)); } catch(e) {}
+      try { ma60Line.setData(_safeArr(_maObj.ma60)); } catch(e) {}
+      try { ma240Line.setData(_safeArr(_maObj.ma240)); } catch(e) {}
       // ★ 上下通道
-      channelHighLine.setData(data.channelHigh || []);
-      channelLowLine.setData(data.channelLow   || []);
+      try { channelHighLine.setData(_safeArr(data.channelHigh)); } catch(e) {}
+      try { channelLowLine.setData(_safeArr(data.channelLow)); } catch(e) {}
       // ★★★ 新增：載入支撐線 ★★★
-      supportLine.setData(data.supportLine || []);
+      try { supportLine.setData(_safeArr(data.supportLine)); } catch(e) {}
       // ★ 個股模式持股水位 UI 已於 switchToStockMode 進入時關閉
 
       // ★ markers 合併：原生策略 markers + 非同步抓的事件 markers
@@ -4025,27 +4044,11 @@ function loadStock(code, days) {
       // ★ 切換個股時強制重新自動縮放價格軸（避免使用者拖曳後價格軸卡住）
       chart.priceScale("right").applyOptions({ autoScale: true });
       chart.timeScale().fitContent();
-      // 2026-08-11: belt-and-suspenders — force the visible range to candle lo/hi so the
-      // chart can't fall back to the union of all series (which pulls Y to 0-1600).
-      // ★ 2026-08-13: 加強錯誤處理，避免圖表崩潰
-      try {
-        var arr = data.candles;
-        if (arr && arr.length) {
-          var lo2 = Infinity, hi2 = -Infinity;
-          for (var j=0; j<arr.length; j++) {
-            if (typeof arr[j].low  === 'number' && arr[j].low  < lo2) lo2 = arr[j].low;
-            if (typeof arr[j].high === 'number' && arr[j].high > hi2) hi2 = arr[j].high;
-          }
-          if (isFinite(lo2) && isFinite(hi2) && hi2 > lo2) {
-            var pad2 = Math.max((hi2 - lo2) * 0.05, hi2 * 0.005, 1);
-            // setVisibleRange + autoScale:true works on v4 (chart will re-fit on next setData)
-            chart.priceScale("right").setVisibleRange({ from: lo2 - pad2, to: hi2 + pad2 });
-          }
-        }
-      } catch(e) {
-        console.warn("[chart] setVisibleRange 失敗，使用預設範圍:", e);
-        // 圖表仍可運作（自動縮放）
-      }
+      // 2026-08-11: belt-and-suspenders — 已透過 _candleAutoscaleFn 把所有 right-axis series
+      // 統一到 candle 的 lo-5%/hi+5% 範圍，不需要再呼叫 setVisibleRange。
+      // ★ 2026-08-13: lightweight-charts 的 IPriceScaleApi 沒有 setVisibleRange() method，
+      // 直接呼叫會 throw "setVisibleRange is not a function"，導致 chart.priceScale(...).
+      // setVisibleRange 失敗並把整個渲染流程打斷。autoscaleInfoProvider 已足以控制 Y 軸範圍。
 
       updateSupportPanel(data.supportPrice, lt.close);
 
