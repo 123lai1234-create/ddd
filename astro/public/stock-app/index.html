@@ -67,8 +67,9 @@
     })();
   </script>
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="static/favicon.svg">
-  <link rel="shortcut icon" href="static/favicon.svg">
+  <!-- ★ 2026-08-13: 改用絕對路徑 favicon，解決 404 -->
+  <link rel="icon" type="image/svg+xml" href="/stock-app/favicon.svg" onerror="this.href='/favicon.svg'">
+  <link rel="shortcut icon" href="/stock-app/favicon.svg" onerror="this.href='/favicon.svg'">
 
   <style>
     :root{--bg:#0f0f23;--bg2:#1a1a3e;--bg3:#1e1e42;--txt:#e0e0ff;--txt2:#8888aa;
@@ -80,7 +81,8 @@
       display:flex;align-items:center;justify-content:space-between;
       border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100}
     .header h1{font-size:18px;background:linear-gradient(90deg,var(--blue),var(--purple));
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      white-space:nowrap;writing-mode:horizontal-tb;flex-shrink:0}
     .header-actions{display:flex;gap:8px;align-items:center}
     .header-actions button{background:var(--blue);border:none;color:#fff;
       padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;transition:all .2s}
@@ -203,7 +205,8 @@
     .mgp-refresh:hover{border-color:var(--blue);color:var(--blue)}
     .search-box{padding:8px 12px}
     .search-box input{width:100%;background:var(--bg);border:1px solid var(--bdr);
-      color:var(--txt);padding:6px 10px;border-radius:6px;font-size:13px;outline:none}
+      color:var(--txt);padding:6px 10px;border-radius:6px;font-size:13px;outline:none;
+      box-sizing:border-box;max-width:100%}
     .search-box input:focus{border-color:var(--blue)}
     .search-box input::placeholder{color:var(--txt2)}
     .sidebar-title{padding:8px 12px;font-size:11px;color:var(--txt2);letter-spacing:1px}
@@ -1257,7 +1260,7 @@
         <button class="index-tab-btn" onclick="loadIndexChart('^TWII')">📈 加權</button>
         <button class="index-tab-btn" onclick="loadIndexChart('^TWOII')">📈 櫃買</button>
       </div>
-      <button id="btnScan">🔍 全部掃描</button>
+      <button id="btnScan" aria-label="執行全部股票掃描">🔍 全部掃描</button>
       <button id="btnReport">📋 彙總報表</button>
       <button onclick="openRecipientsModal()" style="background:var(--purple)">
         📧 收件者管理
@@ -1275,7 +1278,7 @@
   <div id="macroTicker" class="macro-ticker" data-collapsed="0">
     <div class="macro-ticker-head">
       <span class="macro-ticker-label">🌐 國際財經</span>
-      <button class="macro-ticker-toggle" id="macroTickerToggle" onclick="toggleMacroTicker()" title="展開／收合">
+      <button class="macro-ticker-toggle" id="macroTickerToggle" onclick="toggleMacroTicker()" title="展開／收合" aria-label="展開或收合國際財經新聞跑馬燈">
         <span id="macroTickerCaret">▾</span>
       </button>
       <div class="macro-ticker-track-wrap" id="macroTickerTrackWrap">
@@ -1495,7 +1498,7 @@
       </div>
     </div>
     <div class="search-box">
-      <input type="search" id="searchInput" placeholder="🔍 搜尋股票..." value=""
+      <input type="search" id="searchInput" placeholder="🔍 搜尋股票..." value="" aria-label="搜尋自選股" role="searchbox"
         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
         name="stock-search-nofill" data-lpignore="true" data-form-type="other">
     </div>
@@ -1509,7 +1512,7 @@
     </div>
     <div id="stockList"><div class="loading-text">載入中...</div></div>
     <div style="display:flex;gap:6px;align-items:stretch">
-      <button class="btn-add-stock" id="btnOpenAddStock" style="flex:1">＋ 新增股票</button>
+      <button class="btn-add-stock" id="btnOpenAddStock" style="flex:1" aria-label="新增自選股">＋ 新增股票</button>
       <button class="btn-add-stock" id="btnExportStocks"
         title="下載自選股清單 (CSV)"
         style="flex:0 0 auto;padding:0 10px;background:transparent;border:1px solid var(--bdr);color:var(--txt2)"
@@ -1528,14 +1531,14 @@
         <span class="price-display" id="chartPrice">-</span>
         <span class="change-display" id="chartChange"></span>
       </div>
-      <div class="timeframe-btns">
-        <button data-days="60">2M</button>
-        <button class="active" data-days="120">4M</button>
-        <button data-days="250">1Y</button>
+      <div class="timeframe-btns" role="group" aria-label="時間區間選擇">
+        <button data-days="60" aria-label="2 個月資料">2M</button>
+        <button class="active" data-days="120" aria-label="4 個月資料">4M</button>
+        <button data-days="250" aria-label="1 年資料">1Y</button>
       </div>
 
       <!-- ★ Fibonacci 開關 -->
-      <button class="fib-toggle-btn" id="btnFibToggle" onclick="toggleFib()">
+      <button class="fib-toggle-btn" id="btnFibToggle" onclick="toggleFib()" aria-label="切換 Fibonacci 回檔線">
         📐 Fib 回檔線
       </button>
 
@@ -1567,7 +1570,8 @@
            font-size:12px;line-height:1.5;color:#e0e0e0;
            background:rgba(15,15,35,0.85);border:1px solid #2a2a5a;
            padding:6px 10px;border-radius:4px;pointer-events:none;
-           font-family:Consolas,Menlo,monospace;display:none"></div>
+           font-family:Consolas,Menlo,monospace;display:none"
+           role="status" aria-live="polite" aria-atomic="true"></div>
       <div id="posRatioLegend" style="position:absolute;top:8px;right:64px;z-index:10;
            font-size:12px;color:#ffb300;background:rgba(15,15,35,0.85);
            border:1px solid #2a2a5a;padding:4px 9px;border-radius:4px;
@@ -2365,7 +2369,20 @@ function recordMarkersToDB(code, data){
 // 2026-08-10 fix: lightweight-charts v4 only accepts UTCTimestamp (number) or BusinessDay (object)
 //                  for `time` field, NOT ISO string. Railway backend returns time as "2026-08-10"
 //                  which causes chart to silent fail (no K-bars render). Convert here.
-function _toUtcTs(t) { return typeof t === "string" ? Math.floor(new Date(t).getTime() / 1000) : t; }
+function _toUtcTs(t) {
+  if (typeof t === "string") {
+    // ★ 2026-08-13 fix: 支援民國年格式「114/11/12」轉西元
+    var m = t.match(/^(d{2,3})\/(\d{1,2})\/(\d{1,2})$/);
+    if (m) {
+      var year = parseInt(m[1], 10);
+      if (year < 200) year += 1911;  // 民國年 → 西元年
+      var isoStr = year + "-" + m[2].padStart(2, "0") + "-" + m[3].padStart(2, "0") + "T00:00:00Z";
+      return Math.floor(new Date(isoStr).getTime() / 1000);
+    }
+    return Math.floor(new Date(t).getTime() / 1000);
+  }
+  return t;
+}
 function _fixTime(arr) { return (arr || []).map(function(d) { return Object.assign({}, d, { time: _toUtcTs(d.time) }); }); }
 function _fixChartTimes(data) {
   if (!data) return data;
@@ -2576,6 +2593,18 @@ function initChart() {
   new ResizeObserver(function() {
     if (chart) chart.applyOptions({ width:c.clientWidth, height:c.clientHeight });
   }).observe(c);
+  // ★ 2026-08-13 fix: 容器尺寸在 iframe / RWD 模式下首次計算可能不正確
+  //    使用多重延遲確保 layout 完成後再設定正確尺寸
+  var _resizeChartFix = function() {
+    if (chart && c) {
+      var w = c.clientWidth, h = c.clientHeight;
+      if (w > 0 && h > 0) chart.applyOptions({ width: w, height: h });
+    }
+  };
+  requestAnimationFrame(_resizeChartFix);
+  setTimeout(_resizeChartFix, 50);
+  setTimeout(_resizeChartFix, 250);
+  setTimeout(_resizeChartFix, 600);
   // ★ 訂閱圖表縮放事件，重繪 Volume Profile
   setTimeout(function() { setupVPRedraw(); }, 300);
 
@@ -2614,21 +2643,7 @@ function initChart() {
   }
 }
 
-  // 載入除權息側邊欄
-  // 載入除權息側邊欄
-  // 載入除權息側邊欄（完整修正版）
-  // 載入除權息側邊欄（修正版）
-
-
-
-
-
-  // // 頁面載入時執行
-  // window.addEventListener('load', () => {
-  //   loadExdivSidebar();
-  //   // 每 30 分鐘更新一次
-  //   setInterval(loadExdivSidebar, 30 * 60 * 1000);
-  // });
+  // ★ 2026-08-13: 清理舊版除權息載入邏輯的註解（已棄用）
 
 
 // ══════════════════════════════════════════
@@ -2741,7 +2756,11 @@ function switchToIndexMode(ticker) {
         clearRollingLowLine();
         _baseMarkers = []; _eventMarkers = []; _eventsReqCode = null;
 
-        candleSeries.setMarkers(indexData.markers);
+        // 2026-08-13 fix: backend /api/index/<ticker> 不回 markers 欄位，傳 undefined 進
+        // setMarkers 會讓 lightweight-charts 內部 markers.map() throw
+        // "Cannot read properties of undefined (reading 'map')"，把整個 .then 後面右側
+        // panel 渲染（renderIndexSummary / renderIndexGapList 等）都打斷。改用 || [] 兜底。
+        try { candleSeries.setMarkers(indexData.markers || []); } catch(e) { console.warn("[index] setMarkers 失敗:", e); }
         // 2026-08-10: same unified autoscale for index mode
         if (window._candleAutoscaleFn) {
           candleSeries.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
@@ -3990,6 +4009,7 @@ function loadStock(code, days) {
       chart.timeScale().fitContent();
       // 2026-08-11: belt-and-suspenders — force the visible range to candle lo/hi so the
       // chart can't fall back to the union of all series (which pulls Y to 0-1600).
+      // ★ 2026-08-13: 加強錯誤處理，避免圖表崩潰
       try {
         var arr = data.candles;
         if (arr && arr.length) {
@@ -4004,7 +4024,10 @@ function loadStock(code, days) {
             chart.priceScale("right").setVisibleRange({ from: lo2 - pad2, to: hi2 + pad2 });
           }
         }
-      } catch(e) { /* visible range set is best-effort */ }
+      } catch(e) {
+        console.warn("[chart] setVisibleRange 失敗，使用預設範圍:", e);
+        // 圖表仍可運作（自動縮放）
+      }
 
       updateSupportPanel(data.supportPrice, lt.close);
 
@@ -4079,7 +4102,17 @@ function loadStock(code, days) {
     })
     .catch(function(e){
       try { clearRollingLowLine(); } catch(_){}
-      showToast("❌ 載入 "+code+" 失敗: "+e.message,"sell");
+      // ★ 2026-08-13: 自動重試 1 次（網路不穩時）
+      var retryKey = "_retry_" + code + "_" + currentDays;
+      var retryCount = parseInt(sessionStorage.getItem(retryKey) || "0");
+      if (retryCount < 1) {
+        sessionStorage.setItem(retryKey, "1");
+        setTimeout(function() { loadStock(code, days); }, 1500);
+        showToast("⏳ 網路不穩，正在重試...", "info");
+      } else {
+        sessionStorage.removeItem(retryKey);
+        showToast("❌ 載入 "+code+" 失敗: "+e.message,"sell");
+      }
     })
     .finally(function(){ document.getElementById("loadingOverlay").style.display="none"; });
 }
