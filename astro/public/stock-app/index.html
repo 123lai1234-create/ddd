@@ -2602,6 +2602,10 @@ function initChart() {
   // lightweight-charts unions all series' autoscaleInfoProvider results,
   // so channel/support lines were pulling the range to 0-1600 instead of true 1155-2405.
   // This callback returns candle range (lo-5%, hi+5%) — all series get the same range.
+  // 2026-08-14: 永久拿掉 autoscaleInfoProvider 設定
+  //   4.1.1 內部 render pipeline 對 autoscaleInfoProvider 處理不當，導致主圖 canvas 完全透明
+  //   （candle setData 120 根進去但 uniqueColors=0）。改用 default autoscale。
+  //   副作用：MA/Channel 線可能撐大 Y 軸範圍，但 candle 至少能 render。
   window._candleAutoscaleFn = function() {
     try {
       var arr = candleSeries.data();
@@ -2617,9 +2621,9 @@ function initChart() {
       return { priceRange: { minValue: lo - pad, maxValue: hi + pad } };
     } catch(e) { return null; }
   };
-  [ma5Line, ma10Line, ma20Line, ma60Line, ma240Line, channelHighLine, channelLowLine, supportLine].forEach(function(s) {
-    if (s) s.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
-  });
+  // (disabled) [ma5Line, ma10Line, ma20Line, ma60Line, ma240Line, channelHighLine, channelLowLine, supportLine].forEach(function(s) {
+  //   if (s) s.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
+  // });
 
   new ResizeObserver(function() {
     if (chart) chart.applyOptions({ width:c.clientWidth, height:c.clientHeight });
@@ -2798,9 +2802,10 @@ function switchToIndexMode(ticker) {
         // panel 渲染（renderIndexSummary / renderIndexGapList 等）都打斷。改用 || [] 兜底。
         try { candleSeries.setMarkers(indexData.markers || []); } catch(e) { console.warn("[index] setMarkers 失敗:", e); }
         // 2026-08-10: same unified autoscale for index mode
-        if (window._candleAutoscaleFn) {
-          candleSeries.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
-        }
+        // 2026-08-14: 拿掉 (見 stock mode 註解)
+        // if (window._candleAutoscaleFn) {
+        //   candleSeries.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
+        // }
         chart.priceScale("right").applyOptions({ autoScale: true });
         chart.timeScale().fitContent();
 
@@ -4054,9 +4059,11 @@ function loadStock(code, days) {
       // 2026-08-10: unify Y-axis autoscale for ALL right-axis series.
       // lightweight-charts unions all series' autoscaleInfoProvider results; without
       // unifying, channel/support pull the range to 0-1600 instead of 1155-2405.
-      if (window._candleAutoscaleFn) {
-        candleSeries.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
-      }
+      // 2026-08-14: 永久拿掉 applyOptions({autoscaleInfoProvider}) — 4.1.1 render bug
+      //   改用 default autoscale，candle 至少能 render（Y 軸範圍會包含所有 series）
+      // if (window._candleAutoscaleFn) {
+      //   candleSeries.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
+      // }
       // ★ 切換個股時強制重新自動縮放價格軸（避免使用者拖曳後價格軸卡住）
       chart.priceScale("right").applyOptions({ autoScale: true });
       chart.timeScale().fitContent();
