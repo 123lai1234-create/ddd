@@ -1895,9 +1895,19 @@ async function exdivCalendar(request) {
        LIMIT 200`,
       [String(days)]
     );
-    return json({ ok: true, source: "db", count: rows.length, items: rows, days });
+    // 2026-08-14: 加 updated_at / as_of / fetched_at 給 exdiv.html 顯示「更新時間」
+    const nowIso = new Date().toISOString();
+    return json({
+      ok: true, source: "db", count: rows.length, items: rows, days,
+      updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "dividend_calendar table empty or missing" });
+    const nowIso = new Date().toISOString();
+    return json({
+      ok: true, source: "stub", count: 0, items: [], days, error: e?.message,
+      message: "dividend_calendar table empty or missing",
+      updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
+    });
   }
 }
 async function exdivUpcoming(request) {
@@ -1912,9 +1922,18 @@ async function exdivUpcoming(request) {
        LIMIT 50`,
       [String(days)]
     );
-    return json({ ok: true, source: "db", count: rows.length, items: rows, days });
+    const nowIso = new Date().toISOString();
+    return json({
+      ok: true, source: "db", count: rows.length, items: rows, days,
+      updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "dividend_calendar table empty or missing" });
+    const nowIso = new Date().toISOString();
+    return json({
+      ok: true, source: "stub", count: 0, items: [], days, error: e?.message,
+      message: "dividend_calendar table empty or missing",
+      updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
+    });
   }
 }
 
