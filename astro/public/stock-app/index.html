@@ -2404,10 +2404,15 @@ function _toUtcTs(t) {
 // ★ 2026-08-13 fix: 過濾掉 time/value 為 null 的項目，避免 lightweight-charts 拋 "Value is null"
 //   同時為每個項目補上預設 value=0（MA 線等）
 function _fixTime(arr) {
+  // 2026-08-14 fix: 原條件 `d.value != null` 會把 candle（沒有 value 欄位，只有 OHLC）整個過濾掉，
+  // 導致 candleSeries.setData([]) 圖表全空（顯示預設 0~0.7）。改成只檢查 time。
+  // MA/volume 線有 value 欄位的會另外補 Number() 轉數字。
   return (arr || [])
-    .filter(function(d) { return d && d.time != null && d.value != null; })
+    .filter(function(d) { return d && d.time != null; })
     .map(function(d) {
-      return Object.assign({}, d, { time: _toUtcTs(d.time), value: Number(d.value) || 0 });
+      var out = Object.assign({}, d, { time: _toUtcTs(d.time) });
+      if (d.value != null) out.value = Number(d.value) || 0;
+      return out;
     });
 }
 function _fixChartTimes(data) {
