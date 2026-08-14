@@ -3797,6 +3797,24 @@ async function finmindFetch(dataset, params = {}) {
   return j?.data || [];
 }
 
+// 2026-08-14: 公開 dataset 不需要 token（TaiwanStockShareholding / TaiwanStockInfo / TaiwanStockPrice 等）
+// 600 req/hr 限速對 130 stocks 仍足夠
+async function finmindFetchPublic(dataset, params = {}) {
+  const u = new URL(FINMIND_BASE);
+  u.searchParams.set("dataset", dataset);
+  for (const [k, v] of Object.entries(params)) {
+    if (v != null) u.searchParams.set(k, String(v));
+  }
+  const r = await fetch(u.toString(), {
+    headers: { "User-Agent": "Mozilla/5.0" },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!r.ok) throw new Error(`FinMind ${dataset} HTTP ${r.status}`);
+  const j = await r.json();
+  if (j?.msg && j.msg !== "success") throw new Error(`FinMind ${dataset}: ${j.msg}`);
+  return j?.data || [];
+}
+
 // 抓一個 stock 的 big_holders (近 1 年每月揭露)
 async function loadBigHoldersFinMindForCode(code) {
   const today = new Date();
@@ -3955,6 +3973,69 @@ async function loadFinancialReportsFinMind(request) {
   }
   const inserted = results.map(r => ({ok: r.ok, inserted: (r && r.inserted) || 0})).filter(x => x.ok).reduce((s, x) => s + x.inserted, 0);
   return json({ ok: true, source: "finmind", scanned: codes.length, inserted, results });
+}
+
+// 2026-08-14: 從 FinMind TaiwanStockShareholding 拿 NumberOfSharesIssued (已發行普通股數)
+// 寫入 market_instruments.metadata_text.shares_outstanding 給 stockIntro/stockKlines 算 marketCap
+// 公開 dataset 不用 token；限速 600 req/hr
+async function loadIssuedSharesFinMind(request) {
+  const u = urlOf(request);
+  const codesParam = pickStr(u.searchParams.get("codes") || "");
+  let codes = codesParam ? codesParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  if (!codes.length) {
+    const wl = await q(`SELECT code FROM watchlist ORDER BY sort_order LIMIT 200`);
+    codes = wl.rows.map((r) => r.code);
+  }
+  if (!codes.length) return json({ ok: false, error: "no codes" }, { status: 400 });
+
+  const results = [];
+  const CONCURRENCY = 8;
+  for (let i = 0; i < codes.length; i += CONCURRENCY) {
+    const chunk = codes.slice(i, i + CONCURRENCY);
+    const chunkResults = await Promise.all(chunk.map(async (code) => {
+      try {
+        // 抓最近 90 天（shareholding 每月更新，但為保險起見取最近一筆）
+        const today = new Date();
+        const start = new Date(today.getTime() - 90 * 86400000);
+        const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const rows = await finmindFetchPublic("TaiwanStockShareholding", {
+          data_id: code,
+          start_date: fmt(start),
+        });
+        if (!rows.length) return { code, ok: false, error: "no shareholding rows" };
+        rows.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+        const latest = rows[0];
+        const shares = Number(latest.NumberOfSharesIssued);
+        if (!shares || shares <= 0) return { code, ok: false, error: "NumberOfSharesIssued missing" };
+
+        const ex = await q(
+          `SELECT id, metadata_text FROM market_instruments WHERE symbol = $1 AND asset_type = 'stock' LIMIT 1`,
+          [code]
+        );
+        if (!ex.rows.length) return { code, ok: false, error: "not in market_instruments" };
+        let meta = {};
+        try { meta = ex.rows[0].metadata_text ? JSON.parse(ex.rows[0].metadata_text) : {}; } catch {}
+        if (typeof meta !== "object" || Array.isArray(meta)) meta = {};
+        meta.shares_outstanding = shares;
+        meta.shares_outstanding_date = String(latest.date).slice(0, 10);
+        meta.shares_outstanding_source = "finmind";
+        await q(
+          `UPDATE market_instruments SET metadata_text = $2, fetched_at = NOW() WHERE id = $1`,
+          [ex.rows[0].id, JSON.stringify(meta)]
+        );
+        return { code, ok: true, shares_outstanding: shares, as_of: String(latest.date).slice(0, 10) };
+      } catch (e) {
+        return { code, ok: false, error: e.message };
+      }
+    }));
+    results.push(...chunkResults);
+  }
+  const okCount = results.filter((r) => r.ok).length;
+  const failCount = results.filter((r) => !r.ok).length;
+  return json({
+    ok: true, source: "finmind_public", scanned: codes.length,
+    inserted: okCount, failed: failCount, results,
+  });
 }
 
 async function loadExdivForDate(dateYmd) {
@@ -5462,6 +5543,8 @@ const TABLE = [
   ["POST", /^\/admin\/load\/big_holders\/finmind\/?$/, loadBigHoldersFinMind],
   ["GET",  /^\/admin\/load\/financial_reports\/finmind\/?$/, loadFinancialReportsFinMind],
   ["POST", /^\/admin\/load\/financial_reports\/finmind\/?$/, loadFinancialReportsFinMind],
+  ["GET",  /^\/admin\/load\/issued_shares\/finmind\/?$/, loadIssuedSharesFinMind],
+  ["POST", /^\/admin\/load\/issued_shares\/finmind\/?$/, loadIssuedSharesFinMind],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
