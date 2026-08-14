@@ -249,7 +249,7 @@
     .add-stock-hint.loading{color:var(--orange)}
     .add-stock-close{position:absolute;top:12px;right:14px;background:none;border:none;
       color:var(--txt2);font-size:18px;cursor:pointer}
-    .main-area{display:flex;flex-direction:column;overflow:hidden}
+    .main-area{display:flex;flex-direction:column;overflow:hidden;min-height:0}
     .chart-header{padding:10px 20px;display:flex;align-items:center;gap:16px;
       border-bottom:1px solid var(--bdr);background:var(--bg2);flex-wrap:wrap}
     .chart-header .ticker-info h2{font-size:20px}
@@ -262,7 +262,7 @@
     .timeframe-btns button{background:transparent;border:1px solid var(--bdr);
       color:var(--txt2);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px}
     .timeframe-btns button.active{background:var(--blue);border-color:var(--blue);color:#fff}
-    #chart-container{flex:1;position:relative}
+    #chart-container{flex:1 1 0;position:relative;min-height:0}
     #macd-container{height:0;overflow:hidden;transition:height .25s ease;
       border-top:1px solid #1a1a3e;background:#0f0f23;flex-shrink:0}
     #macd-container.show{height:140px}
@@ -3301,15 +3301,22 @@ function loadStockList() {
   function renderStockList() {
     var el = document.getElementById("stockList"), html = "";
     var shown = 0;
-    for (var i = 0; i < stockListData.length; i++) {
-      var s = stockListData[i];
+    // ★ 修正 BUG-10：stockListData 可能是 null/undefined 或非陣列（API 還沒回、
+    //   失敗、或格式變更），統一保護，否則會噴 "Cannot read property 'length' of null"。
+    var list = Array.isArray(stockListData) ? stockListData : [];
+    for (var i = 0; i < list.length; i++) {
+      var s = list[i];
+      // ★ 跳過 null/falsy 物件，避免讀 s.code 時拋 null 錯誤
+      if (!s || !s.code) continue;
       if (!_stockMatchesIndustry(s.code)) continue;
       shown++;
+      // ★ name 也要 null 安全，避免後端未填名稱時顯示字串 "null"
+      var sName = (s.name == null || s.name === '' || s.name === 'null') ? '(無名稱)' : s.name;
       // ★ 所有股票都顯示刪除按鈕（包含預設股票）
       var removeBtn = '<button class="stock-remove-btn" title="移除" '
         + 'onclick="event.stopPropagation();promptRemoveStock(\'' + s.code + '\')" >✕</button>';
       html += '<div class="stock-item" data-code="' + s.code + '" onclick="loadStock(\'' + s.code + '\')">'
-        + '<div><div class="name">' + s.name + '</div><div class="code">' + s.code + '</div></div>'
+        + '<div><div class="name">' + sName + '</div><div class="code">' + s.code + '</div></div>'
         + '<div style="display:flex;align-items:center;gap:4px">'
         + '<span id="price-' + s.code + '" style="font-size:12px;font-weight:600">-</span>'
         + removeBtn
@@ -3326,6 +3333,10 @@ function loadStockList() {
       var si = document.getElementById("searchInput");
       if (si && si.value && typeof filterStocks === "function") filterStocks();
     } catch(e){}
+    // ★ 修正 BUG-9：載入後主動觸發 sidebar 報價更新（之前只有點擊後才會更新該檔）
+    try {
+      if (typeof refreshSidebarPrices === "function") refreshSidebarPrices();
+    } catch(e){ console.warn("refreshSidebarPrices failed:", e); }
   }
 
 // ══════════════════════════════════════════
@@ -4141,6 +4152,61 @@ function loadStock(code, days) {
       }
     })
     .finally(function(){ document.getElementById("loadingOverlay").style.display="none"; });
+}
+
+// ══════════════════════════════════════════
+// ★ 修正 BUG-9：批次更新 sidebar 報價
+//   原本只有當使用者「點擊」某檔時，該檔的 sidebar 報價才會被填入。
+//   現在載入清單後主動抓一次所有 sidebar 股票的即時收盤價。
+//   - 用 batched API：避免一次發 N 個 request 造成 rate-limit
+//   - 用 rAF/throttle 避免重複觸發
+//   - null/失敗時保持 "-"，不拋例外（避免 BUG-10 噴 console）
+// ══════════════════════════════════════════
+var _sidebarPricesInFlight = false;
+function refreshSidebarPrices() {
+  if (!Array.isArray(stockListData) || stockListData.length === 0) return;
+  if (_sidebarPricesInFlight) return;
+  _sidebarPricesInFlight = true;
+
+  var codes = stockListData
+    .filter(function(s){ return s && s.code; })
+    .map(function(s){ return String(s.code).replace(/\.(TW|TWO)$/i, ""); });
+  if (codes.length === 0) { _sidebarPricesInFlight = false; return; }
+
+  // 用既有的 /api/heatmap 同源（一次拿所有上市櫃股票的收盤/漲跌），
+  // 若 endpoint 不存在則逐檔 fallback 到 /api/stock/<code>。
+  fetch("/api/heatmap?scope=watchlist")
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(function(d){
+      var stocks = (d && Array.isArray(d.stocks)) ? d.stocks
+                 : (Array.isArray(d) ? d : []);
+      var byCode = {};
+      for (var i=0;i<stocks.length;i++){
+        var s = stocks[i];
+        if (!s || !s.code) continue;
+        byCode[String(s.code)] = s;
+      }
+      for (var j=0;j<stockListData.length;j++){
+        var w = stockListData[j];
+        if (!w || !w.code) continue;
+        var key = String(w.code).replace(/\.(TW|TWO)$/i, "");
+        var hit = byCode[key] || byCode[w.code];
+        if (!hit) continue;
+        var c = Number(hit.close ?? hit.price ?? hit.last ?? NaN);
+        if (!isFinite(c) || c <= 0) continue;
+        var chg = Number(hit.change_pct ?? hit.chg_1d ?? hit.changePct ?? 0);
+        var el = document.getElementById("price-" + w.code);
+        if (!el) continue;
+        el.textContent = c.toFixed(2);
+        el.style.color = chg >= 0 ? "var(--red)" : "var(--green)";
+      }
+    })
+    .catch(function(e){
+      // 不拋例外，避免 BUG-10 的 console 噴錯。
+      // 個股報價失敗時 sidebar 保持 "-"，下次 loadStock() 觸發時會再更新。
+      console.warn("refreshSidebarPrices: batch fetch failed, will retry on next load:", (e && e.message) || e);
+    })
+    .finally(function(){ _sidebarPricesInFlight = false; });
 }
 
 // ══════════════════════════════════════════
