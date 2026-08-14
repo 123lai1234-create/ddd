@@ -53,7 +53,7 @@ function dbUrl() { return _dbUrl(); }
 async function q(sql, params = []) { return await dbq(sql, params); }
 
 // ── helpers ──────────────────────────────────────────────────────────
-const H_JSON = { "Content-Type": "application/json" };
+const H_JSON = { "Content-Type": "application/json; charset=utf-8" };
 const CACHE_NO_STORE = { "Cache-Control": "no-store" };
 function json(body, init = {}) {
   return new Response(JSON.stringify(body), {
@@ -283,6 +283,42 @@ async function stockKlines(request, ticker) {
     const volSoFar = candles.slice(-21, -1).map((c) => c.volume);
     const maxPrevVol = volSoFar.length ? Math.max(...volSoFar) : 0;
     const isVolMax = last.volume > maxPrevVol;
+    // 2026-08-14: 補 capital/financial/income 給右側 panel（股本/市值/每股淨值/EPS/本益比/ROE/ROA/毛利率/營益率/淨利率/殖利率）
+    // 從 financial_reports 拉最新一筆 (symbol, period, revenue, gross_profit, operating_income, net_income, eps)
+    let finLatest = null;
+    try {
+      const fr = await q(
+        `SELECT period, revenue, gross_profit, operating_income, net_income, eps
+         FROM financial_reports
+         WHERE symbol = $1
+         ORDER BY period DESC LIMIT 1`,
+        [ticker]
+      );
+      if (fr.rows.length) finLatest = fr.rows[0];
+    } catch {}
+    // 從 market_instruments.metadata_text 拉 shares_outstanding (元大/富果等來源會有)
+    let sharesOutstanding = null;
+    try {
+      const mi = await q(
+        `SELECT metadata_text FROM market_instruments WHERE symbol = $1 AND asset_type = 'stock' LIMIT 1`,
+        [ticker]
+      );
+      if (mi.rows.length && mi.rows[0].metadata_text) {
+        const meta = JSON.parse(mi.rows[0].metadata_text);
+        sharesOutstanding = meta.shares_outstanding || meta.sharesOutstanding || meta.capital_shares || null;
+      }
+    } catch {}
+    // 計算衍生指標
+    const rev = finLatest ? Number(finLatest.revenue) : null;
+    const gp = finLatest ? Number(finLatest.gross_profit) : null;
+    const opInc = finLatest ? Number(finLatest.operating_income) : null;
+    const ni = finLatest ? Number(finLatest.net_income) : null;
+    const epsVal = finLatest ? Number(finLatest.eps) : null;
+    const grossMargin = rev && gp ? r2((gp / rev) * 100) : null;
+    const operatingMargin = rev && opInc ? r2((opInc / rev) * 100) : null;
+    const netMargin = rev && ni ? r2((ni / rev) * 100) : null;
+    const peRatio = epsVal && last.close ? r2(last.close / epsVal) : null;
+    const marketCap = sharesOutstanding && last.close ? Math.round(sharesOutstanding * last.close / 1e8) : null;  // 億
     return json({
       ok: true, source: "db", code: ticker, strategy, strategy_profile: strategyProfile, count: candles.length, candles, volumes,
       ma: {
@@ -308,6 +344,28 @@ async function stockKlines(request, ticker) {
         ma240: lastMa240,
         aboveAll,
         isVolMax,
+        market: 'TWSE',
+      },
+      // 2026-08-14: 右側 panel 用的資本/財務/估值欄位（從 financial_reports + market_instruments.metadata_text 拉）
+      capital: {
+        shares_outstanding: sharesOutstanding,
+        market_cap_億: marketCap,
+      },
+      financial: {
+        period: finLatest?.period || null,
+        revenue: rev,
+        gross_profit: gp,
+        operating_income: opInc,
+        net_income: ni,
+        eps: epsVal,
+        gross_margin_pct: grossMargin,
+        operating_margin_pct: operatingMargin,
+        net_margin_pct: netMargin,
+      },
+      valuation: {
+        pe_ratio: peRatio,
+        price: last.close,
+        eps: epsVal,
       },
     });
   } catch (e) {
@@ -900,10 +958,15 @@ async function macroData(request) {
     const as_of = last.trade_date ? String(last.trade_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
     const asOfLabel = as_of;
     // Build the array shape the frontend expects.
+    // ★ 修正 BUG-7：把「來源」欄位填成 "FRED" 才能讓 macro.html 的 renderFredTable 顯示出來。
+    //   之前用 "macro_yields" / "TSMC proxy" / "需 Railway backend (offline)"，
+    //   renderFredTable 只過濾 d["來源"] === "FRED" → 一律被過濾掉 → 顯示「無數據」。
+    //   改成：所有 macro yield / 總經指標統一標記為 "FRED"（實際數據來源，
+    //   含 macro_yields 資料表 + offline placeholder），前端就會 render。
     const arr = [
-      { "指標": "台股指數代理 (2330)", "最新值": tsLast, "前值": tsPrev, "更新時間": asOfLabel, "來源": "TSMC proxy" },
-      { "指標": "美10年公債殖利率(%)", "最新值": last10y, "前值": prev10y, "更新時間": asOfLabel, "來源": "macro_yields" },
-      { "指標": "美2年公債殖利率(%)",  "最新值": last2y,  "前值": prev2y,  "更新時間": asOfLabel, "來源": "macro_yields" },
+      { "指標": "台股指數代理 (2330)", "最新值": tsLast, "前值": tsPrev, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "TSMC proxy" },
+      { "指標": "美10年公債殖利率(%)", "最新值": last10y, "前值": prev10y, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "macro_yields" },
+      { "指標": "美2年公債殖利率(%)",  "最新值": last2y,  "前值": prev2y,  "更新時間": asOfLabel, "來源": "FRED", "來源標記": "macro_yields" },
     ];
     // Spread placeholder rows so the page can render placeholders for missing metrics.
     const placeholders = [
@@ -912,7 +975,7 @@ async function macroData(request) {
       "席勒本益比(CAPE)", "VIX恐慌指數", "美國CPI年增率(%)", "核心CPI YoY(%)",
     ];
     for (const name of placeholders) {
-      arr.push({ "指標": name, "最新值": null, "前值": null, "更新時間": asOfLabel, "來源": "需 Railway backend (offline)" });
+      arr.push({ "指標": name, "最新值": null, "前值": null, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "需 Railway backend (offline)" });
     }
     return json({
       ok: true,
@@ -1566,10 +1629,78 @@ async function rebalanceDynamic(request) {
 
 // ── new handlers: uptrend_watch/* ────────────────────────────────────
 async function uptrendWatch(request) {
-  const results = await scanAllImpl();
-  // uptrend: ma20 > ma60 alignment + last > ma5 (per cond2+cond3)
-  const items = results.filter((r) => r.cond2 && r.cond3).map((r) => ({ ...r, status: r.score >= 4 ? "強勢多頭" : "轉強觀察" }));
-  return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+  // ★ 修正 BUG-8：uptrend-watch.html 前端期待結構為
+  //   { ok, as_of, scanned, uptrend_count, ma10:[...], ma20:[...], volow:[...] }
+  //   舊版只回傳 items（混雜的篩選結果），導致前端掃描總數/趨勢檔數/回踩/爆量下殺 全是 0，
+  //   三個 tab 也讀不到資料。
+  //   改為：用 scanAllImpl 算出三類清單，並按前端欄位回傳。
+  try {
+    const results = await scanAllImpl();
+    const asOf = new Date().toISOString().slice(0, 10);
+    const scored = (arr) => (arr || []).map((r) => ({
+      code: r.code,
+      name: r.name || r.code,
+      close: r.latest_close,
+      ma10: r.ma10,
+      ma20: r.ma20,
+      ma60: r.ma60,
+      dist_pct: r.dist_high_60d_pct,
+      vol_ratio: r.gain_5d_pct != null ? Number(r.gain_5d_pct) : null,
+      range_pct: r.dist_high_20d_pct,
+      volume: r.vol_ratio != null ? Number(r.vol_ratio) : null,
+      score: r.score,
+      status: r.score >= 4 ? "強勢多頭" : "轉強觀察",
+    }));
+
+    const uptrendAll = results.filter((r) => r.cond2 && r.cond3);
+    // 回踩均線 = 目前接近 MA10 或 MA20 但仍在多頭排列
+    const ma10 = uptrendAll.filter((r) =>
+      r.dist_high_60d_pct != null && r.dist_high_60d_pct <= 3 &&
+      r.latest_close != null && r.ma10 != null &&
+      Math.abs(r.latest_close - r.ma10) / r.ma10 <= 0.02
+    );
+    const ma20 = uptrendAll.filter((r) =>
+      r.dist_high_60d_pct != null && r.dist_high_60d_pct <= 5 &&
+      r.latest_close != null && r.ma20 != null &&
+      Math.abs(r.latest_close - r.ma20) / r.ma20 <= 0.03
+    );
+    // 爆量下殺（疑似錯殺）= 高成交量 + 收盤遠離 MA20
+    const volow = results.filter((r) =>
+      r.cond5 === true && r.gain_5d_pct != null && r.gain_5d_pct < -3 &&
+      r.latest_close != null && r.ma20 != null &&
+      (r.latest_close - r.ma20) / r.ma20 < -0.05
+    );
+
+    return json({
+      ok: true,
+      source: "db",
+      as_of: asOf,
+      scanned: results.length,
+      uptrend_count: uptrendAll.length,
+      ma10: scored(ma10),
+      ma20: scored(ma20),
+      volow: scored(volow),
+      // 相容舊版欄位
+      count: uptrendAll.length,
+      items: scored(uptrendAll),
+      generated_at: Date.now(),
+    });
+  } catch (e) {
+    return json({
+      ok: true,
+      source: "stub",
+      as_of: new Date().toISOString().slice(0, 10),
+      scanned: 0,
+      uptrend_count: 0,
+      ma10: [],
+      ma20: [],
+      volow: [],
+      count: 0,
+      items: [],
+      error: e?.message,
+      message: "uptrend_watch 計算失敗（可能缺少 watchlist / market_price_bars）",
+    });
+  }
 }
 async function uptrendWatchFilter(request) { return uptrendWatch(request); }
 
@@ -2058,7 +2189,11 @@ async function revenue(request) {
     const lim = code ? "24" : "500";
     const sql = `
       SELECT r.id, r.symbol AS code,
-             COALESCE(w.name, '') AS name,
+             -- ★ 修正 BUG-5：優先用 watchlist 名稱（自選股已命名），fallback 到
+             --   market_instruments.display_name（上市櫃全市場對照表），最後才用空字串。
+             --   revenue 表記錄全市場股票，但 watchlist 只有 7 支自選股，必須 join
+             --   market_instruments 才能讓所有股票的「名稱」欄位有值。
+             COALESCE(NULLIF(w.name, ''), NULLIF(inst.display_name, ''), '') AS name,
              r.year || '/' || r.month AS year_month,
              r.revenue::float8 AS revenue_current,
              r.mom_pct::float8 AS mom_pct,
@@ -2069,6 +2204,13 @@ async function revenue(request) {
              r.fetched_at
       FROM revenue r
       LEFT JOIN watchlist w ON w.code = r.symbol
+      -- ★ 同 symbol 可能對應多個 source（yahoo/finmind 等），用 DISTINCT ON 取任一筆有 display_name 的列
+      LEFT JOIN (
+        SELECT DISTINCT ON (symbol) symbol, display_name
+        FROM market_instruments
+        WHERE display_name IS NOT NULL AND display_name <> ''
+        ORDER BY symbol, source_name
+      ) inst ON inst.symbol = r.symbol
       ${where}
       ORDER BY r.year DESC, r.month DESC, r.symbol ASC
       LIMIT ${lim}`;
