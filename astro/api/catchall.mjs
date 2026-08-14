@@ -707,6 +707,26 @@ async function stockIntro(request, code) {
         sector = parsed.sector || null;
       }
     } catch { /* keep null */ }
+
+    // 2026-08-14: 補 capital (股本/股數) + marketCap (市值) 給前端基本資料區塊
+    let capital = null;       // 股數（shares）
+    let marketCap = null;     // 市值（元）
+    let lastClose = null;
+    try {
+      const so = meta?.shares_outstanding || meta?.sharesOutstanding || meta?.capital_shares || null;
+      if (so) capital = Number(so);
+    } catch {}
+    try {
+      const lp = await q(
+        `SELECT close_price FROM market_price_bars
+         WHERE symbol = $1 AND asset_type = 'stock' AND close_price IS NOT NULL
+         ORDER BY trade_date DESC LIMIT 1`,
+        [code]
+      );
+      if (lp.rows.length) lastClose = Number(lp.rows[0].close_price);
+    } catch {}
+    if (capital && lastClose) marketCap = Math.round(capital * lastClose);
+
     return json({
       ok: true,
       source: "db",
@@ -718,6 +738,9 @@ async function stockIntro(request, code) {
       reference_url: m.reference_url,
       industry,
       sector,
+      capital,
+      marketCap,
+      lastClose,
       metadata: meta,
       fetched_at: m.fetched_at,
     });
@@ -2549,24 +2572,26 @@ async function priceCompare(request) {
   const days = Math.min(500, Math.max(10, parseInt(u.searchParams.get("days") || "60", 10) || 60));
   try {
     const { rows } = await q(
-      `SELECT symbol, trade_date, close_price
-       FROM market_price_bars
-       WHERE symbol = ANY($1::text[]) AND asset_type='stock' AND trade_date IS NOT NULL
-         AND trade_date >= (SELECT MAX(trade_date) FROM market_price_bars) - ($2 || ' days')::interval
-       ORDER BY symbol, trade_date ASC`,
+      `SELECT b.symbol, b.trade_date, b.close_price, COALESCE(m.display_name, NULL) AS name
+       FROM market_price_bars b
+       LEFT JOIN market_instruments m ON m.symbol = b.symbol AND m.asset_type = 'stock'
+       WHERE b.symbol = ANY($1::text[]) AND b.asset_type='stock' AND b.trade_date IS NOT NULL
+         AND b.trade_date >= (SELECT MAX(trade_date) FROM market_price_bars) - ($2 || ' days')::interval
+       ORDER BY b.symbol, b.trade_date ASC`,
       [codes, String(days)]
     );
     // Group by symbol
     const series = new Map();
     for (const r of rows) {
-      if (!series.has(r.symbol)) series.set(r.symbol, []);
-      series.get(r.symbol).push({ date: toTwseStyleDate(String(r.trade_date).slice(0, 10)), close: Number(r.close_price) });
+      if (!series.has(r.symbol)) series.set(r.symbol, { name: r.name, points: [] });
+      series.get(r.symbol).points.push({ date: toTwseStyleDate(String(r.trade_date).slice(0, 10)), close: Number(r.close_price) });
     }
-    const items = Array.from(series.entries()).map(([code, points]) => {
+    const items = Array.from(series.entries()).map(([code, payload]) => {
+      const points = payload.points;
       const base = points[0]?.close || 0;
       const last = points[points.length - 1]?.close || 0;
       return {
-        code, name: null,
+        code, name: payload.name,
         base, last,
         change_pct: base ? r2(((last - base) / base) * 100) : 0,
         points,
