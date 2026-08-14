@@ -732,7 +732,7 @@ async function stockIntro(request, code) {
     try {
       const fr = await q(
         `SELECT period, revenue, gross_profit, operating_income, net_income, eps
-         FROM financial_reports WHERE code = $1 ORDER BY period DESC LIMIT 1`,
+         FROM financial_reports WHERE symbol = $1 ORDER BY period DESC LIMIT 1`,
         [code]
       );
       if (fr.rows.length) finLatest = fr.rows[0];
