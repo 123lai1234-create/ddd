@@ -727,6 +727,27 @@ async function stockIntro(request, code) {
     } catch {}
     if (capital && lastClose) marketCap = Math.round(capital * lastClose);
 
+    // 2026-08-14: 補 financial + valuation 給前端右側 panel（從 financial_reports 拉）
+    let finLatest = null;
+    try {
+      const fr = await q(
+        `SELECT period, revenue, gross_profit, operating_income, net_income, eps
+         FROM financial_reports WHERE code = $1 ORDER BY period DESC LIMIT 1`,
+        [code]
+      );
+      if (fr.rows.length) finLatest = fr.rows[0];
+    } catch {}
+    const r2 = (n) => (n == null ? null : Math.round(Number(n) * 100) / 100);
+    const revenue = finLatest ? Number(finLatest.revenue) : null;
+    const grossProfit = finLatest ? Number(finLatest.gross_profit) : null;
+    const opIncome = finLatest ? Number(finLatest.operating_income) : null;
+    const ni = finLatest ? Number(finLatest.net_income) : null;
+    const epsVal = finLatest && finLatest.eps != null ? Number(finLatest.eps) : null;
+    const grossMarginPct = revenue && grossProfit ? r2((grossProfit / revenue) * 100) : null;
+    const opMarginPct = revenue && opIncome ? r2((opIncome / revenue) * 100) : null;
+    const netMarginPct = revenue && ni ? r2((ni / revenue) * 100) : null;
+    const peRatio = epsVal && lastClose ? r2(lastClose / epsVal) : null;
+
     return json({
       ok: true,
       source: "db",
@@ -741,6 +762,23 @@ async function stockIntro(request, code) {
       capital,
       marketCap,
       lastClose,
+      // 2026-08-14: 為前端右側 panel 提供「基本概況」+「財務資訊」用的扁平欄位
+      eps: epsVal,
+      pe: peRatio,
+      grossMargin: grossMarginPct,
+      operatingMargin: opMarginPct,
+      profitMargin: netMarginPct,
+      revenue: revenue,
+      netIncome: ni,
+      financial: {
+        period: finLatest?.period || null,
+        revenue, gross_profit: grossProfit, operating_income: opIncome,
+        net_income: ni, eps: epsVal,
+        gross_margin_pct: grossMarginPct,
+        operating_margin_pct: opMarginPct,
+        net_margin_pct: netMarginPct,
+      },
+      valuation: { pe_ratio: peRatio, price: lastClose, eps: epsVal },
       metadata: meta,
       fetched_at: m.fetched_at,
     });
