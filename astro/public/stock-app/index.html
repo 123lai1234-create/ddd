@@ -2618,8 +2618,7 @@ function initChart() {
     } catch(e) { return null; }
   };
   [ma5Line, ma10Line, ma20Line, ma60Line, ma240Line, channelHighLine, channelLowLine, supportLine].forEach(function(s) {
-    // 2026-08-14: 暫時拿掉（見 setData 後的註解）
-    // if (s) s.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
+    if (s) s.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
   });
 
   new ResizeObserver(function() {
@@ -4055,12 +4054,9 @@ function loadStock(code, days) {
       // 2026-08-10: unify Y-axis autoscale for ALL right-axis series.
       // lightweight-charts unions all series' autoscaleInfoProvider results; without
       // unifying, channel/support pull the range to 0-1600 instead of 1155-2405.
-      // 2026-08-14: 暫時拿掉 autoscaleInfoProvider — headless Chrome / 4.1.1 渲染時
-      //    主圖 canvas 完全透明（uniqueColors=0），疑似 autoscaleInfoProvider 與 autoScale
-      //    衝突導致 render pipeline 中斷。先恢復 default autoscale 確認 chart render。
-      // if (window._candleAutoscaleFn) {
-      //   candleSeries.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
-      // }
+      if (window._candleAutoscaleFn) {
+        candleSeries.applyOptions({ autoscaleInfoProvider: window._candleAutoscaleFn });
+      }
       // ★ 切換個股時強制重新自動縮放價格軸（避免使用者拖曳後價格軸卡住）
       chart.priceScale("right").applyOptions({ autoScale: true });
       chart.timeScale().fitContent();
