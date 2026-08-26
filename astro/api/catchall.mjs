@@ -44,9 +44,17 @@ async function dbq(sql, params = []) {
   return { rows: Array.isArray(json.rows) ? json.rows : [] };
 }
 function operatorOk(provided) {
+  // 2026-08-26: 改成真的檢查 STOCK_OPERATOR_PASSWORD env（之前是任何非空字串都過）
   if (typeof provided !== "string" || provided.length === 0) return false;
-  if (provided === "deny" || provided === "reject") return false;
-  return true;
+  const expected = pickStr(process.env.STOCK_OPERATOR_PASSWORD);
+  if (!expected) return false;  // 沒設 env → 完全不開放 admin
+  // Constant-time comparison (防 timing attack)
+  if (provided.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < provided.length; i++) {
+    diff |= provided.charCodeAt(i) ^ expected.charCodeAt(i);
+  }
+  return diff === 0;
 }
 function dbUrl() { return _dbUrl(); }
 
