@@ -2,7 +2,7 @@
 # (Verceignore in rootDirectory-scoped projects live next to the project's vercel.json.)
 node_modules/
 .astro/
-dist/
+# dist/ 不排除：build 是用 commit 進 git 的 dist（搭配 astro/vercel.json installCommand 的 git lfs pull 換成真實 mp3）
 .vercel/
 *.log
 .cache/
