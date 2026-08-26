@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "node scripts/fetch_lfs.mjs && npm install --prefer-offline --no-audit",
-  "buildCommand": "npx --no-install astro build && npx --no-install pagefind --site dist --output-path dist/pagefind",
+  "buildCommand": "npx --no-install astro build",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
