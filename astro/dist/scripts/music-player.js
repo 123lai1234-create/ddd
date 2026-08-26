@@ -186,8 +186,11 @@
         cacheElements();
         loadFromStorage();
         bindEvents();
-        renderPlaylist();
-        updateStats();
+        // 用真實的 manifest 啟動；失敗才退回 SAMPLE_MUSIC demo
+        loadTracksManifest().then(() => {
+            renderPlaylist();
+            updateStats();
+        });
         initAudioVisualizer();
         loadStatsFromStorage();
 
@@ -195,6 +198,29 @@
         elements.audioPlayer.volume = state.volume / 100;
         elements.volumeSlider.value = state.volume;
         elements.volumeValue.textContent = state.volume + "%";
+    }
+
+    // 從 /music/tracks.json 載入真實音樂清單
+    async function loadTracksManifest() {
+        try {
+            const r = await fetch("/music/tracks.json?v=" + Date.now(), { cache: "no-store" });
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            const data = await r.json();
+            if (data && Array.isArray(data.tracks) && data.tracks.length > 0) {
+                // 保留 localStorage 裡使用者新增的（id 大於 manifest 範圍或 url 以 blob: 開頭）
+                const userAdded = (state.playlist || []).filter(t =>
+                    !data.tracks.some(mt => mt.url === t.url && mt.title === t.title)
+                );
+                state.playlist = data.tracks.concat(userAdded);
+                // 用真實 metadata duration 蓋過 manifest 的估計值（如果有）
+                return;
+            }
+        } catch (err) {
+            console.warn("[music] tracks.json 載入失敗，使用 SAMPLE_MUSIC：", err && err.message);
+        }
+        if (!state.playlist || state.playlist.length === 0) {
+            state.playlist = SAMPLE_MUSIC.slice();
+        }
     }
 
     function cacheElements() {
@@ -306,11 +332,17 @@
         const track = state.playlist[index];
         state.currentIndex = index;
 
-        // 由於這是演示版本，使用模擬播放
-        // 實際上您需要真實的音頻 URL
+        // 如果有真實音檔 → 用 <audio> 播；沒 url 才退回模擬
         if (track.url) {
-            elements.audioPlayer.src = track.url;
-            elements.audioPlayer.play().catch(() => { });
+            if (simulateInterval) { clearInterval(simulateInterval); simulateInterval = null; }
+            // 重置 audio element（避免 src 相同時不觸發 load）
+            if (elements.audioPlayer.src !== new URL(track.url, location.href).href) {
+                elements.audioPlayer.src = track.url;
+            }
+            elements.audioPlayer.volume = state.isMuted ? 0 : state.volume / 100;
+            elements.audioPlayer.play().catch(err => {
+                console.warn("[music] play() rejected (autoplay? user gesture?):", err && err.message);
+            });
         }
 
         updateNowPlaying(track);
@@ -323,12 +355,20 @@
 
         // 開始視覺化
         if (state.audioContext && state.audioSource) {
-            state.audioSource.connect(state.analyser);
-            state.analyser.connect(state.audioContext.destination);
+            try {
+                state.audioSource.connect(state.analyser);
+                state.analyser.connect(state.audioContext.destination);
+            } catch (_) { /* already connected */ }
         }
 
-        // 模擬播放進度（因為沒有真實音頻）
-        simulatePlayback(track.duration);
+        // 沒 url 才模擬播放進度
+        if (!track.url) {
+            simulatePlayback(track.duration);
+        } else {
+            // 真實音檔：加 playing class 給視覺效果
+            elements.albumArt.classList.add("playing");
+            elements.audioVisualizer.classList.add("active");
+        }
     }
 
     function pauseTrack() {
@@ -479,7 +519,22 @@
     }
 
     function onMetadataLoaded() {
-        elements.timeTotal.textContent = formatTime(elements.audioPlayer.duration);
+        const d = elements.audioPlayer.duration;
+        if (d && !isNaN(d) && isFinite(d)) {
+            // 用真實 metadata duration 蓋過 manifest 的估計值
+            const track = state.playlist[state.currentIndex];
+            if (track) track.duration = Math.round(d);
+            elements.timeTotal.textContent = formatTime(d);
+            updatePlaylistStats();
+        }
+    }
+
+    function onAudioError() {
+        console.warn("[music] audio error:", elements.audioPlayer.error);
+        const track = state.playlist[state.currentIndex];
+        if (track) {
+            elements.trackArtist.textContent = (track.artist || "") + " · " + (track.album || "") + "  ⚠️ 載入失敗";
+        }
     }
 
     function onTrackEnded() {
@@ -496,11 +551,6 @@
         } else {
             nextTrack();
         }
-    }
-
-    function onAudioError() {
-        console.log("音頻載入失敗（預期行為 - 演示版本）");
-        // 在演示模式下，這是預期的，因為我們沒有真實的音頻 URL
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -567,11 +617,13 @@
         }
         item.dataset.index = index;
 
+        const coverHtml = renderCoverHtml(track.cover);
+
         item.innerHTML = `
-            <div class="playlist-item-cover">${track.cover || "🎵"}</div>
+            <div class="playlist-item-cover">${coverHtml}</div>
             <div class="playlist-item-info">
-                <div class="playlist-item-title">${track.title}</div>
-                <div class="playlist-item-artist">${track.artist}</div>
+                <div class="playlist-item-title">${escapeHtml(track.title)}</div>
+                <div class="playlist-item-artist">${escapeHtml(track.artist || "")}</div>
             </div>
             <div class="playlist-item-duration">${formatTime(track.duration)}</div>
             <div class="playlist-item-actions">
@@ -661,20 +713,76 @@
         }
 
         elements.trackTitle.textContent = track.title;
-        elements.trackArtist.textContent = track.artist + " · " + track.album;
-        elements.albumPlaceholder.textContent = track.cover || "🎵";
+        elements.trackArtist.textContent = (track.artist || "") + " · " + (track.album || "");
+        setAlbumArt(track.cover);
         elements.timeTotal.textContent = formatTime(track.duration);
         elements.progressFill.style.width = "0%";
         elements.progressHandle.style.left = "0%";
         elements.timeCurrent.textContent = "0:00";
 
-        // 渲染歌詞
+        // 渲染歌詞（支援 lyricsUrl 從遠端抓 + lyrics 陣列直接用）
         if (track.lyrics && track.lyrics.length > 0) {
             elements.lyrics.innerHTML = track.lyrics
-                .map(line => `<p class="lyric-line">${line}</p>`)
+                .map(line => `<p class="lyric-line">${escapeHtml(line)}</p>`)
                 .join("");
+        } else if (track.lyricsUrl) {
+            loadLyricsFromUrl(track.lyricsUrl);
         } else {
             elements.lyrics.innerHTML = '<p class="lyric-line">暫無歌詞</p>';
+        }
+    }
+
+    // 渲染封面 HTML（URL 用 <img>，emoji 純字串）
+    function renderCoverHtml(cover) {
+        if (!cover) return "🎵";
+        if (typeof cover === "string" && /^(\/|https?:|data:)/i.test(cover)) {
+            const esc = escapeHtml(cover);
+            return `<img src="${esc}" alt="" loading="lazy" onerror="this.outerHTML='🎵'" />`;
+        }
+        return escapeHtml(cover);
+    }
+
+    function setAlbumArt(cover) {
+        if (!elements.albumPlaceholder) return;
+        if (cover && typeof cover === "string" && /^(\/|https?:|data:)/i.test(cover)) {
+            elements.albumPlaceholder.innerHTML =
+                `<img src="${escapeHtml(cover)}" alt="" onerror="this.outerHTML='🎵'" />`;
+        } else {
+            elements.albumPlaceholder.textContent = cover || "🎵";
+        }
+    }
+
+    function escapeHtml(s) {
+        return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    async function loadLyricsFromUrl(url) {
+        elements.lyrics.innerHTML = '<p class="lyric-line">歌詞載入中…</p>';
+        try {
+            const r = await fetch(url, { cache: "no-store" });
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            const text = await r.text();
+            const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+            if (lines.length === 0) {
+                elements.lyrics.innerHTML = '<p class="lyric-line">歌詞為空</p>';
+                return;
+            }
+            const track = state.playlist[state.currentIndex];
+            if (track) {
+                track.lyrics = lines;
+                track.lyricsUrl = url;
+            }
+            elements.lyrics.innerHTML = lines
+                .map(line => `<p class="lyric-line">${escapeHtml(line)}</p>`)
+                .join("");
+        } catch (err) {
+            elements.lyrics.innerHTML = '<p class="lyric-line">歌詞載入失敗</p>';
+            console.warn("[music] lyrics load failed:", err);
         }
     }
 
