@@ -331,6 +331,7 @@
 
         const track = state.playlist[index];
         state.currentIndex = index;
+        state.currentLyricIndex = -1; // 重置歌詞高亮索引
 
         // 有真實音檔 → 用 <audio> 播；沒 url 才退回模擬
         if (track.url) {
@@ -720,8 +721,10 @@
         elements.progressHandle.style.left = "0%";
         elements.timeCurrent.textContent = "0:00";
 
-        // 渲染歌詞（支援 lyricsUrl 從遠端抓 + lyrics 陣列直接用）
-        if (track.lyrics && track.lyrics.length > 0) {
+        // 渲染歌詞（支援 LRC timed array > plain lyrics array > lyricsUrl 抓）
+        if (track.lyricsTimed && track.lyricsTimed.length > 0) {
+            renderLyricsTimed(track.lyricsTimed);
+        } else if (track.lyrics && track.lyrics.length > 0) {
             elements.lyrics.innerHTML = track.lyrics
                 .map(line => `<p class="lyric-line">${escapeHtml(line)}</p>`)
                 .join("");
@@ -730,6 +733,13 @@
         } else {
             elements.lyrics.innerHTML = '<p class="lyric-line">暫無歌詞</p>';
         }
+    }
+
+    // 渲染 timed lyrics：[{ time: 12.34, text: '...' }, ...]
+    function renderLyricsTimed(timed) {
+        elements.lyrics.innerHTML = timed
+            .map((l, i) => `<p class="lyric-line" data-time="${l.time.toFixed(2)}" data-idx="${i}">${escapeHtml(l.text)}</p>`)
+            .join("");
     }
 
     // 渲染封面 HTML（URL 用 <img>，emoji 純字串）
@@ -767,43 +777,131 @@
             const r = await fetch(url, { cache: "no-store" });
             if (!r.ok) throw new Error("HTTP " + r.status);
             const text = await r.text();
-            const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-            if (lines.length === 0) {
-                elements.lyrics.innerHTML = '<p class="lyric-line">歌詞為空</p>';
-                return;
-            }
             const track = state.playlist[state.currentIndex];
             if (track) {
-                track.lyrics = lines;
                 track.lyricsUrl = url;
+                // 自動偵測 LRC 格式（[mm:ss.xx]）
+                if (isLrcFormat(text)) {
+                    const timed = parseLrc(text);
+                    track.lyricsTimed = timed;
+                    track.lyrics = null;
+                    renderLyricsTimed(timed);
+                } else {
+                    const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+                    track.lyrics = lines;
+                    track.lyricsTimed = null;
+                    if (lines.length === 0) {
+                        elements.lyrics.innerHTML = '<p class="lyric-line">歌詞為空</p>';
+                    } else {
+                        elements.lyrics.innerHTML = lines
+                            .map(line => `<p class="lyric-line">${escapeHtml(line)}</p>`)
+                            .join("");
+                    }
+                }
             }
-            elements.lyrics.innerHTML = lines
-                .map(line => `<p class="lyric-line">${escapeHtml(line)}</p>`)
-                .join("");
         } catch (err) {
             elements.lyrics.innerHTML = '<p class="lyric-line">歌詞載入失敗</p>';
             console.warn("[music] lyrics load failed:", err);
         }
     }
 
+    // LRC 格式：[mm:ss.xx] 歌詞
+    function isLrcFormat(text) {
+        return /^\s*\[\d{1,2}:\d{1,2}(?:\.\d{1,3})?\]/m.test(text);
+    }
+
+    // 解析 LRC 為 [{time, text}]，處理多時間標籤同一行
+    function parseLrc(text) {
+        const lines = text.split(/\r?\n/);
+        const out = [];
+        const tagRe = /\[(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?\]/g;
+        const metaRe = /^\[(ti|ar|al|length|by|offset|re|ve):/i;
+        for (const raw of lines) {
+            const line = raw.trim();
+            if (!line) continue;
+            if (metaRe.test(line)) continue; // 跳過 [ti:..] [ar:..] 等 metadata
+            // 找所有時間標籤
+            const times = [];
+            let m;
+            tagRe.lastIndex = 0;
+            while ((m = tagRe.exec(line)) !== null) {
+                const min = parseInt(m[1], 10);
+                const sec = parseInt(m[2], 10);
+                const ms = m[3] ? parseInt(m[3].padEnd(3, '0').slice(0, 3), 10) : 0;
+                times.push(min * 60 + sec + ms / 1000);
+            }
+            if (times.length === 0) continue;
+            // 去掉時間標籤，剩下的是歌詞
+            const text = line.replace(tagRe, '').trim();
+            for (const t of times) {
+                out.push({ time: t, text });
+            }
+        }
+        // 按時間排序
+        out.sort((a, b) => a.time - b.time);
+        return out;
+    }
+
+    // 找當前播放時間對應的歌詞行（用 lyricsTimed 二分搜尋）
+    function findCurrentLyricLine(timed, currentTime) {
+        if (!timed || timed.length === 0) return -1;
+        let lo = 0, hi = timed.length - 1, idx = -1;
+        // 找最大的 t <= currentTime
+        while (lo <= hi) {
+            const mid = (lo + hi) >> 1;
+            if (timed[mid].time <= currentTime) {
+                idx = mid;
+                lo = mid + 1;
+            } else {
+                hi = mid - 1;
+            }
+        }
+        return idx;
+    }
+
     function updateLyrics(currentTime) {
         if (state.currentIndex < 0) return;
 
         const track = state.playlist[state.currentIndex];
-        if (!track.lyrics || track.lyrics.length === 0) return;
+        if (!track) return;
 
+        let currentLineIndex = -1;
+
+        if (track.lyricsTimed && track.lyricsTimed.length > 0) {
+            // LRC 模式：二分配對時間
+            currentLineIndex = findCurrentLyricLine(track.lyricsTimed, currentTime);
+        } else if (track.lyrics && track.lyrics.length > 0) {
+            // 純文字 fallback：均分時間
+            const duration = track.duration / track.lyrics.length;
+            currentLineIndex = Math.floor(currentTime / duration);
+        } else {
+            return;
+        }
+
+        // 切換 active/passed class（避免不必要的 DOM 操作）
         const lines = elements.lyrics.querySelectorAll(".lyric-line");
-        const duration = track.duration / track.lyrics.length;
-        const currentLineIndex = Math.floor(currentTime / duration);
-
-        lines.forEach((line, index) => {
-            line.classList.toggle("active", index === currentLineIndex);
-        });
-
-        // 滾動到當前行
-        const activeLine = elements.lyrics.querySelector(".lyric-line.active");
-        if (activeLine) {
-            activeLine.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (lines.length === 0) return;
+        const prev = state.currentLyricIndex ?? -1;
+        if (prev !== currentLineIndex) {
+            // 移除所有舊狀態
+            for (let i = 0; i < lines.length; i++) {
+                const c = lines[i].classList;
+                if (c.contains("active") || c.contains("passed")) {
+                    c.remove("active", "passed");
+                }
+            }
+            // 標記已過的 + 當前的
+            if (currentLineIndex >= 0) {
+                for (let i = 0; i < currentLineIndex; i++) {
+                    lines[i].classList.add("passed");
+                }
+                lines[currentLineIndex].classList.add("active");
+                // 平滑滾動到當前行（置中）
+                try {
+                    lines[currentLineIndex].scrollIntoView({ behavior: "smooth", block: "center" });
+                } catch (_) { /* scrollIntoView not supported */ }
+            }
+            state.currentLyricIndex = currentLineIndex;
         }
     }
 

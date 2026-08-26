@@ -22,7 +22,7 @@
       "duration": 226,
       "url": "/music/03_不服輸(優化版).mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/03_不服輸(優化版).txt",
+      "lyricsUrl": "/music/03_不服輸.lrc",
       "favorite": false
     },
     {
@@ -33,7 +33,7 @@
       "duration": 247,
       "url": "/music/03_不服輸.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/03_不服輸.txt",
+      "lyricsUrl": "/music/03_不服輸.lrc",
       "favorite": false
     },
     {
@@ -66,7 +66,7 @@
       "duration": 179,
       "url": "/music/04_老家的巷子.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/04_老家的巷子.txt",
+      "lyricsUrl": "/music/04_老家的巷子.lrc",
       "favorite": false
     },
     {
@@ -88,7 +88,7 @@
       "duration": 295,
       "url": "/music/05_雨夜出租.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/05_雨夜出租.txt",
+      "lyricsUrl": "/music/05_雨夜出租.lrc",
       "favorite": false
     },
     {
@@ -110,7 +110,7 @@
       "duration": 240,
       "url": "/music/07_愛的模樣.mp3",
       "cover": "/music/covers/07_愛的模樣.jpg",
-      "lyricsUrl": "/music/07_愛的模樣.txt",
+      "lyricsUrl": "/music/07_愛的模樣.lrc",
       "favorite": false
     },
     {
@@ -121,7 +121,7 @@
       "duration": 221,
       "url": "/music/08_三十歲的懸賞令.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/08_三十歲的懸賞令.txt",
+      "lyricsUrl": "/music/08_三十歲的懸賞令.lrc",
       "favorite": false
     },
     {
@@ -132,7 +132,7 @@
       "duration": 254,
       "url": "/music/08_給爸媽的電話.mp3",
       "cover": "/music/covers/08_給爸媽的電話.jpg",
-      "lyricsUrl": "/music/08_給爸媽的電話.txt",
+      "lyricsUrl": "/music/08_給爸媽的電話.lrc",
       "favorite": false
     },
     {
@@ -143,7 +143,7 @@
       "duration": 245,
       "url": "/music/09_我一個人也很好.mp3",
       "cover": "/music/covers/09_我一個人也很好.jpg",
-      "lyricsUrl": "/music/09_我一個人也很好.txt",
+      "lyricsUrl": "/music/09_我一個人也很好.lrc",
       "favorite": false
     },
     {
@@ -154,7 +154,7 @@
       "duration": 180,
       "url": "/music/09_機場的最後一夜.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/09_機場的最後一夜.txt",
+      "lyricsUrl": "/music/09_機場的最後一夜.lrc",
       "favorite": false
     },
     {
@@ -165,7 +165,7 @@
       "duration": 258,
       "url": "/music/10_十年後的重逢(優化版).mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/10_十年後的重逢(優化版).txt",
+      "lyricsUrl": "/music/10_十年後的重逢.lrc",
       "favorite": false
     },
     {
@@ -176,7 +176,7 @@
       "duration": 143,
       "url": "/music/10_十年後的重逢.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/10_十年後的重逢.txt",
+      "lyricsUrl": "/music/10_十年後的重逢.lrc",
       "favorite": false
     },
     {
@@ -187,7 +187,7 @@
       "duration": 351,
       "url": "/music/10_城市的夜.mp3",
       "cover": "/music/covers/10_城市的夜.jpg",
-      "lyricsUrl": "/music/10_城市的夜.txt",
+      "lyricsUrl": "/music/10_城市的夜.lrc",
       "favorite": false
     },
     {
@@ -198,7 +198,7 @@
       "duration": 216,
       "url": "/music/11_如果有一天.mp3",
       "cover": "/music/covers/11_如果有一天.jpg",
-      "lyricsUrl": "/music/11_如果有一天.txt",
+      "lyricsUrl": "/music/11_如果有一天.lrc",
       "favorite": false
     },
     {
@@ -209,7 +209,7 @@
       "duration": 312,
       "url": "/music/12_故鄉的雲.mp3",
       "cover": "/music/covers/12_故鄉的雲.jpg",
-      "lyricsUrl": "/music/12_故鄉的雲.txt",
+      "lyricsUrl": "/music/12_故鄉的雲.lrc",
       "favorite": false
     },
     {
@@ -220,7 +220,7 @@
       "duration": 128,
       "url": "/music/13_時光膠囊.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/13_時光膠囊.txt",
+      "lyricsUrl": "/music/13_時光膠囊.lrc",
       "favorite": false
     },
     {
@@ -231,7 +231,7 @@
       "duration": 298,
       "url": "/music/15_風箏的故鄉.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/15_風箏的故鄉.txt",
+      "lyricsUrl": "/music/15_風箏的故鄉.lrc",
       "favorite": false
     },
     {
@@ -242,7 +242,7 @@
       "duration": 133,
       "url": "/music/18_遇見你之前.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/18_遇見你之前.txt",
+      "lyricsUrl": "/music/18_遇見你之前.lrc",
       "favorite": false
     },
     {
@@ -253,7 +253,7 @@
       "duration": 283,
       "url": "/music/20_等天亮(優化版).mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/20_等天亮(優化版).txt",
+      "lyricsUrl": "/music/20_等天亮.lrc",
       "favorite": false
     },
     {
@@ -264,7 +264,7 @@
       "duration": 186,
       "url": "/music/20_等天亮.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/20_等天亮.txt",
+      "lyricsUrl": "/music/20_等天亮.lrc",
       "favorite": false
     },
     {
