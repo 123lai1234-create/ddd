@@ -1137,21 +1137,11 @@ async function markersRecordImpl(request) {
         let isoDate = safeIsoDate(it?.time);
         if (!isoDate) isoDate = todayIso;  // fallback to today when time is missing/invalid
         const type = pickStr(it?.source || "auto", "auto");        // "trade" | "event" | "auto"
-        const textMain = pickStr(it?.text);
-        const t = Number(it?.time);
-        // 序列化額外欄位(close/ma5/10/20/60/position/shape/color)塞進 text
-        const extra = {
-          close:    it?.close  != null ? Number(it.close)  : null,
-          ma5:      it?.ma5    != null ? Number(it.ma5)    : null,
-          ma10:     it?.ma10   != null ? Number(it.ma10)   : null,
-          ma20:     it?.ma20   != null ? Number(it.ma20)   : null,
-          ma60:     it?.ma60   != null ? Number(it.ma60)   : null,
-          position: pickStr(it?.position, ""),
-          shape:    pickStr(it?.shape, ""),
-          color:    pickStr(it?.color, ""),
-          time:     Number.isFinite(t) && t > 0 ? t : null,
-        };
-        const text = textMain + " || " + JSON.stringify(extra);
+        // 2026-08-26 fix: 只存純文字到 markers.text 欄位
+        //   之前把 close/ma5/10/20/60/position/shape/color/time 序列化塞進 text，
+        //   造成 marker_history.html 顯示 "<訊息> || {...一堆 null JSON...}" 雜訊。
+        //   這些欄位在 charts 端已經用得到，不需要再回灌到 DB 的 text。
+        const text = pickStr(it?.text);
         rows.push([code, isoDate, type, text, null]);
       }
       if (rows.length === 0) {
