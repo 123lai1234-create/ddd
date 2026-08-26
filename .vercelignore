@@ -95,8 +95,11 @@ netlify.toml
 nginx.conf
 npm-install*.log
 OPTIMIZATION_REPORT.md
-package-lock.json
-package.json
+# 排除根目錄的 package-lock.json / package.json，但保留 astro 子目錄的（vercel 需要它做 npm ci）
+/package-lock.json
+/package.json
+!/astro/package-lock.json
+!/astro/package.json
 pip-out.log
 probe-*.mjs
 probe-*.cjs

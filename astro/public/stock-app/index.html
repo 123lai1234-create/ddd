@@ -2823,12 +2823,12 @@ function switchToIndexMode(ticker) {
               var pts = hist.map(function(x){
                 return { time: x.date, value: x.ratio };
               });
-              posRatioLine.setData(pts);
+              try { if (posRatioLine) posRatioLine.setData(_safeArr(pts)); } catch(e) { console.warn("[posRatio] setData failed:", e); }
               renderPositionTable(hist, (indexData && indexData.candles) || []);
             })
             .catch(function(){
               if (currentMode !== "index" || currentIndexTicker !== "^TWII") return;
-              posRatioLine.setData([]);
+              try { if (posRatioLine) posRatioLine.setData([]); } catch(e) {}
               document.getElementById("positionTableContent").innerHTML =
                 '<div class="loading-text">水位資料載入失敗</div>';
             });
@@ -7196,7 +7196,7 @@ function showTradeDetail() {
           lastValueVisible: true,
           title: "Hist",
         });
-        macdHistSeries.setData(d.histogram);
+        try { macdHistSeries.setData(_safeArr(d.histogram)); } catch(e) { console.warn("[MACD] setData histogram failed:", e); }
 
         // MACD 線
         macdLineSeries = macdChart.addLineSeries({
@@ -7207,7 +7207,7 @@ function showTradeDetail() {
           lastValueVisible: true,
           title: "MACD",
         });
-        macdLineSeries.setData(d.macd_line);
+        try { macdLineSeries.setData(_safeArr(d.macd_line)); } catch(e) { console.warn("[MACD] setData macd_line failed:", e); }
 
         // Signal 線
         macdSigSeries = macdChart.addLineSeries({
@@ -7218,7 +7218,7 @@ function showTradeDetail() {
           lastValueVisible: true,
           title: "Signal",
         });
-        macdSigSeries.setData(d.signal_line);
+        try { macdSigSeries.setData(_safeArr(d.signal_line)); } catch(e) { console.warn("[MACD] setData signal_line failed:", e); }
 
         // 背離 marker 放在 MACD 線上
         if (d.divergences && d.divergences.length > 0) {

@@ -239,7 +239,22 @@ async function stockKlines(request, ticker) {
        ORDER BY trade_date DESC LIMIT $2`,
       [ticker, days]
     );
-    if (!rows.length) return json({ error: "查無資料", code: ticker }, { status: 404 });
+    // 2026-08-26: 改成 200 + 空 candles，避免前端 lightweight-charts 爆 "Value is null"。
+    //   這個 endpoint 是公開 cacheable lookups，回 404 會讓前端 fetch 進入 catch 分支，
+    //   但舊版前端不處理 catch 直接 setData([])，新版則會 try/catch 但 console 還是會刷錯誤。
+    //   改成 200 + empty 結構，前端可以正常 render 「此股票無 K 線資料」訊息。
+    if (!rows.length) {
+      return json({
+        ok: true, source: "empty", code: ticker, strategy, strategy_profile: strategyProfile,
+        count: 0, candles: [], volumes: [],
+        ma: { ma5: [], ma10: [], ma20: [], ma60: [], ma240: [] },
+        latest: null,
+        capital: { shares_outstanding: null, market_cap_億: null },
+        financial: { period: null, revenue: 0, gross_profit: 0, operating_income: 0, net_income: 0, eps: null, gross_margin_pct: null, operating_margin_pct: null, net_margin_pct: null },
+        valuation: { pe_ratio: null, price: null, eps: null },
+        message: "此股票尚無 K 線資料（可能尚未 seed 到 market_price_bars）",
+      });
+    }
     const asc = rows.slice().reverse();
     // Build candles with:
     // - date: "115/07/09" (ROC, for display)

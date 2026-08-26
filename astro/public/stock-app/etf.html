@@ -1587,21 +1587,21 @@ function drawMacd(d) {
     priceFormat: { type: "price", precision: 4, minMove: 0.0001 },
     priceScaleId: "right", lastValueVisible: true, title: "Hist",
   });
-  macdHistSeries.setData(d.histogram);
+  try { macdHistSeries.setData(_safeArr(d.histogram)); } catch(e) { console.warn("[MACD] setData histogram failed:", e); }
 
   macdLineSeries = macdChart.addLineSeries({
     color: "#e0e0ff", lineWidth: 1,
     priceFormat: { type: "price", precision: 4, minMove: 0.0001 },
     priceScaleId: "right", lastValueVisible: true, title: "MACD",
   });
-  macdLineSeries.setData(d.macd_line);
+  try { macdLineSeries.setData(_safeArr(d.macd_line)); } catch(e) { console.warn("[MACD] setData macd_line failed:", e); }
 
   macdSigSeries = macdChart.addLineSeries({
     color: "#ffb300", lineWidth: 1,
     priceFormat: { type: "price", precision: 4, minMove: 0.0001 },
     priceScaleId: "right", lastValueVisible: true, title: "Signal",
   });
-  macdSigSeries.setData(d.signal_line);
+  try { macdSigSeries.setData(_safeArr(d.signal_line)); } catch(e) { console.warn("[MACD] setData signal_line failed:", e); }
 
   if (d.divergences && d.divergences.length > 0) {
     var mks = d.divergences.map(function(dv) {
