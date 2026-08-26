@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "git lfs install --local || true; git lfs pull || true; npm install --prefer-offline --no-audit",
+  "installCommand": "node scripts/fetch_lfs.mjs && npm install --prefer-offline --no-audit",
   "buildCommand": "npx --no-install astro build && npx --no-install pagefind --site dist --output-path dist/pagefind",
   "outputDirectory": "dist",
   "cleanUrls": true,
