@@ -1,0 +1,10 @@
+[
+  {
+    "type": "Runtime.consoleAPICalled",
+    "text": "[監控] 後端已手動停用，盤中即時掃描將不執行"
+  },
+  {
+    "type": "Runtime.consoleAPICalled",
+    "text": "[監控] 後端已手動停用，盤中即時掃描將不執行"
+  }
+]

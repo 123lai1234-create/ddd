@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📅 法說會 AI 摘要</title>
+<link rel="icon" type="image/svg+xml" href="static/favicon.svg">
+<style>
+  :root{--bg:#0f0f23;--bg2:#1a1a3e;--bg3:#1e1e42;--txt:#e0e0ff;--txt2:#8888aa;
+        --green:#00c853;--red:#ff1744;--orange:#ff9100;--purple:#d500f9;
+        --blue:#448aff;--cyan:#00bcd4;--bdr:#2a2a5a}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--txt);padding:20px}
+  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+  h1{font-size:20px;background:linear-gradient(90deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .meta{color:var(--txt2);font-size:13px}
+  .filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+  .filter-bar select, .filter-bar button, .filter-bar input{
+    background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);
+    padding:6px 12px;border-radius:6px;font-size:13px
+  }
+  .filter-bar button{cursor:pointer}
+  .filter-bar button:hover{background:var(--bg3)}
+  .filter-bar label{color:var(--txt2);font-size:13px}
+  .filter-bar a{color:var(--cyan);text-decoration:none;padding:6px 12px;border:1px solid var(--bdr);border-radius:6px;font-size:13px}
+  .filter-bar a:hover{background:var(--bg2)}
+  .card{background:var(--bg2);border-radius:8px;padding:14px 18px;margin-bottom:12px;border-left:4px solid var(--bdr)}
+  .card.bull{border-left-color:#ff1744}
+  .card.bear{border-left-color:#00c853}
+  .card.neutral{border-left-color:#8888aa}
+  .card h3{font-size:15px;margin-bottom:6px}
+  .card h3 .tag{font-size:12px;padding:2px 8px;border-radius:4px;margin-left:8px;font-weight:600}
+  .tag-bull{background:rgba(255,23,68,.2);color:#ff1744}
+  .tag-bear{background:rgba(0,200,83,.2);color:#00c853}
+  .tag-neutral{background:rgba(136,136,170,.2);color:#aaa}
+  .card .info{color:var(--txt2);font-size:12px;margin-bottom:8px}
+  .card .summary{margin:8px 0;line-height:1.6}
+  .card ul{margin:6px 0 6px 20px;color:var(--txt)}
+  .card ul li{margin:2px 0;font-size:13px;line-height:1.5}
+  .card .risks{background:rgba(255,23,68,.08);padding:8px 12px;border-radius:4px;margin-top:8px}
+  .card .risks .lbl{color:#ff1744;font-weight:600;font-size:12px}
+  .card .guidance{background:rgba(0,188,212,.08);padding:8px 12px;border-radius:4px;margin-top:8px}
+  .card .guidance .lbl{color:var(--cyan);font-weight:600;font-size:12px}
+  .card a{color:var(--cyan);font-size:12px}
+  .card .no-ai{color:var(--txt2);font-style:italic;font-size:13px}
+  .empty{padding:40px;text-align:center;color:var(--txt2);background:var(--bg2);border-radius:8px}
+  .loading{padding:40px;text-align:center;color:var(--cyan)}
+  .err{padding:20px;text-align:center;color:var(--red);background:var(--bg2);border-radius:8px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📅 法說會 AI 摘要</h1>
+  <div class="meta" id="meta">資料源：MOPS · AI 解讀：gpt-4o-mini</div>
+</div>
+
+<div class="filter-bar">
+  <label>日期範圍</label>
+  <input type="date" id="dateFrom">
+  <span style="color:var(--txt2)">~</span>
+  <input type="date" id="dateTo">
+  <select id="sentSel">
+    <option value="">全部情緒</option>
+    <option value="利多">利多</option>
+    <option value="利空">利空</option>
+    <option value="中性">中性</option>
+  </select>
+  <label><input type="checkbox" id="watchOnly" checked> 只看自選股</label>
+  <button onclick="loadData()">查詢</button>
+  <button id="btnCopyAllBull" onclick="copyAllBullStocks()"
+          style="background:#1565c0;color:#fff;border:1px solid #1565c0;display:none"
+          title="複製所有 AI 判定為利多的股票：含法說會 AI 摘要 + 個股資訊欄（每檔約 5~10 秒）">
+    📋 一鍵複製全部利多
+  </button>
+  <span id="bulkCopyStatus" style="font-size:12px;color:var(--txt2);display:none"></span>
+  <a href="index.html">← 回首頁</a>
+</div>
+
+<!-- 隱藏 iframe 容器（批次複製用） -->
+<div id="bulkCopyFrames" style="position:fixed;left:-99999px;top:0;width:1200px;height:800px;overflow:hidden;pointer-events:none"></div>
+
+<!-- 情緒後續報酬統計表 -->
+<div id="statsBox" style="background:var(--bg2);border-radius:8px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--bdr)">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+    <div style="font-size:15px;font-weight:600">📊 法說情緒後續漲跌幅統計</div>
+    <div class="meta" id="statsMeta" style="font-size:12px"></div>
+  </div>
+  <div style="overflow-x:auto">
+    <table id="statsTable" style="border-collapse:collapse;width:100%;font-size:13px;min-width:480px">
+      <thead>
+        <tr style="color:var(--txt2);text-align:right">
+          <th style="text-align:left;padding:6px 10px;border-bottom:1px solid var(--bdr)">情緒</th>
+          <th style="padding:6px 10px;border-bottom:1px solid var(--bdr)">場數</th>
+          <th style="padding:6px 10px;border-bottom:1px solid var(--bdr)">後續5日</th>
+          <th style="padding:6px 10px;border-bottom:1px solid var(--bdr)">後續20日</th>
+          <th style="padding:6px 10px;border-bottom:1px solid var(--bdr)">後續60日</th>
+        </tr>
+      </thead>
+      <tbody id="statsBody">
+        <tr><td colspan="5" style="padding:12px;text-align:center;color:var(--txt2)">統計載入中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="meta" style="font-size:11px;margin-top:8px">
+    以法說會當日收盤為基準，計算後續 5/20/60 個交易日平均漲跌幅；括號為已成熟樣本數，視窗尚未成熟者不列入。僅供參考，非買賣訊號。
+  </div>
+</div>
+
+<div id="content"><div class="loading">載入中...</div></div>
+
+<script>
+let rawData = [];
+
+function sentimentClass(s){
+  if (s === "利多") return {card:"bull", tag:"tag-bull"};
+  if (s === "利空") return {card:"bear", tag:"tag-bear"};
+  return {card:"neutral", tag:"tag-neutral"};
+}
+
+function render(){
+  const sent = document.getElementById("sentSel").value;
+  let rows = rawData.slice();
+  if (sent){
+    rows = rows.filter(r => r.ai && r.ai.sentiment === sent);
+  }
+  const c = document.getElementById("content");
+  if (!rows.length){
+    c.innerHTML = '<div class="empty">沒有命中的法說會</div>';
+    return;
+  }
+  let html = '';
+  rows.forEach(r => {
+    const ai = r.ai || null;
+    const sc = sentimentClass(ai && ai.sentiment);
+    const pdfUrl = r.pdf_zh
+      ? `https://mopsov.twse.com.tw/server-java/FileDownLoad?step=9&filePath=/home/html/nas/STR/&fileName=${r.pdf_zh}&functionName=t100sb02_1`
+      : null;
+    html += `<div class="card ${sc.card}">`;
+    const stockUrl = `index.html?code=${encodeURIComponent(r.code)}`;
+    html += `<h3><a href="${stockUrl}" target="_blank" `
+      + `style="color:#7ab8ff;text-decoration:none" title="開新分頁看 K 線">`
+      + `${r.code} ${r.name||''}</a>`;
+    if (ai && ai.sentiment){
+      const scoreStr = ai.score != null ? ` ${ai.score >= 0 ? '+' : ''}${Number(ai.score).toFixed(1)}` : '';
+      html += `<span class="tag ${sc.tag}">${ai.sentiment}${scoreStr}</span>`;
+    }
+    html += `</h3>`;
+    html += `<div class="info">📅 ${r.meeting_date} ${r.meeting_time||''}`;
+    if (r.location) html += ` · 📍 ${(r.location||'').substring(0,30)}`;
+    if (pdfUrl) html += ` · <a href="${pdfUrl}" target="_blank">📄 簡報 PDF</a>`;
+    html += `</div>`;
+    if (r.subject){
+      html += `<div class="info" style="color:var(--txt)">主題：${r.subject}</div>`;
+    }
+    if (!ai){
+      html += `<div class="no-ai">（尚未 AI 解讀）</div>`;
+    } else if (ai.error){
+      html += `<div class="no-ai">AI 解讀失敗：${ai.error}</div>`;
+    } else {
+      if (ai.summary) html += `<div class="summary">${ai.summary}</div>`;
+      if (ai.key_points && ai.key_points.length){
+        html += `<ul>`;
+        ai.key_points.forEach(kp => html += `<li>${kp}</li>`);
+        html += `</ul>`;
+      }
+      if (ai.guidance){
+        html += `<div class="guidance"><span class="lbl">🎯 展望：</span> ${ai.guidance}</div>`;
+      }
+      if (ai.risks && ai.risks.length){
+        html += `<div class="risks"><span class="lbl">⚠ 風險：</span><ul>`;
+        ai.risks.forEach(rk => html += `<li>${rk}</li>`);
+        html += `</ul></div>`;
+      }
+    }
+    html += `</div>`;
+  });
+  c.innerHTML = html;
+  // ★ 更新「一鍵複製全部利多」按鈕顯示狀態
+  updateBullCopyBtn();
+}
+
+function updateBullCopyBtn(){
+  const btn = document.getElementById('btnCopyAllBull');
+  if (!btn) return;
+  const bullRows = (rawData || []).filter(r => r.ai && r.ai.sentiment === '利多' && r.code);
+  btn.style.display = bullRows.length > 0 ? '' : 'none';
+  if (!_bulkCopyState){
+    btn.disabled = false;
+    btn.textContent = `📋 一鍵複製全部利多（${bullRows.length}）`;
+  }
+}
+
+// ══════════════════════════════════════════
+// ★ 一鍵複製全部利多（法說會 AI 摘要 + 個股資訊欄）
+// ══════════════════════════════════════════
+var _bulkCopyState = null;
+
+function _bulkCopyUpdateStatus(msg, color){
+  var s = document.getElementById('bulkCopyStatus');
+  if (!s) return;
+  s.style.display = 'inline';
+  s.style.color = color || 'var(--txt2)';
+  s.textContent = msg;
+}
+
+function _bulkCopyReset(){
+  var btn = document.getElementById('btnCopyAllBull');
+  if (btn) btn.disabled = false;
+  var box = document.getElementById('bulkCopyFrames');
+  if (box) box.innerHTML = '';
+  if (_bulkCopyState){
+    if (_bulkCopyState.msgHandler) window.removeEventListener('message', _bulkCopyState.msgHandler);
+    if (_bulkCopyState.unloadHandler) window.removeEventListener('beforeunload', _bulkCopyState.unloadHandler);
+    for (var c in _bulkCopyState.activeFrames){
+      try { clearTimeout(parseInt(_bulkCopyState.activeFrames[c].dataset.timer || '0', 10)); } catch(e){}
+    }
+  }
+  _bulkCopyState = null;
+  updateBullCopyBtn();
+}
+
+function _bulkCopySpawnNext(){
+  if (!_bulkCopyState) return;
+  var st = _bulkCopyState;
+  while (st.pending.length > 0 && Object.keys(st.activeFrames).length < st.concurrency){
+    var code = st.pending.shift();
+    var fr = document.createElement('iframe');
+    fr.src = '/?bulkcopy=1&code=' + encodeURIComponent(code);
+    fr.dataset.code = code;
+    fr.style.width = '1200px';
+    fr.style.height = '800px';
+    fr.style.border = '0';
+    fr.dataset.timer = String(setTimeout(function(c){
+      return function(){ _bulkCopyOnResult(c, false, '', 'timeout'); };
+    }(code), 15000));
+    document.getElementById('bulkCopyFrames').appendChild(fr);
+    st.activeFrames[code] = fr;
+  }
+}
+
+function _bulkCopyOnResult(code, ok, text, error){
+  if (!_bulkCopyState) return;
+  var st = _bulkCopyState;
+  if (!st.activeFrames[code]) return;
+  var fr = st.activeFrames[code];
+  try { clearTimeout(parseInt(fr.dataset.timer || '0', 10)); } catch(e){}
+  try { fr.remove(); } catch(e){}
+  delete st.activeFrames[code];
+  st.results[code] = { ok: ok, text: text || '', error: error || '' };
+  st.doneCount++;
+  _bulkCopyUpdateStatus(
+    '進度 ' + st.doneCount + ' / ' + st.total
+      + '（成功 ' + Object.keys(st.results).filter(function(c){return st.results[c].ok && st.results[c].text;}).length + '）',
+    '#4fc3f7'
+  );
+  if (st.pending.length > 0){
+    _bulkCopySpawnNext();
+  } else if (Object.keys(st.activeFrames).length === 0){
+    _bulkCopyFinish();
+  }
+}
+
+function _buildConferenceBlock(code){
+  // 把同一檔的所有利多法說會 AI 摘要組合成純文字
+  var meets = (rawData || []).filter(function(r){
+    return String(r.code) === String(code) && r.ai && r.ai.sentiment === '利多';
+  });
+  if (!meets.length) return '';
+  var lines = [];
+  lines.push('=== 法說會 AI 摘要（' + meets.length + ' 場利多）===');
+  meets.forEach(function(r){
+    var ai = r.ai || {};
+    var scoreStr = (ai.score != null) ? ' ' + (ai.score >= 0 ? '+' : '') + Number(ai.score).toFixed(1) : '';
+    lines.push('');
+    lines.push('【' + r.code + ' ' + (r.name || '') + '｜' + (ai.sentiment || '') + scoreStr + '】');
+    lines.push('📅 ' + (r.meeting_date || '') + ' ' + (r.meeting_time || '')
+      + (r.location ? ' · 📍 ' + r.location : ''));
+    if (r.subject) lines.push('主題：' + r.subject);
+    if (ai.summary) lines.push(ai.summary);
+    if (ai.key_points && ai.key_points.length){
+      ai.key_points.forEach(function(kp){ lines.push('• ' + kp); });
+    }
+    if (ai.guidance) lines.push('🎯 展望：' + ai.guidance);
+    if (ai.risks && ai.risks.length){
+      lines.push('⚠ 風險：');
+      ai.risks.forEach(function(rk){ lines.push('• ' + rk); });
+    }
+  });
+  return lines.join('\n');
+}
+
+function _bulkCopyFinish(){
+  if (!_bulkCopyState) return;
+  var st = _bulkCopyState;
+  var parts = [];
+  var okN = 0, failN = 0;
+  for (var i = 0; i < st.codes.length; i++){
+    var c = st.codes[i];
+    var r = st.results[c];
+    var confBlock = _buildConferenceBlock(c);
+    var stockBlock;
+    if (r && r.ok && r.text){
+      stockBlock = r.text.trim();
+      okN++;
+    } else {
+      stockBlock = '='.repeat(40) + '\n' + c + '（個股資訊欄讀取失敗' + (r && r.error ? '：' + r.error : '') + '）\n' + '='.repeat(40);
+      failN++;
+    }
+    parts.push((confBlock ? confBlock + '\n\n' : '') + stockBlock);
+  }
+  var combined = parts.join('\n\n\n');
+  _bulkCopyWriteClipboard(combined).then(function(ok){
+    if (ok){
+      _bulkCopyUpdateStatus(
+        '✅ 已複製 ' + okN + ' 檔（' + combined.length + ' 字元'
+          + (failN > 0 ? '，' + failN + ' 檔資訊欄失敗' : '') + '）',
+        '#66bb6a'
+      );
+    } else {
+      _bulkCopyUpdateStatus('❌ 寫入剪貼簿失敗', '#f55');
+    }
+    _bulkCopyReset();
+  });
+}
+
+function _bulkCopyWriteClipboard(text){
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text).then(
+      function(){ return true; },
+      function(){ return _bulkCopyExecFallback(text); }
+    );
+  }
+  return Promise.resolve(_bulkCopyExecFallback(text));
+}
+
+function _bulkCopyExecFallback(text){
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return !!ok;
+  } catch (e) { return false; }
+}
+
+function copyAllBullStocks(){
+  if (_bulkCopyState){
+    alert('已有批次複製進行中，請等候完成或重新整理頁面。');
+    return;
+  }
+  var bullRows = (rawData || []).filter(function(r){
+    return r.ai && r.ai.sentiment === '利多' && r.code;
+  });
+  var codes = [];
+  var seen = {};
+  bullRows.forEach(function(r){
+    var c = String(r.code).trim();
+    if (!/^\d{3,6}$/.test(c)) return;
+    if (seen[c]) return;
+    seen[c] = 1;
+    codes.push(c);
+  });
+  if (codes.length === 0){
+    alert('沒有 AI 判定為利多的個股。');
+    return;
+  }
+  var MAX_BULK = 60;
+  if (codes.length > MAX_BULK){
+    if (!confirm('利多共 ' + codes.length + ' 檔，預估需 '
+        + Math.ceil(codes.length * 8 / 2 / 60) + ' 分鐘。確定繼續嗎？')) return;
+  }
+  var btn = document.getElementById('btnCopyAllBull');
+  if (btn){ btn.disabled = true; btn.textContent = '⏳ 載入中...'; }
+  _bulkCopyState = {
+    codes: codes,
+    total: codes.length,
+    pending: codes.slice(),
+    activeFrames: {},
+    results: {},
+    doneCount: 0,
+    concurrency: 2,
+    msgHandler: function(ev){
+      if (ev.origin !== window.location.origin) return;
+      var d = ev && ev.data;
+      if (!d || d.type !== 'bulkCopyResult') return;
+      _bulkCopyOnResult(d.code, !!d.ok, d.text || '', d.error || '');
+    },
+    unloadHandler: function(){ try { _bulkCopyReset(); } catch(e){} }
+  };
+  window.addEventListener('message', _bulkCopyState.msgHandler);
+  window.addEventListener('beforeunload', _bulkCopyState.unloadHandler);
+  _bulkCopyUpdateStatus('⏳ 準備載入 ' + codes.length + ' 檔（利多個股）...', '#4fc3f7');
+  _bulkCopySpawnNext();
+}
+
+function fmtRet(cell){
+  if (!cell || cell.n === 0 || cell.avg_return == null){
+    return '<span style="color:var(--txt2)">—</span>';
+  }
+  const v = Number(cell.avg_return);
+  const color = v > 0 ? 'var(--red)' : (v < 0 ? 'var(--green)' : 'var(--txt)');
+  const sign = v > 0 ? '+' : '';
+  return `<span style="color:${color};font-weight:600">${sign}${v.toFixed(2)}%</span>`
+    + ` <span style="color:var(--txt2);font-size:11px">(${cell.n})</span>`;
+}
+
+function loadStats(){
+  fetch('/api/conference/sentiment_stats?days=365')
+    .then(r => r.json())
+    .then(d => {
+      const body = document.getElementById("statsBody");
+      if (!d.ok || !d.stats){
+        body.innerHTML = '<tr><td colspan="5" style="padding:12px;text-align:center;color:var(--red)">統計暫時無法取得</td></tr>';
+        return;
+      }
+      const colorOf = s => s === '利多' ? '#ff1744' : (s === '利空' ? '#00c853' : '#8888aa');
+      let html = '';
+      d.stats.forEach(g => {
+        html += '<tr style="text-align:right">';
+        html += `<td style="text-align:left;padding:6px 10px;border-bottom:1px solid var(--bdr)">`
+          + `<span style="color:${colorOf(g.sentiment)};font-weight:600">${g.sentiment}</span></td>`;
+        html += `<td style="padding:6px 10px;border-bottom:1px solid var(--bdr)">${g.n_total}</td>`;
+        ['5','20','60'].forEach(k => {
+          html += `<td style="padding:6px 10px;border-bottom:1px solid var(--bdr)">${fmtRet(g.windows[k])}</td>`;
+        });
+        html += '</tr>';
+      });
+      body.innerHTML = html;
+      const meta = document.getElementById("statsMeta");
+      meta.textContent = `近 ${d.days || 365} 天 ${d.n_conferences || 0} 場 · 更新 ${d.as_of || '—'}`;
+    })
+    .catch(() => {
+      document.getElementById("statsBody").innerHTML =
+        '<tr><td colspan="5" style="padding:12px;text-align:center;color:var(--red)">統計載入失敗</td></tr>';
+    });
+}
+
+function loadData(){
+  document.getElementById("content").innerHTML = '<div class="loading">載入中...</div>';
+  const df = document.getElementById("dateFrom").value;
+  const dt = document.getElementById("dateTo").value;
+  const wo = document.getElementById("watchOnly").checked;
+  const qs = new URLSearchParams();
+  if (df) qs.set("from", df);
+  if (dt) qs.set("to", dt);
+  qs.set("watch_only", wo ? "1" : "0");
+  fetch('/api/conference?' + qs.toString())
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok){
+        document.getElementById("content").innerHTML =
+          `<div class="err">資料暫時無法取得：${d.error||'未知錯誤'}</div>`;
+        return;
+      }
+      rawData = d.data || [];
+      document.getElementById("meta").textContent =
+        `命中 ${rawData.length} 場 · 最後更新：${d.last_update || '—'} · AI：gpt-4o-mini`;
+      render();
+    })
+    .catch(err => {
+      document.getElementById("content").innerHTML =
+        `<div class="err">資料載入失敗：${err.message}</div>`;
+    });
+}
+
+// 預設：過去 7 天 ~ 未來 7 天
+(function initDates(){
+  const today = new Date();
+  const fmt = d => d.toISOString().slice(0,10);
+  const past = new Date(today); past.setDate(past.getDate() - 7);
+  const fut = new Date(today); fut.setDate(fut.getDate() + 7);
+  document.getElementById("dateFrom").value = fmt(past);
+  document.getElementById("dateTo").value = fmt(fut);
+})();
+
+document.getElementById("sentSel").onchange = render;
+loadStats();
+loadData();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+﻿Vercel CLI 58.9.1 (Node.js 24.14.1)
+WARNING! Build not running on Vercel. System environment variables will not be available.
+Running "install" command: `cd astro && npm install --ignore-scripts`...
+
+up to date, audited 310 packages in 13s
+
+139 packages are looking for funding
+  run `npm fund` for details
+
+10 vulnerabilities (2 low, 8 high)
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+Error: spawn cmd.exe ENOENT

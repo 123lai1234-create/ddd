@@ -1,0 +1,1 @@
+{"tabId":751771080,"code":"return Array.from(document.querySelectorAll('button')).map(b => b.innerText).join('|')"}

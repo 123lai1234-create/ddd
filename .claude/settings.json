@@ -57,7 +57,9 @@
       "Bash(python3 -)",
       "Bash(python3)",
       "Bash(agent-browser screenshot *)",
-      "Bash(agent-browser scroll *)"
+      "Bash(agent-browser scroll *)",
+      "Bash(cd /d/project && cat build-stderr.log 2>/dev/null | tail -20)",
+      "Read(//d/project/**)"
     ]
   },
   "hooks": {

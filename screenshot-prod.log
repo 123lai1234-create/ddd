@@ -1,0 +1,21 @@
+﻿Loading stock-app...
+Screenshot 1 saved: stock-2330.png
+Screenshot 2 saved: stock-2454.png
+Screenshot 3 saved: stock-dashboard.png
+Screenshot 4 saved: stock-signal-filter.png
+Screenshot 5 saved: stock-sold-too-early.png
+
+=== Console logs: 5 ===
+  [log] [�ʱ�] ��� cron �w���ΡA���ݶ}�L�۰ʽ���...
+  [warning] setMarkers ����: TypeError: Cannot read properties of undefined (reading 'year')
+    at qn (https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js:7:90879)
+    at Zn
+  [warning] setMarkers ����: TypeError: Cannot read properties of undefined (reading 'year')
+    at qn (https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js:7:90879)
+    at Zn
+  [warning] setMarkers ����: TypeError: Cannot read properties of undefined (reading 'year')
+    at qn (https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js:7:90879)
+    at Zn
+  [error] Failed to load resource: the server responded with a status of 404 ()
+
+=== Page errors: 0 ===

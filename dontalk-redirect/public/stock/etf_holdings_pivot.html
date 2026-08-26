@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>ETF 樞紐分析 - 大永健</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg:#0a0e14; --bg2:#11161f; --bg3:#1a2030;
+      --txt:#d8e0ec; --txt2:#8a96a8; --bdr:#222b3a;
+      --cyan:#5fb3d4; --green:#7eb55b; --red:#d4574e;
+      --yellow:#d4a44e; --blue:#6c8eef; --purple:#a48ee8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--txt);
+           font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC",sans-serif;
+           font-size: 13px; line-height: 1.5; }
+    .header { background: var(--bg2); border-bottom:1px solid var(--bdr);
+              padding: 12px 20px; display:flex; align-items:center; gap:24px; }
+    .header h1 { font-size: 16px; color: var(--cyan); font-weight: 600; }
+    .nav a { color: var(--txt2); text-decoration: none; margin-right:14px; font-size:13px; }
+    .nav a.active { color: var(--cyan); font-weight: 600; }
+    .nav a:hover { color: var(--txt); }
+    .container { padding: 16px 20px; max-width: 1600px; margin: 0 auto; }
+    .panel { background: var(--bg2); border:1px solid var(--bdr); border-radius:10px;
+             padding: 14px 16px; margin-bottom: 14px; }
+    .panel h2 { color: var(--cyan); font-size: 14px; margin-bottom: 12px; font-weight: 600; }
+    .controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    button { background: var(--bg3); color: var(--txt); border:1px solid var(--bdr);
+             padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    button:hover { border-color: var(--cyan); color: var(--cyan); }
+    button.primary { background: var(--cyan); color:#001; border-color: var(--cyan); }
+    button.primary:hover { background: #7ec5e0; }
+    select, input[type=number] { background: var(--bg3); color: var(--txt);
+             border: 1px solid var(--bdr); padding: 6px 10px; border-radius: 6px; font-size: 13px; }
+    label { color: var(--txt2); font-size:12px; }
+    .empty { color: var(--txt2); padding: 20px; text-align: center; }
+    .tabs { display:flex; gap:0; border-bottom:1px solid var(--bdr); margin-bottom:14px;
+            overflow-x:auto; }
+    .tab { padding: 10px 16px; cursor:pointer; color: var(--txt2); border-bottom: 2px solid transparent;
+           white-space: nowrap; font-size: 13px; }
+    .tab:hover { color: var(--txt); }
+    .tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th, td { padding: 6px 8px; text-align:center; border-bottom:1px solid var(--bdr); }
+    th { background: var(--bg3); color: var(--txt2); font-weight: 600; position:sticky; top:0;
+         cursor:pointer; user-select:none; }
+    th:hover { color: var(--cyan); }
+    td.num, th.num { text-align:center; font-variant-numeric: tabular-nums; }
+    td.code { font-family: monospace; color: var(--cyan); }
+    .pos { color: var(--red); }   /* 台股紅=漲 */
+    .neg { color: var(--green); } /* 台股綠=跌 */
+    .pill { display: inline-block; padding: 1px 7px; border-radius: 10px; background: var(--bg3);
+            color: var(--txt2); font-size: 11px; margin: 1px 2px; }
+    .pill.cy { color: var(--cyan); border:1px solid #2a3a4a; }
+    .table-wrap { max-height: 600px; overflow:auto; border:1px solid var(--bdr); border-radius:6px; }
+
+    /* 多選 ETF 篩選器 */
+    .etf-select-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                       gap: 4px; max-height: 180px; overflow-y:auto; padding: 8px;
+                       border: 1px solid var(--bdr); border-radius: 6px; background: var(--bg3); }
+    .etf-chk { display:flex; align-items:center; gap:5px; cursor:pointer; padding: 2px 4px;
+               border-radius: 4px; font-size: 12px; }
+    .etf-chk:hover { background: var(--bg2); }
+    .etf-chk input { cursor:pointer; }
+
+    /* heatmap 矩陣 */
+    .matrix-wrap { overflow:auto; max-width:100%; border:1px solid var(--bdr); border-radius:6px; }
+    table.matrix { font-size: 11px; }
+    table.matrix th, table.matrix td { padding: 4px 6px; text-align:center; min-width: 56px;
+                                       border:1px solid var(--bdr); }
+    table.matrix th { background: var(--bg3); }
+    table.matrix th.row-label { text-align:left; font-family: monospace; color: var(--cyan);
+                                position: sticky; left: 0; z-index: 2; }
+    table.matrix td { font-variant-numeric: tabular-nums; cursor: default; }
+    table.matrix td.diag { background: var(--bg3); color: var(--txt2); }
+
+    .legend { display:flex; align-items:center; gap:6px; font-size:11px; color: var(--txt2);
+              margin-top: 8px; }
+    .legend-bar { width: 240px; height: 12px; border-radius: 3px; }
+
+    .badge-style { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; }
+    .style-高度集中 { background: rgba(212,87,78,0.2); color: var(--red); }
+    .style-中度集中 { background: rgba(212,164,78,0.2); color: var(--yellow); }
+    .style-平均分散 { background: rgba(126,181,91,0.2); color: var(--green); }
+    .style-高度分散 { background: rgba(95,179,212,0.2); color: var(--cyan); }
+
+    /* 共識雷達 兩欄卡片 */
+    .consensus-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .consensus-grid .table-wrap { overflow-x:auto; -webkit-overflow-scrolling: touch; }
+    .consensus-grid table { min-width: 360px; }
+
+    /* RWD（≤768px：手機/平板直立） */
+    @media (max-width: 768px) {
+      body { font-size: 12px; }
+      .header { padding: 10px 12px; gap: 12px; flex-wrap: wrap; }
+      .header h1 { font-size: 15px; }
+      .nav a { margin-right: 8px; font-size: 12px; }
+      .container { padding: 10px 10px; }
+      .panel { padding: 10px 10px; margin-bottom: 10px; }
+      .panel h2 { font-size: 13px; margin-bottom: 8px; }
+      .controls { gap: 6px; }
+      .controls label { font-size: 11px; }
+      button { padding: 5px 10px; font-size: 12px; }
+      select, input[type=number] { padding: 5px 8px; font-size: 12px; }
+      .tab { padding: 8px 10px; font-size: 12px; }
+
+      /* 共識雷達：手機改單欄 */
+      .consensus-grid { grid-template-columns: 1fr; gap: 10px; }
+
+      /* 多選 ETF 格子縮窄 */
+      .etf-select-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+                          max-height: 160px; padding: 6px; }
+      .etf-chk { font-size: 11px; }
+
+      /* 表格水平滾動 */
+      .table-wrap { max-height: 480px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      th, td { padding: 5px 6px; font-size: 11px; }
+      .pill { font-size: 10px; padding: 1px 5px; }
+    }
+
+    /* RWD（≤480px：小螢幕手機） */
+    @media (max-width: 480px) {
+      .header { padding: 8px 10px; }
+      .header h1 { font-size: 14px; }
+      .container { padding: 8px 6px; }
+      .panel { padding: 8px 8px; }
+      .matrix-wrap, .table-wrap { font-size: 10px; }
+      table.matrix th, table.matrix td { min-width: 44px; padding: 3px 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>ETF 樞紐分析</h1>
+    <div class="nav">
+      <a href="index.html">主系統</a>
+      <a href="etf_holdings.html">共同持股</a>
+      <a href="etf_holdings_tracker.html">持股追蹤</a>
+      <a href="etf_holdings_pivot.html" class="active">樞紐分析</a>
+      <a href="sitemap.html" title="網站地圖">🗺️</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- ETF 多選篩選器 -->
+    <div class="panel">
+      <h2>選擇 ETF（套用至矩陣／重疊度／共識／集中度／換手率）</h2>
+      <div class="controls" style="margin-bottom:8px;">
+        <button id="btnAll">全選</button>
+        <button id="btnNone">全不選</button>
+        <button id="btnTop">熱門 ETF（0050/0056/00878/00919/00929/00940）</button>
+        <span id="etfCount" style="color:var(--txt2); font-size:12px;"></span>
+      </div>
+      <div id="etfGrid" class="etf-select-grid"></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="overlap">重疊度矩陣</div>
+      <div class="tab" data-tab="weight">權重矩陣</div>
+      <div class="tab" data-tab="time">時序熱力圖</div>
+      <div class="tab" data-tab="consensus">共識雷達</div>
+      <div class="tab" data-tab="concentration">集中度</div>
+      <div class="tab" data-tab="turnover">換手率</div>
+    </div>
+
+    <!-- TAB: 重疊度矩陣 -->
+    <div class="tab-pane active" id="pane-overlap">
+      <div class="panel">
+        <h2>ETF 重疊度矩陣（熱力圖）</h2>
+        <div class="controls" style="margin-bottom:10px;">
+          <label>方法：</label>
+          <select id="overlapMethod">
+            <option value="jaccard">Jaccard（持有交集/聯集）</option>
+            <option value="cosine">Cosine（權重向量相似度）</option>
+          </select>
+          <button class="primary" id="btnOverlap">計算</button>
+          <span id="overlapMeta" style="color:var(--txt2); font-size:12px;"></span>
+        </div>
+        <div id="overlapBox"><div class="empty">點「計算」開始</div></div>
+        <div id="overlapDetail"></div>
+      </div>
+    </div>
+
+    <!-- TAB: 權重矩陣 -->
+    <div class="tab-pane" id="pane-weight">
+      <div class="panel">
+        <h2>ETF × 個股 權重矩陣</h2>
+        <div class="controls" style="margin-bottom:10px;">
+          <label>最少出現於</label>
+          <input type="number" id="wmMinEtf" value="2" min="1" max="20" style="width:60px;">
+          <label>檔 ETF；平均權重 ≥</label>
+          <input type="number" id="wmMinW" value="0" min="0" step="0.5" style="width:70px;">
+          <label>%；上限</label>
+          <input type="number" id="wmLimit" value="200" min="10" max="2000" step="50" style="width:80px;">
+          <label>列</label>
+          <button class="primary" id="btnWeight">計算</button>
+          <span id="wmMeta" style="color:var(--txt2); font-size:12px;"></span>
+        </div>
+        <div id="wmBox"><div class="empty">點「計算」開始</div></div>
+      </div>
+    </div>
+
+    <!-- TAB: 時序熱力圖 -->
+    <div class="tab-pane" id="pane-time">
+      <div class="panel">
+        <h2>個股 × 時間 權重熱力圖（單一 ETF）</h2>
+        <div class="controls" style="margin-bottom:10px;">
+          <label>ETF：</label>
+          <select id="thEtf"></select>
+          <label>前</label>
+          <input type="number" id="thTopN" value="20" min="5" max="50" style="width:60px;">
+          <label>大持股；最近</label>
+          <input type="number" id="thSnaps" value="12" min="2" max="60" style="width:60px;">
+          <label>個快照</label>
+          <button class="primary" id="btnTime">計算</button>
+        </div>
+        <div id="thBox"><div class="empty">選 ETF 後點「計算」</div></div>
+      </div>
+    </div>
+
+    <!-- TAB: 共識雷達 -->
+    <div class="tab-pane" id="pane-consensus">
+      <div class="panel">
+        <h2>跨 ETF 集體加碼／出清／新進／移出</h2>
+        <div class="controls" style="margin-bottom:10px;">
+          <label>回看</label>
+          <input type="number" id="csDays" value="5" min="1" max="180" style="width:60px;">
+          <label>天；至少</label>
+          <input type="number" id="csMinEtfs" value="3" min="1" max="20" style="width:60px;">
+          <label>檔 ETF 同方向</label>
+          <button class="primary" id="btnConsensus">計算</button>
+          <span id="csMeta" style="color:var(--txt2); font-size:12px;"></span>
+        </div>
+        <div id="csBox"><div class="empty">點「計算」開始</div></div>
+      </div>
+    </div>
+
+    <!-- TAB: 集中度 -->
+    <div class="tab-pane" id="pane-concentration">
+      <div class="panel">
+        <h2>ETF 集中度排行（HHI、前 5/10 大占比）</h2>
+        <div class="controls" style="margin-bottom:10px;">
+          <button class="primary" id="btnConc">計算</button>
+          <span style="color:var(--txt2); font-size:11px;">
+            HHI = Σ(權重²)；&gt;2500 高度集中、1500~2500 中度、500~1500 平均、&lt;500 高度分散
+          </span>
+        </div>
+        <div id="concBox"><div class="empty">點「計算」開始</div></div>
+      </div>
+    </div>
+
+    <!-- TAB: 換手率 -->
+    <div class="tab-pane" id="pane-turnover">
+      <div class="panel">
+        <h2>ETF 換手率排行（兩快照間 Σ|Δw| / 2）</h2>
+        <div class="controls" style="margin-bottom:10px;">
+          <label>回看</label>
+          <input type="number" id="toLb" value="30" min="1" max="365" style="width:70px;">
+          <label>天</label>
+          <button class="primary" id="btnTurnover">計算</button>
+          <span style="color:var(--txt2); font-size:11px;">
+            高換手 = 主動風格；低換手 = 被動指數型
+          </span>
+        </div>
+        <div id="toBox"><div class="empty">點「計算」開始</div></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const ETF_DICT = {"0050": "\u5143\u5927\u53f0\u706350", "0051": "\u5143\u5927\u4e2d\u578b100", "0052": "\u5bcc\u90a6\u79d1\u6280", "0053": "\u5143\u5927\u96fb\u5b50", "0055": "\u5143\u5927MSCI\u91d1\u878d", "0056": "\u5143\u5927\u9ad8\u80a1\u606f", "0057": "\u5bcc\u90a6\u6469\u53f0", "006203": "\u5143\u5927MSCI\u53f0\u7063", "006204": "\u6c38\u8c50\u81fa\u7063\u52a0\u6b0a", "006208": "\u5bcc\u90a6\u53f050", "00690": "\u5146\u8c50\u85cd\u7c4c30", "00692": "\u5bcc\u90a6\u516c\u53f8\u6cbb\u7406", "00701": "\u570b\u6cf0\u80a1\u5229\u7cbe\u907830", "00713": "\u5143\u5927\u53f0\u7063\u9ad8\u606f\u4f4e\u6ce2", "00728": "\u7b2c\u4e00\u91d1\u5de5\u696d30", "00730": "\u5bcc\u90a6\u81fa\u7063\u512a\u8cea\u9ad8\u606f", "00731": "\u5fa9\u83ef\u5bcc\u6642\u9ad8\u606f\u4f4e\u6ce2", "00733": "\u5bcc\u90a6\u81fa\u7063\u4e2d\u5c0f", "00735": "\u570b\u6cf0\u81fa\u97d3\u79d1\u6280", "00850": "\u5143\u5927\u81fa\u7063ESG\u6c38\u7e8c", "00878": "\u570b\u6cf0\u6c38\u7e8c\u9ad8\u80a1\u606f", "00881": "\u570b\u6cf0\u53f0\u70635G+", "00888": "\u6c38\u8c50\u53f0\u7063ESG", "00891": "\u4e2d\u4fe1\u95dc\u9375\u534a\u5c0e\u9ad4", "00892": "\u5bcc\u90a6\u53f0\u7063\u534a\u5c0e\u9ad4", "00894": "\u4e2d\u4fe1\u5c0f\u8cc7\u9ad8\u50f930", "00900": "\u5bcc\u90a6\u7279\u9078\u9ad8\u80a1\u606f30", "00901": "\u6c38\u8c50\u667a\u80fd\u8eca\u4f9b\u61c9\u93c8", "00905": "FT\u81fa\u7063Smart", "00907": "\u6c38\u8c50\u512a\u606f\u5b58\u80a1", "00912": "\u4e2d\u4fe1\u81fa\u7063\u667a\u616750", "00913": "\u5146\u8c50\u53f0\u7063\u6676\u5713\u88fd\u9020", "00915": "\u51f1\u57fa\u512a\u9078\u9ad8\u80a1\u606f30", "00919": "\u7fa4\u76ca\u53f0\u7063\u7cbe\u9078\u9ad8\u606f", "00921": "\u5146\u8c50\u9f8d\u982d\u7b49\u6b0a\u91cd", "00922": "\u570b\u6cf0\u53f0\u7063\u9818\u889650", "00923": "\u7fa4\u76ca\u53f0ESG\u4f4e\u78b350", "00927": "\u7fa4\u76ca\u534a\u5c0e\u9ad4\u6536\u76ca", "00929": "\u5fa9\u83ef\u53f0\u7063\u79d1\u6280\u512a\u606f", "00930": "\u6c38\u8c50ESG\u4f4e\u78b3\u9ad8\u606f", "00932": "\u5146\u8c50\u6c38\u7e8c\u9ad8\u606f\u7b49\u6b0a", "00934": "\u4e2d\u4fe1\u6210\u9577\u9ad8\u80a1\u606f", "00935": "\u91ce\u6751\u81fa\u7063\u65b0\u79d1\u628050", "00936": "\u53f0\u65b0\u6c38\u7e8c\u9ad8\u606f\u4e2d\u5c0f", "00944": "\u91ce\u6751\u8da8\u52e2\u52d5\u80fd\u9ad8\u606f", "00947": "\u53f0\u65b0\u81fa\u7063IC\u8a2d\u8a08", "00952": "\u51f1\u57fa\u53f0\u7063AI50", "009802": "\u5bcc\u90a6\u65d7\u826650", "009803": "\u4fdd\u5fb7\u4fe1\u5e02\u503c\u52d5\u80fd50", "00981A": "\u7d71\u4e00\u53f0\u80a1\u589e\u9577", "00982A": "\u7fa4\u76ca\u53f0\u7063\u5f37\u68d2"};
+const HOT_ETFS = ['0050','0056','00878','00919','00929','00940'];
+
+// ---- helpers ----
+function $(id) { return document.getElementById(id); }
+function el(tag, attrs={}, text='') {
+  const e = document.createElement(tag);
+  for (const k in attrs) {
+    if (k === 'class') e.className = attrs[k];
+    else if (k === 'style') e.style.cssText = attrs[k];
+    else if (k.startsWith('data-')) e.setAttribute(k, attrs[k]);
+    else e[k] = attrs[k];
+  }
+  if (text) e.textContent = text;
+  return e;
+}
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+function fmt(v, d=2) { return (v===null||v===undefined||isNaN(v)) ? '—' : Number(v).toFixed(d); }
+
+function selectedEtfs() {
+  const out = [];
+  document.querySelectorAll('#etfGrid input[type=checkbox]:checked').forEach(cb => out.push(cb.value));
+  return out;
+}
+function etfsParam() { return selectedEtfs().join(','); }
+
+// ---- ETF grid ----
+function buildEtfGrid() {
+  const grid = $('etfGrid');
+  clear(grid);
+  Object.keys(ETF_DICT).forEach(code => {
+    const lbl = el('label', {class:'etf-chk'});
+    const cb = el('input', {type:'checkbox', value:code});
+    cb.checked = HOT_ETFS.includes(code);
+    cb.addEventListener('change', updateEtfCount);
+    lbl.appendChild(cb);
+    lbl.appendChild(el('span', {}, `${code} ${ETF_DICT[code] || ''}`));
+    grid.appendChild(lbl);
+  });
+  // 時序熱力圖 ETF select
+  const sel = $('thEtf');
+  Object.keys(ETF_DICT).forEach(code => {
+    sel.appendChild(el('option', {value: code}, `${code} ${ETF_DICT[code] || ''}`));
+  });
+  updateEtfCount();
+}
+function updateEtfCount() {
+  const n = selectedEtfs().length;
+  $('etfCount').textContent = `已選 ${n} / ${Object.keys(ETF_DICT).length} 檔`;
+}
+$('btnAll').onclick = () => {
+  document.querySelectorAll('#etfGrid input').forEach(cb => cb.checked = true);
+  updateEtfCount();
+};
+$('btnNone').onclick = () => {
+  document.querySelectorAll('#etfGrid input').forEach(cb => cb.checked = false);
+  updateEtfCount();
+};
+$('btnTop').onclick = () => {
+  document.querySelectorAll('#etfGrid input').forEach(cb => {
+    cb.checked = HOT_ETFS.includes(cb.value);
+  });
+  updateEtfCount();
+};
+
+// ---- tabs ----
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    $('pane-' + t.dataset.tab).classList.add('active');
+  };
+});
+
+// ---- color scale ----
+function heatColor(v, vmax=1.0) {
+  // 0 = 深背景, vmax = 鮮明青色
+  if (v === null || v === undefined || isNaN(v)) return 'var(--bg3)';
+  const ratio = Math.max(0, Math.min(1, v / vmax));
+  const a = 0.10 + ratio * 0.85;
+  return `rgba(95, 179, 212, ${a.toFixed(3)})`;
+}
+function trendColor(v) {
+  if (v > 0.05) return `rgba(212, 87, 78, ${Math.min(0.85, 0.20 + Math.abs(v)*0.15)})`;
+  if (v < -0.05) return `rgba(126, 181, 91, ${Math.min(0.85, 0.20 + Math.abs(v)*0.15)})`;
+  return 'transparent';
+}
+
+// ---- 1. 重疊度矩陣 ----
+$('btnOverlap').onclick = async () => {
+  const etfs = etfsParam();
+  if (!etfs) { $('overlapBox').textContent = '請至少選 2 檔 ETF'; return; }
+  const method = $('overlapMethod').value;
+  const box = $('overlapBox'); clear(box); box.appendChild(el('div',{class:'empty'},'計算中…'));
+  $('overlapDetail').innerHTML = '';
+  try {
+    const r = await fetch(`/api/etf_holdings/pivot/overlap?etfs=${encodeURIComponent(etfs)}&method=${method}`);
+    const d = await r.json();
+    if (!d.ok) { box.textContent = '失敗：' + (d.error||''); return; }
+    renderOverlap(d);
+  } catch(e) {
+    clear(box); box.appendChild(el('div',{class:'empty', style:'color:var(--red)'}, '失敗：'+e));
+  }
+};
+
+function renderOverlap(d) {
+  const box = $('overlapBox'); clear(box);
+  $('overlapMeta').textContent = `方法：${d.method}；${d.cached ? '快取' : '即時'}；${d.etfs.length} 檔 ETF`;
+  if (d.etfs.length < 2) {
+    box.appendChild(el('div',{class:'empty'},'至少需 2 檔 ETF 才能比較'));
+    return;
+  }
+  const wrap = el('div', {class:'matrix-wrap'});
+  const tbl = el('table', {class:'matrix'});
+  const thead = el('thead'); const trh = el('tr');
+  trh.appendChild(el('th', {class:'row-label'}, ''));
+  d.etfs.forEach(e => trh.appendChild(el('th', {}, e)));
+  thead.appendChild(trh); tbl.appendChild(thead);
+  const tbody = el('tbody');
+  d.etfs.forEach(a => {
+    const tr = el('tr');
+    tr.appendChild(el('th', {class:'row-label'}, `${a}\n${ETF_DICT[a]||''}`));
+    d.etfs.forEach(b => {
+      const v = d.matrix[a][b];
+      const td = el('td', {});
+      if (a === b) {
+        td.classList.add('diag');
+        td.textContent = '—';
+      } else {
+        td.textContent = (v*100).toFixed(0) + '%';
+        td.style.background = heatColor(v, 1.0);
+        td.style.cursor = 'pointer';
+        td.title = `${a} vs ${b}: ${(v*100).toFixed(1)}% (點擊看重疊個股)`;
+        td.onclick = () => loadOverlapDetail(a, b);
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  wrap.appendChild(tbl);
+  box.appendChild(wrap);
+
+  const lg = el('div', {class:'legend'});
+  lg.appendChild(el('span', {}, '低重疊'));
+  const bar = el('span', {class:'legend-bar'});
+  bar.style.background = 'linear-gradient(90deg, rgba(95,179,212,0.10), rgba(95,179,212,0.95))';
+  lg.appendChild(bar);
+  lg.appendChild(el('span', {}, '高重疊（提示：兩 ETF 內容大量重複，無分散效果）'));
+  box.appendChild(lg);
+}
+
+async function loadOverlapDetail(a, b) {
+  const det = $('overlapDetail');
+  det.innerHTML = '';
+  const card = el('div', {class:'panel'});
+  card.appendChild(el('h2',{},`${a} ↔ ${b} 重疊個股清單`));
+  card.appendChild(el('div',{class:'empty'},'載入中…'));
+  det.appendChild(card);
+  try {
+    const r = await fetch(`/api/etf_holdings/pivot/overlap_detail/${a}/${b}?top_n=50`);
+    const d = await r.json();
+    clear(card);
+    card.appendChild(el('h2',{},`${a} ↔ ${b} 重疊個股清單（共 ${d.total_common||0} 檔，顯示前 ${d.stocks?.length||0}）`));
+    if (!d.stocks || !d.stocks.length) {
+      card.appendChild(el('div',{class:'empty'},'無重疊'));
+      return;
+    }
+    const wrap = el('div',{class:'table-wrap'});
+    const tbl = el('table');
+    const thead = el('thead'); const trh = el('tr');
+    [['股票'],['名稱'],[`${a} 權重`,'num'],[`${b} 權重`,'num'],['min(兩邊)','num']].forEach(([h,c]) => trh.appendChild(el('th',c?{class:c}:{},h)));
+    thead.appendChild(trh); tbl.appendChild(thead);
+    const tbody = el('tbody');
+    d.stocks.forEach(s => {
+      const tr = el('tr');
+      const codeTd = el('td',{class:'code'});
+      const nameTd = el('td',{});
+      if (s.stock_code) {
+        const href = `index.html?code=${encodeURIComponent(s.stock_code)}`;
+        codeTd.appendChild(el('a',{href, target:'_blank', rel:'noopener', style:'color:var(--cyan,#00bcd4);text-decoration:none;font-weight:700;', title:'查看 K 線圖'}, s.stock_code));
+        nameTd.appendChild(el('a',{href, target:'_blank', rel:'noopener', style:'color:inherit;text-decoration:none;', title:'查看 K 線圖'}, s.stock_name||'—'));
+      } else {
+        codeTd.textContent = '—';
+        nameTd.textContent = s.stock_name||'—';
+      }
+      tr.appendChild(codeTd);
+      tr.appendChild(nameTd);
+      tr.appendChild(el('td',{class:'num'}, fmt(s.weight_a)+'%'));
+      tr.appendChild(el('td',{class:'num'}, fmt(s.weight_b)+'%'));
+      tr.appendChild(el('td',{class:'num'}, fmt(s.min_weight)+'%'));
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    wrap.appendChild(tbl);
+    card.appendChild(wrap);
+  } catch(e) {
+    clear(card);
+    card.appendChild(el('div',{class:'empty', style:'color:var(--red)'}, '失敗：'+e));
+  }
+}
+
+// ---- 2. 權重矩陣 ----
+$('btnWeight').onclick = async () => {
+  const etfs = etfsParam();
+  if (!etfs) { $('wmBox').textContent = '請選擇 ETF'; return; }
+  const params = new URLSearchParams({
+    etfs, min_etf_count: $('wmMinEtf').value,
+    min_avg_weight: $('wmMinW').value, limit: $('wmLimit').value,
+  });
+  const box = $('wmBox'); clear(box); box.appendChild(el('div',{class:'empty'},'計算中…'));
+  try {
+    const r = await fetch('/api/etf_holdings/pivot/weight_matrix?' + params);
+    const d = await r.json();
+    if (!d.ok) { box.textContent = '失敗：' + (d.error||''); return; }
+    renderWeightMatrix(d);
+  } catch(e) {
+    clear(box); box.appendChild(el('div',{class:'empty', style:'color:var(--red)'}, '失敗：'+e));
+  }
+};
+
+function renderWeightMatrix(d) {
+  const box = $('wmBox'); clear(box);
+  $('wmMeta').textContent =
+    `${d.cached ? '快取' : '即時'}；共 ${d.summary.total_unique_stocks} 檔個股，顯示 ${d.summary.shown}`;
+  if (!d.stocks.length) { box.appendChild(el('div',{class:'empty'},'無資料')); return; }
+
+  // 找各 ETF 內最大權重以計算 heatmap 強度
+  const vmax = {};
+  d.etfs.forEach(e => vmax[e] = 0);
+  d.stocks.forEach(s => {
+    Object.keys(s.weights).forEach(e => { if (s.weights[e] > vmax[e]) vmax[e] = s.weights[e]; });
+  });
+
+  const wrap = el('div',{class:'matrix-wrap'});
+  const tbl = el('table',{class:'matrix'});
+  const thead = el('thead'); const trh = el('tr');
+  ['股票','名稱','#ETF','平均%','總和%'].forEach(h => trh.appendChild(el('th',{class:'row-label'}, h)));
+  d.etfs.forEach(e => trh.appendChild(el('th',{}, e)));
+  thead.appendChild(trh); tbl.appendChild(thead);
+  const tbody = el('tbody');
+  d.stocks.forEach(s => {
+    const tr = el('tr');
+    const codeTd = el('td',{class:'code'});
+    const nameTd = el('td',{});
+    if (s.stock_code) {
+      const href = `index.html?code=${encodeURIComponent(s.stock_code)}`;
+      codeTd.appendChild(el('a',{href, target:'_blank', rel:'noopener', style:'color:var(--cyan,#00bcd4);text-decoration:none;font-weight:700;', title:'查看 K 線圖'}, s.stock_code));
+      nameTd.appendChild(el('a',{href, target:'_blank', rel:'noopener', style:'color:inherit;text-decoration:none;', title:'查看 K 線圖'}, s.stock_name||'—'));
+    } else {
+      codeTd.textContent = '—';
+      nameTd.textContent = s.stock_name||'—';
+    }
+    tr.appendChild(codeTd);
+    tr.appendChild(nameTd);
+    tr.appendChild(el('td',{class:'num'}, String(s.etf_count)));
+    tr.appendChild(el('td',{class:'num'}, fmt(s.avg_weight)));
+    tr.appendChild(el('td',{class:'num'}, fmt(s.sum_weight)));
+    d.etfs.forEach(e => {
+      const w = s.weights[e];
+      const td = el('td', {});
+      if (w === undefined || w === null) {
+        td.textContent = '—'; td.style.color = 'var(--txt2)';
+      } else {
+        td.textContent = fmt(w);
+        td.style.background = heatColor(w, vmax[e] || 1);
+        td.title = `${e}: ${w.toFixed(2)}%`;
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  wrap.appendChild(tbl);
+  box.appendChild(wrap);
+}
+
+// ---- 3. 時序熱力圖 ----
+$('btnTime').onclick = async () => {
+  const etf = $('thEtf').value;
+  if (!etf) return;
+  const box = $('thBox'); clear(box); box.appendChild(el('div',{class:'empty'},'計算中…'));
+  try {
+    const r = await fetch(`/api/etf_holdings/pivot/time_heatmap/${etf}?top_n=${$('thTopN').value}&snapshots=${$('thSnaps').value}`);
+    const d = await r.json();
+    if (!d.ok) { box.textContent = '失敗：' + (d.error||''); return; }
+    renderTimeHeatmap(d);
+  } catch(e) {
+    clear(box); box.appendChild(el('div',{class:'empty',style:'color:var(--red)'}, '失敗：'+e));
+  }
+};
+
+function renderTimeHeatmap(d) {
+  const box = $('thBox'); clear(box);
+  if (!d.stocks || !d.stocks.length) {
+    box.appendChild(el('div',{class:'empty'}, d.message || '無資料（快照需 ≥ 2 筆）'));
+    return;
+  }
+  // vmax = 該 ETF 最高權重（為了 heatmap 比例好看）
+  let vmax = 0;
+  d.stocks.forEach(s => s.weights.forEach(w => { if (w !== null && w > vmax) vmax = w; }));
+
+  const wrap = el('div',{class:'matrix-wrap'});
+  const tbl = el('table',{class:'matrix'});
+  const thead = el('thead'); const trh = el('tr');
+  trh.appendChild(el('th',{class:'row-label'}, '股票'));
+  trh.appendChild(el('th',{class:'row-label'}, '名稱'));
+  d.snapshots.forEach(s => trh.appendChild(el('th',{}, s.date.slice(5))));
+  trh.appendChild(el('th',{class:'row-label'}, '趨勢'));
+  thead.appendChild(trh); tbl.appendChild(thead);
+  const tbody = el('tbody');
+  d.stocks.forEach(s => {
+    const tr = el('tr');
+    const codeTd = el('td',{class:'code'});
+    const nameTd = el('td',{});
+    if (s.stock_code) {
+      const href = `index.html?code=${encodeURIComponent(s.stock_code)}`;
+      codeTd.appendChild(el('a',{href, target:'_blank', rel:'noopener', style:'color:var(--cyan,#00bcd4);text-decoration:none;font-weight:700;', title:'查看 K 線圖'}, s.stock_code));
+      nameTd.appendChild(el('a',{href, target:'_blank', rel:'noopener', style:'color:inherit;text-decoration:none;', title:'查看 K 線圖'}, s.stock_name||'—'));
+    } else {
+      codeTd.textContent = '—';
+      nameTd.textContent = s.stock_name||'—';
+    }
+    tr.appendChild(codeTd);
+    tr.appendChild(nameTd);
+    s.weights.forEach(w => {
+      const td = el('td',{});
+      if (w === null) { td.textContent='—'; td.style.color='var(--txt2)'; }
+      else {
+        td.textContent = w.toFixed(2);
+        td.style.background = heatColor(w, vmax);
+      }
+      tr.appendChild(td);
+    });
+    const trendTd = el('td',{class:'num'});
+    const sign = s.trend > 0 ? '+' : '';
+    trendTd.textContent = sign + s.trend.toFixed(2);
+    trendTd.className = 'num ' + (s.trend > 0 ? 'pos' : s.trend < 0 ? 'neg' : '');
+    trendTd.style.background = trendColor(s.trend);
+    tr.appendChild(trendTd);
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  wrap.appendChild(tbl);
+  box.appendChild(wrap);
+}
+
+// ---- 4. 共識雷達 ----
+$('btnConsensus').onclick = async () => {
+  const etfs = etfsParam();
+  if (!etfs) { $('csBox').textContent = '請選擇 ETF'; return; }
+  const params = new URLSearchParams({
+    etfs, days: $('csDays').value, min_etfs: $('csMinEtfs').value,
+  });
+  const box = $('csBox'); clear(box); box.appendChild(el('div',{class:'empty'},'計算中…'));
+  try {
+    const r = await fetch('/api/etf_holdings/pivot/consensus?' + params);
+    const d = await r.json();
+    if (!d.ok) { box.textContent = '失敗：' + (d.error||''); return; }
+    renderConsensus(d);
+  } catch(e) {
+    clear(box); box.appendChild(el('div',{class:'empty',style:'color:var(--red)'}, '失敗：'+e));
+  }
+};
+
+function renderConsensus(d) {
+  const box = $('csBox'); clear(box);
+  $('csMeta').textContent = `回看 ${d.days} 天；比對到 ${d.etf_count_compared || 0} 檔；${d.cached ? '快取' : '即時'}`;
+  if (d.message) { box.appendChild(el('div',{class:'empty'}, d.message)); return; }
+
+  const sections = [
+    {key:'increased', title:'集體加碼（多檔 ETF 同時增持）', cls:'pos', extra:'total_change'},
+    {key:'added',     title:'集體新進（多檔 ETF 同時新納入）', cls:'pos', extra:'avg_new_weight'},
+    {key:'decreased', title:'集體減碼（多檔 ETF 同時減持）', cls:'neg', extra:'total_change'},
+    {key:'removed',   title:'集體移出（多檔 ETF 同時剔除）', cls:'neg', extra:null},
+  ];
+  const grid = el('div',{class:'consensus-grid'});
+  sections.forEach(sec => {
+    const items = d[sec.key] || [];
+    const card = el('div',{class:'panel', style:'margin:0;'});
+    card.appendChild(el('h2',{}, `${sec.title}（${items.length}）`));
+    if (!items.length) {
+      card.appendChild(el('div',{class:'empty'},'無'));
+    } else {
+      const wrap = el('div',{class:'table-wrap', style:'max-height:380px;'});
+      const tbl = el('table');
+      const thead = el('thead'); const trh = el('tr');
+      const heads = [['股票'],['名稱'],['#ETF','num']];
+      if (sec.extra === 'total_change') heads.push(['總變動%','num']);
+      if (sec.extra === 'avg_new_weight') heads.push(['平均新進%','num']);
+      heads.push(['ETF 列']);
+      heads.forEach(([h,c]) => trh.appendChild(el('th',c?{class:c}:{},h)));
+      thead.appendChild(trh); tbl.appendChild(thead);
+      const tbody = el('tbody');
+      items.forEach(it => {
+        const tr = el('tr');
+        const tdCode = el('td',{class:'code'});
+        if (it.stock_code) {
+          const a = el('a',{
+            href:'index.html?code=' + encodeURIComponent(it.stock_code),
+            target:'_blank',
+            rel:'noopener',
+            style:'color:var(--cy,#00bcd4);text-decoration:none;font-weight:700;',
+            title:'查看 K 線圖'
+          }, it.stock_code);
+          tdCode.appendChild(a);
+        } else {
+          tdCode.textContent = '—';
+        }
+        tr.appendChild(tdCode);
+        const tdName = el('td');
+        if (it.stock_code && it.stock_name) {
+          const a2 = el('a',{
+            href:'index.html?code=' + encodeURIComponent(it.stock_code),
+            target:'_blank',
+            rel:'noopener',
+            style:'color:inherit;text-decoration:none;',
+            title:'查看 K 線圖'
+          }, it.stock_name);
+          tdName.appendChild(a2);
+        } else {
+          tdName.textContent = it.stock_name || '—';
+        }
+        tr.appendChild(tdName);
+        tr.appendChild(el('td',{class:'num'}, String(it.etf_count)));
+        if (sec.extra === 'total_change') {
+          const td = el('td',{class:'num '+sec.cls});
+          const sign = it.total_change > 0 ? '+' : '';
+          td.textContent = sign + fmt(it.total_change);
+          tr.appendChild(td);
+        } else if (sec.extra === 'avg_new_weight') {
+          tr.appendChild(el('td',{class:'num '+sec.cls}, fmt(it.avg_new_weight)));
+        }
+        const td = el('td',{});
+        (it.etfs||[]).slice(0,8).forEach(e => td.appendChild(el('span',{class:'pill cy'}, e)));
+        if ((it.etfs||[]).length > 8) td.appendChild(el('span',{class:'pill'}, `+${it.etfs.length-8}`));
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      });
+      tbl.appendChild(tbody);
+      wrap.appendChild(tbl);
+      card.appendChild(wrap);
+    }
+    grid.appendChild(card);
+  });
+  box.appendChild(grid);
+}
+
+// ---- 5. 集中度 ----
+$('btnConc').onclick = async () => {
+  const etfs = etfsParam();
+  if (!etfs) { $('concBox').textContent = '請選擇 ETF'; return; }
+  const box = $('concBox'); clear(box); box.appendChild(el('div',{class:'empty'},'計算中…'));
+  try {
+    const r = await fetch('/api/etf_holdings/pivot/concentration?etfs=' + encodeURIComponent(etfs));
+    const d = await r.json();
+    if (!d.ok) { box.textContent = '失敗：' + (d.error||''); return; }
+    renderConcentration(d);
+  } catch(e) {
+    clear(box); box.appendChild(el('div',{class:'empty',style:'color:var(--red)'}, '失敗：'+e));
+  }
+};
+
+function renderConcentration(d) {
+  const box = $('concBox'); clear(box);
+  if (!d.items || !d.items.length) { box.appendChild(el('div',{class:'empty'}, '無資料')); return; }
+  const wrap = el('div',{class:'table-wrap'});
+  const tbl = el('table');
+  const thead = el('thead'); const trh = el('tr');
+  [['ETF'],['名稱'],['HHI','num'],['風格'],['前5大%','num'],['前10大%','num'],['持股檔數','num'],['權重總和%','num'],['快照時間']].forEach(([h,c]) => trh.appendChild(el('th',c?{class:c}:{},h)));
+  thead.appendChild(trh); tbl.appendChild(thead);
+  const tbody = el('tbody');
+  d.items.forEach(it => {
+    const tr = el('tr');
+    tr.appendChild(el('td',{class:'code'}, it.etf_code));
+    tr.appendChild(el('td',{}, ETF_DICT[it.etf_code] || '—'));
+    tr.appendChild(el('td',{class:'num'}, String(it.hhi)));
+    const tdStyle = el('td');
+    tdStyle.appendChild(el('span',{class:'badge-style style-'+it.style}, it.style));
+    tr.appendChild(tdStyle);
+    tr.appendChild(el('td',{class:'num'}, fmt(it.top5)));
+    tr.appendChild(el('td',{class:'num'}, fmt(it.top10)));
+    tr.appendChild(el('td',{class:'num'}, String(it.holding_count)));
+    tr.appendChild(el('td',{class:'num'}, fmt(it.total_weight)));
+    tr.appendChild(el('td',{style:'color:var(--txt2);font-size:11px;'}, it.fetched_at));
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  wrap.appendChild(tbl);
+  box.appendChild(wrap);
+}
+
+// ---- 6. 換手率 ----
+$('btnTurnover').onclick = async () => {
+  const etfs = etfsParam();
+  if (!etfs) { $('toBox').textContent = '請選擇 ETF'; return; }
+  const box = $('toBox'); clear(box); box.appendChild(el('div',{class:'empty'},'計算中…'));
+  try {
+    const r = await fetch(`/api/etf_holdings/pivot/turnover?etfs=${encodeURIComponent(etfs)}&lookback=${$('toLb').value}`);
+    const d = await r.json();
+    if (!d.ok) { box.textContent = '失敗：' + (d.error||''); return; }
+    renderTurnover(d);
+  } catch(e) {
+    clear(box); box.appendChild(el('div',{class:'empty',style:'color:var(--red)'}, '失敗：'+e));
+  }
+};
+
+function renderTurnover(d) {
+  const box = $('toBox'); clear(box);
+  if (!d.items || !d.items.length) {
+    const msg = (d.skipped && d.skipped.length)
+      ? `無可比對資料（${d.lookback_days} 天前無快照的 ETF：${d.skipped.length} 檔）`
+      : '無資料';
+    box.appendChild(el('div',{class:'empty'}, msg));
+    return;
+  }
+  const wrap = el('div',{class:'table-wrap'});
+  const tbl = el('table');
+  const thead = el('thead'); const trh = el('tr');
+  [['ETF'],['名稱'],['換手率%','num'],['實際天數','num'],['新進','num'],['移出','num'],['變動','num'],['起'],['迄']].forEach(([h,c]) => trh.appendChild(el('th',c?{class:c}:{},h)));
+  thead.appendChild(trh); tbl.appendChild(thead);
+  const tbody = el('tbody');
+  d.items.forEach(it => {
+    const tr = el('tr');
+    tr.appendChild(el('td',{class:'code'}, it.etf_code));
+    tr.appendChild(el('td',{}, ETF_DICT[it.etf_code] || '—'));
+    tr.appendChild(el('td',{class:'num', style:'color:var(--cyan); font-weight:600;'}, fmt(it.turnover_pct)));
+    tr.appendChild(el('td',{class:'num'}, String(it.days)));
+    tr.appendChild(el('td',{class:'num pos'}, '+'+it.added));
+    tr.appendChild(el('td',{class:'num neg'}, '-'+it.removed));
+    tr.appendChild(el('td',{class:'num'}, String(it.changed)));
+    tr.appendChild(el('td',{style:'color:var(--txt2);font-size:11px;'}, it.old_date));
+    tr.appendChild(el('td',{style:'color:var(--txt2);font-size:11px;'}, it.new_date));
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  wrap.appendChild(tbl);
+  box.appendChild(wrap);
+}
+
+buildEtfGrid();
+</script>
+</body>
+</html>

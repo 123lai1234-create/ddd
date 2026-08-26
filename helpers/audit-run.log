@@ -1,0 +1,147 @@
+﻿[15:48:22] Launching browser (headed)...
+[15:48:23] === index-�Ѳ��� (/stock-app/index.html) ===
+[15:48:27]   [ERR] Page.evaluate: TypeError: Converting circular structure to JSON
+    --> starting at object with constructor 'vn'
+    |     property 'ao' -> object with constructor 'k'
+    |     property 'h' -> object with constructor 'Array'
+    |     ...
+    |     property '_' -> object with constructor 'ks'
+    --- property 'Li' closes the circle
+    at JSON.stringify (<anonymous>)
+    at eval (eval at evaluate (:303:30), <anonymous>:11:29)
+    at UtilityScript.evaluate (<anonymous>:310:18)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+[15:48:27] === sitemap-����a�� (/stock-app/sitemap.html) ===
+[15:48:32]   status=200  page_errs=1  req_fails=0
+[15:48:32]   [ERR] 'cp950' codec can't encode character '\U0001f5fa' in position 50: illegal multibyte sequence
+[15:48:32] === etf-ETF�� (/stock-app/etf.html) ===
+[15:48:38]   [ERR] Page.evaluate: TypeError: Converting circular structure to JSON
+    --> starting at object with constructor 'vn'
+    |     property 'ao' -> object with constructor 'k'
+    |     property 'h' -> object with constructor 'Array'
+    |     ...
+    |     property '_' -> object with constructor 'ks'
+    --- property 'Li' closes the circle
+    at JSON.stringify (<anonymous>)
+    at eval (eval at evaluate (:303:30), <anonymous>:11:29)
+    at UtilityScript.evaluate (<anonymous>:310:18)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+[15:48:38] === warming-�ɷŰ� (/stock-app/warming.html) ===
+[15:48:43]   status=200  page_errs=0  req_fails=0
+[15:48:43]   [ERR] 'cp950' codec can't encode character '\U0001f321' in position 51: illegal multibyte sequence
+[15:48:43] === exdiv-���v�� (/stock-app/exdiv.html) ===
+[15:48:48]   status=200  page_errs=0  req_fails=0
+[15:48:48]   [ERR] 'cp950' codec can't encode character '\U0001f4ca' in position 55: illegal multibyte sequence
+[15:48:48] === macro-�`�g�ƾ� (/stock-app/macro.html) ===
+[15:48:53]   status=200  page_errs=0  req_fails=0
+[15:48:53]   [ERR] 'cp950' codec can't encode character '\U0001f310' in position 46: illegal multibyte sequence
+[15:48:53] === signal-filter-�Ѳ��T���z�� (/stock-app/signal-filter.html) ===
+[15:48:58]   status=200  page_errs=0  req_fails=0
+[15:48:58]   [ERR] 'cp950' codec can't encode character '\U0001f50d' in position 53: illegal multibyte sequence
+[15:48:58] === etf-filter-ETF�T���z�� (/stock-app/etf-filter.html) ===
+[15:49:03]   status=200  page_errs=0  req_fails=0
+[15:49:03]   [ERR] 'cp950' codec can't encode character '\U0001f50d' in position 57: illegal multibyte sequence
+[15:49:03] === etf_holdings-ETF�@�P���� (/stock-app/etf_holdings.html) ===
+[15:49:08]   status=200  page_errs=0  req_fails=0
+[15:49:08]   [ERR] 'cp950' codec can't encode character '\U0001f5fa' in position 106: illegal multibyte sequence
+[15:49:08] === etf_holdings_tracker-ETF�����ܰ� (/stock-app/etf_holdings_tracker.html) ===
+[15:49:13]   status=200  page_errs=0  req_fails=0
+[15:49:13]   [ERR] 'cp950' codec can't encode character '\U0001f5fa' in position 106: illegal multibyte sequence
+[15:49:13] === sold-too-early-�歸�Ѳ� (/stock-app/sold-too-early.html) ===
+[15:49:18]   status=200  page_errs=0  req_fails=0
+[15:49:18]   [ERR] 'cp950' codec can't encode character '\U0001f985' in position 50: illegal multibyte sequence
+[15:49:18] === uptrend-watch-�W���Ͷ� (/stock-app/uptrend-watch.html) ===
+[15:49:23]   status=200  page_errs=0  req_fails=0
+[15:49:23]   [ERR] 'cp950' codec can't encode character '\U0001f331' in position 52: illegal multibyte sequence
+[15:49:23] === heatmap-���^���� (/stock-app/heatmap.html) ===
+[15:49:28]   status=200  page_errs=0  req_fails=0
+[15:49:28]   info: {"title":"���^���ȼ��O��","h1":"���^���ȼ��O��","bodyText":"���^���ȼ��O��\n��s�ɶ� 2026-08-06�@�@ 126 ��\n�� �^����\n���O�ϴ��� \n���\n�� 5 ��\n�� 20 ��\n���~�z�� \n�������~\nETF\n���q�~\n��L\n��L�q�l�~\n�ƾǤu�~\n�b����~\n�콦�u�~\n��d�u�~\n�T���u�~\n��������\n��B�~\n�q�H���~\n���īO�I
+[15:49:28]   screenshot: D:\project\helpers\audit\page_____________.png
+[15:49:28] === price-compare-���դ�� (/stock-app/price-compare.html) ===
+[15:49:33]   status=200  page_errs=0  req_fails=0
+[15:49:33]   [ERR] 'cp950' codec can't encode character '\U0001f4c8' in position 155: illegal multibyte sequence
+[15:49:33] === rebalance-�겣�A���� (/stock-app/rebalance.html) ===
+[15:49:39]   status=200  page_errs=0  req_fails=0
+[15:49:39]   info: {"title":"�겣�A���ū�ĳ","h1":"�겣�A���ū�ĳ","bodyText":"�겣�A���ū�ĳ\n���A���ٹ��_���� �P �ȫ�ĳ���U��\n�� �^����\n\n�����u�b�_�l��̥ؼ��v���R�i�B����������A���šv�줵�Ѫ��v�������A���X�^��ؼ��v�����R���ĳ�C �o�O�¤�Ҽ����]���ݿ�J��ګ��ѡ^�A�è̥x�Ѧ^���۰������x�l�O�_�A�X�A���šC\n\n�x�� ETF �ʺA�A���� �W�B���S�զX �P MA200
+[15:49:39]   screenshot: D:\project\helpers\audit\page________________.png
+[15:49:39] === ai-capex-AI�ꥻ��X (/stock-app/ai-capex.html) ===
+[15:49:44]   status=200  page_errs=0  req_fails=0
+[15:49:44]   info: {"title":"���� AI �ꥻ��X�]�W��ݨD�^","h1":"���� AI �ꥻ��X","bodyText":"���� AI �ꥻ��X\n��s�ɶ� 2026-08-13�@�ӷ��GSEC EDGAR�]�u�סA�]������^\n��ʧ�s\n�� �^����\n�X�i���ʯ���z�]YoY +9.4%�A+7.1pp�^\n���j���ݶR��]�L�n / Alphabet / �Ȱ��� / Meta / �Ұ���^�ꥻ��X�X�p�F�` ca
+[15:49:44]   screenshot: D:\project\helpers\audit\page________________.png
+[15:49:44] === revenue-���禬 (/stock-app/revenue.html) ===
+[15:49:49]   status=200  page_errs=0  req_fails=0
+[15:49:49]   [ERR] 'cp950' codec can't encode character '\U0001f4c8' in position 29: illegal multibyte sequence
+[15:49:49] === conference-�k���| (/stock-app/conference.html) ===
+[15:49:53]   status=200  page_errs=0  req_fails=0
+[15:49:53]   [ERR] 'cp950' codec can't encode character '\U0001f4c5' in position 29: illegal multibyte sequence
+[15:49:53] === admin_logs-�t��Log (/stock-app/admin_logs.html) ===
+[15:49:58]   status=200  page_errs=0  req_fails=0
+[15:49:58]   [ERR] 'cp950' codec can't encode character '\U0001f4dc' in position 52: illegal multibyte sequence
+[15:49:58] === stock-damo-�Ѳ�DAMO (/stock-app/stock-damo.html) ===
+[15:50:02]   status=404  page_errs=1  req_fails=0
+[15:50:02]   info: {"title":"404: NOT_FOUND","h1":"","bodyText":"404: NOT_FOUND\nCode: NOT_FOUND\nID: hkg1::slc87-1786607399966-aa29b7b19740\n\nRead our documentation to learn more about this error.","emptyDash":0,"load
+[15:50:02]     err: [error] Failed to load resource: the server responded with a status of 404 ()
+[15:50:02]   screenshot: D:\project\helpers\audit\page__________________.png
+[15:50:02] === Test inline buttons on index ===
+[15:50:07]   baseline: D:\project\helpers\audit\inline_baseline.png
+[15:50:07]   Test: �[�v (button.index-tab-btn:has-text('�[�v'))
+[15:50:07]     clicked (idx 0)
+[15:50:10]     screenshot: D:\project\helpers\audit\inline___.png
+[15:50:10]   Test: �d�R (button.index-tab-btn:has-text('�d�R'))
+[15:50:10]     clicked (idx 0)
+[15:50:13]     screenshot: D:\project\helpers\audit\inline___.png
+[15:50:13]   Test: �������y (#btnScan)
+[15:50:13]     clicked (idx 0)
+[15:50:15]     screenshot: D:\project\helpers\audit\inline_____.png
+[15:50:15]   Test: Fib �^�ɽu (.fib-toggle-btn:has-text('Fib'))
+[15:50:15]     clicked (idx 0)
+[15:50:18]     screenshot: D:\project\helpers\audit\inline________.png
+[15:50:18]   Test: �q���� (.fib-toggle-btn:has-text('�q��'))
+[15:50:18]     clicked (idx 0)
+[15:50:21]     screenshot: D:\project\helpers\audit\inline____.png
+[15:50:21]   Test: MACD (.fib-toggle-btn:has-text('MACD'))
+[15:50:21]     clicked (idx 0)
+[15:50:23]     screenshot: D:\project\helpers\audit\inline_____.png
+[15:50:23]   Test: 2M (.timeframe-btns button:has-text('2M'))
+[15:50:23]     clicked (idx 0)
+[15:50:26]     screenshot: D:\project\helpers\audit\inline___.png
+[15:50:26]   Test: 4M (.timeframe-btns button:has-text('4M'))
+[15:50:26]     clicked (idx 0)
+[15:50:28]     screenshot: D:\project\helpers\audit\inline___.png
+[15:50:28]   Test: 1Y (.timeframe-btns button:has-text('1Y'))
+[15:50:28]     clicked (idx 0)
+[15:50:31]     screenshot: D:\project\helpers\audit\inline___.png
+[15:50:31]   Test: �ҰʽL���ʱ� (button:has-text('�ҰʽL���ʱ�'))
+[15:50:31]     clicked (idx 0)
+[15:50:34]     screenshot: D:\project\helpers\audit\inline_______.png
+[15:50:34]   Test: �޽L���� (button:has-text('�޽L����'))
+[15:50:34]     [SKIP] not found
+[15:50:34]   Test: ����̺޲z (button:has-text('����̺޲z'))
+[15:50:34]     clicked (idx 0)
+[15:50:36]     screenshot: D:\project\helpers\audit\inline______.png
+[15:50:36]   Test: Marker ���v (button:has-text('Marker ���v'))
+[15:50:36]     [SKIP] not found
+[15:50:36]   Test: �e�� (button:has-text('�e��'))
+[15:50:36]     [SKIP] not found
+[15:50:36]   Test: �ƥ�аO (button:has-text('�ƥ�аO'))
+[15:50:38]     [SKIP] no visible
+[15:50:38] 
+=== Total: 34 ===
+[15:50:38] OK: 15 / 34
+python.exe : Traceback (most recent call last):
+位於 線路:4 字元:1
++ & python -u "D:\project\helpers\stock-app-audit.py" 2>&1 | Out-File - ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\project\helpers\stock-app-audit.py", line 214, in <module>
+    main()
+    ~~~~^^
+  File "D:\project\helpers\stock-app-audit.py", line 201, in main
+    log(f"  [{status}] {r['name']:45s}{err_summary[:150]}")
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\project\helpers\stock-app-audit.py", line 18, in log
+    print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'cp950' codec can't encode character '\u2717' in position 14: illegal multibyte sequence

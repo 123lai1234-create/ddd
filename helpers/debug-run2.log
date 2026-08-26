@@ -1,0 +1,18 @@
+﻿[11:13:31] Launching browser...
+[11:13:31] Navigating to https://donttalk.vercel.app/stock ...
+[11:13:41] Inspecting chart state...
+[11:13:41] Chart state: ERR: candleSeries is not defined
+[11:13:41] Screenshot: D:\project\helpers\debug\01-after-load.png
+[11:13:41] 
+[11:13:41] === ALL CONSOLE MESSAGES (0) ===
+[11:13:41] 
+[11:13:41] === Re-fetch /api/stock/2330 from inside page ===
+[11:13:42] API state: {"status":200,"source":"db","count":120,"firstCandle":{"date":"115/03/24","time":1774310400,"time_iso":"2026-03-24","volume":30569936,"open":1850,"high":1850,"low":1800,"close":1810},"lastCandle":{"date":"115/08/13","time":1786579200,"time_iso":"2026-08-13","volume":23066385,"open":2440,"high":2445,"low":2425,"close":2435},"hasMa":true,"hasMarkers":false,"hasCapital":false,"hasFinancial":false,"hasIncome":false,"keys":["ok","source","code","strategy","strategy_profile","count","candles","volumes","ma","latest"]}
+[11:13:42] 
+[11:13:42] === Click 1Y to trigger render ===
+[11:14:12] click 1Y err: Locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator("button:has-text('1Y')").first
+
+[11:14:12] After 1Y - candle data: no-candleSeries
+[11:14:12] Done.

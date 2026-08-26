@@ -1,0 +1,33 @@
+﻿On branch 123lai1234-create
+Objects to be pushed to origin/123lai1234-create:
+
+	.vercel_python_packages/scipy/io/tests/data/test-1234Hz-le-1ch-10S-20bit-extra.wav (87c097b16e7f4a1291d7deedfddf935139600ea399fbbc0afc47151ae711f9a6)
+	.vercel_python_packages/scipy/io/tests/data/test-44100Hz-2ch-32bit-float-be.wav (823bfffe783dc47fec9b7e21cb109b0a03b800ffbe3d901f0ce02b1f9a269233)
+	.vercel_python_packages/scipy/io/tests/data/test-44100Hz-2ch-32bit-float-le.wav (1f42cbcafda573682ecd81a7c780d65d4eaf079ec9ad15fe1bd0dde2a1a1d213)
+	.vercel_python_packages/scipy/io/tests/data/test-44100Hz-be-1ch-4bytes.wav (28acfd497bff477817fc055e103dafca16278f806f0f5bb20e22a9093dee959d)
+	.vercel_python_packages/scipy/io/tests/data/test-44100Hz-le-1ch-4bytes-early-eof-no-data.wav (617d60f2a7423801b5eaf5fd1baab84ac7c28f6655935f7d8f30d0f12d335982)
+	.vercel_python_packages/scipy/io/tests/data/test-44100Hz-le-1ch-4bytes-early-eof.wav (6c5aec46ac344179ac683b630fa4c53fc859e631183326829adfa46bf0ba18d9)
+	.vercel_python_packages/scipy/io/tests/data/test-44100Hz-le-1ch-4bytes-incomplete-chunk.wav (ccc9e1bd9beb3f893239629529f6c19decafd37c6fce0a976211cdc6c0310c9e)
+	.vercel_python_packages/scipy/io/tests/data/test-44100Hz-le-1ch-4bytes-rf64.wav (1922690ae7b396f1db84fdc2af88cd5a6cf8cc6e3a5d9ea3722d9f5ad88c3749)
+	.vercel_python_packages/scipy/io/tests/data/test-44100Hz-le-1ch-4bytes.wav (f6a4c2be981dcf7ada79c54dd558a08073e742305fe3bc665e877d8820ec1229)
+	.vercel_python_packages/scipy/io/tests/data/test-48000Hz-2ch-64bit-float-le-wavex.wav (12a6019c4813c532af69302d740e47225e3b0821488def77cb885ac11e8fcaed)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-be-3ch-5S-24bit.wav (84661c8714058ebb6f642068d142e2fb1759f24aea5dc29d4e5dcd4947ea7bc9)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-le-1ch-1byte-ulaw.wav (0685020dcb771a263f24957f1e88211779b301e6d3d7c8f4d9cf8c3a7d7d2b15)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-le-2ch-1byteu.wav (47a109b21bd0a79615478181f6ee0a867e4733554c7c9523d3cda2f2d901209f)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-le-3ch-5S-24bit-inconsistent.wav (b76320ae2de1e892d00de92bc0884304e686e3a394cc7ca7533d2929bbcea4d5)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-le-3ch-5S-24bit-rf64.wav (8921b2aa8b97e7735a101df7b732976b5d4d44863dec61b8d3fa6a585fe4e4b4)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-le-3ch-5S-24bit.wav (c82bf4ba1faec7fb2426cc5e3a3ce88346019376503bf930e4724732ab55c88d)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-le-3ch-5S-36bit.wav (a22315b1057dfaa181cff670b1f024800f416573635db1f8cf1086bef753d116)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-le-3ch-5S-45bit.wav (7bded7a0facf1890c887c9ceea68a2fff562639c95966b783a73d0a03375763b)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-le-3ch-5S-53bit.wav (c1ba272a5cefcd0fdb418c81b23f86c278a164e867d2ec5f2a12ff9c434218d7)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-le-3ch-5S-64bit.wav (52ee503d071bb671659f139de33146c698930b8c20769e893a8609d95319214d)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-le-4ch-9S-12bit.wav (d45ebb87cb6bdb1cf40b92b6d53f72f60b29706034aa748ecec976be302b00cb)
+	.vercel_python_packages/scipy/io/tests/data/test-8000Hz-le-5ch-9S-5bit.wav (4c9bc653b1a9817742addae3ccc943b6989e0cc9c32be95630caa55a34f6dc16)
+
+Objects to be committed:
+
+
+Objects not staged for commit:
+
+	dontalk-import (?: <missing> -> ?: <missing>)
+

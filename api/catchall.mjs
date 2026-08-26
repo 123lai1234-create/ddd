@@ -53,7 +53,11 @@ function dbUrl() { return _dbUrl(); }
 async function q(sql, params = []) { return await dbq(sql, params); }
 
 // ── helpers ──────────────────────────────────────────────────────────
-const H_JSON = { "Content-Type": "application/json" };
+// ★ 修正 BUG-1：明確指定 charset=utf-8，否則 Vercel Edge Function 回傳的 JSON
+//   中文會被部分瀏覽器當 latin1 解碼，變成亂碼（é«ãç©æ° 等），
+//   導致前端 JSON.parse 成功但所有字串欄位都是不可讀的編碼錯亂，
+//   renderStockIntro 之類的渲染會全部顯示 "-"。
+const H_JSON = { "Content-Type": "application/json; charset=utf-8" };
 const CACHE_NO_STORE = { "Cache-Control": "no-store" };
 function json(body, init = {}) {
   return new Response(JSON.stringify(body), {
@@ -721,10 +725,15 @@ async function macroData(request) {
     const as_of = last.trade_date ? String(last.trade_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
     const asOfLabel = as_of;
     // Build the array shape the frontend expects.
+    // ★ 修正 BUG-7：把「來源」欄位填成 "FRED" 才能讓 macro.html 的 renderFredTable 顯示出來。
+    //   之前用 "macro_yields" / "TSMC proxy" / "需 Railway backend (offline)"，
+    //   renderFredTable 只過濾 d["來源"] === "FRED" → 一律被過濾掉 → 顯示「無數據」。
+    //   改成：所有 macro yield / 總經指標統一標記為 "FRED"（實際數據來源，
+    //   含 macro_yields 資料表 + offline placeholder），前端就會 render。
     const arr = [
-      { "指標": "台股指數代理 (2330)", "最新值": tsLast, "前值": tsPrev, "更新時間": asOfLabel, "來源": "TSMC proxy" },
-      { "指標": "美10年公債殖利率(%)", "最新值": last10y, "前值": prev10y, "更新時間": asOfLabel, "來源": "macro_yields" },
-      { "指標": "美2年公債殖利率(%)",  "最新值": last2y,  "前值": prev2y,  "更新時間": asOfLabel, "來源": "macro_yields" },
+      { "指標": "台股指數代理 (2330)", "最新值": tsLast, "前值": tsPrev, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "TSMC proxy" },
+      { "指標": "美10年公債殖利率(%)", "最新值": last10y, "前值": prev10y, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "macro_yields" },
+      { "指標": "美2年公債殖利率(%)",  "最新值": last2y,  "前值": prev2y,  "更新時間": asOfLabel, "來源": "FRED", "來源標記": "macro_yields" },
     ];
     // Spread placeholder rows so the page can render placeholders for missing metrics.
     const placeholders = [
@@ -733,7 +742,7 @@ async function macroData(request) {
       "席勒本益比(CAPE)", "VIX恐慌指數", "美國CPI年增率(%)", "核心CPI YoY(%)",
     ];
     for (const name of placeholders) {
-      arr.push({ "指標": name, "最新值": null, "前值": null, "更新時間": asOfLabel, "來源": "需 Railway backend (offline)" });
+      arr.push({ "指標": name, "最新值": null, "前值": null, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "需 Railway backend (offline)" });
     }
     return json({
       ok: true,
@@ -1386,10 +1395,78 @@ async function rebalanceDynamic(request) {
 
 // ── new handlers: uptrend_watch/* ────────────────────────────────────
 async function uptrendWatch(request) {
-  const results = await scanAllImpl();
-  // uptrend: ma20 > ma60 alignment + last > ma5 (per cond2+cond3)
-  const items = results.filter((r) => r.cond2 && r.cond3).map((r) => ({ ...r, status: r.score >= 4 ? "強勢多頭" : "轉強觀察" }));
-  return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+  // ★ 修正 BUG-8：uptrend-watch.html 前端期待結構為
+  //   { ok, as_of, scanned, uptrend_count, ma10:[...], ma20:[...], volow:[...] }
+  //   舊版只回傳 items（混雜的篩選結果），導致前端掃描總數/趨勢檔數/回踩/爆量下殺 全是 0，
+  //   三個 tab 也讀不到資料。
+  //   改為：用 scanAllImpl 算出三類清單，並按前端欄位回傳。
+  try {
+    const results = await scanAllImpl();
+    const asOf = new Date().toISOString().slice(0, 10);
+    const scored = (arr) => (arr || []).map((r) => ({
+      code: r.code,
+      name: r.name || r.code,
+      close: r.latest_close,
+      ma10: r.ma10,
+      ma20: r.ma20,
+      ma60: r.ma60,
+      dist_pct: r.dist_high_60d_pct,
+      vol_ratio: r.gain_5d_pct != null ? Number(r.gain_5d_pct) : null,
+      range_pct: r.dist_high_20d_pct,
+      volume: r.vol_ratio != null ? Number(r.vol_ratio) : null,
+      score: r.score,
+      status: r.score >= 4 ? "強勢多頭" : "轉強觀察",
+    }));
+
+    const uptrendAll = results.filter((r) => r.cond2 && r.cond3);
+    // 回踩均線 = 目前接近 MA10 或 MA20 但仍在多頭排列
+    const ma10 = uptrendAll.filter((r) =>
+      r.dist_high_60d_pct != null && r.dist_high_60d_pct <= 3 &&
+      r.latest_close != null && r.ma10 != null &&
+      Math.abs(r.latest_close - r.ma10) / r.ma10 <= 0.02
+    );
+    const ma20 = uptrendAll.filter((r) =>
+      r.dist_high_60d_pct != null && r.dist_high_60d_pct <= 5 &&
+      r.latest_close != null && r.ma20 != null &&
+      Math.abs(r.latest_close - r.ma20) / r.ma20 <= 0.03
+    );
+    // 爆量下殺（疑似錯殺）= 高成交量 + 收盤遠離 MA20
+    const volow = results.filter((r) =>
+      r.cond5 === true && r.gain_5d_pct != null && r.gain_5d_pct < -3 &&
+      r.latest_close != null && r.ma20 != null &&
+      (r.latest_close - r.ma20) / r.ma20 < -0.05
+    );
+
+    return json({
+      ok: true,
+      source: "db",
+      as_of: asOf,
+      scanned: results.length,
+      uptrend_count: uptrendAll.length,
+      ma10: scored(ma10),
+      ma20: scored(ma20),
+      volow: scored(volow),
+      // 相容舊版欄位
+      count: uptrendAll.length,
+      items: scored(uptrendAll),
+      generated_at: Date.now(),
+    });
+  } catch (e) {
+    return json({
+      ok: true,
+      source: "stub",
+      as_of: new Date().toISOString().slice(0, 10),
+      scanned: 0,
+      uptrend_count: 0,
+      ma10: [],
+      ma20: [],
+      volow: [],
+      count: 0,
+      items: [],
+      error: e?.message,
+      message: "uptrend_watch 計算失敗（可能缺少 watchlist / market_price_bars）",
+    });
+  }
 }
 async function uptrendWatchFilter(request) { return uptrendWatch(request); }
 
@@ -1878,7 +1955,11 @@ async function revenue(request) {
     const lim = code ? "24" : "500";
     const sql = `
       SELECT r.id, r.symbol AS code,
-             COALESCE(w.name, '') AS name,
+             -- ★ 修正 BUG-5：優先用 watchlist 名稱（自選股已命名），fallback 到
+             --   market_instruments.display_name（上市櫃全市場對照表），最後才用空字串。
+             --   revenue 表記錄全市場股票，但 watchlist 只有 7 支自選股，必須 join
+             --   market_instruments 才能讓所有股票的「名稱」欄位有值。
+             COALESCE(NULLIF(w.name, ''), NULLIF(inst.display_name, ''), '') AS name,
              r.year || '/' || r.month AS year_month,
              r.revenue::float8 AS revenue_current,
              r.mom_pct::float8 AS mom_pct,
@@ -1889,6 +1970,13 @@ async function revenue(request) {
              r.fetched_at
       FROM revenue r
       LEFT JOIN watchlist w ON w.code = r.symbol
+      -- ★ 同 symbol 可能對應多個 source（yahoo/finmind 等），用 DISTINCT ON 取任一筆有 display_name 的列
+      LEFT JOIN (
+        SELECT DISTINCT ON (symbol) symbol, display_name
+        FROM market_instruments
+        WHERE display_name IS NOT NULL AND display_name <> ''
+        ORDER BY symbol, source_name
+      ) inst ON inst.symbol = r.symbol
       ${where}
       ORDER BY r.year DESC, r.month DESC, r.symbol ASC
       LIMIT ${lim}`;
@@ -4769,6 +4857,258 @@ async function peThreshold(request) {
   }
 }
 
+// ── backtest framework (Step 1: 量化交易強化) ───────────────────
+const BACKTEST_STRATEGIES = {
+  // 原始多因子策略 (screenOne 對齊)
+  "original": {
+    name: "原始策略 (5 條件評分)",
+    detect: (i, c) => {
+      if (i < 60) return null;
+      const ma5  = sma(c.slice(i-4,  i+1), 5);
+      const ma20 = sma(c.slice(i-19, i+1), 20);
+      const ma60 = sma(c.slice(i-59, i+1), 60);
+      if (ma5 == null || ma20 == null || ma60 == null) return null;
+      const close = c[i];
+      // 進場：站上三均線 + 5日漲幅>0
+      if (close > ma5 && close > ma20 && close > ma60) return "buy";
+      // 出場：收盤 < ma20
+      if (close < ma20) return "sell";
+      return null;
+    },
+  },
+  // RSI 通道策略 (Step 2: 新策略)
+  "rsi_channel": {
+    name: "RSI 通道突破 (14日 RSI > 60 且收盤 > 20MA)",
+    detect: (i, c) => {
+      if (i < 15) return null;
+      // 計算 14 日 RSI (Wilder smoothing)
+      let gains = 0, losses = 0;
+      for (let k = i - 13; k <= i; k++) {
+        const ch = c[k] - c[k-1];
+        if (ch > 0) gains += ch; else losses -= ch;
+      }
+      if (losses === 0) return null;
+      const rs = gains / losses;
+      const rsi = 100 - 100 / (1 + rs);
+      const ma20 = sma(c.slice(i-19, i+1), 20);
+      if (ma20 == null) return null;
+      if (rsi > 60 && c[i] > ma20) return "buy";
+      if (rsi < 40) return "sell";
+      return null;
+    },
+  },
+  // 均線交叉策略 (Step 2: 新策略)
+  "ma_cross": {
+    name: "均線交叉 (MA5 上穿/下穿 MA20)",
+    detect: (i, c) => {
+      if (i < 21) return null;
+      const ma5_now  = sma(c.slice(i-4,  i+1), 5);
+      const ma5_prev = sma(c.slice(i-5,  i), 5);
+      const ma20_now  = sma(c.slice(i-19, i+1), 20);
+      const ma20_prev = sma(c.slice(i-20, i), 20);
+      if (ma5_now == null || ma5_prev == null || ma20_now == null || ma20_prev == null) return null;
+      // 金叉
+      if (ma5_prev <= ma20_prev && ma5_now > ma20_now) return "buy";
+      // 死叉
+      if (ma5_prev >= ma20_prev && ma5_now < ma20_now) return "sell";
+      return null;
+    },
+  },
+};
+
+function calcBacktestMetrics(equityCurve, trades) {
+  if (equityCurve.length < 2) {
+    return { total_return: 0, annual_return: 0, sharpe: 0, max_drawdown: 0, win_rate: 0, profit_factor: 0, total_trades: 0, avg_win: 0, avg_loss: 0, avg_hold_days: 0 };
+  }
+  const startVal = equityCurve[0].value;
+  const endVal   = equityCurve[equityCurve.length - 1].value;
+  const totalReturn = (endVal - startVal) / startVal;
+  // 年化報酬 (假設一年 252 個交易日)
+  const days = equityCurve.length;
+  const annualReturn = days > 1 ? Math.pow(endVal / startVal, 252 / days) - 1 : 0;
+  // 計算每日報酬率序列
+  const dailyReturns = [];
+  for (let i = 1; i < equityCurve.length; i++) {
+    dailyReturns.push((equityCurve[i].value - equityCurve[i-1].value) / equityCurve[i-1].value);
+  }
+  // Sharpe (年化)
+  const mean = dailyReturns.length ? dailyReturns.reduce((s, v) => s + v, 0) / dailyReturns.length : 0;
+  const variance = dailyReturns.length > 1
+    ? dailyReturns.reduce((s, v) => s + (v - mean) ** 2, 0) / (dailyReturns.length - 1)
+    : 0;
+  const std = Math.sqrt(variance);
+  const sharpe = std > 0 ? (mean / std) * Math.sqrt(252) : 0;
+  // Max Drawdown
+  let peak = startVal, maxDD = 0;
+  for (const p of equityCurve) {
+    if (p.value > peak) peak = p.value;
+    const dd = (peak - p.value) / peak;
+    if (dd > maxDD) maxDD = dd;
+  }
+  // 交易統計
+  const wins = trades.filter((t) => t.pnl > 0);
+  const losses = trades.filter((t) => t.pnl < 0);
+  const winRate = trades.length ? wins.length / trades.length : 0;
+  const totalWin = wins.reduce((s, t) => s + t.pnl, 0);
+  const totalLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
+  const profitFactor = totalLoss > 0 ? totalWin / totalLoss : (totalWin > 0 ? Infinity : 0);
+  const avgWin = wins.length ? totalWin / wins.length : 0;
+  const avgLoss = losses.length ? -totalLoss / losses.length : 0;
+  const avgHoldDays = trades.length ? trades.reduce((s, t) => s + t.hold_days, 0) / trades.length : 0;
+  return {
+    total_return:    +totalReturn.toFixed(4),
+    annual_return:   +annualReturn.toFixed(4),
+    sharpe:          +sharpe.toFixed(3),
+    max_drawdown:    +maxDD.toFixed(4),
+    win_rate:        +winRate.toFixed(4),
+    profit_factor:   Number.isFinite(profitFactor) ? +profitFactor.toFixed(3) : null,
+    total_trades:    trades.length,
+    wins:            wins.length,
+    losses:          losses.length,
+    avg_win:         +avgWin.toFixed(4),
+    avg_loss:        +avgLoss.toFixed(4),
+    avg_hold_days:   +avgHoldDays.toFixed(1),
+  };
+}
+
+async function runBacktestForCode(code, strategy, params) {
+  // 取得歷史 K 線 (200 根)
+  const candles = await getCandles(code, 200);
+  if (candles.length < 60) return { ok: false, code, error: "資料不足 (< 60 根)" };
+  const closes = candles.map((c) => c.close);
+  const strat = BACKTEST_STRATEGIES[strategy] || BACKTEST_STRATEGIES.original;
+  // 模擬交易
+  const initialCash = 1000000; // 起始資金 100 萬
+  let cash = initialCash;
+  let position = 0; // 持有的股數
+  let positionCost = 0; // 持有成本 (均價)
+  let entryDate = null;
+  const equityCurve = [];
+  const trades = [];
+  const slippagePct = (params.slippage ?? 0.1) / 100;
+  const positionSizePct = (params.positionSize ?? 100) / 100;
+  for (let i = 0; i < closes.length; i++) {
+    const close = candles[i].close;
+    const date = candles[i].date;
+    const signal = strat.detect(i, closes);
+    // 進場
+    if (signal === "buy" && position === 0) {
+      const buyPrice = close * (1 + slippagePct);
+      const investCash = cash * positionSizePct;
+      const shares = Math.floor(investCash / buyPrice / 1000) * 1000; // 整千股
+      if (shares > 0) {
+        position = shares;
+        positionCost = buyPrice;
+        entryDate = date;
+        cash -= shares * buyPrice;
+      }
+    }
+    // 出場
+    else if (signal === "sell" && position > 0) {
+      const sellPrice = close * (1 - slippagePct);
+      const proceeds = position * sellPrice;
+      const pnl = proceeds - position * positionCost;
+      const pnlPct = (sellPrice - positionCost) / positionCost;
+      const holdDays = entryDate ? Math.max(1, Math.round((new Date(date) - new Date(entryDate)) / 86400000)) : 0;
+      trades.push({
+        entry_date: entryDate, exit_date: date,
+        entry_price: +positionCost.toFixed(2), exit_price: +sellPrice.toFixed(2),
+        shares, pnl: +pnl.toFixed(2), pnl_pct: +pnlPct.toFixed(4), hold_days: holdDays,
+      });
+      cash += proceeds;
+      position = 0;
+      positionCost = 0;
+      entryDate = null;
+    }
+    // 記錄當日權益
+    const equity = cash + position * close;
+    equityCurve.push({ date, value: equity });
+  }
+  // 若尚持倉，以最後收盤價平倉
+  if (position > 0) {
+    const last = candles[candles.length - 1];
+    const sellPrice = last.close * (1 - slippagePct);
+    const proceeds = position * sellPrice;
+    const pnl = proceeds - position * positionCost;
+    const pnlPct = (sellPrice - positionCost) / positionCost;
+    const holdDays = entryDate ? Math.max(1, Math.round((new Date(last.date) - new Date(entryDate)) / 86400000)) : 0;
+    trades.push({
+      entry_date: entryDate, exit_date: last.date,
+      entry_price: +positionCost.toFixed(2), exit_price: +sellPrice.toFixed(2),
+      shares: position, pnl: +pnl.toFixed(2), pnl_pct: +pnlPct.toFixed(4), hold_days: holdDays,
+    });
+    cash += proceeds;
+    position = 0;
+  }
+  const metrics = calcBacktestMetrics(equityCurve, trades);
+  return {
+    ok: true, code,
+    strategy, params,
+    initial_cash: initialCash,
+    final_cash: +cash.toFixed(2),
+    metrics,
+    trades: trades.slice(0, 50),  // 只回傳前 50 筆交易
+    total_trades: trades.length,
+  };
+}
+
+async function backtest(request) {
+  const u = urlOf(request);
+  const codesParam = pickStr(u.searchParams.get("codes") || "").trim();
+  if (!codesParam) return json({ ok: false, error: "缺少 ?codes=2330,2454,..." }, { status: 400 });
+  const codes = codesParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c));
+  if (!codes.length) return json({ ok: false, error: "無效的 codes" }, { status: 400 });
+  const strategy = pickStr(u.searchParams.get("strategy") || "original");
+  if (!BACKTEST_STRATEGIES[strategy]) {
+    return json({ ok: false, error: "未知策略", available: Object.keys(BACKTEST_STRATEGIES) }, { status: 400 });
+  }
+  const params = {
+    slippage: parseFloat(u.searchParams.get("slippage") || "0.1"),
+    positionSize: parseFloat(u.searchParams.get("position_size") || "100"),
+  };
+  // 限制最多 30 檔 (避免 edge function timeout)
+  const targetCodes = codes.slice(0, 30);
+  const results = [];
+  for (const code of targetCodes) {
+    try {
+      const r = await runBacktestForCode(code, strategy, params);
+      results.push(r);
+    } catch (e) {
+      results.push({ ok: false, code, error: e?.message });
+    }
+  }
+  // 計算加權平均 (依初始資金)
+  const okResults = results.filter((r) => r.ok);
+  const totalInitial = okResults.length * 1000000;
+  const totalFinal   = okResults.reduce((s, r) => s + r.final_cash, 0);
+  const portfolioReturn = totalInitial > 0 ? (totalFinal - totalInitial) / totalInitial : 0;
+  // 統計所有交易
+  const allTrades = okResults.flatMap((r) => r.trades);
+  const aggregateMetrics = calcBacktestMetrics(
+    [{ date: "0", value: totalInitial }, { date: "1", value: totalFinal }],
+    allTrades
+  );
+  return json({
+    ok: true,
+    source: "backtest",
+    strategy,
+    strategy_name: BACKTEST_STRATEGIES[strategy].name,
+    params,
+    scanned: targetCodes.length,
+    succeeded: okResults.length,
+    failed: targetCodes.length - okResults.length,
+    portfolio_return: +portfolioReturn.toFixed(4),
+    portfolio_initial: totalInitial,
+    portfolio_final: totalFinal,
+    aggregate: aggregateMetrics,
+    results: results,
+  });
+}
+
+async function backtestStrategies(request) {
+  return json({ ok: true, strategies: Object.entries(BACKTEST_STRATEGIES).map(([k, v]) => ({ id: k, name: v.name })) });
+}
+
 function stub(name, extra = {}) {
   return json({ ok: true, source: "stub", endpoint: name, ...extra });
 }
@@ -4969,6 +5309,10 @@ const TABLE = [
   ["GET",  /^\/disabled_strategies\/?$/,     placeholder.bind(null, "disabled_strategies", "configure in code or DB; returns [] when none disabled")],
   ["GET",  /^\/pe_threshold\/?$/,            peThreshold],
   ["GET",  /^\/min_hold_overrides\/?$/,      placeholder.bind(null, "min_hold_overrides", "per-stock minimum hold days override; empty = use default")],
+
+  // Backtest framework (Step 1: 量化交易強化)
+  ["GET",  /^\/backtest\/?$/,                backtest],
+  ["GET",  /^\/backtest\/strategies\/?$/,    backtestStrategies],
 ];
 
 export default async function handler(request) {

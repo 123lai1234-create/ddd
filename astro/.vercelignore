@@ -1,0 +1,35 @@
+# Vercel ignore patterns for astro/ subdirectory deployment.
+# (Verceignore in rootDirectory-scoped projects live next to the project's vercel.json.)
+node_modules/
+.astro/
+dist/
+.vercel/
+*.log
+.cache/
+.DS_Store
+.env
+.env.local
+.env.*.local
+
+# 開發/測試檔（不會被 production build 用到）
+src/**/*.test.*
+src/**/*.spec.*
+tests/
+docs/
+examples/
+
+# 不要把整個 frontend/ 帶到 Vercel — build script 已經會 sync 必要的部分
+# 但保險起見排除大檔
+frontend/games/xian-godot/*.wasm
+frontend/games/xian-godot/*.data
+frontend/scripts/thesis.js.bak
+
+# Demo/測試用的 stock 截圖
+stock-app/test_screenshots/
+stock-app-bugfix-summary.md
+stock-app-test-report.md
+test_results.json
+test_run.log
+
+# Sync script 中間產物
+scripts/*.bak

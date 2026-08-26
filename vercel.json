@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm ci",
-  "buildCommand": "npx --no-install astro build && npx --no-install pagefind --site dist --output-path dist/pagefind",
+  "installCommand": "node ../vercel-install.mjs",
+  "buildCommand": "node ../vercel-build.mjs",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
@@ -49,6 +49,21 @@
     }
   ],
   "redirects": [
+    {
+      "source": "/stock",
+      "destination": "/stock-app",
+      "permanent": true
+    },
+    {
+      "source": "/stock/",
+      "destination": "/stock-app",
+      "permanent": true
+    },
+    {
+      "source": "/stock-app",
+      "destination": "/stock-app/",
+      "permanent": true
+    },
     {
       "source": "/about_me.html",
       "destination": "/about",

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>賣飛股票 | 台股均線系統</title>
+  <link rel="icon" type="image/svg+xml"
+        href="static/favicon.svg">
+  <style>
+    :root {
+      --bg:#0f0f23; --bg2:#1a1a3e; --bg3:#1e1e42;
+      --txt:#e0e0ff; --txt2:#8888aa;
+      --green:#00c853; --red:#ff1744;
+      --orange:#ff9100; --yellow:#ffeb3b;
+      --blue:#448aff; --cyan:#00bcd4;
+      --purple:#d500f9; --bdr:#2a2a5a;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Segoe UI','Microsoft JhengHei',sans-serif;
+      background:var(--bg); color:var(--txt); min-height:100vh;
+    }
+    .header {
+      background:linear-gradient(135deg,var(--bg2),#12122e);
+      padding:14px 24px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-bottom:1px solid var(--bdr);
+      position:sticky; top:0; z-index:100;
+      flex-wrap:wrap; gap:10px;
+    }
+    .header h1 {
+      font-size:18px;
+      background:linear-gradient(90deg,var(--orange),var(--red));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .nav-btns { display:flex; gap:6px; flex-wrap:wrap; }
+    .nav-btn {
+      background:transparent; border:1px solid var(--bdr);
+      color:var(--txt2); padding:6px 14px; border-radius:6px;
+      cursor:pointer; font-size:12px; font-weight:600;
+      text-decoration:none; display:inline-block;
+    }
+    .nav-btn:hover { background:rgba(68,138,255,.15); color:var(--txt); }
+    .main { max-width:1280px; margin:0 auto; padding:24px 20px 80px; }
+    .intro {
+      background:var(--bg2); border:1px solid var(--bdr);
+      border-radius:12px; padding:16px 20px; margin-bottom:18px;
+      font-size:13px; line-height:1.8; color:var(--txt2);
+    }
+    .intro b { color:var(--orange); }
+    .toolbar {
+      display:flex; align-items:center; gap:12px;
+      margin-bottom:14px; flex-wrap:wrap;
+    }
+    .btn-scan {
+      background:linear-gradient(135deg,var(--orange),var(--red));
+      border:none; color:#fff; padding:10px 22px;
+      border-radius:8px; cursor:pointer; font-size:14px;
+      font-weight:700; box-shadow:0 3px 12px rgba(255,145,0,.35);
+    }
+    .btn-scan:hover { opacity:.88; }
+    .btn-scan:disabled { opacity:.4; cursor:not-allowed; }
+    .meta {
+      font-size:12px; color:var(--txt2); margin-left:auto;
+    }
+    .stat-banner {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+      margin-bottom:18px;
+    }
+    @media(max-width:600px){ .stat-banner { grid-template-columns:1fr; } }
+    .stat-card {
+      background:var(--bg2); border:1px solid var(--bdr);
+      border-radius:10px; padding:14px; text-align:center;
+    }
+    .stat-val { font-size:24px; font-weight:700; font-family:monospace; }
+    .stat-label { font-size:11px; color:var(--txt2); margin-top:4px; }
+    .stat-val.green { color:var(--green); }
+    .stat-val.orange { color:var(--orange); }
+    .stat-val.blue { color:var(--blue); }
+    .table-wrap {
+      background:var(--bg2); border:1px solid var(--bdr);
+      border-radius:12px; overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+    table {
+      width:100%; border-collapse:collapse;
+      min-width:760px;
+    }
+    th, td {
+      padding:10px 12px; text-align:right; font-size:13px;
+      border-bottom:1px solid var(--bdr); white-space:nowrap;
+    }
+    th {
+      background:var(--bg3); color:var(--txt2);
+      font-weight:600; font-size:12px; position:sticky; top:0;
+    }
+    th.left, td.left { text-align:left; }
+    tr:hover td { background:rgba(68,138,255,.05); }
+    /* 代號欄手機橫向卷動時固定在左側 */
+    th.code-col, td.code-col {
+      position:sticky; left:0; background:var(--bg2); z-index:2;
+    }
+    th.code-col { background:var(--bg3); z-index:3; }
+    /* RWD：≤768px 隱藏 MA5/10/20（已過濾即站回三均線，欄位重複）+ 距今 */
+    @media(max-width:768px){
+      .main { padding:16px 12px 60px; }
+      th, td { padding:8px 8px; font-size:12px; }
+      th { font-size:11px; }
+      .ma-col { display:none; }
+      .days-col { display:none; }
+      table { min-width:560px; }
+    }
+    /* RWD：≤480px 仍保留賣出日（用戶要求） */
+    @media(max-width:480px){
+      .header { padding:10px 12px; }
+      .header h1 { font-size:15px; }
+      .nav-btn { padding:4px 10px; font-size:11px; }
+      .intro { font-size:12px; padding:12px 14px; }
+      .btn-scan { padding:8px 16px; font-size:13px; }
+      .stat-val { font-size:20px; }
+      table { min-width:520px; }
+    }
+    th.sortable { cursor:pointer; user-select:none; }
+    th.sortable:hover { color:var(--orange); }
+    th.sortable .arr { font-size:10px; opacity:.5; margin-left:3px; }
+    th.sortable.active .arr { opacity:1; color:var(--orange); }
+    .code-link {
+      color:var(--cyan); text-decoration:none; font-weight:700;
+      font-family:monospace;
+    }
+    .code-link:hover { color:var(--orange); text-decoration:underline; }
+    .name { color:var(--txt); }
+    .strat-tag {
+      display:inline-block; padding:2px 8px; border-radius:4px;
+      background:rgba(68,138,255,.15); color:var(--blue);
+      font-size:11px; font-weight:600;
+    }
+    .gain { font-weight:700; font-family:monospace; }
+    .gain.pos { color:var(--green); }
+    .gain.neg { color:var(--red); }
+    .above {
+      color:var(--green); font-weight:700; font-size:11px;
+    }
+    .below { color:var(--red); font-weight:600; font-size:11px; }
+    .empty {
+      text-align:center; padding:60px 20px;
+      color:var(--txt2); font-size:14px;
+    }
+    .loading {
+      text-align:center; padding:40px; color:var(--txt2);
+    }
+    .loading::after {
+      content:''; display:inline-block; width:20px; height:20px;
+      border:2px solid var(--bdr); border-top-color:var(--orange);
+      border-radius:50%; animation:spin .8s linear infinite;
+      margin-left:10px; vertical-align:middle;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🦅 賣飛股票追蹤</h1>
+    <div class="nav-btns">
+      <a class="nav-btn" href="index.html">📊 股票版</a>
+      <a class="nav-btn" href="signal-filter.html">🔍 訊號篩選</a>
+      <a class="nav-btn" href="stock-damo-filter.html">🔍 DAMO 篩選</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="intro">
+      列出 <b>signal-filter</b> 與 <b>signal-damo-filter</b> 已觸發賣出訊號、
+      但目前現價已重新站回 <b>MA5 / MA10 / MA20</b> 三條短期均線之上的個股。
+      代表賣出後股價反彈創新高 —— 即所謂「賣飛」。點擊代號可在新分頁查看 K 線圖。
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-scan" id="btnScan">🔍 重新掃描</button>
+      <button class="btn-scan" id="btnExport" style="background:linear-gradient(135deg,var(--blue),var(--cyan));box-shadow:0 3px 12px rgba(68,138,255,.35);">📥 匯出 CSV</button>
+      <label style="font-size:12px;color:var(--txt2);">
+        範圍：
+        <select id="selDays" style="background:var(--bg2);color:var(--txt);
+                                     border:1px solid var(--bdr);padding:5px 8px;
+                                     border-radius:6px;">
+          <option value="7">近 7 天</option>
+          <option value="30">近 30 天</option>
+          <option value="60">近 60 天</option>
+          <option value="120">近 120 天</option>
+          <option value="180" selected>近 180 天</option>
+          <option value="365">近 1 年</option>
+        </select>
+      </label>
+      <div class="meta" id="meta"></div>
+    </div>
+
+    <div class="stat-banner" id="statBanner" style="display:none;">
+      <div class="stat-card">
+        <div class="stat-val orange" id="statCount">-</div>
+        <div class="stat-label">賣飛檔數</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val blue" id="statScanned">-</div>
+        <div class="stat-label">掃描樣本</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val green" id="statAvgGain">-</div>
+        <div class="stat-label">平均賣飛漲幅</div>
+      </div>
+    </div>
+
+    <div id="tableWrap"></div>
+  </div>
+
+<script>
+const $ = s => document.querySelector(s);
+const fmt = (v, d=2) => (v===null||v===undefined||isNaN(v))?'-':Number(v).toFixed(d);
+
+let _lastData = null;
+
+async function load() {
+  const days = $('#selDays').value;
+  $('#btnScan').disabled = true;
+  $('#tableWrap').innerHTML = '<div class="loading">掃描中</div>';
+  $('#statBanner').style.display = 'none';
+  try {
+    const r = await fetch(`/api/sold_too_early?days=${days}`);
+    const j = await r.json();
+    if (!j.ok) {
+      $('#tableWrap').innerHTML = `<div class="empty">查詢失敗：${j.error||'未知錯誤'}</div>`;
+      return;
+    }
+    _lastData = j;
+    render(j);
+  } catch (e) {
+    $('#tableWrap').innerHTML = `<div class="empty">查詢失敗：${e.message}</div>`;
+  } finally {
+    $('#btnScan').disabled = false;
+  }
+}
+
+const SORT_TYPE = {
+  sell_date: 'str', days_since_sell: 'num',
+  sell_price: 'num', current_price: 'num',
+  gain_since_sell_pct: 'num',
+  ma5: 'num', ma10: 'num', ma20: 'num',
+  code: 'str', name: 'str',
+};
+let _sortKey = 'gain_since_sell_pct';
+let _sortDir = 'desc';
+
+function sortRows(rows) {
+  const key = _sortKey, dir = _sortDir;
+  const typ = SORT_TYPE[key] || 'str';
+  const arr = rows.slice();
+  if (typ === 'num') {
+    arr.sort((x,y) => {
+      const a = x[key], b = y[key];
+      const av = (a==null||isNaN(a)) ? -Infinity : a;
+      const bv = (b==null||isNaN(b)) ? -Infinity : b;
+      return dir === 'desc' ? (bv - av) : (av - bv);
+    });
+  } else {
+    arr.sort((x,y) => {
+      const av = x[key] || '', bv = y[key] || '';
+      return dir === 'desc' ? bv.localeCompare(av) : av.localeCompare(bv);
+    });
+  }
+  return arr;
+}
+
+function setSort(key) {
+  if (_sortKey === key) {
+    _sortDir = _sortDir === 'desc' ? 'asc' : 'desc';
+  } else {
+    _sortKey = key;
+    _sortDir = (SORT_TYPE[key] === 'num') ? 'desc' : 'desc';
+  }
+  if (_lastData) render(_lastData);
+}
+
+function arrFor(key) {
+  if (_sortKey !== key) return '<span class="arr">⇅</span>';
+  return _sortDir === 'desc' ? '<span class="arr">▼</span>' : '<span class="arr">▲</span>';
+}
+
+function render(j) {
+  $('#meta').textContent = `更新時間 ${j.as_of||'-'}`;
+  const rows = sortRows(j.rows || []);
+  $('#statBanner').style.display = '';
+  $('#statCount').textContent = j.count;
+  $('#statScanned').textContent = j.scanned;
+  const gains = rows.map(r => r.gain_since_sell_pct).filter(v => v!=null);
+  const avg = gains.length ? (gains.reduce((a,b)=>a+b,0)/gains.length) : null;
+  $('#statAvgGain').textContent = avg===null ? '-' : (avg>=0?'+':'')+fmt(avg)+'%';
+
+  if (!rows.length) {
+    $('#tableWrap').innerHTML = '<div class="empty">目前沒有「賣飛 + 站回三均線」的個股 🎯</div>';
+    return;
+  }
+
+  const sCls = k => 'sortable' + (_sortKey===k?' active':'');
+  let html = `
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="left code-col ${sCls('code')}" data-sort="code">代號${arrFor('code')}</th>
+          <th class="left ${sCls('name')}" data-sort="name">名稱${arrFor('name')}</th>
+          <th class="left">策略</th>
+          <th class="selldate-col ${sCls('sell_date')}" data-sort="sell_date">賣出日${arrFor('sell_date')}</th>
+          <th class="days-col ${sCls('days_since_sell')}" data-sort="days_since_sell">距今(日)${arrFor('days_since_sell')}</th>
+          <th class="${sCls('sell_price')}" data-sort="sell_price">賣出價${arrFor('sell_price')}</th>
+          <th class="${sCls('current_price')}" data-sort="current_price">現價${arrFor('current_price')}</th>
+          <th class="${sCls('gain_since_sell_pct')}" data-sort="gain_since_sell_pct">賣飛漲幅${arrFor('gain_since_sell_pct')}</th>
+          <th class="ma-col ${sCls('ma5')}" data-sort="ma5">MA5${arrFor('ma5')}</th>
+          <th class="ma-col ${sCls('ma10')}" data-sort="ma10">MA10${arrFor('ma10')}</th>
+          <th class="ma-col ${sCls('ma20')}" data-sort="ma20">MA20${arrFor('ma20')}</th>
+          <th class="left">賣出原因</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  for (const r of rows) {
+    const g = r.gain_since_sell_pct;
+    const gClass = g===null?'':(g>=0?'pos':'neg');
+    const gTxt = g===null?'-':(g>=0?'+':'')+fmt(g)+'%';
+    html += `
+      <tr>
+        <td class="left code-col"><a class="code-link" href="index.html?code=${r.code}" target="_blank">${r.code}</a></td>
+        <td class="left name">${r.name||''}</td>
+        <td class="left"><span class="strat-tag">${r.strategy_label||r.strategy||''}</span></td>
+        <td class="selldate-col">${r.sell_date||'-'}</td>
+        <td class="days-col">${r.days_since_sell??'-'}</td>
+        <td>${fmt(r.sell_price)}</td>
+        <td><b>${fmt(r.current_price)}</b></td>
+        <td class="gain ${gClass}">${gTxt}</td>
+        <td class="ma-col">${fmt(r.ma5)}</td>
+        <td class="ma-col">${fmt(r.ma10)}</td>
+        <td class="ma-col">${fmt(r.ma20)}</td>
+        <td class="left" style="color:var(--txt2);font-size:11px;">${r.sell_reason||'-'}</td>
+      </tr>
+    `;
+  }
+  html += '</tbody></table></div>';
+  $('#tableWrap').innerHTML = html;
+}
+
+function exportCSV() {
+  if (!_lastData || !_lastData.rows || !_lastData.rows.length) {
+    alert('沒有資料可匯出');
+    return;
+  }
+  const rows = sortRows(_lastData.rows);
+  const cols = [
+    ['code','代號'], ['name','名稱'], ['strategy_label','策略'],
+    ['sell_date','賣出日'], ['days_since_sell','距今(日)'],
+    ['sell_price','賣出價'], ['current_price','現價'],
+    ['gain_since_sell_pct','賣飛漲幅(%)'],
+    ['ma5','MA5'], ['ma10','MA10'], ['ma20','MA20'],
+    ['sell_reason','賣出原因'],
+  ];
+  const esc = v => {
+    if (v == null) return '';
+    const s = String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const lines = [cols.map(c => c[1]).join(',')];
+  for (const r of rows) {
+    lines.push(cols.map(c => {
+      let v = r[c[0]];
+      if (c[0] === 'strategy_label') v = r.strategy_label || r.strategy || '';
+      if (typeof v === 'number') v = (Number.isInteger(v) ? v : v.toFixed(2));
+      return esc(v);
+    }).join(','));
+  }
+  const csv = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const days = $('#selDays').value;
+  const ts = (_lastData.as_of || new Date().toISOString().slice(0,10)).replace(/[^\d]/g,'').slice(0,12);
+  a.href = url;
+  a.download = `sold_too_early_${days}d_${ts}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+$('#btnScan').addEventListener('click', load);
+$('#btnExport').addEventListener('click', exportCSV);
+$('#selDays').addEventListener('change', load);
+document.addEventListener('click', (ev) => {
+  const th = ev.target.closest && ev.target.closest('th.sortable');
+  if (!th) return;
+  const key = th.getAttribute('data-sort');
+  if (key) setSort(key);
+});
+load();
+</script>
+</body>
+</html>

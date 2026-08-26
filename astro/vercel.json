@@ -50,6 +50,21 @@
   ],
   "redirects": [
     {
+      "source": "/stock",
+      "destination": "/stock-app",
+      "permanent": true
+    },
+    {
+      "source": "/stock/",
+      "destination": "/stock-app",
+      "permanent": true
+    },
+    {
+      "source": "/stock-app",
+      "destination": "/stock-app/",
+      "permanent": true
+    },
+    {
       "source": "/about_me.html",
       "destination": "/about",
       "permanent": true

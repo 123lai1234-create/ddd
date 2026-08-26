@@ -1,0 +1,1 @@
+{"function":"() => ({ title: document.title, hasOfficeLinks: !!document.querySelector(\"a[href*=\\\"view.officeapps.live.com\\\"]\"), linkCount: document.querySelectorAll(\"a[href*=\\\"view.officeapps.live.com\\\"]\").length, bodyLen: document.body.innerText.length })"}

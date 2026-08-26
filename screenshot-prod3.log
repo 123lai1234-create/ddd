@@ -1,0 +1,12 @@
+﻿Loading stock-app...
+Screenshot 1 saved: stock-2330.png
+Screenshot 2 saved: stock-2454.png
+Screenshot 3 saved: stock-dashboard.png
+Screenshot 4 saved: stock-signal-filter.png
+Screenshot 5 saved: stock-sold-too-early.png
+
+=== Console logs: 2 ===
+  [log] [�ʱ�] ��� cron �w���ΡA���ݶ}�L�۰ʽ���...
+  [error] Failed to load resource: the server responded with a status of 404 ()
+
+=== Page errors: 0 ===

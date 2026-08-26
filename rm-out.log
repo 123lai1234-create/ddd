@@ -1,0 +1,6 @@
+﻿rm 'api/[...slug].mjs'
+rm 'api/[...test].mjs'
+rm 'api/test-catchall.mjs'
+rm 'astro/api/[...slug].mjs'
+rm 'astro/api/[...test].mjs'
+rm 'astro/api/test-catchall.mjs'

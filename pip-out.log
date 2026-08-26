@@ -1,0 +1,10 @@
+﻿Name: playwright
+Version: 1.61.0
+Summary: A high-level API to automate web browsers
+Home-page: https://github.com/Microsoft/playwright-python
+Author: Microsoft Corporation
+Author-email: 
+License-Expression: Apache-2.0
+Location: C:\Users\User\AppData\Roaming\Python\Python314\site-packages
+Requires: greenlet, pyee
+Required-by: 
