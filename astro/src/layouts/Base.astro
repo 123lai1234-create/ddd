@@ -152,6 +152,38 @@ const personSchema = {
     <script is:inline src="/scripts/dynamic-features.js" defer></script>
     <script is:inline src="/scripts/immersive.js" defer></script>
     <Fragment set:html={headInline} />
+    <!-- Console noise filter (Immersive Translate / Chrome extension errors that don't impact our app) -->
+    <script is:inline>
+    (function() {
+      var isExtNoise = function(args) {
+        try {
+          var s = '';
+          for (var i = 0; i < args.length; i++) {
+            var a = args[i];
+            s += (a && a.stack) ? a.stack : String(a == null ? a : a);
+            if (s.length > 800) { s = s.slice(0, 800); break; }
+          }
+          return /content_main\.js|content_guard\.js|immersive[- ]?translate|chrome-extension:|moz-extension:/.test(s);
+        } catch (_) { return false; }
+      };
+      var origErr = console.error, origWarn = console.warn;
+      console.error = function() { if (isExtNoise(arguments)) return; return origErr.apply(console, arguments); };
+      console.warn  = function() { if (isExtNoise(arguments)) return; return origWarn.apply(console, arguments); };
+      window.addEventListener('error', function(e) {
+        var src = (e && e.filename) || '', msg = (e && e.message) || '';
+        if (/content_main\.js|content_guard\.js|chrome-extension:|moz-extension:/.test(src) ||
+            /classList|reading 'classList'/.test(msg)) {
+          e.stopImmediatePropagation(); e.preventDefault();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        var r = e && e.reason, s = r && (r.stack || r.message) || String(r);
+        if (/content_main\.js|content_guard\.js|chrome-extension:|moz-extension:/.test(s)) {
+          e.stopImmediatePropagation(); e.preventDefault();
+        }
+      });
+    })();
+    </script>
     {!noPersonSchema && (
         <script
             type="application/ld+json"
@@ -183,10 +215,35 @@ const personSchema = {
       style="position:fixed;bottom:24px;right:24px;z-index:500;background:transparent;border:none;border-radius:50%;width:60px;height:60px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,filter .2s;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));overflow:visible"
       onmouseover="this.style.transform='scale(1.15)';this.style.filter='drop-shadow(0 8px 20px rgba(88,215,255,.4))'"
       onmouseout="this.style.transform='scale(1)';this.style.filter='drop-shadow(0 4px 12px rgba(0,0,0,.4))'">
-      <img src="https://minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com/ccv2%2F2026-05-22%2FMiniMax-M2.7%2F2051828084830642340%2F90bfbbf2424b111a0e9e4fd2bf2d4fe9161a737df67195fcde6563674978ea60..png?Expires=1779502655&OSSAccessKeyId=LTAI5tGLnRTkBjLuYPjNcKQ8&Signature=nXfWGxcAAyYikCCK%2FQW5Vmc1UW8%3D" 
-           alt="AI 助手" 
-           style="width:100%;height:100%;object-fit:contain;border-radius:50%;animation:bounce-gentle 3s ease-in-out infinite"
-           id="search-avatar" />
+      <svg id="search-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="AI 助手"
+           style="width:100%;height:100%;animation:bounce-gentle 3s ease-in-out infinite;display:block">
+        <defs>
+          <linearGradient id="pfav-g" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#a78bfa"/>
+            <stop offset="100%" stop-color="#22d3ee"/>
+          </linearGradient>
+          <radialGradient id="pfav-c" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#fde68a"/>
+            <stop offset="100%" stop-color="#fbbf24"/>
+          </radialGradient>
+        </defs>
+        <!-- head -->
+        <circle cx="50" cy="50" r="36" fill="url(#pfav-g)" stroke="#fff" stroke-width="2.5" stroke-opacity="0.9"/>
+        <!-- eyes (closed-arc ^ ^) -->
+        <path d="M 36 47 Q 40 41 44 47" stroke="#1a1a2e" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        <path d="M 56 47 Q 60 41 64 47" stroke="#1a1a2e" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        <!-- mouth -->
+        <path d="M 44 58 Q 50 64 56 58" stroke="#1a1a2e" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <!-- cheeks -->
+        <ellipse cx="34" cy="56" rx="4" ry="2.5" fill="#fb7185" opacity="0.55"/>
+        <ellipse cx="66" cy="56" rx="4" ry="2.5" fill="#fb7185" opacity="0.55"/>
+        <!-- antenna -->
+        <line x1="50" y1="14" x2="50" y2="8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="50" cy="6" r="3" fill="url(#pfav-c)"/>
+        <!-- magnifying glass (held to the side) -->
+        <circle cx="80" cy="78" r="10" fill="rgba(255,255,255,0.18)" stroke="#fff" stroke-width="3"/>
+        <line x1="87" y1="85" x2="94" y2="92" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+      </svg>
     </button>
     <style>
       @keyframes bounce-gentle {

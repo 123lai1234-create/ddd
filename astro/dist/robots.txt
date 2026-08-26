@@ -1,6 +1,29 @@
+# Allow all crawlers by default
 User-agent: *
 Allow: /
+
+# Sensitive admin/internal pages — block from indexing
 Disallow: /ingest.html
 Disallow: /report.html
+
+# AI training crawlers — explicitly allowed for indexing & summarization,
+# but individual pages can opt out via meta robots="noai" if added later.
+# Reference: https://llmstxt.org specification for /llms.txt discovery.
+User-agent: GPTBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Claude-Web
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Applebot-Extended
+Allow: /
+User-agent: CCBot
+Allow: /
 
 Sitemap: https://donttalk.vercel.app/sitemap.xml

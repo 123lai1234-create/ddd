@@ -255,10 +255,37 @@ import Base from '../layouts/Base.astro';
     <button id="chatbot-toggle" aria-label="AI 助手" style="position:fixed;bottom:90px;right:24px;z-index:500;background:transparent;border:none;border-radius:50%;width:70px;height:70px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,filter .2s;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));overflow:visible"
       onmouseover="this.style.transform='scale(1.15)';this.style.filter='drop-shadow(0 8px 20px rgba(88,215,255,.4))'"
       onmouseout="this.style.transform='scale(1)';this.style.filter='drop-shadow(0 4px 12px rgba(0,0,0,.4))'">
-      <img src="https://minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com/ccv2%2F2026-05-22%2FMiniMax-M2.7%2F2051828084830642340%2F18cdb762f4fb37677829d88cc42a72cf5921a1222c8e165ca47d835d7fb74b6f..png?Expires=1779508593&OSSAccessKeyId=LTAI5tGLnRTkBjLuYPjNcKQ8&Signature=x06WLj8eeG5RsBtxEU6nN10yUd4%3D" 
-           alt="AI 助手" 
-           style="width:100%;height:100%;object-fit:contain;border-radius:50%;animation:avatar-bounce 3s ease-in-out infinite"
-           id="chatbot-avatar" />
+      <svg id="chatbot-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="AI 助手"
+           style="width:100%;height:100%;animation:avatar-bounce 3s ease-in-out infinite;display:block">
+        <defs>
+          <linearGradient id="cbav-g" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f472b6"/>
+            <stop offset="100%" stop-color="#818cf8"/>
+          </linearGradient>
+          <radialGradient id="cbav-c" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#fde68a"/>
+            <stop offset="100%" stop-color="#fbbf24"/>
+          </radialGradient>
+        </defs>
+        <!-- head -->
+        <circle cx="50" cy="50" r="38" fill="url(#cbav-g)" stroke="#fff" stroke-width="2.5" stroke-opacity="0.9"/>
+        <!-- eyes (open, friendly) -->
+        <ellipse cx="38" cy="48" rx="3.5" ry="5" fill="#1a1a2e"/>
+        <ellipse cx="62" cy="48" rx="3.5" ry="5" fill="#1a1a2e"/>
+        <circle cx="39" cy="46" r="1.3" fill="#fff"/>
+        <circle cx="63" cy="46" r="1.3" fill="#fff"/>
+        <!-- smile -->
+        <path d="M 42 60 Q 50 68 58 60" stroke="#1a1a2e" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+        <!-- cheeks -->
+        <ellipse cx="32" cy="58" rx="4.5" ry="2.8" fill="#fb7185" opacity="0.55"/>
+        <ellipse cx="68" cy="58" rx="4.5" ry="2.8" fill="#fb7185" opacity="0.55"/>
+        <!-- antenna with star -->
+        <line x1="50" y1="12" x2="50" y2="5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="50" cy="3" r="3.5" fill="url(#cbav-c)"/>
+        <!-- little ears -->
+        <ellipse cx="14" cy="50" rx="4" ry="7" fill="url(#cbav-g)" stroke="#fff" stroke-width="1.8" stroke-opacity="0.7"/>
+        <ellipse cx="86" cy="50" rx="4" ry="7" fill="url(#cbav-g)" stroke="#fff" stroke-width="1.8" stroke-opacity="0.7"/>
+      </svg>
     </button>
     <style>
       @keyframes avatar-bounce {

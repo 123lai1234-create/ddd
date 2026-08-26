@@ -16,9 +16,7 @@
     const host = window.location.hostname;
     const defaultPortfolioServiceNames = ['donttalk'];
     const defaultApiServiceNames = ['donttalk-api'];
-    const defaultApiCandidates = [
-        'https://donttalk-api.fly.dev',
-    ];
+    const defaultApiCandidates = ['https://api-server-production-676d.up.railway.app']; // 8/2026: live Railway (fly.io deprecated);
     const resolvedPortfolioServiceNames = normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES).length
         ? normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES)
         : defaultPortfolioServiceNames;

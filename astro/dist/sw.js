@@ -91,7 +91,9 @@ self.addEventListener('fetch', event => {
         if (request.mode === 'navigate') {
           return caches.match(OFFLINE_URL);
         }
-        return null;
+        // Non-navigation requests: return a proper Response so respondWith()
+        // does not throw "Failed to convert value to 'Response'".
+        return new Response('', { status: 503, statusText: 'Service Unavailable' });
       });
     })
   );
