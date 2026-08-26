@@ -207,17 +207,17 @@
             if (!r.ok) throw new Error("HTTP " + r.status);
             const data = await r.json();
             if (data && Array.isArray(data.tracks) && data.tracks.length > 0) {
-                // 保留 localStorage 裡使用者新增的（id 大於 manifest 範圍或 url 以 blob: 開頭）
+                // 保留 localStorage 裡使用者新增的（標題 + url 都不在 manifest 才算 userAdded）
                 const userAdded = (state.playlist || []).filter(t =>
                     !data.tracks.some(mt => mt.url === t.url && mt.title === t.title)
                 );
                 state.playlist = data.tracks.concat(userAdded);
-                // 用真實 metadata duration 蓋過 manifest 的估計值（如果有）
                 return;
             }
         } catch (err) {
             console.warn("[music] tracks.json 載入失敗，使用 SAMPLE_MUSIC：", err && err.message);
         }
+        // manifest 抓不到才退回 SAMPLE_MUSIC demo
         if (!state.playlist || state.playlist.length === 0) {
             state.playlist = SAMPLE_MUSIC.slice();
         }
@@ -332,11 +332,11 @@
         const track = state.playlist[index];
         state.currentIndex = index;
 
-        // 如果有真實音檔 → 用 <audio> 播；沒 url 才退回模擬
+        // 有真實音檔 → 用 <audio> 播；沒 url 才退回模擬
         if (track.url) {
             if (simulateInterval) { clearInterval(simulateInterval); simulateInterval = null; }
-            // 重置 audio element（避免 src 相同時不觸發 load）
-            if (elements.audioPlayer.src !== new URL(track.url, location.href).href) {
+            const absUrl = new URL(track.url, location.href).href;
+            if (elements.audioPlayer.src !== absUrl) {
                 elements.audioPlayer.src = track.url;
             }
             elements.audioPlayer.volume = state.isMuted ? 0 : state.volume / 100;
@@ -529,14 +529,6 @@
         }
     }
 
-    function onAudioError() {
-        console.warn("[music] audio error:", elements.audioPlayer.error);
-        const track = state.playlist[state.currentIndex];
-        if (track) {
-            elements.trackArtist.textContent = (track.artist || "") + " · " + (track.album || "") + "  ⚠️ 載入失敗";
-        }
-    }
-
     function onTrackEnded() {
         if (simulateInterval) clearInterval(simulateInterval);
 
@@ -550,6 +542,14 @@
             }
         } else {
             nextTrack();
+        }
+    }
+
+    function onAudioError() {
+        console.warn("[music] audio error:", elements.audioPlayer.error);
+        const track = state.playlist[state.currentIndex];
+        if (track) {
+            elements.trackArtist.textContent = (track.artist || "") + " · " + (track.album || "") + "  ⚠️ 載入失敗";
         }
     }
 
@@ -1078,14 +1078,13 @@
             const saved = localStorage.getItem("musicPlayer");
             if (saved) {
                 const data = JSON.parse(saved);
-                state.playlist = data.playlist || [...SAMPLE_MUSIC];
+                state.playlist = Array.isArray(data.playlist) ? data.playlist : [];
                 state.volume = data.volume || 75;
                 state.currentIndex = data.currentIndex ?? -1;
-            } else {
-                state.playlist = [...SAMPLE_MUSIC];
             }
+            // 沒 localStorage 不預塞 SAMPLE_MUSIC，留給 loadTracksManifest() 填
         } catch (e) {
-            state.playlist = [...SAMPLE_MUSIC];
+            // ignore
         }
     }
 
