@@ -5385,6 +5385,148 @@ function stub(name, extra = {}) {
   return json({ ok: true, source: "stub", endpoint: name, ...extra });
 }
 
+// admin: POST /api/admin/reseed-stocks
+// 2026-08-26: 補 watchlist 中缺 K 線的股。邏輯跟 seed-add-stocks.mjs 相同。
+//   body: { password: string, codes?: string[], days?: number }
+//   不傳 codes → 自動掃 watchlist 找缺資料的股
+//   密碼: STOCK_OPERATOR_PASSWORD env
+async function adminReseedStocks(request) {
+  if (request.method !== "POST") {
+    return json({ error: "method not allowed" }, { status: 405 });
+  }
+  const body = await readJson(request);
+  if (!operatorOk(body?.password)) {
+    return json({ error: "operator password required or invalid" }, { status: 403 });
+  }
+  const codes = Array.isArray(body?.codes) && body.codes.length > 0 ? body.codes : null;
+  const days = Math.min(365, Math.max(30, parseInt(body?.days || 120, 10) || 120));
+  const hit = async (sql, params = []) => {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 6000);
+    const r = await fetch(_conn(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Neon-Connection-String": dbUrl() },
+      body: JSON.stringify({ query: sql, params }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    const j = await r.json();
+    if (j.error) throw new Error(j.error.message || "neon error");
+    return j.rows || [];
+  };
+  let targets;
+  if (codes) {
+    targets = codes.map(c => ({ code: String(c) }));
+    try {
+      const rows = await hit(
+        `SELECT code, name FROM watchlist WHERE code = ANY($1::text[])`,
+        [targets.map(t => t.code)]
+      );
+      const byCode = Object.fromEntries(rows.map(r => [r.code, r.name]));
+      targets = targets.map(t => ({ code: t.code, name: byCode[t.code] || t.code }));
+    } catch (e) {
+      targets = targets.map(t => ({ code: t.code, name: t.code }));
+    }
+  } else {
+    const rows = await hit(`
+      SELECT w.code, w.name FROM watchlist w
+      LEFT JOIN (SELECT DISTINCT symbol FROM market_price_bars WHERE asset_type='stock') b
+        ON b.symbol = w.code
+      WHERE w.code ~ '^[0-9]+$' AND b.symbol IS NULL
+      ORDER BY w.sort_order, w.code
+    `);
+    targets = rows.map(r => ({ code: r.code, name: r.name }));
+  }
+  if (targets.length === 0) {
+    return json({ ok: true, mode: codes ? "specific" : "auto", requested: 0, inserted: 0, message: "Nothing to do" });
+  }
+  const results = [];
+  let totalBars = 0;
+  for (const t of targets) {
+    try {
+      await hit(
+        `INSERT INTO watchlist (code, name, ticker, sort_order) VALUES ($1, $2, $3, 9999)
+         ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, ticker = EXCLUDED.ticker`,
+        [t.code, t.name || t.code, t.code + '.TW']
+      );
+      const { bars, ticker } = await _yahooFetch(t.code, days);
+      if (bars.length === 0) {
+        results.push({ code: t.code, status: "no_data", bars: 0 });
+        continue;
+      }
+      await hit(
+        `DELETE FROM market_price_bars WHERE symbol = $1 AND source_name = $2`,
+        [t.code, 'yahoo_chart_v8']
+      );
+      let inserted = 0;
+      for (const b of bars) {
+        if (!b.close) continue;
+        try {
+          await hit(
+            `INSERT INTO market_price_bars
+              (source_name, symbol, asset_type, market, contract_month, trade_date,
+               open_price, high_price, low_price, close_price, settlement_price,
+               volume, turnover, open_interest, change_value, raw_payload, fetched_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, now())`,
+            [
+              'yahoo_chart_v8', t.code, 'stock', 'TWSE', '',
+              b.trade_date, b.open, b.high, b.low, b.close, null,
+              b.volume, null, null, null, ''
+            ]
+          );
+          inserted++;
+        } catch (e) { /* skip */ }
+      }
+      totalBars += inserted;
+      results.push({ code: t.code, status: "ok", bars: inserted, ticker });
+    } catch (e) {
+      results.push({ code: t.code, status: "error", error: e.message });
+    }
+  }
+  return json({ ok: true, mode: codes ? "specific" : "auto", requested: targets.length, inserted: totalBars, results });
+}
+
+// admin reseed: shared Yahoo fetch + insert (used by adminReseedStocks)
+async function _yahooFetch(code, days) {
+  const now = Math.floor(Date.now() / 1000);
+  const period1 = now - days * 86400;
+  for (const suffix of ['.TW', '.TWO']) {
+    const ticker = `${code}${suffix}`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${period1}&period2=${now}&interval=1d&events=history`;
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 10000);
+      const r = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/json,text/plain,*/*',
+        },
+        signal: ctrl.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (!j.chart?.result?.[0]) continue;
+      const r0 = j.chart.result[0];
+      const ts = r0.timestamp || [];
+      const ind = r0.indicators.quote[0];
+      const opens = ind.open || [], highs = ind.high || [], lows = ind.low || [];
+      const closes = ind.close || [], volumes = ind.volume || [];
+      const bars = [];
+      for (let i = 0; i < ts.length; i++) {
+        if (closes[i] == null) continue;
+        bars.push({
+          trade_date: new Date(ts[i] * 1000).toISOString().slice(0, 10),
+          open: opens[i], high: highs[i], low: lows[i], close: closes[i],
+          volume: volumes[i] || 0,
+        });
+      }
+      if (bars.length > 0) return { bars, ticker };
+    } catch (e) { /* try next suffix */ }
+  }
+  return { bars: [], ticker: null };
+}
+
 // ── router ──────────────────────────────────────────────────────────
 const TABLE = [
   // [method, path-regex, handler]
@@ -5550,6 +5692,9 @@ const TABLE = [
   ["POST", /^\/admin\/load\/financial_reports\/finmind\/?$/, loadFinancialReportsFinMind],
   ["GET",  /^\/admin\/load\/issued_shares\/finmind\/?$/, loadIssuedSharesFinMind],
   ["POST", /^\/admin\/load\/issued_shares\/finmind\/?$/, loadIssuedSharesFinMind],
+
+  // 2026-08-26: 補 watchlist 缺 K 線的股（自動掃或指定 codes）
+  ["POST", /^\/admin\/reseed-stocks\/?$/,          adminReseedStocks],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
