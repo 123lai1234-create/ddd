@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm ci",
+  "installCommand": "npm install --prefer-offline --no-audit",
   "buildCommand": "git lfs install --local && git lfs pull && npx --no-install astro build && npx --no-install pagefind --site dist --output-path dist/pagefind",
   "outputDirectory": "dist",
   "cleanUrls": true,
