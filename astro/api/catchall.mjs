@@ -2,7 +2,7 @@
 // Vercel catch-all: any /api/<anything> hits this file, dispatched via small table.
 // Uses Neon HTTP SQL API (no pg driver). Edge runtime for fast cold start.
 // 2026-08-10 build marker (force Vercel edge function rebuild ??cache stuck on polish-final version)
-// 2026-08-11 v2 marker (Railway æ£„ç”¨, ?¹ç”¨ Vercel edge function; force rebuild)
+// 2026-08-11 v2 marker (Railway æ£„ç”¨, ?ï¿½ç”¨ Vercel edge function; force rebuild)
 //
 // Schema (Neon Postgres, schema `public`):
 //   watchlist        (code, name, ticker, sort_order)         ??stock watchlist
@@ -43,15 +43,17 @@ async function dbq(sql, params = []) {
   if (json.error) throw new Error(json.error.message || "Neon error");
   return { rows: Array.isArray(json.rows) ? json.rows : [] };
 }
-// 2026-08-26: ?¹æ? IP ?½å???+ ?¯é¸å¯†ç¢¼ï¼ˆä»»ä¸€?šé??³å¯ï¼?//   - STOCK_OPERATOR_IPS=1.2.3.4,5.6.7.8,192.168.0.0/16  ??ä½ ç? IP
-//   - STOCK_OPERATOR_PASSWORD=xxx                       ??å¾å??¢è¨ª?ç”¨
-//   ?©è€…éƒ½æ²’è¨­ ??å®Œå…¨?’ç?ï¼ˆfail-closedï¼‰ã€?function operatorOk(provided, request) {
-  // IP ?½å???  const ipList = pickStr(process.env.STOCK_OPERATOR_IPS);
+// 2026-08-26: ?ï¿½ï¿½? IP ?ï¿½ï¿½???+ ?ï¿½é¸å¯†ç¢¼ï¼ˆä»»ä¸€?ï¿½ï¿½??ï¿½å¯ï¿½?//   - STOCK_OPERATOR_IPS=1.2.3.4,5.6.7.8,192.168.0.0/16  ??ä½ ï¿½? IP
+//   - STOCK_OPERATOR_PASSWORD=xxx                       ??å¾ï¿½??ï¿½è¨ª?ï¿½ç”¨
+//   ?ï¿½è€…éƒ½æ²’è¨­ ??å®Œå…¨?ï¿½ï¿½?ï¼ˆfail-closedï¼‰ï¿½?function operatorOk(provided, request) {
+  // IP ?ï¿½ï¿½???  const ipList = pickStr(process.env.STOCK_OPERATOR_IPS);
   if (ipList && request) {
     const ip = _clientIp(request);
-    if (ip && _ipInList(ip, ipList)) return true;
+    if (ip && _ipInList(ip, ipList)) {
+      return true;
+    }
   }
-  // å¯†ç¢¼?™æ´
+  // å¯†ç¢¼?ï¿½æ´
   const expected = pickStr(process.env.STOCK_OPERATOR_PASSWORD);
   if (!expected) return false;
   if (typeof provided !== "string" || provided.length === 0) return false;
@@ -65,7 +67,7 @@ async function dbq(sql, params = []) {
 }
 
 function _clientIp(request) {
-  // Vercel edge sets x-forwarded-for (?—è??†é?ï¼Œç¬¬ä¸€?‹æ˜¯ client IP)
+  // Vercel edge sets x-forwarded-for (?ï¿½ï¿½??ï¿½ï¿½?ï¼Œç¬¬ä¸€?ï¿½æ˜¯ client IP)
   // x-real-ip ??fallback
   const xff = request.headers.get("x-forwarded-for") || "";
   const first = xff.split(",")[0]?.trim();
@@ -90,7 +92,7 @@ function _ipInCidr(ip, cidr) {
   const [net, bitsStr] = cidr.split("/");
   const bits = parseInt(bitsStr, 10);
   if (!net || isNaN(bits)) return false;
-  // IPv4 only (Vercel edge å°?IPv6 ?¨ä???headerï¼Œé€™è£¡ç°¡å??ªæ”¯??IPv4)
+  // IPv4 only (Vercel edge ï¿½?IPv6 ?ï¿½ï¿½???headerï¼Œé€™è£¡ç°¡ï¿½??ï¿½æ”¯??IPv4)
   const ip4 = ip.split(".").map(Number);
   const net4 = net.split(".").map(Number);
   if (ip4.length !== 4 || net4.length !== 4) return false;
@@ -104,7 +106,7 @@ function dbUrl() { return _dbUrl(); }
 
 async function q(sql, params = []) { return await dbq(sql, params); }
 
-// ?€?€ helpers ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ helpers ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 const H_JSON = { "Content-Type": "application/json; charset=utf-8" };
 const CACHE_NO_STORE = { "Cache-Control": "no-store" };
 function json(body, init = {}) {
@@ -143,7 +145,7 @@ function nowIso() { return new Date().toISOString(); }
 function pickStr(v, fallback = "") { return typeof v === "string" ? v : (v == null ? fallback : String(v)); }
 function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 
-// ?€?€ watchlist + candle helpers ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ watchlist + candle helpers ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 let _watchCache = null;
 let _watchCacheAt = 0;
 async function getWatchMap() {
@@ -221,7 +223,7 @@ function distHighPct(arr, window) {
   return high ? ((high - last) / high) * 100 : 0;
 }
 
-// ?€?€ handlers: health & basic CRUD ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ handlers: health & basic CRUD ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function healthz(request) {
   let dbOk = false;
   try { await q("SELECT 1 AS ok"); dbOk = true; } catch {}
@@ -234,10 +236,10 @@ async function listStocks(request) {
     return json({ ok: true, source: "db", count: rows.length, stocks: rows });
   } catch (e) {
     return json({ ok: true, source: "seed", count: 4, stocks: [
-      { code: "2330", name: "?°ç???, ticker: "2330.TW" },
-      { code: "2454", name: "?¯ç™¼ç§?, ticker: "2454.TW" },
+      { code: "2330", name: "?ï¿½ï¿½???, ticker: "2330.TW" },
+      { code: "2454", name: "?ï¿½ç™¼ï¿½?, ticker: "2454.TW" },
       { code: "2317", name: "é´»æµ·",   ticker: "2317.TW" },
-      { code: "0050", name: "?ƒå¤§?°ç£50", ticker: "0050.TW" },
+      { code: "0050", name: "?ï¿½å¤§?ï¿½ç£50", ticker: "0050.TW" },
     ], db_error: e?.message });
   }
 }
@@ -245,9 +247,9 @@ async function listStocks(request) {
 async function addStock(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   const code = pickStr(body?.code).trim();
-  if (!/^\d{4,6}$/.test(code)) return json({ error: "ç¼ºå??–ç„¡?ˆç?ä»??" }, { status: 400 });
+  if (!/^\d{4,6}$/.test(code)) return json({ error: "ç¼ºï¿½??ï¿½ç„¡?ï¿½ï¿½?ï¿½??" }, { status: 400 });
   const name = pickStr(body?.name).trim() || code;
   const ticker = `${code}.TW`;
   try {
@@ -266,8 +268,8 @@ async function addStock(request) {
 async function removeStock(request, code) {
   if (request.method !== "DELETE" && request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
-  if (!code) return json({ error: "ç¼ºå?ä»??" }, { status: 400 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
+  if (!code) return json({ error: "ç¼ºï¿½?ï¿½??" }, { status: 400 });
   try {
     await q("DELETE FROM watchlist WHERE code = $1", [code]);
     _watchCache = null;
@@ -291,7 +293,7 @@ async function stockKlines(request, ticker) {
        ORDER BY trade_date DESC LIMIT $2`,
       [ticker, days]
     );
-    // 2026-08-26: ?¹æ? 200 + ç©?candlesï¼Œé¿?å?ç«?lightweight-charts ??"Value is null"??    //   ?™å€?endpoint ?¯å…¬??cacheable lookupsï¼Œå? 404 ?ƒè??ç«¯ fetch ?²å…¥ catch ?†æ”¯ï¼?    //   ä½†è??ˆå?ç«¯ä??•ç? catch ?´æ¥ setData([])ï¼Œæ–°?ˆå???try/catch ä½?console ?„æ˜¯?ƒåˆ·?¯èª¤??    //   ?¹æ? 200 + empty çµæ?ï¼Œå?ç«¯å¯ä»¥æ­£å¸?render ?Œæ­¤?¡ç¥¨??K ç·šè??™ã€è??¯ã€?    if (!rows.length) {
+    // 2026-08-26: ?ï¿½ï¿½? 200 + ï¿½?candlesï¼Œé¿?ï¿½ï¿½?ï¿½?lightweight-charts ??"Value is null"??    //   ?ï¿½ï¿½?endpoint ?ï¿½å…¬??cacheable lookupsï¼Œï¿½? 404 ?ï¿½ï¿½??ï¿½ç«¯ fetch ?ï¿½å…¥ catch ?ï¿½æ”¯ï¿½?    //   ä½†ï¿½??ï¿½ï¿½?ç«¯ï¿½??ï¿½ï¿½? catch ?ï¿½æ¥ setData([])ï¼Œæ–°?ï¿½ï¿½???try/catch ï¿½?console ?ï¿½æ˜¯?ï¿½åˆ·?ï¿½èª¤??    //   ?ï¿½ï¿½? 200 + empty çµï¿½?ï¼Œï¿½?ç«¯å¯ä»¥æ­£ï¿½?render ?ï¿½æ­¤?ï¿½ç¥¨??K ç·šï¿½??ï¿½ã€ï¿½??ï¿½ï¿½?    if (!rows.length) {
       return json({
         ok: true, source: "empty", code: ticker, strategy, strategy_profile: strategyProfile,
         count: 0, candles: [], volumes: [],
@@ -300,7 +302,7 @@ async function stockKlines(request, ticker) {
         capital: { shares_outstanding: null, market_cap_?? null },
         financial: { period: null, revenue: 0, gross_profit: 0, operating_income: 0, net_income: 0, eps: null, gross_margin_pct: null, operating_margin_pct: null, net_margin_pct: null },
         valuation: { pe_ratio: null, price: null, eps: null },
-        message: "æ­¤è‚¡ç¥¨å???K ç·šè??™ï??¯èƒ½å°šæœª seed ??market_price_barsï¼?,
+        message: "æ­¤è‚¡ç¥¨ï¿½???K ç·šï¿½??ï¿½ï¿½??ï¿½èƒ½å°šæœª seed ??market_price_barsï¿½?,
       });
     }
     const asc = rows.slice().reverse();
@@ -346,8 +348,8 @@ async function stockKlines(request, ticker) {
     const volSoFar = candles.slice(-21, -1).map((c) => c.volume);
     const maxPrevVol = volSoFar.length ? Math.max(...volSoFar) : 0;
     const isVolMax = last.volume > maxPrevVol;
-    // 2026-08-14: è£?capital/financial/income çµ¦å³??panelï¼ˆè‚¡??å¸‚å€?æ¯è‚¡æ·¨å€?EPS/?¬ç?æ¯?ROE/ROA/æ¯›åˆ©???Ÿç???æ·¨åˆ©??æ®–åˆ©?‡ï?
-    // å¾?financial_reports ?‰æ??°ä?ç­?(symbol, period, revenue, gross_profit, operating_income, net_income, eps)
+    // 2026-08-14: ï¿½?capital/financial/income çµ¦å³??panelï¼ˆè‚¡??å¸‚ï¿½?æ¯è‚¡æ·¨ï¿½?EPS/?ï¿½ï¿½?ï¿½?ROE/ROA/æ¯›åˆ©???ï¿½ï¿½???æ·¨åˆ©??æ®–åˆ©?ï¿½ï¿½?
+    // ï¿½?financial_reports ?ï¿½ï¿½??ï¿½ï¿½?ï¿½?(symbol, period, revenue, gross_profit, operating_income, net_income, eps)
     let finLatest = null;
     try {
       const fr = await q(
@@ -359,7 +361,7 @@ async function stockKlines(request, ticker) {
       );
       if (fr.rows.length) finLatest = fr.rows[0];
     } catch {}
-    // å¾?market_instruments.metadata_text ??shares_outstanding (?ƒå¤§/å¯Œæ?ç­‰ä?æºæ???
+    // ï¿½?market_instruments.metadata_text ??shares_outstanding (?ï¿½å¤§/å¯Œï¿½?ç­‰ï¿½?æºï¿½???
     let sharesOutstanding = null;
     try {
       const mi = await q(
@@ -371,7 +373,7 @@ async function stockKlines(request, ticker) {
         sharesOutstanding = meta.shares_outstanding || meta.sharesOutstanding || meta.capital_shares || null;
       }
     } catch {}
-    // è¨ˆç?è¡ç??‡æ?
+    // è¨ˆï¿½?è¡ï¿½??ï¿½ï¿½?
     const rev = finLatest ? Number(finLatest.revenue) : null;
     const gp = finLatest ? Number(finLatest.gross_profit) : null;
     const opInc = finLatest ? Number(finLatest.operating_income) : null;
@@ -408,7 +410,7 @@ async function stockKlines(request, ticker) {
         isVolMax,
         market: 'TWSE',
       },
-      // 2026-08-14: ?³å´ panel ?¨ç?è³‡æœ¬/è²¡å?/ä¼°å€¼æ?ä½ï?å¾?financial_reports + market_instruments.metadata_text ?‰ï?
+      // 2026-08-14: ?ï¿½å´ panel ?ï¿½ï¿½?è³‡æœ¬/è²¡ï¿½?/ä¼°å€¼ï¿½?ä½ï¿½?ï¿½?financial_reports + market_instruments.metadata_text ?ï¿½ï¿½?
       capital: {
         shares_outstanding: sharesOutstanding,
         market_cap_?? marketCap,
@@ -440,13 +442,13 @@ async function stockKlines(request, ticker) {
 // we use 2330 (TSMC) as a fallback proxy. For ^TWII we try Yahoo Finance first
 // (real TAIEX data, free, no key needed). The frontend page renders this in TWII/å¤§ç›¤ mode.
 //
-// 2026-08-13: ?°å? summary / gaps / dipSignal / markers æ¬„ä?ï¼ˆå?ç«?loadIndexChart ?Ÿå???4 ?‹ï?
-//   - summary: å¤§ç›¤?€?‹é¢?¿ï?openGapUp/Down, bias, nearestSupport/Resistï¼?//   - gaps: ç¼ºå£æ¸…å–®?¢æ¿ï¼ˆtype, gap_bottom/top, gap_pct, filled, fill_dateï¼?//   - dipSignal: ?„å?è¨Šè??¢æ¿ï¼ˆtriggered, drop_pct, is_vol_max, has_bearish_gapï¼?//   - markers: ?‹è‚¡äº¤æ?è¨Šè? markers ä¸é©?¨æ–¼?‡æ•¸ï¼ˆè??™æ˜¯ 2330 proxyï¼‰ï?ä¿æ?ç©?array
+// 2026-08-13: ?ï¿½ï¿½? summary / gaps / dipSignal / markers æ¬„ï¿½?ï¼ˆï¿½?ï¿½?loadIndexChart ?ï¿½ï¿½???4 ?ï¿½ï¿½?
+//   - summary: å¤§ç›¤?ï¿½?ï¿½é¢?ï¿½ï¿½?openGapUp/Down, bias, nearestSupport/Resistï¿½?//   - gaps: ç¼ºå£æ¸…å–®?ï¿½æ¿ï¼ˆtype, gap_bottom/top, gap_pct, filled, fill_dateï¿½?//   - dipSignal: ?ï¿½ï¿½?è¨Šï¿½??ï¿½æ¿ï¼ˆtriggered, drop_pct, is_vol_max, has_bearish_gapï¿½?//   - markers: ?ï¿½è‚¡äº¤ï¿½?è¨Šï¿½? markers ä¸é©?ï¿½æ–¼?ï¿½æ•¸ï¼ˆï¿½??ï¿½æ˜¯ 2330 proxyï¼‰ï¿½?ä¿ï¿½?ï¿½?array
 //
-// 2026-08-13: ^TWII ?¹ç”¨ Yahoo Finance ^TWII ?Ÿå¯¦?‡æ•¸ï¼ˆå?ä»?2330 proxyï¼‰ã€‚Yahoo 5d/min rate limit
-//   ä½?Vercel edge IP ???ï¼Œuser ?ä?ä¸æ??ã€‚å¤±??fallback 2330??
-// Helper: ??Yahoo Finance ?‡æ•¸/?‹è‚¡??Kï¼Œå???row-shaped ???
-// å½¢ç?å°é? Neon `market_price_bars` ?¥è©¢çµæ?ï¼šæ??‹å?ç´?{trade_date: "YYYY-MM-DD", open_price, high_price, low_price, close_price, volume, change_value}
+// 2026-08-13: ^TWII ?ï¿½ç”¨ Yahoo Finance ^TWII ?ï¿½å¯¦?ï¿½æ•¸ï¼ˆï¿½?ï¿½?2330 proxyï¼‰ã€‚Yahoo 5d/min rate limit
+//   ï¿½?Vercel edge IP ???ï¼Œuser ?ï¿½ï¿½?ä¸ï¿½??ï¿½ã€‚å¤±??fallback 2330??
+// Helper: ??Yahoo Finance ?ï¿½æ•¸/?ï¿½è‚¡??Kï¼Œï¿½???row-shaped ???
+// å½¢ï¿½?å°ï¿½? Neon `market_price_bars` ?ï¿½è©¢çµï¿½?ï¼šï¿½??ï¿½ï¿½?ï¿½?{trade_date: "YYYY-MM-DD", open_price, high_price, low_price, close_price, volume, change_value}
 async function fetchYahooCandlesAsRows(symbol, range = "1y") {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=${range}`;
   const ctrl = new AbortController();
@@ -496,10 +498,10 @@ async function fetchYahooCandlesAsRows(symbol, range = "1y") {
 }
 
 async function indexKlines(request, ticker) {
-  // 2026-08-13: Vercel è·¯ç”± regex æ²?decodeURLï¼Œticker ?¿åˆ°?„æ˜¯ "%5ETWII" ?Œä???"^TWII"
-  //             ??decode ?æ?å°?  const decodedTicker = (() => { try { return decodeURIComponent(ticker); } catch { return ticker; } })();
+  // 2026-08-13: Vercel è·¯ç”± regex ï¿½?decodeURLï¼Œticker ?ï¿½åˆ°?ï¿½æ˜¯ "%5ETWII" ?ï¿½ï¿½???"^TWII"
+  //             ??decode ?ï¿½ï¿½?ï¿½?  const decodedTicker = (() => { try { return decodeURIComponent(ticker); } catch { return ticker; } })();
   const isTwii = decodedTicker === "^TWII";
-  const proxy = "2330";  // fallback proxy (TSMC ?¶å¤§?¤è?ä¼?
+  const proxy = "2330";  // fallback proxy (TSMC ?ï¿½å¤§?ï¿½ï¿½?ï¿½?
   let actualSource = "db";
   try {
     const u = urlOf(request);
@@ -515,7 +517,7 @@ async function indexKlines(request, ticker) {
           rows = yahooRows;
           actualSource = "yahoo_chart";
         } else {
-          // Yahoo å¤±æ? ??fallback DB 2330
+          // Yahoo å¤±ï¿½? ??fallback DB 2330
           const dbRes = await q(
             `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
              FROM market_price_bars
@@ -537,7 +539,7 @@ async function indexKlines(request, ticker) {
         rows = dbRes.rows;
       }
     } else {
-      // ^TWOII / ?¶ä? ???´æ¥??2330 proxy
+      // ^TWOII / ?ï¿½ï¿½? ???ï¿½æ¥??2330 proxy
       const dbRes = await q(
         `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
          FROM market_price_bars
@@ -547,9 +549,9 @@ async function indexKlines(request, ticker) {
       );
       rows = dbRes.rows;
     }
-    if (!rows.length) return json({ error: "?¥ç„¡è³‡æ? (proxy " + proxy + ")", ticker }, { status: 404 });
-    // 2026-08-13: Yahoo è³‡æ???ascending (oldest first)ï¼ŒDB è³‡æ???descending (newest first)
-    //             ??actualSource ?¤æ–·è¦ä?è¦å? reverse
+    if (!rows.length) return json({ error: "?ï¿½ç„¡è³‡ï¿½? (proxy " + proxy + ")", ticker }, { status: 404 });
+    // 2026-08-13: Yahoo è³‡ï¿½???ascending (oldest first)ï¼ŒDB è³‡ï¿½???descending (newest first)
+    //             ??actualSource ?ï¿½æ–·è¦ï¿½?è¦ï¿½? reverse
     const asc = (actualSource === "yahoo_chart") ? rows : rows.slice().reverse();
     const candles = asc.map((r) => {
       const isoDate = String(r.trade_date).slice(0, 10);
@@ -586,7 +588,7 @@ async function indexKlines(request, ticker) {
     const maxPrevVol = volSoFar.length ? Math.max(...volSoFar) : 0;
     const isVolMax = last.volume > maxPrevVol;
 
-    // ??ç¼ºå£?µæ¸¬ï¼ˆè? computeGapsForSymbol ?±ç”¨?è¼¯ï¼Œä???inline candles ä¸é???DBï¼?    const gapStart = Math.max(1, candles.length - gapLookback);
+    // ??ç¼ºå£?ï¿½æ¸¬ï¼ˆï¿½? computeGapsForSymbol ?ï¿½ç”¨?ï¿½è¼¯ï¼Œï¿½???inline candles ä¸ï¿½???DBï¿½?    const gapStart = Math.max(1, candles.length - gapLookback);
     const gaps = [];
     for (let i = 1; i < candles.length; i++) {
       if (i < gapStart) continue;
@@ -632,14 +634,14 @@ async function indexKlines(request, ticker) {
       openGapDown: openDownGaps,
     };
 
-    // ???„å?è¨Šè?ï¼ˆdip signalï¼‰ï?3 æ¢ä»¶ = ?ªå?è£œå?ä¸‹ç¼º??+ è¿?7 ?¥è?å¹???8% + ä»Šæ—¥?äº¤?ç‚ºè¿?7 ?¥æ?å¤?    // æ³¨æ?ï¼šcandles ??ascendingï¼ˆè??’æ–°ï¼‰ï??€ä»¥æ?å¾Œä??¹æ˜¯ä»Šå¤©ï¼Œå€’æ•¸ç¬?1 ?¹æ˜¯?¨å¤©
+    // ???ï¿½ï¿½?è¨Šï¿½?ï¼ˆdip signalï¼‰ï¿½?3 æ¢ä»¶ = ?ï¿½ï¿½?è£œï¿½?ä¸‹ç¼º??+ ï¿½?7 ?ï¿½ï¿½?ï¿½???8% + ä»Šæ—¥?ï¿½äº¤?ï¿½ç‚ºï¿½?7 ?ï¿½ï¿½?ï¿½?    // æ³¨ï¿½?ï¼šcandles ??ascendingï¼ˆï¿½??ï¿½æ–°ï¼‰ï¿½??ï¿½ä»¥ï¿½?å¾Œï¿½??ï¿½æ˜¯ä»Šå¤©ï¼Œå€’æ•¸ï¿½?1 ?ï¿½æ˜¯?ï¿½å¤©
     const dipLookback = 7;
-    const dipWindowAll  = candles.slice(-Math.min(dipLookback, candles.length));  // ?€è¿?N ?¥å«ä»Šæ—¥
-    const dipWindowPrev = candles.slice(-(Math.min(dipLookback, candles.length) + 1), -1);  // ?€è¿?N ?¥ä??«ä???    const firstClose7 = dipWindowAll.length ? dipWindowAll[0].close : last.close;
+    const dipWindowAll  = candles.slice(-Math.min(dipLookback, candles.length));  // ?ï¿½ï¿½?N ?ï¿½å«ä»Šæ—¥
+    const dipWindowPrev = candles.slice(-(Math.min(dipLookback, candles.length) + 1), -1);  // ?ï¿½ï¿½?N ?ï¿½ï¿½??ï¿½ï¿½???    const firstClose7 = dipWindowAll.length ? dipWindowAll[0].close : last.close;
     const todayVol    = last.volume;
     const maxVol7d    = dipWindowAll.length  ? Math.max(...dipWindowAll.map((c)  => c.volume)) : 0;
     const maxVol7dPrev = dipWindowPrev.length ? Math.max(...dipWindowPrev.map((c) => c.volume)) : 0;
-    // drop_pct ?¯ã€Œæ­£?¼ã€è¡¨ç¤ºä?è·Œï??ç«¯ UI é¡¯ç¤º??"-X%"ï¼?    const drop_pct = firstClose7 > 0 ? r2(((firstClose7 - last.close) / firstClose7) * 100) : 0;
+    // drop_pct ?ï¿½ã€Œæ­£?ï¿½ã€è¡¨ç¤ºï¿½?è·Œï¿½??ï¿½ç«¯ UI é¡¯ç¤º??"-X%"ï¿½?    const drop_pct = firstClose7 > 0 ? r2(((firstClose7 - last.close) / firstClose7) * 100) : 0;
     const is_vol_max     = todayVol > 0 && todayVol >= maxVol7dPrev;
     const has_bearish_gap = openDownGaps > 0;
     const triggered = has_bearish_gap && drop_pct >= 8.0 && is_vol_max;
@@ -668,7 +670,7 @@ async function indexKlines(request, ticker) {
       },
       latest: {
         code: decodedTicker,
-        name: decodedTicker === "^TWII" ? "? æ??‡æ•¸" : (decodedTicker === "^TWOII" ? "æ«ƒè²·?‡æ•¸" : null),
+        name: decodedTicker === "^TWII" ? "?ï¿½ï¿½??ï¿½æ•¸" : (decodedTicker === "^TWOII" ? "æ«ƒè²·?ï¿½æ•¸" : null),
         close: last.close,
         change: r2(last.close - prev.close),
         changePct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
@@ -683,16 +685,16 @@ async function indexKlines(request, ticker) {
         aboveAll,
         isVolMax,
       },
-      // ??2026-08-13: ?°å??›å€‹æ?ä½?      markers: [],          // ?‹è‚¡äº¤æ?è¨Šè? markersï¼ˆbuy/sell signalsï¼‰ä??©ç”¨?¼æ???proxy è³‡æ?ï¼Œä??ç©º array
-      summary,              // å¤§ç›¤?€?‹é¢??      gaps,                 // ç¼ºå£æ¸…å–®?¢æ¿
-      dipSignal,            // ?„å?è¨Šè??¢æ¿
+      // ??2026-08-13: ?ï¿½ï¿½??ï¿½å€‹ï¿½?ï¿½?      markers: [],          // ?ï¿½è‚¡äº¤ï¿½?è¨Šï¿½? markersï¼ˆbuy/sell signalsï¼‰ï¿½??ï¿½ç”¨?ï¿½ï¿½???proxy è³‡ï¿½?ï¼Œï¿½??ï¿½ç©º array
+      summary,              // å¤§ç›¤?ï¿½?ï¿½é¢??      gaps,                 // ç¼ºå£æ¸…å–®?ï¿½æ¿
+      dipSignal,            // ?ï¿½ï¿½?è¨Šï¿½??ï¿½æ¿
     });
   } catch (e) {
     return json({ error: e?.message }, { status: 500 });
   }
 }
 
-// ?€?€ screener core: score one stock ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ screener core: score one stock ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 
 // GET /api/stock/<code>/etf_membership ??list ETFs that hold this stock
 async function stockEtfMembership(request, code) {
@@ -759,7 +761,7 @@ async function stockIntro(request, code) {
       }
     } catch { /* keep null */ }
 
-    // 2026-08-14: è£?capital (?¡æœ¬/?¡æ•¸) + marketCap (å¸‚å€? çµ¦å?ç«¯åŸº?¬è??™å?å¡?    let capital = null;       // ?¡æ•¸ï¼ˆsharesï¼?    let marketCap = null;     // å¸‚å€¼ï??ƒï?
+    // 2026-08-14: ï¿½?capital (?ï¿½æœ¬/?ï¿½æ•¸) + marketCap (å¸‚ï¿½? çµ¦ï¿½?ç«¯åŸº?ï¿½ï¿½??ï¿½ï¿½?ï¿½?    let capital = null;       // ?ï¿½æ•¸ï¼ˆsharesï¿½?    let marketCap = null;     // å¸‚å€¼ï¿½??ï¿½ï¿½?
     let lastClose = null;
     try {
       const so = meta?.shares_outstanding || meta?.sharesOutstanding || meta?.capital_shares || null;
@@ -776,7 +778,7 @@ async function stockIntro(request, code) {
     } catch {}
     if (capital && lastClose) marketCap = Math.round(capital * lastClose);
 
-    // 2026-08-14: è£?financial + valuation çµ¦å?ç«¯å³??panelï¼ˆå? financial_reports ?‰ï?
+    // 2026-08-14: ï¿½?financial + valuation çµ¦ï¿½?ç«¯å³??panelï¼ˆï¿½? financial_reports ?ï¿½ï¿½?
     let finLatest = null;
     try {
       const fr = await q(
@@ -811,7 +813,7 @@ async function stockIntro(request, code) {
       capital,
       marketCap,
       lastClose,
-      // 2026-08-14: ?ºå?ç«¯å³??panel ?ä??ŒåŸº?¬æ?æ³ã€??Œè²¡?™è?è¨Šã€ç”¨?„æ?å¹³æ?ä½?      eps: epsVal,
+      // 2026-08-14: ?ï¿½ï¿½?ç«¯å³??panel ?ï¿½ï¿½??ï¿½åŸº?ï¿½ï¿½?æ³ï¿½??ï¿½è²¡?ï¿½ï¿½?è¨Šã€ç”¨?ï¿½ï¿½?å¹³ï¿½?ï¿½?      eps: epsVal,
       pe: peRatio,
       grossMargin: grossMarginPct,
       operatingMargin: opMarginPct,
@@ -953,10 +955,10 @@ async function listRecipients(request) {
 }
 async function addRecipient(request) {
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   const name = pickStr(body?.name).trim();
   const email = pickStr(body?.email).trim();
-  if (!name || !email) return json({ error: "ç¼ºå? name ??email" }, { status: 400 });
+  if (!name || !email) return json({ error: "ç¼ºï¿½? name ??email" }, { status: 400 });
   try {
     await q("INSERT INTO recipients (name, email) VALUES ($1, $2) ON CONFLICT DO NOTHING", [name, email]);
     return json({ ok: true, name, email });
@@ -966,9 +968,9 @@ async function addRecipient(request) {
 }
 async function removeRecipient(request) {
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   const id = parseInt(body?.id, 10);
-  if (!id) return json({ error: "ç¼ºå? id" }, { status: 400 });
+  if (!id) return json({ error: "ç¼ºï¿½? id" }, { status: 400 });
   try {
     await q("DELETE FROM recipients WHERE id = $1", [id]);
     return json({ ok: true, id });
@@ -1033,7 +1035,7 @@ async function newsListImpl(request, { recordType = "news", limit = 20, tag = nu
 }
 
 async function macroData(request) {
-  // macroData: for macro.html. Frontend wants `data.data = [{?‡æ?, ?€?°å€? ?å€? ?´æ–°?‚é?, ...}]`
+  // macroData: for macro.html. Frontend wants `data.data = [{?ï¿½ï¿½?, ?ï¿½?ï¿½ï¿½? ?ï¿½ï¿½? ?ï¿½æ–°?ï¿½ï¿½?, ...}]`
   // but the only real source we have is market_price_bars (TSMC proxy for TAIEX) and
   // macro_yields table (yield_2y / yield_10y). Everything else (CPI / BEI / VIX / etc.)
   // used to come from the offline Railway backend; we return placeholders so the page
@@ -1067,20 +1069,20 @@ async function macroData(request) {
     const as_of = last.trade_date ? String(last.trade_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
     const asOfLabel = as_of;
     // Build the array shape the frontend expects.
-    // ??ä¿®æ­£ BUG-7ï¼šæ??Œä?æºã€æ?ä½å¡«??"FRED" ?èƒ½è®?macro.html ??renderFredTable é¡¯ç¤º?ºä???    //   ä¹‹å???"macro_yields" / "TSMC proxy" / "?€ Railway backend (offline)"ï¼?    //   renderFredTable ?ªé?æ¿?d["ä¾†æ?"] === "FRED" ??ä¸€å¾‹è¢«?æ¿¾????é¡¯ç¤º?Œç„¡?¸æ??ã€?    //   ?¹æ?ï¼šæ???macro yield / ç¸½ç??‡æ?çµ±ä?æ¨™è???"FRED"ï¼ˆå¯¦?›æ•¸?šä?æºï?
-    //   ??macro_yields è³‡æ?è¡?+ offline placeholderï¼‰ï??ç«¯å°±æ? render??    const arr = [
-      { "?‡æ?": "?°è‚¡?‡æ•¸ä»?? (2330)", "?€?°å€?: tsLast, "?å€?: tsPrev, "?´æ–°?‚é?": asOfLabel, "ä¾†æ?": "FRED", "ä¾†æ?æ¨™è?": "TSMC proxy" },
-      { "?‡æ?": "ç¾?0å¹´å…¬?µæ??©ç?(%)", "?€?°å€?: last10y, "?å€?: prev10y, "?´æ–°?‚é?": asOfLabel, "ä¾†æ?": "FRED", "ä¾†æ?æ¨™è?": "macro_yields" },
-      { "?‡æ?": "ç¾?å¹´å…¬?µæ??©ç?(%)",  "?€?°å€?: last2y,  "?å€?: prev2y,  "?´æ–°?‚é?": asOfLabel, "ä¾†æ?": "FRED", "ä¾†æ?æ¨™è?": "macro_yields" },
+    // ??ä¿®æ­£ BUG-7ï¼šï¿½??ï¿½ï¿½?æºã€ï¿½?ä½å¡«??"FRED" ?ï¿½èƒ½ï¿½?macro.html ??renderFredTable é¡¯ç¤º?ï¿½ï¿½???    //   ä¹‹ï¿½???"macro_yields" / "TSMC proxy" / "?ï¿½ Railway backend (offline)"ï¿½?    //   renderFredTable ?ï¿½ï¿½?ï¿½?d["ä¾†ï¿½?"] === "FRED" ??ä¸€å¾‹è¢«?ï¿½æ¿¾????é¡¯ç¤º?ï¿½ç„¡?ï¿½ï¿½??ï¿½ï¿½?    //   ?ï¿½ï¿½?ï¼šï¿½???macro yield / ç¸½ï¿½??ï¿½ï¿½?çµ±ï¿½?æ¨™ï¿½???"FRED"ï¼ˆå¯¦?ï¿½æ•¸?ï¿½ï¿½?æºï¿½?
+    //   ??macro_yields è³‡ï¿½?ï¿½?+ offline placeholderï¼‰ï¿½??ï¿½ç«¯å°±ï¿½? render??    const arr = [
+      { "?ï¿½ï¿½?": "?ï¿½è‚¡?ï¿½æ•¸ï¿½?? (2330)", "?ï¿½?ï¿½ï¿½?: tsLast, "?ï¿½ï¿½?: tsPrev, "?ï¿½æ–°?ï¿½ï¿½?": asOfLabel, "ä¾†ï¿½?": "FRED", "ä¾†ï¿½?æ¨™ï¿½?": "TSMC proxy" },
+      { "?ï¿½ï¿½?": "ï¿½?0å¹´å…¬?ï¿½ï¿½??ï¿½ï¿½?(%)", "?ï¿½?ï¿½ï¿½?: last10y, "?ï¿½ï¿½?: prev10y, "?ï¿½æ–°?ï¿½ï¿½?": asOfLabel, "ä¾†ï¿½?": "FRED", "ä¾†ï¿½?æ¨™ï¿½?": "macro_yields" },
+      { "?ï¿½ï¿½?": "ï¿½?å¹´å…¬?ï¿½ï¿½??ï¿½ï¿½?(%)",  "?ï¿½?ï¿½ï¿½?: last2y,  "?ï¿½ï¿½?: prev2y,  "?ï¿½æ–°?ï¿½ï¿½?": asOfLabel, "ä¾†ï¿½?": "FRED", "ä¾†ï¿½?æ¨™ï¿½?": "macro_yields" },
     ];
     // Spread placeholder rows so the page can render placeholders for missing metrics.
     const placeholders = [
-      "ç¾å‚µå¹³è¡¡?šè†¨?‡BEI(%)", "10å¹?3?ˆå…¬?µåˆ©å·?, "10å¹?2å¹´å…¬?µåˆ©å·?,
-      "?¯é‚¦?ºé??©ç?(%)", "GDP?é•·?‡å¹´??%)", "ç¾å?å¤±æ¥­??%)", "å¯†å¤§æ¶ˆè²»?…ä¿¡å¿?,
-      "å¸­å??¬ç?æ¯?CAPE)", "VIX?æ??‡æ•¸", "ç¾å?CPIå¹´å???%)", "?¸å?CPI YoY(%)",
+      "ç¾å‚µå¹³è¡¡?ï¿½è†¨?ï¿½BEI(%)", "10ï¿½?3?ï¿½å…¬?ï¿½åˆ©ï¿½?, "10ï¿½?2å¹´å…¬?ï¿½åˆ©ï¿½?,
+      "?ï¿½é‚¦?ï¿½ï¿½??ï¿½ï¿½?(%)", "GDP?ï¿½é•·?ï¿½å¹´??%)", "ç¾ï¿½?å¤±æ¥­??%)", "å¯†å¤§æ¶ˆè²»?ï¿½ä¿¡ï¿½?,
+      "å¸­ï¿½??ï¿½ï¿½?ï¿½?CAPE)", "VIX?ï¿½ï¿½??ï¿½æ•¸", "ç¾ï¿½?CPIå¹´ï¿½???%)", "?ï¿½ï¿½?CPI YoY(%)",
     ];
     for (const name of placeholders) {
-      arr.push({ "?‡æ?": name, "?€?°å€?: null, "?å€?: null, "?´æ–°?‚é?": asOfLabel, "ä¾†æ?": "FRED", "ä¾†æ?æ¨™è?": "?€ Railway backend (offline)" });
+      arr.push({ "?ï¿½ï¿½?": name, "?ï¿½?ï¿½ï¿½?: null, "?ï¿½ï¿½?: null, "?ï¿½æ–°?ï¿½ï¿½?": asOfLabel, "ä¾†ï¿½?": "FRED", "ä¾†ï¿½?æ¨™ï¿½?": "?ï¿½ Railway backend (offline)" });
     }
     return json({
       ok: true,
@@ -1110,7 +1112,7 @@ async function intradayScanStatus(request) {
 }
 async function intradayScanToggle(request) {
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   return json({ ok: true, enabled: !!body?.enabled });
 }
 
@@ -1120,12 +1122,12 @@ async function markersRecordImpl(request) {
   const code = pickStr(body?.code).trim();
   if (!/^\d{4,6}$/.test(code)) return json({ error: "invalid code" }, { status: 400 });
 
-  // ?©ç¨®å¯«å…¥æ¨¡å?:
-  //   A) ç®¡ç??¡æ???body å¸?password + ?®ç? (date/type/text/price)    ???€è¦å?ç¢?  //   B) ?ç«¯?ªå?è¨˜é?:body.items[] ???                                ???å?ç¢??¬é??é¢äº‹ä»¶è¨˜é?)
+  // ?ï¿½ç¨®å¯«å…¥æ¨¡ï¿½?:
+  //   A) ç®¡ï¿½??ï¿½ï¿½???body ï¿½?password + ?ï¿½ï¿½? (date/type/text/price)    ???ï¿½è¦ï¿½?ï¿½?  //   B) ?ï¿½ç«¯?ï¿½ï¿½?è¨˜ï¿½?:body.items[] ???                                ???ï¿½ï¿½?ï¿½??ï¿½ï¿½??ï¿½é¢äº‹ä»¶è¨˜ï¿½?)
   const items = Array.isArray(body?.items) ? body.items : null;
   const hasPassword = operatorOk(body?.password, request);
 
-  // æ¨¡å? A:ç®¡ç??¡æ??•è????‘å??¸å®¹)
+  // æ¨¡ï¿½? A:ç®¡ï¿½??ï¿½ï¿½??ï¿½ï¿½????ï¿½ï¿½??ï¿½å®¹)
   if (!items && hasPassword) {
     try {
       await q(
@@ -1138,7 +1140,7 @@ async function markersRecordImpl(request) {
     }
   }
 
-  // æ¨¡å? B:?ç«¯?ªå?è¨˜é? markers(?å?ç¢?
+  // æ¨¡ï¿½? B:?ï¿½ç«¯?ï¿½ï¿½?è¨˜ï¿½? markers(?ï¿½ï¿½?ï¿½?
   if (items && items.length > 0) {
     try {
       // Normalize ALL rows first; skip ones with invalid type instead of failing the whole batch.
@@ -1165,8 +1167,8 @@ async function markersRecordImpl(request) {
         let isoDate = safeIsoDate(it?.time);
         if (!isoDate) isoDate = todayIso;  // fallback to today when time is missing/invalid
         const type = pickStr(it?.source || "auto", "auto");        // "trade" | "event" | "auto"
-        // 2026-08-26 fix: ?ªå?ç´”æ?å­—åˆ° markers.text æ¬„ä?
-        //   ä¹‹å???close/ma5/10/20/60/position/shape/color/time åºå??–å???textï¼?        //   ? æ? marker_history.html é¡¯ç¤º "<è¨Šæ¯> || {...ä¸€??null JSON...}" ?œè???        //   ?™ä?æ¬„ä???charts ç«¯å·²ç¶“ç”¨å¾—åˆ°ï¼Œä??€è¦å??ç???DB ??text??        const text = pickStr(it?.text);
+        // 2026-08-26 fix: ?ï¿½ï¿½?ç´”ï¿½?å­—åˆ° markers.text æ¬„ï¿½?
+        //   ä¹‹ï¿½???close/ma5/10/20/60/position/shape/color/time åºï¿½??ï¿½ï¿½???textï¿½?        //   ?ï¿½ï¿½? marker_history.html é¡¯ç¤º "<è¨Šæ¯> || {...ä¸€??null JSON...}" ?ï¿½ï¿½???        //   ?ï¿½ï¿½?æ¬„ï¿½???charts ç«¯å·²ç¶“ç”¨å¾—åˆ°ï¼Œï¿½??ï¿½è¦ï¿½??ï¿½ï¿½???DB ??text??        const text = pickStr(it?.text);
         rows.push([code, isoDate, type, text, null]);
       }
       if (rows.length === 0) {
@@ -1192,7 +1194,7 @@ async function markersRecordImpl(request) {
     }
   }
 
-  // ?½æ??????ç¤º?¨æ?
+  // ?ï¿½ï¿½??????ï¿½ç¤º?ï¿½ï¿½?
   return json({ error: "missing password (single mode) or items[] (batch mode)" }, { status: 400 });
 }
 async function markersRecord(request) { return markersRecordImpl(request); }
@@ -1291,7 +1293,7 @@ async function intradayCheck(request, code) {
   return json({ ok: true, source: "stub", code, current_price: null, signals: { intraday: {} } });
 }
 
-// ?€?€ new handlers: market_gaps, fibonacci, scan_and_email ?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ new handlers: market_gaps, fibonacci, scan_and_email ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function computeGapsForSymbol(symbol, label, lookback, minGap) {
   try {
     const { rows } = await q(
@@ -1301,7 +1303,7 @@ async function computeGapsForSymbol(symbol, label, lookback, minGap) {
        ORDER BY trade_date DESC LIMIT $2`,
       [symbol, lookback + 5]
     );
-    if (!rows.length) return { name: label, error: "?¥ç„¡è³‡æ?" };
+    if (!rows.length) return { name: label, error: "?ï¿½ç„¡è³‡ï¿½?" };
     const asc = rows.slice().reverse();
     const gaps = [];
     for (let i = 1; i < asc.length; i++) {
@@ -1354,7 +1356,7 @@ async function computeGapsForSymbol(symbol, label, lookback, minGap) {
       gaps,
     };
   } catch (e) {
-    return { name: label, error: e?.message || "?¥è©¢å¤±æ?" };
+    return { name: label, error: e?.message || "?ï¿½è©¢å¤±ï¿½?" };
   }
 }
 
@@ -1365,11 +1367,11 @@ async function marketGaps(request) {
   // Frontend iterates ^TWII / ^TWOII. We don't have index data in DB,
   // so return those keys with a clean "no index data" message ??frontend
   // handles `d.error` gracefully. We also tack on a real `^PROXY` from
-  // 2330 (?°ç??? so the panel can show something live.
+  // 2330 (?ï¿½ï¿½??? so the panel can show something live.
   const [twii, twoii, proxy] = await Promise.all([
-    Promise.resolve({ name: "? æ??‡æ•¸", error: "?¡æ??¸è??™ï?DB ?…å??‹è‚¡/ETFï¼? }),
-    Promise.resolve({ name: "æ«ƒè²·?‡æ•¸", error: "?¡æ??¸è??™ï?DB ?…å??‹è‚¡/ETFï¼? }),
-    computeGapsForSymbol("2330", "?°ç???(2330) ?¶ä?å¤§ç›¤ä»??", lookback, minGap),
+    Promise.resolve({ name: "?ï¿½ï¿½??ï¿½æ•¸", error: "?ï¿½ï¿½??ï¿½ï¿½??ï¿½ï¿½?DB ?ï¿½ï¿½??ï¿½è‚¡/ETFï¿½? }),
+    Promise.resolve({ name: "æ«ƒè²·?ï¿½æ•¸", error: "?ï¿½ï¿½??ï¿½ï¿½??ï¿½ï¿½?DB ?ï¿½ï¿½??ï¿½è‚¡/ETFï¿½? }),
+    computeGapsForSymbol("2330", "?ï¿½ï¿½???(2330) ?ï¿½ï¿½?å¤§ç›¤ï¿½??", lookback, minGap),
   ]);
   return json({ ok: true, source: "db", "^TWII": twii, "^TWOII": twoii, "^PROXY": proxy });
 }
@@ -1380,7 +1382,7 @@ async function fibonacciFor(request, code) {
   const window = Math.min(500, Math.max(20, parseInt(u.searchParams.get("window") || "60", 10) || 60));
   try {
     const candles = await getCandles(code, window);
-    if (candles.length < 20) return json({ error: "è³‡æ?ä¸è¶³", code, window }, { status: 404 });
+    if (candles.length < 20) return json({ error: "è³‡ï¿½?ä¸è¶³", code, window }, { status: 404 });
     const high = Math.max(...candles.map((c) => c.high));
     const low  = Math.min(...candles.map((c) => c.low));
     const range = high - low;
@@ -1433,7 +1435,7 @@ async function scanAndEmail(request) {
   }
 }
 
-// ?€?€ new handlers: etf_holdings/* ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ new handlers: etf_holdings/* ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function etfList(request) {
   try {
     const { rows } = await q("SELECT code, name, ticker, created_at FROM etf_watchlist ORDER BY sort_order ASC, code ASC LIMIT 200");
@@ -1446,10 +1448,10 @@ async function etfList(request) {
 async function etfListAdd(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   const code = pickStr(body?.code).trim();
   const name = pickStr(body?.name).trim() || code;
-  if (!/^\d{4,6}$/.test(code)) return json({ error: "ç¼ºå??–ç„¡?ˆç?ä»??" }, { status: 400 });
+  if (!/^\d{4,6}$/.test(code)) return json({ error: "ç¼ºï¿½??ï¿½ç„¡?ï¿½ï¿½?ï¿½??" }, { status: 400 });
   const ticker = `${code}.TW`;
   try {
     await q(
@@ -1467,9 +1469,9 @@ async function etfListAdd(request) {
 async function etfListRemove(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   const code = pickStr(body?.code).trim();
-  if (!code) return json({ error: "ç¼ºå?ä»??" }, { status: 400 });
+  if (!code) return json({ error: "ç¼ºï¿½?ï¿½??" }, { status: 400 });
   try {
     await q("DELETE FROM etf_watchlist WHERE code = $1", [code]);
     _etfCache = null;
@@ -1541,7 +1543,7 @@ async function etfStatus(request) {
         last_refresh: lastRefresh,
         count: 0,
         no_data: true,
-        message: "etf_holdings è¡¨ç‚ºç©ºï???bulk data sourceï¼ˆé? per-issuer ?¬ï?",
+        message: "etf_holdings è¡¨ç‚ºç©ºï¿½???bulk data sourceï¼ˆï¿½? per-issuer ?ï¿½ï¿½?",
       });
     }
     // Has data ??do sync analysis and return result inline
@@ -1575,7 +1577,7 @@ async function etfAnalyze(request) {
         source: "stub",
         no_data: true,
         count: 0,
-        message: "etf_holdings è¡¨ç‚ºç©ºï???bulk sourceï¼›é? per-issuer ?¬æ??‹å? seedï¼?,
+        message: "etf_holdings è¡¨ç‚ºç©ºï¿½???bulk sourceï¼›ï¿½? per-issuer ?ï¿½ï¿½??ï¿½ï¿½? seedï¿½?,
       });
     }
     // Run real analysis (inline to avoid dynamic import ??edge runtime)
@@ -1647,7 +1649,7 @@ async function etfClearCache(request) {
   return json({ ok: true, cleared: true });
 }
 
-// ?€?€ new handlers: rebalance/* ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ new handlers: rebalance/* ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function rebalanceCompute(request) {
   const watch = await getWatchMap();
   const codes = Array.from(watch.keys());
@@ -1701,8 +1703,8 @@ async function rebalanceGroups(request) {
     const groups = new Map();
     for (const r of rows) {
       const sector = (() => {
-        try { return (r.metadata_text && JSON.parse(r.metadata_text).industry) || "?¶ä?"; }
-        catch { return "?¶ä?"; }
+        try { return (r.metadata_text && JSON.parse(r.metadata_text).industry) || "?ï¿½ï¿½?"; }
+        catch { return "?ï¿½ï¿½?"; }
       })();
       if (!groups.has(sector)) groups.set(sector, []);
       groups.get(sector).push({ code: r.symbol, name: watch.get(r.symbol)?.name || r.symbol, exchange: r.exchange_name });
@@ -1718,10 +1720,10 @@ async function rebalanceDynamic(request) {
   return rebalanceCompute(request);
 }
 
-// ?€?€ new handlers: uptrend_watch/* ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ new handlers: uptrend_watch/* ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function uptrendWatch(request) {
-  // ??ä¿®æ­£ BUG-8ï¼šuptrend-watch.html ?ç«¯?Ÿå?çµæ???  //   { ok, as_of, scanned, uptrend_count, ma10:[...], ma20:[...], volow:[...] }
-  //   ?Šç??ªå???itemsï¼ˆæ··?œç?ç¯©é¸çµæ?ï¼‰ï?å°è‡´?ç«¯?ƒæ?ç¸½æ•¸/è¶¨å‹¢æª”æ•¸/?è¸©/?†é?ä¸‹æ®º ?¨æ˜¯ 0ï¼?  //   ä¸‰å€?tab ä¹Ÿè?ä¸åˆ°è³‡æ???  //   ?¹ç‚ºï¼šç”¨ scanAllImpl ç®—å‡ºä¸‰é?æ¸…å–®ï¼Œä¸¦?‰å?ç«¯æ?ä½å??³ã€?  try {
+  // ??ä¿®æ­£ BUG-8ï¼šuptrend-watch.html ?ï¿½ç«¯?ï¿½ï¿½?çµï¿½???  //   { ok, as_of, scanned, uptrend_count, ma10:[...], ma20:[...], volow:[...] }
+  //   ?ï¿½ï¿½??ï¿½ï¿½???itemsï¼ˆæ··?ï¿½ï¿½?ç¯©é¸çµï¿½?ï¼‰ï¿½?å°è‡´?ï¿½ç«¯?ï¿½ï¿½?ç¸½æ•¸/è¶¨å‹¢æª”æ•¸/?ï¿½è¸©/?ï¿½ï¿½?ä¸‹æ®º ?ï¿½æ˜¯ 0ï¿½?  //   ä¸‰ï¿½?tab ä¹Ÿï¿½?ä¸åˆ°è³‡ï¿½???  //   ?ï¿½ç‚ºï¼šç”¨ scanAllImpl ç®—å‡ºä¸‰ï¿½?æ¸…å–®ï¼Œä¸¦?ï¿½ï¿½?ç«¯ï¿½?ä½ï¿½??ï¿½ï¿½?  try {
     const results = await scanAllImpl();
     const asOf = new Date().toISOString().slice(0, 10);
     const scored = (arr) => (arr || []).map((r) => ({
@@ -1736,11 +1738,11 @@ async function uptrendWatch(request) {
       range_pct: r.dist_high_20d_pct,
       volume: r.vol_ratio != null ? Number(r.vol_ratio) : null,
       score: r.score,
-      status: r.score >= 4 ? "å¼·å‹¢å¤šé ­" : "è½‰å¼·è§€å¯?,
+      status: r.score >= 4 ? "å¼·å‹¢å¤šé ­" : "è½‰å¼·è§€ï¿½?,
     }));
 
     const uptrendAll = results.filter((r) => r.cond2 && r.cond3);
-    // ?è¸©?‡ç? = ?®å??¥è? MA10 ??MA20 ä½†ä??¨å??­æ???    const ma10 = uptrendAll.filter((r) =>
+    // ?ï¿½è¸©?ï¿½ï¿½? = ?ï¿½ï¿½??ï¿½ï¿½? MA10 ??MA20 ä½†ï¿½??ï¿½ï¿½??ï¿½ï¿½???    const ma10 = uptrendAll.filter((r) =>
       r.dist_high_60d_pct != null && r.dist_high_60d_pct <= 3 &&
       r.latest_close != null && r.ma10 != null &&
       Math.abs(r.latest_close - r.ma10) / r.ma10 <= 0.02
@@ -1750,7 +1752,7 @@ async function uptrendWatch(request) {
       r.latest_close != null && r.ma20 != null &&
       Math.abs(r.latest_close - r.ma20) / r.ma20 <= 0.03
     );
-    // ?†é?ä¸‹æ®ºï¼ˆç?ä¼¼éŒ¯æ®ºï?= é«˜æ?äº¤é? + ?¶ç›¤? é›¢ MA20
+    // ?ï¿½ï¿½?ä¸‹æ®ºï¼ˆï¿½?ä¼¼éŒ¯æ®ºï¿½?= é«˜ï¿½?äº¤ï¿½? + ?ï¿½ç›¤?ï¿½é›¢ MA20
     const volow = results.filter((r) =>
       r.cond5 === true && r.gain_5d_pct != null && r.gain_5d_pct < -3 &&
       r.latest_close != null && r.ma20 != null &&
@@ -1766,7 +1768,7 @@ async function uptrendWatch(request) {
       ma10: scored(ma10),
       ma20: scored(ma20),
       volow: scored(volow),
-      // ?¸å®¹?Šç?æ¬„ä?
+      // ?ï¿½å®¹?ï¿½ï¿½?æ¬„ï¿½?
       count: uptrendAll.length,
       items: scored(uptrendAll),
       generated_at: Date.now(),
@@ -1784,13 +1786,13 @@ async function uptrendWatch(request) {
       count: 0,
       items: [],
       error: e?.message,
-      message: "uptrend_watch è¨ˆç?å¤±æ?ï¼ˆå¯?½ç¼ºå°?watchlist / market_price_barsï¼?,
+      message: "uptrend_watch è¨ˆï¿½?å¤±ï¿½?ï¼ˆå¯?ï¿½ç¼ºï¿½?watchlist / market_price_barsï¿½?,
     });
   }
 }
 async function uptrendWatchFilter(request) { return uptrendWatch(request); }
 
-// ?€?€ new handlers: admin/logs (markers as log) ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ new handlers: admin/logs (markers as log) ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function adminLogs(request, id) {
   try {
     if (id) {
@@ -1818,7 +1820,7 @@ async function adminLogs(request, id) {
 async function adminLogsClear(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   try {
     const { rows } = await q("DELETE FROM markers");
     return json({ ok: true, cleared: true });
@@ -1827,7 +1829,7 @@ async function adminLogsClear(request) {
   }
 }
 
-// ?€?€ new handlers: conference, exdiv, etc. ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ new handlers: conference, exdiv, etc. ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function conferenceList(request) {
   const u = urlOf(request);
   const fromDate = u.searchParams.get("from");
@@ -1920,7 +1922,7 @@ async function exdivCalendar(request) {
        LIMIT 200`,
       [String(days)]
     );
-    // 2026-08-14: ??updated_at / as_of / fetched_at çµ?exdiv.html é¡¯ç¤º?Œæ›´?°æ??“ã€?    const nowIso = new Date().toISOString();
+    // 2026-08-14: ??updated_at / as_of / fetched_at ï¿½?exdiv.html é¡¯ç¤º?ï¿½æ›´?ï¿½ï¿½??ï¿½ï¿½?    const nowIso = new Date().toISOString();
     return json({
       ok: true, source: "db", count: rows.length, items: rows, days,
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
@@ -1961,7 +1963,7 @@ async function exdivUpcoming(request) {
   }
 }
 
-// ?€?€ institutional / foreign_futures / financial / revenue etc. ?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ institutional / foreign_futures / financial / revenue etc. ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function institutionalImpl(request, code) {
   try {
     let sql = `SELECT id, symbol, trade_date, foreign_buy, foreign_sell, foreign_net,
@@ -2048,10 +2050,10 @@ async function financial(request, codeFromPath) {
         ok: false,
         source: "stub",
         code,
-        quality: { score: 0, level: "?¡è???, reasons: [], warnings: ["æ­¤è‚¡ç¥¨å??¡å­£åº¦è²¡?±è???] },
+        quality: { score: 0, level: "?ï¿½ï¿½???, reasons: [], warnings: ["æ­¤è‚¡ç¥¨ï¿½??ï¿½å­£åº¦è²¡?ï¿½ï¿½???] },
         financial_data: { eps: [] },
-        error: "æ­¤è‚¡ç¥¨å??¡å­£åº¦è²¡?±è???,
-        message: "synth seed ?…æ¶µ?‹éƒ¨??watchlistï¼Œè?è¦‹å???,
+        error: "æ­¤è‚¡ç¥¨ï¿½??ï¿½å­£åº¦è²¡?ï¿½ï¿½???,
+        message: "synth seed ?ï¿½æ¶µ?ï¿½éƒ¨??watchlistï¼Œï¿½?è¦‹ï¿½???,
       });
     }
     const periods = rows.map(r => ({
@@ -2070,22 +2072,22 @@ async function financial(request, codeFromPath) {
     const gm = latest.revenue > 0 ? (latest.gross_profit / latest.revenue) : 0;
     const om = latest.revenue > 0 ? (latest.operating_income / latest.revenue) : 0;
     const nm = latest.revenue > 0 ? (latest.net_income / latest.revenue) : 0;
-    if (gm >= 0.4) { score += 15; reasons.push(`æ¯›åˆ©??${(gm*100).toFixed(1)}% ?ªç•°`); }
-    else if (gm >= 0.2) { score += 8; reasons.push(`æ¯›åˆ©??${(gm*100).toFixed(1)}% ç©©å?`); }
-    else if (gm < 0.1 && gm >= 0) { score -= 5; warnings.push(`æ¯›åˆ©?‡å? ${(gm*100).toFixed(1)}%`); }
-    if (om >= 0.2) { score += 15; reasons.push(`?Ÿç???${(om*100).toFixed(1)}% å¼·å?`); }
-    else if (om >= 0.1) { score += 5; reasons.push(`?Ÿç???${(om*100).toFixed(1)}% ?¥åº·`); }
-    else if (om < 0) { score -= 10; warnings.push(`?Ÿæ¥­?§æ? ${(om*100).toFixed(1)}%`); }
+    if (gm >= 0.4) { score += 15; reasons.push(`æ¯›åˆ©??${(gm*100).toFixed(1)}% ?ï¿½ç•°`); }
+    else if (gm >= 0.2) { score += 8; reasons.push(`æ¯›åˆ©??${(gm*100).toFixed(1)}% ç©©ï¿½?`); }
+    else if (gm < 0.1 && gm >= 0) { score -= 5; warnings.push(`æ¯›åˆ©?ï¿½ï¿½? ${(gm*100).toFixed(1)}%`); }
+    if (om >= 0.2) { score += 15; reasons.push(`?ï¿½ï¿½???${(om*100).toFixed(1)}% å¼·ï¿½?`); }
+    else if (om >= 0.1) { score += 5; reasons.push(`?ï¿½ï¿½???${(om*100).toFixed(1)}% ?ï¿½åº·`); }
+    else if (om < 0) { score -= 10; warnings.push(`?ï¿½æ¥­?ï¿½ï¿½? ${(om*100).toFixed(1)}%`); }
     if (nm >= 0.15) { score += 10; reasons.push(`æ·¨åˆ©??${(nm*100).toFixed(1)}%`); }
-    else if (nm < 0) { score -= 15; warnings.push(`æ·¨æ? ${(nm*100).toFixed(1)}%`); }
+    else if (nm < 0) { score -= 15; warnings.push(`æ·¨ï¿½? ${(nm*100).toFixed(1)}%`); }
     if (periods.length >= 2) {
       const oldest = periods[periods.length - 1];
       const epsGrowth = oldest.eps !== 0 ? ((latest.eps - oldest.eps) / Math.abs(oldest.eps)) : 0;
-      if (epsGrowth > 0.2) { score += 10; reasons.push(`EPS å­?? ${(epsGrowth*100).toFixed(1)}%`); }
-      else if (epsGrowth < -0.2) { score -= 10; warnings.push(`EPS å­?? ${Math.abs(epsGrowth*100).toFixed(1)}%`); }
+      if (epsGrowth > 0.2) { score += 10; reasons.push(`EPS ï¿½?? ${(epsGrowth*100).toFixed(1)}%`); }
+      else if (epsGrowth < -0.2) { score -= 10; warnings.push(`EPS ï¿½?? ${Math.abs(epsGrowth*100).toFixed(1)}%`); }
     }
     score = Math.max(0, Math.min(100, Math.round(score)));
-    const level = score >= 80 ? "?ªç•°" : score >= 60 ? "?¯å¥½" : score >= 40 ? "ä¸­ç?" : score >= 20 ? "å¾…è?å¯? : "é«˜é¢¨??;
+    const level = score >= 80 ? "?ï¿½ç•°" : score >= 60 ? "?ï¿½å¥½" : score >= 40 ? "ä¸­ï¿½?" : score >= 20 ? "å¾…ï¿½?ï¿½? : "é«˜é¢¨??;
     // Synth valuation: per = close / eps_ttm, pbr by sector default, fair = close * (1 Â± per% range)
     let valuation = null;
     try {
@@ -2104,9 +2106,9 @@ async function financial(request, codeFromPath) {
         let pbr = 3;
         try {
           const m = ind.rows[0]?.metadata_text ? JSON.parse(ind.rows[0].metadata_text) : null;
-          if (m && m.industry === "?Šå?é«”æ¥­") pbr = 6;
-          else if (m && m.industry === "?‘è?ä¿éšªæ¥?) pbr = 1.0;
-          else if (m && m.industry === "?ªé?æ¥?) pbr = 1.5;
+          if (m && m.industry === "?ï¿½ï¿½?é«”æ¥­") pbr = 6;
+          else if (m && m.industry === "?ï¿½ï¿½?ä¿éšªï¿½?) pbr = 1.0;
+          else if (m && m.industry === "?ï¿½ï¿½?ï¿½?) pbr = 1.5;
         } catch {}
         const fair_low = (eps_ttm * 12).toFixed(0);
         const fair_high = (eps_ttm * 20).toFixed(0);
@@ -2130,7 +2132,7 @@ async function financial(request, codeFromPath) {
         total_score: score,
         color: score >= 80 ? "#00c853" : score >= 60 ? "#ffd600" : score >= 40 ? "#448aff" : score >= 20 ? "#ff6d00" : "#ff1744",
         recommendation: level,
-        confidence: reasons.length > warnings.length ? "é«? : "ä¸?,
+        confidence: reasons.length > warnings.length ? "ï¿½? : "ï¿½?,
         breakdown: {
           tech: 50,           // placeholder; technical signal from index.html loadTechnical()
           financial: score,   // financial score mirrors quality
@@ -2173,7 +2175,7 @@ async function marginBurst(request, codeFromPath) {
   // We don't have margin_balance data (TWSE doesn't publish per-stock), so margin
   // fields are stubs; but we DO have market_price_bars, so vol_ratio, ma60_slope_pct,
   // rsi14 can be computed for real. That way the right panel shows real numbers for
-  // what we have, and "?è?è³‡æ?å°šæœªå»ºç?" badge for the rest.
+  // what we have, and "?ï¿½ï¿½?è³‡ï¿½?å°šæœªå»ºï¿½?" badge for the rest.
   if (codeFromPath) {
     let volRatio = 0, ma60SlopePct = 0, rsi14 = 0;
     try {
@@ -2212,7 +2214,7 @@ async function marginBurst(request, codeFromPath) {
       metrics: {
         code: codeFromPath,
         is_g7: false,
-        fail_reasons: ["?è?é¤˜é?è³‡æ??ªå»ºç«‹ï?margin_balance è¡¨ç‚ºç©ºï?TWSE ??per-stock ?¬é? sourceï¼?],
+        fail_reasons: ["?ï¿½ï¿½?é¤˜ï¿½?è³‡ï¿½??ï¿½å»ºç«‹ï¿½?margin_balance è¡¨ç‚ºç©ºï¿½?TWSE ??per-stock ?ï¿½ï¿½? sourceï¿½?],
         // margin fields (no data ??0 / null)
         avg_cost_est: 0,
         cost_premium_pct: 0,
@@ -2293,8 +2295,8 @@ async function revenue(request) {
     const lim = code ? "24" : "500";
     const sql = `
       SELECT r.id, r.symbol AS code,
-             -- ??ä¿®æ­£ BUG-5ï¼šå„ª?ˆç”¨ watchlist ?ç¨±ï¼ˆè‡ª?¸è‚¡å·²å‘½?ï?ï¼Œfallback ??             --   market_instruments.display_nameï¼ˆä?å¸‚æ??¨å??´å??§è¡¨ï¼‰ï??€å¾Œæ??¨ç©ºå­—ä¸²??             --   revenue è¡¨è??„å…¨å¸‚å ´?¡ç¥¨ï¼Œä? watchlist ?ªæ? 7 ?¯è‡ª?¸è‚¡ï¼Œå???join
-             --   market_instruments ?èƒ½è®“æ??‰è‚¡ç¥¨ç??Œå?ç¨±ã€æ?ä½æ??¼ã€?             COALESCE(NULLIF(w.name, ''), NULLIF(inst.display_name, ''), '') AS name,
+             -- ??ä¿®æ­£ BUG-5ï¼šå„ª?ï¿½ç”¨ watchlist ?ï¿½ç¨±ï¼ˆè‡ª?ï¿½è‚¡å·²å‘½?ï¿½ï¿½?ï¼Œfallback ??             --   market_instruments.display_nameï¼ˆï¿½?å¸‚ï¿½??ï¿½ï¿½??ï¿½ï¿½??ï¿½è¡¨ï¼‰ï¿½??ï¿½å¾Œï¿½??ï¿½ç©ºå­—ä¸²??             --   revenue è¡¨ï¿½??ï¿½å…¨å¸‚å ´?ï¿½ç¥¨ï¼Œï¿½? watchlist ?ï¿½ï¿½? 7 ?ï¿½è‡ª?ï¿½è‚¡ï¼Œï¿½???join
+             --   market_instruments ?ï¿½èƒ½è®“ï¿½??ï¿½è‚¡ç¥¨ï¿½??ï¿½ï¿½?ç¨±ã€ï¿½?ä½ï¿½??ï¿½ï¿½?             COALESCE(NULLIF(w.name, ''), NULLIF(inst.display_name, ''), '') AS name,
              r.year || '/' || r.month AS year_month,
              r.revenue::float8 AS revenue_current,
              r.mom_pct::float8 AS mom_pct,
@@ -2305,7 +2307,7 @@ async function revenue(request) {
              r.fetched_at
       FROM revenue r
       LEFT JOIN watchlist w ON w.code = r.symbol
-      -- ????symbol ?¯èƒ½å°æ?å¤šå€?sourceï¼ˆyahoo/finmind ç­‰ï?ï¼Œç”¨ DISTINCT ON ?–ä»»ä¸€ç­†æ? display_name ?„å?
+      -- ????symbol ?ï¿½èƒ½å°ï¿½?å¤šï¿½?sourceï¼ˆyahoo/finmind ç­‰ï¿½?ï¼Œç”¨ DISTINCT ON ?ï¿½ä»»ä¸€ç­†ï¿½? display_name ?ï¿½ï¿½?
       LEFT JOIN (
         SELECT DISTINCT ON (symbol) symbol, display_name
         FROM market_instruments
@@ -2345,7 +2347,7 @@ const AI_CAPEX_NAMES = {
 
 function _aiCapexQuartetKey(y, q) { return y * 10 + q; }
 
-// ?€?€ sold_too_early: heuristic "potentially sold too early" detector ?€?€
+// ?ï¿½?ï¿½ sold_too_early: heuristic "potentially sold too early" detector ?ï¿½?ï¿½
 // No trade history. Heuristic: for each watchlist stock, find cases where
 // the price recently BROKE BELOW MA20 (sell signal territory), then later
 // re-crossed ABOVE MA5/MA10/MA20 (sold signal invalidated). Bigger bounce
@@ -2361,7 +2363,7 @@ async function soldTooEarly(request) {
     if (wl.length === 0) {
       return json({ ok: true, source: "stub", as_of: new Date().toISOString().slice(0, 10),
         scanned: 0, count: 0, rows: [],
-        message: "watchlist ?ºç©ºï¼Œè??ˆåœ¨ä¸»ç³»çµ±æ–°å¢è‡ª?¸è‚¡" });
+        message: "watchlist ?ï¿½ç©ºï¼Œï¿½??ï¿½åœ¨ä¸»ç³»çµ±æ–°å¢è‡ª?ï¿½è‚¡" });
     }
     // 2. Single batched query: pull all bars in one shot
     //    Use window function to get the last `lookback` bars per code
@@ -2457,7 +2459,7 @@ async function soldTooEarly(request) {
       scanned: wl.length,
       count: hits.length,
       rows: hits,
-      note: "?Ÿç™¼å¼ï??¡åƒ¹?¾è???MA20ï¼ˆè³£?ºè??Ÿï?ï¼Œå?ä¾†å?ç«™å? MA5/10/20ï¼Œä??¡å¯¦?›äº¤?“ç???,
+      note: "?ï¿½ç™¼å¼ï¿½??ï¿½åƒ¹?ï¿½ï¿½???MA20ï¼ˆè³£?ï¿½ï¿½??ï¿½ï¿½?ï¼Œï¿½?ä¾†ï¿½?ç«™ï¿½? MA5/10/20ï¼Œï¿½??ï¿½å¯¦?ï¿½äº¤?ï¿½ï¿½???,
     });
   } catch (e) {
     return json({ ok: false, source: "stub", error: e?.message });
@@ -2477,7 +2479,7 @@ async function aiCapex(request) {
         message: "ai_capex table empty ??run SEC EDGAR loader",
         companies: [], chart: { labels: [], agg_ttm: [], agg_yoy: [] },
         agg_ttm_usd_bn: null, agg_yoy_pct: null, accel_pp: null,
-        light: "gray", headline: "ai_capex è¡¨ç‚ºç©ºï?è«‹è? SEC EDGAR loader" });
+        light: "gray", headline: "ai_capex è¡¨ç‚ºç©ºï¿½?è«‹ï¿½? SEC EDGAR loader" });
     }
     // Normalize ??array of objects
     const raw = rows.map(r => ({
@@ -2570,11 +2572,11 @@ async function aiCapex(request) {
     }
     // Light signal
     let light = "gray";
-    let headline = "è³‡æ?ä¸è¶³";
+    let headline = "è³‡ï¿½?ä¸è¶³";
     if (aggYoyPct != null) {
-      if (aggYoyPct > 15 && (accelPp == null || accelPp >= 0)) { light = "green"; headline = `?ˆè? capex TTM ä»æ“´å¼µï?YoY +${aggYoyPct}%ï¼‰`; }
-      else if (aggYoyPct > 0) { light = "yellow"; headline = `?´å¼µä½†å??½è?å¼±ï?YoY +${aggYoyPct}%${accelPp != null ? `ï¼?{accelPp > 0 ? '+' : ''}${accelPp}pp` : ''}ï¼‰`; }
-      else { light = "red"; headline = `?ˆè? capex TTM è½‰æ”¶ç¸®ï?YoY ${aggYoyPct}%ï¼‰`; }
+      if (aggYoyPct > 15 && (accelPp == null || accelPp >= 0)) { light = "green"; headline = `?ï¿½ï¿½? capex TTM ä»æ“´å¼µï¿½?YoY +${aggYoyPct}%ï¼‰`; }
+      else if (aggYoyPct > 0) { light = "yellow"; headline = `?ï¿½å¼µä½†ï¿½??ï¿½ï¿½?å¼±ï¿½?YoY +${aggYoyPct}%${accelPp != null ? `ï¿½?{accelPp > 0 ? '+' : ''}${accelPp}pp` : ''}ï¼‰`; }
+      else { light = "red"; headline = `?ï¿½ï¿½? capex TTM è½‰æ”¶ç¸®ï¿½?YoY ${aggYoyPct}%ï¼‰`; }
     }
     const asOf = new Date().toISOString().slice(0, 10);
     return json({
@@ -2627,7 +2629,7 @@ async function macroYield2yHistory(request) {
   }
 }
 
-// ?€?€ price_compare / heatmap ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ price_compare / heatmap ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function priceCompare(request) {
   const u = urlOf(request);
   const kind = pickStr(u.searchParams.get("kind") || "stocks");
@@ -2725,16 +2727,16 @@ async function heatmap(request) {
     const stocks = [];
     for (const m of metaRows) {
       const industry = (() => {
-        if (!m.metadata_text) return "?¶ä?";
+        if (!m.metadata_text) return "?ï¿½ï¿½?";
         try {
           const parsed = JSON.parse(m.metadata_text);
           // object case (loadSectors injected)
           if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-            return parsed.industry || "?¶ä?";
+            return parsed.industry || "?ï¿½ï¿½?";
           }
           // array case (legacy STOCK_DAY metadata)
-          return "?¶ä?";
-        } catch { return "?¶ä?"; }
+          return "?ï¿½ï¿½?";
+        } catch { return "?ï¿½ï¿½?"; }
       })();
       const hist = histByCode.get(m.symbol) || [];
       const last = hist[0]?.close_price != null ? Number(hist[0].close_price) : (Number(m.close) || 0);
@@ -2797,7 +2799,7 @@ async function heatmap(request) {
   }
 }
 
-// ?€?€ etf_signal_filter / stock_damo_filter / stock_news_scan ?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ etf_signal_filter / stock_damo_filter / stock_news_scan ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function etfSignalFilter(request) {
   const etfs = await getEtfList();
   if (!etfs.length) return json({ ok: true, source: "db", count: 0, items: [], message: "etf_watchlist empty" });
@@ -2833,9 +2835,9 @@ async function etfSignalFilterStatus(request) { return etfSignalFilter(request);
 async function etfSignalFilterRefresh(request) { return etfSignalFilter(request); }
 
 async function stockDamoFilter(request) {
-  // "å¤§æ?" filter: cond2+cond3+cond4 + above MA20 (similar to signal_filter but a different threshold view)
+  // "å¤§ï¿½?" filter: cond2+cond3+cond4 + above MA20 (similar to signal_filter but a different threshold view)
   const results = await scanAllImpl();
-  const items = results.filter((r) => r.cond2 && r.cond3 && r.cond4).map((r) => ({ ...r, status: "å¤§æ??™é¸" }));
+  const items = results.filter((r) => r.cond2 && r.cond3 && r.cond4).map((r) => ({ ...r, status: "å¤§ï¿½??ï¿½é¸" }));
   return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
 }
 async function stockDamoFilterStatus(request) { return stockDamoFilter(request); }
@@ -2859,7 +2861,7 @@ async function stockNewsScan(request) {
   }
 }
 async function stockNewsScanQuota(request) {
-  // ç°¡æ? quota é¡¯ç¤º:ä»Šå¤©è·‘é?å¹¾æ¬¡ (from markers)
+  // ç°¡ï¿½? quota é¡¯ç¤º:ä»Šå¤©è·‘ï¿½?å¹¾æ¬¡ (from markers)
   try {
     const { rows } = await q(
       `SELECT COUNT(*)::int AS used FROM markers WHERE date = CURRENT_DATE::text`
@@ -2870,7 +2872,7 @@ async function stockNewsScanQuota(request) {
       ok: true,
       source: "db",
       used, quota: cap, remaining: cap - used,
-      // aliases used by etf_holdings_tracker.html ("ä»Šæ—¥?©é? X / Y")
+      // aliases used by etf_holdings_tracker.html ("ä»Šæ—¥?ï¿½ï¿½? X / Y")
       left: cap - used, cap,
     });
   } catch (e) {
@@ -2878,7 +2880,7 @@ async function stockNewsScanQuota(request) {
   }
 }
 
-// ?€?€ etf_pivot/* real handlers ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ etf_pivot/* real handlers ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function etfPivotOverlap(request) {
   const u = urlOf(request);
   const etfsParam = pickStr(u.searchParams.get("etfs") || "");
@@ -3083,10 +3085,10 @@ async function etfDiff(request, code) {
     );
     const dates = (dateRes.rows || dateRes).map((r) => r.as_of_date);
     if (dates.length === 0) {
-      return json({ ok: true, source: "db", code, status: "no_diff", snapshot_count: 0, message: "å°šç„¡å¿«ç…§ï¼Œè??ˆæ??Œç??³æ?å¿«ç…§??, summary: { added: 0, removed: 0, changed: 0, unchanged: 0 }, holdings: [], new_time: null, old_time: null });
+      return json({ ok: true, source: "db", code, status: "no_diff", snapshot_count: 0, message: "å°šç„¡å¿«ç…§ï¼Œï¿½??ï¿½ï¿½??ï¿½ï¿½??ï¿½ï¿½?å¿«ç…§??, summary: { added: 0, removed: 0, changed: 0, unchanged: 0 }, holdings: [], new_time: null, old_time: null });
     }
     if (dates.length === 1) {
-      return json({ ok: true, source: "db", code, status: "no_diff", snapshot_count: 1, message: "?ªæ? 1 ç­†å¿«?§ï??¡æ?è¨ˆç?å·®ç•°ï¼ˆé? ??2 ç­†ï?", summary: { added: 0, removed: 0, changed: 0, unchanged: 0 }, holdings: [], new_time: String(dates[0]).slice(0, 10), old_time: null });
+      return json({ ok: true, source: "db", code, status: "no_diff", snapshot_count: 1, message: "?ï¿½ï¿½? 1 ç­†å¿«?ï¿½ï¿½??ï¿½ï¿½?è¨ˆï¿½?å·®ç•°ï¼ˆï¿½? ??2 ç­†ï¿½?", summary: { added: 0, removed: 0, changed: 0, unchanged: 0 }, holdings: [], new_time: String(dates[0]).slice(0, 10), old_time: null });
     }
     const [newDate, oldDate] = dates;
     // 2) pull holdings at each date
@@ -3194,7 +3196,7 @@ async function etfExport(request, code) {
   }
 }
 
-// ?€?€ single-resource GETs (markers/<id>, recipients/<id>, etc.) ?€?€?€?€?€?€
+// ?ï¿½?ï¿½ single-resource GETs (markers/<id>, recipients/<id>, etc.) ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 async function markerById(request, id) {
   const i = parseInt(id, 10);
   if (!Number.isFinite(i)) return json({ error: "invalid id" }, { status: 400 });
@@ -3254,16 +3256,16 @@ async function etfByCode(request, code) {
   }
 }
 
-// ?€?€ data loaders (fetch from TWSE public API ??insert into Neon) ?€?€?€?€
+// ?ï¿½?ï¿½ data loaders (fetch from TWSE public API ??insert into Neon) ?ï¿½?ï¿½?ï¿½?ï¿½
 function twseDateStr(d) {
-  // input: Date object ??"YYYYMMDD" (æ°‘å?å¹´è‡ª?•è?è¥¿å?)
+  // input: Date object ??"YYYYMMDD" (æ°‘ï¿½?å¹´è‡ª?ï¿½ï¿½?è¥¿ï¿½?)
   return d.getFullYear().toString() +
     String(d.getMonth() + 1).padStart(2, "0") +
     String(d.getDate()).padStart(2, "0");
 }
 function rocToIsoDate(rocStr) {
-  // "115å¹?7??1?? ??"2026-07-31"
-  const m = /(\d+)å¹?\d+)??\d+)??.exec(rocStr);
+  // "115ï¿½?7??1?? ??"2026-07-31"
+  const m = /(\d+)ï¿½?\d+)??\d+)??.exec(rocStr);
   if (!m) return null;
   return `${parseInt(m[1], 10) + 1911}-${m[2]}-${m[3]}`;
 }
@@ -3314,27 +3316,27 @@ async function loadInstitutionalForDate(dateYmd) {
   if (data.stat !== "OK" || !Array.isArray(data.data)) {
     return { ok: false, source: "twse", error: data.stat || "no data", date: ymd, count: 0 };
   }
-  // TWSE T86 æ¬„ä??†å?(2026 ç¢ºè?):
-  // 0: è­‰åˆ¸ä»??, 1: è­‰åˆ¸?ç¨±
-  // 2-4: å¤–é™¸è³‡è²·??è³?‡º/è²·è³£è¶?ä¸å«å¤–è??ªç???
-  // 5-7: å¤–è??ªç??†è²·??è³?‡º/è²·è³£è¶?  // 8-10: ?•ä¿¡è²·é€?è³?‡º/è²·è³£è¶?  // 11: ?ªç??†è²·è³??(ç¸?
-  // 12-14: ?ªç????ªè?)è²·é€?è³?‡º/è²·è³£è¶?  // 15-17: ?ªç????¿éšª)è²·é€?è³?‡º/è²·è³£è¶?  // 18: ä¸‰å¤§æ³•äººè²·è³£è¶?  const symbols = [];
+  // TWSE T86 æ¬„ï¿½??ï¿½ï¿½?(2026 ç¢ºï¿½?):
+  // 0: è­‰åˆ¸ï¿½??, 1: è­‰åˆ¸?ï¿½ç¨±
+  // 2-4: å¤–é™¸è³‡è²·??ï¿½?ï¿½ï¿½/è²·è³£ï¿½?ä¸å«å¤–ï¿½??ï¿½ï¿½???
+  // 5-7: å¤–ï¿½??ï¿½ï¿½??ï¿½è²·??ï¿½?ï¿½ï¿½/è²·è³£ï¿½?  // 8-10: ?ï¿½ä¿¡è²·ï¿½?ï¿½?ï¿½ï¿½/è²·è³£ï¿½?  // 11: ?ï¿½ï¿½??ï¿½è²·ï¿½??(ï¿½?
+  // 12-14: ?ï¿½ï¿½????ï¿½ï¿½?)è²·ï¿½?ï¿½?ï¿½ï¿½/è²·è³£ï¿½?  // 15-17: ?ï¿½ï¿½????ï¿½éšª)è²·ï¿½?ï¿½?ï¿½ï¿½/è²·è³£ï¿½?  // 18: ä¸‰å¤§æ³•äººè²·è³£ï¿½?  const symbols = [];
   const foreignBuy = [], foreignSell = [], foreignNet = [];
   const trustBuy = [], trustSell = [], trustNet = [];
   const dealerBuy = [], dealerSell = [], dealerNet = [];
   for (const r of data.data) {
     const sym = String(r[0] || "").trim();
-    if (!/^\d{4,6}$/.test(sym)) continue; // ?ªæ”¶ç´”è‚¡ç¥¨ä»£??    symbols.push(sym);
-    foreignBuy.push(numFromStr(r[2]) + numFromStr(r[5]));   // å¤–é™¸è³?+ å¤–è??ªç?
+    if (!/^\d{4,6}$/.test(sym)) continue; // ?ï¿½æ”¶ç´”è‚¡ç¥¨ä»£??    symbols.push(sym);
+    foreignBuy.push(numFromStr(r[2]) + numFromStr(r[5]));   // å¤–é™¸ï¿½?+ å¤–ï¿½??ï¿½ï¿½?
     foreignSell.push(numFromStr(r[3]) + numFromStr(r[6]));
     foreignNet.push(numFromStr(r[4]) + numFromStr(r[7]));
     trustBuy.push(numFromStr(r[8]));
     trustSell.push(numFromStr(r[9]));
     trustNet.push(numFromStr(r[10]));
-    // dealer = ?ªè? + ?¿éšª
+    // dealer = ?ï¿½ï¿½? + ?ï¿½éšª
     dealerBuy.push(numFromStr(r[12]) + numFromStr(r[15]));
     dealerSell.push(numFromStr(r[13]) + numFromStr(r[16]));
-    dealerNet.push(numFromStr(r[11])); // å·²æ˜¯ç¸½è²·è³??
+    dealerNet.push(numFromStr(r[11])); // å·²æ˜¯ç¸½è²·ï¿½??
   }
   if (!symbols.length) return { ok: true, source: "twse", date: ymd, count: 0, message: "no stock rows" };
   // Bulk upsert via UNNEST JOIN
@@ -3370,7 +3372,7 @@ async function loadInstitutionalForDate(dateYmd) {
   return { ok: true, source: "twse_T86", date: trade_date_iso, count: symbols.length };
 }
 
-// ?€?€ overseas indices loader (Yahoo Finance unofficial chart API) ?€?€
+// ?ï¿½?ï¿½ overseas indices loader (Yahoo Finance unofficial chart API) ?ï¿½?ï¿½
 // Symbols cover: S&P 500, Dow, Nasdaq, Nikkei, KOSPI, Hang Seng, CSI 300, FTSE, DAX, CAC 40.
 // Range: 5d daily. Updates a few times a day during US/EU/Asia market hours.
 const OVERSEAS_INDEX_SYMBOLS = [
@@ -3443,7 +3445,7 @@ async function loadOverseasIndices(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   // Optional symbols override (comma-separated)
   const symParam = pickStr(body?.symbols || u.searchParams.get("symbols") || "").trim();
@@ -3465,7 +3467,7 @@ async function loadOverseasIndices(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
-// ?€?€ loadMacroYields: Yahoo Finance US Treasury yields ??macro_yields ?€
+// ?ï¿½?ï¿½ loadMacroYields: Yahoo Finance US Treasury yields ??macro_yields ?ï¿½
 // Series mapping:
 //   ^TNX = 10Y, ^FVX = 5Y, ^TYX = 30Y, ^IRX = 13W
 // We store as yield_5y/10y/30y/13w to match what we have; 2y is approximated by 5y in
@@ -3523,7 +3525,7 @@ async function loadMacroYields(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   const results = [];
   for (const { sym, series } of MACRO_YIELD_SYMBOLS) {
@@ -3539,16 +3541,16 @@ async function loadMacroYields(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
-// ?€?€ loadMacroNews: Google News RSS ??knowledge_library (record_type=news) ?€
+// ?ï¿½?ï¿½ loadMacroNews: Google News RSS ??knowledge_library (record_type=news) ?ï¿½
 async function loadMacroNews(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
-  // Default queries: ?°è‚¡ + ?‹é?
+  // Default queries: ?ï¿½è‚¡ + ?ï¿½ï¿½?
   const queries = (body?.queries && body.queries.length) ? body.queries
-    : ["?°è‚¡ ? æ??‡æ•¸", "?°ç???2330", "ç¾è‚¡ æ¨™æ™®", "ç¾è¯æº–æ? ?©ç?", "?°è‚¡ æ³•äºº"];
+    : ["?ï¿½è‚¡ ?ï¿½ï¿½??ï¿½æ•¸", "?ï¿½ï¿½???2330", "ç¾è‚¡ æ¨™æ™®", "ç¾è¯æº–ï¿½? ?ï¿½ï¿½?", "?ï¿½è‚¡ æ³•äºº"];
   const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36";
   const all = [];
   for (const q of queries) {
@@ -3648,10 +3650,10 @@ async function loadMacroNews(request) {
   return json({ ok: true, source: "loader", fetched: totalFetched, inserted, results: all });
 }
 
-// ?€?€ loadIndexInstitutional: TWSE å¤§ç›¤ ä¸‰å¤§æ³•äºº ??index_institutional ?€
+// ?ï¿½?ï¿½ loadIndexInstitutional: TWSE å¤§ç›¤ ä¸‰å¤§æ³•äºº ??index_institutional ?ï¿½
 // Endpoint: https://www.twse.com.tw/fund/BFI82U?response=json&dayDate=YYYYMMDD
-// fields: ["?®ä??ç¨±","è²·é€²é?é¡?,"è³?‡º?‘é?","è²·è³£å·®é?"]
-// rows:   [?ªç????ªè?è²·è³£), ?ªç????¿éšª), ?•ä¿¡, å¤–è??Šé™¸è³? å¤–è??ªç??? ?ˆè?]
+// fields: ["?ï¿½ï¿½??ï¿½ç¨±","è²·é€²ï¿½?ï¿½?,"ï¿½?ï¿½ï¿½?ï¿½ï¿½?","è²·è³£å·®ï¿½?"]
+// rows:   [?ï¿½ï¿½????ï¿½ï¿½?è²·è³£), ?ï¿½ï¿½????ï¿½éšª), ?ï¿½ä¿¡, å¤–ï¿½??ï¿½é™¸ï¿½? å¤–ï¿½??ï¿½ï¿½??? ?ï¿½ï¿½?]
 async function loadIndexInstitutionalForDate(dateYmd, indexCode) {
   const ymd = dateYmd.replace(/-/g, "");
   const url = `https://www.twse.com.tw/fund/BFI82U?response=json&dayDate=${ymd}`;
@@ -3675,17 +3677,17 @@ async function loadIndexInstitutionalForDate(dateYmd, indexCode) {
     return { ok: false, source: "twse", error: data.stat || "no data", count: 0 };
   }
   // Aggregate by æ³•äºº type:
-  //   foreign_net = row 3 (å¤–è?) + row 4 (å¤–è??ªç???
-  //   trust_net   = row 2 (?•ä¿¡)
-  //   dealer_net  = row 0 (?ªç??†è‡ªè¡? + row 1 (?ªç??†é¿??
+  //   foreign_net = row 3 (å¤–ï¿½?) + row 4 (å¤–ï¿½??ï¿½ï¿½???
+  //   trust_net   = row 2 (?ï¿½ä¿¡)
+  //   dealer_net  = row 0 (?ï¿½ï¿½??ï¿½è‡ªï¿½? + row 1 (?ï¿½ï¿½??ï¿½é¿??
   const parseNum = (s) => Number(String(s || "0").replace(/,/g, "").trim()) || 0;
   let foreign_net = 0, trust_net = 0, dealer_net = 0;
   for (const r of data.data) {
     const name = String(r[0] || "").trim();
-    const diff = parseNum(r[3]); // è²·è³£å·®é?
-    if (name.startsWith("å¤–è?")) foreign_net += diff;
-    else if (name.startsWith("?•ä¿¡")) trust_net = diff;
-    else if (name.startsWith("?ªç???)) dealer_net += diff;
+    const diff = parseNum(r[3]); // è²·è³£å·®ï¿½?
+    if (name.startsWith("å¤–ï¿½?")) foreign_net += diff;
+    else if (name.startsWith("?ï¿½ä¿¡")) trust_net = diff;
+    else if (name.startsWith("?ï¿½ï¿½???)) dealer_net += diff;
   }
   await q(
     `INSERT INTO index_institutional (index_code, trade_date, foreign_net, trust_net, dealer_net, source)
@@ -3704,7 +3706,7 @@ async function loadIndexInstitutional(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   // Backfill last 30 trading days for TWSE
   const results = [];
@@ -3728,17 +3730,17 @@ async function loadIndexInstitutional(request) {
   return json({ ok: true, source: "loader", inserted: okCount, days, results });
 }
 
-// ?€?€ loadMarkers: å¾?screener + market_price_bars ?ªå?å¯«å…¥ markers (è²·è³£è¨Šè?) ?€
-// è¦å?ï¼ˆç°¡?®ç?ï¼Œå? seed ?ºæ??§å®¹?„è??™ï?:
-//   1. ç«™ä?ä¸‰å?ç·?+ ?å? ??'buy_chase'
+// ?ï¿½?ï¿½ loadMarkers: ï¿½?screener + market_price_bars ?ï¿½ï¿½?å¯«å…¥ markers (è²·è³£è¨Šï¿½?) ?ï¿½
+// è¦ï¿½?ï¼ˆç°¡?ï¿½ï¿½?ï¼Œï¿½? seed ?ï¿½ï¿½??ï¿½å®¹?ï¿½ï¿½??ï¿½ï¿½?:
+//   1. ç«™ï¿½?ä¸‰ï¿½?ï¿½?+ ?ï¿½ï¿½? ??'buy_chase'
 //   2. è·Œç ´ MA20 ??'sell_stop'
-//   3. å¤–è???²· 3 ????'foreign_buy_3d'
-//   4. æ¼²å? (>= 9.5%) ??'limit_up'
+//   3. å¤–ï¿½???ï¿½ï¿½ 3 ????'foreign_buy_3d'
+//   4. æ¼²ï¿½? (>= 9.5%) ??'limit_up'
 async function loadMarkers(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   try {
     // 1) scan watchlist with screenOne (returns {code, name, ... cond1..cond5, gain_5d_pct, ...})
@@ -3748,11 +3750,11 @@ async function loadMarkers(request) {
     const todayText = `${parseInt(today.slice(0, 4), 10) - 1911}/${today.slice(5, 7).replace(/^0/, "")}/${today.slice(8, 10).replace(/^0/, "")}`;
     for (const r of results) {
       const markers = [];
-      // buy_chase: cond2 + cond3 + cond4 (ç«™ä?ä¸‰å?ç·?+ 5d/20d æ¼?
+      // buy_chase: cond2 + cond3 + cond4 (ç«™ï¿½?ä¸‰ï¿½?ï¿½?+ 5d/20d ï¿½?
       if (r.cond2 && r.cond3 && r.cond4) {
         markers.push({
           code: r.code, date: today, type: "buy_chase",
-          text: `ç«™ä?ä¸‰å?ç·?+ 5??20?¥æ¼²å¹?${r.gain_5d_pct}%/${r.gain_20d_pct}%`,
+          text: `ç«™ï¿½?ä¸‰ï¿½?ï¿½?+ 5??20?ï¿½æ¼²ï¿½?${r.gain_5d_pct}%/${r.gain_20d_pct}%`,
           price: r.latest_close,
         });
       }
@@ -3760,16 +3762,16 @@ async function loadMarkers(request) {
       if (r.gain_5d_pct >= 9.5) {
         markers.push({
           code: r.code, date: today, type: "limit_up",
-          text: `5?¥ç´¯è¨ˆæ¼²å¹?${r.gain_5d_pct}%ï¼ˆç?ä¼¼æ¼²????¿ï¼‰`,
+          text: `5?ï¿½ç´¯è¨ˆæ¼²ï¿½?${r.gain_5d_pct}%ï¼ˆï¿½?ä¼¼æ¼²????ï¿½ï¿½ï¼‰`,
           price: r.latest_close,
         });
       }
-      // sell_stop: cond1 broken (è·?60 ?¥é? > 5%) + close < MA20
+      // sell_stop: cond1 broken (ï¿½?60 ?ï¿½ï¿½? > 5%) + close < MA20
       const belowMA20 = r.latest_close < r.ma20;
       if (r.dist_high_60d_pct > 5 && belowMA20) {
         markers.push({
           code: r.code, date: today, type: "sell_stop",
-          text: `è·?60 ?¥é? ${r.dist_high_60d_pct}%, è·Œç ´ MA20 (${r.ma20})`,
+          text: `ï¿½?60 ?ï¿½ï¿½? ${r.dist_high_60d_pct}%, è·Œç ´ MA20 (${r.ma20})`,
           price: r.latest_close,
         });
       }
@@ -3788,8 +3790,8 @@ async function loadMarkers(request) {
   }
 }
 
-// ?€?€ FinMind loaders (big_holders + financial_reports) ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
-// ?€ $env:FINMIND_TOKEN, ??token ??fallback synth_v2_60 (è·‘ç¾??seed script)
+// ?ï¿½?ï¿½ FinMind loaders (big_holders + financial_reports) ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
+// ?ï¿½ $env:FINMIND_TOKEN, ??token ??fallback synth_v2_60 (è·‘ç¾??seed script)
 // Free tier: 600 req/hr, 60 stocks ? 2 endpoints = 120 calls ??OK
 const FINMIND_BASE = "https://api.finmindtrade.com/api/v4/data";
 
@@ -3812,8 +3814,8 @@ async function finmindFetch(dataset, params = {}) {
   return j?.data || [];
 }
 
-// 2026-08-14: ?¬é? dataset ä¸é?è¦?tokenï¼ˆTaiwanStockShareholding / TaiwanStockInfo / TaiwanStockPrice ç­‰ï?
-// 600 req/hr ?é€Ÿå? 130 stocks ä»è¶³å¤?async function finmindFetchPublic(dataset, params = {}) {
+// 2026-08-14: ?ï¿½ï¿½? dataset ä¸ï¿½?ï¿½?tokenï¼ˆTaiwanStockShareholding / TaiwanStockInfo / TaiwanStockPrice ç­‰ï¿½?
+// 600 req/hr ?ï¿½é€Ÿï¿½? 130 stocks ä»è¶³ï¿½?async function finmindFetchPublic(dataset, params = {}) {
   const u = new URL(FINMIND_BASE);
   u.searchParams.set("dataset", dataset);
   for (const [k, v] of Object.entries(params)) {
@@ -3829,7 +3831,7 @@ async function finmindFetch(dataset, params = {}) {
   return j?.data || [];
 }
 
-// ?“ä???stock ??big_holders (è¿?1 å¹´æ??ˆæ­??
+// ?ï¿½ï¿½???stock ??big_holders (ï¿½?1 å¹´ï¿½??ï¿½æ­??
 async function loadBigHoldersFinMindForCode(code) {
   const today = new Date();
   const start = new Date(today.getTime() - 365 * 86400000);
@@ -3881,14 +3883,14 @@ async function loadBigHoldersFinMind(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   if (!process.env.FINMIND_TOKEN) {
     return json({
       ok: false,
       source: "finmind",
-      error: "FINMIND_TOKEN ?ªè¨­å®???è«‹åˆ° https://finmindtrade.com/ è¨»å?ä¸¦è¨­å®?Vercel env var",
-      fallback: "?®å?ä½¿ç”¨ synth_v2_60 synth è³‡æ? (??seed-bh-60.mjs)",
+      error: "FINMIND_TOKEN ?ï¿½è¨­ï¿½???è«‹åˆ° https://finmindtrade.com/ è¨»ï¿½?ä¸¦è¨­ï¿½?Vercel env var",
+      fallback: "?ï¿½ï¿½?ä½¿ç”¨ synth_v2_60 synth è³‡ï¿½? (??seed-bh-60.mjs)",
     }, { status: 503 });
   }
   const wl = await q(`SELECT code FROM watchlist ORDER BY sort_order LIMIT 60`);
@@ -3907,7 +3909,7 @@ async function loadBigHoldersFinMind(request) {
   return json({ ok: true, source: "finmind", scanned: codes.length, inserted, results });
 }
 
-// ?“ä???stock ??financial_reports (è¿?2 å¹?quarterly)
+// ?ï¿½ï¿½???stock ??financial_reports (ï¿½?2 ï¿½?quarterly)
 async function loadFinancialReportsFinMindForCode(code) {
   const today = new Date();
   const start = new Date(today.getTime() - 730 * 86400000);
@@ -3963,14 +3965,14 @@ async function loadFinancialReportsFinMind(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   if (!process.env.FINMIND_TOKEN) {
     return json({
       ok: false,
       source: "finmind",
-      error: "FINMIND_TOKEN ?ªè¨­å®???è«‹åˆ° https://finmindtrade.com/ è¨»å?ä¸¦è¨­å®?Vercel env var",
-      fallback: "?®å?ä½¿ç”¨ synth_v2_60 synth è³‡æ? (??seed-fr-60.mjs)",
+      error: "FINMIND_TOKEN ?ï¿½è¨­ï¿½???è«‹åˆ° https://finmindtrade.com/ è¨»ï¿½?ä¸¦è¨­ï¿½?Vercel env var",
+      fallback: "?ï¿½ï¿½?ä½¿ç”¨ synth_v2_60 synth è³‡ï¿½? (??seed-fr-60.mjs)",
     }, { status: 503 });
   }
   const wl = await q(`SELECT code FROM watchlist ORDER BY sort_order LIMIT 60`);
@@ -3989,9 +3991,9 @@ async function loadFinancialReportsFinMind(request) {
   return json({ ok: true, source: "finmind", scanned: codes.length, inserted, results });
 }
 
-// 2026-08-14: å¾?FinMind TaiwanStockShareholding ??NumberOfSharesIssued (å·²ç™¼è¡Œæ™®?šè‚¡??
-// å¯«å…¥ market_instruments.metadata_text.shares_outstanding çµ?stockIntro/stockKlines ç®?marketCap
-// ?¬é? dataset ä¸ç”¨ tokenï¼›é???600 req/hr
+// 2026-08-14: ï¿½?FinMind TaiwanStockShareholding ??NumberOfSharesIssued (å·²ç™¼è¡Œæ™®?ï¿½è‚¡??
+// å¯«å…¥ market_instruments.metadata_text.shares_outstanding ï¿½?stockIntro/stockKlines ï¿½?marketCap
+// ?ï¿½ï¿½? dataset ä¸ç”¨ tokenï¼›ï¿½???600 req/hr
 async function loadIssuedSharesFinMind(request) {
   const u = urlOf(request);
   const codesParam = pickStr(u.searchParams.get("codes") || "");
@@ -4008,7 +4010,7 @@ async function loadIssuedSharesFinMind(request) {
     const chunk = codes.slice(i, i + CONCURRENCY);
     const chunkResults = await Promise.all(chunk.map(async (code) => {
       try {
-        // ?“æ?è¿?90 å¤©ï?shareholding æ¯æ??´æ–°ï¼Œä??ºä??ªèµ·è¦‹å??€è¿‘ä?ç­†ï?
+        // ?ï¿½ï¿½?ï¿½?90 å¤©ï¿½?shareholding æ¯ï¿½??ï¿½æ–°ï¼Œï¿½??ï¿½ï¿½??ï¿½èµ·è¦‹ï¿½??ï¿½è¿‘ï¿½?ç­†ï¿½?
         const today = new Date();
         const start = new Date(today.getTime() - 90 * 86400000);
         const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -4060,18 +4062,18 @@ async function loadExdivForDate(dateYmd) {
   if (data.stat !== "OK" || !Array.isArray(data.data)) {
     return { ok: false, source: "twse", error: data.stat || "no data", date: ymd, count: 0 };
   }
-  // Field order: è³‡æ??¥æ?, ?¡ç¥¨ä»??, ?¡ç¥¨?ç¨±, ?¤æ??¯å??¶ç›¤?? ?¤æ??¯å??ƒåƒ¹, æ¬Šå€??¯å€? æ¬??? ...
+  // Field order: è³‡ï¿½??ï¿½ï¿½?, ?ï¿½ç¥¨ï¿½??, ?ï¿½ç¥¨?ï¿½ç¨±, ?ï¿½ï¿½??ï¿½ï¿½??ï¿½ç›¤?? ?ï¿½ï¿½??ï¿½ï¿½??ï¿½åƒ¹, æ¬Šï¿½??ï¿½ï¿½? ï¿½??? ...
   const symbols = [], ex_dates = [], cash = [], stock = [], types = [];
   for (const r of data.data) {
     const sym = String(r[1] || "").trim();
     if (!/^\d{4,6}$/.test(sym)) continue;
     const ex_date = rocToIsoDate(String(r[0] || ""));
     if (!ex_date) continue;
-    const kind = String(r[6] || ""); // ??/ æ¬?/ æ¬Šæ¯
+    const kind = String(r[6] || ""); // ??/ ï¿½?/ æ¬Šæ¯
     symbols.push(sym);
     ex_dates.push(ex_date);
     cash.push(kind.includes("??) ? numFromStr(r[5]) : 0);
-    stock.push(kind.includes("æ¬?) ? numFromStr(r[5]) : 0);
+    stock.push(kind.includes("ï¿½?) ? numFromStr(r[5]) : 0);
     types.push(kind);
   }
   if (!symbols.length) return { ok: true, source: "twse", date: ymd, count: 0, message: "no exdiv rows" };
@@ -4090,10 +4092,10 @@ async function loadExdivForDate(dateYmd) {
 async function loadInstitutional(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  // Vercel Cron ä¸é€?body,ä¹Ÿä?å¸?password ???¥å? GET (?¬é? cron trigger)
-  // ?‹å? trigger ä»å¯ POST + å¸?password
+  // Vercel Cron ä¸ï¿½?body,ä¹Ÿï¿½?ï¿½?password ???ï¿½ï¿½? GET (?ï¿½ï¿½? cron trigger)
+  // ?ï¿½ï¿½? trigger ä»å¯ POST + ï¿½?password
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   const dateParam = pickStr(body?.date || u.searchParams.get("date") || "").trim();
   const days = Math.min(30, Math.max(1, parseInt(body?.days || u.searchParams.get("days") || "1", 10) || 1));
@@ -4121,7 +4123,7 @@ async function loadExdiv(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   const dateParam = pickStr(body?.date || u.searchParams.get("date") || "").trim();
   const date = dateParam || (() => {
@@ -4135,7 +4137,7 @@ async function loadExdiv(request) {
   }
 }
 
-// ?€?€ loadMarketPrices: TWSE STOCK_DAY_ALL ??market_price_bars ?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ loadMarketPrices: TWSE STOCK_DAY_ALL ??market_price_bars ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 // Refreshes the latest trading day's close for all stocks in watchlist +
 // all ETFs in etf_watchlist. Edge-friendly: 1 HTTP fetch + N parallel
 // DB upserts. Designed for daily Mon-Fri cron.
@@ -4143,7 +4145,7 @@ async function loadMarketPrices(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   const UA = "Mozilla/5.0 (compatible: donttalk-stock-app/1.0; contact: donttalk@example.com)";
   try {
@@ -4157,7 +4159,7 @@ async function loadMarketPrices(request) {
     for (const r of (wlRes.rows || [])) targets.add(String(r.code ?? r[0]));
     for (const r of (ewRes.rows || [])) targets.add(String(r.code ?? r[0]));
     if (targets.size === 0) {
-      return json({ ok: true, source: "stub", count: 0, message: "watchlist + etf_watchlist ?ºç©º" });
+      return json({ ok: true, source: "stub", count: 0, message: "watchlist + etf_watchlist ?ï¿½ç©º" });
     }
     // 2. Fetch TWSE daily report (CSV; latest trading day)
     const url = "https://www.twse.com.tw/exchangeReport/STOCK_DAY_ALL?response=json";
@@ -4180,7 +4182,7 @@ async function loadMarketPrices(request) {
     // "1150804","00400A","name",...,"close","change","transactions"
     const lines = csv.split("\n").map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length < 2) {
-      return json({ ok: false, source: "loader", error: "TWSE ?å‚³ç©ºè??™ï??¯èƒ½?äº¤?“æ—¥ï¼? });
+      return json({ ok: false, source: "loader", error: "TWSE ?ï¿½å‚³ç©ºï¿½??ï¿½ï¿½??ï¿½èƒ½?ï¿½äº¤?ï¿½æ—¥ï¿½? });
     }
     // Skip header (line 0). Parse each line by splitting on '","' (no edge cases for TWSE format).
     const rows = lines.slice(1).map(l => {
@@ -4191,7 +4193,7 @@ async function loadMarketPrices(request) {
       return parts;
     });
     if (rows.length === 0 || !rows[0][0]) {
-      return json({ ok: false, source: "loader", error: "TWSE CSV è§??å¤±æ?" });
+      return json({ ok: false, source: "loader", error: "TWSE CSV ï¿½??å¤±ï¿½?" });
     }
     // 3. Filter & upsert
     const todayRoc = String(rows[0][0]); // e.g. "1150804"
@@ -4249,19 +4251,19 @@ async function loadMarketPrices(request) {
   }
 }
 
-// ?€?€ loadMarketPricesFinMind: FinMind TaiwanStockPrice ??market_price_bars ?€?€
-// 2026-08-13: backup source for ?‹è‚¡ OHLC (free, no token needed).
-// FinMind provides trading_money + trading_turnover which Yahoo Finance æ²’æ???// Per-stock API call (FinMind ä¸æ”¯??batch via query string), parallel with 8-slot throttle.
+// ?ï¿½?ï¿½ loadMarketPricesFinMind: FinMind TaiwanStockPrice ??market_price_bars ?ï¿½?ï¿½
+// 2026-08-13: backup source for ?ï¿½è‚¡ OHLC (free, no token needed).
+// FinMind provides trading_money + trading_turnover which Yahoo Finance æ²’ï¿½???// Per-stock API call (FinMind ä¸æ”¯??batch via query string), parallel with 8-slot throttle.
 // Usage: GET /api/admin/load/finmind_price?code=2330
 //        GET /api/admin/load/finmind_price?codes=2330,2454,2317&days=120
 async function loadMarketPricesFinMind(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   const days = Math.min(500, Math.max(1, parseInt(u.searchParams.get("days") || body?.days || "120", 10) || 120));
-  // æ±ºå?è¦è??†ç? codes
+  // æ±ºï¿½?è¦ï¿½??ï¿½ï¿½? codes
   let codes = [];
   if (u.searchParams.get("code")) {
     codes = [u.searchParams.get("code")];
@@ -4270,7 +4272,7 @@ async function loadMarketPricesFinMind(request) {
   } else if (body?.codes && Array.isArray(body.codes)) {
     codes = body.codes;
   } else {
-    // æ²’æ?å®?????watchlist + etf_watchlist
+    // æ²’ï¿½?ï¿½?????watchlist + etf_watchlist
     const [wl, ew] = await Promise.all([
       q(`SELECT code FROM watchlist`),
       q(`SELECT code FROM etf_watchlist`),
@@ -4279,15 +4281,15 @@ async function loadMarketPricesFinMind(request) {
     for (const r of (ew.rows || [])) codes.push(String(r.code ?? r[0]));
   }
   if (codes.length === 0) {
-    return json({ ok: true, source: "stub", count: 0, message: "æ²’æ? code ?¯è??? });
+    return json({ ok: true, source: "stub", count: 0, message: "æ²’ï¿½? code ?ï¿½ï¿½??? });
   }
-  // è¨ˆç? start_date
+  // è¨ˆï¿½? start_date
   const endDate = new Date();
   const startDate = new Date(endDate.getTime() - days * 86400000);
   const fmt = (d) => d.toISOString().slice(0, 10);
   const startStr = fmt(startDate);
   const endStr = fmt(endDate);
-  // å¹³è? 8 ??in-flight (FinMind æ²’å???limit ä½†ä?å®ˆä?é»?
+  // å¹³ï¿½? 8 ??in-flight (FinMind æ²’ï¿½???limit ä½†ï¿½?å®ˆï¿½?ï¿½?
   const PARALLEL = 8;
   const results = [];
   const errors = [];
@@ -4308,14 +4310,14 @@ async function loadMarketPricesFinMind(request) {
         if (!j.data || !Array.isArray(j.data) || j.data.length === 0) {
           return { code, count: 0 };
         }
-        // ??watchlist è·?etf_watchlist å°æ???asset_type
+        // ??watchlist ï¿½?etf_watchlist å°ï¿½???asset_type
         const [wl, ew] = await Promise.all([
           q(`SELECT code FROM watchlist WHERE code = $1`, [code]),
           q(`SELECT code FROM etf_watchlist WHERE code = $1`, [code]),
         ]);
         const isEtf = (ew.rows || []).length > 0;
         const assetType = isEtf ? "etf" : "stock";
-        // ??unnest ä¸€æ¬?upsert
+        // ??unnest ä¸€ï¿½?upsert
         const rows = j.data.map(d => ({
           date: d.date,
           open: d.open,
@@ -4374,16 +4376,16 @@ async function loadMarketPricesFinMind(request) {
 // Writes JSON metadata_text.industry for each watchlist stock. Heatmap reads this
 // field to bucket stocks into sectors. No external API needed; curated list.
 const TWSE_INDUSTRY_MAP = {
-  "2330": "?Šå?é«”æ¥­",     "2454": "?Šå?é«”æ¥­",   "2303": "?Šå?é«”æ¥­",   "2308": "?Šå?é«”æ¥­",
-  "2379": "?Šå?é«”æ¥­",     "3711": "?Šå?é«”æ¥­",   "3034": "?Šå?é«”æ¥­",   "6669": "?Šå?é«”æ¥­",
-  "3231": "?»è…¦?Šé€±é?è¨­å?æ¥?,"2357": "?»è…¦?Šé€±é?è¨­å?æ¥?,"2382": "?»è…¦?Šé€±é?è¨­å?æ¥?,
+  "2330": "?ï¿½ï¿½?é«”æ¥­",     "2454": "?ï¿½ï¿½?é«”æ¥­",   "2303": "?ï¿½ï¿½?é«”æ¥­",   "2308": "?ï¿½ï¿½?é«”æ¥­",
+  "2379": "?ï¿½ï¿½?é«”æ¥­",     "3711": "?ï¿½ï¿½?é«”æ¥­",   "3034": "?ï¿½ï¿½?é«”æ¥­",   "6669": "?ï¿½ï¿½?é«”æ¥­",
+  "3231": "?ï¿½è…¦?ï¿½é€±ï¿½?è¨­ï¿½?ï¿½?,"2357": "?ï¿½è…¦?ï¿½é€±ï¿½?è¨­ï¿½?ï¿½?,"2382": "?ï¿½è…¦?ï¿½é€±ï¿½?è¨­ï¿½?ï¿½?,
   "0050": "ETF",          "0051": "ETF",        "0052": "ETF",        "0056": "ETF",  "00878": "ETF",
-  "2881": "?‘è?ä¿éšªæ¥?,   "2882": "?‘è?ä¿éšªæ¥?, "2884": "?‘è?ä¿éšªæ¥?, "2885": "?‘è?ä¿éšªæ¥?,
-  "2886": "?‘è?ä¿éšªæ¥?,   "2887": "?‘è?ä¿éšªæ¥?, "2891": "?‘è?ä¿éšªæ¥?, "2892": "?‘è?ä¿éšªæ¥?,
-  "1301": "å¡‘è?å·¥æ¥­",     "1303": "å¡‘è?å·¥æ¥­",   "1326": "å¡‘è?å·¥æ¥­",   "6505": "å¡‘è?å·¥æ¥­",
-  "2002": "?¼éµå·¥æ¥­",     "2207": "æ±½è?å·¥æ¥­",   "3008": "?‰é›»æ¥?,     "1101": "æ°´æ³¥å·¥æ¥­",
-  "2317": "?¶ä??»å?æ¥?,
-  "1216": "é£Ÿå?å·¥æ¥­",
+  "2881": "?ï¿½ï¿½?ä¿éšªï¿½?,   "2882": "?ï¿½ï¿½?ä¿éšªï¿½?, "2884": "?ï¿½ï¿½?ä¿éšªï¿½?, "2885": "?ï¿½ï¿½?ä¿éšªï¿½?,
+  "2886": "?ï¿½ï¿½?ä¿éšªï¿½?,   "2887": "?ï¿½ï¿½?ä¿éšªï¿½?, "2891": "?ï¿½ï¿½?ä¿éšªï¿½?, "2892": "?ï¿½ï¿½?ä¿éšªï¿½?,
+  "1301": "å¡‘ï¿½?å·¥æ¥­",     "1303": "å¡‘ï¿½?å·¥æ¥­",   "1326": "å¡‘ï¿½?å·¥æ¥­",   "6505": "å¡‘ï¿½?å·¥æ¥­",
+  "2002": "?ï¿½éµå·¥æ¥­",     "2207": "æ±½ï¿½?å·¥æ¥­",   "3008": "?ï¿½é›»ï¿½?,     "1101": "æ°´æ³¥å·¥æ¥­",
+  "2317": "?ï¿½ï¿½??ï¿½ï¿½?ï¿½?,
+  "1216": "é£Ÿï¿½?å·¥æ¥­",
 };
 async function loadSectors(request) {
   try {
@@ -4433,14 +4435,14 @@ async function loadSectors(request) {
   }
 }
 
-// ?€?€ loadAllCombined: combined loader for Vercel Hobby (1 cron slot) ?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ loadAllCombined: combined loader for Vercel Hobby (1 cron slot) ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 // Runs: macro_yields ??macro_news ??index_institutional ??market_prices ??sectors ??markers ??ai_capex
 // Skips: institutional/exdiv/revenue (heavy MOPS, run separately if Hobby plan allows)
 async function loadAllCombined(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   const t0 = Date.now();
   const steps = [];
@@ -4477,7 +4479,7 @@ async function loadAllCombined(request) {
   });
 }
 
-// ?€?€ loadMarketPricesBackfill: Yahoo Finance ?‹è‚¡?¥æ­·????market_price_bars ?€
+// ?ï¿½?ï¿½ loadMarketPricesBackfill: Yahoo Finance ?ï¿½è‚¡?ï¿½æ­·????market_price_bars ?ï¿½
 // One-shot: pulls 1y of daily bars per stock in watchlist so the screener
 // (screenOne needs ??0 days) can score more than the 4 originally tracked stocks.
 // Yahoo Finance: https://query1.finance.yahoo.com/v8/finance/chart/<code>.TW?interval=1d&range=1y
@@ -4488,7 +4490,7 @@ async function loadMarketPricesBackfill(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   const range = pickStr(u.searchParams.get("range") || body?.range || "1y");
   const onlyCode = pickStr(u.searchParams.get("code") || body?.code || "").trim();
@@ -4624,7 +4626,7 @@ async function loadMarketPricesBackfill(request) {
   }
 }
 
-// ?€?€ MOPS revenue loader (?ˆç???from ?¬é?è³‡è?è§€æ¸¬ç?) ?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ MOPS revenue loader (?ï¿½ï¿½???from ?ï¿½ï¿½?è³‡ï¿½?è§€æ¸¬ï¿½?) ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 // Flow:
 //   1. POST https://mops.twse.com.tw/mops/api/redirectToOld
 //      body: {apiName:"ajax_t21sc04_ifrs", parameters:{year, month, encodeURIComponent:1, step:1, firstin:1, off:1, TYPEK}}
@@ -4751,7 +4753,7 @@ async function loadRevenueForMonth(yearRoc, month, typek = "sii") {
   }
 
   // Parse CSV: 14 cols, fields are double-quoted, no embedded quotes inside fields
-  // ?ºè¡¨?¥æ?,è³‡æ?å¹´æ?,?¬å¸ä»??,?¬å¸?ç¨±,?¢æ¥­???Ÿæ¥­?¶å…¥-?¶æ??Ÿæ”¶,?Ÿæ¥­?¶å…¥-ä¸Šæ??Ÿæ”¶,?Ÿæ¥­?¶å…¥-?»å¹´?¶æ??Ÿæ”¶,?Ÿæ¥­?¶å…¥-ä¸Šæ?æ¯”è?å¢æ?(%),?Ÿæ¥­?¶å…¥-?»å¹´?Œæ?å¢æ?(%),ç´¯è??Ÿæ¥­?¶å…¥-?¶æ?ç´¯è??Ÿæ”¶,ç´¯è??Ÿæ¥­?¶å…¥-?»å¹´ç´¯è??Ÿæ”¶,ç´¯è??Ÿæ¥­?¶å…¥-?æ?æ¯”è?å¢æ?(%),?™è¨»
+  // ?ï¿½è¡¨?ï¿½ï¿½?,è³‡ï¿½?å¹´ï¿½?,?ï¿½å¸ï¿½??,?ï¿½å¸?ï¿½ç¨±,?ï¿½æ¥­???ï¿½æ¥­?ï¿½å…¥-?ï¿½ï¿½??ï¿½æ”¶,?ï¿½æ¥­?ï¿½å…¥-ä¸Šï¿½??ï¿½æ”¶,?ï¿½æ¥­?ï¿½å…¥-?ï¿½å¹´?ï¿½ï¿½??ï¿½æ”¶,?ï¿½æ¥­?ï¿½å…¥-ä¸Šï¿½?æ¯”ï¿½?å¢ï¿½?(%),?ï¿½æ¥­?ï¿½å…¥-?ï¿½å¹´?ï¿½ï¿½?å¢ï¿½?(%),ç´¯ï¿½??ï¿½æ¥­?ï¿½å…¥-?ï¿½ï¿½?ç´¯ï¿½??ï¿½æ”¶,ç´¯ï¿½??ï¿½æ¥­?ï¿½å…¥-?ï¿½å¹´ç´¯ï¿½??ï¿½æ”¶,ç´¯ï¿½??ï¿½æ¥­?ï¿½å…¥-?ï¿½ï¿½?æ¯”ï¿½?å¢ï¿½?(%),?ï¿½è¨»
   const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lines.length < 2) return { ok: true, source: "mops_t21sc04", typek, year: yearRoc, month, count: 0, message: "empty CSV" };
   const year = yearRoc + 1911;
@@ -4769,7 +4771,7 @@ async function loadRevenueForMonth(yearRoc, month, typek = "sii") {
     if (seen.has(key)) continue;
     seen.add(key);
     symbols.push(sym);
-    // cols: 5=?¶æ??Ÿæ”¶, 8=MoM%, 9=YoY%, 10=YTD ç´¯è??Ÿæ”¶, 12=YTD YoY%
+    // cols: 5=?ï¿½ï¿½??ï¿½æ”¶, 8=MoM%, 9=YoY%, 10=YTD ç´¯ï¿½??ï¿½æ”¶, 12=YTD YoY%
     revenues.push(numFromStr(parts[5]));
     moms.push(numFromStr(parts[8]));
     yoys.push(numFromStr(parts[9]));
@@ -4806,7 +4808,7 @@ async function loadRevenue(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   // Param priority: body > query > default (previous month)
   const yearRocParam = parseInt(body?.yearRoc || u.searchParams.get("yearRoc") || "", 10);
@@ -4841,16 +4843,16 @@ async function loadRevenue(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
-// ?€?€ TAIFEX futures loader (å¤§å°/å°å°/?»å?/?‘è?/å¾®å?) ?€?€
+// ?ï¿½?ï¿½ TAIFEX futures loader (å¤§å°/å°å°/?ï¿½ï¿½?/?ï¿½ï¿½?/å¾®ï¿½?) ?ï¿½?ï¿½
 // Endpoint: https://www.taifex.com.tw/cht/3/dlFutDataDown?down_type=1&commodity_id=<TX>&queryStartDate=YYYY/MM/DD&queryEndDate=YYYY/MM/DD
-// CSV: Big5 encoded. Columns: äº¤æ??¥æ?,å¥‘ç?,?°æ??ˆä»½(?±åˆ¥),?‹ç›¤???€é«˜åƒ¹,?€ä½åƒ¹,?¶ç›¤??æ¼²è???æ¼²è?%,?äº¤??çµç????ªæ??·å?ç´„æ•¸,...
-// Map: contract=å¥‘ç? (TX), maturity=?°æ??ˆä»½, all others as-is.
+// CSV: Big5 encoded. Columns: äº¤ï¿½??ï¿½ï¿½?,å¥‘ï¿½?,?ï¿½ï¿½??ï¿½ä»½(?ï¿½åˆ¥),?ï¿½ç›¤???ï¿½é«˜åƒ¹,?ï¿½ä½åƒ¹,?ï¿½ç›¤??æ¼²ï¿½???æ¼²ï¿½?%,?ï¿½äº¤??çµï¿½????ï¿½ï¿½??ï¿½ï¿½?ç´„æ•¸,...
+// Map: contract=å¥‘ï¿½? (TX), maturity=?ï¿½ï¿½??ï¿½ä»½, all others as-is.
 const TAIFEX_FUTURE_CONTRACTS = [
-  { id: "TX", name: "?ºè‚¡?Ÿè²¨" },
-  { id: "MTX", name: "å°å??ºè‚¡?Ÿè²¨" },
-  { id: "TE", name: "?»å??Ÿè²¨" },
-  { id: "TF", name: "?‘è??Ÿè²¨" },
-  { id: "ZEF", name: "å¾®å??ºæ??Ÿè²¨" },
+  { id: "TX", name: "?ï¿½è‚¡?ï¿½è²¨" },
+  { id: "MTX", name: "å°ï¿½??ï¿½è‚¡?ï¿½è²¨" },
+  { id: "TE", name: "?ï¿½ï¿½??ï¿½è²¨" },
+  { id: "TF", name: "?ï¿½ï¿½??ï¿½è²¨" },
+  { id: "ZEF", name: "å¾®ï¿½??ï¿½ï¿½??ï¿½è²¨" },
 ];
 function toAdDate(ymd) {
   // "2026-08-03" -> "2026/08/03"
@@ -4903,7 +4905,7 @@ async function loadFuturesForDate(dateYmd) {
       const sym = (cols[1] || "").trim();
       const maturity = (cols[2] || "").trim();
       if (sym !== c.id) continue; // safety
-      // Filter to "ä¸€?? (regular session) only ??the CSV also has ?¤å? (after-hours) and å¤œç›¤
+      // Filter to "ä¸€?? (regular session) only ??the CSV also has ?ï¿½ï¿½? (after-hours) and å¤œç›¤
       // entries for the same (symbol, contract, date) which would violate the unique constraint.
       const session = (cols[17] || "").trim();
       if (session && session !== "ä¸€??) continue;
@@ -4955,7 +4957,7 @@ async function loadFutures(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   // Param priority: body > query > default (yesterday, since TAIFEX settles same day but
   // a same-day morning call may be missing intraday data)
@@ -4982,7 +4984,7 @@ async function loadFutures(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results: allResults });
 }
 
-// ?€?€ ai_capex loader: SEC EDGAR companyconcept API ??ai_capex table ?€?€?€?€?€
+// ?ï¿½?ï¿½ ai_capex loader: SEC EDGAR companyconcept API ??ai_capex table ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 // Companies: NVDA / MSFT / AMZN / GOOGL / META / ORCL (TSM is 20-F, skipped)
 // Designed to refresh the LATEST 1-2 quarters per company, runs in <30s
 // on Vercel edge (60s budget). Per-cron daily is safe (Hobby: 1/day/cron).
@@ -5103,7 +5105,7 @@ async function loadAiCapex(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+    return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   }
   // Fetch all 6 companies in parallel ??each one does 2 SEC fetches + 4 DB upserts
   // (sequential within one company to avoid SEC rate limit hits)
@@ -5118,7 +5120,7 @@ async function loadAiCapex(request) {
   return json({ ok: true, source: "loader", refreshed: okCount, total: AI_CAPEX_COMPANIES.length, results });
 }
 
-// ?€?€ etf_holdings loader: per-issuer scraping (PROBE ONLY) + manual seed ?€?€
+// ?ï¿½?ï¿½ etf_holdings loader: per-issuer scraping (PROBE ONLY) + manual seed ?ï¿½?ï¿½
 // Per-issuer scraping not viable: yuanta.com.tw / cathaysite.com.tw /
 // dcbfund.com.tw all unreachable from Vercel edge (timeout or 403).
 // Fallback: POST seed endpoint accepts manually-pasted holdings data.
@@ -5148,13 +5150,13 @@ const ETF_ISSUERS = {
 async function seedEtfHoldings(request) {
   if (request.method !== "POST") return json({ error: "method not allowed (use POST)" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   const etfCode = String(body?.etf_code || "").trim();
   const asOf = String(body?.as_of_date || "").trim();
   const source = String(body?.source || "manual").trim();
   const holdings = Array.isArray(body?.holdings) ? body.holdings : [];
   if (!etfCode || !asOf || holdings.length === 0) {
-    return json({ error: "ç¼ºå?å¿…è?æ¬„ä?ï¼šetf_code, as_of_date (YYYY-MM-DD), holdings[]" }, { status: 400 });
+    return json({ error: "ç¼ºï¿½?å¿…ï¿½?æ¬„ï¿½?ï¼šetf_code, as_of_date (YYYY-MM-DD), holdings[]" }, { status: 400 });
   }
   let inserted = 0, updated = 0;
   for (const h of holdings) {
@@ -5185,17 +5187,17 @@ async function seedEtfHoldings(request) {
   return json({ ok: true, source: "seed", etf_code: etfCode, as_of_date: asOf, inserted, updated, total: holdings.length });
 }
 
-// ?€?€ seedBigHolders: manual POST endpoint for big_holders ?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ seedBigHolders: manual POST endpoint for big_holders ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 // Body: { password, holders: [{ symbol, holder_type, holder_name, shares, pct, as_of_date }] }
-// Use case: real å¤§è‚¡???¬å? from MOPS / broker feeds / manual entry.
+// Use case: real å¤§è‚¡???ï¿½ï¿½? from MOPS / broker feeds / manual entry.
 async function seedBigHolders(request) {
   if (request.method !== "POST") return json({ error: "method not allowed (use POST)" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   const source = String(body?.source || "manual").trim();
   const holders = Array.isArray(body?.holders) ? body.holders : [];
   if (holders.length === 0) {
-    return json({ error: "ç¼ºå?å¿…è?æ¬„ä?ï¼šholders[] (each with symbol, holder_type, holder_name, shares, pct, as_of_date)" }, { status: 400 });
+    return json({ error: "ç¼ºï¿½?å¿…ï¿½?æ¬„ï¿½?ï¼šholders[] (each with symbol, holder_type, holder_name, shares, pct, as_of_date)" }, { status: 400 });
   }
   let inserted = 0, updated = 0, skipped = 0;
   for (const h of holders) {
@@ -5229,17 +5231,17 @@ async function seedBigHolders(request) {
   return json({ ok: true, source: "seed", inserted, updated, skipped, total: holders.length });
 }
 
-// ?€?€ seedFinancialReports: manual POST endpoint for financial_reports ?€?€
+// ?ï¿½?ï¿½ seedFinancialReports: manual POST endpoint for financial_reports ?ï¿½?ï¿½
 // Body: { password, reports: [{ symbol, period, revenue, gross_profit, operating_income, net_income, eps, source }] }
 // period format: "2026-Q2", "2026-06", "2025" (any unique string per symbol)
 async function seedFinancialReports(request) {
   if (request.method !== "POST") return json({ error: "method not allowed (use POST)" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   const source = String(body?.source || "manual").trim();
   const reports = Array.isArray(body?.reports) ? body.reports : [];
   if (reports.length === 0) {
-    return json({ error: "ç¼ºå?å¿…è?æ¬„ä?ï¼šreports[] (each with symbol, period, revenue, gross_profit, operating_income, net_income, eps)" }, { status: 400 });
+    return json({ error: "ç¼ºï¿½?å¿…ï¿½?æ¬„ï¿½?ï¼šreports[] (each with symbol, period, revenue, gross_profit, operating_income, net_income, eps)" }, { status: 400 });
   }
   let inserted = 0, updated = 0, skipped = 0;
   for (const r of reports) {
@@ -5335,7 +5337,7 @@ async function loadEtfHoldings(request) {
 async function loadAll(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?¯èª¤" }, { status: 403 });
+  if (!operatorOk(body?.password, request)) return json({ error: "å¯†ç¢¼?ï¿½èª¤" }, { status: 403 });
   const days = Math.min(30, Math.max(1, parseInt(body?.days || "3", 10) || 3));
   const instiResults = [];
   for (let i = 0; i < days; i++) {
@@ -5352,7 +5354,7 @@ async function loadAll(request) {
   return json({ ok: true, source: "loader", institutional: instiResults, exdiv: exdivResults });
 }
 
-// ?€?€ placeholders (return helpful shape, not pure stub) ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ placeholders (return helpful shape, not pure stub) ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 function placeholder(name, hint) {
   return json({ ok: true, source: "stub", tier: 1, endpoint: name, hint, value: null, items: [] });
 }
@@ -5394,8 +5396,8 @@ function stub(name, extra = {}) {
 }
 
 // admin: POST /api/admin/reseed-stocks
-// 2026-08-26: è£?watchlist ä¸­ç¼º K ç·šç??¡ã€‚é?è¼¯è? seed-add-stocks.mjs ?¸å???//   body: { password: string, codes?: string[], days?: number }
-//   ä¸å‚³ codes ???ªå???watchlist ?¾ç¼ºè³‡æ??„è‚¡
+// 2026-08-26: ï¿½?watchlist ä¸­ç¼º K ç·šï¿½??ï¿½ã€‚ï¿½?è¼¯ï¿½? seed-add-stocks.mjs ?ï¿½ï¿½???//   body: { password: string, codes?: string[], days?: number }
+//   ä¸å‚³ codes ???ï¿½ï¿½???watchlist ?ï¿½ç¼ºè³‡ï¿½??ï¿½è‚¡
 //   å¯†ç¢¼: STOCK_OPERATOR_PASSWORD env
 async function adminReseedStocks(request) {
   if (request.method !== "POST") {
@@ -5534,7 +5536,7 @@ async function _yahooFetch(code, days) {
   return { bars: [], ticker: null };
 }
 
-// ?€?€ router ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€
+// ?ï¿½?ï¿½ router ?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½
 const TABLE = [
   // [method, path-regex, handler]
   ["GET",  /^\/healthz\/?$/,                healthz],
@@ -5700,7 +5702,7 @@ const TABLE = [
   ["GET",  /^\/admin\/load\/issued_shares\/finmind\/?$/, loadIssuedSharesFinMind],
   ["POST", /^\/admin\/load\/issued_shares\/finmind\/?$/, loadIssuedSharesFinMind],
 
-  // 2026-08-26: è£?watchlist ç¼?K ç·šç??¡ï??ªå??ƒæ??‡å? codesï¼?  ["POST", /^\/admin\/reseed-stocks\/?$/,          adminReseedStocks],
+  // 2026-08-26: ï¿½?watchlist ï¿½?K ç·šï¿½??ï¿½ï¿½??ï¿½ï¿½??ï¿½ï¿½??ï¿½ï¿½? codesï¿½?  ["POST", /^\/admin\/reseed-stocks\/?$/,          adminReseedStocks],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],

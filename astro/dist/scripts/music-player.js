@@ -190,6 +190,8 @@
         loadTracksManifest().then(() => {
             renderPlaylist();
             updateStats();
+            // 預載所有 LRC（背景 fetch + parse，點歌時歌詞已經在 DOM）
+            preloadAllLyrics();
         });
         initAudioVisualizer();
         loadStatsFromStorage();
@@ -198,6 +200,57 @@
         elements.audioPlayer.volume = state.volume / 100;
         elements.volumeSlider.value = state.volume;
         elements.volumeValue.textContent = state.volume + "%";
+
+        // rAF 持續更新歌詞（不靠 timeupdate，更可靠）
+        startLyricSyncLoop();
+    }
+
+    // rAF loop：每幀依 audio.currentTime 更新 active line
+    let _rafId = null;
+    function startLyricSyncLoop() {
+        if (_rafId) return;
+        function tick() {
+            if (state.isPlaying && state.currentIndex >= 0) {
+                const t = elements.audioPlayer.currentTime || 0;
+                updateLyrics(t);
+            }
+            _rafId = requestAnimationFrame(tick);
+        }
+        _rafId = requestAnimationFrame(tick);
+    }
+
+    // 預載所有 LRC（背景 fetch + parse）
+    async function preloadAllLyrics() {
+        const tasks = [];
+        for (let i = 0; i < state.playlist.length; i++) {
+            const t = state.playlist[i];
+            if (t && t.lyricsUrl && !t.lyricsTimed && !t.lyrics) {
+                tasks.push(preloadLyric(t));
+            }
+        }
+        if (tasks.length === 0) return;
+        // 平行但節流（一次 4 個）
+        const CONCURRENCY = 4;
+        for (let i = 0; i < tasks.length; i += CONCURRENCY) {
+            const batch = tasks.slice(i, i + CONCURRENCY);
+            await Promise.all(batch);
+        }
+        console.log(`[music] preloaded ${tasks.length} LRC files`);
+    }
+
+    async function preloadLyric(track) {
+        if (!track.lyricsUrl) return;
+        try {
+            const r = await fetch(track.lyricsUrl, { cache: "force-cache" });
+            if (!r.ok) return;
+            const text = await r.text();
+            if (isLrcFormat(text)) {
+                track.lyricsTimed = parseLrc(text);
+            } else {
+                const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+                if (lines.length > 0) track.lyrics = lines;
+            }
+        } catch (_) { /* ignore */ }
     }
 
     // 從 /music/tracks.json 載入真實音樂清單
@@ -772,15 +825,26 @@
     }
 
     async function loadLyricsFromUrl(url) {
+        // 已被預載 → 直接 render
+        const t = state.playlist[state.currentIndex];
+        if (t && t.lyricsTimed && t.lyricsTimed.length > 0) {
+            renderLyricsTimed(t.lyricsTimed);
+            return;
+        }
+        if (t && t.lyrics && t.lyrics.length > 0) {
+            elements.lyrics.innerHTML = t.lyrics
+                .map(line => `<p class="lyric-line">${escapeHtml(line)}</p>`)
+                .join("");
+            return;
+        }
         elements.lyrics.innerHTML = '<p class="lyric-line">歌詞載入中…</p>';
         try {
-            const r = await fetch(url, { cache: "no-store" });
+            const r = await fetch(url, { cache: "force-cache" });
             if (!r.ok) throw new Error("HTTP " + r.status);
             const text = await r.text();
             const track = state.playlist[state.currentIndex];
             if (track) {
                 track.lyricsUrl = url;
-                // 自動偵測 LRC 格式（[mm:ss.xx]）
                 if (isLrcFormat(text)) {
                     const timed = parseLrc(text);
                     track.lyricsTimed = timed;
