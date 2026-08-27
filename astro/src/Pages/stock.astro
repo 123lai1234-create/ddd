@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>台股均線買賣訊號系統 · 站內小工具</title>
+<meta name="description" content="台股 K 線 + 均線訊號 + 法人買賣超 + 盤中監控 + 自選股">
+<style>
+  *,*::before,*::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: #0d1117; color: #e6edf3; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif; }
+  .frame-shell { position: fixed; inset: 0; display: flex; flex-direction: column; background: #0d1117; }
+  .frame-bar { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #161b22; border-bottom: 1px solid #30363d; font-size: 13px; }
+  .frame-bar .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff5f56; box-shadow: 0 0 6px rgba(255,95,86,0.6); transition: background-color .2s, box-shadow .2s; }
+  .frame-bar .dot.dot-connecting { background: #8b949e; box-shadow: 0 0 6px rgba(139,148,158,0.4); animation: dot-pulse 1.4s ease-in-out infinite; }
+  .frame-bar .dot.dot-online { background: #3fb950; box-shadow: 0 0 6px rgba(63,185,80,0.55); }
+  .frame-bar .dot.dot-offline { background: #ff5f56; box-shadow: 0 0 6px rgba(255,95,86,0.6); }
+  @keyframes dot-pulse { 0%,100% { opacity: .55 } 50% { opacity: 1 } }
+  .frame-bar .label { color: #e6edf3; font-weight: 600; }
+  .frame-bar .sub { color: #8b949e; transition: color .2s; }
+  .frame-bar .sub.health-online { color: #3fb950; }
+  .frame-bar .sub.health-offline { color: #ff7b72; }
+  .frame-bar .spacer { flex: 1; }
+  .frame-bar a { color: #58a6ff; text-decoration: none; }
+  .frame-bar a:hover { text-decoration: underline; }
+  .frame-host { flex: 1 1 auto; position: relative; min-height: 0; }
+  .frame-host iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #0d1117; }
+  .frame-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: #8b949e; }
+  .frame-fallback code { color: #e6edf3; }
+  .banner-warn { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: rgba(255, 145, 0, 0.12); border-bottom: 1px solid #ff9100; color: #ffb84d; font-size: 12px; line-height: 1.5; }
+  .banner-warn[hidden] { display: none; }
+  .banner-warn .banner-icon { flex-shrink: 0; font-size: 14px; }
+  .banner-warn .banner-text { flex: 1; min-width: 0; }
+  .banner-warn .banner-text b { color: #fff; font-weight: 600; }
+  .banner-warn .banner-text code { background: rgba(0,0,0,.4); color: #ffd89a; padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+  .banner-warn button { background: transparent; border: 1px solid currentColor; color: inherit; border-radius: 4px; padding: 2px 10px; cursor: pointer; font-size: 11px; flex-shrink: 0; line-height: 1; }
+  .banner-warn button:hover { background: rgba(255, 145, 0, 0.2); }
+  @media (max-width: 600px) {
+    .frame-bar { flex-wrap: wrap; }
+    .frame-bar .sub { display: none; }
+    .banner-warn { font-size: 11px; padding: 6px 10px; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+  <div class="frame-shell">
+    <div class="frame-bar">
+      <span class="dot" id="healthDot"></span>
+      <span class="label">📊 台股均線買賣訊號系統</span>
+      <span class="sub" id="healthLabel">連線中…</span>
+      <span class="spacer"></span>
+      <a href="/stock-app/index.html" target="_blank" rel="noopener">在新分頁開啟 ↗</a>
+    </div>
+    <div class="banner-warn" id="backendBanner" hidden>
+      <span class="banner-icon">📡</span>
+      <span class="banner-text">
+        <b id="backendBannerTitle">後端服務異常</b> — <span id="backendBannerMsg">healthz 探測失敗，請稍後重試或 <a href="/healthz" target="_blank" rel="noopener">查看狀態</a>。</span>
+      </span>
+    </div>
+    <div class="frame-host">
+      <iframe
+        src="/stock-app/index.html"
+        title="台股均線買賣訊號系統"
+        loading="eager"
+        referrerpolicy="no-referrer-when-downgrade"
+        allow="fullscreen; clipboard-read; clipboard-write"
+      ></iframe>
+      <noscript class="frame-fallback">
+        <div>
+          <p>此頁面需要 JavaScript 才能載入 iframe。</p>
+          <p>請改用 <a href="/stock-app/index.html" target="_blank" rel="noopener">直接連結</a>。</p>
+        </div>
+      </noscript>
+    </div>
+  </div>
+  <script>
+    // Real healthz probe — updates banner based on actual backend status.
+    // Polls every 30s. Only shows banner if backend is offline or DB is down.
+    (function() {
+      const dot = document.getElementById('healthDot');
+      const label = document.getElementById('healthLabel');
+      const banner = document.getElementById('backendBanner');
+      const bannerTitle = document.getElementById('backendBannerTitle');
+      const bannerMsg = document.getElementById('backendBannerMsg');
+
+      const setOnline = () => {
+        if (dot) {
+          dot.classList.remove('dot-offline', 'dot-connecting');
+          dot.classList.add('dot-online');
+          dot.style.boxShadow = '';
+        }
+        if (label) {
+          label.textContent = '後端已連線';
+          label.classList.remove('health-offline');
+          label.classList.add('health-online');
+        }
+        if (banner) banner.hidden = true;
+      };
+      const setConnecting = () => {
+        if (dot) {
+          dot.classList.remove('dot-offline', 'dot-online');
+          dot.classList.add('dot-connecting');
+        }
+        if (label) {
+          label.textContent = '連線中…';
+          label.classList.remove('health-online', 'health-offline');
+        }
+        if (banner) banner.hidden = true;
+      };
+      const setOffline = (msg) => {
+        if (dot) {
+          dot.classList.remove('dot-online', 'dot-connecting');
+          dot.classList.add('dot-offline');
+          dot.style.boxShadow = '0 0 6px rgba(255,95,86,0.6)';
+        }
+        if (label) {
+          label.textContent = '後端已下線';
+          label.classList.remove('health-online');
+          label.classList.add('health-offline');
+        }
+        if (banner) {
+          if (bannerMsg && msg) bannerMsg.textContent = msg;
+          banner.hidden = false;
+        }
+      };
+
+      async function probe() {
+        setConnecting();
+        try {
+          const ctrl = new AbortController();
+          const tid = setTimeout(() => ctrl.abort(), 5000);
+          const r = await fetch('/api/healthz', { signal: ctrl.signal, cache: 'no-store' });
+          clearTimeout(tid);
+          if (!r.ok) {
+            setOffline(`healthz HTTP ${r.status}`);
+            return;
+          }
+          const j = await r.json().catch(() => ({}));
+          if (j && j.db === false) {
+            setOffline('Neon DB 連線失敗 (db=false)');
+            return;
+          }
+          setOnline();
+        } catch (e) {
+          setOffline(`healthz 探測失敗：${e?.message || e}`);
+        }
+      }
+      probe();
+      setInterval(probe, 30000);
+      // Re-probe when tab regains focus (catch quick state changes).
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) probe();
+      });
+    })();
+  </script>
+</body>
+</html>

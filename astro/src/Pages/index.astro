@@ -1,0 +1,401 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+    title="Portfolio — 工程 × 生醫 × AI 平台"
+    description="電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。"
+    ogTag="Portfolio"
+    bodyPage="index"
+    schemaType="ProfilePage"
+    pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css"]}
+    pageScripts={["/scripts/app-config.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js"]}
+>
+    <div data-site-nav></div>
+
+    <!-- Hero: compact, left-aligned, leerob-style -->
+    <section id="hero">
+        <div class="hero-content">
+            <div class="hero-badge"><span class="live-dot"></span>2026 · 開放洽談機會</div>
+            <h1 class="hero-name" style="display:none">Portfolio</h1>
+            <p class="hero-role" style="display:none">工程師 · 生醫研究者 · AI 平台設計</p>
+            <!-- AEO direct answer: 1-2 sentence summary AI Overviews/Perplexity pick up first. -->
+            <p class="hero-bio" data-aeo-summary="true">
+                電資工程與生物醫學雙碩士，把蛋白質語言模型、基因分析工具與互動介面整合成可操作的研究平台。站在研究與產品的交界，做有真實意義的跨域系統。
+            </p>
+            <p class="hero-bio aeo-facts" style="font-size:.82rem;opacity:.7;margin-top:.5rem">
+                專長：ESM-2 / ProteinMPNN / Bayesian Optimization / REINFORCE / NGS / FastAPI / Astro。碩士：北科電子所 + 陽明交大解剖細胞生物所。
+            </p>
+            <div class="hero-links">
+                <a href="/about" class="btn btn-primary">認識我</a>
+                <a href="/works" class="btn btn-outline">全部作品 →</a>
+                <a href="/gene-ai" class="btn btn-ghost">基因 AI 平台 ↗</a>
+            </div>
+        </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- Selected Work: leerob list-style -->
+    <section id="selected">
+        <div class="sel-header reveal">
+            <span class="section-label">代表作品</span>
+        </div>
+        <div class="sel-list reveal">
+            <a href="/report" class="sel-item">
+                <div class="sel-left">
+                    <span class="sel-title">蛋白質 AI 設計系統</span>
+                    <span class="sel-desc">端到端 Pipeline：ESM-2 嵌入、Bayesian Optimization、ProteinMPNN 序列設計、REINFORCE RL 微調。</span>
+                </div>
+                <span class="sel-tag">Protein AI</span>
+                <span class="sel-arrow">→</span>
+            </a>
+            <a href="/gene-ai" class="sel-item">
+                <div class="sel-left">
+                    <span class="sel-title">基因 AI 分析平台</span>
+                    <span class="sel-desc">序列資料庫、RAG 文件搜尋、啟動子設計、CRISPR 導引排序、變異效應評估一站整合。</span>
+                </div>
+                <span class="sel-tag">Gene AI</span>
+                <span class="sel-arrow">→</span>
+            </a>
+            <a href="/ngs" class="sel-item">
+                <div class="sel-left">
+                    <span class="sel-title">NGS 次世代定序工作站</span>
+                    <span class="sel-desc">實驗設計計算器、定序深度估算、QC 到功能分析的完整結果圖表集。</span>
+                </div>
+                <span class="sel-tag">NGS</span>
+                <span class="sel-arrow">→</span>
+            </a>
+            <a href="/protein-mpnn" class="sel-item">
+                <div class="sel-left">
+                    <span class="sel-title">ProteinMPNN 互動工作台</span>
+                    <span class="sel-desc">直接操作序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</span>
+                </div>
+                <span class="sel-tag">Interactive</span>
+                <span class="sel-arrow">→</span>
+            </a>
+            <a href="/thesis" class="sel-item">
+                <div class="sel-left">
+                    <span class="sel-title">遺傳演算法量化研究</span>
+                    <span class="sel-desc">以 48 檔 ETF50 股票池重建 PPTS × GAPPTS，族群演化視覺化與逐檔回測比較。</span>
+                </div>
+                <span class="sel-tag">Research</span>
+                <span class="sel-arrow">→</span>
+            </a>
+        </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- About strip: 3 stats inline -->
+    <section id="about-strip">
+        <div class="strip-grid reveal">
+            <div class="strip-item">
+                <div class="strip-val">雙碩士</div>
+                <div class="strip-lbl">電資工程 × 生物醫學</div>
+            </div>
+            <div class="strip-item">
+                <div class="strip-val">2014–Now</div>
+                <div class="strip-lbl">研究 → 產品 → 平台</div>
+            </div>
+            <div class="strip-item">
+                <div class="strip-val">3 AI 平台</div>
+                <div class="strip-lbl">Protein · Gene · NGS</div>
+            </div>
+            <div class="strip-item strip-item-text">
+                <p>電資工程與生醫的雙碩士訓練，加上臨床與研究場景的第一線經驗，讓作品集裡每個系統都有真實問題的背景支撐。</p>
+                <a href="/about" class="strip-link">完整背景 →</a>
+            </div>
+        </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- Explore: full topic grid -->
+    <section id="explore">
+        <div class="reveal">
+            <div class="section-label">深入探索</div>
+            <h2 class="section-title">各主題專頁</h2>
+            <p class="section-sub">每個主題都有獨立頁面，包含完整技術細節、互動圖表與操作介面。</p>
+        </div>
+        <div class="explore-groups reveal">
+            <div class="explore-group">
+                <div class="explore-group-head">
+                    <span class="explore-group-label">Protein</span>
+                    <span class="explore-group-title">蛋白質設計與分析</span>
+                    <span class="explore-group-sub">技術報告 + 可操作工作台兩頁互補</span>
+                </div>
+                <div class="explore-grid explore-grid-2">
+                    <a href="/report" class="explore-card ec-bio"><div class="explore-icon">🧬</div><h3>蛋白質 AI 專案報告</h3><p>端到端 Pipeline 架構、實驗結果圖表、核心演算法數學推導、程式碼庫結構一覽。</p><div class="explore-footer"><span class="explore-tag">Protein AI</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/protein-mpnn" class="explore-card ec-bio"><div class="explore-icon">🧪</div><h3>ProteinMPNN 互動展示</h3><p>獨立工作台頁面，直接操作序列設計、3D 結構預覽、突變著色與 Rosetta 簡化評分。</p><div class="explore-footer"><span class="explore-tag">Interactive</span><span class="explore-arrow">→</span></div></a>
+                </div>
+            </div>
+            <div class="explore-group">
+                <div class="explore-group-head">
+                    <span class="explore-group-label">Genomics</span>
+                    <span class="explore-group-title">基因 AI 與 NGS 定序</span>
+                    <span class="explore-group-sub">從序列快取到實驗設計的完整工作流</span>
+                </div>
+                <div class="explore-grid explore-grid-2">
+                    <a href="/gene-ai" class="explore-card ec-gene"><div class="explore-icon">🔬</div><h3>基因 AI 平台</h3><p>序列資料庫、知識庫、RAG 文件搜尋、啟動子設計、CRISPR 導引排序、變異效應評估。</p><div class="explore-footer"><span class="explore-tag">Gene AI</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/ngs" class="explore-card ec-gene"><div class="explore-icon">📊</div><h3>NGS 次世代定序</h3><p>實驗設計計算器、定序深度估算、QC 到功能分析的完整結果圖表集。</p><div class="explore-footer"><span class="explore-tag">NGS</span><span class="explore-arrow">→</span></div></a>
+                </div>
+            </div>
+            <div class="explore-group">
+                <div class="explore-group-head">
+                    <span class="explore-group-label">Other</span>
+                    <span class="explore-group-title">其他資源</span>
+                    <span class="explore-group-sub">面試準備、作品集總覽、研究論文</span>
+                </div>
+                <div class="explore-grid explore-grid-3">
+                    <a href="/interview" class="explore-card ec-study"><div class="explore-icon">🎯</div><h3>面試準備手冊</h3><p>模擬面試問答、數學推導筆記、Mini Project 完整程式碼、六週衝刺計劃。</p><div class="explore-footer"><span class="explore-tag">Study</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/works" class="explore-card ec-study"><div class="explore-icon">💼</div><h3>作品總覽</h3><p>所有專案卡片篩選、即時 API 統計、跨域作品集一覽。</p><div class="explore-footer"><span class="explore-tag">Portfolio</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/blog" class="explore-card ec-research"><div class="explore-icon">📖</div><h3>技術文章</h3><p>蛋白質 AI、NGS 定序、量化交易等研究筆記與技術解析。</p><div class="explore-footer"><span class="explore-tag">Blog</span><span class="explore-arrow">→</span></div></a>
+                    <a href="/thesis" class="explore-card ec-research"><div class="explore-icon">📝</div><h3>論文 · 遺傳演算法</h3><p>以 48 檔 ETF50 股票池重建 PPTS × GAPPTS，逐檔觀察族群演化、逐檔回測與方法比較。</p><div class="explore-footer"><span class="explore-tag">Research</span><span class="explore-arrow">→</span></div></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- ════════ GitHub Live Stats ════════ -->
+    <section id="github-stats" style="max-width:800px;margin:0 auto;padding:40px 24px">
+        <div class="section-label">Live · GitHub</div>
+        <h2 class="section-title">開源活動</h2>
+        <div id="gh-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-top:24px">
+            <div class="gh-stat-card" id="gh-repos"><div class="gh-val">—</div><div class="gh-lbl">Public Repos</div></div>
+            <div class="gh-stat-card" id="gh-stars"><div class="gh-val">—</div><div class="gh-lbl">Total Stars</div></div>
+            <div class="gh-stat-card" id="gh-followers"><div class="gh-val">—</div><div class="gh-lbl">Followers</div></div>
+            <div class="gh-stat-card" id="gh-updated"><div class="gh-val" style="font-size:.85rem">—</div><div class="gh-lbl">最近推送</div></div>
+        </div>
+        <div id="gh-recent" style="margin-top:20px;display:flex;flex-direction:column;gap:8px"></div>
+    </section>
+    <style>
+    .gh-stat-card {
+        background: var(--surface, rgba(255,255,255,.04));
+        border: 1px solid var(--border, rgba(255,255,255,.08));
+        border-radius: 10px; padding: 18px 20px; text-align: center;
+    }
+    .gh-val { font-size: 1.6rem; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+    .gh-lbl { font-size: .75rem; color: var(--muted); margin-top: 4px; }
+    .gh-repo-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 14px;
+        background: var(--surface, rgba(255,255,255,.03));
+        border: 1px solid var(--border, rgba(255,255,255,.06));
+        border-radius: 8px; text-decoration: none; color: var(--text);
+        transition: border-color .15s;
+    }
+    .gh-repo-row:hover { border-color: var(--accent, #58d7ff); }
+    .gh-repo-name { font-size: .9rem; font-weight: 500; }
+    .gh-repo-meta { font-size: .78rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    </style>
+    <script>
+    (async () => {
+        const base = 'https://api.github.com';
+        const user = '123lai1234-create';
+        try {
+            const [uRes, rRes] = await Promise.all([
+                fetch(`${base}/users/${user}`),
+                fetch(`${base}/users/${user}/repos?sort=pushed&per_page=5&type=owner`),
+            ]);
+            if (!uRes.ok || !rRes.ok) return;
+            const [u, repos] = await Promise.all([uRes.json(), rRes.json()]);
+            document.querySelector('#gh-repos .gh-val').textContent = u.public_repos ?? '—';
+            document.querySelector('#gh-followers .gh-val').textContent = u.followers ?? '—';
+            const stars = repos.reduce((s, r) => s + (r.stargazers_count || 0), 0);
+            document.querySelector('#gh-stars .gh-val').textContent = stars;
+            const latest = repos[0]?.pushed_at ? new Date(repos[0].pushed_at).toLocaleDateString('zh-TW') : '—';
+            document.querySelector('#gh-updated .gh-val').textContent = latest;
+            const container = document.getElementById('gh-recent');
+            repos.slice(0, 4).forEach(r => {
+                const a = document.createElement('a');
+                a.href = r.html_url; a.target = '_blank'; a.rel = 'noreferrer';
+                a.className = 'gh-repo-row';
+                a.innerHTML = `
+                    <span class="gh-repo-name">${r.name}</span>
+                    <span class="gh-repo-meta">★ ${r.stargazers_count} · ${r.language || '—'} · ${new Date(r.pushed_at).toLocaleDateString('zh-TW')}</span>
+                `;
+                container.appendChild(a);
+            });
+        } catch(e) {}
+    })();
+    </script>
+
+    <hr class="divider" />
+
+    <!-- ════════ ESM-2 DEMO ════════ -->
+    <section id="esm-demo" style="max-width:800px;margin:0 auto;padding:48px 24px">
+        <div class="section-label">Live Demo · ESM-2</div>
+        <h2 class="section-title">蛋白質序列相似度分析</h2>
+        <p class="section-sub" style="margin-bottom:28px">輸入兩段胺基酸序列，透過 ESM-2（8M）embedding 計算語意相似度。由 <a href="https://huggingface.co/spaces/Donttalk123/web" target="_blank" rel="noreferrer" style="color:var(--accent)">HuggingFace Space</a> 即時推論。</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+            <label style="font-size:.85rem;color:var(--muted)">序列 A</label>
+            <input id="esm-seq-a" type="text" value="MKTIIALSYIFCLVFA"
+                placeholder="MKTIIALSYIFCLVFA"
+                style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:.9rem" />
+            <label style="font-size:.85rem;color:var(--muted)">序列 B</label>
+            <input id="esm-seq-b" type="text" value="MKTIIALSYIFCLVFAFF"
+                placeholder="MKTIIALSYIFCLVFAFF"
+                style="width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;font-size:.9rem" />
+            <button id="esm-run-btn"
+                style="align-self:flex-start;padding:10px 28px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.95rem">
+                計算相似度
+            </button>
+        </div>
+        <div id="esm-result" style="margin-top:20px;min-height:60px"></div>
+    </section>
+
+    <hr class="divider" />
+    <div data-site-footer></div>
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+    <div id="tsparticles"></div>
+
+    <!-- AI 助手人偶按鈕 -->
+    <button id="chatbot-toggle" aria-label="AI 助手" style="position:fixed;bottom:90px;right:24px;z-index:500;background:transparent;border:none;border-radius:50%;width:70px;height:70px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,filter .2s;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));overflow:visible"
+      onmouseover="this.style.transform='scale(1.15)';this.style.filter='drop-shadow(0 8px 20px rgba(88,215,255,.4))'"
+      onmouseout="this.style.transform='scale(1)';this.style.filter='drop-shadow(0 4px 12px rgba(0,0,0,.4))'">
+      <svg id="chatbot-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="AI 助手"
+           style="width:100%;height:100%;animation:avatar-bounce 3s ease-in-out infinite;display:block">
+        <defs>
+          <linearGradient id="cbav-g" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f472b6"/>
+            <stop offset="100%" stop-color="#818cf8"/>
+          </linearGradient>
+          <radialGradient id="cbav-c" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#fde68a"/>
+            <stop offset="100%" stop-color="#fbbf24"/>
+          </radialGradient>
+        </defs>
+        <!-- head -->
+        <circle cx="50" cy="50" r="38" fill="url(#cbav-g)" stroke="#fff" stroke-width="2.5" stroke-opacity="0.9"/>
+        <!-- eyes (open, friendly) -->
+        <ellipse cx="38" cy="48" rx="3.5" ry="5" fill="#1a1a2e"/>
+        <ellipse cx="62" cy="48" rx="3.5" ry="5" fill="#1a1a2e"/>
+        <circle cx="39" cy="46" r="1.3" fill="#fff"/>
+        <circle cx="63" cy="46" r="1.3" fill="#fff"/>
+        <!-- smile -->
+        <path d="M 42 60 Q 50 68 58 60" stroke="#1a1a2e" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+        <!-- cheeks -->
+        <ellipse cx="32" cy="58" rx="4.5" ry="2.8" fill="#fb7185" opacity="0.55"/>
+        <ellipse cx="68" cy="58" rx="4.5" ry="2.8" fill="#fb7185" opacity="0.55"/>
+        <!-- antenna with star -->
+        <line x1="50" y1="12" x2="50" y2="5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="50" cy="3" r="3.5" fill="url(#cbav-c)"/>
+        <!-- little ears -->
+        <ellipse cx="14" cy="50" rx="4" ry="7" fill="url(#cbav-g)" stroke="#fff" stroke-width="1.8" stroke-opacity="0.7"/>
+        <ellipse cx="86" cy="50" rx="4" ry="7" fill="url(#cbav-g)" stroke="#fff" stroke-width="1.8" stroke-opacity="0.7"/>
+      </svg>
+    </button>
+    <style>
+      @keyframes avatar-bounce {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        25% { transform: translateY(-6px) rotate(-3deg); }
+        50% { transform: translateY(0) rotate(0deg); }
+        75% { transform: translateY(-3px) rotate(3deg); }
+      }
+      @keyframes avatar-nod {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-4px) rotate(-5deg); }
+      }
+      #chatbot-toggle:hover #chatbot-avatar {
+        animation: avatar-nod 0.4s ease-in-out infinite;
+      }
+      #chatbot-toggle:active #chatbot-avatar {
+        animation: avatar-jump 0.3s ease-out;
+      }
+      @keyframes avatar-jump {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2) translateY(-10px); }
+        100% { transform: scale(1); }
+      }
+    </style>
+    <div id="chatbot-panel">
+        <div class="chatbot-header">
+            <h4>AI 助手</h4>
+            <button class="chatbot-close" aria-label="關閉">✕</button>
+        </div>
+        <div id="chatbot-messages">
+            <div class="chat-msg chat-bot">你好！有什麼關於這個作品集的問題嗎？</div>
+        </div>
+        <div class="chatbot-input-row">
+            <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off" />
+            <button id="chatbot-send">送出</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const SYSTEM = `你是這個作品集網站的 AI 助手。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師。
+專長：ESM-2 蛋白質語言模型、ProteinMPNN、Bayesian Optimization（BoTorch/qLogEI）、REINFORCE RL、
+FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場資料平台。
+請用繁體中文回答，保持專業友善，回答不超過 200 字。只回答與作品集相關的問題。`;
+
+        let history = [];
+        let busy = false;
+
+        const toggle = document.getElementById('chatbot-toggle');
+        const panel  = document.getElementById('chatbot-panel');
+        const close  = document.querySelector('.chatbot-close');
+        const msgs   = document.getElementById('chatbot-messages');
+        const input  = document.getElementById('chatbot-input');
+        const send   = document.getElementById('chatbot-send');
+
+        toggle.addEventListener('click', () => panel.classList.toggle('open'));
+        close.addEventListener('click',  () => panel.classList.remove('open'));
+        send.addEventListener('click', submit);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) submit(); });
+
+        async function submit() {
+            const text = input.value.trim();
+            if (!text || busy) return;
+            input.value = '';
+            addMsg('user', text);
+            history.push({ role: 'user', content: text });
+            setBusy(true);
+            // SECURITY: 前端不能直連 Anthropic API（會洩漏 key / 401）。
+            // 改走站內 /api/chat proxy；proxy 失敗就誠實顯示，不要再嘗試直連外部 API。
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        system: SYSTEM,
+                        messages: history.slice(-10),
+                    }),
+                });
+                if (!res.ok) throw new Error(`proxy ${res.status}`);
+                const data = await res.json();
+                const reply = data.reply ?? data.content?.[0]?.text ?? '抱歉，暫時無法回應。';
+                history.push({ role: 'assistant', content: reply });
+                addMsg('bot', reply);
+            } catch {
+                addMsg('bot', '⚠️ 聊天助理暫停服務，請稍後再試或直接到 [關於我] 頁面看聯絡方式。');
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        function addMsg(role, text) {
+            const d = document.createElement('div');
+            d.className = `chat-msg chat-${role}`;
+            d.textContent = text;
+            msgs.appendChild(d);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function setBusy(v) {
+            busy = v; send.disabled = v; input.disabled = v;
+            document.getElementById('chat-typing')?.remove();
+            if (v) {
+                const t = document.createElement('div');
+                t.id = 'chat-typing';
+                t.className = 'chat-msg chat-bot chat-typing';
+                t.innerHTML = '<span></span><span></span><span></span>';
+                msgs.appendChild(t);
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+    })();
+    </script>
+</Base>

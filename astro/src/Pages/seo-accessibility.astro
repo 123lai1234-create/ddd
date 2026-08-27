@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+const bodyHtml = "\n  <!-- 跳過導航連結 (可訪問性) -->\n  <a href=\"#main-content\" class=\"skip-link\">跳過導航，前往主要內容</a>\n  \n  <!-- 主要內容區域 -->\n  <main id=\"main-content\" role=\"main\">\n    <!-- 遊戲容器 -->\n    <div id=\"game-container\" role=\"application\" aria-label=\"仙俠傳遊戲\">\n      <!-- 遊戲內容 -->\n    </div>\n    \n    <!-- 載入狀態指示器 -->\n    <div id=\"loading-indicator\" role=\"status\" aria-live=\"polite\" aria-label=\"遊戲載入中\">\n      <span>載入中...</span>\n    </div>\n    \n    <!-- 無障礙文字說明 -->\n    <div class=\"sr-only\" role=\"complementary\">\n      <h2>遊戲說明</h2>\n      <p>仙俠傳是一款回合制 RPG 遊戲。使用方向鍵或滑鼠移動角色，按 Enter 或點擊按鈕執行行動。</p>\n    </div>\n  </main>\n  \n  <!-- 頁尾 -->\n  <footer role=\"contentinfo\">\n    <nav aria-label=\"頁尾導航\">\n      <a href=\"/\">首頁</a>\n      <a href=\"/about\">關於我們</a>\n      <a href=\"/privacy\">隱私政策</a>\n      <a href=\"/terms\">使用條款</a>\n    </nav>\n  </footer>\n\n  <style>\n    /* 跳過導航連結 */\n    .skip-link {\n      position: absolute;\n      top: -40px;\n      left: 0;\n      background: #000;\n      color: #fff;\n      padding: 8px;\n      z-index: 100;\n    }\n    \n    .skip-link:focus {\n      top: 0;\n    }\n    \n    /* 螢幕閱讀器專用文字 */\n    .sr-only {\n      position: absolute;\n      width: 1px;\n      height: 1px;\n      padding: 0;\n      margin: -1px;\n      overflow: hidden;\n      clip: rect(0, 0, 0, 0);\n      white-space: nowrap;\n      border-width: 0;\n    }\n    \n    /* 焦點指示器 */\n    *:focus {\n      outline: 2px solid #ffd700;\n      outline-offset: 2px;\n    }\n    \n    /* 按鈕可訪問性 */\n    button {\n      min-height: 44px; /* 觸控友善的最小尺寸 */\n      min-width: 44px;\n      font-size: 16px; /* 防止自動縮放 */\n    }\n    \n    /* 顏色對比度 */\n    body {\n      color: #f0e6c8; /* WCAG AA 標準 */\n      background-color: #08060e;\n    }\n  </style>\n";
+const headInline = "<script is:inline>{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"VideoGame\",\n  \"name\": \"仙俠傳\",\n  \"description\": \"經典回合制 RPG 遊戲\",\n  \"genre\": [\"RPG\", \"Strategy\"],\n  \"applicationCategory\": \"GameApplication\",\n  \"offers\": {\n    \"@type\": \"Offer\",\n    \"price\": \"0\",\n    \"priceCurrency\": \"USD\"\n  },\n  \"author\": {\n    \"@type\": \"Organization\",\n    \"name\": \"Manus Game Studio\"\n  }\n}</script>";
+---
+<Base
+    title=""
+    description="仙俠傳 - 經典回合制 RPG 遊戲，純瀏覽器遊玩。含 AI 敵人、動態難度、豐富劇情與精美特效。"
+    bodyPage=""
+    pageStyles={[]}
+    pageScripts={[]}
+    headInline={headInline}
+>
+    <Fragment set:html={bodyHtml} />
+</Base>

@@ -1,0 +1,59 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', p => !p.data.draft);
+  return posts.map(post => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+<Base
+  title={`${post.data.title} | JT Lai`}
+  description={post.data.description}
+  ogTag="Portfolio"
+  bodyPage="blog-post"
+>
+  <div data-site-nav></div>
+  <main style="max-width:720px;margin:0 auto;padding:60px 24px">
+    <a href="/blog" style="font-size:.85rem;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:32px">← 所有文章</a>
+
+    <header style="margin-bottom:40px">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+        {post.data.tags.map(t => (
+          <span style="font-size:.72rem;padding:2px 8px;background:rgba(88,215,255,.08);border:1px solid rgba(88,215,255,.2);border-radius:99px;color:var(--cyan,#58d7ff)">{t}</span>
+        ))}
+      </div>
+      <h1 style="font-size:clamp(1.5rem,4vw,2.1rem);font-weight:700;line-height:1.3;color:var(--text);margin:0 0 12px">{post.data.title}</h1>
+      <p style="color:var(--muted);font-size:.9rem;margin:0 0 8px">{post.data.description}</p>
+      <time style="font-size:.8rem;color:var(--muted);font-family:'JetBrains Mono',monospace">
+        {post.data.date.toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric' })}
+      </time>
+    </header>
+
+    <article class="blog-prose">
+      <Content />
+    </article>
+  </main>
+  <div data-site-footer></div>
+
+  <style>
+  .blog-prose { color: var(--text, #e6edf3); line-height: 1.8; font-size: .95rem; }
+  .blog-prose h2 { font-size: 1.25rem; font-weight: 700; margin: 2em 0 .75em; color: var(--text); border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); padding-bottom: .4em; }
+  .blog-prose h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5em 0 .5em; color: var(--text); }
+  .blog-prose p  { margin: 0 0 1.2em; }
+  .blog-prose ul, .blog-prose ol { margin: 0 0 1.2em 1.4em; }
+  .blog-prose li { margin-bottom: .35em; }
+  .blog-prose a  { color: var(--accent, #58d7ff); text-underline-offset: 3px; }
+  .blog-prose code { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 4px; padding: 1px 6px; font-family: 'JetBrains Mono', monospace; font-size: .85em; }
+  .blog-prose pre { background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 16px 20px; overflow-x: auto; margin: 0 0 1.4em; }
+  .blog-prose pre code { background: none; border: none; padding: 0; font-size: .85rem; }
+  .blog-prose blockquote { border-left: 3px solid var(--accent, #58d7ff); padding: .4em 0 .4em 1.2em; margin: 0 0 1.2em; color: var(--muted); font-style: italic; }
+  .blog-prose table { width: 100%; border-collapse: collapse; margin: 0 0 1.4em; font-size: .875rem; }
+  .blog-prose th, .blog-prose td { padding: 8px 12px; border: 1px solid rgba(255,255,255,.1); text-align: left; }
+  .blog-prose th { background: rgba(255,255,255,.04); font-weight: 600; }
+  .blog-prose strong { color: var(--text); font-weight: 600; }
+  </style>
+</Base>

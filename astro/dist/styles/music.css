@@ -927,3 +927,126 @@
   background: var(--music-border);
   border-radius: 2px;
 }
+
+/* ─── Karaoke (逐字漸亮) ──────────────────────────────────────────────── */
+.lyrics.karaoke .song-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.02em;
+}
+
+/* 字元外層：未點亮狀態 */
+.lyrics.karaoke .kar-ch {
+  color: var(--music-text-muted);
+  opacity: 0.75;
+  transition: color 0.08s ease-out;
+  will-change: color;
+}
+
+/* 已點亮的字元 → 強調色 + 光暈 */
+.lyrics.karaoke .kar-ch.lit {
+  color: var(--music-accent-light);
+  opacity: 1;
+  text-shadow: 0 0 12px rgba(99, 102, 241, 0.45);
+}
+
+/* 關掉卡拉OK時，退回原本整行高亮，隱藏字元 span 的個別顏色 */
+.lyrics:not(.karaoke) .kar-ch {
+  color: inherit;
+  opacity: inherit;
+  text-shadow: inherit;
+}
+
+/* ─── Karaoke 切換鈕 ─────────────────────────────────────────────────── */
+.karaoke-toggle {
+  position: absolute;
+  top: 58px;
+  right: 14px;
+  z-index: 5;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--music-border);
+  background: var(--music-surface);
+  color: var(--music-text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.karaoke-toggle:hover {
+  border-color: var(--music-accent);
+  color: var(--music-accent);
+}
+
+.karaoke-toggle.on {
+  border-color: var(--music-accent);
+  color: var(--music-accent);
+  background: rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 16px var(--music-accent-glow);
+}
+
+/* ─── 上傳本機音樂 ────────────────────────────────────────────────────── */
+.upload-zone {
+  border: 1px dashed var(--music-border);
+  border-radius: 12px;
+  padding: 18px 16px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s;
+}
+
+.upload-zone.dragover {
+  border-color: var(--music-accent);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.upload-header {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--music-text);
+  margin-bottom: 6px;
+}
+
+.upload-hint {
+  font-size: 0.78rem;
+  color: var(--music-text-muted);
+  margin-bottom: 12px;
+}
+
+.upload-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.upload-btn {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--music-border);
+  background: var(--music-surface);
+  color: var(--music-text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-btn:hover {
+  border-color: var(--music-accent);
+  color: var(--music-accent);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.upload-status {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: var(--music-text-muted);
+  min-height: 1em;
+  word-break: break-word;
+}
