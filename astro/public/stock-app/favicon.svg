@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="6" fill="#0a0e17"/>
+  <!-- Candlestick chart icon -->
+  <!-- Candle 1: bullish green -->
+  <rect x="4" y="10" width="4" height="12" rx="1" fill="#22c55e"/>
+  <line x1="6" y1="7" x2="6" y2="10" stroke="#22c55e" stroke-width="1.5"/>
+  <line x1="6" y1="22" x2="6" y2="25" stroke="#22c55e" stroke-width="1.5"/>
+  <!-- Candle 2: bearish red -->
+  <rect x="10" y="8" width="4" height="14" rx="1" fill="#ef4444"/>
+  <line x1="12" y1="5" x2="12" y2="8" stroke="#ef4444" stroke-width="1.5"/>
+  <line x1="12" y1="22" x2="12" y2="25" stroke="#ef4444" stroke-width="1.5"/>
+  <!-- Candle 3: bullish green -->
+  <rect x="16" y="12" width="4" height="10" rx="1" fill="#22c55e"/>
+  <line x1="18" y1="9" x2="18" y2="12" stroke="#22c55e" stroke-width="1.5"/>
+  <line x1="18" y1="22" x2="18" y2="25" stroke="#22c55e" stroke-width="1.5"/>
+  <!-- Candle 4: bullish green large -->
+  <rect x="22" y="6" width="4" height="16" rx="1" fill="#22c55e"/>
+  <line x1="24" y1="3" x2="24" y2="6" stroke="#22c55e" stroke-width="1.5"/>
+  <line x1="24" y1="22" x2="24" y2="26" stroke="#22c55e" stroke-width="1.5"/>
+  <!-- Moving average line -->
+  <polyline points="4,18 12,15 18,17 26,10" stroke="#58d7ff" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
