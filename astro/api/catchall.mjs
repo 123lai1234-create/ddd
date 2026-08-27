@@ -119,11 +119,14 @@ async function getEtfList() {
 
 async function getCandles(code, limit = 200) {
   const { rows } = await q(
-    `SELECT trade_date, open_price AS open, high_price AS high,
+    `SELECT DISTINCT ON (trade_date) trade_date, open_price AS open, high_price AS high,
             low_price AS low, close_price AS close, volume
      FROM market_price_bars
      WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
-     ORDER BY trade_date DESC LIMIT $2`,
+     ORDER BY trade_date DESC,
+       (source_name = 'twse_STOCK_DAY_ALL') DESC,
+       fetched_at DESC NULLS LAST
+     LIMIT $2`,
     [code, limit]
   );
   return rows.slice().reverse().map((r) => ({
@@ -137,11 +140,14 @@ async function getCandles(code, limit = 200) {
 }
 async function getEtfCandles(code, limit = 200) {
   const { rows } = await q(
-    `SELECT trade_date, open_price AS open, high_price AS high,
+    `SELECT DISTINCT ON (trade_date) trade_date, open_price AS open, high_price AS high,
             low_price AS low, close_price AS close, volume
      FROM market_price_bars
      WHERE symbol = $1 AND asset_type='etf' AND trade_date IS NOT NULL
-     ORDER BY trade_date DESC LIMIT $2`,
+     ORDER BY trade_date DESC,
+       (source_name = 'twse_STOCK_DAY_ALL') DESC,
+       fetched_at DESC NULLS LAST
+     LIMIT $2`,
     [code, limit]
   );
   return rows.slice().reverse().map((r) => ({
@@ -232,11 +238,20 @@ async function stockKlines(request, ticker) {
   const strategy = u.searchParams.get("strategy") || "original";
   const strategyProfile = u.searchParams.get("profile") || "default";
   try {
+    // ★ 2026-08-26 fix: market_price_bars 同一 (symbol, trade_date) 可能有多筆
+    //   （來源 twse_STOCK_DAY_ALL / finmind / yahoo_v8 各自 upsert），舊 SQL 只
+    //   ORDER BY trade_date LIMIT 會把同日重複列全回傳 → 前端 lightweight-charts
+    //   收到重複 time 在 render 時拋 "Value is null" 刷爆 console。
+    //   改用 DISTINCT ON (trade_date) 每交易日只取一筆，優先官方 TWSE 來源，
+    //   其次最新抓取（fetched_at）。LIMIT 在去重後套用 = 真正 days 根 K 線。
     const { rows } = await q(
-      `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
+      `SELECT DISTINCT ON (trade_date) trade_date, open_price, high_price, low_price, close_price, volume, change_value
        FROM market_price_bars
        WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
-       ORDER BY trade_date DESC LIMIT $2`,
+       ORDER BY trade_date DESC,
+         (source_name = 'twse_STOCK_DAY_ALL') DESC,
+         fetched_at DESC NULLS LAST
+       LIMIT $2`,
       [ticker, days]
     );
     // 2026-08-26: 改成 200 + 空 candles，避免前端 lightweight-charts 爆 "Value is null"。
@@ -475,10 +490,13 @@ async function indexKlines(request, ticker) {
         } else {
           // Yahoo 失敗 → fallback DB 2330
           const dbRes = await q(
-            `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
+            `SELECT DISTINCT ON (trade_date) trade_date, open_price, high_price, low_price, close_price, volume, change_value
              FROM market_price_bars
              WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
-             ORDER BY trade_date DESC LIMIT 200`,
+             ORDER BY trade_date DESC,
+               (source_name = 'twse_STOCK_DAY_ALL') DESC,
+               fetched_at DESC NULLS LAST
+             LIMIT 200`,
             [proxy]
           );
           rows = dbRes.rows;
@@ -486,10 +504,13 @@ async function indexKlines(request, ticker) {
       } catch (ye) {
         yahooDebug = `THROW: ${ye?.message}`;
         const dbRes = await q(
-          `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
+          `SELECT DISTINCT ON (trade_date) trade_date, open_price, high_price, low_price, close_price, volume, change_value
            FROM market_price_bars
            WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
-           ORDER BY trade_date DESC LIMIT 200`,
+           ORDER BY trade_date DESC,
+             (source_name = 'twse_STOCK_DAY_ALL') DESC,
+             fetched_at DESC NULLS LAST
+           LIMIT 200`,
           [proxy]
         );
         rows = dbRes.rows;
@@ -497,10 +518,13 @@ async function indexKlines(request, ticker) {
     } else {
       // ^TWOII / 其他 → 直接用 2330 proxy
       const dbRes = await q(
-        `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
+        `SELECT DISTINCT ON (trade_date) trade_date, open_price, high_price, low_price, close_price, volume, change_value
          FROM market_price_bars
          WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
-         ORDER BY trade_date DESC LIMIT 200`,
+         ORDER BY trade_date DESC,
+           (source_name = 'twse_STOCK_DAY_ALL') DESC,
+           fetched_at DESC NULLS LAST
+         LIMIT 200`,
         [proxy]
       );
       rows = dbRes.rows;
@@ -3210,10 +3234,13 @@ async function etfByCode(request, code) {
     const etf = list.find((e) => e.code === code);
     if (!etf) return json({ error: "not in etf_watchlist", code }, { status: 404 });
     const { rows: candles } = await q(
-      `SELECT trade_date, close_price, change_value, volume
+      `SELECT DISTINCT ON (trade_date) trade_date, close_price, change_value, volume
        FROM market_price_bars
        WHERE symbol = $1 AND asset_type='etf' AND trade_date IS NOT NULL
-       ORDER BY trade_date DESC LIMIT 60`,
+       ORDER BY trade_date DESC,
+         (source_name = 'twse_STOCK_DAY_ALL') DESC,
+         fetched_at DESC NULLS LAST
+       LIMIT 60`,
       [code]
     );
     const { rows: holdings } = await q(

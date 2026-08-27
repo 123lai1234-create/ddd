@@ -14,29 +14,33 @@ test.txt
 astro/_astro-cache/
 # 不要把這些非 astro 子目錄也帶上去
 # （Vercel 已透過 rootDirectory=astro 只打包 astro/，但保險起見也排除）
-artifacts/
-outputs/
-packages/
-tests/
-docs/
-scripts/
-helpers/
-migrations/
-src/
-supabase/
-lib/
-api/
-site_api/
-hf-spaces/
-frames/
-fly-supabase-proxy/
-go-proxy/
-dogfood-donttalk/
-dontalk-import/
-dontalk-redirect/
-multi-delogo/
-WatermarkRemover-AI/
-frontend/
+# ★ 2026-08-27 fix: 全部改為「根目錄錨定」（前綴 /），否則未錨定 pattern 會連
+#   astro/src、astro/scripts、astro/api、astro/tests、astro/docs、astro/frontend、
+#   astro/vercel.json、astro/tsconfig.json 一起排除，導致遠端 build 找不到
+#   scripts/fetch_lfs.mjs / vercel.json / tsconfig.json 而失敗。
+/artifacts/
+/outputs/
+/packages/
+/tests/
+/docs/
+/scripts/
+/helpers/
+/migrations/
+/src/
+/supabase/
+/lib/
+/api/
+/site_api/
+/hf-spaces/
+/frames/
+/fly-supabase-proxy/
+/go-proxy/
+/dogfood-donttalk/
+/dontalk-import/
+/dontalk-redirect/
+/multi-delogo/
+/WatermarkRemover-AI/
+/frontend/
 3d-animation-demo.html
 add-5269.mjs
 add-5269-out.log
@@ -106,7 +110,7 @@ probe-*.cjs
 probe-*-out.log
 push-out.log
 railway.toml
-README.md
+/README.md
 refresh_screenshot.py
 remove-nodata.mjs
 remove-nodata-out.log
@@ -128,10 +132,10 @@ test_all_buttons.py
 test_results.json
 test_run.log
 trigger.txt
-tsconfig.json
-vercel-build.mjs
-vercel-install.mjs
-vercel.json
+/tsconfig.json
+/vercel-build.mjs
+/vercel-install.mjs
+/vercel.json
 verify-*.cjs
 verify_*.py
 works_screenshot.png

@@ -123,11 +123,14 @@ async function getEtfList() {
 
 async function getCandles(code, limit = 200) {
   const { rows } = await q(
-    `SELECT trade_date, open_price AS open, high_price AS high,
+    `SELECT DISTINCT ON (trade_date) trade_date, open_price AS open, high_price AS high,
             low_price AS low, close_price AS close, volume
      FROM market_price_bars
      WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
-     ORDER BY trade_date DESC LIMIT $2`,
+     ORDER BY trade_date DESC,
+       (source_name = 'twse_STOCK_DAY_ALL') DESC,
+       fetched_at DESC NULLS LAST
+     LIMIT $2`,
     [code, limit]
   );
   return rows.slice().reverse().map((r) => ({
@@ -141,11 +144,14 @@ async function getCandles(code, limit = 200) {
 }
 async function getEtfCandles(code, limit = 200) {
   const { rows } = await q(
-    `SELECT trade_date, open_price AS open, high_price AS high,
+    `SELECT DISTINCT ON (trade_date) trade_date, open_price AS open, high_price AS high,
             low_price AS low, close_price AS close, volume
      FROM market_price_bars
      WHERE symbol = $1 AND asset_type='etf' AND trade_date IS NOT NULL
-     ORDER BY trade_date DESC LIMIT $2`,
+     ORDER BY trade_date DESC,
+       (source_name = 'twse_STOCK_DAY_ALL') DESC,
+       fetched_at DESC NULLS LAST
+     LIMIT $2`,
     [code, limit]
   );
   return rows.slice().reverse().map((r) => ({
@@ -237,10 +243,13 @@ async function stockKlines(request, ticker) {
   const strategyProfile = u.searchParams.get("profile") || "default";
   try {
     const { rows } = await q(
-      `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
+      `SELECT DISTINCT ON (trade_date) trade_date, open_price, high_price, low_price, close_price, volume, change_value
        FROM market_price_bars
        WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
-       ORDER BY trade_date DESC LIMIT $2`,
+       ORDER BY trade_date DESC,
+         (source_name = 'twse_STOCK_DAY_ALL') DESC,
+         fetched_at DESC NULLS LAST
+       LIMIT $2`,
       [ticker, days]
     );
     if (!rows.length) return json({ error: "查無資料", code: ticker }, { status: 404 });
@@ -328,10 +337,13 @@ async function indexKlines(request, ticker) {
   const proxy = "2330";
   try {
     const { rows } = await q(
-      `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
+      `SELECT DISTINCT ON (trade_date) trade_date, open_price, high_price, low_price, close_price, volume, change_value
        FROM market_price_bars
        WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
-       ORDER BY trade_date DESC LIMIT 200`,
+       ORDER BY trade_date DESC,
+         (source_name = 'twse_STOCK_DAY_ALL') DESC,
+         fetched_at DESC NULLS LAST
+       LIMIT 200`,
       [proxy]
     );
     if (!rows.length) return json({ error: "查無資料 (proxy " + proxy + ")", ticker }, { status: 404 });
@@ -971,10 +983,13 @@ async function intradayCheck(request, code) {
 async function computeGapsForSymbol(symbol, label, lookback, minGap) {
   try {
     const { rows } = await q(
-      `SELECT trade_date, open_price, high_price, low_price, close_price
+      `SELECT DISTINCT ON (trade_date) trade_date, open_price, high_price, low_price, close_price
        FROM market_price_bars
        WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
-       ORDER BY trade_date DESC LIMIT $2`,
+       ORDER BY trade_date DESC,
+         (source_name = 'twse_STOCK_DAY_ALL') DESC,
+         fetched_at DESC NULLS LAST
+       LIMIT $2`,
       [symbol, lookback + 5]
     );
     if (!rows.length) return { name: label, error: "查無資料" };
@@ -2889,10 +2904,13 @@ async function etfByCode(request, code) {
     const etf = list.find((e) => e.code === code);
     if (!etf) return json({ error: "not in etf_watchlist", code }, { status: 404 });
     const { rows: candles } = await q(
-      `SELECT trade_date, close_price, change_value, volume
+      `SELECT DISTINCT ON (trade_date) trade_date, close_price, change_value, volume
        FROM market_price_bars
        WHERE symbol = $1 AND asset_type='etf' AND trade_date IS NOT NULL
-       ORDER BY trade_date DESC LIMIT 60`,
+       ORDER BY trade_date DESC,
+         (source_name = 'twse_STOCK_DAY_ALL') DESC,
+         fetched_at DESC NULLS LAST
+       LIMIT 60`,
       [code]
     );
     const { rows: holdings } = await q(
