@@ -733,19 +733,22 @@
                 elements.audioPlayer.src = track.url;
             }
             elements.audioPlayer.volume = state.isMuted ? 0 : state.volume / 100;
-            elements.audioPlayer.play().catch(err => {
-                // 以下屬於「可預期 / 非錯誤」的情況，不印警告：
+            elements.audioPlayer.play().then(() => {
+                // play() 成功後才更新 UI 狀態
+                state.isPlaying = true;
+                updatePlayButton();
+            }).catch(err => {
+                // 以下屬於「可預期 / 非錯誤」的情況，不做任何 UI 變動：
                 //  - AbortError：快速跳歌時新的 load() 中斷了上一次 play()
-                //  - NotAllowedError：瀏覽器自動播放政策擋下 play()（需使用者手勢）
+                //  - NotAllowedError：瀏覽器自動播放政策擋下 play()（需使用者手勢，UI 維持現狀）
                 if (err && (err.name === "AbortError" || err.name === "NotAllowedError" || err.code === 20)) return;
                 console.warn("[music] play() rejected:", err && err.message);
             });
         }
 
+        // 這些只負責顯示，不依賴 play() 是否成功
         updateNowPlaying(track);
         updatePlaylistUI();
-        state.isPlaying = true;
-        updatePlayButton();
 
         // 更新播放統計
         updatePlayStats(track);
@@ -778,11 +781,15 @@
 
     function resumeTrack() {
         if (state.currentIndex >= 0) {
-            elements.audioPlayer.play().catch(() => { });
-            state.isPlaying = true;
-            updatePlayButton();
-            elements.albumArt.classList.add("playing");
-            elements.audioVisualizer.classList.add("active");
+            elements.audioPlayer.play().then(() => {
+                state.isPlaying = true;
+                updatePlayButton();
+                elements.albumArt.classList.add("playing");
+                elements.audioVisualizer.classList.add("active");
+            }).catch(err => {
+                if (err && (err.name === "AbortError" || err.name === "NotAllowedError" || err.code === 20)) return;
+                console.warn("[music] resume play() rejected:", err && err.message);
+            });
         }
     }
 
