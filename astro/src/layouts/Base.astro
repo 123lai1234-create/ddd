@@ -130,7 +130,7 @@ const personSchema = {
     <link rel="stylesheet" href="/styles/shared.css" />
     <link rel="stylesheet" href="/styles/polish.css" />
     <link rel="stylesheet" href="/styles/dynamic.css" />
-    <link rel="stylesheet" href="/styles/immersive.css" />
+    <link rel="stylesheet" href="/styles/immersive-experience.css" />
     {pageStyles.map((href) => <link rel="stylesheet" href={href} />)}
     <!-- Sentry error monitoring (set SENTRY_DSN env var to activate) -->
     <script is:inline>
@@ -150,7 +150,7 @@ const personSchema = {
     <script is:inline src="/scripts/nav.js" defer></script>
     <script is:inline src="/scripts/app-config.js" defer></script>
     <script is:inline src="/scripts/dynamic-features.js" defer></script>
-    <script is:inline src="/scripts/immersive.js" defer></script>
+    <script is:inline src="/scripts/immersive-experience.js" defer></script>
     <Fragment set:html={headInline} />
     <!-- Console noise filter (Immersive Translate / Chrome extension errors that don't impact our app) -->
     <script is:inline>
