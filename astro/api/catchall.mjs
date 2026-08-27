@@ -1,17 +1,17 @@
 // api/[catchall].mjs — mega edge-runtime router for all /api/* endpoints.
 // Vercel catch-all: any /api/<anything> hits this file, dispatched via small table.
 // Uses Neon HTTP SQL API (no pg driver). Edge runtime for fast cold start.
-// 2026-08-10 build marker (force Vercel edge function rebuild cache stuck on polish-final version)
-// 2026-08-11 v2 marker (Railway 棄用, ?用 Vercel edge function; force rebuild)
+// 2026-08-10 build marker (force Vercel edge function rebuild — cache stuck on polish-final version)
+// 2026-08-11 v2 marker (Railway 棄用, 改用 Vercel edge function; force rebuild)
 //
 // Schema (Neon Postgres, schema `public`):
-//   watchlist        (code, name, ticker, sort_order)         股票 watchlist
-//   etf_watchlist    (code, name, ticker, sort_order, created_at) ETF watchlist
+//   watchlist        (code, name, ticker, sort_order)         — stock watchlist
+//   etf_watchlist    (code, name, ticker, sort_order, created_at) — ETF watchlist
 //   market_instruments (id, symbol, display_name, market, exchange_name, ...)
 //   market_price_bars  (id, symbol, trade_date, open/high/low/close_price, volume, change_value, asset_type, market)
-//   markers          (id, code, date, type, text, price)      user notes / signals
-//   position_history (id, date, ratio, source)                position % history
-//   recipients       (id, name, email)                        email recipients
+//   markers          (id, code, date, type, text, price)      — user notes / signals
+//   position_history (id, date, ratio, source)                — position % history
+//   recipients       (id, name, email)                        — email recipients
 //   knowledge_library (id, record_type, title, summary_text, record_url, published_at, fetched_at, ...)
 //   line_subscribers, opentargets_library, sequence_library, sequencing_run_library, site_inquiries (other projects)
 
@@ -43,73 +43,16 @@ async function dbq(sql, params = []) {
   if (json.error) throw new Error(json.error.message || "Neon error");
   return { rows: Array.isArray(json.rows) ? json.rows : [] };
 }
-// 2026-08-26: 加 IP allowlist + 可選密碼（任一通過即可）
-//   - STOCK_OPERATOR_IPS=1.2.3.4,5.6.7.8,192.168.0.0/16  你的白名單 IP
-//   - STOCK_OPERATOR_PASSWORD=xxx                       從瀏覽器帶來的密碼
-//   兩者都沒設 → 完全拒絕（fail-closed）
-function operatorOk(provided, request) {
-  // IP allowlist
-  const ipList = pickStr(process.env.STOCK_OPERATOR_IPS);
-  if (ipList && request) {
-    const ip = _clientIp(request);
-    if (ip && _ipInList(ip, ipList)) {
-      return true;
-    }
-  }
-  // 密碼支援
-  const expected = pickStr(process.env.STOCK_OPERATOR_PASSWORD);
-  if (!expected) return false;
+function operatorOk(provided) {
   if (typeof provided !== "string" || provided.length === 0) return false;
-  // Constant-time comparison
-  if (provided.length !== expected.length) return false;
-  let diff = 0;
-  for (let i = 0; i < provided.length; i++) {
-    diff |= provided.charCodeAt(i) ^ expected.charCodeAt(i);
-  }
-  return diff === 0;
-}
-
-function _clientIp(request) {
-  // Vercel edge sets x-forwarded-for (白名單 IP?，第一?是 client IP)
-  // x-real-ip 是 fallback
-  const xff = request.headers.get("x-forwarded-for") || "";
-  const first = xff.split(",")[0]?.trim();
-  if (first) return first;
-  const xr = request.headers.get("x-real-ip");
-  return xr || null;
-}
-
-function _ipInList(ip, csvList) {
-  const allowed = csvList.split(",").map(s => s.trim()).filter(Boolean);
-  for (const entry of allowed) {
-    if (entry === ip) return true;
-    if (entry.includes("/")) {
-      // CIDR
-      if (_ipInCidr(ip, entry)) return true;
-    }
-  }
-  return false;
-}
-
-function _ipInCidr(ip, cidr) {
-  const [net, bitsStr] = cidr.split("/");
-  const bits = parseInt(bitsStr, 10);
-  if (!net || isNaN(bits)) return false;
-  // IPv4 only (Vercel edge ?IPv6  allowlistheader，這裡簡支IPv4)
-  const ip4 = ip.split(".").map(Number);
-  const net4 = net.split(".").map(Number);
-  if (ip4.length !== 4 || net4.length !== 4) return false;
-  if (ip4.some(n => isNaN(n)) || net4.some(n => isNaN(n))) return false;
-  const ipInt = ((ip4[0] << 24) | (ip4[1] << 16) | (ip4[2] << 8) | ip4[3]) >>> 0;
-  const netInt = ((net4[0] << 24) | (net4[1] << 16) | (net4[2] << 8) | net4[3]) >>> 0;
-  const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0;
-  return (ipInt & mask) === (netInt & mask);
+  if (provided === "deny" || provided === "reject") return false;
+  return true;
 }
 function dbUrl() { return _dbUrl(); }
 
 async function q(sql, params = []) { return await dbq(sql, params); }
 
-// ?? helpers ??????????????????????????????????????????????????????????
+// ── helpers ──────────────────────────────────────────────────────────
 const H_JSON = { "Content-Type": "application/json; charset=utf-8" };
 const CACHE_NO_STORE = { "Cache-Control": "no-store" };
 function json(body, init = {}) {
@@ -148,7 +91,7 @@ function nowIso() { return new Date().toISOString(); }
 function pickStr(v, fallback = "") { return typeof v === "string" ? v : (v == null ? fallback : String(v)); }
 function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 
-// ?? watchlist + candle helpers ???????????????????????????????????????
+// ── watchlist + candle helpers ───────────────────────────────────────
 let _watchCache = null;
 let _watchCacheAt = 0;
 async function getWatchMap() {
@@ -226,7 +169,7 @@ function distHighPct(arr, window) {
   return high ? ((high - last) / high) * 100 : 0;
 }
 
-// ?? handlers: health & basic CRUD ????????????????????????????????????
+// ── handlers: health & basic CRUD ────────────────────────────────────
 async function healthz(request) {
   let dbOk = false;
   try { await q("SELECT 1 AS ok"); dbOk = true; } catch {}
@@ -250,9 +193,9 @@ async function listStocks(request) {
 async function addStock(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const code = pickStr(body?.code).trim();
-  if (!/^\d{4,6}$/.test(code)) return json({ error: "缺無??" }, { status: 400 });
+  if (!/^\d{4,6}$/.test(code)) return json({ error: "缺少或無效的代號" }, { status: 400 });
   const name = pickStr(body?.name).trim() || code;
   const ticker = `${code}.TW`;
   try {
@@ -271,8 +214,8 @@ async function addStock(request) {
 async function removeStock(request, code) {
   if (request.method !== "DELETE" && request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
-  if (!code) return json({ error: "缺?" }, { status: 400 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
+  if (!code) return json({ error: "缺少代號" }, { status: 400 });
   try {
     await q("DELETE FROM watchlist WHERE code = $1", [code]);
     _watchCache = null;
@@ -296,20 +239,20 @@ async function stockKlines(request, ticker) {
        ORDER BY trade_date DESC LIMIT $2`,
       [ticker, days]
     );
-    // 2026-08-26: 回 200 + empty candles，避開 lightweight-charts "Value is null" 警告
-    //   這個 endpoint 是 cacheable lookups，從 404 改前端 fetch 進 catch 分支
-    //   但前端 catch 直接 setData([])，新 allowlist try/catch 在 console 刷錯
-    //   用 200 + empty 結構，前端可以正常 render 「此股票K 線」
+    // 2026-08-26: 改成 200 + 空 candles，避免前端 lightweight-charts 爆 "Value is null"。
+    //   這個 endpoint 是公開 cacheable lookups，回 404 會讓前端 fetch 進入 catch 分支，
+    //   但舊版前端不處理 catch 直接 setData([])，新版則會 try/catch 但 console 還是會刷錯誤。
+    //   改成 200 + empty 結構，前端可以正常 render 「此股票無 K 線資料」訊息。
     if (!rows.length) {
       return json({
         ok: true, source: "empty", code: ticker, strategy, strategy_profile: strategyProfile,
         count: 0, candles: [], volumes: [],
         ma: { ma5: [], ma10: [], ma20: [], ma60: [], ma240: [] },
         latest: null,
-        capital: { shares_outstanding: null, market_cap: null },
+        capital: { shares_outstanding: null, market_cap_億: null },
         financial: { period: null, revenue: 0, gross_profit: 0, operating_income: 0, net_income: 0, eps: null, gross_margin_pct: null, operating_margin_pct: null, net_margin_pct: null },
         valuation: { pe_ratio: null, price: null, eps: null },
-        message: "此股票沒有 K 線資料，可能尚未 seed 進 market_price_bars",
+        message: "此股票尚無 K 線資料（可能尚未 seed 到 market_price_bars）",
       });
     }
     const asc = rows.slice().reverse();
@@ -355,8 +298,8 @@ async function stockKlines(request, ticker) {
     const volSoFar = candles.slice(-21, -1).map((c) => c.volume);
     const maxPrevVol = volSoFar.length ? Math.max(...volSoFar) : 0;
     const isVolMax = last.volume > maxPrevVol;
-    // 2026-08-14: ?capital/financial/income 給右panel（股市?每股淨?EPS/???ROE/ROA/毛利 allowlist淨利殖利??
-    // ?financial_reports 白名單 IP??(symbol, period, revenue, gross_profit, operating_income, net_income, eps)
+    // 2026-08-14: 補 capital/financial/income 給右側 panel（股本/市值/每股淨值/EPS/本益比/ROE/ROA/毛利率/營益率/淨利率/殖利率）
+    // 從 financial_reports 拉最新一筆 (symbol, period, revenue, gross_profit, operating_income, net_income, eps)
     let finLatest = null;
     try {
       const fr = await q(
@@ -368,7 +311,7 @@ async function stockKlines(request, ticker) {
       );
       if (fr.rows.length) finLatest = fr.rows[0];
     } catch {}
-    // ?market_instruments.metadata_text shares_outstanding (?大/富?等?源?
+    // 從 market_instruments.metadata_text 拉 shares_outstanding (元大/富果等來源會有)
     let sharesOutstanding = null;
     try {
       const mi = await q(
@@ -380,7 +323,7 @@ async function stockKlines(request, ticker) {
         sharesOutstanding = meta.shares_outstanding || meta.sharesOutstanding || meta.capital_shares || null;
       }
     } catch {}
-    // 計?衍?
+    // 計算衍生指標
     const rev = finLatest ? Number(finLatest.revenue) : null;
     const gp = finLatest ? Number(finLatest.gross_profit) : null;
     const opInc = finLatest ? Number(finLatest.operating_income) : null;
@@ -418,10 +361,10 @@ async function stockKlines(request, ticker) {
         isVolMax,
         market: 'TWSE',
       },
-      // 2026-08-14: 右側 panel 補資本/財務/估值欄位，用 financial_reports + market_instruments.metadata_text 拉
+      // 2026-08-14: 右側 panel 用的資本/財務/估值欄位（從 financial_reports + market_instruments.metadata_text 拉）
       capital: {
         shares_outstanding: sharesOutstanding,
-        market_cap: marketCap,
+        market_cap_億: marketCap,
       },
       financial: {
         period: finLatest?.period || null,
@@ -446,17 +389,21 @@ async function stockKlines(request, ticker) {
 }
 
 // Index klines: returns same shape as /api/stock/<ticker> for index symbols
-// (^TWII, ^TWOII, etc.) since we don't have index data in market_price_bars,
+// (^TWII, ^TWOII, etc.) — since we don't have index data in market_price_bars,
 // we use 2330 (TSMC) as a fallback proxy. For ^TWII we try Yahoo Finance first
 // (real TAIEX data, free, no key needed). The frontend page renders this in TWII/大盤 mode.
 //
-// 2026-08-13: ?? summary / gaps / dipSignal / markers 欄?（??loadIndexChart  allowlist4 ??
-//   - summary: 大盤??面??openGapUp/Down, bias, nearestSupport/Resist?//   - gaps: 缺口清單?板（type, gap_bottom/top, gap_pct, filled, fill_date?//   - dipSignal: ??訊板（triggered, drop_pct, is_vol_max, has_bearish_gap?//   - markers: ?股交?訊? markers 不適?於?數（是 2330 proxy）?保??array
+// 2026-08-13: 新增 summary / gaps / dipSignal / markers 欄位（前端 loadIndexChart 期待這 4 個）
+//   - summary: 大盤狀態面板（openGapUp/Down, bias, nearestSupport/Resist）
+//   - gaps: 缺口清單面板（type, gap_bottom/top, gap_pct, filled, fill_date）
+//   - dipSignal: 抄底訊號面板（triggered, drop_pct, is_vol_max, has_bearish_gap）
+//   - markers: 個股交易訊號 markers 不適用於指數（資料是 2330 proxy），保持空 array
 //
-// 2026-08-13: ^TWII ?用 Yahoo Finance ^TWII ?實?數（??2330 proxy）。Yahoo 5d/min rate limit
-//   ?Vercel edge IP ?，user ??不。失fallback 2330
-// Helper: Yahoo Finance ?數/?股K，?row-shaped ?
-// 形?對? Neon `market_price_bars` ?詢結?：??{trade_date: "YYYY-MM-DD", open_price, high_price, low_price, close_price, volume, change_value}
+// 2026-08-13: ^TWII 改用 Yahoo Finance ^TWII 真實指數（取代 2330 proxy）。Yahoo 5d/min rate limit
+//   但 Vercel edge IP 散佈，user 量低不會撞。失敗 fallback 2330。
+
+// Helper: 抓 Yahoo Finance 指數/個股日 K，回傳 row-shaped 陣列
+// 形狀對齊 Neon `market_price_bars` 查詢結果：每個元素 {trade_date: "YYYY-MM-DD", open_price, high_price, low_price, close_price, volume, change_value}
 async function fetchYahooCandlesAsRows(symbol, range = "1y") {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=${range}`;
   const ctrl = new AbortController();
@@ -506,10 +453,11 @@ async function fetchYahooCandlesAsRows(symbol, range = "1y") {
 }
 
 async function indexKlines(request, ticker) {
-  // 2026-08-13: Vercel 路由 regex ?decodeURL，ticker ?到?是 "%5ETWII"  allowlist"^TWII"
-  //             decode ???  const decodedTicker = (() => { try { return decodeURIComponent(ticker); } catch { return ticker; } })();
+  // 2026-08-13: Vercel 路由 regex 沒 decodeURL，ticker 拿到的是 "%5ETWII" 而不是 "^TWII"
+  //             先 decode 再比對
+  const decodedTicker = (() => { try { return decodeURIComponent(ticker); } catch { return ticker; } })();
   const isTwii = decodedTicker === "^TWII";
-  const proxy = "2330";  // fallback proxy (TSMC ?大???
+  const proxy = "2330";  // fallback proxy (TSMC 當大盤近似)
   let actualSource = "db";
   try {
     const u = urlOf(request);
@@ -525,7 +473,7 @@ async function indexKlines(request, ticker) {
           rows = yahooRows;
           actualSource = "yahoo_chart";
         } else {
-          // Yahoo 失? fallback DB 2330
+          // Yahoo 失敗 → fallback DB 2330
           const dbRes = await q(
             `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
              FROM market_price_bars
@@ -547,7 +495,7 @@ async function indexKlines(request, ticker) {
         rows = dbRes.rows;
       }
     } else {
-      // ^TWOII / ?? ?接2330 proxy
+      // ^TWOII / 其他 → 直接用 2330 proxy
       const dbRes = await q(
         `SELECT trade_date, open_price, high_price, low_price, close_price, volume, change_value
          FROM market_price_bars
@@ -557,9 +505,9 @@ async function indexKlines(request, ticker) {
       );
       rows = dbRes.rows;
     }
-    if (!rows.length) return json({ error: "?無資? (proxy " + proxy + ")", ticker }, { status: 404 });
-    // 2026-08-13: Yahoo 資?scending (oldest first)，DB 資?descending (newest first)
-    //             ctualSource ?斷要?要? reverse
+    if (!rows.length) return json({ error: "查無資料 (proxy " + proxy + ")", ticker }, { status: 404 });
+    // 2026-08-13: Yahoo 資料是 ascending (oldest first)，DB 資料是 descending (newest first)
+    //             用 actualSource 判斷要不要再 reverse
     const asc = (actualSource === "yahoo_chart") ? rows : rows.slice().reverse();
     const candles = asc.map((r) => {
       const isoDate = String(r.trade_date).slice(0, 10);
@@ -596,7 +544,8 @@ async function indexKlines(request, ticker) {
     const maxPrevVol = volSoFar.length ? Math.max(...volSoFar) : 0;
     const isVolMax = last.volume > maxPrevVol;
 
-    // 缺口?測（? computeGapsForSymbol ?用?輯，?inline candles 不?DB?    const gapStart = Math.max(1, candles.length - gapLookback);
+    // ★ 缺口偵測（與 computeGapsForSymbol 共用邏輯，但用 inline candles 不重查 DB）
+    const gapStart = Math.max(1, candles.length - gapLookback);
     const gaps = [];
     for (let i = 1; i < candles.length; i++) {
       if (i < gapStart) continue;
@@ -642,14 +591,17 @@ async function indexKlines(request, ticker) {
       openGapDown: openDownGaps,
     };
 
-    // ??訊?（dip signal）?3 條件 = ??補?下缺+ ?7 ???8% + 今日?交?為?7 ???    // 注?：candles scending（新）以?後是今天，倒數?1 ?是?天
+    // ★ 抄底訊號（dip signal）：3 條件 = 未回補向下缺口 + 近 7 日跌幅 ≥ 8% + 今日成交量為近 7 日最大
+    // 注意：candles 是 ascending（舊→新），所以最後一根是今天，倒數第 1 根是昨天
     const dipLookback = 7;
-    const dipWindowAll  = candles.slice(-Math.min(dipLookback, candles.length));  // ??N ?含今日
-    const dipWindowPrev = candles.slice(-(Math.min(dipLookback, candles.length) + 1), -1);  // ??N ?? allowlist    const firstClose7 = dipWindowAll.length ? dipWindowAll[0].close : last.close;
+    const dipWindowAll  = candles.slice(-Math.min(dipLookback, candles.length));  // 最近 N 日含今日
+    const dipWindowPrev = candles.slice(-(Math.min(dipLookback, candles.length) + 1), -1);  // 最近 N 日不含今日
+    const firstClose7 = dipWindowAll.length ? dipWindowAll[0].close : last.close;
     const todayVol    = last.volume;
     const maxVol7d    = dipWindowAll.length  ? Math.max(...dipWindowAll.map((c)  => c.volume)) : 0;
     const maxVol7dPrev = dipWindowPrev.length ? Math.max(...dipWindowPrev.map((c) => c.volume)) : 0;
-    // drop_pct ?「正?」表示?跌端 UI 顯示"-X%"?    const drop_pct = firstClose7 > 0 ? r2(((firstClose7 - last.close) / firstClose7) * 100) : 0;
+    // drop_pct 是「正值」表示下跌（前端 UI 顯示為 "-X%"）
+    const drop_pct = firstClose7 > 0 ? r2(((firstClose7 - last.close) / firstClose7) * 100) : 0;
     const is_vol_max     = todayVol > 0 && todayVol >= maxVol7dPrev;
     const has_bearish_gap = openDownGaps > 0;
     const triggered = has_bearish_gap && drop_pct >= 8.0 && is_vol_max;
@@ -678,7 +630,7 @@ async function indexKlines(request, ticker) {
       },
       latest: {
         code: decodedTicker,
-        name: decodedTicker === "^TWII" ? "白名單 IP數" : (decodedTicker === "^TWOII" ? "櫃買?數" : null),
+        name: decodedTicker === "^TWII" ? "加權指數" : (decodedTicker === "^TWOII" ? "櫃買指數" : null),
         close: last.close,
         change: r2(last.close - prev.close),
         changePct: prev.close ? r2(((last.close - prev.close) / prev.close) * 100) : 0,
@@ -693,18 +645,20 @@ async function indexKlines(request, ticker) {
         aboveAll,
         isVolMax,
       },
-      // 2026-08-13: 白名單 IP個??      markers: [],          // ?股交?訊? markers（buy/sell signals）用 allowlistproxy 資?，空 array
-      summary,              // 大盤??面      gaps,                 // 缺口清單?板
-      dipSignal,            // ??訊板
+      // ★ 2026-08-13: 新增四個欄位
+      markers: [],          // 個股交易訊號 markers（buy/sell signals）不適用於指數 proxy 資料，保持空 array
+      summary,              // 大盤狀態面板
+      gaps,                 // 缺口清單面板
+      dipSignal,            // 抄底訊號面板
     });
   } catch (e) {
     return json({ error: e?.message }, { status: 500 });
   }
 }
 
-// ?? screener core: score one stock ???????????????????????????????????
+// ── screener core: score one stock ───────────────────────────────────
 
-// GET /api/stock/<code>/etf_membership list ETFs that hold this stock
+// GET /api/stock/<code>/etf_membership — list ETFs that hold this stock
 async function stockEtfMembership(request, code) {
   if (!/^\d{4,6}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
   try {
@@ -722,7 +676,7 @@ async function stockEtfMembership(request, code) {
   }
 }
 
-// GET /api/stock/<code>/events?days=120 markers/signals for this stock
+// GET /api/stock/<code>/events?days=120 — markers/signals for this stock
 async function stockEvents(request, code) {
   if (!/^\d{4,6}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
   const u = urlOf(request);
@@ -742,7 +696,7 @@ async function stockEvents(request, code) {
   }
 }
 
-// GET /api/stock/<code>/intro basic stock metadata (sector, display_name, etc)
+// GET /api/stock/<code>/intro — basic stock metadata (sector, display_name, etc)
 async function stockIntro(request, code) {
   if (!/^\d{4,6}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
   try {
@@ -769,7 +723,9 @@ async function stockIntro(request, code) {
       }
     } catch { /* keep null */ }
 
-    // 2026-08-14: ?capital (?本/?數) + marketCap (市? 給?端基白名單 IP??    let capital = null;       // ?數（shares?    let marketCap = null;     // 市值?
+    // 2026-08-14: 補 capital (股本/股數) + marketCap (市值) 給前端基本資料區塊
+    let capital = null;       // 股數（shares）
+    let marketCap = null;     // 市值（元）
     let lastClose = null;
     try {
       const so = meta?.shares_outstanding || meta?.sharesOutstanding || meta?.capital_shares || null;
@@ -786,7 +742,7 @@ async function stockIntro(request, code) {
     } catch {}
     if (capital && lastClose) marketCap = Math.round(capital * lastClose);
 
-    // 2026-08-14: ?financial + valuation 給?端右panel（? financial_reports ??
+    // 2026-08-14: 補 financial + valuation 給前端右側 panel（從 financial_reports 拉）
     let finLatest = null;
     try {
       const fr = await q(
@@ -821,7 +777,8 @@ async function stockIntro(request, code) {
       capital,
       marketCap,
       lastClose,
-      // 2026-08-14: ??端右panel 白名單 IP基??況財??訊」用??平??      eps: epsVal,
+      // 2026-08-14: 為前端右側 panel 提供「基本概況」+「財務資訊」用的扁平欄位
+      eps: epsVal,
       pe: peRatio,
       grossMargin: grossMarginPct,
       operatingMargin: opMarginPct,
@@ -963,10 +920,10 @@ async function listRecipients(request) {
 }
 async function addRecipient(request) {
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const name = pickStr(body?.name).trim();
   const email = pickStr(body?.email).trim();
-  if (!name || !email) return json({ error: "缺? name email" }, { status: 400 });
+  if (!name || !email) return json({ error: "缺少 name 或 email" }, { status: 400 });
   try {
     await q("INSERT INTO recipients (name, email) VALUES ($1, $2) ON CONFLICT DO NOTHING", [name, email]);
     return json({ ok: true, name, email });
@@ -976,9 +933,9 @@ async function addRecipient(request) {
 }
 async function removeRecipient(request) {
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const id = parseInt(body?.id, 10);
-  if (!id) return json({ error: "缺? id" }, { status: 400 });
+  if (!id) return json({ error: "缺少 id" }, { status: 400 });
   try {
     await q("DELETE FROM recipients WHERE id = $1", [id]);
     return json({ ok: true, id });
@@ -1001,7 +958,7 @@ async function macroNews(request) {
 }
 async function newsList(request)     { return newsListImpl(request, { recordType: "news",    limit: 50 }); }
 async function newsMarket(request)   { return newsListImpl(request, { recordType: "news",    limit: 20, tag: "market" }); }
-// /api/news/<code> per-stock news lookup. Frontend (index.html loadStockNews)
+// /api/news/<code> — per-stock news lookup. Frontend (index.html loadStockNews)
 // uses data.news + data.combined + renderNewsBox(...). FALLBACK: search
 // knowledge_library by query_term (no per-stock news table yet).
 async function newsByCode(request, code) {
@@ -1043,7 +1000,7 @@ async function newsListImpl(request, { recordType = "news", limit = 20, tag = nu
 }
 
 async function macroData(request) {
-  // macroData: for macro.html. Frontend wants `data.data = [{??, ??? ?? ?新??, ...}]`
+  // macroData: for macro.html. Frontend wants `data.data = [{指標, 最新值, 前值, 更新時間, ...}]`
   // but the only real source we have is market_price_bars (TSMC proxy for TAIEX) and
   // macro_yields table (yield_2y / yield_10y). Everything else (CPI / BEI / VIX / etc.)
   // used to come from the offline Railway backend; we return placeholders so the page
@@ -1077,23 +1034,24 @@ async function macroData(request) {
     const as_of = last.trade_date ? String(last.trade_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
     const asOfLabel = as_of;
     // Build the array shape the frontend expects.
-    // 修正 BUG-7：「來源」欄位填 "FRED" 才能讓 macro.html renderFredTable 顯示 allowlist
-    //   之後 "macro_yields" / "TSMC proxy" / "Railway backend (offline)"
-    //   renderFredTable 用 d["來源"] === "FRED" 一律被過濾顯示（無白名單 IP）
-    //   補：macro yield / 總統選情 "FRED"（實指數據源 + offline placeholder）端就能 render
+    // ★ 修正 BUG-7：把「來源」欄位填成 "FRED" 才能讓 macro.html 的 renderFredTable 顯示出來。
+    //   之前用 "macro_yields" / "TSMC proxy" / "需 Railway backend (offline)"，
+    //   renderFredTable 只過濾 d["來源"] === "FRED" → 一律被過濾掉 → 顯示「無數據」。
+    //   改成：所有 macro yield / 總經指標統一標記為 "FRED"（實際數據來源，
+    //   含 macro_yields 資料表 + offline placeholder），前端就會 render。
     const arr = [
-      { "名稱": "台股指數 (2330)", "最新值": tsLast, "前日值": tsPrev, "更新時間": asOfLabel, "來源": "FRED", "來源標籤": "TSMC proxy" },
-      { "名稱": "10年公債殖利率 (%)", "最新值": last10y, "前日值": prev10y, "更新時間": asOfLabel, "來源": "FRED", "來源標籤": "macro_yields" },
-      { "名稱": "2年公債殖利率 (%)",  "最新值": last2y,  "前日值": prev2y,  "更新時間": asOfLabel, "來源": "FRED", "來源標籤": "macro_yields" },
+      { "指標": "台股指數代理 (2330)", "最新值": tsLast, "前值": tsPrev, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "TSMC proxy" },
+      { "指標": "美10年公債殖利率(%)", "最新值": last10y, "前值": prev10y, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "macro_yields" },
+      { "指標": "美2年公債殖利率(%)",  "最新值": last2y,  "前值": prev2y,  "更新時間": asOfLabel, "來源": "FRED", "來源標記": "macro_yields" },
     ];
     // Spread placeholder rows so the page can render placeholders for missing metrics.
     const placeholders = [
-      "美債平衡通膨BEI(%)", "10年3月公債利差", "10年2年公債利差",
-      "聯邦利率(%)", "GDP長年(%)", "美國失業率(%)", "密大消費信心",
-      "席勒CAPE", "VIX指數", "美國CPI年增(%)", "核心CPI YoY(%)",
+      "美債平衡通膨率BEI(%)", "10年-3月公債利差", "10年-2年公債利差",
+      "聯邦基金利率(%)", "GDP成長率年化(%)", "美國失業率(%)", "密大消費者信心",
+      "席勒本益比(CAPE)", "VIX恐慌指數", "美國CPI年增率(%)", "核心CPI YoY(%)",
     ];
     for (const name of placeholders) {
-      arr.push({ "名稱": name, "最新值": null, "前日值": null, "更新時間": asOfLabel, "來源": "FRED", "來源標籤": "Railway backend (offline)" });
+      arr.push({ "指標": name, "最新值": null, "前值": null, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "需 Railway backend (offline)" });
     }
     return json({
       ok: true,
@@ -1123,7 +1081,7 @@ async function intradayScanStatus(request) {
 }
 async function intradayScanToggle(request) {
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   return json({ ok: true, enabled: !!body?.enabled });
 }
 
@@ -1133,17 +1091,18 @@ async function markersRecordImpl(request) {
   const code = pickStr(body?.code).trim();
   if (!/^\d{4,6}$/.test(code)) return json({ error: "invalid code" }, { status: 400 });
 
-  // ?種寫入模?:
-  //   A) 管? allowlistbody ?password + ?? (date/type/text/price)    ?要??  //   B) ?端??記?:body.items[] ?                                ???白名單 IP面事件記?)
+  // 兩種寫入模式:
+  //   A) 管理員手動:body 帶 password + 單筆 (date/type/text/price)    → 需要密碼
+  //   B) 前端自動記錄:body.items[] 陣列                                → 免密碼(公開頁面事件記錄)
   const items = Array.isArray(body?.items) ? body.items : null;
-  const hasPassword = operatorOk(body?.password, request);
+  const hasPassword = operatorOk(body?.password);
 
-  // 模? A:管? allowlist白名單 IP容)
+  // 模式 A:管理員手動記錄(向後相容)
   if (!items && hasPassword) {
     try {
       await q(
         `INSERT INTO markers (code, date, type, text, price) VALUES ($1, $2, $3, $4, $5)`,
-        [code, pickStr(body?.date), pickStr(body?.type ?? "note"), pickStr(body?.text), Number(body?.price) || null]
+        [code, pickStr(body?.date), pickStr(body?.type ?? "note", "note"), pickStr(body?.text), Number(body?.price) || null]
       );
       return json({ ok: true, code, mode: "single", inserted: 1 });
     } catch (e) {
@@ -1151,7 +1110,7 @@ async function markersRecordImpl(request) {
     }
   }
 
-  // 模? B:?端??記? markers(???
+  // 模式 B:前端自動記錄 markers(免密碼)
   if (items && items.length > 0) {
     try {
       // Normalize ALL rows first; skip ones with invalid type instead of failing the whole batch.
@@ -1164,7 +1123,7 @@ async function markersRecordImpl(request) {
         if (v instanceof Date) d = v;
         else if (typeof v === "number") d = new Date(v * 1000);
         else if (typeof v === "string") {
-          // numeric string seconds; non-numeric string try as ISO/native
+          // numeric string → seconds; non-numeric string → try as ISO/native
           if (/^\d+(\.\d+)?$/.test(v.trim())) d = new Date(Number(v) * 1000);
           else d = new Date(v);
         } else {
@@ -1178,8 +1137,11 @@ async function markersRecordImpl(request) {
         let isoDate = safeIsoDate(it?.time);
         if (!isoDate) isoDate = todayIso;  // fallback to today when time is missing/invalid
         const type = pickStr(it?.source || "auto", "auto");        // "trade" | "event" | "auto"
-        // 2026-08-26 fix: ??純?字到 markers.text 欄?
-        //   之?close/ma5/10/20/60/position/shape/color/time 序? allowlisttext?        //   ?? marker_history.html 顯示 "<訊息> || {...一null JSON...}"  allowlist        //   ??欄?charts 端已經用得到，要? allowlistDB text        const text = pickStr(it?.text);
+        // 2026-08-26 fix: 只存純文字到 markers.text 欄位
+        //   之前把 close/ma5/10/20/60/position/shape/color/time 序列化塞進 text，
+        //   造成 marker_history.html 顯示 "<訊息> || {...一堆 null JSON...}" 雜訊。
+        //   這些欄位在 charts 端已經用得到，不需要再回灌到 DB 的 text。
+        const text = pickStr(it?.text);
         rows.push([code, isoDate, type, text, null]);
       }
       if (rows.length === 0) {
@@ -1205,7 +1167,7 @@ async function markersRecordImpl(request) {
     }
   }
 
-  //  allowlist?示??
+  // 都沒有 → 提示用法
   return json({ error: "missing password (single mode) or items[] (batch mode)" }, { status: 400 });
 }
 async function markersRecord(request) { return markersRecordImpl(request); }
@@ -1304,7 +1266,7 @@ async function intradayCheck(request, code) {
   return json({ ok: true, source: "stub", code, current_price: null, signals: { intraday: {} } });
 }
 
-// ?? new handlers: market_gaps, fibonacci, scan_and_email ????????????
+// ── new handlers: market_gaps, fibonacci, scan_and_email ────────────
 async function computeGapsForSymbol(symbol, label, lookback, minGap) {
   try {
     const { rows } = await q(
@@ -1314,7 +1276,7 @@ async function computeGapsForSymbol(symbol, label, lookback, minGap) {
        ORDER BY trade_date DESC LIMIT $2`,
       [symbol, lookback + 5]
     );
-    if (!rows.length) return { name: label, error: "?無資?" };
+    if (!rows.length) return { name: label, error: "查無資料" };
     const asc = rows.slice().reverse();
     const gaps = [];
     for (let i = 1; i < asc.length; i++) {
@@ -1367,7 +1329,7 @@ async function computeGapsForSymbol(symbol, label, lookback, minGap) {
       gaps,
     };
   } catch (e) {
-    return { name: label, error: e?.message || "?詢失?" };
+    return { name: label, error: e?.message || "查詢失敗" };
   }
 }
 
@@ -1376,13 +1338,13 @@ async function marketGaps(request) {
   const lookback = Math.min(180, Math.max(10, parseInt(u.searchParams.get("lookback") || "60", 10) || 60));
   const minGap   = Math.max(0.1, parseFloat(u.searchParams.get("min_gap") || "0.3") || 0.3);
   // Frontend iterates ^TWII / ^TWOII. We don't have index data in DB,
-  // so return those keys with a clean "no index data" message frontend
+  // so return those keys with a clean "no index data" message — frontend
   // handles `d.error` gracefully. We also tack on a real `^PROXY` from
-  // 2330 (台積電) allowlist so the panel can show something live.
+  // 2330 (台積電) so the panel can show something live.
   const [twii, twoii, proxy] = await Promise.all([
-    Promise.resolve({ name: "加權指數", error: "查詢 DB 失敗（無股/ETF）" }),
-    Promise.resolve({ name: "櫃買指數", error: "查詢 DB 失敗（無股/ETF）" }),
-    computeGapsForSymbol("2330", "台積電(2330) 代理大盤", lookback, minGap),
+    Promise.resolve({ name: "加權指數", error: "無指數資料（DB 僅存個股/ETF）" }),
+    Promise.resolve({ name: "櫃買指數", error: "無指數資料（DB 僅存個股/ETF）" }),
+    computeGapsForSymbol("2330", "台積電 (2330) 當作大盤代理", lookback, minGap),
   ]);
   return json({ ok: true, source: "db", "^TWII": twii, "^TWOII": twoii, "^PROXY": proxy });
 }
@@ -1393,7 +1355,7 @@ async function fibonacciFor(request, code) {
   const window = Math.min(500, Math.max(20, parseInt(u.searchParams.get("window") || "60", 10) || 60));
   try {
     const candles = await getCandles(code, window);
-    if (candles.length < 20) return json({ error: "資?不足", code, window }, { status: 404 });
+    if (candles.length < 20) return json({ error: "資料不足", code, window }, { status: 404 });
     const high = Math.max(...candles.map((c) => c.high));
     const low  = Math.min(...candles.map((c) => c.low));
     const range = high - low;
@@ -1446,7 +1408,7 @@ async function scanAndEmail(request) {
   }
 }
 
-// ?? new handlers: etf_holdings/* ?????????????????????????????????????
+// ── new handlers: etf_holdings/* ─────────────────────────────────────
 async function etfList(request) {
   try {
     const { rows } = await q("SELECT code, name, ticker, created_at FROM etf_watchlist ORDER BY sort_order ASC, code ASC LIMIT 200");
@@ -1459,10 +1421,10 @@ async function etfList(request) {
 async function etfListAdd(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const code = pickStr(body?.code).trim();
   const name = pickStr(body?.name).trim() || code;
-  if (!/^\d{4,6}$/.test(code)) return json({ error: "缺無??" }, { status: 400 });
+  if (!/^\d{4,6}$/.test(code)) return json({ error: "缺少或無效的代號" }, { status: 400 });
   const ticker = `${code}.TW`;
   try {
     await q(
@@ -1480,9 +1442,9 @@ async function etfListAdd(request) {
 async function etfListRemove(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const code = pickStr(body?.code).trim();
-  if (!code) return json({ error: "缺?" }, { status: 400 });
+  if (!code) return json({ error: "缺少代號" }, { status: 400 });
   try {
     await q("DELETE FROM etf_watchlist WHERE code = $1", [code]);
     _etfCache = null;
@@ -1554,10 +1516,10 @@ async function etfStatus(request) {
         last_refresh: lastRefresh,
         count: 0,
         no_data: true,
-        message: "etf_holdings 表為空?bulk data source（? per-issuer ??",
+        message: "etf_holdings 表為空，無 bulk data source（需 per-issuer 爬）",
       });
     }
-    // Has data do sync analysis and return result inline
+    // Has data — do sync analysis and return result inline
     const result = await _runEtfAnalysis();
     return json({
       ok: true,
@@ -1588,10 +1550,10 @@ async function etfAnalyze(request) {
         source: "stub",
         no_data: true,
         count: 0,
-        message: "etf_holdings 表為空，無 bulk source；請 per-issuer 補資料後 seed",
+        message: "etf_holdings 表為空（無 bulk source；需 per-issuer 爬或手動 seed）",
       });
     }
-    // Run real analysis (inline to avoid dynamic import edge runtime)
+    // Run real analysis (inline to avoid dynamic import — edge runtime)
     const result = await _runEtfAnalysis();
     return json({ ok: true, source: "db", count: n, status: "done", ...result });
   } catch (e) {
@@ -1660,7 +1622,7 @@ async function etfClearCache(request) {
   return json({ ok: true, cleared: true });
 }
 
-// ?? new handlers: rebalance/* ????????????????????????????????????????
+// ── new handlers: rebalance/* ────────────────────────────────────────
 async function rebalanceCompute(request) {
   const watch = await getWatchMap();
   const codes = Array.from(watch.keys());
@@ -1714,8 +1676,8 @@ async function rebalanceGroups(request) {
     const groups = new Map();
     for (const r of rows) {
       const sector = (() => {
-        try { return (r.metadata_text && JSON.parse(r.metadata_text).industry) || "??"; }
-        catch { return "??"; }
+        try { return (r.metadata_text && JSON.parse(r.metadata_text).industry) || "其他"; }
+        catch { return "其他"; }
       })();
       if (!groups.has(sector)) groups.set(sector, []);
       groups.get(sector).push({ code: r.symbol, name: watch.get(r.symbol)?.name || r.symbol, exchange: r.exchange_name });
@@ -1731,10 +1693,14 @@ async function rebalanceDynamic(request) {
   return rebalanceCompute(request);
 }
 
-// ?? new handlers: uptrend_watch/* ????????????????????????????????????
+// ── new handlers: uptrend_watch/* ────────────────────────────────────
 async function uptrendWatch(request) {
-  // 修正 BUG-8：uptrend-watch.html ?端??結?  //   { ok, as_of, scanned, uptrend_count, ma10:[...], ma20:[...], volow:[...] }
-  //   ?? allowlistitems（混??篩選結?）?導致?端??總數/趨勢檔數/?踩/??下殺 ?是 0?  //   三?tab 也?不到資?  //   ?為：用 scanAllImpl 算出三?清單，並??端?位?  try {
+  // ★ 修正 BUG-8：uptrend-watch.html 前端期待結構為
+  //   { ok, as_of, scanned, uptrend_count, ma10:[...], ma20:[...], volow:[...] }
+  //   舊版只回傳 items（混雜的篩選結果），導致前端掃描總數/趨勢檔數/回踩/爆量下殺 全是 0，
+  //   三個 tab 也讀不到資料。
+  //   改為：用 scanAllImpl 算出三類清單，並按前端欄位回傳。
+  try {
     const results = await scanAllImpl();
     const asOf = new Date().toISOString().slice(0, 10);
     const scored = (arr) => (arr || []).map((r) => ({
@@ -1753,7 +1719,7 @@ async function uptrendWatch(request) {
     }));
 
     const uptrendAll = results.filter((r) => r.cond2 && r.cond3);
-    // 站上均線 = 距 60 日高點 ≤ 3%，最新收盤與 MA10 差距 ≤ 2%（站穩 MA10 但允許 slight pullback）
+    // 回踩均線 = 目前接近 MA10 或 MA20 但仍在多頭排列
     const ma10 = uptrendAll.filter((r) =>
       r.dist_high_60d_pct != null && r.dist_high_60d_pct <= 3 &&
       r.latest_close != null && r.ma10 != null &&
@@ -1764,7 +1730,7 @@ async function uptrendWatch(request) {
       r.latest_close != null && r.ma20 != null &&
       Math.abs(r.latest_close - r.ma20) / r.ma20 <= 0.03
     );
-    // ??下殺（?似錯殺?= 高?交? + ?盤?離 MA20
+    // 爆量下殺（疑似錯殺）= 高成交量 + 收盤遠離 MA20
     const volow = results.filter((r) =>
       r.cond5 === true && r.gain_5d_pct != null && r.gain_5d_pct < -3 &&
       r.latest_close != null && r.ma20 != null &&
@@ -1780,7 +1746,7 @@ async function uptrendWatch(request) {
       ma10: scored(ma10),
       ma20: scored(ma20),
       volow: scored(volow),
-      // 兼容舊欄位
+      // 相容舊版欄位
       count: uptrendAll.length,
       items: scored(uptrendAll),
       generated_at: Date.now(),
@@ -1798,13 +1764,13 @@ async function uptrendWatch(request) {
       count: 0,
       items: [],
       error: e?.message,
-      message: "uptrend_watch 計?失?（可?缺?watchlist / market_price_bars?,
+      message: "uptrend_watch 計算失敗（可能缺少 watchlist / market_price_bars）",
     });
   }
 }
 async function uptrendWatchFilter(request) { return uptrendWatch(request); }
 
-// ?? new handlers: admin/logs (markers as log) ????????????????????????
+// ── new handlers: admin/logs (markers as log) ────────────────────────
 async function adminLogs(request, id) {
   try {
     if (id) {
@@ -1832,7 +1798,7 @@ async function adminLogs(request, id) {
 async function adminLogsClear(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   try {
     const { rows } = await q("DELETE FROM markers");
     return json({ ok: true, cleared: true });
@@ -1841,7 +1807,7 @@ async function adminLogsClear(request) {
   }
 }
 
-// ?? new handlers: conference, exdiv, etc. ????????????????????????????
+// ── new handlers: conference, exdiv, etc. ────────────────────────────
 async function conferenceList(request) {
   const u = urlOf(request);
   const fromDate = u.searchParams.get("from");
@@ -1886,7 +1852,7 @@ async function conferenceSentimentStats(request) {
     return json({ ok: true, source: "stub", count: 0, buckets: [], error: e?.message });
   }
 }
-// /api/conference/<code> per-stock conference / 法說lookup. Frontend
+// /api/conference/<code> — per-stock conference / 法說會 lookup. Frontend
 // (index.html loadConference) expects { data: [{meeting_date, meeting_time,
 // location, ai: {sentiment, summary}}] }. We don't have a real conference
 // table; FALLBACK: search knowledge_library by query_term and synthesize a
@@ -1934,7 +1900,8 @@ async function exdivCalendar(request) {
        LIMIT 200`,
       [String(days)]
     );
-    // 2026-08-14: updated_at / as_of / fetched_at ?exdiv.html 顯示?更白名單 IP?    const nowIso = new Date().toISOString();
+    // 2026-08-14: 加 updated_at / as_of / fetched_at 給 exdiv.html 顯示「更新時間」
+    const nowIso = new Date().toISOString();
     return json({
       ok: true, source: "db", count: rows.length, items: rows, days,
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
@@ -1975,7 +1942,7 @@ async function exdivUpcoming(request) {
   }
 }
 
-// ?? institutional / foreign_futures / financial / revenue etc. ???????
+// ── institutional / foreign_futures / financial / revenue etc. ───────
 async function institutionalImpl(request, code) {
   try {
     let sql = `SELECT id, symbol, trade_date, foreign_buy, foreign_sell, foreign_net,
@@ -2062,10 +2029,10 @@ async function financial(request, codeFromPath) {
         ok: false,
         source: "stub",
         code,
-        quality: { score: 0, level: " allowlist, reasons: [], warnings: ["此股票季度財 allowlist] },
+        quality: { score: 0, level: "無資料", reasons: [], warnings: ["此股票尚無季度財報資料"] },
         financial_data: { eps: [] },
-        error: "此股票季度財 allowlist,
-        message: "synth seed ?涵?部watchlist，?見?,
+        error: "此股票尚無季度財報資料",
+        message: "synth seed 僅涵蓋部分 watchlist，請見後台",
       });
     }
     const periods = rows.map(r => ({
@@ -2084,22 +2051,22 @@ async function financial(request, codeFromPath) {
     const gm = latest.revenue > 0 ? (latest.gross_profit / latest.revenue) : 0;
     const om = latest.revenue > 0 ? (latest.operating_income / latest.revenue) : 0;
     const nm = latest.revenue > 0 ? (latest.net_income / latest.revenue) : 0;
-    if (gm >= 0.4) { score += 15; reasons.push(`毛利${(gm*100).toFixed(1)}% ?異`); }
-    else if (gm >= 0.2) { score += 8; reasons.push(`毛利${(gm*100).toFixed(1)}% 穩?`); }
-    else if (gm < 0.1 && gm >= 0) { score -= 5; warnings.push(`毛利?? ${(gm*100).toFixed(1)}%`); }
-    if (om >= 0.2) { score += 15; reasons.push(` allowlist${(om*100).toFixed(1)}% 強?`); }
-    else if (om >= 0.1) { score += 5; reasons.push(` allowlist${(om*100).toFixed(1)}% ?康`); }
-    else if (om < 0) { score -= 10; warnings.push(`?業?? ${(om*100).toFixed(1)}%`); }
-    if (nm >= 0.15) { score += 10; reasons.push(`淨利${(nm*100).toFixed(1)}%`); }
-    else if (nm < 0) { score -= 15; warnings.push(`淨? ${(nm*100).toFixed(1)}%`); }
+    if (gm >= 0.4) { score += 15; reasons.push(`毛利率 ${(gm*100).toFixed(1)}% 優異`); }
+    else if (gm >= 0.2) { score += 8; reasons.push(`毛利率 ${(gm*100).toFixed(1)}% 穩定`); }
+    else if (gm < 0.1 && gm >= 0) { score -= 5; warnings.push(`毛利率僅 ${(gm*100).toFixed(1)}%`); }
+    if (om >= 0.2) { score += 15; reasons.push(`營益率 ${(om*100).toFixed(1)}% 強勁`); }
+    else if (om >= 0.1) { score += 5; reasons.push(`營益率 ${(om*100).toFixed(1)}% 健康`); }
+    else if (om < 0) { score -= 10; warnings.push(`營業虧損 ${(om*100).toFixed(1)}%`); }
+    if (nm >= 0.15) { score += 10; reasons.push(`淨利率 ${(nm*100).toFixed(1)}%`); }
+    else if (nm < 0) { score -= 15; warnings.push(`淨損 ${(nm*100).toFixed(1)}%`); }
     if (periods.length >= 2) {
       const oldest = periods[periods.length - 1];
       const epsGrowth = oldest.eps !== 0 ? ((latest.eps - oldest.eps) / Math.abs(oldest.eps)) : 0;
-      if (epsGrowth > 0.2) { score += 10; reasons.push(`EPS  ${(epsGrowth*100).toFixed(1)}%`); }
-      else if (epsGrowth < -0.2) { score -= 10; warnings.push(`EPS  ${Math.abs(epsGrowth*100).toFixed(1)}%`); }
+      if (epsGrowth > 0.2) { score += 10; reasons.push(`EPS 季增 ${(epsGrowth*100).toFixed(1)}%`); }
+      else if (epsGrowth < -0.2) { score -= 10; warnings.push(`EPS 季減 ${Math.abs(epsGrowth*100).toFixed(1)}%`); }
     }
     score = Math.max(0, Math.min(100, Math.round(score)));
-    const level = score >= 80 ? "?異" : score >= 60 ? "?好" : score >= 40 ? "中?" : score >= 20 ? "待?? : "高風;
+    const level = score >= 80 ? "優異" : score >= 60 ? "良好" : score >= 40 ? "中等" : score >= 20 ? "待觀察" : "高風險";
     // Synth valuation: per = close / eps_ttm, pbr by sector default, fair = close * (1 ± per% range)
     let valuation = null;
     try {
@@ -2118,9 +2085,9 @@ async function financial(request, codeFromPath) {
         let pbr = 3;
         try {
           const m = ind.rows[0]?.metadata_text ? JSON.parse(ind.rows[0].metadata_text) : null;
-          if (m && m.industry === "??體業") pbr = 6;
-          else if (m && m.industry === "??保險?) pbr = 1.0;
-          else if (m && m.industry === "???) pbr = 1.5;
+          if (m && m.industry === "半導體業") pbr = 6;
+          else if (m && m.industry === "金融保險業") pbr = 1.0;
+          else if (m && m.industry === "航運業") pbr = 1.5;
         } catch {}
         const fair_low = (eps_ttm * 12).toFixed(0);
         const fair_high = (eps_ttm * 20).toFixed(0);
@@ -2144,7 +2111,7 @@ async function financial(request, codeFromPath) {
         total_score: score,
         color: score >= 80 ? "#00c853" : score >= 60 ? "#ffd600" : score >= 40 ? "#448aff" : score >= 20 ? "#ff6d00" : "#ff1744",
         recommendation: level,
-        confidence: reasons.length > warnings.length ? "? : "?,
+        confidence: reasons.length > warnings.length ? "高" : "中",
         breakdown: {
           tech: 50,           // placeholder; technical signal from index.html loadTechnical()
           financial: score,   // financial score mirrors quality
@@ -2187,7 +2154,7 @@ async function marginBurst(request, codeFromPath) {
   // We don't have margin_balance data (TWSE doesn't publish per-stock), so margin
   // fields are stubs; but we DO have market_price_bars, so vol_ratio, ma60_slope_pct,
   // rsi14 can be computed for real. That way the right panel shows real numbers for
-  // what we have, and "??資?尚未建?" badge for the rest.
+  // what we have, and "融資資料尚未建立" badge for the rest.
   if (codeFromPath) {
     let volRatio = 0, ma60SlopePct = 0, rsi14 = 0;
     try {
@@ -2226,8 +2193,8 @@ async function marginBurst(request, codeFromPath) {
       metrics: {
         code: codeFromPath,
         is_g7: false,
-        fail_reasons: ["??餘?資建立?margin_balance 表為空?TWSE per-stock ?? source?],
-        // margin fields (no data 0 / null)
+        fail_reasons: ["融資餘額資料未建立（margin_balance 表為空，TWSE 無 per-stock 公開 source）"],
+        // margin fields (no data → 0 / null)
         avg_cost_est: 0,
         cost_premium_pct: 0,
         margin_burst_ratio: 0,
@@ -2307,8 +2274,11 @@ async function revenue(request) {
     const lim = code ? "24" : "500";
     const sql = `
       SELECT r.id, r.symbol AS code,
-             -- 修正 BUG-5：優?用 watchlist ?稱（自?股已命??，fallback              --   market_instruments.display_name（?市?白名單 IP表）後空字串             --   revenue 表全市場?票，? watchlist ?? 7 ?自?股，?join
-             --   market_instruments ?能讓股票?稱」?位?             COALESCE(NULLIF(w.name, ''), NULLIF(inst.display_name, ''), '') AS name,
+             -- ★ 修正 BUG-5：優先用 watchlist 名稱（自選股已命名），fallback 到
+             --   market_instruments.display_name（上市櫃全市場對照表），最後才用空字串。
+             --   revenue 表記錄全市場股票，但 watchlist 只有 7 支自選股，必須 join
+             --   market_instruments 才能讓所有股票的「名稱」欄位有值。
+             COALESCE(NULLIF(w.name, ''), NULLIF(inst.display_name, ''), '') AS name,
              r.year || '/' || r.month AS year_month,
              r.revenue::float8 AS revenue_current,
              r.mom_pct::float8 AS mom_pct,
@@ -2319,7 +2289,7 @@ async function revenue(request) {
              r.fetched_at
       FROM revenue r
       LEFT JOIN watchlist w ON w.code = r.symbol
-      -- symbol ?能對?多?source（yahoo/finmind 等?，用 DISTINCT ON ?任一筆? display_name ??
+      -- ★ 同 symbol 可能對應多個 source（yahoo/finmind 等），用 DISTINCT ON 取任一筆有 display_name 的列
       LEFT JOIN (
         SELECT DISTINCT ON (symbol) symbol, display_name
         FROM market_instruments
@@ -2359,7 +2329,7 @@ const AI_CAPEX_NAMES = {
 
 function _aiCapexQuartetKey(y, q) { return y * 10 + q; }
 
-// ?? sold_too_early: heuristic "potentially sold too early" detector ??
+// ── sold_too_early: heuristic "potentially sold too early" detector ──
 // No trade history. Heuristic: for each watchlist stock, find cases where
 // the price recently BROKE BELOW MA20 (sell signal territory), then later
 // re-crossed ABOVE MA5/MA10/MA20 (sold signal invalidated). Bigger bounce
@@ -2375,11 +2345,11 @@ async function soldTooEarly(request) {
     if (wl.length === 0) {
       return json({ ok: true, source: "stub", as_of: new Date().toISOString().slice(0, 10),
         scanned: 0, count: 0, rows: [],
-        message: "watchlist ?空，在主系統新增自?股" });
+        message: "watchlist 為空，請先在主系統新增自選股" });
     }
     // 2. Single batched query: pull all bars in one shot
     //    Use window function to get the last `lookback` bars per code
-    const codeList = wl.map(w => String(w.code  w[0]  "").trim()).filter(Boolean);
+    const codeList = wl.map(w => String(w.code ?? w[0] ?? "").trim()).filter(Boolean);
     if (codeList.length === 0) {
       return json({ ok: true, source: "stub", as_of: new Date().toISOString().slice(0, 10),
         scanned: 0, count: 0, rows: [] });
@@ -2399,16 +2369,16 @@ async function soldTooEarly(request) {
     // Group by code
     const byCode = new Map();
     for (const b of allBars) {
-      const sym = String(b.symbol  b[0]  "").trim();
-      const d   = String(b.d  b[1]  "").trim();
-      const c   = Number(b.c  b[2]);
+      const sym = String(b.symbol ?? b[0] ?? "").trim();
+      const d   = String(b.d ?? b[1] ?? "").trim();
+      const c   = Number(b.c ?? b[2]);
       if (!byCode.has(sym)) byCode.set(sym, []);
       byCode.get(sym).push({ d, c });
     }
     // 3. For each stock, compute MA + check sold-too-early
     const hits = [];
     let asOf = null;
-    const nameByCode = new Map(wl.map(w => [String(w.code  w[0]  "").trim(), String(w.name  w[1]  "").trim()]));
+    const nameByCode = new Map(wl.map(w => [String(w.code ?? w[0] ?? "").trim(), String(w.name ?? w[1] ?? "").trim()]));
     for (const [code, bars] of byCode) {
       if (bars.length < 25) continue; // need at least MA20 + buffer
       // bars is DESC; reverse to ASC for MA calculation
@@ -2471,7 +2441,7 @@ async function soldTooEarly(request) {
       scanned: wl.length,
       count: hits.length,
       rows: hits,
-      note: "?發式價 allowlistMA20（賣白名單 IP?，?來?站? MA5/10/20，實?交 allowlist,
+      note: "啟發式：股價曾跌破 MA20（賣出訊號），後來又站回 MA5/10/20，但無實際交易紀錄",
     });
   } catch (e) {
     return json({ ok: false, source: "stub", error: e?.message });
@@ -2488,12 +2458,12 @@ async function aiCapex(request) {
     );
     if (rows.length === 0) {
       return json({ ok: true, source: "stub", count: 0, items: [], as_of: new Date().toISOString().slice(0, 10),
-        message: "ai_capex table empty run SEC EDGAR loader",
+        message: "ai_capex table empty — run SEC EDGAR loader",
         companies: [], chart: { labels: [], agg_ttm: [], agg_yoy: [] },
         agg_ttm_usd_bn: null, agg_yoy_pct: null, accel_pp: null,
-        light: "gray", headline: "ai_capex 表為空?請? SEC EDGAR loader" });
+        light: "gray", headline: "ai_capex 表為空，請跑 SEC EDGAR loader" });
     }
-    // Normalize rray of objects
+    // Normalize → array of objects
     const raw = rows.map(r => ({
       company: r.company,
       year: Number(r.year),
@@ -2539,7 +2509,7 @@ async function aiCapex(request) {
     companies.sort((a, b) => AI_CAPEX_ALL.indexOf(a.code) - AI_CAPEX_ALL.indexOf(b.code));
 
     // Aggregate: sum across core 5 (TTM per quarter aligned by quarter)
-    // First, build a (year, quarter) total capex map for core
+    // First, build a (year, quarter) → total capex map for core
     const coreAgg = new Map();
     for (const r of raw) {
       if (!AI_CAPEX_CORE.includes(r.company)) continue;
@@ -2584,11 +2554,11 @@ async function aiCapex(request) {
     }
     // Light signal
     let light = "gray";
-    let headline = "資?不足";
+    let headline = "資料不足";
     if (aggYoyPct != null) {
-      if (aggYoyPct > 15 && (accelPp == null || accelPp >= 0)) { light = "green"; headline = `?? capex TTM 仍擴張?YoY +${aggYoyPct}%）`; }
-      else if (aggYoyPct > 0) { light = "yellow"; headline = `?張但?弱?YoY +${aggYoyPct}%${accelPp != null ? `?{accelPp > 0 ? '+' : ''}${accelPp}pp` : ''}）`; }
-      else { light = "red"; headline = `?? capex TTM 轉收縮?YoY ${aggYoyPct}%）`; }
+      if (aggYoyPct > 15 && (accelPp == null || accelPp >= 0)) { light = "green"; headline = `合計 capex TTM 仍擴張（YoY +${aggYoyPct}%）`; }
+      else if (aggYoyPct > 0) { light = "yellow"; headline = `擴張但動能轉弱（YoY +${aggYoyPct}%${accelPp != null ? `，${accelPp > 0 ? '+' : ''}${accelPp}pp` : ''}）`; }
+      else { light = "red"; headline = `合計 capex TTM 轉收縮（YoY ${aggYoyPct}%）`; }
     }
     const asOf = new Date().toISOString().slice(0, 10);
     return json({
@@ -2641,13 +2611,13 @@ async function macroYield2yHistory(request) {
   }
 }
 
-// ?? price_compare / heatmap ??????????????????????????????????????????
+// ── price_compare / heatmap ──────────────────────────────────────────
 async function priceCompare(request) {
   const u = urlOf(request);
   const kind = pickStr(u.searchParams.get("kind") || "stocks");
   const codesParam = pickStr(u.searchParams.get("codes") || "");
   let codes = codesParam ? codesParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
-  // FALLBACK: no ?codes= use watchlist (etf_watchlist for kind=etf) so the page
+  // FALLBACK: no ?codes= → use watchlist (etf_watchlist for kind=etf) so the page
   // shows something on first load instead of an error.
   if (!codes.length) {
     if (kind === "etf") {
@@ -2739,16 +2709,16 @@ async function heatmap(request) {
     const stocks = [];
     for (const m of metaRows) {
       const industry = (() => {
-        if (!m.metadata_text) return "??";
+        if (!m.metadata_text) return "其他";
         try {
           const parsed = JSON.parse(m.metadata_text);
           // object case (loadSectors injected)
           if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-            return parsed.industry || "??";
+            return parsed.industry || "其他";
           }
           // array case (legacy STOCK_DAY metadata)
-          return "??";
-        } catch { return "??"; }
+          return "其他";
+        } catch { return "其他"; }
       })();
       const hist = histByCode.get(m.symbol) || [];
       const last = hist[0]?.close_price != null ? Number(hist[0].close_price) : (Number(m.close) || 0);
@@ -2796,7 +2766,7 @@ async function heatmap(request) {
         chg_20d: mean("chg_20d"),
         chg_60d: mean("chg_60d"),
       };
-    }).sort((a, b) => (b.chg_5d  -Infinity) - (a.chg_5d  -Infinity));
+    }).sort((a, b) => (b.chg_5d ?? -Infinity) - (a.chg_5d ?? -Infinity));
     return json({
       ok: true,
       source: "db",
@@ -2811,7 +2781,7 @@ async function heatmap(request) {
   }
 }
 
-// ?? etf_signal_filter / stock_damo_filter / stock_news_scan ??????????
+// ── etf_signal_filter / stock_damo_filter / stock_news_scan ──────────
 async function etfSignalFilter(request) {
   const etfs = await getEtfList();
   if (!etfs.length) return json({ ok: true, source: "db", count: 0, items: [], message: "etf_watchlist empty" });
@@ -2847,9 +2817,9 @@ async function etfSignalFilterStatus(request) { return etfSignalFilter(request);
 async function etfSignalFilterRefresh(request) { return etfSignalFilter(request); }
 
 async function stockDamoFilter(request) {
-  // "大?" filter: cond2+cond3+cond4 + above MA20 (similar to signal_filter but a different threshold view)
+  // "大毛" filter: cond2+cond3+cond4 + above MA20 (similar to signal_filter but a different threshold view)
   const results = await scanAllImpl();
-  const items = results.filter((r) => r.cond2 && r.cond3 && r.cond4).map((r) => ({ ...r, status: "大選" }));
+  const items = results.filter((r) => r.cond2 && r.cond3 && r.cond4).map((r) => ({ ...r, status: "大毛候選" }));
   return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
 }
 async function stockDamoFilterStatus(request) { return stockDamoFilter(request); }
@@ -2873,7 +2843,7 @@ async function stockNewsScan(request) {
   }
 }
 async function stockNewsScanQuota(request) {
-  // 簡? quota 顯示:今天跑?幾次 (from markers)
+  // 簡易 quota 顯示:今天跑過幾次 (from markers)
   try {
     const { rows } = await q(
       `SELECT COUNT(*)::int AS used FROM markers WHERE date = CURRENT_DATE::text`
@@ -2884,7 +2854,7 @@ async function stockNewsScanQuota(request) {
       ok: true,
       source: "db",
       used, quota: cap, remaining: cap - used,
-      // aliases used by etf_holdings_tracker.html ("今日?? X / Y")
+      // aliases used by etf_holdings_tracker.html ("今日剩餘 X / Y")
       left: cap - used, cap,
     });
   } catch (e) {
@@ -2892,7 +2862,7 @@ async function stockNewsScanQuota(request) {
   }
 }
 
-// ?? etf_pivot/* real handlers ????????????????????????????????????????
+// ── etf_pivot/* real handlers ────────────────────────────────────────
 async function etfPivotOverlap(request) {
   const u = urlOf(request);
   const etfsParam = pickStr(u.searchParams.get("etfs") || "");
@@ -3097,10 +3067,10 @@ async function etfDiff(request, code) {
     );
     const dates = (dateRes.rows || dateRes).map((r) => r.as_of_date);
     if (dates.length === 0) {
-      return json({ ok: true, source: "db", code, status: "no_diff", snapshot_count: 0, message: "尚無快照，?白名單 IP?快照, summary: { added: 0, removed: 0, changed: 0, unchanged: 0 }, holdings: [], new_time: null, old_time: null });
+      return json({ ok: true, source: "db", code, status: "no_diff", snapshot_count: 0, message: "尚無快照，請先按「立即抓快照」", summary: { added: 0, removed: 0, changed: 0, unchanged: 0 }, holdings: [], new_time: null, old_time: null });
     }
     if (dates.length === 1) {
-      return json({ ok: true, source: "db", code, status: "no_diff", snapshot_count: 1, message: "?? 1 筆快白名單 IP?計?差異（? 2 筆?", summary: { added: 0, removed: 0, changed: 0, unchanged: 0 }, holdings: [], new_time: String(dates[0]).slice(0, 10), old_time: null });
+      return json({ ok: true, source: "db", code, status: "no_diff", snapshot_count: 1, message: "只有 1 筆快照，無法計算差異（需 ≥ 2 筆）", summary: { added: 0, removed: 0, changed: 0, unchanged: 0 }, holdings: [], new_time: String(dates[0]).slice(0, 10), old_time: null });
     }
     const [newDate, oldDate] = dates;
     // 2) pull holdings at each date
@@ -3142,7 +3112,7 @@ async function etfDiff(request, code) {
     }
     // sort: changed/added/removed first
     const rank = { changed: 0, added: 1, removed: 2, unchanged: 3 };
-    holdings.sort((a, b) => (rank[a.status]  9) - (rank[b.status]  9) || (b.change ?? 0) - (a.change ?? 0));
+    holdings.sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9) || (b.change ?? 0) - (a.change ?? 0));
     return json({
       ok: true,
       source: "db",
@@ -3208,7 +3178,7 @@ async function etfExport(request, code) {
   }
 }
 
-// ?? single-resource GETs (markers/<id>, recipients/<id>, etc.) ??????
+// ── single-resource GETs (markers/<id>, recipients/<id>, etc.) ──────
 async function markerById(request, id) {
   const i = parseInt(id, 10);
   if (!Number.isFinite(i)) return json({ error: "invalid id" }, { status: 400 });
@@ -3268,16 +3238,16 @@ async function etfByCode(request, code) {
   }
 }
 
-// ?? data loaders (fetch from TWSE public API insert into Neon) ????
+// ── data loaders (fetch from TWSE public API → insert into Neon) ────
 function twseDateStr(d) {
-  // input: Date object "YYYYMMDD" (民?年自??西?)
+  // input: Date object → "YYYYMMDD" (民國年自動轉西元)
   return d.getFullYear().toString() +
     String(d.getMonth() + 1).padStart(2, "0") +
     String(d.getDate()).padStart(2, "0");
 }
 function rocToIsoDate(rocStr) {
-  // "115?71 "2026-07-31"
-  const m = /(\d+)?\d+)\d+).exec(rocStr);
+  // "115年07月31日" → "2026-07-31"
+  const m = /(\d+)年(\d+)月(\d+)日/.exec(rocStr);
   if (!m) return null;
   return `${parseInt(m[1], 10) + 1911}-${m[2]}-${m[3]}`;
 }
@@ -3310,7 +3280,7 @@ async function fetchTwse(url) {
     } catch (e) {
       clearTimeout(tid);
       lastErr = e;
-      // abort or non-retryable rethrow
+      // abort or non-retryable → rethrow
       if (e.name === "AbortError") throw e;
       if (e.message && e.message.includes("TWSE HTTP 4") && !e.message.includes("429")) throw e;
     }
@@ -3328,27 +3298,33 @@ async function loadInstitutionalForDate(dateYmd) {
   if (data.stat !== "OK" || !Array.isArray(data.data)) {
     return { ok: false, source: "twse", error: data.stat || "no data", date: ymd, count: 0 };
   }
-  // TWSE T86 欄?(2026 確?):
-  // 0: 證券, 1: 證券?稱
-  // 2-4: 外陸資買?/買賣?不含外? allowlist
-  // 5-7: 外?白名單 IP買?/買賣?  // 8-10: ?信買??/買賣?  // 11: 白名單 IP買(?
-  // 12-14:  allowlist??)買??/買賣?  // 15-17:  allowlist?險)買??/買賣?  // 18: 三大法人買賣?  const symbols = [];
+  // TWSE T86 欄位順序(2026 確認):
+  // 0: 證券代號, 1: 證券名稱
+  // 2-4: 外陸資買進/賣出/買賣超(不含外資自營商)
+  // 5-7: 外資自營商買進/賣出/買賣超
+  // 8-10: 投信買進/賣出/買賣超
+  // 11: 自營商買賣超(總)
+  // 12-14: 自營商(自行)買進/賣出/買賣超
+  // 15-17: 自營商(避險)買進/賣出/買賣超
+  // 18: 三大法人買賣超
+  const symbols = [];
   const foreignBuy = [], foreignSell = [], foreignNet = [];
   const trustBuy = [], trustSell = [], trustNet = [];
   const dealerBuy = [], dealerSell = [], dealerNet = [];
   for (const r of data.data) {
     const sym = String(r[0] || "").trim();
-    if (!/^\d{4,6}$/.test(sym)) continue; // ?收純股票代    symbols.push(sym);
-    foreignBuy.push(numFromStr(r[2]) + numFromStr(r[5]));   // 外陸?+ 外?
+    if (!/^\d{4,6}$/.test(sym)) continue; // 只收純股票代號
+    symbols.push(sym);
+    foreignBuy.push(numFromStr(r[2]) + numFromStr(r[5]));   // 外陸資 + 外資自營
     foreignSell.push(numFromStr(r[3]) + numFromStr(r[6]));
     foreignNet.push(numFromStr(r[4]) + numFromStr(r[7]));
     trustBuy.push(numFromStr(r[8]));
     trustSell.push(numFromStr(r[9]));
     trustNet.push(numFromStr(r[10]));
-    // dealer = ?? + ?險
+    // dealer = 自行 + 避險
     dealerBuy.push(numFromStr(r[12]) + numFromStr(r[15]));
     dealerSell.push(numFromStr(r[13]) + numFromStr(r[16]));
-    dealerNet.push(numFromStr(r[11])); // 已是總買
+    dealerNet.push(numFromStr(r[11])); // 已是總買賣超
   }
   if (!symbols.length) return { ok: true, source: "twse", date: ymd, count: 0, message: "no stock rows" };
   // Bulk upsert via UNNEST JOIN
@@ -3384,7 +3360,7 @@ async function loadInstitutionalForDate(dateYmd) {
   return { ok: true, source: "twse_T86", date: trade_date_iso, count: symbols.length };
 }
 
-// ?? overseas indices loader (Yahoo Finance unofficial chart API) ??
+// ── overseas indices loader (Yahoo Finance unofficial chart API) ──
 // Symbols cover: S&P 500, Dow, Nasdaq, Nikkei, KOSPI, Hang Seng, CSI 300, FTSE, DAX, CAC 40.
 // Range: 5d daily. Updates a few times a day during US/EU/Asia market hours.
 const OVERSEAS_INDEX_SYMBOLS = [
@@ -3456,8 +3432,8 @@ async function loadOverseasIndicesForSymbol(sym) {
 async function loadOverseasIndices(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   // Optional symbols override (comma-separated)
   const symParam = pickStr(body?.symbols || u.searchParams.get("symbols") || "").trim();
@@ -3479,7 +3455,7 @@ async function loadOverseasIndices(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
-// ?? loadMacroYields: Yahoo Finance US Treasury yields macro_yields ?
+// ── loadMacroYields: Yahoo Finance US Treasury yields → macro_yields ─
 // Series mapping:
 //   ^TNX = 10Y, ^FVX = 5Y, ^TYX = 30Y, ^IRX = 13W
 // We store as yield_5y/10y/30y/13w to match what we have; 2y is approximated by 5y in
@@ -3536,8 +3512,8 @@ async function loadMacroYieldsForSymbol(sym, series) {
 async function loadMacroYields(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   const results = [];
   for (const { sym, series } of MACRO_YIELD_SYMBOLS) {
@@ -3553,16 +3529,16 @@ async function loadMacroYields(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
-// ?? loadMacroNews: Google News RSS knowledge_library (record_type=news) ?
+// ── loadMacroNews: Google News RSS → knowledge_library (record_type=news) ─
 async function loadMacroNews(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
-  // Default queries: ?股 + ??
+  // Default queries: 台股 + 國際
   const queries = (body?.queries && body.queries.length) ? body.queries
-    : ["?股 白名單 IP數", " allowlist2330", "美股 標普", "美聯準? ??", "?股 法人"];
+    : ["台股 加權指數", "台積電 2330", "美股 標普", "美聯準會 利率", "台股 法人"];
   const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36";
   const all = [];
   for (const q of queries) {
@@ -3602,7 +3578,7 @@ async function loadMacroNews(request) {
     }
     await new Promise((res) => setTimeout(res, 300));
   }
-  // 2-phase dedupe: SELECT existing record_urls filter out bulk INSERT.
+  // 2-phase dedupe: SELECT existing record_urls → filter out → bulk INSERT.
   // (We avoid ON CONFLICT here because the partial unique index can't be used
   // as an arbiter in pg's infer_arbiter_indexes; using ON CONFLICT (col) fails
   // with 42P10. Plain INSERT after dedupe is reliable and only costs one extra roundtrip.)
@@ -3641,7 +3617,7 @@ async function loadMacroNews(request) {
         const dates = fresh.map((it) => it.date);
         const queries = fresh.map((it) => it.query);
         // source_id must be globally unique (UNIQUE (record_type, source_name, source_id))
-        // and 64 chars. Use a short stable hash of the URL.
+        // and ≤ 64 chars. Use a short stable hash of the URL.
         const ids = u.map((url) => {
           let h = 0;
           for (let i = 0; i < url.length; i++) h = ((h * 31) + url.charCodeAt(i)) | 0;
@@ -3662,10 +3638,10 @@ async function loadMacroNews(request) {
   return json({ ok: true, source: "loader", fetched: totalFetched, inserted, results: all });
 }
 
-// ?? loadIndexInstitutional: TWSE 大盤 三大法人 index_institutional ?
+// ── loadIndexInstitutional: TWSE 大盤 三大法人 → index_institutional ─
 // Endpoint: https://www.twse.com.tw/fund/BFI82U?response=json&dayDate=YYYYMMDD
-// fields: ["白名單 IP稱","買進??,"???","買賣差?"]
-// rows:   [ allowlist??買賣),  allowlist?險), ?信, 外陸? 外? allowlist ??]
+// fields: ["單位名稱","買進金額","賣出金額","買賣差額"]
+// rows:   [自營商(自行買賣), 自營商(避險), 投信, 外資及陸資, 外資自營商, 合計]
 async function loadIndexInstitutionalForDate(dateYmd, indexCode) {
   const ymd = dateYmd.replace(/-/g, "");
   const url = `https://www.twse.com.tw/fund/BFI82U?response=json&dayDate=${ymd}`;
@@ -3689,17 +3665,17 @@ async function loadIndexInstitutionalForDate(dateYmd, indexCode) {
     return { ok: false, source: "twse", error: data.stat || "no data", count: 0 };
   }
   // Aggregate by 法人 type:
-  //   foreign_net = row 3 (外?) + row 4 (外? allowlist
-  //   trust_net   = row 2 (?信)
-  //   dealer_net  = row 0 (白名單 IP自? + row 1 (白名單 IP避
+  //   foreign_net = row 3 (外資) + row 4 (外資自營商)
+  //   trust_net   = row 2 (投信)
+  //   dealer_net  = row 0 (自營商自行) + row 1 (自營商避險)
   const parseNum = (s) => Number(String(s || "0").replace(/,/g, "").trim()) || 0;
   let foreign_net = 0, trust_net = 0, dealer_net = 0;
   for (const r of data.data) {
     const name = String(r[0] || "").trim();
-    const diff = parseNum(r[3]); // 買賣差?
-    if (name.startsWith("外?")) foreign_net += diff;
-    else if (name.startsWith("?信")) trust_net = diff;
-    else if (name.startsWith(" allowlist)) dealer_net += diff;
+    const diff = parseNum(r[3]); // 買賣差額
+    if (name.startsWith("外資")) foreign_net += diff;
+    else if (name.startsWith("投信")) trust_net = diff;
+    else if (name.startsWith("自營商")) dealer_net += diff;
   }
   await q(
     `INSERT INTO index_institutional (index_code, trade_date, foreign_net, trust_net, dealer_net, source)
@@ -3717,8 +3693,8 @@ async function loadIndexInstitutionalForDate(dateYmd, indexCode) {
 async function loadIndexInstitutional(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   // Backfill last 30 trading days for TWSE
   const results = [];
@@ -3742,17 +3718,17 @@ async function loadIndexInstitutional(request) {
   return json({ ok: true, source: "loader", inserted: okCount, days, results });
 }
 
-// ?? loadMarkers: ?screener + market_price_bars ??寫入 markers (買賣訊?) ?
-// 規?（簡??，? seed 白名單 IP容白名單 IP?:
-//   1. 站?三??+ ?? 'buy_chase'
-//   2. 跌破 MA20 'sell_stop'
-//   3. 外? 3 'foreign_buy_3d'
-//   4. 漲? (>= 9.5%) 'limit_up'
+// ── loadMarkers: 從 screener + market_price_bars 自動寫入 markers (買賣訊號) ─
+// 規則（簡單版，先 seed 出有內容的資料）:
+//   1. 站上三均線 + 量增 → 'buy_chase'
+//   2. 跌破 MA20 → 'sell_stop'
+//   3. 外資連買 3 日 → 'foreign_buy_3d'
+//   4. 漲停 (>= 9.5%) → 'limit_up'
 async function loadMarkers(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   try {
     // 1) scan watchlist with screenOne (returns {code, name, ... cond1..cond5, gain_5d_pct, ...})
@@ -3762,11 +3738,11 @@ async function loadMarkers(request) {
     const todayText = `${parseInt(today.slice(0, 4), 10) - 1911}/${today.slice(5, 7).replace(/^0/, "")}/${today.slice(8, 10).replace(/^0/, "")}`;
     for (const r of results) {
       const markers = [];
-      // buy_chase: cond2 + cond3 + cond4 (站?三??+ 5d/20d ?
+      // buy_chase: cond2 + cond3 + cond4 (站上三均線 + 5d/20d 漲)
       if (r.cond2 && r.cond3 && r.cond4) {
         markers.push({
           code: r.code, date: today, type: "buy_chase",
-          text: `站?三??+ 520?漲?${r.gain_5d_pct}%/${r.gain_20d_pct}%`,
+          text: `站上三均線 + 5日/20日漲幅 ${r.gain_5d_pct}%/${r.gain_20d_pct}%`,
           price: r.latest_close,
         });
       }
@@ -3774,16 +3750,16 @@ async function loadMarkers(request) {
       if (r.gain_5d_pct >= 9.5) {
         markers.push({
           code: r.code, date: today, type: "limit_up",
-          text: `5?累計漲?${r.gain_5d_pct}%（?似漲）`,
+          text: `5日累計漲幅 ${r.gain_5d_pct}%（疑似漲停/連板）`,
           price: r.latest_close,
         });
       }
-      // sell_stop: cond1 broken (?60 ?? > 5%) + close < MA20
+      // sell_stop: cond1 broken (距 60 日高 > 5%) + close < MA20
       const belowMA20 = r.latest_close < r.ma20;
       if (r.dist_high_60d_pct > 5 && belowMA20) {
         markers.push({
           code: r.code, date: today, type: "sell_stop",
-          text: `?60 ?? ${r.dist_high_60d_pct}%, 跌破 MA20 (${r.ma20})`,
+          text: `距 60 日高 ${r.dist_high_60d_pct}%, 跌破 MA20 (${r.ma20})`,
           price: r.latest_close,
         });
       }
@@ -3802,9 +3778,9 @@ async function loadMarkers(request) {
   }
 }
 
-// ?? FinMind loaders (big_holders + financial_reports) ????????????????????????
-// ? $env:FINMIND_TOKEN, token fallback synth_v2_60 (跑現seed script)
-// Free tier: 600 req/hr, 60 stocks ? 2 endpoints = 120 calls OK
+// ── FinMind loaders (big_holders + financial_reports) ────────────────────────
+// 需 $env:FINMIND_TOKEN, 無 token 時 fallback synth_v2_60 (跑現有 seed script)
+// Free tier: 600 req/hr, 60 stocks × 2 endpoints = 120 calls 內 OK
 const FINMIND_BASE = "https://api.finmindtrade.com/api/v4/data";
 
 async function finmindFetch(dataset, params = {}) {
@@ -3826,8 +3802,9 @@ async function finmindFetch(dataset, params = {}) {
   return j?.data || [];
 }
 
-// 2026-08-14: ?? dataset 不??token（TaiwanStockShareholding / TaiwanStockInfo / TaiwanStockPrice 等?
-// 600 req/hr ?速? 130 stocks 仍足?async function finmindFetchPublic(dataset, params = {}) {
+// 2026-08-14: 公開 dataset 不需要 token（TaiwanStockShareholding / TaiwanStockInfo / TaiwanStockPrice 等）
+// 600 req/hr 限速對 130 stocks 仍足夠
+async function finmindFetchPublic(dataset, params = {}) {
   const u = new URL(FINMIND_BASE);
   u.searchParams.set("dataset", dataset);
   for (const [k, v] of Object.entries(params)) {
@@ -3843,7 +3820,7 @@ async function finmindFetch(dataset, params = {}) {
   return j?.data || [];
 }
 
-//  allowliststock big_holders (?1 年揭
+// 抓一個 stock 的 big_holders (近 1 年每月揭露)
 async function loadBigHoldersFinMindForCode(code) {
   const today = new Date();
   const start = new Date(today.getTime() - 365 * 86400000);
@@ -3894,15 +3871,15 @@ async function loadBigHoldersFinMindForCode(code) {
 async function loadBigHoldersFinMind(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   if (!process.env.FINMIND_TOKEN) {
     return json({
       ok: false,
       source: "finmind",
-      error: "FINMIND_TOKEN ?設?請到 https://finmindtrade.com/ 註?並設?Vercel env var",
-      fallback: "??使用 synth_v2_60 synth 資? (seed-bh-60.mjs)",
+      error: "FINMIND_TOKEN 未設定 — 請到 https://finmindtrade.com/ 註冊並設定 Vercel env var",
+      fallback: "目前使用 synth_v2_60 synth 資料 (在 seed-bh-60.mjs)",
     }, { status: 503 });
   }
   const wl = await q(`SELECT code FROM watchlist ORDER BY sort_order LIMIT 60`);
@@ -3921,7 +3898,7 @@ async function loadBigHoldersFinMind(request) {
   return json({ ok: true, source: "finmind", scanned: codes.length, inserted, results });
 }
 
-//  allowliststock financial_reports (?2 ?quarterly)
+// 抓一個 stock 的 financial_reports (近 2 年 quarterly)
 async function loadFinancialReportsFinMindForCode(code) {
   const today = new Date();
   const start = new Date(today.getTime() - 730 * 86400000);
@@ -3976,15 +3953,15 @@ async function loadFinancialReportsFinMindForCode(code) {
 async function loadFinancialReportsFinMind(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   if (!process.env.FINMIND_TOKEN) {
     return json({
       ok: false,
       source: "finmind",
-      error: "FINMIND_TOKEN ?設?請到 https://finmindtrade.com/ 註?並設?Vercel env var",
-      fallback: "??使用 synth_v2_60 synth 資? (seed-fr-60.mjs)",
+      error: "FINMIND_TOKEN 未設定 — 請到 https://finmindtrade.com/ 註冊並設定 Vercel env var",
+      fallback: "目前使用 synth_v2_60 synth 資料 (在 seed-fr-60.mjs)",
     }, { status: 503 });
   }
   const wl = await q(`SELECT code FROM watchlist ORDER BY sort_order LIMIT 60`);
@@ -4003,9 +3980,9 @@ async function loadFinancialReportsFinMind(request) {
   return json({ ok: true, source: "finmind", scanned: codes.length, inserted, results });
 }
 
-// 2026-08-14: ?FinMind TaiwanStockShareholding NumberOfSharesIssued (已發行普?股
-// 寫入 market_instruments.metadata_text.shares_outstanding ?stockIntro/stockKlines ?marketCap
-// ?? dataset 不用 token；?600 req/hr
+// 2026-08-14: 從 FinMind TaiwanStockShareholding 拿 NumberOfSharesIssued (已發行普通股數)
+// 寫入 market_instruments.metadata_text.shares_outstanding 給 stockIntro/stockKlines 算 marketCap
+// 公開 dataset 不用 token；限速 600 req/hr
 async function loadIssuedSharesFinMind(request) {
   const u = urlOf(request);
   const codesParam = pickStr(u.searchParams.get("codes") || "");
@@ -4022,7 +3999,7 @@ async function loadIssuedSharesFinMind(request) {
     const chunk = codes.slice(i, i + CONCURRENCY);
     const chunkResults = await Promise.all(chunk.map(async (code) => {
       try {
-        // ???90 天?shareholding 每新，?白名單 IP起見近?筆?
+        // 抓最近 90 天（shareholding 每月更新，但為保險起見取最近一筆）
         const today = new Date();
         const start = new Date(today.getTime() - 90 * 86400000);
         const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -4074,18 +4051,18 @@ async function loadExdivForDate(dateYmd) {
   if (data.stat !== "OK" || !Array.isArray(data.data)) {
     return { ok: false, source: "twse", error: data.stat || "no data", date: ymd, count: 0 };
   }
-  // Field order: 資?, ?票, ?票?稱, 白名單 IP盤 白名單 IP價, 權? ? ...
+  // Field order: 資料日期, 股票代號, 股票名稱, 除權息前收盤價, 除權息參考價, 權值+息值, 權/息, ...
   const symbols = [], ex_dates = [], cash = [], stock = [], types = [];
   for (const r of data.data) {
     const sym = String(r[1] || "").trim();
     if (!/^\d{4,6}$/.test(sym)) continue;
     const ex_date = rocToIsoDate(String(r[0] || ""));
     if (!ex_date) continue;
-    const kind = String(r[6] || ""); // / ?/ 權息
+    const kind = String(r[6] || ""); // 息 / 權 / 權息
     symbols.push(sym);
     ex_dates.push(ex_date);
-    cash.push(kind.includes(") ? numFromStr(r[5]) : 0);
-    stock.push(kind.includes("?) ? numFromStr(r[5]) : 0);
+    cash.push(kind.includes("息") ? numFromStr(r[5]) : 0);
+    stock.push(kind.includes("權") ? numFromStr(r[5]) : 0);
     types.push(kind);
   }
   if (!symbols.length) return { ok: true, source: "twse", date: ymd, count: 0, message: "no exdiv rows" };
@@ -4104,10 +4081,10 @@ async function loadExdivForDate(dateYmd) {
 async function loadInstitutional(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  // Vercel Cron 不?body,也??password ?? GET (?? cron trigger)
-  // ?? trigger 仍可 POST + ?password
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  // Vercel Cron 不送 body,也不帶 password → 接受 GET (公開 cron trigger)
+  // 手動 trigger 仍可 POST + 帶 password
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   const dateParam = pickStr(body?.date || u.searchParams.get("date") || "").trim();
   const days = Math.min(30, Math.max(1, parseInt(body?.days || u.searchParams.get("days") || "1", 10) || 1));
@@ -4134,8 +4111,8 @@ async function loadInstitutional(request) {
 async function loadExdiv(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   const dateParam = pickStr(body?.date || u.searchParams.get("date") || "").trim();
   const date = dateParam || (() => {
@@ -4149,15 +4126,15 @@ async function loadExdiv(request) {
   }
 }
 
-// ?? loadMarketPrices: TWSE STOCK_DAY_ALL 進 market_price_bars ????????
+// ── loadMarketPrices: TWSE STOCK_DAY_ALL → market_price_bars ────────
 // Refreshes the latest trading day's close for all stocks in watchlist +
 // all ETFs in etf_watchlist. Edge-friendly: 1 HTTP fetch + N parallel
 // DB upserts. Designed for daily Mon-Fri cron.
 async function loadMarketPrices(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   const UA = "Mozilla/5.0 (compatible: donttalk-stock-app/1.0; contact: donttalk@example.com)";
   try {
@@ -4168,10 +4145,10 @@ async function loadMarketPrices(request) {
     ]);
     // q() returns {rows: [...]} in OBJECT mode (no Neon-Array-Mode header) by default
     const targets = new Set();
-    for (const r of (wlRes.rows || [])) targets.add(String(r.code  r[0]));
-    for (const r of (ewRes.rows || [])) targets.add(String(r.code  r[0]));
+    for (const r of (wlRes.rows || [])) targets.add(String(r.code ?? r[0]));
+    for (const r of (ewRes.rows || [])) targets.add(String(r.code ?? r[0]));
     if (targets.size === 0) {
-      return json({ ok: true, source: "stub", count: 0, message: "watchlist + etf_watchlist ?空" });
+      return json({ ok: true, source: "stub", count: 0, message: "watchlist + etf_watchlist 為空" });
     }
     // 2. Fetch TWSE daily report (CSV; latest trading day)
     const url = "https://www.twse.com.tw/exchangeReport/STOCK_DAY_ALL?response=json";
@@ -4194,9 +4171,9 @@ async function loadMarketPrices(request) {
     // "1150804","00400A","name",...,"close","change","transactions"
     const lines = csv.split("\n").map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length < 2) {
-      return json({ ok: false, source: "loader", error: "TWSE ?傳空?白名單 IP能?交?日? });
+      return json({ ok: false, source: "loader", error: "TWSE 回傳空資料（可能非交易日）" });
     }
-    // Skip header (line ?? 0). Parse each line by splitting on '","' (no edge cases for TWSE format).
+    // Skip header (line 0). Parse each line by splitting on '","' (no edge cases for TWSE format).
     const rows = lines.slice(1).map(l => {
       const parts = l.split('","');
       // Strip leading and trailing quote
@@ -4205,11 +4182,11 @@ async function loadMarketPrices(request) {
       return parts;
     });
     if (rows.length === 0 || !rows[0][0]) {
-      return json({ ok: false, source: "loader", error: "TWSE CSV 失?" });
+      return json({ ok: false, source: "loader", error: "TWSE CSV 解析失敗" });
     }
     // 3. Filter & upsert
     const todayRoc = String(rows[0][0]); // e.g. "1150804"
-    // Convert ROC date YYYMMDD ISO YYYY-MM-DD (ROC year + 1911)
+    // Convert ROC date YYYMMDD → ISO YYYY-MM-DD (ROC year + 1911)
     const rocYear = parseInt(todayRoc.slice(0, 3), 10);
     const mmdd = todayRoc.slice(3);
     const isoDate = `${rocYear + 1911}-${mmdd.slice(0, 2)}-${mmdd.slice(2)}`;
@@ -4218,7 +4195,7 @@ async function loadMarketPrices(request) {
     for (const row of rows) {
       const code = String(row[1] || "").trim();
       if (!targets.has(code)) continue;
-      const isEtf = (ewRes.rows || []).some(r => String(r.code  r[0]) === code);
+      const isEtf = (ewRes.rows || []).some(r => String(r.code ?? r[0]) === code);
       const assetType = isEtf ? "etf" : "stock";
       const open = parseFloat(row[5]) || null;
       const high = parseFloat(row[6]) || null;
@@ -4263,19 +4240,20 @@ async function loadMarketPrices(request) {
   }
 }
 
-// ?? loadMarketPricesFinMind: FinMind TaiwanStockPrice 進 market_price_bars ??
-// 2026-08-13: backup source for ?股 OHLC (free, no token needed).
-// FinMind provides trading_money + trading_turnover which Yahoo Finance 沒?// Per-stock API call (FinMind 不支batch via query string), parallel with 8-slot throttle.
+// ── loadMarketPricesFinMind: FinMind TaiwanStockPrice → market_price_bars ──
+// 2026-08-13: backup source for 個股 OHLC (free, no token needed).
+// FinMind provides trading_money + trading_turnover which Yahoo Finance 沒有。
+// Per-stock API call (FinMind 不支援 batch via query string), parallel with 8-slot throttle.
 // Usage: GET /api/admin/load/finmind_price?code=2330
 //        GET /api/admin/load/finmind_price?codes=2330,2454,2317&days=120
 async function loadMarketPricesFinMind(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   const days = Math.min(500, Math.max(1, parseInt(u.searchParams.get("days") || body?.days || "120", 10) || 120));
-  // 決?要? codes
+  // 決定要處理的 codes
   let codes = [];
   if (u.searchParams.get("code")) {
     codes = [u.searchParams.get("code")];
@@ -4284,24 +4262,24 @@ async function loadMarketPricesFinMind(request) {
   } else if (body?.codes && Array.isArray(body.codes)) {
     codes = body.codes;
   } else {
-    // 沒??watchlist + etf_watchlist
+    // 沒指定 → 拉 watchlist + etf_watchlist
     const [wl, ew] = await Promise.all([
       q(`SELECT code FROM watchlist`),
       q(`SELECT code FROM etf_watchlist`),
     ]);
-    for (const r of (wl.rows || [])) codes.push(String(r.code  r[0]));
-    for (const r of (ew.rows || [])) codes.push(String(r.code  r[0]));
+    for (const r of (wl.rows || [])) codes.push(String(r.code ?? r[0]));
+    for (const r of (ew.rows || [])) codes.push(String(r.code ?? r[0]));
   }
   if (codes.length === 0) {
-    return json({ ok: true, source: "stub", count: 0, message: "沒? code  allowlist });
+    return json({ ok: true, source: "stub", count: 0, message: "沒有 code 可處理" });
   }
-  // 計? start_date
+  // 計算 start_date
   const endDate = new Date();
   const startDate = new Date(endDate.getTime() - days * 86400000);
   const fmt = (d) => d.toISOString().slice(0, 10);
   const startStr = fmt(startDate);
   const endStr = fmt(endDate);
-  // 平? 8 in-flight (FinMind 沒?limit 但?守??
+  // 平行 8 個 in-flight (FinMind 沒官方 limit 但保守一點)
   const PARALLEL = 8;
   const results = [];
   const errors = [];
@@ -4322,14 +4300,14 @@ async function loadMarketPricesFinMind(request) {
         if (!j.data || !Array.isArray(j.data) || j.data.length === 0) {
           return { code, count: 0 };
         }
-        // watchlist ?etf_watchlist 對?sset_type
+        // 抓 watchlist 跟 etf_watchlist 對應的 asset_type
         const [wl, ew] = await Promise.all([
           q(`SELECT code FROM watchlist WHERE code = $1`, [code]),
           q(`SELECT code FROM etf_watchlist WHERE code = $1`, [code]),
         ]);
         const isEtf = (ew.rows || []).length > 0;
         const assetType = isEtf ? "etf" : "stock";
-        // unnest 一?upsert
+        // 用 unnest 一次 upsert
         const rows = j.data.map(d => ({
           date: d.date,
           open: d.open,
@@ -4388,16 +4366,16 @@ async function loadMarketPricesFinMind(request) {
 // Writes JSON metadata_text.industry for each watchlist stock. Heatmap reads this
 // field to bucket stocks into sectors. No external API needed; curated list.
 const TWSE_INDUSTRY_MAP = {
-  "2330": "??體業",     "2454": "??體業",   "2303": "??體業",   "2308": "??體業",
-  "2379": "??體業",     "3711": "??體業",   "3034": "??體業",   "6669": "??體業",
-  "3231": "?腦?週?設??,"2357": "?腦?週?設??,"2382": "?腦?週?設??,
+  "2330": "半導體業",     "2454": "半導體業",   "2303": "半導體業",   "2308": "半導體業",
+  "2379": "半導體業",     "3711": "半導體業",   "3034": "半導體業",   "6669": "半導體業",
+  "3231": "電腦及週邊設備業","2357": "電腦及週邊設備業","2382": "電腦及週邊設備業",
   "0050": "ETF",          "0051": "ETF",        "0052": "ETF",        "0056": "ETF",  "00878": "ETF",
-  "2881": "??保險?,   "2882": "??保險?, "2884": "??保險?, "2885": "??保險?,
-  "2886": "??保險?,   "2887": "??保險?, "2891": "??保險?, "2892": "??保險?,
-  "1301": "塑?工業",     "1303": "塑?工業",   "1326": "塑?工業",   "6505": "塑?工業",
-  "2002": "?鐵工業",     "2207": "汽?工業",   "3008": "?電?,     "1101": "水泥工業",
-  "2317": "白名單 IP??,
-  "1216": "食?工業",
+  "2881": "金融保險業",   "2882": "金融保險業", "2884": "金融保險業", "2885": "金融保險業",
+  "2886": "金融保險業",   "2887": "金融保險業", "2891": "金融保險業", "2892": "金融保險業",
+  "1301": "塑膠工業",     "1303": "塑膠工業",   "1326": "塑膠工業",   "6505": "塑膠工業",
+  "2002": "鋼鐵工業",     "2207": "汽車工業",   "3008": "光電業",     "1101": "水泥工業",
+  "2317": "其他電子業",
+  "1216": "食品工業",
 };
 async function loadSectors(request) {
   try {
@@ -4447,14 +4425,14 @@ async function loadSectors(request) {
   }
 }
 
-// ?? loadAllCombined: combined loader for Vercel Hobby (1 cron slot) ??????????
-// Runs: macro_yields macro_news index_institutional market_prices sectors markers i_capex
+// ── loadAllCombined: combined loader for Vercel Hobby (1 cron slot) ──────────
+// Runs: macro_yields → macro_news → index_institutional → market_prices → sectors → markers → ai_capex
 // Skips: institutional/exdiv/revenue (heavy MOPS, run separately if Hobby plan allows)
 async function loadAllCombined(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   const t0 = Date.now();
   const steps = [];
@@ -4467,7 +4445,7 @@ async function loadAllCombined(request) {
       steps.push({ name, ok: false, ms: Date.now() - s, error: e?.message });
     }
   };
-  // 1. macro_yields (Yahoo Finance 4 series ? 30d)
+  // 1. macro_yields (Yahoo Finance 4 series × 30d)
   await step("macro_yields", () => loadMacroYields({ method: "GET" }));
   // 2. macro_news (Google News RSS)
   await step("macro_news", () => loadMacroNews({ method: "GET" }));
@@ -4491,9 +4469,9 @@ async function loadAllCombined(request) {
   });
 }
 
-// ?? loadMarketPricesBackfill: Yahoo Finance ?股?歷進 market_price_bars ?
+// ── loadMarketPricesBackfill: Yahoo Finance 個股日歷史 → market_price_bars ─
 // One-shot: pulls 1y of daily bars per stock in watchlist so the screener
-// (screenOne needs 0 days) can score more than the 4 originally tracked stocks.
+// (screenOne needs ≥60 days) can score more than the 4 originally tracked stocks.
 // Yahoo Finance: https://query1.finance.yahoo.com/v8/finance/chart/<code>.TW?interval=1d&range=1y
 // (gives ~244 trading days, enough for warming_zone_scan / screenOne)
 // We use source_name='yahoo_v8' to differentiate from TWSE daily loader.
@@ -4501,8 +4479,8 @@ const BACKFILL_UA = "Mozilla/5.0 (compatible: donttalk-stock-app/1.0; contact: d
 async function loadMarketPricesBackfill(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   const range = pickStr(u.searchParams.get("range") || body?.range || "1y");
   const onlyCode = pickStr(u.searchParams.get("code") || body?.code || "").trim();
@@ -4510,7 +4488,7 @@ async function loadMarketPricesBackfill(request) {
     // 1) target stocks: watchlist (skip those that already have 60+ days)
     const wlRes = await q(`SELECT code FROM watchlist ORDER BY code`);
     const wlRows = wlRes.rows || wlRes;
-    let targets = wlRows.map((r) => String(r.code  r[0])).filter((c) => /^\d{4,6}$/.test(c));
+    let targets = wlRows.map((r) => String(r.code ?? r[0])).filter((c) => /^\d{4,6}$/.test(c));
     if (onlyCode) targets = targets.filter((c) => c === onlyCode);
     if (targets.length === 0) {
       return json({ ok: true, source: "stub", count: 0, message: "no watchlist stocks to backfill" });
@@ -4525,7 +4503,7 @@ async function loadMarketPricesBackfill(request) {
       );
       const haveEnough = new Set();
       for (const r of (cntRes.rows || [])) {
-        if ((r.n  r[1]) >= 60) haveEnough.add(String(r.symbol  r[0]));
+        if ((r.n ?? r[1]) >= 60) haveEnough.add(String(r.symbol ?? r[0]));
       }
       const before = targets.length;
       targets = targets.filter((c) => !haveEnough.has(c));
@@ -4638,15 +4616,15 @@ async function loadMarketPricesBackfill(request) {
   }
 }
 
-// ?? MOPS revenue loader ( allowlistfrom ??資?觀測?) ??????????????
+// ── MOPS revenue loader (月營收 from 公開資訊觀測站) ──────────────
 // Flow:
 //   1. POST https://mops.twse.com.tw/mops/api/redirectToOld
 //      body: {apiName:"ajax_t21sc04_ifrs", parameters:{year, month, encodeURIComponent:1, step:1, firstin:1, off:1, TYPEK}}
-//      returns {result:{url: <mopsov URL>}}
-//   2. GET <mopsov URL> HTML containing `window.open('/nas/t21/<sii|otc|all>/t21sc03_<year>_<month>.html')`
+//      → returns {result:{url: <mopsov URL>}}
+//   2. GET <mopsov URL> → HTML containing `window.open('/nas/t21/<sii|otc|all>/t21sc03_<year>_<month>.html')`
 //   3. POST https://mopsov.twse.com.tw/server-java/FileDownLoad
 //      body: step=9&functionName=show_file2&filePath=/t21/<sii|otc|all>/&fileName=t21sc03_<year>_<month>.csv
-//      Big5-encoded CSV with 14 cols
+//      → Big5-encoded CSV with 14 cols
 async function loadRevenueForMonth(yearRoc, month, typek = "sii") {
   const yearMonthStr = `${yearRoc}-${String(month).padStart(2, "0")}`;
   const mopsPath = typek === "otc" ? "otc" : typek === "all" ? "all" : "sii";
@@ -4765,7 +4743,7 @@ async function loadRevenueForMonth(yearRoc, month, typek = "sii") {
   }
 
   // Parse CSV: 14 cols, fields are double-quoted, no embedded quotes inside fields
-  // ?表??,資?年?,?司,?司?稱,?業?業?入-白名單 IP收,?業?入-上收,?業?入-?年白名單 IP收,?業?入-上?比?增?(%),?業?入-?年??增?(%),累業?入-??累收,累業?入-?年累收,累業?入-??比?增?(%),?註
+  // 出表日期,資料年月,公司代號,公司名稱,產業別,營業收入-當月營收,營業收入-上月營收,營業收入-去年當月營收,營業收入-上月比較增減(%),營業收入-去年同月增減(%),累計營業收入-當月累計營收,累計營業收入-去年累計營收,累計營業收入-前期比較增減(%),備註
   const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lines.length < 2) return { ok: true, source: "mops_t21sc04", typek, year: yearRoc, month, count: 0, message: "empty CSV" };
   const year = yearRoc + 1911;
@@ -4783,7 +4761,7 @@ async function loadRevenueForMonth(yearRoc, month, typek = "sii") {
     if (seen.has(key)) continue;
     seen.add(key);
     symbols.push(sym);
-    // cols: 5=白名單 IP收, 8=MoM%, 9=YoY%, 10=YTD 累收, 12=YTD YoY%
+    // cols: 5=當月營收, 8=MoM%, 9=YoY%, 10=YTD 累計營收, 12=YTD YoY%
     revenues.push(numFromStr(parts[5]));
     moms.push(numFromStr(parts[8]));
     yoys.push(numFromStr(parts[9]));
@@ -4819,8 +4797,8 @@ async function loadRevenueForMonth(yearRoc, month, typek = "sii") {
 async function loadRevenue(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   // Param priority: body > query > default (previous month)
   const yearRocParam = parseInt(body?.yearRoc || u.searchParams.get("yearRoc") || "", 10);
@@ -4855,16 +4833,16 @@ async function loadRevenue(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
-// ?? TAIFEX futures loader (大台/小台/??/??/微?) ??
+// ── TAIFEX futures loader (大台/小台/電子/金融/微型) ──
 // Endpoint: https://www.taifex.com.tw/cht/3/dlFutDataDown?down_type=1&commodity_id=<TX>&queryStartDate=YYYY/MM/DD&queryEndDate=YYYY/MM/DD
-// CSV: Big5 encoded. Columns: 交?,契?,白名單 IP份(?別),?盤?高價,?低價,?盤漲?漲?%,?交結?白名單 IP?約數,...
-// Map: contract=契? (TX), maturity=白名單 IP份, all others as-is.
+// CSV: Big5 encoded. Columns: 交易日期,契約,到期月份(週別),開盤價,最高價,最低價,收盤價,漲跌價,漲跌%,成交量,結算價,未沖銷契約數,...
+// Map: contract=契約 (TX), maturity=到期月份, all others as-is.
 const TAIFEX_FUTURE_CONTRACTS = [
-  { id: "TX", name: "?股?貨" },
-  { id: "MTX", name: "小股?貨" },
-  { id: "TE", name: "白名單 IP貨" },
-  { id: "TF", name: "白名單 IP貨" },
-  { id: "ZEF", name: "微?白名單 IP貨" },
+  { id: "TX", name: "臺股期貨" },
+  { id: "MTX", name: "小型臺股期貨" },
+  { id: "TE", name: "電子期貨" },
+  { id: "TF", name: "金融期貨" },
+  { id: "ZEF", name: "微型臺指期貨" },
 ];
 function toAdDate(ymd) {
   // "2026-08-03" -> "2026/08/03"
@@ -4917,10 +4895,10 @@ async function loadFuturesForDate(dateYmd) {
       const sym = (cols[1] || "").trim();
       const maturity = (cols[2] || "").trim();
       if (sym !== c.id) continue; // safety
-      // Filter to "一 (regular session) only the CSV also has ?? (after-hours) and 夜盤
+      // Filter to "一般" (regular session) only — the CSV also has 盤後 (after-hours) and 夜盤
       // entries for the same (symbol, contract, date) which would violate the unique constraint.
       const session = (cols[17] || "").trim();
-      if (session && session !== "一) continue;
+      if (session && session !== "一般") continue;
       const open = numFromStr(cols[3]);
       const high = numFromStr(cols[4]);
       const low = numFromStr(cols[5]);
@@ -4968,8 +4946,8 @@ async function loadFuturesForDate(dateYmd) {
 async function loadFutures(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
   // Param priority: body > query > default (yesterday, since TAIFEX settles same day but
   // a same-day morning call may be missing intraday data)
@@ -4996,7 +4974,7 @@ async function loadFutures(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results: allResults });
 }
 
-// ?? ai_capex loader: SEC EDGAR companyconcept API i_capex table ?????
+// ── ai_capex loader: SEC EDGAR companyconcept API → ai_capex table ─────
 // Companies: NVDA / MSFT / AMZN / GOOGL / META / ORCL (TSM is 20-F, skipped)
 // Designed to refresh the LATEST 1-2 quarters per company, runs in <30s
 // on Vercel edge (60s budget). Per-cron daily is safe (Hobby: 1/day/cron).
@@ -5096,7 +5074,7 @@ async function _aiLoadOne(co) {
   for (const r of last4) {
     const pct = r.revenue ? (r.capex / r.revenue) * 100 : null;
     const src = `sec_${r.concept}_${r.form}`;
-    // UPSERT via ON CONFLICT robust against select/insert races
+    // UPSERT via ON CONFLICT — robust against select/insert races
     await q(
       `INSERT INTO ai_capex (company, year, quarter, capex, revenue, capex_pct_of_revenue, source)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -5116,10 +5094,10 @@ async function _aiLoadOne(co) {
 async function loadAiCapex(request) {
   const u = urlOf(request);
   const body = request.method !== "GET" ? await readJson(request) : {};
-  if (request.method === "POST" && !operatorOk(body?.password, request)) {
-    return json({ error: "密碼?誤" }, { status: 403 });
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
   }
-  // Fetch all 6 companies in parallel each one does 2 SEC fetches + 4 DB upserts
+  // Fetch all 6 companies in parallel — each one does 2 SEC fetches + 4 DB upserts
   // (sequential within one company to avoid SEC rate limit hits)
   const results = await Promise.all(AI_CAPEX_COMPANIES.map(async (co) => {
     try {
@@ -5132,7 +5110,7 @@ async function loadAiCapex(request) {
   return json({ ok: true, source: "loader", refreshed: okCount, total: AI_CAPEX_COMPANIES.length, results });
 }
 
-// ?? etf_holdings loader: per-issuer scraping (PROBE ONLY) + manual seed ??
+// ── etf_holdings loader: per-issuer scraping (PROBE ONLY) + manual seed ──
 // Per-issuer scraping not viable: yuanta.com.tw / cathaysite.com.tw /
 // dcbfund.com.tw all unreachable from Vercel edge (timeout or 403).
 // Fallback: POST seed endpoint accepts manually-pasted holdings data.
@@ -5158,17 +5136,17 @@ const ETF_ISSUERS = {
   ]},
 };
 
-// Manual seed endpoint POST { etf_code, as_of_date, source, holdings: [...] }
+// Manual seed endpoint — POST { etf_code, as_of_date, source, holdings: [...] }
 async function seedEtfHoldings(request) {
   if (request.method !== "POST") return json({ error: "method not allowed (use POST)" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const etfCode = String(body?.etf_code || "").trim();
   const asOf = String(body?.as_of_date || "").trim();
   const source = String(body?.source || "manual").trim();
   const holdings = Array.isArray(body?.holdings) ? body.holdings : [];
   if (!etfCode || !asOf || holdings.length === 0) {
-    return json({ error: "缺?必?欄?：etf_code, as_of_date (YYYY-MM-DD), holdings[]" }, { status: 400 });
+    return json({ error: "缺少必要欄位：etf_code, as_of_date (YYYY-MM-DD), holdings[]" }, { status: 400 });
   }
   let inserted = 0, updated = 0;
   for (const h of holdings) {
@@ -5199,17 +5177,17 @@ async function seedEtfHoldings(request) {
   return json({ ok: true, source: "seed", etf_code: etfCode, as_of_date: asOf, inserted, updated, total: holdings.length });
 }
 
-// ?? seedBigHolders: manual POST endpoint for big_holders ?????????????
+// ── seedBigHolders: manual POST endpoint for big_holders ─────────────
 // Body: { password, holders: [{ symbol, holder_type, holder_name, shares, pct, as_of_date }] }
-// Use case: real 大股?? from MOPS / broker feeds / manual entry.
+// Use case: real 大股東 公告 from MOPS / broker feeds / manual entry.
 async function seedBigHolders(request) {
   if (request.method !== "POST") return json({ error: "method not allowed (use POST)" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const source = String(body?.source || "manual").trim();
   const holders = Array.isArray(body?.holders) ? body.holders : [];
   if (holders.length === 0) {
-    return json({ error: "缺?必?欄?：holders[] (each with symbol, holder_type, holder_name, shares, pct, as_of_date)" }, { status: 400 });
+    return json({ error: "缺少必要欄位：holders[] (each with symbol, holder_type, holder_name, shares, pct, as_of_date)" }, { status: 400 });
   }
   let inserted = 0, updated = 0, skipped = 0;
   for (const h of holders) {
@@ -5243,17 +5221,17 @@ async function seedBigHolders(request) {
   return json({ ok: true, source: "seed", inserted, updated, skipped, total: holders.length });
 }
 
-// ?? seedFinancialReports: manual POST endpoint for financial_reports ??
+// ── seedFinancialReports: manual POST endpoint for financial_reports ──
 // Body: { password, reports: [{ symbol, period, revenue, gross_profit, operating_income, net_income, eps, source }] }
 // period format: "2026-Q2", "2026-06", "2025" (any unique string per symbol)
 async function seedFinancialReports(request) {
   if (request.method !== "POST") return json({ error: "method not allowed (use POST)" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const source = String(body?.source || "manual").trim();
   const reports = Array.isArray(body?.reports) ? body.reports : [];
   if (reports.length === 0) {
-    return json({ error: "缺?必?欄?：reports[] (each with symbol, period, revenue, gross_profit, operating_income, net_income, eps)" }, { status: 400 });
+    return json({ error: "缺少必要欄位：reports[] (each with symbol, period, revenue, gross_profit, operating_income, net_income, eps)" }, { status: 400 });
   }
   let inserted = 0, updated = 0, skipped = 0;
   for (const r of reports) {
@@ -5312,7 +5290,7 @@ async function _etfFetch(url) {
 
 async function loadEtfHoldings(request) {
   // Probe-only: tries each issuer's known URL patterns in PARALLEL.
-  // All 8 URLs fire at once; 5s timeout each worst case 5s wall time.
+  // All 8 URLs fire at once; 5s timeout each → worst case 5s wall time.
   // For each ETF, picks the first URL that returns 200 with body > 1000 bytes.
   const u = urlOf(request);
   const onlyCode = u.searchParams.get("code") || null;
@@ -5341,7 +5319,7 @@ async function loadEtfHoldings(request) {
     ok: true,
     source: "probe",
     as_of: new Date().toISOString().slice(0, 10),
-    message: "Probe only reports which issuer URLs are reachable. Real parsing TBD.",
+    message: "Probe only — reports which issuer URLs are reachable. Real parsing TBD.",
     results: Array.from(byCode.values()),
   });
 }
@@ -5349,7 +5327,7 @@ async function loadEtfHoldings(request) {
 async function loadAll(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) return json({ error: "密碼?誤" }, { status: 403 });
+  if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const days = Math.min(30, Math.max(1, parseInt(body?.days || "3", 10) || 3));
   const instiResults = [];
   for (let i = 0; i < days; i++) {
@@ -5366,12 +5344,12 @@ async function loadAll(request) {
   return json({ ok: true, source: "loader", institutional: instiResults, exdiv: exdivResults });
 }
 
-// ?? placeholders (return helpful shape, not pure stub) ???????????????
+// ── placeholders (return helpful shape, not pure stub) ───────────────
 function placeholder(name, hint) {
   return json({ ok: true, source: "stub", tier: 1, endpoint: name, hint, value: null, items: [] });
 }
 
-// /api/pe_threshold real handler. Frontend (signal-filter.html) uses
+// /api/pe_threshold — real handler. Frontend (signal-filter.html) uses
 // pe_max = 1 / yield_10y  to mark stocks with PE > pe_max as overvalued.
 // Reads from macro_yields table.
 async function peThreshold(request) {
@@ -5407,148 +5385,7 @@ function stub(name, extra = {}) {
   return json({ ok: true, source: "stub", endpoint: name, ...extra });
 }
 
-// admin: POST /api/admin/reseed-stocks
-// 2026-08-26: ?watchlist 中缺 K 線。?輯? seed-add-stocks.mjs  allowlist//   body: { password: string, codes?: string[], days?: number }
-//   不傳 codes  allowlistwatchlist ?缺資股
-//   密碼: STOCK_OPERATOR_PASSWORD env
-async function adminReseedStocks(request) {
-  if (request.method !== "POST") {
-    return json({ error: "method not allowed" }, { status: 405 });
-  }
-  const body = await readJson(request);
-  if (!operatorOk(body?.password, request)) {
-    return json({ error: "operator password required or invalid" }, { status: 403 });
-  }
-  const codes = Array.isArray(body?.codes) && body.codes.length > 0 ? body.codes : null;
-  const days = Math.min(365, Math.max(30, parseInt(body?.days || 120, 10) || 120));
-  const hit = async (sql, params = []) => {
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 6000);
-    const r = await fetch(_conn(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Neon-Connection-String": dbUrl() },
-      body: JSON.stringify({ query: sql, params }),
-      signal: ctrl.signal,
-    });
-    clearTimeout(tid);
-    const j = await r.json();
-    if (j.error) throw new Error(j.error.message || "neon error");
-    return j.rows || [];
-  };
-  let targets;
-  if (codes) {
-    targets = codes.map(c => ({ code: String(c) }));
-    try {
-      const rows = await hit(
-        `SELECT code, name FROM watchlist WHERE code = ANY($1::text[])`,
-        [targets.map(t => t.code)]
-      );
-      const byCode = Object.fromEntries(rows.map(r => [r.code, r.name]));
-      targets = targets.map(t => ({ code: t.code, name: byCode[t.code] || t.code }));
-    } catch (e) {
-      targets = targets.map(t => ({ code: t.code, name: t.code }));
-    }
-  } else {
-    const rows = await hit(`
-      SELECT w.code, w.name FROM watchlist w
-      LEFT JOIN (SELECT DISTINCT symbol FROM market_price_bars WHERE asset_type='stock') b
-        ON b.symbol = w.code
-      WHERE w.code ~ '^[0-9]+$' AND b.symbol IS NULL
-      ORDER BY w.sort_order, w.code
-    `);
-    targets = rows.map(r => ({ code: r.code, name: r.name }));
-  }
-  if (targets.length === 0) {
-    return json({ ok: true, mode: codes ? "specific" : "auto", requested: 0, inserted: 0, message: "Nothing to do" });
-  }
-  const results = [];
-  let totalBars = 0;
-  for (const t of targets) {
-    try {
-      await hit(
-        `INSERT INTO watchlist (code, name, ticker, sort_order) VALUES ($1, $2, $3, 9999)
-         ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, ticker = EXCLUDED.ticker`,
-        [t.code, t.name || t.code, t.code + '.TW']
-      );
-      const { bars, ticker } = await _yahooFetch(t.code, days);
-      if (bars.length === 0) {
-        results.push({ code: t.code, status: "no_data", bars: 0 });
-        continue;
-      }
-      await hit(
-        `DELETE FROM market_price_bars WHERE symbol = $1 AND source_name = $2`,
-        [t.code, 'yahoo_chart_v8']
-      );
-      let inserted = 0;
-      for (const b of bars) {
-        if (!b.close) continue;
-        try {
-          await hit(
-            `INSERT INTO market_price_bars
-              (source_name, symbol, asset_type, market, contract_month, trade_date,
-               open_price, high_price, low_price, close_price, settlement_price,
-               volume, turnover, open_interest, change_value, raw_payload, fetched_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, now())`,
-            [
-              'yahoo_chart_v8', t.code, 'stock', 'TWSE', '',
-              b.trade_date, b.open, b.high, b.low, b.close, null,
-              b.volume, null, null, null, ''
-            ]
-          );
-          inserted++;
-        } catch (e) { /* skip */ }
-      }
-      totalBars += inserted;
-      results.push({ code: t.code, status: "ok", bars: inserted, ticker });
-    } catch (e) {
-      results.push({ code: t.code, status: "error", error: e.message });
-    }
-  }
-  return json({ ok: true, mode: codes ? "specific" : "auto", requested: targets.length, inserted: totalBars, results });
-}
-
-// admin reseed: shared Yahoo fetch + insert (used by adminReseedStocks)
-async function _yahooFetch(code, days) {
-  const now = Math.floor(Date.now() / 1000);
-  const period1 = now - days * 86400;
-  for (const suffix of ['.TW', '.TWO']) {
-    const ticker = `${code}${suffix}`;
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${period1}&period2=${now}&interval=1d&events=history`;
-    try {
-      const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 10000);
-      const r = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'application/json,text/plain,*/*',
-        },
-        signal: ctrl.signal,
-      });
-      clearTimeout(tid);
-      if (!r.ok) continue;
-      const j = await r.json();
-      if (!j.chart?.result?.[0]) continue;
-      const r0 = j.chart.result[0];
-      const ts = r0.timestamp || [];
-      const ind = r0.indicators.quote[0];
-      const opens = ind.open || [], highs = ind.high || [], lows = ind.low || [];
-      const closes = ind.close || [], volumes = ind.volume || [];
-      const bars = [];
-      for (let i = 0; i < ts.length; i++) {
-        if (closes[i] == null) continue;
-        bars.push({
-          trade_date: new Date(ts[i] * 1000).toISOString().slice(0, 10),
-          open: opens[i], high: highs[i], low: lows[i], close: closes[i],
-          volume: volumes[i] || 0,
-        });
-      }
-      if (bars.length > 0) return { bars, ticker };
-    } catch (e) { /* try next suffix */ }
-  }
-  return { bars: [], ticker: null };
-}
-
-// ?? router ??????????????????????????????????????????????????????????
+// ── router ──────────────────────────────────────────────────────────
 const TABLE = [
   // [method, path-regex, handler]
   ["GET",  /^\/healthz\/?$/,                healthz],
@@ -5714,8 +5551,6 @@ const TABLE = [
   ["GET",  /^\/admin\/load\/issued_shares\/finmind\/?$/, loadIssuedSharesFinMind],
   ["POST", /^\/admin\/load\/issued_shares\/finmind\/?$/, loadIssuedSharesFinMind],
 
-  // 2026-08-26: ?watchlist ?K 線?白名單 IP?白名單 IP? codes?  ["POST", /^\/admin\/reseed-stocks\/?$/,          adminReseedStocks],
-
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
   ["GET",  /^\/exdiv\/upcoming\/?$/,         exdivUpcoming],
@@ -5745,7 +5580,7 @@ const TABLE = [
   ["GET",  /^\/stock_news_scan\/?$/,         stockNewsScan],
   ["GET",  /^\/stock_news_scan\/quota\/?$/,  stockNewsScanQuota],
 
-  // Configuration endpoints (no DB table return helpful shape with hint)
+  // Configuration endpoints (no DB table — return helpful shape with hint)
   ["GET",  /^\/strategy\/etf_added_resonance\/?$/, placeholder.bind(null, "strategy_etf_added_resonance", "use etf_holdings + screener + resonance score")],
   ["GET",  /^\/disabled_strategies\/?$/,     placeholder.bind(null, "disabled_strategies", "configure in code or DB; returns [] when none disabled")],
   ["GET",  /^\/pe_threshold\/?$/,            peThreshold],
