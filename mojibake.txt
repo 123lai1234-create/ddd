@@ -1,0 +1,14 @@
+﻿Found 348 mojibake lines
+  L1: '// api/[catchall].mjs ??mega edge-runtime router for all /api/* endpoints.'
+  L4: '// 2026-08-10 build marker (force Vercel edge function rebuild ??cache stuck on polish-final version)'
+python : Traceback (most recent call last):
+位於 線路:1 字元:122
++ ... .Encoding]::UTF8; cd D:\project; python find-mojibake.py 2>&1 | Out-F ...
++                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\project\find-mojibake.py", line 16, in <module>
+    print(f'  L{i}: {line!r}')
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'cp950' codec can't encode character '\ufffd' in position 45: illegal multibyte sequence

@@ -1,0 +1,2 @@
+﻿Found at offset 10929
+"<!-- Scripts -->\\r\\n    <script src=\\\"scripts/app-config.js\\\"></script>\\r\\n    <script src=\\\"scripts/music-player.js\\\"></script>\\r\\n\";\nconst headInline = \"<script is:inline>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { });</script>\";\n---\n<Base\n    title=\"🎵 音樂播放平台\"\n    description=\"現代化音樂播放平台，支援播放清單、音質控制與視覺化效果\"\n    bodyPage=\"music\"\n    pageStyles={[\"/styl"
