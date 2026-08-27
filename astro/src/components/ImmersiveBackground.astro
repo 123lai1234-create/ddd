@@ -66,18 +66,12 @@
 </style>
 
 <script>
+    // Only files that actually exist in /public (bg1-bg15). UUID-named files were
+    // never shipped and produced 404 console errors, so they are omitted.
     const videos = [
         '/bg1.mp4', '/bg2.mp4', '/bg3.mp4', '/bg4.mp4', '/bg5.mp4',
         '/bg6.mp4', '/bg7.mp4', '/bg8.mp4', '/bg9.mp4', '/bg10.mp4',
-        '/bg11.mp4', '/bg12.mp4', '/bg13.mp4', '/bg14.mp4', '/bg15.mp4',
-        '/350f54bf-9466-4b56-b740-bc1cfd1cfb1.mp4',
-        '/6354a061-40a3-4783-90c6-ae8d1fb24ff7.mp4',
-        '/97eb4e11-5e1b-4e4c-b59b-b1ceada17ee1.mp4',
-        '/9c52e0cd-3149-41bf-a352-dc6b0a057d4d.mp4',
-        '/a59aa81d-8d61-42d1-bd95-7153bfc50a91.mp4',
-        '/a9283c1d-a6d5-40e3-a89a-85cf7f2546e9.mp4',
-        '/cd66d6a-3dbb-4ed4-bd24-4a05add4b914.mp4',
-        '/f5ea057b-3d35-4cad-83d6-fbf5223cce47.mp4'
+        '/bg11.mp4', '/bg12.mp4', '/bg13.mp4', '/bg14.mp4', '/bg15.mp4'
     ];
     let currentIndex = Math.floor(Math.random() * videos.length);
     let lastIndex = currentIndex;

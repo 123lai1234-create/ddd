@@ -16,7 +16,7 @@
     const host = window.location.hostname;
     const defaultPortfolioServiceNames = ['donttalk'];
     const defaultApiServiceNames = ['donttalk-api'];
-    const defaultApiCandidates = ['https://api-server-production-676d.up.railway.app']; // 8/2026: live Railway (fly.io deprecated);
+    const defaultApiCandidates = ['https://donttalk.vercel.app']; // live: same-origin Vercel edge API (/api/*); Railway decommissioned;
     const resolvedPortfolioServiceNames = normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES).length
         ? normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES)
         : defaultPortfolioServiceNames;
@@ -69,20 +69,25 @@
         }
 
         const candidates = deriveApiCandidates(options);
+        // The deployed API lives under /api/* (Vercel edge function); probe
+        // /api/healthz first, then fall back to the classic root /healthz.
+        const probePaths = ['/api/healthz', '/healthz'];
         for (const candidate of candidates) {
-            try {
-                const response = await fetch(`${candidate}/healthz`);
-                if (!response.ok) {
+            for (const probePath of probePaths) {
+                try {
+                    const response = await fetch(`${candidate}${probePath}`);
+                    if (!response.ok) {
+                        continue;
+                    }
+
+                    const data = await response.json().catch(() => null);
+                    if (data?.status === 'ok') {
+                        resolutionCache.set(cacheKey, candidate);
+                        return candidate;
+                    }
+                } catch (error) {
                     continue;
                 }
-
-                const data = await response.json().catch(() => null);
-                if (data?.status === 'ok') {
-                    resolutionCache.set(cacheKey, candidate);
-                    return candidate;
-                }
-            } catch (error) {
-                continue;
             }
         }
 

@@ -195,6 +195,9 @@ const personSchema = {
 <body data-page={bodyPage}>
     <ImmersiveBackground />
     <slot />
+    {pageScripts.includes('/scripts/index-charts.js') && (
+        <script is:inline src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    )}
     {pageScripts.map((src) => <script is:inline src={src}></script>)}
     <Analytics />
 
