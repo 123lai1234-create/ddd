@@ -14,7 +14,7 @@ with open(path, 'wb') as f:
 import subprocess
 result = subprocess.run(['node', '-c', path], capture_output=True, text=True, encoding='utf-8', errors='replace')
 if result.returncode == 0:
-    print('✓ node -c passed!')
+    print('OK node -c passed!')
 else:
     err = (result.stderr or '').split('\n')[0:3]
-    print(f'✗ Still: {" ".join(err)}')
+    print(f'STILL: {" ".join(err)}')

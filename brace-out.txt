@@ -1,0 +1,8 @@
+﻿opens: 1185, closes: 1186, diff: -1
+last open: L5793, last close: L5793
+
+Unbalanced - simulating stack...
+  Extra } at L2268
+  Extra } at L3160
+  1 unmatched { :
+    L4873 pos 211740: .../");\n}\nasync function loadFuturesForDate(dateYmd) {\n  const adDate = toAdDate(dateYmd);\n  const results = [];\n  for (const c of TAIFEX_FUTURE_CONTRACT...
