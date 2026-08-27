@@ -1,5 +1,6 @@
 """Fix all `return ??` patterns to `return`"""
-import re
+import re, sys
+sys.stdout.reconfigure(encoding='utf-8')
 path = 'astro/api/catchall.mjs'
 with open(path, 'rb') as f:
     text = f.read().decode('utf-8')

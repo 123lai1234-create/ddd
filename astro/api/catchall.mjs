@@ -467,10 +467,10 @@ async function fetchYahooCandlesAsRows(symbol, range = "1y") {
       signal: ctrl.signal,
     });
     clearTimeout(tid);
-    if (!r.ok) return ?? null;
+    if (!r.ok) return null;
     const j = await r.json();
     const result = j?.chart?.result?.[0];
-    if (!result) return ?? null;
+    if (!result) return null;
     const ts = result.timestamp || [];
     const q = result.indicators?.quote?.[0] || {};
     const closes = q.close || [];
@@ -501,7 +501,7 @@ async function fetchYahooCandlesAsRows(symbol, range = "1y") {
     return out.length > 0 ? out : null;
   } catch (e) {
     clearTimeout(tid);
-    return ?? null;
+    return null;
   }
 }
 
@@ -847,7 +847,7 @@ async function stockIntro(request, code) {
 
 async function screenOne(code, name) {
   const candles = await getCandles(code, 200);
-  if (candles.length < 60) return ?? null;
+  if (candles.length < 60) return null;
   const closes = candles.map((c) => c.close);
   const last = closes[closes.length - 1];
   const ma5 = sma(closes, 5) ?? 0;
@@ -1156,7 +1156,7 @@ async function markersRecordImpl(request) {
       // safeIsoDate: convert any value to ISO YYYY-MM-DD or return null. Handles
       // numbers, numeric strings, ISO strings, Date objects, and bogus values.
       const safeIsoDate = (v) => {
-        if (v == null) return ?? null;
+        if (v == null) return null;
         let d;
         if (v instanceof Date) d = v;
         else if (typeof v === "number") d = new Date(v * 1000);
@@ -1167,7 +1167,7 @@ async function markersRecordImpl(request) {
         } else {
           d = new Date(v);
         }
-        if (!(d instanceof Date) || isNaN(d.getTime())) return ?? null;
+        if (!(d instanceof Date) || isNaN(d.getTime())) return null;
         return d.toISOString().slice(0, 10);
       };
       const rows = [];
@@ -2411,7 +2411,7 @@ async function soldTooEarly(request) {
       const series = bars.slice().reverse();
       // MA helper
       const ma = (n) => {
-        if (series.length < n) return ?? null;
+        if (series.length < n) return null;
         const slice = series.slice(-n);
         return slice.reduce((s, x) => s + x.c, 0) / n;
       };
@@ -2560,9 +2560,9 @@ async function aiCapex(request) {
     const chartLabels = quarters.slice(chartStart);
     const chartTtm = ttmByQ.slice(chartStart);
     const chartYoy = ttmByQ.map((v, i) => {
-      if (i < 8) return ?? null;
+      if (i < 8) return null;
       const yearAgo = ttmByQ[i - 4];
-      if (!v || !yearAgo) return ?? null;
+      if (!v || !yearAgo) return null;
       return +(((v - yearAgo) / yearAgo) * 100).toFixed(1);
     }).slice(chartStart);
 
@@ -2751,7 +2751,7 @@ async function heatmap(request) {
       const at = (offset) => (offset < hist.length && hist[offset]?.close_price != null ? Number(hist[offset].close_price) : null);
       const chg = (baseIdx) => {
         const base = at(baseIdx);
-        if (base == null || last == null || base === 0) return ?? null;
+        if (base == null || last == null || base === 0) return null;
         return r2(((last - base) / base) * 100);
       };
       // market_cap fallback (no real cap table; scale by close so bigger-priced stocks look bigger, floor 100B TWD)
@@ -2780,7 +2780,7 @@ async function heatmap(request) {
       const mcap = list.reduce((a, s) => a + (s.market_cap || 0), 0);
       const mean = (key) => {
         const arr = list.map((s) => s[key]).filter((v) => v != null);
-        if (!arr.length) return ?? null;
+        if (!arr.length) return null;
         return r2(arr.reduce((a, b) => a + b, 0) / arr.length);
       };
       return {
@@ -3274,7 +3274,7 @@ function twseDateStr(d) {
 function rocToIsoDate(rocStr) {
   // "115?71 "2026-07-31"
   const m = /(\d+)?\d+)\d+).exec(rocStr);
-  if (!m) return ?? null;
+  if (!m) return null;
   return `${parseInt(m[1], 10) + 1911}-${m[2]}-${m[3]}`;
 }
 function numFromStr(s) {
@@ -4312,7 +4312,7 @@ async function loadMarketPricesFinMind(request) {
         clearTimeout(tid);
         if (!r.ok) {
           errors.push({ code, status: r.status });
-          return ?? null;
+          return null;
         }
         const j = await r.json();
         if (!j.data || !Array.isArray(j.data) || j.data.length === 0) {
@@ -4363,7 +4363,7 @@ async function loadMarketPricesFinMind(request) {
       } catch (e) {
         clearTimeout(tid);
         errors.push({ code, error: e?.message });
-        return ?? null;
+        return null;
       }
     }));
     for (const r of batchRes) if (r) results.push(r);
@@ -5023,9 +5023,9 @@ async function _secFetch(cik, concept) {
     const r = await fetch(`https://data.sec.gov/api/xbrl/companyconcept/CIK${cik}/us-gaap/${concept}.json`, {
       headers: { "User-Agent": "donttalk-stock-app/1.0 (contact: donttalk@example.com)" },
     });
-    if (!r.ok) return ?? null;
+    if (!r.ok) return null;
     return await r.json();
-  } catch (e) { return ?? null; }
+  } catch (e) { return null; }
 }
 
 function _aiCalQuarter(endDate) {
