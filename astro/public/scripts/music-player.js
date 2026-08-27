@@ -163,6 +163,7 @@
         isMuted: false,
         shuffle: false,
         repeat: "none", // none, one, all
+        karaoke: true, // 卡拉OK逐字漸亮模式（預設開）
         audioContext: null,
         analyser: null,
         audioSource: null,
@@ -180,16 +181,75 @@
     const elements = {};
 
     // ═══════════════════════════════════════════════════════════════════
+    // 本機音樂上傳 — IndexedDB 持久化（跨重整保留音檔）
+    // ═══════════════════════════════════════════════════════════════════
+    let _idb = null;
+
+    function idbOpen() {
+        return new Promise((resolve, reject) => {
+            if (_idb) return resolve(_idb);
+            if (!window.indexedDB) return reject(new Error("IndexedDB 不支援"));
+            const req = indexedDB.open("music-player-local", 1);
+            req.onupgradeneeded = () => {
+                const db = req.result;
+                if (!db.objectStoreNames.contains("audio")) {
+                    db.createObjectStore("audio", { keyPath: "id" });
+                }
+            };
+            req.onsuccess = () => { _idb = req.result; resolve(_idb); };
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function idbPut(id, blob) {
+        const db = await idbOpen();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction("audio", "readwrite");
+            tx.objectStore("audio").put({ id, blob });
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    async function idbGet(id) {
+        const db = await idbOpen();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction("audio", "readonly");
+            const rq = tx.objectStore("audio").get(id);
+            rq.onsuccess = () => resolve(rq.result ? rq.result.blob : null);
+            rq.onerror = () => reject(rq.error);
+        });
+    }
+
+    async function idbDelete(id) {
+        const db = await idbOpen();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction("audio", "readwrite");
+            tx.objectStore("audio").delete(id);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // 初始化
     // ═══════════════════════════════════════════════════════════════════
     function init() {
         cacheElements();
         loadFromStorage();
         bindEvents();
+        // 注入「上傳本機音樂」UI 到新增音樂 modal
+        injectUploadUI();
+        // 注入卡拉OK切換鈕到歌詞區
+        injectKaraokeToggle();
+        // 設定卡拉OK預設
+        setKaraokeMode(state.karaoke);
         // 用真實的 manifest 啟動；失敗才退回 SAMPLE_MUSIC demo
         loadTracksManifest().then(() => {
             renderPlaylist();
             updateStats();
+            // 重新接上上一回上傳、保存在 IndexedDB 的音檔（blob -> objectURL）
+            restoreLocalAudio();
             // 預載所有 LRC（背景 fetch + parse，點歌時歌詞已經在 DOM）
             preloadAllLyrics();
         });
@@ -359,6 +419,285 @@
 
         // 鍵盤快捷鍵
         document.addEventListener("keydown", handleKeyboard);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 上傳本機音樂 UI（注入「新增音樂」modal）
+    // ═══════════════════════════════════════════════════════════════════
+    function injectUploadUI() {
+        const modalBody = document.querySelector("#add-music-modal .modal-body");
+        if (!modalBody) return;
+
+        // 避免重複注入
+        if (modalBody.querySelector(".upload-zone")) return;
+
+        const zone = document.createElement("div");
+        zone.className = "upload-zone";
+        zone.innerHTML = `
+            <div class="upload-header">☁️ 上傳本機音樂</div>
+            <div class="upload-hint">點擊選擇或拖放音檔至此（mp3 / wav / ogg / m4a / webm）</div>
+            <input type="file" id="audio-file-input" accept="audio/*" multiple hidden>
+            <input type="file" id="lyrics-file-input" accept=".lrc,.txt,text/plain" hidden>
+            <div class="upload-actions">
+                <button type="button" class="upload-btn" id="upload-audio-btn">📁 選擇音檔</button>
+                <button type="button" class="upload-btn" id="upload-lyrics-btn">📄 上傳歌詞 (.lrc)</button>
+            </div>
+            <div class="upload-status" id="upload-status"></div>
+        `;
+        modalBody.insertBefore(zone, modalBody.firstChild);
+
+        const fileInput = zone.querySelector("#audio-file-input");
+        const lyricsInput = zone.querySelector("#lyrics-file-input");
+        const statusEl = zone.querySelector("#upload-status");
+        const audioBtn = zone.querySelector("#upload-audio-btn");
+        const lyricsBtn = zone.querySelector("#upload-lyrics-btn");
+
+        audioBtn.addEventListener("click", () => fileInput.click());
+        lyricsBtn.addEventListener("click", () => lyricsInput.click());
+
+        fileInput.addEventListener("change", () => {
+            if (fileInput.files && fileInput.files.length) {
+                handleUploadFiles(fileInput.files, statusEl);
+                fileInput.value = "";
+            }
+        });
+        lyricsInput.addEventListener("change", () => {
+            if (lyricsInput.files && lyricsInput.files.length) {
+                importLyricsFile(lyricsInput.files[0], statusEl);
+                lyricsInput.value = "";
+            }
+        });
+
+        // 拖放
+        ["dragenter", "dragover"].forEach(evt => {
+            zone.addEventListener(evt, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.add("dragover");
+            });
+        });
+        ["dragleave", "drop"].forEach(evt => {
+            zone.addEventListener(evt, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove("dragover");
+            });
+        });
+        zone.addEventListener("drop", e => {
+            const files = e.dataTransfer && e.dataTransfer.files;
+            if (files && files.length) {
+                const audio = Array.from(files).filter(f => /^audio\//.test(f.type));
+                if (audio.length) handleUploadFiles(audio, statusEl);
+                else statusEl.textContent = "⚠️ 請拖放音檔（mp3 / wav / ogg / m4a / webm）";
+            }
+        });
+    }
+
+    // 一次新增一個或多個音檔；由 addMusic() 寫入 playlist 時接上 blob
+    async function handleUploadFiles(fileList, statusEl) {
+        const files = Array.from(fileList).filter(f => /^audio\//.test(f.type) || /\.(mp3|wav|ogg|m4a|webm)$/i.test(f.name));
+        if (files.length === 0) {
+            if (statusEl) statusEl.textContent = "⚠️ 未偵測到可用的音檔。";
+            return;
+        }
+
+        // 準備批量資料：先讀取 metadata 取得 duration / 當封面
+        const pending = [];
+        for (const file of files) {
+            const track = await buildUploadedTrack(file);
+            pending.push(track);
+            state.playlist.push(track);
+        }
+
+        renderPlaylist(elements.searchInput.value);
+        updatePlaylistStats();
+        saveToStorage();
+
+        if (statusEl) {
+            statusEl.textContent = `✅ 已新增 ${pending.length} 首本機音樂：${pending.map(t => t.title).join("、")}`;
+        }
+        // 自動播第一首剛上傳的（若有）
+        if (pending.length && state.currentIndex === -1) {
+            playTrack(state.playlist.indexOf(pending[0]));
+        }
+    }
+
+    async function buildUploadedTrack(file) {
+        const id = Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+        const blob = file; // Blob 直接存 IDB
+        // 存到 IndexedDB，以便重整後還原
+        try {
+            await idbPut(id, blob);
+        } catch (e) {
+            console.warn("[music] 無法持久化音檔到 IndexedDB：", e);
+        }
+
+        // 讀取音檔 metadata（長度/時長）
+        let duration = 0;
+        const cover = await extractCoverMetadata(file);
+        duration = await probeAudioDuration(id, blob);
+
+        return {
+            id,
+            title: titleFromFilename(file.name),
+            artist: "本機上傳",
+            album: "我的音樂",
+            duration: duration || 0,
+            url: URL.createObjectURL(blob),
+            cover: cover || "🎵",
+            lyrics: [],
+            lyricsTimed: null,
+            lyricsUrl: null,
+            favorite: false,
+            local: true       // 標記為本機上傳，重整後從 IDB 還原
+        };
+    }
+
+    function titleFromFilename(name) {
+        const base = name.replace(/\.[^.]*$/, "");
+        return base || "未知歌曲";
+    }
+
+    // 用暫時 <audio> 抓長度（讀 objectURL；blob 若在 IDB，重新造 URL）
+    function probeAudioDuration(id, blob) {
+        return new Promise((resolve) => {
+            let src;
+            try {
+                // 優先直接吃 blob
+                const url = URL.createObjectURL(blob);
+                src = url;
+            } catch (_) {
+                src = "";
+            }
+            if (!src) return resolve(0);
+            const a = document.createElement("audio");
+            a.preload = "metadata";
+            const cleanup = () => { URL.revokeObjectURL(src); };
+            a.addEventListener("loadedmetadata", () => {
+                const d = a.duration && isFinite(a.duration) ? Math.round(a.duration) : 0;
+                cleanup();
+                resolve(d);
+            });
+            a.addEventListener("error", () => { cleanup(); resolve(0); });
+            setTimeout(() => { cleanup(); resolve(0); }, 4000);
+            a.src = src;
+        });
+    }
+
+    // 從音檔 ID3 抓封面（無則回 null）
+    function extractCoverMetadata(file) {
+        return new Promise((resolve) => {
+            if (!window.FileReader) return resolve(null);
+            try {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // 嘗試解析 ID3 APIC；太複雜就跳過，避免阻塞
+                    const buf = new Uint8Array(reader.result);
+                    const header = String.fromCharCode.apply(null, buf.slice(0, 3));
+                    if (header !== "ID3") return resolve(null);
+                    // 找 ID3v2 APIC frame（粗略掃描）
+                    const str = String.fromCharCode.apply(null, buf);
+                    const idx = str.indexOf("APIC");
+                    if (idx > 0 && idx < buf.length) {
+                        const start = idx + 4;
+                        const len = buf[start];
+                        const mimeEnd = start + 1 + len;
+                        const mime = String.fromCharCode.apply(null, buf.slice(start + 1, mimeEnd));
+                        let picStart = mimeEnd + 3;
+                        if (buf[picStart - 1] === 0) picStart++;
+                        const b64 = arrayBufferToBase64(buf.slice(picStart, picStart + 40000));
+                        if (b64 && /^image\//.test(mime)) {
+                            resolve(`data:${mime};base64,${b64}`);
+                            return;
+                        }
+                    }
+                    resolve(null);
+                };
+                reader.onerror = () => resolve(null);
+                reader.readAsArrayBuffer(file);
+            } catch (_) {
+                resolve(null);
+            }
+        });
+    }
+
+    function arrayBufferToBase64(buf) {
+        let binary = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < buf.length; i += chunk) {
+            binary += String.fromCharCode.apply(null, buf.subarray(i, i + chunk));
+        }
+        return btoa(binary);
+    }
+
+    // 上傳 .lrc 歌詞 → 直接填入 modal 歌詞欄
+    async function importLyricsFile(file, statusEl) {
+        try {
+            const text = await file.text();
+            const ta = document.getElementById("new-lyrics");
+            if (ta) {
+                ta.value = text;
+                if (statusEl) statusEl.textContent = `✅ 歌詞已匯入：${file.name}（${text.split(/\r?\n/).filter(Boolean).length} 行）`;
+            }
+        } catch (e) {
+            if (statusEl) statusEl.textContent = "⚠️ 歌詞讀取失敗。";
+        }
+    }
+
+    // 重整後：把上傳過的 local 歌曲從 IndexedDB 還原 objectURL
+    async function restoreLocalAudio() {
+        for (let i = 0; i < state.playlist.length; i++) {
+            const t = state.playlist[i];
+            if (t && t.local) {
+                try {
+                    const blob = await idbGet(t.id);
+                    if (blob) {
+                        // blob URL 每次 session 都失效，一律重建
+                        if (t.url && t.url.startsWith("blob:")) {
+                            try { URL.revokeObjectURL(t.url); } catch (_) {}
+                        }
+                        t.url = URL.createObjectURL(blob);
+                    }
+                } catch (_) { /* ignore */ }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 卡拉OK模式
+    // ═══════════════════════════════════════════════════════════════════
+    function injectKaraokeToggle() {
+        const container = document.querySelector(".lyrics-container");
+        if (!container) return;
+        if (container.querySelector("#karaoke-toggle")) return;
+
+        const btn = document.createElement("button");
+        btn.id = "karaoke-toggle";
+        btn.className = "karaoke-toggle";
+        btn.type = "button";
+        btn.title = "切換卡拉OK逐字模式";
+        btn.textContent = "🎤";
+        btn.addEventListener("click", () => {
+            state.karaoke = !state.karaoke;
+            setKaraokeMode(state.karaoke);
+            // 依目前播放中的歌曲重新渲染歌詞，讓結構符合新模式
+            const track = state.playlist[state.currentIndex];
+            if (track && state.currentIndex >= 0) {
+                if (track.lyricsTimed && track.lyricsTimed.length) {
+                    renderLyricsTimed(track.lyricsTimed);
+                } else if (track.lyrics && track.lyrics.length) {
+                    renderLyricsPlain(track.lyrics);
+                }
+            }
+        });
+        container.appendChild(btn);
+    }
+
+    function setKaraokeMode(on) {
+        const modeBtn = document.getElementById("karaoke-toggle");
+        const lyricsEl = document.getElementById("lyrics");
+        if (modeBtn) modeBtn.classList.toggle("on", on);
+        if (lyricsEl) lyricsEl.classList.toggle("karaoke", on);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -722,6 +1061,14 @@
     function deleteTrack(trackId) {
         const index = state.playlist.findIndex(t => t.id === trackId);
         if (index !== -1) {
+            const removed = state.playlist[index];
+            // 若是本機上傳的音檔，也從 IndexedDB 移除
+            if (removed && removed.local) {
+                idbDelete(removed.id).catch(() => {});
+                if (removed.url && removed.url.startsWith("blob:")) {
+                    try { URL.revokeObjectURL(removed.url); } catch (_) {}
+                }
+            }
             state.playlist.splice(index, 1);
             if (state.currentIndex === index) {
                 pauseTrack();
@@ -778,9 +1125,7 @@
         if (track.lyricsTimed && track.lyricsTimed.length > 0) {
             renderLyricsTimed(track.lyricsTimed);
         } else if (track.lyrics && track.lyrics.length > 0) {
-            elements.lyrics.innerHTML = track.lyrics
-                .map(line => `<p class="lyric-line">${escapeHtml(line)}</p>`)
-                .join("");
+            renderLyricsPlain(track.lyrics);
         } else if (track.lyricsUrl) {
             loadLyricsFromUrl(track.lyricsUrl);
         } else {
@@ -788,10 +1133,32 @@
         }
     }
 
+    // 渲染 plain lyrics（無時間戳）成 karaoke 字元 span
+    function renderLyricsPlain(lines) {
+        elements.lyrics.classList.toggle("karaoke", state.karaoke);
+        elements.lyrics.innerHTML = lines
+            .map(line => {
+                const chars = Array.from(line || "");
+                const spans = chars
+                    .map(ch => `<span class="kar-ch">${escapeHtml(ch)}</span>`)
+                    .join("");
+                return `<p class="lyric-line song-line">${spans || '<span class="kar-ch">&nbsp;</span>'}</p>`;
+            })
+            .join("");
+    }
+
     // 渲染 timed lyrics：[{ time: 12.34, text: '...' }, ...]
+    // 卡拉OK模式：每一行拆成「字元 span」，用 --kar-fill 逐字元漸亮
     function renderLyricsTimed(timed) {
+        elements.lyrics.classList.toggle("karaoke", state.karaoke);
         elements.lyrics.innerHTML = timed
-            .map((l, i) => `<p class="lyric-line" data-time="${l.time.toFixed(2)}" data-idx="${i}">${escapeHtml(l.text)}</p>`)
+            .map((l, i) => {
+                const chars = Array.from(l.text || "");
+                const spans = chars
+                    .map(ch => `<span class="kar-ch">${escapeHtml(ch)}</span>`)
+                    .join("");
+                return `<p class="lyric-line song-line" data-time="${l.time.toFixed(2)}" data-idx="${i}" data-next="${i + 1 < timed.length ? (timed[i + 1].time - l.time).toFixed(2) : '3.00'}">${spans}</p>`;
+            })
             .join("");
     }
 
@@ -832,9 +1199,7 @@
             return;
         }
         if (t && t.lyrics && t.lyrics.length > 0) {
-            elements.lyrics.innerHTML = t.lyrics
-                .map(line => `<p class="lyric-line">${escapeHtml(line)}</p>`)
-                .join("");
+            renderLyricsPlain(t.lyrics);
             return;
         }
         elements.lyrics.innerHTML = '<p class="lyric-line">歌詞載入中…</p>';
@@ -857,9 +1222,7 @@
                     if (lines.length === 0) {
                         elements.lyrics.innerHTML = '<p class="lyric-line">歌詞為空</p>';
                     } else {
-                        elements.lyrics.innerHTML = lines
-                            .map(line => `<p class="lyric-line">${escapeHtml(line)}</p>`)
-                            .join("");
+                        renderLyricsPlain(lines);
                     }
                 }
             }
@@ -945,8 +1308,27 @@
         // 切換 active/passed class（避免不必要的 DOM 操作）
         const lines = elements.lyrics.querySelectorAll(".lyric-line");
         if (lines.length === 0) return;
+
+        // 計算當前行在整行時間窗內的完成度（k 値 0..1）→ 卡拉OK漸亮
+        let lineFill = 0;
+        if (currentLineIndex >= 0) {
+            if (track.lyricsTimed && track.lyricsTimed.length) {
+                const start = track.lyricsTimed[currentLineIndex].time;
+                const end = (currentLineIndex + 1 < track.lyricsTimed.length)
+                    ? track.lyricsTimed[currentLineIndex + 1].time
+                    : (start + 3);
+                lineFill = Math.max(0, Math.min(1, (currentTime - start) / Math.max(0.05, end - start)));
+            } else if (track.lyrics && track.lyrics.length) {
+                const seg = track.duration / track.lyrics.length;
+                const s = currentLineIndex * seg;
+                lineFill = Math.max(0, Math.min(1, (currentTime - s) / Math.max(0.05, seg)));
+            }
+        }
+
         const prev = state.currentLyricIndex ?? -1;
-        if (prev !== currentLineIndex) {
+        const lineChanged = prev !== currentLineIndex;
+
+        if (lineChanged) {
             // 移除所有舊狀態
             for (let i = 0; i < lines.length; i++) {
                 const c = lines[i].classList;
@@ -965,7 +1347,30 @@
                     lines[currentLineIndex].scrollIntoView({ behavior: "smooth", block: "center" });
                 } catch (_) { /* scrollIntoView not supported */ }
             }
+            // 行切換時，把非當前行所有字元的 .lit 清除，避免殘留高亮
+            for (let i = 0; i < lines.length; i++) {
+                if (i !== currentLineIndex) {
+                    lines[i].querySelectorAll(".lit").forEach(el => el.classList.remove("lit"));
+                }
+            }
             state.currentLyricIndex = currentLineIndex;
+        }
+
+        // 卡拉OK：即使行沒變，把當前行細分成字元，依 lineFill 上色
+        if (state.karaoke && currentLineIndex >= 0 && lines[currentLineIndex]) {
+            const activeLine = lines[currentLineIndex];
+            const chars = activeLine.querySelectorAll(".kar-ch");
+            if (chars.length) {
+                const threshold = lineFill * chars.length;
+                const prevLit = activeLine.dataset.litCount || "0";
+                const litCount = Math.floor(threshold);
+                if (prevLit !== String(litCount)) {
+                    for (let i = 0; i < chars.length; i++) {
+                        chars[i].classList.toggle("lit", i < litCount);
+                    }
+                    activeLine.dataset.litCount = String(litCount);
+                }
+            }
         }
     }
 
@@ -1115,6 +1520,7 @@
         const duration = parseInt(document.getElementById("new-duration").value) || 180;
         const lyricsText = document.getElementById("new-lyrics").value.trim();
 
+        /************* Local content check *************/
         if (!title || !artist) {
             alert("請填寫歌曲標題和藝術家");
             return;
@@ -1131,6 +1537,12 @@
             lyrics: lyricsText ? lyricsText.split("\n") : [],
             favorite: false
         };
+
+        // 若歌詞欄是 LRC 格式，改用 timed 模式
+        if (lyricsText && isLrcFormat(lyricsText)) {
+            newTrack.lyricsTimed = parseLrc(lyricsText);
+            newTrack.lyrics = null;
+        }
 
         state.playlist.push(newTrack);
         renderPlaylist(elements.searchInput.value);
