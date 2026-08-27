@@ -734,7 +734,11 @@
             }
             elements.audioPlayer.volume = state.isMuted ? 0 : state.volume / 100;
             elements.audioPlayer.play().catch(err => {
-                console.warn("[music] play() rejected (autoplay? user gesture?):", err && err.message);
+                // 以下屬於「可預期 / 非錯誤」的情況，不印警告：
+                //  - AbortError：快速跳歌時新的 load() 中斷了上一次 play()
+                //  - NotAllowedError：瀏覽器自動播放政策擋下 play()（需使用者手勢）
+                if (err && (err.name === "AbortError" || err.name === "NotAllowedError" || err.code === 20)) return;
+                console.warn("[music] play() rejected:", err && err.message);
             });
         }
 
