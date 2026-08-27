@@ -6,5 +6,5 @@
 *.m4a filter=lfs diff=lfs merge=lfs -text
 *.aac filter=lfs diff=lfs merge=lfs -text
 
-# Lyrics files
-*.lrc filter=lfs diff=lfs merge=lfs -text
+# Lyrics files: 不歸 LFS 管（才幾百 bytes 的純文字，LFS pointer 132 bytes 還比真檔大）
+# *.lrc 不寫 LFS filter，用一般 git 追蹤
