@@ -879,7 +879,7 @@ async function screenOne(code, name) {
 async function scanAllImpl() {
   const watch = await getWatchMap();
   const codes = Array.from(watch.keys());
-  const results = (await Promise.all(codes.map(async (c) => screenOne(c, watch.get(c)?.name  c)))).filter(Boolean);
+  const results = (await Promise.all(codes.map(async (c) => screenOne(c, watch.get(c)?.name ?? c)))).filter(Boolean);
   return results;
 }
 
@@ -1077,20 +1077,23 @@ async function macroData(request) {
     const as_of = last.trade_date ? String(last.trade_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
     const asOfLabel = as_of;
     // Build the array shape the frontend expects.
-    // 修正 BUG-7：?源」?位填"FRED" ?能?macro.html renderFredTable 顯示 allowlist    //   之?"macro_yields" / "TSMC proxy" / "? Railway backend (offline)"?    //   renderFredTable ???d["來?"] === "FRED" 一律被?濾顯示?無白名單 IP?    //   ??：?macro yield / 總?統?標?"FRED"（實?數??源?
-    //   macro_yields 資??+ offline placeholder）端就? render    const arr = [
-      { "??": "?股?數 (2330)", "???: tsLast, "??: tsPrev, "?新??": asOfLabel, "來?": "FRED", "來?標?": "TSMC proxy" },
-      { "??": "?0年公白名單 IP?(%)", "???: last10y, "??: prev10y, "?新??": asOfLabel, "來?": "FRED", "來?標?": "macro_yields" },
-      { "??": "?年公白名單 IP?(%)",  "???: last2y,  "??: prev2y,  "?新??": asOfLabel, "來?": "FRED", "來?標?": "macro_yields" },
+    // 修正 BUG-7：「來源」欄位填 "FRED" 才能讓 macro.html renderFredTable 顯示 allowlist
+    //   之後 "macro_yields" / "TSMC proxy" / "Railway backend (offline)"
+    //   renderFredTable 用 d["來源"] === "FRED" 一律被過濾顯示（無白名單 IP）
+    //   補：macro yield / 總統選情 "FRED"（實指數據源 + offline placeholder）端就能 render
+    const arr = [
+      { "名稱": "台股指數 (2330)", "最新值": tsLast, "前日值": tsPrev, "更新時間": asOfLabel, "來源": "FRED", "來源標籤": "TSMC proxy" },
+      { "名稱": "10年公債殖利率 (%)", "最新值": last10y, "前日值": prev10y, "更新時間": asOfLabel, "來源": "FRED", "來源標籤": "macro_yields" },
+      { "名稱": "2年公債殖利率 (%)",  "最新值": last2y,  "前日值": prev2y,  "更新時間": asOfLabel, "來源": "FRED", "來源標籤": "macro_yields" },
     ];
     // Spread placeholder rows so the page can render placeholders for missing metrics.
     const placeholders = [
-      "美債平衡?膨?BEI(%)", "10?3?公?利?, "10?2年公?利?,
-      "?邦白名單 IP?(%)", "GDP?長?年%)", "美?失業%)", "密大消費?信?,
-      "席??CAPE)", "VIX白名單 IP數", "美?CPI年?%)", "??CPI YoY(%)",
+      "美債平衡通膨BEI(%)", "10年3月公債利差", "10年2年公債利差",
+      "聯邦利率(%)", "GDP長年(%)", "美國失業率(%)", "密大消費信心",
+      "席勒CAPE", "VIX指數", "美國CPI年增(%)", "核心CPI YoY(%)",
     ];
     for (const name of placeholders) {
-      arr.push({ "??": name, "???: null, "??: null, "?新??": asOfLabel, "來?": "FRED", "來?標?": "? Railway backend (offline)" });
+      arr.push({ "名稱": name, "最新值": null, "前日值": null, "更新時間": asOfLabel, "來源": "FRED", "來源標籤": "Railway backend (offline)" });
     }
     return json({
       ok: true,
@@ -1140,7 +1143,7 @@ async function markersRecordImpl(request) {
     try {
       await q(
         `INSERT INTO markers (code, date, type, text, price) VALUES ($1, $2, $3, $4, $5)`,
-        [code, pickStr(body?.date), pickStr(body?.type  "note", "note"), pickStr(body?.text), Number(body?.price) || null]
+        [code, pickStr(body?.date), pickStr(body?.type ?? "note"), pickStr(body?.text), Number(body?.price) || null]
       );
       return json({ ok: true, code, mode: "single", inserted: 1 });
     } catch (e) {
@@ -1256,7 +1259,7 @@ async function markersExport(request) {
   try {
     const { rows } = await q("SELECT id, code, date, type, text, price FROM markers ORDER BY date DESC LIMIT 1000");
     const header = "id,code,date,type,text,price";
-    const lines = rows.map((r) => [r.id, r.code, r.date, r.type, JSON.stringify(r.text  ""), r.price].join(","));
+    const lines = rows.map((r) => [r.id, r.code, r.date, r.type, JSON.stringify(r.text ?? ""), r.price].join(","));
     const csv = [header, ...lines].join("\n");
     return new Response(csv, {
       headers: {
@@ -1375,11 +1378,11 @@ async function marketGaps(request) {
   // Frontend iterates ^TWII / ^TWOII. We don't have index data in DB,
   // so return those keys with a clean "no index data" message frontend
   // handles `d.error` gracefully. We also tack on a real `^PROXY` from
-  // 2330 ( allowlist so the panel can show something live.
+  // 2330 (台積電) allowlist so the panel can show something live.
   const [twii, twoii, proxy] = await Promise.all([
-    Promise.resolve({ name: "白名單 IP數", error: "白名單 IP?DB 白名單 IP股/ETF? }),
-    Promise.resolve({ name: "櫃買?數", error: "白名單 IP?DB 白名單 IP股/ETF? }),
-    computeGapsForSymbol("2330", " allowlist(2330) ??大盤", lookback, minGap),
+    Promise.resolve({ name: "加權指數", error: "查詢 DB 失敗（無股/ETF）" }),
+    Promise.resolve({ name: "櫃買指數", error: "查詢 DB 失敗（無股/ETF）" }),
+    computeGapsForSymbol("2330", "台積電(2330) 代理大盤", lookback, minGap),
   ]);
   return json({ ok: true, source: "db", "^TWII": twii, "^TWOII": twoii, "^PROXY": proxy });
 }
@@ -1512,7 +1515,7 @@ async function etfSnapshot(request) {
       change_pct: 0, // computed below
       date: toTwseStyleDate(String(r.trade_date).slice(0, 10)),
       volume: Number(r.volume) || 0,
-      name: etfs.find((e) => e.code === r.symbol)?.name  r.symbol,
+      name: etfs.find((e) => e.code === r.symbol)?.name ?? r.symbol,
     }));
     return json({ ok: true, source: "db", count: items.length, items, taken_at: Date.now() });
   } catch (e) {
@@ -1585,7 +1588,7 @@ async function etfAnalyze(request) {
         source: "stub",
         no_data: true,
         count: 0,
-        message: "etf_holdings 表為空?bulk source；? per-issuer 白名單 IP? seed?,
+        message: "etf_holdings 表為空，無 bulk source；請 per-issuer 補資料後 seed",
       });
     }
     // Run real analysis (inline to avoid dynamic import edge runtime)
@@ -1602,7 +1605,7 @@ async function _runEtfAnalysis() {
   const byEtf = new Map();
   let prev_compared_at = null;
   for (const e of (etfs || [])) {
-    const code = String(e.code  e[0]  "");
+    const code = String(e.code ?? e[0] ?? "");
     if (!code) continue;
     const { rows: h } = await q(
       `SELECT symbol, weight_pct, as_of_date::text
@@ -1613,9 +1616,9 @@ async function _runEtfAnalysis() {
       [code]
     );
     const holdings = (h || []).map(r => ({
-      stock_code: String(r.symbol  r[0]  ""),
+      stock_code: String(r.symbol ?? r[0] ?? ""),
       weight: r.weight_pct != null ? Number(r.weight_pct) : null,
-      as_of: r.as_of_date  r[2] ?? null,
+      as_of: r.as_of_date ?? r[2] ?? null,
     })).filter(h => h.stock_code);
     byEtf.set(code, holdings);
     if (holdings.length > 0 && (!prev_compared_at || holdings[0].as_of > prev_compared_at)) {
@@ -1746,11 +1749,12 @@ async function uptrendWatch(request) {
       range_pct: r.dist_high_20d_pct,
       volume: r.vol_ratio != null ? Number(r.vol_ratio) : null,
       score: r.score,
-      status: r.score >= 4 ? "強勢多頭" : "轉強觀?,
+      status: r.score >= 4 ? "強勢多頭" : "轉強觀察",
     }));
 
     const uptrendAll = results.filter((r) => r.cond2 && r.cond3);
-    // ?踩?? = 白名單 IP? MA10 MA20 但? allowlist    const ma10 = uptrendAll.filter((r) =>
+    // 站上均線 = 距 60 日高點 ≤ 3%，最新收盤與 MA10 差距 ≤ 2%（站穩 MA10 但允許 slight pullback）
+    const ma10 = uptrendAll.filter((r) =>
       r.dist_high_60d_pct != null && r.dist_high_60d_pct <= 3 &&
       r.latest_close != null && r.ma10 != null &&
       Math.abs(r.latest_close - r.ma10) / r.ma10 <= 0.02
@@ -1776,7 +1780,7 @@ async function uptrendWatch(request) {
       ma10: scored(ma10),
       ma20: scored(ma20),
       volow: scored(volow),
-      // ?容??欄?
+      // 兼容舊欄位
       count: uptrendAll.length,
       items: scored(uptrendAll),
       generated_at: Date.now(),
