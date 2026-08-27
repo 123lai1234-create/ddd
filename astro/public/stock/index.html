@@ -68,8 +68,8 @@
   </script>
   <!-- Favicon -->
   <!-- ★ 2026-08-13: 改用絕對路徑 favicon，解決 404 -->
-  <link rel="icon" type="image/svg+xml" href="/stock-app/favicon.svg" onerror="this.href='/favicon.svg'">
-  <link rel="shortcut icon" href="/stock-app/favicon.svg" onerror="this.href='/favicon.svg'">
+  <link rel="icon" type="image/svg+xml" href="/stock/favicon.svg" onerror="this.href='/favicon.svg'">
+  <link rel="shortcut icon" href="/stock/favicon.svg" onerror="this.href='/favicon.svg'">
 
   <style>
     :root{--bg:#0f0f23;--bg2:#1a1a3e;--bg3:#1e1e42;--txt:#e0e0ff;--txt2:#8888aa;
@@ -1265,7 +1265,7 @@
       <button onclick="openRecipientsModal()" style="background:var(--purple)">
         📧 收件者管理
       </button>
-      <a href="/stock-app/marker_history.html" target="_blank"
+      <a href="/stock/marker_history.html" target="_blank"
          style="background:linear-gradient(135deg,#ab47bc,#7b1fa2);color:#fff;
                 text-decoration:none;padding:8px 14px;border-radius:6px;
                 font-size:14px;display:inline-block">
@@ -2390,7 +2390,7 @@ function recordMarkersToDB(code, data){
 function _toUtcTs(t) {
   if (typeof t === "string") {
     // ★ 2026-08-13 fix: 支援民國年格式「114/11/12」轉西元
-    var m = t.match(/^(d{2,3})\/(\d{1,2})\/(\d{1,2})$/);
+    var m = t.match(/^(\d{2,3})\/(\d{1,2})\/(\d{1,2})$/);
     if (m) {
       var year = parseInt(m[1], 10);
       if (year < 200) year += 1911;  // 民國年 → 西元年
@@ -2403,17 +2403,37 @@ function _toUtcTs(t) {
 }
 // ★ 2026-08-13 fix: 過濾掉 time/value 為 null 的項目，避免 lightweight-charts 拋 "Value is null"
 //   同時為每個項目補上預設 value=0（MA 線等）
+// ★ 2026-08-26 fix: 後端 market_price_bars 同一天可能有多來源列（twse/finmind/yahoo），
+//   /api/stock 曾回傳「重複 time」的 candles/volumes/ma。lightweight-charts v4 遇到重複
+//   time 會在 render 階段拋 "Value is null" 並每幀重複刷 console。這裡再加三道防線：
+//   1) time 轉換後必須是有限數字（NaN → 丟棄）
+//   2) 同 time 只保留最後一筆（去重，保持嚴格遞增）
+//   3) value / OHLC 非有限數字 → 丟棄
 function _fixTime(arr) {
   // 2026-08-14 fix: 原條件 `d.value != null` 會把 candle（沒有 value 欄位，只有 OHLC）整個過濾掉，
   // 導致 candleSeries.setData([]) 圖表全空（顯示預設 0~0.7）。改成只檢查 time。
   // MA/volume 線有 value 欄位的會另外補 Number() 轉數字。
-  return (arr || [])
-    .filter(function(d) { return d && d.time != null; })
-    .map(function(d) {
-      var out = Object.assign({}, d, { time: _toUtcTs(d.time) });
-      if (d.value != null) out.value = Number(d.value) || 0;
-      return out;
-    });
+  var seen = {}, out = [];
+  var src = arr || [];
+  for (var i = src.length - 1; i >= 0; i--) {   // 倒著掃 → 同 time 留最後一筆
+    var d = src[i];
+    if (!d || d.time == null) continue;
+    var t = _toUtcTs(d.time);
+    if (typeof t === 'number' && !isFinite(t)) continue;   // NaN/Infinity time → 丟棄
+    if (t == null) continue;
+    var key = String(t);
+    if (seen[key]) continue;                              // 重複 time → 丟棄（保留最後一筆）
+    seen[key] = true;
+    var o = Object.assign({}, d, { time: t });
+    if (d.value != null) o.value = Number(d.value) || 0;
+    if (o.value != null && !isFinite(o.value)) continue;  // value 非有限 → 丟棄
+    if ('open' in o) {                                    // candle：OHLC 非有限 → 丟棄
+      var badOhlc = [o.open, o.high, o.low, o.close].some(function(v){ return v != null && !isFinite(Number(v)); });
+      if (badOhlc) continue;
+    }
+    out.push(o);
+  }
+  return out.reverse();
 }
 function _fixChartTimes(data) {
   if (!data) return data;
@@ -2427,6 +2447,12 @@ function _fixChartTimes(data) {
   ["channelHigh","channelLow","supportLine"].forEach(function(k) {
     if (Array.isArray(data[k])) data[k] = _fixTime(data[k]);
   });
+  // ★ 2026-08-26: MACD pane 同樣去重（重複 time 會讓 macdChart render 拋錯）
+  if (data.macd) {
+    ["histogram","macd_line","signal_line"].forEach(function(k) {
+      if (Array.isArray(data.macd[k])) data.macd[k] = _fixTime(data.macd[k]);
+    });
+  }
   return data;
 }
 
@@ -7703,7 +7729,8 @@ function showTradeDetail() {
       return { time: d.time, value: d.volume, color: color };
     });
 
-    volumeSeries.setData(newVols);
+    // ★ 2026-08-26: 同 time 去重 + try/catch（原 unwrapped setData 遇到重複 time 會 throw）
+    try { volumeSeries.setData(_fixTime(newVols)); } catch(e) { console.warn("[volume] recolorVolume setData 失敗:", e); }
   }
 
   /**

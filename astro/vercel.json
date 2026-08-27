@@ -54,13 +54,13 @@
   ],
   "redirects": [
     {
-      "source": "/stock",
-      "destination": "/stock-app",
+      "source": "/stock-app",
+      "destination": "/stock",
       "permanent": true
     },
     {
-      "source": "/stock/",
-      "destination": "/stock-app",
+      "source": "/stock-app/",
+      "destination": "/stock",
       "permanent": true
     },
     {
