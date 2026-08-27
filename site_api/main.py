@@ -26,6 +26,15 @@ from site_api.routes_aggregator import router
 from site_api.routes_minimax import router as minimax_router
 from site_api.routes.music_analysis import router as music_analysis_router
 
+# ── New: LLM stack (OpenAI / Anthropic / Gemini / MiniMax, MCP, Tools, RAG,
+# LangChain-style, LangGraph-style). Mounted at /llm-stack.
+try:
+    from site_api.llm_stack import mount_llm_stack, list_providers
+    LLM_STACK_AVAILABLE = True
+except Exception as _exc:  # pragma: no cover
+    LLM_STACK_AVAILABLE = False
+    logger.warning("LLM stack import failed: %s", _exc)
+
 logger = logging.getLogger(__name__)
 
 
@@ -72,4 +81,13 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 app.include_router(router)
 app.include_router(minimax_router)
-app.include_router(music_analysis_router)
+
+# Mount the LLM stack at /llm-stack (graceful fallback if it fails)
+if LLM_STACK_AVAILABLE:
+    try:
+        mount_llm_stack(app)
+        logger.info("LLM stack mounted; active providers: %s", list_providers())
+    except Exception as _exc:  # pragma: no cover
+        logger.warning("Failed to mount LLM stack: %s", _exc)
+else:
+    logger.warning("LLM stack not available; /llm-stack endpoints are not registered.")

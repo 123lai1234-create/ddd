@@ -121,6 +121,15 @@
   </div>
 
   <div class="container">
+    <div style="background:rgba(255,145,0,.12);border:1px solid #ff9100;color:#ffb74d;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;line-height:1.7">
+      <b style="color:#ff9100">⚠ 快照資料為空</b><br>
+      持股變動追蹤需 <code>etf_holdings</code> 歷史快照，目前 <b>0 筆快照</b>。
+      因為沒有 bulk source、且 ETF 發行商頁面沒有歷史 archive（只顯示最新一期），
+      抓一次快照也只能跟「無」比對，無法看變動。
+      <br>下方按鈕「立即抓快照」可單次抓最新一期，但變動比較仍會是空。
+      建議先確認是否能接受單期快照；若需要歷史 trend，要等 ETF 發行商開放 archive 或自行定期跑。
+    </div>
+
     <div class="panel">
       <h2>選擇 ETF</h2>
       <div class="controls">

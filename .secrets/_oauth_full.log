@@ -1,0 +1,143 @@
+[01:07:43] Spawning oauth_capture_server.py ...
+[01:07:43]   Server PID: 30376
+[01:07:44]   Server up on port: 8080
+[01:07:44] PKCE verifier written (86 chars)
+[01:07:44] 
+=== AUTH URL ===
+https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=154332931431-g2qimnhtod7ivsgtqbv2c0btc39n0fp6.apps.googleusercontent.com&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.upload&redirect_uri=http%3A%2F%2Flocalhost%3A8080&code_challenge=bdV4yxu2Ni6JMqpeVnzX4L7yszRfEAQszRMdZAYkFew&code_challenge_method=S256&prompt=consent&access_type=offline&include_granted_scopes=true
+================
+
+[01:07:44] URL persisted at: D:\project\.secrets\_oauth_url_now.json
+[01:07:44] >>> CALLER: open this URL in user's Chrome via mavis browser NOW <<<
+[01:07:44] Waiting for OAuth callback (max 5 min)...
+[01:07:45]   ... waiting (298s left)
+[01:08:00]   ... waiting (283s left)
+[01:08:15]   ... waiting (268s left)
+[01:08:30]   ... waiting (253s left)
+[01:08:45]   ... waiting (238s left)
+[01:09:00]   ... waiting (223s left)
+[01:09:15]   ... waiting (208s left)
+[01:09:30]   ... waiting (193s left)
+[01:09:45]   ... waiting (178s left)
+[01:10:00]   ... waiting (163s left)
+[01:10:15]   ... waiting (148s left)
+[01:10:30]   ... waiting (133s left)
+[01:10:45]   ... waiting (118s left)
+[01:11:00]   ... waiting (103s left)
+[01:11:15]   ... waiting (88s left)
+[01:11:30]   ... waiting (73s left)
+[01:11:45]   ... waiting (58s left)
+[01:12:00]   ... waiting (43s left)
+[01:12:15]   ... waiting (28s left)
+[01:12:30]   ... waiting (13s left)
+[01:12:44] Server stopped.
+[01:12:44] TIMEOUT: no code captured within 5 min
+[06:40:35] Spawning oauth_capture_server.py ...
+[06:40:35]   Server PID: 15868
+[06:40:35]   Server up on port: 8080
+[06:40:35] PKCE verifier written (86 chars)
+[06:40:35] 
+=== AUTH URL ===
+https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=154332931431-g2qimnhtod7ivsgtqbv2c0btc39n0fp6.apps.googleusercontent.com&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.upload&redirect_uri=http%3A%2F%2Flocalhost%3A8080&code_challenge=c_P6HTbGmVQqMklFGEUrpv76rfqoPGds_R37xgkiavI&code_challenge_method=S256&prompt=consent&access_type=offline&include_granted_scopes=true
+================
+
+[06:40:35] URL persisted at: D:\project\.secrets\_oauth_url_now.json
+[06:40:35] >>> CALLER: open this URL in user's Chrome via mavis browser NOW <<<
+[06:40:35] Waiting for OAuth callback (max 5 min)...
+[06:40:45]   ... waiting (289s left)
+[06:41:00]   ... waiting (274s left)
+[06:41:15]   ... waiting (259s left)
+[06:41:30]   ... waiting (244s left)
+[06:41:45]   ... waiting (229s left)
+[06:45:51] Spawning oauth_capture_server.py ...
+[06:45:51]   Server PID: 34236
+[06:45:51]   Server up on port: 8080
+[06:45:51] PKCE verifier written (86 chars)
+[06:45:51] 
+=== AUTH URL ===
+https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=154332931431-g2qimnhtod7ivsgtqbv2c0btc39n0fp6.apps.googleusercontent.com&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.upload&redirect_uri=http%3A%2F%2Flocalhost%3A8080&code_challenge=5yfL4RmRsSdH2Lkj56wGHByNL5_5lYzCFsESnvMU3So&code_challenge_method=S256&prompt=consent&access_type=offline&include_granted_scopes=true
+================
+
+[06:45:51] URL persisted at: D:\project\.secrets\_oauth_url_now.json
+[06:45:51] >>> CALLER: open this URL in user's Chrome via mavis browser NOW <<<
+[06:45:51] Waiting for OAuth callback (max 5 min)...
+[06:46:00]   ... waiting (290s left)
+[06:46:15]   ... waiting (275s left)
+[06:46:30]   ... waiting (260s left)
+[06:46:45]   ... waiting (245s left)
+[06:47:00]   ... waiting (230s left)
+[06:47:15]   ... waiting (215s left)
+[06:47:30]   ... waiting (200s left)
+[06:47:45]   ... waiting (185s left)
+[06:48:00]   ... waiting (170s left)
+[06:48:15]   ... waiting (155s left)
+[06:48:30]   ... waiting (140s left)
+[06:48:45]   ... waiting (125s left)
+[06:49:00]   ... waiting (110s left)
+[06:49:15]   ... waiting (95s left)
+[06:49:30]   ... waiting (80s left)
+[06:49:45]   ... waiting (65s left)
+[06:50:00]   ... waiting (50s left)
+[06:50:15]   ... waiting (35s left)
+[06:50:30]   ... waiting (20s left)
+[06:50:45]   ... waiting (5s left)
+[06:50:51] Server stopped.
+[06:50:51] TIMEOUT: no code captured within 5 min
+[06:56:56] Spawning oauth_capture_server.py ...
+[06:56:56]   Server PID: 36200
+[06:56:56]   Server up on port: 8080
+[06:56:56] PKCE verifier written (86 chars)
+[06:56:56] 
+=== AUTH URL ===
+https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=154332931431-g2qimnhtod7ivsgtqbv2c0btc39n0fp6.apps.googleusercontent.com&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.upload&redirect_uri=http%3A%2F%2Flocalhost%3A8080&code_challenge=j9R4ydubGBd7vNfHK_1BVnccs1TPSYPDfr5L8XhA28w&code_challenge_method=S256&prompt=consent&access_type=offline&include_granted_scopes=true
+================
+
+[06:56:56] URL persisted at: D:\project\.secrets\_oauth_url_now.json
+[06:56:56] >>> CALLER: open this URL in user's Chrome via mavis browser NOW <<<
+[06:56:56] Waiting for OAuth callback (max 5 min)...
+[06:57:00]   ... waiting (295s left)
+[06:57:15]   ... waiting (280s left)
+[06:57:30]   ... waiting (265s left)
+[06:57:45]   ... waiting (250s left)
+[06:58:00]   ... waiting (235s left)
+[06:58:15]   ... waiting (220s left)
+[06:58:30]   ... waiting (205s left)
+[06:58:45]   ... waiting (190s left)
+[06:59:00]   ... waiting (175s left)
+[06:59:15]   ... waiting (160s left)
+[06:59:30]   ... waiting (145s left)
+[06:59:45]   ... waiting (130s left)
+[07:00:00]   ... waiting (115s left)
+[07:00:15]   ... waiting (100s left)
+[07:00:30]   ... waiting (85s left)
+[07:00:45]   ... waiting (70s left)
+[07:01:00]   ... waiting (55s left)
+[07:01:15]   ... waiting (40s left)
+[07:01:30]   ... waiting (25s left)
+[07:01:45]   ... waiting (10s left)
+[07:01:56] Server stopped.
+[07:01:56] TIMEOUT: no code captured within 5 min
+[07:02:43] Spawning oauth_capture_server.py ...
+[07:02:43]   Server PID: 37076
+[07:02:44]   Server up on port: 8080
+[07:02:44] PKCE verifier written (86 chars)
+[07:02:44] 
+=== AUTH URL ===
+https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=154332931431-g2qimnhtod7ivsgtqbv2c0btc39n0fp6.apps.googleusercontent.com&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.upload&redirect_uri=http%3A%2F%2Flocalhost%3A8080&code_challenge=mXGoDLH3Id405bsjjz2J4Hj0_l8jK4D-3hy6UZVCLOs&code_challenge_method=S256&prompt=consent&access_type=offline&include_granted_scopes=true
+================
+
+[07:02:44] URL persisted at: D:\project\.secrets\_oauth_url_now.json
+[07:02:44] >>> CALLER: open this URL in user's Chrome via mavis browser NOW <<<
+[07:02:44] Waiting for OAuth callback (max 5 min)...
+[07:02:45]   ... waiting (298s left)
+[07:03:00]   ... waiting (283s left)
+[07:03:15]   ... waiting (268s left)
+[07:03:30]   ... waiting (253s left)
+[07:03:45]   ... waiting (238s left)
+[07:04:00]   ... waiting (223s left)
+[07:04:15]   ... waiting (208s left)
+[07:04:30]   ... waiting (193s left)
+[07:04:45]   ... waiting (178s left)
+[07:05:00]   ... waiting (163s left)
+[07:05:15]   ... waiting (148s left)
+[07:05:30]   ... waiting (133s left)

@@ -1,24 +1,29 @@
 {
   "name": "astro",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "prebuild": "echo 'prebuild skipped on Vercel (dist already committed)'",
+    "sync-frontend": "node scripts/sync_frontend.mjs && node scripts/convert_pages.mjs",
+    "build": "astro build && npx pagefind --site dist --output-path dist/pagefind",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/react": "^4.4.0",
-    "@astrojs/vercel": "^10.0.8",
+    "@astrojs/react": "^4.2.1",
     "@vercel/analytics": "^2.0.1",
-    "astro": "^6.1.6"
+    "astro": "^6.1.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "music-metadata": "^11.13.0",
-    "pagefind": "^1.3.0"
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "pagefind": "^1.3.0",
+    "typescript": "^5.7.3"
   }
 }

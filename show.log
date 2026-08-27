@@ -1,0 +1,11 @@
+﻿commit f898e4c1812b07a638260266cc25d9620a2f7395
+Author: JT Lai <jtlai0921@gmail.com>
+Date:   Wed Aug 12 10:01:12 2026 +0800
+
+    fix(api): rename to catchall.mjs + add routes config to map /api/* explicitly
+
+ api/catchall.mjs       | 4900 ++++++++++++++++++++++++++++++++++++++++++++++++
+ astro/api/catchall.mjs | 4900 ++++++++++++++++++++++++++++++++++++++++++++++++
+ astro/vercel.json      |    6 +
+ vercel.json            |    6 +
+ 4 files changed, 9812 insertions(+)

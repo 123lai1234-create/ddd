@@ -1,0 +1,76 @@
+﻿node.exe : Vercel CLI 59.7.0 (Node.js 24.14.1)
+位於 線路:1 字元:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Vercel CLI 59.7.0 (Node.js 24.14.1):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Retrieving project…
+Fetching deployments in donttalk
+> Deployments for donttalk/donttalk [796ms]
+
+  Age     Project               Deployment                                         Status      Environment     Duration
+     Username           
+  8m      donttalk/donttalk     https://donttalk-fa3aj8kzu-donttalk.vercel.app     ● Error     Production      36s     
+     jtlai0921-8797     
+  14m     donttalk/donttalk     https://donttalk-mn082ckrr-donttalk.vercel.app     ● Error     Production      35s     
+     jtlai0921-8797     
+  47m     donttalk/donttalk     https://donttalk-c2sxspc9n-donttalk.vercel.app     ● Ready     Production      42s     
+     jtlai0921-8797     
+  18h     donttalk/donttalk     https://donttalk-pz7s7mwwe-donttalk.vercel.app     ● Ready     Production      40s     
+     jtlai0921-8797     
+  18h     donttalk/donttalk     https://donttalk-gygu7pe3u-donttalk.vercel.app     ● Ready     Production      48s     
+     jtlai0921-8797     
+  18h     donttalk/donttalk     https://donttalk-ikydxqmcm-donttalk.vercel.app     ● Ready     Production      47s     
+     jtlai0921-8797     
+  18h     donttalk/donttalk     https://donttalk-qr4xtalmv-donttalk.vercel.app     ● Ready     Production      35s     
+     jtlai0921-8797     
+  19h     donttalk/donttalk     https://donttalk-r5rcm3vh9-donttalk.vercel.app     ● Ready     Production      34s     
+     jtlai0921-8797     
+  19h     donttalk/donttalk     https://donttalk-pmpk81bhh-donttalk.vercel.app     ● Ready     Production      37s     
+     jtlai0921-8797     
+  19h     donttalk/donttalk     https://donttalk-l5z460mpc-donttalk.vercel.app     ● Ready     Production      1m      
+     jtlai0921-8797     
+  21h     donttalk/donttalk     https://donttalk-1k65r7vo2-donttalk.vercel.app     ● Ready     Production      42s     
+     jtlai0921-8797     
+  21h     donttalk/donttalk     https://donttalk-p7h3bf9q8-donttalk.vercel.app     ● Ready     Production      1m      
+     jtlai0921-8797     
+  22h     donttalk/donttalk     https://donttalk-m3g4t3gk8-donttalk.vercel.app     ● Ready     Production      37s     
+     jtlai0921-8797     
+  22h     donttalk/donttalk     https://donttalk-1tkcuontb-donttalk.vercel.app     ● Error     Production      20s     
+     jtlai0921-8797     
+  22h     donttalk/donttalk     https://donttalk-2fqv6r34m-donttalk.vercel.app     ● Error     Production      26s     
+     jtlai0921-8797     
+  22h     donttalk/donttalk     https://donttalk-mg8d8a6mk-donttalk.vercel.app     ● Error     Production      28s     
+     jtlai0921-8797     
+  22h     donttalk/donttalk     https://donttalk-geqbgtf1t-donttalk.vercel.app     ● Error     Production      21s     
+     jtlai0921-8797     
+  22h     donttalk/donttalk     https://donttalk-hypfj5p36-donttalk.vercel.app     ● Error     Production      25s     
+     jtlai0921-8797     
+  22h     donttalk/donttalk     https://donttalk-8ytkyjep9-donttalk.vercel.app     ● Ready     Production      43s     
+     jtlai0921-8797     
+  23h     donttalk/donttalk     https://donttalk-qmdc0goox-donttalk.vercel.app     ● Error     Production      16s     
+     jtlai0921-8797     
+
+> To display the next page, run `vercel ls --next 1787716688072`
+https://donttalk-fa3aj8kzu-donttalk.vercel.app
+https://donttalk-mn082ckrr-donttalk.vercel.app
+https://donttalk-c2sxspc9n-donttalk.vercel.app
+https://donttalk-pz7s7mwwe-donttalk.vercel.app
+https://donttalk-gygu7pe3u-donttalk.vercel.app
+https://donttalk-ikydxqmcm-donttalk.vercel.app
+https://donttalk-qr4xtalmv-donttalk.vercel.app
+https://donttalk-r5rcm3vh9-donttalk.vercel.app
+https://donttalk-pmpk81bhh-donttalk.vercel.app
+https://donttalk-l5z460mpc-donttalk.vercel.app
+https://donttalk-1k65r7vo2-donttalk.vercel.app
+https://donttalk-p7h3bf9q8-donttalk.vercel.app
+https://donttalk-m3g4t3gk8-donttalk.vercel.app
+https://donttalk-1tkcuontb-donttalk.vercel.app
+https://donttalk-2fqv6r34m-donttalk.vercel.app
+https://donttalk-mg8d8a6mk-donttalk.vercel.app
+https://donttalk-geqbgtf1t-donttalk.vercel.app
+https://donttalk-hypfj5p36-donttalk.vercel.app
+https://donttalk-8ytkyjep9-donttalk.vercel.app
+https://donttalk-qmdc0goox-donttalk.vercel.app
+

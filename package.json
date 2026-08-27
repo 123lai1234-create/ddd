@@ -3,16 +3,13 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "cd astro && npm run build",
-    "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
-  },
-  "private": true,
-  "devDependencies": {
-    "prettier": "^3.8.3",
-    "typescript": "~5.9.3"
+    "build": "cd astro && npm install && npm run build",
+    "vercel-build": "cd astro && npm run build"
   },
   "dependencies": {
-    "@replit/connectors-sdk": "^0.4.1"
+    "@vercel/og": "^0.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1"
   }
 }

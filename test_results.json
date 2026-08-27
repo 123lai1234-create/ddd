@@ -1,0 +1,1644 @@
+[
+  {
+    "page": "index.html",
+    "url": "https://donttalk.vercel.app/stock-app/index.html",
+    "screenshot_initial": "d:/project/test_screenshots/index_initial.png",
+    "console_errors": [],
+    "page_errors": [
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null"
+    ],
+    "failed_requests": [],
+    "elements_found": 23,
+    "buttons_tested": [
+      {
+        "text": "☰ 展開選單",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📡 啟動盤中監控",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📈 加權",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📈 櫃買",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "🔍 全部掃描",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📋 彙總報表",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📧 收件者管理",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "▾",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "✕",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "＋ 新增股票",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "⬇ 匯出",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "2M",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "4M",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "1Y",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "📐 Fib 回檔線",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "📊 量價圖",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "📌 事件標記",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "MACD",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "📋 一鍵複製右側資訊",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "原始策略",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "量價背離減碼",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "📌 Marker 歷史",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "全部新聞 →",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      }
+    ]
+  },
+  {
+    "page": "dashboard.html",
+    "url": "https://donttalk.vercel.app/stock-app/dashboard.html",
+    "screenshot_initial": "d:/project/test_screenshots/dashboard_initial.png",
+    "console_errors": [
+      "[error] Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 5,
+    "buttons_tested": [
+      {
+        "text": "🔥 熱力圖",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📈 個股",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🌡 暖身",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📍 訊號",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🗂 全站",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      }
+    ]
+  },
+  {
+    "page": "etf.html",
+    "url": "https://donttalk.vercel.app/stock-app/etf.html",
+    "screenshot_initial": "d:/project/test_screenshots/etf_initial.png",
+    "console_errors": [
+      "[error] 載入除權息側邊欄失敗: TypeError: data.forEach is not a function\n    at https://donttalk.vercel.app/stock-app/etf:1847:14"
+    ],
+    "page_errors": [
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null",
+      "Value is null"
+    ],
+    "failed_requests": [],
+    "elements_found": 20,
+    "buttons_tested": [
+      {
+        "text": "📊 股票版",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📈 ETF版",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🌡️ 升溫區調節",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📅 除權息",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🌐 總經數據",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔍 股票訊號篩選",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔍 ETF訊號篩選",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📈 加權",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📈 櫃買",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔍 全部掃描",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📋 彙總報表",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "＋ 新增股票",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "⬇ 匯出",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2M",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "4M",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1Y",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📐 Fib 回檔線",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📊 量價圖",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "MACD",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔗 開啟個股完整分析頁 →",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      }
+    ]
+  },
+  {
+    "page": "signal-filter.html",
+    "url": "https://donttalk.vercel.app/stock-app/signal-filter.html",
+    "screenshot_initial": "d:/project/test_screenshots/signal-filter_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 32,
+    "buttons_tested": [
+      {
+        "text": "⚙️ 寄信卡片管理",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "⏱ 時間鎖設定",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "☑ 全選",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "✕ 取消全選",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "−",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "+",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "不限",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "40+",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "60+",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "80+",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "≤8%",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "≤13%",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "≤15%",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "10%+",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "20%+",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "30%+",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "🔍 套用篩選",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "↺ 重設條件",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "🔄 重新掃描",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "清除",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "📊 載入紀錄",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "⬇ 匯出 CSV",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "📊 股票版",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "📈 ETF版",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "🌡️ 升溫區",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "📅 除權息",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "🌐 總經",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "🔍 訊號篩選",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "🎯 股票DAMO",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "🔍 ETF訊號篩選",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "🧬 ETF共同持股",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "📋 ETF持股追蹤",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      }
+    ]
+  },
+  {
+    "page": "stock-damo-filter.html",
+    "url": "https://donttalk.vercel.app/stock-app/stock-damo-filter.html",
+    "screenshot_initial": "d:/project/test_screenshots/stock-damo-filter_initial.png",
+    "console_errors": [
+      "[error] Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 15,
+    "buttons_tested": [
+      {
+        "text": "全選",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "取消",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "🔍 套用篩選",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "↺ 重設條件",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "🔄 重新掃描",
+        "click_ok": true,
+        "new_console_errors": [
+          "[error] Failed to load resource: the server responded with a status of 404 ()"
+        ]
+      },
+      {
+        "text": "📊 載入紀錄",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "⬇ 匯出 CSV",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📊 股票版",
+        "click_ok": true,
+        "new_console_errors": []
+      }
+    ]
+  },
+  {
+    "page": "etf-filter.html",
+    "url": "https://donttalk.vercel.app/stock-app/etf-filter.html",
+    "screenshot_initial": "d:/project/test_screenshots/etf-filter_initial.png",
+    "console_errors": [
+      "[error] Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 15,
+    "buttons_tested": [
+      {
+        "text": "全選",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "取消",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "🔍 套用篩選",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "↺ 重設條件",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "🔄 重新掃描",
+        "click_ok": true,
+        "new_console_errors": [
+          "[error] Failed to load resource: the server responded with a status of 404 ()"
+        ]
+      },
+      {
+        "text": "📊 載入紀錄",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "⬇ 匯出 CSV",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📊 股票版",
+        "click_ok": true,
+        "new_console_errors": []
+      }
+    ]
+  },
+  {
+    "page": "uptrend-watch.html",
+    "url": "https://donttalk.vercel.app/stock-app/uptrend-watch.html",
+    "screenshot_initial": "d:/project/test_screenshots/uptrend-watch_initial.png",
+    "console_errors": [
+      "[error] Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 10,
+    "buttons_tested": [
+      {
+        "text": "🔄 重新掃描",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📥 匯出 CSV",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "回踩 MA10 0",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "回踩 MA20 0",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "爆量下殺 K 棒 0",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "🎯 精選篩選 0",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📈 篩選歷史 0",
+        "click_ok": true,
+        "new_console_errors": [
+          "[error] Failed to load resource: the server responded with a status of 404 ()"
+        ]
+      },
+      {
+        "text": "📊 股票版",
+        "click_ok": true,
+        "new_console_errors": []
+      }
+    ]
+  },
+  {
+    "page": "sold-too-early.html",
+    "url": "https://donttalk.vercel.app/stock-app/sold-too-early.html",
+    "screenshot_initial": "d:/project/test_screenshots/sold-too-early_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 48,
+    "buttons_tested": [
+      {
+        "text": "🔍 重新掃描",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📥 匯出 CSV",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📊 股票版",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "🔍 訊號篩選",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔍 DAMO 篩選",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2492",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "9921",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "9914",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2395",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2357",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2324",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "3231",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "3017",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2408",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2301",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2890",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2006",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1907",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2344",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1605",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2880",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2454",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2376",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "3008",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2377",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2327",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "6271",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2308",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2474",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2603",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2885",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2615",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2382",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "6285",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2353",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2606",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1303",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1504",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1802",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "3711",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "5880",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2330",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2887",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2634",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2207",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "5388",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2201",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2449",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      }
+    ]
+  },
+  {
+    "page": "revenue.html",
+    "url": "https://donttalk.vercel.app/stock-app/revenue.html",
+    "screenshot_initial": "d:/project/test_screenshots/revenue_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 61,
+    "buttons_tested": [
+      {
+        "text": "重新整理",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📥 匯出 CSV",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "下一頁 →",
+        "click_ok": false,
+        "error": "ElementHandle.click: Element is not attached to the DOM\nCall log:\n  - attempting"
+      },
+      {
+        "text": "← 回首頁",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "2509",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2348",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2408",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "南亞科",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1595",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2545",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2059",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "川湖",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2344",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "華邦電",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2465",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2073",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2524",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2025",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2305",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1618",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2438",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2337",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2360",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2547",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1340",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2485",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2467",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "志聖",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2383",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "台光電",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2501",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1229",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2258",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1599",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1906",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2395",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "研華",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2432",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1709",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2302",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1714",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2368",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1342",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2070",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2316",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2460",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1815",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1336",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2406",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1591",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2236",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2495",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2374",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2404",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "漢唐",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2636",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2464",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2488",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "1409",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2637",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "2476",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      }
+    ]
+  },
+  {
+    "page": "conference.html",
+    "url": "https://donttalk.vercel.app/stock-app/conference.html",
+    "screenshot_initial": "d:/project/test_screenshots/conference_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 3,
+    "buttons_tested": [
+      {
+        "text": "查詢",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "← 回首頁",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "MOPS 法說會專區",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      }
+    ]
+  },
+  {
+    "page": "admin_logs.html",
+    "url": "https://donttalk.vercel.app/stock-app/admin_logs.html",
+    "screenshot_initial": "d:/project/test_screenshots/admin_logs_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 1,
+    "buttons_tested": [
+      {
+        "text": "登入",
+        "click_ok": true,
+        "new_console_errors": []
+      }
+    ]
+  },
+  {
+    "page": "etf_holdings.html",
+    "url": "https://donttalk.vercel.app/stock-app/etf_holdings.html",
+    "screenshot_initial": "d:/project/test_screenshots/etf_holdings_initial.png",
+    "console_errors": [
+      "[error] TypeError: Failed to fetch\n    at pollStatus (https://donttalk.vercel.app/stock-app/etf_holdings:227:25)"
+    ],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 8,
+    "buttons_tested": [
+      {
+        "text": "開始分析（用快取）",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "強制重抓",
+        "click_ok": false,
+        "error": "ElementHandle.click: Timeout 3000ms exceeded.\nCall log:\n  - attempting click act"
+      },
+      {
+        "text": "清除快取",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "主系統",
+        "click_ok": true,
+        "new_console_errors": [
+          "[error] TypeError: Failed to fetch\n    at pollStatus (https://donttalk.vercel.app/stock-app/etf_holdings:227:25)"
+        ]
+      },
+      {
+        "text": "共同持股",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "持股追蹤",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "樞紐分析",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🗺️",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      }
+    ]
+  },
+  {
+    "page": "etf_holdings_tracker.html",
+    "url": "https://donttalk.vercel.app/stock-app/etf_holdings_tracker.html",
+    "screenshot_initial": "d:/project/test_screenshots/etf_holdings_tracker_initial.png",
+    "console_errors": [
+      "[error] Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 11,
+    "buttons_tested": [
+      {
+        "text": "載入",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "立即抓快照",
+        "click_ok": true,
+        "new_console_errors": [
+          "[error] Failed to load resource: the server responded with a status of 404 ()"
+        ]
+      },
+      {
+        "text": "⚡ 一鍵批次抓全部",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "⬇ 下載歷史快照",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "開始掃描",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "強制重新掃描",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "主系統",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "共同持股",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "持股追蹤",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "樞紐分析",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🗺️",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      }
+    ]
+  },
+  {
+    "page": "etf_holdings_pivot.html",
+    "url": "https://donttalk.vercel.app/stock-app/etf_holdings_pivot.html",
+    "screenshot_initial": "d:/project/test_screenshots/etf_holdings_pivot_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 9,
+    "buttons_tested": [
+      {
+        "text": "全選",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "全不選",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "熱門 ETF（0050/0056/00878/00919/00929/00940）",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "計算",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "主系統",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "共同持股",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "持股追蹤",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "樞紐分析",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🗺️",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      }
+    ]
+  },
+  {
+    "page": "warming.html",
+    "url": "https://donttalk.vercel.app/stock-app/warming.html",
+    "screenshot_initial": "d:/project/test_screenshots/warming_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 20,
+    "buttons_tested": [
+      {
+        "text": "📊 股票版",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📈 ETF版",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🌡️ 升溫區調節",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📅 除權息",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🌐 總經數據",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔍 股票訊號篩選",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔍 ETF訊號篩選",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔍 掃描全部股票 + ETF",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔄 重新抓取",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "全部",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📊 股票",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📈 ETF",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔥 多組觸發",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔴 高位融資爆增",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🟢 軋空標的",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔻 ETF集體出清",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🌡️ 升溫程度",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📊 綜合評分↑",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🟢 空單未死",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📈 查看K線圖",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      }
+    ]
+  },
+  {
+    "page": "exdiv.html",
+    "url": "https://donttalk.vercel.app/stock-app/exdiv.html",
+    "screenshot_initial": "d:/project/test_screenshots/exdiv_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 12,
+    "buttons_tested": [
+      {
+        "text": "📊 股票版",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📈 ETF版",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🌡️ 升溫區調節",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📅 除權息",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🌐 總經數據",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔍 股票訊號篩選",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔍 ETF訊號篩選",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "← 返回",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔄 重新整理",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "未來 7 天",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "未來 30 天",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "未來 90 天",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      }
+    ]
+  },
+  {
+    "page": "macro.html",
+    "url": "https://donttalk.vercel.app/stock-app/macro.html",
+    "screenshot_initial": "d:/project/test_screenshots/macro_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 11,
+    "buttons_tested": [
+      {
+        "text": "🔄 重新整理數據",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📊 股票版",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "📈 ETF版",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🌡️ 升溫區調節",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📅 除權息",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🌐 總經分析",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔍 股票訊號篩選",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "🔍 ETF訊號篩選",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📋 複製數據",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📊 前往 Investing.com 查看即時 Fed 點陣圖 →",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      },
+      {
+        "text": "📊 查看即時 Fed 利率預測工具 →",
+        "error": "ElementHandle.get_attribute: Execution context was destroyed, most likely because of a navigation\nCall log:\n  - waiting "
+      }
+    ]
+  },
+  {
+    "page": "ai-capex.html",
+    "url": "https://donttalk.vercel.app/stock-app/ai-capex.html",
+    "screenshot_initial": "d:/project/test_screenshots/ai-capex_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 2,
+    "buttons_tested": [
+      {
+        "text": "手動更新",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "← 回首頁",
+        "click_ok": true,
+        "new_console_errors": []
+      }
+    ]
+  },
+  {
+    "page": "heatmap.html",
+    "url": "https://donttalk.vercel.app/stock-app/heatmap.html",
+    "screenshot_initial": "d:/project/test_screenshots/heatmap_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 4,
+    "buttons_tested": [
+      {
+        "text": "當日",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "近 5 日",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "近 20 日",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "← 回首頁",
+        "click_ok": true,
+        "new_console_errors": []
+      }
+    ]
+  },
+  {
+    "page": "price-compare.html",
+    "url": "https://donttalk.vercel.app/stock-app/price-compare.html",
+    "screenshot_initial": "d:/project/test_screenshots/price-compare_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 9,
+    "buttons_tested": [
+      {
+        "text": "近一週",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "近一月",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "近三月",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "近半年",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "近一年",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "近三年",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "近五年",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "套用區間",
+        "click_ok": true,
+        "new_console_errors": []
+      }
+    ]
+  },
+  {
+    "page": "rebalance.html",
+    "url": "https://donttalk.vercel.app/stock-app/rebalance.html",
+    "screenshot_initial": "d:/project/test_screenshots/rebalance_initial.png",
+    "console_errors": [],
+    "page_errors": [],
+    "failed_requests": [],
+    "elements_found": 6,
+    "buttons_tested": [
+      {
+        "text": "計算動態再平衡",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "還原報告權重",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "計算宏觀再平衡",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "計算再平衡建議",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "填入範例",
+        "click_ok": true,
+        "new_console_errors": []
+      },
+      {
+        "text": "← 回首頁",
+        "click_ok": true,
+        "new_console_errors": []
+      }
+    ]
+  }
+]

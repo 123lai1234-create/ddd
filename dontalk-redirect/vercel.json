@@ -1,0 +1,10 @@
+{
+  "trailingSlash": true,
+  "functions": {
+    "api/macro_news.ts": { "maxDuration": 10 },
+    "api/stocks.ts": { "maxDuration": 10 },
+    "api/market_gaps.ts": { "maxDuration": 10 },
+    "api/stock/[code].ts": { "maxDuration": 10 },
+    "api/intraday_scan/status.ts": { "maxDuration": 10 }
+  }
+}

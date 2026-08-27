@@ -1,0 +1,4 @@
+﻿[123lai1234-create 608377e0] chore: touch file to invalidate Vercel build cache (old [...slug].mjs conflict)
+ 2 files changed, 2 insertions(+)
+ create mode 100644 api/zzz-invalidate-cache.mjs
+ create mode 100644 astro/api/zzz-invalidate-cache.mjs

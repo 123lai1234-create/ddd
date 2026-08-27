@@ -1,0 +1,16 @@
+﻿CANNOT PARSE ERROR: D:\project\astro\api\catchall.mjs:1091
+      "美債平衡?膨?BEI(%)", "10?3?公?利?, "10?2年公?利?,
+                                    ^^
+
+SyntaxError: Unexpected number
+    at checkSyntax (node:internal/main/chec
+Final: 1
+Final error: D:\project\astro\api\catchall.mjs:1091
+      "美債平衡?膨?BEI(%)", "10?3?公?利?, "10?2年公?利?,
+                                    ^^
+
+SyntaxError: Unexpected number
+    at checkSyntax (node:internal/main/check_syntax:72:5)
+
+Node.js v24.14.1
+

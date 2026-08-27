@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8" />
+<title>系統 Log 檢視 - 管理員</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root {
+    --bg:#0c0e13; --bg2:#151821; --bg3:#1c2030;
+    --txt:#e8eaf0; --txt2:#9aa0b4;
+    --bdr:#2a2f42;
+    --green:#00c853; --cyan:#00bcd4; --orange:#ff9800;
+    --red:#ef5350; --yellow:#ffc107; --blue:#42a5f5;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;
+    font-size:14px;
+  }
+  .container { max-width:1400px; margin:0 auto; padding:20px; }
+  h1 { font-size:20px; margin:0 0 6px; display:flex; align-items:center; gap:10px; }
+  .meta { color:var(--txt2); font-size:12px; margin-bottom:18px; }
+
+  /* 登入框 */
+  .login-mask {
+    position:fixed; inset:0; background:rgba(12,14,19,.92);
+    display:flex; align-items:center; justify-content:center;
+    z-index:1000;
+  }
+  .login-box {
+    background:var(--bg2); border:1px solid var(--bdr);
+    border-radius:12px; padding:32px 36px; min-width:340px;
+    box-shadow:0 12px 48px rgba(0,0,0,.6);
+  }
+  .login-box h2 { margin:0 0 14px; font-size:18px; }
+  .login-box p { color:var(--txt2); font-size:12px; margin:0 0 18px; }
+  .login-box input {
+    width:100%; padding:10px 12px; background:var(--bg3);
+    border:1px solid var(--bdr); border-radius:6px; color:var(--txt);
+    font-size:14px; margin-bottom:14px;
+  }
+  .login-box input:focus { outline:none; border-color:var(--green); }
+  .login-box button {
+    width:100%; padding:10px; background:var(--green); color:#000;
+    border:none; border-radius:6px; font-weight:700; cursor:pointer;
+    font-size:14px;
+  }
+  .login-box .err { color:var(--red); font-size:12px; min-height:16px; margin-top:8px; }
+
+  /* 工具列 */
+  .toolbar {
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    background:var(--bg2); border:1px solid var(--bdr);
+    padding:12px 16px; border-radius:10px; margin-bottom:14px;
+  }
+  .toolbar select, .toolbar input[type=text] {
+    background:var(--bg3); color:var(--txt); border:1px solid var(--bdr);
+    border-radius:6px; padding:7px 10px; font-size:13px;
+  }
+  .toolbar input[type=text] { width:240px; }
+  .toolbar label { font-size:12px; color:var(--txt2); }
+  .toolbar button {
+    background:var(--bg3); color:var(--txt); border:1px solid var(--bdr);
+    border-radius:6px; padding:7px 14px; font-size:13px; cursor:pointer;
+  }
+  .toolbar button:hover { border-color:var(--green); }
+  .toolbar button.danger:hover { border-color:var(--red); color:var(--red); }
+  .toolbar .spacer { flex:1; }
+  .toolbar .status { font-size:12px; color:var(--txt2); }
+  .toolbar .status b { color:var(--cyan); }
+  .toolbar .auto-on { color:var(--green); }
+
+  /* Log 表格 */
+  .log-list {
+    background:var(--bg2); border:1px solid var(--bdr);
+    border-radius:10px; max-height:75vh; overflow-y:auto;
+  }
+  .log-row {
+    display:grid;
+    grid-template-columns:170px 80px 1fr;
+    gap:10px; padding:8px 14px;
+    border-bottom:1px solid var(--bdr);
+    font-family:ui-monospace,"SF Mono",Consolas,monospace;
+    font-size:12px; line-height:1.5;
+    align-items:start;
+  }
+  .log-row:hover { background:var(--bg3); }
+  .log-row .ts { color:var(--txt2); white-space:nowrap; }
+  .log-row .lv {
+    display:inline-block; padding:2px 8px; border-radius:3px;
+    font-weight:700; font-size:11px; text-align:center;
+  }
+  .lv-WARNING { background:rgba(255,193,7,.15); color:var(--yellow); border:1px solid rgba(255,193,7,.4); }
+  .lv-ERROR { background:rgba(239,83,80,.18); color:var(--red); border:1px solid rgba(239,83,80,.5); }
+  .lv-CRITICAL { background:var(--red); color:#fff; }
+  .log-row .msg { color:var(--txt); white-space:pre-wrap; word-break:break-all; }
+  .log-row .logger { color:var(--cyan); font-size:11px; }
+  .log-row .exc {
+    margin-top:6px; padding:8px 10px; background:#0a0c12;
+    border-left:2px solid var(--red); border-radius:0 4px 4px 0;
+    color:var(--red); font-size:11px; white-space:pre-wrap;
+    max-height:200px; overflow-y:auto;
+  }
+  .empty { padding:40px; text-align:center; color:var(--txt2); }
+</style>
+</head>
+<body>
+
+<!-- 登入遮罩 -->
+<div class="login-mask" id="loginMask">
+  <div class="login-box">
+    <h2>🔐 管理員登入</h2>
+    <p>系統 Log 檢視（WARNING / ERROR 等級），需管理員密碼。</p>
+    <input type="password" id="pwdInput" placeholder="管理員密碼" autocomplete="current-password" />
+    <button id="loginBtn">登入</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<div class="container" id="mainContainer" style="display:none;">
+  <h1>📜 系統 Log 檢視</h1>
+  <div class="meta">
+    記憶體環形 buffer · 容量 <span id="cap">2000</span> 條 · 重啟後清空 · 只攔 WARNING 以上 ·
+    <b style="color:var(--cyan);">即時錄製</b>（每條 log 一產生立刻入 buffer；前端輪詢顯示，自動更新間隔 5 秒）·
+    時間顯示為 <b style="color:var(--cyan);">台北時間 (UTC+8)</b>
+  </div>
+
+  <div class="toolbar">
+    <label>等級：</label>
+    <select id="levelSel">
+      <option value="ALL">全部（WARN+）</option>
+      <option value="WARNING">只看 WARNING</option>
+      <option value="ERROR">只看 ERROR+</option>
+      <option value="CRITICAL">只看 CRITICAL</option>
+    </select>
+    <label>搜尋：</label>
+    <input type="text" id="qInput" placeholder="關鍵字（訊息或 logger）" />
+    <button id="reloadBtn">🔄 重抓全部</button>
+    <button id="autoBtn">⏱️ 自動更新：關</button>
+    <button id="exportCsvBtn">📥 匯出 CSV</button>
+    <button id="exportTxtBtn">📥 匯出 TXT</button>
+    <button id="clearBtn" class="danger">🗑️ 清空 buffer</button>
+    <div class="spacer"></div>
+    <div class="status">
+      共 <b id="totalCnt">0</b> 條（buffer <b id="bufCnt">0</b>/<span id="capCnt">2000</span>）·
+      最後更新 <b id="lastUpd">-</b>
+    </div>
+  </div>
+
+  <div class="log-list" id="logList">
+    <div class="empty">尚未載入</div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const PWD_KEY = "admin_logs_pwd";
+
+let _pwd = sessionStorage.getItem(PWD_KEY) || "";
+let _autoTimer = null;
+let _autoOn = false;
+let _items = [];          // 累積的 log（含歷史）
+let _lastId = 0;          // 已抓到的最大 id（增量輪詢用）
+
+function fmtTs(ts) {
+  // 強制台北時間（Asia/Taipei, UTC+8），與後端容器 UTC 無關
+  const d = new Date(ts * 1000);
+  const parts = new Intl.DateTimeFormat('zh-TW', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  }).formatToParts(d);
+  const g = k => (parts.find(p => p.type === k) || {}).value || '';
+  return `${g('year')}-${g('month')}-${g('day')} ${g('hour')}:${g('minute')}:${g('second')}`;
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function renderList() {
+  const list = $('#logList');
+  if (!_items.length) {
+    list.innerHTML = '<div class="empty">目前沒有符合條件的 log（buffer 內無資料或被篩選掉）</div>';
+    return;
+  }
+  // 新到舊
+  const sorted = _items.slice().sort((a,b) => b.id - a.id);
+  list.innerHTML = sorted.map(r => `
+    <div class="log-row">
+      <div class="ts">${fmtTs(r.ts)}</div>
+      <div><span class="lv lv-${r.level}">${r.level}</span></div>
+      <div>
+        <div><span class="logger">[${escapeHtml(r.logger)}]</span> ${escapeHtml(r.msg)}</div>
+        ${r.exc ? `<div class="exc">${escapeHtml(r.exc)}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function fetchLogs({ incremental = false } = {}) {
+  const params = new URLSearchParams({
+    password: _pwd,
+    level: $('#levelSel').value,
+    q: $('#qInput').value,
+    since_id: incremental ? String(_lastId) : '0',
+    limit: '2000',
+  });
+  try {
+    const r = await fetch('/api/admin/logs?' + params.toString());
+    if (r.status === 401) {
+      sessionStorage.removeItem(PWD_KEY);
+      _pwd = '';
+      stopAuto();
+      showLogin('密碼錯誤或失效，請重新登入');
+      return;
+    }
+    const j = await r.json();
+    if (!j.ok) {
+      console.warn('fetch logs failed:', j.error);
+      return;
+    }
+    if (incremental) {
+      // 合併新增
+      for (const r of j.items) {
+        _items.push(r);
+        if (r.id > _lastId) _lastId = r.id;
+      }
+      // 上限保護
+      if (_items.length > 3000) _items = _items.slice(-3000);
+    } else {
+      _items = j.items;
+      _lastId = j.items.reduce((m, r) => Math.max(m, r.id), 0);
+    }
+    $('#totalCnt').textContent = _items.length;
+    $('#bufCnt').textContent = j.buffer_size;
+    $('#capCnt').textContent = j.capacity;
+    $('#cap').textContent = j.capacity;
+    $('#lastUpd').textContent = new Date().toLocaleTimeString();
+    renderList();
+  } catch (e) {
+    console.warn('fetch err:', e);
+  }
+}
+
+function startAuto() {
+  if (_autoTimer) return;
+  _autoOn = true;
+  $('#autoBtn').textContent = '⏱️ 自動更新：開（5s）';
+  $('#autoBtn').classList.add('auto-on');
+  _autoTimer = setInterval(() => fetchLogs({ incremental: true }), 5000);
+}
+function stopAuto() {
+  if (_autoTimer) { clearInterval(_autoTimer); _autoTimer = null; }
+  _autoOn = false;
+  $('#autoBtn').textContent = '⏱️ 自動更新：關';
+  $('#autoBtn').classList.remove('auto-on');
+}
+
+function showLogin(errMsg) {
+  $('#loginMask').style.display = 'flex';
+  $('#mainContainer').style.display = 'none';
+  $('#loginErr').textContent = errMsg || '';
+  setTimeout(() => $('#pwdInput').focus(), 50);
+}
+function showMain() {
+  $('#loginMask').style.display = 'none';
+  $('#mainContainer').style.display = '';
+}
+
+async function tryLogin(pwd) {
+  // 試打一次 API 驗密碼
+  const r = await fetch('/api/admin/logs?password=' + encodeURIComponent(pwd) + '&limit=1');
+  if (r.status === 401) return false;
+  if (!r.ok) return false;
+  return true;
+}
+
+$('#loginBtn').addEventListener('click', async () => {
+  const pwd = $('#pwdInput').value.trim();
+  if (!pwd) { $('#loginErr').textContent = '請輸入密碼'; return; }
+  $('#loginErr').textContent = '驗證中...';
+  const ok = await tryLogin(pwd);
+  if (!ok) { $('#loginErr').textContent = '密碼錯誤'; return; }
+  _pwd = pwd;
+  sessionStorage.setItem(PWD_KEY, pwd);
+  showMain();
+  fetchLogs();
+});
+$('#pwdInput').addEventListener('keydown', ev => {
+  if (ev.key === 'Enter') $('#loginBtn').click();
+});
+
+$('#reloadBtn').addEventListener('click', () => fetchLogs());
+$('#levelSel').addEventListener('change', () => fetchLogs());
+$('#qInput').addEventListener('input', () => {
+  clearTimeout(window._qTimer);
+  window._qTimer = setTimeout(() => fetchLogs(), 300);
+});
+$('#autoBtn').addEventListener('click', () => {
+  if (_autoOn) stopAuto(); else startAuto();
+});
+function csvEscape(s) {
+  const v = String(s == null ? '' : s);
+  if (/[",\n\r]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
+  return v;
+}
+
+function downloadBlob(content, filename, mime) {
+  const blob = new Blob(["\uFEFF" + content], { type: mime + ';charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function tsForFilename() {
+  const d = new Date();
+  const parts = new Intl.DateTimeFormat('zh-TW', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  }).formatToParts(d);
+  const g = k => (parts.find(p => p.type === k) || {}).value || '';
+  return `${g('year')}${g('month')}${g('day')}_${g('hour')}${g('minute')}${g('second')}`;
+}
+
+function getExportItems() {
+  // 依目前畫面排序（新到舊）匯出
+  return _items.slice().sort((a, b) => b.id - a.id);
+}
+
+$('#exportCsvBtn').addEventListener('click', () => {
+  const items = getExportItems();
+  if (!items.length) { alert('沒有資料可匯出'); return; }
+  const header = ['id', '台北時間(UTC+8)', 'unix_ts', 'level', 'logger', 'message', 'exception'];
+  const rows = items.map(r => [
+    r.id, fmtTs(r.ts), r.ts, r.level, r.logger, r.msg, r.exc || ''
+  ].map(csvEscape).join(','));
+  downloadBlob(header.join(',') + '\n' + rows.join('\n'),
+    `system_logs_TPE_${tsForFilename()}.csv`, 'text/csv');
+});
+
+$('#exportTxtBtn').addEventListener('click', () => {
+  const items = getExportItems();
+  if (!items.length) { alert('沒有資料可匯出'); return; }
+  const lines = items.map(r => {
+    const head = `[${fmtTs(r.ts)} TPE] [${r.level}] [${r.logger}] ${r.msg}`;
+    return r.exc ? `${head}\n--- Traceback ---\n${r.exc}\n-----------------` : head;
+  });
+  const meta = `# 匯出時間: ${fmtTs(Date.now()/1000)} TPE\n` +
+               `# 共 ${items.length} 條 log（等級: ${$('#levelSel').value}, 關鍵字: "${$('#qInput').value}"）\n` +
+               `# 記憶體 buffer · 重啟即清\n\n`;
+  downloadBlob(meta + lines.join('\n'),
+    `system_logs_TPE_${tsForFilename()}.txt`, 'text/plain');
+});
+
+$('#clearBtn').addEventListener('click', async () => {
+  if (!confirm('確定要清空 log buffer 嗎？')) return;
+  const r = await fetch('/api/admin/logs/clear', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: _pwd }),
+  });
+  const j = await r.json();
+  if (j.ok) { _items = []; _lastId = 0; renderList(); fetchLogs(); }
+  else alert('清空失敗：' + (j.error || '未知錯誤'));
+});
+
+// 啟動：若已有密碼快取，自動進入
+if (_pwd) {
+  (async () => {
+    const ok = await tryLogin(_pwd);
+    if (ok) { showMain(); fetchLogs(); }
+    else { sessionStorage.removeItem(PWD_KEY); _pwd = ''; showLogin(); }
+  })();
+} else {
+  showLogin();
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+﻿Screenshot saved: 03-chart-after-fix.png
+Console errors: 0
+python.exe : Traceback (most recent call last):
+位於 線路:3 字元:1
++ & python -u "D:\project\helpers\verify-chart.py" 2>&1 | Out-File -Fil ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\project\helpers\verify-chart.py", line 20, in <module>
+    for e in set(errs)[:10]:
+             ~~~~~~~~~^^^^^
+TypeError: 'set' object is not subscriptable

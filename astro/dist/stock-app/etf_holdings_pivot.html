@@ -146,6 +146,13 @@
   </div>
 
   <div class="container">
+    <div style="background:rgba(255,145,0,.12);border:1px solid #ff9100;color:#ffb74d;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;line-height:1.7">
+      <b style="color:#ff9100">⚠ 樞紐分析需要成分股資料</b><br>
+      本頁所有計算 (重疊度矩陣、權重矩陣、時序熱力圖、共識雷達、集中度、換手率) 都依賴 <code>etf_holdings</code> 表的成分股資料，目前是空的。
+      點任何「計算」按鈕都會回 0 筆。
+      <br>解法同上：需 per-issuer 爬或等 bulk source 釋出。
+    </div>
+
     <!-- ETF 多選篩選器 -->
     <div class="panel">
       <h2>選擇 ETF（套用至矩陣／重疊度／共識／集中度／換手率）</h2>

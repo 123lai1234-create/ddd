@@ -2,29 +2,27 @@
 import Base from '../layouts/Base.astro';
 ---
 <Base
-    title="工程 × 生醫 × AI 平台作品集"
+    title="Portfolio — 工程 × 生醫 × AI 平台"
     description="電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域作品集。"
     ogTag="Portfolio"
     bodyPage="index"
     schemaType="ProfilePage"
-    pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css", "/styles/chatbot.css"]}
-    pageScripts={["https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js", "/scripts/chatbot.js"]}
-    noImmersive
+    pageStyles={["/styles/index.css", "/styles/index-live.css", "/styles/index-content.css"]}
+    pageScripts={["/scripts/app-config.js", "/scripts/index-ui.js", "/scripts/index-live.js", "/scripts/index-charts.js"]}
 >
     <div data-site-nav></div>
 
     <!-- Hero: compact, left-aligned, leerob-style -->
     <section id="hero">
-        <div class="hero-canvas"></div>
         <div class="hero-content">
-            <div class="hero-eyebrow"><span class="live-dot"></span>2026 · 開放洽談機會</div>
-            <h1 class="hero-title">Portfolio</h1>
-            <p class="hero-sub">工程師 · 生醫研究者 · AI 平台設計</p>
-            <p class="hero-sub" style="max-width:600px;margin:1rem auto;font-size:.95rem;opacity:.85">
+            <div class="hero-badge"><span class="live-dot"></span>2026 · 開放洽談機會</div>
+            <h1 class="hero-name" style="display:none">Portfolio</h1>
+            <p class="hero-role" style="display:none">工程師 · 生醫研究者 · AI 平台設計</p>
+            <!-- AEO direct answer: 1-2 sentence summary AI Overviews/Perplexity pick up first. -->
+            <p class="hero-bio" data-aeo-summary="true">
                 電資工程與生物醫學雙碩士，把蛋白質語言模型、基因分析工具與互動介面整合成可操作的研究平台。站在研究與產品的交界，做有真實意義的跨域系統。
             </p>
-            <!-- AEO direct answer: AI Overviews/Perplexity pick this up first. -->
-            <p class="hero-sub aeo-facts" style="max-width:600px;margin:.5rem auto;font-size:.82rem;opacity:.7">
+            <p class="hero-bio aeo-facts" style="font-size:.82rem;opacity:.7;margin-top:.5rem">
                 專長：ESM-2 / ProteinMPNN / Bayesian Optimization / REINFORCE / NGS / FastAPI / Astro。碩士：北科電子所 + 陽明交大解剖細胞生物所。
             </p>
             <div class="hero-links">
@@ -162,31 +160,67 @@ import Base from '../layouts/Base.astro';
 
     <!-- ════════ GitHub Live Stats ════════ -->
     <section id="github-stats" style="max-width:800px;margin:0 auto;padding:40px 24px">
-        <div class="section-label">GitHub</div>
+        <div class="section-label">Live · GitHub</div>
         <h2 class="section-title">開源活動</h2>
         <div id="gh-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-top:24px">
-            <a class="gh-stat-card" href="https://github.com/123lai1234-create?tab=repositories" target="_blank" rel="noreferrer">
-                <div class="gh-val">Repositories</div><div class="gh-lbl">查看公開專案</div>
-            </a>
-            <a class="gh-stat-card" href="https://github.com/123lai1234-create" target="_blank" rel="noreferrer">
-                <div class="gh-val">GitHub</div><div class="gh-lbl">前往個人頁面</div>
-            </a>
+            <div class="gh-stat-card" id="gh-repos"><div class="gh-val">—</div><div class="gh-lbl">Public Repos</div></div>
+            <div class="gh-stat-card" id="gh-stars"><div class="gh-val">—</div><div class="gh-lbl">Total Stars</div></div>
+            <div class="gh-stat-card" id="gh-followers"><div class="gh-val">—</div><div class="gh-lbl">Followers</div></div>
+            <div class="gh-stat-card" id="gh-updated"><div class="gh-val" style="font-size:.85rem">—</div><div class="gh-lbl">最近推送</div></div>
         </div>
+        <div id="gh-recent" style="margin-top:20px;display:flex;flex-direction:column;gap:8px"></div>
     </section>
     <style>
     .gh-stat-card {
-        display: block;
         background: var(--surface, rgba(255,255,255,.04));
         border: 1px solid var(--border, rgba(255,255,255,.08));
         border-radius: 10px; padding: 18px 20px; text-align: center;
-        text-decoration: none;
-        color: inherit;
-        transition: border-color .15s, transform .15s;
     }
-    .gh-stat-card:hover { border-color: var(--accent, #58d7ff); transform: translateY(-2px); }
-    .gh-val { font-size: 1.25rem; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+    .gh-val { font-size: 1.6rem; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
     .gh-lbl { font-size: .75rem; color: var(--muted); margin-top: 4px; }
+    .gh-repo-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 14px;
+        background: var(--surface, rgba(255,255,255,.03));
+        border: 1px solid var(--border, rgba(255,255,255,.06));
+        border-radius: 8px; text-decoration: none; color: var(--text);
+        transition: border-color .15s;
+    }
+    .gh-repo-row:hover { border-color: var(--accent, #58d7ff); }
+    .gh-repo-name { font-size: .9rem; font-weight: 500; }
+    .gh-repo-meta { font-size: .78rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
     </style>
+    <script>
+    (async () => {
+        const base = 'https://api.github.com';
+        const user = '123lai1234-create';
+        try {
+            const [uRes, rRes] = await Promise.all([
+                fetch(`${base}/users/${user}`),
+                fetch(`${base}/users/${user}/repos?sort=pushed&per_page=5&type=owner`),
+            ]);
+            if (!uRes.ok || !rRes.ok) return;
+            const [u, repos] = await Promise.all([uRes.json(), rRes.json()]);
+            document.querySelector('#gh-repos .gh-val').textContent = u.public_repos ?? '—';
+            document.querySelector('#gh-followers .gh-val').textContent = u.followers ?? '—';
+            const stars = repos.reduce((s, r) => s + (r.stargazers_count || 0), 0);
+            document.querySelector('#gh-stars .gh-val').textContent = stars;
+            const latest = repos[0]?.pushed_at ? new Date(repos[0].pushed_at).toLocaleDateString('zh-TW') : '—';
+            document.querySelector('#gh-updated .gh-val').textContent = latest;
+            const container = document.getElementById('gh-recent');
+            repos.slice(0, 4).forEach(r => {
+                const a = document.createElement('a');
+                a.href = r.html_url; a.target = '_blank'; a.rel = 'noreferrer';
+                a.className = 'gh-repo-row';
+                a.innerHTML = `
+                    <span class="gh-repo-name">${r.name}</span>
+                    <span class="gh-repo-meta">★ ${r.stargazers_count} · ${r.language || '—'} · ${new Date(r.pushed_at).toLocaleDateString('zh-TW')}</span>
+                `;
+                container.appendChild(a);
+            });
+        } catch(e) {}
+    })();
+    </script>
 
     <hr class="divider" />
 
@@ -221,10 +255,37 @@ import Base from '../layouts/Base.astro';
     <button id="chatbot-toggle" aria-label="AI 助手" style="position:fixed;bottom:90px;right:24px;z-index:500;background:transparent;border:none;border-radius:50%;width:70px;height:70px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,filter .2s;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));overflow:visible"
       onmouseover="this.style.transform='scale(1.15)';this.style.filter='drop-shadow(0 8px 20px rgba(88,215,255,.4))'"
       onmouseout="this.style.transform='scale(1)';this.style.filter='drop-shadow(0 4px 12px rgba(0,0,0,.4))'">
-      <img src="https://minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com/ccv2%2F2026-05-22%2FMiniMax-M2.7%2F2051828084830642340%2F18cdb762f4fb37677829d88cc42a72cf5921a1222c8e165ca47d835d7fb74b6f..png?Expires=1779508593&OSSAccessKeyId=LTAI5tGLnRTkBjLuYPjNcKQ8&Signature=x06WLj8eeG5RsBtxEU6nN10yUd4%3D" 
-           alt="AI 助手" 
-           style="width:100%;height:100%;object-fit:contain;border-radius:50%;animation:avatar-bounce 3s ease-in-out infinite"
-           id="chatbot-avatar" />
+      <svg id="chatbot-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="AI 助手"
+           style="width:100%;height:100%;animation:avatar-bounce 3s ease-in-out infinite;display:block">
+        <defs>
+          <linearGradient id="cbav-g" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f472b6"/>
+            <stop offset="100%" stop-color="#818cf8"/>
+          </linearGradient>
+          <radialGradient id="cbav-c" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#fde68a"/>
+            <stop offset="100%" stop-color="#fbbf24"/>
+          </radialGradient>
+        </defs>
+        <!-- head -->
+        <circle cx="50" cy="50" r="38" fill="url(#cbav-g)" stroke="#fff" stroke-width="2.5" stroke-opacity="0.9"/>
+        <!-- eyes (open, friendly) -->
+        <ellipse cx="38" cy="48" rx="3.5" ry="5" fill="#1a1a2e"/>
+        <ellipse cx="62" cy="48" rx="3.5" ry="5" fill="#1a1a2e"/>
+        <circle cx="39" cy="46" r="1.3" fill="#fff"/>
+        <circle cx="63" cy="46" r="1.3" fill="#fff"/>
+        <!-- smile -->
+        <path d="M 42 60 Q 50 68 58 60" stroke="#1a1a2e" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+        <!-- cheeks -->
+        <ellipse cx="32" cy="58" rx="4.5" ry="2.8" fill="#fb7185" opacity="0.55"/>
+        <ellipse cx="68" cy="58" rx="4.5" ry="2.8" fill="#fb7185" opacity="0.55"/>
+        <!-- antenna with star -->
+        <line x1="50" y1="12" x2="50" y2="5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="50" cy="3" r="3.5" fill="url(#cbav-c)"/>
+        <!-- little ears -->
+        <ellipse cx="14" cy="50" rx="4" ry="7" fill="url(#cbav-g)" stroke="#fff" stroke-width="1.8" stroke-opacity="0.7"/>
+        <ellipse cx="86" cy="50" rx="4" ry="7" fill="url(#cbav-g)" stroke="#fff" stroke-width="1.8" stroke-opacity="0.7"/>
+      </svg>
     </button>
     <style>
       @keyframes avatar-bounce {
@@ -252,15 +313,89 @@ import Base from '../layouts/Base.astro';
     <div id="chatbot-panel">
         <div class="chatbot-header">
             <h4>AI 助手</h4>
-            <div class="chatbot-header-actions">
-                <button id="chatbot-clear" class="chatbot-icon-btn" title="清除對話" aria-label="清除對話">↻</button>
-                <button id="chatbot-close" class="chatbot-icon-btn" aria-label="關閉">✕</button>
-            </div>
+            <button class="chatbot-close" aria-label="關閉">✕</button>
         </div>
-        <div id="chatbot-messages"></div>
+        <div id="chatbot-messages">
+            <div class="chat-msg chat-bot">你好！有什麼關於這個作品集的問題嗎？</div>
+        </div>
         <div class="chatbot-input-row">
-            <input id="chatbot-input" type="text" placeholder="講講蛋白質？基因？韌體？" autocomplete="off" />
+            <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off" />
             <button id="chatbot-send">送出</button>
         </div>
     </div>
+
+    <script>
+    (function() {
+        const SYSTEM = `你是這個作品集網站的 AI 助手。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師。
+專長：ESM-2 蛋白質語言模型、ProteinMPNN、Bayesian Optimization（BoTorch/qLogEI）、REINFORCE RL、
+FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場資料平台。
+請用繁體中文回答，保持專業友善，回答不超過 200 字。只回答與作品集相關的問題。`;
+
+        let history = [];
+        let busy = false;
+
+        const toggle = document.getElementById('chatbot-toggle');
+        const panel  = document.getElementById('chatbot-panel');
+        const close  = document.querySelector('.chatbot-close');
+        const msgs   = document.getElementById('chatbot-messages');
+        const input  = document.getElementById('chatbot-input');
+        const send   = document.getElementById('chatbot-send');
+
+        toggle.addEventListener('click', () => panel.classList.toggle('open'));
+        close.addEventListener('click',  () => panel.classList.remove('open'));
+        send.addEventListener('click', submit);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) submit(); });
+
+        async function submit() {
+            const text = input.value.trim();
+            if (!text || busy) return;
+            input.value = '';
+            addMsg('user', text);
+            history.push({ role: 'user', content: text });
+            setBusy(true);
+            // SECURITY: 前端不能直連 Anthropic API（會洩漏 key / 401）。
+            // 改走站內 /api/chat proxy；proxy 失敗就誠實顯示，不要再嘗試直連外部 API。
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        system: SYSTEM,
+                        messages: history.slice(-10),
+                    }),
+                });
+                if (!res.ok) throw new Error(`proxy ${res.status}`);
+                const data = await res.json();
+                const reply = data.reply ?? data.content?.[0]?.text ?? '抱歉，暫時無法回應。';
+                history.push({ role: 'assistant', content: reply });
+                addMsg('bot', reply);
+            } catch {
+                addMsg('bot', '⚠️ 聊天助理暫停服務，請稍後再試或直接到 [關於我] 頁面看聯絡方式。');
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        function addMsg(role, text) {
+            const d = document.createElement('div');
+            d.className = `chat-msg chat-${role}`;
+            d.textContent = text;
+            msgs.appendChild(d);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function setBusy(v) {
+            busy = v; send.disabled = v; input.disabled = v;
+            document.getElementById('chat-typing')?.remove();
+            if (v) {
+                const t = document.createElement('div');
+                t.id = 'chat-typing';
+                t.className = 'chat-msg chat-bot chat-typing';
+                t.innerHTML = '<span></span><span></span><span></span>';
+                msgs.appendChild(t);
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+    })();
+    </script>
 </Base>

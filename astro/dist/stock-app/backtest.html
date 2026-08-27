@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📊 策略回測 — 台股均線買賣訊號系統</title>
+  <style>
+    :root{--bg:#0f0f23;--bg2:#1a1a3e;--bg3:#1e1e42;--txt:#e0e0ff;--txt2:#8888aa;
+          --green:#00c853;--red:#ff1744;--orange:#ff9100;--purple:#d500f9;
+          --blue:#448aff;--cyan:#00bcd4;--bdr:#2a2a5a;--gold:#ffd700}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:20px}
+    .container{max-width:1200px;margin:0 auto}
+    h1{font-size:22px;margin-bottom:8px;background:linear-gradient(90deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .subtitle{color:var(--txt2);font-size:13px;margin-bottom:20px}
+    .card{background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:18px;margin-bottom:16px}
+    .card h2{font-size:15px;margin-bottom:12px;color:var(--cyan)}
+    .form-row{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:12px}
+    .form-group{display:flex;flex-direction:column;gap:4px;min-width:140px;flex:1}
+    .form-group label{font-size:11px;color:var(--txt2)}
+    .form-group input,.form-group select{background:var(--bg);border:1px solid var(--bdr);color:var(--txt);padding:8px 10px;border-radius:5px;font-size:13px;font-family:inherit}
+    .form-group input:focus,.form-group select:focus{outline:none;border-color:var(--blue)}
+    .btn{background:var(--blue);color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s}
+    .btn:hover{opacity:.85;transform:translateY(-1px)}
+    .btn:disabled{background:var(--bdr);cursor:not-allowed;transform:none}
+    .btn-secondary{background:var(--bg3);border:1px solid var(--bdr);color:var(--txt2)}
+    .btn-secondary:hover{color:var(--txt)}
+    .btn-row{display:flex;gap:8px;flex-wrap:wrap}
+    .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+    .chip{background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:4px 10px;border-radius:14px;font-size:12px;cursor:pointer;transition:all .2s}
+    .chip:hover{background:var(--blue);border-color:var(--blue)}
+    .chip.active{background:var(--blue);border-color:var(--blue);color:#fff}
+    .results-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+    .metric{background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:10px;text-align:center}
+    .metric .label{font-size:10px;color:var(--txt2);margin-bottom:4px;letter-spacing:.5px}
+    .metric .value{font-size:18px;font-weight:700}
+    .metric .sub{font-size:10px;color:var(--txt2);margin-top:2px}
+    .v-pos{color:var(--red)}
+    .v-neg{color:var(--green)}
+    .v-neutral{color:var(--blue)}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{background:var(--bg);color:var(--txt2);padding:8px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+    td{padding:8px;border-bottom:1px solid var(--bdr)}
+    tr:hover td{background:rgba(68,138,255,0.04)}
+    .pos{color:var(--red);font-weight:700}
+    .neg{color:var(--green);font-weight:700}
+    .loading{text-align:center;color:var(--txt2);padding:20px}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--bdr);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite;margin-right:8px;vertical-align:middle}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .summary-row{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;padding:14px 18px;border-radius:8px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+    .summary-row .label{font-size:11px;opacity:.85}
+    .summary-row .value{font-size:22px;font-weight:800}
+    .tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;margin-left:6px}
+    .tag-good{background:rgba(255,23,68,0.18);color:var(--red)}
+    .tag-bad{background:rgba(0,200,83,0.18);color:var(--green)}
+    .tag-neutral{background:rgba(68,138,255,0.18);color:var(--blue)}
+    .error{background:rgba(255,23,68,0.1);border:1px solid var(--red);color:var(--red);padding:12px;border-radius:6px;margin:10px 0}
+    .empty{text-align:center;color:var(--txt2);padding:30px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 策略回測</h1>
+    <p class="subtitle">用歷史 K 線模擬交易，計算 Sharpe / MaxDD / WinRate 等 11 項指標。可比較 3 種策略表現。</p>
+
+    <div class="card">
+      <h2>⚙️ 設定</h2>
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label>股票代碼（逗號分隔，最多 30 檔）</label>
+          <input type="text" id="codesInput" value="2330,2454,2317,2308,2379" placeholder="例: 2330,2454,2317">
+          <div class="chips" id="quickChips">
+            <span class="chip" data-codes="2330,2454,2317,2308,2379">熱門 5</span>
+            <span class="chip" data-codes="2330,2454,2317,2308,2379,6669,2382,3231,3711,2357">半導體 10</span>
+            <span class="chip" data-codes="2881,2882,2884,2885,2886,2887,2891,2892">金融 8</span>
+            <span class="chip" data-codes="0050,0051,0052,0056,00878">ETF 5</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>策略</label>
+          <select id="strategySelect">
+            <option value="original">original — 原始策略 (5 條件評分)</option>
+            <option value="rsi_channel">rsi_channel — RSI 通道突破 (RSI>60 + 收>MA20)</option>
+            <option value="ma_cross">ma_cross — 均線交叉 (MA5 上穿/下穿 MA20)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>滑價 (bps)</label>
+          <input type="number" id="slippage" value="10" min="0" max="100" step="5">
+        </div>
+        <div class="form-group">
+          <label>倉位 (%)</label>
+          <input type="number" id="positionSize" value="100" min="10" max="100" step="10">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="runBtn">▶ 執行回測</button>
+        <button class="btn btn-secondary" id="compareBtn">🔀 比較 3 策略（同一組股票）</button>
+        <button class="btn btn-secondary" id="loadStrategiesBtn">📋 列出策略</button>
+      </div>
+    </div>
+
+    <div id="status"></div>
+    <div id="results"></div>
+  </div>
+
+<script>
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+  // Quick chip selector
+  document.addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    const codes = chip.dataset.codes;
+    if (codes) {
+      $("#codesInput").value = codes;
+      $$(".chip").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+    }
+  });
+
+  $("#loadStrategiesBtn").addEventListener("click", async () => {
+    try {
+      const r = await fetch("/api/backtest/strategies");
+      const d = await r.json();
+      alert("可用策略:\n" + d.strategies.map(s => `  - ${s.id}: ${s.name}`).join("\n"));
+    } catch (e) { showError(e.message); }
+  });
+
+  $("#runBtn").addEventListener("click", () => runBacktest(false));
+  $("#compareBtn").addEventListener("click", () => runBacktest(true));
+
+  function showError(msg) {
+    $("#status").innerHTML = `<div class="error">❌ ${escapeHtml(msg)}</div>`;
+  }
+
+  function setLoading(loading) {
+    $("#runBtn").disabled = loading;
+    $("#compareBtn").disabled = loading;
+    if (loading) {
+      $("#status").innerHTML = `<div class="loading"><span class="spinner"></span>回測中，請稍候 5~15 秒…</div>`;
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&", "<": "<", ">": ">", '"': """, "'": "&#39;" })[c]);
+  }
+
+  function fmtPct(v, dp = 2) {
+    if (v == null) return "-";
+    const sign = v > 0 ? "+" : "";
+    return sign + (v * 100).toFixed(dp) + "%";
+  }
+  function fmtPctRaw(v, dp = 2) {
+    if (v == null) return "-";
+    return Number(v).toFixed(dp) + "%";
+  }
+  function fmtNum(v, dp = 0) {
+    if (v == null) return "-";
+    return Number(v).toFixed(dp);
+  }
+  function fmtSharpe(v) {
+    if (v == null) return "-";
+    const c = v > 1 ? "pos" : v < 0 ? "neg" : "v-neutral";
+    return `<span class="${c}">${Number(v).toFixed(2)}</span>`;
+  }
+
+  function metricCard(label, value, sub = "", cls = "") {
+    return `<div class="metric"><div class="label">${label}</div><div class="value ${cls}">${value}</div>${sub ? `<div class="sub">${sub}</div>` : ""}</div>`;
+  }
+
+  function colorFor(v) {
+    if (v == null) return "";
+    return v > 0 ? "v-pos" : v < 0 ? "v-neg" : "v-neutral";
+  }
+  function colorForWin(v) {
+    if (v == null) return "";
+    return v > 0.5 ? "v-pos" : v > 0.4 ? "v-neutral" : "v-neg";
+  }
+
+  function metricBlock(m) {
+    return `
+      <div class="results-grid">
+        ${metricCard("總報酬", fmtPct(m.total_return), `$${fmtNum(m.total_return !== null ? m.total_return * 100 : 0)}%`, colorFor(m.total_return))}
+        ${metricCard("年化報酬", fmtPctRaw(m.annual_return, 2), "Sharpe " + fmtSharpe(m.sharpe), colorFor(m.annual_return))}
+        ${metricCard("最大回撤", fmtPctRaw(-m.max_drawdown, 2), "MDD 越深越差", "v-neg")}
+        ${metricCard("勝率", fmtPctRaw(m.win_rate * 100, 1) + "%", `${m.wins}勝 ${m.losses}敗`, colorForWin(m.win_rate))}
+        ${metricCard("交易數", fmtNum(m.total_trades), `${m.avg_hold_days?.toFixed(1) ?? "-"} 天/筆`)}
+        ${metricCard("獲利因子", m.profit_factor == null ? "∞" : m.profit_factor.toFixed(2), "盈虧比", m.profit_factor == null ? "v-pos" : (m.profit_factor > 1.5 ? "v-pos" : "v-neutral"))}
+        ${metricCard("平均獲利", fmtPctRaw(m.avg_win * 100, 2), "單筆", m.avg_win > 0 ? "v-pos" : "")}
+        ${metricCard("平均虧損", fmtPctRaw(m.avg_loss * 100, 2), "單筆", "v-neg")}
+      </div>`;
+  }
+
+  function renderSingleResult(r) {
+    if (!r.ok) return `<div class="error">❌ ${escapeHtml(r.code)}: ${escapeHtml(r.error || "失敗")}</div>`;
+    const m = r.metrics || {};
+    return `
+      <div class="card">
+        <h2>📊 ${escapeHtml(r.code)} — ${escapeHtml(r.strategy_name || r.strategy)}</h2>
+        ${metricBlock(m)}
+        ${(r.trades || []).length > 0 ? `
+          <h3 style="margin:14px 0 8px;font-size:13px;color:var(--txt2)">最近交易（最多 50 筆）</h3>
+          <table>
+            <thead><tr><th>進場日</th><th>出場日</th><th>進價</th><th>出價</th><th>股數</th><th>持有天</th><th>損益</th><th>%</th></tr></thead>
+            <tbody>${r.trades.slice(-10).map((t) => {
+              const cls = t.pnl > 0 ? "pos" : t.pnl < 0 ? "neg" : "";
+              return `<tr><td>${escapeHtml(t.entry_date || "")}</td><td>${escapeHtml(t.exit_date || "")}</td><td>${fmtNum(t.entry_price, 1)}</td><td>${fmtNum(t.exit_price, 1)}</td><td>${fmtNum(t.shares)}</td><td>${fmtNum(t.hold_days)}</td><td class="${cls}">${fmtNum(t.pnl, 0)}</td><td class="${cls}">${fmtPctRaw(t.pnl_pct * 100, 2)}</td></tr>`;
+            }).join("")}</tbody>
+          </table>
+        ` : `<div class="empty">此股票在回測區間無交易</div>`}
+      </div>`;
+    `;
+  }
+
+  function renderAggregate(d) {
+    const m = d.aggregate || {};
+    if (!m.total_trades) return "";
+    return `
+      <div class="summary-row">
+        <div>
+          <div class="label">📊 投資組合總報酬</div>
+          <div class="value ${colorFor(d.portfolio_return)}">${fmtPct(d.portfolio_return)}</div>
+        </div>
+        <div>
+          <div class="label">回測期間</div>
+          <div class="value" style="font-size:14px">${fmtNum(d.succeeded)} / ${fmtNum(d.scanned)} 檔</div>
+        </div>
+        <div>
+          <div class="label">策略</div>
+          <div class="value" style="font-size:14px">${escapeHtml(d.strategy_name || d.strategy)}</div>
+        </div>
+        <div>
+          <div class="label">初始 → 最終</div>
+          <div class="value" style="font-size:14px">$${fmtNum(d.portfolio_initial)} → $${fmtNum(d.portfolio_final)}</div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>🎯 投資組合加權指標</h2>
+        ${metricBlock(m)}
+      </div>
+    `;
+  }
+
+  function renderPerCodeTable(results) {
+    if (!results || !results.length) return "";
+    const okR = results.filter((r) => r.ok);
+    if (!okR.length) return "";
+    const sorted = okR.slice().sort((a, b) => (b.metrics?.sharpe ?? -99) - (a.metrics?.sharpe ?? -99));
+    return `
+      <div class="card">
+        <h2>🏆 個股排名（依 Sharpe 降冪）</h2>
+        <table>
+          <thead><tr><th>代碼</th><th>策略</th><th>報酬</th><th>年化</th><th>MDD</th><th>Sharpe</th><th>勝率</th><th>盈虧比</th><th>交易數</th></tr></thead>
+          <tbody>${sorted.map((r) => {
+            const m = r.metrics || {};
+            return `<tr>
+              <td><b>${escapeHtml(r.code)}</b></td>
+              <td>${escapeHtml(r.strategy)}</td>
+              <td class="${colorFor(m.total_return)}">${fmtPct(m.total_return)}</td>
+              <td class="${colorFor(m.annual_return)}">${fmtPctRaw(m.annual_return, 2)}</td>
+              <td>${fmtPctRaw(-m.max_drawdown, 2)}</td>
+              <td>${fmtSharpe(m.sharpe)}</td>
+              <td class="${colorForWin(m.win_rate)}">${fmtPctRaw(m.win_rate * 100, 1)}%</td>
+              <td>${m.profit_factor == null ? "∞" : m.profit_factor.toFixed(2)}</td>
+              <td>${fmtNum(m.total_trades)}</td>
+            </tr>`;
+          }).join("")}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function renderCompare(compareResults) {
+    // compareResults: { strategy_name: { ok, aggregate, results } }
+    const html = Object.entries(compareResults).map(([name, data]) => {
+      if (!data.ok) return `<div class="error">❌ ${escapeHtml(name)}: ${escapeHtml(data.error || "失敗")}</div>`;
+      const a = data.aggregate;
+      return `
+        <div class="card">
+          <h2>📊 ${escapeHtml(name)}</h2>
+          <div class="summary-row" style="background:linear-gradient(135deg,var(--cyan),var(--blue))">
+            <div>
+              <div class="label">投資組合總報酬</div>
+              <div class="value ${colorFor(a.portfolio_return)}">${fmtPct(a.portfolio_return)}</div>
+            </div>
+            <div>
+              <div class="label">年化</div>
+              <div class="value" style="font-size:14px">${fmtPctRaw(a.annual_return, 2)}</div>
+            </div>
+            <div>
+              <div class="label">Sharpe</div>
+              <div class="value" style="font-size:14px">${fmtSharpe(a.sharpe)}</div>
+            </div>
+            <div>
+              <div class="label">勝率</div>
+              <div class="value" style="font-size:14px">${fmtPctRaw(a.win_rate * 100, 1)}%</div>
+            </div>
+            <div>
+              <div class="label">交易數</div>
+              <div class="value" style="font-size:14px">${fmtNum(a.total_trades)}</div>
+            </div>
+          </div>
+          ${metricBlock(a)}
+        </div>
+      `;
+    }).join("");
+    return html;
+  }
+
+  async function runBacktest(compareMode) {
+    const codes = $("#codesInput").value.trim();
+    if (!codes) { showError("請輸入股票代碼"); return; }
+    const slippage = parseFloat($("#slippage").value) || 0;
+    const positionSize = parseFloat($("#positionSize").value) || 100;
+    setLoading(true);
+    try {
+      if (compareMode) {
+        // 跑 3 個策略在同一組股票
+        const strategies = ["original", "rsi_channel", "ma_cross"];
+        const results = {};
+        for (const s of strategies) {
+          const url = `/api/backtest?codes=${encodeURIComponent(codes)}&strategy=${s}&slippage=${slippage}&position_size=${positionSize}`;
+          const r = await fetch(url);
+          const d = await r.json();
+          results[s] = d;
+        }
+        $("#results").innerHTML = `
+          ${renderCompare(results)}
+          ${renderPerCodeTable(results.original?.results || [])}
+        `;
+      } else {
+        const strategy = $("#strategySelect").value;
+        const url = `/api/backtest?codes=${encodeURIComponent(codes)}&strategy=${strategy}&slippage=${slippage}&position_size=${positionSize}`;
+        const r = await fetch(url);
+        const d = await r.json();
+        if (!d.ok) { showError(d.error || "回測失敗"); return; }
+        $("#results").innerHTML = `
+          ${renderAggregate(d)}
+          ${renderPerCodeTable(d.results)}
+          ${d.results.map(renderSingleResult).join("")}
+        `;
+      }
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Auto-load initial result on page load
+  runBacktest(false);
+</script>
+</body>
+</html>

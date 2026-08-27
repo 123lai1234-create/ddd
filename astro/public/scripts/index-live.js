@@ -18,6 +18,13 @@ function portfolioFormatDateTime(value) {
     });
 }
 
+// Null-safe textContent write: the live feed section may be absent from a page,
+// and touching a missing element used to throw "Cannot set properties of null".
+function portfolioSetText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
 function portfolioSequencePreview(sequence) {
     const normalized = String(sequence || '').replace(/\s+/g, '').toUpperCase();
     if (!normalized) return '-';
@@ -61,21 +68,23 @@ async function resolvePortfolioApiBase() {
 
     const candidates = derivePortfolioApiCandidates();
     for (const candidate of candidates) {
-        try {
-            const response = await fetch(`${candidate}/healthz`);
-            if (!response.ok) continue;
+        for (const probePath of ['/api/healthz', '/healthz']) {
+            try {
+                const response = await fetch(`${candidate}${probePath}`);
+                if (!response.ok) continue;
 
-            const data = await response.json().catch(() => null);
-            if (data?.status === 'ok') {
-                _portfolioApiBase = candidate;
-                ['portfolioApiBase', 'portfolioKnowledgeApiBase'].forEach((id) => {
-                    const label = document.getElementById(id);
-                    if (label) label.textContent = candidate;
-                });
-                return _portfolioApiBase;
+                const data = await response.json().catch(() => null);
+                if (data?.status === 'ok') {
+                    _portfolioApiBase = candidate;
+                    ['portfolioApiBase', 'portfolioKnowledgeApiBase'].forEach((id) => {
+                        const label = document.getElementById(id);
+                        if (label) label.textContent = candidate;
+                    });
+                    return _portfolioApiBase;
+                }
+            } catch (error) {
+                continue;
             }
-        } catch (error) {
-            continue;
         }
     }
 
@@ -207,9 +216,9 @@ async function loadPortfolioSequenceFeed() {
             portfolioApiJson('/api/sequences?sequence_type=gene&limit=3')
         ]);
 
-        document.getElementById('portfolioProteinCount').textContent = String(summary.proteinCount ?? 0);
-        document.getElementById('portfolioGeneCount').textContent = String(summary.geneCount ?? 0);
-        document.getElementById('portfolioLatestFetched').textContent = portfolioFormatDateTime(summary.latestFetchedAt);
+        portfolioSetText('portfolioProteinCount', String(summary.proteinCount ?? 0));
+        portfolioSetText('portfolioGeneCount', String(summary.geneCount ?? 0));
+        portfolioSetText('portfolioLatestFetched', portfolioFormatDateTime(summary.latestFetchedAt));
 
         renderPortfolioSequenceList('portfolioProteinFeed', proteinPayload.records || [], 'protein');
         renderPortfolioSequenceList('portfolioGeneFeed', genePayload.records || [], 'gene');
@@ -233,12 +242,9 @@ async function loadPortfolioSequenceFeed() {
     } catch (error) {
         renderPortfolioSequenceList('portfolioProteinFeed', [], 'protein');
         renderPortfolioSequenceList('portfolioGeneFeed', [], 'gene');
-        const proteinCount = document.getElementById('portfolioProteinCount');
-        const geneCount = document.getElementById('portfolioGeneCount');
-        const latestFetched = document.getElementById('portfolioLatestFetched');
-        if (proteinCount) proteinCount.textContent = '0';
-        if (geneCount) geneCount.textContent = '0';
-        if (latestFetched) latestFetched.textContent = '-';
+        portfolioSetText('portfolioProteinCount', '0');
+        portfolioSetText('portfolioGeneCount', '0');
+        portfolioSetText('portfolioLatestFetched', '-');
         setPortfolioSequenceStatus(`序列資料庫讀取失敗：${error.message}`, 'error');
     }
 }
@@ -261,9 +267,9 @@ async function loadPortfolioKnowledgeFeed() {
             portfolioApiJson('/api/rag/documents?include_sequences=true&limit=3&chunk_size=680&chunk_overlap=100')
         ]);
 
-        document.getElementById('portfolioKnowledgeProteinCount').textContent = String(summary.proteinAnnotationCount ?? 0);
-        document.getElementById('portfolioKnowledgeLiteratureCount').textContent = String(summary.literatureCount ?? 0);
-        document.getElementById('portfolioKnowledgeLatestFetched').textContent = portfolioFormatDateTime(summary.latestFetchedAt);
+        portfolioSetText('portfolioKnowledgeProteinCount', String(summary.proteinAnnotationCount ?? 0));
+        portfolioSetText('portfolioKnowledgeLiteratureCount', String(summary.literatureCount ?? 0));
+        portfolioSetText('portfolioKnowledgeLatestFetched', portfolioFormatDateTime(summary.latestFetchedAt));
 
         renderPortfolioKnowledgeList('portfolioKnowledgeProteinFeed', annotationPayload.records || [], 'protein_annotation');
         renderPortfolioKnowledgeList('portfolioKnowledgeLiteratureFeed', literaturePayload.records || [], 'literature');
@@ -286,12 +292,9 @@ async function loadPortfolioKnowledgeFeed() {
 
         setPortfolioKnowledgeStatus('首頁已接上知識資料庫與 RAG 文件預覽。', 'success');
     } catch (error) {
-        const kProteinCount = document.getElementById('portfolioKnowledgeProteinCount');
-        const kLitCount = document.getElementById('portfolioKnowledgeLiteratureCount');
-        const kLatest = document.getElementById('portfolioKnowledgeLatestFetched');
-        if (kProteinCount) kProteinCount.textContent = '0';
-        if (kLitCount) kLitCount.textContent = '0';
-        if (kLatest) kLatest.textContent = '-';
+        portfolioSetText('portfolioKnowledgeProteinCount', '0');
+        portfolioSetText('portfolioKnowledgeLiteratureCount', '0');
+        portfolioSetText('portfolioKnowledgeLatestFetched', '-');
         renderPortfolioKnowledgeList('portfolioKnowledgeProteinFeed', [], 'protein_annotation');
         renderPortfolioKnowledgeList('portfolioKnowledgeLiteratureFeed', [], 'literature');
         renderPortfolioRagPreview([]);

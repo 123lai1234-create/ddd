@@ -1,0 +1,47 @@
+[11:25:26] Starting OAuth capture server in background...
+[11:25:26]   Server PID: 31756
+[11:25:31] ERROR: server didn't start within 5s
+[11:26:32] Starting OAuth capture server in background...
+[11:26:32]   Server PID: 32300
+[11:26:33]   Server listening on port: 8080
+[11:26:33] Auth URL built. Required redirect_uri in GCP: http://localhost:8080
+[11:26:33] Opening OAuth URL in default browser (user's Chrome)...
+[11:26:33]   webbrowser.open returned: True
+[11:26:33] Waiting for OAuth callback (max 5 min)...
+[11:31:33] Server stopped.
+[11:31:33] ERROR: no code captured. Did you click Allow in the browser?
+[11:31:33] If you saw a 'redirect_uri_mismatch' page, the GCP OAuth client
+[11:31:33] must have http://localhost:8080 in its Authorized redirect URIs list.
+[11:31:58] Starting OAuth capture server in background...
+[11:31:58]   Server PID: 5532
+[11:31:58]   Server listening on port: 8080
+[11:31:58] Auth URL built. Required redirect_uri in GCP: http://127.0.0.1:8080
+[11:31:58] Opening OAuth URL in default browser (user's Chrome)...
+[11:31:58]   webbrowser.open returned: True
+[11:31:58] Waiting for OAuth callback (max 5 min)...
+[11:36:58] Server stopped.
+[11:36:58] ERROR: no code captured. Did you click Allow in the browser?
+[11:36:58] If you saw a 'redirect_uri_mismatch' page, the GCP OAuth client
+[11:36:58] must have http://127.0.0.1:8080 in its Authorized redirect URIs list.
+[11:41:14] Starting OAuth capture server in background...
+[11:41:14]   Server PID: 16640
+[11:41:14]   Server listening on port: 8080
+[11:41:14] Auth URL built. Required redirect_uri in GCP: http://localhost:8080
+[11:41:14] Opening OAuth URL in default browser (user's Chrome)...
+[11:41:14]   webbrowser.open returned: True
+[11:41:14] Waiting for OAuth callback (max 5 min)...
+[11:46:14] Server stopped.
+[11:46:14] ERROR: no code captured. Did you click Allow in the browser?
+[11:46:14] If you saw a 'redirect_uri_mismatch' page, the GCP OAuth client
+[11:46:14] must have http://localhost:8080 in its Authorized redirect URIs list.
+[11:53:48] Starting OAuth capture server in background...
+[11:53:48]   Server PID: 29596
+[11:53:48]   Server listening on port: 8080
+[11:53:48] Auth URL built. Required redirect_uri in GCP: http://localhost:8080
+[11:53:48] Opening OAuth URL in default browser (user's Chrome)...
+[11:53:48]   webbrowser.open returned: True
+[11:53:48] Waiting for OAuth callback (max 5 min)...
+[11:58:48] Server stopped.
+[11:58:48] ERROR: no code captured. Did you click Allow in the browser?
+[11:58:48] If you saw a 'redirect_uri_mismatch' page, the GCP OAuth client
+[11:58:48] must have http://localhost:8080 in its Authorized redirect URIs list.

@@ -1,0 +1,147 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "node scripts/fetch_lfs.mjs && npm install --prefer-offline --no-audit",
+  "buildCommand": "npx --no-install astro build",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "env": {
+    "API_PROXY_TARGET": "https://vercel-edge-function"
+  },
+  "headers": [
+    {
+      "source": "/games/xian-godot/(.*)?",
+      "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "require-corp"
+        }
+      ]
+    },
+    {
+      "source": "/xian-godot",
+      "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "require-corp"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/og",
+      "destination": "/api/og"
+    },
+    {
+      "source": "/healthz",
+      "destination": "/api/healthz"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/.*",
+      "dest": "/api/catchall"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/stock",
+      "destination": "/stock-app",
+      "permanent": true
+    },
+    {
+      "source": "/stock/",
+      "destination": "/stock-app",
+      "permanent": true
+    },
+    {
+      "source": "/about_me.html",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/about_me",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/works.html",
+      "destination": "/works",
+      "permanent": true
+    },
+    {
+      "source": "/gene_ai.html",
+      "destination": "/gene-ai",
+      "permanent": true
+    },
+    {
+      "source": "/gene_ai",
+      "destination": "/gene-ai",
+      "permanent": true
+    },
+    {
+      "source": "/ngs.html",
+      "destination": "/ngs",
+      "permanent": true
+    },
+    {
+      "source": "/report.html",
+      "destination": "/report",
+      "permanent": true
+    },
+    {
+      "source": "/thesis.html",
+      "destination": "/thesis",
+      "permanent": true
+    },
+    {
+      "source": "/protein_mpnn.html",
+      "destination": "/protein-mpnn",
+      "permanent": true
+    },
+    {
+      "source": "/protein_mpnn",
+      "destination": "/protein-mpnn",
+      "permanent": true
+    },
+    {
+      "source": "/interview_prep.html",
+      "destination": "/interview",
+      "permanent": true
+    },
+    {
+      "source": "/interview_prep",
+      "destination": "/interview",
+      "permanent": true
+    },
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/stem_cell.html",
+      "destination": "/stem-cell",
+      "permanent": true
+    },
+    {
+      "source": "/stem_cell",
+      "destination": "/stem-cell",
+      "permanent": true
+    },
+    {
+      "source": "/music.html",
+      "destination": "/music",
+      "permanent": true
+    }
+  ]
+}

@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ETF 持股變動追蹤</title>
+  <link rel="icon" type="image/svg+xml" href="static/favicon.svg">
+  <style>
+    :root {
+      --bg:#0f0f23; --bg2:#1a1a3e; --bg3:#1e1e42; --txt:#e0e0ff; --txt2:#8888aa;
+      --green:#00c853; --red:#ff1744; --orange:#ff9100;
+      --blue:#448aff; --cyan:#00bcd4; --bdr:#2a2a5a;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { overflow-x:hidden; max-width:100%; }
+    body { background:var(--bg); color:var(--txt); font-family:'Segoe UI','Microsoft JhengHei',sans-serif; min-height:100vh; }
+    .header { background:linear-gradient(135deg,var(--bg2),#12122e); padding:14px 24px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+      border-bottom:1px solid var(--bdr); position:sticky; top:0; z-index:10; }
+    .header h1 { font-size:18px; background:linear-gradient(90deg,var(--blue),var(--cyan));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; white-space:nowrap; }
+    .nav { display:flex; gap:8px; flex-wrap:wrap; }
+    .nav a { color:var(--txt2); text-decoration:none; padding:6px 12px; border-radius:6px;
+      border:1px solid var(--bdr); font-size:13px; transition:all .2s; white-space:nowrap; }
+    .nav a:hover { color:var(--cyan); border-color:var(--cyan); }
+    .nav a.active { background:var(--cyan); color:#000; font-weight:700; }
+
+    .container { max-width:1100px; margin:24px auto; padding:0 16px; }
+    .panel { background:var(--bg2); border:1px solid var(--bdr); border-radius:10px;
+      padding:18px; margin-bottom:18px; }
+    .panel h2 { color:var(--cyan); font-size:14px; margin-bottom:12px; font-weight:600; }
+    /* 表格容器：包住會跑出邊界的 table（snapBox, diffBox 等） */
+    #snapBox, #diffBox { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+    .controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    select, input { background:var(--bg); color:var(--txt); border:1px solid var(--bdr);
+      padding:8px 12px; border-radius:6px; font-size:13px; }
+    select:focus, input:focus { outline:none; border-color:var(--cyan); }
+    button { padding:8px 16px; border:none; border-radius:6px; font-size:13px;
+      cursor:pointer; font-weight:600; color:#fff; background:var(--blue); transition:all .2s; }
+    button:hover:not(:disabled) { opacity:.85; }
+    button:disabled { opacity:.4; cursor:not-allowed; }
+
+    table { width:100%; border-collapse:collapse; background:var(--bg2);
+      border-radius:8px; overflow:hidden; min-width:560px; }
+    th, td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--bdr); font-size:13px;
+      vertical-align:top; }
+    th { background:var(--bg3); color:var(--cyan); font-weight:600; white-space:nowrap; }
+    .code { color:var(--txt2); font-family:monospace; white-space:nowrap; }
+    .name { color:var(--txt); font-weight:600; }
+    .pos { color:var(--green); font-weight:600; }
+    .neg { color:var(--red); font-weight:600; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px;
+      background:var(--bg3); color:var(--txt2); border:1px solid var(--bdr); }
+    .pill-add { background:#003d24; color:#69f0ae; border-color:#005a36; }
+    .pill-rm { background:#3d0019; color:#ff80ab; border-color:#5a0028; }
+    .reso { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;
+      border:1px solid var(--bdr); }
+    .reso-up   { background:#3d0019; color:#ff80ab; border-color:#5a0028; }   /* ETF 加碼 + 外資買，強多 */
+    .reso-down { background:#003d24; color:#69f0ae; border-color:#005a36; }   /* ETF 減碼 + 外資賣，強空 */
+    .reso-div  { background:var(--bg3); color:var(--txt2); border-color:var(--bdr); }
+    .filter-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px; font-size:12px; }
+    .filter-bar label { color:var(--txt2); cursor:pointer; user-select:none; }
+    .filter-bar input[type=checkbox] { vertical-align:middle; margin-right:4px; }
+    .empty { color:var(--txt2); padding:30px; text-align:center; font-size:14px; }
+    #status { color:var(--txt2); font-size:13px; margin-top:8px; min-height:18px; }
+
+    /* ── 個股新聞 AI 掃描 ── */
+    button.secondary { background:#5a5a8a; }
+    .badge { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; }
+    .b-bull { background:#3d0019; color:#ff80ab; border:1px solid #5a0028; }
+    .b-bear { background:#003d24; color:#69f0ae; border:1px solid #005a36; }
+    .b-neu  { background:var(--bg3); color:var(--txt2); border:1px solid var(--bdr); }
+    .stat-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+    .stat { background:var(--bg3); border:1px solid var(--bdr); padding:6px 12px; border-radius:6px; font-size:12px; color:var(--txt2); }
+    .stat b { color:var(--txt); margin-left:4px; }
+    .scan-card { border:1px solid var(--bdr); background:var(--bg); border-radius:8px; padding:12px 14px; margin-bottom:8px; }
+    .scan-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px; }
+    .scan-head .stk { color:var(--txt); font-weight:600; }
+    .scan-head .muted { color:var(--txt2); font-size:11px; }
+    .scan-reason { color:var(--txt2); font-size:12px; margin-top:6px; }
+    .toggle-news { background:none; color:var(--cyan); padding:0; font-size:12px; font-weight:500; cursor:pointer; margin-top:6px; }
+    .toggle-news:hover { text-decoration:underline; }
+    .news-list { display:none; margin-top:8px; padding-left:12px; border-left:2px solid var(--bdr); }
+    .news-list.open { display:block; }
+    .news-item { padding:5px 0; font-size:12px; border-bottom:1px dashed var(--bdr); }
+    .news-item:last-child { border-bottom:none; }
+    .news-item a { color:var(--blue); text-decoration:none; }
+    .news-item a:hover { text-decoration:underline; }
+    .news-item .news-meta { color:var(--txt2); font-size:11px; margin-left:4px; }
+    .progress-bar { height:6px; background:var(--bg3); border-radius:6px; overflow:hidden; margin-top:8px; }
+    .progress-fill { height:100%; background:linear-gradient(90deg,var(--blue),var(--cyan)); transition:width .3s; width:0%; }
+    .alert-warn { background:#3d2200; border:1px solid #ff9100; color:#ffb74d; padding:8px 12px; border-radius:6px; font-size:12px; margin-bottom:10px; }
+
+    @media (max-width: 640px) {
+      .header { padding:10px 14px; gap:8px; }
+      .header h1 { font-size:15px; }
+      .nav a { padding:5px 9px; font-size:12px; }
+      .container { margin:14px auto; padding:0 10px; }
+      .panel { padding:12px; margin-bottom:12px; }
+      .panel h2 { font-size:13px; }
+      .controls select, .controls input, .controls button { font-size:12px; padding:7px 10px; }
+      th, td { padding:7px 8px; font-size:12px; }
+      table { min-width:520px; }
+      .pill { font-size:9px; padding:1px 6px; }
+      .stat { font-size:11px; padding:5px 9px; }
+      .scan-card { padding:10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>ETF 持股變動追蹤</h1>
+    <div class="nav">
+      <a href="index.html">主系統</a>
+      <a href="etf_holdings.html">共同持股</a>
+      <a href="etf_holdings_tracker.html" class="active">持股追蹤</a>
+      <a href="etf_holdings_pivot.html">樞紐分析</a>
+      <a href="sitemap.html" title="網站地圖">🗺️</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="panel">
+      <h2>選擇 ETF</h2>
+      <div class="controls">
+        <select id="etfSelect">
+          
+            <option value="0050" selected>0050 元大台灣50</option>
+          
+            <option value="0051" >0051 元大中型100</option>
+          
+            <option value="0052" >0052 富邦科技</option>
+          
+            <option value="0053" >0053 元大電子</option>
+          
+            <option value="0055" >0055 元大MSCI金融</option>
+          
+            <option value="0056" >0056 元大高股息</option>
+          
+            <option value="0057" >0057 富邦摩台</option>
+          
+            <option value="006203" >006203 元大MSCI台灣</option>
+          
+            <option value="006204" >006204 永豐臺灣加權</option>
+          
+            <option value="006208" >006208 富邦台50</option>
+          
+            <option value="00690" >00690 兆豐藍籌30</option>
+          
+            <option value="00692" >00692 富邦公司治理</option>
+          
+            <option value="00701" >00701 國泰股利精選30</option>
+          
+            <option value="00713" >00713 元大台灣高息低波</option>
+          
+            <option value="00728" >00728 第一金工業30</option>
+          
+            <option value="00730" >00730 富邦臺灣優質高息</option>
+          
+            <option value="00731" >00731 復華富時高息低波</option>
+          
+            <option value="00733" >00733 富邦臺灣中小</option>
+          
+            <option value="00735" >00735 國泰臺韓科技</option>
+          
+            <option value="00850" >00850 元大臺灣ESG永續</option>
+          
+            <option value="00878" >00878 國泰永續高股息</option>
+          
+            <option value="00881" >00881 國泰台灣5G+</option>
+          
+            <option value="00888" >00888 永豐台灣ESG</option>
+          
+            <option value="00891" >00891 中信關鍵半導體</option>
+          
+            <option value="00892" >00892 富邦台灣半導體</option>
+          
+            <option value="00894" >00894 中信小資高價30</option>
+          
+            <option value="00900" >00900 富邦特選高股息30</option>
+          
+            <option value="00901" >00901 永豐智能車供應鏈</option>
+          
+            <option value="00905" >00905 FT臺灣Smart</option>
+          
+            <option value="00907" >00907 永豐優息存股</option>
+          
+            <option value="00912" >00912 中信臺灣智慧50</option>
+          
+            <option value="00913" >00913 兆豐台灣晶圓製造</option>
+          
+            <option value="00915" >00915 凱基優選高股息30</option>
+          
+            <option value="00919" >00919 群益台灣精選高息</option>
+          
+            <option value="00921" >00921 兆豐龍頭等權重</option>
+          
+            <option value="00922" >00922 國泰台灣領袖50</option>
+          
+            <option value="00923" >00923 群益台ESG低碳50</option>
+          
+            <option value="00927" >00927 群益半導體收益</option>
+          
+            <option value="00929" >00929 復華台灣科技優息</option>
+          
+            <option value="00930" >00930 永豐ESG低碳高息</option>
+          
+            <option value="00932" >00932 兆豐永續高息等權</option>
+          
+            <option value="00934" >00934 中信成長高股息</option>
+          
+            <option value="00935" >00935 野村臺灣新科技50</option>
+          
+            <option value="00936" >00936 台新永續高息中小</option>
+          
+            <option value="00944" >00944 野村趨勢動能高息</option>
+          
+            <option value="00947" >00947 台新臺灣IC設計</option>
+          
+            <option value="00952" >00952 凱基台灣AI50</option>
+          
+            <option value="009802" >009802 富邦旗艦50</option>
+          
+            <option value="009803" >009803 保德信市值動能50</option>
+          
+            <option value="00981A" >00981A 統一台股增長</option>
+          
+            <option value="00982A" >00982A 群益台灣強棒</option>
+          
+        </select>
+        <button onclick="loadAll()">載入</button>
+        <button onclick="manualSnapshot()">立即抓快照</button>
+        <button id="btnSnapAll" style="background:var(--orange)" onclick="batchSnapshotAll()">⚡ 一鍵批次抓全部</button>
+        <button style="background:#388e3c" onclick="downloadSnapshots()" title="下載目前選取 ETF 最近 30 筆完整快照（JSON）">⬇ 下載歷史快照</button>
+      </div>
+      <div id="status"></div>
+      <div id="batchSnapBox" style="display:none; margin-top:10px; padding:10px;
+            background:var(--bg3); border:1px solid var(--orange); border-radius:6px;">
+        <div id="batchSnapMeta" style="font-size:12px; color:var(--txt); margin-bottom:6px;"></div>
+        <div class="progress-bar"><div class="progress-fill" id="batchSnapBar"></div></div>
+        <div id="batchSnapDetail" style="font-size:11px; color:var(--txt2); margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>快照清單（最近 30 筆）</h2>
+      <div id="snapBox"><div class="empty">尚未載入</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>最近兩次快照差異</h2>
+      <div id="diffBox"><div class="empty">尚未載入</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>個股新聞 AI 情緒掃描（前 10 大持股）</h2>
+      <div class="controls" style="margin-bottom:10px;">
+        <button id="btnScan">開始掃描</button>
+        <button class="secondary" id="btnScanForce">強制重新掃描</button>
+        <span class="stat" id="scanMeta">尚未掃描</span>
+      </div>
+      <div class="progress-bar" id="scanBarWrap" style="display:none;">
+        <div class="progress-fill" id="scanBar"></div>
+      </div>
+      <div class="stat-row" id="scanSummary" style="margin-top:12px;"></div>
+      <div id="scanResults"><div class="empty">點「開始掃描」對前 10 大持股做新聞 + AI 情緒判讀（約 30~60 秒）</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>自選個股新聞 AI 情緒掃描（最多 5 檔）</h2>
+      <div style="font-size:12px; color:var(--txt2); margin-bottom:10px;">
+        輸入股票代碼或名稱（如 <code>2330</code> 或 <code>台積</code>），最多 5 檔；空欄會自動略過。
+      </div>
+      <div class="controls" style="flex-wrap:wrap; gap:6px; margin-bottom:10px;">
+        <input type="text" id="adhocIn1" list="stockOptions" placeholder="代碼或名稱 1" style="min-width:140px;">
+        <input type="text" id="adhocIn2" list="stockOptions" placeholder="代碼或名稱 2" style="min-width:140px;">
+        <input type="text" id="adhocIn3" list="stockOptions" placeholder="代碼或名稱 3" style="min-width:140px;">
+        <input type="text" id="adhocIn4" list="stockOptions" placeholder="代碼或名稱 4" style="min-width:140px;">
+        <input type="text" id="adhocIn5" list="stockOptions" placeholder="代碼或名稱 5" style="min-width:140px;">
+        <datalist id="stockOptions"></datalist>
+      </div>
+      <div class="controls" style="margin-bottom:10px;">
+        <button id="btnAdhocScan">開始掃描</button>
+        <button class="secondary" id="btnAdhocScanForce">強制重新掃描</button>
+        <span class="stat" id="adhocScanMeta">尚未掃描</span>
+        <span class="stat" id="adhocQuota" title="每日 OpenAI 掃描配額（全站共用）">配額讀取中…</span>
+      </div>
+      <div class="progress-bar" id="adhocScanBarWrap" style="display:none;">
+        <div class="progress-fill" id="adhocScanBar"></div>
+      </div>
+      <div class="stat-row" id="adhocScanSummary" style="margin-top:12px;"></div>
+      <div id="adhocScanResults">
+        <div class="empty">輸入 1~5 檔後按「開始掃描」，結果 30 分鐘內快取</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getCode() {
+      return document.getElementById('etfSelect').value.replace('.TW','');
+    }
+
+    function setStatus(msg, color) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.style.color = color || 'var(--txt2)';
+    }
+
+    async function loadAll() {
+      await Promise.all([loadSnapshots(), loadDiff()]);
+    }
+
+    async function loadSnapshots() {
+      const code = getCode();
+      const box = document.getElementById('snapBox');
+      box.innerHTML = '<div class="empty">載入中…</div>';
+      try {
+        const r = await fetch(`/api/etf_holdings/snapshots/${code}?limit=30`);
+        const d = await r.json();
+        if (!d.ok || !d.snapshots.length) {
+          box.innerHTML = '<div class="empty">無快照（請先「立即抓快照」）</div>';
+          return;
+        }
+        box.innerHTML = `<table><thead><tr>
+          <th>ID</th><th>時間</th><th>來源</th><th>持股數</th>
+        </tr></thead><tbody>${d.snapshots.map(s => `
+          <tr>
+            <td class="code">${s.id}</td>
+            <td>${s.fetched_at}</td>
+            <td><span class="pill">${s.source}</span></td>
+            <td>${s.holding_count}</td>
+          </tr>`).join('')}</tbody></table>`;
+      } catch (e) {
+        box.innerHTML = `<div class="empty" style="color:var(--red)">載入失敗：${e}</div>`;
+      }
+    }
+
+    async function loadDiff() {
+      const code = getCode();
+      const box = document.getElementById('diffBox');
+      box.innerHTML = '<div class="empty">載入中…</div>';
+      try {
+        const r = await fetch(`/api/etf_holdings/diff/${code}`);
+        const d = await r.json();
+        if (d.status === 'no_diff') {
+          box.innerHTML = `<div class="empty">${d.message}（目前 ${d.snapshot_count || 0} 筆快照）</div>`;
+          return;
+        }
+        if (d.status === 'error') {
+          box.innerHTML = `<div class="empty" style="color:var(--red)">${d.message}</div>`;
+          return;
+        }
+        const s = d.summary;
+        const esc = (str) => String(str==null?'':str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const summary = `
+          <div style="margin-bottom:12px;color:var(--txt2);font-size:13px;line-height:1.8">
+            <div>本次：<span style="color:var(--txt)">${esc(d.new_time)}</span></div>
+            <div>上次：<span style="color:var(--txt)">${esc(d.old_time)}</span></div>
+            <div style="margin-top:6px">
+              <span class="pill pill-add">🆕 新增 ${s.added}</span>
+              <span class="pill pill-rm">❌ 移除 ${s.removed}</span>
+              <span class="pill">📊 變動 ${s.changed}</span>
+              <span class="pill">⏸ 不變 ${s.unchanged}</span>
+            </div>
+          </div>`;
+        const rows = d.holdings.map(h => {
+          let tag, chg;
+          if (h.status === 'added') {
+            tag = '<span class="pill pill-add">新增</span>';
+            chg = `<span class="pos">+${(h.new_weight||0).toFixed(2)}%</span>`;
+          } else if (h.status === 'removed') {
+            tag = '<span class="pill pill-rm">移除</span>';
+            chg = `<span class="neg">-${(h.old_weight||0).toFixed(2)}%</span>`;
+          } else if (h.status === 'unchanged') {
+            tag = '<span class="pill">不變</span>';
+            chg = `<span style="color:var(--txt2)">±0.00%</span>`;
+          } else {
+            tag = '<span class="pill">變動</span>';
+            const cls = h.change > 0 ? 'pos' : 'neg';
+            const sign = h.change > 0 ? '+' : '';
+            chg = `<span class="${cls}">${sign}${h.change.toFixed(2)}%</span>`;
+          }
+          const ow = h.old_weight !== null ? h.old_weight.toFixed(2)+'%' : '—';
+          const nw = h.new_weight !== null ? h.new_weight.toFixed(2)+'%' : '—';
+          // 外資 5 日合計（張）
+          let foreignCell = '<span style="color:var(--txt2)">—</span>';
+          if (typeof h.foreign_5d === 'number') {
+            const v = h.foreign_5d;
+            const cls = v > 0 ? 'pos' : (v < 0 ? 'neg' : '');
+            const sign = v > 0 ? '+' : '';
+            foreignCell = `<span class="${cls}">${sign}${v.toLocaleString()}</span>`;
+          }
+          // 共振訊號
+          let resoCell = '';
+          let resoKey = '';
+          if (h.resonance === 'up') { resoCell = '<span class="reso reso-up" title="ETF 加碼 + 外資買超">↑↑ 強多</span>'; resoKey = 'up'; }
+          else if (h.resonance === 'down') { resoCell = '<span class="reso reso-down" title="ETF 減碼 + 外資賣超">↓↓ 強空</span>'; resoKey = 'down'; }
+          else if (h.resonance === 'div_up') { resoCell = '<span class="reso reso-div" title="ETF 加碼但外資賣超（背離）">↑↓ 背離</span>'; resoKey = 'div'; }
+          else if (h.resonance === 'div_down') { resoCell = '<span class="reso reso-div" title="ETF 減碼但外資買超（背離）">↓↑ 背離</span>'; resoKey = 'div'; }
+          const codeStr = h.stock_code ? esc(h.stock_code) : '';
+          const nameStr = h.stock_name ? esc(h.stock_name) : '';
+          const codeCell = codeStr
+            ? `<a href="index.html?code=${encodeURIComponent(h.stock_code)}" target="_blank" rel="noopener" style="color:var(--cyan,#00bcd4);text-decoration:none;font-weight:700;" title="查看 K 線圖">${codeStr}</a>`
+            : '—';
+          const nameCell = (codeStr && nameStr)
+            ? `<a href="index.html?code=${encodeURIComponent(h.stock_code)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;" title="查看 K 線圖">${nameStr}</a>`
+            : (nameStr || '—');
+          return `<tr data-reso="${resoKey}" data-status="${h.status||''}">
+            <td>${tag}</td>
+            <td class="code">${codeCell}</td>
+            <td class="name">${nameCell}</td>
+            <td>${ow}</td><td>${nw}</td><td>${chg}</td>
+            <td>${foreignCell}</td>
+            <td>${resoCell}</td>
+          </tr>`;
+        }).join('');
+        const filterBar = `<div class="filter-bar">
+          <label><input type="checkbox" id="filterReso" onchange="applyDiffFilter()">只看共振訊號（強多/強空）</label>
+          <span style="color:var(--txt2);font-size:11px;">外資 5 日合計＝近 5 個交易日外資合計買賣超（張數，正紅負綠）</span>
+        </div>`;
+        box.innerHTML = summary + filterBar + `<table id="diffTable"><thead><tr>
+          <th>狀態</th><th>代號</th><th>名稱</th><th>上次比例</th><th>本次比例</th><th>變動</th>
+          <th>外資5日(張)</th><th>共振</th>
+        </tr></thead><tbody>${rows || '<tr><td colspan="8" class="empty">無資料</td></tr>'}</tbody></table>`;
+      } catch (e) {
+        box.innerHTML = `<div class="empty" style="color:var(--red)">載入失敗：${e}</div>`;
+      }
+    }
+
+    function applyDiffFilter() {
+      const onlyReso = document.getElementById('filterReso')?.checked;
+      const tbl = document.getElementById('diffTable');
+      if (!tbl) return;
+      tbl.querySelectorAll('tbody tr').forEach(tr => {
+        const r = tr.getAttribute('data-reso') || '';
+        const show = !onlyReso || (r === 'up' || r === 'down');
+        tr.style.display = show ? '' : 'none';
+      });
+    }
+
+    async function manualSnapshot() {
+      const code = getCode();
+      setStatus(`正在抓 ${code} 快照…`, 'var(--cyan)');
+      try {
+        const r = await fetch('/api/etf_holdings/snapshot', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({etf_code: code}),
+        });
+        const d = await r.json();
+        if (d.ok) {
+          setStatus(`已存快照 id=${d.snapshot_id}`, 'var(--green)');
+          loadAll();
+        } else {
+          setStatus(d.msg || '失敗', 'var(--red)');
+        }
+      } catch (e) {
+        setStatus('請求失敗：' + e, 'var(--red)');
+      }
+    }
+
+    function downloadSnapshots() {
+      const code = getCode();
+      if (!code) { setStatus('請先選擇 ETF', 'var(--red)'); return; }
+      setStatus(`正在準備 ${code} 歷史快照下載…`, 'var(--cyan)');
+      const url = `/api/etf_holdings/export/${encodeURIComponent(code)}?limit=30`;
+      const a = document.createElement('a');
+      a.href = url;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => setStatus(`已觸發下載（最近 30 筆，含完整持股）`, 'var(--green)'), 600);
+    }
+
+    // ───── 一鍵批次抓全部 ETF 快照 ─────
+    let _batchSnapTimer = null;
+
+    async function batchSnapshotAll() {
+      const btn = document.getElementById('btnSnapAll');
+      const box = document.getElementById('batchSnapBox');
+      if (!confirm('將批次抓取所有追蹤中的 ETF 快照，預計需要數分鐘。是否繼續？')) return;
+      btn.disabled = true;
+      box.style.display = 'block';
+      document.getElementById('batchSnapMeta').textContent = '啟動中…';
+      document.getElementById('batchSnapBar').style.width = '0%';
+      document.getElementById('batchSnapDetail').textContent = '';
+      try {
+        const r = await fetch('/api/etf_holdings/snapshot_all', { method:'POST' });
+        const d = await r.json();
+        if (!d.ok) {
+          document.getElementById('batchSnapMeta').textContent = '失敗：' + (d.msg || '');
+          btn.disabled = false;
+          return;
+        }
+        pollBatchSnap();
+      } catch (e) {
+        document.getElementById('batchSnapMeta').textContent = '請求失敗：' + e;
+        btn.disabled = false;
+      }
+    }
+
+    async function pollBatchSnap() {
+      if (_batchSnapTimer) clearInterval(_batchSnapTimer);
+      _batchSnapTimer = setInterval(async () => {
+        try {
+          const r = await fetch('/api/etf_holdings/snapshot_all/status');
+          const s = await r.json();
+          const meta = document.getElementById('batchSnapMeta');
+          const bar = document.getElementById('batchSnapBar');
+          const det = document.getElementById('batchSnapDetail');
+          const pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
+          bar.style.width = pct + '%';
+          if (s.running) {
+            meta.textContent = `進度 ${s.done}/${s.total}（${pct}%）　目前：${s.current || '-'}　成功 ${s.ok_count}　失敗 ${s.fail_count}`;
+          } else {
+            clearInterval(_batchSnapTimer); _batchSnapTimer = null;
+            const okMsg = s.error ? '錯誤：' + s.error : '完成';
+            meta.style.color = s.fail_count > 0 ? 'var(--orange)' : 'var(--green)';
+            meta.textContent = `${okMsg}　共 ${s.total} 檔，成功 ${s.ok_count}　失敗 ${s.fail_count}`;
+            if (s.failed_codes && s.failed_codes.length) {
+              det.textContent = '失敗清單：' + s.failed_codes.join(', ');
+            } else {
+              det.textContent = '';
+            }
+            document.getElementById('btnSnapAll').disabled = false;
+            loadAll();
+          }
+        } catch (e) {
+          console.warn('查詢批次狀態失敗', e);
+        }
+      }, 1500);
+    }
+
+    // 頁面載入時若已有任務在跑，自動接續顯示進度
+    (async function _resumeBatchSnap() {
+      try {
+        const r = await fetch('/api/etf_holdings/snapshot_all/status');
+        const s = await r.json();
+        if (s.running) {
+          document.getElementById('btnSnapAll').disabled = true;
+          document.getElementById('batchSnapBox').style.display = 'block';
+          pollBatchSnap();
+        }
+      } catch (e) { /* 忽略 */ }
+    })();
+
+    document.getElementById('etfSelect').addEventListener('change', () => {
+      loadAll();
+      resetScanUI();
+      tryLoadCachedScan();
+    });
+    loadAll();
+
+    // ───── 個股新聞 AI 掃描 ─────
+    function el(tag, opts = {}, children = []) {
+      const e = document.createElement(tag);
+      if (opts.cls) e.className = opts.cls;
+      if (opts.text != null) e.textContent = opts.text;
+      if (opts.attrs) for (const k in opts.attrs) e.setAttribute(k, opts.attrs[k]);
+      (children || []).forEach(c => c && e.appendChild(c));
+      return e;
+    }
+
+    function aiBadgeEl(label) {
+      const map = { '利多': 'b-bull', '中性': 'b-neu', '利空': 'b-bear' };
+      const safe = (label === '利多' || label === '中性' || label === '利空') ? label : '中性';
+      return el('span', { cls: 'badge ' + (map[safe] || 'b-neu'), text: safe });
+    }
+
+    function safeUrl(url) {
+      if (typeof url !== 'string') return '#';
+      try {
+        const u = new URL(url, window.location.origin);
+        return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '#';
+      } catch (e) { return '#'; }
+    }
+
+    function resetScanUI() {
+      document.getElementById('scanBarWrap').style.display = 'none';
+      document.getElementById('scanBar').style.width = '0%';
+      document.getElementById('scanMeta').textContent = '尚未掃描';
+      document.getElementById('scanSummary').replaceChildren();
+      document.getElementById('scanResults').innerHTML =
+        '<div class="empty">點「開始掃描」對前 10 大持股做新聞 + AI 情緒判讀（約 30~60 秒）</div>';
+    }
+
+    function renderScanResult(result) {
+      const sumBox = document.getElementById('scanSummary');
+      const resBox = document.getElementById('scanResults');
+      const s = result.summary || {};
+
+      sumBox.replaceChildren();
+      const mkStat = (label, val) => {
+        const d = el('div', { cls: 'stat' });
+        d.appendChild(document.createTextNode(label));
+        d.appendChild(el('b', { text: String(val) }));
+        return d;
+      };
+      sumBox.appendChild(mkStat('掃描時間：', result.scanned_at || '—'));
+      sumBox.appendChild(mkStat('利多 ', s.bullish || 0));
+      sumBox.appendChild(mkStat('中性 ', s.neutral || 0));
+      sumBox.appendChild(mkStat('利空 ', s.bearish || 0));
+
+      resBox.replaceChildren();
+      if (s.ai_available === false) {
+        resBox.appendChild(el('div', {
+          cls: 'alert-warn',
+          text: '未偵測到 OPENAI_API_KEY，AI 判讀已退回到本地關鍵字評分。'
+        }));
+      }
+
+      const rows = result.results || [];
+      if (rows.length === 0) {
+        resBox.appendChild(el('div', { cls: 'empty', text: '無資料' }));
+        return;
+      }
+
+      rows.forEach((r, idx) => {
+        const ai = r.ai || {};
+        const conf = ai.confidence != null ? ` ${(ai.confidence * 100).toFixed(0)}%` : '';
+        const srcTag = ai.source === 'ai' ? 'AI' : ai.source === 'fallback' ? '本地' : '—';
+        const wt = r.weight != null ? r.weight.toFixed(2) + '%' : '—';
+
+        const card = el('div', { cls: 'scan-card' });
+        const head = el('div', { cls: 'scan-head' });
+        head.appendChild(el('span', { cls: 'stk', text: `${r.stock_code || '—'} ${r.stock_name || ''}` }));
+        head.appendChild(aiBadgeEl(ai.label));
+        head.appendChild(el('span', {
+          cls: 'muted',
+          text: `${srcTag}${conf} · 權重 ${wt} · 新聞 ${r.news_count || 0} 則`
+        }));
+        card.appendChild(head);
+        card.appendChild(el('div', { cls: 'scan-reason', text: '理由：' + (ai.reason || '—') }));
+
+        const newsId = `etf-news-${idx}`;
+        const toggleBtn = el('button', {
+          cls: 'toggle-news',
+          attrs: { 'data-target': newsId, 'type': 'button' },
+          text: '展開新聞 ▾'
+        });
+        card.appendChild(toggleBtn);
+
+        const newsBox = el('div', { cls: 'news-list', attrs: { id: newsId } });
+        const news = r.news || [];
+        if (news.length === 0) {
+          newsBox.appendChild(el('div', { cls: 'news-item', text: '無近期新聞' }));
+        } else {
+          news.forEach(n => {
+            const item = el('div', { cls: 'news-item' });
+            item.appendChild(aiBadgeEl(n.sentiment_label));
+            item.appendChild(document.createTextNode(' '));
+            const a = el('a', {
+              text: n.title || '(無標題)',
+              attrs: { href: safeUrl(n.link), target: '_blank', rel: 'noopener noreferrer' },
+            });
+            item.appendChild(a);
+            const time = n.hours_ago != null ? `${n.hours_ago} 小時前` : '近期';
+            const src = n.source ? ` · ${n.source}` : '';
+            item.appendChild(el('span', { cls: 'news-meta', text: ` ${time}${src}` }));
+            newsBox.appendChild(item);
+          });
+        }
+        card.appendChild(newsBox);
+        resBox.appendChild(card);
+      });
+
+      resBox.querySelectorAll('.toggle-news').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tgt = document.getElementById(btn.dataset.target);
+          tgt.classList.toggle('open');
+          btn.textContent = tgt.classList.contains('open') ? '收合新聞 ▴' : '展開新聞 ▾';
+        });
+      });
+    }
+
+    let _scanTimer = null;
+    function pollScan(taskId) {
+      if (_scanTimer) clearInterval(_scanTimer);
+      _scanTimer = setInterval(async () => {
+        try {
+          const r = await fetch(`/api/etf_holdings/stock_scan/status/${taskId}`);
+          const d = await r.json();
+          if (!d.ok) {
+            setStatus('查詢失敗：' + (d.msg || '未知錯誤'), 'var(--red)');
+            clearInterval(_scanTimer);
+            return;
+          }
+          const pct = d.total ? Math.round((d.done / d.total) * 100) : 0;
+          document.getElementById('scanBar').style.width = pct + '%';
+          const stepLabel = {
+            queued: '排隊中', load_holdings: '讀取持股',
+            fetch_news: '抓新聞', ai: 'AI 判讀', done: '完成',
+          }[d.step] || d.step;
+          document.getElementById('scanMeta').textContent = `[${stepLabel}] ${d.done || 0} / ${d.total || 10}`;
+
+          if (d.status === 'done' && d.result) {
+            clearInterval(_scanTimer);
+            document.getElementById('scanBarWrap').style.display = 'none';
+            renderScanResult(d.result);
+            document.getElementById('btnScan').disabled = false;
+            document.getElementById('btnScanForce').disabled = false;
+            setStatus('掃描完成', 'var(--green)');
+          } else if (d.status === 'error') {
+            clearInterval(_scanTimer);
+            document.getElementById('scanBarWrap').style.display = 'none';
+            const errBox = document.getElementById('scanResults');
+            errBox.replaceChildren(el('div', { cls: 'alert-warn', text: (d.error || '掃描失敗') }));
+            document.getElementById('btnScan').disabled = false;
+            document.getElementById('btnScanForce').disabled = false;
+          }
+        } catch (e) {
+          clearInterval(_scanTimer);
+          setStatus('輪詢失敗：' + e.message, 'var(--red)');
+          document.getElementById('scanBarWrap').style.display = 'none';
+          document.getElementById('btnScan').disabled = false;
+          document.getElementById('btnScanForce').disabled = false;
+        }
+      }, 1500);
+    }
+
+    async function startScan(force) {
+      const code = getCode();
+      const btn1 = document.getElementById('btnScan');
+      const btn2 = document.getElementById('btnScanForce');
+      btn1.disabled = true; btn2.disabled = true;
+      document.getElementById('scanBarWrap').style.display = 'block';
+      document.getElementById('scanBar').style.width = '0%';
+      document.getElementById('scanMeta').textContent = '啟動中…';
+      document.getElementById('scanResults').innerHTML = '<div class="empty">掃描中，請稍候…</div>';
+      try {
+        const r = await fetch(`/api/etf_holdings/stock_scan/${code}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ force_refresh: !!force }),
+        });
+        const d = await r.json();
+        if (d.cached && d.result) {
+          document.getElementById('scanBarWrap').style.display = 'none';
+          document.getElementById('scanMeta').textContent = '（30 分鐘內快取結果）';
+          renderScanResult(d.result);
+          btn1.disabled = false; btn2.disabled = false;
+          return;
+        }
+        if (d.task_id) {
+          pollScan(d.task_id);
+        } else {
+          setStatus(d.msg || '啟動失敗', 'var(--red)');
+          btn1.disabled = false; btn2.disabled = false;
+        }
+      } catch (e) {
+        setStatus('請求失敗：' + e.message, 'var(--red)');
+        btn1.disabled = false; btn2.disabled = false;
+      }
+    }
+
+    async function tryLoadCachedScan() {
+      try {
+        const code = getCode();
+        const r = await fetch(`/api/etf_holdings/stock_scan/result/${code}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d.ok && d.result) {
+          document.getElementById('scanMeta').textContent = '（顯示先前掃描結果）';
+          renderScanResult(d.result);
+        }
+      } catch (e) {}
+    }
+
+    document.getElementById('btnScan').addEventListener('click', () => startScan(false));
+    document.getElementById('btnScanForce').addEventListener('click', () => startScan(true));
+    tryLoadCachedScan();
+
+    // ───── 自選個股 AI 掃描 ─────
+    // 沿用 ETF 掃描的 renderScanResult / DOM helpers，只是改寫入不同容器
+
+    async function loadStockOptionsDatalist() {
+      try {
+        const r = await fetch('/api/stocks');
+        if (!r.ok) return;
+        const arr = await r.json();
+        const dl = document.getElementById('stockOptions');
+        dl.replaceChildren();
+        (arr || []).forEach(s => {
+          const opt = document.createElement('option');
+          // value 顯示在輸入框，label 顯示在下拉建議列
+          opt.value = s.code;
+          opt.label = `${s.code} ${s.name}`;
+          dl.appendChild(opt);
+        });
+      } catch (e) {}
+    }
+
+    async function refreshAdhocQuota() {
+      try {
+        const r = await fetch('/api/stock_news_scan/quota');
+        const d = await r.json();
+        if (d.ok) {
+          document.getElementById('adhocQuota').textContent =
+            `今日剩餘 ${d.left} / ${d.cap}`;
+        }
+      } catch (e) {}
+    }
+
+    function renderAdhocResult(result) {
+      const sumBox = document.getElementById('adhocScanSummary');
+      const resBox = document.getElementById('adhocScanResults');
+      const s = result.summary || {};
+
+      sumBox.replaceChildren();
+      const mkStat = (label, val) => {
+        const d = el('div', { cls: 'stat' });
+        d.appendChild(document.createTextNode(label));
+        d.appendChild(el('b', { text: String(val) }));
+        return d;
+      };
+      sumBox.appendChild(mkStat('掃描時間：', result.scanned_at || '—'));
+      sumBox.appendChild(mkStat('利多 ', s.bullish || 0));
+      sumBox.appendChild(mkStat('中性 ', s.neutral || 0));
+      sumBox.appendChild(mkStat('利空 ', s.bearish || 0));
+
+      resBox.replaceChildren();
+      if (s.ai_available === false) {
+        resBox.appendChild(el('div', {
+          cls: 'alert-warn',
+          text: '未偵測到 OPENAI_API_KEY，AI 判讀已退回到本地關鍵字評分。'
+        }));
+      }
+
+      const rows = result.results || [];
+      if (rows.length === 0) {
+        resBox.appendChild(el('div', { cls: 'empty', text: '無資料' }));
+        return;
+      }
+
+      rows.forEach((r, idx) => {
+        const ai = r.ai || {};
+        const conf = ai.confidence != null ? ` ${(ai.confidence * 100).toFixed(0)}%` : '';
+        const srcTag = ai.source === 'ai' ? 'AI' : ai.source === 'fallback' ? '本地' : '—';
+
+        const card = el('div', { cls: 'scan-card' });
+        const head = el('div', { cls: 'scan-head' });
+        head.appendChild(el('span', { cls: 'stk', text: `${r.stock_code || '—'} ${r.stock_name || ''}` }));
+        head.appendChild(aiBadgeEl(ai.label));
+        head.appendChild(el('span', {
+          cls: 'muted',
+          text: `${srcTag}${conf} · 新聞 ${r.news_count || 0} 則`
+        }));
+        card.appendChild(head);
+        card.appendChild(el('div', { cls: 'scan-reason', text: '理由：' + (ai.reason || '—') }));
+
+        const newsId = `adhoc-news-${idx}`;
+        const toggleBtn = el('button', {
+          cls: 'toggle-news',
+          attrs: { 'data-target': newsId, 'type': 'button' },
+          text: '展開新聞 ▾'
+        });
+        card.appendChild(toggleBtn);
+
+        const newsBox = el('div', { cls: 'news-list', attrs: { id: newsId } });
+        const news = r.news || [];
+        if (news.length === 0) {
+          newsBox.appendChild(el('div', { cls: 'news-item', text: '無近期新聞' }));
+        } else {
+          news.forEach(n => {
+            const item = el('div', { cls: 'news-item' });
+            item.appendChild(aiBadgeEl(n.sentiment_label));
+            item.appendChild(document.createTextNode(' '));
+            const a = el('a', {
+              text: n.title || '(無標題)',
+              attrs: { href: safeUrl(n.link), target: '_blank', rel: 'noopener noreferrer' },
+            });
+            item.appendChild(a);
+            const time = n.hours_ago != null ? `${n.hours_ago} 小時前` : '近期';
+            const src = n.source ? ` · ${n.source}` : '';
+            item.appendChild(el('span', { cls: 'news-meta', text: ` ${time}${src}` }));
+            newsBox.appendChild(item);
+          });
+        }
+        card.appendChild(newsBox);
+        resBox.appendChild(card);
+      });
+
+      resBox.querySelectorAll('.toggle-news').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tgt = document.getElementById(btn.dataset.target);
+          tgt.classList.toggle('open');
+          btn.textContent = tgt.classList.contains('open') ? '收合新聞 ▴' : '展開新聞 ▾';
+        });
+      });
+    }
+
+    let _adhocTimer = null;
+    function pollAdhocScan(taskId) {
+      if (_adhocTimer) clearInterval(_adhocTimer);
+      _adhocTimer = setInterval(async () => {
+        try {
+          const r = await fetch(`/api/etf_holdings/stock_scan/status/${taskId}`);
+          const d = await r.json();
+          if (!d.ok) {
+            document.getElementById('adhocScanMeta').textContent = '查詢失敗：' + (d.msg || '未知錯誤');
+            clearInterval(_adhocTimer);
+            return;
+          }
+          const pct = d.total ? Math.round((d.done / d.total) * 100) : 0;
+          document.getElementById('adhocScanBar').style.width = pct + '%';
+          const stepLabel = {
+            queued: '排隊中', fetch_news: '抓新聞', ai: 'AI 判讀', done: '完成',
+          }[d.step] || d.step;
+          document.getElementById('adhocScanMeta').textContent = `[${stepLabel}] ${d.done || 0} / ${d.total || 0}`;
+
+          if (d.status === 'done' && d.result) {
+            clearInterval(_adhocTimer);
+            document.getElementById('adhocScanBarWrap').style.display = 'none';
+            renderAdhocResult(d.result);
+            document.getElementById('btnAdhocScan').disabled = false;
+            document.getElementById('btnAdhocScanForce').disabled = false;
+            refreshAdhocQuota();
+          } else if (d.status === 'error') {
+            clearInterval(_adhocTimer);
+            document.getElementById('adhocScanBarWrap').style.display = 'none';
+            const errBox = document.getElementById('adhocScanResults');
+            errBox.replaceChildren(el('div', { cls: 'alert-warn', text: (d.error || '掃描失敗') }));
+            document.getElementById('btnAdhocScan').disabled = false;
+            document.getElementById('btnAdhocScanForce').disabled = false;
+            refreshAdhocQuota();
+          }
+        } catch (e) {
+          clearInterval(_adhocTimer);
+          document.getElementById('adhocScanMeta').textContent = '輪詢失敗：' + e.message;
+          document.getElementById('adhocScanBarWrap').style.display = 'none';
+          document.getElementById('btnAdhocScan').disabled = false;
+          document.getElementById('btnAdhocScanForce').disabled = false;
+        }
+      }, 1500);
+    }
+
+    function collectAdhocInputs() {
+      const out = [];
+      for (let i = 1; i <= 5; i++) {
+        const v = (document.getElementById('adhocIn' + i).value || '').trim();
+        if (v) out.push(v);
+      }
+      return out;
+    }
+
+    async function startAdhocScan(force) {
+      const inputs = collectAdhocInputs();
+      if (inputs.length === 0) {
+        alert('請至少輸入 1 檔股票代碼或名稱');
+        return;
+      }
+      const btn1 = document.getElementById('btnAdhocScan');
+      const btn2 = document.getElementById('btnAdhocScanForce');
+      btn1.disabled = true; btn2.disabled = true;
+      document.getElementById('adhocScanBarWrap').style.display = 'block';
+      document.getElementById('adhocScanBar').style.width = '0%';
+      document.getElementById('adhocScanMeta').textContent = '啟動中…';
+      document.getElementById('adhocScanResults').innerHTML = '<div class="empty">掃描中，請稍候…</div>';
+      try {
+        const r = await fetch('/api/stock_news_scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputs, force_refresh: !!force }),
+        });
+        const d = await r.json();
+        if (!d.ok) {
+          document.getElementById('adhocScanBarWrap').style.display = 'none';
+          document.getElementById('adhocScanMeta').textContent = d.msg || '啟動失敗';
+          document.getElementById('adhocScanResults').innerHTML =
+            '<div class="alert-warn">' + (d.msg || '啟動失敗') + '</div>';
+          btn1.disabled = false; btn2.disabled = false;
+          refreshAdhocQuota();
+          return;
+        }
+        if (d.cached && d.result) {
+          document.getElementById('adhocScanBarWrap').style.display = 'none';
+          document.getElementById('adhocScanMeta').textContent = '（30 分鐘內快取結果）';
+          renderAdhocResult(d.result);
+          btn1.disabled = false; btn2.disabled = false;
+          return;
+        }
+        if (d.task_id) {
+          if (d.resolved) {
+            const labels = d.resolved.map(x => `${x.stock_code || ''} ${x.stock_name || ''}`.trim());
+            document.getElementById('adhocScanMeta').textContent = `已解析 ${labels.length} 檔：${labels.join('、')}`;
+          }
+          pollAdhocScan(d.task_id);
+        } else {
+          document.getElementById('adhocScanMeta').textContent = d.msg || '啟動失敗';
+          btn1.disabled = false; btn2.disabled = false;
+        }
+      } catch (e) {
+        document.getElementById('adhocScanMeta').textContent = '請求失敗：' + e.message;
+        btn1.disabled = false; btn2.disabled = false;
+      }
+    }
+
+    document.getElementById('btnAdhocScan').addEventListener('click', () => startAdhocScan(false));
+    document.getElementById('btnAdhocScanForce').addEventListener('click', () => startAdhocScan(true));
+    loadStockOptionsDatalist();
+    refreshAdhocQuota();
+  </script>
+</body>
+</html>

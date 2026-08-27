@@ -1,0 +1,10 @@
+﻿Found 0 matching lines
+STILL: D:\project\astro\api\catchall.mjs:1788
+  } catch (e) {
+    ^^^^^
+
+SyntaxError: Unexpected token 'catch'
+    at checkSyntax (node:internal/main/check_syntax:72:5)
+
+Node.js v24.14.1
+

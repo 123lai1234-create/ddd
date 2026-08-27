@@ -1,0 +1,122 @@
+﻿node.exe : Vercel CLI 59.7.0 (Node.js 24.14.1)
+位於 線路:1 字元:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Vercel CLI 59.7.0 (Node.js 24.14.1):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Fetching deployment "donttalk-7rd0kcnvd-donttalk.vercel.app" in donttalk
+2026-08-27T02:56:12.774Z  Running build in Washington, D.C., USA (East) – iad1
+2026-08-27T02:56:12.774Z  Build machine configuration: 2 cores, 8 GB
+2026-08-27T02:56:12.970Z  Cloning github.com/123lai1234-create/ddd (Branch: 123lai1234-create, Commit: 8a760bb)
+2026-08-27T02:56:33.657Z  Warning: Failed to fetch one or more git submodules
+2026-08-27T02:56:33.658Z  Cloning completed: 20.686s
+2026-08-27T02:56:33.842Z  Found .vercelignore
+2026-08-27T02:56:33.930Z  Removed 70 ignored files defined in .vercelignore
+2026-08-27T02:56:33.930Z  /.secrets/_capture_stderr.log
+2026-08-27T02:56:33.931Z  /.secrets/_capture_stdout.log
+2026-08-27T02:56:33.931Z  /.secrets/_oauth_full.log
+2026-08-27T02:56:33.931Z  /.secrets/_oauth_now_stderr.log
+2026-08-27T02:56:33.931Z  /.secrets/_oauth_now_stdout.log
+2026-08-27T02:56:33.932Z  /.secrets/_oauth_now.log
+2026-08-27T02:56:33.932Z  /.secrets/authorize.log
+2026-08-27T02:56:33.932Z  /.secrets/oauth_full.log
+2026-08-27T02:56:33.932Z  /add-5269-out.log
+2026-08-27T02:56:33.932Z  /artifacts/pip_install.log
+2026-08-27T02:56:34.010Z  Restored build cache from previous deployment (9AM7nCpEnDcLh2F6xsRpo2n6gUQh)
+2026-08-27T02:56:35.824Z  Running "vercel build"
+2026-08-27T02:56:35.850Z  Vercel CLI 59.3.0
+2026-08-27T02:56:36.683Z  Warning: Detected "engines": { "node": ">=22.12.0" } in your `package.json` that will automat
+ically upgrade when a new major Node.js Version is released. Learn More: https://vercel.link/node-version
+2026-08-27T02:56:36.689Z  Running "install" command: `node scripts/fetch_lfs.mjs && npm install --prefer-offline --no-a
+udit`...
+2026-08-27T02:56:36.798Z  [fetch_lfs] found 78 LFS pointers to fetch
+2026-08-27T02:56:37.424Z  ........
+2026-08-27T02:56:37.424Z  [fetch_lfs] done: replaced=8 errors=0
+2026-08-27T02:56:38.395Z  
+2026-08-27T02:56:38.395Z  up to date in 853ms
+2026-08-27T02:56:38.395Z  
+2026-08-27T02:56:38.395Z  144 packages are looking for funding
+2026-08-27T02:56:38.395Z  run `npm fund` for details
+2026-08-27T02:56:38.397Z  npm warn allow-scripts 3 packages have install scripts not yet covered by allowScripts:
+2026-08-27T02:56:38.397Z  npm warn allow-scripts   esbuild@0.27.7 (postinstall: node install.js)
+2026-08-27T02:56:38.397Z  npm warn allow-scripts   sharp@0.34.5 (install: node install/check.js || npm run build)
+2026-08-27T02:56:38.397Z  npm warn allow-scripts   esbuild@0.25.12 (postinstall: node install.js)
+2026-08-27T02:56:38.397Z  npm warn allow-scripts
+2026-08-27T02:56:38.398Z  npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm a
+pprove-scripts <pkg>` to allow.
+2026-08-27T02:56:41.709Z  02:56:41 [content] Syncing content
+2026-08-27T02:56:41.727Z  02:56:41 [content] Synced content
+2026-08-27T02:56:41.729Z  02:56:41 [types] Generated 626ms
+2026-08-27T02:56:41.730Z  02:56:41 [build] output: "static"
+2026-08-27T02:56:41.730Z  02:56:41 [build] mode: "static"
+2026-08-27T02:56:41.731Z  02:56:41 [build] directory: /vercel/path1/dist/
+2026-08-27T02:56:41.731Z  02:56:41 [build] Collecting build info...
+2026-08-27T02:56:41.731Z  02:56:41 [build] ✓ Completed in 731ms.
+2026-08-27T02:56:41.741Z  02:56:41 [build] Building static entrypoints...
+2026-08-27T02:56:44.520Z  02:56:44 [vite] ✓ built in 2.72s
+2026-08-27T02:56:45.295Z  02:56:45 [vite] ✓ built in 773ms
+2026-08-27T02:56:45.303Z  02:56:45 [build] Rearranging server assets...
+2026-08-27T02:56:45.324Z  
+2026-08-27T02:56:45.325Z  generating static routes
+2026-08-27T02:56:45.333Z  02:56:45 [WARN] [build] Could not render `/blog` from route `/blog/[...slug]` as it conflicts
+ with higher priority route `/blog`.
+2026-08-27T02:56:45.334Z  02:56:45 [WARN] [build] Could not render `/blog` from route `/blog/[...slug]` as it conflicts
+ with higher priority route `/blog`.
+2026-08-27T02:56:45.334Z  02:56:45 [WARN] [build] Could not render `/blog` from route `/blog/[...slug]` as it conflicts
+ with higher priority route `/blog`.
+2026-08-27T02:56:45.346Z  02:56:45   ├─ /about/index.html (+13ms)
+2026-08-27T02:56:45.350Z  02:56:45   ├─ /about_me/index.html (+4ms)
+2026-08-27T02:56:45.354Z  02:56:45   ├─ /ai-demo/index.html (+4ms)
+2026-08-27T02:56:45.359Z  02:56:45   ├─ /blog/index.html (+5ms)
+2026-08-27T02:56:45.362Z  02:56:45   ├─ /demo/music/index.html (+3ms)
+2026-08-27T02:56:45.366Z  02:56:45   ├─ /diving/index.html (+4ms)
+2026-08-27T02:56:45.371Z  02:56:45   ├─ /firmware/index.html (+5ms)
+2026-08-27T02:56:45.376Z  02:56:45   ├─ /gene_ai/index.html (+4ms)
+2026-08-27T02:56:45.381Z  02:56:45   ├─ /gene-ai/index.html (+5ms)
+2026-08-27T02:56:45.386Z  02:56:45   ├─ /index-optimized/index.html (+5ms)
+2026-08-27T02:56:45.390Z  02:56:45   ├─ /ingest/index.html (+4ms)
+2026-08-27T02:56:45.394Z  02:56:45   ├─ /interactive-showcase/index.html (+4ms)
+2026-08-27T02:56:45.399Z  02:56:45   ├─ /interview/index.html (+4ms)
+2026-08-27T02:56:45.403Z  02:56:45   ├─ /interview_prep/index.html (+4ms)
+2026-08-27T02:56:45.407Z  02:56:45   ├─ /music/index.html (+4ms)
+2026-08-27T02:56:45.441Z  02:56:45   ├─ /ngs/index.html (+30ms)
+2026-08-27T02:56:45.445Z  02:56:45   ├─ /offline/index.html (+7ms)
+2026-08-27T02:56:45.451Z  02:56:45   ├─ /protein_mpnn/index.html (+5ms)
+2026-08-27T02:56:45.465Z  02:56:45   ├─ /protein-mpnn/index.html (+12ms)
+2026-08-27T02:56:45.470Z  02:56:45   ├─ /report/index.html (+8ms)
+2026-08-27T02:56:45.474Z  02:56:45   ├─ /seo-accessibility/index.html (+4ms)
+2026-08-27T02:56:45.479Z  02:56:45   ├─ /stem-cell/index.html (+5ms)
+2026-08-27T02:56:45.482Z  02:56:45   ├─ /stock/index.html (+3ms)
+2026-08-27T02:56:45.489Z  02:56:45   ├─ /thesis/index.html (+7ms)
+2026-08-27T02:56:45.493Z  02:56:45   ├─ /video-gen/index.html (+4ms)
+2026-08-27T02:56:45.497Z  02:56:45   ├─ /works/index.html (+4ms)
+2026-08-27T02:56:45.500Z  02:56:45   ├─ /xian-godot/index.html (+3ms)
+2026-08-27T02:56:45.504Z  02:56:45   ├─ /index.html (+4ms)
+2026-08-27T02:56:45.505Z  02:56:45 ✓ Completed in 202ms.
+2026-08-27T02:56:45.506Z  
+2026-08-27T02:56:45.508Z  02:56:45 [build] ✓ Completed in 3.77s.
+2026-08-27T02:56:45.509Z  02:56:45 [build] 28 page(s) built in 4.51s
+2026-08-27T02:56:45.509Z  02:56:45 [build] Complete!
+2026-08-27T02:56:45.593Z  Warning: Detected "engines": { "node": ">=22.12.0" } in your `package.json` that will automat
+ically upgrade when a new major Node.js Version is released. Learn More: https://vercel.link/node-version
+2026-08-27T02:56:45.613Z  Installing dependencies...
+2026-08-27T02:56:46.913Z  
+2026-08-27T02:56:46.913Z  up to date in 1s
+2026-08-27T02:56:46.914Z  
+2026-08-27T02:56:46.914Z  144 packages are looking for funding
+2026-08-27T02:56:46.914Z  run `npm fund` for details
+2026-08-27T02:56:46.915Z  npm warn allow-scripts 3 packages have install scripts not yet covered by allowScripts:
+2026-08-27T02:56:46.916Z  npm warn allow-scripts   esbuild@0.27.7 (postinstall: node install.js)
+2026-08-27T02:56:46.916Z  npm warn allow-scripts   sharp@0.34.5 (install: node install/check.js || npm run build)
+2026-08-27T02:56:46.916Z  npm warn allow-scripts   esbuild@0.25.12 (postinstall: node install.js)
+2026-08-27T02:56:46.917Z  npm warn allow-scripts
+2026-08-27T02:56:46.918Z  npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm a
+pprove-scripts <pkg>` to allow.
+2026-08-27T02:56:47.414Z  Warning: Detected "engines": { "node": ">=22.12.0" } in your `package.json` that will automat
+ically upgrade when a new major Node.js Version is released. Learn More: https://vercel.link/node-version
+2026-08-27T02:56:47.505Z  Build Completed in /vercel/output [11s]
+2026-08-27T02:56:47.530Z  Deploying outputs...
+2026-08-27T02:56:49.114Z  Build failed with 1 error:
+2026-08-27T02:56:49.114Z  vc-file-system:__vc__ns__/0/api/catchall.mjs:67:0: ERROR: Unexpected "}"
+status	● Error

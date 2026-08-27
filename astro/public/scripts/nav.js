@@ -136,7 +136,7 @@
     // ── SEO: canonical URL + JSON-LD structured data ──
     (function injectSEO() {
         var base = 'https://donttalk.vercel.app/';
-        var page = location.pathname.split('/').pop() || 'index.html';
+        var page = location.pathname.split('/').pop() || '';
         // Canonical
         var canon = document.createElement('link');
         canon.rel = 'canonical';

@@ -2343,6 +2343,35 @@ window.syncThesisStocks = syncThesisStocks;
 window.showAlgoStrategy = showAlgoStrategy;
 window.closeAlgoStrategy = closeAlgoStrategy;
 
+window.getThesisPyodideContext = function () {
+    const code = uiState.currentStockCode;
+    const cached = SERIES_CACHE.get(code);
+    const stock = getStockByCode(code);
+    let prices = [];
+    if (cached && cached.train && cached.test) {
+        prices = [...cached.train, ...cached.test];
+    } else if (stock && stock.synth) {
+        prices = [...stock.synth.train, ...stock.synth.test];
+    }
+    const num = (id, def) => {
+        const el = document.getElementById(id);
+        const v = el ? Number(el.value) : NaN;
+        return Number.isFinite(v) ? v : def;
+    };
+    return {
+        stock_code: code,
+        stock_name: stock ? stock.name : '',
+        prices,
+        pop: num('cfgPop', 50),
+        gens: num('cfgGens', 50),
+        cr: num('cfgCR', 0.8),
+        mr: num('cfgMR', 0.1),
+        m: num('strat-m', 8),
+        hold_days: num('strat-hold', 5),
+        target_profit: num('strat-target', 3.0),
+    };
+};
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialisePage);
 } else {
@@ -3030,6 +3059,8 @@ function escHtml(s) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+window.switchPrompt = switchPrompt;
+window.copyPrompt = copyPrompt;
 
 /* ═══════════════════════════════════════════════════════════════════════
    初始化新增模組

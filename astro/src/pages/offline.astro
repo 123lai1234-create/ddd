@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+const bodyHtml = "\n    <div class=\"icon\">📡</div>\n    <h1>目前離線</h1>\n    <p>請檢查您的網路連線。連線恢復後頁面將自動重新載入。</p>\n    <a href=\"/\" class=\"btn\">重新嘗試</a>\n    <script>\n        // Auto-reload when back online\n        window.addEventListener('online', () => location.reload());\n    </script>\n";
+const headInline = "";
+---
+<Base
+    title="離線 | 工程 × 生醫 × AI"
+    description=""
+    bodyPage=""
+    pageStyles={[]}
+    pageScripts={[]}
+    headInline={headInline}
+>
+    <Fragment set:html={bodyHtml} />
+</Base>

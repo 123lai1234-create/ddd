@@ -1,0 +1,11 @@
+﻿node.exe : Vercel CLI 59.7.0 (Node.js 24.14.1)
+位於 線路:1 字元:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Vercel CLI 59.7.0 (Node.js 24.14.1):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Resolving deployment "donttalk-fa3aj8kzu-donttalk.vercel.app"
+Fetching project "prj_vcjSm78uyB2LGkEMYJBEArC3c5It"
+Error: Logs are unavailable because deployment dpl_5qdxETuDq9KDn2JEERP41drfeqfw never reached READY and ended in ERROR.
+Run `vercel inspect https://donttalk-fa3aj8kzu-donttalk.vercel.app --scope donttalk` for deployment details.

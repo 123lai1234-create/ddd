@@ -155,6 +155,14 @@ function render(){
     rows.sort((a,b) => (b._sig.priority - a._sig.priority) || ((b.yoy_pct||-999) - (a.yoy_pct||-999)));
   }
 
+  // 分頁：每頁 50 筆
+  const PAGE_SIZE = 50;
+  if (!window._revenuePage) window._revenuePage = 1;
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  if (window._revenuePage > totalPages) window._revenuePage = totalPages;
+  const start = (window._revenuePage - 1) * PAGE_SIZE;
+  const pageRows = rows.slice(start, start + PAGE_SIZE);
+
   const c = document.getElementById("content");
   if (!rows.length){
     c.innerHTML = '<div class="empty">沒有命中的資料</div>';
@@ -171,7 +179,7 @@ function render(){
     + '</tr></thead><tbody>';
   // 手機卡片
   let cardsHtml = '<div class="mobile-cards">';
-  rows.forEach(r => {
+  pageRows.forEach(r => {
     const s = r._sig;
     const codeLink = `<a href="index.html?code=${encodeURIComponent(r.code)}" target="_blank" `
       + `style="color:#7ab8ff;text-decoration:none" title="開新分頁看 K 線">${r.code}</a>`;
@@ -203,7 +211,15 @@ function render(){
   });
   tableHtml += '</tbody></table>';
   cardsHtml += '</div>';
-  c.innerHTML = tableHtml + cardsHtml;
+  // 分頁 UI
+  const pagination = rows.length > PAGE_SIZE
+    ? `<div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:16px;font-size:13px;color:var(--txt2)">`
+      + `<button onclick="window._revenuePage=Math.max(1,window._revenuePage-1);render()" ${window._revenuePage===1?'disabled':''} style="background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:6px 12px;border-radius:6px;cursor:pointer">← 上一頁</button>`
+      + `<span>第 ${window._revenuePage} / ${totalPages} 頁 · 共 ${rows.length} 筆</span>`
+      + `<button onclick="window._revenuePage=Math.min(${totalPages},window._revenuePage+1);render()" ${window._revenuePage===totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:6px 12px;border-radius:6px;cursor:pointer">下一頁 →</button>`
+      + `</div>`
+    : '';
+  c.innerHTML = tableHtml + cardsHtml + pagination;
   // 綁定排序點擊（render 後重新綁，因為 innerHTML 整段重畫）
   c.querySelectorAll('th.sortable').forEach(th => {
     th.onclick = () => toggleSort(th.dataset.sort);

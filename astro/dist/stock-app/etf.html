@@ -1587,21 +1587,21 @@ function drawMacd(d) {
     priceFormat: { type: "price", precision: 4, minMove: 0.0001 },
     priceScaleId: "right", lastValueVisible: true, title: "Hist",
   });
-  macdHistSeries.setData(d.histogram);
+  try { macdHistSeries.setData(_safeArr(d.histogram)); } catch(e) { console.warn("[MACD] setData histogram failed:", e); }
 
   macdLineSeries = macdChart.addLineSeries({
     color: "#e0e0ff", lineWidth: 1,
     priceFormat: { type: "price", precision: 4, minMove: 0.0001 },
     priceScaleId: "right", lastValueVisible: true, title: "MACD",
   });
-  macdLineSeries.setData(d.macd_line);
+  try { macdLineSeries.setData(_safeArr(d.macd_line)); } catch(e) { console.warn("[MACD] setData macd_line failed:", e); }
 
   macdSigSeries = macdChart.addLineSeries({
     color: "#ffb300", lineWidth: 1,
     priceFormat: { type: "price", precision: 4, minMove: 0.0001 },
     priceScaleId: "right", lastValueVisible: true, title: "Signal",
   });
-  macdSigSeries.setData(d.signal_line);
+  try { macdSigSeries.setData(_safeArr(d.signal_line)); } catch(e) { console.warn("[MACD] setData signal_line failed:", e); }
 
   if (d.divergences && d.divergences.length > 0) {
     var mks = d.divergences.map(function(dv) {
@@ -1837,26 +1837,38 @@ function initChart() {
   function loadExdivSidebar() {
     fetch('/api/exdiv/upcoming?days=3')
       .then(r => r.json())
-      .then(data => {
-        if (!data || data.length === 0) {
+      .then(resp => {
+        // ★ 修正：API 回傳結構為 {ok, items} 或 {ok, data}，需統一取出陣列
+        //   也相容舊版直接回傳陣列的情況
+        let data = resp;
+        if (resp && typeof resp === 'object' && !Array.isArray(resp)) {
+          data = resp.items || resp.data || resp.results || resp.upcoming || [];
+        }
+        if (!Array.isArray(data) || data.length === 0) {
           document.getElementById('exdivSidebar').style.display = 'none';
           return;
         }
 
         let html = '';
         data.forEach(item => {
+          // ★ null 防護：避免 null.name / null.code 顯示字串 "null"
+          const code = item.code || '?';
+          const name = item.name || '(未提供名稱)';
+          const type = item.type || '權息';
+          const exDate = item.ex_date || item.exDate || '—';
+          const dividend = (item.dividend != null) ? item.dividend : '—';
           const urgentClass = item.days_left === 1 ? 'urgent' : '';
-          const daysText = item.days_left === 1 ? '⚠️ 明日' : 
-                           item.days_left === 2 ? '📅 後日' : 
+          const daysText = item.days_left === 1 ? '⚠️ 明日' :
+                           item.days_left === 2 ? '📅 後日' :
                            `📅 ${item.days_left}日後`;
 
           html += `
             <div class="exdiv-item ${urgentClass}">
-              <div class="exdiv-item-name">${item.name} (${item.code})</div>
+              <div class="exdiv-item-name">${name} (${code})</div>
               <div class="exdiv-item-detail">
-                ${daysText}除${item.type}<br>
-                除權息日：${item.ex_date}<br>
-                現金股利：${item.dividend} 元
+                ${daysText}除${type}<br>
+                除權息日：${exDate}<br>
+                現金股利：${dividend} 元
               </div>
             </div>`;
         });
@@ -1932,18 +1944,26 @@ function loadIndexChart(ticker) {
         '<span style="color:'+(isUp?"var(--red)":"var(--green)")+'">'
         +(isUp?"▲":"▼")+" "+Math.abs(lt.change).toFixed(2)
         +" ("+sign+lt.changePct+"%)</span>";
-      candleSeries.setData(data.candles);
-      volumeSeries.setData(data.volumes);
-      ma5Line.setData(data.ma.ma5);
-      ma10Line.setData([]);
-      ma20Line.setData(data.ma.ma20);
-      ma60Line.setData(data.ma.ma60);
-      ma240Line.setData([]);        // ★ 清空年線
-      channelHighLine.setData([]); // ★ 清空上通道
-      channelLowLine.setData([]);  // ★ 清空下通道
+      // ★ 2026-08-13 防呆：API 不回傳 markers/summary/gaps/dipSignal 等欄位時，全部兜底為空陣列/空物件
+      //   否則會拋 "Cannot read properties of undefined (reading 'map')"。
+      var _safeArr = function(a) { return Array.isArray(a) ? a : []; };
+      var _safeObj = function(o) { return (o && typeof o === 'object') ? o : {}; };
+      var _safeMa  = function(m) { return _safeObj(m); };
+      var maObj = _safeMa(data.ma);
+      var candles = _safeArr(data.candles);
+      var volumes = _safeArr(data.volumes);
+      try { candleSeries.setData(candles); } catch(e) { console.warn("[index] setData candles 失敗:", e); }
+      try { volumeSeries.setData(volumes); } catch(e) { console.warn("[index] setData volumes 失敗:", e); }
+      try { ma5Line.setData(_safeArr(maObj.ma5)); } catch(e) {}
+      try { ma10Line.setData([]); } catch(e) {}
+      try { ma20Line.setData(_safeArr(maObj.ma20)); } catch(e) {}
+      try { ma60Line.setData(_safeArr(maObj.ma60)); } catch(e) {}
+      try { ma240Line.setData([]); } catch(e) {}
+      try { channelHighLine.setData([]); } catch(e) {}
+      try { channelLowLine.setData([]); } catch(e) {}
 
-      _baseMarkers = data.markers || [];
-      _lastMacdData = data.macd || null;
+      _baseMarkers = _safeArr(data.markers);
+      _lastMacdData = _safeObj(data.macd);
       _mergeAndSetMarkers();
 
       candleSeries.applyOptions({ autoscaleInfoProvider: undefined });
@@ -2073,7 +2093,19 @@ function renderMarketGaps(data) {
 function loadStockList() {
   fetch("/api/stocks")
     .then(function(r){ return r.json(); })
-    .then(function(d){ stockListData=d; renderStockList(); })
+    .then(function(d){
+      // ★ 修正 BUG-3：後端 /api/stocks 回傳結構是 {ok, source, count, stocks: [...]}
+      //   之前直接 stockListData = d 會把整個物件塞進 stockListData，
+      //   後續 stockListData.length 變 undefined → for 迴圈不跑 → sidebar 空白，
+      //   並噴出 "data.forEach is not a function"（如果其他函式誤用）。
+      //   統一抽取出真正的陣列（同時相容舊版直接回陣列的格式）。
+      stockListData = (d && Array.isArray(d.stocks)) ? d.stocks
+                    : (Array.isArray(d) ? d
+                    : (d && Array.isArray(d.items) ? d.items
+                    : (d && Array.isArray(d.data) ? d.data
+                    : [])));
+      renderStockList();
+    })
     .catch(function(){
       document.getElementById("stockList").innerHTML='<div class="loading-text">載入失敗</div>';
     });

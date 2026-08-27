@@ -1,0 +1,4 @@
+[00:52:25] PKCE verifier written (86 chars)
+[00:52:25] AUTH URL ready (redirect_uri=http://localhost:8080)
+[00:52:25] Waiting for OAuth callback (max 5 min)...
+[00:57:25] TIMEOUT: no code captured within 5 min

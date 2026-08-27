@@ -1,0 +1,202 @@
+﻿version: 1
+plan:
+  name: 歌詞同步對照語音辨識
+  max_concurrency: 5
+  max_consecutive_failures: 3
+  auto_reject_retries: 1
+tasks:
+  - id: batch1
+    title: 批次1：軌001-013 歌詞同步對照
+    prompt: |
+      任務：為 D:\project\astro\public\music\ 下的 track_001.mp3 到 track_013.mp3（共13軌）進行歌詞同步對照。
+
+      輸出目錄：D:\project\astro\public\music\lyrics_sync_results\
+
+      請為每軌執行以下步驟：
+      1. 使用 mavis mcp call matrix matrix_transcribe_audio 工具對 mp3 音檔進行語音辨識
+         工具路徑：mavis mcp call matrix matrix_transcribe_audio
+         參數格式：{"audio": "D:\\project\\astro\\public\\music\\track_XXX.mp3"}
+         注意：音檔路徑要用雙反斜線
+      2. 讀取對應的 lyrics_XXX.txt（已含時間戳歌詞）
+      3. 比對語音辨識結果與歌詞文字，產生對照報告
+
+      每軌結果存成 JSON 檔：
+      D:\project\astro\public\music\lyrics_sync_results\track_XXX.json
+      格式：
+      {
+        "track": "XXX",
+        "transcription": "語音辨識結果文字",
+        "lyrics": "歌詞檔案內容",
+        "match_score": 0-100,
+        "notes": "對照說明"
+      }
+
+      完成後報告：共處理了哪些軌、順利完成幾軌、遇到問題的軌。
+    assigned_to: general
+    verify_skip_reason: 各軌結果以 JSON 寫入磁碟，最終合併任務會做完整性檢查；下游 merge 任務依賴此輸出作為真實來源。
+    max_retries: 2
+
+  - id: batch2
+    title: 批次2：軌014-026 歌詞同步對照
+    prompt: |
+      任務：為 D:\project\astro\public\music\ 下的 track_014.mp3 到 track_026.mp3（共13軌）進行歌詞同步對照。
+
+      輸出目錄：D:\project\astro\public\music\lyrics_sync_results\
+
+      請為每軌執行以下步驟：
+      1. 使用 mavis mcp call matrix matrix_transcribe_audio 工具對 mp3 音檔進行語音辨識
+         工具路徑：mavis mcp call matrix matrix_transcribe_audio
+         參數格式：{"audio": "D:\\project\\astro\\public\\music\\track_XXX.mp3"}
+         注意：音檔路徑要用雙反斜線
+      2. 讀取對應的 lyrics_XXX.txt（已含時間戳歌詞）
+      3. 比對語音辨識結果與歌詞文字，產生對照報告
+
+      每軌結果存成 JSON 檔：
+      D:\project\astro\public\music\lyrics_sync_results\track_XXX.json
+      格式：
+      {
+        "track": "XXX",
+        "transcription": "語音辨識結果文字",
+        "lyrics": "歌詞檔案內容",
+        "match_score": 0-100,
+        "notes": "對照說明"
+      }
+
+      完成後報告：共處理了哪些軌、順利完成幾軌、遇到問題的軌。
+    assigned_to: general
+    verify_skip_reason: 各軌結果以 JSON 寫入磁碟，最終合併任務會做完整性檢查；下游 merge 任務依賴此輸出作為真實來源。
+    max_retries: 2
+
+  - id: batch3
+    title: 批次3：軌027-039 歌詞同步對照
+    prompt: |
+      任務：為 D:\project\astro\public\music\ 下的 track_027.mp3 到 track_039.mp3（共13軌）進行歌詞同步對照。
+
+      輸出目錄：D:\project\astro\public\music\lyrics_sync_results\
+
+      請為每軌執行以下步驟：
+      1. 使用 mavis mcp call matrix matrix_transcribe_audio 工具對 mp3 音檔進行語音辨識
+         工具路徑：mavis mcp call matrix matrix_transcribe_audio
+         參數格式：{"audio": "D:\\project\\astro\\public\\music\\track_XXX.mp3"}
+         注意：音檔路徑要用雙反斜線
+      2. 讀取對應的 lyrics_XXX.txt（已含時間戳歌詞）
+      3. 比對語音辨識結果與歌詞文字，產生對照報告
+
+      每軌結果存成 JSON 檔：
+      D:\project\astro\public\music\lyrics_sync_results\track_XXX.json
+      格式：
+      {
+        "track": "XXX",
+        "transcription": "語音辨識結果文字",
+        "lyrics": "歌詞檔案內容",
+        "match_score": 0-100,
+        "notes": "對照說明"
+      }
+
+      完成後報告：共處理了哪些軌、順利完成幾軌、遇到問題的軌。
+    assigned_to: general
+    verify_skip_reason: 各軌結果以 JSON 寫入磁碟，最終合併任務會做完整性檢查；下游 merge 任務依賴此輸出作為真實來源。
+    max_retries: 2
+
+  - id: batch4
+    title: 批次4：軌040-052 歌詞同步對照
+    prompt: |
+      任務：為 D:\project\astro\public\music\ 下的 track_040.mp3 到 track_052.mp3（共13軌）進行歌詞同步對照。
+
+      輸出目錄：D:\project\astro\public\music\lyrics_sync_results\
+
+      請為每軌執行以下步驟：
+      1. 使用 mavis mcp call matrix matrix_transcribe_audio 工具對 mp3 音檔進行語音辨識
+         工具路徑：mavis mcp call matrix matrix_transcribe_audio
+         參數格式：{"audio": "D:\\project\\astro\\public\\music\\track_XXX.mp3"}
+         注意：音檔路徑要用雙反斜線
+      2. 讀取對應的 lyrics_XXX.txt（已含時間戳歌詞）
+      3. 比對語音辨識結果與歌詞文字，產生對照報告
+
+      每軌結果存成 JSON 檔：
+      D:\project\astro\public\music\lyrics_sync_results\track_XXX.json
+      格式：
+      {
+        "track": "XXX",
+        "transcription": "語音辨識結果文字",
+        "lyrics": "歌詞檔案內容",
+        "match_score": 0-100,
+        "notes": "對照說明"
+      }
+
+      完成後報告：共處理了哪些軌、順利完成幾軌、遇到問題的軌。
+    assigned_to: general
+    verify_skip_reason: 各軌結果以 JSON 寫入磁碟，最終合併任務會做完整性檢查；下游 merge 任務依賴此輸出作為真實來源。
+    max_retries: 2
+
+  - id: batch5
+    title: 批次5：軌053-065 歌詞同步對照
+    prompt: |
+      任務：為 D:\project\astro\public\music\ 下的 track_053.mp3 到 track_065.mp3（共13軌）進行歌詞同步對照。
+
+      輸出目錄：D:\project\astro\public\music\lyrics_sync_results\
+
+      請為每軌執行以下步驟：
+      1. 使用 mavis mcp call matrix matrix_transcribe_audio 工具對 mp3 音檔進行語音辨識
+         工具路徑：mavis mcp call matrix matrix_transcribe_audio
+         參數格式：{"audio": "D:\\project\\astro\\public\\music\\track_XXX.mp3"}
+         注意：音檔路徑要用雙反斜線
+      2. 讀取對應的 lyrics_XXX.txt（已含時間戳歌詞）
+      3. 比對語音辨識結果與歌詞文字，產生對照報告
+
+      每軌結果存成 JSON 檔：
+      D:\project\astro\public\music\lyrics_sync_results\track_XXX.json
+      格式：
+      {
+        "track": "XXX",
+        "transcription": "語音辨識結果文字",
+        "lyrics": "歌詞檔案內容",
+        "match_score": 0-100,
+        "notes": "對照說明"
+      }
+
+      完成後報告：共處理了哪些軌、順利完成幾軌、遇到問題的軌。
+    assigned_to: general
+    verify_skip_reason: 各軌結果以 JSON 寫入磁碟，最終合併任務會做完整性檢查；下游 merge 任務依賴此輸出作為真實來源。
+    max_retries: 2
+
+  - id: merge
+    title: 合併所有結果並生成最終報告
+    prompt: |
+      任務：合併所有歌詞同步對照結果，生成最終報告。
+
+      來源目錄：D:\project\astro\public\music\lyrics_sync_results\
+
+      步驟：
+      1. 讀取 D:\project\astro\public\music\lyrics_sync_results\ 下所有 track_XXX.json 檔案
+      2. 統計：
+         - 總軌數、成功處理數、失敗數
+         - 平均 match_score
+         - match_score >= 80 的軌數（高匹配）
+         - match_score < 50 的軌數（需關注）
+      3. 生成最終報告：
+         D:\project\astro\public\music\lyrics_sync_results\最終報告.md
+
+      報告格式：
+      # 歌詞同步對照最終報告
+
+      ## 統計摘要
+      - 總軌數：XX
+      - 成功處理：XX
+      - 失敗：XX
+      - 平均匹配分數：XX
+      - 高匹配（>=80）：XX 軌
+      - 需關注（<50）：XX 軌
+
+      ## 各軌結果列表
+      | 軌 | 匹配分 | 狀態 |
+      |----|--------|------|
+      | 001 | 85 | 高匹配 |
+
+      ## 問題軌分析（如有）
+      （說明 match_score < 50 的軌可能問題）
+
+      depends_on: [batch1, batch2, batch3, batch4, batch5]
+    assigned_to: general
+    verify_skip_reason: 合併任務直接讀取磁碟 JSON 檔案並生成 Markdown 報告，用戶可直接閱讀驗證。
+    max_retries: 1

@@ -1,0 +1,96 @@
+﻿=== startup/init lines ===
+1260: <button class="index-tab-btn" onclick="loadIndexChart('^TWII')">📈 加權</button>
+1261: <button class="index-tab-btn" onclick="loadIndexChart('^TWOII')">📈 櫃買</button>
+1456: document.addEventListener('DOMContentLoaded', function(){
+1509: onclick="reloadStockNews()">↻ 重新整理</span>
+1537: onclick="downloadStockList()">⬇ 匯出</button>
+1992: document.addEventListener("DOMContentLoaded", function () {
+2012: document.addEventListener("DOMContentLoaded", _clearSearchInput);
+2015: document.addEventListener("DOMContentLoaded", function() {
+2044: var POLL = 500;
+2079: setTimeout(_tick, POLL);
+2083: setTimeout(_tick, POLL);
+2085: document.addEventListener("DOMContentLoaded", function() { setTimeout(_tick, POLL); });
+2433: function loadStockEvents(code, days, stockData){
+2450: console.warn("loadStockEvents 失敗:", e);
+2470: var stockListData=[], currentCode="2330", currentDays=120;
+2733: function loadIndexChart(ticker) {
+2842: loadIndexInstitutional();
+3173: html += '<div class="mgp-index-name" style="cursor:pointer" onclick="loadIndexChart(\'' + ticker + '\')">'
+3232: function loadStockList() {
+3323: html += '<div class="stock-item" data-code="' + s.code + '" onclick="loadStock(\'' + s.code + '\')">'
+3351: function downloadStockList() {
+3832: if (currentCode === code) {
+3834: loadStock(stockListData[0].code);
+3976: loadStock(d.code);
+3995: function loadStock(code, days) {
+3996: currentCode=code;
+4052: loadStockEvents(code, currentDays, data);
+4111: loadStockNews(code, data.name, "");
+4120: loadStockNews(code, data.name, "");
+4127: loadStockIntro(code);      // ★ 新增：個股介紹
+4154: setTimeout(function() { loadStock(code, days); }, 1500);
+4213: // 個股報價失敗時 sidebar 保持 "-"，下次 loadStock() 觸發時會再更新。
+4850: html += '<tr style="cursor:pointer" onclick="hideScanModal();loadStock(\'' + r.code + '\')">'
+4991: function loadIndexInstitutional() {
+5376: function loadStockNews(code, name, signal) {
+5404: function reloadStockNews() {
+5405: if (_currentStockCode) loadStockNews(_currentStockCode,
+5715: if (currentMode==="index") loadIndexChart(currentIndexTicker);
+5716: else loadStock(currentCode, d);
+6341: function loadStockIntro(code) {
+8165: function _startMonitorIfNotRunning() {
+8220: _startMonitorIfNotRunning();
+8258: _startMonitorIfNotRunning();
+8269: _startMonitorIfNotRunning();
+8280: _startMonitorIfNotRunning();
+8334: _startMonitorIfNotRunning();
+8384: window.addEventListener("load", function(){
+8386: loadStockList();
+8397: loadStock(targetCode, currentDays);
+8401: loadStock(targetCode, currentDays);
+8406: loadStock(currentCode, currentDays);
+8453: loadStock(currentCode, currentDays);
+
+=== setMarkers / marker merge ===
+2325: var _baseMarkers=[], _eventMarkers=[], _eventsReqCode=null;
+2328: function _mergeAndSetMarkers(){
+2330: var ev = _showEventMarkers ? (_eventMarkers||[]) : [];
+2331: var all = (_baseMarkers||[]).concat(ev).concat(_macdDivMarkers||[]);
+2332: // ★ 2026-08-12 fix: 過濾掉 time 缺失或無效的 markers，避免 lightweight-charts setMarkers 拋 "Cannot read properties of undefined (reading 'year')"
+2339: try { candleSeries.setMarkers(all); } catch(e) { console.warn("setMarkers 失敗:", e); }
+2345: _mergeAndSetMarkers();
+2359: var base = (_baseMarkers||[]).map(function(m){ return Object.assign({}, m, {source:"trade"}); });
+2360: var evs  = (_eventMarkers||[]).map(function(m){ return Object.assign({}, m, {source:"event"}); });
+2434: _eventMarkers = [];
+2436: _mergeAndSetMarkers();  // 立即清空舊事件，避免殘留
+2443: _eventMarkers = d.events;
+2444: _mergeAndSetMarkers();
+2715: _baseMarkers = []; _eventMarkers = []; _eventsReqCode = null;
+2716: try { if (candleSeries) candleSeries.setMarkers([]); } catch(e) {}
+2797: _baseMarkers = []; _eventMarkers = []; _eventsReqCode = null;
+2800: // setMarkers 會讓 lightweight-charts 內部 markers.map() throw
+2803: try { candleSeries.setMarkers(indexData.markers || []); } catch(e) { console.warn("[index] setMarkers 失敗:", e); }
+4049: _baseMarkers = data.markers || [];
+4051: _mergeAndSetMarkers();
+7167: _mergeAndSetMarkers();
+7235: try { macdLineSeries.setMarkers(macdMks); } catch(e) {}
+7247: _mergeAndSetMarkers();
+
+=== series .update( calls ===
+
+=== price line calls ===
+2457: if (rollingLowLine){ try{ candleSeries.removePriceLine(rollingLowLine); }catch(e){} rollingLowLine=null; }
+2464: rollingLowLine = candleSeries.createPriceLine({
+4361: try { if (tpPriceLine) candleSeries.removePriceLine(tpPriceLine); } catch(e) {}
+4362: try { if (slPriceLine) candleSeries.removePriceLine(slPriceLine); } catch(e) {}
+4369: try { if (marginWarnLine) candleSeries.removePriceLine(marginWarnLine); } catch(e) {}
+4370: try { if (marginExitLine) candleSeries.removePriceLine(marginExitLine); } catch(e) {}
+4381: marginWarnLine = candleSeries.createPriceLine({
+4515: tpPriceLine = candleSeries.createPriceLine({
+4527: slPriceLine = candleSeries.createPriceLine({
+7303: var fibPriceLines = [];   // 存放 createPriceLine 物件
+7331: try { candleSeries.removePriceLine(fibPriceLines[i]); } catch(e) {}
+7360: * 在圖表上繪製 Fib 水平線（使用 createPriceLine）
+7391: // createPriceLine API [[0]](#__0)
+7392: var pl = candleSeries.createPriceLine({

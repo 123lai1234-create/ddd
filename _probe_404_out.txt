@@ -1,0 +1,25 @@
+﻿page status: 200 len: 320118
+=== probing 22 URLs (concurrency 6, timeout 12s) ===
+200           /stock-app/favicon.svg
+200           /favicon.svg
+200           /stock-app/sitemap.html
+200           /stock-app/warming.html
+200           /stock-app/etf.html
+200           /stock-app/exdiv.html
+200           https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js
+200           /stock-app/macro.html
+200           /api/stocks
+200           /stock-app/marker_history.html
+200           /api/stock/2330?days=120&strategy=original
+200           /stock-app/etf-filter.html
+200           /api/stock/2330/events?days=120
+404           /api/stock/2330/news?days=120
+200           /stock-app/signal-filter.html
+404           /api/stock/intro/2330
+404           /stock-app/${escapeHtml(it.link)}
+200           https://tw.stock.yahoo.com/institutional-trading
+200           /api/market_gaps?lookback=60&min_gap=0.3
+200           /api/position_history?days=120
+200           /api/intraday_check/2330
+200           /api/heatmap?scope=watchlist
+=== done ===

@@ -1,42 +1,6 @@
-<!DOCTYPE html><html lang="zh-TW"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><!--
-      Native IntersectionObserver fallback for `.reveal` fade-in.
-      Runs in addition to nav.js's local observer, so the page works
-      even if nav.js fails to load (network/CDN issue) — content stays
-      visible instead of getting stuck at opacity:0.
-    --><script>
-      (function() {
-        function bootReveal() {
-          var els = document.querySelectorAll('.reveal:not(.visible)');
-          if (!els.length) return;
-          if (typeof IntersectionObserver === 'undefined') {
-            els.forEach(function(el) { el.classList.add('visible'); });
-            return;
-          }
-          var io = new IntersectionObserver(function(entries) {
-            entries.forEach(function(e) {
-              if (e.isIntersecting) {
-                e.target.classList.add('visible');
-                io.unobserve(e.target);
-              }
-            });
-          }, { rootMargin: '0px 0px -8% 0px', threshold: 0.04 });
-          els.forEach(function(el) { io.observe(el); });
-          // Hard fallback: anything still hidden after 1.5s gets shown.
-          setTimeout(function() {
-            document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) {
-              el.classList.add('visible');
-            });
-          }, 1500);
-        }
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', bootReveal);
-        } else {
-          bootReveal();
-        }
-      })();
-    </script><title>PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化</title><meta name="description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><meta property="og:title" content="PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化"><meta property="og:description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://dontalk.vercel.app/og?t=PPTS%20%C3%97%20GAPPTS%20%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%20%C2%B7%20%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E4%BA%A4%E6%98%93%E7%AD%96%E7%95%A5%E6%9C%80%E4%BD%B3%E5%8C%96&#38;s=%E4%BE%9D%E7%A2%A9%E5%A3%AB%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%E7%9A%84%20PPTS%20%C3%97%20GAPPTS%20%E4%BA%92%E5%8B%95%E9%A0%81%EF%BC%8C%E8%81%9A%E7%84%A6%E5%85%83%E5%A4%A7%E5%8F%B0%E7%81%A3%2050%20%E7%9A%84%2048%20%E6%AA%94%E8%82%A1%E7%A5%A8%E3%80%81%E5%83%B9%E6%A0%BC%E5%8D%80%E9%96%93%E5%88%A9%E6%BD%A4%E5%88%86%E5%B8%83%E8%88%87%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E5%8F%83%E6%95%B8%E6%9C%80%E4%BD%B3%E5%8C%96%E3%80%82&#38;tag="><meta name="twitter:image" content="https://dontalk.vercel.app/og?t=PPTS%20%C3%97%20GAPPTS%20%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%20%C2%B7%20%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E4%BA%A4%E6%98%93%E7%AD%96%E7%95%A5%E6%9C%80%E4%BD%B3%E5%8C%96&#38;s=%E4%BE%9D%E7%A2%A9%E5%A3%AB%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%E7%9A%84%20PPTS%20%C3%97%20GAPPTS%20%E4%BA%92%E5%8B%95%E9%A0%81%EF%BC%8C%E8%81%9A%E7%84%A6%E5%85%83%E5%A4%A7%E5%8F%B0%E7%81%A3%2050%20%E7%9A%84%2048%20%E6%AA%94%E8%82%A1%E7%A5%A8%E3%80%81%E5%83%B9%E6%A0%BC%E5%8D%80%E9%96%93%E5%88%A9%E6%BD%A4%E5%88%86%E5%B8%83%E8%88%87%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E5%8F%83%E6%95%B8%E6%9C%80%E4%BD%B3%E5%8C%96%E3%80%82&#38;tag="><meta property="og:url" content="https://donttalk.vercel.app/thesis/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化"><meta name="twitter:description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><link rel="canonical" href="https://donttalk.vercel.app/thesis/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/thesis/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/thesis/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-5hce7sga> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><title>PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化</title><meta name="description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><meta property="og:title" content="PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化"><meta property="og:description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og?t=PPTS%20%C3%97%20GAPPTS%20%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%20%C2%B7%20%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E4%BA%A4%E6%98%93%E7%AD%96%E7%95%A5%E6%9C%80%E4%BD%B3%E5%8C%96&amp;s=%E4%BE%9D%E7%A2%A9%E5%A3%AB%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%E7%9A%84%20PPTS%20%C3%97%20GAPPTS%20%E4%BA%92%E5%8B%95%E9%A0%81%EF%BC%8C%E8%81%9A%E7%84%A6%E5%85%83%E5%A4%A7%E5%8F%B0%E7%81%A3%2050%20%E7%9A%84%2048%20%E6%AA%94%E8%82%A1%E7%A5%A8%E3%80%81%E5%83%B9%E6%A0%BC%E5%8D%80%E9%96%93%E5%88%A9%E6%BD%A4%E5%88%86%E5%B8%83%E8%88%87%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E5%8F%83%E6%95%B8%E6%9C%80%E4%BD%B3%E5%8C%96%E3%80%82&amp;tag="><meta name="twitter:image" content="https://donttalk.vercel.app/og?t=PPTS%20%C3%97%20GAPPTS%20%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%20%C2%B7%20%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E4%BA%A4%E6%98%93%E7%AD%96%E7%95%A5%E6%9C%80%E4%BD%B3%E5%8C%96&amp;s=%E4%BE%9D%E7%A2%A9%E5%A3%AB%E8%AB%96%E6%96%87%E9%87%8D%E5%BB%BA%E7%9A%84%20PPTS%20%C3%97%20GAPPTS%20%E4%BA%92%E5%8B%95%E9%A0%81%EF%BC%8C%E8%81%9A%E7%84%A6%E5%85%83%E5%A4%A7%E5%8F%B0%E7%81%A3%2050%20%E7%9A%84%2048%20%E6%AA%94%E8%82%A1%E7%A5%A8%E3%80%81%E5%83%B9%E6%A0%BC%E5%8D%80%E9%96%93%E5%88%A9%E6%BD%A4%E5%88%86%E5%B8%83%E8%88%87%E9%81%BA%E5%82%B3%E6%BC%94%E7%AE%97%E6%B3%95%E5%8F%83%E6%95%B8%E6%9C%80%E4%BD%B3%E5%8C%96%E3%80%82&amp;tag="><meta property="og:url" content="https://donttalk.vercel.app/thesis/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化"><meta name="twitter:description" content="依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。"><link rel="canonical" href="https://donttalk.vercel.app/thesis/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/thesis/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/thesis/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
       if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300;1,14..32,400;1,14..32,500;1,14..32,600;1,14..32,700;1,14..32,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css?v=03bbf2c2"><link rel="stylesheet" href="/styles/thesis.css?v=91abe6be"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    </script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/immersive-experience.css"><link rel="stylesheet" href="/styles/thesis.css"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
     if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
       import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
         Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
@@ -45,7 +9,38 @@
         });
       }).catch(() => {});
     }
-    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><script src="/scripts/immersive-experience.js" defer></script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://dontalk.vercel.app#person","name":"JT Lai","url":"https://dontalk.vercel.app","image":"https://dontalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://dontalk.vercel.app#website","url":"https://dontalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://dontalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://dontalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/thesis/#webpage","url":"https://donttalk.vercel.app/thesis/","name":"PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化","description":"依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。","inLanguage":"zh-TW","isPartOf":{"@id":"https://dontalk.vercel.app#website"},"about":{"@id":"https://dontalk.vercel.app#person"},"additionalType":"WebPage"}]}</script><link rel="stylesheet" href="/_astro/Base.BhTaoyI2.css"></head> <body data-page="thesis"> <div class="immersive-bg" id="immersive-bg" data-astro-cid-3guv64em> <video id="bg-video" class="bg-video" autoplay muted loop playsinline data-astro-cid-3guv64em> <source id="video-source" type="video/webm" data-astro-cid-3guv64em> </video> <div class="bg-overlay" data-astro-cid-3guv64em></div> </div>  <script type="module">class n{constructor(){this.container=document.getElementById("immersive-bg"),this.video=document.getElementById("bg-video"),this.particles=[],this.init()}init(){this.createParticles(),this.setupEventListeners(),this.setupVideo()}setupVideo(){if(!this.video)return;const a=["179f1b00-2727-47ec-81d3-591d8405c762_watermarked.webm","314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.webm","5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.webm","6b95a3b8-no-watermark_watermarked.webm","a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.webm","bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.webm","ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.webm","cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.webm"],t=a[Math.floor(Math.random()*a.length)],e=document.getElementById("video-source");e&&(e.src="/videos/"+t),this.video.play().catch(()=>{this.video.style.display="none"})}createParticles(){if(!this.container)return;const a=Math.min(80,Math.floor(window.innerWidth/15));for(let t=0;t<a;t++){const e=document.createElement("div");e.className="particle",e.style.left=Math.random()*100+"%",e.style.top=Math.random()*100+"%";const i=Math.random()*3+1;e.style.width=i+"px",e.style.height=i+"px",e.style.animationDuration=Math.random()*10+15+"s",e.style.animationDelay=Math.random()*5+"s",this.container.appendChild(e),this.particles.push(e)}}setupEventListeners(){window.addEventListener("resize",()=>this.handleResize())}handleResize(){Math.min(80,Math.floor(window.innerWidth/15))!==this.particles.length&&(this.particles.forEach(t=>t.remove()),this.particles=[],this.createParticles())}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",()=>{new n}):new n;</script>   
+    </script><script src="/scripts/theme-randomizer.js"></script><script src="/scripts/shader-bg.js" defer></script><script src="/scripts/admin-mode.js"></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><script src="/scripts/immersive-experience.js" defer></script><!-- Console noise filter (Immersive Translate / Chrome extension errors that don't impact our app) --><script>
+    (function() {
+      var isExtNoise = function(args) {
+        try {
+          var s = '';
+          for (var i = 0; i < args.length; i++) {
+            var a = args[i];
+            s += (a && a.stack) ? a.stack : String(a == null ? a : a);
+            if (s.length > 800) { s = s.slice(0, 800); break; }
+          }
+          return /content_main\.js|content_guard\.js|immersive[- ]?translate|chrome-extension:|moz-extension:/.test(s);
+        } catch (_) { return false; }
+      };
+      var origErr = console.error, origWarn = console.warn;
+      console.error = function() { if (isExtNoise(arguments)) return; return origErr.apply(console, arguments); };
+      console.warn  = function() { if (isExtNoise(arguments)) return; return origWarn.apply(console, arguments); };
+      window.addEventListener('error', function(e) {
+        var src = (e && e.filename) || '', msg = (e && e.message) || '';
+        if (/content_main\.js|content_guard\.js|chrome-extension:|moz-extension:/.test(src) ||
+            /classList|reading 'classList'/.test(msg)) {
+          e.stopImmediatePropagation(); e.preventDefault();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        var r = e && e.reason, s = r && (r.stack || r.message) || String(r);
+        if (/content_main\.js|content_guard\.js|chrome-extension:|moz-extension:/.test(s)) {
+          e.stopImmediatePropagation(); e.preventDefault();
+        }
+      });
+    })();
+    </script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://donttalk.vercel.app#person","name":"JT Lai","url":"https://donttalk.vercel.app","image":"https://donttalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://donttalk.vercel.app#website","url":"https://donttalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://donttalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://donttalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/thesis/#webpage","url":"https://donttalk.vercel.app/thesis/","name":"PPTS × GAPPTS 論文重建 · 遺傳演算法交易策略最佳化","description":"依碩士論文重建的 PPTS × GAPPTS 互動頁，聚焦元大台灣 50 的 48 檔股票、價格區間利潤分布與遺傳演算法參數最佳化。","inLanguage":"zh-TW","isPartOf":{"@id":"https://donttalk.vercel.app#website"},"about":{"@id":"https://donttalk.vercel.app#person"},"additionalType":"WebPage"}]}</script><style>.immersive-bg[data-astro-cid-3guv64em]{position:fixed;inset:0;z-index:-1;overflow:hidden;background:#08060e;pointer-events:none}.immersive-video[data-astro-cid-3guv64em]{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1;z-index:-1;image-rendering:high-quality}.vignette-overlay[data-astro-cid-3guv64em]{position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 60%,rgba(8,6,14,.15) 100%)}.watermark-cover[data-astro-cid-3guv64em]{display:none}.particle[data-astro-cid-3guv64em]{position:absolute;width:2px;height:2px;background:radial-gradient(circle,#fffc,#fff0);border-radius:50%;pointer-events:none;animation:float 20s infinite ease-in-out}@keyframes float{0%,to{transform:translateY(0) translate(0) scale(1);opacity:0}10%{opacity:1}50%{opacity:.8}90%{opacity:0}}@keyframes bounce-gentle{0%,to{transform:translateY(0)}50%{transform:translateY(-4px)}}#pf-btn[data-astro-cid-5hce7sga]:hover #search-avatar[data-astro-cid-5hce7sga]{animation:wiggle .5s ease-in-out}@keyframes wiggle{0%,to{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+</style></head> <body data-page="thesis" data-astro-cid-5hce7sga> <div class="immersive-bg" id="immersive-bg" data-astro-cid-3guv64em> <video class="immersive-video" id="bgVideo" autoplay muted loop playsinline data-astro-cid-3guv64em> <source id="bgSource" type="video/mp4" data-astro-cid-3guv64em> </video> <div class="vignette-overlay" data-astro-cid-3guv64em></div> <div class="content-scrim" data-astro-cid-3guv64em></div> <div class="watermark-cover" data-astro-cid-3guv64em></div> </div>  <script type="module">const o=["/bg1.mp4","/bg2.mp4","/bg3.mp4","/bg4.mp4","/bg5.mp4","/bg6.mp4","/bg7.mp4","/bg8.mp4","/bg9.mp4","/bg10.mp4","/bg11.mp4","/bg12.mp4","/bg13.mp4","/bg14.mp4","/bg15.mp4"];let a=Math.floor(Math.random()*o.length),r=a;function l(){for(;a===r&&o.length>1;)a=Math.floor(Math.random()*o.length);return r=a,o[a]}function m(){const i=document.getElementById("bgVideo"),e=document.getElementById("bgSource");if(!i||!e)return;const n=l();e.src=n,i.load()}class d{constructor(){this.container=document.getElementById("immersive-bg"),this.particles=[],this.init()}init(){this.createParticles(),this.setupEventListeners(),setInterval(()=>{const e=document.getElementById("bgVideo");e&&!e.paused&&m()},15e3)}createParticles(){if(!this.container)return;const e=Math.min(80,Math.floor(window.innerWidth/15));for(let n=0;n<e;n++){const t=document.createElement("div");t.className="particle",t.style.left=Math.random()*100+"%",t.style.top=Math.random()*100+"%";const s=Math.random()*3+1;t.style.width=s+"px",t.style.height=s+"px",t.style.animationDuration=Math.random()*10+15+"s",t.style.animationDelay=Math.random()*5+"s",this.container.appendChild(t),this.particles.push(t)}}setupEventListeners(){window.addEventListener("resize",()=>this.handleResize())}handleResize(){Math.min(80,Math.floor(window.innerWidth/15))!==this.particles.length&&(this.particles.forEach(n=>n.remove()),this.particles=[],this.createParticles())}}function c(){const i=document.getElementById("bgVideo"),e=document.getElementById("bgSource");if(i&&e){const n=Math.floor(Math.random()*o.length);e.src=o[n],i.load()}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",()=>{c(),new d}):(c(),new d);</script>  
     <div data-site-nav></div>
 
     <header class="hero">
@@ -84,172 +79,278 @@
         </div>
     </header>
 
-    <div class="section reveal">
-        <div class="section-inner">
-            <div class="section-label">研究方法</div>
-            <h2 class="section-title">PPTS × GAPPTS 研究流程</h2>
-            <p class="section-sub">論文把歷史價格資料拆成價格區間統計問題，再用遺傳演算法搜尋最佳區間數、持有天數、目標利潤與進場門檻，避免固定參數策略在不同個股與產業上失靈。</p>
-            <div class="algo-flow" style="margin-bottom:28px">
-                <div class="algo-step">
-                    <div class="icon">🗃</div>
-                    <div class="lbl">資料整理</div>
-                    <div class="sub">48 檔個股 · 2019–2024</div>
-                </div>
-                <div class="algo-arrow">→</div>
-                <div class="algo-step">
-                    <div class="icon">📏</div>
-                    <div class="lbl">PPTS 區間切分</div>
-                    <div class="sub">將價格切成 m 個等距區間</div>
-                </div>
-                <div class="algo-arrow">→</div>
-                <div class="algo-step">
-                    <div class="icon">📈</div>
-                    <div class="lbl">利潤機率分析</div>
-                    <div class="sub">平均利潤 + 達標機率</div>
-                </div>
-                <div class="algo-arrow">→</div>
-                <div class="algo-step">
-                    <div class="icon">🎯</div>
-                    <div class="lbl">輪盤選擇</div>
-                    <div class="sub">保留高適應度參數組</div>
-                </div>
-                <div class="algo-arrow">→</div>
-                <div class="algo-step">
-                    <div class="icon">🔀</div>
-                    <div class="lbl">交叉 / 突變</div>
-                    <div class="sub">CR 0.8 · MR 0.1</div>
-                </div>
-                <div class="algo-arrow">→</div>
-                <div class="algo-step">
-                    <div class="icon">✅</div>
-                    <div class="lbl">最佳策略</div>
-                    <div class="sub">輸出逐檔最佳參數</div>
-                </div>
-            </div>
-            <div class="grid-3">
-                <div class="card">
-                    <div class="card-title">染色體結構（29 bit）</div>
-                    <div id="chromTable"></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">適應度與評估指標</div>
-                    <div id="fitnessTable"></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">研究資料設計</div>
-                    <div style="font-size:.82rem;line-height:1.8;color:var(--muted)">
-                        <span style="color:var(--green);font-weight:600">母體：</span>元大台灣 50 成分股中的 48 檔股票<br>
-                        <span style="color:var(--green);font-weight:600">訓練集：</span>2019–2023 歷史資料<br>
-                        <span style="color:var(--green);font-weight:600">測試集：</span>2024 外樣本回測<br>
-                        <span style="color:var(--green);font-weight:600">系統：</span>Python、SQL Server、Gradio 介面<br>
-                        <span style="color:var(--green);font-weight:600">目標：</span>比較 GAPPTS、固定參數 PPTS 與 Buy &amp; Hold
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- ═══ Tab Navigation ═══ -->
+    <div class="tab-nav-wrap">
+        <nav class="tab-nav" id="thesisTabNav">
+            <button class="tab-btn active" data-tab="research">
+                <span class="tab-icon">📖</span>論文研究
+            </button>
+            <button class="tab-btn" data-tab="interactive">
+                <span class="tab-icon">⚡</span>互動體驗
+            </button>
+            <button class="tab-btn" data-tab="tools">
+                <span class="tab-icon">🛠</span>技術工具
+            </button>
+            <button class="tab-btn" data-tab="appendix">
+                <span class="tab-icon">📎</span>附錄資料
+            </button>
+        </nav>
     </div>
 
-    <div class="section reveal">
-        <div class="section-inner">
-            <div class="section-label">論文核心</div>
-            <h2 class="section-title">PPTS 價格區間利潤邏輯</h2>
-            <p class="section-sub">PPTS 先依買入價把歷史交易切進不同價格區間，統計每個區間的平均利潤與達標機率，再用 α 門檻判斷該區間屬於買入訊號還是保守區間。</p>
-            <div class="grid-2">
-                <div class="card">
-                    <div class="card-title">所選個股的價格區間平均利潤 / 達標機率</div>
-                    <div class="card-note">每個柱狀代表該價格區間的平均利潤，折線代表達成目標利潤的機率。綠色區間表示通過 α 門檻的買入候選。</div>
-                    <div class="chart-box"><canvas id="returnDistChart"></canvas></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">48 檔樣本績效分級</div>
-                    <div class="card-note">論文把樣本分成「有效果」「一般」「無效果」三類。互動頁保留同一個分級框架，方便直接對照研究結果。</div>
-                    <div class="chart-box"><canvas id="profitDistChart"></canvas></div>
-                </div>
-            </div>
-            <div class="grid-3" style="margin-top:14px">
-                <div class="card">
-                    <div class="card-title">所選個股最佳化參數</div>
-                    <div id="gen0Stats" style="margin-top:6px"></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">所選個股測試績效</div>
-                    <div id="finalStats" style="margin-top:6px"></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">論文整體觀察</div>
-                    <div id="impStats" style="margin-top:6px"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- ═══ Tab 1: 論文研究 ═══ -->
+    <div class="tab-panel active" id="panel-research">
 
-    <div class="section reveal">
-        <div class="section-inner">
-            <div class="section-label">互動體驗</div>
-            <h2 class="section-title">選股與 GAPPTS 參數產生 GAPPTS 策略</h2>
-            <p class="section-sub">你可以切換不同 ETF50 個股，重新執行 GAPPTS，觀察相同方法在不同產業與價格結構上會如何收斂到不同的參數組合。</p>
-            <div class="ga-cfg-panel">
-                <div class="ga-cfg-grid">
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="industryFilter">產業篩選</label>
-                        <select class="ga-cfg-input" id="industryFilter"></select>
-                        <div class="ga-cfg-hint">依論文的跨產業比較方式切換股票池</div>
+        <div class="section reveal">
+            <div class="section-inner">
+                <div class="section-label">研究方法</div>
+                <h2 class="section-title">PPTS × GAPPTS 研究流程</h2>
+                <p class="section-sub">論文把歷史價格資料拆成價格區間統計問題，再用遺傳演算法搜尋最佳區間數、持有天數、目標利潤與進場門檻，避免固定參數策略在不同個股與產業上失靈。</p>
+                <div class="algo-flow" style="margin-bottom:28px">
+                    <div class="algo-step">
+                        <div class="icon">🗃</div>
+                        <div class="lbl">資料整理</div>
+                        <div class="sub">48 檔個股 · 2019–2024</div>
                     </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="stockSelect">個股</label>
-                        <select class="ga-cfg-input" id="stockSelect"></select>
-                        <div class="ga-cfg-hint">逐檔查看 PPTS / GAPPTS 的參數與績效差異</div>
+                    <div class="algo-arrow">→</div>
+                    <div class="algo-step">
+                        <div class="icon">📏</div>
+                        <div class="lbl">PPTS 區間切分</div>
+                        <div class="sub">將價格切成 m 個等距區間</div>
                     </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="cfgPop">族群規模 (POP)</label>
-                        <input class="ga-cfg-input" id="cfgPop" type="number" value="50" min="20" max="120" step="10">
-                        <div class="ga-cfg-hint">論文建議值：50</div>
+                    <div class="algo-arrow">→</div>
+                    <div class="algo-step">
+                        <div class="icon">📈</div>
+                        <div class="lbl">利潤機率分析</div>
+                        <div class="sub">平均利潤 + 達標機率</div>
                     </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="cfgGens">最大世代數 (GENS)</label>
-                        <input class="ga-cfg-input" id="cfgGens" type="number" value="50" min="10" max="80" step="5">
-                        <div class="ga-cfg-hint">論文系統預設：50</div>
+                    <div class="algo-arrow">→</div>
+                    <div class="algo-step">
+                        <div class="icon">🎯</div>
+                        <div class="lbl">輪盤選擇</div>
+                        <div class="sub">保留高適應度參數組</div>
                     </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="cfgCR">交配率 (CR)</label>
-                        <input class="ga-cfg-input" id="cfgCR" type="number" value="0.80" min="0.30" max="1.00"
-                            step="0.05">
-                        <div class="ga-cfg-hint">輪盤選擇後的單點交叉機率</div>
+                    <div class="algo-arrow">→</div>
+                    <div class="algo-step">
+                        <div class="icon">🔀</div>
+                        <div class="lbl">交叉 / 突變</div>
+                        <div class="sub">CR 0.8 · MR 0.1</div>
                     </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="cfgMR">突變率 (MR)</label>
-                        <input class="ga-cfg-input" id="cfgMR" type="number" value="0.10" min="0.01" max="0.30"
-                            step="0.01">
-                        <div class="ga-cfg-hint">論文系統預設：0.10</div>
-                    </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="strat-m">價格區間數 m</label>
-                        <input class="ga-cfg-input" id="strat-m" type="number" value="8" min="2" max="20" step="1">
-                        <div class="ga-cfg-hint">PPTS 將價格切成 m 個等距區間</div>
-                    </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="strat-hold">持有天數</label>
-                        <input class="ga-cfg-input" id="strat-hold" type="number" value="5" min="1" max="30" step="1">
-                        <div class="ga-cfg-hint">買入後持有天數</div>
-                    </div>
-                    <div class="ga-cfg-field">
-                        <label class="ga-cfg-label" for="strat-target">目標利潤 (%)</label>
-                        <input class="ga-cfg-input" id="strat-target" type="number" value="3.0" min="0.5" max="20"
-                            step="0.5">
-                        <div class="ga-cfg-hint">區間達標機率的門檻</div>
+                    <div class="algo-arrow">→</div>
+                    <div class="algo-step">
+                        <div class="icon">✅</div>
+                        <div class="lbl">最佳策略</div>
+                        <div class="sub">輸出逐檔最佳參數</div>
                     </div>
                 </div>
-                <div class="stock-meta" id="selectedStockMeta"></div>
-                <div class="ga-cfg-actions">
-                    <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 產生 GAPPTS 策略</button>
-                    <button class="btn btn-ghost" onclick="resetGaCfg()">↩ 重置論文預設</button>
-                    <button class="btn btn-ghost" id="btnSyncStocks"
-                        style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步真實股價</button>
-                    <span class="ga-cfg-status" id="cfgStatus"></span>
+                <div class="grid-3">
+                    <div class="card">
+                        <div class="card-title">染色體結構（29 bit）</div>
+                        <div id="chromTable"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">適應度與評估指標</div>
+                        <div id="fitnessTable"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">研究資料設計</div>
+                        <div style="font-size:.82rem;line-height:1.8;color:var(--muted)">
+                            <span style="color:var(--green);font-weight:600">母體：</span>元大台灣 50 成分股中的 48 檔股票<br>
+                            <span style="color:var(--green);font-weight:600">訓練集：</span>2019–2023 歷史資料<br>
+                            <span style="color:var(--green);font-weight:600">測試集：</span>2024 外樣本回測<br>
+                            <span style="color:var(--green);font-weight:600">系統：</span>Python、SQL Server、Gradio 介面<br>
+                            <span style="color:var(--green);font-weight:600">目標：</span>比較 GAPPTS、固定參數 PPTS 與 Buy &amp;
+                            Hold
+                        </div>
+                    </div>
                 </div>
-            </div>            </div>
+            </div>
         </div>
-    </div>
+
+        <div class="section reveal">
+            <div class="section-inner">
+                <div class="section-label">論文核心</div>
+                <h2 class="section-title">PPTS 價格區間利潤邏輯</h2>
+                <p class="section-sub">PPTS 先依買入價把歷史交易切進不同價格區間，統計每個區間的平均利潤與達標機率，再用 α 門檻判斷該區間屬於買入訊號還是保守區間。</p>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">所選個股的價格區間平均利潤 / 達標機率</div>
+                        <div class="card-note">每個柱狀代表該價格區間的平均利潤，折線代表達成目標利潤的機率。綠色區間表示通過 α 門檻的買入候選。</div>
+                        <div class="chart-box"><canvas id="returnDistChart"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">48 檔樣本績效分級</div>
+                        <div class="card-note">論文把樣本分成「有效果」「一般」「無效果」三類。互動頁保留同一個分級框架，方便直接對照研究結果。</div>
+                        <div class="chart-box"><canvas id="profitDistChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="grid-3" style="margin-top:14px">
+                    <div class="card">
+                        <div class="card-title">所選個股最佳化參數</div>
+                        <div id="gen0Stats" style="margin-top:6px"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">所選個股測試績效</div>
+                        <div id="finalStats" style="margin-top:6px"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">論文整體觀察</div>
+                        <div id="impStats" style="margin-top:6px"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section reveal">
+            <div class="section-inner">
+                <div class="section-label">互動體驗</div>
+                <h2 class="section-title">選股與 GAPPTS 參數產生 GAPPTS 策略</h2>
+                <p class="section-sub">你可以切換不同 ETF50 個股，重新執行 GAPPTS，觀察相同方法在不同產業與價格結構上會如何收斂到不同的參數組合。</p>
+                <div class="ga-cfg-panel">
+                    <div class="ga-cfg-grid">
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="industryFilter">產業篩選</label>
+                            <select class="ga-cfg-input" id="industryFilter"></select>
+                            <div class="ga-cfg-hint">依論文的跨產業比較方式切換股票池</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="stockSelect">個股</label>
+                            <select class="ga-cfg-input" id="stockSelect"></select>
+                            <div class="ga-cfg-hint">逐檔查看 PPTS / GAPPTS 的參數與績效差異</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="cfgPop">族群規模 (POP)</label>
+                            <input class="ga-cfg-input" id="cfgPop" type="number" value="50" min="20" max="120"
+                                step="10">
+                            <div class="ga-cfg-hint">論文建議值：50</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="cfgGens">最大世代數 (GENS)</label>
+                            <input class="ga-cfg-input" id="cfgGens" type="number" value="50" min="10" max="80"
+                                step="5">
+                            <div class="ga-cfg-hint">論文系統預設：50</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="cfgCR">交配率 (CR)</label>
+                            <input class="ga-cfg-input" id="cfgCR" type="number" value="0.80" min="0.30" max="1.00"
+                                step="0.05">
+                            <div class="ga-cfg-hint">輪盤選擇後的單點交叉機率</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="cfgMR">突變率 (MR)</label>
+                            <input class="ga-cfg-input" id="cfgMR" type="number" value="0.10" min="0.01" max="0.30"
+                                step="0.01">
+                            <div class="ga-cfg-hint">論文系統預設：0.10</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="strat-m">價格區間數 m</label>
+                            <input class="ga-cfg-input" id="strat-m" type="number" value="8" min="2" max="20" step="1">
+                            <div class="ga-cfg-hint">PPTS 將價格切成 m 個等距區間</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="strat-hold">持有天數</label>
+                            <input class="ga-cfg-input" id="strat-hold" type="number" value="5" min="1" max="30"
+                                step="1">
+                            <div class="ga-cfg-hint">買入後持有天數</div>
+                        </div>
+                        <div class="ga-cfg-field">
+                            <label class="ga-cfg-label" for="strat-target">目標利潤 (%)</label>
+                            <input class="ga-cfg-input" id="strat-target" type="number" value="3.0" min="0.5" max="20"
+                                step="0.5">
+                            <div class="ga-cfg-hint">區間達標機率的門檻</div>
+                        </div>
+                    </div>
+                    <div class="stock-meta" id="selectedStockMeta"></div>
+                    <div class="ga-cfg-actions">
+                        <button class="btn btn-primary" id="btnRerun" onclick="rerunGA()">▶ 產生 GAPPTS 策略</button>
+                        <button class="btn btn-ghost" onclick="resetGaCfg()">↩ 重置論文預設</button>
+                        <button class="btn btn-ghost" id="btnSyncStocks"
+                            style="color:var(--teal);border-color:rgba(88,215,255,0.2)">📡 同步真實股價</button>
+                        <span class="ga-cfg-status" id="cfgStatus"></span>
+                    </div>
+                </div>
+
+                <div id="pyodide-runner-card" style="display:none">
+                    <textarea id="pyodide-code">import numpy as np
+
+# 變數由上方 GUI 自動注入：
+#   個股: stock_code, stock_name, prices (list[float])
+#   GA 參數: pop, gens, cr, mr
+#   策略參數: m, hold_days, target_profit
+
+prices = np.asarray(prices, dtype=float)
+p_min, p_max = float(prices.min()), float(prices.max())
+
+print(f"個股: {stock_code} · {stock_name}")
+print(f"價格序列: {len(prices)} 筆 · 範圍 {p_min:.1f}~{p_max:.1f}")
+print(f"GA: POP={pop} GENS={gens} CR={cr:.2f} MR={mr:.2f}")
+print(f"策略起點: m={m}  hold={hold_days}  target={target_profit:.1f}%\n")
+
+def fitness(m_, hold_, target_):
+    if hold_ >= len(prices) or m_ < 2:
+        return -1e9
+    width = (p_max - p_min) / m_
+    sum_avg = sum_prob = bins = 0
+    for i in range(m_):
+        lo = p_min + width * i
+        hi = lo + width
+        profs = []
+        for j in range(len(prices) - hold_):
+            if lo <= prices[j] < hi or (i == m_-1 and prices[j] == hi):
+                profs.append((prices[j+hold_] - prices[j]) / prices[j] * 100)
+        if profs:
+            sum_avg += float(np.mean(profs))
+            sum_prob += float(np.mean([p >= target_ for p in profs]))
+            bins += 1
+    return (sum_avg / bins) * (sum_prob / bins) if bins else -1e9
+
+# --- Mini GA: 以 GUI 參數為初始種子，用 POP/GENS/CR/MR 做隨機搜尋 ---
+rng = np.random.default_rng(42)
+best = (m, hold_days, target_profit, fitness(m, hold_days, target_profit))
+print(f"初始 fitness = {best[3]:.3f}")
+for g in range(int(gens)):
+    if rng.random() < cr:  # crossover: 向 best 靠攏 + 混入新基因
+        m_ = int((best[0] + rng.integers(2, 21)) // 2)
+        hold_ = int((best[1] + rng.integers(1, 31)) // 2)
+        target_ = float((best[2] + rng.uniform(0.5, 20.0)) / 2)
+    else:  # mutation: 在 best 附近擾動
+        m_ = int(best[0] + rng.integers(-2, 3))
+        hold_ = int(best[1] + rng.integers(-2, 3))
+        target_ = float(best[2] + rng.normal(0, 1.0))
+    if rng.random() < mr:  # 額外突變
+        target_ += float(rng.normal(0, 2.0))
+    m_ = max(2, min(20, m_))
+    hold_ = max(1, min(30, hold_))
+    target_ = max(0.5, min(20.0, target_))
+    f = fitness(m_, hold_, target_)
+    if f > best[3]:
+        best = (m_, hold_, target_, f)
+
+print(f"\n最佳 ({gens} 代): m={best[0]}  hold={best[1]}  target={best[2]:.1f}%  fitness={best[3]:.3f}\n")
+
+# --- 依最佳參數畫出區間分布 ---
+bm, bh, bt = best[0], best[1], best[2]
+width = (p_max - p_min) / bm
+print(f"區間寬度: {width:.2f}，共 {bm} 個區間")
+for i in range(bm):
+    lo = p_min + width * i
+    hi = lo + width
+    profits = []
+    for j in range(len(prices) - bh):
+        if lo <= prices[j] < hi or (i == bm-1 and prices[j] == hi):
+            profits.append((prices[j+bh] - prices[j]) / prices[j] * 100)
+    if profits:
+        avg = float(np.mean(profits))
+        prob = float(np.mean([p >= bt for p in profits])) * 100
+        bar = "█" * int(min(abs(avg) * 4, 40))
+        sign = "+" if avg >= 0 else "-"
+        print(f"  [{lo:5.1f}~{hi:5.1f}] avg={sign}{abs(avg):.2f}% prob={prob:.0f}% {bar}")
+    else:
+        print(f"  [{lo:5.1f}~{hi:5.1f}] (無交易)")
+</textarea>
+                    <div id="pyodide-output"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="section reveal">
@@ -1287,309 +1388,87 @@
     <div data-site-footer></div>
 
     <button class="scroll-top" aria-label="返回頂部">↑</button>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script><script src="/scripts/thesis.js?v=c33b39e0"></script> <!-- ── Hide Vercel Toolbar (auto-injected when logged in to Vercel) ── --> <style>
-      vercel-toolbar { display: none !important; visibility: hidden !important; }
-    </style> <!-- ── AI Chat Widget (floating, bottom-left, hides on media pages) ── --> <button class="cw-btn" id="cw-btn" data-tip="AI 助手" data-cw-api="/api/chat" data-cw-hide-paths="/music,/video-gen,/interactive-showcase" aria-label="開啟 AI 助手">💬</button> <aside class="cw-panel" id="cw-panel" role="dialog" aria-label="AI 助手對話" aria-hidden="true"> <header class="cw-header"> <div> <div class="cw-title">AI 助手</div> <div class="cw-sub">問我任何關於這個網站的問題</div> </div> <button class="cw-close" id="cw-close" aria-label="關閉">×</button> </header> <div class="cw-msgs" id="cw-msgs"> <div class="cw-welcome" id="cw-welcome"> <p>嗨！我是你的 AI 助手 👋</p> <p style="margin: 8px 0 12px; font-size: .78rem">問我關於這個網站、音樂、基因、AI、或股票的任何問題：</p> <div id="cw-suggestions"></div> </div> </div> <form class="cw-input-row" id="cw-form" autocomplete="off"> <textarea class="cw-input" id="cw-input" placeholder="輸入訊息… (Enter 送出 / Shift+Enter 換行)" rows="1" maxlength="2000"></textarea> <button class="cw-send" id="cw-send" type="submit">送出</button> </form> </aside> <script>
-(function() {
-  'use strict';
-  if (window.__cw_loaded) return;
-  window.__cw_loaded = true;
 
-  // ── API URL resolution (hardcode Render to avoid SW-cache HTML issues) ─
-  const RENDER_URL = 'https://donttalk-chat-bot-xc4e.onrender.com';
-  // Prefer window.CHAT_BOT_API (set by Base.astro <head>) for local dev overrides;
-  // fall back to hardcoded Render on production where HTML may be SW-cached.
-  const CHAT_BOT_API = window.CHAT_BOT_API;
-  const resolvedApiUrl = (CHAT_BOT_API && CHAT_BOT_API.startsWith('http'))
-    ? CHAT_BOT_API
-    : RENDER_URL + '/chat';
-  console.log('[ChatWidget] resolvedApiUrl =', resolvedApiUrl);
+    <script src="scripts/thesis.js"></script>
+    <script>
+        (function () {
+            var nav = document.getElementById('thesisTabNav');
+            if (!nav) return;
+            nav.addEventListener('click', function (e) {
+                var btn = e.target.closest('.tab-btn');
+                if (!btn) return;
+                var tab = btn.dataset.tab;
+                nav.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                var map = {
+                    research: ['研究方法', '論文核心', '回測結果', '演算法模擬', '方法比較', '實證發現', '文獻對照', '技術指標補充', '衍生性商品延伸', '資源整理'],
+                    interactive: ['互動體驗'],
+                    tools: ['AI 輔助估值', '技術分析', '量化工具速查'],
+                    appendix: ['AI 分析工具', '課程複習']
+                };
+                var show = map[tab] || [];
+                document.querySelectorAll('.section').forEach(function (s) {
+                    var lbl = s.querySelector('.section-label');
+                    if (!lbl) return;
+                    var t = lbl.textContent.trim();
+                    s.style.display = show.some(function (x) { return t.indexOf(x) !== -1; }) ? 'block' : 'none';
+                });
+                var extra = {
+                    research: ['quant-ref', 'prompt-lib', 'course-recap', 'valuation-calc', 'tech-analysis', 'detailed-ta'],
+                    interactive: ['valuation-calc', 'tech-analysis', 'detailed-ta'],
+                    tools: ['quant-ref', 'prompt-lib'],
+                    appendix: ['course-recap', 'quant-ref']
+                };
+                var all = ['quant-ref', 'prompt-lib', 'course-recap', 'valuation-calc', 'tech-analysis', 'detailed-ta'];
+                var toShow = extra[tab] || [];
+                all.forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el) el.style.display = toShow.indexOf(id) !== -1 ? 'block' : 'none';
+                });
+            });
+        })();
+    </script>
+   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script><script src="/scripts/thesis.js"></script> <vercel-analytics data-props="{&quot;data-astro-cid-5hce7sga&quot;:true}" data-params="{}" data-pathname="/thesis/"></vercel-analytics> <script type="module">var v=()=>{window.va||(window.va=function(...i){window.vaq||(window.vaq=[]),window.vaq.push(i)})},w="@vercel/analytics",h="2.0.1";function f(){return typeof window<"u"}function l(){try{const e="production"}catch{}return"production"}function m(e="auto"){if(e==="auto"){window.vam=l();return}window.vam=e}function y(){return(f()?window.vam:l())||"production"}function d(){return y()==="development"}function b(e,i){if(!e||!i)return e;let n=e;try{const t=Object.entries(i);for(const[r,s]of t)if(!Array.isArray(s)){const o=u(s);o.test(n)&&(n=n.replace(o,`/[${r}]`))}for(const[r,s]of t)if(Array.isArray(s)){const o=u(s.join("/"));o.test(n)&&(n=n.replace(o,`/[...${r}]`))}return n}catch{return e}}function u(e){return new RegExp(`/${g(e)}(?=[/?#]|$)`)}function g(e){return e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function E(e){return e.scriptSrc?a(e.scriptSrc):d()?"https://va.vercel-scripts.com/v1/script.debug.js":e.basePath?a(`${e.basePath}/insights/script.js`):"/_vercel/insights/script.js"}function k(e,i){var n;let t=e;if(i)try{t={...(n=JSON.parse(i))==null?void 0:n.analytics,...e}}catch{}m(t.mode);const r={sdkn:w+(t.framework?`/${t.framework}`:""),sdkv:h};return t.disableAutoTrack&&(r.disableAutoTrack="1"),t.viewEndpoint&&(r.viewEndpoint=a(t.viewEndpoint)),t.eventEndpoint&&(r.eventEndpoint=a(t.eventEndpoint)),t.sessionEndpoint&&(r.sessionEndpoint=a(t.sessionEndpoint)),d()&&t.debug===!1&&(r.debug="false"),t.dsn&&(r.dsn=t.dsn),t.endpoint?r.endpoint=t.endpoint:t.basePath&&(r.endpoint=a(`${t.basePath}/insights`)),{beforeSend:t.beforeSend,src:E(t),dataset:r}}function a(e){return e.startsWith("http://")||e.startsWith("https://")||e.startsWith("/")?e:`/${e}`}function S(e={debug:!0},i){var n;if(!f())return;const{beforeSend:t,src:r,dataset:s}=k(e,i);if(v(),t&&((n=window.va)==null||n.call(window,"beforeSend",t)),document.head.querySelector(`script[src*="${r}"]`))return;const o=document.createElement("script");o.src=r;for(const[c,p]of Object.entries(s))o.dataset[c]=p;o.defer=!0,o.onerror=()=>{const c=d()?"Please check if any ad blockers are enabled and try again.":"Be sure to enable Web Analytics for your project and deploy again. See https://vercel.com/docs/analytics/quickstart for more information.";console.log(`[Vercel Web Analytics] Failed to load script from ${r}. ${c}`)},document.head.appendChild(o)}function $({route:e,path:i}){var n;(n=window.va)==null||n.call(window,"pageview",{route:e,path:i})}function A(){try{return}catch{}}function j(){try{return}catch{}}customElements.define("vercel-analytics",class extends HTMLElement{constructor(){super();try{const i=JSON.parse(this.dataset.props??"{}"),n=JSON.parse(this.dataset.params??"{}");S({...i,disableAutoTrack:!0,framework:"astro",basePath:A(),beforeSend:window.webAnalyticsBeforeSend},j());const t=this.dataset.pathname;$({route:b(t??"",n),path:t})}catch(i){throw new Error(`Failed to parse WebAnalytics properties: ${i}`)}}});</script> <!-- ── Search modal (Pagefind) ── --> <div id="pf-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:10vh" data-astro-cid-5hce7sga> <div style="background:var(--bg,#0d1117);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;width:min(640px,90vw);max-height:70vh;overflow:hidden;display:flex;flex-direction:column" data-astro-cid-5hce7sga> <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border,rgba(255,255,255,.08))" data-astro-cid-5hce7sga> <span style="color:var(--muted,#8b949e);font-size:1.1rem" data-astro-cid-5hce7sga>🔍</span> <input id="pf-input" placeholder="搜尋頁面內容…" autocomplete="off" spellcheck="false" style="flex:1;background:none;border:none;outline:none;font-size:1rem;color:var(--text,#e6edf3);font-family:inherit" data-astro-cid-5hce7sga> <kbd style="font-size:.75rem;color:var(--muted,#8b949e);border:1px solid var(--border,rgba(255,255,255,.12));border-radius:4px;padding:2px 6px" data-astro-cid-5hce7sga>Esc</kbd> </div> <div id="pf-results" style="overflow-y:auto;padding:8px 0;flex:1" data-astro-cid-5hce7sga></div> </div> </div> <!-- Search trigger button (bottom-right) - Q版人偶 --> <button id="pf-btn" title="搜尋 (Ctrl+K)" aria-label="搜尋" style="position:fixed;bottom:24px;right:24px;z-index:500;background:transparent;border:none;border-radius:50%;width:60px;height:60px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,filter .2s;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));overflow:visible" onmouseover="this.style.transform='scale(1.15)';this.style.filter='drop-shadow(0 8px 20px rgba(88,215,255,.4))'" onmouseout="this.style.transform='scale(1)';this.style.filter='drop-shadow(0 4px 12px rgba(0,0,0,.4))'" data-astro-cid-5hce7sga> <svg id="search-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="AI 助手" style="width:100%;height:100%;animation:bounce-gentle 3s ease-in-out infinite;display:block" data-astro-cid-5hce7sga> <defs data-astro-cid-5hce7sga> <linearGradient id="pfav-g" x1="0%" y1="0%" x2="100%" y2="100%" data-astro-cid-5hce7sga> <stop offset="0%" stop-color="#a78bfa" data-astro-cid-5hce7sga></stop> <stop offset="100%" stop-color="#22d3ee" data-astro-cid-5hce7sga></stop> </linearGradient> <radialGradient id="pfav-c" cx="50%" cy="50%" r="50%" data-astro-cid-5hce7sga> <stop offset="0%" stop-color="#fde68a" data-astro-cid-5hce7sga></stop> <stop offset="100%" stop-color="#fbbf24" data-astro-cid-5hce7sga></stop> </radialGradient> </defs> <!-- head --> <circle cx="50" cy="50" r="36" fill="url(#pfav-g)" stroke="#fff" stroke-width="2.5" stroke-opacity="0.9" data-astro-cid-5hce7sga></circle> <!-- eyes (closed-arc ^ ^) --> <path d="M 36 47 Q 40 41 44 47" stroke="#1a1a2e" stroke-width="2.8" fill="none" stroke-linecap="round" data-astro-cid-5hce7sga></path> <path d="M 56 47 Q 60 41 64 47" stroke="#1a1a2e" stroke-width="2.8" fill="none" stroke-linecap="round" data-astro-cid-5hce7sga></path> <!-- mouth --> <path d="M 44 58 Q 50 64 56 58" stroke="#1a1a2e" stroke-width="2.2" fill="none" stroke-linecap="round" data-astro-cid-5hce7sga></path> <!-- cheeks --> <ellipse cx="34" cy="56" rx="4" ry="2.5" fill="#fb7185" opacity="0.55" data-astro-cid-5hce7sga></ellipse> <ellipse cx="66" cy="56" rx="4" ry="2.5" fill="#fb7185" opacity="0.55" data-astro-cid-5hce7sga></ellipse> <!-- antenna --> <line x1="50" y1="14" x2="50" y2="8" stroke="#fff" stroke-width="2" stroke-linecap="round" data-astro-cid-5hce7sga></line> <circle cx="50" cy="6" r="3" fill="url(#pfav-c)" data-astro-cid-5hce7sga></circle> <!-- magnifying glass (held to the side) --> <circle cx="80" cy="78" r="10" fill="rgba(255,255,255,0.18)" stroke="#fff" stroke-width="3" data-astro-cid-5hce7sga></circle> <line x1="87" y1="85" x2="94" y2="92" stroke="#fff" stroke-width="4" stroke-linecap="round" data-astro-cid-5hce7sga></line> </svg> </button>  <script>
+    (function() {
+      const modal  = document.getElementById('pf-modal');
+      const input  = document.getElementById('pf-input');
+      const results= document.getElementById('pf-results');
+      const btn    = document.getElementById('pf-btn');
+      let pf = null, debounce = null;
 
-  const btn = document.getElementById('cw-btn');
-  if (!btn) return;
-  const apiUrl = btn.getAttribute('data-cw-api') || '/api/chat';
-  const hideOnPaths = btn.getAttribute('data-cw-hide-paths') || '';
-  const hidePaths = hideOnPaths.split(',').map(function(s){return s.trim();}).filter(Boolean);
-
-  // ── Keep backend warm: ping /healthz when button is first interacted ─
-  // (Render Free tier sleeps after 15 min; this wakes it before the user sends a message)
-  let warmedUp = false;
-  function warmUp() {
-    if (warmedUp) return;
-    warmedUp = true;
-    // Always ping Render directly — never a relative path (avoids SW/HTML-cache mismatch)
-    fetch(RENDER_URL + '/healthz', { mode: 'cors' }).catch(function() {});
-  }
-  btn.addEventListener('mouseenter', warmUp, { once: true });
-  btn.addEventListener('focus', warmUp, { once: true });
-
-  const panel = document.getElementById('cw-panel');
-  const closeBtn = document.getElementById('cw-close');
-  const msgs = document.getElementById('cw-msgs');
-  const form = document.getElementById('cw-form');
-  const input = document.getElementById('cw-input');
-  const sendBtn = document.getElementById('cw-send');
-  const welcome = document.getElementById('cw-welcome');
-  const suggestions = document.getElementById('cw-suggestions');
-
-  if (!btn || !panel) return;
-
-  const STORAGE_KEY = 'cw.history.v1';
-  const MAX_HISTORY = 20;
-  const SUGGESTIONS = [
-    '這個網站是什麼？',
-    '介紹一下你的音樂作品',
-    '你有做哪些 AI 工具？',
-    '幫我查台積電股價',
-  ];
-
-  // ── Hide on certain paths + during media playback ─────────────
-  function shouldHide() {
-    const p = location.pathname;
-    if (hidePaths.some(h => p.startsWith(h))) return true;
-    // Hide if any <video> or <audio> is playing
-    const media = document.querySelectorAll('video, audio');
-    for (const m of media) {
-      if (!m.paused && m.readyState > 1) return true;
-    }
-    return false;
-  }
-  function applyHide() {
-    btn.setAttribute('data-hidden', shouldHide() ? '1' : '0');
-  }
-  applyHide();
-  // Re-check every 1.5s (cheap; covers SPA-ish nav + media start/stop)
-  setInterval(applyHide, 1500);
-  document.addEventListener('play', applyHide, true);
-  document.addEventListener('pause', applyHide, true);
-
-  // ── Open/close ────────────────────────────────────────────────
-  function open() {
-    panel.setAttribute('data-open', '1');
-    panel.setAttribute('aria-hidden', 'false');
-    if (welcome && suggestions && suggestions.children.length === 0) {
-      SUGGESTIONS.forEach(s => {
-        const c = document.createElement('span');
-        c.className = 'cw-chip';
-        c.textContent = s;
-        c.addEventListener('click', () => sendUser(s));
-        suggestions.appendChild(c);
-      });
-    }
-    setTimeout(() => input.focus(), 50);
-  }
-  function close() {
-    panel.removeAttribute('data-open');
-    panel.setAttribute('aria-hidden', 'true');
-  }
-  btn.addEventListener('click', () => {
-    panel.getAttribute('data-open') === '1' ? close() : open();
-  });
-  closeBtn.addEventListener('click', close);
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && panel.getAttribute('data-open') === '1') close();
-  });
-
-  // ── History persistence ───────────────────────────────────────
-  function loadHistory() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-    catch { return []; }
-  }
-  function saveHistory(h) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h.slice(-MAX_HISTORY))); }
-    catch {}
-  }
-  let history = loadHistory();
-  // render prior history
-  history.forEach(m => renderBubble(m.role, m.content, false));
-
-  // ── Markdown mini-renderer (very small, no deps) ──────────────
-  function escapeHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-  function md(s) {
-    if (!s) return '';
-    // citations [1] [2] → sup pill
-    s = s.replace(/\[(\d+)\]/g, (_, n) => `<span class="cw-cite">[${n}]</span>`);
-    // code blocks
-    s = s.replace(/```([\s\S]*?)```/g, (_, c) => `<pre>${escapeHtml(c.trim())}</pre>`);
-    // inline code
-    s = s.replace(/`([^`]+)`/g, function(_, c) { return '<code>' + escapeHtml(c) + '</code>'; });
-    // links [text](url)
-    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-    // internal links /path
-    s = s.replace(/(^|\s)(\/[a-z0-9_\-/]+)/gi, (m, pre, p) => `${pre}<a href="${p}">${p}</a>`);
-    // bold
-    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    // line breaks
-    s = s.replace(/\n/g, '<br>');
-    return s;
-  }
-
-  // ── Bubbles ───────────────────────────────────────────────────
-  let activeBotBubble = null; // currently streaming
-  function renderBubble(role, content, isHtml = false) {
-    const div = document.createElement('div');
-    div.className = 'cw-msg cw-msg-' + (role === 'user' ? 'user' : role === 'error' ? 'error' : 'bot');
-    if (role === 'typing') {
-      div.innerHTML = '<span class="cw-typing"></span><span class="cw-typing"></span><span class="cw-typing"></span>';
-    } else {
-      div.innerHTML = isHtml ? content : md(content);
-    }
-    msgs.appendChild(div);
-    msgs.scrollTop = msgs.scrollHeight;
-    return div;
-  }
-
-  // ── Send / stream ─────────────────────────────────────────────
-  input.addEventListener('input', () => {
-    input.style.height = 'auto';
-    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-  });
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
-  });
-  form.addEventListener('submit', e => { e.preventDefault(); sendUser(input.value); });
-
-  async function sendUser(text) {
-    text = (text || '').trim();
-    if (!text) return;
-    if (welcome && welcome.parentNode) welcome.parentNode.removeChild(welcome);
-
-    input.value = '';
-    input.style.height = 'auto';
-    renderBubble('user', text);
-    history.push({ role: 'user', content: text });
-
-    // typing indicator
-    const typing = renderBubble('typing');
-    sendBtn.disabled = true;
-
-    let botText = '';
-    let tools = [];
-    let ragSources = [];
-    // track the final bot bubble so we can append footnotes to it after finally
-    let finalBubble = null;
-
-    // Timeout guard: fe8.cn may return non-streaming JSON (no SSE) → reader hangs forever
-    let gotToken = false;
-    var timeoutId;
-
-    try {
-      console.log('[ChatWidget] sending fetch to', resolvedApiUrl);
-      // No abort timeout — Render Free tier cold-starts can take 30-60s.
-      // warmUp() on hover should wake it before the user sends a message.
-      const resp = await fetch(resolvedApiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
-      });
-      console.log('[ChatWidget] fetch done, status:', resp.status, 'body=', !!resp.body);
-      if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
-      const reader = resp.body.getReader();
-      const dec = new TextDecoder();
-      let buf = '';
-      gotToken = false;
-      timeoutId = setTimeout(function() { if (!gotToken) { console.log('[ChatWidget] TIMEOUT: no token in 30s'); reader.cancel(); } }, 30000);
-      // Process one complete SSE event from the front of buf
-      // Render backend uses CRLF (\r\n) line endings — must match or we'll never split events
-      function processBuf() {
-        let idx = buf.indexOf('\r\n\r\n');
-        if (idx === -1) return;
-        const raw = buf.slice(0, idx);
-        buf = buf.slice(idx + 4);
-        const evLine = raw.split('\r\n').find(function(l) { return l.startsWith('event:'); });
-        const dataLine = raw.split('\r\n').find(function(l) { return l.startsWith('data:'); });
-        if (!dataLine) return;
-        const evt = (evLine || '').replace(/^event:\s*/, '').trim() || 'message';
-        let data = {};
-        try { data = JSON.parse(dataLine.replace(/^data:\s*/, '')); } catch {}
-        if (evt === 'token' && data.content) {
-          gotToken = true;
-          clearTimeout(timeoutId);
-          if (typing.parentNode) typing.parentNode.removeChild(typing);
-          if (!activeBotBubble) activeBotBubble = renderBubble('bot', '');
-          botText += data.content;
-          activeBotBubble.innerHTML = md(botText);
-          msgs.scrollTop = msgs.scrollHeight;
-        } else if (evt === 'tool_call') {
-          tools.push({ name: data.name, args: data.arguments });
-        } else if (evt === 'tool_result') {
-          const last = tools[tools.length - 1];
-          if (last) last.result = data.result;
-        } else if (evt === 'rag') {
-          (data.chunks || []).forEach(function(c) { ragSources.push(c); });
-        } else if (evt === 'done') {
-          clearTimeout(timeoutId);
-          if (typing.parentNode) typing.parentNode.removeChild(typing);
-          if (!activeBotBubble) activeBotBubble = renderBubble('bot', md(botText));
-          finalBubble = activeBotBubble;
-        } else if (evt === 'error') {
-          if (typing.parentNode) typing.parentNode.removeChild(typing);
-          renderBubble('error', '⚠️ ' + (data.message || 'unknown error'));
-          finalBubble = null;
+      async function openModal() {
+        modal.style.display = 'flex';
+        input.focus();
+        if (!pf) {
+          try {
+            pf = await import('/pagefind/pagefind.js');
+            await pf.init();
+          } catch(e) { results.innerHTML = '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">搜尋索引尚未建立（需要先 build）。</p>'; pf = null; }
         }
       }
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          // Stream exhausted — process any trailing data still in buf (no \n\n needed)
-          buf = buf.trim();
-          if (buf) processBuf();
-          break;
-        }
-        buf += dec.decode(value, { stream: true });
-        // Drain all complete events in buf (CRLF-separated)
-        while (buf.indexOf('\r\n\r\n') !== -1) processBuf();
-      }
-    } catch (err) {
-      if (typing.parentNode) typing.parentNode.removeChild(typing);
-      const isAbort = err && (err.name === 'AbortError' || (err.message && err.message.includes('abort')));
-      renderBubble('error', isAbort
-        ? '⚠️ 連線逾時（後端服務喚醒中，請稍候後再試）'
-        : '⚠️ 連線失敗：' + (err && err.message ? err.message : String(err)));
-      finalBubble = null;
-    } finally {
-      clearTimeout(timeoutId);
-      sendBtn.disabled = false;
-      activeBotBubble = null;
-    }
+      function closeModal() { modal.style.display = 'none'; input.value = ''; results.innerHTML = ''; }
 
-    // append footnotes to the final bot bubble (runs after finally so we have a stable ref)
-    if (finalBubble) {
-      if (tools.length) {
-        const div = document.createElement('div');
-        div.className = 'cw-tools';
-        div.innerHTML = tools.map(function(t) { return '<span class="cw-tool-pill">🔧 ' + escapeHtml(t.name) + '</span>'; }).join('');
-        finalBubble.appendChild(div);
+      async function doSearch(q) {
+        if (!pf || !q.trim()) { results.innerHTML = ''; return; }
+        const sr = await pf.search(q);
+        const items = await Promise.all(sr.results.slice(0, 8).map(r => r.data()));
+        results.innerHTML = items.length
+          ? items.map(d => `<a href="${d.url}" style="display:block;padding:10px 18px;text-decoration:none;color:var(--text,#e6edf3);border-bottom:1px solid var(--border,rgba(255,255,255,.05));transition:background .1s" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
+              <div style="font-size:.9rem;font-weight:600;margin-bottom:3px">${d.meta?.title || d.url}</div>
+              <div style="font-size:.78rem;color:#8b949e">${d.excerpt}</div>
+            </a>`).join('')
+          : '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">找不到結果。</p>';
       }
-      if (ragSources.length) {
-        const div = document.createElement('div');
-        div.className = 'cw-rag-sources';
-        const uniq = [];
-        const seen = new Set();
-        ragSources.forEach(function(s) {
-          const key = s.url || s.title;
-          if (!seen.has(key)) { seen.add(key); uniq.push(s); }
-        });
-        div.innerHTML = '📚 引用：' + uniq.slice(0, 5).map(function(s) {
-          const url = s.url || '#';
-          const title = s.title || url;
-          return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(title) + '</a>';
-        }).join(' · ');
-        finalBubble.appendChild(div);
-      }
-    }
-    if (botText) history.push({ role: 'assistant', content: botText });
-    saveHistory(history);
-  }
-})();
-</script> <script>
-      // DEPLOY_MARKER: 2026-07-21T16:50:00-chat-render-v3
-      // Resolve Chat Widget API URL.
-      // In dev (localhost) → http://localhost:8765/chat (FastAPI backend)
-      // In prod → Render directly (Vercel proxy buffers SSE → broken streaming)
-      window.CHAT_BOT_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-        ? 'http://localhost:8765/chat'
-        : 'https://donttalk-chat-bot-xc4e.onrender.com/chat';
+
+      btn.addEventListener('click', openModal);
+      modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+      document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openModal(); }
+        if (e.key === 'Escape') closeModal();
+      });
+      input.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => doSearch(input.value), 250);
+      });
+    })();
     </script> </body> </html>

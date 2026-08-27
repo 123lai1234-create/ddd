@@ -1,0 +1,14 @@
+﻿[15:23:29] ===== Fugle API Key �۰ʨ��o�u�� v2 =====
+[15:23:29] ���n�G�s�����}�ҫ�нT�{�w�n�J Fugle
+[15:23:29] Launching Chromium (headed mode)...
+[15:23:29] [1/6] Navigating to https://developer.fugle.tw/docs/key/ ...
+[15:23:30]      Page title: ���_�ӽ� | Fugle Developer Docs
+[15:23:30]      Page URL: https://developer.fugle.tw/docs/key/
+[15:23:30]      Screenshot saved: D:\project\helpers\fugle-state-1-initial.png
+[15:23:30] [2/6] Waiting for login (looking for 'API Key �M��')...
+[15:23:30]       >>> �Цb�u�X�� Chrome �������n�J Fugle <<<
+[15:23:32]       �����w�m�� (hwnd=853812)
+[15:24:42] ERROR: TargetClosedError: Page.wait_for_selector: Target page, context or browser has been closed
+Call log:
+  - waiting for locator("text=API Key �M��") to be visible
+

@@ -1,0 +1,151 @@
+---
+---
+
+<!-- 纯 CSS/JS 虚拟人物组件 -->
+<div id="virtual-char" class="virtual-char" style="position:fixed;bottom:180px;right:24px;z-index:450;width:100px;height:140px;cursor:pointer"
+     onmouseover="this.querySelector('.char-body').style.transform='scale(1.05)'"
+     onmouseout="this.querySelector('.char-body').style.transform='scale(1)'">
+    <div class="char-body" style="position:relative;width:100%;height:100%;transition:transform .2s">
+        <!-- 头 -->
+        <div class="char-head" style="
+            position:absolute;top:0;left:50%;transform:translateX(-50%);
+            width:50px;height:50px;
+            background:linear-gradient(135deg,#e8d5c4 0%,#d4c4b0 100%);
+            border-radius:50%;
+            box-shadow:0 4px 12px rgba(0,0,0,.3);
+            overflow:hidden">
+            <!-- 眼睛 -->
+            <div class="char-eyes" style="position:absolute;top:18px;left:50%;transform:translateX(-50%);display:flex;gap:10px">
+                <div class="char-eye" style="width:10px;height:12px;background:#2d3436;border-radius:50%;animation:eye-blink 4s infinite">
+                    <div style="width:4px;height:4px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px"></div>
+                </div>
+                <div class="char-eye" style="width:10px;height:12px;background:#2d3436;border-radius:50%;animation:eye-blink 4s infinite 0.1s">
+                    <div style="width:4px;height:4px;background:#fff;border-radius:50%;position:absolute;top:2px;right:2px"></div>
+                </div>
+            </div>
+            <!-- 嘴巴 -->
+            <div class="char-mouth" style="
+                position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+                width:12px;height:6px;
+                background:#e17055;
+                border-radius:0 0 6px 6px;
+                animation:mouth-talk 0.8s infinite"></div>
+        </div>
+        <!-- 身体 -->
+        <div class="char-torso" style="
+            position:absolute;top:48px;left:50%;transform:translateX(-50%);
+            width:40px;height:45px;
+            background:linear-gradient(135deg,#74b9ff 0%,#0984e3 100%);
+            border-radius:8px 8px 12px 12px;
+            box-shadow:0 4px 12px rgba(0,0,0,.2)">
+            <!-- 手臂 -->
+            <div class="char-arms" style="position:absolute;top:5px;left:-12px;width:100%;display:flex;justify-content:space-between">
+                <div class="char-arm-left" style="width:12px;height:35px;background:linear-gradient(135deg,#74b9ff 0%,#0984e3 100%);border-radius:6px;transform-origin:top center;animation:arm-wave 2s ease-in-out infinite"></div>
+                <div class="char-arm-right" style="width:12px;height:35px;background:linear-gradient(135deg,#74b9ff 0%,#0984e3 100%);border-radius:6px;transform-origin:top center;animation:arm-wave 2s ease-in-out infinite 0.5s"></div>
+            </div>
+        </div>
+        <!-- 腿 -->
+        <div class="char-legs" style="position:absolute;top:90px;left:50%;transform:translateX(-50%);display:flex;gap:4px">
+            <div class="char-leg-left" style="width:14px;height:40px;background:linear-gradient(135deg,#636e72 0%,#2d3436 100%);border-radius:6px;animation:leg-step 1s ease-in-out infinite"></div>
+            <div class="char-leg-right" style="width:14px;height:40px;background:linear-gradient(135deg,#636e72 0%,#2d3436 100%);border-radius:6px;animation:leg-step 1s ease-in-out infinite 0.5s"></div>
+        </div>
+        <!-- 阴影 -->
+        <div style="position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:60px;height:10px;background:rgba(0,0,0,.2);border-radius:50%;filter:blur(3px)"></div>
+    </div>
+    <!-- 提示文字 -->
+    <div class="char-hint" style="position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:rgba(88,215,255,.9);color:#000;padding:4px 10px;border-radius:12px;font-size:.75rem;font-weight:600;white-space:nowrap;opacity:0;transition:opacity .3s;pointer-events:none">
+        嗨！點擊我聊聊
+    </div>
+</div>
+
+<style>
+@keyframes eye-blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.1); }
+}
+
+@keyframes mouth-talk {
+    0%, 100% { height: 6px; border-radius: 0 0 6px 6px; }
+    50% { height: 8px; border-radius: 0 0 8px 8px; }
+}
+
+@keyframes arm-wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-15deg); }
+    75% { transform: rotate(10deg); }
+}
+
+@keyframes leg-step {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
+}
+
+@keyframes char-idle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+@keyframes char-jump {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-20px) scale(1.1); }
+}
+
+#virtual-char:hover .char-hint {
+    opacity: 1;
+}
+
+#virtual-char:hover .char-body {
+    animation: char-jump 0.4s ease-out;
+}
+
+#virtual-char .char-body {
+    animation: char-idle 2s ease-in-out infinite;
+}
+</style>
+
+<script>
+(function() {
+    const char = document.getElementById('virtual-char');
+    if (!char) return;
+
+    // 随机动作
+    const actions = ['nod', 'wave', 'dance'];
+    let actionTimeout;
+
+    function doRandomAction() {
+        const action = actions[Math.floor(Math.random() * actions.length)];
+        const body = char.querySelector('.char-body');
+        
+        if (action === 'nod') {
+            body.style.animation = 'none';
+            body.offsetHeight; // 触发重绘
+            body.style.animation = 'avatar-nod 0.5s ease-in-out';
+        } else if (action === 'wave') {
+            const leftArm = char.querySelector('.char-arm-left');
+            if (leftArm) {
+                leftArm.style.animation = 'none';
+                leftArm.offsetHeight;
+                leftArm.style.animation = 'arm-wave 0.3s ease-in-out 3';
+            }
+        }
+        
+        actionTimeout = setTimeout(doRandomAction, 8000 + Math.random() * 7000);
+    }
+
+    // 点击时触发特殊动画
+    char.addEventListener('click', () => {
+        const body = char.querySelector('.char-body');
+        body.style.animation = 'none';
+        body.offsetHeight;
+        body.style.animation = 'avatar-jump 0.5s ease-out';
+        
+        // 清除定时器，重新计时
+        clearTimeout(actionTimeout);
+        actionTimeout = setTimeout(doRandomAction, 5000);
+    });
+
+    // 启动随机动作
+    setTimeout(doRandomAction, 3000);
+})();
+</script>

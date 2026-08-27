@@ -1,794 +1,1714 @@
-/* Music Player — extracted from src/pages/music.astro
- * Loads tracks from <script type="application/json" id="music-tracks"> injected by the .astro page.
- * Falls back to /music/playlist.json fetch if not present.
+/**
+ * 🎵 Music Player - 音樂播放平台核心邏輯
+ * 包含播放控制、播放清單、等化器、視覺化效果
  */
+
 (function () {
-  'use strict';
+    "use strict";
 
-  // ---- 讀取 tracks（由頁面以 application/json 注入，或 fallback fetch） ----
-  function readInlineTracks() {
-    const node = document.getElementById('music-tracks');
-    if (!node) return null;
-    try { return JSON.parse(node.textContent || '[]'); } catch (e) { return null; }
-  }
+    // ═══════════════════════════════════════════════════════════════════
+    // 範例音樂數據
+    // ═══════════════════════════════════════════════════════════════════
+    const SAMPLE_MUSIC = [
+        {
+            id: 1,
+            title: "晨曦中的鋼琴",
+            artist: "鋼琴詩人",
+            album: "黎明時分",
+            duration: 245,
+            url: "",
+            cover: "🎹",
+            lyrics: [
+                "陽光穿透窗簾的縫隙",
+                "喚醒沉睡的鋼琴鍵盤",
+                "每一個音符都是",
+                "新的一天開始的旋律"
+            ],
+            favorite: false
+        },
+        {
+            id: 2,
+            title: "城市節奏",
+            artist: "電子浪潮",
+            album: "都會夜曲",
+            duration: 312,
+            url: "",
+            cover: "🌆",
+            lyrics: [
+                "霓虹燈閃爍的街道",
+                "人群穿梭的地鐵",
+                "城市的心跳",
+                "在夜色中加速"
+            ],
+            favorite: true
+        },
+        {
+            id: 3,
+            title: "海洋的呼喚",
+            artist: "自然之音",
+            album: "海邊時光",
+            duration: 278,
+            url: "",
+            cover: "🌊",
+            lyrics: [
+                "海浪輕拍著沙灘",
+                "海鷗在天空翱翔",
+                "潮汐的韻律",
+                "是大海的呼吸"
+            ],
+            favorite: false
+        },
+        {
+            id: 4,
+            title: "森林小路",
+            artist: "環境音樂",
+            album: "自然之旅",
+            duration: 356,
+            url: "",
+            cover: "🌲",
+            lyrics: [
+                "陽光穿過樹葉縫隙",
+                "鳥鳴迴盪在林間",
+                "踩著落葉的小徑",
+                "通往內心的寧靜"
+            ],
+            favorite: false
+        },
+        {
+            id: 5,
+            title: "星空下的約定",
+            artist: "夢幻樂團",
+            album: "銀河紀元",
+            duration: 289,
+            url: "",
+            cover: "⭐",
+            lyrics: [
+                "星星點亮夜的帷幕",
+                "我們仰望同一片天空",
+                "在星河之下許下願望",
+                "永遠不分開"
+            ],
+            favorite: true
+        },
+        {
+            id: 6,
+            title: "咖啡館時光",
+            artist: "爵士融合",
+            album: "慵懶午後",
+            duration: 234,
+            url: "",
+            cover: "☕",
+            lyrics: [
+                "拿鐵的香氣瀰漫",
+                "爵士樂輕聲迴盪",
+                "在靠窗的位置",
+                "享受慢時光"
+            ],
+            favorite: false
+        },
+        {
+            id: 7,
+            title: "雨後的彩虹",
+            artist: "清新樂章",
+            album: "希望的顏色",
+            duration: 267,
+            url: "",
+            cover: "🌈",
+            lyrics: [
+                "暴風雨後的天空",
+                "總會出現彩虹",
+                "就像困難過後",
+                "迎來的是希望"
+            ],
+            favorite: false
+        },
+        {
+            id: 8,
+            title: "深夜圖書館",
+            artist: "古典鋼琴",
+            album: "書香歲月",
+            duration: 423,
+            url: "",
+            cover: "📚",
+            lyrics: [
+                "安靜的圖書館裡",
+                "只有翻頁的聲音",
+                "知識的海洋",
+                "在心靈深處流淌"
+            ],
+            favorite: true
+        }
+    ];
 
-  async function loadTracks() {
-    const inline = readInlineTracks();
-    if (Array.isArray(inline) && inline.length > 0) return inline;
-    try {
-      const res = await fetch('/music/playlist.json');
-      const data = await res.json();
-      return data.tracks || [];
-    } catch (e) { return []; }
-  }
+    // ═══════════════════════════════════════════════════════════════════
+    // 等化器預設
+    // ═══════════════════════════════════════════════════════════════════
+    const EQ_PRESETS = {
+        flat: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        pop: [1, 2, 4, 5, 4, 2, 1, 0, -1],
+        rock: [4, 3, 1, -1, -2, 0, 2, 4, 5],
+        jazz: [2, 1, -1, 0, 1, 3, 4, 3, 2],
+        classical: [3, 2, 1, 0, -1, -1, 0, 2, 3],
+        bass: [6, 5, 4, 2, 0, -1, -2, -2, -3]
+    };
 
-  class MusicPlayer {
-    constructor() {
-      this.tracks = [];
-      this.filteredTracks = [];
-      this.currentIndex = 0;
-      this.isPlaying = false;
-      this.currentLang = 'all';
-      this.currentStyle = 'all';
-      this.currentGender = 'all';
-      this.lyrics = [];
-      this.queue = [];
-      this.queueIdx = 0;
-      this.prevPressTime = 0;
-      this.isLiked = false;
-      this.isMuted = false;
-      this.savedVolume = 80;
-      this.playMode = 'sequence';
-      this.playbackSpeed = 1;
-      this.audio = new Audio();
-      this.audio.preload = 'auto';
-      this.audio.volume = this.savedVolume / 100;
-      this.likedSongs = JSON.parse(localStorage.getItem('likedSongs') || '[]');
-      this.repostedSongs = JSON.parse(localStorage.getItem('repostedSongs') || '[]');
-      this.playStats = JSON.parse(localStorage.getItem('playStats') || '{"total":0,"liked":0,"history":[]}');
-      this.lyricsOffset = parseFloat(localStorage.getItem('lyricsOffset') || '0');
-      this.init();
-    }
+    // ═══════════════════════════════════════════════════════════════════
+    // 播放器狀態
+    // ═══════════════════════════════════════════════════════════════════
+    let state = {
+        playlist: [],
+        currentIndex: -1,
+        isPlaying: false,
+        volume: 75,
+        isMuted: false,
+        shuffle: false,
+        repeat: "none", // none, one, all
+        karaoke: true, // 卡拉OK逐字漸亮模式（預設開）
+        audioContext: null,
+        analyser: null,
+        audioSource: null,
+        stats: {
+            totalPlayedTime: 0,
+            todayPlays: 0,
+            mostPlayed: null,
+            playCounts: {}
+        }
+    };
 
-    async init() {
-      this.tracks = await loadTracks();
-      this.trackListEl = document.getElementById('track-list');
+    // ═══════════════════════════════════════════════════════════════════
+    // DOM 元素緩存
+    // ═══════════════════════════════════════════════════════════════════
+    const elements = {};
 
-      if (this.tracks.length === 0) {
-        this.trackListEl.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 50px;">載入失敗：請檢查網路或聯繫管理員</p>';
-        return;
-      }
+    // ═══════════════════════════════════════════════════════════════════
+    // 本機音樂上傳 — IndexedDB 持久化（跨重整保留音檔）
+    // ═══════════════════════════════════════════════════════════════════
+    let _idb = null;
 
-      this.filteredTracks = [...this.tracks];
-      this.renderTrackList();
-      this.updateStats();
-      this.updateLyricsOffsetUI();
-
-      this.trackSearch = document.getElementById('track-search');
-      this.toastContainer = document.getElementById('toast-container');
-      this.barTrackName = document.getElementById('bar-track-name');
-      this.barTrackArtist = document.getElementById('bar-track-artist');
-      this.barPlay = document.getElementById('bar-play');
-      this.barPrev = document.getElementById('bar-prev');
-      this.barNext = document.getElementById('bar-next');
-      this.barProgress = document.getElementById('bar-progress');
-      this.barCurrentTime = document.getElementById('bar-current-time');
-      this.barDuration = document.getElementById('bar-duration');
-      this.barVolume = document.getElementById('bar-volume');
-      this.barVolume.style.setProperty('--volume', this.savedVolume + '%');
-      this.barLikeBtn = document.getElementById('bar-like-btn');
-      this.barAlbum = document.getElementById('bar-album');
-      this.lyricsContainer = document.getElementById('lyrics-container');
-      this.lyricsCount = document.getElementById('lyrics-count');
-      this.bindEvents();
-    }
-
-    updateStats() {
-      document.getElementById('total-tracks').textContent = this.tracks.length;
-      document.getElementById('liked-count').textContent = this.likedSongs.length;
-    }
-
-    bindEvents() {
-      this.trackSearch.addEventListener('input', () => this.applyFilters());
-      document.getElementById('lang-filter').addEventListener('change', (e) => { this.currentLang = e.target.value; this.applyFilters(); });
-      document.getElementById('style-filter').addEventListener('change', (e) => { this.currentStyle = e.target.value; this.applyFilters(); });
-      document.getElementById('gender-filter').addEventListener('change', (e) => { this.currentGender = e.target.value; this.applyFilters(); });
-
-      this.trackListEl.addEventListener('click', (e) => {
-        const row = e.target.closest('.track-row');
-        const addBtn = e.target.closest('.add-queue-btn');
-        const repostBtn = e.target.closest('.repost-btn');
-        const dlBtn = e.target.closest('.download-btn');
-        const mvBtn = e.target.closest('.mv-btn');
-
-        if (dlBtn) { e.stopPropagation(); this.downloadTrack(parseInt(dlBtn.dataset.idx)); return; }
-        if (repostBtn) { e.stopPropagation(); this.toggleRepost(parseInt(repostBtn.dataset.idx)); return; }
-        if (addBtn) { e.stopPropagation(); this.addToQueue(parseInt(addBtn.dataset.idx)); return; }
-        if (mvBtn) { e.stopPropagation(); this.openMVModal(parseInt(mvBtn.dataset.idx)); return; }
-        if (row) { const idx = parseInt(row.dataset.idx); this.queue = [idx]; this.queueIdx = 0; this.playTrack(idx); }
-      });
-
-      this.barPlay.addEventListener('click', () => this.togglePlay());
-      this.barLikeBtn.addEventListener('click', () => this.toggleLike());
-      document.getElementById('bar-share-btn')?.addEventListener('click', () => this.shareTrack());
-
-      this.barPrev.addEventListener('click', () => { const prevIdx = this.getPrevIdx(); if (prevIdx !== -1) this.playTrack(prevIdx); });
-      this.barNext.addEventListener('click', () => { const nextIdx = this.getNextIdx(); if (nextIdx !== -1) this.playTrack(nextIdx); });
-      this.barProgress.addEventListener('input', () => { if(this.audio.duration) this.audio.currentTime = (parseFloat(this.barProgress.value) / 100) * this.audio.duration; });
-      this.barVolume.addEventListener('input', () => { this.savedVolume = parseInt(this.barVolume.value); this.audio.volume = this.savedVolume / 100; this.isMuted = this.savedVolume === 0; this.barVolume.style.setProperty('--volume', this.savedVolume + '%'); });
-      document.getElementById('bar-vol-btn')?.addEventListener('click', () => this.toggleMute());
-
-      document.getElementById('bar-mode')?.addEventListener('click', (e) => {
-        const opt = e.target.closest('.mode-option');
-        if (opt) { this.playMode = opt.dataset.mode; this.updateModeUI(); this.showToast('模式：' + {'sequence':'順序播放','shuffle':'隨機播放','repeat':'全部循環','repeat-one':'單曲循環'}[this.playMode]); }
-      });
-
-      document.getElementById('bar-speed')?.addEventListener('click', (e) => {
-        const opt = e.target.closest('.speed-option');
-        if (opt) { this.playbackSpeed = parseFloat(opt.dataset.speed); this.audio.playbackRate = this.playbackSpeed; document.getElementById('speed-label').textContent = this.playbackSpeed + 'x'; this.updateSpeedUI(); }
-      });
-
-      document.getElementById('bar-eq-btn')?.addEventListener('click', () => {
-        document.getElementById('eq-panel').classList.toggle('open');
-      });
-
-      document.getElementById('eq-close')?.addEventListener('click', () => {
-        document.getElementById('eq-panel').classList.remove('open');
-      });
-
-      this.barAlbum.addEventListener('click', () => this.openPlayerModal());
-      document.getElementById('close-modal-btn')?.addEventListener('click', () => this.closePlayerModal());
-      document.getElementById('player-modal')?.addEventListener('click', (e) => { if(e.target.id === 'player-modal') this.closePlayerModal(); });
-      document.getElementById('modal-play')?.addEventListener('click', () => this.togglePlay());
-      document.getElementById('modal-prev')?.addEventListener('click', () => { const prevIdx = this.getPrevIdx(); if (prevIdx !== -1) this.playTrack(prevIdx); });
-      document.getElementById('modal-next')?.addEventListener('click', () => { const nextIdx = this.getNextIdx(); if (nextIdx !== -1) this.playTrack(nextIdx); });
-      document.getElementById('modal-progress')?.addEventListener('input', (e) => { if(this.audio.duration) this.audio.currentTime = (parseFloat(e.target.value) / 100) * this.audio.duration; });
-
-      document.getElementById('shortcuts-btn')?.addEventListener('click', () => this.toggleShortcuts());
-      document.getElementById('close-shortcuts')?.addEventListener('click', () => this.toggleShortcuts());
-      document.getElementById('shortcuts-overlay')?.addEventListener('click', () => this.toggleShortcuts());
-
-      document.getElementById('mobile-lyrics-toggle')?.addEventListener('click', () => {
-        document.querySelector('.lyrics-panel').classList.add('mobile-open');
-      });
-      document.getElementById('mobile-lyrics-close')?.addEventListener('click', () => {
-        document.querySelector('.lyrics-panel').classList.remove('mobile-open');
-      });
-
-      document.querySelectorAll('.translate-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          document.querySelectorAll('.translate-tab').forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          this.lyricsMode = tab.dataset.mode;
-          this.renderLyrics();
+    function idbOpen() {
+        return new Promise((resolve, reject) => {
+            if (_idb) return resolve(_idb);
+            if (!window.indexedDB) return reject(new Error("IndexedDB 不支援"));
+            const req = indexedDB.open("music-player-local", 1);
+            req.onupgradeneeded = () => {
+                const db = req.result;
+                if (!db.objectStoreNames.contains("audio")) {
+                    db.createObjectStore("audio", { keyPath: "id" });
+                }
+            };
+            req.onsuccess = () => { _idb = req.result; resolve(_idb); };
+            req.onerror = () => reject(req.error);
         });
-      });
+    }
 
-      // 歌詞偏移控制
-      document.getElementById('lyrics-offset-minus')?.addEventListener('click', () => {
-        this.lyricsOffset -= 0.5;
-        this.updateLyricsOffsetUI();
-      });
-      document.getElementById('lyrics-offset-plus')?.addEventListener('click', () => {
-        this.lyricsOffset += 0.5;
-        this.updateLyricsOffsetUI();
-      });
-      document.getElementById('lyrics-offset-reset')?.addEventListener('click', () => {
-        this.lyricsOffset = 0;
-        this.updateLyricsOffsetUI();
-      });
+    async function idbPut(id, blob) {
+        const db = await idbOpen();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction("audio", "readwrite");
+            tx.objectStore("audio").put({ id, blob });
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
 
-      this.audio.addEventListener('timeupdate', () => {
-        if (this.audio.duration && this.audio.currentTime > 0) {
-          const progress = (this.audio.currentTime / this.audio.duration) * 100;
-          this.barProgress.value = progress;
-          this.barProgress.style.setProperty('--progress', progress + '%');
-          this.barCurrentTime.textContent = this.formatTime(this.audio.currentTime);
-          const progressEl = document.querySelector('.track-row.playing .track-progress-bar');
-          if (progressEl) progressEl.style.width = progress + '%';
-          this.updateLyricsSync();
+    async function idbGet(id) {
+        const db = await idbOpen();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction("audio", "readonly");
+            const rq = tx.objectStore("audio").get(id);
+            rq.onsuccess = () => resolve(rq.result ? rq.result.blob : null);
+            rq.onerror = () => reject(rq.error);
+        });
+    }
 
-          const modalProgress = document.getElementById('modal-progress');
-          if (modalProgress) { modalProgress.value = progress; modalProgress.style.setProperty('--progress', progress + '%'); }
-          document.getElementById('modal-current-time').textContent = this.formatTime(this.audio.currentTime);
+    async function idbDelete(id) {
+        const db = await idbOpen();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction("audio", "readwrite");
+            tx.objectStore("audio").delete(id);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 初始化
+    // ═══════════════════════════════════════════════════════════════════
+    function init() {
+        cacheElements();
+        loadFromStorage();
+        bindEvents();
+        // 注入「上傳本機音樂」UI 到新增音樂 modal
+        injectUploadUI();
+        // 注入卡拉OK切換鈕到歌詞區
+        injectKaraokeToggle();
+        // 設定卡拉OK預設
+        setKaraokeMode(state.karaoke);
+        // 用真實的 manifest 啟動；失敗才退回 SAMPLE_MUSIC demo
+        loadTracksManifest().then(() => {
+            renderPlaylist();
+            updateStats();
+            // 重新接上上一回上傳、保存在 IndexedDB 的音檔（blob -> objectURL）
+            restoreLocalAudio();
+            // 預載所有 LRC（背景 fetch + parse，點歌時歌詞已經在 DOM）
+            preloadAllLyrics();
+        });
+        initAudioVisualizer();
+        loadStatsFromStorage();
+
+        // 設置預設音量
+        elements.audioPlayer.volume = state.volume / 100;
+        elements.volumeSlider.value = state.volume;
+        elements.volumeValue.textContent = state.volume + "%";
+
+        // rAF 持續更新歌詞（不靠 timeupdate，更可靠）
+        startLyricSyncLoop();
+    }
+
+    // rAF loop：每幀依 audio.currentTime 更新 active line
+    let _rafId = null;
+    function startLyricSyncLoop() {
+        if (_rafId) return;
+        function tick() {
+            if (state.isPlaying && state.currentIndex >= 0) {
+                const t = elements.audioPlayer.currentTime || 0;
+                updateLyrics(t);
+            }
+            _rafId = requestAnimationFrame(tick);
         }
-      });
+        _rafId = requestAnimationFrame(tick);
+    }
 
-      this.audio.addEventListener('loadedmetadata', () => {
-        this.barDuration.textContent = this.formatTime(this.audio.duration);
-        document.getElementById('modal-duration').textContent = this.formatTime(this.audio.duration);
-      });
-
-      this.audio.addEventListener('ended', () => {
-        if (this.playMode === 'repeat-one') {
-          this.audio.currentTime = 0;
-          this.audio.play();
-        } else {
-          const nextIdx = this.getNextIdx();
-          if (nextIdx !== -1) this.playTrack(nextIdx);
+    // 預載所有 LRC（背景 fetch + parse）
+    async function preloadAllLyrics() {
+        const tasks = [];
+        for (let i = 0; i < state.playlist.length; i++) {
+            const t = state.playlist[i];
+            if (t && t.lyricsUrl && !t.lyricsTimed && !t.lyrics) {
+                tasks.push(preloadLyric(t));
+            }
         }
-      });
-
-      this.audio.addEventListener('error', (e) => {
-        const err = this.audio.error;
-        let msg = '載入音訊失敗';
-        if (err) {
-          switch (err.code) {
-            case MediaError.MEDIA_ERR_ABORTED: msg = '音訊載入被中斷'; break;
-            case MediaError.MEDIA_ERR_NETWORK: msg = '網路錯誤，請檢查網路連線或確認開發伺服器正在運行'; break;
-            case MediaError.MEDIA_ERR_DECODE: msg = '音訊格式解碼失敗'; break;
-            case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: msg = '不支援的音訊格式或檔案不存在'; break;
-          }
+        if (tasks.length === 0) return;
+        // 平行但節流（一次 4 個）
+        const CONCURRENCY = 4;
+        for (let i = 0; i < tasks.length; i += CONCURRENCY) {
+            const batch = tasks.slice(i, i + CONCURRENCY);
+            await Promise.all(batch);
         }
-        console.error('[MusicPlayer] Audio error:', err?.code, err?.message, 'src:', this.audio.src);
-        this.showToast('⚠️ ' + msg + '（' + this.cleanTrackName(this.filteredTracks[this.currentIndex]?.name || '') + '）');
-      });
+        console.log(`[music] preloaded ${tasks.length} LRC files`);
+    }
 
-      this.audio.addEventListener('canplay', () => {
-        console.log('[MusicPlayer] Audio ready, duration:', this.audio.duration);
-      });
+    async function preloadLyric(track) {
+        if (!track.lyricsUrl) return;
+        try {
+            const r = await fetch(track.lyricsUrl, { cache: "force-cache" });
+            if (!r.ok) return;
+            const text = await r.text();
+            if (isLrcFormat(text)) {
+                track.lyricsTimed = parseLrc(text);
+            } else {
+                const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+                if (lines.length > 0) track.lyrics = lines;
+            }
+        } catch (_) { /* ignore */ }
+    }
 
-      this.audio.addEventListener('play', () => {
-        this.isPlaying = true;
-        this.renderTrackList();
-        document.getElementById('play-icon').style.display = 'none';
-        document.getElementById('pause-icon').style.display = '';
-        document.getElementById('modal-play-icon').style.display = 'none';
-        document.getElementById('modal-pause-icon').style.display = '';
-        this.barAlbum.classList.add('playing');
-        document.getElementById('modal-album')?.classList.add('playing');
-      });
-
-      this.audio.addEventListener('pause', () => {
-        this.isPlaying = false;
-        this.renderTrackList();
-        document.getElementById('play-icon').style.display = '';
-        document.getElementById('pause-icon').style.display = 'none';
-        document.getElementById('modal-play-icon').style.display = '';
-        document.getElementById('modal-pause-icon').style.display = 'none';
-        this.barAlbum.classList.remove('playing');
-        document.getElementById('modal-album')?.classList.remove('playing');
-      });
-
-      document.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-        switch(e.code) {
-          case 'Space': e.preventDefault(); this.togglePlay(); break;
-          case 'ArrowLeft': e.preventDefault(); this.audio.currentTime -= 10; break;
-          case 'ArrowRight': e.preventDefault(); this.audio.currentTime += 10; break;
-          case 'ArrowUp': this.barVolume.value = Math.min(100, parseInt(this.barVolume.value) + 10); this.audio.volume = parseInt(this.barVolume.value) / 100; this.barVolume.style.setProperty('--volume', this.barVolume.value + '%'); break;
-          case 'ArrowDown': this.barVolume.value = Math.max(0, parseInt(this.barVolume.value) - 10); this.audio.volume = parseInt(this.barVolume.value) / 100; this.barVolume.style.setProperty('--volume', this.barVolume.value + '%'); break;
-          case 'KeyM': this.toggleMute(); break;
-          case 'KeyS': this.playMode = 'shuffle'; this.updateModeUI(); this.showToast('隨機播放'); break;
-          case 'KeyL': this.toggleLike(); break;
-          case 'KeyJ': this.lyricsOffset -= 0.5; this.updateLyricsOffsetUI(); this.showToast('歌詞提前 0.5s'); break;
-          case 'KeyK': this.lyricsOffset += 0.5; this.updateLyricsOffsetUI(); this.showToast('歌詞延後 0.5s'); break;
+    // 從 /music/tracks.json 載入真實音樂清單
+    async function loadTracksManifest() {
+        try {
+            const r = await fetch("/music/tracks.json?v=" + Date.now(), { cache: "no-store" });
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            const data = await r.json();
+            if (data && Array.isArray(data.tracks) && data.tracks.length > 0) {
+                // 保留 localStorage 裡使用者新增的（標題 + url 都不在 manifest 才算 userAdded）
+                const userAdded = (state.playlist || []).filter(t =>
+                    !data.tracks.some(mt => mt.url === t.url && mt.title === t.title)
+                );
+                state.playlist = data.tracks.concat(userAdded);
+                return;
+            }
+        } catch (err) {
+            console.warn("[music] tracks.json 載入失敗，使用 SAMPLE_MUSIC：", err && err.message);
         }
-      });
+        // manifest 抓不到才退回 SAMPLE_MUSIC demo
+        if (!state.playlist || state.playlist.length === 0) {
+            state.playlist = SAMPLE_MUSIC.slice();
+        }
     }
 
-    applyFilters() {
-      const search = this.trackSearch.value.toLowerCase();
-      this.filteredTracks = this.tracks.filter(t => {
-        const langOk = this.currentLang === 'all' || t.lang === this.currentLang;
-        const styleOk = this.currentStyle === 'all' || t.style === this.currentStyle;
-        const genderOk = this.currentGender === 'all' || t.gender === this.currentGender;
-        const searchOk = !search || t.name.toLowerCase().includes(search) || (t.artist && t.artist.toLowerCase().includes(search));
-        return langOk && styleOk && genderOk && searchOk;
-      });
-      this.renderTrackList();
+    function cacheElements() {
+        elements.audioPlayer = document.getElementById("audio-player");
+        elements.playlist = document.getElementById("playlist");
+        elements.playBtn = document.getElementById("play-btn");
+        elements.prevBtn = document.getElementById("prev-btn");
+        elements.nextBtn = document.getElementById("next-btn");
+        elements.shuffleBtn = document.getElementById("shuffle-btn");
+        elements.repeatBtn = document.getElementById("repeat-btn");
+        elements.volumeBtn = document.getElementById("volume-btn");
+        elements.volumeSlider = document.getElementById("volume-slider");
+        elements.volumeValue = document.getElementById("volume-value");
+        elements.progressBar = document.getElementById("progress-bar");
+        elements.progressFill = document.getElementById("progress-fill");
+        elements.progressHandle = document.getElementById("progress-handle");
+        elements.timeCurrent = document.getElementById("time-current");
+        elements.timeTotal = document.getElementById("time-total");
+        elements.trackTitle = document.getElementById("track-title");
+        elements.trackArtist = document.getElementById("track-artist");
+        elements.albumArt = document.getElementById("album-art");
+        elements.albumPlaceholder = document.querySelector(".album-placeholder");
+        elements.searchInput = document.getElementById("search-input");
+        elements.addMusicBtn = document.getElementById("add-music-btn");
+        elements.addMusicModal = document.getElementById("add-music-modal");
+        elements.modalClose = document.getElementById("modal-close");
+        elements.addMusicConfirm = document.getElementById("add-music-confirm");
+        elements.eqSliders = document.querySelectorAll(".eq-slider");
+        elements.eqValues = document.querySelectorAll(".eq-value");
+        elements.presetBtns = document.querySelectorAll(".preset-btn");
+        elements.eqReset = document.getElementById("eq-reset");
+        elements.visualizerCanvas = document.getElementById("visualizer-canvas");
+        elements.audioVisualizer = document.getElementById("audio-visualizer");
+        elements.lyrics = document.getElementById("lyrics");
+        elements.qualitySelect = document.getElementById("quality-select");
+        elements.totalSongs = document.getElementById("total-songs");
+        elements.totalDuration = document.getElementById("total-duration");
+        elements.tabBtns = document.querySelectorAll(".tab-btn");
+        elements.playlistStats = document.querySelector(".playlist-stats");
     }
 
-    getGenderIcon(g) {
-      return g === 'F' ? '♀' : g === 'M' ? '♂' : '·';
-    }
-    getGenderClass(g) {
-      return g === 'F' ? 'gender-f' : g === 'M' ? 'gender-m' : 'gender-x';
+    function bindEvents() {
+        // 播放控制
+        elements.playBtn.addEventListener("click", togglePlay);
+        elements.prevBtn.addEventListener("click", prevTrack);
+        elements.nextBtn.addEventListener("click", nextTrack);
+        elements.shuffleBtn.addEventListener("click", toggleShuffle);
+        elements.repeatBtn.addEventListener("click", toggleRepeat);
+
+        // 進度條
+        elements.progressBar.addEventListener("click", seekTo);
+        elements.progressBar.addEventListener("mousedown", startSeek);
+
+        // 音量
+        elements.volumeBtn.addEventListener("click", toggleMute);
+        elements.volumeSlider.addEventListener("input", setVolume);
+
+        // 等化器
+        elements.eqSliders.forEach(slider => {
+            slider.addEventListener("input", updateEqualizer);
+        });
+        elements.presetBtns.forEach(btn => {
+            btn.addEventListener("click", applyPreset);
+        });
+        elements.eqReset.addEventListener("click", resetEqualizer);
+
+        // 搜尋
+        elements.searchInput.addEventListener("input", filterPlaylist);
+
+        // 新增音樂
+        elements.addMusicBtn.addEventListener("click", openAddMusicModal);
+        elements.modalClose.addEventListener("click", closeAddMusicModal);
+        elements.addMusicConfirm.addEventListener("click", addMusic);
+        elements.addMusicModal.addEventListener("click", e => {
+            if (e.target === elements.addMusicModal) closeAddMusicModal();
+        });
+
+        // 音頻事件
+        elements.audioPlayer.addEventListener("timeupdate", updateProgress);
+        elements.audioPlayer.addEventListener("loadedmetadata", onMetadataLoaded);
+        elements.audioPlayer.addEventListener("ended", onTrackEnded);
+        elements.audioPlayer.addEventListener("error", onAudioError);
+
+        // 鍵盤快捷鍵
+        document.addEventListener("keydown", handleKeyboard);
     }
 
-    renderTrackList() {
-      if (this.filteredTracks.length === 0) {
-        this.trackListEl.innerHTML = '<p style="color: var(--accent); text-align: center; padding: 50px;">沒有符合條件的歌曲</p>';
-        return;
-      }
-      const progress = this.audio.duration ? (this.audio.currentTime / this.audio.duration) * 100 : 0;
-      this.trackListEl.innerHTML = this.filteredTracks.map((track, i) => {
-        const isPlayingNow = i === this.currentIndex;
-        const isReposted = this.repostedSongs.includes(i);
-        const gIcon = this.getGenderIcon(track.gender);
-        const gCls = this.getGenderClass(track.gender);
-        return '<div class="track-row ' + (isPlayingNow ? 'playing' : '') + '" data-idx="' + i + '">' +
-          '<span class="track-num">' + (i + 1) + '</span>' +
-          '<div class="track-wave"><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div><div class="wave-bar-sm"></div></div>' +
-          '<div class="track-info"><p class="track-title">' + this.cleanTrackName(track.name) + ' <span class="srt-badge" title="此曲有 SRT 同步字幕">CC</span></p>' +
-          '<p class="track-artist-list"><span class="gender-badge ' + gCls + '" title="' + (track.gender === 'F' ? '女歌手' : track.gender === 'M' ? '男歌手' : '性別未標') + '">' + gIcon + '</span>' + (track.artist || '--') + '</p>' +
-          '<div class="track-progress"><div class="track-progress-bar" style="width:' + (isPlayingNow ? progress : 0) + '%"></div></div></div>' +
-          '<span class="track-album">' + (track.album || '--') + '</span>' +
-          '<span class="track-duration">' + (track.duration || '--:--') + '</span>' +
-          '<div class="track-actions">' +
-            '<button class="action-btn mv-btn" data-idx="' + i + '" title="觀看 MV">' +
-              '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>' +
-            '</button>' +
-            '<button class="action-btn repost-btn ' + (isReposted ? 'reposted' : '') + '" data-idx="' + i + '" title="轉發">' +
-              '<svg viewBox="0 0 24 24" fill="' + (isReposted ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>' +
-            '</button>' +
-            '<button class="action-btn download-btn" data-idx="' + i + '" title="下載">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-            '</button>' +
-            '<button class="action-btn add-queue-btn" data-idx="' + i + '" title="加入佇列">+</button>' +
-          '</div>' +
-        '</div>';
-      }).join('');
+    // ═══════════════════════════════════════════════════════════════════
+    // 上傳本機音樂 UI（注入「新增音樂」modal）
+    // ═══════════════════════════════════════════════════════════════════
+    function injectUploadUI() {
+        const modalBody = document.querySelector("#add-music-modal .modal-body");
+        if (!modalBody) return;
+
+        // 避免重複注入
+        if (modalBody.querySelector(".upload-zone")) return;
+
+        const zone = document.createElement("div");
+        zone.className = "upload-zone";
+        zone.innerHTML = `
+            <div class="upload-header">☁️ 上傳本機音樂</div>
+            <div class="upload-hint">點擊選擇或拖放音檔至此（mp3 / wav / ogg / m4a / webm）</div>
+            <input type="file" id="audio-file-input" accept="audio/*" multiple hidden>
+            <input type="file" id="lyrics-file-input" accept=".lrc,.txt,text/plain" hidden>
+            <div class="upload-actions">
+                <button type="button" class="upload-btn" id="upload-audio-btn">📁 選擇音檔</button>
+                <button type="button" class="upload-btn" id="upload-lyrics-btn">📄 上傳歌詞 (.lrc)</button>
+            </div>
+            <div class="upload-status" id="upload-status"></div>
+        `;
+        modalBody.insertBefore(zone, modalBody.firstChild);
+
+        const fileInput = zone.querySelector("#audio-file-input");
+        const lyricsInput = zone.querySelector("#lyrics-file-input");
+        const statusEl = zone.querySelector("#upload-status");
+        const audioBtn = zone.querySelector("#upload-audio-btn");
+        const lyricsBtn = zone.querySelector("#upload-lyrics-btn");
+
+        audioBtn.addEventListener("click", () => fileInput.click());
+        lyricsBtn.addEventListener("click", () => lyricsInput.click());
+
+        fileInput.addEventListener("change", () => {
+            if (fileInput.files && fileInput.files.length) {
+                handleUploadFiles(fileInput.files, statusEl);
+                fileInput.value = "";
+            }
+        });
+        lyricsInput.addEventListener("change", () => {
+            if (lyricsInput.files && lyricsInput.files.length) {
+                importLyricsFile(lyricsInput.files[0], statusEl);
+                lyricsInput.value = "";
+            }
+        });
+
+        // 拖放
+        ["dragenter", "dragover"].forEach(evt => {
+            zone.addEventListener(evt, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.add("dragover");
+            });
+        });
+        ["dragleave", "drop"].forEach(evt => {
+            zone.addEventListener(evt, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove("dragover");
+            });
+        });
+        zone.addEventListener("drop", e => {
+            const files = e.dataTransfer && e.dataTransfer.files;
+            if (files && files.length) {
+                const audio = Array.from(files).filter(f => /^audio\//.test(f.type));
+                if (audio.length) handleUploadFiles(audio, statusEl);
+                else statusEl.textContent = "⚠️ 請拖放音檔（mp3 / wav / ogg / m4a / webm）";
+            }
+        });
     }
 
-    updateModeUI() {
-      document.querySelectorAll('.mode-option').forEach(opt => {
-        opt.classList.toggle('active', opt.dataset.mode === this.playMode);
-      });
-      const modeIcon = document.getElementById('mode-icon');
-      if (modeIcon) {
-        const icons = {
-          sequence: '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
-          shuffle: '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>',
-          repeat: '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
-          'repeat-one': '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="9" y1="12" x2="15" y2="12"/>'
+    // 一次新增一個或多個音檔；由 addMusic() 寫入 playlist 時接上 blob
+    async function handleUploadFiles(fileList, statusEl) {
+        const files = Array.from(fileList).filter(f => /^audio\//.test(f.type) || /\.(mp3|wav|ogg|m4a|webm)$/i.test(f.name));
+        if (files.length === 0) {
+            if (statusEl) statusEl.textContent = "⚠️ 未偵測到可用的音檔。";
+            return;
+        }
+
+        // 準備批量資料：先讀取 metadata 取得 duration / 當封面
+        const pending = [];
+        for (const file of files) {
+            const track = await buildUploadedTrack(file);
+            pending.push(track);
+            state.playlist.push(track);
+        }
+
+        renderPlaylist(elements.searchInput.value);
+        updatePlaylistStats();
+        saveToStorage();
+
+        if (statusEl) {
+            statusEl.textContent = `✅ 已新增 ${pending.length} 首本機音樂：${pending.map(t => t.title).join("、")}`;
+        }
+        // 自動播第一首剛上傳的（若有）
+        if (pending.length && state.currentIndex === -1) {
+            playTrack(state.playlist.indexOf(pending[0]));
+        }
+    }
+
+    async function buildUploadedTrack(file) {
+        const id = Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+        const blob = file; // Blob 直接存 IDB
+        // 存到 IndexedDB，以便重整後還原
+        try {
+            await idbPut(id, blob);
+        } catch (e) {
+            console.warn("[music] 無法持久化音檔到 IndexedDB：", e);
+        }
+
+        // 讀取音檔 metadata（長度/時長）
+        let duration = 0;
+        const cover = await extractCoverMetadata(file);
+        duration = await probeAudioDuration(id, blob);
+
+        return {
+            id,
+            title: titleFromFilename(file.name),
+            artist: "本機上傳",
+            album: "我的音樂",
+            duration: duration || 0,
+            url: URL.createObjectURL(blob),
+            cover: cover || "🎵",
+            lyrics: [],
+            lyricsTimed: null,
+            lyricsUrl: null,
+            favorite: false,
+            local: true       // 標記為本機上傳，重整後從 IDB 還原
         };
-        modeIcon.innerHTML = icons[this.playMode] || icons.sequence;
-      }
     }
 
-    updateSpeedUI() {
-      document.querySelectorAll('.speed-option').forEach(opt => {
-        opt.classList.toggle('active', parseFloat(opt.dataset.speed) === this.playbackSpeed);
-      });
+    function titleFromFilename(name) {
+        const base = name.replace(/\.[^.]*$/, "");
+        return base || "未知歌曲";
     }
 
-    downloadTrack(idx) {
-      const track = this.filteredTracks[idx];
-      if (!track) return;
-      const a = document.createElement('a');
-      a.href = track.audio;
-      a.download = track.name + '.mp3';
-      a.click();
-      this.showToast('開始下載：' + this.cleanTrackName(track.name));
-    }
-
-    toggleRepost(idx) {
-      const pos = this.repostedSongs.indexOf(idx);
-      if (pos === -1) {
-        this.repostedSongs.push(idx);
-        this.showToast('已轉發');
-      } else {
-        this.repostedSongs.splice(pos, 1);
-        this.showToast('已取消轉發');
-      }
-      localStorage.setItem('repostedSongs', JSON.stringify(this.repostedSongs));
-      this.renderTrackList();
-    }
-
-    shareTrack() {
-      const track = this.filteredTracks[this.currentIndex];
-      if (!track) return;
-      const shareUrl = window.location.origin + '/music?track=' + encodeURIComponent(track.name);
-      if (navigator.share) {
-        navigator.share({ title: track.name, text: track.artist, url: shareUrl });
-      } else {
-        navigator.clipboard.writeText(shareUrl);
-        this.showToast('連結已複製');
-      }
-    }
-
-    /**
-     * 動態掛載 <track> 原生字幕（SRT 格式）到 this.audio。
-     * 瀏覽器原生 CC 按鈕可開關，無需額外 UI。
-     * 從 track.audio 路徑 /music/track_NNN.mp3 推出 /music/lyrics_NNN.srt
-     */
-    attachSubtitleTrack(track) {
-      // 移除舊的 <track>
-      const oldTracks = this.audio.querySelectorAll('track');
-      oldTracks.forEach((t) => t.remove());
-
-      // 從 audio 路徑推出 srt 路徑
-      const m = (track.audio || '').match(/track_(\d+)\.mp3$/);
-      if (!m) return;
-      const trackNum = m[1];
-      const srtPath = `/music/lyrics_${trackNum}.srt`;
-
-      // 語言代碼映射（playlist 的 lang -> srclang）
-      const langMap = { TW: 'zh', EN: 'en', JP: 'ja', KR: 'ko' };
-      const srclang = langMap[track.lang] || 'zh';
-      const labels = { zh: '中文', en: 'English', ja: '日本語', ko: '한국어' };
-
-      const trackEl = document.createElement('track');
-      trackEl.kind = 'subtitles';
-      trackEl.src = srtPath;
-      trackEl.srclang = srclang;
-      trackEl.label = labels[srclang] || srclang;
-      // 預設不開啟原生字幕（避免跟自製歌詞面板重疊）；要看原生 CC 點瀏覽器播放器按鈕
-      // trackEl.default = true;
-      this.audio.appendChild(trackEl);
-
-      console.log('[MusicPlayer] Subtitle track attached:', srtPath, srclang);
-    }
-
-    playTrack(index) {
-      if (this.filteredTracks.length === 0) return;
-      this.currentIndex = Math.max(0, Math.min(index, this.filteredTracks.length - 1));
-      const track = this.filteredTracks[this.currentIndex];
-      if (!track) return;
-
-      this.playStats.total++;
-      this.playStats.history.unshift({ name: track.name, time: Date.now() });
-      if (this.playStats.history.length > 100) this.playStats.history.pop();
-      localStorage.setItem('playStats', JSON.stringify(this.playStats));
-
-      this.audio.pause();
-      this.audio.src = track.audio;
-      this.audio.volume = this.savedVolume / 100;
-      this.audio.playbackRate = this.playbackSpeed;
-
-      // 動態掛載 <track> 原生字幕（SRT）— 瀏覽器原生 CC 按鈕可開關
-      this.attachSubtitleTrack(track);
-
-      console.log('[MusicPlayer] Track set:', this.cleanTrackName(track.name), 'src:', this.audio.src, 'volume:', this.audio.volume);
-
-      this.barTrackName.textContent = this.cleanTrackName(track.name);
-      this.barTrackArtist.textContent = track.artist || '--';
-      document.getElementById('modal-title').textContent = this.cleanTrackName(track.name);
-      document.getElementById('modal-artist').textContent = track.artist || '--';
-
-      // track.cover 可能是字串或 {cdn, local} 物件，統一抽出 URL
-      const coverUrl = typeof track.cover === 'string'
-        ? track.cover
-        : (track.cover?.cdn || track.cover?.local || '');
-      if (coverUrl) {
-        document.getElementById('album-img').src = coverUrl;
-        document.getElementById('album-img').style.display = '';
-        document.getElementById('album-fallback').style.display = 'none';
-      } else {
-        document.getElementById('album-img').style.display = 'none';
-        document.getElementById('album-fallback').style.display = '';
-      }
-
-      this.isLiked = this.likedSongs.includes(this.currentIndex);
-      this.updateLikeButton();
-      this.renderTrackList();
-
-      // 套用 per-track 歌詞偏移（從 playlist.json 讀取，預設 0）
-      if (typeof track.lyricsOffset === 'number') {
-        this.lyricsOffset = track.lyricsOffset;
-        this.updateLyricsOffsetUI();
-      }
-
-      const playPromise = this.audio.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          console.log('[MusicPlayer] Playing OK');
-        }).catch(err => {
-          console.error('[MusicPlayer] Play rejected:', err.name, err.message);
-          if (err.name === 'NotAllowedError') {
-            this.showToast('⚠️ 請點擊頁面任意處（讓瀏覽器授權音訊），再按播放鍵');
-          } else {
-            this.showToast('⚠️ 播放失敗：' + err.message);
-          }
+    // 用暫時 <audio> 抓長度（讀 objectURL；blob 若在 IDB，重新造 URL）
+    function probeAudioDuration(id, blob) {
+        return new Promise((resolve) => {
+            let src;
+            try {
+                // 優先直接吃 blob
+                const url = URL.createObjectURL(blob);
+                src = url;
+            } catch (_) {
+                src = "";
+            }
+            if (!src) return resolve(0);
+            const a = document.createElement("audio");
+            a.preload = "metadata";
+            const cleanup = () => { URL.revokeObjectURL(src); };
+            a.addEventListener("loadedmetadata", () => {
+                const d = a.duration && isFinite(a.duration) ? Math.round(a.duration) : 0;
+                cleanup();
+                resolve(d);
+            });
+            a.addEventListener("error", () => { cleanup(); resolve(0); });
+            setTimeout(() => { cleanup(); resolve(0); }, 4000);
+            a.src = src;
         });
-      }
-
-      // Custom track：每次播放時把 offset 重置為 0，讓 _autoSyncLyricsOffset() 能自動算正確的偏移
-      if (track._isCustom) {
-        this.lyricsOffset = 0;
-        this.updateLyricsOffsetUI();
-      }
-
-      this.loadLyrics(track.lyrics);
     }
 
-    async loadLyrics(lyricsPath) {
-      if (!lyricsPath) {
-        this.lyrics = [];
-        this.renderLyrics();
-        this.lyricsCount.textContent = '0 句';
-        return;
-      }
-
-      try {
-        const res = await fetch(lyricsPath);
-        const text = await res.text();
-        this.lyrics = this.parseLyrics(text);
-        this.renderLyrics();
-        this.lyricsCount.textContent = this.lyrics.length + ' 句';
-      } catch (err) {
-        console.error('Failed to load lyrics:', err);
-        this.lyrics = [];
-        this.renderLyrics();
-        this.lyricsCount.textContent = '載入失敗';
-      }
-    }
-
-    parseLyrics(text) {
-      const lines = text.split('\n').filter(l => l.trim());
-      const lyrics = [];
-      const lrcRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d{2,3}))?\](.*)/;
-
-      for (const line of lines) {
-        const match = line.match(lrcRegex);
-        if (match) {
-          const mins = parseInt(match[1]);
-          const secs = parseInt(match[2]);
-          const ms = match[3] ? parseInt(match[3].padEnd(3, '0')) : 0;
-          const time = mins * 60 + secs + ms / 1000;
-          const text = match[4].trim();
-          if (text) lyrics.push({ time, text });
-        } else if (line.trim() && !line.startsWith('[')) {
-          lyrics.push({ time: -1, text: line.trim() });
-        }
-      }
-
-      if (lyrics.length > 0 && lyrics[0].time === -1) {
-        const duration = this.audio.duration || 180;
-        // 預留前 10% 當 intro，最後 5% 當 outro，平均分配中間行
-        const introTime = duration * 0.05;
-        const outroTime = duration * 0.03;
-        const usableTime = duration - introTime - outroTime;
-        const timePerLine = usableTime / (lyrics.length - 1 || 1);
-        lyrics.forEach((l, i) => { 
-          l.time = introTime + timePerLine * i;
+    // 從音檔 ID3 抓封面（無則回 null）
+    function extractCoverMetadata(file) {
+        return new Promise((resolve) => {
+            if (!window.FileReader) return resolve(null);
+            try {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // 嘗試解析 ID3 APIC；太複雜就跳過，避免阻塞
+                    const buf = new Uint8Array(reader.result);
+                    const header = String.fromCharCode.apply(null, buf.slice(0, 3));
+                    if (header !== "ID3") return resolve(null);
+                    // 找 ID3v2 APIC frame（粗略掃描）
+                    const str = String.fromCharCode.apply(null, buf);
+                    const idx = str.indexOf("APIC");
+                    if (idx > 0 && idx < buf.length) {
+                        const start = idx + 4;
+                        const len = buf[start];
+                        const mimeEnd = start + 1 + len;
+                        const mime = String.fromCharCode.apply(null, buf.slice(start + 1, mimeEnd));
+                        let picStart = mimeEnd + 3;
+                        if (buf[picStart - 1] === 0) picStart++;
+                        const b64 = arrayBufferToBase64(buf.slice(picStart, picStart + 40000));
+                        if (b64 && /^image\//.test(mime)) {
+                            resolve(`data:${mime};base64,${b64}`);
+                            return;
+                        }
+                    }
+                    resolve(null);
+                };
+                reader.onerror = () => resolve(null);
+                reader.readAsArrayBuffer(file);
+            } catch (_) {
+                resolve(null);
+            }
         });
-      }
-
-      return lyrics.sort((a, b) => a.time - b.time);
     }
 
-    renderLyrics() {
-      if (this.lyrics.length === 0) {
-        this.lyricsContainer.innerHTML = '<p style="color: var(--text-tertiary); text-align: center; padding: 50px;">此歌曲暫無歌詞</p>';
-        return;
-      }
+    function arrayBufferToBase64(buf) {
+        let binary = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < buf.length; i += chunk) {
+            binary += String.fromCharCode.apply(null, buf.subarray(i, i + chunk));
+        }
+        return btoa(binary);
+    }
 
-      this.lyricsContainer.innerHTML = this.lyrics.map((l, i) =>
-        '<div class="lyric-line" data-time="' + l.time + '" data-idx="' + i + '">' +
-          '<span class="lyric-time">' + (l.time >= 0 ? this.formatTime(l.time) : '') + '</span>' +
-          '<span>' + l.text + '</span>' +
-        '</div>'
-      ).join('');
+    // 上傳 .lrc 歌詞 → 直接填入 modal 歌詞欄
+    async function importLyricsFile(file, statusEl) {
+        try {
+            const text = await file.text();
+            const ta = document.getElementById("new-lyrics");
+            if (ta) {
+                ta.value = text;
+                if (statusEl) statusEl.textContent = `✅ 歌詞已匯入：${file.name}（${text.split(/\r?\n/).filter(Boolean).length} 行）`;
+            }
+        } catch (e) {
+            if (statusEl) statusEl.textContent = "⚠️ 歌詞讀取失敗。";
+        }
+    }
 
-      this.lyricsContainer.querySelectorAll('.lyric-line').forEach(el => {
-        el.addEventListener('click', () => {
-          const time = parseFloat(el.dataset.time);
-          if (time >= 0) this.audio.currentTime = time;
+    // 重整後：把上傳過的 local 歌曲從 IndexedDB 還原 objectURL
+    async function restoreLocalAudio() {
+        for (let i = 0; i < state.playlist.length; i++) {
+            const t = state.playlist[i];
+            if (t && t.local) {
+                try {
+                    const blob = await idbGet(t.id);
+                    if (blob) {
+                        // blob URL 每次 session 都失效，一律重建
+                        if (t.url && t.url.startsWith("blob:")) {
+                            try { URL.revokeObjectURL(t.url); } catch (_) {}
+                        }
+                        t.url = URL.createObjectURL(blob);
+                    }
+                } catch (_) { /* ignore */ }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 卡拉OK模式
+    // ═══════════════════════════════════════════════════════════════════
+    function injectKaraokeToggle() {
+        const container = document.querySelector(".lyrics-container");
+        if (!container) return;
+        if (container.querySelector("#karaoke-toggle")) return;
+
+        const btn = document.createElement("button");
+        btn.id = "karaoke-toggle";
+        btn.className = "karaoke-toggle";
+        btn.type = "button";
+        btn.title = "切換卡拉OK逐字模式";
+        btn.textContent = "🎤";
+        btn.addEventListener("click", () => {
+            state.karaoke = !state.karaoke;
+            setKaraokeMode(state.karaoke);
+            // 依目前播放中的歌曲重新渲染歌詞，讓結構符合新模式
+            const track = state.playlist[state.currentIndex];
+            if (track && state.currentIndex >= 0) {
+                if (track.lyricsTimed && track.lyricsTimed.length) {
+                    renderLyricsTimed(track.lyricsTimed);
+                } else if (track.lyrics && track.lyrics.length) {
+                    renderLyricsPlain(track.lyrics);
+                }
+            }
         });
-      });
+        container.appendChild(btn);
     }
 
-    updateLyricsSync() {
-      if (this.lyrics.length === 0) return;
+    function setKaraokeMode(on) {
+        const modeBtn = document.getElementById("karaoke-toggle");
+        const lyricsEl = document.getElementById("lyrics");
+        if (modeBtn) modeBtn.classList.toggle("on", on);
+        if (lyricsEl) lyricsEl.classList.toggle("karaoke", on);
+    }
 
-      const currentTime = this.audio.currentTime + this.lyricsOffset;
-      let activeIdx = -1;
-
-      for (let i = this.lyrics.length - 1; i >= 0; i--) {
-        if (this.lyrics[i].time >= 0 && this.lyrics[i].time <= currentTime) {
-          activeIdx = i;
-          break;
+    // ═══════════════════════════════════════════════════════════════════
+    // 播放控制
+    // ═══════════════════════════════════════════════════════════════════
+    function togglePlay() {
+        if (state.currentIndex === -1) {
+            if (state.playlist.length > 0) {
+                playTrack(0);
+            }
+            return;
         }
-      }
 
-      // Only update and scroll when the active line changes
-      if (activeIdx === this._lastActiveLyricIdx) return;
-      this._lastActiveLyricIdx = activeIdx;
-
-      this.lyricsContainer.querySelectorAll('.lyric-line').forEach((el, i) => {
-        el.classList.remove('active', 'past');
-        if (i === activeIdx) {
-          el.classList.add('active');
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (i < activeIdx) {
-          el.classList.add('past');
+        if (state.isPlaying) {
+            pauseTrack();
+        } else {
+            resumeTrack();
         }
-      });
     }
 
-    updateLyricsOffsetUI() {
-      const offsetEl = document.getElementById('lyrics-offset-value');
-      if (offsetEl) {
-        offsetEl.textContent = this.lyricsOffset + 's';
-      }
-      localStorage.setItem('lyricsOffset', this.lyricsOffset.toString());
-    }
+    function playTrack(index) {
+        if (index < 0 || index >= state.playlist.length) return;
 
-    toggleLike() {
-      const idx = this.currentIndex;
-      const pos = this.likedSongs.indexOf(idx);
-      if (pos === -1) {
-        this.likedSongs.push(idx);
-        this.playStats.liked++;
-        this.showToast('已加入到喜歡');
-      } else {
-        this.likedSongs.splice(pos, 1);
-        this.playStats.liked = Math.max(0, this.playStats.liked - 1);
-        this.showToast('已移除');
-      }
-      this.isLiked = this.likedSongs.includes(idx);
-      this.updateLikeButton();
-      localStorage.setItem('likedSongs', JSON.stringify(this.likedSongs));
-      localStorage.setItem('playStats', JSON.stringify(this.playStats));
-      this.updateStats();
-    }
+        const track = state.playlist[index];
+        state.currentIndex = index;
+        state.currentLyricIndex = -1; // 重置歌詞高亮索引
 
-    updateLikeButton() {
-      const svg = this.barLikeBtn.querySelector('svg');
-      if (this.isLiked) {
-        svg.setAttribute('fill', '#ef4444');
-        this.barLikeBtn.classList.add('liked');
-      } else {
-        svg.setAttribute('fill', 'none');
-        this.barLikeBtn.classList.remove('liked');
-      }
-    }
-
-    togglePlay() {
-      if (this.isPlaying) {
-        this.audio.pause();
-        this.isPlaying = false;
-      } else if (!this.audio.src) {
-        if (this.filteredTracks.length > 0) {
-          this.playTrack(0);
+        // 有真實音檔 → 用 <audio> 播；沒 url 才退回模擬
+        if (track.url) {
+            if (simulateInterval) { clearInterval(simulateInterval); simulateInterval = null; }
+            const absUrl = new URL(track.url, location.href).href;
+            if (elements.audioPlayer.src !== absUrl) {
+                elements.audioPlayer.src = track.url;
+            }
+            elements.audioPlayer.volume = state.isMuted ? 0 : state.volume / 100;
+            elements.audioPlayer.play().catch(err => {
+                // 以下屬於「可預期 / 非錯誤」的情況，不印警告：
+                //  - AbortError：快速跳歌時新的 load() 中斷了上一次 play()
+                //  - NotAllowedError：瀏覽器自動播放政策擋下 play()（需使用者手勢）
+                if (err && (err.name === "AbortError" || err.name === "NotAllowedError" || err.code === 20)) return;
+                console.warn("[music] play() rejected:", err && err.message);
+            });
         }
-      } else {
-        this.audio.play().then(() => {
-          this.isPlaying = true;
-        }).catch(err => {
-          console.warn('Play failed:', err);
-          this.showToast('⚠️ 播放失敗，請點歌曲播放');
+
+        updateNowPlaying(track);
+        updatePlaylistUI();
+        state.isPlaying = true;
+        updatePlayButton();
+
+        // 更新播放統計
+        updatePlayStats(track);
+
+        // 開始視覺化
+        if (state.audioContext && state.audioSource) {
+            try {
+                state.audioSource.connect(state.analyser);
+                state.analyser.connect(state.audioContext.destination);
+            } catch (_) { /* already connected */ }
+        }
+
+        // 沒 url 才模擬播放進度
+        if (!track.url) {
+            simulatePlayback(track.duration);
+        } else {
+            // 真實音檔：加 playing class 給視覺效果
+            elements.albumArt.classList.add("playing");
+            elements.audioVisualizer.classList.add("active");
+        }
+    }
+
+    function pauseTrack() {
+        elements.audioPlayer.pause();
+        state.isPlaying = false;
+        updatePlayButton();
+        elements.albumArt.classList.remove("playing");
+        elements.audioVisualizer.classList.remove("active");
+    }
+
+    function resumeTrack() {
+        if (state.currentIndex >= 0) {
+            elements.audioPlayer.play().catch(() => { });
+            state.isPlaying = true;
+            updatePlayButton();
+            elements.albumArt.classList.add("playing");
+            elements.audioVisualizer.classList.add("active");
+        }
+    }
+
+    function prevTrack() {
+        let newIndex = state.currentIndex - 1;
+        if (newIndex < 0) {
+            newIndex = state.playlist.length - 1;
+        }
+        playTrack(newIndex);
+    }
+
+    function nextTrack() {
+        let newIndex;
+        if (state.shuffle) {
+            newIndex = Math.floor(Math.random() * state.playlist.length);
+        } else {
+            newIndex = state.currentIndex + 1;
+            if (newIndex >= state.playlist.length) {
+                if (state.repeat === "all") {
+                    newIndex = 0;
+                } else {
+                    newIndex = state.currentIndex;
+                    pauseTrack();
+                    return;
+                }
+            }
+        }
+        playTrack(newIndex);
+    }
+
+    function toggleShuffle() {
+        state.shuffle = !state.shuffle;
+        elements.shuffleBtn.classList.toggle("active", state.shuffle);
+    }
+
+    function toggleRepeat() {
+        const modes = ["none", "all", "one"];
+        const currentModeIndex = modes.indexOf(state.repeat);
+        state.repeat = modes[(currentModeIndex + 1) % modes.length];
+
+        elements.repeatBtn.classList.remove("active");
+        if (state.repeat === "one") {
+            elements.repeatBtn.classList.add("active");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 進度條控制
+    // ═══════════════════════════════════════════════════════════════════
+    function updateProgress() {
+        if (state.currentIndex < 0) return;
+
+        const current = elements.audioPlayer.currentTime;
+        const duration = elements.audioPlayer.duration || state.playlist[state.currentIndex].duration;
+        const progress = (current / duration) * 100;
+
+        elements.progressFill.style.width = progress + "%";
+        elements.progressHandle.style.left = progress + "%";
+        elements.timeCurrent.textContent = formatTime(current);
+
+        // 更新歌詞
+        updateLyrics(current);
+    }
+
+    function seekTo(e) {
+        if (state.currentIndex < 0) return;
+
+        const rect = elements.progressBar.getBoundingClientRect();
+        const percent = (e.clientX - rect.left) / rect.width;
+        const duration = elements.audioPlayer.duration || state.playlist[state.currentIndex].duration;
+        elements.audioPlayer.currentTime = percent * duration;
+    }
+
+    let isSeeking = false;
+    function startSeek() {
+        isSeeking = true;
+        document.addEventListener("mousemove", onSeek);
+        document.addEventListener("mouseup", stopSeek);
+    }
+
+    function onSeek(e) {
+        if (!isSeeking) return;
+        const rect = elements.progressBar.getBoundingClientRect();
+        const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+        elements.progressFill.style.width = percent + "%";
+        elements.progressHandle.style.left = percent + "%";
+    }
+
+    function stopSeek(e) {
+        if (!isSeeking) return;
+        isSeeking = false;
+        document.removeEventListener("mousemove", onSeek);
+        document.removeEventListener("mouseup", stopSeek);
+        seekTo(e);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 進度條模擬（因為沒有真實音頻）
+    // ═══════════════════════════════════════════════════════════════════
+    let simulateInterval = null;
+    let simulateProgress = 0;
+
+    function simulatePlayback(duration) {
+        if (simulateInterval) clearInterval(simulateInterval);
+
+        simulateProgress = 0;
+        elements.timeTotal.textContent = formatTime(duration);
+        elements.albumArt.classList.add("playing");
+        elements.audioVisualizer.classList.add("active");
+
+        simulateInterval = setInterval(() => {
+            if (!state.isPlaying) {
+                clearInterval(simulateInterval);
+                return;
+            }
+
+            simulateProgress++;
+            const progress = (simulateProgress / duration) * 100;
+
+            elements.progressFill.style.width = progress + "%";
+            elements.progressHandle.style.left = progress + "%";
+            elements.timeCurrent.textContent = formatTime(simulateProgress);
+
+            // 更新歌詞
+            updateLyrics(simulateProgress);
+
+            if (simulateProgress >= duration) {
+                onTrackEnded();
+            }
+        }, 1000);
+    }
+
+    function onMetadataLoaded() {
+        const d = elements.audioPlayer.duration;
+        if (d && !isNaN(d) && isFinite(d)) {
+            // 用真實 metadata duration 蓋過 manifest 的估計值
+            const track = state.playlist[state.currentIndex];
+            if (track) track.duration = Math.round(d);
+            elements.timeTotal.textContent = formatTime(d);
+            updatePlaylistStats();
+        }
+    }
+
+    function onTrackEnded() {
+        if (simulateInterval) clearInterval(simulateInterval);
+
+        if (state.repeat === "one") {
+            simulateProgress = 0;
+            if (state.playlist[state.currentIndex].url) {
+                elements.audioPlayer.currentTime = 0;
+                elements.audioPlayer.play().catch(() => { });
+            } else {
+                simulatePlayback(state.playlist[state.currentIndex].duration);
+            }
+        } else {
+            nextTrack();
+        }
+    }
+
+    function onAudioError() {
+        console.warn("[music] audio error:", elements.audioPlayer.error);
+        const track = state.playlist[state.currentIndex];
+        if (track) {
+            elements.trackArtist.textContent = (track.artist || "") + " · " + (track.album || "") + "  ⚠️ 載入失敗";
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 音量控制
+    // ═══════════════════════════════════════════════════════════════════
+    function toggleMute() {
+        state.isMuted = !state.isMuted;
+        elements.audioPlayer.muted = state.isMuted;
+        elements.volumeBtn.textContent = state.isMuted ? "🔇" : "🔊";
+
+        if (state.isMuted) {
+            elements.volumeValue.textContent = "0%";
+        } else {
+            elements.volumeValue.textContent = state.volume + "%";
+        }
+    }
+
+    function setVolume() {
+        state.volume = parseInt(elements.volumeSlider.value);
+        elements.audioPlayer.volume = state.volume / 100;
+        elements.volumeValue.textContent = state.volume + "%";
+
+        if (state.volume === 0) {
+            elements.volumeBtn.textContent = "🔇";
+        } else if (state.volume < 50) {
+            elements.volumeBtn.textContent = "🔉";
+        } else {
+            elements.volumeBtn.textContent = "🔊";
+        }
+
+        saveToStorage();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 播放清單
+    // ═══════════════════════════════════════════════════════════════════
+    function renderPlaylist(filter = "") {
+        elements.playlist.innerHTML = "";
+
+        let filteredPlaylist = state.playlist;
+        if (filter) {
+            const searchTerm = filter.toLowerCase();
+            filteredPlaylist = state.playlist.filter(track =>
+                track.title.toLowerCase().includes(searchTerm) ||
+                track.artist.toLowerCase().includes(searchTerm) ||
+                track.album.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        filteredPlaylist.forEach((track, index) => {
+            const originalIndex = state.playlist.indexOf(track);
+            const item = createPlaylistItem(track, originalIndex);
+            elements.playlist.appendChild(item);
         });
-      }
+
+        updatePlaylistStats();
     }
 
-    toggleMute() {
-      this.isMuted = !this.isMuted;
-      this.audio.volume = this.isMuted ? 0 : this.savedVolume / 100;
-      this.barVolume.value = this.isMuted ? '0' : String(this.savedVolume);
-      this.barVolume.style.setProperty('--volume', this.isMuted ? '0%' : this.savedVolume + '%');
-    }
-
-    getNextIdx() {
-      if (this.playMode === 'repeat-one') return this.currentIndex;
-
-      if (this.playMode === 'shuffle') {
-        const available = [...Array(this.filteredTracks.length).keys()].filter(i => i !== this.currentIndex);
-        if (available.length > 0) return available[Math.floor(Math.random() * available.length)];
-      }
-
-      if (this.queue.length > 1 && this.queueIdx < this.queue.length - 1) {
-        this.queueIdx++;
-        return this.queue[this.queueIdx];
-      }
-      return (this.currentIndex + 1) % this.filteredTracks.length;
-    }
-
-    getPrevIdx() {
-      const now = Date.now();
-      if (this.audio.currentTime > 3 && now - this.prevPressTime > 2000) {
-        this.prevPressTime = now;
-        this.audio.currentTime = 0;
-        return this.currentIndex;
-      }
-      this.prevPressTime = now;
-
-      if (this.queue.length > 1 && this.queueIdx > 0) {
-        this.queueIdx--;
-        return this.queue[this.queueIdx];
-      }
-      return (this.currentIndex - 1 + this.filteredTracks.length) % this.filteredTracks.length;
-    }
-
-    addToQueue(idx) {
-      if (!this.queue.includes(idx)) {
-        this.queue.push(idx);
-        this.showToast('已加入佇列');
-      }
-    }
-
-    openPlayerModal() {
-      document.getElementById('player-modal').classList.add('open');
-    }
-
-    closePlayerModal() {
-      document.getElementById('player-modal').classList.remove('open');
-    }
-
-    openMVModal(idx) {
-      const track = this.filteredTracks[idx] || this.tracks[idx];
-      if (!track || !track.mv) { this.showToast('這首歌沒有 MV'); return; }
-      let modal = document.getElementById('mv-modal');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'mv-modal';
-        modal.className = 'mv-modal';
-        modal.innerHTML = '<div class="mv-modal-content"><button class="mv-modal-close" id="mv-modal-close" aria-label="關閉 MV">✕</button><video id="mv-video" controls autoplay playsinline preload="metadata"></video><div class="mv-modal-title" id="mv-modal-title"></div></div>';
-        document.body.appendChild(modal);
-        document.getElementById('mv-modal-close').addEventListener('click', () => this.closeMVModal());
-        modal.addEventListener('click', (e) => { if (e.target === modal) this.closeMVModal(); });
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) this.closeMVModal(); });
-        const v = document.getElementById('mv-video');
-        v.addEventListener('error', () => this.showToast('MV 載入失敗，請稍後再試'));
-        v.addEventListener('loadedmetadata', () => { v._duration = v.duration; });
-      }
-      const video = document.getElementById('mv-video');
-      const src = track.mv.cdn || track.mv.local;
-      video.poster = track.cover?.cdn || track.cover?.local || '';
-      video.src = src;
-      video.currentTime = 0;
-      // Pause the background audio player so MV audio + music don't overlap
-      this._mvWasPlaying = !this.audio.paused && this.audio.src;
-      if (this._mvWasPlaying) this.audio.pause();
-      video.play().catch((err) => { if (err.name !== 'AbortError') this.showToast('MV 播放失敗，請點擊影片手動播放'); });
-      document.getElementById('mv-modal-title').textContent = track.name + ' · ' + (track.artist || '');
-      modal.classList.add('open');
-    }
-
-    closeMVModal() {
-      const modal = document.getElementById('mv-modal');
-      if (modal) {
-        const video = document.getElementById('mv-video');
-        if (video) {
-          video.pause();
-          video.removeAttribute('src');
-          video.load();
-          video.poster = '';
+    function createPlaylistItem(track, index) {
+        const item = document.createElement("div");
+        item.className = "playlist-item";
+        if (index === state.currentIndex) {
+            item.classList.add("playing");
         }
-        // Resume background audio if it was playing before MV opened
-        if (this._mvWasPlaying && this.audio.src) {
-          this.audio.play().catch(() => {});
-          this._mvWasPlaying = false;
+        item.dataset.index = index;
+
+        const coverHtml = renderCoverHtml(track.cover);
+
+        item.innerHTML = `
+            <div class="playlist-item-cover">${coverHtml}</div>
+            <div class="playlist-item-info">
+                <div class="playlist-item-title">${escapeHtml(track.title)}</div>
+                <div class="playlist-item-artist">${escapeHtml(track.artist || "")}</div>
+            </div>
+            <div class="playlist-item-duration">${formatTime(track.duration)}</div>
+            <div class="playlist-item-actions">
+                <button class="playlist-item-action favorite ${track.favorite ? 'active' : ''}" title="收藏">❤️</button>
+                <button class="playlist-item-action delete" title="刪除">🗑️</button>
+            </div>
+        `;
+
+        // 點擊播放
+        item.addEventListener("click", e => {
+            if (!e.target.closest(".playlist-item-action")) {
+                playTrack(index);
+            }
+        });
+
+        // 收藏按鈕
+        const favoriteBtn = item.querySelector(".favorite");
+        favoriteBtn.addEventListener("click", e => {
+            e.stopPropagation();
+            toggleFavorite(track.id);
+        });
+
+        // 刪除按鈕
+        const deleteBtn = item.querySelector(".delete");
+        deleteBtn.addEventListener("click", e => {
+            e.stopPropagation();
+            deleteTrack(track.id);
+        });
+
+        return item;
+    }
+
+    function toggleFavorite(trackId) {
+        const track = state.playlist.find(t => t.id === trackId);
+        if (track) {
+            track.favorite = !track.favorite;
+            renderPlaylist(elements.searchInput.value);
+            saveToStorage();
         }
-        modal.classList.remove('open');
-      }
     }
 
-    toggleShortcuts() {
-      document.getElementById('shortcuts-panel').classList.toggle('open');
-      document.getElementById('shortcuts-overlay').classList.toggle('open');
+    function deleteTrack(trackId) {
+        const index = state.playlist.findIndex(t => t.id === trackId);
+        if (index !== -1) {
+            const removed = state.playlist[index];
+            // 若是本機上傳的音檔，也從 IndexedDB 移除
+            if (removed && removed.local) {
+                idbDelete(removed.id).catch(() => {});
+                if (removed.url && removed.url.startsWith("blob:")) {
+                    try { URL.revokeObjectURL(removed.url); } catch (_) {}
+                }
+            }
+            state.playlist.splice(index, 1);
+            if (state.currentIndex === index) {
+                pauseTrack();
+                state.currentIndex = -1;
+                updateNowPlaying(null);
+            } else if (state.currentIndex > index) {
+                state.currentIndex--;
+            }
+            renderPlaylist(elements.searchInput.value);
+            saveToStorage();
+        }
     }
 
-    showToast(msg) {
-      const toast = document.createElement('div');
-      toast.className = 'toast';
-      toast.innerHTML = '✓ ' + msg;
-      this.toastContainer.appendChild(toast);
-      setTimeout(() => toast.remove(), 2500);
+    function filterPlaylist() {
+        renderPlaylist(elements.searchInput.value);
     }
 
-    formatTime(s) {
-      return Math.floor(s / 60) + ':' + Math.floor(s % 60).toString().padStart(2, '0');
+    function updatePlaylistUI() {
+        const items = elements.playlist.querySelectorAll(".playlist-item");
+        items.forEach((item, index) => {
+            item.classList.toggle("playing", index === state.currentIndex);
+        });
     }
 
-    cleanTrackName(name) {
-      if (!name) return '--';
-      return name.replace(/\.mp3$/i, '').replace(/_/g, ' ');
+    function updatePlaylistStats() {
+        const totalSongs = state.playlist.length;
+        const totalSeconds = state.playlist.reduce((sum, track) => sum + track.duration, 0);
+
+        elements.totalSongs.textContent = totalSongs;
+        elements.totalDuration.textContent = formatTime(totalSeconds);
     }
 
-    // 由 upload script 呼叫，把使用者上傳的歌曲加到清單
-    addCustomTrack(track) {
-      if (!track || !track.audio) {
-        console.error('[MusicPlayer] addCustomTrack: missing audio', track);
-        return null;
-      }
-      this.tracks.push(track);
-      this.filteredTracks = [...this.tracks];
-      this.renderTrackList();
-      this.updateStats();
-      console.log('[MusicPlayer] Custom track added:', track.name);
-      return this.tracks.length - 1;
-    }
-  }
+    // ═══════════════════════════════════════════════════════════════════
+    // 當前播放資訊
+    // ═══════════════════════════════════════════════════════════════════
+    function updateNowPlaying(track) {
+        if (!track) {
+            elements.trackTitle.textContent = "選擇一首音樂開始";
+            elements.trackArtist.textContent = "-";
+            elements.albumPlaceholder.textContent = "🎵";
+            elements.lyrics.innerHTML = '<p class="lyric-line">歌詞將在播放時顯示</p>';
+            return;
+        }
 
-  // 啟動：DOM 已就緒就直接建實例；否則等 DOMContentLoaded
-    window.MusicPlayer = MusicPlayer;
-function start() { window.musicPlayer = new MusicPlayer(); window.musicPlayerReady = true; document.dispatchEvent(new CustomEvent('musicplayerready')); }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start);
-  } else {
-    start();
-  }
+        elements.trackTitle.textContent = track.title;
+        elements.trackArtist.textContent = (track.artist || "") + " · " + (track.album || "");
+        setAlbumArt(track.cover);
+        elements.timeTotal.textContent = formatTime(track.duration);
+        elements.progressFill.style.width = "0%";
+        elements.progressHandle.style.left = "0%";
+        elements.timeCurrent.textContent = "0:00";
+
+        // 渲染歌詞（支援 LRC timed array > plain lyrics array > lyricsUrl 抓）
+        if (track.lyricsTimed && track.lyricsTimed.length > 0) {
+            renderLyricsTimed(track.lyricsTimed);
+        } else if (track.lyrics && track.lyrics.length > 0) {
+            renderLyricsPlain(track.lyrics);
+        } else if (track.lyricsUrl) {
+            loadLyricsFromUrl(track.lyricsUrl);
+        } else {
+            elements.lyrics.innerHTML = '<p class="lyric-line">暫無歌詞</p>';
+        }
+    }
+
+    // 渲染 plain lyrics（無時間戳）成 karaoke 字元 span
+    function renderLyricsPlain(lines) {
+        elements.lyrics.classList.toggle("karaoke", state.karaoke);
+        elements.lyrics.innerHTML = lines
+            .map(line => {
+                const chars = Array.from(line || "");
+                const spans = chars
+                    .map(ch => `<span class="kar-ch">${escapeHtml(ch)}</span>`)
+                    .join("");
+                return `<p class="lyric-line song-line">${spans || '<span class="kar-ch">&nbsp;</span>'}</p>`;
+            })
+            .join("");
+    }
+
+    // 渲染 timed lyrics：[{ time: 12.34, text: '...' }, ...]
+    // 卡拉OK模式：每一行拆成「字元 span」，用 --kar-fill 逐字元漸亮
+    function renderLyricsTimed(timed) {
+        elements.lyrics.classList.toggle("karaoke", state.karaoke);
+        elements.lyrics.innerHTML = timed
+            .map((l, i) => {
+                const chars = Array.from(l.text || "");
+                const spans = chars
+                    .map(ch => `<span class="kar-ch">${escapeHtml(ch)}</span>`)
+                    .join("");
+                return `<p class="lyric-line song-line" data-time="${l.time.toFixed(2)}" data-idx="${i}" data-next="${i + 1 < timed.length ? (timed[i + 1].time - l.time).toFixed(2) : '3.00'}">${spans}</p>`;
+            })
+            .join("");
+    }
+
+    // 渲染封面 HTML（URL 用 <img>，emoji 純字串）
+    function renderCoverHtml(cover) {
+        if (!cover) return "🎵";
+        if (typeof cover === "string" && /^(\/|https?:|data:)/i.test(cover)) {
+            const esc = escapeHtml(cover);
+            return `<img src="${esc}" alt="" loading="lazy" onerror="this.outerHTML='🎵'" />`;
+        }
+        return escapeHtml(cover);
+    }
+
+    function setAlbumArt(cover) {
+        if (!elements.albumPlaceholder) return;
+        if (cover && typeof cover === "string" && /^(\/|https?:|data:)/i.test(cover)) {
+            elements.albumPlaceholder.innerHTML =
+                `<img src="${escapeHtml(cover)}" alt="" onerror="this.outerHTML='🎵'" />`;
+        } else {
+            elements.albumPlaceholder.textContent = cover || "🎵";
+        }
+    }
+
+    function escapeHtml(s) {
+        return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    async function loadLyricsFromUrl(url) {
+        // 已被預載 → 直接 render
+        const t = state.playlist[state.currentIndex];
+        if (t && t.lyricsTimed && t.lyricsTimed.length > 0) {
+            renderLyricsTimed(t.lyricsTimed);
+            return;
+        }
+        if (t && t.lyrics && t.lyrics.length > 0) {
+            renderLyricsPlain(t.lyrics);
+            return;
+        }
+        elements.lyrics.innerHTML = '<p class="lyric-line">歌詞載入中…</p>';
+        try {
+            const r = await fetch(url, { cache: "force-cache" });
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            const text = await r.text();
+            const track = state.playlist[state.currentIndex];
+            if (track) {
+                track.lyricsUrl = url;
+                if (isLrcFormat(text)) {
+                    const timed = parseLrc(text);
+                    track.lyricsTimed = timed;
+                    track.lyrics = null;
+                    renderLyricsTimed(timed);
+                } else {
+                    const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+                    track.lyrics = lines;
+                    track.lyricsTimed = null;
+                    if (lines.length === 0) {
+                        elements.lyrics.innerHTML = '<p class="lyric-line">歌詞為空</p>';
+                    } else {
+                        renderLyricsPlain(lines);
+                    }
+                }
+            }
+        } catch (err) {
+            elements.lyrics.innerHTML = '<p class="lyric-line">歌詞載入失敗</p>';
+            console.warn("[music] lyrics load failed:", err);
+        }
+    }
+
+    // LRC 格式：[mm:ss.xx] 歌詞
+    function isLrcFormat(text) {
+        return /^\s*\[\d{1,2}:\d{1,2}(?:\.\d{1,3})?\]/m.test(text);
+    }
+
+    // 解析 LRC 為 [{time, text}]，處理多時間標籤同一行
+    function parseLrc(text) {
+        const lines = text.split(/\r?\n/);
+        const out = [];
+        const tagRe = /\[(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?\]/g;
+        const metaRe = /^\[(ti|ar|al|length|by|offset|re|ve):/i;
+        for (const raw of lines) {
+            const line = raw.trim();
+            if (!line) continue;
+            if (metaRe.test(line)) continue; // 跳過 [ti:..] [ar:..] 等 metadata
+            // 找所有時間標籤
+            const times = [];
+            let m;
+            tagRe.lastIndex = 0;
+            while ((m = tagRe.exec(line)) !== null) {
+                const min = parseInt(m[1], 10);
+                const sec = parseInt(m[2], 10);
+                const ms = m[3] ? parseInt(m[3].padEnd(3, '0').slice(0, 3), 10) : 0;
+                times.push(min * 60 + sec + ms / 1000);
+            }
+            if (times.length === 0) continue;
+            // 去掉時間標籤，剩下的是歌詞
+            const text = line.replace(tagRe, '').trim();
+            for (const t of times) {
+                out.push({ time: t, text });
+            }
+        }
+        // 按時間排序
+        out.sort((a, b) => a.time - b.time);
+        return out;
+    }
+
+    // 找當前播放時間對應的歌詞行（用 lyricsTimed 二分搜尋）
+    function findCurrentLyricLine(timed, currentTime) {
+        if (!timed || timed.length === 0) return -1;
+        let lo = 0, hi = timed.length - 1, idx = -1;
+        // 找最大的 t <= currentTime
+        while (lo <= hi) {
+            const mid = (lo + hi) >> 1;
+            if (timed[mid].time <= currentTime) {
+                idx = mid;
+                lo = mid + 1;
+            } else {
+                hi = mid - 1;
+            }
+        }
+        return idx;
+    }
+
+    function updateLyrics(currentTime) {
+        if (state.currentIndex < 0) return;
+
+        const track = state.playlist[state.currentIndex];
+        if (!track) return;
+
+        let currentLineIndex = -1;
+
+        if (track.lyricsTimed && track.lyricsTimed.length > 0) {
+            // LRC 模式：二分配對時間
+            currentLineIndex = findCurrentLyricLine(track.lyricsTimed, currentTime);
+        } else if (track.lyrics && track.lyrics.length > 0) {
+            // 純文字 fallback：均分時間
+            const duration = track.duration / track.lyrics.length;
+            currentLineIndex = Math.floor(currentTime / duration);
+        } else {
+            return;
+        }
+
+        // 切換 active/passed class（避免不必要的 DOM 操作）
+        const lines = elements.lyrics.querySelectorAll(".lyric-line");
+        if (lines.length === 0) return;
+
+        // 計算當前行在整行時間窗內的完成度（k 値 0..1）→ 卡拉OK漸亮
+        let lineFill = 0;
+        if (currentLineIndex >= 0) {
+            if (track.lyricsTimed && track.lyricsTimed.length) {
+                const start = track.lyricsTimed[currentLineIndex].time;
+                const end = (currentLineIndex + 1 < track.lyricsTimed.length)
+                    ? track.lyricsTimed[currentLineIndex + 1].time
+                    : (start + 3);
+                lineFill = Math.max(0, Math.min(1, (currentTime - start) / Math.max(0.05, end - start)));
+            } else if (track.lyrics && track.lyrics.length) {
+                const seg = track.duration / track.lyrics.length;
+                const s = currentLineIndex * seg;
+                lineFill = Math.max(0, Math.min(1, (currentTime - s) / Math.max(0.05, seg)));
+            }
+        }
+
+        const prev = state.currentLyricIndex ?? -1;
+        const lineChanged = prev !== currentLineIndex;
+
+        if (lineChanged) {
+            // 移除所有舊狀態
+            for (let i = 0; i < lines.length; i++) {
+                const c = lines[i].classList;
+                if (c.contains("active") || c.contains("passed")) {
+                    c.remove("active", "passed");
+                }
+            }
+            // 標記已過的 + 當前的
+            if (currentLineIndex >= 0) {
+                for (let i = 0; i < currentLineIndex; i++) {
+                    lines[i].classList.add("passed");
+                }
+                lines[currentLineIndex].classList.add("active");
+                // 平滑滾動到當前行（置中）
+                try {
+                    lines[currentLineIndex].scrollIntoView({ behavior: "smooth", block: "center" });
+                } catch (_) { /* scrollIntoView not supported */ }
+            }
+            // 行切換時，把非當前行所有字元的 .lit 清除，避免殘留高亮
+            for (let i = 0; i < lines.length; i++) {
+                if (i !== currentLineIndex) {
+                    lines[i].querySelectorAll(".lit").forEach(el => el.classList.remove("lit"));
+                }
+            }
+            state.currentLyricIndex = currentLineIndex;
+        }
+
+        // 卡拉OK：即使行沒變，把當前行細分成字元，依 lineFill 上色
+        if (state.karaoke && currentLineIndex >= 0 && lines[currentLineIndex]) {
+            const activeLine = lines[currentLineIndex];
+            const chars = activeLine.querySelectorAll(".kar-ch");
+            if (chars.length) {
+                const threshold = lineFill * chars.length;
+                const prevLit = activeLine.dataset.litCount || "0";
+                const litCount = Math.floor(threshold);
+                if (prevLit !== String(litCount)) {
+                    for (let i = 0; i < chars.length; i++) {
+                        chars[i].classList.toggle("lit", i < litCount);
+                    }
+                    activeLine.dataset.litCount = String(litCount);
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 等化器控制
+    // ═══════════════════════════════════════════════════════════════════
+    function updateEqualizer() {
+        elements.eqSliders.forEach(slider => {
+            const value = slider.value;
+            const valueDisplay = slider.nextElementSibling;
+            valueDisplay.textContent = value;
+        });
+        saveToStorage();
+    }
+
+    function applyPreset(e) {
+        const presetName = e.target.dataset.preset;
+        const preset = EQ_PRESETS[presetName];
+
+        if (!preset) return;
+
+        elements.eqSliders.forEach((slider, index) => {
+            slider.value = preset[index];
+        });
+
+        updateEqualizer();
+
+        // 更新預設按鈕狀態
+        elements.presetBtns.forEach(btn => {
+            btn.classList.toggle("active", btn.dataset.preset === presetName);
+        });
+    }
+
+    function resetEqualizer() {
+        elements.eqSliders.forEach(slider => {
+            slider.value = 0;
+        });
+        updateEqualizer();
+        elements.presetBtns.forEach(btn => {
+            btn.classList.remove("active");
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 音效視覺化
+    // ═══════════════════════════════════════════════════════════════════
+    function initAudioVisualizer() {
+        try {
+            const canvas = elements.visualizerCanvas;
+            const ctx = canvas.getContext("2d");
+
+            // 設置畫布尺寸
+            function resizeCanvas() {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            }
+            resizeCanvas();
+            window.addEventListener("resize", resizeCanvas);
+
+            // 動畫循環
+            function draw() {
+                requestAnimationFrame(draw);
+
+                if (!state.isPlaying) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    return;
+                }
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const bars = 32;
+                const radius = Math.min(centerX, centerY) * 0.6;
+
+                // 繪製動態圓環
+                for (let i = 0; i < bars; i++) {
+                    const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
+                    const barHeight = Math.random() * 40 + 20;
+
+                    const x1 = centerX + Math.cos(angle) * radius;
+                    const y1 = centerY + Math.sin(angle) * radius;
+                    const x2 = centerX + Math.cos(angle) * (radius + barHeight);
+                    const y2 = centerY + Math.sin(angle) * (radius + barHeight);
+
+                    const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+                    gradient.addColorStop(0, "rgba(99, 102, 241, 0.8)");
+                    gradient.addColorStop(1, "rgba(129, 140, 248, 0.4)");
+
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = "round";
+                    ctx.stroke();
+                }
+
+                // 中心圓
+                const centerGradient = ctx.createRadialGradient(
+                    centerX, centerY, 0,
+                    centerX, centerY, radius * 0.5
+                );
+                centerGradient.addColorStop(0, "rgba(99, 102, 241, 0.3)");
+                centerGradient.addColorStop(1, "rgba(99, 102, 241, 0)");
+
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = centerGradient;
+                ctx.fill();
+            }
+
+            draw();
+        } catch (e) {
+            console.log("視覺化初始化失敗", e);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 新增音樂 Modal
+    // ═══════════════════════════════════════════════════════════════════
+    function openAddMusicModal() {
+        elements.addMusicModal.classList.add("active");
+        clearModalInputs();
+    }
+
+    function closeAddMusicModal() {
+        elements.addMusicModal.classList.remove("active");
+    }
+
+    function clearModalInputs() {
+        document.getElementById("new-title").value = "";
+        document.getElementById("new-artist").value = "";
+        document.getElementById("new-album").value = "";
+        document.getElementById("new-url").value = "";
+        document.getElementById("new-cover").value = "";
+        document.getElementById("new-duration").value = "180";
+        document.getElementById("new-lyrics").value = "";
+    }
+
+    function addMusic() {
+        const title = document.getElementById("new-title").value.trim();
+        const artist = document.getElementById("new-artist").value.trim();
+        const album = document.getElementById("new-album").value.trim() || "未知專輯";
+        const url = document.getElementById("new-url").value.trim();
+        const cover = document.getElementById("new-cover").value.trim() || "🎵";
+        const duration = parseInt(document.getElementById("new-duration").value) || 180;
+        const lyricsText = document.getElementById("new-lyrics").value.trim();
+
+        /************* Local content check *************/
+        if (!title || !artist) {
+            alert("請填寫歌曲標題和藝術家");
+            return;
+        }
+
+        const newTrack = {
+            id: Date.now(),
+            title,
+            artist,
+            album,
+            duration,
+            url,
+            cover,
+            lyrics: lyricsText ? lyricsText.split("\n") : [],
+            favorite: false
+        };
+
+        // 若歌詞欄是 LRC 格式，改用 timed 模式
+        if (lyricsText && isLrcFormat(lyricsText)) {
+            newTrack.lyricsTimed = parseLrc(lyricsText);
+            newTrack.lyrics = null;
+        }
+
+        state.playlist.push(newTrack);
+        renderPlaylist(elements.searchInput.value);
+        saveToStorage();
+        closeAddMusicModal();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 播放統計
+    // ═══════════════════════════════════════════════════════════════════
+    function updatePlayStats(track) {
+        state.stats.todayPlays++;
+        state.stats.playCounts[track.id] = (state.stats.playCounts[track.id] || 0) + 1;
+
+        // 找出最常播放
+        let maxPlays = 0;
+        let mostPlayedTrack = null;
+        for (const [trackId, plays] of Object.entries(state.stats.playCounts)) {
+            if (plays > maxPlays) {
+                maxPlays = plays;
+                mostPlayedTrack = state.playlist.find(t => t.id === parseInt(trackId));
+            }
+        }
+        state.stats.mostPlayed = mostPlayedTrack;
+
+        updateStats();
+        saveStatsToStorage();
+    }
+
+    function updateStats() {
+        const statPlayed = document.getElementById("stat-played");
+        const statPlays = document.getElementById("stat-plays");
+        const statMostPlayed = document.getElementById("stat-most-played");
+
+        if (statPlayed) {
+            statPlayed.textContent = formatTime(state.stats.totalPlayedTime);
+        }
+        if (statPlays) {
+            statPlays.textContent = state.stats.todayPlays;
+        }
+        if (statMostPlayed && state.stats.mostPlayed) {
+            statMostPlayed.textContent = state.stats.mostPlayed.title;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 按鈕狀態
+    // ═══════════════════════════════════════════════════════════════════
+    function updatePlayButton() {
+        elements.playBtn.textContent = state.isPlaying ? "⏸️" : "▶️";
+        elements.playBtn.classList.toggle("playing", state.isPlaying);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 鍵盤快捷鍵
+    // ═══════════════════════════════════════════════════════════════════
+    function handleKeyboard(e) {
+        // 忽略輸入框中的按鍵
+        if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+        switch (e.code) {
+            case "Space":
+                e.preventDefault();
+                togglePlay();
+                break;
+            case "ArrowLeft":
+                prevTrack();
+                break;
+            case "ArrowRight":
+                nextTrack();
+                break;
+            case "ArrowUp":
+                e.preventDefault();
+                state.volume = Math.min(100, state.volume + 5);
+                elements.volumeSlider.value = state.volume;
+                setVolume();
+                break;
+            case "ArrowDown":
+                e.preventDefault();
+                state.volume = Math.max(0, state.volume - 5);
+                elements.volumeSlider.value = state.volume;
+                setVolume();
+                break;
+            case "KeyM":
+                toggleMute();
+                break;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 本地存儲
+    // ═══════════════════════════════════════════════════════════════════
+    function saveToStorage() {
+        try {
+            localStorage.setItem("musicPlayer", JSON.stringify({
+                playlist: state.playlist,
+                volume: state.volume,
+                currentIndex: state.currentIndex
+            }));
+        } catch (e) {
+            console.log("本地存儲保存失敗", e);
+        }
+    }
+
+    function loadFromStorage() {
+        try {
+            const saved = localStorage.getItem("musicPlayer");
+            if (saved) {
+                const data = JSON.parse(saved);
+                state.playlist = Array.isArray(data.playlist) ? data.playlist : [];
+                state.volume = data.volume || 75;
+                state.currentIndex = data.currentIndex ?? -1;
+            }
+            // 沒 localStorage 不預塞 SAMPLE_MUSIC，留給 loadTracksManifest() 填
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    function saveStatsToStorage() {
+        try {
+            localStorage.setItem("musicStats", JSON.stringify(state.stats));
+        } catch (e) {
+            console.log("統計保存失敗", e);
+        }
+    }
+
+    function loadStatsFromStorage() {
+        try {
+            const saved = localStorage.getItem("musicStats");
+            if (saved) {
+                const savedStats = JSON.parse(saved);
+                // 檢查是否是今天
+                const today = new Date().toDateString();
+                if (savedStats.lastDate !== today) {
+                    state.stats = {
+                        totalPlayedTime: savedStats.totalPlayedTime || 0,
+                        todayPlays: 0,
+                        mostPlayed: savedStats.mostPlayed || null,
+                        playCounts: savedStats.playCounts || {}
+                    };
+                } else {
+                    state.stats = savedStats;
+                }
+            }
+        } catch (e) {
+            console.log("統計載入失敗", e);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 工具函數
+    // ═══════════════════════════════════════════════════════════════════
+    function formatTime(seconds) {
+        if (isNaN(seconds)) return "0:00";
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 啟動
+    // ═══════════════════════════════════════════════════════════════════
+    document.addEventListener("DOMContentLoaded", init);
 })();

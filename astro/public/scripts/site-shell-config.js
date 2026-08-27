@@ -1,39 +1,42 @@
 window.SITE_SHELL_CONFIG = (function () {
     var STD_NAV = [
-        { href: '/about',        label: 'About Me' },
-        { href: '/works',        label: '作品總覽' },
-        { href: '/ngs',          label: 'NGS 定序' },
-        { href: '/gene-ai',      label: '基因 AI' },
-        { href: '/firmware',     label: '🔌 韌體' },
-        { href: '/stem-cell',    label: '🧫 幹細胞' },
-        { href: '/protein-mpnn',           label: '互動展示' },
-        { href: '/interactive-showcase',   label: '⚡ Tech Lab', classes: 'nav-cta' }
+        { href: '/about', label: 'About Me' },
+        { href: '/works', label: '作品總覽' },
+        { href: '/ngs', label: 'NGS 定序' },
+        { href: '/gene-ai', label: '基因 AI' },
+        { href: '/firmware', label: '🔌 韌體' },
+        { href: '/stem-cell', label: '🧫 幹細胞' },
+        { href: '/protein-mpnn', label: 'ProteinMPNN' },
+        { href: '/music', label: '🎵 音樂' },
+        { href: '/interactive-showcase', label: '⚡ Tech Lab', classes: 'nav-cta' }
     ];
 
     var STD_DRAWER = [
-        { href: '/',                       label: '首頁' },
-        { href: '/about',                  label: 'About Me' },
-        { href: '/works',                  label: '作品總覽' },
-        { href: '/ngs',                    label: 'NGS 定序' },
-        { href: '/gene-ai',                label: '基因 AI' },
-        { href: '/report',                 label: '專案報告' },
-        { href: '/protein-mpnn',           label: '互動展示' },
-        { href: '/interactive-showcase',   label: '⚡ 互動技術展示館' },
-        { href: '/firmware',               label: '🔌 韌體 MCU' },
-        { href: '/interview',              label: '面試準備' },
-        { href: '/stem-cell',              label: '🧫 幹細胞研究' }
+        { href: '/', label: '首頁' },
+        { href: '/about', label: 'About Me' },
+        { href: '/works', label: '作品總覽' },
+        { href: '/ngs', label: 'NGS 定序' },
+        { href: '/gene-ai', label: '基因 AI' },
+        { href: '/report', label: '專案報告' },
+        { href: '/protein-mpnn', label: 'ProteinMPNN' },
+        { href: '/music', label: '🎵 音樂播放' },
+        { href: '/interactive-showcase', label: '⚡ 互動技術展示館' },
+        { href: '/firmware', label: '🔌 韌體 MCU' },
+        { href: '/interview-prep', label: '面試準備' },
+        { href: '/stem-cell', label: '🧫 幹細胞研究' }
     ];
 
     var STD_FOOTER_LINKS = [
-        { href: '/',             label: '首頁' },
-        { href: '/about',        label: 'About Me' },
-        { href: '/works',        label: '作品總覽' },
-        { href: '/gene-ai',      label: '基因 AI' },
-        { href: '/ngs',          label: 'NGS 定序' },
-        { href: '/protein-mpnn', label: '互動展示' },
-        { href: '/report',       label: '專案報告' },
-        { href: '/firmware',     label: '韌體' },
-        { href: '/stem-cell',    label: '幹細胞研究' },
+        { href: '/', label: '首頁' },
+        { href: '/about', label: 'About Me' },
+        { href: '/works', label: '作品總覽' },
+        { href: '/gene-ai', label: '基因 AI' },
+        { href: '/ngs', label: 'NGS 定序' },
+        { href: '/protein-mpnn', label: 'ProteinMPNN' },
+        { href: '/music', label: '🎵 音樂播放' },
+        { href: '/report', label: '專案報告' },
+        { href: '/firmware', label: '韌體' },
+        { href: '/stem-cell', label: '幹細胞研究' },
         { href: '/interactive-showcase', label: '⚡ Tech Lab' },
         { href: 'https://jtlai0921.wixsite.com/mysite', label: '個人網站', target: '_blank', rel: 'noreferrer' }
     ];
@@ -106,7 +109,7 @@ window.SITE_SHELL_CONFIG = (function () {
                 variant: 'inline',
                 noteHtml: '碩士論文互動展示 · 電資工程研究所 · 利用遺傳演算法於利潤價格分布為基礎的交易策略最佳化技術之研究',
                 links: [
-                    { href: '/',      label: '返回首頁' },
+                    { href: '/', label: '返回首頁' },
                     { href: '/works', label: '作品總覽' },
                     { href: '/about', label: 'About Me' }
                 ]
@@ -146,6 +149,13 @@ window.SITE_SHELL_CONFIG = (function () {
             navLinks: STD_NAV,
             drawerLinks: STD_DRAWER,
             footer: stdFooter('互動技術展示館', 'Three.js · Canvas · Web Animations API · A-Frame VR · WebAssembly · PWA · 2026')
+        },
+        music: {
+            brandHref: '/',
+            brandHtml: '<span class="nav-dot"></span>🎵 音樂播放',
+            navLinks: STD_NAV,
+            drawerLinks: STD_DRAWER,
+            footer: stdFooter('音樂播放平台', '現代化音樂播放平台 · 等化器 · 視覺化效果 · 2026')
         }
     };
 })();

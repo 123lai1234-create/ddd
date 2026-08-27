@@ -117,6 +117,12 @@ Thumbs.db
 .local/
 
 .vercel
+.vercel_python_packages/
+.netlify/
+.wrangler/
+.railway/
+.env
+.env*.local
+.hftoken
 .env*
-.vercel/output/
 .trash-nested-git/

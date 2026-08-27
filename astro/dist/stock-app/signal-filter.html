@@ -3455,7 +3455,12 @@ document.addEventListener("keydown", function(e) {
           + '</tr>';
       }
       var tableHtml = hits.length === 0
-        ? '<div style="padding:30px;text-align:center;color:#aab">📭 今日無命中股票</div>'
+        ? '<div style="padding:24px 18px;color:#ffb74d;background:rgba(255,145,0,.08);border:1px solid #ff9100;border-radius:8px;line-height:1.7">'
+          + '<b style="color:#ff9100">⚠ big_holders 表為空</b><br>'
+          + '本策略需 <code>big_holders</code> 表 (單一持股 &gt; 5% 大戶名單)，目前 0 筆，'
+          + '因此「單一主力大戶 + 股價近 52 週低」這個條件永遠不會命中。<br>'
+          + '<span style="color:#aab;font-size:12px">資料源：需定期抓 TWSE 每月 5% 以上大戶持股變動表 (t08tb)，尚未實作 loader。</span>'
+          + '</div>'
         : '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px">'
         + '<table style="width:100%;min-width:640px;border-collapse:collapse;background:rgba(0,0,0,0.25);border-radius:8px;overflow:hidden;font-size:13px">'
           + '<thead><tr style="background:rgba(255,183,77,0.15);color:var(--txt2);font-size:12px">'

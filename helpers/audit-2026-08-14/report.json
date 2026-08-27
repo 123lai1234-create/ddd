@@ -1,0 +1,104 @@
+[
+  {
+    "page": "stock-2330",
+    "url": "https://donttalk.vercel.app/stock-app/index.html?t=2330&_=1786689259",
+    "status": 200,
+    "screenshot": "D:\\project\\helpers\\audit-2026-08-14\\stock-2330.png",
+    "errors": [],
+    "snippet": {
+      "title": "台股均線買賣訊號系統",
+      "ma5": "2419",
+      "ma10": "2399",
+      "ma20": "2368.5",
+      "ma60": "2382.25",
+      "ma240": "-"
+    }
+  },
+  {
+    "page": "stock-2454",
+    "url": "https://donttalk.vercel.app/stock-app/index.html?t=2454&_=1786689259",
+    "error": "Page.goto: Timeout 60000ms exceeded.\nCall log:\n  - navigating to \"https://donttalk.vercel.app/stock-app/index.html?t=2454&_=1786689259\", waiting until \"load\"\n"
+  },
+  {
+    "page": "price-compare",
+    "url": "https://donttalk.vercel.app/stock-app/price-compare.html?_=1786689259",
+    "error": "Page.goto: Timeout 60000ms exceeded.\nCall log:\n  - navigating to \"https://donttalk.vercel.app/stock-app/price-compare.html?_=1786689259\", waiting until \"load\"\n"
+  },
+  {
+    "page": "exdiv",
+    "url": "https://donttalk.vercel.app/stock-app/exdiv.html?_=1786689259",
+    "status": 200,
+    "screenshot": "D:\\project\\helpers\\audit-2026-08-14\\exdiv.png",
+    "errors": [],
+    "snippet": {
+      "title": "除權息日曆 - 台股均線買賣訊號系統",
+      "ma5": null,
+      "ma10": null,
+      "ma20": null,
+      "ma60": null,
+      "ma240": null
+    }
+  },
+  {
+    "page": "uptrend-watch",
+    "url": "https://donttalk.vercel.app/stock-app/uptrend-watch.html?_=1786689259",
+    "status": 200,
+    "screenshot": "D:\\project\\helpers\\audit-2026-08-14\\uptrend-watch.png",
+    "errors": [],
+    "snippet": {
+      "title": "上升趨勢觀察 | 台股均線系統",
+      "ma5": null,
+      "ma10": null,
+      "ma20": null,
+      "ma60": null,
+      "ma240": null
+    }
+  },
+  {
+    "page": "sitemap",
+    "url": "https://donttalk.vercel.app/stock-app/sitemap.html?_=1786689259",
+    "status": 200,
+    "screenshot": "D:\\project\\helpers\\audit-2026-08-14\\sitemap.png",
+    "errors": [],
+    "snippet": {
+      "title": "網站地圖 | 台股分析系統",
+      "ma5": null,
+      "ma10": null,
+      "ma20": null,
+      "ma60": null,
+      "ma240": null
+    }
+  },
+  {
+    "page": "dashboard",
+    "url": "https://donttalk.vercel.app/stock-app/dashboard.html?_=1786689259",
+    "status": 200,
+    "screenshot": "D:\\project\\helpers\\audit-2026-08-14\\dashboard.png",
+    "errors": [
+      "error: Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "snippet": {
+      "title": "Stock-App 總覽儀表板",
+      "ma5": null,
+      "ma10": null,
+      "ma20": null,
+      "ma60": null,
+      "ma240": null
+    }
+  },
+  {
+    "page": "signal-filter",
+    "url": "https://donttalk.vercel.app/stock-app/signal-filter.html?_=1786689259",
+    "status": 200,
+    "screenshot": "D:\\project\\helpers\\audit-2026-08-14\\signal-filter.png",
+    "errors": [],
+    "snippet": {
+      "title": "買入訊號篩選器 | 台股均線系統",
+      "ma5": null,
+      "ma10": null,
+      "ma20": null,
+      "ma60": null,
+      "ma240": null
+    }
+  }
+]

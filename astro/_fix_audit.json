@@ -1,0 +1,130 @@
+[
+  {
+    "table": "watchlist",
+    "code": "2887",
+    "old_name": "台新金",
+    "new_name": "台新新光金",
+    "old_ticker": "2887.TW",
+    "new_ticker": null
+  },
+  {
+    "table": "watchlist",
+    "code": "2327",
+    "old_name": "國巨",
+    "new_name": "國巨*",
+    "old_ticker": "2327.TW",
+    "new_ticker": null
+  },
+  {
+    "table": "watchlist",
+    "code": "1590",
+    "old_name": "亞德客",
+    "new_name": "亞德客-KY",
+    "old_ticker": "1590.TW",
+    "new_ticker": null
+  },
+  {
+    "table": "watchlist",
+    "code": "2883",
+    "old_name": "開發金",
+    "new_name": "凱基金",
+    "old_ticker": "2883.TW",
+    "new_ticker": null
+  },
+  {
+    "table": "watchlist",
+    "code": "6531",
+    "old_name": "愛普",
+    "new_name": "愛普*",
+    "old_ticker": "6531.TW",
+    "new_ticker": null
+  },
+  {
+    "table": "watchlist",
+    "code": "2006",
+    "old_name": "燁輝",
+    "new_name": "東和鋼鐵",
+    "old_ticker": "2006.TW",
+    "new_ticker": null
+  },
+  {
+    "table": "watchlist",
+    "code": "00646",
+    "old_name": "富邦深100",
+    "new_name": "元大S&P500",
+    "old_ticker": "00646.TW",
+    "new_ticker": null
+  },
+  {
+    "table": "watchlist",
+    "code": "00881",
+    "old_name": "國泰台灣5G+",
+    "new_name": "國泰台灣科技龍頭",
+    "old_ticker": "00881.TW",
+    "new_ticker": null
+  },
+  {
+    "table": "watchlist",
+    "code": "00891",
+    "old_name": "國泰智能電動車",
+    "new_name": "中信關鍵半導體",
+    "old_ticker": "00891.TW",
+    "new_ticker": null
+  },
+  {
+    "table": "watchlist",
+    "code": "00679B",
+    "old_name": "元大美債20年",
+    "new_name": null,
+    "old_ticker": "00679B.TW",
+    "new_ticker": "00679B.TWO"
+  },
+  {
+    "table": "watchlist",
+    "code": "00687B",
+    "old_name": "國泰20年美債",
+    "new_name": null,
+    "old_ticker": "00687B.TW",
+    "new_ticker": "00687B.TWO"
+  },
+  {
+    "table": "watchlist",
+    "code": "00937B",
+    "old_name": "群益ESG投等債20+",
+    "new_name": null,
+    "old_ticker": "00937B.TW",
+    "new_ticker": "00937B.TWO"
+  },
+  {
+    "table": "watchlist",
+    "code": "00675L",
+    "old_name": "富邦恒生國企正2",
+    "new_name": "富邦臺灣加權正2",
+    "old_ticker": "00675L.TW",
+    "new_ticker": null
+  },
+  {
+    "table": "watchlist",
+    "code": "006205",
+    "old_name": "富邦上證180",
+    "new_name": "富邦上証",
+    "old_ticker": "006205.TW",
+    "new_ticker": null
+  },
+  {
+    "table": "watchlist",
+    "code": "00888",
+    "old_name": "永豐台灣ESG",
+    "new_name": null,
+    "old_ticker": "00888.TW",
+    "new_ticker": "00888.TWO"
+  },
+  {
+    "table": "etf_watchlist",
+    "code": "00918",
+    "old_name": "大成中國A股淨利",
+    "new_name": "大華優利高填息30",
+    "old_ticker": "00918.TW",
+    "new_ticker": null
+  }
+]

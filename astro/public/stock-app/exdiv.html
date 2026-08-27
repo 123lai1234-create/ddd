@@ -602,11 +602,14 @@ let currentDays = 90;
           throw new Error(data.message || '載入失敗');
         }
 
-        allData = data.data || [];
+        // ★ 修正 BUG-6：data.data 防 null（後端偶爾回傳空物件 / 非預期 schema）；
+        //   data.update_time 防 undefined → 顯示「未知」而非字串 "undefined"。
+        allData = Array.isArray(data.data) ? data.data : [];
         filteredData = allData;
-
-        document.getElementById('updateTime').textContent = 
-          '更新時間：' + data.update_time;
+        var updateTs = data.update_time || data.fetched_at || data.last_update || data.lastUpdate;
+        var updateText = updateTs ? String(updateTs) : '未知（後端未提供）';
+        document.getElementById('updateTime').textContent =
+          '更新時間：' + updateText;
 
         if (data.debug) {
           console.log('除錯資訊：', data.debug);

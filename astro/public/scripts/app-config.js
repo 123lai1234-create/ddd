@@ -5,73 +5,30 @@
     const normalizeList = (values) => Array.isArray(values)
         ? values.map(normalizeUrl).filter(Boolean)
         : [];
-    const DEAD_HOST_PATTERNS = [
-        'fly.dev',
-        'onrender.com',
-        'herokuapp.com',
-        'up.railway.app',
-        'donttalk-api.vercel.app',
-        'railway.app',
-    ];
-    const isDeadApiBase = (value) => DEAD_HOST_PATTERNS.some((dead) => value.includes(dead));
 
     const rawInjectedApiBase = '__API_BASE_URL__';
-    const injectedApiBaseCandidate = rawInjectedApiBase === '__API_BASE_URL__'
+    const injectedApiBase = rawInjectedApiBase === '__API_BASE_URL__'
         ? ''
         : normalizeUrl(rawInjectedApiBase);
-    const injectedApiBase = isDeadApiBase(injectedApiBaseCandidate) ? '' : injectedApiBaseCandidate;
-    const configuredApiBaseCandidate = typeof existingConfig.API_BASE_URL === 'string'
+    const configuredApiBase = typeof existingConfig.API_BASE_URL === 'string'
         ? normalizeUrl(existingConfig.API_BASE_URL)
         : '';
-    const configuredApiBase = isDeadApiBase(configuredApiBaseCandidate) ? '' : configuredApiBaseCandidate;
     const host = window.location.hostname;
-    const isLocalhost = ['localhost', '127.0.0.1'].includes(host);
-    // The portfolio API deployment is currently offline. Keep production
-    // discovery empty so every page fails closed instead of probing stale
-    // Vercel/Railway hosts and filling DevTools with 404/CORS errors.
-    const defaultApiCandidates = isLocalhost
-        ? [`http://${host}:8000`]
-        : [];
-
-    // ── Stale-cache scrub ────────────────────────────────────────────────────
-    // Older versions of this file (and the v1 service-worker-served pages)
-    // stored `fly.dev` candidates in `window.APP_CONFIG.API_CANDIDATES` and
-    // / or in the SW HTTP cache. When a stale HTML payload set
-    // `window.APP_CONFIG.API_CANDIDATES` from a previous session, this run
-    // would inherit those dead hosts and the resolve loop would burn timeouts
-    // on every page. Bumping APP_CONFIG_VERSION forces a one-time reset.
-    const APP_CONFIG_VERSION = 3;
-    const STORAGE_VERSION_KEY = '_app_config_version';
-    const STORAGE_API_BASE_KEY = '_app_config_api_base';
-    try {
-        const storedVersion = parseInt(localStorage.getItem(STORAGE_VERSION_KEY) || '0', 10);
-        if (storedVersion < APP_CONFIG_VERSION) {
-            localStorage.setItem(STORAGE_VERSION_KEY, String(APP_CONFIG_VERSION));
-            localStorage.removeItem(STORAGE_API_BASE_KEY);
-            // Force re-derivation from defaults even if a previous run cached
-            // candidates on `window.APP_CONFIG`.
-            if (window.APP_CONFIG) {
-                delete window.APP_CONFIG.API_CANDIDATES;
-                delete window.APP_CONFIG.API_BASE_URL;
-                delete window.APP_CONFIG.DEFAULT_API_BASE_URL;
-            }
-        }
-    } catch {
-        /* localStorage may be disabled — fall through to defaults. */
-    }
-
-    // Drop any dead hosts that older runs may have pushed into APP_CONFIG.
-    const liveApiCandidatesFromExisting = normalizeList(existingConfig.API_CANDIDATES)
-        .filter((candidate) => !isDeadApiBase(candidate));
-    const existingDefaultApiBase = normalizeUrl(existingConfig.DEFAULT_API_BASE_URL);
-    const liveDefaultApiBase = isDeadApiBase(existingDefaultApiBase) ? '' : existingDefaultApiBase;
-
-    const resolvedPortfolioServiceNames = normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES);
-    const resolvedApiServiceNames = normalizeList(existingConfig.API_SERVICE_NAMES);
-    const resolvedApiCandidates = liveApiCandidatesFromExisting.length
-        ? liveApiCandidatesFromExisting
+    const defaultPortfolioServiceNames = ['donttalk'];
+    const defaultApiServiceNames = ['donttalk-api'];
+    const defaultApiCandidates = ['https://donttalk.vercel.app']; // live: same-origin Vercel edge API (/api/*); Railway decommissioned;
+    const resolvedPortfolioServiceNames = normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES).length
+        ? normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES)
+        : defaultPortfolioServiceNames;
+    const resolvedApiServiceNames = normalizeList(existingConfig.API_SERVICE_NAMES).length
+        ? normalizeList(existingConfig.API_SERVICE_NAMES)
+        : defaultApiServiceNames;
+    const resolvedApiCandidates = normalizeList(existingConfig.API_CANDIDATES).length
+        ? normalizeList(existingConfig.API_CANDIDATES)
         : defaultApiCandidates;
-    const fallbackApiBase = resolvedApiCandidates[resolvedApiCandidates.length - 1] || '';
+    const fallbackApiBase = ['localhost', '127.0.0.1'].includes(host)
+        ? `http://${host}:8000`
+        : (resolvedApiCandidates[resolvedApiCandidates.length - 1] || '');
     const resolutionCache = new Map();
 
     const pushCandidate = (candidates, value) => {
@@ -85,9 +42,9 @@
         const candidates = [];
         pushCandidate(candidates, configuredApiBase);
         pushCandidate(candidates, injectedApiBase);
-        pushCandidate(candidates, liveDefaultApiBase);
+        pushCandidate(candidates, existingConfig.DEFAULT_API_BASE_URL);
 
-        if (options.includeCurrentOrigin !== false && (isLocalhost || configuredApiBase || injectedApiBase)) {
+        if (options.includeCurrentOrigin !== false) {
             const currentOrigin = normalizeUrl(window.location.origin);
             pushCandidate(candidates, currentOrigin);
             for (const portfolioServiceName of resolvedPortfolioServiceNames) {
@@ -112,22 +69,25 @@
         }
 
         const candidates = deriveApiCandidates(options);
+        // The deployed API lives under /api/* (Vercel edge function); probe
+        // /api/healthz first, then fall back to the classic root /healthz.
+        const probePaths = ['/api/healthz', '/healthz'];
         for (const candidate of candidates) {
-            try {
-                const response = await fetch(`${candidate}/healthz`, {
-                    signal: AbortSignal.timeout(3000),
-                });
-                if (!response.ok) {
+            for (const probePath of probePaths) {
+                try {
+                    const response = await fetch(`${candidate}${probePath}`);
+                    if (!response.ok) {
+                        continue;
+                    }
+
+                    const data = await response.json().catch(() => null);
+                    if (data?.status === 'ok') {
+                        resolutionCache.set(cacheKey, candidate);
+                        return candidate;
+                    }
+                } catch (error) {
                     continue;
                 }
-
-                const data = await response.json().catch(() => null);
-                if (data?.status === 'ok') {
-                    resolutionCache.set(cacheKey, candidate);
-                    return candidate;
-                }
-            } catch (error) {
-                continue;
             }
         }
 

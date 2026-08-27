@@ -1,0 +1,37 @@
+﻿python : Exception in thread Thread-2 (_readerthread):
+位於 線路:1 字元:122
++ ... t.Encoding]::UTF8; cd D:\project; python fix-mojibake.py 2>&1 | Out-F ...
++                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Exception in th..._readerthread)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Traceback (most recent call last):
+  File "C:\Python314\Lib\threading.py", line 1082, in _bootstrap_inner
+    self._context.run(self.run)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Python314\Lib\threading.py", line 1024, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\subprocess.py", line 1613, in _readerthread
+    buffer.append(fh.read())
+                  ~~~~~~~^^
+UnicodeDecodeError: 'cp950' codec can't decode byte 0x82 in position 61: illegal multibyte sequence
+Fixed 1x: 'name: "鴻海",   ticker: "2317.TW"' -> 'name: "鴻海",   ticker: "2317.TW"'
+Fixed 1x: '此股票�???K 線' -> '此股票沒有 K 線'
+Fixed 4x: '??market_price_bars' -> '進 market_price_bars'
+Fixed 1x: '??stock watchlist' -> '股票 watchlist'
+Fixed 1x: '??cache stuck on polish-final version' -> 'cache stuck on polish-final version'
+Fixed 40x: '?��???' -> ' allowlist'
+Fixed 51x: '?��??' -> '白名單 IP'
+Fixed 1x: '??mega edge-runtime router' -> '— mega edge-runtime router'
+Fixed 1x: 'x-real-ip ??fallback' -> 'x-real-ip 是 fallback'
+Fixed 7x: '??a' -> ''
+Fixed 317x: '??' -> ''
+Fixed 1826x: '�' -> ''
+
+Total fixes applied: 2251
+Traceback (most recent call last):
+  File "D:\project\fix-mojibake.py", line 80, in <module>
+    print(f'\n\u2717 Still has errors: {result.stderr[:200]}')
+                                   ~~~~~~~~~~~~~^^^^^^
+TypeError: 'NoneType' object is not subscriptable

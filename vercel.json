@@ -1,29 +1,144 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": "astro/dist",
-  "buildCommand": "cd astro && npm install --ignore-scripts && npm run build",
-  "installCommand": "cd astro && npm install --ignore-scripts",
+  "installCommand": "node ../vercel-install.mjs",
+  "buildCommand": "node ../vercel-build.mjs",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/[[...slug]]" }
+  "env": {
+    "API_PROXY_TARGET": "https://vercel-edge-function"
+  },
+  "headers": [
+    {
+      "source": "/games/xian-godot/(.*)?",
+      "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "require-corp"
+        }
+      ]
+    },
+    {
+      "source": "/xian-godot",
+      "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        }
+      ]
+    }
   ],
-  "crons": [
-    { "path": "/api/admin/load/all", "schedule": "30 7 * * 1-5" },
-    { "path": "/api/admin/load/institutional", "schedule": "0 14 * * 1-5" },
-    { "path": "/api/admin/load/exdiv", "schedule": "0 15 * * 1-5" },
-    { "path": "/api/admin/load/revenue?typeks=sii", "schedule": "0 14 12 * *" },
-    { "path": "/api/admin/load/revenue?typeks=otc", "schedule": "30 14 12 * *" },
-    { "path": "/api/admin/load/futures", "schedule": "15 14 * * 1-5" },
-    { "path": "/api/admin/load/overseas", "schedule": "30 14 * * 1-5" },
-    { "path": "/api/admin/load/ai_capex", "schedule": "0 1 * * *" },
-    { "path": "/api/admin/load/market_prices", "schedule": "30 6 * * 1-5" },
-    { "path": "/api/admin/load/macro_yields", "schedule": "30 7 * * 1-5" },
-    { "path": "/api/admin/load/macro_news", "schedule": "0 8 * * *" },
-    { "path": "/api/admin/load/index_institutional", "schedule": "15 16 * * 1-5" },
-    { "path": "/api/admin/load/markers", "schedule": "30 18 * * 1-5" },
-    { "path": "/api/admin/load/sectors", "schedule": "0 7 * * 1" },
-    { "path": "/api/admin/load/big_holders/finmind", "schedule": "0 9 1 * *" },
-    { "path": "/api/admin/load/financial_reports/finmind", "schedule": "0 10 1 * *" }
+  "rewrites": [
+    {
+      "source": "/og",
+      "destination": "/api/og"
+    },
+    {
+      "source": "/healthz",
+      "destination": "/api/healthz"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/.*",
+      "dest": "/api/catchall"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/stock",
+      "destination": "/stock-app",
+      "permanent": true
+    },
+    {
+      "source": "/stock/",
+      "destination": "/stock-app",
+      "permanent": true
+    },
+    {
+      "source": "/about_me.html",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/about_me",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/works.html",
+      "destination": "/works",
+      "permanent": true
+    },
+    {
+      "source": "/gene_ai.html",
+      "destination": "/gene-ai",
+      "permanent": true
+    },
+    {
+      "source": "/gene_ai",
+      "destination": "/gene-ai",
+      "permanent": true
+    },
+    {
+      "source": "/ngs.html",
+      "destination": "/ngs",
+      "permanent": true
+    },
+    {
+      "source": "/report.html",
+      "destination": "/report",
+      "permanent": true
+    },
+    {
+      "source": "/thesis.html",
+      "destination": "/thesis",
+      "permanent": true
+    },
+    {
+      "source": "/protein_mpnn.html",
+      "destination": "/protein-mpnn",
+      "permanent": true
+    },
+    {
+      "source": "/protein_mpnn",
+      "destination": "/protein-mpnn",
+      "permanent": true
+    },
+    {
+      "source": "/interview_prep.html",
+      "destination": "/interview",
+      "permanent": true
+    },
+    {
+      "source": "/interview_prep",
+      "destination": "/interview",
+      "permanent": true
+    },
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/stem_cell.html",
+      "destination": "/stem-cell",
+      "permanent": true
+    },
+    {
+      "source": "/stem_cell",
+      "destination": "/stem-cell",
+      "permanent": true
+    },
+    {
+      "source": "/music.html",
+      "destination": "/music",
+      "permanent": true
+    }
   ]
 }
 

@@ -51,10 +51,10 @@
       <span class="spacer"></span>
       <a href="/stock-app/index.html" target="_blank" rel="noopener">在新分頁開啟 ↗</a>
     </div>
-    <div class="banner-warn" id="backendBanner">
+    <div class="banner-warn" id="backendBanner" hidden>
       <span class="banner-icon">📡</span>
       <span class="banner-text">
-        <b id="backendBannerTitle">後端服務已下線</b> — <span id="backendBannerMsg">個股 API 已於 2026-07-01 停用，詳見 <a href="https://donttalk.vercel.app/blog" style="color:#ffd89a;text-decoration:underline">技術文章</a>。</span>
+        <b id="backendBannerTitle">後端服務異常</b> — <span id="backendBannerMsg">healthz 探測失敗，請稍後重試或 <a href="/healthz" target="_blank" rel="noopener">查看狀態</a>。</span>
       </span>
     </div>
     <div class="frame-host">
@@ -74,19 +74,83 @@
     </div>
   </div>
   <script>
-    // Stock backend permanently offline since 2026-07-01.
-    // Health probe removed — always show offline state.
+    // Real healthz probe — updates banner based on actual backend status.
+    // Polls every 30s. Only shows banner if backend is offline or DB is down.
     (function() {
       const dot = document.getElementById('healthDot');
       const label = document.getElementById('healthLabel');
-      if (dot) {
-        dot.classList.add('dot-offline');
-        dot.style.boxShadow = '0 0 6px rgba(255,95,86,0.6)';
+      const banner = document.getElementById('backendBanner');
+      const bannerTitle = document.getElementById('backendBannerTitle');
+      const bannerMsg = document.getElementById('backendBannerMsg');
+
+      const setOnline = () => {
+        if (dot) {
+          dot.classList.remove('dot-offline', 'dot-connecting');
+          dot.classList.add('dot-online');
+          dot.style.boxShadow = '';
+        }
+        if (label) {
+          label.textContent = '後端已連線';
+          label.classList.remove('health-offline');
+          label.classList.add('health-online');
+        }
+        if (banner) banner.hidden = true;
+      };
+      const setConnecting = () => {
+        if (dot) {
+          dot.classList.remove('dot-offline', 'dot-online');
+          dot.classList.add('dot-connecting');
+        }
+        if (label) {
+          label.textContent = '連線中…';
+          label.classList.remove('health-online', 'health-offline');
+        }
+        if (banner) banner.hidden = true;
+      };
+      const setOffline = (msg) => {
+        if (dot) {
+          dot.classList.remove('dot-online', 'dot-connecting');
+          dot.classList.add('dot-offline');
+          dot.style.boxShadow = '0 0 6px rgba(255,95,86,0.6)';
+        }
+        if (label) {
+          label.textContent = '後端已下線';
+          label.classList.remove('health-online');
+          label.classList.add('health-offline');
+        }
+        if (banner) {
+          if (bannerMsg && msg) bannerMsg.textContent = msg;
+          banner.hidden = false;
+        }
+      };
+
+      async function probe() {
+        setConnecting();
+        try {
+          const ctrl = new AbortController();
+          const tid = setTimeout(() => ctrl.abort(), 5000);
+          const r = await fetch('/api/healthz', { signal: ctrl.signal, cache: 'no-store' });
+          clearTimeout(tid);
+          if (!r.ok) {
+            setOffline(`healthz HTTP ${r.status}`);
+            return;
+          }
+          const j = await r.json().catch(() => ({}));
+          if (j && j.db === false) {
+            setOffline('Neon DB 連線失敗 (db=false)');
+            return;
+          }
+          setOnline();
+        } catch (e) {
+          setOffline(`healthz 探測失敗：${e?.message || e}`);
+        }
       }
-      if (label) {
-        label.textContent = '後端已下線';
-        label.classList.add('health-offline');
-      }
+      probe();
+      setInterval(probe, 30000);
+      // Re-probe when tab regains focus (catch quick state changes).
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) probe();
+      });
     })();
   </script>
 </body>

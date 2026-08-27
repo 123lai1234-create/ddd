@@ -1,19 +1,13 @@
 ---
-// Immersive Background Component for Astro — with random video background
 ---
 
 <div class="immersive-bg" id="immersive-bg">
-    <video
-        id="bg-video"
-        class="bg-video"
-        autoplay
-        muted
-        loop
-        playsinline
-    >
-        <source id="video-source" type="video/webm" />
+    <video class="immersive-video" id="bgVideo" autoplay muted loop playsinline>
+        <source id="bgSource" type="video/mp4">
     </video>
-    <div class="bg-overlay"></div>
+    <div class="vignette-overlay"></div>
+    <div class="content-scrim"></div>
+    <div class="watermark-cover"></div>
 </div>
 
 <style>
@@ -23,26 +17,31 @@
         z-index: -1;
         overflow: hidden;
         background: #08060e;
-    }
-
-    .bg-video {
-        position: absolute;
-        top: 50%;
-        left: 0;
-        width: 100%;
-        height: auto;
-        min-height: 100%;
-        object-fit: cover;
-        object-position: center top;
-        transform: translateY(0);
         pointer-events: none;
     }
 
-    .bg-overlay {
+    .immersive-video {
         position: absolute;
         inset: 0;
-        background: rgba(8, 6, 14, 0.25);
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 1;
+        z-index: -1;
+        image-rendering: high-quality;
+    }
+
+    .vignette-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
         pointer-events: none;
+        background: radial-gradient(ellipse at center, transparent 60%, rgba(8,6,14,0.15) 100%);
+    }
+
+    /* 浮水印覆蓋層 - 已停用，使用處理的影片 */
+    .watermark-cover {
+        display: none;
     }
 
     .particle {
@@ -67,10 +66,36 @@
 </style>
 
 <script>
+    // Only files that actually exist in /public (bg1-bg15). UUID-named files were
+    // never shipped and produced 404 console errors, so they are omitted.
+    const videos = [
+        '/bg1.mp4', '/bg2.mp4', '/bg3.mp4', '/bg4.mp4', '/bg5.mp4',
+        '/bg6.mp4', '/bg7.mp4', '/bg8.mp4', '/bg9.mp4', '/bg10.mp4',
+        '/bg11.mp4', '/bg12.mp4', '/bg13.mp4', '/bg14.mp4', '/bg15.mp4'
+    ];
+    let currentIndex = Math.floor(Math.random() * videos.length);
+    let lastIndex = currentIndex;
+
+    function getRandomVideo() {
+        while (currentIndex === lastIndex && videos.length > 1) {
+            currentIndex = Math.floor(Math.random() * videos.length);
+        }
+        lastIndex = currentIndex;
+        return videos[currentIndex];
+    }
+
+    function switchVideo() {
+        const video = document.getElementById('bgVideo');
+        const source = document.getElementById('bgSource');
+        if (!video || !source) return;
+        const newVideo = getRandomVideo();
+        source.src = newVideo;
+        video.load();
+    }
+
     class ImmersiveBackground {
         constructor() {
             this.container = document.getElementById('immersive-bg');
-            this.video = document.getElementById('bg-video');
             this.particles = [];
             this.init();
         }
@@ -78,52 +103,27 @@
         init() {
             this.createParticles();
             this.setupEventListeners();
-            this.setupVideo();
-        }
-
-        setupVideo() {
-            if (!this.video) return;
-            
-            // Random video selection
-            const videos = [
-                '179f1b00-2727-47ec-81d3-591d8405c762_watermarked.webm',
-                '314d4f6d-a33c-4ae9-98be-278f186e8b69_watermarked.webm',
-                '5ae42f29-5a34-41e9-a27c-6631b45dd16a_watermarked.webm',
-                '6b95a3b8-no-watermark_watermarked.webm',
-                'a0288e4b-f7ee-4e17-b24c-5d7d0f0a514f_watermarked.webm',
-                'bb49c6e0-0a76-4bc7-9e69-11f1737b4461_watermarked.webm',
-                'ca1772e9-acb6-496e-9a58-8a86f29e890a_watermarked.webm',
-                'cd66d66a-3dbb-4ed4-bd24-4a05add4b914_watermarked.webm'
-            ];
-            
-            const randomVideo = videos[Math.floor(Math.random() * videos.length)];
-            const source = document.getElementById('video-source');
-            if (source) {
-                source.src = '/videos/' + randomVideo;
-            }
-            
-            this.video.play().catch(() => {
-                this.video.style.display = 'none';
-            });
+            setInterval(() => {
+                const video = document.getElementById('bgVideo');
+                if (video && !video.paused) {
+                    switchVideo();
+                }
+            }, 15000);
         }
 
         createParticles() {
             if (!this.container) return;
-            
             const particleCount = Math.min(80, Math.floor(window.innerWidth / 15));
-
             for (let i = 0; i < particleCount; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
                 particle.style.left = Math.random() * 100 + '%';
                 particle.style.top = Math.random() * 100 + '%';
-                
                 const size = Math.random() * 3 + 1;
                 particle.style.width = size + 'px';
                 particle.style.height = size + 'px';
                 particle.style.animationDuration = (Math.random() * 10 + 15) + 's';
                 particle.style.animationDelay = Math.random() * 5 + 's';
-                
                 this.container.appendChild(particle);
                 this.particles.push(particle);
             }
@@ -143,11 +143,24 @@
         }
     }
 
+    // 初始化時選擇隨機影片
+    function initRandomVideo() {
+        const video = document.getElementById('bgVideo');
+        const source = document.getElementById('bgSource');
+        if (video && source) {
+            const initialIndex = Math.floor(Math.random() * videos.length);
+            source.src = videos[initialIndex];
+            video.load();
+        }
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+            initRandomVideo();
             new ImmersiveBackground();
         });
     } else {
+        initRandomVideo();
         new ImmersiveBackground();
     }
 </script>

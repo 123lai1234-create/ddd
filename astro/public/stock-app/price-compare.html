@@ -257,12 +257,15 @@ function renderPicker(kind){
   const q = ($(s.elSearch).value||'').trim().toLowerCase();
   const rows = s.data.series.filter(x=>{
     if(!q) return true;
-    return (x.code+'').toLowerCase().includes(q) || (x.name+'').toLowerCase().includes(q);
+    const nm = (x.name == null) ? '' : String(x.name);
+    return (x.code+'').toLowerCase().includes(q) || nm.toLowerCase().includes(q);
   });
   $(s.elPick).innerHTML = rows.map(x=>{
     const checked = s.selected.has(x.code) ? 'checked' : '';
+    // ★ 修正 BUG-4：後端可能回傳 name=null，避免顯示字串 "null"
+    const displayName = (x.name == null || x.name === '' || x.name === 'null') ? '—' : x.name;
     return `<label class="chk"><input type="checkbox" data-code="${x.code}" ${checked}>`
-      + `<span>${x.code} ${x.name}</span>`
+      + `<span>${x.code} ${displayName}</span>`
       + `<span class="rt ${clsPct(x.ret)}">${fmtPct(x.ret)}</span></label>`;
   }).join('');
   $(s.elPick).querySelectorAll('input[type=checkbox]').forEach(cb=>{
@@ -287,7 +290,7 @@ function renderChart(kind){
   if(!s.chart || s.chart.isDisposed()){ el.innerHTML=''; s.chart = echarts.init(el, 'dark'); }
   const picked = s.data.series.filter(x=>s.selected.has(x.code));
   const series = picked.map((x,i)=>({
-    name: x.code+' '+x.name,
+    name: x.code+' '+((x.name == null || x.name === '' || x.name === 'null') ? '—' : x.name),
     type: 'line',
     showSymbol: false,
     smooth: false,

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ETF 共同持股分析</title>
+  <link rel="icon" type="image/svg+xml" href="static/favicon.svg">
+  <style>
+    :root {
+      --bg:#0f0f23; --bg2:#1a1a3e; --bg3:#1e1e42; --txt:#e0e0ff; --txt2:#8888aa;
+      --green:#00c853; --red:#ff1744; --orange:#ff9100;
+      --blue:#448aff; --cyan:#00bcd4; --bdr:#2a2a5a;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { overflow-x:hidden; max-width:100%; }
+    body { background:var(--bg); color:var(--txt); font-family:'Segoe UI','Microsoft JhengHei',sans-serif; min-height:100vh; }
+    .header { background:linear-gradient(135deg,var(--bg2),#12122e); padding:14px 24px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+      border-bottom:1px solid var(--bdr); position:sticky; top:0; z-index:10; }
+    .header h1 { font-size:18px; background:linear-gradient(90deg,var(--blue),var(--cyan));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; white-space:nowrap; }
+    .nav { display:flex; gap:8px; flex-wrap:wrap; }
+    .nav a { color:var(--txt2); text-decoration:none; padding:6px 12px; border-radius:6px;
+      border:1px solid var(--bdr); font-size:13px; transition:all .2s; white-space:nowrap; }
+    .nav a:hover { color:var(--cyan); border-color:var(--cyan); }
+    .nav a.active { background:var(--cyan); color:#000; font-weight:700; }
+
+    .container { max-width:1100px; margin:24px auto; padding:0 16px; }
+    .panel { background:var(--bg2); border:1px solid var(--bdr); border-radius:10px;
+      padding:18px; margin-bottom:18px; }
+    .panel h2 { color:var(--cyan); font-size:14px; margin-bottom:12px; font-weight:600; }
+    .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
+    button { padding:8px 18px; border:none; border-radius:6px; font-size:13px;
+      cursor:pointer; font-weight:600; color:#fff; transition:all .2s; }
+    .btn-primary { background:var(--blue); }
+    .btn-refresh { background:var(--orange); }
+    .btn-cache { background:#666; }
+    button:hover:not(:disabled) { opacity:.85; transform:translateY(-1px); }
+    button:disabled { opacity:.4; cursor:not-allowed; }
+
+    .progress-wrap { margin-top:14px; display:none; }
+    .pbar-bg { background:var(--bg); border-radius:999px; height:10px; overflow:hidden; border:1px solid var(--bdr); }
+    .pbar-fill { background:linear-gradient(90deg,var(--blue),var(--cyan)); height:100%; width:0%; transition:width .3s; }
+    .ptext { font-size:12px; color:var(--txt2); margin-top:6px; }
+    #statusMsg { margin-top:10px; font-size:13px; min-height:18px; color:var(--txt2); }
+
+    .stats-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+    .stat-box { background:var(--bg2); border:1px solid var(--bdr); border-radius:8px;
+      padding:12px 18px; flex:1; min-width:130px; text-align:center; }
+    .stat-box .val { font-size:1.6rem; font-weight:800; color:var(--cyan); }
+    .stat-box .lbl { font-size:11px; color:var(--txt2); margin-top:2px; }
+
+    .table-wrap { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;
+      border-radius:8px; border:1px solid var(--bdr); }
+    table { width:100%; border-collapse:collapse; background:var(--bg2); min-width:640px; }
+    th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--bdr); font-size:13px;
+      vertical-align:top; }
+    th { background:var(--bg3); color:var(--cyan); font-weight:600; white-space:nowrap; }
+    tr:hover td { background:var(--bg3); }
+    .rank { color:var(--orange); font-weight:700; width:50px; white-space:nowrap; }
+    .code { color:var(--txt2); font-family:monospace; white-space:nowrap; }
+    .name { color:var(--txt); font-weight:600; }
+    td.etf-list { max-width:260px; }
+    .pill { display:inline-block; padding:2px 7px; border-radius:10px; font-size:10px;
+      margin-right:3px; margin-bottom:3px; background:var(--bg3); color:var(--txt2); border:1px solid var(--bdr); }
+
+    .source-badge { display:inline-block; font-size:11px; padding:2px 9px; border-radius:999px;
+      font-weight:600; margin-right:6px; background:var(--bg3); color:var(--cyan); }
+
+    @media (max-width: 640px) {
+      .header { padding:10px 14px; gap:8px; }
+      .header h1 { font-size:15px; }
+      .nav a { padding:5px 9px; font-size:12px; }
+      .container { margin:14px auto; padding:0 10px; }
+      .panel { padding:12px; margin-bottom:12px; }
+      .panel h2 { font-size:13px; }
+      .btn-row button { padding:7px 12px; font-size:12px; }
+      .stat-box { min-width:0; padding:10px 12px; }
+      .stat-box .val { font-size:1.3rem; }
+      th, td { padding:8px 8px; font-size:12px; }
+      td.etf-list { max-width:160px; }
+      .pill { font-size:9px; padding:1px 5px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>ETF 共同持股分析</h1>
+    <div class="nav">
+      <a href="index.html">主系統</a>
+      <a href="etf_holdings.html" class="active">共同持股</a>
+      <a href="etf_holdings_tracker.html">持股追蹤</a>
+      <a href="etf_holdings_pivot.html">樞紐分析</a>
+      <a href="sitemap.html" title="網站地圖">🗺️</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="panel">
+      <h2>操作</h2>
+      <div class="btn-row">
+        <button class="btn-primary" id="btnAnalyze" onclick="startAnalysis(false)">開始分析（用快取）</button>
+        <button class="btn-refresh" id="btnRefresh" onclick="startAnalysis(true)">強制重抓</button>
+        <button class="btn-cache" onclick="clearCache()">清除快取</button>
+      </div>
+      <div class="progress-wrap" id="progressWrap">
+        <div class="pbar-bg"><div class="pbar-fill" id="pbarFill"></div></div>
+        <div class="ptext" id="ptext">準備中…</div>
+      </div>
+      <div id="statusMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h2 style="display:flex;align-items:center;justify-content:space-between;cursor:pointer"
+          onclick="toggleListMgr()">
+        <span>📝 ETF 追蹤清單管理 <span id="listCount" style="color:var(--txt2);font-size:12px;font-weight:400"></span></span>
+        <span id="listMgrToggle" style="font-size:12px;color:var(--txt2)">▼ 展開</span>
+      </h2>
+      <div id="listMgrBody" style="display:none">
+        <div style="font-size:12px;color:var(--txt2);margin-bottom:10px;line-height:1.6">
+          清單變更會同步影響：共同持股、持股追蹤、樞紐分析、每日排程快照、主系統 ETF 關聯。
+          <br>移除 ETF 不會刪除歷史快照（保留資料）。
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;
+                    padding:10px;background:var(--bg);border-radius:6px">
+          <input type="text" id="addCode" placeholder="代號（如 0050）" maxlength="7"
+                 style="background:var(--bg2);color:var(--txt);border:1px solid var(--bdr);
+                        padding:6px 10px;border-radius:4px;font-size:13px;width:130px">
+          <input type="text" id="addName" placeholder="名稱（如 元大台灣50）" maxlength="30"
+                 style="background:var(--bg2);color:var(--txt);border:1px solid var(--bdr);
+                        padding:6px 10px;border-radius:4px;font-size:13px;width:200px">
+          <input type="password" id="addPwd" placeholder="管理密碼"
+                 style="background:var(--bg2);color:var(--txt);border:1px solid var(--bdr);
+                        padding:6px 10px;border-radius:4px;font-size:13px;width:130px">
+          <button class="btn-primary" onclick="addEtf()" style="padding:6px 14px;font-size:13px">
+            ＋ 新增
+          </button>
+          <span id="listMgrMsg" style="font-size:12px;margin-left:auto"></span>
+        </div>
+        <div class="table-wrap" style="max-height:340px;overflow-y:auto">
+          <table>
+            <thead><tr>
+              <th style="width:90px">代號</th><th>名稱</th><th style="width:80px">操作</th>
+            </tr></thead>
+            <tbody id="etfListBody">
+              <tr><td colspan="3" class="empty" style="color:var(--txt2);padding:14px">載入中…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="resultSection" style="display:none">
+      <div class="stats-row" id="statsRow"></div>
+      <div class="panel">
+        <h2>共同持股 Top 20</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>排名</th><th>名稱</th><th>代號</th><th>共持</th>
+              <th>平均權重</th><th>最大權重</th><th>持有 ETF</th>
+            </tr></thead>
+            <tbody id="resultBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>資料來源統計</h2>
+        <div id="sourceStats"></div>
+      </div>
+      <div class="panel" id="failedPanel" style="display:none">
+        <h2>抓取失敗</h2>
+        <div id="failedList" style="font-size:12px; color:var(--txt2)"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let pollTimer = null;
+
+    function setBtns(disabled) {
+      document.getElementById('btnAnalyze').disabled = disabled;
+      document.getElementById('btnRefresh').disabled = disabled;
+    }
+    function setStatus(msg, color) {
+      const el = document.getElementById('statusMsg');
+      el.textContent = msg;
+      el.style.color = color || 'var(--txt2)';
+    }
+
+    async function startAnalysis(forceRefresh) {
+      setBtns(true);
+      document.getElementById('resultSection').style.display = 'none';
+      document.getElementById('progressWrap').style.display = 'block';
+      setStatus('正在啟動分析…', 'var(--cyan)');
+
+      try {
+        const r = await fetch('/api/etf_holdings/analyze', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({force_refresh: forceRefresh}),
+        });
+        const data = await r.json();
+        if (!data.ok) {
+          setStatus(data.msg, 'var(--red)');
+          setBtns(false);
+          return;
+        }
+        pollTimer = setInterval(pollStatus, 1500);
+      } catch (e) {
+        setStatus('請求失敗：' + e, 'var(--red)');
+        setBtns(false);
+      }
+    }
+
+    async function pollStatus() {
+      try {
+        const r = await fetch('/api/etf_holdings/status');
+        const s = await r.json();
+        const done = s.done || 0, total = s.total || 1;
+        const pct = Math.round((done / total) * 100);
+        document.getElementById('pbarFill').style.width = pct + '%';
+        document.getElementById('ptext').textContent = `已處理 ${done} / ${total} 檔（${pct}%）`;
+
+        if (!s.running) {
+          clearInterval(pollTimer); pollTimer = null;
+          document.getElementById('progressWrap').style.display = 'none';
+          setBtns(false);
+          if (s.error) { setStatus('分析失敗：' + s.error, 'var(--red)'); return; }
+          if (s.result) {
+            setStatus(`分析完成（耗時 ${calcDur(s.started_at, s.finished_at)}）`, 'var(--green)');
+            renderResult(s.result);
+          }
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function calcDur(a, b) {
+      if (!a || !b) return '—';
+      const s = (new Date(b) - new Date(a)) / 1000;
+      return s < 60 ? `${s.toFixed(0)} 秒` : `${(s/60).toFixed(1)} 分鐘`;
+    }
+
+    async function clearCache() {
+      if (!confirm('確定清除所有快取？')) return;
+      const r = await fetch('/api/etf_holdings/clear_cache', {method:'POST'});
+      const d = await r.json();
+      setStatus(d.msg, d.ok ? 'var(--green)' : 'var(--red)');
+    }
+
+    /* ───── ETF 追蹤清單管理 ───── */
+    function toggleListMgr() {
+      const body = document.getElementById('listMgrBody');
+      const tog = document.getElementById('listMgrToggle');
+      const open = body.style.display === 'none';
+      body.style.display = open ? 'block' : 'none';
+      tog.textContent = open ? '▲ 收合' : '▼ 展開';
+      if (open) loadEtfList();
+    }
+    function setListMsg(msg, color) {
+      const el = document.getElementById('listMgrMsg');
+      el.textContent = msg || '';
+      el.style.color = color || 'var(--txt2)';
+    }
+    async function loadEtfList() {
+      try {
+        const r = await fetch('/api/etf_holdings/list');
+        const d = await r.json();
+        if (!d.ok) { setListMsg('載入失敗', 'var(--red)'); return; }
+        document.getElementById('listCount').textContent = `（共 ${d.count} 檔）`;
+        const tbody = document.getElementById('etfListBody');
+        tbody.replaceChildren();
+        d.items.forEach(it => {
+          const tr = document.createElement('tr');
+          const tdCode = document.createElement('td');
+          tdCode.className = 'code';
+          tdCode.textContent = it.code;
+          const tdName = document.createElement('td');
+          tdName.className = 'name';
+          tdName.textContent = it.name;
+          const tdBtn = document.createElement('td');
+          const btn = document.createElement('button');
+          btn.textContent = '刪除';
+          btn.style.cssText = 'padding:3px 10px;font-size:11px;background:var(--red)';
+          btn.addEventListener('click', () => removeEtf(it.code, it.name));
+          tdBtn.appendChild(btn);
+          tr.append(tdCode, tdName, tdBtn);
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        setListMsg('載入錯誤：' + e, 'var(--red)');
+      }
+    }
+    async function addEtf() {
+      const code = document.getElementById('addCode').value.trim().toUpperCase();
+      const name = document.getElementById('addName').value.trim();
+      const password = document.getElementById('addPwd').value;
+      if (!code || !name) { setListMsg('代號與名稱皆必填', 'var(--red)'); return; }
+      if (!password) { setListMsg('請輸入管理密碼', 'var(--red)'); return; }
+      setListMsg('新增中…', 'var(--cyan)');
+      try {
+        const r = await fetch('/api/etf_holdings/list/add', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({code, name, password}),
+        });
+        const d = await r.json();
+        setListMsg(d.msg, d.ok ? 'var(--green)' : 'var(--red)');
+        if (d.ok) {
+          document.getElementById('addCode').value = '';
+          document.getElementById('addName').value = '';
+          loadEtfList();
+        }
+      } catch (e) { setListMsg('請求失敗：' + e, 'var(--red)'); }
+    }
+    async function removeEtf(code, name) {
+      const password = prompt(`確定移除 ${code} ${name}？\n（歷史快照會保留）\n請輸入管理密碼：`);
+      if (!password) return;
+      setListMsg('移除中…', 'var(--cyan)');
+      try {
+        const r = await fetch('/api/etf_holdings/list/remove', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({code, password}),
+        });
+        const d = await r.json();
+        setListMsg(d.msg, d.ok ? 'var(--green)' : 'var(--red)');
+        if (d.ok) loadEtfList();
+      } catch (e) { setListMsg('請求失敗：' + e, 'var(--red)'); }
+    }
+
+    function rankChangeHtml(h) {
+      // 回傳排名變動指標 HTML
+      if (h.change_status === 'new') {
+        return `<span style="color:#69f0ae;font-weight:700;font-size:11px;margin-left:4px"
+                    title="新進榜">NEW</span>`;
+      }
+      const rc = h.rank_change;
+      if (rc === null || rc === undefined) {
+        return `<span style="color:var(--txt2);font-size:11px;margin-left:4px"
+                    title="排名未變">—</span>`;
+      }
+      if (rc > 0) {
+        return `<span style="color:#69f0ae;font-weight:700;font-size:11px;margin-left:4px"
+                    title="上升 ${rc} 名（上次 #${h.prev_rank}）">▲${rc}</span>`;
+      }
+      if (rc < 0) {
+        return `<span style="color:#ff80ab;font-weight:700;font-size:11px;margin-left:4px"
+                    title="下降 ${-rc} 名（上次 #${h.prev_rank}）">▼${-rc}</span>`;
+      }
+      return `<span style="color:var(--txt2);font-size:11px;margin-left:4px"
+                  title="與上次相同">＝</span>`;
+    }
+
+    function etfCountChangeHtml(h) {
+      const c = h.etf_count_change;
+      if (c === null || c === undefined || c === 0) return '';
+      const cls = c > 0 ? 'color:#69f0ae' : 'color:#ff80ab';
+      const sign = c > 0 ? '+' : '';
+      return `<span style="${cls};font-size:11px;margin-left:4px"
+                  title="共持 ETF 檔數變化（上次 ${h.prev_etf_count}）">${sign}${c}</span>`;
+    }
+
+    function renderResult(result) {
+      document.getElementById('resultSection').style.display = 'block';
+      const prevAt = result.prev_compared_at;
+      const compareNote = prevAt
+        ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px">
+             排名變動對照基準：上次分析於 <b style="color:var(--cyan)">${prevAt}</b>
+             　·　▲ 上升 / ▼ 下降 / NEW 新進榜
+           </div>`
+        : `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px">
+             首次分析（無上次紀錄可對照），下次起會顯示排名變動。
+           </div>`;
+      document.getElementById('statsRow').innerHTML = `
+        <div class="stat-box"><div class="val">${result.total_etf}</div><div class="lbl">分析 ETF 總數</div></div>
+        <div class="stat-box"><div class="val" style="color:var(--green)">${result.success_etf}</div><div class="lbl">成功</div></div>
+        <div class="stat-box"><div class="val" style="color:var(--red)">${result.failed_etf.length}</div><div class="lbl">失敗</div></div>
+      ` + compareNote;
+      document.getElementById('resultBody').innerHTML = result.top_holdings.map(h => {
+        const codeEnc = h.stock_code ? encodeURIComponent(h.stock_code) : '';
+        const nameCell = (h.stock_code && h.stock_name)
+          ? `<a href="index.html?code=${codeEnc}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;" title="查看 K 線圖">${h.stock_name}</a>`
+          : (h.stock_name || '—');
+        const codeCell = h.stock_code
+          ? `<a href="index.html?code=${codeEnc}" target="_blank" rel="noopener" style="color:var(--cyan,#00bcd4);text-decoration:none;font-weight:700;" title="查看 K 線圖">${h.stock_code}</a>`
+          : '—';
+        return `
+        <tr>
+          <td class="rank">#${h.rank}${rankChangeHtml(h)}</td>
+          <td class="name">${nameCell}</td>
+          <td class="code">${codeCell}</td>
+          <td><b>${h.etf_count}</b> 檔${etfCountChangeHtml(h)}</td>
+          <td>${h.avg_weight !== null ? h.avg_weight + '%' : '—'}</td>
+          <td>${h.max_weight !== null ? h.max_weight + '%' : '—'}</td>
+          <td class="etf-list">${h.etf_list.slice(0,8).map(c => `<span class="pill">${c}</span>`).join('') + (h.etf_list.length>8 ? `<span class="pill">+${h.etf_list.length-8}</span>` : '')}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('sourceStats').innerHTML = Object.entries(result.source_stats)
+        .map(([k,v]) => `<span class="source-badge">${k}：${v} 檔</span>`).join('');
+      const fp = document.getElementById('failedPanel');
+      if (result.failed_etf.length > 0) {
+        fp.style.display = 'block';
+        document.getElementById('failedList').textContent = result.failed_etf.join('、');
+      } else {
+        fp.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -58,7 +58,8 @@
       "Bash(python3)",
       "Bash(agent-browser screenshot *)",
       "Bash(agent-browser scroll *)",
-      "Bash(curl -s \"https://donttalk.vercel.app/music/02_%E5%85%8B%E5%BC%9F%E6%9C%AC%E8%89%B2.mp3\")"
+      "Bash(cd /d/project && cat build-stderr.log 2>/dev/null | tail -20)",
+      "Read(//d/project/**)"
     ]
   },
   "hooks": {
