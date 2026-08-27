@@ -1,0 +1,10 @@
+﻿2x '\\b(\\w+)\\(\\) {1,3}(null|0|\\[\\])\\b'
+4x '\\b(\\w+\\([^)]*\\)) {1,3}(null|0)\\b'
+17x '\\b(\\w+) {1,3}null;'
+2x '\\b(\\w+) {1,3}0;'
+2x '\\b(\\w+) {1,3}0,'
+3x '\\b(\\w+) {1,3}0\\)'
+2x '\\] {1,3}(0|null|\\[\\])\\b'
+
+Total replacements: 32
+✗ Still has error: D:\project\astro\api\catchall.mjs:126   if (values.length < period) return ?? null;                                      ^^

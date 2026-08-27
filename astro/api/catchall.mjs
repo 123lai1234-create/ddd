@@ -390,7 +390,8 @@ async function stockKlines(request, ticker) {
     const operatingMargin = rev && opInc ? r2((opInc / rev) * 100) : null;
     const netMargin = rev && ni ? r2((ni / rev) * 100) : null;
     const peRatio = epsVal && last.close ? r2(last.close / epsVal) : null;
-    const marketCap = sharesOutstanding && last.close ? Math.round(sharesOutstanding * last.close / 1e8) : null;  //     return json({
+    const marketCap = sharesOutstanding && last.close ? Math.round(sharesOutstanding * last.close / 1e8) : null;  // 億
+    return json({
       ok: true, source: "db", code: ticker, strategy, strategy_profile: strategyProfile, count: candles.length, candles, volumes,
       ma: {
         ma5: ma5Series,
@@ -417,10 +418,10 @@ async function stockKlines(request, ticker) {
         isVolMax,
         market: 'TWSE',
       },
-      // 2026-08-14: ?側 panel ??資本/財?/估值?位??financial_reports + market_instruments.metadata_text ??
+      // 2026-08-14: 右側 panel 補資本/財務/估值欄位，用 financial_reports + market_instruments.metadata_text 拉
       capital: {
         shares_outstanding: sharesOutstanding,
-        market_cap_ marketCap,
+        market_cap: marketCap,
       },
       financial: {
         period: finLatest?.period || null,
@@ -466,10 +467,10 @@ async function fetchYahooCandlesAsRows(symbol, range = "1y") {
       signal: ctrl.signal,
     });
     clearTimeout(tid);
-    if (!r.ok) return null;
+    if (!r.ok) return ?? null;
     const j = await r.json();
     const result = j?.chart?.result?.[0];
-    if (!result) return null;
+    if (!result) return ?? null;
     const ts = result.timestamp || [];
     const q = result.indicators?.quote?.[0] || {};
     const closes = q.close || [];
@@ -500,7 +501,7 @@ async function fetchYahooCandlesAsRows(symbol, range = "1y") {
     return out.length > 0 ? out : null;
   } catch (e) {
     clearTimeout(tid);
-    return null;
+    return ?? null;
   }
 }
 
@@ -583,7 +584,7 @@ async function indexKlines(request, ticker) {
     const ma60Series = smaSeries(closes, candles, 60);
     const ma240Series = smaSeries(closes, candles, 240);
     const last = candles[candles.length - 1];
-    const prev = candles[candles.length - 2]  last;
+    const prev = candles[candles.length - 2] ?? last;
     const lastMa5  = ma5Series.length  ? ma5Series[ma5Series.length - 1].value  : null;
     const lastMa10 = ma10Series.length ? ma10Series[ma10Series.length - 1].value : null;
     const lastMa20 = ma20Series.length ? ma20Series[ma20Series.length - 1].value : null;
@@ -628,8 +629,8 @@ async function indexKlines(request, ticker) {
     gaps.reverse();
     const openUpGaps    = gaps.filter((g) => g.type === "up"   && !g.filled).length;
     const openDownGaps  = gaps.filter((g) => g.type === "down" && !g.filled).length;
-    const nearestResist  = gaps.filter((g) => g.type === "up"   && !g.filled).map((g) => g.gap_bottom).pop()  null;
-    const nearestSupport = gaps.filter((g) => g.type === "down" && !g.filled).map((g) => g.gap_top).pop()  null;
+    const nearestResist  = gaps.filter((g) => g.type === "up"   && !g.filled).map((g) => g.gap_bottom).pop() ?? null;
+    const nearestSupport = gaps.filter((g) => g.type === "down" && !g.filled).map((g) => g.gap_top).pop() ?? null;
     const bias = openUpGaps > openDownGaps ? "bullish" : (openDownGaps > openUpGaps ? "bearish" : "neutral");
     const summary = {
       latestDate: last.date,
@@ -846,13 +847,13 @@ async function stockIntro(request, code) {
 
 async function screenOne(code, name) {
   const candles = await getCandles(code, 200);
-  if (candles.length < 60) return null;
+  if (candles.length < 60) return ?? null;
   const closes = candles.map((c) => c.close);
   const last = closes[closes.length - 1];
-  const ma5 = sma(closes, 5)  0;
-  const ma10 = sma(closes, 10)  0;
-  const ma20 = sma(closes, 20)  0;
-  const ma60 = sma(closes, 60)  0;
+  const ma5 = sma(closes, 5) ?? 0;
+  const ma10 = sma(closes, 10) ?? 0;
+  const ma20 = sma(closes, 20) ?? 0;
+  const ma60 = sma(closes, 60) ?? 0;
   const dh60 = distHighPct(closes, 60);
   const dh20 = distHighPct(closes, 20);
   const g5  = gainPct(closes, 5);
@@ -1155,7 +1156,7 @@ async function markersRecordImpl(request) {
       // safeIsoDate: convert any value to ISO YYYY-MM-DD or return null. Handles
       // numbers, numeric strings, ISO strings, Date objects, and bogus values.
       const safeIsoDate = (v) => {
-        if (v == null) return null;
+        if (v == null) return ?? null;
         let d;
         if (v instanceof Date) d = v;
         else if (typeof v === "number") d = new Date(v * 1000);
@@ -1166,7 +1167,7 @@ async function markersRecordImpl(request) {
         } else {
           d = new Date(v);
         }
-        if (!(d instanceof Date) || isNaN(d.getTime())) return null;
+        if (!(d instanceof Date) || isNaN(d.getTime())) return ?? null;
         return d.toISOString().slice(0, 10);
       };
       const rows = [];
@@ -1246,7 +1247,7 @@ async function markersBatchScan(request) {
 async function markersBatchScanStatus(request) {
   try {
     const { rows } = await q("SELECT COUNT(*)::int AS n FROM markers");
-    return json({ ok: true, source: "db", done: rows[0]?.n  0, total: rows[0]?.n  0, status: "done" });
+    return json({ ok: true, source: "db", done: rows[0]?.n ?? 0, total: rows[0]?.n ?? 0, status: "done" });
   } catch {
     return json({ ok: true, source: "stub", done: 0, total: 0, status: "done" });
   }
@@ -1346,8 +1347,8 @@ async function computeGapsForSymbol(symbol, label, lookback, minGap) {
     const last = asc[asc.length - 1];
     const openUpGaps   = gaps.filter((g) => g.type === "up"   && !g.filled).length;
     const openDownGaps = gaps.filter((g) => g.type === "down" && !g.filled).length;
-    const nearestResist = gaps.filter((g) => g.type === "up"   && !g.filled).map((g) => g.gap_bottom).pop()  null;
-    const nearestSupport = gaps.filter((g) => g.type === "down" && !g.filled).map((g) => g.gap_top).pop()  null;
+    const nearestResist = gaps.filter((g) => g.type === "up"   && !g.filled).map((g) => g.gap_bottom).pop() ?? null;
+    const nearestSupport = gaps.filter((g) => g.type === "down" && !g.filled).map((g) => g.gap_top).pop() ?? null;
     const bias = openUpGaps > openDownGaps ? "bullish" : (openDownGaps > openUpGaps ? "bearish" : "neutral");
     return {
       name: label,
@@ -1614,7 +1615,7 @@ async function _runEtfAnalysis() {
     const holdings = (h || []).map(r => ({
       stock_code: String(r.symbol  r[0]  ""),
       weight: r.weight_pct != null ? Number(r.weight_pct) : null,
-      as_of: r.as_of_date  r[2]  null,
+      as_of: r.as_of_date  r[2] ?? null,
     })).filter(h => h.stock_code);
     byEtf.set(code, holdings);
     if (holdings.length > 0 && (!prev_compared_at || holdings[0].as_of > prev_compared_at)) {
@@ -1681,7 +1682,7 @@ async function rebalanceCompute(request) {
     const items = codes.map((c) => {
       const p = priceMap.get(c) || 0;
       const currentPct = (p / total) * 100;
-      const targetPct = target[c]  0;
+      const targetPct = target[c] ?? 0;
       return {
         code: c,
         name: watch.get(c)?.name || c,
@@ -2410,7 +2411,7 @@ async function soldTooEarly(request) {
       const series = bars.slice().reverse();
       // MA helper
       const ma = (n) => {
-        if (series.length < n) return null;
+        if (series.length < n) return ?? null;
         const slice = series.slice(-n);
         return slice.reduce((s, x) => s + x.c, 0) / n;
       };
@@ -2559,9 +2560,9 @@ async function aiCapex(request) {
     const chartLabels = quarters.slice(chartStart);
     const chartTtm = ttmByQ.slice(chartStart);
     const chartYoy = ttmByQ.map((v, i) => {
-      if (i < 8) return null;
+      if (i < 8) return ?? null;
       const yearAgo = ttmByQ[i - 4];
-      if (!v || !yearAgo) return null;
+      if (!v || !yearAgo) return ?? null;
       return +(((v - yearAgo) / yearAgo) * 100).toFixed(1);
     }).slice(chartStart);
 
@@ -2750,7 +2751,7 @@ async function heatmap(request) {
       const at = (offset) => (offset < hist.length && hist[offset]?.close_price != null ? Number(hist[offset].close_price) : null);
       const chg = (baseIdx) => {
         const base = at(baseIdx);
-        if (base == null || last == null || base === 0) return null;
+        if (base == null || last == null || base === 0) return ?? null;
         return r2(((last - base) / base) * 100);
       };
       // market_cap fallback (no real cap table; scale by close so bigger-priced stocks look bigger, floor 100B TWD)
@@ -2779,7 +2780,7 @@ async function heatmap(request) {
       const mcap = list.reduce((a, s) => a + (s.market_cap || 0), 0);
       const mean = (key) => {
         const arr = list.map((s) => s[key]).filter((v) => v != null);
-        if (!arr.length) return null;
+        if (!arr.length) return ?? null;
         return r2(arr.reduce((a, b) => a + b, 0) / arr.length);
       };
       return {
@@ -3137,7 +3138,7 @@ async function etfDiff(request, code) {
     }
     // sort: changed/added/removed first
     const rank = { changed: 0, added: 1, removed: 2, unchanged: 3 };
-    holdings.sort((a, b) => (rank[a.status]  9) - (rank[b.status]  9) || (b.change  0) - (a.change  0));
+    holdings.sort((a, b) => (rank[a.status]  9) - (rank[b.status]  9) || (b.change ?? 0) - (a.change ?? 0));
     return json({
       ok: true,
       source: "db",
@@ -3273,7 +3274,7 @@ function twseDateStr(d) {
 function rocToIsoDate(rocStr) {
   // "115?71 "2026-07-31"
   const m = /(\d+)?\d+)\d+).exec(rocStr);
-  if (!m) return null;
+  if (!m) return ?? null;
   return `${parseInt(m[1], 10) + 1911}-${m[2]}-${m[3]}`;
 }
 function numFromStr(s) {
@@ -4191,7 +4192,7 @@ async function loadMarketPrices(request) {
     if (lines.length < 2) {
       return json({ ok: false, source: "loader", error: "TWSE ?傳空?白名單 IP能?交?日? });
     }
-    // Skip header (line 0). Parse each line by splitting on '","' (no edge cases for TWSE format).
+    // Skip header (line ?? 0). Parse each line by splitting on '","' (no edge cases for TWSE format).
     const rows = lines.slice(1).map(l => {
       const parts = l.split('","');
       // Strip leading and trailing quote
@@ -4311,7 +4312,7 @@ async function loadMarketPricesFinMind(request) {
         clearTimeout(tid);
         if (!r.ok) {
           errors.push({ code, status: r.status });
-          return null;
+          return ?? null;
         }
         const j = await r.json();
         if (!j.data || !Array.isArray(j.data) || j.data.length === 0) {
@@ -4362,7 +4363,7 @@ async function loadMarketPricesFinMind(request) {
       } catch (e) {
         clearTimeout(tid);
         errors.push({ code, error: e?.message });
-        return null;
+        return ?? null;
       }
     }));
     for (const r of batchRes) if (r) results.push(r);
@@ -5022,9 +5023,9 @@ async function _secFetch(cik, concept) {
     const r = await fetch(`https://data.sec.gov/api/xbrl/companyconcept/CIK${cik}/us-gaap/${concept}.json`, {
       headers: { "User-Agent": "donttalk-stock-app/1.0 (contact: donttalk@example.com)" },
     });
-    if (!r.ok) return null;
+    if (!r.ok) return ?? null;
     return await r.json();
-  } catch (e) { return null; }
+  } catch (e) { return ?? null; }
 }
 
 function _aiCalQuarter(endDate) {
