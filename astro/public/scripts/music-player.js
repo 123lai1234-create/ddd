@@ -254,11 +254,12 @@
     }
 
     // rAF loop：每幀依 audio.currentTime 更新 active line
+    // 只要選了曲（currentIndex !== -1）就更新歌詞，這樣手動 seek 時也能跟著走
     let _rafId = null;
     function startLyricSyncLoop() {
         if (_rafId) return;
         function tick() {
-            if (state.isPlaying && state.currentIndex >= 0) {
+            if (state.currentIndex >= 0 && state.playlist[state.currentIndex]) {
                 const t = elements.audioPlayer.currentTime || 0;
                 updateLyrics(t);
             }
