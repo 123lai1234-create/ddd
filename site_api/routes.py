@@ -51,6 +51,7 @@ from site_api.models import (
     StructurePredictionSyncRequest,
     VariantSyncRequest,
 )
+from site_api.minimax_client import chat_completion as minimax_chat
 from site_api.services import (
     build_knowledge_rag_documents,
     build_sequence_rag_documents,
@@ -1533,6 +1534,26 @@ def _try_openrouter(message: str) -> str | None:
     return resp.json().get("choices", [{}])[0].get("message", {}).get("content") or None
 
 
+def _try_minimax(message: str) -> str | None:
+    try:
+        import os
+        if not os.getenv("MINIMAX_API_KEY", "").strip():
+            return None
+        resp = minimax_chat(
+            messages=[
+                {"role": "system", "content": CHAT_SYSTEM_PROMPT},
+                {"role": "user", "content": message},
+            ],
+            model="MiniMax-M2",
+            temperature=0.7,
+            max_tokens=512,
+        )
+        content = resp.get("choices", [{}])[0].get("message", {}).get("content")
+        return content or None
+    except Exception:
+        return None
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
 
@@ -1540,6 +1561,7 @@ class ChatRequest(BaseModel):
 @router.post("/api/chat")
 def chat_proxy(payload: ChatRequest) -> dict[str, Any]:
     providers = [
+        ("MiniMax", _try_minimax),
         ("Gemini", _try_gemini),
         ("DeepSeek", _try_deepseek),
         ("OpenRouter", _try_openrouter),
