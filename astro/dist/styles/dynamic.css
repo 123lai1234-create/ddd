@@ -251,6 +251,97 @@
   cursor: pointer;
 }
 #chatbot-send:hover { opacity: 0.85; }
+#chatbot-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* New: header title with status dot */
+.chatbot-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chatbot-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #7bf0be;
+  box-shadow: 0 0 6px #7bf0be;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.chatbot-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.chatbot-reset {
+  background: none;
+  border: none;
+  color: var(--muted, #94a59f);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 6px;
+  transition: transform 0.2s, color 0.2s;
+}
+.chatbot-reset:hover {
+  color: var(--text, #e9f0ec);
+  transform: rotate(-90deg);
+}
+
+/* Quick suggestion chips */
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.chat-chip {
+  background: var(--surface, rgba(18, 26, 33, 0.92));
+  border: 1px solid var(--border, rgba(151, 190, 181, 0.15));
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: var(--text, #e9f0ec);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.chat-chip:hover {
+  background: rgba(88, 215, 255, 0.1);
+  border-color: var(--teal, #58d7ff);
+  transform: translateY(-1px);
+}
+.chat-chip:active { transform: translateY(0); }
+
+/* Markdown rendering inside bot replies */
+.chat-bot strong { color: var(--text, #e9f0ec); }
+.chat-bot a {
+  color: var(--teal, #58d7ff);
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(88, 215, 255, 0.5);
+}
+.chat-bot a:hover { border-bottom-style: solid; }
+
+/* Typing indicator dots */
+.chat-typing {
+  display: inline-flex !important;
+  gap: 4px;
+  padding: 10px 12px !important;
+}
+.chat-typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted, #94a59f);
+  animation: typing-bounce 1.2s ease-in-out infinite;
+}
+.chat-typing span:nth-child(2) { animation-delay: 0.15s; }
+.chat-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
 
 /* ── Lottie containers ────────────────────────────────────────────────────── */
 [data-lottie] {

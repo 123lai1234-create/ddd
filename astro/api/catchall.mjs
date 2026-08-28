@@ -5412,10 +5412,48 @@ function stub(name, extra = {}) {
   return json({ ok: true, source: "stub", endpoint: name, ...extra });
 }
 
+// ── AI Chat proxy → FastAPI backend on Fly.io ───────────────────────
+const _BACKEND_BASE = "https://donttalk-api.fly.dev";
+async function chatHandler(request) {
+  if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "invalid JSON" }, { status: 400 }); }
+  // Accept either { message } (FastAPI native) or { system, messages[] } (portfolio format)
+  let messageText;
+  if (body.message) {
+    messageText = body.message;
+  } else if (Array.isArray(body.messages)) {
+    const { system = "", messages = [] } = body;
+    const lines = [];
+    if (system) lines.push(`[System] ${system}`);
+    for (const m of messages) lines.push(`[${m.role}] ${m.content}`);
+    messageText = lines.join("\n");
+  } else {
+    return json({ error: "need message (string) or messages (array)" }, { status: 400 });
+  }
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 55000);
+  try {
+    const r = await fetch(`${_BACKEND_BASE}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: messageText }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    const text = await r.text();
+    return new Response(text, { status: r.status, headers: { "Content-Type": "application/json" } });
+  } catch (e) {
+    clearTimeout(tid);
+    return json({ error: `Chat proxy failed: ${e.name}: ${e.message}` }, { status: 502 });
+  }
+}
+
 // ── router ──────────────────────────────────────────────────────────
 const TABLE = [
   // [method, path-regex, handler]
   ["GET",  /^\/healthz\/?$/,                healthz],
+  ["POST", /^\/chat\/?$/,                   chatHandler],
   ["GET",  /^\/stocks\/?$/,                  listStocks],
   ["GET",  /^\/stocks\/remove\/?$/,          stub.bind(null, "stocks_remove_list", { hint: "use DELETE/POST /api/stocks/remove/<code>" })],
   ["POST", /^\/stocks\/add\/?$/,             addStock],
