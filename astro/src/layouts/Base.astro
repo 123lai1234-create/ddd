@@ -1,5 +1,6 @@
 ---
 import Analytics from '@vercel/analytics/astro';
+import Chatbot from '../components/Chatbot.astro';
 // ImmersiveBackground removed — was causing clutter (video bg + particles + WebGL shader stacked)
 
 
@@ -122,7 +123,7 @@ const personSchema = {
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#08060e" />
     <script is:inline>
-      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=20260827h').catch(() => {});
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.cn" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -212,39 +213,15 @@ const personSchema = {
         <div id="pf-results" style="overflow-y:auto;padding:8px 0;flex:1"></div>
       </div>
     </div>
-    <!-- Search trigger button (bottom-right) - Q版人偶 -->
+    <!-- Search trigger button (bottom-right) - 簡單放大鏡 -->
     <button id="pf-btn" title="搜尋 (Ctrl+K)" aria-label="搜尋"
-      style="position:fixed;bottom:24px;right:24px;z-index:500;background:transparent;border:none;border-radius:50%;width:60px;height:60px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,filter .2s;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));overflow:visible"
-      onmouseover="this.style.transform='scale(1.15)';this.style.filter='drop-shadow(0 8px 20px rgba(88,215,255,.4))'"
-      onmouseout="this.style.transform='scale(1)';this.style.filter='drop-shadow(0 4px 12px rgba(0,0,0,.4))'">
-      <svg id="search-avatar" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="AI 助手"
-           style="width:100%;height:100%;animation:bounce-gentle 3s ease-in-out infinite;display:block">
-        <defs>
-          <linearGradient id="pfav-g" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#a78bfa"/>
-            <stop offset="100%" stop-color="#22d3ee"/>
-          </linearGradient>
-          <radialGradient id="pfav-c" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#fde68a"/>
-            <stop offset="100%" stop-color="#fbbf24"/>
-          </radialGradient>
-        </defs>
-        <!-- head -->
-        <circle cx="50" cy="50" r="36" fill="url(#pfav-g)" stroke="#fff" stroke-width="2.5" stroke-opacity="0.9"/>
-        <!-- eyes (closed-arc ^ ^) -->
-        <path d="M 36 47 Q 40 41 44 47" stroke="#1a1a2e" stroke-width="2.8" fill="none" stroke-linecap="round"/>
-        <path d="M 56 47 Q 60 41 64 47" stroke="#1a1a2e" stroke-width="2.8" fill="none" stroke-linecap="round"/>
-        <!-- mouth -->
-        <path d="M 44 58 Q 50 64 56 58" stroke="#1a1a2e" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-        <!-- cheeks -->
-        <ellipse cx="34" cy="56" rx="4" ry="2.5" fill="#fb7185" opacity="0.55"/>
-        <ellipse cx="66" cy="56" rx="4" ry="2.5" fill="#fb7185" opacity="0.55"/>
-        <!-- antenna -->
-        <line x1="50" y1="14" x2="50" y2="8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="50" cy="6" r="3" fill="url(#pfav-c)"/>
-        <!-- magnifying glass (held to the side) -->
-        <circle cx="80" cy="78" r="10" fill="rgba(255,255,255,0.18)" stroke="#fff" stroke-width="3"/>
-        <line x1="87" y1="85" x2="94" y2="92" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+      style="position:fixed;bottom:24px;right:24px;z-index:400;background:linear-gradient(135deg,#58d7ff,#7bf0be);border:none;border-radius:50%;width:56px;height:56px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 16px rgba(88,215,255,.35);overflow:visible"
+      onmouseover="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(88,215,255,.55)'"
+      onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 16px rgba(88,215,255,.35)'">
+      <svg id="search-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
+           style="width:26px;height:26px;display:block">
+        <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="#0a1116" stroke-width="2.2"/>
+        <line x1="15.5" y1="15.5" x2="20.5" y2="20.5" stroke="#0a1116" stroke-width="2.5" stroke-linecap="round"/>
       </svg>
     </button>
     <style>
@@ -252,7 +229,7 @@ const personSchema = {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-4px); }
       }
-      #pf-btn:hover #search-avatar {
+      #pf-btn:hover #search-icon {
         animation: wiggle 0.5s ease-in-out;
       }
       @keyframes wiggle {
@@ -305,5 +282,8 @@ const personSchema = {
       });
     })();
     </script>
+
+    <!-- Site-wide 3D chatbot assistant -->
+    <Chatbot />
 </body>
 </html>
