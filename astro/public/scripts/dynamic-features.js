@@ -566,95 +566,12 @@ async function initPyodide() {
 /* ── 9. Anthropic chatbot widget ──────────────────────────────────────────── */
 
 function initChatbot() {
-  // Only init if chat elements exist
-  const toggle = document.getElementById('chatbot-toggle');
-  const panel = document.getElementById('chatbot-panel');
-  const input = document.getElementById('chatbot-input');
-  const send = document.getElementById('chatbot-send');
-  const messages = document.getElementById('chatbot-messages');
-  if (!toggle || !panel) return;
-
-  toggle.addEventListener('click', () => {
-    panel.classList.toggle('open');
-    if (panel.classList.contains('open') && input) input.focus();
-  });
-
-  const closeBtn = panel.querySelector('.chatbot-close');
-  if (closeBtn) closeBtn.addEventListener('click', () => panel.classList.remove('open'));
-
-  if (!send || !input || !messages) return;
-
-  async function sendMessage() {
-    const text = input.value.trim();
-    if (!text) return;
-    input.value = '';
-    send.disabled = true;
-    input.disabled = true;
-
-    const userDiv = document.createElement('div');
-    userDiv.className = 'chat-msg chat-user';
-    userDiv.textContent = text;
-    messages.appendChild(userDiv);
-
-    const typingDiv = document.createElement('div');
-    typingDiv.className = 'chat-msg chat-bot chat-typing';
-    typingDiv.textContent = '思考中...';
-    messages.appendChild(typingDiv);
-    messages.scrollTop = messages.scrollHeight;
-
-    try {
-      const apiBase = typeof window.APP_CONFIG_UTILS?.resolveApiBase === 'function'
-        ? await window.APP_CONFIG_UTILS.resolveApiBase({ cacheKey: 'chatbot' })
-        : '';
-      const resp = await fetch(`${apiBase}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
-        signal: AbortSignal.timeout(30000),
-      });
-      typingDiv.remove();
-
-      if (resp.ok) {
-        const data = await resp.json();
-        const reply = data.reply || '...';
-        const botDiv = document.createElement('div');
-        botDiv.className = 'chat-msg chat-bot';
-        messages.appendChild(botDiv);
-        messages.scrollTop = messages.scrollHeight;
-        let i = 0;
-        const tick = () => {
-          if (i < reply.length) {
-            botDiv.textContent += reply[i++];
-            messages.scrollTop = messages.scrollHeight;
-            setTimeout(tick, 15);
-          } else {
-            send.disabled = false;
-            input.disabled = false;
-            input.focus();
-          }
-        };
-        tick();
-        return;
-      } else {
-        const errDiv = document.createElement('div');
-        errDiv.className = 'chat-msg chat-bot';
-        errDiv.textContent = '目前無法回應，請稍後再試。';
-        messages.appendChild(errDiv);
-      }
-    } catch {
-      typingDiv.remove();
-      const errDiv = document.createElement('div');
-      errDiv.className = 'chat-msg chat-bot';
-      errDiv.textContent = '連線失敗，請確認後端已啟動。';
-      messages.appendChild(errDiv);
-    }
-    messages.scrollTop = messages.scrollHeight;
-    send.disabled = false;
-    input.disabled = false;
-  }
-
-  send.addEventListener('click', sendMessage);
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+  // The chatbot widget is fully wired up by the inline IIFE in
+  // src/pages/index.astro (and any future page that embeds the widget).
+  // We must NOT bind a second click handler here — that would cause
+  // toggle() to fire twice per click and the panel would never visibly
+  // open.
+  return;
 }
 
 function escapeHtml(text) {
