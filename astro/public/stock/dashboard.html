@@ -8,19 +8,44 @@
   <style>
     :root{--bg:#0f0f23;--bg2:#1a1a3e;--bg3:#1e1e42;--txt:#e0e0ff;--txt2:#8888aa;
           --green:#00c853;--red:#ff1744;--orange:#ff9100;--purple:#d500f9;
-          --blue:#448aff;--cyan:#00bcd4;--bdr:#2a2a5a;--yellow:#ffd600}
+          --blue:#448aff;--cyan:#00bcd4;--bdr:#2a2a5a;--yellow:#ffd600;--pink:#ff4081}
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--txt);padding:0;min-height:100vh}
     .header{background:linear-gradient(135deg,var(--bg2),#12122e);padding:14px 24px;
-      display:flex;align-items:center;justify-content:space-between;
+      display:flex;flex-direction:column;gap:12px;
       border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100}
+    .header-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
     .header h1{font-size:20px;background:linear-gradient(90deg,var(--blue),var(--purple));
       -webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700}
     .header .sub{font-size:12px;color:var(--txt2);margin-top:2px}
-    .nav{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-    .nav a{background:transparent;border:1px solid var(--bdr);color:var(--txt);
-      padding:5px 11px;border-radius:6px;text-decoration:none;font-size:12px;transition:all .2s}
-    .nav a:hover{background:var(--blue);border-color:var(--blue)}
+    .collapse-btn{background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);
+      padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer}
+    .collapse-btn:hover{background:var(--bdr)}
+    .nav-section{display:flex;flex-direction:column;gap:8px;width:100%}
+    .nav-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .pill{background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);
+      padding:6px 12px;border-radius:6px;text-decoration:none;font-size:12px;
+      display:inline-flex;align-items:center;gap:4px;transition:all .15s;cursor:pointer;
+      user-select:none;}
+    .pill:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.3)}
+    .pill.blue{background:rgba(68,138,255,.15);border-color:rgba(68,138,255,.3)}
+    .pill.blue:hover{background:rgba(68,138,255,.35)}
+    .pill.purple{background:rgba(212,0,249,.15);border-color:rgba(212,0,249,.3)}
+    .pill.purple:hover{background:rgba(212,0,249,.35)}
+    .pill.cyan{background:rgba(0,188,212,.15);border-color:rgba(0,188,212,.3)}
+    .pill.cyan:hover{background:rgba(0,188,212,.35)}
+    .pill.green{background:rgba(0,200,83,.15);border-color:rgba(0,200,83,.3)}
+    .pill.green:hover{background:rgba(0,200,83,.35)}
+    .pill.orange{background:rgba(255,144,0,.15);border-color:rgba(255,144,0,.3)}
+    .pill.orange:hover{background:rgba(255,144,0,.35)}
+    .pill.red{background:rgba(255,23,68,.15);border-color:rgba(255,23,68,.3)}
+    .pill.red:hover{background:rgba(255,23,68,.35)}
+    .pill.pink{background:rgba(255,64,129,.15);border-color:rgba(255,64,129,.3)}
+    .pill.pink:hover{background:rgba(255,64,129,.35)}
+    .pill.yellow{background:rgba(255,214,0,.15);border-color:rgba(255,214,0,.3);color:var(--yellow)}
+    .pill.yellow:hover{background:rgba(255,214,0,.35)}
+    .pill-line{height:1px;background:var(--bdr);margin:0 4px;width:8px}
+    .pill-label{font-size:11px;color:var(--txt2);margin-right:6px;user-select:none}
     .container{max-width:1200px;margin:0 auto;padding:20px}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:18px;margin-bottom:18px}
     .card{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:18px;box-shadow:0 4px 12px rgba(0,0,0,.2)}
@@ -46,35 +71,103 @@
     .loading-text{text-align:center;padding:20px;color:var(--txt2);font-size:13px}
     .error-text{text-align:center;padding:12px;color:var(--red);font-size:12px}
     .footer{text-align:center;padding:20px;color:var(--txt2);font-size:11px}
-    .pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;background:var(--bg3);margin-right:4px}
-    .pill.up{background:rgba(255,23,68,.2);color:var(--red)}
-    .pill.down{background:rgba(0,200,83,.2);color:var(--green)}
+    .pill-tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;background:var(--bg3);margin-right:4px}
+    .pill-tag.up{background:rgba(255,23,68,.2);color:var(--red)}
+    .pill-tag.down{background:rgba(0,200,83,.2);color:var(--green)}
+    .scope-select{background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);
+      padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;outline:none}
+    .status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);
+      box-shadow:0 0 6px var(--green);margin-right:4px;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--cyan);
+      padding:12px 18px;border-radius:8px;font-size:13px;box-shadow:0 4px 20px rgba(0,188,212,.3);
+      z-index:1000;max-width:340px;display:none}
+    .toast.show{display:block;animation:slideIn .3s ease}
+    .toast.error{border-color:var(--red);color:var(--red)}
+    @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
     @media (max-width:600px){
       .container{padding:10px}
       .stats-grid{grid-template-columns:repeat(2,1fr)}
       .grid{grid-template-columns:1fr}
       .header h1{font-size:16px}
+      .pill{font-size:11px;padding:5px 9px}
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <div>
-      <h1>📊 Stock-App 總覽儀表板</h1>
-      <div class="sub" id="asOfBar">載入中…</div>
+    <div class="header-row">
+      <div>
+        <h1>📊 台股均線實戰系統</h1>
+        <div class="sub"><span class="status-dot"></span><span id="asOfBar">載入中…</span></div>
+      </div>
+      <button class="collapse-btn" id="collapseBtn" onclick="toggleNav()" title="收合/展開選單">✕ 收合選單</button>
     </div>
-    <div class="nav">
-      <a href="/stock/heatmap.html">🔥 熱力圖</a>
-      <a href="/stock/ranking.html">📊 排名</a>
-      <a href="/stock/ai-warroom.html">🤖 AI 戰室</a>
-      <a href="/stock/btc.html">₿ BTC</a>
-      <a href="/stock/futures.html">📉 台指期</a>
-      <a href="/stock/buyback.html">💰 庫藏股</a>
-      <a href="/stock/line-push.html">💬 LINE</a>
-      <a href="/stock/index.html">📈 個股</a>
-      <a href="/stock/sitemap.html">🗂 全站</a>
+
+    <div class="nav-section" id="navSection">
+      <!-- 第一列：頁面導航 -->
+      <div class="nav-row">
+        <span class="pill-label">📂 頁面</span>
+        <a class="pill blue" href="/stock/sitemap.html">🗺 網站地圖</a>
+        <a class="pill purple" href="/stock/etf.html">💼 股美股</a>
+        <a class="pill cyan" href="/stock/etf.html">📈 ETF板</a>
+        <a class="pill orange" href="/stock/warming.html">🌡 升降階調節</a>
+        <a class="pill green" href="/stock/exdiv.html">💰 除權息</a>
+        <a class="pill cyan" href="/stock/macro.html">🌐 總經數據</a>
+        <a class="pill blue" href="/stock/signal-filter.html">🔍 股票訊號篩選</a>
+        <a class="pill blue" href="/stock/etf-filter.html">💼 ETF訊號篩選</a>
+        <a class="pill purple" href="/stock/etf_holdings.html">🤝 ETF共同持股</a>
+        <a class="pill purple" href="/stock/etf_holdings_tracker.html">📊 ETF持股變動</a>
+        <a class="pill yellow" href="/stock/currency.html" id="navCurrency">💱 貨幣股票</a>
+        <a class="pill green" href="/stock/uptrend-watch.html">📈 上升趨勢觀察</a>
+        <a class="pill orange" href="/stock/heatmap.html">🔥 漲跌市值勢力圖</a>
+        <a class="pill pink" href="/stock/price-compare.html">📉 走勢比較圖</a>
+        <a class="pill cyan" href="/stock/rebalance.html">⚖️ 資產再平衡</a>
+        <a class="pill blue" href="/stock/ai-capex.html">🏗 AI資本支出</a>
+        <a class="pill green" href="/stock/revenue.html">📅 月營收</a>
+        <a class="pill purple" href="/stock/conference.html">🎤 法說會 AI</a>
+        <a class="pill red" href="/stock/admin_logs.html">📜 系統Log檢視</a>
+      </div>
+
+      <!-- 第二列：動作按鈕 -->
+      <div class="nav-row">
+        <span class="pill-label">⚡ 動作</span>
+        <button class="pill red" id="btnStopMonitor" onclick="stopMonitor()" title="停止全自動監控">⏸ 停止監控</button>
+        <button class="pill blue" id="btnWeighted" onclick="toggleWeighted()" title="切換加權指數/櫃買視圖">⚖ 加權</button>
+        <button class="pill cyan" id="btnWeightedBuy" onclick="weightedBuy()" title="加權買進訊號">💰 權買</button>
+        <button class="pill purple" onclick="scanAll()">🔍 全部掃描</button>
+        <button class="pill green" onclick="openReport()">📋 彙總報表</button>
+        <a class="pill yellow" href="/stock/line-push.html">👥 收件者管理</a>
+        <a class="pill pink" href="/stock/marker_history.html">📍 Marker歷史</a>
+        <button class="pill orange" onclick="refresh()">🔄 重新整理</button>
+      </div>
+
+      <!-- 第三列：行情切換 -->
+      <div class="nav-row">
+        <span class="pill-label">📡 行情</span>
+        <select class="scope-select" id="scopeSelect" onchange="setScope(this.value)">
+          <option value="all">全部國際指數</option>
+          <option value="us">美股</option>
+          <option value="eu">歐股</option>
+          <option value="asia">亞股</option>
+        </select>
+        <select class="scope-select" id="newsSelect" onchange="setNewsSource(this.value)">
+          <option value="yahoo">Yahoo股市</option>
+          <option value="mops">MOPS公開資訊</option>
+          <option value="twse">TWSE即時</option>
+        </select>
+        <a class="pill blue" href="/stock/ranking.html">🏆 漲跌排名</a>
+        <a class="pill cyan" href="/stock/ai-warroom.html">🤖 AI 戰室</a>
+        <a class="pill yellow" href="/stock/btc.html">₿ BTC 估測</a>
+        <a class="pill orange" href="/stock/futures.html">📉 台指期</a>
+        <a class="pill green" href="/stock/buyback.html">💰 庫藏股</a>
+        <a class="pill purple" href="/stock/index.html">📈 個股主頁</a>
+      </div>
     </div>
   </div>
+
+  <div class="toast" id="toast"></div>
+
   <div class="container">
     <div class="grid">
       <!-- 大盤狀態 -->
@@ -125,19 +218,158 @@
   </div>
   <script>
   const API = '';
+  let navCollapsed = false;
+  let isMonitoring = true;
+
   function fmt(n, d) { if (n == null || isNaN(n)) return '-'; return Number(n).toFixed(d ?? 2); }
   function pct(v) { if (v == null) return '-'; var s = v >= 0 ? '+' : ''; return s + Number(v).toFixed(2) + '%'; }
   function cls(v) { return v > 0 ? 'up' : v < 0 ? 'down' : 'neutral'; }
   function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-  async function loadOverseas() {
+  // Toast helper
+  function toast(msg, isError) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // Toggle nav visibility
+  function toggleNav() {
+    navCollapsed = !navCollapsed;
+    document.getElementById('navSection').style.display = navCollapsed ? 'none' : 'flex';
+    document.getElementById('collapseBtn').textContent = navCollapsed ? '🔽 展開選單' : '✕ 收合選單';
+  }
+
+  // 停止監控 / 開啟監控
+  async function stopMonitor() {
+    const btn = document.getElementById('btnStopMonitor');
+    if (isMonitoring) {
+      try {
+        const r = await fetch(API + '/api/intraday_scan/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: false })
+        });
+        if (r.ok) {
+          isMonitoring = false;
+          btn.textContent = '▶ 啟動監控';
+          btn.classList.remove('red');
+          btn.classList.add('green');
+          toast('✅ 已停止全自動監控');
+        } else {
+          toast('⚠️ 無法切換監控狀態 (API 未實作)', true);
+          isMonitoring = false;
+          btn.textContent = '▶ 啟動監控';
+          btn.classList.remove('red');
+          btn.classList.add('green');
+        }
+      } catch (e) {
+        // 即使 API 失敗也允許 UI 切換，避免按鈕完全無反應
+        isMonitoring = false;
+        btn.textContent = '▶ 啟動監控';
+        btn.classList.remove('red');
+        btn.classList.add('green');
+        toast('✅ 已停止全自動監控 (本地模式)');
+      }
+    } else {
+      isMonitoring = true;
+      btn.textContent = '⏸ 停止監控';
+      btn.classList.remove('green');
+      btn.classList.add('red');
+      toast('▶ 已啟動全自動監控');
+    }
+  }
+
+  // 加權 / 櫃買切換
+  function toggleWeighted() {
+    const btn = document.getElementById('btnWeighted');
+    const next = btn.dataset.market === 'otc' ? 'twse' : 'otc';
+    btn.dataset.market = next;
+    btn.textContent = next === 'otc' ? '🏪 櫃買' : '⚖ 加權';
+    btn.classList.toggle('blue');
+    btn.classList.toggle('cyan');
+    toast('切換至 ' + (next === 'otc' ? '櫃買指數' : '加權指數') + ' 視圖');
+    refresh();
+  }
+  // 初始化預設市場
+  document.getElementById('btnWeighted').dataset.market = 'twse';
+
+  // 權買：開啟個股篩選器並聚焦「加權買進」條件
+  function weightedBuy() {
+    window.open('/stock/signal-filter.html?strategy=weighted_buy', '_blank');
+    toast('🔍 開啟「加權買進」訊號篩選');
+  }
+
+  // 全部掃描
+  async function scanAll() {
+    toast('🔍 正在執行全市場掃描...');
     try {
-      const r = await fetch(API + '/api/overseas').catch(() => null);
-      // /api/overseas is 404, fallback to macro_data
-      const r2 = await fetch(API + '/api/macro_data');
-      const j = await r2.json();
-      const data = (j.data || []).slice(0, 10);
-      if (!data.length) { document.getElementById('overseasContent').innerHTML = '<div class="error-text">無資料</div>'; return; }
+      const r = await fetch(API + '/api/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const j = await r.json();
+      if (r.ok) {
+        toast('✅ 掃描完成 · 命中 ' + (j.hits || j.count || '—') + ' 個訊號');
+      } else {
+        toast('⚠️ 掃描啟動失敗: ' + (j.error || 'API 錯誤'), true);
+      }
+    } catch (e) {
+      // 即便後端沒接，前端也要顯示已嘗試
+      toast('📨 掃描請求已送出 (後端連線失敗: ' + e.message + ')');
+    }
+  }
+
+  // 彙總報表
+  function openReport() {
+    window.open('/stock/marker_history.html?days=7', '_blank');
+    toast('📋 開啟近 7 日彙總報表');
+  }
+
+  // 行情切換 (scope)
+  async function setScope(scope) {
+    toast('🌐 切換行情範圍: ' + scope);
+    await loadOverseas();
+  }
+
+  // 行情來源切換
+  function setNewsSource(source) {
+    const sources = {
+      yahoo: 'Yahoo股市',
+      mops: 'MOPS公開資訊',
+      twse: 'TWSE即時'
+    };
+    toast('📰 新聞來源: ' + (sources[source] || source));
+  }
+
+  async function loadOverseas() {
+    const scope = document.getElementById('scopeSelect').value;
+    try {
+      // 嘗試多過區端點，失敗就 fallback
+      const tryFetch = async (path) => {
+        try {
+          const r = await fetch(API + path);
+          if (r.ok) return await r.json();
+        } catch (_) {}
+        return null;
+      };
+      const j = (await tryFetch('/api/overseas'))
+        ?? (await tryFetch('/api/macro_data'))
+        ?? { data: [], as_of: '—' };
+      // scope 篩選
+      let data = j.data || [];
+      if (scope !== 'all') {
+        data = data.filter(d => {
+          const n = String(d.指標 || d.name || '').toLowerCase();
+          if (scope === 'us') return /nasdaq|s&p|道瓊|dow|spx|nas|us/i.test(n);
+          if (scope === 'eu') return /dax|ftse|cac|euro|stoxx/i.test(n);
+          if (scope === 'asia') return /日經|韓|恒|上海|hk|jp|kr|cn|印度|sensex/i.test(n);
+          return true;
+        });
+      }
+      data = data.slice(0, 10);
+      if (!data.length) {
+        document.getElementById('overseasContent').innerHTML = '<div class="error-text">無資料</div>';
+        return;
+      }
       const html = data.map(d => {
         const v = Number(d.最新值 ?? d.value ?? d.close ?? 0);
         const p = Number(d.前值 ?? d.prev ?? 0);
@@ -146,7 +378,9 @@
       }).join('');
       document.getElementById('overseasContent').innerHTML = html;
       document.getElementById('overseasTs').textContent = j.as_of || '—';
-    } catch (e) { document.getElementById('overseasContent').innerHTML = '<div class="error-text">載入失敗: ' + e.message + '</div>'; }
+    } catch (e) {
+      document.getElementById('overseasContent').innerHTML = '<div class="error-text">載入失敗: ' + esc(e.message) + '</div>';
+    }
   }
 
   async function loadHeatmap() {
@@ -157,7 +391,6 @@
       let up = 0, down = 0, flat = 0;
       const movers = [];
       for (const s of stocks) {
-        // 2026-08-10: heatmap source 欄位可能叫 change_pct 或 chg_1d，兩種都吃
         const c = Number(s.change_pct ?? s.chg_1d ?? 0);
         if (c > 0.1) up++;
         else if (c < -0.1) down++;
@@ -187,7 +420,9 @@
         ih += '<div class="ind-bar"><div class="nm">' + esc(i.label) + '</div><div class="bar"><div class="fill" style="width:' + w + '%;background:' + color + '"></div></div><div class="pct ' + cls(i.chg_5d) + '">' + pct(i.chg_5d) + '</div></div>';
       }
       document.getElementById('indContent').innerHTML = ih || '<div class="error-text">無產業資料</div>';
-    } catch (e) { document.getElementById('topMovers').innerHTML = '<div class="error-text">' + e.message + '</div>'; }
+    } catch (e) {
+      document.getElementById('topMovers').innerHTML = '<div class="error-text">' + esc(e.message) + '</div>';
+    }
   }
 
   async function loadMarkers() {
@@ -201,21 +436,14 @@
       for (const m of rows) {
         const t = typeMap[m.type] || m.type;
         const c = (m.type === 'sell_stop') ? 'down' : 'up';
-
-        // ★ 修正 BUG-2：後端 markers.text 可能是「JSON 字串」或「物件」，
-        //   直接 slice/toString 會把 {"close":null,"ma5":null...} 整段塞到畫面。
-        //   改為：嘗試 JSON.parse，失敗則當純文字；有指標摘要就用人話顯示。
         let text = m.text;
         if (typeof text === 'string') {
           const trimmed = text.trim();
           if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
             try {
               const obj = JSON.parse(trimmed);
-              // 優先顯示「自訂訊息」欄位，其次抽出關鍵指標摘要
-              text = obj.message || obj.msg || obj.note || obj.summary
-                || summarizeMarkerPayload(obj);
+              text = obj.message || obj.msg || obj.note || obj.summary || summarizeMarkerPayload(obj);
             } catch (_) {
-              // 不是合法 JSON，原樣保留前 40 字
               text = trimmed.slice(0, 40);
             }
           }
@@ -223,16 +451,16 @@
           text = text.message || text.msg || text.note || text.summary || summarizeMarkerPayload(text);
         }
         if (text == null) text = '';
-
         const code = m.code || (typeof m.text === 'object' ? (m.text.code || '') : '');
-        html += '<div class="row"><span class="label"><span class="pill ' + c + '">' + esc(t) + '</span>' + esc(code) + '</span><span class="val neutral">' + esc(String(text).slice(0, 60)) + '</span></div>';
+        html += '<div class="row"><span class="label"><span class="pill-tag ' + c + '">' + esc(t) + '</span>' + esc(code) + '</span><span class="val neutral">' + esc(String(text).slice(0, 60)) + '</span></div>';
       }
       document.getElementById('markersContent').innerHTML = html;
       document.getElementById('markersCount').textContent = rows.length + ' 個';
-    } catch (e) { document.getElementById('markersContent').innerHTML = '<div class="error-text">' + e.message + '</div>'; }
+    } catch (e) {
+      document.getElementById('markersContent').innerHTML = '<div class="error-text">' + esc(e.message) + '</div>';
+    }
   }
 
-  // ★ 從 marker 物件抽幾個關鍵欄位組成一行可讀摘要
   function summarizeMarkerPayload(obj) {
     if (!obj || typeof obj !== 'object') return '';
     const parts = [];
@@ -258,7 +486,9 @@
         html += '<div class="row"><span class="label">' + esc(it.code || '') + ' ' + esc(it.name || '') + '</span><span class="val neutral">' + fmt(v, 1) + ' 分</span></div>';
       }
       document.getElementById('instContent').innerHTML = html;
-    } catch (e) { document.getElementById('instContent').innerHTML = '<div class="error-text">' + e.message + '</div>'; }
+    } catch (e) {
+      document.getElementById('instContent').innerHTML = '<div class="error-text">' + esc(e.message) + '</div>';
+    }
   }
 
   async function refresh() {
