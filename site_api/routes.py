@@ -1535,11 +1535,12 @@ def _try_openrouter(message: str) -> str | None:
 
 
 def _try_minimax(message: str) -> str | None:
+    import asyncio
     try:
         import os
         if not os.getenv("MINIMAX_API_KEY", "").strip():
             return None
-        resp = minimax_chat(
+        resp = asyncio.run(minimax_chat(
             messages=[
                 {"role": "system", "content": CHAT_SYSTEM_PROMPT},
                 {"role": "user", "content": message},
@@ -1547,7 +1548,7 @@ def _try_minimax(message: str) -> str | None:
             model="MiniMax-M2",
             temperature=0.7,
             max_tokens=512,
-        )
+        ))
         content = resp.get("choices", [{}])[0].get("message", {}).get("content")
         return content or None
     except Exception:
