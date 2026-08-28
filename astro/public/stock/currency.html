@@ -253,12 +253,12 @@
     const dxy = await fetchYahooHistory('DX-Y.NYB', days);
     let twseHist = [];
     try {
-      const r = await fetch(API + `/api/index/TWSE?range=${days}d`);
+      const r = await fetch(API + '/api/index/TWSE?range=' + days + 'd');
       const j = await r.json();
-      twseHist = (j.history || j.bars || []).map(b => ({
-        time: new Date(b.trade_date).getTime(),
-        close: Number(b.close_price)
-      }));
+      twseHist = (j.candles || j.history || j.bars || []).map(b => ({
+        time: b.time || new Date(b.time_iso || b.date).getTime(),
+        close: Number(b.close || b.close_price)
+      })).filter(b => b.time && Number.isFinite(b.close));
     } catch (_) {}
 
     const labels = dxy.map(d => new Date(d.time).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }));
