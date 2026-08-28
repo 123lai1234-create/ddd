@@ -687,6 +687,7 @@
     // 播放控制
     // ═══════════════════════════════════════════════════════════════════
     function togglePlay() {
+        console.info("[music] togglePlay: currentIndex=" + state.currentIndex + " isPlaying=" + state.isPlaying + " playlist.length=" + state.playlist.length);
         if (state.currentIndex === -1) {
             if (state.playlist.length > 0) {
                 playTrack(0);
@@ -705,6 +706,7 @@
         if (index < 0 || index >= state.playlist.length) return;
 
         const track = state.playlist[index];
+        const previousIndex = state.currentIndex;
         state.currentIndex = index;
         state.currentLyricIndex = -1; // 重置歌詞高亮索引
 
@@ -723,9 +725,14 @@
             }).catch(err => {
                 // 以下屬於「可預期 / 非錯誤」的情況，但提示一下方便診斷：
                 //  - AbortError：快速跳歌時新的 load() 中斷了上一次 play()
-                //  - NotAllowedError：瀏覽器自動播放政策擋下 play()（需使用者手勢，UI 維持現狀）
+                //  - NotAllowedError：瀏覽器自動播放政策擋下 play()（需使用者手勢）
                 if (err && (err.name === "AbortError" || err.name === "NotAllowedError" || err.code === 20)) {
                     console.info("[music] play() blocked (autoplay policy or aborted):", err && err.name);
+                    // 若是因為 autoplay 政策被擋，把 currentIndex 還原，
+                    // 這樣下次點 ▶️ 時會重新觸發 playTrack（仍在 user gesture 內）
+                    if (err.name === "NotAllowedError") {
+                        state.currentIndex = previousIndex === index ? -1 : previousIndex;
+                    }
                     return;
                 }
                 console.warn("[music] play() rejected:", err && err.message);
@@ -760,11 +767,13 @@
     }
 
     function resumeTrack() {
+        console.info("[music] resumeTrack: currentIndex=" + state.currentIndex);
         if (state.currentIndex >= 0) {
             elements.audioPlayer.play().then(() => {
                 state.isPlaying = true;
                 updatePlayButton();
             }).catch(err => {
+                console.info("[music] resumeTrack play() rejected: " + (err && err.name) + " " + (err && err.message));
                 if (err && (err.name === "AbortError" || err.name === "NotAllowedError" || err.code === 20)) return;
                 console.warn("[music] resume play() rejected:", err && err.message);
             });
