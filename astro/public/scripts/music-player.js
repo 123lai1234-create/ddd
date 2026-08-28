@@ -141,18 +141,6 @@
     ];
 
     // ═══════════════════════════════════════════════════════════════════
-    // 等化器預設
-    // ═══════════════════════════════════════════════════════════════════
-    const EQ_PRESETS = {
-        flat: [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        pop: [1, 2, 4, 5, 4, 2, 1, 0, -1],
-        rock: [4, 3, 1, -1, -2, 0, 2, 4, 5],
-        jazz: [2, 1, -1, 0, 1, 3, 4, 3, 2],
-        classical: [3, 2, 1, 0, -1, -1, 0, 2, 3],
-        bass: [6, 5, 4, 2, 0, -1, -2, -2, -3]
-    };
-
-    // ═══════════════════════════════════════════════════════════════════
     // 播放器狀態
     // ═══════════════════════════════════════════════════════════════════
     let state = {
@@ -164,6 +152,7 @@
         shuffle: false,
         repeat: "none", // none, one, all
         karaoke: true, // 卡拉OK逐字漸亮模式（預設開）
+        drawerOpen: false,
         audioContext: null,
         analyser: null,
         audioSource: null,
@@ -253,7 +242,6 @@
             // 預載所有 LRC（背景 fetch + parse，點歌時歌詞已經在 DOM）
             preloadAllLyrics();
         });
-        initAudioVisualizer();
         loadStatsFromStorage();
 
         // 設置預設音量
@@ -354,25 +342,21 @@
         elements.timeTotal = document.getElementById("time-total");
         elements.trackTitle = document.getElementById("track-title");
         elements.trackArtist = document.getElementById("track-artist");
-        elements.albumArt = document.getElementById("album-art");
-        elements.albumPlaceholder = document.querySelector(".album-placeholder");
         elements.searchInput = document.getElementById("search-input");
         elements.addMusicBtn = document.getElementById("add-music-btn");
         elements.addMusicModal = document.getElementById("add-music-modal");
         elements.modalClose = document.getElementById("modal-close");
         elements.addMusicConfirm = document.getElementById("add-music-confirm");
-        elements.eqSliders = document.querySelectorAll(".eq-slider");
-        elements.eqValues = document.querySelectorAll(".eq-value");
-        elements.presetBtns = document.querySelectorAll(".preset-btn");
-        elements.eqReset = document.getElementById("eq-reset");
-        elements.visualizerCanvas = document.getElementById("visualizer-canvas");
-        elements.audioVisualizer = document.getElementById("audio-visualizer");
         elements.lyrics = document.getElementById("lyrics");
         elements.qualitySelect = document.getElementById("quality-select");
         elements.totalSongs = document.getElementById("total-songs");
         elements.totalDuration = document.getElementById("total-duration");
         elements.tabBtns = document.querySelectorAll(".tab-btn");
-        elements.playlistStats = document.querySelector(".playlist-stats");
+        // 抽屜
+        elements.openPlaylistBtn = document.getElementById("open-playlist-btn");
+        elements.drawer = document.getElementById("playlist-drawer");
+        elements.drawerBackdrop = document.getElementById("drawer-backdrop");
+        elements.drawerClose = document.getElementById("drawer-close");
     }
 
     function bindEvents() {
@@ -391,17 +375,16 @@
         elements.volumeBtn.addEventListener("click", toggleMute);
         elements.volumeSlider.addEventListener("input", setVolume);
 
-        // 等化器
-        elements.eqSliders.forEach(slider => {
-            slider.addEventListener("input", updateEqualizer);
-        });
-        elements.presetBtns.forEach(btn => {
-            btn.addEventListener("click", applyPreset);
-        });
-        elements.eqReset.addEventListener("click", resetEqualizer);
-
         // 搜尋
         elements.searchInput.addEventListener("input", filterPlaylist);
+
+        // 抽屜
+        elements.openPlaylistBtn.addEventListener("click", openPlaylistDrawer);
+        elements.drawerClose.addEventListener("click", closePlaylistDrawer);
+        elements.drawerBackdrop.addEventListener("click", closePlaylistDrawer);
+        document.addEventListener("keydown", e => {
+            if (e.key === "Escape" && state.drawerOpen) closePlaylistDrawer();
+        });
 
         // 新增音樂
         elements.addMusicBtn.addEventListener("click", openAddMusicModal);
@@ -764,10 +747,6 @@
         // 沒 url 才模擬播放進度
         if (!track.url) {
             simulatePlayback(track.duration);
-        } else {
-            // 真實音檔：加 playing class 給視覺效果
-            elements.albumArt.classList.add("playing");
-            elements.audioVisualizer.classList.add("active");
         }
     }
 
@@ -775,8 +754,6 @@
         elements.audioPlayer.pause();
         state.isPlaying = false;
         updatePlayButton();
-        elements.albumArt.classList.remove("playing");
-        elements.audioVisualizer.classList.remove("active");
     }
 
     function resumeTrack() {
@@ -784,8 +761,6 @@
             elements.audioPlayer.play().then(() => {
                 state.isPlaying = true;
                 updatePlayButton();
-                elements.albumArt.classList.add("playing");
-                elements.audioVisualizer.classList.add("active");
             }).catch(err => {
                 if (err && (err.name === "AbortError" || err.name === "NotAllowedError" || err.code === 20)) return;
                 console.warn("[music] resume play() rejected:", err && err.message);
@@ -897,8 +872,6 @@
 
         simulateProgress = 0;
         elements.timeTotal.textContent = formatTime(duration);
-        elements.albumArt.classList.add("playing");
-        elements.audioVisualizer.classList.add("active");
 
         simulateInterval = setInterval(() => {
             if (!state.isPlaying) {
@@ -955,6 +928,23 @@
         if (track) {
             elements.trackArtist.textContent = (track.artist || "") + " · " + (track.album || "") + "  ⚠️ 載入失敗";
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 播放清單抽屜
+    // ═══════════════════════════════════════════════════════════════════
+    function openPlaylistDrawer() {
+        state.drawerOpen = true;
+        elements.drawer.classList.add("open");
+        elements.drawer.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+    }
+
+    function closePlaylistDrawer() {
+        state.drawerOpen = false;
+        elements.drawer.classList.remove("open");
+        elements.drawer.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -1119,14 +1109,12 @@
         if (!track) {
             elements.trackTitle.textContent = "選擇一首音樂開始";
             elements.trackArtist.textContent = "-";
-            elements.albumPlaceholder.textContent = "🎵";
             elements.lyrics.innerHTML = '<p class="lyric-line">歌詞將在播放時顯示</p>';
             return;
         }
 
         elements.trackTitle.textContent = track.title;
         elements.trackArtist.textContent = (track.artist || "") + " · " + (track.album || "");
-        setAlbumArt(track.cover);
         elements.timeTotal.textContent = formatTime(track.duration);
         elements.progressFill.style.width = "0%";
         elements.progressHandle.style.left = "0%";
@@ -1181,16 +1169,6 @@
             return `<img src="${esc}" alt="" loading="lazy" onerror="this.outerHTML='🎵'" />`;
         }
         return escapeHtml(cover);
-    }
-
-    function setAlbumArt(cover) {
-        if (!elements.albumPlaceholder) return;
-        if (cover && typeof cover === "string" && /^(\/|https?:|data:)/i.test(cover)) {
-            elements.albumPlaceholder.innerHTML =
-                `<img src="${escapeHtml(cover)}" alt="" onerror="this.outerHTML='🎵'" />`;
-        } else {
-            elements.albumPlaceholder.textContent = cover || "🎵";
-        }
     }
 
     function escapeHtml(s) {
@@ -1386,120 +1364,7 @@
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // 等化器控制
-    // ═══════════════════════════════════════════════════════════════════
-    function updateEqualizer() {
-        elements.eqSliders.forEach(slider => {
-            const value = slider.value;
-            const valueDisplay = slider.nextElementSibling;
-            valueDisplay.textContent = value;
-        });
-        saveToStorage();
-    }
-
-    function applyPreset(e) {
-        const presetName = e.target.dataset.preset;
-        const preset = EQ_PRESETS[presetName];
-
-        if (!preset) return;
-
-        elements.eqSliders.forEach((slider, index) => {
-            slider.value = preset[index];
-        });
-
-        updateEqualizer();
-
-        // 更新預設按鈕狀態
-        elements.presetBtns.forEach(btn => {
-            btn.classList.toggle("active", btn.dataset.preset === presetName);
-        });
-    }
-
-    function resetEqualizer() {
-        elements.eqSliders.forEach(slider => {
-            slider.value = 0;
-        });
-        updateEqualizer();
-        elements.presetBtns.forEach(btn => {
-            btn.classList.remove("active");
-        });
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // 音效視覺化
-    // ═══════════════════════════════════════════════════════════════════
-    function initAudioVisualizer() {
-        try {
-            const canvas = elements.visualizerCanvas;
-            const ctx = canvas.getContext("2d");
-
-            // 設置畫布尺寸
-            function resizeCanvas() {
-                canvas.width = canvas.offsetWidth;
-                canvas.height = canvas.offsetHeight;
-            }
-            resizeCanvas();
-            window.addEventListener("resize", resizeCanvas);
-
-            // 動畫循環
-            function draw() {
-                requestAnimationFrame(draw);
-
-                if (!state.isPlaying) {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    return;
-                }
-
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
-                const bars = 32;
-                const radius = Math.min(centerX, centerY) * 0.6;
-
-                // 繪製動態圓環
-                for (let i = 0; i < bars; i++) {
-                    const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
-                    const barHeight = Math.random() * 40 + 20;
-
-                    const x1 = centerX + Math.cos(angle) * radius;
-                    const y1 = centerY + Math.sin(angle) * radius;
-                    const x2 = centerX + Math.cos(angle) * (radius + barHeight);
-                    const y2 = centerY + Math.sin(angle) * (radius + barHeight);
-
-                    const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
-                    gradient.addColorStop(0, "rgba(99, 102, 241, 0.8)");
-                    gradient.addColorStop(1, "rgba(129, 140, 248, 0.4)");
-
-                    ctx.beginPath();
-                    ctx.moveTo(x1, y1);
-                    ctx.lineTo(x2, y2);
-                    ctx.strokeStyle = gradient;
-                    ctx.lineWidth = 3;
-                    ctx.lineCap = "round";
-                    ctx.stroke();
-                }
-
-                // 中心圓
-                const centerGradient = ctx.createRadialGradient(
-                    centerX, centerY, 0,
-                    centerX, centerY, radius * 0.5
-                );
-                centerGradient.addColorStop(0, "rgba(99, 102, 241, 0.3)");
-                centerGradient.addColorStop(1, "rgba(99, 102, 241, 0)");
-
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, radius * 0.5, 0, Math.PI * 2);
-                ctx.fillStyle = centerGradient;
-                ctx.fill();
-            }
-
-            draw();
-        } catch (e) {
-            console.log("視覺化初始化失敗", e);
-        }
-    }
-
+    // 音效視覺化（已移除）
     // ═══════════════════════════════════════════════════════════════════
     // 新增音樂 Modal
     // ═══════════════════════════════════════════════════════════════════
