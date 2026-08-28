@@ -708,44 +708,59 @@
         state.currentIndex = index;
         state.currentLyricIndex = -1; // 重置歌詞高亮索引
 
-        // 有真實音檔 → 用 <audio> 播；沒 url 才退回模擬
-        if (track.url) {
-            if (simulateInterval) { clearInterval(simulateInterval); simulateInterval = null; }
-            const absUrl = new URL(track.url, location.href).href;
-            if (elements.audioPlayer.src !== absUrl) {
-                elements.audioPlayer.src = track.url;
-            }
-            elements.audioPlayer.volume = state.isMuted ? 0 : state.volume / 100;
-            elements.audioPlayer.play().then(() => {
-                // play() 成功後才更新 UI 狀態
-                state.isPlaying = true;
-                updatePlayButton();
-            }).catch(err => {
-                // 以下屬於「可預期 / 非錯誤」的情況，但提示一下方便診斷：
-                //  - AbortError：快速跳歌時新的 load() 中斷了上一次 play()
-                //  - NotAllowedError：瀏覽器自動播放政策擋下 play()（保留 currentIndex，
-                //    下次點 ▶️ 會在 user gesture 內重試播放當前選中的曲目）
-                if (err && (err.name === "AbortError" || err.name === "NotAllowedError" || err.code === 20)) {
-                    console.info("[music] play() blocked (autoplay policy or aborted):", err && err.name);
-                    return;
-                }
-                console.warn("[music] play() rejected:", err && err.message);
-            });
-        }
-
-        // 這些只負責顯示，不依賴 play() 是否成功
+        // 這些只負責顯示（不依賴 play() 是否成功）
         updateNowPlaying(track);
         updatePlaylistUI();
 
         // 更新播放統計
         updatePlayStats(track);
 
-        // 開始視覺化
-        if (state.audioContext && state.audioSource) {
-            try {
-                state.audioSource.connect(state.analyser);
-                state.analyser.connect(state.audioContext.destination);
-            } catch (_) { /* already connected */ }
+        // 有真實音檔 → 用 <audio> 播；沒 url 才退回模擬
+        if (track.url) {
+            if (simulateInterval) { clearInterval(simulateInterval); simulateInterval = null; }
+            const absUrl = new URL(track.url, location.href).href;
+            const srcChanged = elements.audioPlayer.src !== absUrl;
+            if (srcChanged) {
+                elements.audioPlayer.src = track.url;
+            }
+            elements.audioPlayer.volume = state.isMuted ? 0 : state.volume / 100;
+
+            // 嘗試播放：根據 readyState 決定 sync 或等 canplay
+            const tryPlay = () => {
+                elements.audioPlayer.play().then(() => {
+                    state.isPlaying = true;
+                    updatePlayButton();
+                }).catch(err => {
+                    if (err && (err.name === "AbortError" || err.name === "NotAllowedError" || err.code === 20)) {
+                        console.info("[music] play() blocked:", err && err.name);
+                        return;
+                    }
+                    console.warn("[music] play() rejected:", err && err.message);
+                });
+            };
+
+            // HAVE_NOTHING = 0, HAVE_METADATA = 1, HAVE_CURRENT_DATA = 2, HAVE_FUTURE_DATA = 3, HAVE_ENOUGH_DATA = 4
+            if (srcChanged || elements.audioPlayer.readyState < 2) {
+                // 改 src 後需要等 load 完成才能 play；否則 Chrome 可能會擋下
+                const onCanPlay = () => {
+                    elements.audioPlayer.removeEventListener("canplay", onCanPlay);
+                    elements.audioPlayer.removeEventListener("loadeddata", onCanPlay);
+                    tryPlay();
+                };
+                elements.audioPlayer.addEventListener("canplay", onCanPlay, { once: true });
+                elements.audioPlayer.addEventListener("loadeddata", onCanPlay, { once: true });
+                // 觸發 load（如果 src 沒變可能不會重新 load，確保觸發一次）
+                if (srcChanged) elements.audioPlayer.load();
+                // 保險：若 300ms 內還沒 canplay，強制嘗試 play（避免永遠卡住）
+                setTimeout(() => {
+                    elements.audioPlayer.removeEventListener("canplay", onCanPlay);
+                    elements.audioPlayer.removeEventListener("loadeddata", onCanPlay);
+                    if (!state.isPlaying) tryPlay();
+                }, 300);
+            } else {
+                // src 沒變且已載入，直接 play
+                tryPlay();
+            }
         }
 
         // 沒 url 才模擬播放進度
