@@ -142,6 +142,121 @@
       "source": "/music.html",
       "destination": "/music",
       "permanent": true
+    },
+    {
+      "source": "/etf",
+      "destination": "/stock/etf",
+      "permanent": true
+    },
+    {
+      "source": "/etf/",
+      "destination": "/stock/etf",
+      "permanent": true
+    },
+    {
+      "source": "/etf.html",
+      "destination": "/stock/etf",
+      "permanent": true
+    },
+    {
+      "source": "/stock-app/dashboard",
+      "destination": "/stock/dashboard",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/stock/dashboard",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap",
+      "destination": "/stock/sitemap",
+      "permanent": true
+    },
+    {
+      "source": "/heatmap",
+      "destination": "/stock/heatmap",
+      "permanent": true
+    },
+    {
+      "source": "/signal-filter",
+      "destination": "/stock/signal-filter",
+      "permanent": true
+    },
+    {
+      "source": "/etf-filter",
+      "destination": "/stock/etf-filter",
+      "permanent": true
+    },
+    {
+      "source": "/macro",
+      "destination": "/stock/macro",
+      "permanent": true
+    },
+    {
+      "source": "/exdiv",
+      "destination": "/stock/exdiv",
+      "permanent": true
+    },
+    {
+      "source": "/warming",
+      "destination": "/stock/warming",
+      "permanent": true
+    },
+    {
+      "source": "/revenue",
+      "destination": "/stock/revenue",
+      "permanent": true
+    },
+    {
+      "source": "/conference",
+      "destination": "/stock/conference",
+      "permanent": true
+    },
+    {
+      "source": "/ai-capex",
+      "destination": "/stock/ai-capex",
+      "permanent": true
+    },
+    {
+      "source": "/marker-history",
+      "destination": "/stock/marker-history",
+      "permanent": true
+    },
+    {
+      "source": "/ranking",
+      "destination": "/stock/ranking",
+      "permanent": true
+    },
+    {
+      "source": "/btc",
+      "destination": "/stock/btc",
+      "permanent": true
+    },
+    {
+      "source": "/futures",
+      "destination": "/stock/futures",
+      "permanent": true
+    },
+    {
+      "source": "/buyback",
+      "destination": "/stock/buyback",
+      "permanent": true
+    },
+    {
+      "source": "/line-push",
+      "destination": "/stock/line-push",
+      "permanent": true
+    },
+    {
+      "source": "/ai-warroom",
+      "destination": "/stock/ai-warroom",
+      "permanent": true
+    },
+    {
+      "source": "/currency",
+      "destination": "/stock/currency",
+      "permanent": true
     }
   ]
 }
