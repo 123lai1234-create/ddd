@@ -143,12 +143,12 @@ const personSchema = {
       }).catch(() => {});
     }
     </script>
-    <script is:inline src="/scripts/theme-randomizer.js"></script>
+    <script src="/scripts/theme-randomizer.js" defer></script>
     <!-- <script is:inline src="/scripts/shader-bg.js" defer></script> -->
-    <script is:inline src="/scripts/admin-mode.js"></script>
+    <script src="/scripts/admin-mode.js" defer></script>
     <script is:inline src="/scripts/site-shell-config.js" defer></script>
     <script is:inline src="/scripts/nav.js" defer></script>
-    <script is:inline src="/scripts/app-config.js" defer></script>
+    <script src="/scripts/app-config.js" defer></script>
     <script is:inline src="/scripts/dynamic-features.js" defer></script>
     <!-- <script is:inline src="/scripts/immersive-experience.js" defer></script> -->
     <Fragment set:html={headInline} />
@@ -195,9 +195,9 @@ const personSchema = {
 <body data-page={bodyPage}>
     <slot />
     {pageScripts.includes('/scripts/index-charts.js') && (
-        <script is:inline src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
     )}
-    {pageScripts.map((src) => <script is:inline src={src}></script>)}
+    {pageScripts.map((src) => <script src={src}></script>)}
     <Analytics />
 
     <!-- ── Search modal (Pagefind) ── -->
