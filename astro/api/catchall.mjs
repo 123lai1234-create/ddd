@@ -5530,6 +5530,34 @@ async function futuresQuoteHandler(request, contract) {
   });
 }
 
+// ── Yahoo Finance proxy (CORS workaround) ──────────────────────────
+// Yahoo's chart API is reachable but doesn't send CORS headers, so the browser
+// refuses the response. We proxy through the Vercel edge to fetch server-side
+// and return the same JSON with permissive CORS.
+async function yahooChartProxy(request) {
+  const u = new URL(request.url);
+  const symbol = u.searchParams.get("symbol") || "";
+  const interval = u.searchParams.get("interval") || "1d";
+  const range = u.searchParams.get("range") || "1mo";
+  if (!symbol) return json({ error: "missing symbol" }, { status: 400 });
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 10000);
+  try {
+    const r = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; donttalk-stocks/1.0)" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    if (!r.ok) return json({ error: `Yahoo ${r.status}` }, { status: r.status });
+    const data = await r.json();
+    return json(data);
+  } catch (e) {
+    clearTimeout(tid);
+    return json({ error: `Yahoo fetch failed: ${e.name}: ${e.message}` }, { status: 502 });
+  }
+}
+
 // ── Treasury buyback / private placement (MOPS-derived) ──────────
 // Reads from Neon when treasury_buyback / private_placement tables exist.
 // Falls back to graceful empty payload + MOPS scraping hint otherwise.
@@ -5769,6 +5797,7 @@ const TABLE = [
   ["GET",  /^\/futures\/([^/]+?)\/quote\/?$/, futuresQuoteHandler],
   ["GET",  /^\/treasury\/buyback\/?$/,       buybackListHandler],
   ["GET",  /^\/treasury\/private\/?$/,       privatePlacementHandler],
+  ["GET",  /^\/yahoo\/chart\/?$/,            yahooChartProxy],
   ["GET",  /^\/ranking\/?$/,                 rankingHandler],
   ["GET",  /^\/stocks\/?$/,                  listStocks],
   ["GET",  /^\/stocks\/remove\/?$/,          stub.bind(null, "stocks_remove_list", { hint: "use DELETE/POST /api/stocks/remove/<code>" })],
