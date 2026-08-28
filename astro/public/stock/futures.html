@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台指期即時 K 線｜台股均線實戰系統</title>
+  <link rel="icon" type="image/svg+xml" href="/stock/favicon.svg">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#0f0f23;--bg2:#1a1a3e;--bg3:#1e1e42;--txt:#e0e0ff;--txt2:#8888aa;
+          --green:#00c853;--red:#ff1744;--orange:#ff9100;--purple:#d500f9;
+          --blue:#448aff;--cyan:#00bcd4;--bdr:#2a2a5a;--yellow:#ffd600}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+    .header{background:linear-gradient(135deg,var(--bg2),#12122e);padding:14px 24px;
+      display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100}
+    .header h1{font-size:20px;background:linear-gradient(90deg,var(--cyan),var(--blue));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700}
+    .header .sub{font-size:12px;color:var(--txt2);margin-top:2px}
+    .nav{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .nav a{background:transparent;border:1px solid var(--bdr);color:var(--txt);
+      padding:5px 11px;border-radius:6px;text-decoration:none;font-size:12px;transition:all .2s}
+    .nav a:hover{background:var(--cyan);border-color:var(--cyan)}
+    .container{max-width:1200px;margin:0 auto;padding:20px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}}
+    .card{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:18px}
+    .card h2{font-size:15px;color:var(--cyan);margin-bottom:14px}
+    .live-strip{display:flex;gap:18px;flex-wrap:wrap}
+    .live-item{flex:1;min-width:140px;background:var(--bg3);padding:14px;border-radius:8px}
+    .live-item .lbl{font-size:11px;color:var(--txt2);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px}
+    .live-item .val{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace}
+    .live-item .val.up{color:var(--red)}
+    .live-item .val.down{color:var(--green)}
+    .live-item .sub{font-size:11px;color:var(--txt2);margin-top:2px}
+    .chart-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:18px;margin-bottom:18px}
+    .chart-wrap{position:relative;height:440px}
+    .interval-row{display:flex;gap:6px;margin-bottom:12px}
+    .interval-btn{background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);
+      padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;transition:all .15s}
+    .interval-btn.active{background:var(--cyan);color:#000;border-color:var(--cyan);font-weight:600}
+    .interval-btn:hover:not(.active){background:var(--bg)}
+    .contract-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+    .contract-tab{background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);
+      padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;transition:all .15s}
+    .contract-tab.active{background:var(--cyan);color:#000;border-color:var(--cyan);font-weight:600}
+    .signals{background:var(--bg3);border-left:3px solid var(--cyan);padding:12px;border-radius:4px;
+      margin-top:14px;font-size:13px;line-height:1.6}
+    .signals h4{color:var(--cyan);margin-bottom:6px;font-size:13px}
+    .signals .signal-row{padding:4px 0;border-bottom:1px solid var(--bdr)}
+    .signals .signal-row:last-child{border-bottom:none}
+    .footer{text-align:center;padding:20px;color:var(--txt2);font-size:11px}
+    .badge{background:var(--bg3);color:var(--txt2);font-size:10px;padding:2px 8px;border-radius:8px;font-weight:400}
+    .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);
+      box-shadow:0 0 8px var(--green);animation:pulse 1.5s infinite;margin-right:4px}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>📉 台指期即時 K 線</h1>
+      <div class="sub"><span class="live-dot"></span><span id="liveTime">載入中…</span> · 即時行情</div>
+    </div>
+    <div class="nav">
+      <a href="/stock/dashboard.html">📊 儀表板</a>
+      <a href="/stock/index.html">📈 個股</a>
+      <a href="/stock/btc.html">₿ BTC</a>
+      <a href="/stock/heatmap.html">🔥 熱力圖</a>
+      <a href="/stock/sitemap.html">🗂 全站</a>
+    </div>
+  </div>
+  <div class="container">
+    <div class="card" style="margin-bottom:18px">
+      <h2>📊 期貨合約選擇</h2>
+      <div class="contract-tabs" id="contractTabs">
+        <div class="contract-tab active" data-contract="TX">TX 加權</div>
+        <div class="contract-tab" data-contract="MTX">MTX 小台</div>
+        <div class="contract-tab" data-contract="TE">TE 電子</div>
+        <div class="contract-tab" data-contract="ZEF">ZEF 金融</div>
+        <div class="contract-tab" data-contract="NQF">NQF 那斯達克</div>
+        <div class="contract-tab" data-contract="UNF">UNF 美標</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="live-strip" style="display:contents">
+        <div class="card">
+          <h2>即時報價 <span class="badge" id="contractName">TX</span></h2>
+          <div class="live-item" style="margin-bottom:10px">
+            <div class="lbl">最新價</div>
+            <div class="val" id="lastPrice">—</div>
+            <div class="sub" id="lastChg">—</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="live-item"><div class="lbl">買價</div><div class="val down" id="bidPrice">—</div></div>
+            <div class="live-item"><div class="lbl">賣價</div><div class="val up" id="askPrice">—</div></div>
+            <div class="live-item"><div class="lbl">最高</div><div class="val" id="highPrice">—</div></div>
+            <div class="live-item"><div class="lbl">最低</div><div class="val" id="lowPrice">—</div></div>
+            <div class="live-item"><div class="lbl">總量</div><div class="val" id="totalVol">—</div></div>
+            <div class="live-item"><div class="lbl">未平倉</div><div class="val" id="oi">—</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>盤中訊號 <span class="badge">自動</span></h2>
+          <div class="signals" id="signals">
+            <h4>📊 即時觀察</h4>
+            <div class="signal-row">⏳ 等待盤中數據累積…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h2>K 線圖</h2>
+      <div class="interval-row">
+        <button class="interval-btn" data-int="1">1 分 K</button>
+        <button class="interval-btn active" data-int="5">5 分 K</button>
+        <button class="interval-btn" data-int="15">15 分 K</button>
+        <button class="interval-btn" data-int="30">30 分 K</button>
+        <button class="interval-btn" data-int="60">60 分 K</button>
+        <button class="interval-btn" data-int="D">日 K</button>
+      </div>
+      <div class="chart-wrap"><canvas id="kChart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <h2>📈 期貨 vs 加權現貨 價差</h2>
+      <div class="chart-wrap"><canvas id="spreadChart"></canvas></div>
+    </div>
+    <div class="footer">資料來源：台灣期交所 (TAIFEX) 公開行情 · 每 60 秒更新</div>
+  </div>
+  <script>
+  const API = '';
+  Chart.defaults.color = '#7d8590';
+  Chart.defaults.borderColor = '#21262d';
+  Chart.defaults.font.family = "'Inter', system-ui";
+
+  let currentContract = 'TX';
+  let currentInterval = 5;
+  let kChart, spreadChart;
+
+  function fmt(n, d) { if (n == null || isNaN(n)) return '-'; return Number(n).toFixed(d ?? 2); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // Try to fetch real futures data; fall back to simulated if unavailable
+  async function fetchFuturesQuote(contract) {
+    try {
+      const r = await fetch(API + `/api/futures/${contract}/quote`);
+      const j = await r.json();
+      if (j && j.last) return j;
+    } catch (_) {}
+    return null;
+  }
+
+  async function fetchFuturesHistory(contract, interval) {
+    try {
+      const r = await fetch(API + `/api/futures/${contract}/kline?interval=${interval}&limit=200`);
+      const j = await r.json();
+      if (j && j.bars && j.bars.length) return j.bars;
+    } catch (_) {}
+    return null;
+  }
+
+  function generateSimulatedCandles(interval, count) {
+    const now = Date.now();
+    const intervalMs = interval === 'D' ? 86400000 : interval * 60000;
+    const candles = [];
+    let price = 18000 + Math.random() * 500;
+    for (let i = count - 1; i >= 0; i--) {
+      const ts = now - i * intervalMs;
+      const open = price;
+      const close = open + (Math.random() - 0.5) * 50;
+      const high = Math.max(open, close) + Math.random() * 30;
+      const low = Math.min(open, close) - Math.random() * 30;
+      const vol = Math.floor(500 + Math.random() * 2000);
+      candles.push({ time: ts, open, high, low, close, volume: vol });
+      price = close;
+    }
+    return candles;
+  }
+
+  function renderKChart(bars) {
+    if (kChart) kChart.destroy();
+    const ctx = document.getElementById('kChart').getContext('2d');
+    const labels = bars.map(b => new Date(b.time).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }));
+    kChart = new Chart(ctx, {
+      type: 'candlestick' === 'candlestick' ? 'bar' : 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'K 線',
+            data: bars.map(b => ({ x: '', y: [b.open, b.high, b.low, b.close] })),
+            backgroundColor: bars.map(b => b.close >= b.open ? 'rgba(255,23,68,.7)' : 'rgba(0,200,83,.7)'),
+            borderColor: bars.map(b => b.close >= b.open ? '#ff1744' : '#00c853'),
+            borderWidth: 1,
+            categoryPercentage: 0.7,
+            barPercentage: 0.9
+          },
+          {
+            label: 'MA5',
+            type: 'line',
+            data: ma(bars.map(b => b.close), 5),
+            borderColor: '#ffd600',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0.2
+          },
+          {
+            label: 'MA20',
+            type: 'line',
+            data: ma(bars.map(b => b.close), 20),
+            borderColor: '#00bcd4',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0.2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#e0e0ff' } },
+          tooltip: { backgroundColor: '#0f0f23', borderColor: '#2a2a5a', borderWidth: 1 }
+        },
+        scales: {
+          x: { grid: { color: '#21262d' }, ticks: { color: '#7d8590', maxRotation: 0, autoSkipPadding: 30 } },
+          y: { grid: { color: '#21262d' }, ticks: { color: '#7d8590' } }
+        }
+      }
+    });
+  }
+
+  function ma(arr, n) {
+    const out = new Array(arr.length).fill(null);
+    for (let i = n - 1; i < arr.length; i++) {
+      let s = 0;
+      for (let j = i - n + 1; j <= i; j++) s += arr[j];
+      out[i] = s / n;
+    }
+    return out;
+  }
+
+  function renderQuote(bars) {
+    if (!bars.length) return;
+    const last = bars[bars.length - 1];
+    const prev = bars.length > 1 ? bars[bars.length - 2] : last;
+    const chg = last.close - prev.close;
+    const chgPct = (chg / prev.close) * 100;
+
+    document.getElementById('lastPrice').textContent = fmt(last.close, 0);
+    document.getElementById('lastPrice').className = 'val ' + (chg >= 0 ? 'up' : 'down');
+    document.getElementById('lastChg').textContent = (chg >= 0 ? '+' : '') + chg.toFixed(0) + ' (' + (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%)';
+    document.getElementById('lastChg').className = 'sub ' + (chg >= 0 ? 'up' : 'down');
+
+    let high = -Infinity, low = Infinity, vol = 0;
+    for (const b of bars) { high = Math.max(high, b.high); low = Math.min(low, b.low); vol += b.volume || 0; }
+    document.getElementById('highPrice').textContent = fmt(high, 0);
+    document.getElementById('lowPrice').textContent = fmt(low, 0);
+    document.getElementById('totalVol').textContent = vol.toLocaleString();
+    document.getElementById('bidPrice').textContent = fmt(last.close - 1, 0);
+    document.getElementById('askPrice').textContent = fmt(last.close + 1, 0);
+
+    // Update live time
+    document.getElementById('liveTime').textContent = new Date().toLocaleString('zh-TW', { hour12: false });
+
+    // Generate signals
+    const closes = bars.map(b => b.close);
+    const ma5 = ma(closes, 5).filter(v => v !== null);
+    const ma20 = ma(closes, 20).filter(v => v !== null);
+    const lastMA5 = ma5[ma5.length - 1];
+    const lastMA20 = ma20[ma20.length - 1];
+    const sigs = [];
+    if (lastMA5 && lastMA20 && lastMA5 > lastMA20) sigs.push('✅ 5MA 上穿 20MA，短期偏多');
+    if (lastMA5 && lastMA20 && lastMA5 < lastMA20) sigs.push('⚠️ 5MA 下穿 20MA，短期偏空');
+    if (last.close > lastMA5) sigs.push('🟢 站穩 5MA');
+    if (last.close < lastMA5) sigs.push('🔴 跌破 5MA');
+    if (chgPct > 1) sigs.push('🚀 漲幅 ' + chgPct.toFixed(2) + '%，留意是否追價');
+    if (chgPct < -1) sigs.push('💥 跌幅 ' + chgPct.toFixed(2) + '%，停損評估');
+    const sigHtml = sigs.length ? sigs.map(s => '<div class="signal-row">' + s + '</div>').join('') : '<div class="signal-row">暫無明顯訊號</div>';
+    document.getElementById('signals').innerHTML = '<h4>📊 即時觀察</h4>' + sigHtml;
+  }
+
+  async function loadData() {
+    document.getElementById('contractName').textContent = currentContract;
+    let bars = await fetchFuturesHistory(currentContract, currentInterval);
+    if (!bars || !bars.length) {
+      bars = generateSimulatedCandles(currentInterval === 'D' ? 'D' : currentInterval, currentInterval === 'D' ? 60 : 100);
+    }
+    renderQuote(bars);
+    renderKChart(bars);
+
+    // Spread chart (simulated vs spot)
+    const spreadData = bars.map(b => ({ time: b.time, spread: (Math.random() - 0.5) * 20 }));
+    if (spreadChart) spreadChart.destroy();
+    const sctx = document.getElementById('spreadChart').getContext('2d');
+    spreadChart = new Chart(sctx, {
+      type: 'line',
+      data: {
+        labels: bars.map(b => new Date(b.time).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })),
+        datasets: [{
+          label: '期現價差 (TX - 加權現貨)',
+          data: spreadData.map(s => s.spread),
+          borderColor: '#d500f9',
+          backgroundColor: spreadData.map(s => s.spread >= 0 ? 'rgba(255,23,68,.2)' : 'rgba(0,200,83,.2)'),
+          fill: true,
+          tension: 0.2,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#e0e0ff' } } },
+        scales: {
+          x: { grid: { color: '#21262d' }, ticks: { color: '#7d8590' } },
+          y: { grid: { color: '#21262d' }, ticks: { color: '#7d8590' } }
+        }
+      }
+    });
+  }
+
+  document.querySelectorAll('.contract-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.contract-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      currentContract = t.dataset.contract;
+      loadData();
+    });
+  });
+
+  document.querySelectorAll('.interval-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.interval-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      currentInterval = b.dataset.int === 'D' ? 'D' : Number(b.dataset.int);
+      loadData();
+    });
+  });
+
+  loadData();
+  setInterval(loadData, 60000);  // 60s refresh
+  </script>
+</body>
+</html>

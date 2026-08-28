@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 智能篩選戰室｜台股均線實戰系統</title>
+  <link rel="icon" type="image/svg+xml" href="/stock/favicon.svg">
+  <style>
+    :root{
+      --bg:#0f0f23;--bg2:#1a1a3e;--bg3:#1e1e42;
+      --txt:#e0e0ff;--txt2:#8888aa;
+      --green:#00c853;--red:#ff1744;--orange:#ff9100;
+      --purple:#d500f9;--blue:#448aff;--cyan:#00bcd4;
+      --bdr:#2a2a5a;--yellow:#ffd600;--pink:#ff4081
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:0}
+    .header{background:linear-gradient(135deg,var(--bg2),#12122e);padding:14px 24px;
+      display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100}
+    .header h1{font-size:20px;background:linear-gradient(90deg,var(--purple),var(--pink));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700}
+    .header .sub{font-size:12px;color:var(--txt2);margin-top:2px}
+    .nav{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .nav a{background:transparent;border:1px solid var(--bdr);color:var(--txt);
+      padding:5px 11px;border-radius:6px;text-decoration:none;font-size:12px;transition:all .2s}
+    .nav a:hover{background:var(--purple);border-color:var(--purple)}
+    .container{max-width:1200px;margin:0 auto;padding:20px}
+    .layout{display:grid;grid-template-columns:300px 1fr;gap:18px}
+    @media(max-width:900px){.layout{grid-template-columns:1fr}}
+    .panel{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:16px}
+    .panel h2{font-size:14px;color:var(--cyan);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+    .preset-list{display:flex;flex-direction:column;gap:8px}
+    .preset{background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;
+      padding:10px 12px;cursor:pointer;transition:all .15s}
+    .preset:hover{background:rgba(212,0,249,.15);border-color:var(--purple)}
+    .preset .nm{font-size:13px;font-weight:600;color:var(--txt)}
+    .preset .ds{font-size:11px;color:var(--txt2);margin-top:3px}
+    .preset .em{font-size:18px;float:right}
+    .chat-area{display:flex;flex-direction:column;height:600px;background:var(--bg2);
+      border:1px solid var(--bdr);border-radius:10px;overflow:hidden}
+    .chat-log{flex:1;overflow-y:auto;padding:16px}
+    .chat-log::-webkit-scrollbar{width:6px}
+    .chat-log::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+    .msg{margin-bottom:14px;display:flex;gap:10px}
+    .msg .av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+      justify-content:center;font-size:16px;flex-shrink:0}
+    .msg.user .av{background:var(--blue);color:#fff}
+    .msg.bot .av{background:var(--purple);color:#fff}
+    .msg .bd{flex:1}
+    .msg .meta{font-size:11px;color:var(--txt2);margin-bottom:4px}
+    .msg .content{font-size:13px;line-height:1.6;background:var(--bg3);padding:10px 12px;border-radius:8px}
+    .msg.user .content{background:rgba(68,138,255,.1);border:1px solid rgba(68,138,255,.2)}
+    .msg.bot .content{background:rgba(212,0,249,.08);border:1px solid rgba(212,0,249,.2)}
+    .msg .content code{background:var(--bg);padding:2px 6px;border-radius:3px;font-size:12px;
+      color:var(--cyan);font-family:'JetBrains Mono',monospace}
+    .msg .content table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
+    .msg .content th,.msg .content td{padding:4px 8px;text-align:left;border-bottom:1px solid var(--bdr)}
+    .msg .content th{color:var(--cyan);font-weight:600}
+    .msg .content .up{color:var(--red)}
+    .msg .content .down{color:var(--green)}
+    .chat-input{display:flex;border-top:1px solid var(--bdr);padding:10px;background:var(--bg3);gap:8px}
+    .chat-input textarea{flex:1;background:var(--bg);border:1px solid var(--bdr);
+      color:var(--txt);padding:8px 12px;border-radius:8px;font-family:inherit;
+      font-size:13px;resize:none;min-height:40px;max-height:100px}
+    .chat-input textarea:focus{outline:none;border-color:var(--purple)}
+    .chat-input button{background:var(--purple);color:#fff;border:none;padding:8px 18px;
+      border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;transition:opacity .2s}
+    .chat-input button:hover{opacity:.85}
+    .chat-input button:disabled{background:var(--txt2);cursor:not-allowed;opacity:.5}
+    .results-card{background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;
+      padding:12px;margin-top:10px}
+    .results-card .t{font-size:13px;font-weight:600;color:var(--cyan);margin-bottom:8px}
+    .stock-chip{display:inline-block;background:var(--bg);padding:4px 10px;border-radius:14px;
+      font-size:11px;margin:2px;border:1px solid var(--bdr);cursor:pointer}
+    .stock-chip:hover{border-color:var(--purple)}
+    .stock-chip .nm{font-weight:600;color:var(--txt)}
+    .stock-chip .cd{color:var(--txt2);margin-left:4px}
+    .typing{color:var(--txt2);font-size:12px;font-style:italic}
+    .typing::after{content:'...';animation:dot 1s steps(4) infinite}
+    @keyframes dot{0%,20%{content:'.'}40%{content:'..'}60%,100%{content:'...'}}
+    .status-bar{font-size:11px;color:var(--txt2);padding:6px 12px;background:var(--bg);
+      border-top:1px solid var(--bdr);text-align:center}
+    .quick-actions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+    .quick-action{background:var(--bg);border:1px solid var(--bdr);color:var(--txt);
+      padding:4px 10px;border-radius:14px;font-size:11px;cursor:pointer;transition:all .15s}
+    .quick-action:hover{background:var(--purple);border-color:var(--purple)}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>🤖 AI 智能篩選戰室</h1>
+      <div class="sub" id="asOfBar">自然語言查詢 + 技術指標 + 基本面 · 即時對話</div>
+    </div>
+    <div class="nav">
+      <a href="/stock/dashboard.html">📊 儀表板</a>
+      <a href="/stock/index.html">📈 個股</a>
+      <a href="/stock/heatmap.html">🔥 熱力圖</a>
+      <a href="/stock/signal-filter.html">🔍 篩選</a>
+      <a href="/stock/etf-filter.html">💼 ETF</a>
+      <a href="/stock/sitemap.html">🗂 全站</a>
+    </div>
+  </div>
+  <div class="container">
+    <div class="layout">
+      <!-- 左側：預設查詢模板 -->
+      <div class="panel">
+        <h2>⚡ 預設查詢</h2>
+        <div class="preset-list">
+          <div class="preset" data-q="找出今天 MACD 剛轉正且成交量放大 1.5 倍以上的股票">
+            <span class="em">📈</span>
+            <div class="nm">MACD 轉正 + 量增</div>
+            <div class="ds">短線進場訊號</div>
+          </div>
+          <div class="preset" data-q="篩選月營收年增率大於 20% 且本益比小於 20 的中小型股">
+            <span class="em">💎</span>
+            <div class="nm">高成長低本益比</div>
+            <div class="ds">價值成長股</div>
+          </div>
+          <div class="preset" data-q="列出外資連續買超 3 天以上且股價在 5 日均線之上的股票">
+            <span class="em">🏦</span>
+            <div class="nm">外資連買 + 站穩均線</div>
+            <div class="ds">法人偏多標的</div>
+          </div>
+          <div class="preset" data-q="篩選 RSI 跌破 30 接近超賣且 KD 黃金交叉的股票">
+            <span class="em">📉</span>
+            <div class="nm">RSI 超賣 + KD 黃交叉</div>
+            <div class="ds">技術反轉訊號</div>
+          </div>
+          <div class="preset" data-q="找出 ETF 0050、0056 持股增加最多的前 10 檔成分股">
+            <span class="em">💼</span>
+            <div class="nm">ETF 加碼股</div>
+            <div class="ds">0050/0056 重點持股</div>
+          </div>
+          <div class="preset" data-q="列出今日成交量是 5 日均量 3 倍以上的股票（爆量股）">
+            <span class="em">🔥</span>
+            <div class="nm">今日爆量股</div>
+            <div class="ds">異常交易警示</div>
+          </div>
+          <div class="preset" data-q="篩選股價突破 20 日新高且融資增加不超過 5% 的股票">
+            <span class="em">🚀</span>
+            <div class="nm">突破新高 + 融資溫和</div>
+            <div class="ds">籌碼穩定強勢股</div>
+          </div>
+          <div class="preset" data-q="列出今日收紅、成交量增加、法人同步買超的前 10 大權值股">
+            <span class="em">⭐</span>
+            <div class="nm">權值三好股</div>
+            <div class="ds">大盤主流標的</div>
+          </div>
+        </div>
+      </div>
+      <!-- 右側：對話區 -->
+      <div class="chat-area">
+        <div class="chat-log" id="chatLog">
+          <div class="msg bot">
+            <div class="av">🤖</div>
+            <div class="bd">
+              <div class="meta">AI 助手</div>
+              <div class="content">
+                你好！我是 <strong>AI 篩選助手</strong>，可以用自然語言幫你篩選台股。<br><br>
+                例如：<br>
+                • 「找出 MACD 剛轉正且量增的股票」<br>
+                • 「篩選本益比小於 15、殖利率大於 5% 的高股息股」<br>
+                • 「列出外資連買 5 日的權值股」<br>
+                • 「找出接近年線支撐的強勢股」<br><br>
+                也可以點左邊預設查詢直接開始 👈
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="status-bar" id="statusBar">就緒 · MiniMax AI</div>
+        <div class="chat-input">
+          <textarea id="userInput" placeholder="輸入你的篩選條件…(Enter 送出, Shift+Enter 換行)" rows="1"></textarea>
+          <button id="sendBtn">送出</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+  const BACKEND = '';  // 透過 Vercel edge function 轉發
+  const DIRECT_BACKEND = 'https://donttalk-api.fly.dev';  // 直連 Fly.io
+
+  const chatLog = document.getElementById('chatLog');
+  const userInput = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const statusBar = document.getElementById('statusBar');
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function nowTime() { return new Date().toLocaleTimeString('zh-TW', { hour12: false }); }
+
+  function addMsg(role, content, isHTML) {
+    const d = document.createElement('div');
+    d.className = 'msg ' + role;
+    d.innerHTML = `
+      <div class="av">${role === 'user' ? '🙋' : '🤖'}</div>
+      <div class="bd">
+        <div class="meta">${role === 'user' ? '你' : 'AI 助手'} · ${nowTime()}</div>
+        <div class="content">${isHTML ? content : esc(content)}</div>
+      </div>`;
+    chatLog.appendChild(d);
+    chatLog.scrollTop = chatLog.scrollHeight;
+    return d;
+  }
+
+  function setBusy(busy) {
+    sendBtn.disabled = busy;
+    statusBar.textContent = busy ? 'AI 思考中…' : '就緒 · MiniMax AI';
+  }
+
+  async function sendQuery(q) {
+    if (!q.trim()) return;
+    addMsg('user', q);
+    userInput.value = '';
+    userInput.style.height = 'auto';
+    setBusy(true);
+
+    const placeholder = addMsg('bot', '<span class="typing">分析中</span>', true);
+
+    try {
+      // Step 1: 解析用戶意圖並抓取即時資料
+      const planResp = await fetch(BACKEND + '/api/ai/warroom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q })
+      });
+      const plan = await planResp.json();
+      placeholder.remove();
+
+      if (plan.error) {
+        addMsg('bot', '⚠️ ' + esc(plan.error));
+        return;
+      }
+
+      // Render the AI response with results table
+      let html = '';
+      if (plan.summary) html += '<div style="margin-bottom:10px">' + esc(plan.summary) + '</div>';
+
+      if (plan.results && plan.results.length) {
+        html += '<div class="results-card"><div class="t">📋 命中 ' + plan.results.length + ' 檔</div>';
+        html += '<table><thead><tr><th>代號</th><th>名稱</th><th>收盤</th><th>漲跌%</th><th>成交量</th></tr></thead><tbody>';
+        for (const s of plan.results.slice(0, 15)) {
+          const chgClass = (s.change_pct || 0) > 0 ? 'up' : (s.change_pct || 0) < 0 ? 'down' : '';
+          html += '<tr><td><code>' + esc(s.code) + '</code></td><td>' + esc(s.name || '') + '</td>';
+          html += '<td>' + (s.close || '-') + '</td>';
+          html += '<td class="' + chgClass + '">' + (s.change_pct != null ? (s.change_pct >= 0 ? '+' : '') + s.change_pct.toFixed(2) + '%' : '-') + '</td>';
+          html += '<td>' + (s.volume || '-') + '</td></tr>';
+        }
+        if (plan.results.length > 15) {
+          html += '<tr><td colspan="5" style="text-align:center;color:var(--txt2)">…還有 ' + (plan.results.length - 15) + ' 檔</td></tr>';
+        }
+        html += '</tbody></table>';
+        // Quick chips
+        html += '<div style="margin-top:10px">';
+        for (const s of plan.results.slice(0, 8)) {
+          html += '<span class="stock-chip" onclick="window.open(\'/stock/index.html?code=' + esc(s.code) + '\',\'_blank\')"><span class="nm">' + esc(s.name || s.code) + '</span><span class="cd">' + esc(s.code) + '</span></span>';
+        }
+        html += '</div></div>';
+      } else if (plan.results && plan.results.length === 0) {
+        html += '<div style="color:var(--txt2);padding:8px">沒有命中任何股票，試試放寬條件</div>';
+      }
+
+      if (plan.indicators_used && plan.indicators_used.length) {
+        html += '<div style="margin-top:8px;font-size:11px;color:var(--txt2)">📊 使用指標：' + plan.indicators_used.map(esc).join('、') + '</div>';
+      }
+
+      addMsg('bot', html, true);
+    } catch (e) {
+      placeholder.remove();
+      addMsg('bot', '❌ 連線錯誤：' + esc(e.message));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Event listeners
+  sendBtn.addEventListener('click', () => sendQuery(userInput.value));
+  userInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendQuery(userInput.value);
+    }
+  });
+  userInput.addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(100, this.scrollHeight) + 'px';
+  });
+
+  document.querySelectorAll('.preset').forEach(p => {
+    p.addEventListener('click', () => sendQuery(p.dataset.q));
+  });
+  </script>
+</body>
+</html>
