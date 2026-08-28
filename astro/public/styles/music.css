@@ -832,10 +832,19 @@
     grid-template-rows: auto 1fr auto;
   }
 
-  .playlist-panel,
+  .playlist-panel {
+    height: auto;
+    max-height: 480px;
+  }
+
   .equalizer-panel {
     height: auto;
     max-height: 300px;
+  }
+
+  /* 在窄螢幕時讓 playlist 區域可見且夠大 */
+  .playlist-panel .playlist {
+    max-height: 360px;
   }
 
   .now-playing {
@@ -856,6 +865,14 @@
   .music-container {
     padding: calc(var(--nav-h, 64px) + 16px) 16px 16px;
     gap: 16px;
+  }
+
+  /* 在手機上給 playlist 足夠高度 */
+  .playlist-panel {
+    max-height: 420px;
+  }
+  .playlist-panel .playlist {
+    max-height: 300px;
   }
 
   .now-playing {
@@ -880,6 +897,12 @@
   .play-btn {
     width: 56px;
     height: 56px;
+  }
+
+  /* 手機上播放清單項目放大、間距放寬，更容易點 */
+  .playlist-item {
+    padding: 14px 14px;
+    gap: 14px;
   }
 
   .extra-controls {
