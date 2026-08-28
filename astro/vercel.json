@@ -220,7 +220,7 @@
     },
     {
       "source": "/marker-history",
-      "destination": "/stock/marker-history",
+      "destination": "/stock/marker_history",
       "permanent": true
     },
     {
