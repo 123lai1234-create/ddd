@@ -721,10 +721,13 @@
                 state.isPlaying = true;
                 updatePlayButton();
             }).catch(err => {
-                // 以下屬於「可預期 / 非錯誤」的情況，不做任何 UI 變動：
+                // 以下屬於「可預期 / 非錯誤」的情況，但提示一下方便診斷：
                 //  - AbortError：快速跳歌時新的 load() 中斷了上一次 play()
                 //  - NotAllowedError：瀏覽器自動播放政策擋下 play()（需使用者手勢，UI 維持現狀）
-                if (err && (err.name === "AbortError" || err.name === "NotAllowedError" || err.code === 20)) return;
+                if (err && (err.name === "AbortError" || err.name === "NotAllowedError" || err.code === 20)) {
+                    console.info("[music] play() blocked (autoplay policy or aborted):", err && err.name);
+                    return;
+                }
                 console.warn("[music] play() rejected:", err && err.message);
             });
         }
