@@ -4723,19 +4723,32 @@ function showTradeDetail() {
   function scanAll() {
     showToast("🔍 掃描中，請稍候...","info");
 
-    // ① 前端顯示訊號（原有邏輯）
+    // ① 依據 /api/scan 的 screen 結果組訊號
+    //   schema: {ok, count, results:[{code, name, latest_close, ma5..ma60, gain_5d_pct, gain_20d_pct, cond1..5, score}]}
+    //   buy：score >= 4（5 個訊號條件中至少中 4 個 = 強勢）
+    //   sell：score === 0 且 20 日跌幅 > 3%（全面弱勢）
     fetch("/api/scan")
       .then(function(r){ return r.json(); })
       .then(function(data){
-        var count = 0;
-        for (var i = 0; i < data.length; i++) {
-          var sigs = data[i].signals_today || [];
-          for (var j = 0; j < sigs.length; j++) {
-            showToast(sigs[j], sigs[j].indexOf("SELL") >= 0 ? "sell" : "buy");
-            count++;
+        var results = (data && data.results) ? data.results : (Array.isArray(data) ? data : []);
+        var buyCount = 0, sellCount = 0;
+        for (var i = 0; i < results.length; i++) {
+          var r = results[i];
+          if (r.error) continue;
+          var score = Number(r.score) || 0;
+          if (score >= 4) {
+            showToast("🟢 強勢 " + r.name + " (" + r.code + ") " + score + "/5", "buy");
+            buyCount++;
+          } else if (score === 0 && Number(r.gain_20d_pct) < -3) {
+            showToast("🔴 弱勢 " + r.name + " (" + r.code + ") 20日 " + r.gain_20d_pct + "%", "sell");
+            sellCount++;
           }
         }
-        if (count === 0) showToast("✅ 掃描完成，今日無新訊號", "info");
+        if (buyCount === 0 && sellCount === 0) {
+          showToast("✅ 掃描完成，今日無新訊號", "info");
+        } else {
+          showToast("📊 完成：buy " + buyCount + " 檔 / sell " + sellCount + " 檔", "info");
+        }
       })
       .catch(function(){ showToast("❌ 掃描失敗", "sell"); });
 
