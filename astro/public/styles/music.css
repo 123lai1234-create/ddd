@@ -526,17 +526,36 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.02em;
+  padding: 8px 14px;
+  margin: 0;
+  line-height: 1.7;
+  color: var(--music-text-muted);
+  opacity: 0.55;
+  transition: color 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+}
+.lyrics.karaoke .song-line.passed {
+  opacity: 0.3;
+}
+.lyrics.karaoke .song-line.active {
+  color: var(--music-accent-light);
+  opacity: 1;
+  transform: scale(1.06);
+  font-weight: 700;
+  text-shadow: 0 0 24px rgba(129, 140, 248, 0.55);
+}
+.lyrics.karaoke .song-line.next {
+  opacity: 0.8;
 }
 .lyrics.karaoke .kar-ch {
-  color: var(--music-text-muted);
-  opacity: 0.75;
-  transition: color 0.08s ease-out;
-  will-change: color;
+  color: inherit;
+  opacity: 0.6;
+  transition: color 0.08s ease-out, opacity 0.08s ease-out;
+  will-change: color, opacity;
 }
 .lyrics.karaoke .kar-ch.lit {
   color: var(--music-accent-light);
   opacity: 1;
-  text-shadow: 0 0 12px rgba(99, 102, 241, 0.45);
+  text-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
 }
 .lyrics:not(.karaoke) .kar-ch {
   color: inherit;
