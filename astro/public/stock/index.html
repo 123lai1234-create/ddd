@@ -4766,10 +4766,10 @@ function showTradeDetail() {
       document.getElementById("scanOverlay").classList.add("show");
       document.getElementById("scanContent").innerHTML='<div class="loading-text">掃描中...</div>';
       fetch("/api/scan").then(function(r){ return r.json(); }).then(function(data){
-          // ★ 修正：從新格式中取出 results
-          scanData = data.results || data;  // 相容新舊格式
-          scanSortCol = "combinedScore";
-          scanSortDir = 1;
+          // ★ 從新格式中取出 results（後端 /api/scan 統一回 {ok, count, results:[...]})
+          scanData = (data && data.results) ? data.results : (Array.isArray(data) ? data : []);
+          scanSortCol = "score";
+          scanSortDir = -1;   // 訊號分高的排前面（降冪）
           renderScanTable();
       }).catch(function(){
           document.getElementById("scanContent").innerHTML='<div class="loading-text">掃描失敗</div>';
@@ -4790,26 +4790,37 @@ function showTradeDetail() {
   // templates/index.html - renderScanTable()
 
   // ══════════════════════════════════════════
-  // 掃描表格渲染（支援錯誤顯示）
+  // 掃描表格渲染（對應 /api/scan 回的 screen 結果 schema）
+  // schema: { code, name, latest_close, latest_date, ma5, ma20, ma60,
+  //          dist_high_60d_pct, dist_high_20d_pct, gain_5d_pct, gain_20d_pct,
+  //          cond1, cond2, cond3, cond4, cond5, score }
   // ══════════════════════════════════════════
   function renderScanTable() {
       var data = scanData.slice();
 
-      // ★ 排序時處理 null 值和錯誤
+      // 輔助：把 null/undefined 視為最尾（降冪排到底，升冪排到頂），跟原排序邏輯一致
+      function sortVal(v) {
+        if (v === null || v === undefined || (typeof v === 'number' && isNaN(v))) return null;
+        return v;
+      }
+
       if (scanSortCol) {
         data.sort(function(a, b) {
-          // ★ 有錯誤的排到最後
+          // 有 error 的排到最後
           if (a.error && !b.error) return 1;
           if (!a.error && b.error) return -1;
           if (a.error && b.error) return 0;
 
-          var av = a[scanSortCol];
-          var bv = b[scanSortCol];
+          var av = sortVal(a[scanSortCol]);
+          var bv = sortVal(b[scanSortCol]);
 
-          // ★ null 值排到最後
-          if (av === null || av === undefined) return 1;
-          if (bv === null || bv === undefined) return -1;
+          if (av === null && bv === null) return 0;
+          if (av === null) return 1;   // null 排到尾
+          if (bv === null) return -1;
 
+          if (typeof av === 'string' || typeof bv === 'string') {
+            return (String(av).localeCompare(String(bv), 'zh-Hant')) * scanSortDir;
+          }
           return (bv - av) * scanSortDir;
         });
       }
@@ -4821,98 +4832,104 @@ function showTradeDetail() {
           : '<span style="color:var(--blue);font-size:10px;margin-left:3px">▲</span>';
       }
 
-    // ★ 表頭（確保順序正確）
-    var html = '<table class="scan-table"><thead><tr>'
-      + '<th style="text-align:left">股票</th>'
-      + '<th>代碼</th>'
-      + '<th>收盤</th>'
-      + '<th>三均線</th>'
-      + '<th>追買</th>'
-      + '<th>賣出</th>'
-      + '<th>抄底月</th>'
-      + '<th>抄底季</th>'
-      + '<th>抄底年</th>'
-      + '<th>支撐買</th>'
-      + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'totalTrades\')">交易數' + arrow('totalTrades') + '</th>'
-      + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'winRate\')">勝率' + arrow('winRate') + '</th>'
-      + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'cumulativeReturn\')">累計報酬' + arrow('cumulativeReturn') + '</th>'
-      + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'combinedScore\')">綜合評分' + arrow('combinedScore') + '</th>'
-      + '</tr></thead><tbody>';
+      // 表頭：對應 screen 結果
+      var html = '<table class="scan-table"><thead><tr>'
+        + '<th style="text-align:left">股票</th>'
+        + '<th>代碼</th>'
+        + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'latest_close\')">收盤' + arrow('latest_close') + '</th>'
+        + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'ma5\')">MA5' + arrow('ma5') + '</th>'
+        + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'ma20\')">MA20' + arrow('ma20') + '</th>'
+        + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'ma60\')">MA60' + arrow('ma60') + '</th>'
+        + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'dist_high_60d_pct\')">距60日高%' + arrow('dist_high_60d_pct') + '</th>'
+        + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'gain_5d_pct\')">5日%' + arrow('gain_5d_pct') + '</th>'
+        + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'gain_20d_pct\')">20日%' + arrow('gain_20d_pct') + '</th>'
+        + '<th style="cursor:pointer;user-select:none" onclick="sortScan(\'score\')">訊號分' + arrow('score') + '</th>'
+        + '</tr></thead><tbody>';
 
+      // 工具：把數字格式化（價格/百分比）
+      function fmtPct(v) {
+        if (v === null || v === undefined || isNaN(v)) return '-';
+        var n = Number(v);
+        return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+      }
+      function fmtNum(v, digits) {
+        if (v === null || v === undefined || isNaN(v)) return '-';
+        return Number(v).toFixed(digits === undefined ? 2 : digits);
+      }
+      function pctColor(v) {
+        if (v === null || v === undefined || isNaN(v)) return '';
+        return Number(v) >= 0 ? 'win' : 'lose';
+      }
+      // 5 個條件做成 tooltip：cond1~5 對應的訊號
+      function condHint(r) {
+        var lines = [
+          'cond1 三均線多頭: ' + (r.cond1 ? '✅' : '❌'),
+          'cond2 站上均線: ' + (r.cond2 ? '✅' : '❌'),
+          'cond3 量能: ' + (r.cond3 ? '✅' : '❌'),
+          'cond4 強勢: ' + (r.cond4 ? '✅' : '❌'),
+          'cond5 趨勢: ' + (r.cond5 ? '✅' : '❌'),
+        ];
+        return lines.join('\n');
+      }
+      // 訊號分顏色（0=灰, 1-2=黃, 3=綠, 4-5=強綠）
+      function scoreColor(s) {
+        s = Number(s) || 0;
+        if (s >= 4) return 'var(--green)';
+        if (s >= 3) return '#7bd389';
+        if (s >= 1) return 'var(--orange)';
+        return 'var(--txt2)';
+      }
 
       for (var i = 0; i < data.length; i++) {
         var r = data[i];
 
-        // ★ 處理資料抓取失敗的情況
+        // 資料抓取失敗
         if (r.error) {
           html += '<tr style="opacity:0.6;background:rgba(255,23,68,0.05)">'
-            + '<td style="text-align:left;font-weight:600">' + r.name + '</td>'
-            + '<td>' + r.code + '</td>'
-            + '<td colspan="10" style="color:var(--red);font-size:11px;padding:8px">'
+            + '<td style="text-align:left;font-weight:600">' + (r.name || '-') + '</td>'
+            + '<td>' + (r.code || '-') + '</td>'
+            + '<td colspan="9" style="color:var(--red);font-size:11px;padding:8px">'
             + '❌ ' + r.error
             + '</td>'
             + '</tr>';
           continue;
         }
 
-        var cc = (r.cumulativeReturn || 0) >= 0 ? "win" : "lose";
+        var score = Number(r.score) || 0;
 
-        // ★ 綜合評分欄位（處理 null 值）
-        var combinedCell = "";
-        if (r.combinedScore !== null && r.combinedScore !== undefined) {
-          combinedCell = '<span style="font-weight:700;color:' + r.combinedColor + '">'
-            + r.combinedScore.toFixed(1) + ' 分</span>';
-        } else {
-          var errorMsg = "";
-          if (r.financialError) errorMsg += r.financialError;
-          if (r.newsError) errorMsg += (errorMsg ? " / " : "") + r.newsError;
-          if (!errorMsg) errorMsg = "資料不足";
-
-          combinedCell = '<span style="font-size:10px;color:var(--txt2)" title="' + errorMsg + '">'
-            + '⚠️ ' + errorMsg + '</span>';
-        }
-
-        // ★ 資料列（13欄，與表頭對齊）
+        // row 10 欄，與表頭對齊
         html += '<tr style="cursor:pointer" onclick="hideScanModal();loadStock(\'' + r.code + '\')">'
-          + '<td style="text-align:left;font-weight:600">' + r.name + '</td>'   // 1. 股票
-          + '<td>' + (r.code || "-") + '</td>'                                   // 2. 代碼
-          + '<td>' + (r.close || "-") + '</td>'                                  // 3. 收盤
-          + '<td>' + (r.aboveAll ? "✅" : "❌") + '</td>'                       // 4. 三均線
-          + '<td>' + (r.chaseBuy ? "🟢" : "") + '</td>'                         // 5. 追買
-          + '<td>' + (r.sell ? "🔴" : "") + '</td>'                             // 6. 賣出
-          + '<td>' + (r.dipMA20 ? "🟠" : "") + '</td>'                          // 7. 抄底月
-          + '<td>' + (r.dipMA60 ? "🟣" : "") + '</td>'                          // 8. 抄底季
-          + '<td>' + (r.dipMA240 ? "🔴" : "") + '</td>'                         // 9. 抄底年
-          + '<td>' + (r.supportBuy ? "🟢" : "") + '</td>'                       // 9. 支撐買
-          + '<td>' + (r.totalTrades || 0) + '</td>'                             // 10. 交易數
-          + '<td>' + (r.winRate || 0) + '%</td>'                                // 11. 勝率
-          + '<td class="' + cc + '" style="font-weight:700">'
-          +   ((r.cumulativeReturn || 0) >= 0 ? "+" : "") + (r.cumulativeReturn || 0) + '%</td>'  // 12. 累計報酬
-          + '<td>' + combinedCell + '</td>'                                     // 13. 綜合評分
+          + '<td style="text-align:left;font-weight:600">' + (r.name || '-') + '</td>'                        // 1. 股票
+          + '<td>' + (r.code || '-') + '</td>'                                                                  // 2. 代碼
+          + '<td>' + fmtNum(r.latest_close, 2) + '</td>'                                                         // 3. 收盤
+          + '<td>' + fmtNum(r.ma5, 2) + '</td>'                                                                  // 4. MA5
+          + '<td>' + fmtNum(r.ma20, 2) + '</td>'                                                                 // 5. MA20
+          + '<td>' + fmtNum(r.ma60, 2) + '</td>'                                                                 // 6. MA60
+          + '<td class="' + pctColor(r.dist_high_60d_pct) + '">' + fmtPct(r.dist_high_60d_pct) + '</td>'        // 7. 距60日高%
+          + '<td class="' + pctColor(r.gain_5d_pct) + '">' + fmtPct(r.gain_5d_pct) + '</td>'                     // 8. 5日%
+          + '<td class="' + pctColor(r.gain_20d_pct) + '">' + fmtPct(r.gain_20d_pct) + '</td>'                   // 9. 20日%
+          + '<td title="' + condHint(r).replace(/"/g, '&quot;') + '">'
+          +   '<span style="font-weight:700;color:' + scoreColor(score) + '">' + score + ' / 5</span>'
+          + '</td>'                                                                                              // 10. 訊號分
           + '</tr>';
-
       }
       html += '</tbody></table>';
 
-      // ★ 加入統計資訊
+      // 底部統計
       var failedCount = data.filter(function(r){ return r.error; }).length;
-      var partialCount = data.filter(function(r){ return !r.error && r.combinedScore === null; }).length;
+      var highScore = data.filter(function(r){ return !r.error && Number(r.score) >= 4; }).length;
+      var total = data.length;
 
-      if (failedCount > 0 || partialCount > 0) {
-        html += '<div style="margin-top:12px;padding:12px;background:rgba(255,145,0,0.1);'
-              + 'border-left:3px solid var(--orange);border-radius:6px;font-size:12px">';
-
-        if (failedCount > 0) {
-          html += '❌ <strong>' + failedCount + ' 支股票</strong> 資料抓取失敗<br>';
-        }
-        if (partialCount > 0) {
-          html += '⚠️ <strong>' + partialCount + ' 支股票</strong> 因 API 額度不足，綜合評分無法計算<br>';
-        }
-
-        html += '<span style="font-size:11px;color:var(--txt2);margin-top:6px;display:block">'
-              + '💡 建議：稍後再試，或升級 FinMind API 方案</span>'
-              + '</div>';
+      html += '<div style="margin-top:12px;padding:10px 14px;background:var(--bg);'
+            + 'border:1px solid var(--bdr);border-radius:6px;font-size:11px;color:var(--txt2);'
+            + 'display:flex;gap:18px;flex-wrap:wrap">'
+            + '<span>📊 共掃描 <strong style="color:var(--txt)">' + total + '</strong> 支</span>'
+            + '<span>🎯 訊號分 ≥4：<strong style="color:var(--green)">' + highScore + '</strong> 支</span>';
+      if (failedCount > 0) {
+        html += '<span style="color:var(--red)">❌ 抓取失敗：' + failedCount + ' 支</span>';
       }
+      html += '<span style="margin-left:auto">💡 點任一列可進入個股頁</span>'
+            + '</div>';
 
       document.getElementById("scanContent").innerHTML = html;
   }
