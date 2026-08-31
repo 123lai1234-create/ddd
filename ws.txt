@@ -1,0 +1,1 @@
+﻿whisper: C:\Users\User\AppData\Roaming\Python\Python314\site-packages\whisper\__init__.py

@@ -1,0 +1,90 @@
+﻿node.exe : Vercel CLI 59.10.0 (Node.js 24.14.1)
+位於 線路:1 字元:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Vercel CLI 59.10.0 (Node.js 24.14.1):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Fetching deployment "donttalk-4pk8lo2rg-donttalk.vercel.app" in donttalk
+2026-08-31T04:06:10.093Z  Running build in Washington, D.C., USA (East) – iad1
+2026-08-31T04:06:10.093Z  Build machine configuration: 2 cores, 8 GB
+2026-08-31T04:06:10.125Z  Retrieving list of deployment files...
+2026-08-31T04:06:10.431Z  Concatenating deployment archive files...
+2026-08-31T04:06:10.432Z  Extracting deployment files...
+2026-08-31T04:06:13.254Z  Extracted 305 deployment files...
+2026-08-31T04:06:13.669Z  Using prebuilt build artifacts from .vercel/output
+2026-08-31T04:06:13.670Z  Learn more: https://vercel.link/build-output-api
+2026-08-31T04:06:13.675Z  Deploying outputs...
+2026-08-31T04:06:13.751Z  Warning: Override path "about_me\index.html" was not detected as an output path
+2026-08-31T04:06:13.751Z  Warning: Override path "about\index.html" was not detected as an output path
+2026-08-31T04:06:13.751Z  Warning: Override path "ai-demo\index.html" was not detected as an output path
+2026-08-31T04:06:13.751Z  Warning: Override path "blog\esm2-protein-language-model\index.html" was not detected as an o
+utput path
+2026-08-31T04:06:13.752Z  Warning: Override path "blog\genetic-algorithm-trading\index.html" was not detected as an out
+put path
+2026-08-31T04:06:13.752Z  Warning: Override path "blog\index.html" was not detected as an output path
+2026-08-31T04:06:13.752Z  Warning: Override path "blog\ngs-sequencing-design\index.html" was not detected as an output 
+path
+2026-08-31T04:06:13.752Z  Warning: Override path "demo\music\index.html" was not detected as an output path
+2026-08-31T04:06:13.752Z  Warning: Override path "diving\index.html" was not detected as an output path
+2026-08-31T04:06:13.752Z  Warning: Override path "firmware\index.html" was not detected as an output path
+2026-08-31T04:06:13.752Z  Warning: Override path "games\xian-godot\index.html" was not detected as an output path
+2026-08-31T04:06:13.752Z  Warning: Override path "games\xian\index.html" was not detected as an output path
+2026-08-31T04:06:13.753Z  Warning: Override path "gene_ai\index.html" was not detected as an output path
+2026-08-31T04:06:13.754Z  Warning: Override path "gene-ai\index.html" was not detected as an output path
+2026-08-31T04:06:13.754Z  Warning: Override path "index-optimized\index.html" was not detected as an output path
+2026-08-31T04:06:13.754Z  Warning: Override path "ingest\index.html" was not detected as an output path
+2026-08-31T04:06:13.754Z  Warning: Override path "interactive-showcase\index.html" was not detected as an output path
+2026-08-31T04:06:13.754Z  Warning: Override path "interview_prep\index.html" was not detected as an output path
+2026-08-31T04:06:13.754Z  Warning: Override path "interview\index.html" was not detected as an output path
+2026-08-31T04:06:13.754Z  Warning: Override path "music\index.html" was not detected as an output path
+2026-08-31T04:06:13.754Z  Warning: Override path "ngs\index.html" was not detected as an output path
+2026-08-31T04:06:13.754Z  Warning: Override path "offline\index.html" was not detected as an output path
+2026-08-31T04:06:13.755Z  Warning: Override path "privacy\index.html" was not detected as an output path
+2026-08-31T04:06:13.755Z  Warning: Override path "protein_mpnn\index.html" was not detected as an output path
+2026-08-31T04:06:13.755Z  Warning: Override path "protein-mpnn\index.html" was not detected as an output path
+2026-08-31T04:06:13.755Z  Warning: Override path "report\index.html" was not detected as an output path
+2026-08-31T04:06:13.755Z  Warning: Override path "seo-accessibility\index.html" was not detected as an output path
+2026-08-31T04:06:13.755Z  Warning: Override path "stem-cell\index.html" was not detected as an output path
+2026-08-31T04:06:13.755Z  Warning: Override path "stock\admin_logs.html" was not detected as an output path
+2026-08-31T04:06:13.755Z  Warning: Override path "stock\ai-capex.html" was not detected as an output path
+2026-08-31T04:06:13.755Z  Warning: Override path "stock\ai-warroom.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\backtest.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\btc.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\buyback.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\conference.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\currency.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\dashboard.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\etf_holdings_pivot.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\etf_holdings_tracker.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\etf_holdings.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\etf-filter.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\etf.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\exdiv.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\futures.html" was not detected as an output path
+2026-08-31T04:06:13.756Z  Warning: Override path "stock\heatmap.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\index.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\line-push.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\macro.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\marker_history.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\price-compare.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\ranking.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\rebalance.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\revenue.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\signal-filter.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\sitemap.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\sitemap\index.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\sold-too-early.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\stock-damo-filter.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\uptrend-watch.html" was not detected as an output path
+2026-08-31T04:06:13.757Z  Warning: Override path "stock\warming.html" was not detected as an output path
+2026-08-31T04:06:13.758Z  Warning: Override path "templates\common-head-optimized.html" was not detected as an output p
+ath
+2026-08-31T04:06:13.758Z  Warning: Override path "templates\common-head.html" was not detected as an output path
+2026-08-31T04:06:13.758Z  Warning: Override path "terms\index.html" was not detected as an output path
+2026-08-31T04:06:13.758Z  Warning: Override path "thesis\index.html" was not detected as an output path
+2026-08-31T04:06:13.758Z  Warning: Override path "video-gen\index.html" was not detected as an output path
+2026-08-31T04:06:13.758Z  Warning: Override path "works\index.html" was not detected as an output path
+2026-08-31T04:06:13.758Z  Warning: Override path "xian-godot\index.html" was not detected as an output path
+2026-08-31T04:06:22.596Z  Deployment completed
+status	● Ready

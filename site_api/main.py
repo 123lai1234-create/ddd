@@ -25,6 +25,8 @@ from site_api.db import (
 from site_api.routes import router
 from site_api.routes_minimax import router as minimax_router
 
+logger = logging.getLogger(__name__)
+
 # ── New: LLM stack (OpenAI / Anthropic / Gemini / MiniMax, MCP, Tools, RAG,
 # LangChain-style, LangGraph-style). Mounted at /llm-stack.
 try:
@@ -33,8 +35,6 @@ try:
 except Exception as _exc:  # pragma: no cover
     LLM_STACK_AVAILABLE = False
     logger.warning("LLM stack import failed: %s", _exc)
-
-logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager

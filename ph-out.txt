@@ -1,0 +1,18 @@
+﻿=== Click track 3 (no LRC) ===
+Lyrics lines: {
+  "lineCount": 1,
+  "lines": [
+    "暫無歌詞"
+  ],
+  "firstTime": null,
+  "secondTime": null
+}
+
+=== Force currentTime=10s, 20s, 30s ===
+  t=10s  -> {"text": null, "idx": null, "time": null}
+  t=20s  -> {"text": null, "idx": null, "time": null}
+  t=30s  -> {"text": null, "idx": null, "time": null}
+
+=== Console (last 10) ===
+  [warning] [.WebGL-0x2cec018d6000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+  [log] [music] preloaded 38 LRC files

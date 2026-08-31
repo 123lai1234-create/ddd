@@ -1,4 +1,4 @@
----
+﻿---
 /**
  * Chatbot.astro — site-wide AI assistant floating widget.
  * Includes the 3D chibi character, chat panel, drag-to-move,
@@ -417,8 +417,8 @@
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
-        camera.position.set(0, 0.5, 8);
-        camera.lookAt(0, 0.0, 0);
+        camera.position.set(0, -0.5, 9);
+        camera.lookAt(0, -0.4, 0);
 
         const ambient = new THREE.AmbientLight(0xffffff, 0.45);
         scene.add(ambient);
@@ -538,178 +538,143 @@
         const hairMat = new THREE.MeshStandardMaterial({ map: hairTex, roughness: 0.65, metalness: 0.0 });
         const bodyMat = new THREE.MeshStandardMaterial({ map: bodyTex, roughness: 0.55, metalness: 0.0 });
 
-        // === 柴犬幾何 ===
-        // 柴犬皮膚/毛色：橘黃漸層 + 白色嘴邊/腹部
-        const shibaFurMat = skinMat;
+        // === 柴犬幾何 — 乾淨重寫 ===
+        const furMat = skinMat;
+        const whiteMat = new THREE.MeshStandardMaterial({
+            color: 0xfffaf0, roughness: 0.55,
+        });
+        const darkFurMat = new THREE.MeshStandardMaterial({
+            color: 0xc87830, roughness: 0.7,
+        });
 
-        // === HEAD — 略長的橢圓（柴犬臉比例）===
-        const head = new THREE.Mesh(new THREE.SphereGeometry(1.25, 64, 48), shibaFurMat);
-        head.scale.set(1.05, 1.0, 1.05); // 接近正圓略長
+        // HEAD — 球體，半徑 1.0
+        const head = new THREE.Mesh(new THREE.SphereGeometry(1.0, 64, 48), furMat);
         headPivot.add(head);
 
-        // 嘴部突起 (柴犬的白嘴邊) — 大塊白色往前推
-        const muzzleGeom = new THREE.SphereGeometry(0.7, 32, 24);
-        const muzzleMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55 });
-        const muzzle = new THREE.Mesh(muzzleGeom, muzzleMat);
-        muzzle.position.set(0, -0.45, 0.65);
-        muzzle.scale.set(1.1, 0.7, 0.85);
+        // 白嘴邊 (muzzle) — 小球往前
+        const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 24), whiteMat);
+        muzzle.position.set(0, -0.30, 0.70);
+        muzzle.scale.set(1.1, 0.85, 0.95);
         headPivot.add(muzzle);
 
-        // 兩側臉頰加厚
-        const cheekFatGeom = new THREE.SphereGeometry(0.40, 24, 18);
-        const cheekFatL = new THREE.Mesh(cheekFatGeom, shibaFurMat);
-        cheekFatL.position.set(-0.85, -0.25, 0.45);
-        cheekFatL.scale.set(0.95, 0.95, 0.7);
-        headPivot.add(cheekFatL);
-        const cheekFatR = cheekFatL.clone();
-        cheekFatR.position.x = 0.85;
-        headPivot.add(cheekFatR);
+        // 兩側臉頰 (jowls)
+        const jowlGeom = new THREE.SphereGeometry(0.30, 24, 18);
+        const jowlL = new THREE.Mesh(jowlGeom, furMat);
+        jowlL.position.set(-0.78, -0.15, 0.45);
+        jowlL.scale.set(0.95, 0.85, 0.7);
+        headPivot.add(jowlL);
+        const jowlR = jowlL.clone();
+        jowlR.position.x = 0.78;
+        headPivot.add(jowlR);
 
-        // === EARS — 小三角形豎耳 (柴犬招牌) ===
-        // 用 cone 當耳朵
-        const earGeom = new THREE.ConeGeometry(0.30, 0.55, 4);
+        // === EARS — 小三角形豎耳 ===
+        const earGeom = new THREE.ConeGeometry(0.22, 0.55, 4);
         const earMat = new THREE.MeshStandardMaterial({
-            color: 0xd87838, // 柴犬深橘 (耳朵內側)
-            roughness: 0.7,
+            color: 0xd87838, roughness: 0.7,
         });
         const earL = new THREE.Mesh(earGeom, earMat);
-        earL.position.set(-0.70, 0.95, 0.05);
-        earL.rotation.z = 0.35; // 微微外斜
-        earL.rotation.x = -0.05;
+        earL.position.set(-0.62, 0.85, 0.0);
+        earL.rotation.z = 0.20;
+        earL.rotation.x = -0.10;
         headPivot.add(earL);
         const earR = earL.clone();
-        earR.position.x = 0.70;
-        earR.rotation.z = -0.35;
+        earR.position.x = 0.62;
+        earR.rotation.z = -0.20;
         headPivot.add(earR);
 
-        // 耳朵內側（粉色）
+        // 耳朵內側 (粉紅)
+        const earInnerGeom = new THREE.ConeGeometry(0.14, 0.42, 4);
         const earInnerMat = new THREE.MeshStandardMaterial({
             color: 0xffb098, roughness: 0.5,
         });
-        const earInnerGeom = new THREE.ConeGeometry(0.18, 0.40, 4);
         const earInnerL = new THREE.Mesh(earInnerGeom, earInnerMat);
-        earInnerL.position.set(-0.65, 0.95, 0.08);
-        earInnerL.rotation.z = 0.35;
-        earInnerL.rotation.x = -0.05;
+        earInnerL.position.set(-0.58, 0.85, 0.05);
+        earInnerL.rotation.z = 0.20;
+        earInnerL.rotation.x = -0.10;
         headPivot.add(earInnerL);
         const earInnerR = earInnerL.clone();
-        earInnerR.position.x = 0.65;
-        earInnerR.rotation.z = -0.35;
+        earInnerR.position.x = 0.58;
+        earInnerR.rotation.z = -0.20;
         headPivot.add(earInnerR);
 
-        // === 頭頂毛斑 (柴犬特有的橘色頭頂) ===
-        const headFurMat = new THREE.MeshStandardMaterial({
-            color: 0xf0a050, roughness: 0.7,
-        });
-        const headFurGeom = new THREE.SphereGeometry(1.27, 48, 32, 0, Math.PI * 2, 0, Math.PI / 2.0);
-        const headFur = new THREE.Mesh(headFurGeom, headFurMat);
-        headFur.position.y = 0.05;
-        headPivot.add(headFur);
-
-        // 額頭白色斑紋 (柴犬 Urajiro — 臉頰白色延伸)
-        const urajiroMat = new THREE.MeshStandardMaterial({ color: 0xfffaf0, roughness: 0.55 });
-        const urajiroGeom = new THREE.SphereGeometry(0.6, 24, 18);
-        const urajiroForehead = new THREE.Mesh(urajiroGeom, urajiroMat);
-        urajiroForehead.position.set(0, 0.15, 0.85);
-        urajiroForehead.scale.set(1.5, 0.45, 0.6);
+        // === 額頭白色斑紋 (Urajiro) ===
+        const urajiroForehead = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 18), whiteMat);
+        urajiroForehead.position.set(0, 0.30, 0.75);
+        urajiroForehead.scale.set(1.3, 0.40, 0.5);
         headPivot.add(urajiroForehead);
 
-        // === EYES — 黑豆眼 (柴犬招牌 — 斜向上、圓、深色) ===
-        // 眼白 (小小的，柴犬眼睛幾乎全黑)
-        const eyeWhiteMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff, roughness: 0.15, metalness: 0.0,
-        });
-        const eyeGeom = new THREE.SphereGeometry(0.22, 24, 20);
-        const eyeL = new THREE.Mesh(eyeGeom, eyeWhiteMat);
-        eyeL.position.set(-0.32, 0.10, 1.05); // 偏上 (柴犬眼位高)
-        eyeL.scale.set(0.85, 0.95, 0.5);
-        headPivot.add(eyeL);
-        const eyeR = eyeL.clone();
-        eyeR.position.x = 0.32;
-        headPivot.add(eyeR);
-
-        // 大黑豆瞳孔 (佔眼白大部分，柴犬特色)
-        const pupilMat = new THREE.MeshStandardMaterial({
-            color: 0x0a0604, roughness: 0.05, metalness: 0.8,
-        });
-        const pupilGeom = new THREE.SphereGeometry(0.20, 24, 20);
-        const pupilL = new THREE.Mesh(pupilGeom, pupilMat);
-        pupilL.position.set(-0.32, 0.10, 1.16);
-        pupilL.scale.set(0.9, 0.95, 0.5);
-        headPivot.add(pupilL);
-        const pupilR = pupilL.clone();
-        pupilR.position.x = 0.32;
-        headPivot.add(pupilR);
-
-        // 眼睛亮點 (單一大亮點，柴犬眼超亮)
-        const shineGeom = new THREE.SphereGeometry(0.045, 12, 10);
-        const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const shineL = new THREE.Mesh(shineGeom, shineMat);
-        shineL.position.set(-0.27, 0.16, 1.26);
-        headPivot.add(shineL);
-        const shineR = shineL.clone();
-        shineR.position.x = 0.27;
-        headPivot.add(shineR);
-
-        // 眉毛斑 (柴犬臉上有兩塊深橘色眉毛斑)
-        const browMat = new THREE.MeshStandardMaterial({ color: 0xc87830, roughness: 0.65 });
-        const browGeom = new THREE.SphereGeometry(0.20, 20, 16);
-        const browL = new THREE.Mesh(browGeom, browMat);
-        browL.position.set(-0.30, 0.40, 1.05);
-        browL.scale.set(0.85, 0.45, 0.4);
+        // === 兩塊深橘眉毛斑 ===
+        const browGeom = new THREE.SphereGeometry(0.18, 20, 16);
+        const browL = new THREE.Mesh(browGeom, darkFurMat);
+        browL.position.set(-0.32, 0.32, 0.90);
+        browL.scale.set(0.85, 0.55, 0.4);
         headPivot.add(browL);
         const browR = browL.clone();
-        browR.position.x = 0.30;
+        browR.position.x = 0.32;
         headPivot.add(browR);
 
-        // === NOSE — 黑色大鼻子 ===
-        const noseMat = new THREE.MeshStandardMaterial({
-            color: 0x1a1a1a, roughness: 0.4,
+        // === EYES — 黑豆眼 ===
+        const eyeWhiteMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff, roughness: 0.15,
         });
-        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.13, 20, 16), noseMat);
-        nose.position.set(0, -0.30, 1.20);
+        const eyeGeom = new THREE.SphereGeometry(0.18, 24, 20);
+        const eyeL = new THREE.Mesh(eyeGeom, eyeWhiteMat);
+        eyeL.position.set(-0.28, 0.12, 0.92);
+        eyeL.scale.set(1.0, 1.05, 0.5);
+        headPivot.add(eyeL);
+        const eyeR = eyeL.clone();
+        eyeR.position.x = 0.28;
+        headPivot.add(eyeR);
+
+        const pupilMat = new THREE.MeshStandardMaterial({
+            color: 0x0a0604, roughness: 0.05, metalness: 0.7,
+        });
+        const pupilGeom = new THREE.SphereGeometry(0.16, 24, 20);
+        const pupilL = new THREE.Mesh(pupilGeom, pupilMat);
+        pupilL.position.set(-0.28, 0.12, 1.02);
+        pupilL.scale.set(1.0, 1.05, 0.5);
+        headPivot.add(pupilL);
+        const pupilR = pupilL.clone();
+        pupilR.position.x = 0.28;
+        headPivot.add(pupilR);
+
+        const shineGeom = new THREE.SphereGeometry(0.035, 12, 10);
+        const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const shineL = new THREE.Mesh(shineGeom, shineMat);
+        shineL.position.set(-0.22, 0.17, 1.10);
+        headPivot.add(shineL);
+        const shineR = shineL.clone();
+        shineR.position.x = 0.22;
+        headPivot.add(shineR);
+
+        // === NOSE — 黑色大鼻子 ===
+        const nose = new THREE.Mesh(
+            new THREE.SphereGeometry(0.13, 20, 16),
+            new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 }),
+        );
+        nose.position.set(0, -0.10, 0.98);
         nose.scale.set(1.1, 0.85, 0.6);
         headPivot.add(nose);
 
-        // === MOUTH — 張嘴吐舌 (柴犬招牌笑容) ===
-        // 張開的嘴 (黑色口腔)
-        const mouthOpenMat = new THREE.MeshStandardMaterial({ color: 0x1a0a0a, roughness: 0.4 });
-        const mouthOpenGeom = new THREE.SphereGeometry(0.22, 20, 14);
-        const mouthOpen = new THREE.Mesh(mouthOpenGeom, mouthOpenMat);
-        mouthOpen.position.set(0, -0.55, 1.05);
+        // === MOUTH — 張嘴吐舌 ===
+        const mouthOpen = new THREE.Mesh(
+            new THREE.SphereGeometry(0.20, 20, 14),
+            new THREE.MeshStandardMaterial({ color: 0x1a0a0a, roughness: 0.4 }),
+        );
+        mouthOpen.position.set(0, -0.42, 0.85);
         mouthOpen.scale.set(1.3, 0.7, 0.4);
         headPivot.add(mouthOpen);
 
-        // 舌頭 (粉紅，往下垂)
-        const tongueMat = new THREE.MeshStandardMaterial({
-            color: 0xff7090, roughness: 0.4,
-            emissive: 0xff8fa3, emissiveIntensity: 0.3,
-        });
-        const tongueGeom = new THREE.SphereGeometry(0.14, 16, 12);
-        const tongue = new THREE.Mesh(tongueGeom, tongueMat);
-        tongue.position.set(0, -0.65, 1.10);
-        tongue.scale.set(1.4, 0.6, 0.4);
+        const tongue = new THREE.Mesh(
+            new THREE.SphereGeometry(0.13, 16, 12),
+            new THREE.MeshStandardMaterial({
+                color: 0xff7090, roughness: 0.4,
+                emissive: 0xff8fa3, emissiveIntensity: 0.3,
+            }),
+        );
+        tongue.position.set(0, -0.55, 0.88);
+        tongue.scale.set(1.4, 0.7, 0.5);
         headPivot.add(tongue);
-
-        // === CHEEKS (柴犬腮紅不明顯，Urajiro 白毛代替) ===
-        // 改成白色斑塊 (已經在 muzzle 中表現，這裡不加腮紅)
-        const cheekL = new THREE.Mesh(cheekGeom, cheekMat);
-        cheekL.position.set(-0.80, -0.35, 0.78);
-        cheekL.scale.set(1.1, 0.75, 0.4);
-        headPivot.add(cheekL);
-        const cheekR = cheekL.clone();
-        cheekR.position.x = 0.80;
-        headPivot.add(cheekR);
-
-        // 腮紅高光
-        const cheekHLMat = new THREE.MeshBasicMaterial({ color: 0xffa0b8, transparent: true, opacity: 0.5 });
-        const cheekHLGeom = new THREE.SphereGeometry(0.14, 16, 12);
-        const cheekHLL = new THREE.Mesh(cheekHLGeom, cheekHLMat);
-        cheekHLL.position.set(-0.78, -0.33, 0.86);
-        headPivot.add(cheekHLL);
-        const cheekHLR = cheekHLL.clone();
-        cheekHLR.position.x = 0.78;
-        headPivot.add(cheekHLR);
 
         // === 柴犬身體 (圓滾滾、有四隻腳、露出白色腹部) ===
         const body = new THREE.Mesh(new THREE.SphereGeometry(1.0, 32, 24), bodyMat);

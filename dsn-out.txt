@@ -1,0 +1,12 @@
+﻿=== Click track 0 ===
+Lyrics info: {"lyricsClass": "lyrics karaoke", "containerClass": "stage-lyrics", "lineCount": 26, "activeCount": 1, "passedCount": 0, "firstLineHTML": "<p class=\"lyric-line song-line active\" data-time=\"0.00\" data-idx=\"0\" data-next=\"12.87\"><span class=\"kar-ch\">Y</span><span class=\"kar-ch\">a</span><span class=\"kar-ch\">y</span></p>", "activeHTML": "<p class=\"lyric-line song-line active\" data-time=\"0.00\" data-idx=\"0\" data-next=\"12.87\"><span class=\"kar-ch\">Y</span><span class=\"kar-ch\">a</span><span class=\"kar-ch\">y</span></p>"}
+
+=== Manually advance audio.currentTime ===
+  t=  1s  idx=0  tData=0.00  passed=0/26  'Yay'
+  t=  5s  idx=0  tData=0.00  passed=0/26  'Yay'
+  t= 15s  idx=1  tData=12.87  passed=1/26  '那年我們在路邊喫餅了'
+  t= 20s  idx=4  tData=19.27  passed=4/26  '等我們有彼此什麼都不謙卻'
+  t= 30s  idx=7  tData=28.93  passed=7/26  '電話拿起來不許多說'
+  t= 50s  idx=14  tData=49.49  passed=14/26  '我們就是我們'
+  t=100s  idx=24  tData=93.66  passed=24/26  '這就是兄弟 社會這麼說'
+  t=130s  idx=25  tData=101.26  passed=25/26  '我們就是我們 就大聲說'

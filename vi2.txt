@@ -1,0 +1,31 @@
+﻿# Vercel ignore patterns for astro/ subdirectory deployment.
+# (Verceignore in rootDirectory-scoped projects live next to the project's vercel.json.)
+node_modules/
+.astro/
+# dist/ 銝??歹?build ?舐 commit ??git ??dist嚗??astro/vercel.json installCommand ??git lfs pull ???祕 mp3嚗?.vercel/
+*.log
+.cache/
+.DS_Store
+.env
+.env.local
+.env.*.local
+
+# ?/皜祈岫瑼?銝?鋡?production build ?典嚗?src/**/*.test.*
+src/**/*.spec.*
+tests/
+docs/
+examples/
+
+# 銝????frontend/ 撣嗅 Vercel ??build script 撌脩???sync 敹????# 雿??芾絲閬??文之瑼?frontend/games/xian-godot/*.wasm
+frontend/games/xian-godot/*.data
+frontend/scripts/thesis.js.bak
+
+# Demo/皜祈岫?函? stock ?芸?
+stock-app/test_screenshots/
+stock-app-bugfix-summary.md
+stock-app-test-report.md
+test_results.json
+test_run.log
+
+# Sync script 銝剝??Ｙ
+scripts/*.bak

@@ -1,0 +1,13 @@
+﻿Active state at t=30s:
+{
+  "activeText": "電話拿起來不許多說",
+  "activeIdx": "7",
+  "color": "rgb(129, 140, 248)",
+  "opacity": "1",
+  "fontWeight": "700",
+  "transform": "matrix(1.06, 0, 0, 1.06, 0, 0)"
+}
+
+Screenshot: D:/project/sync-active-30s.png
+
+Active state at t=50s: {"activeText": "我們就是我們", "activeIdx": "14"}

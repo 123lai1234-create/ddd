@@ -1,0 +1,92 @@
+﻿whisper : C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\whisper\__init__.py:144: FutureWarnin
+g: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle modu
+le implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (S
+ee https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, th
+e default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during u
+npickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowliste
+d by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any us
+e case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to t
+his experimental feature.
+位於 線路:1 字元:122
++ ... D:\project; whisper "astro\public\music\13_\u6642\u5149\u81a0\u56ca.m ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\User\A...mental feature.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  checkpoint = torch.load(fp, map_location=device)
+C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\whisper\transcribe.py:114: UserWarning: FP16 is
+ not supported on CPU; using FP32 instead
+  warnings.warn("FP16 is not supported on CPU; using FP32 instead")
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\whisper\audio.py", line 48, in load_aud
+io
+    .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\ffmpeg\_run.py", line 325, in run
+    raise Error('ffmpeg', out, err)
+ffmpeg._run.Error: ffmpeg error (see stderr output for detail)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Scripts\whisper.exe\__main__.py", line 7, in <module>
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\whisper\transcribe.py", line 437, in cl
+i
+    result = transcribe(model, audio_path, temperature=temperature, **args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\whisper\transcribe.py", line 121, in tr
+anscribe
+    mel = log_mel_spectrogram(audio, padding=N_SAMPLES)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\whisper\audio.py", line 130, in log_mel
+_spectrogram
+    audio = load_audio(audio)
+            ^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\site-packages\whisper\audio.py", line 51, in load_aud
+io
+    raise RuntimeError(f"Failed to load audio: {e.stderr.decode()}") from e
+RuntimeError: Failed to load audio: ffmpeg version 8.1-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg devel
+opers
+
+  built with gcc 15.2.0 (Rev11, Built by MSYS2 project)
+
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-cair
+o --enable-fontconfig --enable-iconv --enable-gnutls --enable-lcms2 --enable-libxml2 --enable-gmp --enable-bzlib --enab
+le-lzma --enable-libsnappy --enable-zlib --enable-librist --enable-libsrt --enable-libssh --enable-libzmq --enable-avis
+ynth --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-sdl2 --enable-libaribb24 --ena
+ble-libaribcaption --enable-libdav1d --enable-libdavs2 --enable-libopenjpeg --enable-libquirc --enable-libuavs3d --enab
+le-libxevd --enable-libzvbi --enable-liboapv --enable-libqrencode --enable-librav1e --enable-libsvtav1 --enable-libvven
+c --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxeve --enable-libxvid --enable-libao
+m --enable-libjxl --enable-libsvtjpegxs --enable-libvpx --enable-mediafoundation --enable-libass --enable-frei0r --enab
+le-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-liblensfun --enable-libvidstab --enable-libvmaf --enab
+le-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffn
+vcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libshaderc --enable-vulkan --enable-libpla
+cebo --enable-opencl --enable-libcdio --enable-openal --enable-libgme --enable-libmodplug --enable-libopenmpt --enable-
+libopencore-amrwb --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libvo-amrwbenc 
+--enable-libcodec2 --enable-libilbc --enable-libgsm --enable-liblc3 --enable-libopencore-amrnb --enable-libopus --enabl
+e-libspeex --enable-libvorbis --enable-ladspa --enable-libbs2b --enable-libflite --enable-libmysofa --enable-librubberb
+and --enable-libsoxr --enable-chromaprint --enable-whisper
+
+  libavutil      60. 26.100 / 60. 26.100
+
+  libavcodec     62. 28.100 / 62. 28.100
+
+  libavformat    62. 12.100 / 62. 12.100
+
+  libavdevice    62.  3.100 / 62.  3.100
+
+  libavfilter    11. 14.100 / 11. 14.100
+
+  libswscale      9.  5.100 /  9.  5.100
+
+  libswresample   6.  3.100 /  6.  3.100
+
+[in#0 @ 00000238c2668440] Error opening input: No such file or directory
+
+Error opening input file astro\public\music\13_\u6642\u5149\u81a0\u56ca.mp3.
+
+Error opening input files: No such file or directory
+
+

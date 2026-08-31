@@ -16,7 +16,8 @@
     const host = window.location.hostname;
     const defaultPortfolioServiceNames = ['donttalk'];
     const defaultApiServiceNames = ['donttalk-api'];
-    const defaultApiCandidates = ['https://donttalk.vercel.app']; // live: same-origin Vercel edge API (/api/*); Railway decommissioned;
+    // ⚠️ 部署 site_api 到 Railway 之後，把下面的 URL 換成你實際的 Railway app URL
+    const defaultApiCandidates = ['https://donttalk-api.fly.dev', 'https://donttalk.vercel.app'];
     const resolvedPortfolioServiceNames = normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES).length
         ? normalizeList(existingConfig.PORTFOLIO_SERVICE_NAMES)
         : defaultPortfolioServiceNames;

@@ -1,0 +1,39 @@
+﻿python : C:\Users\User\AppData\Roaming\Python\Python314\site-packages\whisper\transcribe.py:132: UserWarning: FP16 is n
+ot supported on CPU; using FP32 instead
+位於 線路:1 字元:122
++ ... t.Encoding]::UTF8; cd D:\project; python test-whisper.py 2>&1 | Out-F ...
++                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\User\A...ng FP32 instead:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  warnings.warn("FP16 is not supported on CPU; using FP32 instead")
+Found 39 mp3 files
+  02_兄弟本色.mp3  5003274 bytes
+  03_不服輸(優化版).mp3  3717632 bytes
+  03_不服輸.mp3  4049491 bytes
+
+Using: 13_時光膠囊.mp3  (2113504 bytes)
+
+Loading tiny model...
+  loaded in 0.4s
+
+Transcribing...
+
+  0%|          | 0/6595 [00:00<?, ?frames/s]
+ 37%|�i�i�i�n      | 2466/6595 [00:07<00:12, 333.53frames/s]
+ 78%|�i�i�i�i�i�i�i�o  | 5126/6595 [00:08<00:02, 728.15frames/s]
+100%|�i�i�i�i�i�i�i�i�i�i| 6595/6595 [00:08<00:00, 984.92frames/s]
+100%|�i�i�i�i�i�i�i�i�i�i| 6595/6595 [00:08<00:00, 763.82frames/s]
+  done in 9.0s
+
+12 segments:
+  [0.0s -> 18.3s]  盆触拿到森所的铁盒子里面有你的照片和这漂亮
+  [18.3s -> 24.7s]  那时候的我们相信永远想起世界会为我们改变
+  [24.7s -> 28.0s]  是光 叫能装着我的二十岁
+  [28.0s -> 31.1s]  打开 她我回到了从前
+  [31.1s -> 34.3s]  那个消息爱情的小女孩
+  [34.3s -> 38.5s]  她还在合自己笑得很甜
+  [38.5s -> 41.7s]  这票的诺的地已经去笑
+  [41.7s -> 44.5s]  你的电话变成了空好
+  [44.5s -> 47.3s]  只有照片里的你还没老
+  [47.3s -> 51.3s]  我永远停在那年的微笑

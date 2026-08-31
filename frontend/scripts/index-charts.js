@@ -38,7 +38,7 @@ async function fetchTrainingLogs(runType) {
       : (window.APP_CONFIG?.API_BASE_URL || '').replace(/\/+$/, '');
     if (!apiBase) return null;
     const res = await fetch(`${apiBase}/api/training/logs?run_type=${runType}`,
-      { signal: AbortSignal.timeout(6000) });
+      { signal: AbortSignal.timeout(6000), credentials: 'omit' });
     if (!res.ok) return null;
     return await res.json();
   } catch {

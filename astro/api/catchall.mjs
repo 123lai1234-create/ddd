@@ -1216,14 +1216,57 @@ async function markersHistory(request) {
        LIMIT ${limit}`,
       params
     );
-    // Add `source` field (synthesized: 'event' for 'limit_up'/'sell_stop', 'trade' for others)
-    const enriched = rows.map((r) => ({
-      ...r,
-      source: ["limit_up", "sell_stop", "buy_chase"].includes(r.type) ? "event" : "trade",
-    }));
+    // 2026-08-31 fix: marker_history.html 前端 JS 期待欄位
+    //   scan_date / marker_text / close / ma5/10/20/60 / position / created_at
+    //   但 DB 只有 id / code / date / type / text / price，沒 ma* 跟 created_at。
+    //   text 欄位在 2026-08-26 修 bug 之前被塞過「訊息 || {<JSON>...}」污染資料
+    //   (close/ma5/.../position/shape/color/time 序列化進去)，現有資料 90% 是這種。
+    //   從內嵌 JSON 救回 position / close / ma*，marker_text 只留「||」前那段。
+    const enriched = rows.map((r) => {
+      const rawText = r.text == null ? "" : String(r.text);
+      // 把 " || {...JSON 雜訊...} || {...} || ..." 後面整段砍掉
+      // 例: "x || {...} || {...}" → "x"
+      // 例: " || {...} || {...}" → ""  (沒前綴文字)
+      // 例: "站上三均線 + ..." → "站上三均線 + ..." (無 || JSON)
+      const markerText = rawText.replace(/\s*\|\|\s*\{[\s\S]*$/, "").trim();
+      let position = null;
+      let closeVal = r.price == null ? null : Number(r.price);
+      let ma5Val = null, ma10Val = null, ma20Val = null, ma60Val = null;
+      // 內嵌 JSON 形狀: {"close":null,"ma5":null,...,"position":"aboveBar","shape":"arrowUp","color":"#e91e63","time":null}
+      const jsonMatch = rawText.match(/\{[^{}]*"position"[^{}]*\}/);
+      if (jsonMatch) {
+        try {
+          const embedded = JSON.parse(jsonMatch[0]);
+          if (embedded.position === "aboveBar" || embedded.position === "belowBar") {
+            position = embedded.position;
+          }
+          if (typeof embedded.close === "number" && Number.isFinite(embedded.close)) closeVal = embedded.close;
+          if (typeof embedded.ma5   === "number" && Number.isFinite(embedded.ma5))   ma5Val  = embedded.ma5;
+          if (typeof embedded.ma10  === "number" && Number.isFinite(embedded.ma10))  ma10Val = embedded.ma10;
+          if (typeof embedded.ma20  === "number" && Number.isFinite(embedded.ma20))  ma20Val = embedded.ma20;
+          if (typeof embedded.ma60  === "number" && Number.isFinite(embedded.ma60))  ma60Val = embedded.ma60;
+        } catch {}
+      }
+      return {
+        id: r.id,
+        scan_date: r.date,        // 前端: '日期' 欄
+        code: r.code,
+        source: r.type === "event" ? "event" : "trade",
+        position,                 // 前端: '位置' 欄 (上/下)
+        marker_text: markerText,  // 前端: '標記文字' 欄
+        close: closeVal,          // 前端: '收盤' 欄
+        ma5: ma5Val,
+        ma10: ma10Val,
+        ma20: ma20Val,
+        ma60: ma60Val,
+        created_at: null,         // markers table 沒這欄，固定 null
+      };
+    });
+    // 前端 source 過濾 ('event' | 'trade')
+    const filtered = source ? enriched.filter((r) => r.source === source) : enriched;
     return json({
-      ok: true, source: "db", count: enriched.length,
-      history: enriched, items: enriched, rows: enriched,  // 'rows' alias for marker_history.html
+      ok: true, source: "db", count: filtered.length,
+      history: filtered, items: filtered, rows: filtered,  // 'rows' alias for marker_history.html
     });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, history: [], items: [], rows: [], error: e?.message });
@@ -6020,8 +6063,10 @@ const TABLE = [
 
   ["POST", /^\/markers\/record\/?$/,         markersRecord],
   ["GET",  /^\/markers\/history\/?$/,        markersHistory],
-  ["GET",  /^\/markers\/batch_scan\/?$/,     markersBatchScan],
-  ["GET",  /^\/markers\/batch_scan\/status\/?$/, markersBatchScanStatus],
+  // 2026-08-31 fix: 前端 marker_history.html batchScan() 用 POST，所以改 POST 註冊
+  ["POST", /^\/markers\/batch_scan\/?$/,     markersBatchScan],
+  // 2026-08-31 fix: 前端 pollBatch() 打 /batch_scan/status/<taskId>，regex 要抓 task id 才能 match
+  ["GET",  /^\/markers\/batch_scan\/status\/([^/]+?)\/?$/, markersBatchScanStatus],
   ["GET",  /^\/markers\/export\.csv\/?$/,    markersExport],
   ["GET",  /^\/markers\/([^/]+?)\/?$/,       markerById],
 

@@ -1,0 +1,11 @@
+﻿python : Traceback (most recent call last):
+位於 線路:1 字元:122
++ ... utEncoding = [System.Text.Encoding]::UTF8; cd D:\project; python -c "
++                                                               ~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<string>", line 2, in <module>
+    exec(open('fix-lrc-urls.py').read())
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+UnicodeDecodeError: 'cp950' codec can't decode byte 0xe5 in position 351: illegal multibyte sequence

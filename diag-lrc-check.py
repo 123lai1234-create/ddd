@@ -1,39 +1,34 @@
-"""Check which LRC URLs are 404 on production"""
-import urllib.request, urllib.parse, json
+"""Check all LRC URLs return 200 (using urllib.request with proper encoding)"""
+import json, urllib.request, urllib.parse, sys
+sys.stdout.reconfigure(encoding='utf-8')
 
 with open('astro/public/music/tracks.json', encoding='utf-8') as f:
-    d = json.load(f)
+    data = json.load(f)
 
-results = []
-for t in d['tracks']:
+ok = 0
+bad = []
+for t in data['tracks']:
     if not t.get('lyricsUrl'):
         continue
-    url = 'https://donttalk.vercel.app' + t['lyricsUrl']
-    # URL encode the path components
-    parts = urllib.parse.urlparse(url)
-    encoded_path = urllib.parse.quote(parts.path)
-    full = f'{parts.scheme}://{parts.netloc}{encoded_path}'
+    # URL-encode the path part
+    path = t['lyricsUrl']  # like /music/01_兄弟本色.lrc
+    # split into segments and encode each
+    parts = path.split('/')
+    encoded_parts = [urllib.parse.quote(p) for p in parts]
+    encoded_path = '/'.join(encoded_parts)
+    url = 'https://donttalk.vercel.app' + encoded_path
     try:
-        req = urllib.request.Request(full, method='HEAD')
+        req = urllib.request.Request(url)
         r = urllib.request.urlopen(req, timeout=10)
-        results.append((r.status, len(urllib.request.urlopen(full).read()), t['title'], t['lyricsUrl']))
-    except urllib.error.HTTPError as e:
-        results.append((e.code, 0, t['title'], t['lyricsUrl']))
+        body = r.read()
+        if r.status == 200 and len(body) > 50:
+            ok += 1
+        else:
+            bad.append((t['title'], url, r.status, len(body)))
     except Exception as e:
-        results.append((-1, 0, t['title'], t['lyricsUrl']))
+        bad.append((t['title'], url, str(e)[:80], 0))
 
-# Print summary
-ok = [r for r in results if r[0] == 200]
-bad = [r for r in results if r[0] != 200]
-print(f'\nOK: {len(ok)}/{len(results)}')
-print(f'BAD: {len(bad)}/{len(results)}')
-if bad:
-    print('\n--- 404 / failing LRCs ---')
-    for status, size, title, url in bad:
-        print(f'  {status}  title={title!r}  url={url!r}')
-
-# Print all
-print('\n--- All LRC URLs ---')
-for status, size, title, url in results:
-    marker = 'OK' if status == 200 else 'BAD'
-    print(f'  {marker} {status}  size={size:>5d}  {url}')
+print(f'OK: {ok}')
+print(f'BAD: {len(bad)}')
+for title, url, err, size in bad:
+    print(f'  {title}: {url}  ({err}, {size} bytes)')

@@ -1,0 +1,6 @@
+﻿Track 0:
+  title: '�S�̥���'
+  url: '/music/02_�S�̥���.mp3'
+  lyricsUrl: '/music/01_�S�̥���.lrc'
+  lyrics: type=NoneType, len=0
+  lyricsTimed: None

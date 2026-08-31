@@ -1,0 +1,42 @@
+﻿Tracks in json:
+  0: '�S�̥���' (mp3: '/music/02_�S�̥���.mp3', lrc: '/music/01_�S�̥���.lrc')
+    >>> MATCHED target: '�S�̥���'
+  1: '���A�� (�u�ƪ�)' (mp3: '/music/03_���A��(�u�ƪ�).mp3', lrc: '/music/03_���A��.lrc')
+  2: '���A��' (mp3: '/music/03_���A��.mp3', lrc: '/music/03_���A��.lrc')
+  3: '�A���_��' (mp3: '/music/03_�A���_��.mp3', lrc: None)
+  4: '��d�˪L' (mp3: '/music/04_��d�˪L.mp3', lrc: '/music/05_��d�˪L.lrc')
+    >>> MATCHED target: '��d�˪L'
+  5: '�Ѯa���Ѥl' (mp3: '/music/04_�Ѯa���Ѥl.mp3', lrc: '/music/04_�Ѯa���Ѥl.lrc')
+  6: '�X�{�b' (mp3: '/music/05_�X�{�b.mp3', lrc: '/music/07_�X�{�b.lrc')
+    >>> MATCHED target: '�X�{�b'
+  7: '�B�]�X��' (mp3: '/music/05_�B�]�X��.mp3', lrc: '/music/05_�B�]�X��.lrc')
+  8: '�^���h���L��' (mp3: '/music/06_�^���h���L��.mp3', lrc: '/music/09_�^���h���L��.lrc')
+    >>> MATCHED target: '�^���h���L��'
+  9: '�R���Ҽ�' (mp3: '/music/07_�R���Ҽ�.mp3', lrc: '/music/07_�R���Ҽ�.lrc')
+  10: '�T�Q�����a��O' (mp3: '/music/08_�T�Q�����a��O.mp3', lrc: '/music/08_�T�Q�����a��O.lrc')
+  11: '���������q��' (mp3: '/music/08_���������q��.mp3', lrc: '/music/08_���������q��.lrc')
+  12: '�ڤ@�ӤH�]�ܦn' (mp3: '/music/09_�ڤ@�ӤH�]�ܦn.mp3', lrc: '/music/09_�ڤ@�ӤH�]�ܦn.lrc')
+  13: '�������̫�@�]' (mp3: '/music/09_�������̫�@�].mp3', lrc: '/music/09_�������̫�@�].lrc')
+  14: '�Q�~�᪺���{ (�u�ƪ�)' (mp3: '/music/10_�Q�~�᪺���{(�u�ƪ�).mp3', lrc: '/music/10_�Q�~�᪺���{.lrc')
+  15: '�Q�~�᪺���{' (mp3: '/music/10_�Q�~�᪺���{.mp3', lrc: '/music/10_�Q�~�᪺���{.lrc')
+  16: '�������]' (mp3: '/music/10_�������].mp3', lrc: '/music/10_�������].lrc')
+  17: '�p�G���@��' (mp3: '/music/11_�p�G���@��.mp3', lrc: '/music/11_�p�G���@��.lrc')
+  18: '�G�m����' (mp3: '/music/12_�G�m����.mp3', lrc: '/music/12_�G�m����.lrc')
+  19: '�ɥ����n' (mp3: '/music/13_�ɥ����n.mp3', lrc: '/music/13_�ɥ����n.lrc')
+  20: '���媺�G�m' (mp3: '/music/15_���媺�G�m.mp3', lrc: '/music/15_���媺�G�m.lrc')
+  21: '�J���A���e' (mp3: '/music/18_�J���A���e.mp3', lrc: '/music/18_�J���A���e.lrc')
+  22: '���ѫG (�u�ƪ�)' (mp3: '/music/20_���ѫG(�u�ƪ�).mp3', lrc: '/music/20_���ѫG.lrc')
+  23: '���ѫG' (mp3: '/music/20_���ѫG.mp3', lrc: '/music/20_���ѫG.lrc')
+  24: '�������}_����n�u' (mp3: '/music/�������}_����n�u.mp3', lrc: '/music/25_�������}_����n�u.lrc')
+    >>> MATCHED target: '�������}_����n�u'
+python : Traceback (most recent call last):
+位於 線路:1 字元:122
++ ... t.Encoding]::UTF8; cd D:\project; python check-titles.py 2>&1 | Out-F ...
++                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\project\check-titles.py", line 10, in <module>
+    print(f"  {i}: {title!r} (mp3: {t.get('url')!r}, lrc: {t.get('lyricsUrl')!r})")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'cp950' codec can't encode character '\u5185' in position 37: illegal multibyte sequence

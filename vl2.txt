@@ -1,0 +1,75 @@
+﻿node.exe : Vercel CLI 59.10.0 (Node.js 24.14.1)
+位於 線路:1 字元:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Vercel CLI 59.10.0 (Node.js 24.14.1):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Retrieving project…
+Fetching deployments in donttalk
+> Deployments for donttalk/donttalk [815ms]
+
+  Age     Project               Deployment                                         Status       Environment     Duratio
+n     Username           
+  7m      donttalk/donttalk     https://donttalk-hze6c5q1w-donttalk.vercel.app     ● Ready      Production      12s    
+      jtlai0921-8797     
+  13m     donttalk/donttalk     https://donttalk-4pk8lo2rg-donttalk.vercel.app     ● Ready      Production      12s    
+      jtlai0921-8797     
+  14m     donttalk/donttalk     https://donttalk-lk34o5onm-donttalk.vercel.app     ● Ready      Production      44s    
+      jtlai0921-8797     
+  55m     donttalk/donttalk     https://donttalk-m6r7wppkk-donttalk.vercel.app     ● Ready      Production      43s    
+      jtlai0921-8797     
+  1h      donttalk/donttalk     https://donttalk-rl7rg9xhs-donttalk.vercel.app     ● Ready      Production      45s    
+      jtlai0921-8797     
+  1h      donttalk/donttalk     https://donttalk-j4a5qr4zm-donttalk.vercel.app     ● Ready      Production      44s    
+      jtlai0921-8797     
+  1h      donttalk/donttalk     https://donttalk-hb4rk45x5-donttalk.vercel.app     ● Ready      Production      47s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-4dixys5r7-donttalk.vercel.app     ● Ready      Production      57s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-nhkv2k4ue-donttalk.vercel.app     ● Ready      Production      29s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-k8fcvq907-donttalk.vercel.app     ● Ready      Production      33s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-ri00u4et2-donttalk.vercel.app     ● Ready      Production      44s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-peukciyac-donttalk.vercel.app     Canceled     Production      ?      
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-o2ihhrw1g-donttalk.vercel.app     ● Error      Production      33s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-qqrwp2ldk-donttalk.vercel.app     ● Ready      Production      31s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-645ypewek-donttalk.vercel.app     ● Error      Production      31s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-9bhzb5jep-donttalk.vercel.app     ● Ready      Production      32s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-dqkfzd02l-donttalk.vercel.app     ● Error      Production      30s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-r2xgt1i1l-donttalk.vercel.app     ● Ready      Production      32s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-ebiddqldx-donttalk.vercel.app     ● Ready      Production      58s    
+      jtlai0921-8797     
+  3d      donttalk/donttalk     https://donttalk-mmanlrzmi-donttalk.vercel.app     ● Ready      Production      33s    
+      jtlai0921-8797     
+
+https://donttalk-hze6c5q1w-donttalk.vercel.app
+https://donttalk-4pk8lo2rg-donttalk.vercel.app
+https://donttalk-lk34o5onm-donttalk.vercel.app
+https://donttalk-m6r7wppkk-donttalk.vercel.app
+https://donttalk-rl7rg9xhs-donttalk.vercel.app
+https://donttalk-j4a5qr4zm-donttalk.vercel.app
+https://donttalk-hb4rk45x5-donttalk.vercel.app
+https://donttalk-4dixys5r7-donttalk.vercel.app
+https://donttalk-nhkv2k4ue-donttalk.vercel.app
+https://donttalk-k8fcvq907-donttalk.vercel.app
+https://donttalk-ri00u4et2-donttalk.vercel.app
+https://donttalk-peukciyac-donttalk.vercel.app
+https://donttalk-o2ihhrw1g-donttalk.vercel.app
+https://donttalk-qqrwp2ldk-donttalk.vercel.app
+https://donttalk-645ypewek-donttalk.vercel.app
+https://donttalk-9bhzb5jep-donttalk.vercel.app
+https://donttalk-dqkfzd02l-donttalk.vercel.app
+https://donttalk-r2xgt1i1l-donttalk.vercel.app
+https://donttalk-ebiddqldx-donttalk.vercel.app
+https://donttalk-mmanlrzmi-donttalk.vercel.app
+> To display the next page, run `vercel ls --next 1787901317156`

@@ -1,0 +1,83 @@
+﻿MP3: '/music/02_�S�̥���.mp3'
+LRC: '/music/01_�S�̥���.lrc'
+
+MP3: '/music/03_���A��(�u�ƪ�).mp3'
+LRC: '/music/03_���A��.lrc'
+
+MP3: '/music/03_���A��.mp3'
+LRC: '/music/03_���A��.lrc'
+
+MP3: '/music/04_��d�˪L.mp3'
+LRC: '/music/05_��d�˪L.lrc'
+
+MP3: '/music/04_�Ѯa���Ѥl.mp3'
+LRC: '/music/04_�Ѯa���Ѥl.lrc'
+
+MP3: '/music/05_�X�{�b.mp3'
+LRC: '/music/07_�X�{�b.lrc'
+
+MP3: '/music/05_�B�]�X��.mp3'
+LRC: '/music/05_�B�]�X��.lrc'
+
+MP3: '/music/06_�^���h���L��.mp3'
+LRC: '/music/09_�^���h���L��.lrc'
+
+MP3: '/music/07_�R���Ҽ�.mp3'
+LRC: '/music/07_�R���Ҽ�.lrc'
+
+MP3: '/music/08_�T�Q�����a��O.mp3'
+LRC: '/music/08_�T�Q�����a��O.lrc'
+
+MP3: '/music/08_���������q��.mp3'
+LRC: '/music/08_���������q��.lrc'
+
+MP3: '/music/09_�ڤ@�ӤH�]�ܦn.mp3'
+LRC: '/music/09_�ڤ@�ӤH�]�ܦn.lrc'
+
+MP3: '/music/09_�������̫�@�].mp3'
+LRC: '/music/09_�������̫�@�].lrc'
+
+MP3: '/music/10_�Q�~�᪺���{(�u�ƪ�).mp3'
+LRC: '/music/10_�Q�~�᪺���{.lrc'
+
+MP3: '/music/10_�Q�~�᪺���{.mp3'
+LRC: '/music/10_�Q�~�᪺���{.lrc'
+
+MP3: '/music/10_�������].mp3'
+LRC: '/music/10_�������].lrc'
+
+MP3: '/music/11_�p�G���@��.mp3'
+LRC: '/music/11_�p�G���@��.lrc'
+
+MP3: '/music/12_�G�m����.mp3'
+LRC: '/music/12_�G�m����.lrc'
+
+MP3: '/music/13_�ɥ����n.mp3'
+LRC: '/music/13_�ɥ����n.lrc'
+
+MP3: '/music/15_���媺�G�m.mp3'
+LRC: '/music/15_���媺�G�m.lrc'
+
+MP3: '/music/18_�J���A���e.mp3'
+LRC: '/music/18_�J���A���e.lrc'
+
+MP3: '/music/20_���ѫG(�u�ƪ�).mp3'
+LRC: '/music/20_���ѫG.lrc'
+
+MP3: '/music/20_���ѫG.mp3'
+LRC: '/music/20_���ѫG.lrc'
+
+MP3: '/music/�������}_����n�u.mp3'
+LRC: '/music/25_�������}_����n�u.lrc'
+
+python : Traceback (most recent call last):
+位於 線路:1 字元:122
++ ... Text.Encoding]::UTF8; cd D:\project; python check-mp3.py 2>&1 | Out-F ...
++                                          ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\project\check-mp3.py", line 7, in <module>
+    print(f"MP3: {t['url']!r}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'cp950' codec can't encode character '\u5185' in position 22: illegal multibyte sequence

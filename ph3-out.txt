@@ -1,0 +1,26 @@
+﻿=== Click track 3 (no LRC) ===
+Lyrics lines: {
+  "lineCount": 8,
+  "lines": [
+    "♪ 音樂輕輕響起 ♪",
+    "再站起來",
+    "詞：未知藝術家",
+    "專輯：Demo Tracks",
+    "♪ 旋律在心中流淌 ♪",
+    "🎵 跟著節拍一起 🎵",
+    "♪ 時光在此刻停留 ♪",
+    "♫ 聆聽這段旋律 ♫"
+  ],
+  "firstTime": null,
+  "secondTime": null
+}
+
+=== Force currentTime=10s, 50s, 100s, 200s, 300s ===
+  t=10s  -> {"text": "♪ 音樂輕輕響起 ♪", "idx": null, "time": null}
+  t=50s  -> {"text": "再站起來", "idx": null, "time": null}
+  t=100s  -> {"text": "詞：未知藝術家", "idx": null, "time": null}
+  t=200s  -> {"text": "♪ 旋律在心中流淌 ♪", "idx": null, "time": null}
+  t=300s  -> {"text": "♪ 時光在此刻停留 ♪", "idx": null, "time": null}
+
+=== Console (last 10) ===
+  [warning] [.WebGL-0x4e74001b9a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels

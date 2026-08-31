@@ -1,0 +1,5 @@
+﻿MATCH: /music/02_兄弟本色.mp3 -> 01_兄弟本色.lrc
+MATCH: /music/04_水泥森林.mp3 -> 05_水泥森林.lrc
+MATCH: /music/05_趁現在.mp3 -> 07_趁現在.lrc
+MATCH: /music/06_回不去的夏天.mp3 -> 09_回不去的夏天.lrc
+MATCH: /music/不死的腳_熱血搖滾.mp3 -> 25_不死的腳_熱血搖滾.lrc

@@ -1,0 +1,3 @@
+﻿[fetch_lfs] found 0 LFS pointers to fetch
+
+[fetch_lfs] done: replaced=0 errors=0

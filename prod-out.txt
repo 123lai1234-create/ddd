@@ -1,0 +1,56 @@
+﻿=== Loading music page ===
+Playlist: 39 items, first: 兄弟本色
+
+=== Network requests for LRC / tracks.json ===
+  https://donttalk.vercel.app/scripts/music-player.js?v=20260827j
+  https://donttalk.vercel.app/music/tracks.json?v=1788144602767
+  https://donttalk.vercel.app/music/01_%E5%85%84%E5%BC%9F%E6%9C%AC%E8%89%B2.lrc
+  https://donttalk.vercel.app/music/03_%E4%B8%8D%E6%9C%8D%E8%BC%B8.lrc
+  https://donttalk.vercel.app/music/03_%E4%B8%8D%E6%9C%8D%E8%BC%B8.lrc
+  https://donttalk.vercel.app/music/05_%E6%B0%B4%E6%B3%A5%E6%A3%AE%E6%9E%97.lrc
+  https://donttalk.vercel.app/music/04_%E8%80%81%E5%AE%B6%E7%9A%84%E5%B7%B7%E5%AD%90.lrc
+  https://donttalk.vercel.app/music/07_%E8%B6%81%E7%8F%BE%E5%9C%A8.lrc
+  https://donttalk.vercel.app/music/05_%E9%9B%A8%E5%A4%9C%E5%87%BA%E7%A7%9F.lrc
+  https://donttalk.vercel.app/music/09_%E5%9B%9E%E4%B8%8D%E5%8E%BB%E7%9A%84%E5%A4%8F%E5%A4%A9.lrc
+  https://donttalk.vercel.app/music/07_%E6%84%9B%E7%9A%84%E6%A8%A1%E6%A8%A3.lrc
+  https://donttalk.vercel.app/music/08_%E4%B8%89%E5%8D%81%E6%AD%B2%E7%9A%84%E6%87%B8%E8%B3%9E%E4%BB%A4.lrc
+  https://donttalk.vercel.app/music/08_%E7%B5%A6%E7%88%B8%E5%AA%BD%E7%9A%84%E9%9B%BB%E8%A9%B1.lrc
+  https://donttalk.vercel.app/music/09_%E6%88%91%E4%B8%80%E5%80%8B%E4%BA%BA%E4%B9%9F%E5%BE%88%E5%A5%BD.lrc
+  https://donttalk.vercel.app/music/09_%E6%A9%9F%E5%A0%B4%E7%9A%84%E6%9C%80%E5%BE%8C%E4%B8%80%E5%A4%9C.lrc
+  https://donttalk.vercel.app/music/10_%E5%8D%81%E5%B9%B4%E5%BE%8C%E7%9A%84%E9%87%8D%E9%80%A2.lrc
+  https://donttalk.vercel.app/music/10_%E5%8D%81%E5%B9%B4%E5%BE%8C%E7%9A%84%E9%87%8D%E9%80%A2.lrc
+  https://donttalk.vercel.app/music/10_%E5%9F%8E%E5%B8%82%E7%9A%84%E5%A4%9C.lrc
+  https://donttalk.vercel.app/music/11_%E5%A6%82%E6%9E%9C%E6%9C%89%E4%B8%80%E5%A4%A9.lrc
+  https://donttalk.vercel.app/music/12_%E6%95%85%E9%84%89%E7%9A%84%E9%9B%B2.lrc
+  https://donttalk.vercel.app/music/13_%E6%99%82%E5%85%89%E8%86%A0%E5%9B%8A.lrc
+  https://donttalk.vercel.app/music/15_%E9%A2%A8%E7%AE%8F%E7%9A%84%E6%95%85%E9%84%89.lrc
+  https://donttalk.vercel.app/music/18_%E9%81%87%E8%A6%8B%E4%BD%A0%E4%B9%8B%E5%89%8D.lrc
+  https://donttalk.vercel.app/music/20_%E7%AD%89%E5%A4%A9%E4%BA%AE.lrc
+  https://donttalk.vercel.app/music/20_%E7%AD%89%E5%A4%A9%E4%BA%AE.lrc
+  https://donttalk.vercel.app/music/25_%E4%B8%8D%E6%AD%BB%E7%9A%84%E8%85%B3_%E7%86%B1%E8%A1%80%E6%90%96%E6%BB%BE.lrc
+  https://donttalk.vercel.app/music/26_%E5%86%85%E5%8D%B7%E5%85%B1%E5%92%8C%E5%9B%BD.lrc
+  https://donttalk.vercel.app/music/27_%E5%86%85%E5%8D%B7%E5%85%B1%E5%92%8C%E5%9B%BD.lrc
+  https://donttalk.vercel.app/music/28_%E6%B7%B1%E5%9C%B3%E5%87%8C%E6%99%A8%E5%9B%9B%E7%82%B9%E7%9A%84%E5%85%89.lrc
+  https://donttalk.vercel.app/music/29_%E6%B7%B1%E5%9C%B3%E5%87%8C%E6%99%A8%E5%9B%9B%E7%82%B9%E7%9A%84%E5%85%89.lrc
+
+=== Find track with LRC ===
+  [0] 兄弟本色
+  [1] 不服輸 (優化版)
+  [2] 不服輸
+  [3] 再站起來
+  [4] 水泥森林
+  [5] 老家的巷子
+  [6] 趁現在
+  [7] 雨夜出租
+  [8] 回不去的夏天
+  [9] 愛的模樣
+
+=== Click track 0 ===
+State: {"lyricsText": "Y\na\ny\n\n那\n年\n我\n們\n在\n路\n邊\n喫\n餅\n了\n\n這\n未\n來\n不\n會\n怕\n\n世\n界\n很\n大\n\n等\n我\n們\n有\n彼\n此\n什\n麼\n都\n不\n謙\n卻\n\n就\n是\n那\n天\n走\n散\n了\n\n你\n還\n在\n我\n身\n", "lineCount": 26, "audioSrc": "https://donttalk.vercel.app/music/02_%E5%85%84%E5%BC%9F%E6%9C%AC%E8%89%B2.mp3", "audioPaused": false, "audioCurrent": 0, "audioReady": 0}
+
+=== Wait 8s for LRC + audio start ===
+State 2: {"lineCount": 26, "firstLineTime": "0.00", "audioCurrent": 0, "audioPaused": false, "audioReady": 0, "activeText": "Yay", "activeIdx": "0"}
+
+=== Console logs ===
+  [ERR] cheekGeom is not defined
+  [warning] [.WebGL-0x477401683600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels

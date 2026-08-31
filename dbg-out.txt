@@ -1,0 +1,3 @@
+﻿mp3:     '02_兄弟本色.mp3'
+expected: '02_兄弟本色.mp3'
+equal: True

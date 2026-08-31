@@ -1,0 +1,6 @@
+﻿Total: 39
+with LRC: 38
+without LRC: 1
+
+=== Tracks without LRC ===
+  3: '再站起來' (album: 'Demo Tracks', artist: '未知藝術家')
