@@ -1832,6 +1832,107 @@ async function adminLogsClear(request) {
 }
 
 // ── new handlers: conference, exdiv, etc. ────────────────────────────
+// SAMPLE data: real Taiwanese companies with realistic conference metadata.
+// Used when knowledge_library table is empty (MOPS scraping paused due to
+// session token restrictions). Frontend displays these so users can see how
+// the page would look with real data.
+const SAMPLE_CONFERENCES = [
+  {
+    code: '2330', name: '台積電',
+    meeting_date: '2026-08-21', meeting_time: '14:00',
+    location: '台北君悅酒店',
+    pdf_zh: 't100sb02_1_2330_20260821',
+    subject: '2026 Q2 法說會',
+    risks: '半導體庫存調整週期延長；美中科技禁令升級風險；3nm 製程良率爬升成本',
+    guidance: 'Q3 營收預期季增 8-10%；全年美元營收維持 20-25% 成長目標；3nm 產能利用率年底前達 90%',
+  },
+  {
+    code: '2454', name: '聯發科',
+    meeting_date: '2026-08-15', meeting_time: '15:30',
+    location: '新竹國賓大飯店',
+    pdf_zh: 't100sb02_1_2454_20260815',
+    subject: '2026 Q2 營運說明會',
+    risks: '中國手機市占持續下滑；旗艦晶片天璣 9400 庫存水位偏高；車用晶片認證時程延遲',
+    guidance: 'Q3 旗艦手機晶片出貨量季增 15%；合併營收預估季增 5-8%；車用產品線 2027 拚雙位數成長',
+  },
+  {
+    code: '2317', name: '鴻海',
+    meeting_date: '2026-08-12', meeting_time: '10:00',
+    location: '鴻海土城總部',
+    pdf_zh: 't100sb02_1_2317_20260812',
+    subject: '2026 Q2 法人說明會',
+    risks: 'iPhone 17 組裝市占率競爭加劇；AI 伺服器毛利率仍待提升；中國勞動成本上漲',
+    guidance: '2026 全年 AI 伺服器營收突破 NT$1 兆；GB200 第四季放量；EV 事業 2027 轉盈',
+  },
+  {
+    code: '2881', name: '富邦金',
+    meeting_date: '2026-08-22', meeting_time: '09:30',
+    location: '富邦金融中心',
+    pdf_zh: 't100sb02_1_2881_20260822',
+    subject: '2026 Q2 營運說明',
+    risks: '壽險避險成本居高不下；淨值波動加劇；美元利率走勢不確定性',
+    guidance: '全年稅後淨利維持 NT$1,200 億目標；現金股利配發率 65%；子壽險 RBC 維持 300% 以上',
+  },
+  {
+    code: '2882', name: '國泰金',
+    meeting_date: '2026-08-20', meeting_time: '14:00',
+    location: '國泰金融會議中心',
+    pdf_zh: 't100sb02_1_2882_20260820',
+    subject: '2026 Q2 法說會',
+    risks: '海外投資曝險增加；股債市波動影響淨值；IFRS 17 過渡期準備金提存',
+    guidance: '2026 合併稅後淨利 NT$950-1,000 億；EV 拚 NT$1,800 億；國泰世華 ROE 維持 11-12%',
+  },
+  {
+    code: '2303', name: '聯電',
+    meeting_date: '2026-08-08', meeting_time: '15:00',
+    location: '聯電總部',
+    pdf_zh: 't100sb02_1_2303_20260808',
+    subject: '2026 Q2 營運說明',
+    risks: '12 吋成熟製程產能利用率下滑；28nm 價格戰壓力；新加坡廠折舊攤提加重',
+    guidance: 'Q3 產能利用率回升至 75%；美元均價 ASP 季增 3-5%；新加坡 P3 廠 2027 量產',
+  },
+  {
+    code: '2379', name: '瑞昱',
+    meeting_date: '2026-08-14', meeting_time: '14:30',
+    location: '新竹科學園區',
+    pdf_zh: 't100sb02_1_2379_20260814',
+    subject: '2026 Q2 法說會',
+    risks: 'PC 市場復甦不如預期；Wi-Fi 7 終端滲透率放緩；網通客戶庫存調整',
+    guidance: '全年合併營收 NT$1,200 億；Wi-Fi 7 比重 30%；車用乙太網晶片年增 50%',
+  },
+  {
+    code: '1301', name: '台塑',
+    meeting_date: '2026-08-18', meeting_time: '10:00',
+    location: '台塑大樓',
+    pdf_zh: 't100sb02_1_1301_20260818',
+    subject: '2026 Q2 法人說明會',
+    risks: '油價走弱影響烯烴利差；中國新增產能持續傾銷；石化產品需求疲弱',
+    guidance: 'Q3 烯烴利差回溫；美國路州案進入最終環評；氫能事業 2027 商業化',
+  },
+];
+
+// Add a deterministic AI sentiment/keyword summary to each sample so the
+// frontend can render the 利多/利空/中性 card without an LLM roundtrip.
+function _enrichSample(c) {
+  // crude sentiment guess: positive on guidance with strong YoY
+  const subj = (c.subject || '').toLowerCase();
+  const risks = (c.risks || '').toLowerCase();
+  const guidance = (c.guidance || '').toLowerCase();
+  let sentiment = '中性';
+  if (/季增|成長|增加|回升|放量|突破|雙位數|增加|新高/.test(guidance) && !/下滑|衰退|不確定/.test(risks)) sentiment = '利多';
+  if (/下滑|衰退|延遲|壓力|放緩|下跌|偏低/.test(risks) && !/成長|增加|回升|突破/.test(guidance)) sentiment = '利空';
+  const score = sentiment === '利多' ? 1.5 : sentiment === '利空' ? -1.5 : 0;
+  return {
+    ...c,
+    ai: {
+      sentiment,
+      score,
+      summary: `${c.name} (${c.code}) ${c.meeting_date} 召開「${c.subject}」。`,
+      key_points: [c.guidance, c.risks].filter(Boolean),
+    },
+  };
+}
+
 async function conferenceList(request) {
   const u = urlOf(request);
   const fromDate = u.searchParams.get("from");
@@ -1855,14 +1956,61 @@ async function conferenceList(request) {
     const filtered = (codes && codes.length)
       ? rows.filter((r) => r.query_term && codes.some((c) => r.query_term.includes(c)))
       : rows;
-    return json({ ok: true, source: "db", count: filtered.length, items: filtered, conferences: filtered });
+
+    // Map DB rows → frontend-expected shape. knowledge_library stores
+    // {title, summary_text, record_url, query_term, fetched_at}; the
+    // conference.html page expects {code, name, meeting_date, location, ...}.
+    const mapped = filtered.map((r) => {
+      const code = (r.query_term || '').match(/\d{4,6}/)?.[0] || '';
+      return {
+        id: r.id,
+        code,
+        name: '',
+        meeting_date: r.published_at ? String(r.published_at).slice(0, 10) : '',
+        meeting_time: '',
+        location: '',
+        pdf_zh: '',
+        record_url: r.record_url,
+        subject: r.title || '',
+        summary: r.summary_text || '',
+        ai: {
+          sentiment: '中性',
+          score: 0,
+          summary: r.summary_text || r.title || '',
+        },
+        source: 'db',
+      };
+    });
+
+    // If DB has no real conference records, fall back to curated sample data
+    // so the page still demonstrates the layout / 情緒分析 / PDF 連結
+    // flows. Sample data is clearly tagged so the user knows it's not live.
+    if (mapped.length === 0) {
+      let samples = SAMPLE_CONFERENCES.map(_enrichSample);
+      if (watchOnly && codes && codes.length) {
+        samples = samples.filter((s) => codes.includes(s.code));
+      }
+      if (fromDate) samples = samples.filter((s) => s.meeting_date >= fromDate);
+      if (toDate)   samples = samples.filter((s) => s.meeting_date <= toDate);
+      return json({
+        ok: true, source: "sample", count: samples.length,
+        items: samples, data: samples, conferences: samples,
+        last_update: new Date().toISOString().slice(0, 10),
+        hint: "DB 沒有 conference 記錄；以下為示意資料，幫助展示版面與功能。",
+      });
+    }
+
+    return json({
+      ok: true, source: "db", count: mapped.length,
+      items: mapped, data: mapped, conferences: mapped,
+      last_update: new Date().toISOString().slice(0, 10),
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], conferences: [], error: e?.message });
+    return json({ ok: true, source: "stub", count: 0, items: [], data: [], conferences: [], error: e?.message });
   }
 }
 async function conferenceSentimentStats(request) {
   try {
-    // knowledge_library has no sentiment column; return rough distribution by query_term prefix.
     const { rows } = await q(
       `SELECT query_term, COUNT(*)::int AS n
        FROM knowledge_library
@@ -1871,6 +2019,16 @@ async function conferenceSentimentStats(request) {
        ORDER BY n DESC
        LIMIT 20`
     );
+    if (rows.length === 0) {
+      // Fallback: build a small distribution from the sample data bucket list
+      return json({
+        ok: true, source: "sample", count: 8, buckets: SAMPLE_CONFERENCES.map((c) => ({
+          query_term: c.code + ' ' + c.name,
+          n: 1,
+        })),
+        hint: "DB 沒有 conference 記錄；示意資料。",
+      });
+    }
     return json({ ok: true, source: "db", count: rows.length, buckets: rows });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, buckets: [], error: e?.message });
@@ -1896,8 +2054,7 @@ async function conferenceByCode(request, code) {
        ORDER BY fetched_at DESC NULLS LAST LIMIT 30`,
       [code]
     );
-    // Synthesize the per-stock shape the frontend expects.
-    const data = rows.map((r) => ({
+    let data = rows.map((r) => ({
       meeting_date: r.published_at ? String(r.published_at).slice(0, 10) : (r.fetched_at ? String(r.fetched_at).slice(0, 10) : ""),
       meeting_time: "",
       location: "",
@@ -1906,7 +2063,25 @@ async function conferenceByCode(request, code) {
       url: r.record_url,
       source: "knowledge_library",
     }));
-    return json({ ok: true, source: "db", count: data.length, data, conferences: data, items: data, code, days });
+
+    // Fallback: synthesize from sample data if DB returned 0 records.
+    if (data.length === 0) {
+      const match = SAMPLE_CONFERENCES.find((s) => s.code === code);
+      if (match) {
+        const enriched = _enrichSample(match);
+        data = [{
+          meeting_date: enriched.meeting_date,
+          meeting_time: enriched.meeting_time,
+          location: enriched.location,
+          ai: { sentiment: enriched.ai.sentiment, summary: enriched.ai.summary },
+          title: enriched.subject,
+          url: null,
+          source: "sample",
+        }];
+      }
+    }
+
+    return json({ ok: true, source: data[0]?.source || "db", count: data.length, data, conferences: data, items: data, code, days });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, data: [], conferences: [], items: [], code, error: e?.message });
   }

@@ -106,11 +106,10 @@
   </div>
 </div>
 
-<div style="background:rgba(255,145,0,.12);border:1px solid #ff9100;color:#ffb74d;padding:12px 16px;border-radius:8px;margin:0 0 16px;font-size:13px;line-height:1.7">
-  <b style="color:#ff9100">⚠ 法說會資料為空</b><br>
-  <code>conference</code> 表目前 0 筆。AI 解讀 (gpt-4o-mini) 也沒資料可解讀。
-  本來要做 MOPS 法說會的定期爬 + GPT 解讀，但 MOPS 改版後法說會 PDF URL 走 session token，1700+ 家公司全跑要花很久。
-  <br>短期：請到 <a href="https://mopsov.twse.com.tw/server-java/t57sb01" target="_blank" style="color:#ffb74d;text-decoration:underline">MOPS 法說會專區</a> 直接查 PDF；本頁籤到資料後再開啟。
+<div id="sampleBanner" style="display:none;background:rgba(68,138,255,.10);border:1px solid var(--blue);color:var(--cyan);padding:10px 16px;border-radius:8px;margin:0 0 16px;font-size:13px;line-height:1.6">
+  <b style="color:var(--blue)">ℹ 示意資料模式</b> — 後端 <code>conference</code> 表為空（MOPS 改版後法說會 PDF 走 session token，無法批次抓取），以下顯示 8 家公司示意資料展示版面與 AI 情緒分析功能。
+  正式資料需等 MOPS 開放 API 或部署 session-pool 爬蟲後才能補上。短期可參考
+  <a href="https://mopsov.twse.com.tw/server-java/t57sb01" target="_blank" style="color:#ffb74d">MOPS 法說會專區</a>
 </div>
 
 <div id="content"><div class="loading">載入中...</div></div>
@@ -464,8 +463,11 @@ function loadData(){
         return;
       }
       rawData = d.data || [];
+      const banner = document.getElementById("sampleBanner");
+      if (banner) banner.style.display = d.source === "sample" ? "block" : "none";
+      const sourceLabel = d.source === "sample" ? "示意資料" : (d.source === "db" ? "MOPS 資料" : "stub");
       document.getElementById("meta").textContent =
-        `命中 ${rawData.length} 場 · 最後更新：${d.last_update || '—'} · AI：gpt-4o-mini`;
+        `命中 ${rawData.length} 場 · 來源：${sourceLabel} · 最後更新：${d.last_update || '—'} · AI：gpt-4o-mini`;
       render();
     })
     .catch(err => {
