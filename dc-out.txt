@@ -1,0 +1,2 @@
+﻿After cache bypass: lineCount=1, first='歌詞載入中…'
+At t=50s: {'text': None, 'idx': None}

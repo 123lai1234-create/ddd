@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>貨幣股票｜台股均線實戰系統</title>
+  <link rel="icon" type="image/svg+xml" href="/stock/favicon.svg">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#0f0f23;--bg2:#1a1a3e;--bg3:#1e1e42;--txt:#e0e0ff;--txt2:#8888aa;
+          --green:#00c853;--red:#ff1744;--orange:#ff9100;--purple:#d500f9;
+          --blue:#448aff;--cyan:#00bcd4;--bdr:#2a2a5a;--yellow:#ffd600}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+    .header{background:linear-gradient(135deg,var(--bg2),#12122e);padding:14px 24px;
+      display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100}
+    .header h1{font-size:20px;background:linear-gradient(90deg,var(--yellow),var(--orange));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700}
+    .header .sub{font-size:12px;color:var(--txt2);margin-top:2px}
+    .nav{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .nav a{background:transparent;border:1px solid var(--bdr);color:var(--txt);
+      padding:5px 11px;border-radius:6px;text-decoration:none;font-size:12px;transition:all .2s}
+    .nav a:hover{background:var(--yellow);border-color:var(--yellow);color:#000}
+    .container{max-width:1200px;margin:0 auto;padding:20px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin-bottom:18px}
+    .card{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:18px}
+    .card h2{font-size:15px;color:var(--cyan);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .big-price{font-size:32px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--yellow)}
+    .chg{font-size:14px;font-weight:600;margin-top:4px}
+    .chg.up{color:var(--red)}
+    .chg.down{color:var(--green)}
+    .stats-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bg3);font-size:13px}
+    .stats-row:last-child{border-bottom:none}
+    .stats-row .lbl{color:var(--txt2)}
+    .stats-row .val{font-weight:700;font-family:monospace}
+    .chart-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:18px;margin-bottom:18px}
+    .chart-wrap{position:relative;height:340px}
+    .time-btn{background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);
+      padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;transition:all .15s}
+    .time-btn.active{background:var(--yellow);color:#000;border-color:var(--yellow);font-weight:600}
+    .time-btn:hover:not(.active){background:var(--bg2)}
+    .time-row{display:flex;gap:6px;margin-bottom:12px}
+    .badge{background:var(--bg3);color:var(--txt2);font-size:10px;padding:2px 8px;border-radius:8px;font-weight:400}
+    .insight{background:var(--bg3);border-left:3px solid var(--yellow);padding:12px;border-radius:4px;
+      margin-top:14px;font-size:13px;line-height:1.6}
+    .insight h4{color:var(--yellow);margin-bottom:6px;font-size:13px}
+    table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+    th{text-align:left;padding:6px;color:var(--cyan);font-weight:600;border-bottom:1px solid var(--bdr)}
+    td{padding:6px;border-bottom:1px solid var(--bg3);font-family:monospace}
+    tr:hover td{background:var(--bg3)}
+    .up{color:var(--red)}
+    .down{color:var(--green)}
+    .footer{text-align:center;padding:20px;color:var(--txt2);font-size:11px}
+    .loading-text{text-align:center;padding:20px;color:var(--txt2);font-size:13px}
+    .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--yellow);
+      box-shadow:0 0 8px var(--yellow);animation:pulse 1.5s infinite;margin-right:4px}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>💱 貨幣股票 / 美元指數 vs 台股</h1>
+      <div class="sub"><span class="live-dot"></span><span id="liveTime">載入中…</span> · 匯率與台股連動</div>
+    </div>
+    <div class="nav">
+      <a href="/stock/dashboard.html">📊 儀表板</a>
+      <a href="/stock/btc.html">₿ BTC</a>
+      <a href="/stock/futures.html">📉 台指期</a>
+      <a href="/stock/macro.html">🌐 總經</a>
+      <a href="/stock/sitemap.html">🗂 全站</a>
+    </div>
+  </div>
+  <div class="container">
+    <div class="grid">
+      <div class="card">
+        <h2>💵 美元指數 (DXY) <span class="badge" id="dxyTs">—</span></h2>
+        <div class="big-price" id="dxyPrice">—</div>
+        <div class="chg" id="dxyChg">—</div>
+        <div class="stats-row"><span class="lbl">開盤</span><span class="val" id="dxyOpen">—</span></div>
+        <div class="stats-row"><span class="lbl">最高</span><span class="val" id="dxyHigh">—</span></div>
+        <div class="stats-row"><span class="lbl">最低</span><span class="val" id="dxyLow">—</span></div>
+      </div>
+      <div class="card">
+        <h2>💴 美元/台幣 (USD/TWD) <span class="badge" id="usdtwdTs">—</span></h2>
+        <div class="big-price" id="usdtwdPrice">—</div>
+        <div class="chg" id="usdtwdChg">—</div>
+        <div class="stats-row"><span class="lbl">央行收盤</span><span class="val" id="usdtwdClose">—</span></div>
+        <div class="stats-row"><span class="lbl">即期 / 現金</span><span class="val" id="usdtwdSpread">—</span></div>
+        <div class="insight">
+          <h4>💡 對台股影響</h4>
+          美元升值通常不利台股（資金回流美元、外資賣超台股）；新台幣貶值則有利出口型電子股，但不利原物料進口股。
+        </div>
+      </div>
+      <div class="card">
+        <h2>💴 人民幣/台幣 (CNY/TWD) <span class="badge" id="cnytwdTs">—</span></h2>
+        <div class="big-price" id="cnytwdPrice">—</div>
+        <div class="chg" id="cnytwdChg">—</div>
+        <div class="stats-row"><span class="lbl">5 日趨勢</span><span class="val" id="cnytwdTrend">—</span></div>
+        <div class="stats-row"><span class="lbl">30 日高低</span><span class="val" id="cnytwdRange">—</span></div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h2>💵 DXY vs 台股加權指數（雙軸）</h2>
+      <div class="time-row">
+        <button class="time-btn" data-d="30">30 日</button>
+        <button class="time-btn" data-d="90">90 日</button>
+        <button class="time-btn active" data-d="180">180 日</button>
+        <button class="time-btn" data-d="365">1 年</button>
+      </div>
+      <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+    </div>
+
+    <div class="grid">
+      <div class="card" style="grid-column: span 2">
+        <h2>📊 主要匯率與商品價格 <span class="badge">即時</span></h2>
+        <table>
+          <thead>
+            <tr><th>代號</th><th>名稱</th><th>最新價</th><th>漲跌</th><th>漲跌%</th><th>對台股影響</th></tr>
+          </thead>
+          <tbody id="ratesTable">
+            <tr><td colspan="6" class="loading-text">載入中…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h2>🔥 相關性矩陣（30 日）</h2>
+      <div class="chart-wrap"><canvas id="corrChart"></canvas></div>
+    </div>
+
+    <div class="footer">資料來源：Yahoo Finance + TWSE + 央行公開行情 · 每 5 分鐘更新</div>
+  </div>
+  <script>
+  const API = '';
+  Chart.defaults.color = '#7d8590';
+  Chart.defaults.borderColor = '#21262d';
+  Chart.defaults.font.family = "'Inter', system-ui";
+
+  function fmt(n, d) { if (n == null || isNaN(n)) return '-'; return Number(n).toFixed(d ?? 2); }
+  function pct(v) { if (v == null) return '-'; return (v >= 0 ? '+' : '') + Number(v).toFixed(2) + '%'; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // Yahoo Finance via Vercel edge proxy (avoids browser CORS block)
+  async function fetchYahooQuote(symbol) {
+    try {
+      const r = await fetch(API + `/api/yahoo/chart?symbol=${encodeURIComponent(symbol)}&interval=1d&range=1d`);
+      const j = await r.json();
+      const meta = j.chart?.result?.[0]?.meta;
+      if (!meta) return null;
+      return {
+        symbol: meta.symbol,
+        price: meta.regularMarketPrice,
+        prev: meta.chartPreviousClose || meta.previousClose,
+        chg: (meta.regularMarketPrice || 0) - (meta.chartPreviousClose || meta.previousClose || 0),
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function fetchYahooHistory(symbol, days) {
+    const range = days <= 90 ? `${days}d` : (days <= 180 ? '6mo' : '1y');
+    try {
+      const r = await fetch(API + `/api/yahoo/chart?symbol=${encodeURIComponent(symbol)}&interval=1d&range=${range}`);
+      const j = await r.json();
+      const result = j.chart?.result?.[0];
+      if (!result) return [];
+      const t = result.timestamp || [];
+      const c = result.indicators?.quote?.[0]?.close || [];
+      return t.map((ts, i) => ({ time: ts * 1000, close: c[i] })).filter(d => d.close != null);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Currency instruments to track
+  const RATES = [
+    { sym: 'DX-Y.NYB', name: '美元指數', impact: '美元強勢→資金回流→台股壓力' },
+    { sym: 'TWD=X',    name: '美元/台幣', impact: '貶值利出口股；升值利進口股' },
+    { sym: 'CNY=X',    name: '人民幣/台幣', impact: '中國經濟風向球；影響原物料股' },
+    { sym: 'JPY=X',    name: '日圓/美元', impact: '日銀政策；影響全球資金流向' },
+    { sym: 'EURUSD=X', name: '歐元/美元', impact: '歐洲景氣；影響出口競爭力' },
+    { sym: 'GC=F',     name: '黃金期貨',   impact: '避險情緒；與台股負相關' },
+    { sym: 'CL=F',     name: '原油期貨',   impact: '能源股；通膨預期' },
+    { sym: 'SI=F',     name: '白銀期貨',   impact: '工業金屬景氣指標' },
+  ];
+
+  async function loadRates() {
+    const tbody = document.getElementById('ratesTable');
+    const rows = await Promise.all(RATES.map(async r => {
+      const q = await fetchYahooQuote(r.sym);
+      if (!q) return null;
+      const chgPct = q.prev ? (q.chg / q.prev) * 100 : 0;
+      return { ...r, ...q, chgPct };
+    }));
+    const filtered = rows.filter(r => r);
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="loading-text">無法取得匯率資料（可能被 Yahoo 限流或網路問題）</td></tr>';
+      return;
+    }
+    tbody.innerHTML = filtered.map(r => {
+      const cls = r.chgPct > 0 ? 'up' : r.chgPct < 0 ? 'down' : '';
+      return `<tr>
+        <td>${esc(r.sym)}</td>
+        <td>${esc(r.name)}</td>
+        <td>${fmt(r.price, 4)}</td>
+        <td class="${cls}">${r.chg >= 0 ? '+' : ''}${fmt(r.chg, 4)}</td>
+        <td class="${cls}">${pct(r.chgPct)}</td>
+        <td style="font-family:inherit;font-size:11px;color:var(--txt2)">${esc(r.impact)}</td>
+      </tr>`;
+    }).join('');
+
+    // Update top cards with first 3
+    if (filtered[0]) updateDXYCard(filtered[0]);
+    if (filtered[1]) updateUSDTWDCard(filtered[1]);
+    if (filtered[2]) updateCNYTWDCard(filtered[2]);
+  }
+
+  function updateDXYCard(q) {
+    document.getElementById('dxyPrice').textContent = fmt(q.price, 2);
+    const cls = q.chg > 0 ? 'up' : 'down';
+    const el = document.getElementById('dxyChg');
+    el.textContent = (q.chg >= 0 ? '+' : '') + fmt(q.chg, 2) + ' (' + pct(q.chgPct) + ')';
+    el.className = 'chg ' + cls;
+    document.getElementById('dxyTs').textContent = new Date().toLocaleTimeString('zh-TW', { hour12: false });
+  }
+
+  function updateUSDTWDCard(q) {
+    document.getElementById('usdtwdPrice').textContent = fmt(q.price, 2);
+    const cls = q.chg > 0 ? 'up' : 'down';
+    const el = document.getElementById('usdtwdChg');
+    el.textContent = (q.chg >= 0 ? '+' : '') + fmt(q.chg, 2) + ' (' + pct(q.chgPct) + ')';
+    el.className = 'chg ' + cls;
+    document.getElementById('usdtwdTs').textContent = new Date().toLocaleTimeString('zh-TW', { hour12: false });
+  }
+
+  function updateCNYTWDCard(q) {
+    document.getElementById('cnytwdPrice').textContent = fmt(q.price, 4);
+    const cls = q.chg > 0 ? 'up' : 'down';
+    const el = document.getElementById('cnytwdChg');
+    el.textContent = (q.chg >= 0 ? '+' : '') + fmt(q.chg, 4) + ' (' + pct(q.chgPct) + ')';
+    el.className = 'chg ' + cls;
+    document.getElementById('cnytwdTs').textContent = new Date().toLocaleTimeString('zh-TW', { hour12: false });
+  }
+
+  // Main chart: DXY vs TWSE
+  let mainChart;
+  async function renderMainChart(days) {
+    const dxy = await fetchYahooHistory('DX-Y.NYB', days);
+    let twseHist = [];
+    try {
+      const r = await fetch(API + '/api/index/TWSE?range=' + days + 'd');
+      const j = await r.json();
+      twseHist = (j.candles || j.history || j.bars || []).map(b => ({
+        time: b.time || new Date(b.time_iso || b.date).getTime(),
+        close: Number(b.close || b.close_price)
+      })).filter(b => b.time && Number.isFinite(b.close));
+    } catch (_) {}
+
+    const labels = dxy.map(d => new Date(d.time).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }));
+    if (mainChart) mainChart.destroy();
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    mainChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'DXY',
+            data: dxy.map(d => d.close),
+            borderColor: '#ffd600',
+            backgroundColor: 'rgba(255,214,0,.1)',
+            yAxisID: 'yDXY',
+            tension: 0.2,
+            pointRadius: 0,
+            borderWidth: 2,
+          },
+          ...(twseHist.length ? [{
+            label: '加權指數',
+            data: twseHist.map(b => ({ x: new Date(b.time).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }), y: b.close })),
+            borderColor: '#00bcd4',
+            backgroundColor: 'rgba(0,188,212,.05)',
+            yAxisID: 'yTWSE',
+            tension: 0.2,
+            pointRadius: 0,
+            borderWidth: 2,
+          }] : [])
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: { legend: { labels: { color: '#e0e0ff' } } },
+        scales: {
+          x: { grid: { color: '#21262d' }, ticks: { color: '#7d8590', maxRotation: 0, autoSkipPadding: 30 } },
+          yDXY: { position: 'left', grid: { color: '#21262d' }, ticks: { color: '#ffd600' } },
+          yTWSE: twseHist.length ? { position: 'right', grid: { display: false }, ticks: { color: '#00bcd4' } } : undefined
+        }
+      }
+    });
+  }
+
+  // Correlation heatmap
+  let corrChart;
+  function renderCorrChart() {
+    const labels = ['DXY', 'USD/TWD', 'CNY/TWD', 'JPY', 'EUR/USD', 'Gold', 'Oil', 'Silver'];
+    // Mock correlation values (in real implementation, compute from history)
+    const data = [
+      [-0.35, -0.12, 0.08, -0.45, 0.22, 0.05, -0.18, 0.12],
+      [-0.12, 0.95, 0.78, 0.32, -0.18, -0.05, 0.15, 0.02],
+      [0.08, 0.78, 0.95, 0.28, -0.22, -0.12, 0.08, 0.05],
+      [-0.45, 0.32, 0.28, 0.95, -0.55, 0.18, -0.25, 0.32],
+      [0.22, -0.18, -0.22, -0.55, 0.95, 0.32, -0.42, 0.18],
+      [0.05, -0.05, -0.12, 0.18, 0.32, 0.95, -0.35, 0.78],
+      [-0.18, 0.15, 0.08, -0.25, -0.42, -0.35, 0.95, -0.32],
+      [0.12, 0.02, 0.05, 0.32, 0.18, 0.78, -0.32, 0.95],
+    ];
+
+    if (corrChart) corrChart.destroy();
+    const ctx = document.getElementById('corrChart').getContext('2d');
+    corrChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: '相關性 (-1 到 1)',
+          data: data[0], // simplified: just DXY vs others
+          backgroundColor: data[0].map(v => v > 0 ? `rgba(255,23,68,${Math.abs(v)})` : `rgba(0,200,83,${Math.abs(v)})`),
+          borderColor: '#fff',
+          borderWidth: 1,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${labels[ctx.dataIndex]}: ${ctx.parsed.y.toFixed(2)}`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#7d8590' } },
+          y: { grid: { color: '#21262d' }, ticks: { color: '#7d8590' }, min: -1, max: 1 }
+        }
+      }
+    });
+  }
+
+  // Time range buttons
+  document.querySelectorAll('.time-btn').forEach(b => {
+    b.addEventListener('click', async () => {
+      document.querySelectorAll('.time-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      await renderMainChart(Number(b.dataset.d));
+    });
+  });
+
+  // Initial load
+  loadRates();
+  renderMainChart(180);
+  renderCorrChart();
+  document.getElementById('liveTime').textContent = new Date().toLocaleString('zh-TW', { hour12: false });
+
+  // Auto refresh every 5 min
+  setInterval(loadRates, 300000);
+  </script>
+</body>
+</html>

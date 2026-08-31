@@ -1,0 +1,1435 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-5hce7sga> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><title>韌體工程 · MCU Firmware · 作品集</title><meta name="description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><meta property="og:title" content="韌體工程 · MCU Firmware · 作品集"><meta property="og:description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og?t=%E9%9F%8C%E9%AB%94%E5%B7%A5%E7%A8%8B%20%C2%B7%20MCU%20Firmware%20%C2%B7%20%E4%BD%9C%E5%93%81%E9%9B%86&amp;s=Nuvoton%20Nano130KE3BN%20Cortex-M0%20%E9%9F%8C%E9%AB%94%E9%96%8B%E7%99%BC%E5%AF%A6%E4%BD%9C%EF%BC%9ATFT%20EBI%20%E9%A9%85%E5%8B%95%E3%80%81RGB565%20%E9%A1%AF%E7%A4%BA%E3%80%81Keil%20%2B%20J-Link%20%E5%B7%A5%E4%BD%9C%E6%B5%81%EF%BC%8C%E5%90%AB%20YouTube%20%E5%AE%8C%E6%95%B4%E6%95%99%E5%AD%B8%E6%92%AD%E6%94%BE%E6%B8%85%E5%96%AE%E3%80%82&amp;tag="><meta name="twitter:image" content="https://donttalk.vercel.app/og?t=%E9%9F%8C%E9%AB%94%E5%B7%A5%E7%A8%8B%20%C2%B7%20MCU%20Firmware%20%C2%B7%20%E4%BD%9C%E5%93%81%E9%9B%86&amp;s=Nuvoton%20Nano130KE3BN%20Cortex-M0%20%E9%9F%8C%E9%AB%94%E9%96%8B%E7%99%BC%E5%AF%A6%E4%BD%9C%EF%BC%9ATFT%20EBI%20%E9%A9%85%E5%8B%95%E3%80%81RGB565%20%E9%A1%AF%E7%A4%BA%E3%80%81Keil%20%2B%20J-Link%20%E5%B7%A5%E4%BD%9C%E6%B5%81%EF%BC%8C%E5%90%AB%20YouTube%20%E5%AE%8C%E6%95%B4%E6%95%99%E5%AD%B8%E6%92%AD%E6%94%BE%E6%B8%85%E5%96%AE%E3%80%82&amp;tag="><meta property="og:url" content="https://donttalk.vercel.app/firmware/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="韌體工程 · MCU Firmware · 作品集"><meta name="twitter:description" content="Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。"><link rel="canonical" href="https://donttalk.vercel.app/firmware/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/firmware/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/firmware/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=20260827j').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.cn"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.cn/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.cn/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/firmware.css"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js" defer></script><!-- <script is:inline src="/scripts/shader-bg.js" defer></script> --><script src="/scripts/admin-mode.js" defer></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><!-- <script is:inline src="/scripts/immersive-experience.js" defer></script> --><!-- Console noise filter (Immersive Translate / Chrome extension errors that don't impact our app) --><script>
+    (function() {
+      var isExtNoise = function(args) {
+        try {
+          var s = '';
+          for (var i = 0; i < args.length; i++) {
+            var a = args[i];
+            s += (a && a.stack) ? a.stack : String(a == null ? a : a);
+            if (s.length > 800) { s = s.slice(0, 800); break; }
+          }
+          return /content_main\.js|content_guard\.js|immersive[- ]?translate|chrome-extension:|moz-extension:/.test(s);
+        } catch (_) { return false; }
+      };
+      var origErr = console.error, origWarn = console.warn;
+      console.error = function() { if (isExtNoise(arguments)) return; return origErr.apply(console, arguments); };
+      console.warn  = function() { if (isExtNoise(arguments)) return; return origWarn.apply(console, arguments); };
+      window.addEventListener('error', function(e) {
+        var src = (e && e.filename) || '', msg = (e && e.message) || '';
+        if (/content_main\.js|content_guard\.js|chrome-extension:|moz-extension:/.test(src) ||
+            /classList|reading 'classList'/.test(msg)) {
+          e.stopImmediatePropagation(); e.preventDefault();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        var r = e && e.reason, s = r && (r.stack || r.message) || String(r);
+        if (/content_main\.js|content_guard\.js|chrome-extension:|moz-extension:/.test(s)) {
+          e.stopImmediatePropagation(); e.preventDefault();
+        }
+      });
+    })();
+    </script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://donttalk.vercel.app#person","name":"JT Lai","url":"https://donttalk.vercel.app","image":"https://donttalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://donttalk.vercel.app#website","url":"https://donttalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://donttalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://donttalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/firmware/#webpage","url":"https://donttalk.vercel.app/firmware/","name":"韌體工程 · MCU Firmware · 作品集","description":"Nuvoton Nano130KE3BN Cortex-M0 韌體開發實作：TFT EBI 驅動、RGB565 顯示、Keil + J-Link 工作流，含 YouTube 完整教學播放清單。","inLanguage":"zh-TW","isPartOf":{"@id":"https://donttalk.vercel.app#website"},"about":{"@id":"https://donttalk.vercel.app#person"},"additionalType":"WebPage"}]}</script><style>#chatbot-anchor{position:fixed;bottom:90px;right:24px;z-index:500;width:80px;height:80px;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45));transition:filter .25s;will-change:transform}#chatbot-anchor:hover{filter:drop-shadow(0 8px 22px rgba(88,215,255,.45))}#chatbot-anchor:active{cursor:grabbing}#chatbot-anchor.dragging{cursor:grabbing;filter:drop-shadow(0 12px 28px rgba(88,215,255,.6))}#chatbot-anchor:focus-visible{outline:2px solid #58d7ff;outline-offset:6px;border-radius:12px}.char-3d{width:100%;height:100%;position:relative}#char-canvas{width:100%;height:100%;display:block}.char-drag-hint{position:absolute;top:-10px;right:-10px;background:#000000b3;color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;opacity:0;transform:scale(.8);transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}#chatbot-anchor:hover .char-drag-hint{opacity:1;transform:scale(1)}#chatbot-anchor.dragging .char-drag-hint{opacity:0}@keyframes bounce-gentle{0%,to{transform:translateY(0)}50%{transform:translateY(-4px)}}#pf-btn[data-astro-cid-5hce7sga]:hover #search-icon[data-astro-cid-5hce7sga]{animation:wiggle .5s ease-in-out}@keyframes wiggle{0%,to{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+</style></head> <body data-page="firmware" data-astro-cid-5hce7sga>  
+    <div data-site-nav></div>
+
+    <section class="fw-hero fw">
+        <span class="fw-eyebrow">Firmware Engineer · MCU Development</span>
+        <h1>從 Datasheet 到<br><span class="grad">實機驅動</span>的完整流程</h1>
+        <p class="sub">Nuvoton Cortex-M0 韌體開發實作：EBI 並列匯流排、RGB565 圖像顯示、精準記憶體規劃、Keil 工具鏈 + J-Link 下載。</p>
+        <div class="fw-hero-tags">
+            <span class="fw-tag accent">Cortex-M0</span>
+            <span class="fw-tag">Nano130KE3BN</span>
+            <span class="fw-tag">Keil µVision 5</span>
+            <span class="fw-tag">J-Link SWD</span>
+            <span class="fw-tag">EBI / SPI / I2C / UART</span>
+            <span class="fw-tag">RGB565</span>
+            <span class="fw-tag">128 KB Flash</span>
+            <span class="fw-tag">16 KB SRAM</span>
+        </div>
+        <div class="fw-chip-viz">
+            <svg viewBox="0 0 460 300" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="chipBg" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="#1a1f3a"/>
+                        <stop offset="1" stop-color="#0a0d1f"/>
+                    </linearGradient>
+                    <linearGradient id="traceGrad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0" stop-color="#00e5ff" stop-opacity="0"/>
+                        <stop offset=".5" stop-color="#00e5ff" stop-opacity=".9"/>
+                        <stop offset="1" stop-color="#a855f7" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <g stroke="url(#traceGrad)" stroke-width="1.5" fill="none" opacity=".7">
+                    <path d="M20 60 L140 60 L150 80"/>
+                    <path d="M20 120 L130 120 L145 140"/>
+                    <path d="M20 180 L135 180"/>
+                    <path d="M20 240 L140 240 L150 220"/>
+                    <path d="M440 60 L320 60 L310 80"/>
+                    <path d="M440 120 L330 120 L315 140"/>
+                    <path d="M440 180 L325 180"/>
+                    <path d="M440 240 L320 240 L310 220"/>
+                </g>
+                <rect x="150" y="80" width="160" height="140" rx="8" fill="url(#chipBg)" stroke="#00e5ff" stroke-width="1.5"/>
+                <rect x="162" y="92" width="136" height="116" rx="4" fill="none" stroke="#00e5ff" stroke-width=".5" opacity=".4"/>
+                <text x="230" y="140" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="14" fill="#00e5ff" font-weight="700">NANO130</text>
+                <text x="230" y="158" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#22ffa7">KE3BN</text>
+                <text x="230" y="178" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#a8b0cc" opacity=".7">Cortex-M0 · 42 MHz</text>
+                <text x="230" y="195" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="7" fill="#6b7399">128K FLASH · 16K SRAM</text>
+                <g fill="#6b7399">
+                    <rect x="140" y="95" width="10" height="3"/><rect x="140" y="110" width="10" height="3"/>
+                    <rect x="140" y="125" width="10" height="3"/><rect x="140" y="140" width="10" height="3"/>
+                    <rect x="140" y="155" width="10" height="3"/><rect x="140" y="170" width="10" height="3"/>
+                    <rect x="140" y="185" width="10" height="3"/><rect x="140" y="200" width="10" height="3"/>
+                    <rect x="310" y="95" width="10" height="3"/><rect x="310" y="110" width="10" height="3"/>
+                    <rect x="310" y="125" width="10" height="3"/><rect x="310" y="140" width="10" height="3"/>
+                    <rect x="310" y="155" width="10" height="3"/><rect x="310" y="170" width="10" height="3"/>
+                    <rect x="310" y="185" width="10" height="3"/><rect x="310" y="200" width="10" height="3"/>
+                </g>
+                <circle cx="165" cy="96" r="2" fill="#22ffa7"><animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite"/></circle>
+                <circle cx="165" cy="171" r="2" fill="#ff2d95"><animate attributeName="opacity" values="0;1;0" dur="1.5s" begin=".5s" repeatCount="indefinite"/></circle>
+                <circle cx="295" cy="126" r="2" fill="#fde047"><animate attributeName="opacity" values="0;1;0" dur="1.5s" begin="1s" repeatCount="indefinite"/></circle>
+                <text x="20" y="55" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">EBI[0:15]</text>
+                <text x="20" y="115" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">SPI0 MOSI</text>
+                <text x="20" y="175" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">I2C SDA</text>
+                <text x="20" y="235" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399">UART TX</text>
+                <text x="440" y="55" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">TFT RS</text>
+                <text x="440" y="115" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">GPIO LED</text>
+                <text x="440" y="175" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">PWM</text>
+                <text x="440" y="235" font-family="'JetBrains Mono',monospace" font-size="8" fill="#6b7399" text-anchor="end">ADC</text>
+            </svg>
+        </div>
+    </section>
+
+    <div class="fw">
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">01</span><h2>核心技術規格</h2><span class="note">bill of materials / datasheet</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">🧠</span><div class="lbl">MCU Core</div><div class="val">Cortex-M0</div><div class="sub">42 MHz · Thumb-2 · NVIC</div></div>
+                <div class="fw-spec"><span class="ico">💾</span><div class="lbl">Flash / SRAM</div><div class="val">128 KB / 16 KB</div><div class="sub">ISP · ICP · Data Flash</div></div>
+                <div class="fw-spec"><span class="ico">⚡</span><div class="lbl">Supply Voltage</div><div class="val">1.8 V – 3.6 V</div><div class="sub">-40°C to 85°C</div></div>
+                <div class="fw-spec"><span class="ico">🔌</span><div class="lbl">Display Bus</div><div class="val">EBI Parallel</div><div class="sub">memory-mapped I/O · 16/8-bit</div></div>
+                <div class="fw-spec"><span class="ico">🎨</span><div class="lbl">Pixel Format</div><div class="val">RGB565</div><div class="sub">16-bit · 2 B/px</div></div>
+                <div class="fw-spec"><span class="ico">📐</span><div class="lbl">Max Resolution</div><div class="val">200 × 220</div><div class="sub">~86 KB image payload</div></div>
+                <div class="fw-spec"><span class="ico">🛠</span><div class="lbl">Toolchain</div><div class="val">Keil + J-Link</div><div class="sub">ARMCC · ELF · SWD flash</div></div>
+                <div class="fw-spec"><span class="ico">📦</span><div class="lbl">Package</div><div class="val">LQFP 48/64/128</div><div class="sub">選 LQFP64 for EBI + LCD</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">02</span><h2>超低功耗模式</h2><span class="note">ultra-low power · wearable target</span></div>
+            <div class="fw-mem-card">
+                <h3>// NANO130 Power Profile — 設計目標：穿戴式 / 可攜式醫療量測</h3>
+                <div class="fw-mem-row">
+                    <span class="name">Normal Mode</span>
+                    <div class="bar"><div class="fill" style="animation-delay:0s;--w:100%"></div></div>
+                    <span class="pct"><b>200 μA/MHz</b></span>
+                </div>
+                <div class="fw-mem-row">
+                    <span class="name">Idle Mode</span>
+                    <div class="bar"><div class="fill" style="animation-delay:.15s"></div></div>
+                    <span class="pct"><b>75 μA/MHz</b></span>
+                </div>
+                <div class="fw-mem-row warn">
+                    <span class="name">Power-down + RTC</span>
+                    <div class="bar"><div class="fill warn" style="animation-delay:.3s"></div></div>
+                    <span class="pct"><b>2.5 μA</b></span>
+                </div>
+                <div class="fw-mem-row warn">
+                    <span class="name">Power-down + RAM</span>
+                    <div class="bar"><div class="fill warn" style="animation-delay:.45s"></div></div>
+                    <span class="pct"><b>1 μA</b></span>
+                </div>
+                <div class="fw-mem-row">
+                    <span class="name">Wake-up latency</span>
+                    <div class="bar"><div class="fill" style="animation-delay:.6s"></div></div>
+                    <span class="pct"><b>&lt; 7 μs</b></span>
+                </div>
+            </div>
+            <style>
+                .fw-mem-row .fill { animation: fwFill 1.2s cubic-bezier(.22,.61,.36,1) forwards; transform-origin: left; }
+                .fw-mem-row:nth-child(1) .fill { width: 100%; }
+                .fw-mem-row:nth-child(2) .fill { width: 37.5%; }
+                .fw-mem-row:nth-child(3) .fill { width: 1.25%; }
+                .fw-mem-row:nth-child(4) .fill { width: 0.5%; }
+                .fw-mem-row:nth-child(5) .fill { width: 8%; }
+            </style>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">03</span><h2>周邊矩陣</h2><span class="note">peripheral overview · datasheet §4</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">📡</span><div class="lbl">ADC</div><div class="val">12-ch · 12-bit</div><div class="sub">2 MSPS · 內建溫度感測器 ±1°C</div></div>
+                <div class="fw-spec"><span class="ico">🔁</span><div class="lbl">PWM</div><div class="val">4 × 16-bit</div><div class="sub">8 輸出 或 4 組互補對 · 死區控制</div></div>
+                <div class="fw-spec"><span class="ico">🖥</span><div class="lbl">LCD Controller</div><div class="val">4×40 / 6×38</div><div class="sub">COM/SEG 段碼顯示器驅動</div></div>
+                <div class="fw-spec"><span class="ico">🔗</span><div class="lbl">USB</div><div class="val">USB 2.0 FS</div><div class="sub">Full-Speed Device · 12 Mbps</div></div>
+                <div class="fw-spec"><span class="ico">🔄</span><div class="lbl">SPI</div><div class="val">× 3 ports</div><div class="sub">最高 32 MHz · Master/Slave</div></div>
+                <div class="fw-spec"><span class="ico">🔀</span><div class="lbl">I²C / UART</div><div class="val">2 / 5 ports</div><div class="sub">I²C 1 MHz · UART 1 Mbps × 2</div></div>
+                <div class="fw-spec"><span class="ico">🕐</span><div class="lbl">Oscillators</div><div class="val">4–24 MHz XTAL</div><div class="sub">12 MHz IRC (±1%) · 10 kHz IRC</div></div>
+                <div class="fw-spec"><span class="ico">🔒</span><div class="lbl">Programming</div><div class="val">ISP · ICP</div><div class="sub">Data Flash · Bootloader 支援</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">02</span><h2>記憶體預算計算機</h2><span class="note">flash budget · interactive</span></div>
+            <div class="fw-calc">
+                <div class="fw-calc-grid">
+                    <div class="fw-calc-inputs">
+                        <div class="fw-calc-field">
+                            <label>Width (px) <b id="calcWV">200</b></label>
+                            <input type="range" id="calcW" min="80" max="320" value="200">
+                        </div>
+                        <div class="fw-calc-field">
+                            <label>Height (px) <b id="calcHV">220</b></label>
+                            <input type="range" id="calcH" min="60" max="320" value="220">
+                        </div>
+                        <div class="fw-calc-field">
+                            <label style="margin-bottom:8px">Color depth</label>
+                            <div class="fw-calc-toggle">
+                                <button data-bpp="8">8-bit</button>
+                                <button data-bpp="16" class="active">16-bit RGB565</button>
+                                <button data-bpp="24">24-bit</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="fw-calc-output">
+                        <div class="fw-calc-row"><span class="name">Code / Data</span><div class="bar"><span class="fill" id="calcFillCode"></span></div><span class="pct" id="calcValCode"></span></div>
+                        <div class="fw-calc-row"><span class="name">Image</span><div class="bar"><span class="fill" id="calcFillImg"></span></div><span class="pct" id="calcValImg"></span></div>
+                        <div class="fw-calc-row"><span class="name">Total</span><div class="bar"><span class="fill" id="calcFillTotal"></span></div><span class="pct" id="calcValTotal"></span></div>
+                        <div class="fw-calc-row"><span class="name">剩餘 Flash</span><div class="bar"><span class="fill" id="calcFillRemain"></span></div><span class="pct" id="calcValRemain"></span></div>
+                        <div class="fw-calc-verdict ok" id="calcVerdict"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">04</span><h2>Flash-resident 影像 + EBI blit</h2><span class="note">img2.c · main.c</span></div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>img2.c — 200×220 RGB565 · Flash-resident</span></div>
+                <pre class="fw-code"><span class="c-cm">/* Generated from PNG via Rinky-Dink RGB565 converter
+   const 讓編譯器鎖在 Flash，零 SRAM 執行時分配 */</span>
+<span class="c-key">const</span> <span class="c-type">unsigned short</span> img2[<span class="c-num">44000</span>] = {
+    <span class="c-num">0x0000</span>, <span class="c-num">0x0000</span>, <span class="c-num">0x1082</span>, <span class="c-num">0x2965</span>, <span class="c-num">0x41A7</span>, <span class="c-num">0x62AB</span>,
+    <span class="c-num">0x832F</span>, <span class="c-num">0xA4B3</span>, <span class="c-num">0xC636</span>, <span class="c-num">0xE7BA</span>, <span class="c-num">0xFFFF</span>, <span class="c-num">0xFFDE</span>,
+    <span class="c-cm">/* ... 44 K entries, each 16-bit RGB565 pixel ... */</span>
+};</pre>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>main.c — EBI blit loop</span></div>
+                <pre class="fw-code"><span class="c-cm">/* memory-mapped I/O: 寫到 EBI address = 送一個像素到 TFT */</span>
+<span class="c-type">void</span> <span class="c-fn">tft_blit</span>(<span class="c-key">const</span> <span class="c-type">uint16_t</span> *buf, <span class="c-type">uint32_t</span> n) {
+    <span class="c-key">for</span> (<span class="c-type">uint32_t</span> i = <span class="c-num">0</span>; i &lt; n; i++) {
+        EBI_WRITE_DATA(buf[i]);    <span class="c-cm">// triggers CS/WR strobe</span>
+    }
+}
+
+<span class="c-type">int</span> <span class="c-fn">main</span>(<span class="c-type">void</span>) {
+    <span class="c-fn">SYS_Init</span>();         <span class="c-cm">// clock tree + multifunction pins</span>
+    <span class="c-fn">EBI_Open</span>(<span class="c-num">0</span>, <span class="c-num">16</span>);   <span class="c-cm">// 16-bit bus, bank 0</span>
+    <span class="c-fn">TFT_Init</span>();         <span class="c-cm">// controller reset + init sequence</span>
+    <span class="c-fn">tft_blit</span>(img2, <span class="c-num">44000</span>);
+    <span class="c-key">while</span> (<span class="c-num">1</span>) { <span class="c-fn">__WFI</span>(); } <span class="c-cm">// sleep, wake on interrupt</span>
+}</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">05</span><h2>PNG → MCU 流程</h2><span class="note">5-step toolchain</span></div>
+            <div class="fw-pipe">
+                <div class="fw-step"><div class="t">影像輸入</div><div class="d">PNG / JPG &lt; 300 KB，建議 200 × 220</div></div>
+                <div class="fw-step"><div class="t">RGB565 轉換</div><div class="d">Rinky-Dink converter 輸出 C header</div></div>
+                <div class="fw-step"><div class="t">加入專案</div><div class="d">替換 img2.c，以 const 鎖進 Flash</div></div>
+                <div class="fw-step"><div class="t">EBI 時序對齊</div><div class="d">設 tAS / tAH 匹配 TFT setup/hold</div></div>
+                <div class="fw-step"><div class="t">J-Link 下載</div><div class="d">SWD flash + 邏輯分析儀驗證</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">06</span><h2>技術難點 &amp; 解決</h2><span class="note">problem → mitigation</span></div>
+            <div class="fw-diff">
+                <div class="fw-diff-card"><div class="title">✕ Flash 空間爆表</div><div class="desc">一張 200×220 RGB565 約 86 KB，加上 code 只剩 12 KB 餘裕。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ 外掛 SPI Flash</div><div class="desc">影像搬到外部 W25Q 系列，MCU 以 SPI DMA 逐行讀取。</div></div>
+                <div class="fw-diff-card"><div class="title">✕ EBI 時序不對</div><div class="desc">TFT 亂碼或部分列遺失，通常是 setup/hold 沒對齊。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ 邏輯分析儀校正</div><div class="desc">量 CS/WR/RD 波形反推 tAS/tAH 調到穩定。</div></div>
+                <div class="fw-diff-card"><div class="title">✕ Keil 32 KB 上限</div><div class="desc">免費版無法編譯大型 image。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ PSN 註冊碼</div><div class="desc">申請免費教育版完整授權解除限制。</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">07</span><h2>RGB565 互動計算機</h2><span class="note">即時轉換 · 位元視覺化</span></div>
+            <div class="fw-rgb-wrap">
+                <div class="fw-rgb-sliders">
+                    <div class="fw-rgb-field">
+                        <label>R（5-bit · bits [15:11]）</label>
+                        <div class="fw-rgb-slider-row">
+                            <input type="range" id="rgbR" min="0" max="31" value="15">
+                            <input type="number" id="rgbRn" min="0" max="31" value="15">
+                        </div>
+                    </div>
+                    <div class="fw-rgb-field">
+                        <label>G（6-bit · bits [10:5]）</label>
+                        <div class="fw-rgb-slider-row">
+                            <input type="range" id="rgbG" min="0" max="63" value="32">
+                            <input type="number" id="rgbGn" min="0" max="63" value="32">
+                        </div>
+                    </div>
+                    <div class="fw-rgb-field">
+                        <label>B（5-bit · bits [4:0]）</label>
+                        <div class="fw-rgb-slider-row">
+                            <input type="range" id="rgbB" min="0" max="31" value="15">
+                            <input type="number" id="rgbBn" min="0" max="31" value="15">
+                        </div>
+                    </div>
+                </div>
+                <div class="fw-rgb-out">
+                    <div class="fw-rgb-preview" id="rgbPreview"></div>
+                    <div class="fw-rgb-row"><span>HEX 16-bit</span><code id="rgbHex">0x7BEF</code></div>
+                    <div class="fw-rgb-row"><span>C literal</span><code id="rgbC">0x7BEFU</code></div>
+                    <div class="fw-rgb-row"><span>RGB888</span><code id="rgb888">#787878</code></div>
+                    <div class="fw-rgb-bits" id="rgbBits"></div>
+                    <div class="fw-bit-legend">
+                        <span class="lr">R[4:0]</span><span class="lg">G[5:0]</span><span class="lb">B[4:0]</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">08</span><h2>EBI 時序波形</h2><span class="note">WRITE / READ cycle · tAS / tAH</span></div>
+            <div class="fw-timing">
+                <div class="fw-timing-head">
+                    <span class="fw-timing-title">// EBI bus cycle @ 42 MHz HCLK (23.8 ns/cycle)</span>
+                    <div class="fw-timing-toggle">
+                        <button data-cycle="write" class="active">WRITE</button>
+                        <button data-cycle="read">READ</button>
+                    </div>
+                </div>
+                <svg id="fwTimingSvg" viewBox="0 0 580 270" xmlns="http://www.w3.org/2000/svg" style="background:#07091a;border-radius:8px">
+                    <defs>
+                        <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6b7399"/></marker>
+                        <marker id="arrl" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse"><path d="M0,0 L6,3 L0,6 Z" fill="#6b7399"/></marker>
+                    </defs>
+                    <!-- labels -->
+                    <text x="78" y="42"  text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">CS_n</text>
+                    <text x="78" y="102" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3" id="fwSig2Lbl">WR_n</text>
+                    <text x="78" y="162" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">RS</text>
+                    <text x="78" y="222" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" fill="#8c95b3">D[15:0]</text>
+                    <!-- CS_n (shared) -->
+                    <polyline points="88,24 130,24 130,56 430,56 430,24 560,24" fill="none" stroke="#00e5ff" stroke-width="1.8"/>
+                    <!-- Strobe signal (WR_n / RD_n): toggled by JS -->
+                    <polyline id="fwStrobeLine" points="88,84 200,84 200,116 340,116 340,84 560,84" fill="none" stroke="#22ffa7" stroke-width="1.8"/>
+                    <!-- RS: stays HIGH -->
+                    <line x1="88" y1="144" x2="560" y2="144" stroke="#a855f7" stroke-width="1.8"/>
+                    <!-- DATA group: write vs read swapped by JS -->
+                    <g id="fwDataWrite">
+                        <polyline points="88,214 88,230 200,230" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <rect x="200" y="206" width="140" height="32" rx="4" fill="rgba(253,224,71,.08)" stroke="#fde047" stroke-width="1.8"/>
+                        <text x="270" y="226" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#fde047">DATA VALID (output)</text>
+                        <polyline points="340,230 390,230 390,214" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <line x1="390" y1="222" x2="560" y2="222" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                    </g>
+                    <g id="fwDataRead" style="display:none">
+                        <line x1="88" y1="222" x2="230" y2="222" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <rect x="230" y="206" width="130" height="32" rx="4" fill="rgba(253,224,71,.08)" stroke="#fde047" stroke-width="1.8"/>
+                        <text x="295" y="226" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#fde047">DATA VALID (input)</text>
+                        <polyline points="360,230 400,230 400,214" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                        <line x1="400" y1="222" x2="560" y2="222" stroke="#fde047" stroke-width="1.5" stroke-dasharray="4,3"/>
+                    </g>
+                    <!-- tAS -->
+                    <line x1="130" y1="245" x2="200" y2="245" stroke="#6b7399" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)"/>
+                    <text x="165" y="258" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#6b7399">tAS</text>
+                    <!-- tAH -->
+                    <line x1="340" y1="245" x2="390" y2="245" stroke="#6b7399" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)" id="fwTahLine"/>
+                    <text x="365" y="258" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#6b7399">tAH</text>
+                    <!-- strobe width -->
+                    <line x1="200" y1="132" x2="340" y2="132" stroke="#22ffa7" stroke-width="1" marker-start="url(#arrl)" marker-end="url(#arr)" opacity=".6" id="fwDlyLine"/>
+                    <text x="270" y="143" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#22ffa7" opacity=".8" id="fwDlyLbl">W_DLY</text>
+                </svg>
+                <div class="fw-timing-readout" id="fwTimingReadout">
+                    <div><span class="k">tAS</span> — <span class="v good" id="fwRtAs">2 × HCLK = 47.6 ns</span></div>
+                    <div><span class="k" id="fwRtDlyK">W_DLY</span> — <span class="v good" id="fwRtDly">6 × HCLK = 142.8 ns</span></div>
+                    <div><span class="k">tAH</span> — <span class="v good" id="fwRtAh">2 × HCLK = 47.6 ns</span></div>
+                    <div><span class="k">cycle</span> — <span class="v" id="fwRtCycle">~10 × HCLK = 238 ns</span></div>
+                </div>
+            </div>
+            <div class="fw-reg-wrap" style="margin-top:16px">
+                <table class="fw-reg-table">
+                    <thead>
+                        <tr><th>Register</th><th>Offset</th><th>Reset</th><th>Key Fields</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="rname">EBI_CTL</td><td class="rval">0x00</td><td class="rval">0x0000_0000</td><td class="rdesc">ENABLE[0]：EBI 致能；DATA_WIDTH[17:16]：匯流排寬度（00=8b, 01=16b）</td></tr>
+                        <tr><td class="rname">EBI_TCTL0</td><td class="rval">0x04</td><td class="rval">0x03FF_FFFF</td><td class="rdesc">tAS[27:24]：address setup；tAH[19:16]：address hold；W_DLY[11:8]：WR 脈寬（× HCLK）</td></tr>
+                        <tr><td class="rname">SYS_GPA_MFP</td><td class="rval">SYS+0x30</td><td class="rval">0x0000_0000</td><td class="rdesc">PA[15:0] multifunction：設為 EBI bus，覆蓋 GPIO 預設值</td></tr>
+                        <tr><td class="rname">SYS_GPB_MFP</td><td class="rval">SYS+0x34</td><td class="rval">0x0000_0000</td><td class="rdesc">PB[10:8] → EBI_ALE / CS0 / WR；PB[7] → EBI_RD</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">09</span><h2>理論基礎 — MIT 6.004 計算機結構</h2><span class="note">Computation Structures · Cortex-M0 原理對應</span></div>
+            <div class="fw-callout" style="margin-bottom:20px">
+                <h3>為什麼看 6.004？</h3>
+                <p>
+                    MIT 6.004《Computation Structures》從數位邏輯、有限狀態機、到 Beta RISC 處理器的完整設計，
+                    正是理解 Cortex-M0 如何執行 Thumb-2 指令的理論骨架——
+                    Fetch → Decode → Execute 三級管線、暫存器檔案、ALU 設計、記憶體映射 I/O（MMIO）
+                    在 Nano130 的 EBI 實作中都有直接對應。
+                    第 13 講深入有限狀態機（FSM），
+                    是理解韌體 State Machine Pattern 的理論起點。
+                </p>
+            </div>
+            <div class="fw-yt" style="margin-bottom:16px">
+                <iframe src="https://www.youtube.com/embed/EvhITMTTl48?list=PLUl_fzAL8tWIqU_zk0u1_18sf1LF-ym91" title="MIT 6.004 Lecture 13 — Finite State Machines" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div class="fw-pipe" style="margin-top:16px">
+                <div class="fw-step"><div class="t">數位邏輯 → GPIO</div><div class="d">組合邏輯閘映射到 Nano130 的 PA/PB multifunction 腳位設定</div></div>
+                <div class="fw-step"><div class="t">FSM → 韌體狀態機</div><div class="d">6.004 FSM 模型直接對應 display init state machine（RESET → CMD → DATA → IDLE）</div></div>
+                <div class="fw-step"><div class="t">Beta ISA → Thumb-2</div><div class="d">Beta 32-bit RISC 與 Cortex-M0 Thumb-2 16/32-bit 混合 ISA 的結構對比</div></div>
+                <div class="fw-step"><div class="t">MMIO → EBI Write</div><div class="d">6.004 的 memory-mapped I/O 概念直接解釋 EBI_WRITE_DATA() 為何等同「送像素」</div></div>
+                <div class="fw-step"><div class="t">中斷 → NVIC</div><div class="d">Cortex-M0 NVIC 優先權仲裁對應 6.004 的中斷向量與 supervisor call</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">10</span><h2>完整韌體教學播放清單</h2><span class="note">YouTube · Nano MCU series</span></div>
+            <div class="fw-yt">
+                <iframe src="https://www.youtube.com/embed/videoseries?list=PLUl_fzAL8tWIqU_zk0u1_18sf1LF-ym91" title="Nuvoton Firmware Playlist" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">11</span><h2>技術文章</h2><span class="note">blog</span></div>
+            <div class="fw-articles">
+                <a href="https://jtlai0921.wixsite.com/mysite/post/%E7%8C%B4%E5%AD%90%E9%83%BD%E8%83%BD%E8%AE%80%E6%87%82%E7%9A%84%E7%94%A8tft%E9%A1%AF%E7%A4%BA%E5%9C%96%E7%89%87" target="_blank" rel="noopener"><span class="bullet">01 ▸</span><span class="title">猴子都能讀懂：用 TFT 顯示圖片（EBI + RGB565 完整教學）</span><span class="arrow">↗</span></a>
+                <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noopener"><span class="bullet">02 ▸</span><span class="title">更多韌體與工程筆記 · 個人部落格</span><span class="arrow">↗</span></a>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">12</span><h2>跨域延伸</h2><span class="note">DSP × biomed</span></div>
+            <div class="fw-callout">
+                <h3>從 Bit 到分子：一條完整的工程線</h3>
+                <p>以韌體底層為基礎，整合生醫研究專業：MCU 上實作 ECG / PPG 訊號 FIR / IIR 濾波、心率擷取演算法，結合站內已展示的 <a href="/report">蛋白質 AI</a>、<a href="/ngs">NGS</a>、<a href="/gene-ai">基因 AI</a> 平台，形成「硬體 ↔ 韌體 ↔ 演算法 ↔ 系統」同一條技術線。</p>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">13</span><h2>NVIC 向量中斷控制器</h2><span class="note">Nested Vectored Interrupt Controller · Cortex-M0</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">⚡</span><div class="lbl">中斷通道</div><div class="val">32 個外部 IRQ</div><div class="sub">+ 16 個系統例外（HardFault / SysTick …）</div></div>
+                <div class="fw-spec"><span class="ico">🎯</span><div class="lbl">優先級位元</div><div class="val">2-bit（4 級）</div><div class="sub">M0 最小化實作 · 低延遲搶佔</div></div>
+                <div class="fw-spec"><span class="ico">🕐</span><div class="lbl">進入延遲</div><div class="val">12 cycles</div><div class="sub">自動 push 8 個暫存器 → 無需 prologue</div></div>
+                <div class="fw-spec"><span class="ico">🔒</span><div class="lbl">Tail-chaining</div><div class="val">6 cycles</div><div class="sub">連續 ISR 切換省去 push/pop overhead</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>irq_setup.c — EBI / GPIO 中斷配置</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 啟用 EINT0（EBI 資料就緒信號）與 UART0 接收中斷 */</span>
+NVIC_SetPriority(EINT0_IRQn, <span class="c-num">0</span>);   <span class="c-cm">/* 最高優先 — 顯示撕裂修復 */</span>
+NVIC_SetPriority(UART0_IRQn, <span class="c-num">1</span>);
+NVIC_EnableIRQ(EINT0_IRQn);
+NVIC_EnableIRQ(UART0_IRQn);
+
+<span class="c-type">void</span> <span class="c-fn">EINT0_IRQHandler</span>(<span class="c-type">void</span>) {
+    GPIO_CLR_INT_FLAG(PB, BIT14);     <span class="c-cm">/* 清 pending bit */</span>
+    <span class="c-fn">tft_vsync_cb</span>();                   <span class="c-cm">/* 觸發下一幀 blit */</span>
+}</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">14</span><h2>PDMA 直接記憶體傳輸</h2><span class="note">Peripheral DMA · zero-CPU pixel blit</span></div>
+            <div class="fw-callout">
+                <h3>為什麼需要 PDMA？</h3>
+                <p>CPU 迴圈搬運 44,000 個像素（200×220）需要 ~88,000 個 load/store cycle，佔滿 2 ms。改用 PDMA burst-transfer 讓 CPU 在搬圖期間執行其他任務（ADC 採樣、UART 輸出），有效實現「軟性多工」。</p>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>pdma_blit.c — Flash → EBI 零 CPU 傳輸</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 設定 PDMA Ch0：Flash 圖陣 → EBI data 暫存器 */</span>
+PDMA_Open(<span class="c-num">1</span> &lt;&lt; <span class="c-num">0</span>);
+PDMA_SetTransferCnt(PDMA, <span class="c-num">0</span>, PDMA_WIDTH_16, <span class="c-num">44000</span>);
+PDMA_SetTransferAddr(PDMA, <span class="c-num">0</span>,
+    (<span class="c-type">uint32_t</span>)img2,          PDMA_SAR_INC,  <span class="c-cm">/* src: Flash array */</span>
+    EBI_BANK0_BASE_ADDR,    PDMA_DAR_FIX); <span class="c-cm">/* dst: TFT EBI 位址（固定） */</span>
+PDMA_SetBurstType(PDMA, <span class="c-num">0</span>, PDMA_REQ_BURST, PDMA_BURST_128);
+PDMA_EnableInt(PDMA, <span class="c-num">0</span>, PDMA_INT_TRANS_DONE);
+NVIC_EnableIRQ(PDMA_IRQn);
+PDMA_Trigger(PDMA, <span class="c-num">0</span>);  <span class="c-cm">/* 啟動 — CPU 可繼續跑其他邏輯 */</span></pre>
+            </div>
+            <div class="fw-diff">
+                <div class="fw-diff-card"><div class="title">✕ CPU 迴圈搬運</div><div class="desc">~88,000 cycle · CPU 100% 忙碌 · UART / ADC 延遲 2 ms 以上</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ PDMA Burst-128</div><div class="desc">~690 cycle 觸發後 CPU 釋放 · 傳完觸發 IRQ 通知主迴圈</div></div>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">15</span><h2>Timer / BPWM 多頻道配置</h2><span class="note">backlight · heartbeat LED · scan clock</span></div>
+            <div class="fw-specgrid">
+                <div class="fw-spec"><span class="ico">🕐</span><div class="lbl">Timer 0 / 1</div><div class="val">系統節拍 1 ms</div><div class="sub">SysTick + 應用層軟體 timer 佇列</div></div>
+                <div class="fw-spec"><span class="ico">🔄</span><div class="lbl">Timer 2</div><div class="val">ADC 觸發 250 Hz</div><div class="sub">每 4 ms 啟動一次 ECG/PPG 採樣</div></div>
+                <div class="fw-spec"><span class="ico">💡</span><div class="lbl">BPWM0 Ch0</div><div class="val">LCD 背光 500 Hz</div><div class="sub">Duty 0–100% 調光 · 低頻閃爍避免感測雜訊</div></div>
+                <div class="fw-spec"><span class="ico">❤️</span><div class="lbl">BPWM0 Ch1</div><div class="val">心跳 LED 1 Hz</div><div class="sub">互補輸出 · dead-band 200 ns 防橋臂直通</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>pwm_init.c — 背光 + ADC 觸發配置</span></div>
+                <pre class="fw-code"><span class="c-cm">/* BPWM0 Ch0: LCD 背光 500 Hz，初始 duty 80% */</span>
+BPWM_ConfigOutputChannel(BPWM0, <span class="c-num">0</span>,
+    <span class="c-num">500</span>,   <span class="c-cm">/* freq Hz  */</span>
+    <span class="c-num">80</span>);   <span class="c-cm">/* duty %   */</span>
+BPWM_EnableOutput(BPWM0, BPWM_CH_0_MASK);
+BPWM_Start(BPWM0, BPWM_CH_0_MASK);
+
+<span class="c-cm">/* Timer2: 每 4 ms 觸發 ADC（250 SPS for ECG） */</span>
+TIMER_Open(TIMER2, TIMER_PERIODIC_MODE, <span class="c-num">250</span>);
+TIMER_SetTriggerSource(TIMER2, TIMER_TRGSRC_TIMEOUT_EVENT);
+TIMER_SetTriggerTarget(TIMER2, TIMER_TRG_TO_ADC);
+TIMER_Start(TIMER2);</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">16</span><h2>SPI Flash 外部影像儲存</h2><span class="note">W25Q64 · 64 Mbit · XIP-ready</span></div>
+            <div class="fw-diff">
+                <div class="fw-diff-card"><div class="title">✕ 影像鎖在 MCU Flash</div><div class="desc">128 KB 只能放 1 張 200×220（86 KB），程式碼加 heap 幾乎爆表，無法做多圖輪播。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ 外掛 W25Q64 SPI Flash</div><div class="desc">64 Mbit = 8 MB，可存 ~93 張全彩圖，透過 SPI0 以 32 MHz DMA 讀取，每幀 &lt;3 ms。</div></div>
+                <div class="fw-diff-card"><div class="title">✕ SPI 讀取阻塞 CPU</div><div class="desc">同步輪詢 64 KB Sector 讀取需 ~5 ms 忙等待，顯示幀率下降。</div></div>
+                <div class="fw-diff-card solve"><div class="title">✓ SPI + PDMA double-buffer</div><div class="desc">前景顯示 buf[0] 時，PDMA 搬 buf[1]；切換時 swap pointer，CPU 始終零等待。</div></div>
+            </div>
+            <div class="fw-code-wrap">
+                <div class="fw-code-bar"><span class="fw-dots"><span></span><span></span><span></span></span><span>spi_flash.c — W25Q64 讀取啟動</span></div>
+                <pre class="fw-code"><span class="c-cm">/* 發 Read Data (0x03) 指令，從 sector 0 讀 86 KB */</span>
+<span class="c-type">void</span> <span class="c-fn">spiflash_read</span>(<span class="c-type">uint32_t</span> addr, <span class="c-type">uint8_t</span> *dst, <span class="c-type">uint32_t</span> len) {
+    SPI_SET_SS_LOW(SPI0);
+    <span class="c-fn">SPI_WriteData</span>(SPI0, <span class="c-num">0x03</span>);           <span class="c-cm">/* Read cmd */</span>
+    <span class="c-fn">SPI_WriteData</span>(SPI0, (addr &gt;&gt; <span class="c-num">16</span>) &amp; <span class="c-num">0xFF</span>);
+    <span class="c-fn">SPI_WriteData</span>(SPI0, (addr &gt;&gt;  <span class="c-num">8</span>) &amp; <span class="c-num">0xFF</span>);
+    <span class="c-fn">SPI_WriteData</span>(SPI0,  addr        &amp; <span class="c-num">0xFF</span>);
+    PDMA_SetTransferAddr(PDMA, <span class="c-num">1</span>,
+        SPI0_BASE + <span class="c-num">0x20</span>, PDMA_SAR_FIX,  <span class="c-cm">/* SPI RX FIFO */</span>
+        (<span class="c-type">uint32_t</span>)dst,      PDMA_DAR_INC);
+    PDMA_SetTransferCnt(PDMA, <span class="c-num">1</span>, PDMA_WIDTH_8, len);
+    PDMA_Trigger(PDMA, <span class="c-num">1</span>);
+}</pre>
+            </div>
+        </section>
+
+        <section class="fw-section">
+            <div class="fw-section-head"><span class="fw-section-num">17</span><h2>完整系統主迴圈架構</h2><span class="note">boot → init → main loop · full picture</span></div>
+            <div class="fw-callout">
+                <h3>從上電到畫面：完整啟動流程</h3>
+                <p>NANO130 上電後執行 ROM Bootloader 自我測試，跳入使用者 Reset Handler，依序初始化時脈樹（PLL → HCLK 42 MHz）、周邊（EBI / SPI / ADC / BPWM / PDMA）、TFT 驅動 IC 初始化序列，最後進入主迴圈。</p>
+            </div>
+            <div class="fw-steps">
+                <div class="fw-step"><div class="t">Power-on Reset + ROM Bootloader</div><div class="d">自我測試 Flash CRC、讀取 Config0 Boot 設定（ISP / ICP / User Flash），決定跳轉目標。</div></div>
+                <div class="fw-step"><div class="t">CLK_SetCoreClock(42000000)</div><div class="d">外部 12 MHz XTAL → PLL × 3.5 → 42 MHz HCLK。PCLK = HCLK / 2 = 21 MHz 供 ADC / SPI。</div></div>
+                <div class="fw-step"><div class="t">周邊初始化</div><div class="d">EBI 時序（tAS=2, tAH=1, tACC=6）→ SPI0 32 MHz → BPWM0 500 Hz → Timer2 250 Hz ADC trigger → PDMA Ch0/1 → NVIC 優先級。</div></div>
+                <div class="fw-step"><div class="t">TFT ILI9225 驅動初始化</div><div class="d">透過 EBI 發送 ~20 條暫存器設定指令（電源、Gamma、掃描方向、色彩模式 RGB565），等待 120 ms Vcom 穩定。</div></div>
+                <div class="fw-step"><div class="t">主迴圈 — while(1)</div><div class="d">PDMA 搬圖（非阻塞）→ ADC 結果處理（ECG/PPG）→ UART 輸出數據 → 低功耗 Sleep 等 SysTick 喚醒（1 ms），迴圈週期 &lt; 4 ms。</div></div>
+            </div>
+        </section>
+    </div>
+
+    <hr class="divider" style="margin-top:60px">
+    <div data-site-footer></div>
+    <button class="scroll-top" aria-label="返回頂部">↑</button>
+    <script>
+    // Flash budget calculator
+    (function () {
+        const w = document.getElementById('calcW'), wv = document.getElementById('calcWV');
+        const h = document.getElementById('calcH'), hv = document.getElementById('calcHV');
+        const btns = document.querySelectorAll('[data-bpp]');
+        if (!w) return;
+        let bpp = 16;
+        const CODE = 30, FLASH = 128;
+        function bar(id, ratio, warn) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.style.width = Math.min(100, ratio * 100).toFixed(1) + '%';
+            el.style.background = warn ? 'var(--accent-amber,#fde047)' : 'var(--accent-cyan,#00e5ff)';
+        }
+        function run() {
+            const wd = +w.value, ht = +h.value;
+            const imgKB = Math.ceil(wd * ht * bpp / 8 / 1024);
+            const tot = CODE + imgKB, rem = FLASH - tot;
+            wv.textContent = wd; hv.textContent = ht;
+            bar('calcFillCode',   CODE / FLASH, false);
+            bar('calcFillImg',    imgKB / FLASH, imgKB > 90);
+            bar('calcFillTotal',  tot / FLASH,   tot > FLASH * 0.88);
+            bar('calcFillRemain', Math.max(0, rem) / FLASH, rem < 10);
+            document.getElementById('calcValCode').textContent   = CODE   + ' / ' + FLASH + ' KB';
+            document.getElementById('calcValImg').textContent    = imgKB  + ' / ' + FLASH + ' KB';
+            document.getElementById('calcValTotal').textContent  = tot    + ' / ' + FLASH + ' KB';
+            document.getElementById('calcValRemain').textContent = rem    + ' KB';
+            const v = document.getElementById('calcVerdict');
+            if (rem < 0)   { v.className = 'fw-calc-verdict bad';  v.textContent = '✕ 超出 Flash ' + (-rem) + ' KB — 需外掛 SPI Flash 或降低解析度'; }
+            else if (rem < 10) { v.className = 'fw-calc-verdict warn'; v.textContent = '⚠ 僅剩 ' + rem + ' KB — 建議保留 ≥ 12 KB 供 ISR + heap'; }
+            else               { v.className = 'fw-calc-verdict ok';   v.textContent = '✓ 餘裕 ' + rem + ' KB — Flash 規劃合理'; }
+        }
+        [w, h].forEach(el => el.addEventListener('input', run));
+        btns.forEach(btn => btn.addEventListener('click', () => {
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            bpp = +btn.dataset.bpp;
+            run();
+        }));
+        run();
+    })();
+
+    // RGB565 calculator
+    (function () {
+        const r = document.getElementById('rgbR'), rn = document.getElementById('rgbRn');
+        const g = document.getElementById('rgbG'), gn = document.getElementById('rgbGn');
+        const b = document.getElementById('rgbB'), bn = document.getElementById('rgbBn');
+        if (!r) return;
+        function update() {
+            const rv = +r.value, gv = +g.value, bv = +b.value;
+            const val = (rv << 11) | (gv << 5) | bv;
+            const hex = '0x' + val.toString(16).toUpperCase().padStart(4, '0');
+            const r8 = Math.round(rv * 255 / 31), g8 = Math.round(gv * 255 / 63), b8 = Math.round(bv * 255 / 31);
+            document.getElementById('rgbPreview').style.background = `rgb(${r8},${g8},${b8})`;
+            document.getElementById('rgbHex').textContent = hex;
+            document.getElementById('rgbC').textContent = hex + 'U';
+            document.getElementById('rgb888').textContent = '#' + [r8, g8, b8].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+            const bits = document.getElementById('rgbBits');
+            bits.innerHTML = '';
+            for (let i = 15; i >= 0; i--) {
+                const span = document.createElement('span');
+                span.className = 'fw-bit';
+                const on = (val >> i) & 1;
+                span.textContent = on;
+                if (i >= 11) span.classList.add(on ? 'r1' : 'off');
+                else if (i >= 5) span.classList.add(on ? 'g1' : 'off');
+                else span.classList.add(on ? 'b1' : 'off');
+                bits.appendChild(span);
+            }
+        }
+        [[r, rn], [g, gn], [b, bn]].forEach(([sl, num]) => {
+            sl.addEventListener('input', () => { num.value = sl.value; update(); });
+            num.addEventListener('input', () => { sl.value = num.value; update(); });
+        });
+        update();
+    })();
+
+    // EBI timing toggle
+    (function () {
+        const btns = document.querySelectorAll('[data-cycle]');
+        if (!btns.length) return;
+        const CYCLES = {
+            write: {
+                strobePts: '88,84 200,84 200,116 340,116 340,84 560,84',
+                strobeLabel: 'WR_n',
+                dlyLabel: 'W_DLY',
+                tahX1: 340, tahX2: 390,
+                dlyX1: 200, dlyX2: 340,
+                readout: { dlyK: 'W_DLY', dly: '6 × HCLK = 142.8 ns', cycle: '~10 × HCLK = 238 ns' }
+            },
+            read: {
+                strobePts: '88,84 200,84 200,116 360,116 360,84 560,84',
+                strobeLabel: 'RD_n',
+                dlyLabel: 'R_DLY',
+                tahX1: 360, tahX2: 410,
+                dlyX1: 200, dlyX2: 360,
+                readout: { dlyK: 'R_DLY', dly: '6 × HCLK = 142.8 ns', cycle: '~11 × HCLK = 262 ns' }
+            }
+        };
+        function apply(mode) {
+            const c = CYCLES[mode];
+            document.getElementById('fwStrobeLine').setAttribute('points', c.strobePts);
+            document.getElementById('fwSig2Lbl').textContent = c.strobeLabel;
+            document.getElementById('fwDlyLbl').textContent = c.dlyLabel;
+            document.getElementById('fwDlyLine').setAttribute('x1', c.dlyX1);
+            document.getElementById('fwDlyLine').setAttribute('x2', c.dlyX2);
+            document.getElementById('fwTahLine').setAttribute('x1', c.tahX1);
+            document.getElementById('fwTahLine').setAttribute('x2', c.tahX2);
+            document.getElementById('fwDataWrite').style.display = mode === 'write' ? '' : 'none';
+            document.getElementById('fwDataRead').style.display  = mode === 'read'  ? '' : 'none';
+            document.getElementById('fwRtDlyK').textContent  = c.readout.dlyK;
+            document.getElementById('fwRtDly').textContent   = c.readout.dly;
+            document.getElementById('fwRtCycle').textContent = c.readout.cycle;
+        }
+        btns.forEach(btn => btn.addEventListener('click', () => {
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            apply(btn.dataset.cycle);
+        }));
+        apply('write');
+    })();
+
+    // Scroll reveal
+    (function () {
+        if (!('IntersectionObserver' in window)) return;
+        document.querySelector('.fw')?.classList.add('fw-animate');
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('fw-visible'); io.unobserve(e.target); } });
+        }, { threshold: 0.08 });
+        document.querySelectorAll('.fw-section').forEach(el => io.observe(el));
+    })();
+    </script>
+    <vercel-analytics data-props="{&quot;data-astro-cid-5hce7sga&quot;:true}" data-params="{}" data-pathname="/firmware/"></vercel-analytics> <script type="module">var v=()=>{window.va||(window.va=function(...i){window.vaq||(window.vaq=[]),window.vaq.push(i)})},w="@vercel/analytics",h="2.0.1";function f(){return typeof window<"u"}function l(){try{const e="production"}catch{}return"production"}function m(e="auto"){if(e==="auto"){window.vam=l();return}window.vam=e}function y(){return(f()?window.vam:l())||"production"}function d(){return y()==="development"}function b(e,i){if(!e||!i)return e;let n=e;try{const t=Object.entries(i);for(const[r,s]of t)if(!Array.isArray(s)){const o=u(s);o.test(n)&&(n=n.replace(o,`/[${r}]`))}for(const[r,s]of t)if(Array.isArray(s)){const o=u(s.join("/"));o.test(n)&&(n=n.replace(o,`/[...${r}]`))}return n}catch{return e}}function u(e){return new RegExp(`/${g(e)}(?=[/?#]|$)`)}function g(e){return e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function E(e){return e.scriptSrc?a(e.scriptSrc):d()?"https://va.vercel-scripts.com/v1/script.debug.js":e.basePath?a(`${e.basePath}/insights/script.js`):"/_vercel/insights/script.js"}function k(e,i){var n;let t=e;if(i)try{t={...(n=JSON.parse(i))==null?void 0:n.analytics,...e}}catch{}m(t.mode);const r={sdkn:w+(t.framework?`/${t.framework}`:""),sdkv:h};return t.disableAutoTrack&&(r.disableAutoTrack="1"),t.viewEndpoint&&(r.viewEndpoint=a(t.viewEndpoint)),t.eventEndpoint&&(r.eventEndpoint=a(t.eventEndpoint)),t.sessionEndpoint&&(r.sessionEndpoint=a(t.sessionEndpoint)),d()&&t.debug===!1&&(r.debug="false"),t.dsn&&(r.dsn=t.dsn),t.endpoint?r.endpoint=t.endpoint:t.basePath&&(r.endpoint=a(`${t.basePath}/insights`)),{beforeSend:t.beforeSend,src:E(t),dataset:r}}function a(e){return e.startsWith("http://")||e.startsWith("https://")||e.startsWith("/")?e:`/${e}`}function S(e={debug:!0},i){var n;if(!f())return;const{beforeSend:t,src:r,dataset:s}=k(e,i);if(v(),t&&((n=window.va)==null||n.call(window,"beforeSend",t)),document.head.querySelector(`script[src*="${r}"]`))return;const o=document.createElement("script");o.src=r;for(const[c,p]of Object.entries(s))o.dataset[c]=p;o.defer=!0,o.onerror=()=>{const c=d()?"Please check if any ad blockers are enabled and try again.":"Be sure to enable Web Analytics for your project and deploy again. See https://vercel.com/docs/analytics/quickstart for more information.";console.log(`[Vercel Web Analytics] Failed to load script from ${r}. ${c}`)},document.head.appendChild(o)}function $({route:e,path:i}){var n;(n=window.va)==null||n.call(window,"pageview",{route:e,path:i})}function A(){try{return}catch{}}function j(){try{return}catch{}}customElements.define("vercel-analytics",class extends HTMLElement{constructor(){super();try{const i=JSON.parse(this.dataset.props??"{}"),n=JSON.parse(this.dataset.params??"{}");S({...i,disableAutoTrack:!0,framework:"astro",basePath:A(),beforeSend:window.webAnalyticsBeforeSend},j());const t=this.dataset.pathname;$({route:b(t??"",n),path:t})}catch(i){throw new Error(`Failed to parse WebAnalytics properties: ${i}`)}}});</script> <!-- ── Search modal (Pagefind) ── --> <div id="pf-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:10vh" data-astro-cid-5hce7sga> <div style="background:var(--bg,#0d1117);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;width:min(640px,90vw);max-height:70vh;overflow:hidden;display:flex;flex-direction:column" data-astro-cid-5hce7sga> <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border,rgba(255,255,255,.08))" data-astro-cid-5hce7sga> <span style="color:var(--muted,#8b949e);font-size:1.1rem" data-astro-cid-5hce7sga>🔍</span> <input id="pf-input" placeholder="搜尋頁面內容…" autocomplete="off" spellcheck="false" style="flex:1;background:none;border:none;outline:none;font-size:1rem;color:var(--text,#e6edf3);font-family:inherit" data-astro-cid-5hce7sga> <kbd style="font-size:.75rem;color:var(--muted,#8b949e);border:1px solid var(--border,rgba(255,255,255,.12));border-radius:4px;padding:2px 6px" data-astro-cid-5hce7sga>Esc</kbd> </div> <div id="pf-results" style="overflow-y:auto;padding:8px 0;flex:1" data-astro-cid-5hce7sga></div> </div> </div> <!-- Search trigger button (bottom-right) - 簡單放大鏡 --> <button id="pf-btn" title="搜尋 (Ctrl+K)" aria-label="搜尋" style="position:fixed;bottom:24px;right:24px;z-index:400;background:linear-gradient(135deg,#58d7ff,#7bf0be);border:none;border-radius:50%;width:56px;height:56px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 16px rgba(88,215,255,.35);overflow:visible" onmouseover="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(88,215,255,.55)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 16px rgba(88,215,255,.35)'" data-astro-cid-5hce7sga> <svg id="search-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:26px;height:26px;display:block" data-astro-cid-5hce7sga> <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="#0a1116" stroke-width="2.2" data-astro-cid-5hce7sga></circle> <line x1="15.5" y1="15.5" x2="20.5" y2="20.5" stroke="#0a1116" stroke-width="2.5" stroke-linecap="round" data-astro-cid-5hce7sga></line> </svg> </button>  <script>
+    (function() {
+      const modal  = document.getElementById('pf-modal');
+      const input  = document.getElementById('pf-input');
+      const results= document.getElementById('pf-results');
+      const btn    = document.getElementById('pf-btn');
+      let pf = null, debounce = null;
+
+      async function openModal() {
+        modal.style.display = 'flex';
+        input.focus();
+        if (!pf) {
+          try {
+            pf = await import('/pagefind/pagefind.js');
+            await pf.init();
+          } catch(e) { results.innerHTML = '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">搜尋索引尚未建立（需要先 build）。</p>'; pf = null; }
+        }
+      }
+      function closeModal() { modal.style.display = 'none'; input.value = ''; results.innerHTML = ''; }
+
+      async function doSearch(q) {
+        if (!pf || !q.trim()) { results.innerHTML = ''; return; }
+        const sr = await pf.search(q);
+        const items = await Promise.all(sr.results.slice(0, 8).map(r => r.data()));
+        results.innerHTML = items.length
+          ? items.map(d => `<a href="${d.url}" style="display:block;padding:10px 18px;text-decoration:none;color:var(--text,#e6edf3);border-bottom:1px solid var(--border,rgba(255,255,255,.05));transition:background .1s" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
+              <div style="font-size:.9rem;font-weight:600;margin-bottom:3px">${d.meta?.title || d.url}</div>
+              <div style="font-size:.78rem;color:#8b949e">${d.excerpt}</div>
+            </a>`).join('')
+          : '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">找不到結果。</p>';
+      }
+
+      btn.addEventListener('click', openModal);
+      modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+      document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openModal(); }
+        if (e.key === 'Escape') closeModal();
+      });
+      input.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => doSearch(input.value), 250);
+      });
+    })();
+    </script> <!-- Site-wide 3D chatbot assistant --> <!-- AI 助手 3D 人偶按鈕（可拖曳 + 滑鼠 3D 追蹤） --><div id="chatbot-anchor" aria-label="AI 助手（可拖曳）" role="button" tabindex="0"> <div class="char-3d" id="chatbot-3d"> <canvas id="char-canvas" aria-hidden="true"></canvas> <span class="char-drag-hint" aria-hidden="true">✥ 拖曳</span> </div> <div id="chatbot-panel"> <div class="chatbot-header"> <div class="chatbot-title"> <span class="chatbot-status-dot"></span> <h4>AI 助手</h4> </div> <div class="chatbot-actions"> <button class="chatbot-reset" aria-label="重新開始" title="重新開始對話">↻</button> <button class="chatbot-close" aria-label="關閉">✕</button> </div> </div> <div id="chatbot-messages"> <div class="chat-msg chat-bot">
+你好！我是 JT 的作品集助手 🤖<br>
+可以問我關於他的學經歷、技術專長、或是作品集內容。
+</div> <div class="chat-suggestions" id="chat-suggestions"> <button class="chat-chip" data-q="你的背景是什麼？">🎓 背景學歷</button> <button class="chat-chip" data-q="你會哪些技術？">💻 技術專長</button> <button class="chat-chip" data-q="推薦蛋白質 AI 作品">🧬 蛋白質 AI</button> <button class="chat-chip" data-q="如何聯絡你？">📧 聯絡方式</button> </div> </div> <div class="chatbot-input-row"> <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off"> <button id="chatbot-send" aria-label="送出">➤</button> </div> </div> </div>  <script>
+(function() {
+    const SYSTEM = `你是這個作品集網站的 AI 助手。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師（JT Lai）。
+專長：ESM-2 蛋白質語言模型、ProteinMPNN、Bayesian Optimization（BoTorch/qLogEI）、REINFORCE RL、FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場資料平台。
+請用繁體中文回答，保持專業友善，回答不超過 200 字。只回答與作品集相關的問題。`;
+
+    // Local knowledge base — works even when /api/chat is unreachable
+    const KB = [
+        {
+            keys: ['背景', '學歷', '碩士', '經歷', '介紹', 'about', '履歷', 'bio'],
+            reply: '我是 JT Lai，擁有電資工程（北科電子所）與生物醫學（陽明交大解剖細胞生物所）雙碩士背景。\n\n研究主題涵蓋蛋白質 AI 設計、基因體分析與量化交易，現在專注於把研究做成可操作的 AI 平台。\n\n👉 詳細看 /about 頁面',
+        },
+        {
+            keys: ['技術', '會什麼', 'skill', '專長', 'stack', '語言'],
+            reply: '主要技術棧：\n\n• **AI/ML**：PyTorch、ESM-2、ProteinMPNN、BoTorch、REINFORCE\n• **後端**：FastAPI、Python、PostgreSQL、Neon、psycopg\n• **前端**：Astro、React、TypeScript、Chart.js\n• **NGS**：RNA-seq、WGS、scRNA-seq 流程\n• **資料平台**：TWSE、Yahoo Finance、FinMind\n\n👉 看 /works 看實際作品',
+        },
+        {
+            keys: ['蛋白質', 'mpnn', 'esm', 'protein', 'rosetta'],
+            reply: '蛋白質 AI 是核心專長，涵蓋：\n\n• **ESM-2**：蛋白質語言模型 embedding\n• **ProteinMPNN**：序列設計\n• **BoTorch / qLogEI**：Bayesian Optimization 主動學習\n• **REINFORCE**：序列微調\n• **3D 結構預覽** + **Rosetta** 簡化評分\n\n👉 /protein-mpnn 直接玩互動工作台\n👉 /report 看完整技術報告',
+        },
+        {
+            keys: ['基因', 'gene', 'ngs', '定序', 'crispr'],
+            reply: '基因體領域的兩個主要作品：\n\n• **Gene AI 平台** (/gene-ai)：序列資料庫、RAG 文件搜尋、啟動子設計、CRISPR 導引排序、變異效應評估\n• **NGS 工作站** (/ngs)：實驗設計計算器、定序深度估算、QC 到功能分析\n\n背後串接 UniProt、Ensembl、PubMed、OpenAlex 等公開 API。',
+        },
+        {
+            keys: ['論文', '研究', 'thesis', '量化', '遺傳'],
+            reply: '碩士論文主題：以 48 檔 ETF50 股票池重建 PPTS × GAPPTS 遺傳演算法。\n\n比較族群演化過程、逐檔回測表現，並用 GA + 量化指標做策略驗證。\n\n👉 /thesis 看完整論文頁面',
+        },
+        {
+            keys: ['作品', '作品集', 'project', '作品總覽', 'portfolio'],
+            reply: '主要作品分類：\n\n🧬 **Protein**：蛋白質 AI 設計系統、ProteinMPNN 互動工作台\n🔬 **Genomics**：基因 AI 平台、NGS 工作站\n📖 **Research**：遺傳演算法論文、技術部落格\n💼 **Other**：面試準備手冊、作品總覽\n\n👉 /works 一覽所有作品',
+        },
+        {
+            keys: ['聯絡', 'email', 'mail', '合作', 'contact'],
+            reply: '📧 主要聯絡方式在 /about 頁面底部。\n\nGitHub: github.com/123lai1234-create\nHuggingFace: huggingface.co/Donttalk123\n\n面試或合作邀約都可以直接寫信。',
+        },
+        {
+            keys: ['demo', '範例', '相似度', '互動'],
+            reply: '首頁就有兩個即時 demo：\n\n1. **ESM-2 相似度計算**：輸入兩段蛋白質序列，看 embedding 之間的 cosine similarity\n2. **GitHub 開源活動**：自動抓 repo、stars、followers 統計\n\n往下捲就能玩。',
+        },
+        {
+            keys: ['你好', 'hi', 'hello', '嗨', '哈囉'],
+            reply: '你好！👋 試試點下面的快速問題，或直接問我有關 JT 的背景、技術、作品集的任何問題。',
+        },
+    ];
+
+    function findLocalReply(q) {
+        const lower = q.toLowerCase();
+        for (const item of KB) {
+            if (item.keys.some((k) => lower.includes(k.toLowerCase()))) {
+                return item.reply;
+            }
+        }
+        return null;
+    }
+
+    let history = [];
+    let busy = false;
+
+    const anchor = document.getElementById('chatbot-anchor');
+    if (!anchor) return; // component not on this page
+
+    const avatar = document.getElementById('chatbot-3d');
+    const panel  = document.getElementById('chatbot-panel');
+    const close  = document.querySelector('.chatbot-close');
+    const reset  = document.querySelector('.chatbot-reset');
+    const msgs   = document.getElementById('chatbot-messages');
+    const input  = document.getElementById('chatbot-input');
+    const send   = document.getElementById('chatbot-send');
+    const chips  = document.querySelectorAll('.chat-chip');
+
+    /* ── Open / close panel ───────────────────────────────────────── */
+    function openPanel() {
+        anchor.classList.add('panel-open');
+        setTimeout(() => input?.focus(), 200);
+    }
+    function closePanel() {
+        anchor.classList.remove('panel-open');
+    }
+    function isPanelOpen() { return anchor.classList.contains('panel-open'); }
+
+    /* ── Drag-to-move the character anywhere on screen ─────────────
+       Use document-level listeners in CAPTURE phase so we always receive
+       pointer events even if Three.js canvas / SVG / etc. consumes them. */
+    let dragging = false;
+    let dragPointerId = null;
+    let dragOffset = { x: 0, y: 0 };
+    let didDrag = false;
+
+    function isInsideAnchor(e) {
+        // Hit-test against the anchor's bounding rect, not relying on event target
+        const r = anchor.getBoundingClientRect();
+        return e.clientX >= r.left && e.clientX <= r.right
+            && e.clientY >= r.top  && e.clientY <= r.bottom;
+    }
+
+    function onPointerDown(e) {
+        if (e.target.closest('#chatbot-panel')) return;
+        if (e.button !== undefined && e.button !== 0) return;
+        if (!isInsideAnchor(e)) return;
+        dragging = true;
+        didDrag = false;
+        dragPointerId = e.pointerId;
+        const rect = anchor.getBoundingClientRect();
+        dragOffset.x = e.clientX - rect.left;
+        dragOffset.y = e.clientY - rect.top;
+        anchor.style.bottom = 'auto';
+        anchor.style.right = 'auto';
+        anchor.style.left = `${rect.left}px`;
+        anchor.style.top = `${rect.top}px`;
+        anchor.classList.add('dragging');
+        try { anchor.setPointerCapture(e.pointerId); } catch (_) {}
+        e.preventDefault();
+    }
+
+    function onPointerMove(e) {
+        if (!dragging || e.pointerId !== dragPointerId) return;
+        const newLeft = e.clientX - dragOffset.x;
+        const newTop  = e.clientY - dragOffset.y;
+        const maxX = window.innerWidth - anchor.offsetWidth;
+        const maxY = window.innerHeight - anchor.offsetHeight;
+        const x = Math.max(0, Math.min(newLeft, maxX));
+        const y = Math.max(0, Math.min(newTop, maxY));
+        anchor.style.left = `${x}px`;
+        anchor.style.top = `${y}px`;
+        didDrag = true;
+    }
+
+    function onPointerUp(e) {
+        if (!dragging) return;
+        if (e.pointerId !== dragPointerId) return;
+        const moved = didDrag;
+        dragging = false;
+        dragPointerId = null;
+        anchor.classList.remove('dragging');
+        try {
+            const rect = anchor.getBoundingClientRect();
+            localStorage.setItem('chatbot_anchor_pos', JSON.stringify({
+                left: rect.left, top: rect.top,
+            }));
+        } catch (_) {}
+        if (!moved) {
+            if (isPanelOpen()) closePanel();
+            else openPanel();
+        }
+    }
+
+    document.addEventListener('pointerdown', onPointerDown, { capture: true });
+    document.addEventListener('pointermove', onPointerMove, { capture: true });
+    document.addEventListener('pointerup', onPointerUp, { capture: true });
+    document.addEventListener('pointercancel', () => {
+        if (!dragging) return;
+        dragging = false;
+        dragPointerId = null;
+        anchor.classList.remove('dragging');
+    }, { capture: true });
+
+    anchor.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            isPanelOpen() ? closePanel() : openPanel();
+        }
+    });
+
+    close?.addEventListener('click', (e) => { e.stopPropagation(); closePanel(); });
+    reset?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        history = [];
+        msgs.innerHTML = '';
+        addMsg('bot', '對話已重置。問我任何問題吧！');
+        showChips();
+    });
+
+    send.addEventListener('click', submit);
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+    });
+
+    chips.forEach((c) => {
+        c.addEventListener('click', () => {
+            input.value = c.dataset.q;
+            submit();
+        });
+    });
+
+    try {
+        const saved = JSON.parse(localStorage.getItem('chatbot_anchor_pos') || 'null');
+        if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
+            anchor.style.bottom = 'auto';
+            anchor.style.right = 'auto';
+            anchor.style.left = `${saved.left}px`;
+            anchor.style.top = `${saved.top}px`;
+        }
+    } catch (_) {}
+
+    async function submit() {
+        const text = input.value.trim();
+        if (!text || busy) return;
+        input.value = '';
+        addMsg('user', text);
+        history.push({ role: 'user', content: text });
+        hideChips();
+        setBusy(true);
+
+        let reply = null;
+        try {
+            const apiBase = (typeof window.APP_CONFIG_UTILS?.resolveApiBase === 'function')
+                ? await window.APP_CONFIG_UTILS.resolveApiBase({ cacheKey: 'chatbot' })
+                : '';
+            const endpoint = apiBase ? `${apiBase}/api/chat` : '/api/chat';
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ system: SYSTEM, messages: history.slice(-10) }),
+                signal: AbortSignal.timeout(20000),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                reply = data.reply ?? data.content?.[0]?.text ?? null;
+                if (reply) history.push({ role: 'assistant', content: reply });
+            }
+        } catch (_) {}
+
+        if (!reply) {
+            const local = findLocalReply(text);
+            if (local) {
+                reply = local + '\n\n_(本機離線回覆，AI 模型目前未連線)_';
+            } else {
+                reply = `目前 AI 模型暫時無法連線，也沒有對應到本機知識庫。\n\n你問的「${text}」可以試著換個關鍵字（例如：背景、技術、作品、聯絡）。`;
+            }
+        }
+
+        addMsg('bot', reply, true);
+        setBusy(false);
+    }
+
+    function hideChips() {
+        const wrap = document.getElementById('chat-suggestions');
+        if (wrap) wrap.style.display = 'none';
+    }
+
+    function showChips() {
+        const wrap = document.getElementById('chat-suggestions');
+        if (wrap) wrap.style.display = '';
+    }
+
+    function addMsg(role, text, allowMarkdown = false) {
+        const d = document.createElement('div');
+        d.className = `chat-msg chat-${role}`;
+        if (allowMarkdown) {
+            d.innerHTML = escapeHtml(text)
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+                .replace(/\n/g, '<br/>');
+        } else {
+            d.textContent = text;
+        }
+        msgs.appendChild(d);
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function escapeHtml(s) {
+        return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function setBusy(v) {
+        busy = v; send.disabled = v; input.disabled = v;
+        document.getElementById('chat-typing')?.remove();
+        if (v) {
+            const t = document.createElement('div');
+            t.id = 'chat-typing';
+            t.className = 'chat-msg chat-bot chat-typing';
+            t.innerHTML = '<span></span><span></span><span></span>';
+            msgs.appendChild(t);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isPanelOpen()) {
+            closePanel();
+        }
+    });
+
+    /* === 3D mouse-tracking via Three.js === */
+    (async () => {
+        let THREE;
+        try {
+            THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');
+        } catch (e) {
+            console.warn('[3D char] Three.js failed to load', e);
+            return;
+        }
+
+        const canvas = document.getElementById('char-canvas');
+        if (!canvas) return;
+
+        const renderer = new THREE.WebGLRenderer({
+            canvas, alpha: true, antialias: true, premultipliedAlpha: true,
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        const size = 96;
+        renderer.setSize(size, size, false);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+        camera.position.set(0, -0.5, 9);
+        camera.lookAt(0, -0.4, 0);
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+        scene.add(ambient);
+
+        const keyLight = new THREE.DirectionalLight(0xfff5e0, 1.3);
+        keyLight.position.set(2.5, 3, 3);
+        scene.add(keyLight);
+
+        const rimLight = new THREE.DirectionalLight(0xa0c8ff, 0.8);
+        rimLight.position.set(-2.5, 1, -1);
+        scene.add(rimLight);
+
+        const backLight = new THREE.DirectionalLight(0xffe0c0, 0.5);
+        backLight.position.set(0, 1, -3);
+        scene.add(backLight);
+
+        const fillLight = new THREE.DirectionalLight(0xfff0e0, 0.4);
+        fillLight.position.set(0, 0.5, 4);
+        scene.add(fillLight);
+
+        const char = new THREE.Group();
+        scene.add(char);
+
+        const headPivot = new THREE.Group();
+        headPivot.position.set(0, 0.5, 0);
+        char.add(headPivot);
+
+        // === Gradients via Canvas textures ===
+        function makeSkinTexture() {
+            // 柴犬毛色：橘黃漸層，腹部/嘴邊白色區
+            const c = document.createElement('canvas');
+            c.width = 512; c.height = 512;
+            const ctx = c.getContext('2d');
+            // 底色橘黃漸層
+            const grad = ctx.createRadialGradient(256, 220, 40, 256, 256, 320);
+            grad.addColorStop(0, '#ffc888');
+            grad.addColorStop(0.5, '#f0a050');
+            grad.addColorStop(1, '#c87830');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 512, 512);
+            // 腹部白色區 (下半部)
+            const bellyGrad = ctx.createRadialGradient(256, 460, 80, 256, 460, 250);
+            bellyGrad.addColorStop(0, '#ffffff');
+            bellyGrad.addColorStop(0.5, 'rgba(255,255,255,0.6)');
+            bellyGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = bellyGrad;
+            ctx.fillRect(0, 300, 512, 212);
+            // 嘴邊白色 (下巴)
+            const muzzleGrad = ctx.createRadialGradient(256, 410, 30, 256, 410, 150);
+            muzzleGrad.addColorStop(0, '#ffffff');
+            muzzleGrad.addColorStop(0.6, 'rgba(255,255,255,0.5)');
+            muzzleGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = muzzleGrad;
+            ctx.fillRect(160, 350, 192, 162);
+            // 額頭高光
+            ctx.globalCompositeOperation = 'screen';
+            const hl = ctx.createRadialGradient(200, 180, 10, 200, 180, 140);
+            hl.addColorStop(0, 'rgba(255,255,255,0.25)');
+            hl.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = hl;
+            ctx.fillRect(0, 0, 512, 512);
+            ctx.globalCompositeOperation = 'source-over';
+            const tex = new THREE.CanvasTexture(c);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+        }
+        const skinTex = makeSkinTexture();
+
+        function makeHairTexture() {
+            const c = document.createElement('canvas');
+            c.width = 512; c.height = 512;
+            const ctx = c.getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 0, 512);
+            grad.addColorStop(0, '#3a2820');
+            grad.addColorStop(0.5, '#1a0f0a');
+            grad.addColorStop(1, '#0a0604');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 512, 512);
+            ctx.globalCompositeOperation = 'screen';
+            for (let i = 0; i < 8; i++) {
+                ctx.fillStyle = `rgba(${150 + Math.random()*50}, ${100 + Math.random()*40}, 80, ${0.15 + Math.random()*0.15})`;
+                ctx.fillRect(Math.random() * 512, Math.random() * 200, 4 + Math.random() * 8, 200 + Math.random() * 200);
+            }
+            ctx.globalCompositeOperation = 'source-over';
+            const tex = new THREE.CanvasTexture(c);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+        }
+        const hairTex = makeHairTexture();
+
+        // 柴犬全身毛色 — 橘黃 + 白色腹部（跟 skinTex 相同，腹部比例不同）
+        function makeBodyTexture() {
+            const c = document.createElement('canvas');
+            c.width = 512; c.height = 512;
+            const ctx = c.getContext('2d');
+            const grad = ctx.createRadialGradient(256, 220, 40, 256, 256, 320);
+            grad.addColorStop(0, '#ffc888');
+            grad.addColorStop(0.5, '#f0a050');
+            grad.addColorStop(1, '#c87830');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 512, 512);
+            // 腹部白色更明顯
+            const bellyGrad = ctx.createRadialGradient(256, 400, 60, 256, 400, 280);
+            bellyGrad.addColorStop(0, '#ffffff');
+            bellyGrad.addColorStop(0.6, 'rgba(255,255,255,0.7)');
+            bellyGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = bellyGrad;
+            ctx.fillRect(0, 220, 512, 292);
+            ctx.globalCompositeOperation = 'source-over';
+            const tex = new THREE.CanvasTexture(c);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+        }
+        const bodyTex = makeBodyTexture();
+
+        const skinMat = new THREE.MeshStandardMaterial({ map: skinTex, roughness: 0.45, metalness: 0.0 });
+        const hairMat = new THREE.MeshStandardMaterial({ map: hairTex, roughness: 0.65, metalness: 0.0 });
+        const bodyMat = new THREE.MeshStandardMaterial({ map: bodyTex, roughness: 0.55, metalness: 0.0 });
+
+        // === 柴犬幾何 — 乾淨重寫 ===
+        const furMat = skinMat;
+        const whiteMat = new THREE.MeshStandardMaterial({
+            color: 0xfffaf0, roughness: 0.55,
+        });
+        const darkFurMat = new THREE.MeshStandardMaterial({
+            color: 0xc87830, roughness: 0.7,
+        });
+
+        // HEAD — 球體，半徑 1.0
+        const head = new THREE.Mesh(new THREE.SphereGeometry(1.0, 64, 48), furMat);
+        headPivot.add(head);
+
+        // 白嘴邊 (muzzle) — 小球往前
+        const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 24), whiteMat);
+        muzzle.position.set(0, -0.30, 0.70);
+        muzzle.scale.set(1.1, 0.85, 0.95);
+        headPivot.add(muzzle);
+
+        // 兩側臉頰 (jowls)
+        const jowlGeom = new THREE.SphereGeometry(0.30, 24, 18);
+        const jowlL = new THREE.Mesh(jowlGeom, furMat);
+        jowlL.position.set(-0.78, -0.15, 0.45);
+        jowlL.scale.set(0.95, 0.85, 0.7);
+        headPivot.add(jowlL);
+        const jowlR = jowlL.clone();
+        jowlR.position.x = 0.78;
+        headPivot.add(jowlR);
+
+        // === EARS — 小三角形豎耳 ===
+        const earGeom = new THREE.ConeGeometry(0.22, 0.55, 4);
+        const earMat = new THREE.MeshStandardMaterial({
+            color: 0xd87838, roughness: 0.7,
+        });
+        const earL = new THREE.Mesh(earGeom, earMat);
+        earL.position.set(-0.62, 0.85, 0.0);
+        earL.rotation.z = 0.20;
+        earL.rotation.x = -0.10;
+        headPivot.add(earL);
+        const earR = earL.clone();
+        earR.position.x = 0.62;
+        earR.rotation.z = -0.20;
+        headPivot.add(earR);
+
+        // 耳朵內側 (粉紅)
+        const earInnerGeom = new THREE.ConeGeometry(0.14, 0.42, 4);
+        const earInnerMat = new THREE.MeshStandardMaterial({
+            color: 0xffb098, roughness: 0.5,
+        });
+        const earInnerL = new THREE.Mesh(earInnerGeom, earInnerMat);
+        earInnerL.position.set(-0.58, 0.85, 0.05);
+        earInnerL.rotation.z = 0.20;
+        earInnerL.rotation.x = -0.10;
+        headPivot.add(earInnerL);
+        const earInnerR = earInnerL.clone();
+        earInnerR.position.x = 0.58;
+        earInnerR.rotation.z = -0.20;
+        headPivot.add(earInnerR);
+
+        // === 額頭白色斑紋 (Urajiro) ===
+        const urajiroForehead = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 18), whiteMat);
+        urajiroForehead.position.set(0, 0.30, 0.75);
+        urajiroForehead.scale.set(1.3, 0.40, 0.5);
+        headPivot.add(urajiroForehead);
+
+        // === 兩塊深橘眉毛斑 ===
+        const browGeom = new THREE.SphereGeometry(0.18, 20, 16);
+        const browL = new THREE.Mesh(browGeom, darkFurMat);
+        browL.position.set(-0.32, 0.32, 0.90);
+        browL.scale.set(0.85, 0.55, 0.4);
+        headPivot.add(browL);
+        const browR = browL.clone();
+        browR.position.x = 0.32;
+        headPivot.add(browR);
+
+        // === EYES — 黑豆眼 ===
+        const eyeWhiteMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff, roughness: 0.15,
+        });
+        const eyeGeom = new THREE.SphereGeometry(0.18, 24, 20);
+        const eyeL = new THREE.Mesh(eyeGeom, eyeWhiteMat);
+        eyeL.position.set(-0.28, 0.12, 0.92);
+        eyeL.scale.set(1.0, 1.05, 0.5);
+        headPivot.add(eyeL);
+        const eyeR = eyeL.clone();
+        eyeR.position.x = 0.28;
+        headPivot.add(eyeR);
+
+        const pupilMat = new THREE.MeshStandardMaterial({
+            color: 0x0a0604, roughness: 0.05, metalness: 0.7,
+        });
+        const pupilGeom = new THREE.SphereGeometry(0.16, 24, 20);
+        const pupilL = new THREE.Mesh(pupilGeom, pupilMat);
+        pupilL.position.set(-0.28, 0.12, 1.02);
+        pupilL.scale.set(1.0, 1.05, 0.5);
+        headPivot.add(pupilL);
+        const pupilR = pupilL.clone();
+        pupilR.position.x = 0.28;
+        headPivot.add(pupilR);
+
+        const shineGeom = new THREE.SphereGeometry(0.035, 12, 10);
+        const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const shineL = new THREE.Mesh(shineGeom, shineMat);
+        shineL.position.set(-0.22, 0.17, 1.10);
+        headPivot.add(shineL);
+        const shineR = shineL.clone();
+        shineR.position.x = 0.22;
+        headPivot.add(shineR);
+
+        // === NOSE — 黑色大鼻子 ===
+        const nose = new THREE.Mesh(
+            new THREE.SphereGeometry(0.13, 20, 16),
+            new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 }),
+        );
+        nose.position.set(0, -0.10, 0.98);
+        nose.scale.set(1.1, 0.85, 0.6);
+        headPivot.add(nose);
+
+        // === MOUTH — 張嘴吐舌 ===
+        const mouthOpen = new THREE.Mesh(
+            new THREE.SphereGeometry(0.20, 20, 14),
+            new THREE.MeshStandardMaterial({ color: 0x1a0a0a, roughness: 0.4 }),
+        );
+        mouthOpen.position.set(0, -0.42, 0.85);
+        mouthOpen.scale.set(1.3, 0.7, 0.4);
+        headPivot.add(mouthOpen);
+
+        const tongue = new THREE.Mesh(
+            new THREE.SphereGeometry(0.13, 16, 12),
+            new THREE.MeshStandardMaterial({
+                color: 0xff7090, roughness: 0.4,
+                emissive: 0xff8fa3, emissiveIntensity: 0.3,
+            }),
+        );
+        tongue.position.set(0, -0.55, 0.88);
+        tongue.scale.set(1.4, 0.7, 0.5);
+        headPivot.add(tongue);
+
+        // === 柴犬身體 (圓滾滾、有四隻腳、露出白色腹部) ===
+        const body = new THREE.Mesh(new THREE.SphereGeometry(1.0, 32, 24), bodyMat);
+        body.position.set(0, -1.55, 0);
+        body.scale.set(1.4, 0.85, 1.1); // 寬圓身體
+        char.add(body);
+
+        // 身體白色腹部 (Urajiro)
+        const bellyMat = new THREE.MeshStandardMaterial({ color: 0xfffaf0, roughness: 0.55 });
+        const bellyGeom = new THREE.SphereGeometry(0.85, 24, 18);
+        const belly = new THREE.Mesh(bellyGeom, bellyMat);
+        belly.position.set(0, -1.55, 0.35);
+        belly.scale.set(1.1, 0.8, 0.6);
+        char.add(belly);
+
+        // === 四隻腳 (短腿，柴犬特色) ===
+        const pawMat = new THREE.MeshStandardMaterial({
+            color: 0xfffaf0, roughness: 0.55, // 白色腳掌
+        });
+        const pawGeom = new THREE.SphereGeometry(0.18, 16, 12);
+
+        // 兩隻前腳
+        const frontPawL = new THREE.Mesh(pawGeom, pawMat);
+        frontPawL.position.set(-0.55, -2.10, 0.45);
+        frontPawL.scale.set(1.0, 0.8, 1.2);
+        char.add(frontPawL);
+        const frontPawR = frontPawL.clone();
+        frontPawR.position.x = 0.55;
+        char.add(frontPawR);
+
+        // 兩隻後腳 (略小，因為看不到)
+        const backPawL = new THREE.Mesh(pawGeom, pawMat);
+        backPawL.position.set(-0.65, -2.00, -0.40);
+        backPawL.scale.set(0.9, 0.7, 1.0);
+        char.add(backPawL);
+        const backPawR = backPawL.clone();
+        backPawR.position.x = 0.65;
+        char.add(backPawR);
+
+        // 蓬鬆尾巴 (柴犬招牌捲尾)
+        const tailMat = new THREE.MeshStandardMaterial({
+            color: 0xf0a050, roughness: 0.7,
+        });
+        const tailGeom = new THREE.SphereGeometry(0.25, 20, 16);
+        const tail = new THREE.Mesh(tailGeom, tailMat);
+        tail.position.set(0, -1.20, -1.10);
+        tail.scale.set(1.2, 0.9, 1.0);
+        tail.rotation.x = -0.4; // 微微翹起
+        char.add(tail);
+
+        // 尾巴尖端白毛
+        const tailTipGeom = new THREE.SphereGeometry(0.16, 16, 12);
+        const tailTip = new THREE.Mesh(tailTipGeom, bellyMat);
+        tailTip.position.set(0, -0.90, -1.30);
+        char.add(tailTip);
+
+        // === 兩隻前腳的指頭 (白色肉球) ===
+        const toeGeom = new THREE.SphereGeometry(0.06, 12, 8);
+        for (const side of [-1, 1]) {
+            for (let i = 0; i < 3; i++) {
+                const toe = new THREE.Mesh(toeGeom, bellyMat);
+                toe.position.set(side * (0.45 + i * 0.08), -2.18, 0.55);
+                toe.scale.set(0.8, 0.5, 0.9);
+                char.add(toe);
+            }
+        }
+
+        // MOUSE TRACKING
+        const targetRot = { x: 0, y: 0 };
+        const currentRot = { x: 0, y: 0 };
+        const maxYaw = THREE.MathUtils.degToRad(45);
+        const maxPitch = THREE.MathUtils.degToRad(28);
+
+        function onPointerMove(e) {
+            if (dragging) return;
+            const rect = canvas.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const dx = (e.clientX - cx) / (rect.width / 2);
+            const dy = (e.clientY - cy) / (rect.height / 2);
+            targetRot.y = THREE.MathUtils.clamp(dx, -1, 1) * maxYaw;
+            targetRot.x = THREE.MathUtils.clamp(-dy, -1, 1) * maxPitch;
+        }
+        window.addEventListener('pointermove', onPointerMove, { passive: true });
+
+        function onResize() {
+            const rect = canvas.getBoundingClientRect();
+            renderer.setSize(rect.width, rect.height, false);
+            camera.aspect = rect.width / rect.height;
+            camera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', onResize);
+        onResize();
+
+        let blinkTimer = 0;
+        let nextBlink = 2 + Math.random() * 3;
+        let isBlinking = false;
+        let blinkProgress = 0;
+
+        function animate(time) {
+            time *= 0.001;
+            currentRot.x += (targetRot.x - currentRot.x) * 0.12;
+            currentRot.y += (targetRot.y - currentRot.y) * 0.12;
+            headPivot.rotation.y = currentRot.y;
+            headPivot.rotation.x = currentRot.x * 0.85;
+
+            if (!dragging && !anchor.classList.contains('panel-open')) {
+                char.position.y = Math.sin(time * 1.4) * 0.05;
+                char.rotation.y = Math.sin(time * 0.6) * 0.04;
+            } else {
+                char.position.y *= 0.9;
+            }
+
+            blinkTimer += 1 / 60;
+            if (!isBlinking && blinkTimer > nextBlink) {
+                isBlinking = true;
+                blinkProgress = 0;
+            }
+            if (isBlinking) {
+                blinkProgress += 0.18;
+                const scale = Math.max(0.05, 1 - Math.sin(blinkProgress * Math.PI));
+                eyeL.scale.y = scale;
+                eyeR.scale.y = scale;
+                pupilL.scale.y = scale;
+                pupilR.scale.y = scale;
+                shineL.visible = scale > 0.5;
+                shineR.visible = scale > 0.5;
+                if (blinkProgress >= 1) {
+                    isBlinking = false;
+                    blinkTimer = 0;
+                    nextBlink = 2.5 + Math.random() * 3.5;
+                }
+            }
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+
+        window.__chatbot3d = { scene, camera, char, headPivot };
+    })();
+})();
+</script> </body></html>

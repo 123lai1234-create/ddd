@@ -1,0 +1,904 @@
+<!DOCTYPE html><html lang="zh-TW" data-astro-cid-5hce7sga> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script>document.documentElement.classList.add('js-reveal');</script><title>🤿 東北角潛水浪況速查</title><meta name="description" content="浪高、風向、流速、能見度 — 龍洞、鼻頭角、和平島、龜山島即時判斷 GO / CAUTION / NO-GO"><meta property="og:title" content="🤿 東北角潛水浪況速查"><meta property="og:description" content="浪高、風向、流速、能見度 — 龍洞、鼻頭角、和平島、龜山島即時判斷 GO / CAUTION / NO-GO"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image"><meta property="og:image" content="https://donttalk.vercel.app/og?t=%F0%9F%A4%BF%20%E6%9D%B1%E5%8C%97%E8%A7%92%E6%BD%9B%E6%B0%B4%E6%B5%AA%E6%B3%81%E9%80%9F%E6%9F%A5&amp;s=%E6%B5%AA%E9%AB%98%E3%80%81%E9%A2%A8%E5%90%91%E3%80%81%E6%B5%81%E9%80%9F%E3%80%81%E8%83%BD%E8%A6%8B%E5%BA%A6%20%E2%80%94%20%E9%BE%8D%E6%B4%9E%E3%80%81%E9%BC%BB%E9%A0%AD%E8%A7%92%E3%80%81%E5%92%8C%E5%B9%B3%E5%B3%B6%E3%80%81%E9%BE%9C%E5%B1%B1%E5%B3%B6%E5%8D%B3%E6%99%82%E5%88%A4%E6%96%B7%20GO%20%2F%20CAUTION%20%2F%20NO-GO&amp;tag="><meta name="twitter:image" content="https://donttalk.vercel.app/og?t=%F0%9F%A4%BF%20%E6%9D%B1%E5%8C%97%E8%A7%92%E6%BD%9B%E6%B0%B4%E6%B5%AA%E6%B3%81%E9%80%9F%E6%9F%A5&amp;s=%E6%B5%AA%E9%AB%98%E3%80%81%E9%A2%A8%E5%90%91%E3%80%81%E6%B5%81%E9%80%9F%E3%80%81%E8%83%BD%E8%A6%8B%E5%BA%A6%20%E2%80%94%20%E9%BE%8D%E6%B4%9E%E3%80%81%E9%BC%BB%E9%A0%AD%E8%A7%92%E3%80%81%E5%92%8C%E5%B9%B3%E5%B3%B6%E3%80%81%E9%BE%9C%E5%B1%B1%E5%B3%B6%E5%8D%B3%E6%99%82%E5%88%A4%E6%96%B7%20GO%20%2F%20CAUTION%20%2F%20NO-GO&amp;tag="><meta property="og:url" content="https://donttalk.vercel.app/diving/"><meta property="og:site_name" content="JT Lai Portfolio"><meta property="og:locale" content="zh_TW"><meta name="twitter:title" content="🤿 東北角潛水浪況速查"><meta name="twitter:description" content="浪高、風向、流速、能見度 — 龍洞、鼻頭角、和平島、龜山島即時判斷 GO / CAUTION / NO-GO"><link rel="canonical" href="https://donttalk.vercel.app/diving/"><link rel="alternate" hreflang="zh-TW" href="https://donttalk.vercel.app/diving/"><link rel="alternate" hreflang="x-default" href="https://donttalk.vercel.app/diving/"><meta name="author" content="JT Lai"><meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"><meta name="googlebot" content="index, follow"><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>"><link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#08060e"><script>
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=20260827j').catch(() => {});
+    </script><link rel="preconnect" href="https://fonts.googleapis.cn"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" as="style" href="https://fonts.googleapis.cn/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.cn/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript><link rel="stylesheet" href="/styles/shared.css"><link rel="stylesheet" href="/styles/polish.css"><link rel="stylesheet" href="/styles/dynamic.css"><link rel="stylesheet" href="/styles/diving.css"><link rel="stylesheet" href="/styles/diving-charts.css"><!-- Sentry error monitoring (set SENTRY_DSN env var to activate) --><script>
+    if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
+      import('https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js').then(() => {
+        Sentry.init({ dsn: __SENTRY_DSN__, tracesSampleRate: 0.1,
+          integrations: [Sentry.browserTracingIntegration()],
+          environment: location.hostname === 'localhost' ? 'development' : 'production',
+        });
+      }).catch(() => {});
+    }
+    </script><script src="/scripts/theme-randomizer.js" defer></script><!-- <script is:inline src="/scripts/shader-bg.js" defer></script> --><script src="/scripts/admin-mode.js" defer></script><script src="/scripts/site-shell-config.js" defer></script><script src="/scripts/nav.js" defer></script><script src="/scripts/app-config.js" defer></script><script src="/scripts/dynamic-features.js" defer></script><!-- <script is:inline src="/scripts/immersive-experience.js" defer></script> --><script is:inline>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { });</script><!-- Console noise filter (Immersive Translate / Chrome extension errors that don't impact our app) --><script>
+    (function() {
+      var isExtNoise = function(args) {
+        try {
+          var s = '';
+          for (var i = 0; i < args.length; i++) {
+            var a = args[i];
+            s += (a && a.stack) ? a.stack : String(a == null ? a : a);
+            if (s.length > 800) { s = s.slice(0, 800); break; }
+          }
+          return /content_main\.js|content_guard\.js|immersive[- ]?translate|chrome-extension:|moz-extension:/.test(s);
+        } catch (_) { return false; }
+      };
+      var origErr = console.error, origWarn = console.warn;
+      console.error = function() { if (isExtNoise(arguments)) return; return origErr.apply(console, arguments); };
+      console.warn  = function() { if (isExtNoise(arguments)) return; return origWarn.apply(console, arguments); };
+      window.addEventListener('error', function(e) {
+        var src = (e && e.filename) || '', msg = (e && e.message) || '';
+        if (/content_main\.js|content_guard\.js|chrome-extension:|moz-extension:/.test(src) ||
+            /classList|reading 'classList'/.test(msg)) {
+          e.stopImmediatePropagation(); e.preventDefault();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        var r = e && e.reason, s = r && (r.stack || r.message) || String(r);
+        if (/content_main\.js|content_guard\.js|chrome-extension:|moz-extension:/.test(s)) {
+          e.stopImmediatePropagation(); e.preventDefault();
+        }
+      });
+    })();
+    </script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://donttalk.vercel.app#person","name":"JT Lai","url":"https://donttalk.vercel.app","image":"https://donttalk.vercel.app/og-default.png","sameAs":["https://github.com/123lai1234-create","https://huggingface.co/Donttalk123"],"jobTitle":"全端工程師 / 生醫研究者","description":"電資工程與生物醫學雙碩士，整合蛋白質 AI 設計、基因分析、NGS 流程與互動平台開發的全端跨域工程師。","knowsAbout":["Protein Language Model","ESM-2","ProteinMPNN","Bayesian Optimization","BoTorch","REINFORCE","NGS Analysis","RNA-seq","WGS","scRNA-seq","FastAPI","Astro","PostgreSQL","Python","TypeScript"],"alumniOf":[{"@type":"EducationalOrganization","name":"國立臺北科技大學 電子工程研究所"},{"@type":"EducationalOrganization","name":"國立陽明交通大學 解剖學及細胞生物學研究所"}]},{"@type":"WebSite","@id":"https://donttalk.vercel.app#website","url":"https://donttalk.vercel.app","name":"JT Lai Portfolio","inLanguage":"zh-TW","author":{"@id":"https://donttalk.vercel.app#person"},"potentialAction":{"@type":"SearchAction","target":"https://donttalk.vercel.app/?q={search_term_string}","query-input":"required name=search_term_string"}},{"@type":"WebPage","@id":"https://donttalk.vercel.app/diving/#webpage","url":"https://donttalk.vercel.app/diving/","name":"🤿 東北角潛水浪況速查","description":"浪高、風向、流速、能見度 — 龍洞、鼻頭角、和平島、龜山島即時判斷 GO / CAUTION / NO-GO","inLanguage":"zh-TW","isPartOf":{"@id":"https://donttalk.vercel.app#website"},"about":{"@id":"https://donttalk.vercel.app#person"},"additionalType":"WebPage"}]}</script><style>#chatbot-anchor{position:fixed;bottom:90px;right:24px;z-index:500;width:80px;height:80px;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45));transition:filter .25s;will-change:transform}#chatbot-anchor:hover{filter:drop-shadow(0 8px 22px rgba(88,215,255,.45))}#chatbot-anchor:active{cursor:grabbing}#chatbot-anchor.dragging{cursor:grabbing;filter:drop-shadow(0 12px 28px rgba(88,215,255,.6))}#chatbot-anchor:focus-visible{outline:2px solid #58d7ff;outline-offset:6px;border-radius:12px}.char-3d{width:100%;height:100%;position:relative}#char-canvas{width:100%;height:100%;display:block}.char-drag-hint{position:absolute;top:-10px;right:-10px;background:#000000b3;color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;opacity:0;transform:scale(.8);transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}#chatbot-anchor:hover .char-drag-hint{opacity:1;transform:scale(1)}#chatbot-anchor.dragging .char-drag-hint{opacity:0}@keyframes bounce-gentle{0%,to{transform:translateY(0)}50%{transform:translateY(-4px)}}#pf-btn[data-astro-cid-5hce7sga]:hover #search-icon[data-astro-cid-5hce7sga]{animation:wiggle .5s ease-in-out}@keyframes wiggle{0%,to{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+</style></head> <body data-page="diving" data-astro-cid-5hce7sga>  
+    <!-- Immersive Background -->
+    <div class="immersive-bg"></div>
+
+    <!-- ════════ NAV ════════ -->
+    <div data-site-nav></div>
+
+    <!-- ════════ DIVING PAGE ════════ -->
+    <main class="dive-main">
+<!-- ─────── Hero ─────── --> <header class="dive-hero"> <div class="hero-eyebrow">🤿 Taiwan · Northeast Coast</div> <h1 class="hero-title">東北角潛水<br>浪況速查</h1> <p class="hero-sub">
+Windguru 預報 + CWA 海況時序圖 + 在地潛點特性。<br>
+出發前 30 分鐘掃一眼，決定今天 GO 還是窩沙發。
+</p> <div class="hero-cta"> <a class="cta cta-primary" href="https://www.windguru.cz/464009" target="_blank" rel="noopener"> <span class="cta-icon">💨</span> <span class="cta-text"> <span class="cta-label">開 Windguru 預報</span> <span class="cta-sub">龍洞和美國小 · 未來 10 日</span> </span> <span class="cta-arrow">↗</span> </a> <a class="cta cta-secondary" href="https://www.cwa.gov.tw/V8/C/M/OBS_Marine_plot.html?MID=46694A" target="_blank" rel="noopener"> <span class="cta-icon">📊</span> <span class="cta-text"> <span class="cta-label">開 CWA 時序圖</span> <span class="cta-sub">MID 46694A · 觀測站即時</span> </span> <span class="cta-arrow">↗</span> </a> </div> <div class="hero-tip"> <strong>怎麼看？</strong> Windguru 給你未來預報（出發前看），CWA 給你過去觀測（現場核對）。兩個交叉看最準。
+</div> </header> <!-- ─────── 決策矩陣 ─────── --> <section class="section reveal"> <div class="section-head"> <span class="section-tag">決策矩陣</span> <h2>GO / CAUTION / NO-GO 閾值</h2> <p>以下為東北角休閒潛水的經驗值。進階、技術潛水請自行加重標準。</p> </div> <div class="matrix-wrap"> <table class="matrix"> <thead> <tr> <th class="col-icon"></th> <th class="col-name">指標</th> <th class="col-go">🟢 GO</th> <th class="col-caution">🟡 CAUTION</th> <th class="col-nogo">🔴 NO-GO</th> <th class="col-why">說明</th> </tr> </thead> <tbody> <tr> <td class="col-icon"><span class="m-icon">🌊</span></td> <td class="col-name"> <div class="m-name">浪高</div> <div class="m-en">Wave height <span class="m-unit">(m)</span></div> </td> <td class="col-go"><code>&lt; 0.6</code></td> <td class="col-caution"><code>0.6 – 1.2</code></td> <td class="col-nogo"><code>&gt; 1.2</code></td> <td class="col-why">岸潛出入水最需要平靜海況。&gt;1m 入水易失控打裝備，&gt;1.5m 強烈建議改期。</td> </tr><tr> <td class="col-icon"><span class="m-icon">🌬️</span></td> <td class="col-name"> <div class="m-name">風速</div> <div class="m-en">Wind speed <span class="m-unit">(m/s)</span></div> </td> <td class="col-go"><code>&lt; 5</code></td> <td class="col-caution"><code>5 – 8</code></td> <td class="col-nogo"><code>&gt; 8</code></td> <td class="col-why">風決定表面波紋與體溫流失速度。&gt;8m/s 配低水溫容易失溫，且水面浮力袋控管困難。</td> </tr><tr> <td class="col-icon"><span class="m-icon">🧭</span></td> <td class="col-name"> <div class="m-name">風向</div> <div class="m-en">Wind direction <span class="m-unit"></span></div> </td> <td class="col-go"><code>迎岸（S–W 對龍洞）</code></td> <td class="col-caution"><code>沿岸（沿海岸線）</code></td> <td class="col-nogo"><code>離岸（陸→海）</code></td> <td class="col-why">離岸風把水面艇推離岸、潛水員漂向外海，是東北角溺水主因之一。龍洞口朝東，離岸風 ≈ 西風。</td> </tr><tr> <td class="col-icon"><span class="m-icon">📏</span></td> <td class="col-name"> <div class="m-name">週期</div> <div class="m-en">Swell period <span class="m-unit">(s)</span></div> </td> <td class="col-go"><code>&gt; 9</code></td> <td class="col-caution"><code>7 – 9</code></td> <td class="col-nogo"><code>&lt; 6</code></td> <td class="col-why">長週期 = 整齊湧浪（可預測）；短週期 = 混亂碎浪（節奏亂、容易暈船）。</td> </tr><tr> <td class="col-icon"><span class="m-icon">🌡️</span></td> <td class="col-name"> <div class="m-name">水溫</div> <div class="m-en">Water temp <span class="m-unit">(°C)</span></div> </td> <td class="col-go"><code>24 – 28</code></td> <td class="col-caution"><code>21 – 24 / 28 – 30</code></td> <td class="col-nogo"><code>&lt; 20 / &gt; 31</code></td> <td class="col-why">東北角水溫冬低夏高。冬季 &lt;20°C 沒 5mm 防寒衣有失溫風險；夏季 &gt;30°C 珊瑚白化、能見度下降。</td> </tr><tr> <td class="col-icon"><span class="m-icon">👁️</span></td> <td class="col-name"> <div class="m-name">能見度</div> <div class="m-en">Visibility <span class="m-unit">(m)</span></div> </td> <td class="col-go"><code>&gt; 8</code></td> <td class="col-caution"><code>3 – 8</code></td> <td class="col-nogo"><code>&lt; 3</code></td> <td class="col-why">&lt;3m 等於瞎子摸象；3–8m 可潛但樂趣低；龍洞穩定期能到 15–20m。</td> </tr><tr> <td class="col-icon"><span class="m-icon">🌀</span></td> <td class="col-name"> <div class="m-name">流速</div> <div class="m-en">Current <span class="m-unit">(kn)</span></div> </td> <td class="col-go"><code>&lt; 0.5</code></td> <td class="col-caution"><code>0.5 – 1.0</code></td> <td class="col-nogo"><code>&gt; 1.0</code></td> <td class="col-why">東北角流最強在潮汐轉換前後 1–2 小時。岸潛流 &gt;1kn 易回不了岸，需有船伴或負浮力準備。</td> </tr><tr> <td class="col-icon"><span class="m-icon">🌙</span></td> <td class="col-name"> <div class="m-name">潮汐</div> <div class="m-en">Tide phase <span class="m-unit"></span></div> </td> <td class="col-go"><code>平潮前後 1h</code></td> <td class="col-caution"><code>漲退潮中段</code></td> <td class="col-nogo"><code>大潮滿潮 / 乾潮</code></td> <td class="col-why">平潮流最弱，潛水最舒適；大潮時段流速翻倍、潮間帶暴露區變化劇烈。</td> </tr> </tbody> </table> </div> <div class="legend-row"> <div class="legend-card go"> <div class="legend-emoji">🟢</div> <div> <div class="legend-title">GO · 出發</div> <div class="legend-sub">所有指標都綠 → 帶著愉快心情下水</div> </div> </div> <div class="legend-card caution"> <div class="legend-emoji">🟡</div> <div> <div class="legend-title">CAUTION · 評估</div> <div class="legend-sub">任何一項黃 → 看潛點經驗、人數、後備方案</div> </div> </div> <div class="legend-card nogo"> <div class="legend-emoji">🔴</div> <div> <div class="legend-title">NO-GO · 改期</div> <div class="legend-sub">任何一項紅 → 直接放棄，潛水永遠有下一次</div> </div> </div> </div> </section> 
+        <!-- ════════════════════════════════════════════════════════════════
+             🤿 動態視覺化區塊(從 CWA 龍洞浮標 46694A 即時拉資料)
+             ════════════════════════════════════════════════════════════════ -->
+
+        <!-- ── 1. 即時指標儀表板 ── -->
+        <section class="section reveal dive-anim">
+            <div class="section-head">
+                <span class="section-tag">即時儀表板</span>
+                <h2>現在的潛水條件 — 一眼看完</h2>
+                <p>8 個指標即時判讀,綠黃紅三色直覺分級。資料來自 CWA 龍洞資料浮標 46694A。</p>
+            </div>
+            <div id="dive-dashboard">
+                <!-- JS 會注入:載入中 → 8 張儀表卡 -->
+            </div>
+            <div class="dash-summary" id="dive-dash-summary"></div>
+            <p class="dash-foot">
+                💡 <strong>怎麼讀：</strong>每一張卡有 🟢🟡🔴 三段色帶,白色指針指到哪一段就是目前的等級。
+                任一指標 🔴 就改期;有 🟡 就看潛點經驗評估。
+                <strong>≈</strong> 標記代表該浮標無此觀測項,以相關指標推算;⚪ N/A 代表該浮標無對應設備。
+            </p>
+            <div id="dive-cwa-stamp" class="cwa-stamp"></div>
+        </section>
+
+        <!-- ── 2. 互動風向羅盤 ── -->
+        <section class="section reveal dive-anim">
+            <div class="section-head">
+                <span class="section-tag">風向關鍵</span>
+                <h2>龍洞潛點的風向判讀 — 互動版</h2>
+                <p>拖動圓盤上的箭頭(或點圓盤任一點)改變風向,看安全等級即時變化。</p>
+            </div>
+            <div id="dive-compass-interactive"></div>
+        </section>
+
+        <!-- ── 3. 24h 時序圖 ── -->
+        <section class="section reveal dive-anim">
+            <div class="section-head">
+                <span class="section-tag">24 小時預覽</span>
+                <h2>未來一天浪、風、流趨勢</h2>
+                <p>三條折線圖讓你挑最佳下水時段。紅色虛線 = 現在,紅色橫線 = NO-GO 警戒。</p>
+            </div>
+            <div id="dive-timeline"></div>
+        </section>
+
+        <!-- ── 4. 季節雷達圖 ── -->
+        <section class="section reveal dive-anim">
+            <div class="section-head">
+                <span class="section-tag">季節特性</span>
+                <h2>冬 vs 夏 — 六維比較雷達圖</h2>
+                <p>視覺化看東北季風期與西南季風期的差異。藍色 = 冬天、綠色 = 夏天。</p>
+            </div>
+            <div id="dive-season-radar"></div>
+            <div class="radar-tip">
+                <strong>怎麼讀：</strong>形狀越大 = 條件越好(注意「浪平」「風弱」「流弱」這些「負向指標」越大代表越好)。
+                夏天幾乎包住冬天 — 東北角夏天潛水勝過冬天是常識,但雷達圖讓你看到差多大。
+            </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             END 動態視覺化區塊
+             ════════════════════════════════════════════════════════════════ -->
+
+        <!-- ─────── 即時資料來源（直接外連 — 兩站 CSP frame-ancestors 擋 iframe） ─────── --> <section class="section reveal"> <div class="section-head"> <span class="section-tag">即時資料來源</span> <h2>Windguru + CWA 雙查</h2> <p>兩站都設了 CSP frame-ancestors（防止 iframe 嵌入），所以會在新分頁開啟 — 不是連結壞掉。</p> </div> <div class="source-grid"> <article class="source-card"> <div class="source-head"> <div class="source-logo">💨</div> <div> <h3 class="source-title">Windguru · 龍洞和美國小</h3> <div class="source-id">spot #464009</div> </div> </div> <div class="source-look"> <strong>看什麼：</strong>未來 10 日的風速、風向、浪高、週期、氣溫。<br> <strong>主模型：</strong> GFS / ICON（每 6 小時更新）。<br> <strong>提示：</strong> 切到「風」圖層比「溫度」更能判斷能不能潛。
+</div> <a href="https://www.windguru.cz/464009" target="_blank" rel="noopener" class="source-btn"> <span>開啟 Windguru 預報</span> <span class="source-arrow">↗</span> </a> </article> <article class="source-card"> <div class="source-head"> <div class="source-logo">📊</div> <div> <h3 class="source-title">CWA · 海象時序圖</h3> <div class="source-id">MID 46694A</div> </div> </div> <div class="source-look"> <strong>看什麼：</strong>過去 24–48 小時實測浪高、風速、氣壓、水溫。<br> <strong>用途：</strong> 跟 Windguru 預報對照 — 預報 vs 實況有沒有落差。<br> <strong>提示：</strong> 圖可能需要點「重新載入畫圖」才更新。
+</div> <a href="https://www.cwa.gov.tw/V8/C/M/OBS_Marine_plot.html?MID=46694A" target="_blank" rel="noopener" class="source-btn"> <span>開啟 CWA 時序圖</span> <span class="source-arrow">↗</span> </a> </article> </div> <div class="source-note">
+💡 <strong>用兩個站的理由：</strong> Windguru 給「未來預報」、CWA 給「過去實況」。只看預報可能會誤判（模型有誤差），只看實況會錯過轉好的時機。兩個交叉看才準。
+</div> </section> <!-- ─────── 風向圖示 ─────── --> <section class="section reveal"> <div class="section-head"> <span class="section-tag">風向關鍵</span> <h2>龍洞潛點的風向判讀</h2> <p>東北角最大宗的事故原因：離岸風把人往外海吹。口訣背起來。</p> </div> <div class="compass-wrap"> <!--
+                  8-direction wind compass for 龍洞 (Longdong).
+                  Diver sits at the centre, dive site faces EAST.
+                  Wind blows FROM the labeled direction (meteorological convention).
+
+                  Coloured zones:
+                    🟢 E (onshore)  → safe, whitecaps but not pushed out to sea
+                    🟡 N / S / SE / SW (cross-shore) → drift along coast, plan exit
+                    🔴 W / NW / SW (offshore) → pushed out to sea, most dangerous
+                --> <svg class="compass-svg" viewBox="-110 -110 220 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="龍洞潛點 8 方位風向安全分級 compass"> <defs> <clipPath id="compass-clip"> <circle r="100"></circle> </clipPath> <radialGradient id="compass-bg" cx="50%" cy="50%" r="50%"> <stop offset="0%" stop-color="#1c2438" stop-opacity="0.95"></stop> <stop offset="100%" stop-color="#0a0d14" stop-opacity="0.6"></stop> </radialGradient> </defs> <!-- Background disc --> <circle r="100" fill="url(#compass-bg)"></circle> <!-- Coloured safety sectors (8 wedges, 45° each, starting from N going clockwise) --> <g clip-path="url(#compass-clip)"> <path d="M 0 0 L 38.3 -92.4 L 92.4 -38.3 Z" fill="rgba(210,153,34,0.22)"></path> <!-- N   cross-shore --> <path d="M 0 0 L 92.4 -38.3 L 92.4 38.3 Z" fill="rgba(63,185,80,0.18)"></path> <!-- NE  onshore-ish --> <path d="M 0 0 L 92.4 38.3 L 38.3 92.4 Z" fill="rgba(63,185,80,0.32)"></path> <!-- E   SAFEST --> <path d="M 0 0 L 38.3 92.4 L -38.3 92.4 Z" fill="rgba(210,153,34,0.22)"></path> <!-- SE  cross-shore --> <path d="M 0 0 L -38.3 92.4 L -92.4 38.3 Z" fill="rgba(210,153,34,0.22)"></path> <!-- S   cross-shore --> <path d="M 0 0 L -92.4 38.3 L -92.4 -38.3 Z" fill="rgba(248,81,73,0.18)"></path> <!-- SW  offshore-ish --> <path d="M 0 0 L -92.4 -38.3 L -38.3 -92.4 Z" fill="rgba(248,81,73,0.32)"></path><!-- W   MOST DANGEROUS --> <path d="M 0 0 L -38.3 -92.4 L 38.3 -92.4 Z" fill="rgba(248,81,73,0.18)"></path> <!-- NW  offshore-ish --> </g> <!-- Outer ring + inner ring --> <circle r="100" fill="none" stroke="rgba(120,180,255,0.4)" stroke-width="1"></circle> <circle r="86" fill="none" stroke="rgba(120,180,255,0.18)" stroke-width="1"></circle> <!-- Cardinal spokes --> <g stroke="rgba(120,180,255,0.35)" stroke-width="1.2" stroke-linecap="round"> <line x1="0" y1="-100" x2="0" y2="100"></line> <line x1="-100" y1="0" x2="100" y2="0"></line> </g> <!-- Intercardinal spokes (thinner) --> <g stroke="rgba(120,180,255,0.18)" stroke-width="0.8" stroke-linecap="round"> <line x1="-70.7" y1="-70.7" x2="70.7" y2="70.7"></line> <line x1="-70.7" y1="70.7" x2="70.7" y2="-70.7"></line> </g> <!-- Compass labels (cardinal, larger) --> <g font-family="'JetBrains Mono', monospace" font-weight="700" text-anchor="middle"> <text x="0" y="-105" font-size="16" fill="#e6edf3">N</text> <text x="105" y="0" font-size="16" fill="#3fb950" dominant-baseline="middle">E</text> <text x="0" y="115" font-size="16" fill="#e6edf3" dominant-baseline="middle">S</text> <text x="-105" y="0" font-size="16" fill="#f85149" dominant-baseline="middle">W</text> </g> <!-- Intercardinal labels (smaller, muted) --> <g font-family="'JetBrains Mono', monospace" font-size="9" fill="#8b949e" text-anchor="middle"> <text x="74" y="-71" dominant-baseline="middle">NE</text> <text x="74" y="71" dominant-baseline="middle">SE</text> <text x="-74" y="71" dominant-baseline="middle">SW</text> <text x="-74" y="-71" dominant-baseline="middle">NW</text> </g> <!-- East-pointing dive arrow (where the entry faces) --> <g class="compass-arrow"> <path d="M 18 0 L 86 0 M 86 0 L 76 -7 M 86 0 L 76 7" stroke="#3fb950" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"></path> <text x="52" y="-9" text-anchor="middle" font-size="9" fill="#3fb950" font-weight="700">
+入水方向 →
+</text> </g> <!-- Centre: dive site icon + label --> <g> <circle r="14" fill="rgba(88,215,255,0.18)" stroke="rgba(88,215,255,0.5)" stroke-width="1"></circle> <text x="0" y="-1" text-anchor="middle" font-size="14">🤿</text> <text x="0" y="14" text-anchor="middle" font-size="7" fill="#58d7ff" font-weight="600" letter-spacing="0.05em">
+龍洞口
+</text> </g> <!-- Minor tick marks every 22.5° --> <g stroke="rgba(120,180,255,0.5)" stroke-width="1"> <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(22.5)"></line> <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(67.5)"></line> <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(112.5)"></line> <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(157.5)"></line> <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(202.5)"></line> <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(247.5)"></line> <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(292.5)"></line> <line x1="0" y1="-100" x2="0" y2="-93" transform="rotate(337.5)"></line> </g> </svg> <!-- Side legend (HTML for crisp typography + responsive wrap) --> <div class="compass-legend"> <div class="legend-item safe"> <div class="legend-swatch" style="background:rgba(63,185,80,0.32);border-color:#3fb950"></div> <div class="legend-body"> <div class="legend-title">🟢 迎岸風 Onshore</div> <div class="legend-sub">東風、東南東風 → 海面有白沫但不把人推走，最安全的潛水風</div> </div> </div> <div class="legend-item caution"> <div class="legend-swatch" style="background:rgba(210,153,34,0.32);border-color:#d29922"></div> <div class="legend-body"> <div class="legend-title">🟡 沿岸風 Cross-shore</div> <div class="legend-sub">南、北、東北、東南 → 沿岸漂移，要先規劃出水點</div> </div> </div> <div class="legend-item danger"> <div class="legend-swatch" style="background:rgba(248,81,73,0.32);border-color:#f85149"></div> <div class="legend-body"> <div class="legend-title">🔴 離岸風 Offshore</div> <div class="legend-sub">西、西北、西南風 → 推向外海，東北角溺水主因，請改期</div> </div> </div> <div class="compass-note">
+💡 <strong>口訣：</strong> 龍洞口朝東 → 看 Windguru 的風向箭頭，
+                        「箭頭從哪個方向吹過來」就是哪邊的風。吹西風就是吹你出海。
+</div> </div> </div> </section> <!-- ─────── 潛點速查 ─────── --> <section class="section reveal"> <div class="section-head"> <span class="section-tag">潛點速查</span> <h2>東北角六個主要潛點</h2> <p>從入門到船潛進階，依程度挑點。</p> </div> <div class="site-grid"> <article class="site-card"> <header class="site-head"> <h3 class="site-name">龍洞（和美國小）</h3> <span class="site-en">Longdong</span> </header> <div class="site-meta"> <span class="site-tag tag-level">初階～進階</span> <span class="site-tag tag-expose">面 東/東北</span> </div> <p class="site-note">東北角最知名潛點，岸潛入門首選。潮間帶需走石階，水深 5–25m，珊瑚礁與魚群豐富。東北季風強時水況差。</p> <div class="site-drive">🚗 國道 1 號 → 台 2 線，約 40 分</div> </article><article class="site-card"> <header class="site-head"> <h3 class="site-name">鼻頭角</h3> <span class="site-en">Bitou Cape</span> </header> <div class="site-meta"> <span class="site-tag tag-level">中階以上</span> <span class="site-tag tag-expose">面 東北/東</span> </div> <p class="site-note">海階地形、峽谷與大礁。流較強，潛水經驗不足者易出事。需注意假日人潮與漁船活動。</p> <div class="site-drive">🚗 台 2 線 84K 處，與龍洞相鄰</div> </article><article class="site-card"> <header class="site-head"> <h3 class="site-name">和平島</h3> <span class="site-en">Heping Island</span> </header> <div class="site-meta"> <span class="site-tag tag-level">初階</span> <span class="site-tag tag-expose">面 北/東北</span> </div> <p class="site-note">有天然泳池（需漲潮進入）與豆腐岩區域。地形遮蔽好，東北季風期相對穩；夏季為休閒潛水熱門。</p> <div class="site-drive">🚗 基隆市區 → 和平島，約 15 分</div> </article><article class="site-card"> <header class="site-head"> <h3 class="site-name">龜山島</h3> <span class="site-en">Guishan Island</span> </header> <div class="site-meta"> <span class="site-tag tag-level">進階（船潛）</span> <span class="site-tag tag-expose">面 東/南</span> </div> <p class="site-note">需從烏石港搭船。溫差大、能見度變化劇烈；牛奶海、峽谷、花瓶嶼等著名潛點。每年 3–11 月開放。</p> <div class="site-drive">🚗 宜蘭烏石港搭船，船程 30–40 分</div> </article><article class="site-card"> <header class="site-head"> <h3 class="site-name">卯澳</h3> <span class="site-en">Maoao</span> </header> <div class="site-meta"> <span class="site-tag tag-level">中階</span> <span class="site-tag tag-expose">面 東北</span> </div> <p class="site-note">較冷門、人少。漁港旁小峽灣地形，能見度受降雨影響大。</p> <div class="site-drive">🚗 台 2 線 113K 附近</div> </article><article class="site-card"> <header class="site-head"> <h3 class="site-name">澳底</h3> <span class="site-en">Aodi</span> </header> <div class="site-meta"> <span class="site-tag tag-level">初階</span> <span class="site-tag tag-expose">面 東北/東</span> </div> <p class="site-note">小型漁港，岸潛點平緩，適合初學。秋冬有較強東北湧浪。</p> <div class="site-drive">🚗 台 2 線 91K 附近</div> </article> </div> </section> <!-- ─────── 東北季風 vs 西南季風 ─────── --> <section class="section reveal"> <div class="section-head"> <span class="section-tag">季節特性</span> <h2>東北季風 vs 西南季風</h2> <p>東北角全年潛水可行，但季節差異極大。</p> </div> <div class="season-grid"> <div class="season-card winter"> <div class="season-title">❄️ 東北季風期 · 10–3 月</div> <ul class="season-list"> <li><strong>東北風</strong> 動輒 8–15m/s，常 6 級陣風</li> <li><strong>浪高</strong> 經常 1.5–3m，能見度因風浪下降</li> <li><strong>水溫</strong> 18–22°C，需 5mm 防寒衣 + hood</li> <li><strong>潛點建議</strong>：和平島（遮蔽好）、龜山島船潛</li> <li><strong>禁忌</strong>：龍洞東北面、鼻頭角、卯澳東北面岸潛</li> </ul> </div> <div class="season-card summer"> <div class="season-title">☀️ 西南季風期 · 4–9 月</div> <ul class="season-list"> <li><strong>西南風</strong> 通常 3–7m/s，較溫和</li> <li><strong>浪高</strong> 多在 1m 以下，能見度最佳期 5–8 月</li> <li><strong>水溫</strong> 26–29°C，3mm 防寒衣或 skin dive 即可</li> <li><strong>潛點建議</strong>：龍洞全季最佳、鼻頭角放膽去</li> <li><strong>注意</strong>：颱風季（7–9 月）需盯警報，颱風前 2 天通常最美也最危險</li> </ul> </div> </div> </section> <!-- ─────── 裝備清單 ─────── --> <section class="section reveal"> <div class="section-head"> <span class="section-tag">出門前</span> <h2>東北角岸潛裝備 checklist</h2> <p>走石階、迎風面、出水點沒遮蔽 — 跟船潛差很多。</p> </div> <div class="gear-grid"> <div class="gear-card"> <h3>🥶 防寒</h3> <ul> <li>3–5mm 濕式防寒衣（依水溫）</li> <li>冬季加 hood + 5mm 手套</li> <li>頭套內可加背心保暖</li> </ul> </div> <div class="gear-card"> <h3>🦶 行走</h3> <ul> <li>防滑礁鞋（龍洞階梯超滑）</li> <li>厚底潛水襪</li> <li>手提桶裝裝備，避免全程背</li> </ul> </div> <div class="gear-card"> <h3>🌊 水面</h3> <ul> <li>浮力袋 + 哨子（標位 + 求救）</li> <li>SMB（延繩浮標）船潛必備</li> <li>手電筒 / 信號燈（黃昏用）</li> </ul> </div> <div class="gear-card"> <h3>🛟 安全</h3> <ul> <li>潛水電腦錶 + 備用深度計</li> <li>指北針（東北角流強易迷向）</li> <li>簡單急救包 + 氧氣</li> <li>手機裝離線地圖（山區沒訊號）</li> </ul> </div> </div> </section> <!-- ─────── 10 秒快速決策 ─────── --> <section class="section reveal"> <div class="quick-check"> <div class="qc-tag">10 秒快速決策</div> <h2>現在能不能下水？</h2> <ol class="qc-list"> <li><strong>看 Windguru</strong>：未來 3 小時浪高 + 風速 + 風向有沒有紅？</li> <li><strong>對照 CWA</strong>：過去 6 小時實況是否與預報一致？（預報常報喜不報憂）</li> <li><strong>查潮汐</strong>：現在離平潮多久？>2 小時流就會強。</li> <li><strong>問自己</strong>：冷嗎？餓嗎？累嗎？有一個「是」就改天。</li> <li><strong>有潛伴嗎？</strong>：岸潛永遠不單獨下水。</li> </ol> <p class="qc-rule">「潛水永遠有下一次」 — 沒有非今天不可的理由。</p> </div> </section> <footer class="dive-foot"> <p>
+數據來源：<a href="https://www.windguru.cz/464009" target="_blank" rel="noopener">Windguru 464009</a> ·
+<a href="https://www.cwa.gov.tw/V8/C/M/OBS_Marine_plot.html?MID=46694A" target="_blank" rel="noopener">CWA 46694A</a> ·
+                閾值為東北角休閒潛水經驗值，僅供參考。
+</p> </footer>
+    </main>
+    <!-- Footer -->
+    <div data-site-footer></div>
+
+    <!-- Scripts -->
+    
+    
+   <script src="/scripts/cwa-loader.js"></script><script src="/scripts/diving-charts.js"></script> <vercel-analytics data-props="{&quot;data-astro-cid-5hce7sga&quot;:true}" data-params="{}" data-pathname="/diving/"></vercel-analytics> <script type="module">var v=()=>{window.va||(window.va=function(...i){window.vaq||(window.vaq=[]),window.vaq.push(i)})},w="@vercel/analytics",h="2.0.1";function f(){return typeof window<"u"}function l(){try{const e="production"}catch{}return"production"}function m(e="auto"){if(e==="auto"){window.vam=l();return}window.vam=e}function y(){return(f()?window.vam:l())||"production"}function d(){return y()==="development"}function b(e,i){if(!e||!i)return e;let n=e;try{const t=Object.entries(i);for(const[r,s]of t)if(!Array.isArray(s)){const o=u(s);o.test(n)&&(n=n.replace(o,`/[${r}]`))}for(const[r,s]of t)if(Array.isArray(s)){const o=u(s.join("/"));o.test(n)&&(n=n.replace(o,`/[...${r}]`))}return n}catch{return e}}function u(e){return new RegExp(`/${g(e)}(?=[/?#]|$)`)}function g(e){return e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function E(e){return e.scriptSrc?a(e.scriptSrc):d()?"https://va.vercel-scripts.com/v1/script.debug.js":e.basePath?a(`${e.basePath}/insights/script.js`):"/_vercel/insights/script.js"}function k(e,i){var n;let t=e;if(i)try{t={...(n=JSON.parse(i))==null?void 0:n.analytics,...e}}catch{}m(t.mode);const r={sdkn:w+(t.framework?`/${t.framework}`:""),sdkv:h};return t.disableAutoTrack&&(r.disableAutoTrack="1"),t.viewEndpoint&&(r.viewEndpoint=a(t.viewEndpoint)),t.eventEndpoint&&(r.eventEndpoint=a(t.eventEndpoint)),t.sessionEndpoint&&(r.sessionEndpoint=a(t.sessionEndpoint)),d()&&t.debug===!1&&(r.debug="false"),t.dsn&&(r.dsn=t.dsn),t.endpoint?r.endpoint=t.endpoint:t.basePath&&(r.endpoint=a(`${t.basePath}/insights`)),{beforeSend:t.beforeSend,src:E(t),dataset:r}}function a(e){return e.startsWith("http://")||e.startsWith("https://")||e.startsWith("/")?e:`/${e}`}function S(e={debug:!0},i){var n;if(!f())return;const{beforeSend:t,src:r,dataset:s}=k(e,i);if(v(),t&&((n=window.va)==null||n.call(window,"beforeSend",t)),document.head.querySelector(`script[src*="${r}"]`))return;const o=document.createElement("script");o.src=r;for(const[c,p]of Object.entries(s))o.dataset[c]=p;o.defer=!0,o.onerror=()=>{const c=d()?"Please check if any ad blockers are enabled and try again.":"Be sure to enable Web Analytics for your project and deploy again. See https://vercel.com/docs/analytics/quickstart for more information.";console.log(`[Vercel Web Analytics] Failed to load script from ${r}. ${c}`)},document.head.appendChild(o)}function $({route:e,path:i}){var n;(n=window.va)==null||n.call(window,"pageview",{route:e,path:i})}function A(){try{return}catch{}}function j(){try{return}catch{}}customElements.define("vercel-analytics",class extends HTMLElement{constructor(){super();try{const i=JSON.parse(this.dataset.props??"{}"),n=JSON.parse(this.dataset.params??"{}");S({...i,disableAutoTrack:!0,framework:"astro",basePath:A(),beforeSend:window.webAnalyticsBeforeSend},j());const t=this.dataset.pathname;$({route:b(t??"",n),path:t})}catch(i){throw new Error(`Failed to parse WebAnalytics properties: ${i}`)}}});</script> <!-- ── Search modal (Pagefind) ── --> <div id="pf-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:10vh" data-astro-cid-5hce7sga> <div style="background:var(--bg,#0d1117);border:1px solid var(--border,rgba(255,255,255,.1));border-radius:14px;width:min(640px,90vw);max-height:70vh;overflow:hidden;display:flex;flex-direction:column" data-astro-cid-5hce7sga> <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border,rgba(255,255,255,.08))" data-astro-cid-5hce7sga> <span style="color:var(--muted,#8b949e);font-size:1.1rem" data-astro-cid-5hce7sga>🔍</span> <input id="pf-input" placeholder="搜尋頁面內容…" autocomplete="off" spellcheck="false" style="flex:1;background:none;border:none;outline:none;font-size:1rem;color:var(--text,#e6edf3);font-family:inherit" data-astro-cid-5hce7sga> <kbd style="font-size:.75rem;color:var(--muted,#8b949e);border:1px solid var(--border,rgba(255,255,255,.12));border-radius:4px;padding:2px 6px" data-astro-cid-5hce7sga>Esc</kbd> </div> <div id="pf-results" style="overflow-y:auto;padding:8px 0;flex:1" data-astro-cid-5hce7sga></div> </div> </div> <!-- Search trigger button (bottom-right) - 簡單放大鏡 --> <button id="pf-btn" title="搜尋 (Ctrl+K)" aria-label="搜尋" style="position:fixed;bottom:24px;right:24px;z-index:400;background:linear-gradient(135deg,#58d7ff,#7bf0be);border:none;border-radius:50%;width:56px;height:56px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 16px rgba(88,215,255,.35);overflow:visible" onmouseover="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 24px rgba(88,215,255,.55)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 16px rgba(88,215,255,.35)'" data-astro-cid-5hce7sga> <svg id="search-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:26px;height:26px;display:block" data-astro-cid-5hce7sga> <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="#0a1116" stroke-width="2.2" data-astro-cid-5hce7sga></circle> <line x1="15.5" y1="15.5" x2="20.5" y2="20.5" stroke="#0a1116" stroke-width="2.5" stroke-linecap="round" data-astro-cid-5hce7sga></line> </svg> </button>  <script>
+    (function() {
+      const modal  = document.getElementById('pf-modal');
+      const input  = document.getElementById('pf-input');
+      const results= document.getElementById('pf-results');
+      const btn    = document.getElementById('pf-btn');
+      let pf = null, debounce = null;
+
+      async function openModal() {
+        modal.style.display = 'flex';
+        input.focus();
+        if (!pf) {
+          try {
+            pf = await import('/pagefind/pagefind.js');
+            await pf.init();
+          } catch(e) { results.innerHTML = '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">搜尋索引尚未建立（需要先 build）。</p>'; pf = null; }
+        }
+      }
+      function closeModal() { modal.style.display = 'none'; input.value = ''; results.innerHTML = ''; }
+
+      async function doSearch(q) {
+        if (!pf || !q.trim()) { results.innerHTML = ''; return; }
+        const sr = await pf.search(q);
+        const items = await Promise.all(sr.results.slice(0, 8).map(r => r.data()));
+        results.innerHTML = items.length
+          ? items.map(d => `<a href="${d.url}" style="display:block;padding:10px 18px;text-decoration:none;color:var(--text,#e6edf3);border-bottom:1px solid var(--border,rgba(255,255,255,.05));transition:background .1s" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
+              <div style="font-size:.9rem;font-weight:600;margin-bottom:3px">${d.meta?.title || d.url}</div>
+              <div style="font-size:.78rem;color:#8b949e">${d.excerpt}</div>
+            </a>`).join('')
+          : '<p style="padding:16px 20px;color:#8b949e;font-size:.85rem">找不到結果。</p>';
+      }
+
+      btn.addEventListener('click', openModal);
+      modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+      document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openModal(); }
+        if (e.key === 'Escape') closeModal();
+      });
+      input.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => doSearch(input.value), 250);
+      });
+    })();
+    </script> <!-- Site-wide 3D chatbot assistant --> <!-- AI 助手 3D 人偶按鈕（可拖曳 + 滑鼠 3D 追蹤） --><div id="chatbot-anchor" aria-label="AI 助手（可拖曳）" role="button" tabindex="0"> <div class="char-3d" id="chatbot-3d"> <canvas id="char-canvas" aria-hidden="true"></canvas> <span class="char-drag-hint" aria-hidden="true">✥ 拖曳</span> </div> <div id="chatbot-panel"> <div class="chatbot-header"> <div class="chatbot-title"> <span class="chatbot-status-dot"></span> <h4>AI 助手</h4> </div> <div class="chatbot-actions"> <button class="chatbot-reset" aria-label="重新開始" title="重新開始對話">↻</button> <button class="chatbot-close" aria-label="關閉">✕</button> </div> </div> <div id="chatbot-messages"> <div class="chat-msg chat-bot">
+你好！我是 JT 的作品集助手 🤖<br>
+可以問我關於他的學經歷、技術專長、或是作品集內容。
+</div> <div class="chat-suggestions" id="chat-suggestions"> <button class="chat-chip" data-q="你的背景是什麼？">🎓 背景學歷</button> <button class="chat-chip" data-q="你會哪些技術？">💻 技術專長</button> <button class="chat-chip" data-q="推薦蛋白質 AI 作品">🧬 蛋白質 AI</button> <button class="chat-chip" data-q="如何聯絡你？">📧 聯絡方式</button> </div> </div> <div class="chatbot-input-row"> <input id="chatbot-input" type="text" placeholder="輸入訊息..." autocomplete="off"> <button id="chatbot-send" aria-label="送出">➤</button> </div> </div> </div>  <script>
+(function() {
+    const SYSTEM = `你是這個作品集網站的 AI 助手。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師（JT Lai）。
+專長：ESM-2 蛋白質語言模型、ProteinMPNN、Bayesian Optimization（BoTorch/qLogEI）、REINFORCE RL、FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場資料平台。
+請用繁體中文回答，保持專業友善，回答不超過 200 字。只回答與作品集相關的問題。`;
+
+    // Local knowledge base — works even when /api/chat is unreachable
+    const KB = [
+        {
+            keys: ['背景', '學歷', '碩士', '經歷', '介紹', 'about', '履歷', 'bio'],
+            reply: '我是 JT Lai，擁有電資工程（北科電子所）與生物醫學（陽明交大解剖細胞生物所）雙碩士背景。\n\n研究主題涵蓋蛋白質 AI 設計、基因體分析與量化交易，現在專注於把研究做成可操作的 AI 平台。\n\n👉 詳細看 /about 頁面',
+        },
+        {
+            keys: ['技術', '會什麼', 'skill', '專長', 'stack', '語言'],
+            reply: '主要技術棧：\n\n• **AI/ML**：PyTorch、ESM-2、ProteinMPNN、BoTorch、REINFORCE\n• **後端**：FastAPI、Python、PostgreSQL、Neon、psycopg\n• **前端**：Astro、React、TypeScript、Chart.js\n• **NGS**：RNA-seq、WGS、scRNA-seq 流程\n• **資料平台**：TWSE、Yahoo Finance、FinMind\n\n👉 看 /works 看實際作品',
+        },
+        {
+            keys: ['蛋白質', 'mpnn', 'esm', 'protein', 'rosetta'],
+            reply: '蛋白質 AI 是核心專長，涵蓋：\n\n• **ESM-2**：蛋白質語言模型 embedding\n• **ProteinMPNN**：序列設計\n• **BoTorch / qLogEI**：Bayesian Optimization 主動學習\n• **REINFORCE**：序列微調\n• **3D 結構預覽** + **Rosetta** 簡化評分\n\n👉 /protein-mpnn 直接玩互動工作台\n👉 /report 看完整技術報告',
+        },
+        {
+            keys: ['基因', 'gene', 'ngs', '定序', 'crispr'],
+            reply: '基因體領域的兩個主要作品：\n\n• **Gene AI 平台** (/gene-ai)：序列資料庫、RAG 文件搜尋、啟動子設計、CRISPR 導引排序、變異效應評估\n• **NGS 工作站** (/ngs)：實驗設計計算器、定序深度估算、QC 到功能分析\n\n背後串接 UniProt、Ensembl、PubMed、OpenAlex 等公開 API。',
+        },
+        {
+            keys: ['論文', '研究', 'thesis', '量化', '遺傳'],
+            reply: '碩士論文主題：以 48 檔 ETF50 股票池重建 PPTS × GAPPTS 遺傳演算法。\n\n比較族群演化過程、逐檔回測表現，並用 GA + 量化指標做策略驗證。\n\n👉 /thesis 看完整論文頁面',
+        },
+        {
+            keys: ['作品', '作品集', 'project', '作品總覽', 'portfolio'],
+            reply: '主要作品分類：\n\n🧬 **Protein**：蛋白質 AI 設計系統、ProteinMPNN 互動工作台\n🔬 **Genomics**：基因 AI 平台、NGS 工作站\n📖 **Research**：遺傳演算法論文、技術部落格\n💼 **Other**：面試準備手冊、作品總覽\n\n👉 /works 一覽所有作品',
+        },
+        {
+            keys: ['聯絡', 'email', 'mail', '合作', 'contact'],
+            reply: '📧 主要聯絡方式在 /about 頁面底部。\n\nGitHub: github.com/123lai1234-create\nHuggingFace: huggingface.co/Donttalk123\n\n面試或合作邀約都可以直接寫信。',
+        },
+        {
+            keys: ['demo', '範例', '相似度', '互動'],
+            reply: '首頁就有兩個即時 demo：\n\n1. **ESM-2 相似度計算**：輸入兩段蛋白質序列，看 embedding 之間的 cosine similarity\n2. **GitHub 開源活動**：自動抓 repo、stars、followers 統計\n\n往下捲就能玩。',
+        },
+        {
+            keys: ['你好', 'hi', 'hello', '嗨', '哈囉'],
+            reply: '你好！👋 試試點下面的快速問題，或直接問我有關 JT 的背景、技術、作品集的任何問題。',
+        },
+    ];
+
+    function findLocalReply(q) {
+        const lower = q.toLowerCase();
+        for (const item of KB) {
+            if (item.keys.some((k) => lower.includes(k.toLowerCase()))) {
+                return item.reply;
+            }
+        }
+        return null;
+    }
+
+    let history = [];
+    let busy = false;
+
+    const anchor = document.getElementById('chatbot-anchor');
+    if (!anchor) return; // component not on this page
+
+    const avatar = document.getElementById('chatbot-3d');
+    const panel  = document.getElementById('chatbot-panel');
+    const close  = document.querySelector('.chatbot-close');
+    const reset  = document.querySelector('.chatbot-reset');
+    const msgs   = document.getElementById('chatbot-messages');
+    const input  = document.getElementById('chatbot-input');
+    const send   = document.getElementById('chatbot-send');
+    const chips  = document.querySelectorAll('.chat-chip');
+
+    /* ── Open / close panel ───────────────────────────────────────── */
+    function openPanel() {
+        anchor.classList.add('panel-open');
+        setTimeout(() => input?.focus(), 200);
+    }
+    function closePanel() {
+        anchor.classList.remove('panel-open');
+    }
+    function isPanelOpen() { return anchor.classList.contains('panel-open'); }
+
+    /* ── Drag-to-move the character anywhere on screen ─────────────
+       Use document-level listeners in CAPTURE phase so we always receive
+       pointer events even if Three.js canvas / SVG / etc. consumes them. */
+    let dragging = false;
+    let dragPointerId = null;
+    let dragOffset = { x: 0, y: 0 };
+    let didDrag = false;
+
+    function isInsideAnchor(e) {
+        // Hit-test against the anchor's bounding rect, not relying on event target
+        const r = anchor.getBoundingClientRect();
+        return e.clientX >= r.left && e.clientX <= r.right
+            && e.clientY >= r.top  && e.clientY <= r.bottom;
+    }
+
+    function onPointerDown(e) {
+        if (e.target.closest('#chatbot-panel')) return;
+        if (e.button !== undefined && e.button !== 0) return;
+        if (!isInsideAnchor(e)) return;
+        dragging = true;
+        didDrag = false;
+        dragPointerId = e.pointerId;
+        const rect = anchor.getBoundingClientRect();
+        dragOffset.x = e.clientX - rect.left;
+        dragOffset.y = e.clientY - rect.top;
+        anchor.style.bottom = 'auto';
+        anchor.style.right = 'auto';
+        anchor.style.left = `${rect.left}px`;
+        anchor.style.top = `${rect.top}px`;
+        anchor.classList.add('dragging');
+        try { anchor.setPointerCapture(e.pointerId); } catch (_) {}
+        e.preventDefault();
+    }
+
+    function onPointerMove(e) {
+        if (!dragging || e.pointerId !== dragPointerId) return;
+        const newLeft = e.clientX - dragOffset.x;
+        const newTop  = e.clientY - dragOffset.y;
+        const maxX = window.innerWidth - anchor.offsetWidth;
+        const maxY = window.innerHeight - anchor.offsetHeight;
+        const x = Math.max(0, Math.min(newLeft, maxX));
+        const y = Math.max(0, Math.min(newTop, maxY));
+        anchor.style.left = `${x}px`;
+        anchor.style.top = `${y}px`;
+        didDrag = true;
+    }
+
+    function onPointerUp(e) {
+        if (!dragging) return;
+        if (e.pointerId !== dragPointerId) return;
+        const moved = didDrag;
+        dragging = false;
+        dragPointerId = null;
+        anchor.classList.remove('dragging');
+        try {
+            const rect = anchor.getBoundingClientRect();
+            localStorage.setItem('chatbot_anchor_pos', JSON.stringify({
+                left: rect.left, top: rect.top,
+            }));
+        } catch (_) {}
+        if (!moved) {
+            if (isPanelOpen()) closePanel();
+            else openPanel();
+        }
+    }
+
+    document.addEventListener('pointerdown', onPointerDown, { capture: true });
+    document.addEventListener('pointermove', onPointerMove, { capture: true });
+    document.addEventListener('pointerup', onPointerUp, { capture: true });
+    document.addEventListener('pointercancel', () => {
+        if (!dragging) return;
+        dragging = false;
+        dragPointerId = null;
+        anchor.classList.remove('dragging');
+    }, { capture: true });
+
+    anchor.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            isPanelOpen() ? closePanel() : openPanel();
+        }
+    });
+
+    close?.addEventListener('click', (e) => { e.stopPropagation(); closePanel(); });
+    reset?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        history = [];
+        msgs.innerHTML = '';
+        addMsg('bot', '對話已重置。問我任何問題吧！');
+        showChips();
+    });
+
+    send.addEventListener('click', submit);
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+    });
+
+    chips.forEach((c) => {
+        c.addEventListener('click', () => {
+            input.value = c.dataset.q;
+            submit();
+        });
+    });
+
+    try {
+        const saved = JSON.parse(localStorage.getItem('chatbot_anchor_pos') || 'null');
+        if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
+            anchor.style.bottom = 'auto';
+            anchor.style.right = 'auto';
+            anchor.style.left = `${saved.left}px`;
+            anchor.style.top = `${saved.top}px`;
+        }
+    } catch (_) {}
+
+    async function submit() {
+        const text = input.value.trim();
+        if (!text || busy) return;
+        input.value = '';
+        addMsg('user', text);
+        history.push({ role: 'user', content: text });
+        hideChips();
+        setBusy(true);
+
+        let reply = null;
+        try {
+            const apiBase = (typeof window.APP_CONFIG_UTILS?.resolveApiBase === 'function')
+                ? await window.APP_CONFIG_UTILS.resolveApiBase({ cacheKey: 'chatbot' })
+                : '';
+            const endpoint = apiBase ? `${apiBase}/api/chat` : '/api/chat';
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ system: SYSTEM, messages: history.slice(-10) }),
+                signal: AbortSignal.timeout(20000),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                reply = data.reply ?? data.content?.[0]?.text ?? null;
+                if (reply) history.push({ role: 'assistant', content: reply });
+            }
+        } catch (_) {}
+
+        if (!reply) {
+            const local = findLocalReply(text);
+            if (local) {
+                reply = local + '\n\n_(本機離線回覆，AI 模型目前未連線)_';
+            } else {
+                reply = `目前 AI 模型暫時無法連線，也沒有對應到本機知識庫。\n\n你問的「${text}」可以試著換個關鍵字（例如：背景、技術、作品、聯絡）。`;
+            }
+        }
+
+        addMsg('bot', reply, true);
+        setBusy(false);
+    }
+
+    function hideChips() {
+        const wrap = document.getElementById('chat-suggestions');
+        if (wrap) wrap.style.display = 'none';
+    }
+
+    function showChips() {
+        const wrap = document.getElementById('chat-suggestions');
+        if (wrap) wrap.style.display = '';
+    }
+
+    function addMsg(role, text, allowMarkdown = false) {
+        const d = document.createElement('div');
+        d.className = `chat-msg chat-${role}`;
+        if (allowMarkdown) {
+            d.innerHTML = escapeHtml(text)
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+                .replace(/\n/g, '<br/>');
+        } else {
+            d.textContent = text;
+        }
+        msgs.appendChild(d);
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function escapeHtml(s) {
+        return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function setBusy(v) {
+        busy = v; send.disabled = v; input.disabled = v;
+        document.getElementById('chat-typing')?.remove();
+        if (v) {
+            const t = document.createElement('div');
+            t.id = 'chat-typing';
+            t.className = 'chat-msg chat-bot chat-typing';
+            t.innerHTML = '<span></span><span></span><span></span>';
+            msgs.appendChild(t);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isPanelOpen()) {
+            closePanel();
+        }
+    });
+
+    /* === 3D mouse-tracking via Three.js === */
+    (async () => {
+        let THREE;
+        try {
+            THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');
+        } catch (e) {
+            console.warn('[3D char] Three.js failed to load', e);
+            return;
+        }
+
+        const canvas = document.getElementById('char-canvas');
+        if (!canvas) return;
+
+        const renderer = new THREE.WebGLRenderer({
+            canvas, alpha: true, antialias: true, premultipliedAlpha: true,
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        const size = 96;
+        renderer.setSize(size, size, false);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+        camera.position.set(0, -0.5, 9);
+        camera.lookAt(0, -0.4, 0);
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+        scene.add(ambient);
+
+        const keyLight = new THREE.DirectionalLight(0xfff5e0, 1.3);
+        keyLight.position.set(2.5, 3, 3);
+        scene.add(keyLight);
+
+        const rimLight = new THREE.DirectionalLight(0xa0c8ff, 0.8);
+        rimLight.position.set(-2.5, 1, -1);
+        scene.add(rimLight);
+
+        const backLight = new THREE.DirectionalLight(0xffe0c0, 0.5);
+        backLight.position.set(0, 1, -3);
+        scene.add(backLight);
+
+        const fillLight = new THREE.DirectionalLight(0xfff0e0, 0.4);
+        fillLight.position.set(0, 0.5, 4);
+        scene.add(fillLight);
+
+        const char = new THREE.Group();
+        scene.add(char);
+
+        const headPivot = new THREE.Group();
+        headPivot.position.set(0, 0.5, 0);
+        char.add(headPivot);
+
+        // === Gradients via Canvas textures ===
+        function makeSkinTexture() {
+            // 柴犬毛色：橘黃漸層，腹部/嘴邊白色區
+            const c = document.createElement('canvas');
+            c.width = 512; c.height = 512;
+            const ctx = c.getContext('2d');
+            // 底色橘黃漸層
+            const grad = ctx.createRadialGradient(256, 220, 40, 256, 256, 320);
+            grad.addColorStop(0, '#ffc888');
+            grad.addColorStop(0.5, '#f0a050');
+            grad.addColorStop(1, '#c87830');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 512, 512);
+            // 腹部白色區 (下半部)
+            const bellyGrad = ctx.createRadialGradient(256, 460, 80, 256, 460, 250);
+            bellyGrad.addColorStop(0, '#ffffff');
+            bellyGrad.addColorStop(0.5, 'rgba(255,255,255,0.6)');
+            bellyGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = bellyGrad;
+            ctx.fillRect(0, 300, 512, 212);
+            // 嘴邊白色 (下巴)
+            const muzzleGrad = ctx.createRadialGradient(256, 410, 30, 256, 410, 150);
+            muzzleGrad.addColorStop(0, '#ffffff');
+            muzzleGrad.addColorStop(0.6, 'rgba(255,255,255,0.5)');
+            muzzleGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = muzzleGrad;
+            ctx.fillRect(160, 350, 192, 162);
+            // 額頭高光
+            ctx.globalCompositeOperation = 'screen';
+            const hl = ctx.createRadialGradient(200, 180, 10, 200, 180, 140);
+            hl.addColorStop(0, 'rgba(255,255,255,0.25)');
+            hl.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = hl;
+            ctx.fillRect(0, 0, 512, 512);
+            ctx.globalCompositeOperation = 'source-over';
+            const tex = new THREE.CanvasTexture(c);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+        }
+        const skinTex = makeSkinTexture();
+
+        function makeHairTexture() {
+            const c = document.createElement('canvas');
+            c.width = 512; c.height = 512;
+            const ctx = c.getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 0, 512);
+            grad.addColorStop(0, '#3a2820');
+            grad.addColorStop(0.5, '#1a0f0a');
+            grad.addColorStop(1, '#0a0604');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 512, 512);
+            ctx.globalCompositeOperation = 'screen';
+            for (let i = 0; i < 8; i++) {
+                ctx.fillStyle = `rgba(${150 + Math.random()*50}, ${100 + Math.random()*40}, 80, ${0.15 + Math.random()*0.15})`;
+                ctx.fillRect(Math.random() * 512, Math.random() * 200, 4 + Math.random() * 8, 200 + Math.random() * 200);
+            }
+            ctx.globalCompositeOperation = 'source-over';
+            const tex = new THREE.CanvasTexture(c);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+        }
+        const hairTex = makeHairTexture();
+
+        // 柴犬全身毛色 — 橘黃 + 白色腹部（跟 skinTex 相同，腹部比例不同）
+        function makeBodyTexture() {
+            const c = document.createElement('canvas');
+            c.width = 512; c.height = 512;
+            const ctx = c.getContext('2d');
+            const grad = ctx.createRadialGradient(256, 220, 40, 256, 256, 320);
+            grad.addColorStop(0, '#ffc888');
+            grad.addColorStop(0.5, '#f0a050');
+            grad.addColorStop(1, '#c87830');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 512, 512);
+            // 腹部白色更明顯
+            const bellyGrad = ctx.createRadialGradient(256, 400, 60, 256, 400, 280);
+            bellyGrad.addColorStop(0, '#ffffff');
+            bellyGrad.addColorStop(0.6, 'rgba(255,255,255,0.7)');
+            bellyGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = bellyGrad;
+            ctx.fillRect(0, 220, 512, 292);
+            ctx.globalCompositeOperation = 'source-over';
+            const tex = new THREE.CanvasTexture(c);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+        }
+        const bodyTex = makeBodyTexture();
+
+        const skinMat = new THREE.MeshStandardMaterial({ map: skinTex, roughness: 0.45, metalness: 0.0 });
+        const hairMat = new THREE.MeshStandardMaterial({ map: hairTex, roughness: 0.65, metalness: 0.0 });
+        const bodyMat = new THREE.MeshStandardMaterial({ map: bodyTex, roughness: 0.55, metalness: 0.0 });
+
+        // === 柴犬幾何 — 乾淨重寫 ===
+        const furMat = skinMat;
+        const whiteMat = new THREE.MeshStandardMaterial({
+            color: 0xfffaf0, roughness: 0.55,
+        });
+        const darkFurMat = new THREE.MeshStandardMaterial({
+            color: 0xc87830, roughness: 0.7,
+        });
+
+        // HEAD — 球體，半徑 1.0
+        const head = new THREE.Mesh(new THREE.SphereGeometry(1.0, 64, 48), furMat);
+        headPivot.add(head);
+
+        // 白嘴邊 (muzzle) — 小球往前
+        const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 24), whiteMat);
+        muzzle.position.set(0, -0.30, 0.70);
+        muzzle.scale.set(1.1, 0.85, 0.95);
+        headPivot.add(muzzle);
+
+        // 兩側臉頰 (jowls)
+        const jowlGeom = new THREE.SphereGeometry(0.30, 24, 18);
+        const jowlL = new THREE.Mesh(jowlGeom, furMat);
+        jowlL.position.set(-0.78, -0.15, 0.45);
+        jowlL.scale.set(0.95, 0.85, 0.7);
+        headPivot.add(jowlL);
+        const jowlR = jowlL.clone();
+        jowlR.position.x = 0.78;
+        headPivot.add(jowlR);
+
+        // === EARS — 小三角形豎耳 ===
+        const earGeom = new THREE.ConeGeometry(0.22, 0.55, 4);
+        const earMat = new THREE.MeshStandardMaterial({
+            color: 0xd87838, roughness: 0.7,
+        });
+        const earL = new THREE.Mesh(earGeom, earMat);
+        earL.position.set(-0.62, 0.85, 0.0);
+        earL.rotation.z = 0.20;
+        earL.rotation.x = -0.10;
+        headPivot.add(earL);
+        const earR = earL.clone();
+        earR.position.x = 0.62;
+        earR.rotation.z = -0.20;
+        headPivot.add(earR);
+
+        // 耳朵內側 (粉紅)
+        const earInnerGeom = new THREE.ConeGeometry(0.14, 0.42, 4);
+        const earInnerMat = new THREE.MeshStandardMaterial({
+            color: 0xffb098, roughness: 0.5,
+        });
+        const earInnerL = new THREE.Mesh(earInnerGeom, earInnerMat);
+        earInnerL.position.set(-0.58, 0.85, 0.05);
+        earInnerL.rotation.z = 0.20;
+        earInnerL.rotation.x = -0.10;
+        headPivot.add(earInnerL);
+        const earInnerR = earInnerL.clone();
+        earInnerR.position.x = 0.58;
+        earInnerR.rotation.z = -0.20;
+        headPivot.add(earInnerR);
+
+        // === 額頭白色斑紋 (Urajiro) ===
+        const urajiroForehead = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 18), whiteMat);
+        urajiroForehead.position.set(0, 0.30, 0.75);
+        urajiroForehead.scale.set(1.3, 0.40, 0.5);
+        headPivot.add(urajiroForehead);
+
+        // === 兩塊深橘眉毛斑 ===
+        const browGeom = new THREE.SphereGeometry(0.18, 20, 16);
+        const browL = new THREE.Mesh(browGeom, darkFurMat);
+        browL.position.set(-0.32, 0.32, 0.90);
+        browL.scale.set(0.85, 0.55, 0.4);
+        headPivot.add(browL);
+        const browR = browL.clone();
+        browR.position.x = 0.32;
+        headPivot.add(browR);
+
+        // === EYES — 黑豆眼 ===
+        const eyeWhiteMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff, roughness: 0.15,
+        });
+        const eyeGeom = new THREE.SphereGeometry(0.18, 24, 20);
+        const eyeL = new THREE.Mesh(eyeGeom, eyeWhiteMat);
+        eyeL.position.set(-0.28, 0.12, 0.92);
+        eyeL.scale.set(1.0, 1.05, 0.5);
+        headPivot.add(eyeL);
+        const eyeR = eyeL.clone();
+        eyeR.position.x = 0.28;
+        headPivot.add(eyeR);
+
+        const pupilMat = new THREE.MeshStandardMaterial({
+            color: 0x0a0604, roughness: 0.05, metalness: 0.7,
+        });
+        const pupilGeom = new THREE.SphereGeometry(0.16, 24, 20);
+        const pupilL = new THREE.Mesh(pupilGeom, pupilMat);
+        pupilL.position.set(-0.28, 0.12, 1.02);
+        pupilL.scale.set(1.0, 1.05, 0.5);
+        headPivot.add(pupilL);
+        const pupilR = pupilL.clone();
+        pupilR.position.x = 0.28;
+        headPivot.add(pupilR);
+
+        const shineGeom = new THREE.SphereGeometry(0.035, 12, 10);
+        const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const shineL = new THREE.Mesh(shineGeom, shineMat);
+        shineL.position.set(-0.22, 0.17, 1.10);
+        headPivot.add(shineL);
+        const shineR = shineL.clone();
+        shineR.position.x = 0.22;
+        headPivot.add(shineR);
+
+        // === NOSE — 黑色大鼻子 ===
+        const nose = new THREE.Mesh(
+            new THREE.SphereGeometry(0.13, 20, 16),
+            new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 }),
+        );
+        nose.position.set(0, -0.10, 0.98);
+        nose.scale.set(1.1, 0.85, 0.6);
+        headPivot.add(nose);
+
+        // === MOUTH — 張嘴吐舌 ===
+        const mouthOpen = new THREE.Mesh(
+            new THREE.SphereGeometry(0.20, 20, 14),
+            new THREE.MeshStandardMaterial({ color: 0x1a0a0a, roughness: 0.4 }),
+        );
+        mouthOpen.position.set(0, -0.42, 0.85);
+        mouthOpen.scale.set(1.3, 0.7, 0.4);
+        headPivot.add(mouthOpen);
+
+        const tongue = new THREE.Mesh(
+            new THREE.SphereGeometry(0.13, 16, 12),
+            new THREE.MeshStandardMaterial({
+                color: 0xff7090, roughness: 0.4,
+                emissive: 0xff8fa3, emissiveIntensity: 0.3,
+            }),
+        );
+        tongue.position.set(0, -0.55, 0.88);
+        tongue.scale.set(1.4, 0.7, 0.5);
+        headPivot.add(tongue);
+
+        // === 柴犬身體 (圓滾滾、有四隻腳、露出白色腹部) ===
+        const body = new THREE.Mesh(new THREE.SphereGeometry(1.0, 32, 24), bodyMat);
+        body.position.set(0, -1.55, 0);
+        body.scale.set(1.4, 0.85, 1.1); // 寬圓身體
+        char.add(body);
+
+        // 身體白色腹部 (Urajiro)
+        const bellyMat = new THREE.MeshStandardMaterial({ color: 0xfffaf0, roughness: 0.55 });
+        const bellyGeom = new THREE.SphereGeometry(0.85, 24, 18);
+        const belly = new THREE.Mesh(bellyGeom, bellyMat);
+        belly.position.set(0, -1.55, 0.35);
+        belly.scale.set(1.1, 0.8, 0.6);
+        char.add(belly);
+
+        // === 四隻腳 (短腿，柴犬特色) ===
+        const pawMat = new THREE.MeshStandardMaterial({
+            color: 0xfffaf0, roughness: 0.55, // 白色腳掌
+        });
+        const pawGeom = new THREE.SphereGeometry(0.18, 16, 12);
+
+        // 兩隻前腳
+        const frontPawL = new THREE.Mesh(pawGeom, pawMat);
+        frontPawL.position.set(-0.55, -2.10, 0.45);
+        frontPawL.scale.set(1.0, 0.8, 1.2);
+        char.add(frontPawL);
+        const frontPawR = frontPawL.clone();
+        frontPawR.position.x = 0.55;
+        char.add(frontPawR);
+
+        // 兩隻後腳 (略小，因為看不到)
+        const backPawL = new THREE.Mesh(pawGeom, pawMat);
+        backPawL.position.set(-0.65, -2.00, -0.40);
+        backPawL.scale.set(0.9, 0.7, 1.0);
+        char.add(backPawL);
+        const backPawR = backPawL.clone();
+        backPawR.position.x = 0.65;
+        char.add(backPawR);
+
+        // 蓬鬆尾巴 (柴犬招牌捲尾)
+        const tailMat = new THREE.MeshStandardMaterial({
+            color: 0xf0a050, roughness: 0.7,
+        });
+        const tailGeom = new THREE.SphereGeometry(0.25, 20, 16);
+        const tail = new THREE.Mesh(tailGeom, tailMat);
+        tail.position.set(0, -1.20, -1.10);
+        tail.scale.set(1.2, 0.9, 1.0);
+        tail.rotation.x = -0.4; // 微微翹起
+        char.add(tail);
+
+        // 尾巴尖端白毛
+        const tailTipGeom = new THREE.SphereGeometry(0.16, 16, 12);
+        const tailTip = new THREE.Mesh(tailTipGeom, bellyMat);
+        tailTip.position.set(0, -0.90, -1.30);
+        char.add(tailTip);
+
+        // === 兩隻前腳的指頭 (白色肉球) ===
+        const toeGeom = new THREE.SphereGeometry(0.06, 12, 8);
+        for (const side of [-1, 1]) {
+            for (let i = 0; i < 3; i++) {
+                const toe = new THREE.Mesh(toeGeom, bellyMat);
+                toe.position.set(side * (0.45 + i * 0.08), -2.18, 0.55);
+                toe.scale.set(0.8, 0.5, 0.9);
+                char.add(toe);
+            }
+        }
+
+        // MOUSE TRACKING
+        const targetRot = { x: 0, y: 0 };
+        const currentRot = { x: 0, y: 0 };
+        const maxYaw = THREE.MathUtils.degToRad(45);
+        const maxPitch = THREE.MathUtils.degToRad(28);
+
+        function onPointerMove(e) {
+            if (dragging) return;
+            const rect = canvas.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const dx = (e.clientX - cx) / (rect.width / 2);
+            const dy = (e.clientY - cy) / (rect.height / 2);
+            targetRot.y = THREE.MathUtils.clamp(dx, -1, 1) * maxYaw;
+            targetRot.x = THREE.MathUtils.clamp(-dy, -1, 1) * maxPitch;
+        }
+        window.addEventListener('pointermove', onPointerMove, { passive: true });
+
+        function onResize() {
+            const rect = canvas.getBoundingClientRect();
+            renderer.setSize(rect.width, rect.height, false);
+            camera.aspect = rect.width / rect.height;
+            camera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', onResize);
+        onResize();
+
+        let blinkTimer = 0;
+        let nextBlink = 2 + Math.random() * 3;
+        let isBlinking = false;
+        let blinkProgress = 0;
+
+        function animate(time) {
+            time *= 0.001;
+            currentRot.x += (targetRot.x - currentRot.x) * 0.12;
+            currentRot.y += (targetRot.y - currentRot.y) * 0.12;
+            headPivot.rotation.y = currentRot.y;
+            headPivot.rotation.x = currentRot.x * 0.85;
+
+            if (!dragging && !anchor.classList.contains('panel-open')) {
+                char.position.y = Math.sin(time * 1.4) * 0.05;
+                char.rotation.y = Math.sin(time * 0.6) * 0.04;
+            } else {
+                char.position.y *= 0.9;
+            }
+
+            blinkTimer += 1 / 60;
+            if (!isBlinking && blinkTimer > nextBlink) {
+                isBlinking = true;
+                blinkProgress = 0;
+            }
+            if (isBlinking) {
+                blinkProgress += 0.18;
+                const scale = Math.max(0.05, 1 - Math.sin(blinkProgress * Math.PI));
+                eyeL.scale.y = scale;
+                eyeR.scale.y = scale;
+                pupilL.scale.y = scale;
+                pupilR.scale.y = scale;
+                shineL.visible = scale > 0.5;
+                shineR.visible = scale > 0.5;
+                if (blinkProgress >= 1) {
+                    isBlinking = false;
+                    blinkTimer = 0;
+                    nextBlink = 2.5 + Math.random() * 3.5;
+                }
+            }
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+
+        window.__chatbot3d = { scene, camera, char, headPivot };
+    })();
+})();
+</script> </body></html>

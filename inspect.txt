@@ -1,86 +1,33 @@
-﻿node.exe : Vercel CLI 59.7.0 (Node.js 24.14.1)
+﻿node.exe : Vercel CLI 59.10.0 (Node.js 24.14.1)
 位於 線路:1 字元:1
 + & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
 + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (Vercel CLI 59.7.0 (Node.js 24.14.1):String) [], RemoteException
+    + CategoryInfo          : NotSpecified: (Vercel CLI 59.10.0 (Node.js 24.14.1):String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
  
-Fetching deployment "donttalk-fa3aj8kzu-donttalk.vercel.app" in donttalk
-> Fetched deployment "donttalk-fa3aj8kzu-donttalk.vercel.app" in donttalk [974ms]
+Fetching deployment "donttalk-hze6c5q1w-donttalk.vercel.app" in donttalk
+> Fetched deployment "donttalk-hze6c5q1w-donttalk.vercel.app" in donttalk [470ms]
 
   General
 
-    id		dpl_5qdxETuDq9KDn2JEERP41drfeqfw
+    id		dpl_9S8ArFS62GHkkHMRH9JsLVA66VEJ
     name	donttalk
     target	production
-    status	● Error
-    url		https://donttalk-fa3aj8kzu-donttalk.vercel.app
-    created	Thu Aug 27 2026 10:28:42 GMT+0800 (GMT+08:00) [10m ago]
+    status	● Ready
+    url		https://donttalk-hze6c5q1w-donttalk.vercel.app
+    created	Mon Aug 31 2026 12:11:50 GMT+0800 (GMT+08:00) [20m ago]
 
 
   Aliases
 
+    ╶ https://donttalk.vercel.app
     ╶ https://donttalk-donttalk.vercel.app
-    ╶ https://donttalk-git-123lai1234-create-donttalk.vercel.app
     
 
   Builds
 
-    ╶ .        [0ms]
+    ┌ .        [0ms]
+    ├── λ api/catchall (62.99KB) [bom1, fra1, gru1, iad1, lhr1, sfo1, sin1, syd1]
+    └── λ api/zzz-invalidate-cache (1.85KB) [iad1]
     
-
-  Routes
-
-    ╶ ^/api/.*$                            ->      /api/catchall      
-    ╶ ^/healthz$                           ->      /api/healthz      
-    ╶ ^/og$                                ->      /api/og      
-    ┌ ^/(?:(.+)/)?index(?:\.html)?/?$                                 [308]
-    └── Location: /$1
-    ┌ ^/games/xian-godot(?:/(.*))?$                                   
-    ├── Cross-Origin-Opener-Policy: same-origin
-    └── Cross-Origin-Embedder-Policy: require-corp
-    ┌ ^/interview_prep\.html$                                         [308]
-    └── Location: /interview
-    ┌ ^/protein_mpnn\.html$                                           [308]
-    └── Location: /protein-mpnn
-    ┌ ^/stem_cell\.html$                                              [308]
-    └── Location: /stem-cell
-    ┌ ^/about_me\.html$                                               [308]
-    └── Location: /about
-    ┌ ^/interview_prep$                                               [308]
-    └── Location: /interview
-    ┌ ^/gene_ai\.html$                                                [308]
-    └── Location: /gene-ai
-    ┌ ^/(.*)\.html/?$                                                 [308]
-    └── Location: /$1
-    ┌ ^/report\.html$                                                 [308]
-    └── Location: /report
-    ┌ ^/thesis\.html$                                                 [308]
-    └── Location: /thesis
-    ┌ ^/protein_mpnn$                                                 [308]
-    └── Location: /protein-mpnn
-    ┌ ^/works\.html$                                                  [308]
-    └── Location: /works
-    ┌ ^/index\.html$                                                  [308]
-    └── Location: /
-    ┌ ^/music\.html$                                                  [308]
-    └── Location: /music
-    ┌ ^/xian-godot$                                                   
-    ├── Cross-Origin-Opener-Policy: same-origin
-    └── Cross-Origin-Embedder-Policy: require-corp
-    ┌ ^/ngs\.html$                                                    [308]
-    └── Location: /ngs
-    ┌ ^/stem_cell$                                                    [308]
-    └── Location: /stem-cell
-    ┌ ^/about_me$                                                     [308]
-    └── Location: /about
-    ┌ ^/gene_ai$                                                      [308]
-    └── Location: /gene-ai
-    ┌ ^/stock/$                                                       [308]
-    └── Location: /stock-app
-    ┌ ^/(.*)/$                                                        [308]
-    └── Location: /$1
-    ┌ ^/stock$                                                        [308]
-    └── Location: /stock-app
-    ╶ filesystem
 

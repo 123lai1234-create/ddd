@@ -1,0 +1,34 @@
+﻿node.exe : Vercel CLI 59.10.0 (Node.js 24.14.1)
+位於 線路:1 字元:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Vercel CLI 59.10.0 (Node.js 24.14.1):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Fetching deployment "donttalk-c2sxspc9n-donttalk.vercel.app" in donttalk
+> Fetched deployment "donttalk-c2sxspc9n-donttalk.vercel.app" in donttalk [663ms]
+
+  General
+
+    id		dpl_9AM7nCpEnDcLh2F6xsRpo2n6gUQh
+    name	donttalk
+    target	production
+    status	● Ready
+    url		https://donttalk-c2sxspc9n-donttalk.vercel.app
+    created	Thu Aug 27 2026 09:49:47 GMT+0800 (GMT+08:00) [4d ago]
+
+
+  Aliases
+
+    ╶ https://donttalk.vercel.app
+    ╶ https://donttalk-donttalk.vercel.app
+    ╶ https://donttalk-git-123lai1234-create-donttalk.vercel.app
+    
+
+  Builds
+
+    ┌ .        [0ms]
+    ├── λ api/catchall (57.89KB) [bom1, fra1, gru1, iad1, lhr1, sfo1, sin1, syd1]
+    └── λ api/zzz-invalidate-cache (1.85KB) [iad1]
+    
+

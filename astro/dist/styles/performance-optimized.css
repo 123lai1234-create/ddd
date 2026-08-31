@@ -1,0 +1,198 @@
+/* ═══════════════════════════════════════════════════════════
+   Performance Optimizations
+   Core Web Vitals: LCP, CLS, INP
+═══════════════════════════════════════════════════════════ */
+
+/* ─── Font Loading: Prevent FOIT/FOUT ─── */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  /* Use local copy if available, fallback to CDN */
+  src:
+    local("Inter"),
+    url("https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2")
+      format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src:
+    local("JetBrains Mono"),
+    url("https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw.woff2")
+      format("woff2");
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src:
+    local("Space Grotesk"),
+    url("https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gowFX3UBroXqYxpp2Klbtf.woff2")
+      format("woff2");
+}
+
+/* ─── CLS Prevention: Reserved Space for Images ─── */
+/* Images should have explicit width/height or aspect-ratio */
+img {
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: attr(width) / attr(height);
+}
+
+/* Lazy-loaded images: placeholder until loaded */
+img[loading="lazy"] {
+  background: var(--surface2, #1c2230);
+  min-height: 200px;
+}
+
+/* Hero & key images: fixed aspect ratio containers */
+.hero-img-container,
+.result-img-container,
+.chart-container {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--surface2, #1c2230);
+}
+
+.result-img-container {
+  aspect-ratio: 4 / 3;
+}
+
+.chart-container {
+  aspect-ratio: 3 / 2;
+}
+
+/* ─── CLS Prevention: Reserved Space for Ads/Iframes ─── */
+.iframe-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--surface2, #1c2230);
+}
+
+.iframe-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ─── CLS Prevention: Reserved Space for Embeds ─── */
+.embed-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 */
+  height: 0;
+  overflow: hidden;
+  background: var(--surface2, #1c2230);
+}
+
+.embed-container > * {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── Layout Shift Prevention for Dynamic Content ─── */
+.metric-card,
+.pipe-step,
+.explore-card {
+  contain: layout style;
+}
+
+/* ─── Preload Critical Fonts ─── */
+preload /* This would be in HTML <link rel="preload"> */ 
+
+/* ─── Critical CSS Inlining Recommendation ─── */
+/* For index.html above-the-fold content, inline critical CSS */
+
+/* ─── Image Loading States ─── */
+.img-loading {
+  background: linear-gradient(
+    90deg,
+    var(--surface2, #1c2230) 0%,
+    var(--surface, #12171f) 50%,
+    var(--surface2, #1c2230) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Fallback skeleton while image loads */
+.img-skeleton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2, #1c2230);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* ─── Content Visibility for Off-Screen Sections ─── */
+.below-fold-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 500px; /* Estimate typical section height */
+}
+
+/* ─── Reduce Motion for Performance ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── GPU Acceleration for Animations ─── */
+.animating,
+.card,
+.pipe-step,
+.metric-card,
+.reveal,
+.scroll-reveal {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* ─── Containment for Complex Layouts ─── */
+.explore-grid,
+.charts-grid,
+.metrics-grid,
+.card-grid,
+.results-grid {
+  contain: layout style;
+}
+
+/* ─── Paint Containment for Static Areas ─── */
+header,
+nav,
+footer,
+.hero {
+  contain: layout style paint;
+}

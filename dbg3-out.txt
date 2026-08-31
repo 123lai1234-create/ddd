@@ -1,0 +1,7 @@
+﻿HTML: <p class="lyric-line song-line active" data-time="0.00" data-idx="0" data-next="30.00"><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch"
+
+lineCount: 6
+first line text: '哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩哩�'
+first line HTML: <p class="lyric-line song-line active" data-time="0.00" data-idx="0" data-next="30.00"><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span class="kar-ch">哩</span><span clas
+
+At t=50s: {"text": "哩哩哩", "idx": "1", "time": "30.00"}
