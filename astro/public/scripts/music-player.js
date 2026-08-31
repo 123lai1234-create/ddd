@@ -1140,7 +1140,7 @@
         elements.progressHandle.style.left = "0%";
         elements.timeCurrent.textContent = "0:00";
 
-        // 渲染歌詞（支援 LRC timed array > plain lyrics array > lyricsUrl 抓）
+        // 渲染歌詞（支援 LRC timed array > plain lyrics array > lyricsUrl 抓 > placeholder fallback）
         if (track.lyricsTimed && track.lyricsTimed.length > 0) {
             renderLyricsTimed(track.lyricsTimed);
         } else if (track.lyrics && track.lyrics.length > 0) {
@@ -1148,8 +1148,30 @@
         } else if (track.lyricsUrl) {
             loadLyricsFromUrl(track.lyricsUrl);
         } else {
-            elements.lyrics.innerHTML = '<p class="lyric-line">暫無歌詞</p>';
+            // 沒歌詞的 track：生成 placeholder 歌詞（用 track 標題 + artist + album）
+            // 這樣 sync 還是有東西可以 highlight
+            const placeholder = buildPlaceholderLyrics(track);
+            track.lyrics = placeholder;
+            renderLyricsPlain(placeholder);
         }
+    }
+
+    // 從 track metadata 生成 placeholder 歌詞（用於沒 LRC 的歌）
+    // 8 行 pseudo 歌詞，平均分佈在整首歌長度上
+    function buildPlaceholderLyrics(track) {
+        const title = track.title || "未命名";
+        const artist = track.artist || "";
+        const album = track.album || "";
+        return [
+            "♪ 音樂輕輕響起 ♪",
+            title,
+            artist ? `詞：${artist}` : "",
+            album ? `專輯：${album}` : "",
+            "♪ 旋律在心中流淌 ♪",
+            "🎵 跟著節拍一起 🎵",
+            "♪ 時光在此刻停留 ♪",
+            "♫ 聆聽這段旋律 ♫"
+        ].filter(Boolean);
     }
 
     // 渲染 plain lyrics（無時間戳）成 karaoke 字元 span
@@ -1226,18 +1248,32 @@
                     renderLyricsTimed(timed);
                 } else {
                     const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-                    track.lyrics = lines;
-                    track.lyricsTimed = null;
                     if (lines.length === 0) {
-                        elements.lyrics.innerHTML = '<p class="lyric-line">歌詞為空</p>';
+                        // 純文字歌詞是空 → fallback 到 placeholder
+                        const placeholder = buildPlaceholderLyrics(track);
+                        track.lyrics = placeholder;
+                        track.lyricsTimed = null;
+                        renderLyricsPlain(placeholder);
                     } else {
+                        track.lyrics = lines;
+                        track.lyricsTimed = null;
                         renderLyricsPlain(lines);
                     }
                 }
             }
         } catch (err) {
-            elements.lyrics.innerHTML = '<p class="lyric-line">歌詞載入失敗</p>';
+            // LRC 載入失敗（404 / 網路錯誤）→ fallback 到 placeholder
             console.warn("[music] lyrics load failed:", err);
+            const t = state.playlist[state.currentIndex];
+            if (t) {
+                const placeholder = buildPlaceholderLyrics(t);
+                t.lyrics = placeholder;
+                t.lyricsTimed = null;
+                t.lyricsUrl = null; // 不要重試壞掉的 URL
+                renderLyricsPlain(placeholder);
+            } else {
+                elements.lyrics.innerHTML = '<p class="lyric-line">歌詞載入失敗</p>';
+            }
         }
     }
 
