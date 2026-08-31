@@ -1,6 +1,7 @@
 .venv/
 dist/
-!astro/dist/
+!astro/dist/scripts/  # only scripts need to be in git (for cache-busted deploys)
+!astro/dist/styles/   # only styles need to be in git
 node_modules/
 astro/.astro/
 __pycache__/
