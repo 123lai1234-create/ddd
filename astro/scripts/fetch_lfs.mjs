@@ -97,6 +97,9 @@ async function worker() {
         let attempt = 0;
         let lastErr = null;
         let success = false;
+        // 最小 mp3 大小：避免 LFS server 回 79 bytes placeholder（silent 壞掉）
+        // 設為 50KB 確保 audio 檔有基本 mp3 header + content
+        const MIN_AUDIO_SIZE = 50 * 1024;
         while (attempt <= RETRIES) {
             attempt++;
             try {
@@ -108,6 +111,10 @@ async function worker() {
                 const data = Buffer.from(await r.arrayBuffer());
                 if (data.length !== task.size) {
                     throw new Error(`size mismatch: expected ${task.size}, got ${data.length}`);
+                }
+                // 額外 guard：audio 檔（mp3/wav/ogg/m4a）太小表示 LFS 物件只有 placeholder
+                if (task.size < MIN_AUDIO_SIZE) {
+                    throw new Error(`audio file too small (${task.size} bytes, LFS placeholder?)`);
                 }
                 await writeFile(task.filePath, data);
                 replaced++;
