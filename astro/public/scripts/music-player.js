@@ -153,6 +153,9 @@
         repeat: "none", // none, one, all
         karaoke: true, // 卡拉OK逐字漸亮模式（預設開）
         drawerOpen: false,
+        // 用來取消 300ms 強制 tryPlay 計時器：每次 pauseTrack 會 +1
+        // 計時器跑時若發現 token 改變就放棄，不會重新播放
+        playToken: 0,
         audioContext: null,
         analyser: null,
         audioSource: null,
@@ -770,9 +773,12 @@
                 // 觸發 load（如果 src 沒變可能不會重新 load，確保觸發一次）
                 if (srcChanged) elements.audioPlayer.load();
                 // 保險：若 300ms 內還沒 canplay，強制嘗試 play（避免永遠卡住）
+                // 用 token 檢查：如果用戶在 300ms 內暫停（pauseTrack 會遞增 token），就放棄這次 tryPlay
+                const playTokenSnapshot = state.playToken;
                 setTimeout(() => {
                     elements.audioPlayer.removeEventListener("canplay", onCanPlay);
                     elements.audioPlayer.removeEventListener("loadeddata", onCanPlay);
+                    if (playTokenSnapshot !== state.playToken) return; // 用戶已暫停
                     if (!state.isPlaying) tryPlay();
                 }, 300);
             } else {
@@ -790,6 +796,8 @@
     function pauseTrack() {
         elements.audioPlayer.pause();
         state.isPlaying = false;
+        // 遞增 token，取消 playTrack 中尚未觸發的 300ms 強制 tryPlay
+        state.playToken++;
         updatePlayButton();
     }
 
