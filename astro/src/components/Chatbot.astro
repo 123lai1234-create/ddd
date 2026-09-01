@@ -1,17 +1,17 @@
 ﻿---
 /**
  * Chatbot.astro — site-wide AI assistant floating widget.
- * Includes the 3D chibi character, chat panel, drag-to-move,
- * mouse-tracking, and the local knowledge base + /api/chat fallback.
+ * Kawaii 2D avatar + chat panel, drag-to-move, mouse-tracking tilt,
+ * local knowledge base + /api/chat fallback. No 3D, no Three.js.
  *
  * Used by `Base.astro` so every page has it.
  */
 ---
 
-<!-- AI 助手 3D 人偶按鈕（可拖曳 + 滑鼠 3D 追蹤） -->
-<div id="chatbot-anchor" aria-label="AI 助手（可拖曳）" role="button" tabindex="0">
-  <div class="char-3d" id="chatbot-3d">
-    <canvas id="char-canvas" aria-hidden="true"></canvas>
+<!-- 元嬰不說 kawaii 人偶按鈕（可拖曳 + 滑鼠追蹤 + 飄浮 + 輕眨眼） -->
+<div id="chatbot-anchor" aria-label="元嬰不說（可拖曳）" role="button" tabindex="0">
+  <div class="kawaii-stage" id="kawaii-stage">
+    <img class="kawaii-img" src="/img/q-avatar.png" alt="元嬰不說頭像" draggable="false" />
     <span class="char-drag-hint" aria-hidden="true">✥ 拖曳</span>
   </div>
 
@@ -19,7 +19,7 @@
     <div class="chatbot-header">
       <div class="chatbot-title">
         <span class="chatbot-status-dot"></span>
-        <h4>AI 助手</h4>
+        <h4>元嬰不說</h4>
       </div>
       <div class="chatbot-actions">
         <button class="chatbot-reset" aria-label="重新開始" title="重新開始對話">↻</button>
@@ -28,7 +28,7 @@
     </div>
     <div id="chatbot-messages">
       <div class="chat-msg chat-bot">
-        你好！我是 JT 的作品集助手 🤖<br/>
+        你好！我是元嬰不說，<strong>不說</strong> 的作品集助手 🤖<br/>
         可以問我關於他的學經歷、技術專長、或是作品集內容。
       </div>
       <div class="chat-suggestions" id="chat-suggestions">
@@ -46,7 +46,7 @@
 </div>
 
 <style is:global>
-  /* === Floating 3D character anchor === */
+  /* === Floating kawaii character anchor === */
   #chatbot-anchor {
     position: fixed;
     bottom: 90px;
@@ -76,15 +76,31 @@
     border-radius: 12px;
   }
 
-  .char-3d {
+  .kawaii-stage {
     width: 100%;
     height: 100%;
     position: relative;
+    transform-origin: 50% 50%;
+    transition: transform 0.18s ease-out;
   }
-  #char-canvas {
+
+  .kawaii-img {
     width: 100%;
     height: 100%;
     display: block;
+    object-fit: cover;
+    object-position: center top;
+    animation: kawaii-float 3.2s ease-in-out infinite;
+    transform-origin: 50% 50%;
+    border-radius: 50%;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  /* Floating bobbing animation */
+  @keyframes kawaii-float {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50%      { transform: translateY(-4px) rotate(2deg); }
   }
 
   .char-drag-hint {
@@ -111,9 +127,9 @@
 
 <script is:inline>
 (function() {
-    const SYSTEM = `你是這個作品集網站的 AI 助手。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師（JT Lai）。
+    const SYSTEM = `你是「元嬰不說」，這個作品集網站的 AI 助手，自我介紹時請用「元嬰不說」這個名字，不要寫「(AI 助手)」之類的標籤或簽名。「不說」是 persona 的一部分——keep it short、安靜、沉穩，該講的還是要講清楚。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師（JT Lai）。
 專長：ESM-2 蛋白質語言模型、ProteinMPNN、Bayesian Optimization（BoTorch/qLogEI）、REINFORCE RL、FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場資料平台。
-請用繁體中文回答，保持專業友善，回答不超過 200 字。只回答與作品集相關的問題。`;
+請用繁體中文回答，保持專業友善、沉穩簡潔，回答不超過 200 字。只回答與作品集相關的問題。回覆中不要出現 <think> 之類的內部推理標籤。`;
 
     // Local knowledge base — works even when /api/chat is unreachable
     const KB = [
@@ -165,13 +181,20 @@
         return null;
     }
 
+    function stripThink(s) {
+        return String(s == null ? '' : s)
+            .replace(/<think>[\s\S]*?<\/think>/gi, '')
+            .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+            .trim();
+    }
+
     let history = [];
     let busy = false;
 
     const anchor = document.getElementById('chatbot-anchor');
     if (!anchor) return; // component not on this page
 
-    const avatar = document.getElementById('chatbot-3d');
+    const stage  = document.getElementById('kawaii-stage');
     const panel  = document.getElementById('chatbot-panel');
     const close  = document.querySelector('.chatbot-close');
     const reset  = document.querySelector('.chatbot-reset');
@@ -190,16 +213,13 @@
     }
     function isPanelOpen() { return anchor.classList.contains('panel-open'); }
 
-    /* ── Drag-to-move the character anywhere on screen ─────────────
-       Use document-level listeners in CAPTURE phase so we always receive
-       pointer events even if Three.js canvas / SVG / etc. consumes them. */
+    /* ── Drag-to-move the character anywhere on screen ───────────── */
     let dragging = false;
     let dragPointerId = null;
     let dragOffset = { x: 0, y: 0 };
     let didDrag = false;
 
     function isInsideAnchor(e) {
-        // Hit-test against the anchor's bounding rect, not relying on event target
         const r = anchor.getBoundingClientRect();
         return e.clientX >= r.left && e.clientX <= r.right
             && e.clientY >= r.top  && e.clientY <= r.bottom;
@@ -328,7 +348,7 @@
             if (res.ok) {
                 const data = await res.json();
                 reply = data.reply ?? data.content?.[0]?.text ?? null;
-                if (reply) history.push({ role: 'assistant', content: reply });
+                if (reply) history.push({ role: 'assistant', content: stripThink(reply) });
             }
         } catch (_) {}
 
@@ -395,426 +415,41 @@
         }
     });
 
-    /* === 3D mouse-tracking via Three.js === */
-    (async () => {
-        let THREE;
-        try {
-            THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');
-        } catch (e) {
-            console.warn('[3D char] Three.js failed to load', e);
-            return;
-        }
+    /* ── Mouse tracking: tilt image slightly toward cursor ───── */
+    if (stage) {
+        const maxYaw = 18;   // degrees
+        const maxPitch = 12;
+        let targetYaw = 0, targetPitch = 0;
+        let currentYaw = 0, currentPitch = 0;
+        let rafId = null;
 
-        const canvas = document.getElementById('char-canvas');
-        if (!canvas) return;
-
-        const renderer = new THREE.WebGLRenderer({
-            canvas, alpha: true, antialias: true, premultipliedAlpha: true,
-        });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        const size = 96;
-        renderer.setSize(size, size, false);
-
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
-        camera.position.set(0, -0.5, 9);
-        camera.lookAt(0, -0.4, 0);
-
-        const ambient = new THREE.AmbientLight(0xffffff, 0.45);
-        scene.add(ambient);
-
-        const keyLight = new THREE.DirectionalLight(0xfff5e0, 1.3);
-        keyLight.position.set(2.5, 3, 3);
-        scene.add(keyLight);
-
-        const rimLight = new THREE.DirectionalLight(0xa0c8ff, 0.8);
-        rimLight.position.set(-2.5, 1, -1);
-        scene.add(rimLight);
-
-        const backLight = new THREE.DirectionalLight(0xffe0c0, 0.5);
-        backLight.position.set(0, 1, -3);
-        scene.add(backLight);
-
-        const fillLight = new THREE.DirectionalLight(0xfff0e0, 0.4);
-        fillLight.position.set(0, 0.5, 4);
-        scene.add(fillLight);
-
-        const char = new THREE.Group();
-        scene.add(char);
-
-        const headPivot = new THREE.Group();
-        headPivot.position.set(0, 0.5, 0);
-        char.add(headPivot);
-
-        // === Gradients via Canvas textures ===
-        function makeSkinTexture() {
-            // 柴犬毛色：橘黃漸層，腹部/嘴邊白色區
-            const c = document.createElement('canvas');
-            c.width = 512; c.height = 512;
-            const ctx = c.getContext('2d');
-            // 底色橘黃漸層
-            const grad = ctx.createRadialGradient(256, 220, 40, 256, 256, 320);
-            grad.addColorStop(0, '#ffc888');
-            grad.addColorStop(0.5, '#f0a050');
-            grad.addColorStop(1, '#c87830');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 512, 512);
-            // 腹部白色區 (下半部)
-            const bellyGrad = ctx.createRadialGradient(256, 460, 80, 256, 460, 250);
-            bellyGrad.addColorStop(0, '#ffffff');
-            bellyGrad.addColorStop(0.5, 'rgba(255,255,255,0.6)');
-            bellyGrad.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = bellyGrad;
-            ctx.fillRect(0, 300, 512, 212);
-            // 嘴邊白色 (下巴)
-            const muzzleGrad = ctx.createRadialGradient(256, 410, 30, 256, 410, 150);
-            muzzleGrad.addColorStop(0, '#ffffff');
-            muzzleGrad.addColorStop(0.6, 'rgba(255,255,255,0.5)');
-            muzzleGrad.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = muzzleGrad;
-            ctx.fillRect(160, 350, 192, 162);
-            // 額頭高光
-            ctx.globalCompositeOperation = 'screen';
-            const hl = ctx.createRadialGradient(200, 180, 10, 200, 180, 140);
-            hl.addColorStop(0, 'rgba(255,255,255,0.25)');
-            hl.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = hl;
-            ctx.fillRect(0, 0, 512, 512);
-            ctx.globalCompositeOperation = 'source-over';
-            const tex = new THREE.CanvasTexture(c);
-            tex.colorSpace = THREE.SRGBColorSpace;
-            return tex;
-        }
-        const skinTex = makeSkinTexture();
-
-        function makeHairTexture() {
-            const c = document.createElement('canvas');
-            c.width = 512; c.height = 512;
-            const ctx = c.getContext('2d');
-            const grad = ctx.createLinearGradient(0, 0, 0, 512);
-            grad.addColorStop(0, '#3a2820');
-            grad.addColorStop(0.5, '#1a0f0a');
-            grad.addColorStop(1, '#0a0604');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 512, 512);
-            ctx.globalCompositeOperation = 'screen';
-            for (let i = 0; i < 8; i++) {
-                ctx.fillStyle = `rgba(${150 + Math.random()*50}, ${100 + Math.random()*40}, 80, ${0.15 + Math.random()*0.15})`;
-                ctx.fillRect(Math.random() * 512, Math.random() * 200, 4 + Math.random() * 8, 200 + Math.random() * 200);
+        function trackPointer(clientX, clientY) {
+            if (dragging || anchor.classList.contains('panel-open')) {
+                targetYaw = 0;
+                targetPitch = 0;
+                return;
             }
-            ctx.globalCompositeOperation = 'source-over';
-            const tex = new THREE.CanvasTexture(c);
-            tex.colorSpace = THREE.SRGBColorSpace;
-            return tex;
-        }
-        const hairTex = makeHairTexture();
-
-        // 柴犬全身毛色 — 橘黃 + 白色腹部（跟 skinTex 相同，腹部比例不同）
-        function makeBodyTexture() {
-            const c = document.createElement('canvas');
-            c.width = 512; c.height = 512;
-            const ctx = c.getContext('2d');
-            const grad = ctx.createRadialGradient(256, 220, 40, 256, 256, 320);
-            grad.addColorStop(0, '#ffc888');
-            grad.addColorStop(0.5, '#f0a050');
-            grad.addColorStop(1, '#c87830');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 512, 512);
-            // 腹部白色更明顯
-            const bellyGrad = ctx.createRadialGradient(256, 400, 60, 256, 400, 280);
-            bellyGrad.addColorStop(0, '#ffffff');
-            bellyGrad.addColorStop(0.6, 'rgba(255,255,255,0.7)');
-            bellyGrad.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = bellyGrad;
-            ctx.fillRect(0, 220, 512, 292);
-            ctx.globalCompositeOperation = 'source-over';
-            const tex = new THREE.CanvasTexture(c);
-            tex.colorSpace = THREE.SRGBColorSpace;
-            return tex;
-        }
-        const bodyTex = makeBodyTexture();
-
-        const skinMat = new THREE.MeshStandardMaterial({ map: skinTex, roughness: 0.45, metalness: 0.0 });
-        const hairMat = new THREE.MeshStandardMaterial({ map: hairTex, roughness: 0.65, metalness: 0.0 });
-        const bodyMat = new THREE.MeshStandardMaterial({ map: bodyTex, roughness: 0.55, metalness: 0.0 });
-
-        // === 柴犬幾何 — 乾淨重寫 ===
-        const furMat = skinMat;
-        const whiteMat = new THREE.MeshStandardMaterial({
-            color: 0xfffaf0, roughness: 0.55,
-        });
-        const darkFurMat = new THREE.MeshStandardMaterial({
-            color: 0xc87830, roughness: 0.7,
-        });
-
-        // HEAD — 球體，半徑 1.0
-        const head = new THREE.Mesh(new THREE.SphereGeometry(1.0, 64, 48), furMat);
-        headPivot.add(head);
-
-        // 白嘴邊 (muzzle) — 小球往前
-        const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 24), whiteMat);
-        muzzle.position.set(0, -0.30, 0.70);
-        muzzle.scale.set(1.1, 0.85, 0.95);
-        headPivot.add(muzzle);
-
-        // 兩側臉頰 (jowls)
-        const jowlGeom = new THREE.SphereGeometry(0.30, 24, 18);
-        const jowlL = new THREE.Mesh(jowlGeom, furMat);
-        jowlL.position.set(-0.78, -0.15, 0.45);
-        jowlL.scale.set(0.95, 0.85, 0.7);
-        headPivot.add(jowlL);
-        const jowlR = jowlL.clone();
-        jowlR.position.x = 0.78;
-        headPivot.add(jowlR);
-
-        // === EARS — 小三角形豎耳 ===
-        const earGeom = new THREE.ConeGeometry(0.22, 0.55, 4);
-        const earMat = new THREE.MeshStandardMaterial({
-            color: 0xd87838, roughness: 0.7,
-        });
-        const earL = new THREE.Mesh(earGeom, earMat);
-        earL.position.set(-0.62, 0.85, 0.0);
-        earL.rotation.z = 0.20;
-        earL.rotation.x = -0.10;
-        headPivot.add(earL);
-        const earR = earL.clone();
-        earR.position.x = 0.62;
-        earR.rotation.z = -0.20;
-        headPivot.add(earR);
-
-        // 耳朵內側 (粉紅)
-        const earInnerGeom = new THREE.ConeGeometry(0.14, 0.42, 4);
-        const earInnerMat = new THREE.MeshStandardMaterial({
-            color: 0xffb098, roughness: 0.5,
-        });
-        const earInnerL = new THREE.Mesh(earInnerGeom, earInnerMat);
-        earInnerL.position.set(-0.58, 0.85, 0.05);
-        earInnerL.rotation.z = 0.20;
-        earInnerL.rotation.x = -0.10;
-        headPivot.add(earInnerL);
-        const earInnerR = earInnerL.clone();
-        earInnerR.position.x = 0.58;
-        earInnerR.rotation.z = -0.20;
-        headPivot.add(earInnerR);
-
-        // === 額頭白色斑紋 (Urajiro) ===
-        const urajiroForehead = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 18), whiteMat);
-        urajiroForehead.position.set(0, 0.30, 0.75);
-        urajiroForehead.scale.set(1.3, 0.40, 0.5);
-        headPivot.add(urajiroForehead);
-
-        // === 兩塊深橘眉毛斑 ===
-        const browGeom = new THREE.SphereGeometry(0.18, 20, 16);
-        const browL = new THREE.Mesh(browGeom, darkFurMat);
-        browL.position.set(-0.32, 0.32, 0.90);
-        browL.scale.set(0.85, 0.55, 0.4);
-        headPivot.add(browL);
-        const browR = browL.clone();
-        browR.position.x = 0.32;
-        headPivot.add(browR);
-
-        // === EYES — 黑豆眼 ===
-        const eyeWhiteMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff, roughness: 0.15,
-        });
-        const eyeGeom = new THREE.SphereGeometry(0.18, 24, 20);
-        const eyeL = new THREE.Mesh(eyeGeom, eyeWhiteMat);
-        eyeL.position.set(-0.28, 0.12, 0.92);
-        eyeL.scale.set(1.0, 1.05, 0.5);
-        headPivot.add(eyeL);
-        const eyeR = eyeL.clone();
-        eyeR.position.x = 0.28;
-        headPivot.add(eyeR);
-
-        const pupilMat = new THREE.MeshStandardMaterial({
-            color: 0x0a0604, roughness: 0.05, metalness: 0.7,
-        });
-        const pupilGeom = new THREE.SphereGeometry(0.16, 24, 20);
-        const pupilL = new THREE.Mesh(pupilGeom, pupilMat);
-        pupilL.position.set(-0.28, 0.12, 1.02);
-        pupilL.scale.set(1.0, 1.05, 0.5);
-        headPivot.add(pupilL);
-        const pupilR = pupilL.clone();
-        pupilR.position.x = 0.28;
-        headPivot.add(pupilR);
-
-        const shineGeom = new THREE.SphereGeometry(0.035, 12, 10);
-        const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const shineL = new THREE.Mesh(shineGeom, shineMat);
-        shineL.position.set(-0.22, 0.17, 1.10);
-        headPivot.add(shineL);
-        const shineR = shineL.clone();
-        shineR.position.x = 0.22;
-        headPivot.add(shineR);
-
-        // === NOSE — 黑色大鼻子 ===
-        const nose = new THREE.Mesh(
-            new THREE.SphereGeometry(0.13, 20, 16),
-            new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 }),
-        );
-        nose.position.set(0, -0.10, 0.98);
-        nose.scale.set(1.1, 0.85, 0.6);
-        headPivot.add(nose);
-
-        // === MOUTH — 張嘴吐舌 ===
-        const mouthOpen = new THREE.Mesh(
-            new THREE.SphereGeometry(0.20, 20, 14),
-            new THREE.MeshStandardMaterial({ color: 0x1a0a0a, roughness: 0.4 }),
-        );
-        mouthOpen.position.set(0, -0.42, 0.85);
-        mouthOpen.scale.set(1.3, 0.7, 0.4);
-        headPivot.add(mouthOpen);
-
-        const tongue = new THREE.Mesh(
-            new THREE.SphereGeometry(0.13, 16, 12),
-            new THREE.MeshStandardMaterial({
-                color: 0xff7090, roughness: 0.4,
-                emissive: 0xff8fa3, emissiveIntensity: 0.3,
-            }),
-        );
-        tongue.position.set(0, -0.55, 0.88);
-        tongue.scale.set(1.4, 0.7, 0.5);
-        headPivot.add(tongue);
-
-        // === 柴犬身體 (圓滾滾、有四隻腳、露出白色腹部) ===
-        const body = new THREE.Mesh(new THREE.SphereGeometry(1.0, 32, 24), bodyMat);
-        body.position.set(0, -1.55, 0);
-        body.scale.set(1.4, 0.85, 1.1); // 寬圓身體
-        char.add(body);
-
-        // 身體白色腹部 (Urajiro)
-        const bellyMat = new THREE.MeshStandardMaterial({ color: 0xfffaf0, roughness: 0.55 });
-        const bellyGeom = new THREE.SphereGeometry(0.85, 24, 18);
-        const belly = new THREE.Mesh(bellyGeom, bellyMat);
-        belly.position.set(0, -1.55, 0.35);
-        belly.scale.set(1.1, 0.8, 0.6);
-        char.add(belly);
-
-        // === 四隻腳 (短腿，柴犬特色) ===
-        const pawMat = new THREE.MeshStandardMaterial({
-            color: 0xfffaf0, roughness: 0.55, // 白色腳掌
-        });
-        const pawGeom = new THREE.SphereGeometry(0.18, 16, 12);
-
-        // 兩隻前腳
-        const frontPawL = new THREE.Mesh(pawGeom, pawMat);
-        frontPawL.position.set(-0.55, -2.10, 0.45);
-        frontPawL.scale.set(1.0, 0.8, 1.2);
-        char.add(frontPawL);
-        const frontPawR = frontPawL.clone();
-        frontPawR.position.x = 0.55;
-        char.add(frontPawR);
-
-        // 兩隻後腳 (略小，因為看不到)
-        const backPawL = new THREE.Mesh(pawGeom, pawMat);
-        backPawL.position.set(-0.65, -2.00, -0.40);
-        backPawL.scale.set(0.9, 0.7, 1.0);
-        char.add(backPawL);
-        const backPawR = backPawL.clone();
-        backPawR.position.x = 0.65;
-        char.add(backPawR);
-
-        // 蓬鬆尾巴 (柴犬招牌捲尾)
-        const tailMat = new THREE.MeshStandardMaterial({
-            color: 0xf0a050, roughness: 0.7,
-        });
-        const tailGeom = new THREE.SphereGeometry(0.25, 20, 16);
-        const tail = new THREE.Mesh(tailGeom, tailMat);
-        tail.position.set(0, -1.20, -1.10);
-        tail.scale.set(1.2, 0.9, 1.0);
-        tail.rotation.x = -0.4; // 微微翹起
-        char.add(tail);
-
-        // 尾巴尖端白毛
-        const tailTipGeom = new THREE.SphereGeometry(0.16, 16, 12);
-        const tailTip = new THREE.Mesh(tailTipGeom, bellyMat);
-        tailTip.position.set(0, -0.90, -1.30);
-        char.add(tailTip);
-
-        // === 兩隻前腳的指頭 (白色肉球) ===
-        const toeGeom = new THREE.SphereGeometry(0.06, 12, 8);
-        for (const side of [-1, 1]) {
-            for (let i = 0; i < 3; i++) {
-                const toe = new THREE.Mesh(toeGeom, bellyMat);
-                toe.position.set(side * (0.45 + i * 0.08), -2.18, 0.55);
-                toe.scale.set(0.8, 0.5, 0.9);
-                char.add(toe);
-            }
+            const r = anchor.getBoundingClientRect();
+            const cx = r.left + r.width / 2;
+            const cy = r.top + r.height / 2;
+            const dx = (clientX - cx) / (window.innerWidth / 2);
+            const dy = (clientY - cy) / (window.innerHeight / 2);
+            targetYaw   = Math.max(-1, Math.min(1, dx)) * maxYaw;
+            targetPitch = Math.max(-1, Math.min(1, -dy)) * maxPitch;
         }
 
-        // MOUSE TRACKING
-        const targetRot = { x: 0, y: 0 };
-        const currentRot = { x: 0, y: 0 };
-        const maxYaw = THREE.MathUtils.degToRad(45);
-        const maxPitch = THREE.MathUtils.degToRad(28);
-
-        function onPointerMove(e) {
-            if (dragging) return;
-            const rect = canvas.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
-            const dx = (e.clientX - cx) / (rect.width / 2);
-            const dy = (e.clientY - cy) / (rect.height / 2);
-            targetRot.y = THREE.MathUtils.clamp(dx, -1, 1) * maxYaw;
-            targetRot.x = THREE.MathUtils.clamp(-dy, -1, 1) * maxPitch;
+        function tick() {
+            currentYaw   += (targetYaw   - currentYaw)   * 0.12;
+            currentPitch += (targetPitch - currentPitch) * 0.12;
+            stage.style.transform = `rotateY(${currentYaw}deg) rotateX(${currentPitch}deg)`;
+            rafId = requestAnimationFrame(tick);
         }
-        window.addEventListener('pointermove', onPointerMove, { passive: true });
 
-        function onResize() {
-            const rect = canvas.getBoundingClientRect();
-            renderer.setSize(rect.width, rect.height, false);
-            camera.aspect = rect.width / rect.height;
-            camera.updateProjectionMatrix();
-        }
-        window.addEventListener('resize', onResize);
-        onResize();
+        window.addEventListener('pointermove', (e) => {
+            trackPointer(e.clientX, e.clientY);
+        }, { passive: true });
 
-        let blinkTimer = 0;
-        let nextBlink = 2 + Math.random() * 3;
-        let isBlinking = false;
-        let blinkProgress = 0;
-
-        function animate(time) {
-            time *= 0.001;
-            currentRot.x += (targetRot.x - currentRot.x) * 0.12;
-            currentRot.y += (targetRot.y - currentRot.y) * 0.12;
-            headPivot.rotation.y = currentRot.y;
-            headPivot.rotation.x = currentRot.x * 0.85;
-
-            if (!dragging && !anchor.classList.contains('panel-open')) {
-                char.position.y = Math.sin(time * 1.4) * 0.05;
-                char.rotation.y = Math.sin(time * 0.6) * 0.04;
-            } else {
-                char.position.y *= 0.9;
-            }
-
-            blinkTimer += 1 / 60;
-            if (!isBlinking && blinkTimer > nextBlink) {
-                isBlinking = true;
-                blinkProgress = 0;
-            }
-            if (isBlinking) {
-                blinkProgress += 0.18;
-                const scale = Math.max(0.05, 1 - Math.sin(blinkProgress * Math.PI));
-                eyeL.scale.y = scale;
-                eyeR.scale.y = scale;
-                pupilL.scale.y = scale;
-                pupilR.scale.y = scale;
-                shineL.visible = scale > 0.5;
-                shineR.visible = scale > 0.5;
-                if (blinkProgress >= 1) {
-                    isBlinking = false;
-                    blinkTimer = 0;
-                    nextBlink = 2.5 + Math.random() * 3.5;
-                }
-            }
-
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
-        }
-        requestAnimationFrame(animate);
-
-        window.__chatbot3d = { scene, camera, char, headPivot };
-    })();
+        if (!rafId) tick();
+    }
 })();
 </script>
