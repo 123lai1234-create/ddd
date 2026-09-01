@@ -1,7 +1,6 @@
 /**
  * 🎵 Music Player - 音樂播放平台核心邏輯
  * 包含播放控制、播放清單、等化器、視覺化效果
- * 2026-08-31 final: 53/53 LRC auto-generated, TextDecoder UTF-8 fix
  */
 
 (function () {
@@ -271,21 +270,23 @@
 
     // 預載所有 LRC（背景 fetch + parse）
     async function preloadAllLyrics() {
-        const tasks = [];
+        const tracks = [];
         for (let i = 0; i < state.playlist.length; i++) {
             const t = state.playlist[i];
             if (t && t.lyricsUrl && !t.lyricsTimed && !t.lyrics) {
-                tasks.push(preloadLyric(t));
+                tracks.push(t);
             }
         }
-        if (tasks.length === 0) return;
+        if (tracks.length === 0) return;
         // 平行但節流（一次 4 個）
         const CONCURRENCY = 4;
-        for (let i = 0; i < tasks.length; i += CONCURRENCY) {
-            const batch = tasks.slice(i, i + CONCURRENCY);
-            await Promise.all(batch);
+        let successCount = 0;
+        for (let i = 0; i < tracks.length; i += CONCURRENCY) {
+            const batch = tracks.slice(i, i + CONCURRENCY);
+            const results = await Promise.all(batch.map(t => preloadLyric(t)));
+            successCount += results.filter(Boolean).length;
         }
-        console.log(`[music] preloaded ${tasks.length} LRC files`);
+        console.log(`[music] preloaded ${successCount}/${tracks.length} LRC files`);
     }
 
     // 讀 response 並強制用 UTF-8 解碼（避開 application/octet-stream 預設 Latin-1）
@@ -295,10 +296,11 @@
     }
 
     async function preloadLyric(track) {
-        if (!track.lyricsUrl) return;
+        if (!track.lyricsUrl) return false;
         try {
-            const r = await fetch(track.lyricsUrl, { cache: "force-cache" });
-            if (!r.ok) return;
+            // 用 cache: 'reload' 確保不走 cache（避免舊 404 殘留）
+            const r = await fetch(track.lyricsUrl, { cache: "reload" });
+            if (!r.ok) return false;
             const text = await readResponseAsUtf8(r);
             if (isLrcFormat(text)) {
                 track.lyricsTimed = parseLrc(text);
@@ -306,7 +308,15 @@
                 const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
                 if (lines.length > 0) track.lyrics = lines;
             }
-        } catch (_) { /* ignore */ }
+            // 若這首是當前播放曲，預載完成後重跑 updateNowPlaying，
+            // 避免用戶在 preload 完成前點歌抓到 placeholder 的 race condition
+            if (state.playlist[state.currentIndex] === track) {
+                updateNowPlaying(track);
+            }
+            return true;
+        } catch (_) {
+            return false;
+        }
     }
 
     // 從 /music/tracks.json 載入真實音樂清單
