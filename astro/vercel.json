@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "node scripts/fetch_lfs.mjs && npm install --prefer-offline --no-audit",
-  "buildCommand": "npx --no-install astro build",
+  "buildCommand": "npx --no-install astro build && cp -r public/music dist/music/ 2>/dev/null || true",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
