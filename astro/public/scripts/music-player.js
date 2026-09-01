@@ -257,15 +257,20 @@
     }
 
     // rAF loop：每幀依 audio.currentTime 更新 active line
-    // 只要選了曲（currentIndex !== -1）就更新歌詞，這樣手動 seek 時也能跟著走
+    // 沒選曲時自動停止（省 CPU）
+    // 用 cachedLines 避免每幀 querySelectorAll 整個 lyrics 容器
     let _rafId = null;
+    let _cachedLyricLines = null; // 快取 querySelectorAll 結果，歌詞重 render 時清掉
     function startLyricSyncLoop() {
         if (_rafId) return;
         function tick() {
-            if (state.currentIndex >= 0 && state.playlist[state.currentIndex]) {
-                const t = elements.audioPlayer.currentTime || 0;
-                updateLyrics(t);
+            // 沒選曲或曲目被刪除：自我停止 rAF
+            if (state.currentIndex < 0 || !state.playlist[state.currentIndex]) {
+                _rafId = null;
+                return;
             }
+            const t = elements.audioPlayer.currentTime || 0;
+            updateLyrics(t);
             _rafId = requestAnimationFrame(tick);
         }
         _rafId = requestAnimationFrame(tick);
@@ -1201,6 +1206,7 @@
 
     // 渲染 plain lyrics（無時間戳）成 karaoke 字元 span
     function renderLyricsPlain(lines) {
+        _cachedLyricLines = null; // 清空快取，下個 rAF tick 會重新 querySelectorAll
         elements.lyrics.classList.toggle("karaoke", state.karaoke);
         elements.lyrics.innerHTML = lines
             .map(line => {
@@ -1216,6 +1222,7 @@
     // 渲染 timed lyrics：[{ time: 12.34, text: '...' }, ...]
     // 卡拉OK模式：每一行拆成「字元 span」，用 --kar-fill 逐字元漸亮
     function renderLyricsTimed(timed) {
+        _cachedLyricLines = null; // 清空快取，下個 rAF tick 會重新 querySelectorAll
         elements.lyrics.classList.toggle("karaoke", state.karaoke);
         elements.lyrics.innerHTML = timed
             .map((l, i) => {
@@ -1376,7 +1383,12 @@
         }
 
         // 切換 active/passed class（避免不必要的 DOM 操作）
-        const lines = elements.lyrics.querySelectorAll(".lyric-line");
+        // 用 cachedLines 快取避免每幀都做 querySelectorAll
+        let lines = _cachedLyricLines;
+        if (!lines) {
+            lines = elements.lyrics.querySelectorAll(".lyric-line");
+            _cachedLyricLines = lines;
+        }
         if (lines.length === 0) return;
 
         // 計算當前行在整行時間窗內的完成度（k 値 0..1）→ 卡拉OK漸亮
