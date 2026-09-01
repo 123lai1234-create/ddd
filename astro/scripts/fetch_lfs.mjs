@@ -96,6 +96,7 @@ async function worker() {
         const task = tasks[idx];
         let attempt = 0;
         let lastErr = null;
+        let success = false;
         while (attempt <= RETRIES) {
             attempt++;
             try {
@@ -111,7 +112,8 @@ async function worker() {
                 await writeFile(task.filePath, data);
                 replaced++;
                 process.stdout.write('.');
-                return;
+                success = true;
+                break;  // 成功：離開 inner while，繼續 outer while 拿下一個 task
             } catch (err) {
                 lastErr = err;
                 if (attempt > RETRIES) break;
@@ -119,8 +121,11 @@ async function worker() {
                 await new Promise(r => setTimeout(r, 500 * attempt));
             }
         }
-        errors++;
-        console.error(`\n[fetch_lfs] FAILED ${task.relPath}: ${lastErr && lastErr.message}`);
+        if (!success) {
+            errors++;
+            console.error(`\n[fetch_lfs] FAILED ${task.relPath}: ${lastErr && lastErr.message}`);
+        }
+        // 成功或失敗都繼續 outer while 拿下一個 task（不要 return）
     }
 }
 
