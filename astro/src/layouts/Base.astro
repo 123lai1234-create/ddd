@@ -123,7 +123,21 @@ const personSchema = {
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#08060e" />
     <script is:inline>
-      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=20260831h').catch(() => {});
+      if ('serviceWorker' in navigator) {
+        // 強制 unregister 舊版 SW 然後註冊新版，確保新 JS 被加載
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          regs.forEach(reg => {
+            // 任何不是 v=20260831i 開頭的 SW 視為舊版 unregister
+            if (reg.active && reg.active.scriptURL && !reg.active.scriptURL.includes('v=20260831i')) {
+              reg.unregister();
+            }
+          });
+        });
+        navigator.serviceWorker.register('/sw.js?v=20260831i').then(reg => {
+          // 強制新 SW 立即接管所有 clients
+          if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }).catch(() => {});
+      }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.cn" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
