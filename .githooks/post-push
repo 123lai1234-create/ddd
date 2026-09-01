@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Post-push hook: re-alias donttalk.vercel.app to known-working deploy
+# Triggered after `git push` if push target is release branch
+# This fixes the recurring "music 404" problem where Vercel auto-deploy
+# from git push creates a new production deploy that doesn't include music/
+# and steals the production alias away from the working deploy.
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+PROD_DEPLOY="donttalk-jlydvgv0o-donttalk.vercel.app"
+PROD_DOMAIN="donttalk.vercel.app"
+
+# Read while-push info
+remote="$1"
+url="$2"
+shift 2 || true
+
+# Find pushed branches via stdin
+pushed_refs=""
+while read -r local_ref local_sha remote_ref remote_sha; do
+    pushed_refs="${pushed_refs}${remote_ref} "
+done
+
+# Only run if release branch was pushed
+if echo "$pushed_refs" | grep -qE '(^|/)release($| |,)'; then
+    echo ""
+    echo "[vercel-fix-alias] Detected push to release branch — re-aliasing $PROD_DOMAIN to $PROD_DEPLOY"
+    echo ""
+    # Run the alias script
+    bash "$REPO_ROOT/scripts/vercel-fix-alias.sh"
+else
+    echo "[vercel-fix-alias] No release-branch push, skipping alias fix."
+fi
