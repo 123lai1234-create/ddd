@@ -85,12 +85,15 @@ console.log(`[fetch_lfs] found ${tasks.length} LFS pointers to fetch`);
 
 let replaced = 0;
 let errors = 0;
+let nextIndex = 0;
 
-// 平行下載（worker pool）
+// 平行下載（worker pool）— 用 atomic index 避免 race condition
 async function worker() {
     while (true) {
-        const task = tasks.shift();
-        if (!task) return;
+        // 用 atomic 索引取代 tasks.shift() 避免多個 worker race 時漏 task
+        const idx = nextIndex++;
+        if (idx >= tasks.length) return;
+        const task = tasks[idx];
         let attempt = 0;
         let lastErr = null;
         while (attempt <= RETRIES) {
