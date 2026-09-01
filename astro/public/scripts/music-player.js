@@ -305,6 +305,11 @@
                 const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
                 if (lines.length > 0) track.lyrics = lines;
             }
+            // 若這首是當前播放曲，預載完成後重跑 updateNowPlaying，
+            // 避免用戶在 preload 完成前點歌抓到 placeholder 的 race condition
+            if (state.playlist[state.currentIndex] === track) {
+                updateNowPlaying(track);
+            }
         } catch (_) { /* ignore */ }
     }
 
