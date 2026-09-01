@@ -41,9 +41,9 @@ if (globs.length === 0) {
 }
 
 const LFS_POINTER_RE = /^version https:\/\/git-lfs\.github\.com\/spec\/v1\noid sha256:[0-9a-f]+\nsize (\d+)\n?$/;
-const FETCH_TIMEOUT_MS = 30000;
+const FETCH_TIMEOUT_MS = 60000;  // 增加到 60s（LFS server 有時慢）
 const CONCURRENCY = 8;
-const RETRIES = 2;
+const RETRIES = 5;  // 增加 retry 從 2 到 5（確保大部分 LFS 能下載）
 
 async function* walk(pattern) {
     for await (const p of glob(pattern, { cwd: projectRoot })) {
