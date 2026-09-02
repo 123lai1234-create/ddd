@@ -123,20 +123,10 @@ const personSchema = {
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#08060e" />
     <script is:inline>
+      // 註冊新版 SW，舊 cache 會在新 SW activate 時自動清掉
+      // （sw.js 的 activate handler 會刪除所有非 CACHE_NAME 的 cache）
       if ('serviceWorker' in navigator) {
-        // 強制 unregister 舊版 SW 然後註冊新版，確保新 JS 被加載
-        navigator.serviceWorker.getRegistrations().then(regs => {
-          regs.forEach(reg => {
-            // 任何不是 v=20260831i 開頭的 SW 視為舊版 unregister
-            if (reg.active && reg.active.scriptURL && !reg.active.scriptURL.includes('v=20260831i')) {
-              reg.unregister();
-            }
-          });
-        });
-        navigator.serviceWorker.register('/sw.js?v=20260831i').then(reg => {
-          // 強制新 SW 立即接管所有 clients
-          if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }).catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=20260831i').catch(() => {});
       }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.cn" />
