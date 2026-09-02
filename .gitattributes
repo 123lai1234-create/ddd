@@ -1,10 +1,13 @@
-# Audio files
-*.mp3 filter=lfs diff=lfs merge=lfs -text
-*.wav filter=lfs diff=lfs merge=lfs -text
-*.flac filter=lfs diff=lfs merge=lfs -text
-*.ogg filter=lfs diff=lfs merge=lfs -text
-*.m4a filter=lfs diff=lfs merge=lfs -text
-*.aac filter=lfs diff=lfs merge=lfs -text
+# 2026-09-02: 音樂改放 jsDelivr CDN，MP3 不再用 LFS
+# (LFS pointer 132 bytes 對 Vercel 沙盒不友善，且 jsDelivr 不支援 LFS)
+# 64.5MB 全部進 git 還在 GitHub 25GB 限制內
+# Audio files (disabled LFS — use jsDelivr CDN now)
+# *.mp3 filter=lfs diff=lfs merge=lfs -text
+# *.wav filter=lfs diff=lfs merge=lfs -text
+# *.flac filter=lfs diff=lfs merge=lfs -text
+# *.ogg filter=lfs diff=lfs merge=lfs -text
+# *.m4a filter=lfs diff=lfs merge=lfs -text
+# *.aac filter=lfs diff=lfs merge=lfs -text
 
-# Lyrics files: 不歸 LFS 管（才幾百 bytes 的純文字，LFS pointer 132 bytes 還比真檔大）
+# Lyrics files: 不歸 LFS 管（才幾百 bytes 的純文字）
 # *.lrc 不寫 LFS filter，用一般 git 追蹤
