@@ -65,10 +65,10 @@ self.addEventListener('fetch', (event) => {
     return; // let the browser handle it normally
   }
 
-  // 帶 ?v=... cache-bust 參數的請求：永遠 network-first，不走 cache
-  // 這避免舊版 JS/CSS 被 cache 留住造成更新沒生效
+  // 帶 ?v=... cache-bust 參數的請求：永遠 network-only，失敗讓瀏覽器自己 fallback
+  // 不 fallback caches.match（避免 0.1 KB 404 緩存被拿來當作 v=... 的內容）
   if (url.search.length > 1) {
-    event.respondWith(fetch(request).catch(() => caches.match(request)));
+    event.respondWith(fetch(request));
     return;
   }
 
