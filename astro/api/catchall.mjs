@@ -3,6 +3,7 @@
 // Uses Neon HTTP SQL API (no pg driver). Edge runtime for fast cold start.
 // 2026-08-10 build marker (force Vercel edge function rebuild — cache stuck on polish-final version)
 // 2026-08-11 v2 marker (Railway 棄用, 改用 Vercel edge function; force rebuild)
+// 2026-09-02 v3 marker (chatHandler: 加 stripThink 過濾 + 強制 charset=utf-8，修正中文亂碼與 think 區塊外漏)
 //
 // Schema (Neon Postgres, schema `public`):
 //   watchlist        (code, name, ticker, sort_order)         — stock watchlist
@@ -5997,8 +5998,14 @@ async function chatHandler(request) {
       signal: ctrl.signal,
     });
     clearTimeout(tid);
-    const text = await r.text();
-    return new Response(text, { status: r.status, headers: { "Content-Type": "application/json" } });
+    let text = await r.text();
+    // 過濾 <think> 區塊（防 reasoning model 推理內容漏出到使用者）
+    text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
+    // 強制 charset=utf-8，避免中文被瀏覽器當 Latin-1 顯示變亂碼
+    return new Response(text, {
+      status: r.status,
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+    });
   } catch (e) {
     clearTimeout(tid);
     return json({ error: `Chat proxy failed: ${e.name}: ${e.message}` }, { status: 502 });
