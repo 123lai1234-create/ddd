@@ -260,8 +260,9 @@
             updateStats();
             // 重新接上上一回上傳、保存在 IndexedDB 的音檔（blob -> objectURL）
             restoreLocalAudio();
-            // 預載所有 LRC（背景 fetch + parse，點歌時歌詞已經在 DOM）
-            preloadAllLyrics();
+            // 預載所有 LRC：延遲 3 秒讓頁面先完全 render 再背景跑
+            // 避免 init 時 38 個並行 fetch 拖慢頁面（每個 200-900ms）
+            setTimeout(preloadAllLyrics, 3000);
         });
         loadStatsFromStorage();
 
@@ -304,8 +305,8 @@
             }
         }
         if (tracks.length === 0) return;
-        // 平行但節流（一次 4 個）
-        const CONCURRENCY = 4;
+        // 平行但節流（一次 2 個，避免太多同時請求拖慢網路）
+        const CONCURRENCY = 2;
         let successCount = 0;
         for (let i = 0; i < tracks.length; i += CONCURRENCY) {
             const batch = tracks.slice(i, i + CONCURRENCY);
