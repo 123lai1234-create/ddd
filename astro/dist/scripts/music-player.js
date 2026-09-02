@@ -153,6 +153,15 @@
         repeat: "none", // none, one, all
         karaoke: true, // 卡拉OK逐字漸亮模式（預設開）
         drawerOpen: false,
+        // 用來取消 300ms 強制 tryPlay 計時器：每次 pauseTrack 會 +1
+        // 計時器跑時若發現 token 改變就放棄，不會重新播放
+        playToken: 0,
+        // 睡眠定時器狀態
+        sleepMode: null, // null | 'minutes' | 'endOfTrack'
+        sleepEndTime: null, // 計時器到期的 Date 物件
+        sleepTimerId: null, // setTimeout id（null 表示未啟動）
+        // 迷你播放器狀態（切到其他 tab 時縮小到右下角）
+        isMini: false,
         audioContext: null,
         analyser: null,
         audioSource: null,
@@ -231,16 +240,29 @@
         injectUploadUI();
         // 注入卡拉OK切換鈕到歌詞區
         injectKaraokeToggle();
+        // 歌詞 click seek 與雙擊全螢幕
+        bindLyricsEvents();
         // 設定卡拉OK預設
         setKaraokeMode(state.karaoke);
+        // 啟動睡眠定時器 UI 倒計時 ticker
+        startSleepUiTicker();
+        // 切到其他 tab 時自動進入迷你模式，回到頁面恢復
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden && state.isPlaying) {
+                enterMiniMode();
+            } else {
+                exitMiniMode();
+            }
+        });
         // 用真實的 manifest 啟動；失敗才退回 SAMPLE_MUSIC demo
         loadTracksManifest().then(() => {
             renderPlaylist();
             updateStats();
             // 重新接上上一回上傳、保存在 IndexedDB 的音檔（blob -> objectURL）
             restoreLocalAudio();
-            // 預載所有 LRC（背景 fetch + parse，點歌時歌詞已經在 DOM）
-            preloadAllLyrics();
+            // 預載所有 LRC：延遲 8 秒讓用戶完全看完頁面再背景跑
+            // 避免與用戶操作時的 rAF + 音訊播放競爭 CPU/網路
+            setTimeout(preloadAllLyrics, 8000);
         });
         loadStatsFromStorage();
 
@@ -254,15 +276,20 @@
     }
 
     // rAF loop：每幀依 audio.currentTime 更新 active line
-    // 只要選了曲（currentIndex !== -1）就更新歌詞，這樣手動 seek 時也能跟著走
+    // 沒選曲時自動停止（省 CPU）
+    // 用 cachedLines 避免每幀 querySelectorAll 整個 lyrics 容器
     let _rafId = null;
+    let _cachedLyricLines = null; // 快取 querySelectorAll 結果，歌詞重 render 時清掉
     function startLyricSyncLoop() {
         if (_rafId) return;
         function tick() {
-            if (state.currentIndex >= 0 && state.playlist[state.currentIndex]) {
-                const t = elements.audioPlayer.currentTime || 0;
-                updateLyrics(t);
+            // 沒選曲或曲目被刪除：自我停止 rAF
+            if (state.currentIndex < 0 || !state.playlist[state.currentIndex]) {
+                _rafId = null;
+                return;
             }
+            const t = elements.audioPlayer.currentTime || 0;
+            updateLyrics(t);
             _rafId = requestAnimationFrame(tick);
         }
         _rafId = requestAnimationFrame(tick);
@@ -278,8 +305,8 @@
             }
         }
         if (tracks.length === 0) return;
-        // 平行但節流（一次 4 個）
-        const CONCURRENCY = 4;
+        // 平行但節流（一次 2 個，避免太多同時請求拖慢網路）
+        const CONCURRENCY = 2;
         let successCount = 0;
         for (let i = 0; i < tracks.length; i += CONCURRENCY) {
             const batch = tracks.slice(i, i + CONCURRENCY);
@@ -417,6 +444,26 @@
         elements.audioPlayer.addEventListener("loadedmetadata", onMetadataLoaded);
         elements.audioPlayer.addEventListener("ended", onTrackEnded);
         elements.audioPlayer.addEventListener("error", onAudioError);
+
+        // 睡眠定時器按鈕
+        document.querySelectorAll(".sleep-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const mode = btn.dataset.sleep;
+                document.querySelectorAll(".sleep-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                if (mode === "0") {
+                    cancelSleepTimer();
+                } else {
+                    startSleepTimer(mode);
+                }
+            });
+        });
+
+        // 全螢幕歌詞按鈕
+        const fsBtn = document.getElementById("fullscreen-lyrics-btn");
+        if (fsBtn) {
+            fsBtn.addEventListener("click", () => toggleFullscreenLyrics());
+        }
 
         // 鍵盤快捷鍵
         document.addEventListener("keydown", handleKeyboard);
@@ -770,9 +817,12 @@
                 // 觸發 load（如果 src 沒變可能不會重新 load，確保觸發一次）
                 if (srcChanged) elements.audioPlayer.load();
                 // 保險：若 300ms 內還沒 canplay，強制嘗試 play（避免永遠卡住）
+                // 用 token 檢查：如果用戶在 300ms 內暫停（pauseTrack 會遞增 token），就放棄這次 tryPlay
+                const playTokenSnapshot = state.playToken;
                 setTimeout(() => {
                     elements.audioPlayer.removeEventListener("canplay", onCanPlay);
                     elements.audioPlayer.removeEventListener("loadeddata", onCanPlay);
+                    if (playTokenSnapshot !== state.playToken) return; // 用戶已暫停
                     if (!state.isPlaying) tryPlay();
                 }, 300);
             } else {
@@ -790,6 +840,8 @@
     function pauseTrack() {
         elements.audioPlayer.pause();
         state.isPlaying = false;
+        // 遞增 token，取消 playTrack 中尚未觸發的 300ms 強制 tryPlay
+        state.playToken++;
         updatePlayButton();
     }
 
@@ -838,14 +890,24 @@
     }
 
     function toggleRepeat() {
+        // 三態循環：none → all → one → none
         const modes = ["none", "all", "one"];
         const currentModeIndex = modes.indexOf(state.repeat);
         state.repeat = modes[(currentModeIndex + 1) % modes.length];
 
-        elements.repeatBtn.classList.remove("active");
-        if (state.repeat === "one") {
+        elements.repeatBtn.classList.remove("active", "repeat-one");
+        if (state.repeat === "all" || state.repeat === "one") {
             elements.repeatBtn.classList.add("active");
         }
+        if (state.repeat === "one") {
+            elements.repeatBtn.classList.add("repeat-one");
+        }
+        // 更新按鈕文字：none=🔁 all=🔁 one=1️⃣
+        elements.repeatBtn.textContent = state.repeat === "one" ? "1️⃣" : "🔁";
+        elements.repeatBtn.title =
+            state.repeat === "none" ? "重複：關閉 (R)"
+            : state.repeat === "all" ? "重複：全部 (R)"
+            : "重複：單曲 (R)";
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -873,6 +935,14 @@
         const percent = (e.clientX - rect.left) / rect.width;
         const duration = elements.audioPlayer.duration || state.playlist[state.currentIndex].duration;
         elements.audioPlayer.currentTime = percent * duration;
+    }
+
+    // 快捷鍵 0-9 跳到對應百分比（0 = 開頭，9 = 90%）
+    function seekToPercent(percent) {
+        if (state.currentIndex < 0) return;
+        const p = Math.max(0, Math.min(1, percent));
+        const duration = elements.audioPlayer.duration || state.playlist[state.currentIndex].duration;
+        elements.audioPlayer.currentTime = p * duration;
     }
 
     let isSeeking = false;
@@ -946,6 +1016,14 @@
     function onTrackEnded() {
         if (simulateInterval) clearInterval(simulateInterval);
 
+        // 睡眠定時器 endOfTrack 模式：播完這首後暫停
+        if (state.sleepMode === "endOfTrack") {
+            cancelSleepTimer();
+            state.isPlaying = false;
+            updatePlayButton();
+            return;
+        }
+
         if (state.repeat === "one") {
             simulateProgress = 0;
             if (state.playlist[state.currentIndex].url) {
@@ -963,8 +1041,138 @@
         console.warn("[music] audio error:", elements.audioPlayer.error);
         const track = state.playlist[state.currentIndex];
         if (track) {
-            elements.trackArtist.textContent = (track.artist || "") + " · " + (track.album || "") + "  ⚠️ 載入失敗";
+            // 改標題為「點此重試」讓用戶可一鍵重試
+            elements.trackTitle.textContent = "⚠️ 載入失敗（點此重試）";
+            elements.trackTitle.style.cursor = "pointer";
+            elements.trackTitle.style.color = "#f87171";
+            elements.trackArtist.textContent = (track.artist || "") + " · " + (track.album || "");
+            // 一次性重試 handler
+            const retry = () => {
+                elements.trackTitle.textContent = track.title;
+                elements.trackTitle.style.cursor = "";
+                elements.trackTitle.style.color = "";
+                elements.trackTitle.removeEventListener("click", retry);
+                playTrack(state.currentIndex);
+            };
+            elements.trackTitle.addEventListener("click", retry, { once: true });
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 歌詞點擊 seek：點歌詞行直接跳到對應時間
+    // ═══════════════════════════════════════════════════════════════════
+    function bindLyricsEvents() {
+        if (!elements.lyrics) return;
+        // 用 mousedown 而非 click：避免與拖動文字選取衝突
+        elements.lyrics.addEventListener("dblclick", e => {
+            // 雙擊歌詞進入全螢幕模式
+            toggleFullscreenLyrics(true);
+        });
+        elements.lyrics.addEventListener("click", e => {
+            const line = e.target.closest(".lyric-line");
+            if (!line) return;
+            // 跳過 karaoke 的字元 span（只對整行 click 響應）
+            if (e.target.classList.contains("kar-ch")) return;
+            // 優先用 data-time；沒有就 fallback 用 data-idx 與 audio.currentTime
+            const t = parseFloat(line.dataset.time);
+            if (!Number.isNaN(t)) {
+                elements.audioPlayer.currentTime = t;
+            } else {
+                const idx = parseInt(line.dataset.idx, 10);
+                if (!Number.isNaN(idx) && state.playlist[state.currentIndex]) {
+                    const track = state.playlist[state.currentIndex];
+                    const seg = (track.duration || 0) / Math.max(1, (track.lyricsTimed || track.lyrics || []).length);
+                    elements.audioPlayer.currentTime = idx * seg;
+                }
+            }
+            // 暫停時也允許 seek（不自動播放）
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 全螢幕歌詞（F 鍵切換或雙擊歌詞）
+    // ═══════════════════════════════════════════════════════════════════
+    function toggleFullscreenLyrics(force) {
+        const willBeOn = typeof force === "boolean" ? force : !document.body.classList.contains("lyrics-fullscreen");
+        document.body.classList.toggle("lyrics-fullscreen", willBeOn);
+        // ESC 也退出全螢幕
+        if (willBeOn) {
+            const onKey = (e) => {
+                if (e.key === "Escape" && document.body.classList.contains("lyrics-fullscreen")) {
+                    toggleFullscreenLyrics(false);
+                    document.removeEventListener("keydown", onKey);
+                }
+            };
+            document.addEventListener("keydown", onKey);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 睡眠定時器：minutes 分鐘後暫停 / 播完當前曲暫停
+    // ═══════════════════════════════════════════════════════════════════
+    function startSleepTimer(mode) {
+        cancelSleepTimer();
+        state.sleepMode = mode;
+        if (mode === "endOfTrack") {
+            // 播完當前曲後暫停：在 onTrackEnded 檢查 state.sleepMode
+            return;
+        }
+        // mode 是分鐘數字（字串 "5" / "15" / "30" / "60"）
+        const minutes = parseInt(mode, 10);
+        if (!minutes || minutes <= 0) return;
+        state.sleepEndTime = new Date(Date.now() + minutes * 60 * 1000);
+        state.sleepTimerId = setTimeout(() => {
+            pauseTrack();
+            cancelSleepTimer();
+        }, minutes * 60 * 1000);
+    }
+
+    function cancelSleepTimer() {
+        if (state.sleepTimerId) {
+            clearTimeout(state.sleepTimerId);
+            state.sleepTimerId = null;
+        }
+        state.sleepEndTime = null;
+        state.sleepMode = null;
+    }
+
+    // 睡眠定時器 UI：在 trackArtist 旁顯示倒計時
+    function updateSleepTimerUI() {
+        if (!state.sleepEndTime) return;
+        const remaining = Math.max(0, state.sleepEndTime - Date.now());
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        if (elements.trackArtist) {
+            const baseText = state.currentIndex >= 0
+                ? (state.playlist[state.currentIndex]?.artist || "") + " · " + (state.playlist[state.currentIndex]?.album || "")
+                : "-";
+            elements.trackArtist.textContent = `💤 睡眠：${mins}:${String(secs).padStart(2, "0")}  ·  ${baseText}`;
+        }
+    }
+    let _sleepUiInterval = null;
+    function startSleepUiTicker() {
+        if (_sleepUiInterval) return;
+        _sleepUiInterval = setInterval(updateSleepTimerUI, 1000);
+    }
+    function stopSleepUiTicker() {
+        if (_sleepUiInterval) {
+            clearInterval(_sleepUiInterval);
+            _sleepUiInterval = null;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 迷你播放器：切到其他 tab 時，舞台縮小到右下角浮動
+    // ═══════════════════════════════════════════════════════════════════
+    function enterMiniMode() {
+        if (state.isMini) return;
+        state.isMini = true;
+        document.body.classList.add("mini-mode");
+    }
+    function exitMiniMode() {
+        if (!state.isMini) return;
+        state.isMini = false;
+        document.body.classList.remove("mini-mode");
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -1193,6 +1401,7 @@
 
     // 渲染 plain lyrics（無時間戳）成 karaoke 字元 span
     function renderLyricsPlain(lines) {
+        _cachedLyricLines = null; // 清空快取，下個 rAF tick 會重新 querySelectorAll
         elements.lyrics.classList.toggle("karaoke", state.karaoke);
         elements.lyrics.innerHTML = lines
             .map(line => {
@@ -1208,6 +1417,7 @@
     // 渲染 timed lyrics：[{ time: 12.34, text: '...' }, ...]
     // 卡拉OK模式：每一行拆成「字元 span」，用 --kar-fill 逐字元漸亮
     function renderLyricsTimed(timed) {
+        _cachedLyricLines = null; // 清空快取，下個 rAF tick 會重新 querySelectorAll
         elements.lyrics.classList.toggle("karaoke", state.karaoke);
         elements.lyrics.innerHTML = timed
             .map((l, i) => {
@@ -1368,7 +1578,12 @@
         }
 
         // 切換 active/passed class（避免不必要的 DOM 操作）
-        const lines = elements.lyrics.querySelectorAll(".lyric-line");
+        // 用 cachedLines 快取避免每幀都做 querySelectorAll
+        let lines = _cachedLyricLines;
+        if (!lines) {
+            lines = elements.lyrics.querySelectorAll(".lyric-line");
+            _cachedLyricLines = lines;
+        }
         if (lines.length === 0) return;
 
         // 計算當前行在整行時間窗內的完成度（k 値 0..1）→ 卡拉OK漸亮
@@ -1551,6 +1766,8 @@
     function handleKeyboard(e) {
         // 忽略輸入框中的按鍵
         if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+        // 修飾鍵（Ctrl/Meta/Alt）按下時不觸發快捷鍵（避免瀏覽器快捷鍵衝突）
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
 
         switch (e.code) {
             case "Space":
@@ -1558,9 +1775,13 @@
                 togglePlay();
                 break;
             case "ArrowLeft":
+            case "KeyJ":
+                e.preventDefault();
                 prevTrack();
                 break;
             case "ArrowRight":
+            case "KeyL":
+                e.preventDefault();
                 nextTrack();
                 break;
             case "ArrowUp":
@@ -1576,8 +1797,32 @@
                 setVolume();
                 break;
             case "KeyM":
+                e.preventDefault();
                 toggleMute();
                 break;
+            case "KeyR":
+                e.preventDefault();
+                toggleRepeat();
+                break;
+            case "KeyF":
+                e.preventDefault();
+                toggleFullscreenLyrics();
+                break;
+            case "Digit0":
+            case "Digit1":
+            case "Digit2":
+            case "Digit3":
+            case "Digit4":
+            case "Digit5":
+            case "Digit6":
+            case "Digit7":
+            case "Digit8":
+            case "Digit9": {
+                e.preventDefault();
+                const n = parseInt(e.code.replace("Digit", ""), 10);
+                seekToPercent(n / 10);
+                break;
+            }
         }
     }
 
