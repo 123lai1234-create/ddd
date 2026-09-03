@@ -38,15 +38,15 @@
   ],
   "rewrites": [
     {
-      "source": "/og",
-      "destination": "/api/og"
-    },
-    {
       "source": "/healthz",
       "destination": "/api/healthz"
     }
   ],
   "routes": [
+    {
+      "src": "/og",
+      "dest": "/api/catchall"
+    },
     {
       "src": "/api/.*",
       "dest": "/api/catchall"

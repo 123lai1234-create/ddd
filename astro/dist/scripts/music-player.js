@@ -144,7 +144,9 @@
     // 播放器狀態
     // ═══════════════════════════════════════════════════════════════════
     let state = {
-        playlist: [],
+        // 預設填入 SAMPLE_MUSIC 6 首歌，避免 tracks.json 載入前（首次 Vercel edge MISS 可能要 11s）
+        // 頁面空白。tracks.json 拿到後 loadTracksManifest 會覆蓋此值。
+        playlist: SAMPLE_MUSIC.slice(),
         currentIndex: -1,
         isPlaying: false,
         volume: 75,
@@ -254,6 +256,10 @@
                 exitMiniMode();
             }
         });
+        // 立即 render playlist（用 SAMPLE_MUSIC 或 localStorage 的 userAdded），
+        // 避免 tracks.json 載入前（Vercel edge MISS 11s）頁面空白
+        renderPlaylist();
+        updateStats();
         // 用真實的 manifest 啟動；失敗才退回 SAMPLE_MUSIC demo
         loadTracksManifest().then(() => {
             renderPlaylist();
@@ -450,10 +456,10 @@
             btn.addEventListener("click", () => {
                 const mode = btn.dataset.sleep;
                 document.querySelectorAll(".sleep-btn").forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
                 if (mode === "0") {
                     cancelSleepTimer();
                 } else {
+                    btn.classList.add("active");
                     startSleepTimer(mode);
                 }
             });
@@ -1846,7 +1852,10 @@
             const saved = localStorage.getItem("musicPlayer");
             if (saved) {
                 const data = JSON.parse(saved);
-                state.playlist = Array.isArray(data.playlist) ? data.playlist : [];
+                // 若 localStorage 沒 playlist 仍 fallback 到 SAMPLE_MUSIC
+                state.playlist = (Array.isArray(data.playlist) && data.playlist.length > 0)
+                    ? data.playlist
+                    : SAMPLE_MUSIC.slice();
                 state.volume = data.volume || 75;
                 state.currentIndex = data.currentIndex ?? -1;
             }

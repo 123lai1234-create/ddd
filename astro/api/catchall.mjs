@@ -4,6 +4,13 @@
 // 2026-08-10 build marker (force Vercel edge function rebuild — cache stuck on polish-final version)
 // 2026-08-11 v2 marker (Railway 棄用, 改用 Vercel edge function; force rebuild)
 // 2026-09-02 v3 marker (chatHandler: 加 stripThink 過濾 + 強制 charset=utf-8，修正中文亂碼與 think 區塊外漏)
+// 2026-09-02 v4 marker (ogHandler: 內聯到 catchall TABLE，修正 /og 走 catchall 卻 404 的問題；
+//   vercel.json 的 routes /api/.* 把 /api/og 也導到 catchall，原本 og.jsx 不會被 Vercel 執行)
+// 2026-09-03 v5 marker (dispatch: 修正 path normalization，當 vercel.json route rule 把 /og 直接送 catchall 時，
+//   pathname 是 /api//og，去掉 /api/ 後是 /og，原本 "/" + "/og" = "//og" 壞掉，現在去掉 path 開頭多餘 / 再加 /)
+
+import { ImageResponse } from '@vercel/og';
+import { createElement as h, Fragment } from 'react';
 //
 // Schema (Neon Postgres, schema `public`):
 //   watchlist        (code, name, ticker, sort_order)         — stock watchlist
@@ -6012,11 +6019,110 @@ async function chatHandler(request) {
   }
 }
 
+// ── og handler (2026-09-02 v4: 從 og.jsx 內聯到 catchall，修正 /og 走 catchall 卻 404) ──
+// 原本 og.jsx 是獨立 edge function，但 vercel.json 的 routes /api/.* 把它導到 catchall
+// → catchall TABLE 沒 /og 條目就 404。內聯進來省事，且能繼續用同一份 edge function 程式碼。
+const TAG_COLORS_OG = {
+  "Protein AI":  { bg: "#1a1020", border: "#a050e8", text: "#c080f8" },
+  "Gene AI":     { bg: "#0e1820", border: "#2080d0", text: "#60b8f8" },
+  "NGS":         { bg: "#0e1a10", border: "#30a040", text: "#60d870" },
+  "RPG":         { bg: "#1a1000", border: "#e8c060", text: "#f8d880" },
+  "Research":    { bg: "#0a0a1a", border: "#6060c0", text: "#9090e8" },
+  "Portfolio":   { bg: "#14100a", border: "#c8a060", text: "#e8c080" },
+  "Interactive": { bg: "#0a1814", border: "#20c0a0", text: "#40e8c0" },
+};
+
+async function loadCjkFont(text) {
+  if (!/[　-鿿豈-﫿]/.test(text)) return null;
+  try {
+    const css = await fetch(
+      `https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@700&text=${encodeURIComponent(text)}&display=swap`,
+      { headers: { "User-Agent": "Mozilla/5.0 (compatible; Vercel Edge; +https://vercel.com)" } }
+    ).then(r => r.text());
+    const url = css.match(/src:\s*url\((https:\/\/fonts\.gstatic\.com[^)]+)\)/)?.[1];
+    if (!url) return null;
+    return fetch(url).then(r => r.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+async function ogHandler(request) {
+  const { searchParams } = new URL(request.url);
+  const title = (searchParams.get("t") || "不說").slice(0, 70);
+  const sub   = (searchParams.get("s") || "工程 × 生醫 × AI 平台作品集").slice(0, 110);
+  const tag   = (searchParams.get("tag") || "").slice(0, 24);
+
+  const allText = title + sub + tag;
+  const cjkData = await loadCjkFont(allText);
+
+  const fonts = cjkData
+    ? [{ name: "NotoSansSC", data: cjkData, weight: 700, style: "normal" }]
+    : [];
+  const ff = cjkData ? '"NotoSansSC", sans-serif' : "sans-serif";
+
+  const tc = TAG_COLORS_OG[tag] || { bg: "#1a1428", border: "#7a5c1e", text: "#e8c060" };
+  const titleSize = title.length > 24 ? (title.length > 40 ? 50 : 60) : 72;
+
+  // Top-right grid decoration: 5 rows × 6 cols
+  const gridRows = [];
+  for (let r = 0; r < 5; r++) {
+    const cells = [];
+    for (let c = 0; c < 6; c++) {
+      cells.push(h("div", { key: `c${c}`, style: { width: 5, height: 5, borderRadius: "50%", background: "#e8c060" } }));
+    }
+    gridRows.push(h("div", { key: `r${r}`, style: { display: "flex", gap: 6 } }, cells));
+  }
+
+  return new ImageResponse(
+    h("div", {
+      style: {
+        height: "100%", width: "100%", display: "flex", flexDirection: "column",
+        alignItems: "flex-start", justifyContent: "center",
+        backgroundColor: "#07050d", padding: "72px 88px 64px",
+        fontFamily: ff, position: "relative",
+      }
+    },
+      h("div", { style: { position: "absolute", left: 0, top: 0, bottom: 0, width: 7,
+        background: "linear-gradient(180deg, #e8c060 0%, #9a6020 60%, #07050d 100%)" } }),
+      h("div", { style: { position: "absolute", right: 72, top: 56, display: "flex", flexDirection: "column", gap: 6, opacity: 0.18 } }, gridRows),
+      tag && h("div", { style: { display: "flex", marginBottom: 28 } },
+        h("div", {
+          style: {
+            background: tc.bg, border: `1.5px solid ${tc.border}`,
+            borderRadius: 6, padding: "7px 18px",
+            fontSize: 17, color: tc.text, letterSpacing: 2,
+            textTransform: "uppercase", fontWeight: 700,
+          }
+        }, tag)
+      ),
+      h("div", { style: { fontSize: titleSize, fontWeight: 700, color: "#f0e6c8", lineHeight: 1.2, marginBottom: 22, maxWidth: 900 } }, title),
+      h("div", { style: { fontSize: 25, color: "#5a4a2a", lineHeight: 1.55, marginBottom: 56, maxWidth: 820 } }, sub),
+      h("div", { style: { display: "flex", alignItems: "center", gap: 18 } },
+        h("div", {
+          style: {
+            width: 52, height: 52, borderRadius: "50%",
+            background: "#1a1428", border: "1.5px solid #7a5c1e",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 20, fontWeight: 700, color: "#e8c060",
+          }
+        }, "JT"),
+        h("div", { style: { display: "flex", flexDirection: "column", gap: 3 } },
+          h("div", { style: { fontSize: 15, color: "#2a1a00", letterSpacing: 1.2 } }, "donttalk.vercel.app")
+        )
+      )
+    ),
+    { width: 1200, height: 630, fonts }
+  );
+}
+
 // ── router ──────────────────────────────────────────────────────────
 const TABLE = [
   // [method, path-regex, handler]
   ["GET",  /^\/healthz\/?$/,                healthz],
   ["POST", /^\/chat\/?$/,                   chatHandler],
+  // 2026-09-02 v4: /og 從 og.jsx 內聯到 catchall，修正走 catchall 卻 404
+  ["GET",  /^\/og\/?$/,                     ogHandler],
   ["POST", /^\/ai\/warroom\/?$/,            aiWarroomHandler],
   ["GET",  /^\/futures\/([^/]+?)\/kline\/?$/, futuresKlineHandler],
   ["GET",  /^\/futures\/([^/]+?)\/quote\/?$/, futuresQuoteHandler],
@@ -6242,22 +6348,31 @@ export default async function handler(request) {
   try {
     const u = new URL(request.url);
     const raw = u.pathname || "";
+    // 統一處理 path：raw 可能是 "/api/healthz"（從 /api/ 進來）或 "/api//og"（從 route rule 進來）
+    // 目標是產出 "healthz" 或 "og" 之類的純 path，後面再 normalize 加回前綴 /
     let path = raw.replace(/^\/api\/?/, "").replace(/\/+$/, "");
     const fullPath = "/" + (path || "");
+    // 2026-09-02 v4: 但 path 已經是 "/og"（從 route rule 直接進 catchall），再 "/" + "/og" = "//og" 壞掉。
+    // 修正：去掉 path 開頭多餘的 /，然後再統一加 /
+    // path  = "healthz"  → "/healthz"
+    // path  = "/og"      → "/og"  (而不是 "//og")
+    // path  = ""         → "/"
+    const normPath = path.replace(/^\/+/, "");
+    const normFullPath = "/" + normPath;
     // DEBUG: return 200 for ALL requests to see if function is invoked
-    if (path === "debug-all-200") {
+    if (normPath === "debug-all-200") {
       return new Response("DEBUG: function invoked for path: " + raw, { status: 200 });
     }
     for (const [method, re, fn] of TABLE) {
       if (method !== request.method) continue;
-      const m = re.exec(fullPath);
+      const m = re.exec(normFullPath);
       if (m) {
         const args = m.slice(1);
         const res = await fn(request, ...args);
-        return maybeCacheHeaders(path, request.method, res);
+        return maybeCacheHeaders(normPath, request.method, res);
       }
     }
-    return json({ ok: false, error: "not found", path: "/api/" + path, method: request.method }, { status: 404 });
+    return json({ ok: false, error: "not found", path: raw, method: request.method }, { status: 404 });
   } catch (e) {
     return json({ ok: false, error: e?.message, stack: e?.stack }, { status: 500 });
   }
