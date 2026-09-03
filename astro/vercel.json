@@ -1,315 +1,370 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "node scripts/fetch_lfs.mjs && npm install --prefer-offline --no-audit",
-  "buildCommand": "npx --no-install astro build && cp -r public/music dist/music/ 2>/dev/null || true",
-  "outputDirectory": "dist",
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "env": {
-    "API_PROXY_TARGET": "https://vercel-edge-function"
-  },
-  "headers": [
-    {
-      "source": "/games/xian-godot/(.*)?",
-      "headers": [
-        {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin"
-        },
-        {
-          "key": "Cross-Origin-Embedder-Policy",
-          "value": "require-corp"
-        }
-      ]
-    },
-    {
-      "source": "/xian-godot",
-      "headers": [
-        {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin"
-        },
-        {
-          "key": "Cross-Origin-Embedder-Policy",
-          "value": "require-corp"
-        }
-      ]
-    }    {
-      "source": "/music",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=300, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/music/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=300, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/scripts/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/styles/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/pagefind/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/sw.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-  ],
-  "rewrites": [
-    {
-      "source": "/healthz",
-      "destination": "/api/healthz"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/og",
-      "dest": "/api/catchall"
-    },
-    {
-      "src": "/api/.*",
-      "dest": "/api/catchall"
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/stock-app",
-      "destination": "/stock",
-      "permanent": true
-    },
-    {
-      "source": "/stock-app/",
-      "destination": "/stock",
-      "permanent": true
-    },
-    {
-      "source": "/about_me.html",
-      "destination": "/about",
-      "permanent": true
-    },
-    {
-      "source": "/about_me",
-      "destination": "/about",
-      "permanent": true
-    },
-    {
-      "source": "/works.html",
-      "destination": "/works",
-      "permanent": true
-    },
-    {
-      "source": "/gene_ai.html",
-      "destination": "/gene-ai",
-      "permanent": true
-    },
-    {
-      "source": "/gene_ai",
-      "destination": "/gene-ai",
-      "permanent": true
-    },
-    {
-      "source": "/ngs.html",
-      "destination": "/ngs",
-      "permanent": true
-    },
-    {
-      "source": "/report.html",
-      "destination": "/report",
-      "permanent": true
-    },
-    {
-      "source": "/thesis.html",
-      "destination": "/thesis",
-      "permanent": true
-    },
-    {
-      "source": "/protein_mpnn.html",
-      "destination": "/protein-mpnn",
-      "permanent": true
-    },
-    {
-      "source": "/protein_mpnn",
-      "destination": "/protein-mpnn",
-      "permanent": true
-    },
-    {
-      "source": "/interview_prep.html",
-      "destination": "/interview",
-      "permanent": true
-    },
-    {
-      "source": "/interview_prep",
-      "destination": "/interview",
-      "permanent": true
-    },
-    {
-      "source": "/index.html",
-      "destination": "/",
-      "permanent": true
-    },
-    {
-      "source": "/stem_cell.html",
-      "destination": "/stem-cell",
-      "permanent": true
-    },
-    {
-      "source": "/stem_cell",
-      "destination": "/stem-cell",
-      "permanent": true
-    },
-    {
-      "source": "/music.html",
-      "destination": "/music",
-      "permanent": true
-    },
-    {
-      "source": "/etf",
-      "destination": "/stock/etf",
-      "permanent": true
-    },
-    {
-      "source": "/etf/",
-      "destination": "/stock/etf",
-      "permanent": true
-    },
-    {
-      "source": "/etf.html",
-      "destination": "/stock/etf",
-      "permanent": true
-    },
-    {
-      "source": "/stock-app/dashboard",
-      "destination": "/stock/dashboard",
-      "permanent": true
-    },
-    {
-      "source": "/dashboard",
-      "destination": "/stock/dashboard",
-      "permanent": true
-    },
-    {
-      "source": "/sitemap",
-      "destination": "/stock/sitemap",
-      "permanent": true
-    },
-    {
-      "source": "/heatmap",
-      "destination": "/stock/heatmap",
-      "permanent": true
-    },
-    {
-      "source": "/signal-filter",
-      "destination": "/stock/signal-filter",
-      "permanent": true
-    },
-    {
-      "source": "/etf-filter",
-      "destination": "/stock/etf-filter",
-      "permanent": true
-    },
-    {
-      "source": "/macro",
-      "destination": "/stock/macro",
-      "permanent": true
-    },
-    {
-      "source": "/exdiv",
-      "destination": "/stock/exdiv",
-      "permanent": true
-    },
-    {
-      "source": "/warming",
-      "destination": "/stock/warming",
-      "permanent": true
-    },
-    {
-      "source": "/revenue",
-      "destination": "/stock/revenue",
-      "permanent": true
-    },
-    {
-      "source": "/conference",
-      "destination": "/stock/conference",
-      "permanent": true
-    },
-    {
-      "source": "/ai-capex",
-      "destination": "/stock/ai-capex",
-      "permanent": true
-    },
-    {
-      "source": "/marker-history",
-      "destination": "/stock/marker_history",
-      "permanent": true
-    },
-    {
-      "source": "/ranking",
-      "destination": "/stock/ranking",
-      "permanent": true
-    },
-    {
-      "source": "/btc",
-      "destination": "/stock/btc",
-      "permanent": true
-    },
-    {
-      "source": "/futures",
-      "destination": "/stock/futures",
-      "permanent": true
-    },
-    {
-      "source": "/buyback",
-      "destination": "/stock/buyback",
-      "permanent": true
-    },
-    {
-      "source": "/line-push",
-      "destination": "/stock/line-push",
-      "permanent": true
-    },
-    {
-      "source": "/ai-warroom",
-      "destination": "/stock/ai-warroom",
-      "permanent": true
-    },
-    {
-      "source": "/currency",
-      "destination": "/stock/currency",
-      "permanent": true
-    }
-  ]
+    "$schema":  "https://openapi.vercel.sh/vercel.json",
+    "installCommand":  "node scripts/fetch_lfs.mjs \u0026\u0026 npm install --prefer-offline --no-audit",
+    "buildCommand":  "npx --no-install astro build \u0026\u0026 cp -r public/music dist/music/ 2\u003e/dev/null || true",
+    "outputDirectory":  "dist",
+    "cleanUrls":  true,
+    "trailingSlash":  false,
+    "env":  {
+                "API_PROXY_TARGET":  "https://vercel-edge-function"
+            },
+    "headers":  [
+                    {
+                        "source":  "/games/xian-godot/(.*)?",
+                        "headers":  [
+                                        {
+                                            "key":  "Cross-Origin-Opener-Policy",
+                                            "value":  "same-origin"
+                                        },
+                                        {
+                                            "key":  "Cross-Origin-Embedder-Policy",
+                                            "value":  "require-corp"
+                                        }
+                                    ]
+                    },
+                    {
+                        "source":  "/xian-godot",
+                        "headers":  [
+                                        {
+                                            "key":  "Cross-Origin-Opener-Policy",
+                                            "value":  "same-origin"
+                                        },
+                                        {
+                                            "key":  "Cross-Origin-Embedder-Policy",
+                                            "value":  "require-corp"
+                                        }
+                                    ]
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=300, must-revalidate"
+                                        }
+                                    ],
+                        "source":  "/music"
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=300, must-revalidate"
+                                        }
+                                    ],
+                        "source":  "/music/(.*)"
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=31536000, immutable"
+                                        }
+                                    ],
+                        "source":  "/scripts/(.*)"
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=31536000, immutable"
+                                        }
+                                    ],
+                        "source":  "/styles/(.*)"
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=3600, must-revalidate"
+                                        }
+                                    ],
+                        "source":  "/pagefind/(.*)"
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=31536000, immutable"
+                                        }
+                                    ],
+                        "source":  "/sw.js"
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=300, must-revalidate"
+                                        }
+                                    ],
+                        "source":  "/music"
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=300, must-revalidate"
+                                        }
+                                    ],
+                        "source":  "/music/(.*)"
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=31536000, immutable"
+                                        }
+                                    ],
+                        "source":  "/scripts/(.*)"
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=31536000, immutable"
+                                        }
+                                    ],
+                        "source":  "/styles/(.*)"
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=3600, must-revalidate"
+                                        }
+                                    ],
+                        "source":  "/pagefind/(.*)"
+                    },
+                    {
+                        "headers":  [
+                                        {
+                                            "key":  "Cache-Control",
+                                            "value":  "public, max-age=31536000, immutable"
+                                        }
+                                    ],
+                        "source":  "/sw.js"
+                    }
+                ],
+    "rewrites":  [
+                     {
+                         "source":  "/healthz",
+                         "destination":  "/api/healthz"
+                     }
+                 ],
+    "routes":  [
+                   {
+                       "src":  "/og",
+                       "dest":  "/api/catchall"
+                   },
+                   {
+                       "src":  "/api/.*",
+                       "dest":  "/api/catchall"
+                   }
+               ],
+    "redirects":  [
+                      {
+                          "source":  "/stock-app",
+                          "destination":  "/stock",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/stock-app/",
+                          "destination":  "/stock",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/about_me.html",
+                          "destination":  "/about",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/about_me",
+                          "destination":  "/about",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/works.html",
+                          "destination":  "/works",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/gene_ai.html",
+                          "destination":  "/gene-ai",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/gene_ai",
+                          "destination":  "/gene-ai",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/ngs.html",
+                          "destination":  "/ngs",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/report.html",
+                          "destination":  "/report",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/thesis.html",
+                          "destination":  "/thesis",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/protein_mpnn.html",
+                          "destination":  "/protein-mpnn",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/protein_mpnn",
+                          "destination":  "/protein-mpnn",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/interview_prep.html",
+                          "destination":  "/interview",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/interview_prep",
+                          "destination":  "/interview",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/index.html",
+                          "destination":  "/",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/stem_cell.html",
+                          "destination":  "/stem-cell",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/stem_cell",
+                          "destination":  "/stem-cell",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/music.html",
+                          "destination":  "/music",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/etf",
+                          "destination":  "/stock/etf",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/etf/",
+                          "destination":  "/stock/etf",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/etf.html",
+                          "destination":  "/stock/etf",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/stock-app/dashboard",
+                          "destination":  "/stock/dashboard",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/dashboard",
+                          "destination":  "/stock/dashboard",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/sitemap",
+                          "destination":  "/stock/sitemap",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/heatmap",
+                          "destination":  "/stock/heatmap",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/signal-filter",
+                          "destination":  "/stock/signal-filter",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/etf-filter",
+                          "destination":  "/stock/etf-filter",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/macro",
+                          "destination":  "/stock/macro",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/exdiv",
+                          "destination":  "/stock/exdiv",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/warming",
+                          "destination":  "/stock/warming",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/revenue",
+                          "destination":  "/stock/revenue",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/conference",
+                          "destination":  "/stock/conference",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/ai-capex",
+                          "destination":  "/stock/ai-capex",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/marker-history",
+                          "destination":  "/stock/marker_history",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/ranking",
+                          "destination":  "/stock/ranking",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/btc",
+                          "destination":  "/stock/btc",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/futures",
+                          "destination":  "/stock/futures",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/buyback",
+                          "destination":  "/stock/buyback",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/line-push",
+                          "destination":  "/stock/line-push",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/ai-warroom",
+                          "destination":  "/stock/ai-warroom",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/currency",
+                          "destination":  "/stock/currency",
+                          "permanent":  true
+                      }
+                  ]
 }
