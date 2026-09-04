@@ -244,6 +244,7 @@
         injectKaraokeToggle();
         // 歌詞 click seek 與雙擊全螢幕
         bindLyricsEvents();
+        setupMiniPlayer();
         // 設定卡拉OK預設
         setKaraokeMode(state.karaoke);
         // 啟動睡眠定時器 UI 倒計時 ticker

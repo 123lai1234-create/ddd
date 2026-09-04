@@ -886,3 +886,91 @@ body.mini-mode .stage-ctrl-play {
 body.mini-mode .stage-extras {
   font-size: 0.8rem;
 }
+/* ─── 迷你播放器模式（可手動拖到任意位置）─────────── */
+.mini-player {
+    display: none;
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    width: 320px;
+    max-width: calc(100vw - 32px);
+    background: var(--music-surface);
+    border: 1px solid var(--music-border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    z-index: 9999;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    user-select: none;
+    transition: box-shadow 0.2s, transform 0.2s;
+    cursor: default;
+}
+body.mini-mode .mini-player {
+    display: block;
+}
+body.mini-mode .music-stage {
+    display: none;
+}
+.mini-player.dragging {
+    cursor: grabbing;
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.4);
+    transform: scale(1.02);
+    transition: none;
+}
+.mini-player-handle {
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    background: var(--music-surface-hover);
+    color: var(--music-text-muted);
+    border-radius: 8px;
+    padding: 8px;
+    margin: -8px -8px 8px -8px;
+    text-align: center;
+    font-size: 0.85rem;
+    border: 1px solid var(--music-border);
+}
+.mini-player.dragging .mini-player-handle {
+    cursor: grabbing;
+}
+.mini-player-cover {
+    font-size: 2.4rem;
+    text-align: center;
+    margin: 8px 0;
+}
+.mini-player-info {
+    text-align: center;
+    margin: 8px 0;
+}
+.mini-player-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--music-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mini-player-artist {
+    font-size: 0.8rem;
+    color: var(--music-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 2px;
+}
+.mini-player-play,
+.mini-player-close {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px 2px;
+}
+.mini-player-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+}

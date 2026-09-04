@@ -64,7 +64,8 @@ const bodyHtml = `
                     <button class="stage-icon-btn sleep-btn" data-sleep="60" title="60 分鐘後暫停">60m</button>
                     <button class="stage-icon-btn sleep-btn" data-sleep="endOfTrack" title="播完這首後暫停">曲末</button>
                 </div>
-                <button class="stage-icon-btn fullscreen-btn" id="fullscreen-lyrics-btn" title="全螢幕歌詞 (F 或雙擊歌詞)">⛶</button>
+                <button class="stage-icon-btn fullscreen-btn" id="fullscreen-lyrics-btn">
+                <button class="stage-icon-btn mini-player-toggle" id="mini-player-toggle" title="拖到視窗任意位置">⇲</button> <button class="stage-icon-btn fullscreen-btn" id="fullscreen-lyrics-btn" title="全螢幕歌詞 (F 或雙擊歌詞)">⛶</button>
             </div>
 
             <!-- 音量 + 音質 -->
@@ -107,6 +108,18 @@ const bodyHtml = `
             </div>
         </div>
     </aside>
+
+    <!-- Mini Player (可拖動) -->
+    <div class="mini-player" id="mini-player" aria-hidden="true">
+        <div class="mini-player-handle" id="mini-player-handle" title="拖動">⇲</div>
+        <div class="mini-player-cover" id="mini-player-cover">🎵</div>
+        <div class="mini-player-info">
+            <div class="mini-player-title" id="mini-player-title">—</div>
+            <div class="mini-player-artist" id="mini-player-artist">—</div>
+        </div>
+        <button class="stage-icon-btn mini-player-play" id="mini-player-play" title="播放/暫停">▶</button>
+        <button class="stage-icon-btn mini-player-close" id="mini-player-close" title="關閉">✕</button>
+    </div>
 
     <!-- Hidden Audio Element -->
     <audio id="audio-player"></audio>
@@ -161,8 +174,8 @@ const headInline = "<script is:inline>if ('serviceWorker' in navigator) navigato
     title="🎵 音樂播放平台"
     description="現代化音樂播放平台，支援播放清單、音質控制與視覺化效果"
     bodyPage="music"
-    pageStyles={["/styles/music.css?v=20260902b"]}
-    pageScripts={["/scripts/app-config.js?v=20260902b","/scripts/music-player.js?v=20260902b"]}
+    pageStyles={["/styles/music.css?v=20260902c"]}
+    pageScripts={["/scripts/app-config.js?v=20260902c","/scripts/music-player.js?v=20260902c"]}
     headInline={headInline}
 >
     <Fragment set:html={bodyHtml} />
