@@ -153,7 +153,8 @@
         isMuted: false,
         shuffle: false,
         repeat: "none", // none, one, all
-        karaoke: true, // 卡拉OK逐字漸亮模式（預設開）
+        karaoke: true, // 卡拉OK逐字漸亮模式（預設開，向下相容）
+        karaokeStyle: "all", // all | compact — compact 只顯示當前+下一行
         drawerOpen: false,
         // 用來取消 300ms 強制 tryPlay 計時器：每次 pauseTrack 會 +1
         // 計時器跑時若發現 token 改變就放棄，不會重新播放
@@ -1611,6 +1612,19 @@
 
         const prev = state.currentLyricIndex ?? -1;
         const lineChanged = prev !== currentLineIndex;
+
+        // KTV 緊湊模式：只顯示當前 active + 下一行，其他行隱藏';
+        if (state.karaokeStyle === 'compact') {
+            for (let i = 0; i < lines.length; i++) {
+                const isActive = i === currentLineIndex;
+                const isNext = i === currentLineIndex + 1;
+                lines[i].style.display = (isActive || isNext) ? '' : 'none';
+            }
+        } else {
+            for (let i = 0; i < lines.length; i++) {
+                lines[i].style.display = '';
+            }
+        }
 
         if (lineChanged) {
             // 移除所有舊狀態

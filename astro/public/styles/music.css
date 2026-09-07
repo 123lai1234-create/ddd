@@ -974,3 +974,16 @@ body.mini-mode .music-stage {
     gap: 8px;
     margin-top: 4px;
 }
+/* KTV compact mode: 強調當前 + 下一行視覺反饋 */
+.karaoke-toggle.karaoke-compact {
+    background: rgba(99, 102, 241, 0.4);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+}
+.lyric-line[style*="display: none"] {
+    /* 確保切換時不殘留高度 */
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+    overflow: hidden;
+}
