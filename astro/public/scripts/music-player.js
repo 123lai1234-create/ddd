@@ -1182,6 +1182,62 @@
         state.isMini = false;
         document.body.classList.remove("mini-mode");
     }
+    function setupMiniPlayer() {
+        const mp = document.getElementById("mini-player");
+        if (!mp) return;
+        const handle = document.getElementById("mini-player-handle");
+        const closeBtn = document.getElementById("mini-player-close");
+        const playBtn = document.getElementById("mini-player-play");
+        const titleEl = document.getElementById("mini-player-title");
+        const artistEl = document.getElementById("mini-player-artist");
+        const toggleBtn = document.getElementById("mini-player-toggle");
+        if (toggleBtn) toggleBtn.addEventListener("click", () => { if (state.isMini) exitMiniMode(); else enterMiniMode(); });
+        if (closeBtn) closeBtn.addEventListener("click", () => exitMiniMode());
+        if (playBtn) playBtn.addEventListener("click", () => togglePlay());
+        function updateMiniInfo() {
+            if (!titleEl || !artistEl) return;
+            const t = state.playlist[state.currentIndex];
+            if (t) { titleEl.textContent = t.title; artistEl.textContent = (t.artist || "") + " �P " + (t.album || ""); }
+            else { titleEl.textContent = "�X"; artistEl.textContent = "�X"; }
+        }
+        updateMiniInfo();
+        setupMiniPlayer.updateInfo = updateMiniInfo;
+        if (handle) {
+            let dragging = false, offsetX = 0, offsetY = 0;
+            function getPointerXY(e) {
+                if (e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                return { x: e.clientX, y: e.clientY };
+            }
+            function onStart(e) {
+                e.preventDefault();
+                dragging = true;
+                const p = getPointerXY(e);
+                const r = mp.getBoundingClientRect();
+                offsetX = p.x - r.left; offsetY = p.y - r.top;
+                mp.classList.add("dragging");
+            }
+            function onMove(e) {
+                if (!dragging) return;
+                e.preventDefault();
+                const p = getPointerXY(e);
+                const x = p.x - offsetX, y = p.y - offsetY;
+                const maxX = window.innerWidth - mp.offsetWidth;
+                const maxY = window.innerHeight - mp.offsetHeight;
+                mp.style.left = Math.max(0, Math.min(x, maxX)) + "px";
+                mp.style.top = Math.max(0, Math.min(y, maxY)) + "px";
+                mp.style.right = "auto"; mp.style.bottom = "auto";
+            }
+            function onEnd() { if (dragging) { dragging = false; mp.classList.remove("dragging"); } }
+            handle.addEventListener("mousedown", onStart);
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onEnd);
+            handle.addEventListener("touchstart", onStart, { passive: false });
+            document.addEventListener("touchmove", onMove, { passive: false });
+            document.addEventListener("touchend", onEnd);
+        }
+    }
+
+
 
     // ═══════════════════════════════════════════════════════════════════
     // 播放清單抽屜
