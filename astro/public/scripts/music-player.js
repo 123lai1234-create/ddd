@@ -1252,6 +1252,11 @@
     function closePlaylistDrawer() {
         state.drawerOpen = false;
         elements.drawer.classList.remove("open");
+        // a11y: focus 在 drawer 內先 blur，避免 aria-hidden 隱藏 focused element
+        const af = document.activeElement;
+        if (af && elements.drawer && elements.drawer.contains(af) && typeof af.blur === "function") {
+            af.blur();
+        }
         elements.drawer.setAttribute("aria-hidden", "true");
         document.body.style.overflow = "";
     }
