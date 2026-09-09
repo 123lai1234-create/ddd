@@ -7,109 +7,237 @@ const bodyHtml = `
     <!-- ════════ NAV ════════ -->
     <div data-site-nav></div>
 
-    <!-- ════════ MUSIC STAGE (單欄主舞台) ════════ -->
-    <main class="music-stage">
-        <!-- 頂部工具列 -->
-        <header class="stage-top">
-            <div class="stage-top-left">
-                <button class="stage-icon-btn" id="open-playlist-btn" title="播放清單" aria-label="播放清單">📋</button>
-                <button class="stage-icon-btn" id="add-music-btn" title="上傳音樂" aria-label="上傳音樂">➕</button>
-                <button class="stage-icon-btn" id="karaoke-toggle" title="卡拉OK逐字" aria-label="卡拉OK">🎤</button>
-            </div>
-            <div class="stage-top-right">
-                <button class="stage-icon-btn" id="prev-btn" title="上一首" aria-label="上一首">⏮</button>
-                <button class="stage-icon-btn" id="next-btn" title="下一首" aria-label="下一首">⏭</button>
-            </div>
-        </header>
+    <!-- ════════ MAIN LAYOUT (三欄：playlist | now playing | mixer) ════════ -->
+    <main class="music-layout">
 
-        <!-- 曲目資訊 -->
-        <div class="stage-track-info">
-            <h1 class="stage-track-title" id="track-title">選擇一首音樂開始</h1>
-            <p class="stage-track-artist" id="track-artist">-</p>
-        </div>
-
-        <!-- 大型歌詞區（主角） -->
-        <section class="stage-lyrics" id="lyrics-container">
-            <div class="lyrics" id="lyrics">
-                <p class="lyric-line">歌詞將在播放時顯示</p>
-            </div>
-        </section>
-
-        <!-- 底部播放列 -->
-        <footer class="stage-bottom">
-            <!-- 進度 -->
-            <div class="stage-progress">
-                <span class="time-current" id="time-current">0:00</span>
-                <div class="progress-bar" id="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
-                    <div class="progress-handle" id="progress-handle"></div>
-                </div>
-                <span class="time-total" id="time-total">0:00</span>
-            </div>
-
-            <!-- 控制 -->
-            <div class="stage-controls">
-                <button class="stage-ctrl" id="shuffle-btn" title="隨機">🔀</button>
-                <button class="stage-ctrl stage-ctrl-play" id="play-btn" title="播放 (Space)">▶️</button>
-                <button class="stage-ctrl" id="repeat-btn" title="重複：關閉 (R)">🔁</button>
-            </div>
-
-            <!-- 睡眠定時器 + 全螢幕歌詞 -->
-            <div class="stage-extras-row">
-                <div class="sleep-timer-group">
-                    <button class="stage-icon-btn sleep-btn active" data-sleep="0" title="關閉睡眠定時器">⏰</button>
-                    <button class="stage-icon-btn sleep-btn" data-sleep="5" title="5 分鐘後暫停">5m</button>
-                    <button class="stage-icon-btn sleep-btn" data-sleep="15" title="15 分鐘後暫停">15m</button>
-                    <button class="stage-icon-btn sleep-btn" data-sleep="30" title="30 分鐘後暫停">30m</button>
-                    <button class="stage-icon-btn sleep-btn" data-sleep="60" title="60 分鐘後暫停">60m</button>
-                    <button class="stage-icon-btn sleep-btn" data-sleep="endOfTrack" title="播完這首後暫停">曲末</button>
-                </div>
-                <button class="stage-icon-btn fullscreen-btn" id="fullscreen-lyrics-btn">
-                <button class="stage-icon-btn mini-player-toggle" id="mini-player-toggle" title="拖到視窗任意位置">⇲</button> <button class="stage-icon-btn fullscreen-btn" id="fullscreen-lyrics-btn" title="全螢幕歌詞 (F 或雙擊歌詞)">⛶</button>
-            </div>
-
-            <!-- 音量 + 音質 -->
-            <div class="stage-extras">
-                <button class="stage-icon-btn" id="volume-btn" title="靜音">🔊</button>
-                <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="75" aria-label="音量">
-                <span class="volume-value" id="volume-value">75%</span>
-                <select id="quality-select" class="quality-select" title="音質" aria-label="音質">
-                    <option value="low">低音質</option>
-                    <option value="medium" selected>標準</option>
-                    <option value="high">高品質</option>
-                    <option value="lossless">無損</option>
-                </select>
-            </div>
-        </footer>
-    </main>
-
-    <!-- ════════ 側邊播放清單抽屜 ════════ -->
-    <aside class="playlist-drawer" id="playlist-drawer" aria-hidden="true">
-        <div class="drawer-backdrop" id="drawer-backdrop"></div>
-        <div class="drawer-panel">
-            <header class="drawer-header">
-                <h2>📋 播放清單</h2>
-                <button class="stage-icon-btn drawer-close" id="drawer-close" aria-label="關閉">✕</button>
+        <!-- ── 左欄：播放清單 ──────────────────────────────────── -->
+        <aside class="sidebar sidebar-left">
+            <header class="sidebar-header">
+                <h2 class="sidebar-title">📋 播放清單</h2>
+                <button class="stage-icon-btn" id="add-music-btn" title="新增音樂" aria-label="新增音樂">➕</button>
             </header>
+
             <div class="drawer-search">
                 <input type="text" id="search-input" placeholder="搜尋音樂..." aria-label="搜尋音樂">
             </div>
+
             <div class="drawer-tabs">
                 <button class="tab-btn active" data-tab="all">全部</button>
                 <button class="tab-btn" data-tab="favorites">❤️ 最愛</button>
             </div>
+
             <div class="drawer-playlist">
                 <div class="playlist" id="playlist">
                     <!-- 動態生成歌曲列表 -->
                 </div>
             </div>
+
             <div class="drawer-stats">
                 <span id="total-songs">0</span> 首歌曲 · <span id="total-duration">0:00</span>
             </div>
-        </div>
-    </aside>
+        </aside>
 
-    <!-- Mini Player (可拖動) -->
+        <!-- ── 中欄：現在播放 + 歌詞 ──────────────────────────────── -->
+        <section class="now-playing-pane">
+            <header class="now-playing-header">
+                <button class="stage-icon-btn" id="karaoke-toggle" title="卡拉OK逐字" aria-label="卡拉OK">🎤</button>
+                <button class="stage-icon-btn" id="fullscreen-lyrics-btn" title="全螢幕歌詞 (F 或雙擊歌詞)">⛶</button>
+            </header>
+
+            <div class="now-playing-card" id="now-playing-card">
+                <div class="now-playing-cover" id="now-playing-cover">🎵</div>
+                <div class="now-playing-info">
+                    <h1 class="now-playing-title" id="track-title">選擇一首音樂開始</h1>
+                    <p class="now-playing-artist" id="track-artist">—</p>
+                </div>
+            </div>
+
+            <section class="now-playing-lyrics" id="lyrics-container">
+                <div class="lyrics" id="lyrics">
+                    <p class="lyric-line">歌詞將在播放時顯示</p>
+                </div>
+            </section>
+
+            <footer class="now-playing-footer">
+                <div class="now-playing-progress">
+                    <span class="time-current" id="time-current">0:00</span>
+                    <div class="progress-bar" id="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                        <div class="progress-handle" id="progress-handle"></div>
+                    </div>
+                    <span class="time-total" id="time-total">0:00</span>
+                </div>
+
+                <div class="now-playing-controls">
+                    <button class="stage-ctrl" id="shuffle-btn" title="隨機">🔀</button>
+                    <button class="stage-ctrl" id="prev-btn" title="上一首">⏮</button>
+                    <button class="stage-ctrl stage-ctrl-play" id="play-btn" title="播放 (Space)">▶️</button>
+                    <button class="stage-ctrl" id="next-btn" title="下一首">⏭</button>
+                    <button class="stage-ctrl" id="repeat-btn" title="重複：關閉 (R)">🔁</button>
+                </div>
+
+                <div class="now-playing-extras">
+                    <div class="sleep-timer-group">
+                        <button class="stage-icon-btn sleep-btn active" data-sleep="0" title="關閉睡眠定時器">⏰</button>
+                        <button class="stage-icon-btn sleep-btn" data-sleep="5" title="5 分鐘後暫停">5m</button>
+                        <button class="stage-icon-btn sleep-btn" data-sleep="15" title="15 分鐘後暫停">15m</button>
+                        <button class="stage-icon-btn sleep-btn" data-sleep="30" title="30 分鐘後暫停">30m</button>
+                        <button class="stage-icon-btn sleep-btn" data-sleep="60" title="60 分鐘後暫停">60m</button>
+                        <button class="stage-icon-btn sleep-btn" data-sleep="endOfTrack" title="播完這首後暫停">曲末</button>
+                    </div>
+                    <select id="quality-select" class="quality-select" title="音質" aria-label="音質">
+                        <option value="low">低音質</option>
+                        <option value="medium" selected>標準</option>
+                        <option value="high">高品質</option>
+                        <option value="lossless">無損</option>
+                    </select>
+                    <button class="stage-icon-btn mini-player-toggle" id="mini-player-toggle" title="拖到視窗任意位置">⇲</button>
+                </div>
+            </footer>
+        </section>
+
+        <!-- ── 右欄：混音控制台 ─────────────────────────────────── -->
+        <aside class="sidebar sidebar-right mixer-console" id="mixer-console">
+            <header class="sidebar-header">
+                <h2 class="sidebar-title">🎚️ 混音控制台</h2>
+                <button class="stage-icon-btn" id="reset-mixer-btn" title="重置混音">↺</button>
+            </header>
+
+            <div class="mixer-panels">
+
+                <!-- 作品混音 -->
+                <section class="mixer-card">
+                    <header class="mixer-card-head">
+                        <h3 class="mixer-card-title">🎵 作品混音</h3>
+                        <span class="mixer-card-sub">Track Mixing</span>
+                    </header>
+                    <div class="mixer-track-info">
+                        <div class="mixer-track-title" id="mixer-track-title">—</div>
+                        <div class="mixer-track-artist" id="mixer-track-artist">—</div>
+                    </div>
+                </section>
+
+                <!-- 試聽與音量 -->
+                <section class="mixer-card">
+                    <header class="mixer-card-head">
+                        <h3 class="mixer-card-title">📊 試聽與音量</h3>
+                        <span class="mixer-card-sub">Preview &amp; Volume</span>
+                    </header>
+
+                    <div class="mixer-visualizer">
+                        <canvas id="canvas-spectrum" class="mixer-canvas spectrum-canvas" aria-label="頻譜分析"></canvas>
+                        <canvas id="canvas-waveform" class="mixer-canvas waveform-canvas" aria-label="波形"></canvas>
+                    </div>
+
+                    <div class="mixer-row">
+                        <div class="mixer-label">
+                            <span>體聲音壓</span>
+                            <span class="mixer-val" id="mixer-level-val">0%</span>
+                        </div>
+                    </div>
+                    <div class="mixer-level-meter">
+                        <div class="mixer-level-fill" id="mixer-level-fill"></div>
+                    </div>
+
+                    <div class="mixer-row">
+                        <div class="mixer-label">
+                            <span>主音量</span>
+                            <span class="mixer-val" id="mixer-volume-val">75%</span>
+                        </div>
+                        <input type="range" class="mixer-slider" id="mixer-volume" min="0" max="100" value="75" aria-label="主音量">
+                    </div>
+                </section>
+
+                <!-- 人聲效果 -->
+                <section class="mixer-card">
+                    <header class="mixer-card-head">
+                        <h3 class="mixer-card-title">🎙️ 人聲效果</h3>
+                        <span class="mixer-card-sub">Vocal Effects</span>
+                    </header>
+
+                    <!-- 空間類型 + 濕度 -->
+                    <div class="mixer-row">
+                        <div class="mixer-label"><span>空間類型</span></div>
+                        <select class="mixer-select" id="mixer-reverb-type" aria-label="Reverb 類型">
+                            <option value="off">關閉</option>
+                            <option value="room">小房間</option>
+                            <option value="hall" selected>演藝廳</option>
+                            <option value="plate">金屬板</option>
+                            <option value="spring">彈簧</option>
+                        </select>
+                    </div>
+                    <div class="mixer-row">
+                        <div class="mixer-label">
+                            <span>空間濕度</span>
+                            <span class="mixer-val" id="mixer-reverb-wet-val">22%</span>
+                        </div>
+                        <input type="range" class="mixer-slider" id="mixer-reverb-wet" min="0" max="100" value="22" aria-label="Reverb 濕度">
+                    </div>
+
+                    <!-- 音色 預設 + 濕度 -->
+                    <div class="mixer-row">
+                        <div class="mixer-label"><span>音色預設</span></div>
+                        <select class="mixer-select" id="mixer-timbre-preset" aria-label="音色預設">
+                            <option value="flat" selected>原聲 (Flat)</option>
+                            <option value="air">浮點 (較飄逸)</option>
+                            <option value="warm">暖度 (較溫暖)</option>
+                            <option value="thick">厚度 (較厚實)</option>
+                            <option value="bright">明亮 (較清亮)</option>
+                            <option value="vocal">人聲 (清晰突出)</option>
+                            <option value="custom">自訂</option>
+                        </select>
+                    </div>
+                    <div class="mixer-row">
+                        <div class="mixer-label">
+                            <span>音色濕度</span>
+                            <span class="mixer-val" id="mixer-timbre-wet-val">75%</span>
+                        </div>
+                        <input type="range" class="mixer-slider" id="mixer-timbre-wet" min="0" max="100" value="75" aria-label="音色濕度">
+                    </div>
+
+                    <!-- 6 條音色滑桿 -->
+                    <div class="timbre-grid" id="timbre-grid">
+                        <!-- 由 JS 動態生成 -->
+                    </div>
+                </section>
+
+                <!-- 8 段 EQ -->
+                <section class="mixer-card">
+                    <header class="mixer-card-head">
+                        <h3 class="mixer-card-title">🎛️ 8 段等化器</h3>
+                        <span class="mixer-card-sub">Equalizer</span>
+                    </header>
+
+                    <div class="eq-grid" id="eq-grid">
+                        <!-- 由 JS 動態生成 -->
+                    </div>
+
+                    <div class="mixer-row mixer-row-flat">
+                        <button class="mixer-flat-btn" id="mixer-eq-flat" title="全部歸零">FLAT 歸零</button>
+                    </div>
+                </section>
+
+                <!-- Preset 儲存 -->
+                <section class="mixer-card mixer-preset-card">
+                    <header class="mixer-card-head">
+                        <h3 class="mixer-card-title">💾 Preset</h3>
+                        <span class="mixer-card-sub">混音設定儲存</span>
+                    </header>
+                    <div class="mixer-preset-row">
+                        <button class="mixer-preset-btn" id="mixer-preset-save" title="儲存當前混音">儲存</button>
+                        <select class="mixer-select" id="mixer-preset-list" aria-label="載入 preset">
+                            <option value="">載入 preset...</option>
+                        </select>
+                        <button class="mixer-preset-btn danger" id="mixer-preset-delete" title="刪除選擇的 preset">刪除</button>
+                    </div>
+                </section>
+
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- ════════ Mini Player (可拖動) ════════ -->
     <div class="mini-player" id="mini-player" aria-hidden="true">
         <div class="mini-player-handle" id="mini-player-handle" title="拖動">⇲</div>
         <div class="mini-player-cover" id="mini-player-cover">🎵</div>
@@ -171,11 +299,18 @@ const bodyHtml = `
 const headInline = "<script is:inline>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { });</script>";
 ---
 <Base
-    title="🎵 音樂播放平台"
-    description="現代化音樂播放平台，支援播放清單、音質控制與視覺化效果"
+    title="🎵 音樂混音台"
+    description="現代化音樂播放平台，內建 8 段 EQ、Reverb、人聲效果、即時頻譜分析"
     bodyPage="music"
-    pageStyles={["/styles/music.css?v=20260902f"]}
-    pageScripts={["/scripts/app-config.js?v=20260902f","/scripts/music-player.js?v=20260902f"]}
+    pageStyles={["/styles/music.css?v=20260909a"]}
+    pageScripts={[
+        "/scripts/app-config.js?v=20260909a",
+        "/scripts/reverb-irs.js?v=20260909a",
+        "/scripts/audio-engine.js?v=20260909a",
+        "/scripts/visualizer.js?v=20260909a",
+        "/scripts/music-player.js?v=20260909a",
+        "/scripts/mixing-console.js?v=20260909a"
+    ]}
     headInline={headInline}
 >
     <Fragment set:html={bodyHtml} />

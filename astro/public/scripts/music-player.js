@@ -274,10 +274,10 @@
         });
         loadStatsFromStorage();
 
-        // 設置預設音量
+        // 設置預設音量（新版 layout 把 slider 搬到右側混音台）
         elements.audioPlayer.volume = state.volume / 100;
-        elements.volumeSlider.value = state.volume;
-        elements.volumeValue.textContent = state.volume + "%";
+        if (elements.volumeSlider) elements.volumeSlider.value = state.volume;
+        if (elements.volumeValue) elements.volumeValue.textContent = state.volume + "%";
 
         // rAF 持續更新歌詞（不靠 timeupdate，更可靠）
         startLyricSyncLoop();
@@ -424,9 +424,9 @@
         elements.progressBar.addEventListener("click", seekTo);
         elements.progressBar.addEventListener("mousedown", startSeek);
 
-        // 音量
-        elements.volumeBtn.addEventListener("click", toggleMute);
-        elements.volumeSlider.addEventListener("input", setVolume);
+        // 音量（新版 layout 把 slider 搬到右側混音台，binding 改成選擇性）
+        if (elements.volumeBtn) elements.volumeBtn.addEventListener("click", toggleMute);
+        if (elements.volumeSlider) elements.volumeSlider.addEventListener("input", setVolume);
 
         // 搜尋
         elements.searchInput.addEventListener("input", filterPlaylist);
@@ -1277,9 +1277,10 @@
     }
 
     function setVolume() {
+        if (!elements.volumeSlider) return; // 新 layout 把 slider 搬到右側混音台了
         state.volume = parseInt(elements.volumeSlider.value);
         elements.audioPlayer.volume = state.volume / 100;
-        elements.volumeValue.textContent = state.volume + "%";
+        if (elements.volumeValue) elements.volumeValue.textContent = state.volume + "%";
 
         if (state.volume === 0) {
             elements.volumeBtn.textContent = "🔇";

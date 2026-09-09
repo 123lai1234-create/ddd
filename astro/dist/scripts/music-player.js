@@ -153,7 +153,8 @@
         isMuted: false,
         shuffle: false,
         repeat: "none", // none, one, all
-        karaoke: true, // 卡拉OK逐字漸亮模式（預設開）
+        karaoke: true, // 卡拉OK逐字漸亮模式（預設開，向下相容）
+        karaokeStyle: "all", // all | compact — compact 只顯示當前+下一行
         drawerOpen: false,
         // 用來取消 300ms 強制 tryPlay 計時器：每次 pauseTrack 會 +1
         // 計時器跑時若發現 token 改變就放棄，不會重新播放
@@ -244,6 +245,7 @@
         injectKaraokeToggle();
         // 歌詞 click seek 與雙擊全螢幕
         bindLyricsEvents();
+        setupMiniPlayer();
         // 設定卡拉OK預設
         setKaraokeMode(state.karaoke);
         // 啟動睡眠定時器 UI 倒計時 ticker
@@ -272,10 +274,10 @@
         });
         loadStatsFromStorage();
 
-        // 設置預設音量
+        // 設置預設音量（新版 layout 把 slider 搬到右側混音台）
         elements.audioPlayer.volume = state.volume / 100;
-        elements.volumeSlider.value = state.volume;
-        elements.volumeValue.textContent = state.volume + "%";
+        if (elements.volumeSlider) elements.volumeSlider.value = state.volume;
+        if (elements.volumeValue) elements.volumeValue.textContent = state.volume + "%";
 
         // rAF 持續更新歌詞（不靠 timeupdate，更可靠）
         startLyricSyncLoop();
@@ -422,9 +424,9 @@
         elements.progressBar.addEventListener("click", seekTo);
         elements.progressBar.addEventListener("mousedown", startSeek);
 
-        // 音量
-        elements.volumeBtn.addEventListener("click", toggleMute);
-        elements.volumeSlider.addEventListener("input", setVolume);
+        // 音量（新版 layout 把 slider 搬到右側混音台，binding 改成選擇性）
+        if (elements.volumeBtn) elements.volumeBtn.addEventListener("click", toggleMute);
+        if (elements.volumeSlider) elements.volumeSlider.addEventListener("input", setVolume);
 
         // 搜尋
         elements.searchInput.addEventListener("input", filterPlaylist);
@@ -1180,6 +1182,62 @@
         state.isMini = false;
         document.body.classList.remove("mini-mode");
     }
+    function setupMiniPlayer() {
+        const mp = document.getElementById("mini-player");
+        if (!mp) return;
+        const handle = document.getElementById("mini-player-handle");
+        const closeBtn = document.getElementById("mini-player-close");
+        const playBtn = document.getElementById("mini-player-play");
+        const titleEl = document.getElementById("mini-player-title");
+        const artistEl = document.getElementById("mini-player-artist");
+        const toggleBtn = document.getElementById("mini-player-toggle");
+        if (toggleBtn) toggleBtn.addEventListener("click", () => { if (state.isMini) exitMiniMode(); else enterMiniMode(); });
+        if (closeBtn) closeBtn.addEventListener("click", () => exitMiniMode());
+        if (playBtn) playBtn.addEventListener("click", () => togglePlay());
+        function updateMiniInfo() {
+            if (!titleEl || !artistEl) return;
+            const t = state.playlist[state.currentIndex];
+            if (t) { titleEl.textContent = t.title; artistEl.textContent = (t.artist || "") + " �P " + (t.album || ""); }
+            else { titleEl.textContent = "�X"; artistEl.textContent = "�X"; }
+        }
+        updateMiniInfo();
+        setupMiniPlayer.updateInfo = updateMiniInfo;
+        if (handle) {
+            let dragging = false, offsetX = 0, offsetY = 0;
+            function getPointerXY(e) {
+                if (e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                return { x: e.clientX, y: e.clientY };
+            }
+            function onStart(e) {
+                e.preventDefault();
+                dragging = true;
+                const p = getPointerXY(e);
+                const r = mp.getBoundingClientRect();
+                offsetX = p.x - r.left; offsetY = p.y - r.top;
+                mp.classList.add("dragging");
+            }
+            function onMove(e) {
+                if (!dragging) return;
+                e.preventDefault();
+                const p = getPointerXY(e);
+                const x = p.x - offsetX, y = p.y - offsetY;
+                const maxX = window.innerWidth - mp.offsetWidth;
+                const maxY = window.innerHeight - mp.offsetHeight;
+                mp.style.left = Math.max(0, Math.min(x, maxX)) + "px";
+                mp.style.top = Math.max(0, Math.min(y, maxY)) + "px";
+                mp.style.right = "auto"; mp.style.bottom = "auto";
+            }
+            function onEnd() { if (dragging) { dragging = false; mp.classList.remove("dragging"); } }
+            handle.addEventListener("mousedown", onStart);
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onEnd);
+            handle.addEventListener("touchstart", onStart, { passive: false });
+            document.addEventListener("touchmove", onMove, { passive: false });
+            document.addEventListener("touchend", onEnd);
+        }
+    }
+
+
 
     // ═══════════════════════════════════════════════════════════════════
     // 播放清單抽屜
@@ -1194,6 +1252,11 @@
     function closePlaylistDrawer() {
         state.drawerOpen = false;
         elements.drawer.classList.remove("open");
+        // a11y: focus 在 drawer 內先 blur，避免 aria-hidden 隱藏 focused element
+        const af = document.activeElement;
+        if (af && elements.drawer && elements.drawer.contains(af) && typeof af.blur === "function") {
+            af.blur();
+        }
         elements.drawer.setAttribute("aria-hidden", "true");
         document.body.style.overflow = "";
     }
@@ -1214,9 +1277,10 @@
     }
 
     function setVolume() {
+        if (!elements.volumeSlider) return; // 新 layout 把 slider 搬到右側混音台了
         state.volume = parseInt(elements.volumeSlider.value);
         elements.audioPlayer.volume = state.volume / 100;
-        elements.volumeValue.textContent = state.volume + "%";
+        if (elements.volumeValue) elements.volumeValue.textContent = state.volume + "%";
 
         if (state.volume === 0) {
             elements.volumeBtn.textContent = "🔇";
@@ -1610,6 +1674,19 @@
 
         const prev = state.currentLyricIndex ?? -1;
         const lineChanged = prev !== currentLineIndex;
+
+        // KTV 緊湊模式：只顯示當前 active + 下一行，其他行隱藏';
+        if (state.karaokeStyle === 'compact') {
+            for (let i = 0; i < lines.length; i++) {
+                const isActive = i === currentLineIndex;
+                const isNext = i === currentLineIndex + 1;
+                lines[i].style.display = (isActive || isNext) ? '' : 'none';
+            }
+        } else {
+            for (let i = 0; i < lines.length; i++) {
+                lines[i].style.display = '';
+            }
+        }
 
         if (lineChanged) {
             // 移除所有舊狀態
