@@ -2,6 +2,11 @@ import { ImageResponse } from '@vercel/og';
 
 export const config = { runtime: 'edge' };
 
+// ⚠️ DEPRECATED 2026-09-03：og handler 已內聯到 catchall.mjs（v4 marker），本檔不會被 Vercel 執行。
+// vercel.json 的 routes /api/.* 把 /api/og 導到 catchall → catchall TABLE 沒 /og 條目 → 404。
+// 真正的 og 邏輯在 catchall.mjs 裡的 ogHandler()，用 React.createElement 寫。
+// 本檔僅作歷史參考，新邏輯請改 catchall.mjs。
+
 async function loadCjkFont(text) {
   if (!/[　-鿿豈-﫿]/.test(text)) return null;
   try {
