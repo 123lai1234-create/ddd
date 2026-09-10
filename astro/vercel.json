@@ -55,21 +55,21 @@
                     },
                     {
                         "headers":  [
-                                        {
-                                            "key":  "Cache-Control",
-                                            "value":  "public, max-age=31536000, immutable"
-                                        }
-                                    ],
-                        "source":  "/scripts/(.*)"
+                            {
+                                "key": "Cache-Control",
+                                "value": "public, max-age=3600, s-maxage=86400, must-revalidate, stale-while-revalidate=86400"
+                            }
+                        ],
+                        "source": "/scripts/(.*)"
                     },
                     {
                         "headers":  [
-                                        {
-                                            "key":  "Cache-Control",
-                                            "value":  "public, max-age=31536000, immutable"
-                                        }
-                                    ],
-                        "source":  "/styles/(.*)"
+                            {
+                                "key": "Cache-Control",
+                                "value": "public, max-age=3600, s-maxage=86400, must-revalidate, stale-while-revalidate=86400"
+                            }
+                        ],
+                        "source": "/styles/(.*)"
                     },
                     {
                         "headers":  [
@@ -82,12 +82,12 @@
                     },
                     {
                         "headers":  [
-                                        {
-                                            "key":  "Cache-Control",
-                                            "value":  "public, max-age=31536000, immutable"
-                                        }
-                                    ],
-                        "source":  "/sw.js"
+                            {
+                                "key": "Cache-Control",
+                                "value": "public, max-age=0, must-revalidate"
+                            }
+                        ],
+                        "source": "/sw.js"
                     },
                     {
                         "headers":  [
@@ -109,21 +109,21 @@
                     },
                     {
                         "headers":  [
-                                        {
-                                            "key":  "Cache-Control",
-                                            "value":  "public, max-age=31536000, immutable"
-                                        }
-                                    ],
-                        "source":  "/scripts/(.*)"
+                            {
+                                "key": "Cache-Control",
+                                "value": "public, max-age=3600, s-maxage=86400, must-revalidate, stale-while-revalidate=86400"
+                            }
+                        ],
+                        "source": "/scripts/(.*)"
                     },
                     {
                         "headers":  [
-                                        {
-                                            "key":  "Cache-Control",
-                                            "value":  "public, max-age=31536000, immutable"
-                                        }
-                                    ],
-                        "source":  "/styles/(.*)"
+                            {
+                                "key": "Cache-Control",
+                                "value": "public, max-age=3600, s-maxage=86400, must-revalidate, stale-while-revalidate=86400"
+                            }
+                        ],
+                        "source": "/styles/(.*)"
                     },
                     {
                         "headers":  [
@@ -136,12 +136,12 @@
                     },
                     {
                         "headers":  [
-                                        {
-                                            "key":  "Cache-Control",
-                                            "value":  "public, max-age=31536000, immutable"
-                                        }
-                                    ],
-                        "source":  "/sw.js"
+                            {
+                                "key": "Cache-Control",
+                                "value": "public, max-age=0, must-revalidate"
+                            }
+                        ],
+                        "source": "/sw.js"
                     }
                 ],
     "rewrites":  [
