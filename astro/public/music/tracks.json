@@ -11,7 +11,6 @@
       "duration": 305,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/02_兄弟本色.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/01_兄弟本色.lrc",
       "favorite": false
     },
     {
@@ -22,7 +21,7 @@
       "duration": 226,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/03_不服輸(優化版).mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/03_不服輸.lrc",
+      "lyricsUrl": "/music/不服輸(優化版).lrc",
       "favorite": false
     },
     {
@@ -55,7 +54,6 @@
       "duration": 220,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/04_水泥森林.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/05_水泥森林.lrc",
       "favorite": false
     },
     {
@@ -77,7 +75,6 @@
       "duration": 265,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/05_趁現在.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/07_趁現在.lrc",
       "favorite": false
     },
     {
@@ -99,7 +96,6 @@
       "duration": 237,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/06_回不去的夏天.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/09_回不去的夏天.lrc",
       "favorite": false
     },
     {
@@ -165,7 +161,7 @@
       "duration": 258,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/10_十年後的重逢(優化版).mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/10_十年後的重逢.lrc",
+      "lyricsUrl": "/music/十年後的重逢(優化版).lrc",
       "favorite": false
     },
     {
@@ -253,7 +249,7 @@
       "duration": 283,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/20_等天亮(優化版).mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/20_等天亮.lrc",
+      "lyricsUrl": "/music/等天亮(優化版).lrc",
       "favorite": false
     },
     {
