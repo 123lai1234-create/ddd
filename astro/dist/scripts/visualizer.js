@@ -70,7 +70,8 @@
         start() {
             if (this._running) return;
             this._running = true;
-            this._loop();
+            // 首帧用 performance.now()，避免 _loop() 直接被调时 t 未定义
+            this._loop(performance.now());
         }
 
         stop() {
