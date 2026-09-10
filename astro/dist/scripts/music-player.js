@@ -432,18 +432,18 @@
         elements.searchInput.addEventListener("input", filterPlaylist);
 
         // 抽屜
-        elements.openPlaylistBtn.addEventListener("click", openPlaylistDrawer);
-        elements.drawerClose.addEventListener("click", closePlaylistDrawer);
-        elements.drawerBackdrop.addEventListener("click", closePlaylistDrawer);
+        elements.openPlaylistBtn?.addEventListener("click", openPlaylistDrawer);
+        elements.drawerClose?.addEventListener("click", closePlaylistDrawer);
+        elements.drawerBackdrop?.addEventListener("click", closePlaylistDrawer);
         document.addEventListener("keydown", e => {
             if (e.key === "Escape" && state.drawerOpen) closePlaylistDrawer();
         });
 
         // 新增音樂
-        elements.addMusicBtn.addEventListener("click", openAddMusicModal);
-        elements.modalClose.addEventListener("click", closeAddMusicModal);
-        elements.addMusicConfirm.addEventListener("click", addMusic);
-        elements.addMusicModal.addEventListener("click", e => {
+        elements.addMusicBtn?.addEventListener("click", openAddMusicModal);
+        elements.modalClose?.addEventListener("click", closeAddMusicModal);
+        elements.addMusicConfirm?.addEventListener("click", addMusic);
+        elements.addMusicModal?.addEventListener("click", e => {
             if (e.target === elements.addMusicModal) closeAddMusicModal();
         });
 

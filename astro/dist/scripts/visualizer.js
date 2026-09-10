@@ -78,11 +78,12 @@
             if (this._rafId) cancelAnimationFrame(this._rafId);
         }
 
-        _loop() {
+        _loop(t) {
             if (!this._running) return;
-            this._rafId = requestAnimationFrame((t) => this._loop(t));
-            if (t - this._lastDraw < FRAME_MS) return;
-            this._lastDraw = t;
+            this._rafId = requestAnimationFrame((now) => this._loop(now));
+            const stamp = (typeof t === "number") ? t : performance.now();
+            if (stamp - this._lastDraw < FRAME_MS) return;
+            this._lastDraw = stamp;
             if (this.wfCanvas) this._drawWaveform();
             if (this.spCanvas) this._drawSpectrum();
         }
