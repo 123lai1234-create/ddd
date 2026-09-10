@@ -1,5 +1,5 @@
 ---
-import Analytics from '@vercel/analytics/astro';
+// import Analytics from '@vercel/analytics/astro'; // 暫時關閉：Vercel dashboard 未啟用 Web Analytics，script 永遠 404
 import Chatbot from '../components/Chatbot.astro';
 // ImmersiveBackground removed — was causing clutter (video bg + particles + WebGL shader stacked)
 
@@ -203,7 +203,7 @@ const personSchema = {
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
     )}
     {pageScripts.map((src) => <script src={src}></script>)}
-    <Analytics />
+    {/* <Analytics /> */}
 
     <!-- ── Search modal (Pagefind) ── -->
     <div id="pf-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:10vh">
