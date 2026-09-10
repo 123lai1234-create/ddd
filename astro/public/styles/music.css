@@ -309,9 +309,11 @@ html, body {
   overflow-y: auto;
   background: var(--music-surface-2);
   border-radius: 12px;
-  padding: 20px;
-  min-height: 220px;
-  margin-bottom: 16px;
+  padding: 16px 20px;
+  min-height: 96px;   /* compact 模式只顯 2 行：約 60-80px，給點 padding */
+  max-height: 240px;  /* 保險：即使切到 all 模式也不會撐爆中欄 */
+  margin-bottom: 12px;
+  transition: min-height 0.2s ease;
 }
 .now-playing-lyrics::-webkit-scrollbar { width: 6px; }
 .now-playing-lyrics::-webkit-scrollbar-track { background: transparent; }
@@ -320,16 +322,16 @@ html, body {
 .lyrics { text-align: center; }
 .lyric-line {
   color: var(--music-text-muted);
-  font-size: 16px;
-  line-height: 1.8;
-  margin: 8px 0;
-  padding: 4px 0;
+  font-size: 15px;
+  line-height: 1.4;   /* 縮減行距避免歌詞膨脹 */
+  margin: 2px 0;
+  padding: 2px 0;
   transition: all 0.3s;
   opacity: 0.55;
 }
 .lyric-line.active {
   color: var(--music-text);
-  font-size: 22px;
+  font-size: 20px;     /* 22 → 20，active 行稍縮 */
   font-weight: 600;
   opacity: 1;
   text-shadow: 0 0 20px var(--music-accent-glow);

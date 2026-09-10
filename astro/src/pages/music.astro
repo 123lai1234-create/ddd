@@ -40,8 +40,8 @@ const bodyHtml = `
         <!-- ── 中欄：現在播放 + 歌詞 ──────────────────────────────── -->
         <section class="now-playing-pane">
             <header class="now-playing-header">
-                <button class="stage-icon-btn" id="karaoke-toggle" title="卡拉OK逐字" aria-label="卡拉OK">🎤</button>
-                <button class="stage-icon-btn" id="fullscreen-lyrics-btn" title="全螢幕歌詞 (F 或雙擊歌詞)">⛶</button>
+                <button class="stage-icon-btn" id="karaoke-toggle" title="卡拉OK逐字（開/關）" aria-label="卡拉OK">🎤</button>
+                <button class="stage-icon-btn" id="fullscreen-lyrics-btn" title="全螢幕歌詞看全部 (F 或雙擊歌詞)">⛶</button>
             </header>
 
             <div class="now-playing-card" id="now-playing-card">
@@ -302,14 +302,14 @@ const headInline = "<script is:inline>if ('serviceWorker' in navigator) navigato
     title="🎵 音樂混音台"
     description="現代化音樂播放平台，內建 8 段 EQ、Reverb、人聲效果、即時頻譜分析"
     bodyPage="music"
-    pageStyles={["/styles/music.css?v=20260910a"]}
+    pageStyles={["/styles/music.css?v=20260910b"]}
     pageScripts={[
-        "/scripts/app-config.js?v=20260910a",
-        "/scripts/reverb-irs.js?v=20260910a",
-        "/scripts/audio-engine.js?v=20260910a",
-        "/scripts/visualizer.js?v=20260910a",
-        "/scripts/music-player.js?v=20260910a",
-        "/scripts/mixing-console.js?v=20260910a"
+        "/scripts/app-config.js?v=20260910b",
+        "/scripts/reverb-irs.js?v=20260910b",
+        "/scripts/audio-engine.js?v=20260910b",
+        "/scripts/visualizer.js?v=20260910b",
+        "/scripts/music-player.js?v=20260910b",
+        "/scripts/mixing-console.js?v=20260910b"
     ]}
     headInline={headInline}
 >

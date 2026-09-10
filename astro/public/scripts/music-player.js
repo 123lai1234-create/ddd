@@ -154,7 +154,7 @@
         shuffle: false,
         repeat: "none", // none, one, all
         karaoke: true, // 卡拉OK逐字漸亮模式（預設開，向下相容）
-        karaokeStyle: "all", // all | compact — compact 只顯示當前+下一行
+        karaokeStyle: "compact", // all | compact — compact 只顯示當前+下一行（預設 compact 避免歌詞撐爆中欄；要看全部按 F 或 ⛶ 進全螢幕）
         drawerOpen: false,
         // 用來取消 300ms 強制 tryPlay 計時器：每次 pauseTrack 會 +1
         // 計時器跑時若發現 token 改變就放棄，不會重新播放
