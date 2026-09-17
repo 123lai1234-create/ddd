@@ -2,7 +2,7 @@
 // Strategy: network-first with cache fallback. Skip caching for any
 // request with a ?v=... cache-bust query string (used by music page).
 
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const CACHE_NAME = `portfolio-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
