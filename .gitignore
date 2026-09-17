@@ -18,3 +18,7 @@ outputs/*.pt
 .hftoken
 .env*
 .trash-nested-git/
+
+# LRC backup folders (created by auto-scale script)
+_backup_lrc_*/
+.lrc_backup_*/
