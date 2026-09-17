@@ -13,6 +13,7 @@ import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
 //
 // Schema (Neon Postgres, schema `public`):
+//   chat_qa_cache    (q_hash PK, q_text, a_text, hit_count, created_at, updated_at) — chatbot Q&A cache (FNV-1a hash of normalized question → LLM answer)
 //   watchlist        (code, name, ticker, sort_order)         — stock watchlist
 //   etf_watchlist    (code, name, ticker, sort_order, created_at) — ETF watchlist
 //   market_instruments (id, symbol, display_name, market, exchange_name, ...)
@@ -5978,11 +5979,92 @@ async function aiWarroomHandler(request) {
   return json(filters);
 }
 const _BACKEND_BASE = "https://donttalk-api.fly.dev";
+
+// ── Q&A cache helpers (FNV-1a 32-bit hash, no crypto deps) ───────────
+// Same normalize/hash logic as the client Chatbot.astro so cache keys
+// match across layers. Keep them in sync if you change the rules.
+function _chatNormalize(s) {
+  return String(s == null ? "" : s)
+    .toLowerCase()
+    .replace(/[\s\u3000]+/g, " ")
+    .replace(/[，。！？、；：,.!?;:"'‘’“”()（）【】\[\]<>《》]/g, "")
+    .replace(/[?？!！.]/g, "")
+    .trim()
+    .slice(0, 200);
+}
+function _chatHash(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h * 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+}
+// Extract the LAST user message as the cache question (ignore system + history).
+function _chatExtractLastUserQ(body) {
+  if (body && typeof body.message === "string" && body.message.trim()) return body.message;
+  if (body && Array.isArray(body.messages)) {
+    for (let i = body.messages.length - 1; i >= 0; i--) {
+      const m = body.messages[i];
+      if (m && m.role === "user" && typeof m.content === "string" && m.content.trim()) return m.content;
+    }
+  }
+  return null;
+}
+async function _chatCacheLookup(qText) {
+  const norm = _chatNormalize(qText);
+  if (norm.length < 3) return null;
+  const hh = _chatHash(norm);
+  try {
+    const { rows } = await q(
+      `SELECT a_text FROM chat_qa_cache WHERE q_hash = $1 LIMIT 1`,
+      [hh]
+    );
+    if (rows && rows[0] && rows[0].a_text) {
+      // Fire-and-forget: increment hit_count without blocking the response
+      q(
+        `UPDATE chat_qa_cache SET hit_count = hit_count + 1, updated_at = NOW() WHERE q_hash = $1`,
+        [hh]
+      ).catch(() => {});
+      return { hh, norm, a: rows[0].a_text };
+    }
+  } catch (_) { /* fall through — cache miss on DB error */ }
+  return null;
+}
+async function _chatCacheSave(qText, aText) {
+  const norm = _chatNormalize(qText);
+  if (norm.length < 3 || !aText) return;
+  const hh = _chatHash(norm);
+  try {
+    await q(
+      `INSERT INTO chat_qa_cache (q_hash, q_text, a_text)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (q_hash) DO UPDATE SET
+         a_text = EXCLUDED.a_text,
+         hit_count = chat_qa_cache.hit_count,
+         updated_at = NOW()`,
+      [hh, norm.slice(0, 500), String(aText).slice(0, 4000)]
+    );
+  } catch (_) { /* silent — caching is best-effort */ }
+}
+
 async function chatHandler(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   let body;
   try { body = await request.json(); } catch { return json({ error: "invalid JSON" }, { status: 400 }); }
-  // Accept either { message } (FastAPI native) or { system, messages[] } (portfolio format)
+
+  // 1) Try server-side Q&A cache first — exact normalized-hash match,
+  //    saves the LLM round-trip + tokens for repeat questions.
+  const cacheQ = _chatExtractLastUserQ(body);
+  if (cacheQ) {
+    const hit = await _chatCacheLookup(cacheQ);
+    if (hit && hit.a) {
+      const cleaned = hit.a.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
+      return json({ reply: cleaned, cache: "hit" });
+    }
+  }
+
+  // 2) Accept either { message } (FastAPI native) or { system, messages[] } (portfolio format)
   let messageText;
   if (body.message) {
     messageText = body.message;
@@ -6009,6 +6091,16 @@ async function chatHandler(request) {
     // 過濾 <think> 區塊（防 reasoning model 推理內容漏出到使用者）
     text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
     // 強制 charset=utf-8，避免中文被瀏覽器當 Latin-1 顯示變亂碼
+    // 3) Cache the response (best-effort) so the next identical question hits the cache.
+    if (r.ok && cacheQ) {
+      // Try to extract a clean reply string to store. The proxy returns raw JSON
+      // text from the backend — we just save the cleaned body (may be JSON-wrapped).
+      // The client will strip again if needed.
+      const stripped = String(text).trim();
+      if (stripped && stripped.length < 4000) {
+        _chatCacheSave(cacheQ, stripped).catch(() => {});
+      }
+    }
     return new Response(text, {
       status: r.status,
       headers: { "Content-Type": "application/json; charset=utf-8" },

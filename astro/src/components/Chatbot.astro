@@ -35,7 +35,7 @@
         <button class="chat-chip" data-q="你的背景是什麼？">🎓 背景學歷</button>
         <button class="chat-chip" data-q="你會哪些技術？">💻 技術專長</button>
         <button class="chat-chip" data-q="推薦蛋白質 AI 作品">🧬 蛋白質 AI</button>
-        <button class="chat-chip" data-q="如何聯絡你？">📧 聯絡方式</button>
+        <button class="chat-chip" data-q="如何合作？">🤝 合作方式</button>
       </div>
     </div>
     <div class="chatbot-input-row">
@@ -127,15 +127,15 @@
 
 <script is:inline>
 (function() {
-    const SYSTEM = `你是「元嬰不說」，這個作品集網站的 AI 助手，自我介紹時請用「元嬰不說」這個名字，不要寫「(AI 助手)」之類的標籤或簽名。「不說」是 persona 的一部分——keep it short、安靜、沉穩，該講的還是要講清楚。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師（JT Lai）。
+    const SYSTEM = `你是「元嬰不說」，這個作品集網站的 AI 助手，自我介紹時請用「元嬰不說」這個名字，不要寫「(AI 助手)」之類的標籤或簽名。「不說」是 persona 的一部分——keep it short、安靜、沉穩，該講的還是要講清楚。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師，公開化名為「不說」，對外不揭露真實姓名與聯絡方式。
 專長：ESM-2 蛋白質語言模型、ProteinMPNN、Bayesian Optimization（BoTorch/qLogEI）、REINFORCE RL、FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場資料平台。
-請用繁體中文回答，保持專業友善、沉穩簡潔，回答不超過 200 字。只回答與作品集相關的問題。回覆中不要出現 <think> 之類的內部推理標籤。`;
+請用繁體中文回答，保持專業友善、沉穩簡潔，回答不超過 200 字。只回答與作品集相關的問題。回覆中不要出現 <think> 之類的內部推理標籤；任何時候都不要透露真實姓名、Email、GitHub、LinkedIn 等聯絡資訊，也不要給出能被定位到本人的個資——若被問到，一律以「對外不公開」回應。`;
 
     // Local knowledge base — works even when /api/chat is unreachable
     const KB = [
         {
             keys: ['背景', '學歷', '碩士', '經歷', '介紹', 'about', '履歷', 'bio'],
-            reply: '我是 JT Lai，擁有電資工程（北科電子所）與生物醫學（陽明交大解剖細胞生物所）雙碩士背景。\n\n研究主題涵蓋蛋白質 AI 設計、基因體分析與量化交易，現在專注於把研究做成可操作的 AI 平台。\n\n👉 詳細看 /about 頁面',
+            reply: '作者公開化名為「不說」，擁有電資工程（北科電子所）與生物醫學（陽明交大解剖細胞生物所）雙碩士背景。\n\n研究主題涵蓋蛋白質 AI 設計、基因體分析與量化交易，現在專注於把研究做成可操作的 AI 平台。\n\n👉 詳細看 /about 頁面',
         },
         {
             keys: ['技術', '會什麼', 'skill', '專長', 'stack', '語言'],
@@ -158,8 +158,8 @@
             reply: '主要作品分類：\n\n🧬 **Protein**：蛋白質 AI 設計系統、ProteinMPNN 互動工作台\n🔬 **Genomics**：基因 AI 平台、NGS 工作站\n📖 **Research**：遺傳演算法論文、技術部落格\n💼 **Other**：面試準備手冊、作品總覽\n\n👉 /works 一覽所有作品',
         },
         {
-            keys: ['聯絡', 'email', 'mail', '合作', 'contact'],
-            reply: '📧 主要聯絡方式在 /about 頁面底部。\n\nGitHub: github.com/123lai1234-create\nHuggingFace: huggingface.co/Donttalk123\n\n面試或合作邀約都可以直接寫信。',
+            keys: ['聯絡', 'email', 'mail', '合作', 'contact', '怎麼找', '如何找'],
+            reply: '對外不公開 Email、社群帳號等可直接定位到本人的聯絡方式。\n\n若有合作、研究或產品整合需求，請透過 /about 頁面上的合作洽詢表單留言，會由後台收到並回覆。\n\n這是刻意的選擇——作品集本身已經把所有技術內容、研究主題與可展示的平台都放在站上，公開聯絡方式反而容易被自動爬蟲與垃圾信淹沒。',
         },
         {
             keys: ['demo', '範例', '相似度', '互動'],
@@ -167,7 +167,7 @@
         },
         {
             keys: ['你好', 'hi', 'hello', '嗨', '哈囉'],
-            reply: '你好！👋 試試點下面的快速問題，或直接問我有關 JT 的背景、技術、作品集的任何問題。',
+            reply: '你好！👋 試試點下面的快速問題，或直接問我有關 不說 的背景、技術、作品集的任何問題。',
         },
     ];
 
@@ -186,6 +186,76 @@
             .replace(/<think>[\s\S]*?<\/think>/gi, '')
             .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
             .trim();
+    }
+
+    /* ── Q&A cache (client + server hybrid) ────────────────────────────
+     * Save answered Q&A so the same / similar questions return from cache
+     * without burning LLM tokens. Layered:
+     *   1. localStorage  — instant, per-device, survives reload
+     *   2. /api/chat     — server-side Neon table (q_hash → a_text)
+     * Both layers key on a normalized (lowercased + whitespace + strip
+     * common CJK punctuation) hash of the LAST user message. The server
+     * is the source of truth; the client cache is just a fast front-line.
+     */
+    const QA_CACHE_KEY = 'chatbot_qa_cache_v1';
+    const QA_CACHE_MAX = 200;
+
+    function normalizeQ(s) {
+        return String(s == null ? '' : s)
+            .toLowerCase()
+            .replace(/[\s\u3000]+/g, ' ')
+            .replace(/[，。！？、；：,.!?;:"'‘’“”()（）【】\[\]<>《》]/g, '')
+            .replace(/[?？!！.]/g, '')
+            .trim()
+            .slice(0, 200);
+    }
+
+    function hashQ(s) {
+        // FNV-1a 32-bit — no crypto deps, fast, deterministic
+        let h = 0x811c9dc5;
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = (h * 0x01000193) >>> 0;
+        }
+        return h.toString(16).padStart(8, '0');
+    }
+
+    function loadLocalCache() {
+        try {
+            const raw = localStorage.getItem(QA_CACHE_KEY);
+            if (!raw) return {};
+            const obj = JSON.parse(raw);
+            return (obj && typeof obj === 'object') ? obj : {};
+        } catch (_) { return {}; }
+    }
+
+    function saveLocalCacheEntry(qText, aText) {
+        try {
+            const norm = normalizeQ(qText);
+            if (norm.length < 3) return;
+            const hh = hashQ(norm);
+            const cache = loadLocalCache();
+            cache[hh] = { q: norm.slice(0, 200), a: String(aText || '').slice(0, 4000), ts: Date.now() };
+            // Cap size: drop oldest entries past the limit
+            const entries = Object.entries(cache);
+            if (entries.length > QA_CACHE_MAX) {
+                entries.sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
+                for (let i = 0; i < entries.length - QA_CACHE_MAX; i++) delete cache[entries[i][0]];
+            }
+            localStorage.setItem(QA_CACHE_KEY, JSON.stringify(cache));
+        } catch (_) {}
+    }
+
+    function lookupLocalCache(qText) {
+        try {
+            const norm = normalizeQ(qText);
+            if (norm.length < 3) return null;
+            const hh = hashQ(norm);
+            const cache = loadLocalCache();
+            const entry = cache[hh];
+            if (entry && entry.a) return entry.a;
+        } catch (_) {}
+        return null;
     }
 
     let history = [];
@@ -333,32 +403,57 @@
         hideChips();
         setBusy(true);
 
+        // 1) Try the local KB first — it's free (no fetch, no LLM tokens)
         let reply = null;
-        try {
-            const apiBase = (typeof window.APP_CONFIG_UTILS?.resolveApiBase === 'function')
-                ? await window.APP_CONFIG_UTILS.resolveApiBase({ cacheKey: 'chatbot' })
-                : '';
-            const endpoint = apiBase ? `${apiBase}/api/chat` : '/api/chat';
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ system: SYSTEM, messages: history.slice(-10) }),
-                signal: AbortSignal.timeout(20000),
-            });
-            if (res.ok) {
-                const data = await res.json();
-                reply = data.reply ?? data.content?.[0]?.text ?? null;
-                if (reply) history.push({ role: 'assistant', content: stripThink(reply) });
+        const kbHit = findLocalReply(text);
+        if (kbHit) {
+            reply = kbHit;
+        }
+
+        // 2) Try the client-side Q&A cache (already-answered questions)
+        if (!reply) {
+            const cached = lookupLocalCache(text);
+            if (cached) {
+                reply = cached + '\n\n_(本機快取回覆，不消耗 LLM token)_';
             }
-        } catch (_) {}
+        }
+
+        // 3) Fall through to /api/chat — which itself checks the server-side
+        //    Q&A cache (chat_qa_cache Neon table) before hitting the LLM.
+        if (!reply) {
+            try {
+                const apiBase = (typeof window.APP_CONFIG_UTILS?.resolveApiBase === 'function')
+                    ? await window.APP_CONFIG_UTILS.resolveApiBase({ cacheKey: 'chatbot' })
+                    : '';
+                const endpoint = apiBase ? `${apiBase}/api/chat` : '/api/chat';
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ system: SYSTEM, messages: history.slice(-10) }),
+                    signal: AbortSignal.timeout(20000),
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const fromApi = data.reply ?? data.content?.[0]?.text ?? null;
+                    const cleaned = fromApi ? stripThink(fromApi) : null;
+                    if (cleaned) {
+                        reply = cleaned;
+                        // Mark cache provenance so user can see it
+                        if (data.cache === 'hit') {
+                            reply += '\n\n_(伺服器快取回覆，不消耗 LLM token)_';
+                        }
+                        // Save to local cache for next time
+                        saveLocalCacheEntry(text, cleaned);
+                        history.push({ role: 'assistant', content: cleaned });
+                    }
+                }
+            } catch (_) {}
+        }
 
         if (!reply) {
-            const local = findLocalReply(text);
-            if (local) {
-                reply = local + '\n\n_(本機離線回覆，AI 模型目前未連線)_';
-            } else {
-                reply = `目前 AI 模型暫時無法連線，也沒有對應到本機知識庫。\n\n你問的「${text}」可以試著換個關鍵字（例如：背景、技術、作品、聯絡）。`;
-            }
+            reply = `目前 AI 模型暫時無法連線，也沒有對應到本機知識庫。\n\n你問的「${text}」可以試著換個關鍵字（例如：背景、技術、作品、合作）。`;
+        } else if (kbHit && reply === kbHit) {
+            // (no extra suffix for KB hits; user already knows they're local)
         }
 
         addMsg('bot', reply, true);

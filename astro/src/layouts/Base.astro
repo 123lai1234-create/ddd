@@ -35,7 +35,7 @@ const {
 } = Astro.props;
 
 const ogImageUrl = ogImage
-    ?? `${SITE}/og?t=${encodeURIComponent(title)}&s=${encodeURIComponent(description || 'JT Lai 作品集')}&tag=${encodeURIComponent(ogTag)}`;
+    ?? `${SITE}/og?t=${encodeURIComponent(title)}&s=${encodeURIComponent(description || '不說 作品集')}&tag=${encodeURIComponent(ogTag)}`;
 
 // Canonical: strip query strings & hash, force trailing-slash consistency via Astro.site.
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? SITE).toString();
@@ -47,7 +47,7 @@ const personSchema = {
         {
             '@type': 'Person',
             '@id': `${SITE}#person`,
-            name: 'JT Lai',
+            name: '不說',
             url: SITE,
             image: `${SITE}/og-default.png`,
             sameAs: [
@@ -71,7 +71,7 @@ const personSchema = {
             '@type': 'WebSite',
             '@id': `${SITE}#website`,
             url: SITE,
-            name: 'JT Lai Portfolio',
+            name: '不說 Portfolio',
             inLanguage: 'zh-TW',
             author: { '@id': `${SITE}#person` },
             potentialAction: {
@@ -109,14 +109,14 @@ const personSchema = {
     <meta property="og:image" content={ogImageUrl} />
         <meta name="twitter:image" content={ogImageUrl} />
         <meta property="og:url" content={canonicalURL} />
-        <meta property="og:site_name" content="JT Lai Portfolio" />
+        <meta property="og:site_name" content="不說 Portfolio" />
         <meta property="og:locale" content="zh_TW" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
         <link rel="canonical" href={canonicalURL} />
         <link rel="alternate" hreflang="zh-TW" href={canonicalURL} />
         <link rel="alternate" hreflang="x-default" href={canonicalURL} />
-        <meta name="author" content="JT Lai" />
+        <meta name="author" content="不說" />
             <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
             <meta name="googlebot" content="index, follow" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>" />

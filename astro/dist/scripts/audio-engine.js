@@ -82,6 +82,13 @@
             if (!this.audio) {
                 throw new Error("DontTalkMixer: init(audioEl) not called");
             }
+            // ★ CORS 防護：在 createMediaElementSource 之前先等 audio 至少拿到 metadata，
+            //   否則 Chrome 可能把 MediaElementSource 鎖在「tainted」狀態，
+            //   之後 Web Audio API 收 zero（"MediaElementAudioSource outputs zeroes due to CORS access restrictions"）。
+            //   雖然 crossorigin="anonymous" + jsDelivr 的 ACAO:* 應該過 CORS，
+            //   但若 audio.src 還沒設定好或 race condition 導致 fetch 沒帶 Origin，
+            //   Chrome 會整條鏈靜音。
+            await this._waitForAudioReady(3000);
             if (!this.ctx) {
                 const Ctor = window.AudioContext || window.webkitAudioContext;
                 this.ctx = new Ctor();
@@ -93,6 +100,30 @@
                 await this.ctx.resume();
             }
             return this;
+        }
+
+        /**
+         * 等 audio 至少 HAVE_METADATA 才往下走。
+         * - 沒 src：直接 resolve（之後 music-player.js 設 src 就會觸發 canplay，不影響 mixer）
+         * - 有 src 但還在載：等 loadedmetadata，最多 3 秒 timeout 避免卡住
+         */
+        _waitForAudioReady(timeoutMs) {
+            const a = this.audio;
+            if (!a) return Promise.resolve();
+            // 沒 src：等也沒意義，直接走
+            if (!a.src || a.src === window.location.href) return Promise.resolve();
+            // readyState: 0 NOTHING, 1 METADATA, 2 CURRENT_DATA, 3 FUTURE_DATA, 4 ENOUGH_DATA
+            if (a.readyState >= 1) return Promise.resolve();
+            return new Promise((resolve) => {
+                let done = false;
+                const finish = () => { if (done) return; done = true; resolve(); };
+                const onMeta = () => { a.removeEventListener("loadedmetadata", onMeta); finish(); };
+                a.addEventListener("loadedmetadata", onMeta, { once: true });
+                setTimeout(() => {
+                    a.removeEventListener("loadedmetadata", onMeta);
+                    finish();
+                }, timeoutMs || 3000);
+            });
         }
 
         /** Wire up the entire signal chain. Called once. */

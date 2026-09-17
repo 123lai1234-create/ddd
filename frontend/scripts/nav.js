@@ -150,7 +150,7 @@
             'url': base,
             'author': {
                 '@type': 'Person',
-                'name': 'JT Lai',
+                'name': '不說',
                 'jobTitle': 'Biomedical AI Engineer',
                 'knowsAbout': ['Protein Design', 'NGS', 'Machine Learning', 'FastAPI', 'React']
             },

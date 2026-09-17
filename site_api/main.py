@@ -52,7 +52,7 @@ async def lifespan(application: FastAPI):
         db._DB_POOL.close()
 
 
-app = FastAPI(title="JT Lai Portfolio API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="不說 Portfolio API", version="1.0.0", lifespan=lifespan)
 
 _rate_limit = os.getenv("API_RATE_LIMIT", "60/minute")
 limiter = Limiter(key_func=get_remote_address, default_limits=[_rate_limit])

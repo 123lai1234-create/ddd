@@ -1,7 +1,7 @@
 """
 site_api/llm_stack/tools/builtin/portfolio.py — Portfolio / project-related tools.
 
-These tools let the LLM answer questions about the JT Lai portfolio
+These tools let the LLM answer questions about the 不說 portfolio
 pages, protein design pipeline, and ongoing projects.
 """
 
