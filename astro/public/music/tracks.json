@@ -159,7 +159,6 @@
       "duration": 258,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/10_十年後的重逢(優化版).mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/十年後的重逢(優化版).lrc",
       "favorite": false
     },
     {
@@ -338,7 +337,6 @@
       "duration": 279,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/track-04-房价像风筝一样飞走了---fa0f3e04-93b3-4852-80ca-e8212e823b20.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/track-04-房价像风筝一样飞走了---fa0f3e04-93b3-4852-80ca-e8212e823b20.lrc",
       "favorite": false
     },
     {
@@ -349,7 +347,6 @@
       "duration": 312,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/track-04-房价像风筝一样飞走了.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/track-04-房价像风筝一样飞走了.lrc",
       "favorite": false
     },
     {
@@ -360,7 +357,6 @@
       "duration": 345,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/track-05-毕业等于失业---9a55310a-7278-4124-87dd-2c6d142a49d7.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/track-05-毕业等于失业---9a55310a-7278-4124-87dd-2c6d142a49d7.lrc",
       "favorite": false
     },
     {
@@ -381,7 +377,6 @@
       "duration": 367,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/track-07-六便士与月亮---65b662ae-f285-4631-83ca-a98c80e4db2c.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/track-07-六便士与月亮---65b662ae-f285-4631-83ca-a98c80e4db2c.lrc",
       "favorite": false
     },
     {
@@ -413,7 +408,6 @@
       "duration": 359,
       "url": "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music/track-10-这个时代的艺术家---771c5519-c626-4955-a42a-23c5b48cc4f7.mp3",
       "cover": "🎵",
-      "lyricsUrl": "/music/track-10-这个时代的艺术家---771c5519-c626-4955-a42a-23c5b48cc4f7.lrc",
       "favorite": false
     }
   ]
