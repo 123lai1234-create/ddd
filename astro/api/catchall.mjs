@@ -934,9 +934,33 @@ async function stockIndustry(request) {
     const { rows } = await q(
       "SELECT symbol AS code, display_name AS name, market, exchange_name, metadata_text FROM market_instruments WHERE asset_type='stock' AND market='TWSE' ORDER BY symbol LIMIT 200"
     );
-    return json({ ok: true, source: "db", count: rows.length, items: rows });
+    // Build {code: industry} mapping from metadata_text.industry so the
+    // stock-app sidebar industry filter can render chips. Falls back to
+    // empty string (sidebar treats as "其他") when missing.
+    const _mapping = {};
+    const _items = [];
+    for (const r of rows) {
+      let industry = "";
+      if (r.metadata_text) {
+        try {
+          const parsed = JSON.parse(r.metadata_text);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            industry = parsed.industry || "";
+          }
+        } catch {}
+      }
+      if (industry) _mapping[r.code] = industry;
+      _items.push({ ...r, industry });
+    }
+    return json({
+      ok: true,
+      source: "db",
+      count: rows.length,
+      mapping: _mapping,   // ★ stock-app/SW expects {mapping:{code:industry}}
+      items: _items,        // legacy: full rows incl. derived industry
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [] });
+    return json({ ok: true, source: "stub", count: 0, mapping: {}, items: [] });
   }
 }
 
@@ -4665,8 +4689,12 @@ async function loadSectors(request) {
           [json, code]
         );
       } else {
+        // ★ FIX 2026-09-18: schema has `display_name` not `name`, and the
+        //   duplicate $1 placeholder was a copy/paste bug. We don't have a
+        //   human-readable name here (sector loader is industry-only), so
+        //   insert with display_name='' and let a later loader populate it.
         await q(
-          `INSERT INTO market_instruments (symbol, name, asset_type, market, metadata_text, source) VALUES ($1, $1, 'stock', 'TWSE', $2, 'manual')`,
+          `INSERT INTO market_instruments (symbol, display_name, asset_type, market, metadata_text, source) VALUES ($1, '', 'stock', 'TWSE', $2, 'manual')`,
           [code, json]
         );
       }
