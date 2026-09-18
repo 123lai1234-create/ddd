@@ -60,6 +60,11 @@
       "permanent": true
     },
     {
+      "source": "/stock/:path*",
+      "destination": "/stock-app/:path*",
+      "permanent": true
+    },
+    {
       "source": "/about_me.html",
       "destination": "/about",
       "permanent": true
