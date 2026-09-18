@@ -4695,12 +4695,13 @@ async function loadSectors(request) {
         // ★ FIX 2026-09-18: schema has `display_name` not `name`, the
         //   duplicate $1 placeholder was a copy/paste bug, and the actual
         //   Neon table also doesn't have a `source` column (only
-        //   `market_instruments(id, symbol, display_name, market,
-        //   exchange_name, metadata_text, ...)`). We don't have a human-
-        //   readable name here (sector loader is industry-only), so insert
-        //   with display_name='' and let a later loader populate it.
+        //   `market_instruments(id, symbol, display_name, source_name,
+        //   asset_type, market, exchange_name, metadata_text, ...)`).
+        //   `source_name` IS NOT NULL — we tag it 'twse_sector_loader'
+        //   so it's distinguishable from seed instruments. Empty
+        //   display_name lets a later loader populate the human name.
         await q(
-          `INSERT INTO market_instruments (symbol, display_name, asset_type, market, metadata_text) VALUES ($1, '', 'stock', 'TWSE', $2)`,
+          `INSERT INTO market_instruments (symbol, display_name, source_name, asset_type, market, metadata_text) VALUES ($1, '', 'twse_sector_loader', 'stock', 'TWSE', $2)`,
           [code, json]
         );
       }
