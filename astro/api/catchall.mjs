@@ -8,6 +8,9 @@
 //   vercel.json 的 routes /api/.* 把 /api/og 也導到 catchall，原本 og.jsx 不會被 Vercel 執行)
 // 2026-09-03 v5 marker (dispatch: 修正 path normalization，當 vercel.json route rule 把 /og 直接送 catchall 時，
 //   pathname 是 /api//og，去掉 /api/ 後是 /og，原本 "/" + "/og" = "//og" 壞掉，現在去掉 path 開頭多餘 / 再加 /)
+// 2026-09-18 v6 marker (stockIndustry: 加 {mapping:{code:industry}} 給 stock-app sidebar industry filter 渲染 +
+//   loadSectors: INSERT 改用 display_name 欄位 + 移除 $1 path duplicate; force rebuild edge function —
+//   前 commit 6f18a095 已 deploy 但 Vercel edge function cache 沒 invalidate，production 仍回舊 schema)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
