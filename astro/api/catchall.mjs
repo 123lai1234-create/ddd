@@ -934,8 +934,13 @@ async function signalHistoryRecord(request) {
 
 async function stockIndustry(request) {
   try {
+    // ★ FIX 2026-09-18: bump LIMIT to 800 so non-00-prefixed stocks like
+    //   2330, 2454, 2317 etc. make it into the result. Old LIMIT 200
+    //   meant the first 200 rows were all `00xxx` ETFs/warrants and the
+    //   rest (including the 34 stocks that loadSectors tagged with
+    //   industry) got truncated out.
     const { rows } = await q(
-      "SELECT symbol AS code, display_name AS name, market, exchange_name, metadata_text FROM market_instruments WHERE asset_type='stock' AND market='TWSE' ORDER BY symbol LIMIT 200"
+      "SELECT symbol AS code, display_name AS name, market, exchange_name, metadata_text FROM market_instruments WHERE asset_type='stock' AND market='TWSE' ORDER BY symbol LIMIT 800"
     );
     // Build {code: industry} mapping from metadata_text.industry so the
     // stock-app sidebar industry filter can render chips. Falls back to
