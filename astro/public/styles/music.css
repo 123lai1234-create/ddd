@@ -451,6 +451,32 @@ html, body {
   color: white;
 }
 
+/* ── MV 模式容器 ──────────────────────────────────────── */
+.mv-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 360px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--music-shadow-2);
+  position: relative;
+}
+.mv-container[hidden] { display: none; }
+.mv-container iframe,
+.mv-container #yt-mv-player,
+.mv-container #yt-mv-player > div,
+.mv-container #yt-mv-player iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: 0;
+  display: block;
+}
+@media (max-width: 768px) {
+  .mv-container { max-height: 220px; }
+}
+
 .stage-ctrl {
   width: 44px; height: 44px;
   background: var(--music-surface-2);
