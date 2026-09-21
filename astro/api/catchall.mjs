@@ -4723,15 +4723,17 @@ async function loadSectors(request) {
 // ★ 2026-09-18: full-coverage sector loader via FinMind public dataset.
 //   Hardcoded TWSE_INDUSTRY_MAP only covers 34 stocks; FinMind TaiwanStockInfo
 //   gives industry_category for every listed stock. Public endpoint, no token.
-//   Batch up to 50 codes per request (FinMind accepts comma-separated data_id;
-//   rate-limit-friendly). Writes industry + sector_source to
-//   market_instruments.metadata_text just like loadSectors().
+//   NOTE: FinMind TaiwanStockInfo does NOT accept comma-separated data_id
+//   (returns HTTP 400) — must fetch one code per request. We run with
+//   bounded concurrency to stay inside FinMind's anonymous rate limit and
+//   the Vercel edge function's 60s budget.
 async function loadSectorsFinMind(request) {
   const t0 = Date.now();
   try {
     const u = urlOf(request);
     const onlyCode = pickStr(u.searchParams.get("code") || "").trim();
     const limit = Math.max(1, Math.min(200, parseInt(u.searchParams.get("limit") || "130", 10) || 130));
+    const concurrency = Math.max(1, Math.min(10, parseInt(u.searchParams.get("concurrency") || "8", 10) || 8));
     let codes = [];
     if (onlyCode) {
       codes = [onlyCode];
@@ -4749,35 +4751,36 @@ async function loadSectorsFinMind(request) {
     }
     let updated = 0, noIndustry = 0, failed = 0;
     const details = [];
-    const BATCH = 50;
-    for (let i = 0; i < codes.length; i += BATCH) {
-      const batch = codes.slice(i, i + BATCH);
-      const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo&data_id=${encodeURIComponent(batch.join(","))}`;
-      let rows = [];
-      try {
-        const r = await fetch(url, { headers: { "User-Agent": "donttalk-stock-app/1.0" } });
-        if (!r.ok) throw new Error(`FinMind HTTP ${r.status}`);
-        const j = await r.json();
-        if (j?.msg && j.msg !== "success") throw new Error(`FinMind: ${j.msg}`);
-        rows = j.data || [];
-      } catch (e) {
-        failed += batch.length;
-        details.push({ batch: batch.join(","), error: e?.message });
-        continue;
-      }
-      // Group by stock_id; prefer type==='twse' row, else first.
-      const byCode = new Map();
-      for (const row of rows) {
-        if (!row.stock_id) continue;
-        const code = String(row.stock_id).trim();
-        if (!byCode.has(code) || row.type === "twse") byCode.set(code, row);
-      }
-      for (const code of batch) {
-        const row = byCode.get(code);
+    // Bounded-concurrency fetch: process codes in chunks of `concurrency`.
+    for (let i = 0; i < codes.length; i += concurrency) {
+      const chunk = codes.slice(i, i + concurrency);
+      const results = await Promise.all(chunk.map(async (code) => {
+        try {
+          const u = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo&data_id=${encodeURIComponent(code)}`;
+          const r = await fetch(u, { headers: { "User-Agent": "donttalk-stock-app/1.0" } });
+          if (!r.ok) throw new Error(`FinMind HTTP ${r.status}`);
+          const j = await r.json();
+          if (j?.msg && j.msg !== "success") throw new Error(`FinMind: ${j.msg}`);
+          const rows = j.data || [];
+          // Pick TWSE row first, fall back to TPEX/any.
+          let pick = null;
+          for (const row of rows) {
+            if (!row.stock_id) continue;
+            if (row.type === "twse") { pick = row; break; }
+            if (!pick) pick = row;
+          }
+          return { code, row: pick };
+        } catch (e) {
+          return { code, error: e?.message };
+        }
+      }));
+      for (const res of results) {
+        if (res.error) { failed++; continue; }
+        const row = res.row;
         if (!row || !row.industry_category) { noIndustry++; continue; }
         const industry = row.industry_category;
         const stockName = row.stock_name || "";
-        const ex = await q(`SELECT metadata_text FROM market_instruments WHERE symbol = $1 AND asset_type='stock'`, [code]);
+        const ex = await q(`SELECT metadata_text FROM market_instruments WHERE symbol = $1 AND asset_type='stock'`, [res.code]);
         const exRows = ex.rows || ex || [];
         let meta = {};
         if (exRows.length && exRows[0].metadata_text) {
@@ -4793,17 +4796,17 @@ async function loadSectorsFinMind(request) {
         if (exRows.length) {
           await q(
             `UPDATE market_instruments SET metadata_text = $1 WHERE symbol = $2 AND asset_type='stock'`,
-            [json, code]
+            [json, res.code]
           );
         } else {
           // Use stock_name from FinMind as display_name to avoid empty-string UI later.
           await q(
             `INSERT INTO market_instruments (symbol, display_name, source_name, asset_type, market, metadata_text) VALUES ($1, $2, 'finmind_sector_loader', 'stock', 'TWSE', $3)`,
-            [code, stockName, json]
+            [res.code, stockName, json]
           );
         }
         updated++;
-        details.push({ code, industry });
+        if (details.length < 30) details.push({ code: res.code, industry });
       }
     }
     return json({
@@ -4814,7 +4817,7 @@ async function loadSectorsFinMind(request) {
       no_industry: noIndustry,
       failed,
       ms: Date.now() - t0,
-      details: details.slice(0, 30),
+      details,
     });
   } catch (e) {
     return json({ ok: false, source: "finmind", error: e?.message, ms: Date.now() - t0 });
