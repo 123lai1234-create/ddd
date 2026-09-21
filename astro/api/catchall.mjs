@@ -8,9 +8,10 @@
 //   vercel.json 的 routes /api/.* 把 /api/og 也導到 catchall，原本 og.jsx 不會被 Vercel 執行)
 // 2026-09-03 v5 marker (dispatch: 修正 path normalization，當 vercel.json route rule 把 /og 直接送 catchall 時，
 //   pathname 是 /api//og，去掉 /api/ 後是 /og，原本 "/" + "/og" = "//og" 壞掉，現在去掉 path 開頭多餘 / 再加 /)
-// 2026-09-18 v6 marker (stockIndustry: 加 {mapping:{code:industry}} 給 stock-app sidebar industry filter 渲染 +
-//   loadSectors: INSERT 改用 display_name 欄位 + 移除 $1 path duplicate; force rebuild edge function —
-//   前 commit 6f18a095 已 deploy 但 Vercel edge function cache 沒 invalidate，production 仍回舊 schema)
+// 2026-09-18 v7 marker (新增 loadSectorsFinMind: GET /api/admin/load/sectors_finmind
+//   用 FinMind public TaiwanStockInfo 拉所有 watchlist 的 industry_category (不只是
+//   TWSE_INDUSTRY_MAP hardcoded 34 個)，batch 50 codes/request 寫進 market_instruments。
+//   Hardcoded MAP 太薄，66 個 stocks 仍是「其他」；FinMind public dataset 免 token 全覆蓋)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -4683,7 +4684,7 @@ async function loadSectors(request) {
           if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
             meta = parsed;
           } else if (Array.isArray(parsed)) {
-            const _legacy = parsed; meta = { _legacy: _legacy, industry: "", sector_source: "", updated_at: "" };;
+            const _legacy = parsed; meta = { _legacy: _legacy, industry: "", sector_source: "", updated_at: "" };
           }
         } catch {}
       }
@@ -4716,6 +4717,107 @@ async function loadSectors(request) {
     return json({ ok: true, source: "loader", updated, skipped, total: targets.length, details });
   } catch (e) {
     return json({ ok: false, source: "loader", error: e?.message });
+  }
+}
+
+// ★ 2026-09-18: full-coverage sector loader via FinMind public dataset.
+//   Hardcoded TWSE_INDUSTRY_MAP only covers 34 stocks; FinMind TaiwanStockInfo
+//   gives industry_category for every listed stock. Public endpoint, no token.
+//   Batch up to 50 codes per request (FinMind accepts comma-separated data_id;
+//   rate-limit-friendly). Writes industry + sector_source to
+//   market_instruments.metadata_text just like loadSectors().
+async function loadSectorsFinMind(request) {
+  const t0 = Date.now();
+  try {
+    const u = urlOf(request);
+    const onlyCode = pickStr(u.searchParams.get("code") || "").trim();
+    const limit = Math.max(1, Math.min(200, parseInt(u.searchParams.get("limit") || "130", 10) || 130));
+    let codes = [];
+    if (onlyCode) {
+      codes = [onlyCode];
+    } else {
+      // Pull from both watchlists, dedup, cap at limit.
+      const w = await q("SELECT code FROM watchlist ORDER BY sort_order ASC, code ASC LIMIT $1", [limit]);
+      const e = await q("SELECT code FROM etf_watchlist ORDER BY sort_order ASC, code ASC LIMIT $1", [limit]);
+      const seen = new Set();
+      for (const r of (w.rows || w)) if (r.code) seen.add(r.code);
+      for (const r of (e.rows || e)) if (r.code) seen.add(r.code);
+      codes = [...seen].slice(0, limit);
+    }
+    if (codes.length === 0) {
+      return json({ ok: false, source: "finmind", error: "no codes to load" });
+    }
+    let updated = 0, noIndustry = 0, failed = 0;
+    const details = [];
+    const BATCH = 50;
+    for (let i = 0; i < codes.length; i += BATCH) {
+      const batch = codes.slice(i, i + BATCH);
+      const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo&data_id=${encodeURIComponent(batch.join(","))}`;
+      let rows = [];
+      try {
+        const r = await fetch(url, { headers: { "User-Agent": "donttalk-stock-app/1.0" } });
+        if (!r.ok) throw new Error(`FinMind HTTP ${r.status}`);
+        const j = await r.json();
+        if (j?.msg && j.msg !== "success") throw new Error(`FinMind: ${j.msg}`);
+        rows = j.data || [];
+      } catch (e) {
+        failed += batch.length;
+        details.push({ batch: batch.join(","), error: e?.message });
+        continue;
+      }
+      // Group by stock_id; prefer type==='twse' row, else first.
+      const byCode = new Map();
+      for (const row of rows) {
+        if (!row.stock_id) continue;
+        const code = String(row.stock_id).trim();
+        if (!byCode.has(code) || row.type === "twse") byCode.set(code, row);
+      }
+      for (const code of batch) {
+        const row = byCode.get(code);
+        if (!row || !row.industry_category) { noIndustry++; continue; }
+        const industry = row.industry_category;
+        const stockName = row.stock_name || "";
+        const ex = await q(`SELECT metadata_text FROM market_instruments WHERE symbol = $1 AND asset_type='stock'`, [code]);
+        const exRows = ex.rows || ex || [];
+        let meta = {};
+        if (exRows.length && exRows[0].metadata_text) {
+          try {
+            const parsed = JSON.parse(exRows[0].metadata_text);
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) meta = parsed;
+          } catch {}
+        }
+        meta.industry = industry;
+        meta.sector_source = "finmind_taiwanstock_info";
+        meta.updated_at = new Date().toISOString();
+        const json = JSON.stringify(meta);
+        if (exRows.length) {
+          await q(
+            `UPDATE market_instruments SET metadata_text = $1 WHERE symbol = $2 AND asset_type='stock'`,
+            [json, code]
+          );
+        } else {
+          // Use stock_name from FinMind as display_name to avoid empty-string UI later.
+          await q(
+            `INSERT INTO market_instruments (symbol, display_name, source_name, asset_type, market, metadata_text) VALUES ($1, $2, 'finmind_sector_loader', 'stock', 'TWSE', $3)`,
+            [code, stockName, json]
+          );
+        }
+        updated++;
+        details.push({ code, industry });
+      }
+    }
+    return json({
+      ok: true,
+      source: "finmind",
+      requested: codes.length,
+      updated,
+      no_industry: noIndustry,
+      failed,
+      ms: Date.now() - t0,
+      details: details.slice(0, 30),
+    });
+  } catch (e) {
+    return json({ ok: false, source: "finmind", error: e?.message, ms: Date.now() - t0 });
   }
 }
 
@@ -6404,6 +6506,8 @@ const TABLE = [
   ["POST", /^\/admin\/load\/finmind_price\/?$/,     loadMarketPricesFinMind],
   ["GET",  /^\/admin\/load\/sectors\/?$/,          loadSectors],
   ["POST", /^\/admin\/load\/sectors\/?$/,          loadSectors],
+  ["GET",  /^\/admin\/load\/sectors_finmind\/?$/,  loadSectorsFinMind],
+  ["POST", /^\/admin\/load\/sectors_finmind\/?$/,  loadSectorsFinMind],
   ["GET",  /^\/admin\/load\/all\/?$/,              loadAllCombined],
   ["POST", /^\/admin\/load\/all\/?$/,              loadAllCombined],
   ["GET",  /^\/admin\/load\/etf_holdings\/?$/,  loadEtfHoldings],
