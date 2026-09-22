@@ -306,7 +306,12 @@
                       },
                       {
                           "source":  "/signal-filter",
-                          "destination":  "/stock/signal-filter",
+                          "destination":  "/stock/signal-filter-v2",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/stock/signal-filter",
+                          "destination":  "/stock/signal-filter-v2",
                           "permanent":  true
                       },
                       {
