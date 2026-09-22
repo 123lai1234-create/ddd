@@ -10,6 +10,24 @@
   },
   "headers": [
     {
+      "source": "/stock/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/stock-app/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/games/xian-godot/(.*)?",
       "headers": [
         {
