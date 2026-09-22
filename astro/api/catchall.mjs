@@ -8,10 +8,9 @@
 //   vercel.json 的 routes /api/.* 把 /api/og 也導到 catchall，原本 og.jsx 不會被 Vercel 執行)
 // 2026-09-03 v5 marker (dispatch: 修正 path normalization，當 vercel.json route rule 把 /og 直接送 catchall 時，
 //   pathname 是 /api//og，去掉 /api/ 後是 /og，原本 "/" + "/og" = "//og" 壞掉，現在去掉 path 開頭多餘 / 再加 /)
-// 2026-09-22 v8 marker (loadAllCombined: 加 sectors_finmind step (FinMind TaiwanStockInfo
-//   覆蓋全部 watchlist industry) 在 sectors 之前。JT 確認要 auto-cron 跑這個。Step 順序
-//   變成 macro_yields → macro_news → index_institutional → market_prices →
-//   sectors_finmind → sectors → markers → ai_capex)
+// 2026-09-22 v9 marker (loadAllCombined step wrapper: 之前每個 step 傳 `{method:"GET"}` 給 loader，
+//   導致 `new URL(undefined)` 拋 "Invalid URL string" — 6 個 step 看似壞但其實是 wrapper bug。
+//   改成傳 `_selfReq` 含合法 url，所有 loader 的 `urlOf(request)` 不再爆。JT 確認要修)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -4835,6 +4834,12 @@ async function loadAllCombined(request) {
   }
   const t0 = Date.now();
   const steps = [];
+  // ★ FIX 2026-09-22: loaders call urlOf(request) which does `new URL(request.url)`.
+  //   When called from loadAllCombined we pass a fake request; without `.url` the
+  //   `new URL(undefined)` throws "Invalid URL string" and the whole step fails
+  //   with that misleading message. Build a synthetic request with a stable URL
+  //   so urlOf() works and loaders that read searchParams get sensible defaults.
+  const _selfReq = { method: "GET", url: "https://donttalk.vercel.app/api/admin/load/all" };
   const step = async (name, fn) => {
     const s = Date.now();
     try {
@@ -4845,23 +4850,23 @@ async function loadAllCombined(request) {
     }
   };
   // 1. macro_yields (Yahoo Finance 4 series × 30d)
-  await step("macro_yields", () => loadMacroYields({ method: "GET" }));
+  await step("macro_yields", () => loadMacroYields(_selfReq));
   // 2. macro_news (Google News RSS)
-  await step("macro_news", () => loadMacroNews({ method: "GET" }));
+  await step("macro_news", () => loadMacroNews(_selfReq));
   // 3. index_institutional (TWSE BFI82U 1 day)
-  await step("index_institutional", () => loadIndexInstitutional({ method: "GET" }));
+  await step("index_institutional", () => loadIndexInstitutional(_selfReq));
   // 4. market_prices (TWSE today snapshot for watchlist)
-  await step("market_prices", () => loadMarketPrices({ method: "GET" }));
+  await step("market_prices", () => loadMarketPrices(_selfReq));
   // 5. sectors_finmind (FinMind public TaiwanStockInfo — covers full watchlist,
   //   replaces the hardcoded 34-entry TWSE_INDUSTRY_MAP. Run before sectors so
   //   it can overwrite any stale twse_sector_loader metadata.)
-  await step("sectors_finmind", () => loadSectorsFinMind({ method: "GET" }));
+  await step("sectors_finmind", () => loadSectorsFinMind(_selfReq));
   // 6. sectors (硬編 TWSE industry mapping — fallback for codes FinMind missed)
-  await step("sectors", () => loadSectors({ method: "GET" }));
+  await step("sectors", () => loadSectors(_selfReq));
   // 7. markers (auto-gen from screenOne)
-  await step("markers", () => loadMarkers({ method: "GET" }));
+  await step("markers", () => loadMarkers(_selfReq));
   // 8. ai_capex (SEC EDGAR 6 hyperscalers)
-  await step("ai_capex", () => loadAiCapex({ method: "GET" }));
+  await step("ai_capex", () => loadAiCapex(_selfReq));
   const okCount = steps.filter(s => s.ok).length;
   return json({
     ok: true,
