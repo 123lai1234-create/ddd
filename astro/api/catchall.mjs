@@ -8,9 +8,10 @@
 //   vercel.json 的 routes /api/.* 把 /api/og 也導到 catchall，原本 og.jsx 不會被 Vercel 執行)
 // 2026-09-03 v5 marker (dispatch: 修正 path normalization，當 vercel.json route rule 把 /og 直接送 catchall 時，
 //   pathname 是 /api//og，去掉 /api/ 後是 /og，原本 "/" + "/og" = "//og" 壞掉，現在去掉 path 開頭多餘 / 再加 /)
-// 2026-09-22 v9 marker (loadAllCombined step wrapper: 之前每個 step 傳 `{method:"GET"}` 給 loader，
-//   導致 `new URL(undefined)` 拋 "Invalid URL string" — 6 個 step 看似壞但其實是 wrapper bug。
-//   改成傳 `_selfReq` 含合法 url，所有 loader 的 `urlOf(request)` 不再爆。JT 確認要修)
+// 2026-09-22 v10 marker (loadAllCombined: STEP_BUDGET_MS 8s → 15s。
+//   loadIndexInstitutional 預設 backfill 30 → 5 days，per-fetch timeout 10s → 3s，
+//   sleep 300ms → 100ms。index_institutional 唯一慢的 step，5×3.1s ≈ 15s 剛好 fit budget；
+//   其他 7 step 都快，總耗時仍 < 60s Vercel edge 限制)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -3932,7 +3933,11 @@ async function loadIndexInstitutionalForDate(dateYmd, indexCode) {
   const ymd = dateYmd.replace(/-/g, "");
   const url = `https://www.twse.com.tw/fund/BFI82U?response=json&dayDate=${ymd}`;
   const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 10000);
+  // ★ FIX 2026-09-22: drop per-fetch timeout from 10s to 3s. The 30-day backfill
+  //   × 10s = 300s blows past any reasonable step budget, and TWSE BFI82U almost
+  //   always responds in <2s. If it doesn't, skip and try next day instead of
+  //   holding the cron slot for 10s of silence.
+  const tid = setTimeout(() => ctrl.abort(), 3000);
   let resp;
   try {
     resp = await fetch(url, {
@@ -3982,9 +3987,11 @@ async function loadIndexInstitutional(request) {
   if (request.method === "POST" && !operatorOk(body?.password)) {
     return json({ error: "密碼錯誤" }, { status: 403 });
   }
-  // Backfill last 30 trading days for TWSE
+  // Backfill last N trading days for TWSE. Default 5 (was 30) so the
+  //   loadAllCombined cron fits in its step budget; cron usually only
+  //   needs to refresh the most recent trading day anyway.
   const results = [];
-  const days = Math.min(60, Math.max(1, parseInt(u.searchParams.get("days") || body?.days || "30", 10) || 30));
+  const days = Math.min(30, Math.max(1, parseInt(u.searchParams.get("days") || body?.days || "5", 10) || 5));
   const today = new Date();
   for (let i = 0; i < days; i++) {
     const d = new Date(today.getTime() - i * 86400000);
@@ -3998,7 +4005,7 @@ async function loadIndexInstitutional(request) {
     } catch (e) {
       results.push({ date: ymd, ok: false, error: e?.message });
     }
-    await new Promise((res) => setTimeout(res, 300));
+    await new Promise((res) => setTimeout(res, 100));
   }
   const okCount = results.map(r => ({ok: r.ok, count: (r && r.count) || 0})).filter(x => x.ok).reduce((s, x) => s + x.count, 0);
   return json({ ok: true, source: "loader", inserted: okCount, days, results });
@@ -4842,10 +4849,10 @@ async function loadAllCombined(request) {
   const _selfReq = { method: "GET", url: "https://donttalk.vercel.app/api/admin/load/all" };
   // Per-step budget: Vercel Hobby edge function caps at 60s; with 8 steps each
   // calling 3rd-party APIs (Yahoo, Google News, FinMind, SEC EDGAR) we cannot
-  // let any single step consume the whole budget. 8s leaves room for 8 steps
-  // + the URL construction + DB writes. Failures from timeout get reported
-  // back as the step's error so we don't silently lose the rest.
-  const STEP_BUDGET_MS = 8000;
+  // let any single step consume the whole budget. 15s accommodates the TWSE
+  // BFI82U backfill (5 days × 3s + sleeps) within budget while still leaving
+  // headroom for the other 7 fast steps to complete well under 60s total.
+  const STEP_BUDGET_MS = 15000;
   const step = async (name, fn) => {
     const s = Date.now();
     let timer;
