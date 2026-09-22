@@ -8,11 +8,9 @@
 //   vercel.json 的 routes /api/.* 把 /api/og 也導到 catchall，原本 og.jsx 不會被 Vercel 執行)
 // 2026-09-03 v5 marker (dispatch: 修正 path normalization，當 vercel.json route rule 把 /og 直接送 catchall 時，
 //   pathname 是 /api//og，去掉 /api/ 後是 /og，原本 "/" + "/og" = "//og" 壞掉，現在去掉 path 開頭多餘 / 再加 /)
-// 2026-09-22 v11 marker (GET /api/overseas public endpoint: stock-app dashboard.html 的
-//   loadOverseas() 一直打 /api/overseas 但 endpoint 不存在 → console 404 → 顯示「無資料」。
-//   新增 overseas() handler：從 overseas_indices 取近 7 日 → bucket by symbol → 取最新兩日
-//   close_price，回 {data:[{指標, 最新值, 前值}], as_of} shape。OVERSEAS_INDEX_SYMBOLS 加
-//   zh 中文名（NASDAQ/道瓊/日經...）讓 dashboard scope filter regex /日經|韓|恒|nasdaq|dow/ 直 match)
+// 2026-09-22 v12 marker (POST /api/signal_filter/refresh route: signal-filter.html 按鈕
+//   onclick refreshCache() 用 fetch(POST) 呼叫但 TABLE 只有 GET row → 404。
+//   加 POST 同 handler 解決。stock-app 多個 POST refresh endpoint 都缺)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -6534,6 +6532,7 @@ const TABLE = [
   ["GET",  /^\/signal_filter\/?$/,           signalFilter],
   ["GET",  /^\/signal_filter\/status\/?$/,   signalFilterStatus],
   ["GET",  /^\/signal_filter\/refresh\/?$/,  signalFilter],
+  ["POST", /^\/signal_filter\/refresh\/?$/,  signalFilter],
   ["GET",  /^\/signal_filter\/all_strategy_hits\/?$/, signalFilter],
 
   ["GET",  /^\/intraday_check\/?$/,          stub.bind(null, "intraday_check", { hint: "use /api/intraday_check/<code>" })],
