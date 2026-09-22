@@ -21,6 +21,8 @@
 //   改查獨立 `futures` table WHERE symbol=$1
 // 2026-09-22 v15 marker (futuresKlineHandler: filter spread contracts NOT LIKE '%/%'
 //   從 DB fallback query，避免 spread values 100-1500 跟 main contract 46000+ 混在 K 線圖)
+// 2026-09-22 v16 marker (mopsProbe: 從 Vercel edge 試 MOPS / TWSE 是否能通，
+//   為庫藏股/私募 scraper 做 reachability check)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -5832,6 +5834,56 @@ async function loadEtfHoldings(request) {
   });
 }
 
+// ── mopsProbe: check MOPS reachability from Vercel edge runtime ─────
+// Tells us if /server-java/t05st10 and t05st22 are reachable, and what they return.
+// Local dev sees "FOR SECURITY REASONS" page; Vercel edges may differ.
+async function mopsProbe(request) {
+  const targets = [
+    { name: "MOPS t05st10 庫藏股", url: "https://mops.twse.com.tw/server-java/t05st10" },
+    { name: "MOPS t05st22 私募", url: "https://mops.twse.com.tw/server-java/t05st22" },
+    { name: "MOPS t05st10 POST", url: "https://mops.twse.com.tw/server-java/t05st10", method: "POST" },
+    { name: "TWSE /fund/BFI82U", url: "https://www.twse.com.tw/fund/BFI82U?response=json" },
+  ];
+  const results = [];
+  for (const t of targets) {
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 8000);
+      const opts = {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.7",
+        },
+        signal: ctrl.signal,
+        redirect: "follow",
+      };
+      if (t.method === "POST") {
+        opts.method = "POST";
+        opts.headers["Content-Type"] = "application/x-www-form-urlencoded";
+        opts.body = "encodeURIComponent=1&step=1&firstin=true&off=1&keyword4=&code1=&TYPEK2=&checkbtn=&queryName=co_id&inType=M&co_id=&year=115&month=09&day=";
+      }
+      const r = await fetch(t.url, opts);
+      clearTimeout(tid);
+      const text = await r.text();
+      const blocked = /FOR SECURITY|無法呈現|SECURITY REASONS/i.test(text);
+      const finalUrl = r.url || t.url;
+      results.push({
+        name: t.name,
+        requested_url: t.url,
+        final_url: finalUrl,
+        status: r.status,
+        size: text.length,
+        blocked,
+        sample: text.slice(0, 200).replace(/\s+/g, " ").trim(),
+      });
+    } catch (e) {
+      results.push({ name: t.name, url: t.url, error: e.name + ": " + e.message });
+    }
+  }
+  return json({ ok: true, as_of: new Date().toISOString(), results });
+}
+
 async function loadAll(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
@@ -6655,6 +6707,8 @@ const TABLE = [
   ["POST", /^\/admin\/load\/financial_reports\/finmind\/?$/, loadFinancialReportsFinMind],
   ["GET",  /^\/admin\/load\/issued_shares\/finmind\/?$/, loadIssuedSharesFinMind],
   ["POST", /^\/admin\/load\/issued_shares\/finmind\/?$/, loadIssuedSharesFinMind],
+  // MOPS / TWSE reachability probe (deployment-time diagnostic)
+  ["GET",  /^\/admin\/mops_probe\/?$/,            mopsProbe],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
