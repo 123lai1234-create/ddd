@@ -10,7 +10,7 @@
   },
   "headers": [
     {
-      "source": "/stock/:path*",
+      "source": "/stock/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -19,7 +19,7 @@
       ]
     },
     {
-      "source": "/stock-app/:path*",
+      "source": "/stock-app/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
