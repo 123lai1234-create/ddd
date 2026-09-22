@@ -19,6 +19,8 @@
 //   futuresKlineHandler fallback 之前查 market_price_bars AND asset_type='futures' → 0 rows
 //   → bars 永遠空 → futuresQuoteHandler chain 回 404
 //   改查獨立 `futures` table WHERE symbol=$1
+// 2026-09-22 v15 marker (futuresKlineHandler: filter spread contracts NOT LIKE '%/%'
+//   從 DB fallback query，避免 spread values 100-1500 跟 main contract 46000+ 混在 K 線圖)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -5942,12 +5944,15 @@ async function futuresKlineHandler(request, contract, interval) {
   // futures data lives in the standalone `futures` table. market_price_bars has
   // zero rows for symbol='TX' AND asset_type='futures' → bars stayed empty →
   // futuresQuoteHandler returned 404 (no last bar).
+  // 2026-09-22 v15: filter out spread contracts (e.g. '202609/202610' which store
+  // price differentials 100-1500, not actual futures prices 46000+) so kline chart
+  // doesn't mix tiny spread values with huge main-contract values.
   if (!bars.length) {
     try {
       const { rows } = await q(
         `SELECT trade_date, open_price, high_price, low_price, close_price, volume
          FROM futures
-         WHERE symbol = $1
+         WHERE symbol = $1 AND contract NOT LIKE '%/%'
          ORDER BY trade_date DESC LIMIT 60`,
         [contract]
       );
