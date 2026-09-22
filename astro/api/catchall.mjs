@@ -8,10 +8,11 @@
 //   vercel.json 的 routes /api/.* 把 /api/og 也導到 catchall，原本 og.jsx 不會被 Vercel 執行)
 // 2026-09-03 v5 marker (dispatch: 修正 path normalization，當 vercel.json route rule 把 /og 直接送 catchall 時，
 //   pathname 是 /api//og，去掉 /api/ 後是 /og，原本 "/" + "/og" = "//og" 壞掉，現在去掉 path 開頭多餘 / 再加 /)
-// 2026-09-22 v10 marker (loadAllCombined: STEP_BUDGET_MS 8s → 15s。
-//   loadIndexInstitutional 預設 backfill 30 → 5 days，per-fetch timeout 10s → 3s，
-//   sleep 300ms → 100ms。index_institutional 唯一慢的 step，5×3.1s ≈ 15s 剛好 fit budget；
-//   其他 7 step 都快，總耗時仍 < 60s Vercel edge 限制)
+// 2026-09-22 v11 marker (GET /api/overseas public endpoint: stock-app dashboard.html 的
+//   loadOverseas() 一直打 /api/overseas 但 endpoint 不存在 → console 404 → 顯示「無資料」。
+//   新增 overseas() handler：從 overseas_indices 取近 7 日 → bucket by symbol → 取最新兩日
+//   close_price，回 {data:[{指標, 最新值, 前值}], as_of} shape。OVERSEAS_INDEX_SYMBOLS 加
+//   zh 中文名（NASDAQ/道瓊/日經...）讓 dashboard scope filter regex /日經|韓|恒|nasdaq|dow/ 直 match)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -2430,6 +2431,73 @@ async function overnightSignal(request) {
   }
 }
 
+// ★ 2026-09-22: public read of overseas_indices for stock-app dashboard.html.
+//   Dashboard loadOverseas() fetches /api/overseas (and falls back to
+//   /api/macro_data). Both endpoints were never implemented — the page
+//   logged `GET /api/overseas 404` forever. Read latest two trading days
+//   from overseas_indices, JOIN the symbol→{name, zh} map, and shape the
+//   response so dashboard.html's existing render code works as-is:
+//     data: [{ 指標, 最新值, 前值 }], as_of
+//   Dashboard's scope regex (nasdaq|s&p|道瓊|dow|spx|nas|us | dax|ftse|cac|
+//   stoxx | 日經|韓|恒|上海|hk|jp|kr|cn|印度|sensex) matches against the
+//   Chinese name so we set 指標 = zh when available, fall back to name.
+async function overseas(request) {
+  try {
+    const { rows } = await q(
+      `SELECT DISTINCT ON (symbol) symbol, trade_date, close_price
+       FROM overseas_indices
+       WHERE trade_date >= CURRENT_DATE - 7
+       ORDER BY symbol, trade_date DESC
+       LIMIT 200`
+    );
+    if (!rows.length) {
+      return json({ ok: true, source: "empty", data: [], as_of: new Date().toISOString() });
+    }
+    // For each symbol we need its prior-day close to compute 前值. Pull all
+    // rows in the window once and bucket by symbol.
+    const { rows: allRows } = await q(
+      `SELECT symbol, trade_date, close_price
+       FROM overseas_indices
+       WHERE trade_date >= CURRENT_DATE - 7
+       ORDER BY symbol, trade_date DESC
+       LIMIT 500`
+    );
+    const bySymbol = new Map();
+    for (const r of allRows) {
+      if (!bySymbol.has(r.symbol)) bySymbol.set(r.symbol, []);
+      bySymbol.get(r.symbol).push(r);
+    }
+    const data = [];
+    let asOf = null;
+    for (const r of rows) {
+      const rowsForSym = bySymbol.get(r.symbol) || [];
+      const today = rowsForSym[0];
+      const prev = rowsForSym[1];
+      if (!today) continue;
+      const meta = OVERSEAS_NAME_BY_SYMBOL[r.symbol] || { name: r.symbol, zh: r.symbol };
+      data.push({
+        指標: meta.zh || meta.name,
+        name: meta.name,
+        symbol: r.symbol,
+        最新值: Number(today.close_price),
+        前值: prev ? Number(prev.close_price) : null,
+        change_pct: today.change_pct != null ? Number(today.change_pct) : null,
+        date: today.trade_date,
+      });
+      if (!asOf || today.trade_date > asOf) asOf = today.trade_date;
+    }
+    // Preserve the symbol order so dashboards are stable across requests.
+    data.sort((a, b) => {
+      const ai = OVERSEAS_INDEX_SYMBOLS.findIndex((x) => x.symbol === a.symbol);
+      const bi = OVERSEAS_INDEX_SYMBOLS.findIndex((x) => x.symbol === b.symbol);
+      return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+    });
+    return json({ ok: true, source: "db", count: data.length, data, as_of: asOf });
+  } catch (e) {
+    return json({ ok: true, source: "stub", data: [], as_of: null, error: e?.message });
+  }
+}
+
 async function marginBurst(request, codeFromPath) {
   // /api/margin_burst/<code> is the per-stock shape used by index.html loadMarginBurst().
   // Frontend (loadMarginBurst) renders metrics.* including:
@@ -3651,17 +3719,20 @@ async function loadInstitutionalForDate(dateYmd) {
 // Symbols cover: S&P 500, Dow, Nasdaq, Nikkei, KOSPI, Hang Seng, CSI 300, FTSE, DAX, CAC 40.
 // Range: 5d daily. Updates a few times a day during US/EU/Asia market hours.
 const OVERSEAS_INDEX_SYMBOLS = [
-  { symbol: "^GSPC", name: "S&P 500" },
-  { symbol: "^DJI", name: "Dow Jones Industrial" },
-  { symbol: "^IXIC", name: "Nasdaq Composite" },
-  { symbol: "^N225", name: "Nikkei 225" },
-  { symbol: "^KS11", name: "KOSPI" },
-  { symbol: "^HSI", name: "Hang Seng" },
-  { symbol: "000300.SS", name: "CSI 300" },
-  { symbol: "^FTSE", name: "FTSE 100" },
-  { symbol: "^GDAXI", name: "DAX" },
-  { symbol: "^FCHI", name: "CAC 40" },
+  { symbol: "^GSPC", name: "S&P 500",    zh: "S&P 500" },
+  { symbol: "^DJI",  name: "Dow Jones",  zh: "道瓊工業" },
+  { symbol: "^IXIC", name: "Nasdaq",     zh: "NASDAQ" },
+  { symbol: "^N225", name: "Nikkei 225", zh: "日經225" },
+  { symbol: "^KS11", name: "KOSPI",      zh: "韓股KOSPI" },
+  { symbol: "^HSI",  name: "Hang Seng",  zh: "恆生指數" },
+  { symbol: "000300.SS", name: "CSI 300", zh: "上證300" },
+  { symbol: "^FTSE", name: "FTSE 100",   zh: "FTSE 100" },
+  { symbol: "^GDAXI", name: "DAX",       zh: "德國DAX" },
+  { symbol: "^FCHI", name: "CAC 40",     zh: "法國CAC" },
 ];
+const OVERSEAS_NAME_BY_SYMBOL = Object.fromEntries(
+  OVERSEAS_INDEX_SYMBOLS.map((x) => [x.symbol, { name: x.name, zh: x.zh }]),
+);
 async function loadOverseasIndicesForSymbol(sym) {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`;
   const ctrl = new AbortController();
@@ -6580,6 +6651,7 @@ const TABLE = [
   ["GET",  /^\/financial\/?$/,               financial],
   ["GET",  /^\/financial\/([^/]+?)\/?$/,     financial],
   ["GET",  /^\/overnight_signal\/?$/,        overnightSignal],
+  ["GET",  /^\/overseas\/?$/,                overseas],
   ["GET",  /^\/margin_burst\/?$/,            marginBurst],
   ["GET",  /^\/margin_burst\/([^/]+?)\/?$/,  marginBurst],
   ["GET",  /^\/index_institutional\/?$/,     indexInstitutional],
