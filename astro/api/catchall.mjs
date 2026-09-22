@@ -8,7 +8,7 @@
 //   vercel.json 的 routes /api/.* 把 /api/og 也導到 catchall，原本 og.jsx 不會被 Vercel 執行)
 // 2026-09-03 v5 marker (dispatch: 修正 path normalization，當 vercel.json route rule 把 /og 直接送 catchall 時，
 //   pathname 是 /api//og，去掉 /api/ 後是 /og，原本 "/" + "/og" = "//og" 壞掉，現在去掉 path 開頭多餘 / 再加 /)
-// 2026-09-22 v12 marker (POST /api/signal_filter/refresh route: signal-filter.html 按鈕
+// 2026-09-22 v13 marker (signal-filter.html 改成 GET，避免 POST edge cache 殘 404)
 //   onclick refreshCache() 用 fetch(POST) 呼叫但 TABLE 只有 GET row → 404。
 //   加 POST 同 handler 解決。stock-app 多個 POST refresh endpoint 都缺)
 

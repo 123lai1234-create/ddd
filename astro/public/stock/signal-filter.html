@@ -2326,8 +2326,13 @@ function resetFilter() {
         var beforeUpdatedAt = before.updated_at || "";
 
         // ── Step 2：觸發後端重新掃描 ──
-        return fetch("/api/signal_filter/refresh", { method: "POST" })
-          .then(function(r) { return r.json(); })
+        // 2026-09-22: 改用 GET，handler 兩種 method 都支援，GET row 比 POST 更早 deploy，
+        // 避免 edge cache 殘留舊版 POST 404。
+        return fetch("/api/signal_filter/refresh", { method: "GET" })
+          .then(function(r) {
+            if (!r.ok) throw new Error("refresh HTTP " + r.status);
+            return r.json();
+          })
           .then(function(d) {
             showToast("✅ " + d.message, "success");
             // ── Step 3：帶著「觸發前數量」開始輪詢 ──
