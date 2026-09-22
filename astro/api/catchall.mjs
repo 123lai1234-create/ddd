@@ -8,10 +8,10 @@
 //   vercel.json 的 routes /api/.* 把 /api/og 也導到 catchall，原本 og.jsx 不會被 Vercel 執行)
 // 2026-09-03 v5 marker (dispatch: 修正 path normalization，當 vercel.json route rule 把 /og 直接送 catchall 時，
 //   pathname 是 /api//og，去掉 /api/ 後是 /og，原本 "/" + "/og" = "//og" 壞掉，現在去掉 path 開頭多餘 / 再加 /)
-// 2026-09-18 v7 marker (新增 loadSectorsFinMind: GET /api/admin/load/sectors_finmind
-//   用 FinMind public TaiwanStockInfo 拉所有 watchlist 的 industry_category (不只是
-//   TWSE_INDUSTRY_MAP hardcoded 34 個)，batch 50 codes/request 寫進 market_instruments。
-//   Hardcoded MAP 太薄，66 個 stocks 仍是「其他」；FinMind public dataset 免 token 全覆蓋)
+// 2026-09-22 v8 marker (loadAllCombined: 加 sectors_finmind step (FinMind TaiwanStockInfo
+//   覆蓋全部 watchlist industry) 在 sectors 之前。JT 確認要 auto-cron 跑這個。Step 順序
+//   變成 macro_yields → macro_news → index_institutional → market_prices →
+//   sectors_finmind → sectors → markers → ai_capex)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -4852,11 +4852,15 @@ async function loadAllCombined(request) {
   await step("index_institutional", () => loadIndexInstitutional({ method: "GET" }));
   // 4. market_prices (TWSE today snapshot for watchlist)
   await step("market_prices", () => loadMarketPrices({ method: "GET" }));
-  // 5. sectors (硬編 TWSE industry mapping)
+  // 5. sectors_finmind (FinMind public TaiwanStockInfo — covers full watchlist,
+  //   replaces the hardcoded 34-entry TWSE_INDUSTRY_MAP. Run before sectors so
+  //   it can overwrite any stale twse_sector_loader metadata.)
+  await step("sectors_finmind", () => loadSectorsFinMind({ method: "GET" }));
+  // 6. sectors (硬編 TWSE industry mapping — fallback for codes FinMind missed)
   await step("sectors", () => loadSectors({ method: "GET" }));
-  // 6. markers (auto-gen from screenOne)
+  // 7. markers (auto-gen from screenOne)
   await step("markers", () => loadMarkers({ method: "GET" }));
-  // 7. ai_capex (SEC EDGAR 6 hyperscalers)
+  // 8. ai_capex (SEC EDGAR 6 hyperscalers)
   await step("ai_capex", () => loadAiCapex({ method: "GET" }));
   const okCount = steps.filter(s => s.ok).length;
   return json({
