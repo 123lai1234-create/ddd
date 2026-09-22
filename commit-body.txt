@@ -1,0 +1,28 @@
+feat(backend): FinMind-backed sector loader for full watchlist coverage
+
+Hardcoded TWSE_INDUSTRY_MAP only covered 34 stocks; stockIndustry()
+mapping only had 5 (ETF) + 29 (the 34 minus ETFs sharing row) =
+34 effective entries after loadSectors run. With 130+ stocks in
+watchlist, ~66 stocks still showed '其他' in heatmap / sidebar.
+
+Add loadSectorsFinMind() at GET|POST /api/admin/load/sectors_finmind.
+Pulls watchlist + etf_watchlist from DB (capped by ?limit, default
+130, max 200). Batches 50 codes per FinMind request to stay
+rate-limit-friendly. FinMind's TaiwanStockInfo public endpoint
+(no token) returns industry_category for every listed stock. We
+prefer type==='twse' row when both TWSE/TPEX are returned for the
+same stock_id. Writes industry + sector_source to
+market_instruments.metadata_text the same way loadSectors() does,
+but tag source_name='finmind_sector_loader' for traceability.
+
+Side effect: also populates display_name with the stock_name from
+FinMind on initial INSERT (vs. empty string for the manual loader).
+
+Edge cache: v7 build marker (Vercel Hobby edge cache kept serving
+old bundle even after the previous deploy; commit history confirms
+this pattern is the fix that worked before).
+
+Usage:
+  GET /api/admin/load/sectors_finmind           -> load full watchlist
+  GET /api/admin/load/sectors_finmind?code=2330 -> one stock
+  GET /api/admin/load/sectors_finmind?limit=50  -> cap batch size
