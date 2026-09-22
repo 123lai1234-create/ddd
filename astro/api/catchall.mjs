@@ -8,9 +8,17 @@
 //   vercel.json 的 routes /api/.* 把 /api/og 也導到 catchall，原本 og.jsx 不會被 Vercel 執行)
 // 2026-09-03 v5 marker (dispatch: 修正 path normalization，當 vercel.json route rule 把 /og 直接送 catchall 時，
 //   pathname 是 /api//og，去掉 /api/ 後是 /og，原本 "/" + "/og" = "//og" 壞掉，現在去掉 path 開頭多餘 / 再加 /)
-// 2026-09-22 v13 marker (signal-filter.html 改成 GET，避免 POST edge cache 殘 404)
+// 2026-09-22 v14 marker (signal-filter.html 加 meta no-cache + no-store tags，
+//   加上 vercel.json /stock/(.*) → no-store，瀏覽器 disk cache 也會被繞過)
 //   onclick refreshCache() 用 fetch(POST) 呼叫但 TABLE 只有 GET row → 404。
 //   加 POST 同 handler 解決。stock-app 多個 POST refresh endpoint 都缺)
+// 2026-09-22 v14 marker (rankingHandler + futuresKlineHandler SQL 修欄位名錯，查錯 table)
+//   ranking 之前用 b.code/mi.code/b.change_pct/mi.name/mi.industry → 全部不存在
+//   → query throw 被 catch 吞 → empty up/down/volume 列表
+//   改用 symbol/display_name/change_value 並限 asset_type='stock'
+//   futuresKlineHandler fallback 之前查 market_price_bars AND asset_type='futures' → 0 rows
+//   → bars 永遠空 → futuresQuoteHandler chain 回 404
+//   改查獨立 `futures` table WHERE symbol=$1
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -5930,22 +5938,25 @@ async function futuresKlineHandler(request, contract, interval) {
   } catch (_) {}
 
   // If TAIFEX unavailable, fall back to Neon DB (in case user has stored daily bars)
+  // 2026-09-22 fix: was querying market_price_bars with asset_type='futures' but
+  // futures data lives in the standalone `futures` table. market_price_bars has
+  // zero rows for symbol='TX' AND asset_type='futures' → bars stayed empty →
+  // futuresQuoteHandler returned 404 (no last bar).
   if (!bars.length) {
     try {
       const { rows } = await q(
-        `SELECT trade_date, open_price AS open, high_price AS high,
-                low_price AS low, close_price AS close, volume
-         FROM market_price_bars
-         WHERE symbol = $1 AND asset_type = 'futures'
+        `SELECT trade_date, open_price, high_price, low_price, close_price, volume
+         FROM futures
+         WHERE symbol = $1
          ORDER BY trade_date DESC LIMIT 60`,
         [contract]
       );
       bars = rows.map(r => ({
         time: new Date(r.trade_date).getTime(),
-        open: Number(r.open) || 0,
-        high: Number(r.high) || 0,
-        low:  Number(r.low) || 0,
-        close: Number(r.close) || 0,
+        open: Number(r.open_price) || 0,
+        high: Number(r.high_price) || 0,
+        low:  Number(r.low_price) || 0,
+        close: Number(r.close_price) || 0,
         volume: Number(r.volume) || 0,
       }));
     } catch (_) {}
@@ -6097,14 +6108,21 @@ async function rankingHandler(request) {
   if (scope === "weighted") marketFilter = "AND mi.market = 'TWSE'";
   else if (scope === "otc") marketFilter = "AND mi.market = 'TPEX'";
 
+  // 2026-09-22 fix: rankingHandler SQL used wrong column names (b.code, mi.code,
+  // b.change_pct, mi.name, mi.industry). Real schema is symbol/display_name/change_value
+  // and market_instruments has no `industry` column. Query silently failed → empty up/down.
+  // Restrict base query to asset_type='stock' so ETF/futures rows don't leak into ranking.
   const sql = `
-    SELECT b.code, mi.name, mi.industry, mi.market,
-           b.close_price AS close, b.change_pct, b.volume, b.turnover
+    SELECT b.symbol AS code, mi.display_name AS name, mi.market,
+           b.close_price AS close, b.change_value AS change_pct,
+           b.volume, b.turnover, b.trade_date
     FROM market_price_bars b
-    LEFT JOIN market_instruments mi ON mi.code = b.code
-    WHERE b.trade_date = (SELECT MAX(trade_date) FROM market_price_bars)
+    LEFT JOIN market_instruments mi ON mi.symbol = b.symbol
+    WHERE b.trade_date = (SELECT MAX(trade_date) FROM market_price_bars WHERE asset_type='stock' AND market='TWSE')
+      AND b.asset_type = 'stock'
+      AND b.market = 'TWSE'
       ${marketFilter}
-    ORDER BY b.change_pct DESC NULLS LAST
+    ORDER BY b.change_value DESC NULLS LAST
     LIMIT 200`;
   let rows = [];
   try {
