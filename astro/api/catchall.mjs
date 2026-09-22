@@ -4840,13 +4840,27 @@ async function loadAllCombined(request) {
   //   with that misleading message. Build a synthetic request with a stable URL
   //   so urlOf() works and loaders that read searchParams get sensible defaults.
   const _selfReq = { method: "GET", url: "https://donttalk.vercel.app/api/admin/load/all" };
+  // Per-step budget: Vercel Hobby edge function caps at 60s; with 8 steps each
+  // calling 3rd-party APIs (Yahoo, Google News, FinMind, SEC EDGAR) we cannot
+  // let any single step consume the whole budget. 8s leaves room for 8 steps
+  // + the URL construction + DB writes. Failures from timeout get reported
+  // back as the step's error so we don't silently lose the rest.
+  const STEP_BUDGET_MS = 8000;
   const step = async (name, fn) => {
     const s = Date.now();
+    let timer;
     try {
-      const r = await fn();
-      steps.push({ name, ok: true, ms: Date.now() - s, ...r });
+      const result = await Promise.race([
+        fn(),
+        new Promise((_, rej) => {
+          timer = setTimeout(() => rej(new Error(`step timeout ${STEP_BUDGET_MS}ms`)), STEP_BUDGET_MS);
+        }),
+      ]);
+      steps.push({ name, ok: true, ms: Date.now() - s, ...result });
     } catch (e) {
       steps.push({ name, ok: false, ms: Date.now() - s, error: e?.message });
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   };
   // 1. macro_yields (Yahoo Finance 4 series × 30d)
