@@ -23,6 +23,11 @@
 //   從 DB fallback query，避免 spread values 100-1500 跟 main contract 46000+ 混在 K 線圖)
 // 2026-09-22 v16 marker (mopsProbe: 從 Vercel edge 試 MOPS / TWSE 是否能通，
 //   為庫藏股/私募 scraper 做 reachability check)
+// 2026-09-24 v17 marker (loadMopsPrivate + loadMopsBuyback scrapers:
+//   MOPS 改用 Vue SPA + api/redirectToOld gateway (mops.twse.com.tw/mops/api/)
+//   POST {apiName, parameters} → result.url (mopsov.twse.com.tw/mops/web/...) → 大 HTML table
+//   t116sb01 私募專區 co_id="" 直接回傳全公司表 (一次 6MB HTML)
+//   t35sb01_q1 庫藏股需 per-company，iterate watchlist)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -5884,6 +5889,193 @@ async function mopsProbe(request) {
   return json({ ok: true, as_of: new Date().toISOString(), results });
 }
 
+// ── MOPS scraper (2026-09-24) ─────────────────────────────────────────
+// MOPS migrated to a Vue SPA on mops.twse.com.tw/mops/. Legacy /server-java/*
+// endpoints are dead. New flow:
+//   1. POST https://mops.twse.com.tw/mops/api/redirectToOld
+//      body: {apiName, parameters: {co_id, encodeURIComponent:1, step:1, firstin:1, off:1, TYPEK:"all"}}
+//   2. Returns JSON {code:200, result:{url: "https://mopsov.twse.com.tw/mops/web/<page>?parameters=..."}}
+//   3. GET that URL → big HTML page with all rows in <table class='hasBorder'>
+
+const MOPS_API = "https://mops.twse.com.tw/mops/api/redirectToOld";
+
+async function mopsPost(apiName, params) {
+  const body = JSON.stringify({
+    apiName,
+    parameters: { encodeURIComponent: 1, step: 1, firstin: 1, off: 1, TYPEK: "all", ...params },
+  });
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 20000);
+  const r = await fetch(MOPS_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "User-Agent": _UA },
+    body,
+    signal: ctrl.signal,
+  });
+  clearTimeout(tid);
+  if (!r.ok) throw new Error(`MOPS API ${apiName} HTTP ${r.status}`);
+  const j = await r.json();
+  if (j.code !== 200 || !j.result?.url) throw new Error(`MOPS API ${apiName} no result.url (code=${j.code})`);
+  return j.result.url;
+}
+
+async function mopsFetchPage(url) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 30000);
+  const r = await fetch(url, {
+    headers: { "User-Agent": _UA, "Accept": "text/html,*/*" },
+    signal: ctrl.signal,
+    redirect: "follow",
+  });
+  clearTimeout(tid);
+  if (!r.ok) throw new Error(`MOPS page HTTP ${r.status}`);
+  return await r.text();
+}
+
+// MOPS dates are 2-3 digit year first (96/09/27, 114/01/01)
+function mopsDateToIso(s) {
+  if (!s) return null;
+  s = String(s).trim();
+  const m = s.match(/^(\d{2,3})\/(\d{1,2})\/(\d{1,2})$/);
+  if (!m) return null;
+  let y = parseInt(m[1], 10);
+  y = (y < 200) ? 1911 + y : y;
+  return `${y}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+}
+function mopsYearPeriodToIso(s) {
+  if (!s) return null;
+  const m = String(s).trim().match(/^(\d{3})\s*[/年]\s*([1-4])$/);
+  if (!m) return null;
+  return `${parseInt(m[1], 10) + 1911}-${m[2].padStart(2, "0")}`;
+}
+
+const _textOnly = (s) => s.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+
+// 私募 (private placement) — t116sb01 returns BIG HTML table with all rows for all companies
+async function loadMopsPrivate(request) {
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  try {
+    const resultUrl = await mopsPost("ajax_t116sb01", { co_id: "" });
+    const html = await mopsFetchPage(resultUrl);
+    const rowRe = /<tr[^>]*class=['"](?:odd|even)['"][^>]*>([\s\S]*?)<\/tr>/g;
+    const seen = new Map();
+    let m;
+    while ((m = rowRe.exec(html)) !== null) {
+      const inner = m[1];
+      const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/g;
+      const cells = [];
+      let t;
+      while ((t = tdRe.exec(inner)) !== null) cells.push(t[1]);
+      if (cells.length < 3) continue;
+      const code = _textOnly(cells[0]);
+      const name = _textOnly(cells[1]);
+      const kind = _textOnly(cells[2]);
+      if (!code || !/^\d{4,6}$/.test(code)) continue;
+      let decideDate = null;
+      const inpRe = /name=['"]([^'"]+)['"][^>]*value=['"]([^'"]*)['"]/g;
+      let im;
+      while ((im = inpRe.exec(cells[3] || "")) !== null) {
+        if (im[1] === "decide_date") decideDate = im[2];
+      }
+      const yearPeriod = _textOnly(cells[4] || "");
+      const announce = mopsDateToIso(decideDate);
+      const key = `${code}|${announce || "null"}`;
+      if (seen.has(key)) continue;
+      seen.set(key, {
+        announce_date: announce,
+        code,
+        name,
+        amount: null,
+        private_price: null,
+        discount_pct: null,
+        purpose: kind,
+        year_period: mopsYearPeriodToIso(yearPeriod),
+      });
+    }
+    const rows = Array.from(seen.values());
+    let okCount = 0;
+    for (const r of rows) {
+      try {
+        await q(
+          `INSERT INTO private_placement (announce_date, code, name, amount, private_price, discount_pct, purpose, source)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'MOPS')
+           ON CONFLICT (announce_date, code) DO UPDATE SET
+             name = EXCLUDED.name,
+             purpose = EXCLUDED.purpose,
+             fetched_at = NOW()`,
+          [r.announce_date, r.code, r.name, r.amount, r.private_price, r.discount_pct, r.purpose]
+        );
+        okCount++;
+      } catch (_) {}
+    }
+    return json({ ok: true, source: "MOPS", fetched: rows.length, upserted: okCount, sample: rows.slice(0, 5) });
+  } catch (e) {
+    return json({ ok: false, error: e.message }, { status: 502 });
+  }
+}
+
+// 庫藏股 (treasury buyback) — t35sb01_q1 needs co_id, so iterate per-company from watchlist
+async function loadMopsBuyback(request) {
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  try {
+    const watchRows = await q(`SELECT code, name FROM watchlist`).catch(() => ({ rows: [] }));
+    const rowRe = /<tr[^>]*class=['"](?:odd|even)['"][^>]*>([\s\S]*?)<\/tr>/g;
+    const seen = new Map();
+    let scanned = 0;
+    for (const w of watchRows.rows) {
+      try {
+        scanned++;
+        const url = await mopsPost("ajax_t35sb01_q1", { co_id: w.code });
+        const html = await mopsFetchPage(url);
+        let m;
+        while ((m = rowRe.exec(html)) !== null) {
+          const inner = m[1];
+          const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/g;
+          const cells = [];
+          let t;
+          while ((t = tdRe.exec(inner)) !== null) cells.push(t[1]);
+          if (cells.length < 2) continue;
+          const seq = _textOnly(cells[0]);
+          const date = _textOnly(cells[1]);
+          const key = `${w.code}|${date}|${seq}`;
+          if (seen.has(key)) continue;
+          seen.set(key, {
+            code: w.code,
+            name: w.name,
+            sequence: parseInt(seq, 10) || null,
+            board_resolution_date: mopsDateToIso(date),
+          });
+        }
+        await new Promise((r) => setTimeout(r, 150));
+      } catch (_) {}
+    }
+    const rows = Array.from(seen.values());
+    let okCount = 0;
+    for (const r of rows) {
+      try {
+        await q(
+          `INSERT INTO treasury_buyback (code, name, start_date, end_date, source)
+           VALUES ($1, $2, $3, $4, 'MOPS')
+           ON CONFLICT (code, start_date, end_date) DO UPDATE SET
+             name = EXCLUDED.name,
+             fetched_at = NOW()`,
+          [r.code, r.name, r.board_resolution_date, r.board_resolution_date]
+        );
+        okCount++;
+      } catch (_) {}
+    }
+    return json({ ok: true, source: "MOPS", scanned_companies: scanned, fetched: rows.length, upserted: okCount, sample: rows.slice(0, 5) });
+  } catch (e) {
+    return json({ ok: false, error: e.message }, { status: 502 });
+  }
+}
+
 async function loadAll(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
@@ -6709,6 +6901,11 @@ const TABLE = [
   ["POST", /^\/admin\/load\/issued_shares\/finmind\/?$/, loadIssuedSharesFinMind],
   // MOPS / TWSE reachability probe (deployment-time diagnostic)
   ["GET",  /^\/admin\/mops_probe\/?$/,            mopsProbe],
+  // MOPS loaders for 庫藏股 / 私募 (2026-09-24)
+  ["GET",  /^\/admin\/load\/mops_private\/?$/,    loadMopsPrivate],
+  ["POST", /^\/admin\/load\/mops_private\/?$/,    loadMopsPrivate],
+  ["GET",  /^\/admin\/load\/mops_buyback\/?$/,    loadMopsBuyback],
+  ["POST", /^\/admin\/load\/mops_buyback\/?$/,    loadMopsBuyback],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
