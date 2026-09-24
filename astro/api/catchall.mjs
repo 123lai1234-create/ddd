@@ -34,6 +34,8 @@
 //   拆 chunk: mops_html_cache 存 6.7MB HTML + mops_load_state 追 offset,
 //   每天 09:00 跑 cron 處理 1500 rows/chunk. 6451 private rows ≈ 4 天 backfill;
 //   buyback 60 stocks ≈ 1 天. Vercel Hobby 限 2 cron 已用完)
+// 2026-09-24 v20 marker (loadMopsFromHtml: 本地 Python 抓 MOPS HTML 直接 POST
+//   給 admin endpoint, edge 只跑 INSERT (~5s) 不下載, 完全繞過 edge 60s 限制)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -6356,6 +6358,160 @@ async function mopsCronStatusHandler(request) {
   return json({ ok: true, states, table_counts: counts });
 }
 
+// loadMopsFromHtml: local-trigger path — Python script fetches MOPS HTML, POSTs here.
+// Edge function does only parse + INSERT (~5s for 1500 rows), fits in 60s.
+// Body params (form or JSON):
+//   dataset: "private" | "buyback"
+//   html: raw MOPS HTML string (or url: pre-saved mops_html_cache id)
+//   offset: starting offset within parsed rows (default 0)
+//   limit: max rows to insert this call (default 1500)
+async function loadMopsFromHtml(request) {
+  if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
+  let body;
+  try {
+    const ct = request.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      body = await request.json();
+    } else {
+      const form = await request.formData();
+      body = Object.fromEntries(form);
+    }
+  } catch (e) { return json({ error: "invalid body: " + e.message }, { status: 400 }); }
+  if (!body.password || !operatorOk(body.password)) return json({ error: "密碼錯誤" }, { status: 403 });
+  const dataset = body.dataset;
+  const offset = Math.max(0, parseInt(body.offset || "0", 10) || 0);
+  const limit = Math.min(5000, Math.max(1, parseInt(body.limit || "1500", 10) || 1500));
+  if (dataset !== "private" && dataset !== "buyback") return json({ error: "dataset must be private or buyback" }, { status: 400 });
+
+  let html = body.html;
+  if (!html && body.cache_id) {
+    const { rows } = await q(`SELECT content FROM mops_html_cache WHERE id = $1 AND dataset = $2`, [body.cache_id, dataset]).catch(() => ({ rows: [] }));
+    if (!rows.length) return json({ error: "cache row not found" }, { status: 404 });
+    html = rows[0].content;
+  }
+  if (!html) return json({ error: "missing html or cache_id" }, { status: 400 });
+
+  let okCount = 0;
+  try {
+    if (dataset === "private") {
+      const rowRe = /<tr[^>]*class=['"](?:odd|even)['"][^>]*>([\s\S]*?)<\/tr>/g;
+      const rows = [];
+      let m;
+      while ((m = rowRe.exec(html)) !== null) {
+        const inner = m[1];
+        const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/g;
+        const cells = [];
+        let t2;
+        while ((t2 = tdRe.exec(inner)) !== null) cells.push(t2[1]);
+        if (cells.length < 3) continue;
+        const code = _textOnly(cells[0]);
+        const name = _textOnly(cells[1]);
+        const kind = _textOnly(cells[2]);
+        if (!code || !/^\d{4,6}$/.test(code)) continue;
+        let decideDate = null;
+        const inpRe = /name=['"]([^'"]+)['"][^>]*value=['"]([^'"]*)['"]/g;
+        let im;
+        while ((im = inpRe.exec(cells[3] || "")) !== null) {
+          if (im[1] === "decide_date") decideDate = im[2];
+        }
+        const yearPeriod = _textOnly(cells[4] || "");
+        const announce = mopsDateToIso(decideDate);
+        rows.push({
+          announce_date: announce,
+          code, name, amount: null, private_price: null, discount_pct: null,
+          purpose: kind,
+          year_period: mopsYearPeriodToIso(yearPeriod),
+          _key: `${code}|${announce || "null"}`,
+        });
+      }
+      const seen = new Map();
+      for (const r of rows) if (!seen.has(r._key)) seen.set(r._key, r);
+      const allRows = Array.from(seen.values());
+      const chunk = allRows.slice(offset, offset + limit);
+      const BATCH = 50;
+      for (let i = 0; i < chunk.length; i += BATCH) {
+        const sub = chunk.slice(i, i + BATCH);
+        try {
+          const placeholders = [];
+          const params = [];
+          for (const r of sub) {
+            placeholders.push(`($${params.length + 1}, $${params.length + 2}, $${params.length + 3}, $${params.length + 4}, $${params.length + 5}, $${params.length + 6}, $${params.length + 7})`);
+            params.push(r.announce_date, r.code, r.name, r.amount, r.private_price, r.discount_pct, r.purpose);
+          }
+          await dbq(
+            `INSERT INTO private_placement (announce_date, code, name, amount, private_price, discount_pct, purpose, source)
+             VALUES ${placeholders.join(",")}
+             ON CONFLICT (announce_date, code) DO UPDATE SET
+               name = EXCLUDED.name,
+               purpose = EXCLUDED.purpose,
+               fetched_at = NOW()`,
+            params
+          );
+          okCount += sub.length;
+        } catch (_) {}
+      }
+      await q(
+        `INSERT INTO mops_load_state (dataset, phase, last_offset, total_rows, last_run_at) VALUES ('private', 'done', $1, $2, NOW())
+         ON CONFLICT (dataset) DO UPDATE SET phase = 'done', last_offset = $1, total_rows = $2, last_run_at = NOW()`,
+        [offset + okCount, allRows.length]
+      );
+      return json({ ok: true, dataset, inserted: okCount, total_parsed: allRows.length, offset: offset + okCount });
+    } else {
+      // buyback: HTML is from per-company POSTs, separated by sentinel comments
+      const segments = html.split(/<!--MOPS:(\d+):([^>]+?)-->/);
+      const allRows = [];
+      for (let i = 1; i < segments.length; i += 3) {
+        const code = segments[i];
+        const name = segments[i + 1];
+        const segHtml = segments[i + 2] || "";
+        const rowRe = /<tr[^>]*class=['"](?:odd|even)['"][^>]*>([\s\S]*?)<\/tr>/g;
+        let m;
+        while ((m = rowRe.exec(segHtml)) !== null) {
+          const inner = m[1];
+          const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/g;
+          const cells = [];
+          let t2;
+          while ((t2 = tdRe.exec(inner)) !== null) cells.push(t2[1]);
+          if (cells.length < 2) continue;
+          const seq = _textOnly(cells[0]);
+          const date = _textOnly(cells[1]);
+          allRows.push({ code, name, board_resolution_date: mopsDateToIso(date), sequence: parseInt(seq, 10) || null });
+        }
+      }
+      const chunk = allRows.slice(offset, offset + limit);
+      const BATCH = 50;
+      for (let i = 0; i < chunk.length; i += BATCH) {
+        const sub = chunk.slice(i, i + BATCH);
+        try {
+          const placeholders = [];
+          const params = [];
+          for (const r of sub) {
+            placeholders.push(`($${params.length + 1}, $${params.length + 2}, $${params.length + 3}, $${params.length + 4})`);
+            params.push(r.code, r.name, r.board_resolution_date, r.board_resolution_date);
+          }
+          await dbq(
+            `INSERT INTO treasury_buyback (code, name, start_date, end_date, source)
+             VALUES ${placeholders.join(",")}
+             ON CONFLICT (code, start_date, end_date) DO UPDATE SET
+               name = EXCLUDED.name,
+               fetched_at = NOW()`,
+            params
+          );
+          okCount += sub.length;
+        } catch (_) {}
+      }
+      await q(
+        `INSERT INTO mops_load_state (dataset, phase, last_offset, total_rows, last_run_at) VALUES ('buyback', 'done', $1, $2, NOW())
+         ON CONFLICT (dataset) DO UPDATE SET phase = 'done', last_offset = $1, total_rows = $2, last_run_at = NOW()`,
+        [offset + okCount, allRows.length]
+      );
+      return json({ ok: true, dataset: "buyback", inserted: okCount, total_parsed: allRows.length, offset: offset + okCount });
+    }
+  } catch (e) {
+    return json({ ok: false, error: e.message }, { status: 502 });
+  }
+}
+
 async function loadAll(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
@@ -7190,6 +7346,9 @@ const TABLE = [
   ["GET",  /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
   ["POST", /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
   ["GET",  /^\/cron\/mops\/status\/?$/,          mopsCronStatusHandler],
+  // Local-trigger path: POST raw MOPS HTML here (Python script fetches, server INSERTs).
+  // Edge function only does parse+INSERT (~5s for 1500 rows) so fits in 60s.
+  ["POST", /^\/admin\/load\/mops_from_html\/?$/, loadMopsFromHtml],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
