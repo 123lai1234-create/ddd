@@ -28,6 +28,8 @@
 //   POST {apiName, parameters} → result.url (mopsov.twse.com.tw/mops/web/...) → 大 HTML table
 //   t116sb01 私募專區 co_id="" 直接回傳全公司表 (一次 6MB HTML)
 //   t35sb01_q1 庫藏股需 per-company，iterate watchlist)
+// 2026-09-24 v18 marker (batch INSERT 50 筆/次, 避免 6MB HTML + 逐筆 INSERT 在
+//   Vercel edge 60s timeout; private placement 一次 batch 內全部 upsert)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -5967,8 +5969,8 @@ async function loadMopsPrivate(request) {
       const inner = m[1];
       const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/g;
       const cells = [];
-      let t;
-      while ((t = tdRe.exec(inner)) !== null) cells.push(t[1]);
+      let t2;
+      while ((t2 = tdRe.exec(inner)) !== null) cells.push(t2[1]);
       if (cells.length < 3) continue;
       const code = _textOnly(cells[0]);
       const name = _textOnly(cells[1]);
@@ -5996,19 +5998,29 @@ async function loadMopsPrivate(request) {
       });
     }
     const rows = Array.from(seen.values());
+    // Batch upsert via VALUES + ON CONFLICT, single query per batch of 50 rows
+    // Uses single-statement param array for Neon HTTP API (which forbids multi-statement)
+    const BATCH = 50;
     let okCount = 0;
-    for (const r of rows) {
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const chunk = rows.slice(i, i + BATCH);
       try {
-        await q(
-          `INSERT INTO private_placement (announce_date, code, name, amount, private_price, discount_pct, purpose, source)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, 'MOPS')
-           ON CONFLICT (announce_date, code) DO UPDATE SET
-             name = EXCLUDED.name,
-             purpose = EXCLUDED.purpose,
-             fetched_at = NOW()`,
-          [r.announce_date, r.code, r.name, r.amount, r.private_price, r.discount_pct, r.purpose]
-        );
-        okCount++;
+        // Build VALUES ($,$,$,$,$,$,$),... × N
+        const placeholders = [];
+        const params = [];
+        for (const r of chunk) {
+          placeholders.push(`($${params.length + 1}, $${params.length + 2}, $${params.length + 3}, $${params.length + 4}, $${params.length + 5}, $${params.length + 6}, $${params.length + 7})`);
+          params.push(r.announce_date, r.code, r.name, r.amount, r.private_price, r.discount_pct, r.purpose);
+        }
+        const sql = `INSERT INTO private_placement (announce_date, code, name, amount, private_price, discount_pct, purpose, source)
+                     VALUES ${placeholders.join(",")}
+                     ON CONFLICT (announce_date, code) DO UPDATE SET
+                       name = EXCLUDED.name,
+                       purpose = EXCLUDED.purpose,
+                       fetched_at = NOW()`;
+        const r = await dbq(sql, params);
+        if (r.rows && r.rows.length > 0) okCount += r.rows.length;
+        else okCount += chunk.length;  // Neon may return no rows on successful INSERT
       } catch (_) {}
     }
     return json({ ok: true, source: "MOPS", fetched: rows.length, upserted: okCount, sample: rows.slice(0, 5) });
@@ -6024,7 +6036,7 @@ async function loadMopsBuyback(request) {
     return json({ error: "密碼錯誤" }, { status: 403 });
   }
   try {
-    const watchRows = await q(`SELECT code, name FROM watchlist`).catch(() => ({ rows: [] }));
+    const watchRows = await q(`SELECT code, name FROM watchlist LIMIT 60`).catch(() => ({ rows: [] }));
     const rowRe = /<tr[^>]*class=['"](?:odd|even)['"][^>]*>([\s\S]*?)<\/tr>/g;
     const seen = new Map();
     let scanned = 0;
@@ -6038,8 +6050,8 @@ async function loadMopsBuyback(request) {
           const inner = m[1];
           const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/g;
           const cells = [];
-          let t;
-          while ((t = tdRe.exec(inner)) !== null) cells.push(t[1]);
+          let t2;
+          while ((t2 = tdRe.exec(inner)) !== null) cells.push(t2[1]);
           if (cells.length < 2) continue;
           const seq = _textOnly(cells[0]);
           const date = _textOnly(cells[1]);
@@ -6052,22 +6064,28 @@ async function loadMopsBuyback(request) {
             board_resolution_date: mopsDateToIso(date),
           });
         }
-        await new Promise((r) => setTimeout(r, 150));
       } catch (_) {}
     }
     const rows = Array.from(seen.values());
+    const BATCH = 50;
     let okCount = 0;
-    for (const r of rows) {
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const chunk = rows.slice(i, i + BATCH);
       try {
-        await q(
-          `INSERT INTO treasury_buyback (code, name, start_date, end_date, source)
-           VALUES ($1, $2, $3, $4, 'MOPS')
-           ON CONFLICT (code, start_date, end_date) DO UPDATE SET
-             name = EXCLUDED.name,
-             fetched_at = NOW()`,
-          [r.code, r.name, r.board_resolution_date, r.board_resolution_date]
-        );
-        okCount++;
+        const placeholders = [];
+        const params = [];
+        for (const r of chunk) {
+          placeholders.push(`($${params.length + 1}, $${params.length + 2}, $${params.length + 3}, $${params.length + 4})`);
+          params.push(r.code, r.name, r.board_resolution_date, r.board_resolution_date);
+        }
+        const sql = `INSERT INTO treasury_buyback (code, name, start_date, end_date, source)
+                     VALUES ${placeholders.join(",")}
+                     ON CONFLICT (code, start_date, end_date) DO UPDATE SET
+                       name = EXCLUDED.name,
+                       fetched_at = NOW()`;
+        const r = await dbq(sql, params);
+        if (r.rows && r.rows.length > 0) okCount += r.rows.length;
+        else okCount += chunk.length;
       } catch (_) {}
     }
     return json({ ok: true, source: "MOPS", scanned_companies: scanned, fetched: rows.length, upserted: okCount, sample: rows.slice(0, 5) });
