@@ -30,6 +30,10 @@
 //   t35sb01_q1 庫藏股需 per-company，iterate watchlist)
 // 2026-09-24 v18 marker (batch INSERT 50 筆/次, 避免 6MB HTML + 逐筆 INSERT 在
 //   Vercel edge 60s timeout; private placement 一次 batch 內全部 upsert)
+// 2026-09-24 v19 marker (mopsCronHandler + mopsCronStatusHandler + cron entries
+//   拆 chunk: mops_html_cache 存 6.7MB HTML + mops_load_state 追 offset,
+//   每天 09:00 跑 cron 處理 1500 rows/chunk. 6451 private rows ≈ 4 天 backfill;
+//   buyback 60 stocks ≈ 1 天. Vercel Hobby 限 2 cron 已用完)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -6094,6 +6098,264 @@ async function loadMopsBuyback(request) {
   }
 }
 
+// ── mopsCronHandler: chunked MOPS load via Vercel cron ──────────────────
+// Vercel Hobby edge function max 60s. MOPS pages are 6.7MB+ → download alone
+// takes 40+s. We split the work across multiple cron invocations:
+//   Phase 1 (per dataset): fetch MOPS HTML, save to mops_html_cache, INSERT first chunk
+//   Phase 2+: read cached HTML, INSERT next chunk, advance offset in mops_load_state
+// Each cron invocation handles ~1500 rows + bookkeeping in <60s.
+const MOPS_CHUNK = 1500;
+async function mopsCronHandler(request) {
+  const u = urlOf(request);
+  const dataset = u.searchParams.get("dataset") || "private";
+  if (dataset !== "private" && dataset !== "buyback") {
+    return json({ error: "dataset must be 'private' or 'buyback'" }, { status: 400 });
+  }
+  try {
+    // Get current state
+    const { rows: stateRows } = await q(
+      `SELECT phase, last_offset, total_rows FROM mops_load_state WHERE dataset = $1`,
+      [dataset]
+    ).catch(() => ({ rows: [] }));
+    const state = stateRows[0] || { phase: "idle", last_offset: 0, total_rows: 0 };
+
+    let htmlRow;
+    let phase = state.phase;
+    let offset = state.last_offset;
+    let total = state.total_rows;
+    let htmlId = null;
+
+    // Phase 1: fetch + cache HTML if no cache or marked idle
+    if (phase === "idle" || phase === "done") {
+      // Find the latest cache row for this dataset
+      const { rows: cacheRows } = await q(
+        `SELECT id, content, completed_offset FROM mops_html_cache WHERE dataset = $1 ORDER BY id DESC LIMIT 1`,
+        [dataset]
+      ).catch(() => ({ rows: [] }));
+      if (!cacheRows.length || cacheRows[0].completed_offset >= state.total_rows) {
+        // Need fresh fetch
+        if (dataset === "private") {
+          const resultUrl = await mopsPost("ajax_t116sb01", { co_id: "" });
+          const html = await mopsFetchPage(resultUrl);
+          const count = (html.match(/<tr[^>]*class="(?:odd|even)"/g) || []).length;
+          // Save HTML to cache table
+          const { rows: ins } = await q(
+            `INSERT INTO mops_html_cache (dataset, content, completed_offset) VALUES ($1, $2, 0) RETURNING id`,
+            [dataset, html]
+          );
+          htmlId = ins[0].id;
+          total = count;
+        } else {
+          // buyback: iterate watchlist, concat rows
+          const watchRows = await q(`SELECT code, name FROM watchlist LIMIT 60`).catch(() => ({ rows: [] }));
+          const allRows = [];
+          for (const w of watchRows.rows) {
+            try {
+              const url = await mopsPost("ajax_t35sb01_q1", { co_id: w.code });
+              const h = await mopsFetchPage(url);
+              allRows.push({ __code: w.code, __name: w.name, __html: h });
+            } catch (_) {}
+          }
+          // Combine HTMLs into single cache entry, delimited by sentinel
+          const combined = allRows.map(r => `<!--MOPS:${r.__code}:${r.__name}-->\n${r.__html}`).join("\n");
+          const { rows: ins } = await q(
+            `INSERT INTO mops_html_cache (dataset, content, completed_offset) VALUES ($1, $2, 0) RETURNING id`,
+            [dataset, combined]
+          );
+          htmlId = ins[0].id;
+          total = allRows.length;
+        }
+        offset = 0;
+        phase = "processing";
+        await q(
+          `INSERT INTO mops_load_state (dataset, phase, last_offset, total_rows, last_run_at) VALUES ($1, $2, 0, $3, NOW())
+           ON CONFLICT (dataset) DO UPDATE SET phase = EXCLUDED.phase, last_offset = 0, total_rows = EXCLUDED.total_rows, last_run_at = NOW()`,
+          [dataset, phase, total]
+        );
+        // Load the cache row we just inserted
+        htmlRow = (await q(`SELECT id, content, completed_offset FROM mops_html_cache WHERE id = $1`, [htmlId])).rows[0];
+      } else {
+        htmlRow = cacheRows[0];
+        htmlId = htmlRow.id;
+      }
+    } else {
+      const { rows: cacheRows } = await q(
+        `SELECT id, content, completed_offset FROM mops_html_cache WHERE dataset = $1 ORDER BY id DESC LIMIT 1`,
+        [dataset]
+      ).catch(() => ({ rows: [] }));
+      if (!cacheRows.length) {
+        await q(`UPDATE mops_load_state SET phase='idle', last_run_at=NOW() WHERE dataset = $1`, [dataset]);
+        return json({ ok: false, error: "no cache row found" }, { status: 500 });
+      }
+      htmlRow = cacheRows[0];
+      htmlId = htmlRow.id;
+    }
+
+    if (!htmlRow) {
+      return json({ ok: false, error: "no html row" }, { status: 500 });
+    }
+
+    // Phase 2: parse next chunk + insert
+    const html = htmlRow.content;
+    let rows;
+    let okCount = 0;
+    if (dataset === "private") {
+      const rowRe = /<tr[^>]*class=['"](?:odd|even)['"][^>]*>([\s\S]*?)<\/tr>/g;
+      rows = [];
+      let m;
+      while ((m = rowRe.exec(html)) !== null) {
+        const inner = m[1];
+        const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/g;
+        const cells = [];
+        let t2;
+        while ((t2 = tdRe.exec(inner)) !== null) cells.push(t2[1]);
+        if (cells.length < 3) continue;
+        const code = _textOnly(cells[0]);
+        const name = _textOnly(cells[1]);
+        const kind = _textOnly(cells[2]);
+        if (!code || !/^\d{4,6}$/.test(code)) continue;
+        let decideDate = null;
+        const inpRe = /name=['"]([^'"]+)['"][^>]*value=['"]([^'"]*)['"]/g;
+        let im;
+        while ((im = inpRe.exec(cells[3] || "")) !== null) {
+          if (im[1] === "decide_date") decideDate = im[2];
+        }
+        const yearPeriod = _textOnly(cells[4] || "");
+        const announce = mopsDateToIso(decideDate);
+        rows.push({
+          announce_date: announce,
+          code,
+          name,
+          amount: null,
+          private_price: null,
+          discount_pct: null,
+          purpose: kind,
+          year_period: mopsYearPeriodToIso(yearPeriod),
+          _key: `${code}|${announce || "null"}`,
+        });
+      }
+      // Dedupe
+      const seen = new Map();
+      for (const r of rows) if (!seen.has(r._key)) seen.set(r._key, r);
+      rows = Array.from(seen.values());
+      const chunk = rows.slice(offset, offset + MOPS_CHUNK);
+      const BATCH = 50;
+      for (let i = 0; i < chunk.length; i += BATCH) {
+        const sub = chunk.slice(i, i + BATCH);
+        try {
+          const placeholders = [];
+          const params = [];
+          for (const r of sub) {
+            placeholders.push(`($${params.length + 1}, $${params.length + 2}, $${params.length + 3}, $${params.length + 4}, $${params.length + 5}, $${params.length + 6}, $${params.length + 7})`);
+            params.push(r.announce_date, r.code, r.name, r.amount, r.private_price, r.discount_pct, r.purpose);
+          }
+          await dbq(
+            `INSERT INTO private_placement (announce_date, code, name, amount, private_price, discount_pct, purpose, source)
+             VALUES ${placeholders.join(",")}
+             ON CONFLICT (announce_date, code) DO UPDATE SET
+               name = EXCLUDED.name,
+               purpose = EXCLUDED.purpose,
+               fetched_at = NOW()`,
+            params
+          );
+          okCount += sub.length;
+        } catch (_) {}
+      }
+    } else {
+      // buyback: split HTML by sentinel comments
+      const segments = html.split(/<!--MOPS:(\d+):([^>]+?)-->/);
+      // segments: ['', '1101', 'name', 'html...', '1102', 'name2', 'html2...', ...]
+      const allRows = [];
+      for (let i = 1; i < segments.length; i += 3) {
+        const code = segments[i];
+        const name = segments[i + 1];
+        const segHtml = segments[i + 2] || "";
+        const rowRe = /<tr[^>]*class=['"](?:odd|even)['"][^>]*>([\s\S]*?)<\/tr>/g;
+        let m;
+        while ((m = rowRe.exec(segHtml)) !== null) {
+          const inner = m[1];
+          const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/g;
+          const cells = [];
+          let t2;
+          while ((t2 = tdRe.exec(inner)) !== null) cells.push(t2[1]);
+          if (cells.length < 2) continue;
+          const seq = _textOnly(cells[0]);
+          const date = _textOnly(cells[1]);
+          allRows.push({ code, name, board_resolution_date: mopsDateToIso(date), sequence: parseInt(seq, 10) || null });
+        }
+      }
+      const chunk = allRows.slice(offset, offset + MOPS_CHUNK);
+      const BATCH = 50;
+      for (let i = 0; i < chunk.length; i += BATCH) {
+        const sub = chunk.slice(i, i + BATCH);
+        try {
+          const placeholders = [];
+          const params = [];
+          for (const r of sub) {
+            placeholders.push(`($${params.length + 1}, $${params.length + 2}, $${params.length + 3}, $${params.length + 4})`);
+            params.push(r.code, r.name, r.board_resolution_date, r.board_resolution_date);
+          }
+          await dbq(
+            `INSERT INTO treasury_buyback (code, name, start_date, end_date, source)
+             VALUES ${placeholders.join(",")}
+             ON CONFLICT (code, start_date, end_date) DO UPDATE SET
+               name = EXCLUDED.name,
+               fetched_at = NOW()`,
+            params
+          );
+          okCount += sub.length;
+        } catch (_) {}
+      }
+      total = allRows.length;
+    }
+
+    const newOffset = offset + MOPS_CHUNK;
+    const newPhase = newOffset >= total ? "done" : "processing";
+    await q(
+      `INSERT INTO mops_load_state (dataset, phase, last_offset, total_rows, last_run_at) VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (dataset) DO UPDATE SET phase = $2, last_offset = $3, total_rows = $4, last_run_at = NOW()`,
+      [dataset, newPhase, newOffset, total]
+    );
+    await q(
+      `UPDATE mops_html_cache SET completed_offset = $1 WHERE id = $2`,
+      [newOffset, htmlId]
+    );
+
+    return json({
+      ok: true,
+      dataset,
+      phase: newPhase,
+      offset: newOffset,
+      total,
+      inserted: okCount,
+      next_chunk_at: newOffset,
+    });
+  } catch (e) {
+    try {
+      const u2 = urlOf(request);
+      const ds = u2.searchParams.get("dataset") || "private";
+      await q(
+        `INSERT INTO mops_load_state (dataset, phase, last_offset, last_run_at, last_error) VALUES ($1, 'error', 0, NOW(), $2)
+         ON CONFLICT (dataset) DO UPDATE SET phase = 'error', last_run_at = NOW(), last_error = $2`,
+        [ds, e.message]
+      );
+    } catch (_) {}
+    return json({ ok: false, error: e.message }, { status: 502 });
+  }
+}
+
+// Quick status view of MOPS load progress (no scraping)
+async function mopsCronStatusHandler(request) {
+  const { rows: states } = await q(`SELECT dataset, phase, last_offset, total_rows, last_run_at, last_error FROM mops_load_state`).catch(() => ({ rows: [] }));
+  const { rows: counts } = await q(`
+    SELECT 'private_placement' AS t, COUNT(*)::int AS n FROM private_placement
+    UNION ALL SELECT 'treasury_buyback', COUNT(*)::int FROM treasury_buyback
+    UNION ALL SELECT 'treasury_buyback_exec', COUNT(*)::int FROM treasury_buyback_exec
+    UNION ALL SELECT 'mops_html_cache', COUNT(*)::int FROM mops_html_cache
+  `).catch(() => ({ rows: [] }));
+  return json({ ok: true, states, table_counts: counts });
+}
+
 async function loadAll(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
@@ -6924,6 +7186,10 @@ const TABLE = [
   ["POST", /^\/admin\/load\/mops_private\/?$/,    loadMopsPrivate],
   ["GET",  /^\/admin\/load\/mops_buyback\/?$/,    loadMopsBuyback],
   ["POST", /^\/admin\/load\/mops_buyback\/?$/,    loadMopsBuyback],
+  // MOPS cron: chunked incremental load (Hobby 60s edge limit split into N cron ticks)
+  ["GET",  /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
+  ["POST", /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
+  ["GET",  /^\/cron\/mops\/status\/?$/,          mopsCronStatusHandler],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],

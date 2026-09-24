@@ -168,6 +168,16 @@
                          "destination":  "/api/healthz"
                      }
                  ],
+    "crons":  [
+                   {
+                       "path":  "/api/cron/mops/load?dataset=private",
+                       "schedule":  "0 9 * * *"
+                   },
+                   {
+                       "path":  "/api/cron/mops/load?dataset=buyback",
+                       "schedule":  "0 9 * * *"
+                   }
+               ],
     "routes":  [
                    {
                        "src":  "/og",
