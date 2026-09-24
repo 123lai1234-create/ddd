@@ -36,6 +36,8 @@
 //   buyback 60 stocks ≈ 1 天. Vercel Hobby 限 2 cron 已用完)
 // 2026-09-24 v20 marker (loadMopsFromHtml: 本地 Python 抓 MOPS HTML 直接 POST
 //   給 admin endpoint, edge 只跑 INSERT (~5s) 不下載, 完全繞過 edge 60s 限制)
+// 2026-09-24 v21 marker (loadMopsRows: pre-parsed JSON rows POST, 因 Vercel
+//   edge 4.5MB body limit, raw 6.7MB HTML → 413; 本地 parse 後送 ~300KB/batch)
 
 import { ImageResponse } from '@vercel/og';
 import { createElement as h, Fragment } from 'react';
@@ -6358,15 +6360,76 @@ async function mopsCronStatusHandler(request) {
   return json({ ok: true, states, table_counts: counts });
 }
 
-// loadMopsFromHtml: local-trigger path — Python script fetches MOPS HTML, POSTs here.
-// Edge function does only parse + INSERT (~5s for 1500 rows), fits in 60s.
-// Body params (form or JSON):
-//   dataset: "private" | "buyback"
-//   html: raw MOPS HTML string (or url: pre-saved mops_html_cache id)
-//   offset: starting offset within parsed rows (default 0)
-//   limit: max rows to insert this call (default 1500)
-async function loadMopsFromHtml(request) {
+// loadMopsRows: edge only INSERTs pre-parsed rows sent by local Python script.
+// Each batch: ≤2000 rows × ~150 bytes ≈ 300KB body (under Vercel 4.5MB limit).
+// Edge time: parse(0) + 40 batch INSERTs ≈ 5s, fits 60s edge limit.
+async function loadMopsRows(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "invalid JSON" }, { status: 400 }); }
+  if (!body.password || !operatorOk(body.password)) return json({ error: "密碼錯誤" }, { status: 403 });
+  const dataset = body.dataset;
+  const rows = Array.isArray(body.rows) ? body.rows : null;
+  if (!rows || !rows.length) return json({ error: "rows array required" }, { status: 400 });
+  if (dataset !== "private" && dataset !== "buyback") return json({ error: "dataset must be private|buyback" }, { status: 400 });
+
+  let okCount = 0;
+  let errors = [];
+  try {
+    const BATCH = 100;
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const chunk = rows.slice(i, i + BATCH);
+      try {
+        if (dataset === "private") {
+          const placeholders = [];
+          const params = [];
+          for (const r of chunk) {
+            placeholders.push(`($${params.length + 1}, $${params.length + 2}, $${params.length + 3}, $${params.length + 4}, $${params.length + 5}, $${params.length + 6}, $${params.length + 7})`);
+            params.push(r.announce_date || null, String(r.code), r.name || null, r.amount ?? null, r.private_price ?? null, r.discount_pct ?? null, r.purpose || null);
+          }
+          await dbq(
+            `INSERT INTO private_placement (announce_date, code, name, amount, private_price, discount_pct, purpose, source)
+             VALUES ${placeholders.join(",")}
+             ON CONFLICT (announce_date, code) DO UPDATE SET
+               name = EXCLUDED.name,
+               purpose = EXCLUDED.purpose,
+               fetched_at = NOW()`,
+            params
+          );
+        } else {
+          const placeholders = [];
+          const params = [];
+          for (const r of chunk) {
+            placeholders.push(`($${params.length + 1}, $${params.length + 2}, $${params.length + 3}, $${params.length + 4})`);
+            params.push(String(r.code), r.name || null, r.board_resolution_date || null, r.board_resolution_date || null);
+          }
+          await dbq(
+            `INSERT INTO treasury_buyback (code, name, start_date, end_date, source)
+             VALUES ${placeholders.join(",")}
+             ON CONFLICT (code, start_date, end_date) DO UPDATE SET
+               name = EXCLUDED.name,
+               fetched_at = NOW()`,
+            params
+          );
+        }
+        okCount += chunk.length;
+      } catch (e) {
+        errors.push({ batch_start: i, error: e.message });
+      }
+    }
+    await q(
+      `INSERT INTO mops_load_state (dataset, phase, last_offset, last_run_at) VALUES ($1, 'done', $2, $2, NOW())
+       ON CONFLICT (dataset) DO UPDATE SET phase = 'done', last_offset = $2, last_run_at = NOW()`,
+      [dataset, okCount]
+    ).catch(() => {});
+    return json({ ok: true, dataset, inserted: okCount, total: rows.length, errors: errors.length ? errors.slice(0, 3) : undefined });
+  } catch (e) {
+    return json({ ok: false, error: e.message }, { status: 502 });
+  }
+}
+
+// loadMopsFromHtml: legacy — Vercel edge still can't fit, kept for Pro upgrade path
+async function loadMopsFromHtml(request) {
   let body;
   try {
     const ct = request.headers.get("content-type") || "";
@@ -7349,6 +7412,8 @@ const TABLE = [
   // Local-trigger path: POST raw MOPS HTML here (Python script fetches, server INSERTs).
   // Edge function only does parse+INSERT (~5s for 1500 rows) so fits in 60s.
   ["POST", /^\/admin\/load\/mops_from_html\/?$/, loadMopsFromHtml],
+  // Local-trigger v2: POST pre-parsed JSON rows (avoids Vercel 4.5MB body limit on raw HTML)
+  ["POST", /^\/admin\/load\/mops_rows\/?$/,    loadMopsRows],
 
   // Ex-dividend (queries real dividend_calendar table)
   ["GET",  /^\/exdiv\/calendar\/?$/,         exdivCalendar],
