@@ -398,6 +398,36 @@
                           "source":  "/currency",
                           "destination":  "/stock/currency",
                           "permanent":  true
+                      },
+                      {
+                          "source":  "/rebalance",
+                          "destination":  "/stock/rebalance",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/price-compare",
+                          "destination":  "/stock/price-compare",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/uptrend-watch",
+                          "destination":  "/stock/uptrend-watch",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/sold-too-early",
+                          "destination":  "/stock/sold-too-early",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/etf_holdings",
+                          "destination":  "/stock/etf_holdings",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/etf_holdings_tracker",
+                          "destination":  "/stock/etf_holdings_tracker",
+                          "permanent":  true
                       }
                   ]
 }
