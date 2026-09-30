@@ -432,12 +432,17 @@
     (async function initLoad() {
       try {
         const r = await fetch('/api/etf_holdings/status');
+        if (!r.ok) { console.warn('[initLoad] status HTTP', r.status); return; }
         const s = await r.json();
         if (s && s.result) {
-          setStatus(`已載入上次分析結果`, 'var(--cyan)');
+          setStatus(`已載入上次分析結果（${s.result.top_holdings.length} 筆）`, 'var(--cyan)');
           renderResult(s.result);
+        } else {
+          console.info('[initLoad] status ok but no result yet');
         }
-      } catch (e) { /* silently ignore — 按鈕仍可用 */ }
+      } catch (e) {
+        console.warn('[initLoad] failed:', e);
+      }
     })();
   </script>
 </body>
