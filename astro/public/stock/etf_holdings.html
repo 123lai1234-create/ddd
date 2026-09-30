@@ -430,9 +430,11 @@
     // ── 初始載入：直接查 server 端現有 cache（不需密碼），有就立即 render。
     //   按鈕「開始分析」用於強制重抓（需密碼），不是查看既有結果的唯一入口。
     (async function initLoad() {
+      setStatus('載入上次分析結果…', 'var(--txt2)');
       try {
         const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 8000);
+        // Vercel lambda 冷啟動可能 5-10s；給 15s 緩衝
+        const tid = setTimeout(() => ctrl.abort(), 15000);
         const r = await fetch('/api/etf_holdings/status', { signal: ctrl.signal });
         clearTimeout(tid);
         if (!r.ok) return;
@@ -440,9 +442,12 @@
         if (s && s.result) {
           setStatus(`已載入上次分析結果（${s.result.top_holdings.length} 筆）`, 'var(--cyan)');
           renderResult(s.result);
+        } else {
+          setStatus('尚無分析結果，請按「開始分析」', 'var(--txt2)');
         }
       } catch (e) {
-        /* 冷啟動 lambda 可能慢；按鈕「開始分析」仍可手動觸發 */
+        // 冷啟動 lambda 超時 / 網路不穩 — 提示使用者手動觸發
+        setStatus('自動載入逾時，請按「開始分析（用快取）」手動觸發', 'var(--orange)');
       }
     })();
   </script>
