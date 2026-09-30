@@ -3708,21 +3708,41 @@ async function priceCompare(request) {
   const endParam = pickStr(u.searchParams.get("end") || "");
   const hasCustomRange = /^\d{4}-\d{2}-\d{2}$/.test(startParam) && /^\d{4}-\d{2}-\d{2}$/.test(endParam);
   try {
-    const dateFilter = hasCustomRange
-      ? `b.trade_date BETWEEN $2::date AND $3::date`
-      : `b.trade_date >= (SELECT MAX(trade_date) FROM market_price_bars WHERE asset_type=$4) - ($5 || ' days')::interval`;
+    // Resolve effective start/end (YYYY-MM-DD) up front so we can use a single
+    // param shape. Neon HTTP pre-validates unused params, so we only pass what
+    // is actually referenced ($1/$2/$3/$5).
+    let effStart = null, effEnd = null;
+    if (hasCustomRange) {
+      effStart = startParam;
+      effEnd = endParam;
+    } else {
+      // Resolve "max trade_date for this asset_type" first; fall back to global max
+      // if asset-specific table is empty (e.g. only etf rows present).
+      const refRes = await q(
+        `SELECT COALESCE(
+           (SELECT MAX(trade_date)::date FROM market_price_bars WHERE asset_type=$2),
+           (SELECT MAX(trade_date)::date FROM market_price_bars)
+         ) AS ref`,
+        [null, kind]
+      );
+      const refRows = refRes.rows || refRes;
+      const refDate = refRows[0]?.ref ? String(refRows[0].ref).slice(0, 10) : null;
+      if (refDate) {
+        const refMs = Date.parse(refDate);
+        effStart = new Date(refMs - days * 86400 * 1000).toISOString().slice(0, 10);
+        effEnd = refDate;
+      }
+    }
     const sql =
       `SELECT b.symbol, b.trade_date, b.close_price,
               COALESCE(m.display_name, w.name, NULL) AS name
        FROM market_price_bars b
-       LEFT JOIN market_instruments m ON m.symbol = b.symbol AND m.asset_type = $4
+       LEFT JOIN market_instruments m ON m.symbol = b.symbol AND m.asset_type = $2
        LEFT JOIN etf_watchlist w ON w.code = b.symbol
-       WHERE b.symbol = ANY($1::text[]) AND b.asset_type = $4 AND b.trade_date IS NOT NULL
-         AND ${dateFilter}
+       WHERE b.symbol = ANY($1::text[]) AND b.asset_type = $2 AND b.trade_date IS NOT NULL
+         AND b.trade_date BETWEEN $3::date AND $4::date
        ORDER BY b.symbol, b.trade_date ASC`;
-    const params = hasCustomRange
-      ? [codes, startParam, endParam, kind]
-      : [codes, "", "", kind, String(days)];
+    const params = [codes, kind, effStart || "1970-01-01", effEnd || "9999-12-31"];
     const { rows } = await q(sql, params);
     // Group by symbol
     const grouped = new Map();
