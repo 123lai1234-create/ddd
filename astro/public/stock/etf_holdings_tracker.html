@@ -462,7 +462,18 @@
         });
         const d = await r.json();
         if (d.ok) {
-          setStatus(`已存快照 id=${d.snapshot_id}`, 'var(--green)');
+          // server 目前只回 holdings listing，沒存單檔 snapshot_id；給有意義的成功訊息。
+          if (Array.isArray(d.items) || typeof d.count === 'number') {
+            const parts = [];
+            if (typeof d.count === 'number') parts.push(`共 ${d.count} 筆 holdings`);
+            if (d.source) parts.push(`source=${d.source}`);
+            const detail = parts.length ? '（' + parts.join('，') + '）' : '';
+            setStatus(`已抓 ${code} holdings${detail}`, 'var(--green)');
+          } else if (d.snapshot_id) {
+            setStatus(`已存快照 id=${d.snapshot_id}`, 'var(--green)');
+          } else {
+            setStatus(`已抓 ${code} 快照`, 'var(--green)');
+          }
           loadAll();
         } else {
           setStatus(d.msg || '失敗', 'var(--red)');
