@@ -200,9 +200,9 @@
     </div>
 
     <div class="tab-bar">
-      <button class="tab-btn active" data-tab="ma10">回踩 MA10 <span class="count" id="cntMa10">0</span></button>
+      <button class="tab-btn" data-tab="ma10">回踩 MA10 <span class="count" id="cntMa10">0</span></button>
       <button class="tab-btn" data-tab="ma20">回踩 MA20 <span class="count" id="cntMa20">0</span></button>
-      <button class="tab-btn" data-tab="volow">爆量下殺 K 棒 <span class="count" id="cntVolow">0</span></button>
+      <button class="tab-btn active" data-tab="volow">爆量下殺 K 棒 <span class="count" id="cntVolow">0</span></button>
       <button class="tab-btn" data-tab="filter" style="border-left:1px solid var(--bdr);margin-left:6px;padding-left:18px;">🎯 精選篩選 <span class="count" id="cntFilter">0</span></button>
       <button class="tab-btn" data-tab="history" style="border-left:1px solid var(--bdr);margin-left:6px;padding-left:18px;">📈 篩選歷史 <span class="count" id="cntHistory">0</span></button>
     </div>
@@ -351,9 +351,9 @@ const $ = s => document.querySelector(s);
 const fmt = (v, d=2) => (v===null||v===undefined||isNaN(v))?'-':Number(v).toFixed(d);
 
 let _data = null;
-let _tab = 'ma10';
-let _sortKey = 'dist_pct';
-let _sortDir = 'asc';
+let _tab = 'volow';
+let _sortKey = 'vol_ratio';
+let _sortDir = 'desc';
 
 const SORT_TYPE = {
   code:'str', name:'str', close:'num',
