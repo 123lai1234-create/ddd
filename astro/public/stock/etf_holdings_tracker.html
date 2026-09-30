@@ -833,8 +833,22 @@
         const r = await fetch('/api/stock_news_scan/quota');
         const d = await r.json();
         if (d.ok) {
-          document.getElementById('adhocQuota').textContent =
-            `今日剩餘 ${d.left} / ${d.cap}`;
+          const cap = d.cap ?? d.quota ?? 100;
+          // d.used 不一定有，但 d.left = cap - used 是約定；若 d.left 負數表示 SQL 算錯或 quota 超限
+          const left = typeof d.left === 'number' ? d.left : (cap - (d.used ?? 0));
+          const used = typeof d.used === 'number' ? d.used : (cap - left);
+          let label;
+          if (left < 0) {
+            const over = used - cap;
+            label = `今日已超限 +${over}（cap ${cap}）`;
+            document.getElementById('adhocQuota').style.color = 'var(--orange)';
+          } else if (left === 0) {
+            label = `今日已用完（${used} / ${cap}）`;
+          } else {
+            label = `今日剩餘 ${left} / ${cap}`;
+            document.getElementById('adhocQuota').style.color = '';
+          }
+          document.getElementById('adhocQuota').textContent = label;
         }
       } catch (e) {}
     }
