@@ -2265,6 +2265,17 @@ async function uptrendWatch(request) {
       (r.latest_close - r.ma20) / r.ma20 < -0.05
     );
 
+    // ★ 寫入 uptrend_pick_log（讓 /api/uptrend_pick_history 算勝率）
+    // 去重：以 code 為 key（同一檔可能同時進 uptrend / ma10 / ma20 / volow，
+    // 但 PK 是 (scan_date, code)，所以只要寫一筆 score 最高的）。
+    await _ensureUptrendLogTable();
+    const pickMap = new Map();
+    for (const r of [...uptrendAll, ...ma10, ...ma20, ...volow]) {
+      const cur = pickMap.get(r.code);
+      if (!cur || (r.score || 0) > (cur.score || 0)) pickMap.set(r.code, r);
+    }
+    await _logUptrendPick(asOf, Array.from(pickMap.values()));
+
     return json({
       ok: true,
       source: "db",
@@ -2298,23 +2309,225 @@ async function uptrendWatch(request) {
 }
 async function uptrendWatchFilter(request) { return uptrendWatch(request); }
 
-// Stub: uptrend-watch.html 前端 call /api/uptrend_pick_history?stats=1&days=N
-// 來顯示「過去 N 天歷史選股統計」+ 「歷史選股表」。
-// 後端尚未實作 — 先回空資料讓前端不要 404 crash。 等之後接上 markers +
-// uptrend_pick_log table 再補實際歷史資料。
+// Lazy schema bootstrap: ensures uptrend_pick_log + indexes exist on first call.
+// Neon HTTP SQL API rejects multi-statement bodies, so each statement runs
+// separately. Each is idempotent (CREATE ... IF NOT EXISTS) so duplicates
+// are harmless.
+let _uptrendLogTableReady = false;
+async function _ensureUptrendLogTable() {
+  if (_uptrendLogTableReady) return;
+  try {
+    await q(`CREATE TABLE IF NOT EXISTS uptrend_pick_log (
+      scan_date        DATE        NOT NULL,
+      code             TEXT        NOT NULL,
+      name             TEXT,
+      hit_count        INTEGER     NOT NULL,
+      close_at_signal  NUMERIC,
+      ma10             NUMERIC,
+      ma20             NUMERIC,
+      ma60             NUMERIC,
+      dist_pct         NUMERIC,
+      captured_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (scan_date, code)
+    )`);
+    await q(`CREATE INDEX IF NOT EXISTS uptrend_pick_log_scan_date_idx
+      ON uptrend_pick_log (scan_date DESC)`);
+    await q(`CREATE INDEX IF NOT EXISTS uptrend_pick_log_code_idx
+      ON uptrend_pick_log (code, scan_date DESC)`);
+    _uptrendLogTableReady = true;
+  } catch (e) {
+    // 不 throw — pick history endpoint 還能回空資料
+    console.warn('[uptrend_log] ensure table failed:', e?.message);
+  }
+}
+
+// 將當次掃描的「上升趨勢群」+「回踩MA10/MA20」+「爆量下殺」寫進 log。
+// 同 (scan_date, code) 重複寫不影響（ON CONFLICT DO NOTHING）。
+async function _logUptrendPick(scanDate, picks) {
+  if (!picks || !picks.length) return;
+  try {
+    const values = picks
+      .map((p) => `($1, $${(picks.indexOf(p) * 6) + 2}, $${(picks.indexOf(p) * 6) + 3}, $${(picks.indexOf(p) * 6) + 4}, $${(picks.indexOf(p) * 6) + 5}, $${(picks.indexOf(p) * 6) + 6}, $${(picks.indexOf(p) * 6) + 7}, $${(picks.indexOf(p) * 6) + 8})`)
+      .join(',');
+    // 用 CASE WHEN 算 hit_count（0..5 conditions true）
+    const params = [scanDate];
+    const conds = [
+      'p.dist_high_60d_pct < 5',
+      'p.last > p.ma20 AND p.ma20 > p.ma60',
+      'p.last > p.ma5  AND p.ma5  > p.ma20',
+      'p.gain_5d_pct > 0 AND p.gain_20d_pct > 0',
+      'p.vol > 1000000'
+    ];
+    // 為簡化，這裡 INSERT 直接給 hit_count 整數（呼叫端算好）
+    const sql = `
+      INSERT INTO uptrend_pick_log
+        (scan_date, code, name, hit_count, close_at_signal, ma10, ma20, ma60, dist_pct)
+      SELECT $1::date, code, name, hit_count, close_at_signal, ma10, ma20, ma60, dist_pct
+      FROM UNNEST($2::text[], $3::text[], $4::int[], $5::numeric[], $6::numeric[],
+                  $7::numeric[], $8::numeric[], $9::numeric[]) AS t(
+                    code, name, hit_count, close_at_signal, ma10, ma20, ma60, dist_pct)
+      ON CONFLICT (scan_date, code) DO NOTHING`;
+    // Build column arrays
+    const codeArr = picks.map((p) => p.code);
+    const nameArr = picks.map((p) => p.name || p.code);
+    const hitArr  = picks.map((p) => Number(p.score || 0));
+    const closeArr = picks.map((p) => p.latest_close);
+    const ma10Arr = picks.map((p) => p.ma10);
+    const ma20Arr = picks.map((p) => p.ma20);
+    const ma60Arr = picks.map((p) => p.ma60);
+    const distArr = picks.map((p) => p.dist_high_60d_pct);
+    await q(sql, [scanDate, codeArr, nameArr, hitArr, closeArr, ma10Arr, ma20Arr, ma60Arr, distArr]);
+  } catch (e) {
+    console.warn('[uptrend_log] write failed:', e?.message);
+  }
+}
+
+// 歷史選股查詢 — 從 uptrend_pick_log 讀最近 N 天的 pick，join market_price_bars
+// 算 current / +5d / +10d / +20d 報酬。 返回形狀：
+//   { ok, as_of, count, days,
+//     stats: { current, windows: { 5:{...}, 10:{...}, 20:{...} } },
+//     rows: [{scan_date, code, name, hit_count, close_at_signal, current_price,
+//             return_pct, ret_5d, ret_10d, ret_20d, days_held}] }
+// scan_date 太近（< 5/10/20 個交易日）的 row，ret_Nd 為 null，render 會顯示「待計」。
 async function uptrendPickHistory(request) {
   const u = urlOf(request);
   const days = Math.min(730, Math.max(1, parseInt(u.searchParams.get("days") || "365", 10) || 365));
-  return json({
-    ok: true,
-    source: "stub",
-    count: 0,
-    days,
-    stats: [],
-    rows: [],
-    hint: "uptrend_pick_history 尚未實作後端 — 短期間顯示空表格。可參考「Uptrend watch」主頁查看當期選股。",
-    as_of: new Date().toISOString().slice(0, 10),
-  });
+  await _ensureUptrendLogTable();
+  try {
+    const { rows: logs } = await q(
+      `SELECT scan_date, code, name, hit_count, close_at_signal, ma10, ma20, ma60, dist_pct
+         FROM uptrend_pick_log
+         WHERE scan_date >= CURRENT_DATE - $1::int
+         ORDER BY scan_date DESC, code ASC
+         LIMIT 2000`,
+      [days]
+    );
+    if (!logs.length) {
+      return json({
+        ok: true, source: "db", count: 0, days,
+        as_of: new Date().toISOString().slice(0, 10),
+        stats: {
+          current: { n_evaluated: 0, n_pending: 0, win_rate: null, avg_return: null, best: null, worst: null },
+          windows: { 5:{n:0, win_rate:null, avg_return:null, best:null, worst:null},
+                     10:{n:0, win_rate:null, avg_return:null, best:null, worst:null},
+                     20:{n:0, win_rate:null, avg_return:null, best:null, worst:null} }
+        },
+        rows: [],
+        hint: days < 30 ? `近 ${days} 天無掃描紀錄（系統每日 20:40 自動跑掃描並寫入 log）。` : `log 表為空 — 系統尚未跑過掃描或被 mavis-trash 清掉。`,
+      });
+    }
+    // 一次抓所有 logs 涉及的 (code, scan_date ± 5/10/20 天) 區間的 market_price_bars，
+    // 然後 JS 端 map 對齊。
+    const codes = Array.from(new Set(logs.map((l) => l.code)));
+    const minScan = logs.reduce((m, l) => (m == null || l.scan_date < m ? l.scan_date : m), null);
+    const maxScan = logs.reduce((m, l) => (m == null || l.scan_date > m ? l.scan_date : m), null);
+    const fromDate = new Date(minScan); fromDate.setDate(fromDate.getDate() - 3);
+    const toDate   = new Date(maxScan); toDate.setDate(toDate.getDate() + 30);
+    const isoFrom = fromDate.toISOString().slice(0, 10);
+    const isoTo   = toDate.toISOString().slice(0, 10);
+    const { rows: bars } = await q(
+      `SELECT symbol, trade_date, close_price
+         FROM market_price_bars
+         WHERE asset_type='stock' AND symbol = ANY($1::text[])
+           AND trade_date BETWEEN $2::date AND $3::date`,
+      [codes, isoFrom, isoTo]
+    );
+    // Build lookup: code → array of {date, close} sorted asc
+    const barsByCode = new Map();
+    for (const b of bars) {
+      if (!barsByCode.has(b.symbol)) barsByCode.set(b.symbol, []);
+      barsByCode.get(b.symbol).push({ date: String(b.trade_date).slice(0, 10), close: Number(b.close_price) });
+    }
+    for (const arr of barsByCode.values()) arr.sort((a, b) => a.date < b.date ? -1 : 1);
+
+    function priceOn(code, targetDate) {
+      const arr = barsByCode.get(code);
+      if (!arr) return null;
+      // 找 <= targetDate 的最近一筆（落後用最近 close）
+      let pick = null;
+      for (const e of arr) {
+        if (e.date <= targetDate) pick = e;
+        else break;
+      }
+      return pick ? pick.close : null;
+    }
+    function addDays(iso, n) {
+      const d = new Date(iso); d.setDate(d.getDate() + n);
+      return d.toISOString().slice(0, 10);
+    }
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const enrichedRows = logs.map((l) => {
+      const code = l.code;
+      const scan = String(l.scan_date).slice(0, 10);
+      const sigClose = l.close_at_signal != null ? Number(l.close_at_signal) : null;
+      const cur = priceOn(code, todayIso);
+      const c5  = priceOn(code, addDays(scan, 5));
+      const c10 = priceOn(code, addDays(scan, 10));
+      const c20 = priceOn(code, addDays(scan, 20));
+      const ret = (cur, base) => (cur != null && base != null && base !== 0) ? r2(((cur - base) / base) * 100) : null;
+      return {
+        scan_date: scan,
+        code,
+        name: l.name || code,
+        hit_count: l.hit_count,
+        close_at_signal: sigClose,
+        current_price: cur,
+        return_pct: ret(cur, sigClose),
+        ret_5d:  ret(c5,  sigClose),
+        ret_10d: ret(c10, sigClose),
+        ret_20d: ret(c20, sigClose),
+        days_held: Math.max(0, Math.floor((Date.parse(todayIso) - Date.parse(scan)) / 86400000)),
+      };
+    });
+
+    // 統計：分窗口算勝率（ret > 0 算贏）、平均、最佳、最差
+    function windowStats(getRet, getDaysHeld) {
+      const arr = enrichedRows.filter((r) => getRet(r) != null);
+      const wins = arr.filter((r) => getRet(r) > 0).length;
+      const rets = arr.map((r) => getRet(r));
+      return {
+        n: arr.length,
+        win_rate: arr.length ? r2((wins / arr.length) * 100) : null,
+        avg_return: rets.length ? r2(rets.reduce((s, v) => s + v, 0) / rets.length) : null,
+        best:  rets.length ? r2(Math.max(...rets)) : null,
+        worst: rets.length ? r2(Math.min(...rets)) : null,
+      };
+    }
+    const stats = {
+      current: {
+        n_evaluated: enrichedRows.length,
+        n_pending: 0,
+        ...windowStats((r) => r.return_pct, (r) => r.days_held),
+      },
+      windows: {
+        "5":  windowStats((r) => r.ret_5d,  (r) => r.days_held >= 5),
+        "10": windowStats((r) => r.ret_10d, (r) => r.days_held >= 10),
+        "20": windowStats((r) => r.ret_20d, (r) => r.days_held >= 20),
+      },
+    };
+
+    return json({
+      ok: true, source: "db", count: enrichedRows.length, days,
+      as_of: todayIso,
+      stats,
+      rows: enrichedRows,
+    });
+  } catch (e) {
+    return json({
+      ok: true, source: "stub", count: 0, days,
+      as_of: new Date().toISOString().slice(0, 10),
+      stats: {
+        current: { n_evaluated: 0, n_pending: 0, win_rate: null, avg_return: null, best: null, worst: null },
+        windows: { 5:{n:0, win_rate:null, avg_return:null, best:null, worst:null},
+                   10:{n:0, win_rate:null, avg_return:null, best:null, worst:null},
+                   20:{n:0, win_rate:null, avg_return:null, best:null, worst:null} }
+      },
+      rows: [],
+      error: e?.message,
+      hint: "DB 查詢失敗 — 請看 server log",
+    });
+  }
 }
 
 // ── new handlers: admin/logs (markers as log) ────────────────────────
