@@ -432,18 +432,19 @@
     // ── 初始載入：直接查 server 端現有 cache（不需密碼），有就立即 render。
     //   按鈕「開始分析」用於強制重抓（需密碼），不是查看既有結果的唯一入口。
     (async function initLoad() {
+      setStatus('init: starting fetch', '#888');
       try {
         const r = await fetch('/api/etf_holdings/status');
-        if (!r.ok) { console.warn('[initLoad] status HTTP', r.status); return; }
+        setStatus('init: got response, ok=' + r.ok, '#888');
+        if (!r.ok) { return; }
         const s = await r.json();
+        setStatus('init: parsed json, hasResult=' + !!s.result, '#888');
         if (s && s.result) {
           setStatus(`已載入上次分析結果（${s.result.top_holdings.length} 筆）`, 'var(--cyan)');
           renderResult(s.result);
-        } else {
-          console.info('[initLoad] status ok but no result yet');
         }
       } catch (e) {
-        console.warn('[initLoad] failed:', e);
+        setStatus('init ERROR: ' + e.message, 'var(--red)');
       }
     })();
   </script>
