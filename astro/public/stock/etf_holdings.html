@@ -100,12 +100,12 @@
 
   <div class="container">
     <div style="background:rgba(255,145,0,.12);border:1px solid #ff9100;color:#ffb74d;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;line-height:1.7">
-      <b style="color:#ff9100">⚠ 資料尚未自動載入</b><br>
-      本頁需要 ETF 月報成分股資料（<code>etf_holdings</code> 表），目前是空的。
-      原因：MOPS 只列「最近 6 筆」公告，<b>沒有 ETF 月報的 bulk download</b>。
-      各 ETF 發行商 (元大 yuanta.com.tw、國泰 cathaysite.com.tw、大成 dcbfund.com.tw) 各自有不同格式的查詢頁，需 per-issuer 爬。
-      <br>下方按鈕仍可按，但結果會是 0 筆。
-      短期建議：請到各 ETF 發行商網站直接查成分股。
+      <b style="color:#ff9100">⚠ 自動抓取尚未啟用</b><br>
+      Bulk 下載路徑：MOPS 只列「最近 6 筆」公告，<b>沒有 ETF 月報的 bulk download</b>。
+      各 ETF 發行商 (元大 yuanta.com.tw、國泰 cathaysite.com.tw、大成 dcbfund.com.tw) 各自有不同格式的查詢頁，per-issuer 爬在 Vercel edge timeout / 403。
+      <br>資料來源目前是 <code>manual_seed</code>（手動貼月報 PDF / 網頁 copy-paste 進 DB），
+      已 seed 的 ETF 會立即 render 結果，沒 seed 的會列為「失敗」（無資料 = 無 holdings）。
+      短期建議：到各 ETF 發行商網站查月報並 seed 進 DB。
     </div>
 
     <div class="panel">
@@ -426,6 +426,19 @@
         fp.style.display = 'none';
       }
     }
+
+    // ── 初始載入：直接查 server 端現有 cache（不需密碼），有就立即 render。
+    //   按鈕「開始分析」用於強制重抓（需密碼），不是查看既有結果的唯一入口。
+    (async function initLoad() {
+      try {
+        const r = await fetch('/api/etf_holdings/status');
+        const s = await r.json();
+        if (s && s.result) {
+          setStatus(`已載入上次分析結果`, 'var(--cyan)');
+          renderResult(s.result);
+        }
+      } catch (e) { /* silently ignore — 按鈕仍可用 */ }
+    })();
   </script>
 </body>
 </html>

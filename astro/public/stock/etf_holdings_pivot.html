@@ -150,10 +150,9 @@
 
   <div class="container">
     <div style="background:rgba(255,145,0,.12);border:1px solid #ff9100;color:#ffb74d;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;line-height:1.7">
-      <b style="color:#ff9100">⚠ 樞紐分析需要成分股資料</b><br>
-      本頁所有計算 (重疊度矩陣、權重矩陣、時序熱力圖、共識雷達、集中度、換手率) 都依賴 <code>etf_holdings</code> 表的成分股資料，目前是空的。
-      點任何「計算」按鈕都會回 0 筆。
-      <br>解法同上：需 per-issuer 爬或等 bulk source 釋出。
+      <b style="color:#ff9100">⚠ 部分樞紐計算依賴 snapshot 歷史</b><br>
+      本頁的 <b>時序熱力圖</b> / <b>換手率</b> 需要同一檔 ETF 至少 2 筆 snapshot 才能比對；只有 1 筆 snapshot 的 ETF 在這兩個 tab 會回空。
+      <br>其他計算 (重疊度矩陣、權重矩陣、共識雷達、集中度) 只需 <code>etf_holdings</code> 當下資料，<b>有 seed 就能跑</b>，沒 seed 的 ETF 會被當成空集合。
     </div>
 
     <!-- ETF 多選篩選器 -->
