@@ -4,7 +4,11 @@
 
 // 2026-09-24 v8: line 91 fetch() 加 .catch()，避免 network 抖動時
 //   throw `Uncaught (in promise) TypeError: Failed to fetch`。
-const CACHE_VERSION = 'v9';
+// 2026-09-30 v10: bump 強制重裝清舊 cache（修 deploy 切換期間 SW 對 /stock/macro
+//   /rebalance 回 Response.error() 導致頁面沒 fallback 內容）；同時把 catch
+//   block 從 `Response.error()` 改成 navigation fallback 到 offline.html，
+//   避免 transient network 抖動讓使用者看到空白頁。
+const CACHE_VERSION = 'v10';
 const CACHE_NAME = `portfolio-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -90,9 +94,14 @@ self.addEventListener('fetch', (event) => {
 
   // 其他資源：cache-first（但 cache 是空的，新策略不 cache 進來）
   // 2026-09-24: 加 .catch() 避免網路錯誤拋 Uncaught (in promise) TypeError
+  // 2026-09-30: navigation fallback 到 offline.html，避免 Response.error() 空白
   event.respondWith(
     caches.match(request).then((cached) => cached || fetch(request).catch((err) => {
       console.warn('[SW] resource fetch failed', request.url, err && err.message);
+      // Accept: text/html → 視為 navigation 失敗，給 offline.html；其他→ Response.error()
+      if ((request.headers.get('Accept') || '').includes('text/html')) {
+        return caches.match(OFFLINE_URL).then((off) => off || Response.error());
+      }
       return Response.error();
     }))
   );
