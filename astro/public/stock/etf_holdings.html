@@ -199,6 +199,8 @@
       el.textContent = msg;
       el.style.color = color || 'var(--txt2)';
     }
+    // DEBUG: 確認 JS 是否執行
+    try { setStatus('JS running', '#ff9100'); } catch(e) {}
 
     async function startAnalysis(forceRefresh) {
       setBtns(true);
