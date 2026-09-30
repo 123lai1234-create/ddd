@@ -524,13 +524,15 @@
           const det = document.getElementById('batchSnapDetail');
           const pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
           bar.style.width = pct + '%';
+          const okCnt = s.ok_count ?? 0;
+          const failCnt = s.fail_count ?? 0;
           if (s.running) {
-            meta.textContent = `進度 ${s.done}/${s.total}（${pct}%）　目前：${s.current || '-'}　成功 ${s.ok_count}　失敗 ${s.fail_count}`;
+            meta.textContent = `進度 ${s.done}/${s.total}（${pct}%）　目前：${s.current || '-'}　成功 ${okCnt}　失敗 ${failCnt}`;
           } else {
             clearInterval(_batchSnapTimer); _batchSnapTimer = null;
             const okMsg = s.error ? '錯誤：' + s.error : '完成';
-            meta.style.color = s.fail_count > 0 ? 'var(--orange)' : 'var(--green)';
-            meta.textContent = `${okMsg}　共 ${s.total} 檔，成功 ${s.ok_count}　失敗 ${s.fail_count}`;
+            meta.style.color = failCnt > 0 ? 'var(--orange)' : 'var(--green)';
+            meta.textContent = `${okMsg}　共 ${s.total} 檔，成功 ${okCnt}　失敗 ${failCnt}`;
             if (s.failed_codes && s.failed_codes.length) {
               det.textContent = '失敗清單：' + s.failed_codes.join(', ');
             } else {

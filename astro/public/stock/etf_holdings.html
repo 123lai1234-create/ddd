@@ -384,12 +384,18 @@
         : `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px">
              首次分析（無上次紀錄可對照），下次起會顯示排名變動。
            </div>`;
+      // failed_etf 可能是 number (目前 API 行為) 或 string[] (舊/未來格式)
+      const failedCount = Array.isArray(result.failed_etf)
+        ? result.failed_etf.length
+        : (Number(result.failed_etf) || 0);
+      // failed list: 只有 array 才有 codes；number 拿不到 codes
+      const failedCodes = Array.isArray(result.failed_etf) ? result.failed_etf : [];
       document.getElementById('statsRow').innerHTML = `
         <div class="stat-box"><div class="val">${result.total_etf}</div><div class="lbl">分析 ETF 總數</div></div>
         <div class="stat-box"><div class="val" style="color:var(--green)">${result.success_etf}</div><div class="lbl">成功</div></div>
-        <div class="stat-box"><div class="val" style="color:var(--red)">${result.failed_etf.length}</div><div class="lbl">失敗</div></div>
+        <div class="stat-box"><div class="val" style="color:var(--red)">${failedCount}</div><div class="lbl">失敗</div></div>
       ` + compareNote;
-      document.getElementById('resultBody').innerHTML = result.top_holdings.map(h => {
+      document.getElementById('resultBody').innerHTML = result.top_holdings.map((h, i) => {
         const codeEnc = h.stock_code ? encodeURIComponent(h.stock_code) : '';
         const nameCell = (h.stock_code && h.stock_name)
           ? `<a href="index.html?code=${codeEnc}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;" title="查看 K 線圖">${h.stock_name}</a>`
@@ -397,9 +403,11 @@
         const codeCell = h.stock_code
           ? `<a href="index.html?code=${codeEnc}" target="_blank" rel="noopener" style="color:var(--cyan,#00bcd4);text-decoration:none;font-weight:700;" title="查看 K 線圖">${h.stock_code}</a>`
           : '—';
+        // rank 可能直接由 API 提供；若無則用 array 位置 (1-indexed)
+        const rankNum = h.rank ?? (i + 1);
         return `
         <tr>
-          <td class="rank">#${h.rank}${rankChangeHtml(h)}</td>
+          <td class="rank">#${rankNum}${rankChangeHtml(h)}</td>
           <td class="name">${nameCell}</td>
           <td class="code">${codeCell}</td>
           <td><b>${h.etf_count}</b> 檔${etfCountChangeHtml(h)}</td>
@@ -411,9 +419,9 @@
       document.getElementById('sourceStats').innerHTML = Object.entries(result.source_stats)
         .map(([k,v]) => `<span class="source-badge">${k}：${v} 檔</span>`).join('');
       const fp = document.getElementById('failedPanel');
-      if (result.failed_etf.length > 0) {
+      if (failedCodes.length > 0) {
         fp.style.display = 'block';
-        document.getElementById('failedList').textContent = result.failed_etf.join('、');
+        document.getElementById('failedList').textContent = failedCodes.join('、');
       } else {
         fp.style.display = 'none';
       }
