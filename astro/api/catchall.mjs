@@ -3720,10 +3720,10 @@ async function priceCompare(request) {
       // if asset-specific table is empty (e.g. only etf rows present).
       const refRes = await q(
         `SELECT COALESCE(
-           (SELECT MAX(trade_date)::date FROM market_price_bars WHERE asset_type=$2),
+           (SELECT MAX(trade_date)::date FROM market_price_bars WHERE asset_type=$1),
            (SELECT MAX(trade_date)::date FROM market_price_bars)
          ) AS ref`,
-        [null, kind]
+        [kind]
       );
       const refRows = refRes.rows || refRes;
       const refDate = refRows[0]?.ref ? String(refRows[0].ref).slice(0, 10) : null;
