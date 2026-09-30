@@ -760,7 +760,18 @@
         if (d.task_id) {
           pollScan(d.task_id);
         } else {
-          setStatus(d.msg || '啟動失敗', 'var(--red)');
+          // 偵測：server 目前只實作 holdings screener（沒真的 AI 情緒掃描 task），
+          // 回傳的是 holdings listing（d.items / d.count）。改給橘色說明而非紅字失敗。
+          const isHoldingsListing = Array.isArray(d.items) || (typeof d.count === 'number' && !d.task_id && !d.cached);
+          if (isHoldingsListing) {
+            const parts = [];
+            if (typeof d.count === 'number') parts.push(`共 ${d.count} 筆 holdings`);
+            if (d.message) parts.push(d.message);
+            const detail = parts.length ? '（' + parts.join('，') + '）' : '';
+            setStatus(`AI 情緒掃描尚未實作，目前僅回傳 holdings listing${detail}`, 'var(--orange)');
+          } else {
+            setStatus(d.msg || '啟動失敗', 'var(--red)');
+          }
           btn1.disabled = false; btn2.disabled = false;
         }
       } catch (e) {
