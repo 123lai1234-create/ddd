@@ -2012,6 +2012,25 @@ async function uptrendWatch(request) {
 }
 async function uptrendWatchFilter(request) { return uptrendWatch(request); }
 
+// Stub: uptrend-watch.html 前端 call /api/uptrend_pick_history?stats=1&days=N
+// 來顯示「過去 N 天歷史選股統計」+ 「歷史選股表」。
+// 後端尚未實作 — 先回空資料讓前端不要 404 crash。 等之後接上 markers +
+// uptrend_pick_log table 再補實際歷史資料。
+async function uptrendPickHistory(request) {
+  const u = urlOf(request);
+  const days = Math.min(730, Math.max(1, parseInt(u.searchParams.get("days") || "365", 10) || 365));
+  return json({
+    ok: true,
+    source: "stub",
+    count: 0,
+    days,
+    stats: [],
+    rows: [],
+    hint: "uptrend_pick_history 尚未實作後端 — 短期間顯示空表格。可參考「Uptrend watch」主頁查看當期選股。",
+    as_of: new Date().toISOString().slice(0, 10),
+  });
+}
+
 // ── new handlers: admin/logs (markers as log) ────────────────────────
 async function adminLogs(request, id) {
   try {
@@ -7502,6 +7521,7 @@ const TABLE = [
 
   // Uptrend watch
   ["GET",  /^\/uptrend_watch\/?$/,           uptrendWatch],
+  ["GET",  /^\/uptrend_pick_history\/?$/,    uptrendPickHistory],
   ["GET",  /^\/uptrend_watch_filter\/?$/,    uptrendWatchFilter],
 
   // Admin
