@@ -1761,14 +1761,16 @@ async function etfClearCache(request) {
 async function rebalanceCompute(request) {
   const watch = await getWatchMap();
   const codes = Array.from(watch.keys());
-  if (!codes.length) return json({ ok: true, source: "stub", count: 0, items: [] });
+  if (!codes.length) return json({ ok: true, source: "stub", count: 0, items: [], holdings: [] });
   // Equal-weight target as default. If a body has {weights:{CODE:pct}}, use that.
   let customWeights = null;
+  let body = null;
   if (request.method === "POST") {
-    const body = await readJson(request);
+    body = await readJson(request);
     if (body && typeof body.weights === "object") customWeights = body.weights;
   }
   const target = customWeights || Object.fromEntries(codes.map((c) => [c, 100 / codes.length]));
+  const amount = (body && Number(body.amount)) || 1000000;
   try {
     const { rows } = await q(
       `SELECT symbol, close_price FROM market_price_bars
@@ -1792,9 +1794,57 @@ async function rebalanceCompute(request) {
         diff_pct: r2(currentPct - targetPct),
       };
     });
-    return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+    // Frontend macro-rebalance UI uses `holdings` with these field names:
+    // current_weight / target_weight / drift / action / action_units / action_amount.
+    // Map items → holdings with computed buy/sell action. period_return and
+    // volatility require historical bars — leave as null with "—" in UI.
+    const holdings = items.map((it) => {
+      const drift = (it.current_pct || 0) - (it.target_pct || 0);
+      const targetAmount = (amount * (it.target_pct || 0)) / 100;
+      const currentAmount = (amount * (it.current_pct || 0)) / 100;
+      const diffAmount = targetAmount - currentAmount;     // positive = need to buy
+      const actionUnits = it.price > 0 ? Math.round(diffAmount / it.price) : 0;
+      let action = "持平";
+      if (Math.abs(drift) < 0.5) action = "持平";
+      else if (drift > 0) action = "賣出";                 // overweight → sell
+      else action = "買入";                                  // underweight → buy
+      return {
+        code: it.code,
+        name: it.name,
+        industry: "",
+        target_weight: it.target_pct,
+        current_weight: it.current_pct,
+        drift: r2(drift),
+        period_return: null,
+        volatility: null,
+        action,
+        action_amount: Math.round(Math.abs(diffAmount)),
+        action_units: Math.abs(actionUnits),
+      };
+    });
+    const maxDrift = items.reduce((m, it) => Math.max(m, Math.abs(it.diff_pct || 0)), 0);
+    return json({
+      ok: true,
+      source: "db",
+      count: items.length,
+      items,
+      holdings,
+      max_drift: r2(maxDrift),
+      amount,
+      // thresholds / guardrails / buyhold_return / rebalanced curves / start_date /
+      // end_date / trading_days / avg_correlation 都需要完整歷史模擬 —
+      // 尚未實作，前端 render() 已有防呆 (`|| []`、`== null ? '—'`)
+      start_date: null,
+      end_date: null,
+      trading_days: null,
+      buyhold_return: null,
+      avg_correlation: null,
+      thresholds: [],
+      guardrails: [],
+      generated_at: Date.now(),
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message });
+    return json({ ok: true, source: "stub", count: 0, items: [], holdings: [], error: e?.message });
   }
 }
 
@@ -2022,6 +2072,22 @@ const SAMPLE_CONFERENCES = [
   },
 ];
 
+// Sample dates are relative to today so the default 2-week forward query
+// window (UI default: from=today, to=today+14) always shows data. Offsets
+// spread 8 conferences over an 18-day window centered ~5 days from now.
+const SAMPLE_DATE_OFFSETS = [-4, -1, 2, 4, 7, 9, 12, 14];
+function _dateOffsetFromToday(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function _getSampleConferences() {
+  return SAMPLE_CONFERENCES.map((c, i) => ({
+    ...c,
+    meeting_date: _dateOffsetFromToday(SAMPLE_DATE_OFFSETS[i] ?? 0),
+  }));
+}
+
 // Add a deterministic AI sentiment/keyword summary to each sample so the
 // frontend can render the 利多/利空/中性 card without an LLM roundtrip.
 function _enrichSample(c) {
@@ -2097,7 +2163,7 @@ async function conferenceList(request) {
     // so the page still demonstrates the layout / 情緒分析 / PDF 連結
     // flows. Sample data is clearly tagged so the user knows it's not live.
     if (mapped.length === 0) {
-      let samples = SAMPLE_CONFERENCES.map(_enrichSample);
+      let samples = _getSampleConferences().map(_enrichSample);
       if (watchOnly && codes && codes.length) {
         samples = samples.filter((s) => codes.includes(s.code));
       }
@@ -2131,13 +2197,44 @@ async function conferenceSentimentStats(request) {
        LIMIT 20`
     );
     if (rows.length === 0) {
-      // Fallback: build a small distribution from the sample data bucket list
+      // Fallback: synthesize the stats shape frontend expects
+      // ({sentiment, n_total, windows:{5/20/60:{n, avg_return}}}) so the
+      // table renders even when the DB is empty. Numbers are deterministic
+      // demo values, clearly tagged via source="sample".
+      const samples = _getSampleConferences().map(_enrichSample);
+      const buckets = { "利多": [], "利空": [], "中性": [] };
+      samples.forEach((s) => {
+        const k = (s.ai && s.ai.sentiment) || "中性";
+        if (!buckets[k]) buckets[k] = [];
+        buckets[k].push(s);
+      });
+      const stats = ["利多", "利空", "中性"].map((sent) => {
+        const items = buckets[sent] || [];
+        const total = items.length;
+        const profile = {
+          "利多": { d5: 2.62, d20: 5.83, d60: 12.18 },
+          "利空": { d5: -1.84, d20: -3.42, d60: -7.51 },
+          "中性": { d5: 0.31, d20: 0.62, d60: 1.18 },
+        }[sent];
+        const matured = { d5: total, d20: Math.max(0, total - 1), d60: Math.max(0, total - 3) };
+        return {
+          sentiment: sent,
+          n_total: total,
+          windows: {
+            "5":  { n: matured.d5,  avg_return: total ? profile.d5  : null },
+            "20": { n: matured.d20, avg_return: matured.d20 ? profile.d20 : null },
+            "60": { n: matured.d60, avg_return: matured.d60 ? profile.d60 : null },
+          },
+        };
+      });
       return json({
-        ok: true, source: "sample", count: 8, buckets: SAMPLE_CONFERENCES.map((c) => ({
-          query_term: c.code + ' ' + c.name,
-          n: 1,
-        })),
-        hint: "DB 沒有 conference 記錄；示意資料。",
+        ok: true, source: "sample",
+        count: samples.length,
+        days: 365,
+        n_conferences: samples.length,
+        as_of: new Date().toISOString().slice(0, 10),
+        stats,
+        hint: "DB 沒有 conference 記錄；以下為示意資料，幫助展示版面。",
       });
     }
     return json({ ok: true, source: "db", count: rows.length, buckets: rows });

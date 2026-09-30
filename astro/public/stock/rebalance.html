@@ -457,18 +457,20 @@ function render(d, resultId, chartId){
   });
 
   let rows = '';
-  d.holdings.forEach(h=>{
+  (d.holdings || []).forEach(h=>{
     const actClass = h.action === '買入' ? 'act-buy' : (h.action === '賣出' ? 'act-sell' : 'neu');
-    const unitTxt = h.action_units >= 1 ? `${fmtMoney(h.action_units)} 股` : '<1 股';
+    const unitTxt = (h.action_units || 0) >= 1 ? `${fmtMoney(h.action_units)} 股` : '<1 股';
     const actText = h.action === '持平' ? '—'
       : `${h.action} ${fmtMoney(h.action_amount)}<span class="meta"> · ${unitTxt}</span>`;
     const vol = (h.volatility==null) ? '—' : (h.volatility.toFixed(1)+'%');
+    const tgtW = (h.target_weight==null) ? '—' : h.target_weight.toFixed(1)+'%';
+    const curW = (h.current_weight==null) ? '—' : h.current_weight.toFixed(1)+'%';
     rows += `<tr>
       <td>${h.code}</td>
-      <td>${h.name}<span class="meta"> · ${h.industry}</span></td>
-      <td class="mono">${h.target_weight.toFixed(1)}%</td>
-      <td class="mono">${h.current_weight.toFixed(1)}%</td>
-      <td>${pp(h.drift)}</td>
+      <td>${h.name}${h.industry?'<span class="meta"> · '+h.industry+'</span>':''}</td>
+      <td class="mono">${tgtW}</td>
+      <td class="mono">${curW}</td>
+      <td>${h.drift==null?'—':pp(h.drift)}</td>
       <td>${pct(h.period_return)}</td>
       <td class="mono neu">${vol}</td>
       <td class="${actClass}">${actText}</td>
@@ -477,15 +479,18 @@ function render(d, resultId, chartId){
 
   const bestTh = best ? best.threshold_pct : '—';
 
+  const startTxt = (d.start_date && d.end_date) ? `${d.start_date} ~ ${d.end_date}` : '—';
+  const tradingTxt = d.trading_days==null ? '—' : d.trading_days;
+  const amountTxt = d.amount==null ? '—' : fmtMoney(d.amount);
   document.getElementById(resultId).innerHTML = `
     <div class="card">
       <h2>結果總覽</h2>
       <div class="summary" style="margin-bottom:14px">
-        <div class="stat"><div class="k">期間</div><div class="v" style="font-size:14px">${d.start_date} ~ ${d.end_date}</div></div>
-        <div class="stat"><div class="k">交易日</div><div class="v">${d.trading_days}</div></div>
-        <div class="stat"><div class="k">投入總額</div><div class="v" style="font-size:15px">${fmtMoney(d.amount)}</div></div>
-        <div class="stat"><div class="k">買進持有 報酬</div><div class="v">${signed(d.buyhold_return)}%</div></div>
-        <div class="stat"><div class="k">目前最大偏離</div><div class="v">${d.max_drift.toFixed(1)}</div></div>
+        <div class="stat"><div class="k">期間</div><div class="v" style="font-size:14px">${startTxt}</div></div>
+        <div class="stat"><div class="k">交易日</div><div class="v">${tradingTxt}</div></div>
+        <div class="stat"><div class="k">投入總額</div><div class="v" style="font-size:15px">${amountTxt}</div></div>
+        <div class="stat"><div class="k">買進持有 報酬</div><div class="v">${d.buyhold_return==null?'—':signed(d.buyhold_return)+'%'}</div></div>
+        <div class="stat"><div class="k">目前最大偏離</div><div class="v">${d.max_drift==null?'—':d.max_drift.toFixed(1)}</div></div>
         <div class="stat"><div class="k">平均相關係數</div><div class="v">${corr}</div></div>
       </div>
       ${cmpTable}
@@ -493,10 +498,11 @@ function render(d, resultId, chartId){
         買進持有報酬各門檻相同（門檻只影響再平衡模擬）。「★最佳」為「再平衡 − 買持」pp 最大的門檻；
         門檻越高不代表 pp 越大——若期間偏離從未觸及該門檻，等於完全沒再平衡（pp = 0）。
       </p>
+      ${(d.thresholds||[]).length===0 ? `<p class="disclaimer" style="color:var(--orange)">⚠ 完整門檻再平衡模擬（含 buy-hold / 最佳門檻 / 走勢圖）尚未實作後端 — 目前僅顯示「各標的偏離與建議」基本表。可參考 <a href="/stock/etf_holdings" style="color:var(--cyan)">ETF 持股分析</a> 或 <a href="/stock/buyback" style="color:var(--cyan)">庫藏股</a>。</p>` : ''}
     </div>
 
     <div class="card">
-      <h2>績效走勢：買進持有 vs 門檻再平衡（最佳門檻 ${bestTh}　同額起點 ${fmtMoney(d.amount)}）</h2>
+      <h2>績效走勢：買進持有 vs 門檻再平衡（最佳門檻 ${bestTh}　同額起點 ${amountTxt}）</h2>
       <div id="${chartId}" style="width:100%;height:380px;"></div>
       <p class="disclaimer">
         再平衡曲線：每日檢查偏離，超過門檻 ${bestTh} 個百分點即拉回目標權重（不計手續費／稅）。
