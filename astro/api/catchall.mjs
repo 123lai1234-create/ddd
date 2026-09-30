@@ -2089,7 +2089,9 @@ async function rebalanceDynamic(request) {
   }
 
   // dynamic：依每個交易日所在 regime 加權（牛市→input 加權；熊市→40%cash + 60%防禦 3 檔）
+  // 同時逐日累積 NAV 序列給 chart 用
   let dynamicReturn = null;
+  let curve = null;
   if (bars0050.length >= 2 && items.length) {
     const px = {};
     for (const it of items) {
@@ -2108,41 +2110,55 @@ async function rebalanceDynamic(request) {
         if (key >= ss && key <= se) segMap.set(key, s.regime);
       }
     }
-    // 逐日 NAV
-    let navBull = 1, navBear = 1;
+    // 逐日 NAV：static / dynamic / benchmark 三條線
+    const cDates = [], cStatic = [], cDyn = [], cBench = [];
+    let nStatic = 1, nDynamic = 1, nBench = 1;
+    cDates.push(String(bars0050[0].trade_date).slice(0, 10));
+    cStatic.push(1); cDyn.push(1); cBench.push(1);
     for (let i = 1; i < bars0050.length; i++) {
       const prevKey = String(bars0050[i - 1].trade_date).slice(0, 10);
       const key = String(bars0050[i].trade_date).slice(0, 10);
-      let totalW = 0, retSum = 0;
+      const cur = bars0050[i].close, prev = bars0050[i - 1].close;
+      // benchmark: 0050 buy-hold
+      if (prev && prev > 0 && cur) nBench *= cur / prev;
+      cBench.push(nBench);
+      // static: weighted input buy-hold
+      let rStatic = 0, wS = 0;
       for (const it of items) {
         const m = px[it.code];
         if (!m) continue;
         const p0 = m.get(prevKey), p1 = m.get(key);
-        if (p0 && p1 && p0 > 0) { retSum += it.weight * (p1 / p0 - 1); totalW += it.weight; }
+        if (p0 && p1 && p0 > 0) { rStatic += it.weight * (p1 / p0 - 1); wS += it.weight; }
       }
-      const rBull = totalW > 0 ? retSum / totalW : 0;
-      navBull *= (1 + rBull);
-      let dSum = 0, dN = 0;
-      for (const c of ['00713B', '00635U', '00719B']) {
-        const m = px[c];
-        if (!m) continue;
-        const p0 = m.get(prevKey), p1 = m.get(key);
-        if (p0 && p1 && p0 > 0) { dSum += (p1 / p0 - 1); dN++; }
+      if (wS > 0) nStatic *= (1 + rStatic / wS);
+      cStatic.push(nStatic);
+      // dynamic: per-day regime weights
+      const regime = segMap.get(key);
+      let rDyn = 0, wD = 0;
+      if (regime === 'bear') {
+        for (const c of ['00713B', '00635U', '00719B']) {
+          const m = px[c];
+          if (!m) continue;
+          const p0 = m.get(prevKey), p1 = m.get(key);
+          if (p0 && p1 && p0 > 0) { rDyn += (1 / 3) * (p1 / p0 - 1); wD += 1; }
+        }
+      } else {
+        for (const it of items) {
+          const m = px[it.code];
+          if (!m) continue;
+          const p0 = m.get(prevKey), p1 = m.get(key);
+          if (p0 && p1 && p0 > 0) { rDyn += it.weight * (p1 / p0 - 1); wD += it.weight; }
+        }
       }
-      const rBear = dN > 0 ? dSum / dN : 0;
-      navBear *= (1 + rBear);
+      if (wD > 0) nDynamic *= (1 + rDyn / wD);
+      cDyn.push(nDynamic);
+      cDates.push(key);
     }
-    // 按 regime 天數加權 NAV
-    let bullDays = 0, bearDays = 0;
-    for (const b of bars0050) {
-      const key = String(b.trade_date).slice(0, 10);
-      if (segMap.get(key) === 'bear') bearDays++;
-      else bullDays++;
-    }
-    const totalDays = bullDays + bearDays;
-    if (totalDays > 0) {
-      const blended = (navBull * bullDays + navBear * bearDays) / totalDays;
-      dynamicReturn = r2((blended - 1) * 100);
+    curve = { dates: cDates, static: cStatic, dynamic: cDyn, benchmark: cBench };
+    // dynamic 最終 return 用起點/終點（避免浮點誤差）
+    if (cDyn.length >= 2) {
+      const lastDyn = cDyn[cDyn.length - 1];
+      dynamicReturn = r2((lastDyn - 1) * 100);
     }
   }
 
@@ -2188,7 +2204,7 @@ async function rebalanceDynamic(request) {
     dynamic_vs_static_pp: (dynamicReturn != null && staticReturn != null)
       ? r2(dynamicReturn - staticReturn) : null,
 
-    curve: null,
+    curve,
     current_total: amount,
 
     generated_at: Date.now(),
