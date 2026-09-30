@@ -111,9 +111,12 @@
     <div class="panel">
       <h2>操作</h2>
       <div class="btn-row">
-        <button class="btn-primary" id="btnAnalyze" onclick="startAnalysis(false)">開始分析（用快取）</button>
-        <button class="btn-refresh" id="btnRefresh" onclick="startAnalysis(true)">強制重抓</button>
+        <button class="btn-primary" id="btnAnalyze" onclick="startAnalysis(false)">重新分析（從 DB 抓最新）</button>
         <button class="btn-cache" onclick="clearCache()">清除快取</button>
+      </div>
+      <div style="font-size:11px;color:var(--txt2);margin-top:6px;line-height:1.5">
+        頁面開啟時已自動載入上次分析結果，按按鈕可重新從 <code>etf_holdings</code> 表抓最新資料計算（耗時 &lt; 5s）。
+        <br>「清除快取」只清 lambda 記憶體的 <code>analyzeJob</code>，不動 DB 內的 holdings 資料。
       </div>
       <div class="progress-wrap" id="progressWrap">
         <div class="pbar-bg"><div class="pbar-fill" id="pbarFill"></div></div>
@@ -191,8 +194,10 @@
     let pollTimer = null;
 
     function setBtns(disabled) {
-      document.getElementById('btnAnalyze').disabled = disabled;
-      document.getElementById('btnRefresh').disabled = disabled;
+      const a = document.getElementById('btnAnalyze');
+      const r = document.getElementById('btnRefresh');
+      if (a) a.disabled = disabled;
+      if (r) r.disabled = disabled;
     }
     function setStatus(msg, color) {
       const el = document.getElementById('statusMsg');
