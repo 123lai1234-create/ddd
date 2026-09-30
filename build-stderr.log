@@ -1,3 +1,0 @@
-Vercel CLI 58.9.1 (Node.js 24.14.1)
-WARNING! Build not running on Vercel. System environment variables will not be available.
-Error: spawn cmd.exe ENOENT

@@ -1,0 +1,1 @@
+﻿fix(backend): stockIndustry mapping + loadSectors schema

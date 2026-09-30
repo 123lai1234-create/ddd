@@ -1,0 +1,156 @@
+﻿[
+{"type":"stdout","created":1790670506902,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Running build in Washington, D.C., USA (East) â iad1","id":"1790670506902360354284700000","date":1790670506902,"serial":"1790670506902360354284700000"}}
+,
+{"type":"stdout","created":1790670506903,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Build machine configuration: 2 cores, 8 GB","id":"1790670506903360354284700000","date":1790670506903,"serial":"1790670506903360354284700000"}}
+,
+{"type":"stdout","created":1790670506937,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Retrieving list of deployment files...","id":"1790670506937360354284700000","date":1790670506937,"serial":"1790670506937360354284700000"}}
+,
+{"type":"stdout","created":1790670507263,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Concatenating deployment archive files...","id":"1790670507263360354284700000","date":1790670507263,"serial":"1790670507263360354284700000"}}
+,
+{"type":"stdout","created":1790670507265,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Extracting deployment files...","id":"1790670507265360354284700000","date":1790670507265,"serial":"1790670507265360354284700000"}}
+,
+{"type":"stdout","created":1790670510246,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Extracted 368 deployment files...","id":"1790670510246360354284700000","date":1790670510246,"serial":"1790670510246360354284700000"}}
+,
+{"type":"stdout","created":1790670511475,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Using prebuilt build artifacts from .vercel/output","id":"1790670511475432650046900000","date":1790670511475,"serial":"1790670511475432650046900000"}}
+,
+{"type":"stdout","created":1790670511476,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Learn more: https://vercel.link/build-output-api","id":"1790670511476432650046900000","date":1790670511476,"serial":"1790670511476432650046900000"}}
+,
+{"type":"stdout","created":1790670511486,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Deploying outputs...","id":"1790670511486432650046900000","date":1790670511486,"serial":"1790670511486432650046900000"}}
+,
+{"type":"stderr","created":1790670511650,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"about_me\\index.html\" was not detected as an output path","id":"1790670511650432650046900000","date":1790670511650,"serial":"1790670511650432650046900000"}}
+,
+{"type":"stderr","created":1790670511650,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"about\\index.html\" was not detected as an output path","id":"1790670511650432650046900001","date":1790670511650,"serial":"1790670511650432650046900001"}}
+,
+{"type":"stderr","created":1790670511650,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"ai-demo\\index.html\" was not detected as an output path","id":"1790670511650432650046900002","date":1790670511650,"serial":"1790670511650432650046900002"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"blog\\esm2-protein-language-model\\index.html\" was not detected as an output path","id":"1790670511651432650046900000","date":1790670511651,"serial":"1790670511651432650046900000"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"blog\\genetic-algorithm-trading\\index.html\" was not detected as an output path","id":"1790670511651432650046900001","date":1790670511651,"serial":"1790670511651432650046900001"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"blog\\index.html\" was not detected as an output path","id":"1790670511651432650046900002","date":1790670511651,"serial":"1790670511651432650046900002"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"blog\\ngs-sequencing-design\\index.html\" was not detected as an output path","id":"1790670511651432650046900003","date":1790670511651,"serial":"1790670511651432650046900003"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"demo\\music\\index.html\" was not detected as an output path","id":"1790670511651432650046900004","date":1790670511651,"serial":"1790670511651432650046900004"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"diving\\index.html\" was not detected as an output path","id":"1790670511651432650046900005","date":1790670511651,"serial":"1790670511651432650046900005"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"firmware\\index.html\" was not detected as an output path","id":"1790670511651432650046900006","date":1790670511651,"serial":"1790670511651432650046900006"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"games\\xian-godot\\index.html\" was not detected as an output path","id":"1790670511651432650046900007","date":1790670511651,"serial":"1790670511651432650046900007"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"games\\xian\\index.html\" was not detected as an output path","id":"1790670511651432650046900008","date":1790670511651,"serial":"1790670511651432650046900008"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"gene_ai\\index.html\" was not detected as an output path","id":"1790670511651432650046900009","date":1790670511651,"serial":"1790670511651432650046900009"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"gene-ai\\index.html\" was not detected as an output path","id":"1790670511651432650046900010","date":1790670511651,"serial":"1790670511651432650046900010"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"index-optimized\\index.html\" was not detected as an output path","id":"1790670511651432650046900011","date":1790670511651,"serial":"1790670511651432650046900011"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"ingest\\index.html\" was not detected as an output path","id":"1790670511651432650046900012","date":1790670511651,"serial":"1790670511651432650046900012"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"interactive-showcase\\index.html\" was not detected as an output path","id":"1790670511651432650046900013","date":1790670511651,"serial":"1790670511651432650046900013"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"interview_prep\\index.html\" was not detected as an output path","id":"1790670511651432650046900014","date":1790670511651,"serial":"1790670511651432650046900014"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"interview\\index.html\" was not detected as an output path","id":"1790670511651432650046900015","date":1790670511651,"serial":"1790670511651432650046900015"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"music\\index.html\" was not detected as an output path","id":"1790670511651432650046900016","date":1790670511651,"serial":"1790670511651432650046900016"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"ngs\\index.html\" was not detected as an output path","id":"1790670511651432650046900017","date":1790670511651,"serial":"1790670511651432650046900017"}}
+,
+{"type":"stderr","created":1790670511651,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"offline\\index.html\" was not detected as an output path","id":"1790670511651432650046900018","date":1790670511651,"serial":"1790670511651432650046900018"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"privacy\\index.html\" was not detected as an output path","id":"1790670511652432650046900000","date":1790670511652,"serial":"1790670511652432650046900000"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"protein_mpnn\\index.html\" was not detected as an output path","id":"1790670511652432650046900001","date":1790670511652,"serial":"1790670511652432650046900001"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"protein-mpnn\\index.html\" was not detected as an output path","id":"1790670511652432650046900002","date":1790670511652,"serial":"1790670511652432650046900002"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"report\\index.html\" was not detected as an output path","id":"1790670511652432650046900003","date":1790670511652,"serial":"1790670511652432650046900003"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"seo-accessibility\\index.html\" was not detected as an output path","id":"1790670511652432650046900004","date":1790670511652,"serial":"1790670511652432650046900004"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stem-cell\\index.html\" was not detected as an output path","id":"1790670511652432650046900005","date":1790670511652,"serial":"1790670511652432650046900005"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\admin_logs.html\" was not detected as an output path","id":"1790670511652432650046900006","date":1790670511652,"serial":"1790670511652432650046900006"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\ai-capex.html\" was not detected as an output path","id":"1790670511652432650046900007","date":1790670511652,"serial":"1790670511652432650046900007"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\ai-warroom.html\" was not detected as an output path","id":"1790670511652432650046900008","date":1790670511652,"serial":"1790670511652432650046900008"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\backtest.html\" was not detected as an output path","id":"1790670511652432650046900009","date":1790670511652,"serial":"1790670511652432650046900009"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\btc.html\" was not detected as an output path","id":"1790670511652432650046900010","date":1790670511652,"serial":"1790670511652432650046900010"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\buyback.html\" was not detected as an output path","id":"1790670511652432650046900011","date":1790670511652,"serial":"1790670511652432650046900011"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\conference.html\" was not detected as an output path","id":"1790670511652432650046900012","date":1790670511652,"serial":"1790670511652432650046900012"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\currency.html\" was not detected as an output path","id":"1790670511652432650046900013","date":1790670511652,"serial":"1790670511652432650046900013"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\dashboard.html\" was not detected as an output path","id":"1790670511652432650046900014","date":1790670511652,"serial":"1790670511652432650046900014"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\etf_holdings_pivot.html\" was not detected as an output path","id":"1790670511652432650046900015","date":1790670511652,"serial":"1790670511652432650046900015"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\etf_holdings_tracker.html\" was not detected as an output path","id":"1790670511652432650046900016","date":1790670511652,"serial":"1790670511652432650046900016"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\etf_holdings.html\" was not detected as an output path","id":"1790670511652432650046900017","date":1790670511652,"serial":"1790670511652432650046900017"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\etf-filter.html\" was not detected as an output path","id":"1790670511652432650046900018","date":1790670511652,"serial":"1790670511652432650046900018"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\etf.html\" was not detected as an output path","id":"1790670511652432650046900019","date":1790670511652,"serial":"1790670511652432650046900019"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\exdiv.html\" was not detected as an output path","id":"1790670511652432650046900020","date":1790670511652,"serial":"1790670511652432650046900020"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\futures.html\" was not detected as an output path","id":"1790670511652432650046900021","date":1790670511652,"serial":"1790670511652432650046900021"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\heatmap.html\" was not detected as an output path","id":"1790670511652432650046900022","date":1790670511652,"serial":"1790670511652432650046900022"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\index.html\" was not detected as an output path","id":"1790670511652432650046900023","date":1790670511652,"serial":"1790670511652432650046900023"}}
+,
+{"type":"stderr","created":1790670511652,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\line-push.html\" was not detected as an output path","id":"1790670511652432650046900024","date":1790670511652,"serial":"1790670511652432650046900024"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\macro.html\" was not detected as an output path","id":"1790670511653432650046900000","date":1790670511653,"serial":"1790670511653432650046900000"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\marker_history.html\" was not detected as an output path","id":"1790670511653432650046900001","date":1790670511653,"serial":"1790670511653432650046900001"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\price-compare.html\" was not detected as an output path","id":"1790670511653432650046900002","date":1790670511653,"serial":"1790670511653432650046900002"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\ranking.html\" was not detected as an output path","id":"1790670511653432650046900003","date":1790670511653,"serial":"1790670511653432650046900003"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\rebalance.html\" was not detected as an output path","id":"1790670511653432650046900004","date":1790670511653,"serial":"1790670511653432650046900004"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\revenue.html\" was not detected as an output path","id":"1790670511653432650046900005","date":1790670511653,"serial":"1790670511653432650046900005"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\signal-filter.html\" was not detected as an output path","id":"1790670511653432650046900006","date":1790670511653,"serial":"1790670511653432650046900006"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\sitemap.html\" was not detected as an output path","id":"1790670511653432650046900007","date":1790670511653,"serial":"1790670511653432650046900007"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\sitemap\\index.html\" was not detected as an output path","id":"1790670511653432650046900008","date":1790670511653,"serial":"1790670511653432650046900008"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\sold-too-early.html\" was not detected as an output path","id":"1790670511653432650046900009","date":1790670511653,"serial":"1790670511653432650046900009"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\stock-damo-filter.html\" was not detected as an output path","id":"1790670511653432650046900010","date":1790670511653,"serial":"1790670511653432650046900010"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\uptrend-watch.html\" was not detected as an output path","id":"1790670511653432650046900011","date":1790670511653,"serial":"1790670511653432650046900011"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"stock\\warming.html\" was not detected as an output path","id":"1790670511653432650046900012","date":1790670511653,"serial":"1790670511653432650046900012"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"templates\\common-head-optimized.html\" was not detected as an output path","id":"1790670511653432650046900013","date":1790670511653,"serial":"1790670511653432650046900013"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"templates\\common-head.html\" was not detected as an output path","id":"1790670511653432650046900014","date":1790670511653,"serial":"1790670511653432650046900014"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"terms\\index.html\" was not detected as an output path","id":"1790670511653432650046900015","date":1790670511653,"serial":"1790670511653432650046900015"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"thesis\\index.html\" was not detected as an output path","id":"1790670511653432650046900016","date":1790670511653,"serial":"1790670511653432650046900016"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"video-gen\\index.html\" was not detected as an output path","id":"1790670511653432650046900017","date":1790670511653,"serial":"1790670511653432650046900017"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"works\\index.html\" was not detected as an output path","id":"1790670511653432650046900018","date":1790670511653,"serial":"1790670511653432650046900018"}}
+,
+{"type":"stderr","created":1790670511653,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Warning: Override path \"xian-godot\\index.html\" was not detected as an output path","id":"1790670511653432650046900019","date":1790670511653,"serial":"1790670511653432650046900019"}}
+,
+{"type":"stdout","created":1790670521672,"payload":{"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"text":"Deployment completed","id":"1790670521672432650046900000","date":1790670521672,"serial":"1790670521672432650046900000"}}
+]
+

@@ -1854,59 +1854,345 @@ async function rebalanceCompute(request) {
   return json(await rebalanceComputeCore(request));
 }
 
-// 0050 牛熊切換判定：last close vs MA200
-//  - close > MA200 → bull
-//  - MA200 較前一日上升 → ma_rising=true
-//  - 切換權重：bull 100% 靜態買持；bear 40% 現金 + 60% 防禦三檔 (00713B/00635U/00719B)
-//  - 從 market_price_bars 拉近 250 個交易日（MA200 需要 200 個 + 30 個 buffer）
-async function computeRegime0050() {
+// ── 0050 牛熊切換 + 動態再平衡 helpers ───────────────────────────────
+async function getEtfBarsBulk(codes, startDate) {
+  // 回傳 Map<code, [{trade_date, close}]> (ASC 舊→新)
+  const m = new Map();
+  for (const c of codes) m.set(c, []);
+  if (!codes || !codes.length) return m;
+  try {
+    const params = [codes];
+    let dateFilter = '';
+    if (startDate) { params.push(startDate); dateFilter = 'AND trade_date >= $2'; }
+    const { rows } = await q(
+      `SELECT symbol, trade_date, close_price FROM market_price_bars
+       WHERE symbol = ANY($1::text[]) AND asset_type='etf'
+         AND close_price IS NOT NULL AND trade_date IS NOT NULL ${dateFilter}
+       ORDER BY trade_date DESC`,
+      params
+    );
+    const tmp = new Map();
+    for (const c of codes) tmp.set(c, []);
+    for (const r of rows) tmp.get(r.symbol).push({ trade_date: r.trade_date, close: Number(r.close_price) });
+    for (const c of codes) m.set(c, (tmp.get(c) || []).reverse());
+    return m;
+  } catch { return m; }
+}
+
+async function getEtfLatestPrices(codes) {
+  if (!codes || !codes.length) return new Map();
+  try {
+    const { rows } = await q(
+      `SELECT DISTINCT ON (symbol) symbol, close_price
+       FROM market_price_bars
+       WHERE symbol = ANY($1::text[]) AND asset_type='etf'
+         AND close_price IS NOT NULL AND trade_date IS NOT NULL
+       ORDER BY symbol, trade_date DESC,
+         (source_name = 'twse_STOCK_DAY_ALL') DESC,
+         fetched_at DESC NULLS LAST`,
+      [codes]
+    );
+    return new Map(rows.map(r => [r.symbol, Number(r.close_price)]));
+  } catch { return new Map(); }
+}
+
+function computeRegimeSegmentsFromBars(barsAsc, maWindow = 200) {
+  // barsAsc: [{trade_date, close}] ASC；產出 [{start, end, regime}] 連續區段
+  if (!barsAsc || barsAsc.length < maWindow) return [];
+  const segments = [];
+  let curRegime = null;
+  let segStart = null;
+  for (let i = maWindow - 1; i < barsAsc.length; i++) {
+    const slice = barsAsc.slice(i - maWindow + 1, i + 1);
+    const ma = slice.reduce((a, b) => a + b.close, 0) / maWindow;
+    const last = barsAsc[i].close;
+    const regime = last > ma ? 'bull' : 'bear';
+    if (regime !== curRegime) {
+      if (curRegime !== null) {
+        segments.push({ start: segStart, end: barsAsc[i - 1].trade_date, regime: curRegime });
+      }
+      curRegime = regime;
+      segStart = barsAsc[i].trade_date;
+    }
+  }
+  if (curRegime !== null) {
+    segments.push({ start: segStart, end: barsAsc[barsAsc.length - 1].trade_date, regime: curRegime });
+  }
+  return segments;
+}
+
+function periodReturnPct(bars) {
+  if (!bars || bars.length < 2) return null;
+  const first = bars[0].close;
+  const last  = bars[bars.length - 1].close;
+  if (!first || first <= 0) return null;
+  return r2((last / first - 1) * 100);
+}
+
+const DEF_NAME = {
+  'CASH':   '現金',
+  '00713B': '元大美債20年',
+  '00635U': '期元大S&P黃金',
+  '00719B': '元大美債1-3',
+};
+
+// 0050 牛熊判定 + 區段歷史
+//   - close > MA200 → bull；否則 bear
+//   - 牛市：input 12 檔原權重
+//   - 熊市：CASH 40% + 00713B 20% + 00635U 20% + 00719B 20%
+async function computeRegime0050(opts = {}) {
+  const limit = Number(opts.limit) || 280;
   try {
     const { rows } = await q(
       `SELECT trade_date, close_price FROM market_price_bars
        WHERE symbol = $1 AND asset_type='etf' AND close_price IS NOT NULL AND trade_date IS NOT NULL
-       ORDER BY trade_date DESC LIMIT 250`,
-      ['0050']
+       ORDER BY trade_date DESC LIMIT $2`,
+      ['0050', limit]
     );
     if (!rows || rows.length < 200) {
-      return { current_regime: null, current_regime_label: '資料不足', ma_window: 200 };
+      return {
+        current_regime: null, current_regime_label: '資料不足', ma_window: 200,
+        bars0050: [], regime_segments: [], n_switch: 0,
+      };
     }
-    // 反轉成時間正序（舊→新）
-    const closes = rows.slice().reverse().map(r => Number(r.close_price)).filter(n => n > 0);
-    if (closes.length < 200) {
-      return { current_regime: null, current_regime_label: '資料不足', ma_window: 200 };
+    const asc = rows.slice().reverse()
+      .map(r => ({ trade_date: r.trade_date, close: Number(r.close_price) }))
+      .filter(b => b.close > 0);
+    if (asc.length < 200) {
+      return {
+        current_regime: null, current_regime_label: '資料不足', ma_window: 200,
+        bars0050: asc, regime_segments: [], n_switch: 0,
+      };
     }
     const maWindow = 200;
-    const maNow  = closes.slice(-maWindow).reduce((a, b) => a + b, 0) / maWindow;
-    const maPrev = closes.slice(-(maWindow + 1), -1).reduce((a, b) => a + b, 0) / maWindow;
-    const last   = closes[closes.length - 1];
-    const regime   = last > maNow ? 'bull' : 'bear';
-    const maRising = maNow > maPrev;
-    const label    = regime === 'bull' ? '牛市' : '熊市';
-    // 推薦權重
+    const maNow  = asc.slice(-maWindow).reduce((a, b) => a + b.close, 0) / maWindow;
+    const maPrev = asc.slice(-(maWindow + 1), -1).reduce((a, b) => a + b.close, 0) / maWindow;
+    const last   = asc[asc.length - 1].close;
+    const regime = last > maNow ? 'bull' : 'bear';
+    const segments = computeRegimeSegmentsFromBars(asc, maWindow);
+    const nSwitch = Math.max(0, segments.length - 1);
     const dynamicWeights = regime === 'bull'
-      ? {}                                  // 牛市：用原目標權重，不切換
-      : { 'CASH': 40, '00713B': 20, '00635U': 20, '00719B': 20 }; // 熊市：40% 現金 + 60% 防禦三檔
+      ? {}
+      : { CASH: 40, '00713B': 20, '00635U': 20, '00719B': 20 };
     return {
       current_regime: regime,
-      current_regime_label: label,
+      current_regime_label: regime === 'bull' ? '牛市' : '熊市',
       signal_close: r2(last),
       signal_ma: r2(maNow),
       ma_window: maWindow,
-      ma_rising: maRising,
+      ma_rising: maNow > maPrev,
       dynamic_weights: dynamicWeights,
-      as_of_trade_date: rows[0].trade_date, // 最新交易日
+      as_of_trade_date: asc[asc.length - 1].trade_date,
+      bars0050: asc,
+      regime_segments: segments,
+      n_switch: nSwitch,
     };
   } catch (e) {
-    return { current_regime: null, current_regime_label: '查詢失敗', ma_window: 200, error: e?.message };
+    return {
+      current_regime: null, current_regime_label: '查詢失敗', ma_window: 200,
+      bars0050: [], regime_segments: [], n_switch: 0, error: e?.message,
+    };
   }
 }
 
 async function rebalanceDynamic(request) {
-  // 1. 跟 rebalanceCompute 一樣算 holdings
-  const core = await rebalanceComputeCore(request);
-  // 2. 加 0050 牛熊判定
-  const regime = await computeRegime0050();
-  return json({ ...core, ...regime });
+  const body = request.method === 'POST' ? await readJson(request) : {};
+  const items = (Array.isArray(body.items) ? body.items : [])
+    .map(it => ({ code: String(it.code || ''), weight: Number(it.weight) || 0 }))
+    .filter(it => it.code && it.weight > 0);
+  const amount = Number(body.amount) || 1000000;
+  const startDate = body.start_date || null;
+
+  // 1. 0050 regime + 區段
+  const regime = await computeRegime0050({ limit: 280 });
+  const isBull = regime.current_regime === 'bull';
+  const bars0050 = regime.bars0050 || [];
+  const segments = regime.regime_segments || [];
+
+  // 2. 決定目標權重
+  //    - 牛市：input 12 檔原權重
+  //    - 熊市：CASH 40% + 00713B 20% + 00635U 20% + 00719B 20%
+  let targets;
+  if (isBull) {
+    targets = items.map(it => ({ code: it.code, tw: it.weight, baseW: it.weight }));
+  } else {
+    targets = [
+      { code: 'CASH',   tw: 40, baseW: 0 },
+      { code: '00713B', tw: 20, baseW: 0 },
+      { code: '00635U', tw: 20, baseW: 0 },
+      { code: '00719B', tw: 20, baseW: 0 },
+    ];
+  }
+
+  // 3. 抓所需 codes 的最新價 + 歷史 bars
+  const codes = targets.map(t => t.code).filter(c => c !== 'CASH');
+  const [latestMap, barsMap] = await Promise.all([
+    getEtfLatestPrices(codes),
+    getEtfBarsBulk(codes, startDate),
+  ]);
+
+  // 4. per-holding 欄位
+  const watch = await getWatchMap();
+  const holdings = targets.map(t => {
+    const code = t.code;
+    const isCash = code === 'CASH';
+    const last = isCash ? null : (latestMap.get(code) || null);
+    const bars = isCash ? [] : (barsMap.get(code) || []);
+    const tw = t.tw;
+    const cw = tw;                            // 模擬剛切換 → current = target
+    const drift = r2(tw - cw);
+    const tgtAmount = Math.round((amount * tw) / 100);
+    const curAmount = Math.round((amount * cw) / 100);
+    const diffAmount = tgtAmount - curAmount;
+    const units = last && last > 0 ? Math.round(diffAmount / last) : 0;
+    let action = '持平';
+    if (Math.abs(drift) >= 0.5) action = diffAmount > 0 ? '買入' : '賣出';
+    return {
+      code,
+      name: DEF_NAME[code] || (watch.get(code)?.name) || code,
+      industry: '',
+      base_weight: t.baseW || null,
+      target_weight: tw,
+      current_weight: cw,
+      drift,
+      last_close: last,
+      period_return: periodReturnPct(bars),
+      action,
+      action_amount: Math.round(Math.abs(diffAmount)),
+      action_units: Math.abs(units),
+    };
+  });
+
+  // 5. 現金（bear 顯示 cash row）
+  const cashTargetPct  = isBull ? 0 : 40;
+  const cashCurrentPct = 0;
+  const cashActionAmount = Math.round((amount * Math.abs(cashTargetPct - cashCurrentPct)) / 100);
+  let cashAction = '持平';
+  if (Math.abs(cashTargetPct - cashCurrentPct) < 0.5) cashAction = '持平';
+  else cashAction = cashTargetPct > cashCurrentPct ? '增加現金' : '減少現金';
+
+  // 6. 期間
+  const start = bars0050[0]?.trade_date || null;
+  const end   = bars0050[bars0050.length - 1]?.trade_date || null;
+  const tradingDays = bars0050.length;
+
+  // benchmark / static / dynamic 報酬（簡化）
+  const benchmarkReturn = periodReturnPct(bars0050);
+  let staticReturn = null;
+  if (items.length) {
+    let wsum = 0, rsum = 0;
+    for (const it of items) {
+      const r = periodReturnPct(barsMap.get(it.code) || []);
+      if (r != null) { wsum += it.weight; rsum += it.weight * r; }
+    }
+    if (wsum > 0) staticReturn = r2(rsum / wsum);
+  }
+
+  // dynamic：依每個交易日所在 regime 加權（牛市→input 加權；熊市→40%cash + 60%防禦 3 檔）
+  let dynamicReturn = null;
+  if (bars0050.length >= 2 && items.length) {
+    const px = {};
+    for (const it of items) {
+      px[it.code] = new Map((barsMap.get(it.code) || []).map(b => [String(b.trade_date).slice(0, 10), b.close]));
+    }
+    for (const c of ['00713B', '00635U', '00719B']) {
+      px[c] = new Map((barsMap.get(c) || []).map(b => [String(b.trade_date).slice(0, 10), b.close]));
+    }
+    // trade_date → regime
+    const segMap = new Map();
+    for (const s of segments) {
+      const ss = String(s.start).slice(0, 10);
+      const se = String(s.end).slice(0, 10);
+      for (const b of bars0050) {
+        const key = String(b.trade_date).slice(0, 10);
+        if (key >= ss && key <= se) segMap.set(key, s.regime);
+      }
+    }
+    // 逐日 NAV
+    let navBull = 1, navBear = 1;
+    for (let i = 1; i < bars0050.length; i++) {
+      const prevKey = String(bars0050[i - 1].trade_date).slice(0, 10);
+      const key = String(bars0050[i].trade_date).slice(0, 10);
+      let totalW = 0, retSum = 0;
+      for (const it of items) {
+        const m = px[it.code];
+        if (!m) continue;
+        const p0 = m.get(prevKey), p1 = m.get(key);
+        if (p0 && p1 && p0 > 0) { retSum += it.weight * (p1 / p0 - 1); totalW += it.weight; }
+      }
+      const rBull = totalW > 0 ? retSum / totalW : 0;
+      navBull *= (1 + rBull);
+      let dSum = 0, dN = 0;
+      for (const c of ['00713B', '00635U', '00719B']) {
+        const m = px[c];
+        if (!m) continue;
+        const p0 = m.get(prevKey), p1 = m.get(key);
+        if (p0 && p1 && p0 > 0) { dSum += (p1 / p0 - 1); dN++; }
+      }
+      const rBear = dN > 0 ? dSum / dN : 0;
+      navBear *= (1 + rBear);
+    }
+    // 按 regime 天數加權 NAV
+    let bullDays = 0, bearDays = 0;
+    for (const b of bars0050) {
+      const key = String(b.trade_date).slice(0, 10);
+      if (segMap.get(key) === 'bear') bearDays++;
+      else bullDays++;
+    }
+    const totalDays = bullDays + bearDays;
+    if (totalDays > 0) {
+      const blended = (navBull * bullDays + navBear * bearDays) / totalDays;
+      dynamicReturn = r2((blended - 1) * 100);
+    }
+  }
+
+  // 7. bull/bear target 顯示用
+  const bullTarget = isBull
+    ? Math.round(items.reduce((s, it) => s + it.weight, 0))
+    : 0;
+  const bearTarget = 60;
+
+  return json({
+    ok: true,
+    current_regime: regime.current_regime,
+    current_regime_label: regime.current_regime_label,
+    signal_close: regime.signal_close,
+    signal_ma: regime.signal_ma,
+    ma_window: regime.ma_window,
+    ma_rising: regime.ma_rising,
+    dynamic_weights: regime.dynamic_weights,
+    as_of_trade_date: regime.as_of_trade_date,
+
+    holdings,
+    cash_target_pct: cashTargetPct,
+    cash_current_pct: cashCurrentPct,
+    cash_action: cashAction,
+    cash_action_amount: cashActionAmount,
+
+    bull_target: bullTarget,
+    bear_target: bearTarget,
+
+    amount,
+    start_date: start,
+    end_date: end,
+    trading_days: tradingDays,
+
+    n_switch: regime.n_switch,
+    regime_segments: segments,
+
+    benchmark_return: benchmarkReturn,
+    static_return: staticReturn,
+    dynamic_return: dynamicReturn,
+    dynamic_vs_benchmark_pp: (dynamicReturn != null && benchmarkReturn != null)
+      ? r2(dynamicReturn - benchmarkReturn) : null,
+    dynamic_vs_static_pp: (dynamicReturn != null && staticReturn != null)
+      ? r2(dynamicReturn - staticReturn) : null,
+
+    curve: null,
+    current_total: amount,
+
+    generated_at: Date.now(),
+  });
 }
 
 async function rebalanceGroups(request) {

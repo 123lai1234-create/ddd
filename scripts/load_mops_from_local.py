@@ -40,12 +40,21 @@ def mops_post(api_name: str, parameters: dict) -> str:
         return json.loads(r.read())["result"]["url"]
 
 
-def mops_fetch(url: str) -> str:
+def mops_fetch(url: str, max_retries: int = 3) -> str:
+    """GET result.url with retry on ConnectionReset. Returns raw HTML string."""
     req = urllib.request.Request(url)
     req.add_header("User-Agent", "Mozilla/5.0")
     ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
-    with urllib.request.urlopen(req, timeout=180, context=ctx) as r:
-        return r.read().decode("utf-8", errors="ignore")
+    last_err = None
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=180, context=ctx) as r:
+                return r.read().decode("utf-8", errors="ignore")
+        except Exception as e:
+            last_err = e
+            print(f"[mops_fetch] attempt {attempt+1}/{max_retries} failed: {e.__class__.__name__}")
+            time.sleep(2 + attempt * 2)
+    raise last_err
 
 
 def edge_post(edge_base: str, path: str, payload: dict) -> dict:

@@ -1,0 +1,102 @@
+﻿[
+{"created":1789712023727,"date":1789712023727,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712023727314494439900000","text":"Running build in Washington, D.C., USA (East) â iad1","type":"stdout","serial":"1789712023727314494439900000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712023728,"date":1789712023728,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712023728314494439900000","text":"Build machine configuration: 2 cores, 8 GB","type":"stdout","serial":"1789712023728314494439900000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712023971,"date":1789712023971,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712023971314494439900000","text":"Cloning github.com/123lai1234-create/ddd (Branch: main, Commit: f661f22)","type":"stdout","serial":"1789712023971314494439900000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712049602,"date":1789712049602,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712049602314494439900000","text":"Warning: Failed to fetch one or more git submodules","type":"stdout","serial":"1789712049602314494439900000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."},"level":"warning"}
+,
+{"created":1789712049603,"date":1789712049603,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712049603314494439900000","text":"Cloning completed: 25.631s","type":"stdout","serial":"1789712049603314494439900000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712049997,"date":1789712049997,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712049997314494439900000","text":"Found .vercelignore","type":"stdout","serial":"1789712049997314494439900000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050045,"date":1789712050045,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050045314494439900000","text":"Removed 75 ignored files defined in .vercelignore","type":"stdout","serial":"1789712050045314494439900000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050046,"date":1789712050046,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050046314494439900000","text":"  /.secrets/_capture_stderr.log","type":"stdout","serial":"1789712050046314494439900000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050046,"date":1789712050046,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050046314494439900001","text":"  /.secrets/_capture_stdout.log","type":"stdout","serial":"1789712050046314494439900001","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050046,"date":1789712050046,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050046314494439900002","text":"  /.secrets/_oauth_full.log","type":"stdout","serial":"1789712050046314494439900002","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050046,"date":1789712050046,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050046314494439900003","text":"  /.secrets/_oauth_now_stderr.log","type":"stdout","serial":"1789712050046314494439900003","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050047,"date":1789712050047,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050047314494439900000","text":"  /.secrets/_oauth_now_stdout.log","type":"stdout","serial":"1789712050047314494439900000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050047,"date":1789712050047,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050047314494439900001","text":"  /.secrets/_oauth_now.log","type":"stdout","serial":"1789712050047314494439900001","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050047,"date":1789712050047,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050047314494439900002","text":"  /.secrets/authorize.log","type":"stdout","serial":"1789712050047314494439900002","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050047,"date":1789712050047,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050047314494439900003","text":"  /.secrets/oauth_full.log","type":"stdout","serial":"1789712050047314494439900003","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050048,"date":1789712050048,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050048314494439900000","text":"  /add-5269-out.log","type":"stdout","serial":"1789712050048314494439900000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050048,"date":1789712050048,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050048314494439900001","text":"  /artifacts/pip_install.log","type":"stdout","serial":"1789712050048314494439900001","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712050227,"date":1789712050227,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712050227314494439900000","text":"Restored build cache from previous deployment (g6S41V2aDF3DaHTgtzFvi4c2RSCT)","type":"stdout","serial":"1789712050227314494439900000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712052483,"date":1789712052483,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712052483948080406600000","text":"Running \"vercel build\"","type":"stdout","serial":"1789712052483948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712052561,"date":1789712052561,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712052561948080406600000","text":"Vercel CLI 59.16.0","type":"stderr","serial":"1789712052561948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712052729,"date":1789712052729,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712052729948080406600000","text":"WARNING! When using Next.js, it is recommended to place JavaScript Functions inside of the `pages/api` (provided by Next.js) directory instead of `api` (provided by Vercel). Other languages (Python, Go, etc) should still go in the `api` directory.","type":"stderr","serial":"1789712052729948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."},"level":"warning"}
+,
+{"created":1789712052731,"date":1789712052731,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712052731948080406600000","text":"Learn More: https://nextjs.org/docs/api-routes/introduction","type":"stderr","serial":"1789712052731948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712054229,"date":1789712054229,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712054229948080406600000","text":"Warning: Detected \"engines\": { \"node\": \">=22.12.0\" } in your `package.json` that will automatically upgrade when a new major Node.js Version is released. Learn More: https://vercel.link/node-version","type":"stderr","serial":"1789712054229948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."},"level":"warning"}
+,
+{"created":1789712054243,"date":1789712054243,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712054243948080406600000","text":"Running \"install\" command: `node scripts/fetch_lfs.mjs && npm install --prefer-offline --no-audit`...","type":"stdout","serial":"1789712054243948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712054474,"date":1789712054474,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712054474948080406600000","text":"[fetch_lfs] found 118 LFS pointers to fetch","type":"stdout","serial":"1789712054474948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056239,"date":1789712056239,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056239948080406600000","text":"","type":"stderr","serial":"1789712056239948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056240,"date":1789712056240,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056240948080406600000","text":"[fetch_lfs] FAILED public/music/02_åå¼æ¬è².mp3: HTTP 404","type":"stderr","serial":"1789712056240948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056241,"date":1789712056241,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056241948080406600000","text":"","type":"stderr","serial":"1789712056241948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056241,"date":1789712056241,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056241948080406600001","text":"[fetch_lfs] FAILED public/music/05_é¨å¤åºç§.mp3: HTTP 404","type":"stderr","serial":"1789712056241948080406600001","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056242,"date":1789712056242,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056242948080406600000","text":"","type":"stderr","serial":"1789712056242948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056242,"date":1789712056242,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056242948080406600001","text":"[fetch_lfs] FAILED public/music/04_èå®¶çå··å­.mp3: HTTP 404","type":"stderr","serial":"1789712056242948080406600001","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056243,"date":1789712056243,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056243948080406600000","text":"","type":"stderr","serial":"1789712056243948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056243,"date":1789712056243,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056243948080406600001","text":"[fetch_lfs] FAILED public/music/05_è¶ç¾å¨.mp3: HTTP 404","type":"stderr","serial":"1789712056243948080406600001","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056244,"date":1789712056244,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056244948080406600000","text":"","type":"stderr","serial":"1789712056244948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056244,"date":1789712056244,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056244948080406600001","text":"[fetch_lfs] FAILED public/music/03_ä¸æè¼¸.mp3: HTTP 404","type":"stderr","serial":"1789712056244948080406600001","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056244,"date":1789712056244,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056244948080406600002","text":"","type":"stderr","serial":"1789712056244948080406600002","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056245,"date":1789712056245,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056245948080406600000","text":"[fetch_lfs] FAILED public/music/03_åç«èµ·ä¾.mp3: HTTP 404","type":"stderr","serial":"1789712056245948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056294,"date":1789712056294,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056294948080406600000","text":"","type":"stderr","serial":"1789712056294948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056294,"date":1789712056294,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056294948080406600001","text":"[fetch_lfs] FAILED public/music/04_æ°´æ³¥æ£®æ.mp3: HTTP 404","type":"stderr","serial":"1789712056294948080406600001","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056404,"date":1789712056404,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056404948080406600000","text":"","type":"stderr","serial":"1789712056404948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712056405,"date":1789712056405,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712056405948080406600000","text":"[fetch_lfs] FAILED public/music/03_ä¸æè¼¸(åªåç).mp3: HTTP 404","type":"stderr","serial":"1789712056405948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712057876,"date":1789712057876,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712057876948080406600000","text":"","type":"stderr","serial":"1789712057876948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712057876,"date":1789712057876,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712057876948080406600001","text":"[fetch_lfs] FAILED public/music/09_æ©å ´çæå¾ä¸å¤.mp3: HTTP 404","type":"stderr","serial":"1789712057876948080406600001","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712057876,"date":1789712057876,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712057876948080406600002","text":"","type":"stderr","serial":"1789712057876948080406600002","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712057877,"date":1789712057877,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712057877948080406600000","text":"[fetch_lfs] FAILED public/music/09_æä¸åäººä¹å¾å¥½.mp3: HTTP 404","type":"stderr","serial":"1789712057877948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712057881,"date":1789712057881,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712057881948080406600000","text":"","type":"stderr","serial":"1789712057881948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712057881,"date":1789712057881,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712057881948080406600001","text":"[fetch_lfs] FAILED public/music/06_åä¸å»çå¤å¤©.mp3: HTTP 404","type":"stderr","serial":"1789712057881948080406600001","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712057892,"date":1789712057892,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712057892948080406600000","text":"","type":"stderr","serial":"1789712057892948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712057892,"date":1789712057892,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712057892948080406600001","text":"[fetch_lfs] FAILED public/music/08_ä¸åæ­²çæ¸è³ä»¤.mp3: HTTP 404","type":"stderr","serial":"1789712057892948080406600001","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+,
+{"created":1789712057893,"date":1789712057893,"deploymentId":"dpl_4pr1kbQuUwWZ2UAv8MJgHyfEpn7C","id":"1789712057893948080406600000","text":"","type":"stderr","serial":"1789712057893948080406600000","info":{"type":"build","name":"bld_86u6tzpq8","entrypoint":"."}}
+]
+

@@ -1,28 +1,10 @@
-feat(backend): FinMind-backed sector loader for full watchlist coverage
+﻿fix(admin): loadMopsRows — pre-parsed rows POST to bypass 4.5MB body limit
 
-Hardcoded TWSE_INDUSTRY_MAP only covered 34 stocks; stockIndustry()
-mapping only had 5 (ETF) + 29 (the 34 minus ETFs sharing row) =
-34 effective entries after loadSectors run. With 130+ stocks in
-watchlist, ~66 stocks still showed '其他' in heatmap / sidebar.
+loadMopsFromHtml (POST raw HTML) 撞 Vercel edge FUNCTION_PAYLOAD_TOO_LARGE (4.5MB)。
+loadMopsRows 改成接受 pre-parsed JSON rows, body ~300KB/batch (1500 rows × 150 bytes)。
+Edge 只跑 INSERT (~5s) 完全繞過 60s + 4.5MB 雙重限制。
 
-Add loadSectorsFinMind() at GET|POST /api/admin/load/sectors_finmind.
-Pulls watchlist + etf_watchlist from DB (capped by ?limit, default
-130, max 200). Batches 50 codes per FinMind request to stay
-rate-limit-friendly. FinMind's TaiwanStockInfo public endpoint
-(no token) returns industry_category for every listed stock. We
-prefer type==='twse' row when both TWSE/TPEX are returned for the
-same stock_id. Writes industry + sector_source to
-market_instruments.metadata_text the same way loadSectors() does,
-but tag source_name='finmind_sector_loader' for traceability.
+scripts/load_mops_from_local.py 改用 loadMopsRows endpoint
+(parse HTML locally, send JSON batches)。
 
-Side effect: also populates display_name with the stock_name from
-FinMind on initial INSERT (vs. empty string for the manual loader).
-
-Edge cache: v7 build marker (Vercel Hobby edge cache kept serving
-old bundle even after the previous deploy; commit history confirms
-this pattern is the fix that worked before).
-
-Usage:
-  GET /api/admin/load/sectors_finmind           -> load full watchlist
-  GET /api/admin/load/sectors_finmind?code=2330 -> one stock
-  GET /api/admin/load/sectors_finmind?limit=50  -> cap batch size
+v20 → v21 marker bump。

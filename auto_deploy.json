@@ -1,0 +1,32 @@
+﻿[
+{"created":1790732898361,"date":1790732898361,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732898361637924708600000","text":"Running build in Washington, D.C., USA (East) â iad1","type":"stdout","serial":"1790732898361637924708600000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732898363,"date":1790732898363,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732898363637924708600000","text":"Build machine configuration: 2 cores, 8 GB","type":"stdout","serial":"1790732898363637924708600000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732898426,"date":1790732898426,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732898426637924708600000","text":"Retrieving list of deployment files...","type":"stdout","serial":"1790732898426637924708600000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732898873,"date":1790732898873,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732898873637924708600000","text":"Downloading 1551 deployment files...","type":"stdout","serial":"1790732898873637924708600000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732908631,"date":1790732908631,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732908631637924708600000","text":"Restored build cache from previous deployment (FF22BAdURWuoa5ixaQkxorMFEduY)","type":"stdout","serial":"1790732908631637924708600000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732910772,"date":1790732910772,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732910772626948334100000","text":"Running \"vercel build\"","type":"stdout","serial":"1790732910772626948334100000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732910987,"date":1790732910987,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732910987626948334100000","text":"Vercel CLI 60.1.3","type":"stderr","serial":"1790732910987626948334100000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732912466,"date":1790732912466,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732912466626948334100000","text":"Warning: Detected \"engines\": { \"node\": \">=22.12.0\" } in your `package.json` that will automatically upgrade when a new major Node.js Version is released. Learn More: https://vercel.link/node-version","type":"stderr","serial":"1790732912466626948334100000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."},"level":"warning"}
+,
+{"created":1790732912473,"date":1790732912473,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732912473626948334100000","text":"Running \"install\" command: `node scripts/fetch_lfs.mjs && npm install --prefer-offline --no-audit`...","type":"stdout","serial":"1790732912473626948334100000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732912612,"date":1790732912612,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732912612626948334100000","text":"[fetch_lfs] found 0 LFS pointers to fetch","type":"stdout","serial":"1790732912612626948334100000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732912613,"date":1790732912613,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732912613626948334100000","text":"","type":"stdout","serial":"1790732912613626948334100000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732912613,"date":1790732912613,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732912613626948334100001","text":"[fetch_lfs] done: replaced=0 errors=0","type":"stdout","serial":"1790732912613626948334100001","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732914499,"date":1790732914499,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732914499626948334100000","text":"","type":"stdout","serial":"1790732914499626948334100000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732914500,"date":1790732914500,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732914500626948334100000","text":"up to date in 2s","type":"stdout","serial":"1790732914500626948334100000","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+,
+{"created":1790732914500,"date":1790732914500,"deploymentId":"dpl_UjeZiMn9U1Vg5rmauc5Kyu3hVHA6","id":"1790732914500626948334100001","text":"","type":"stdout","serial":"1790732914500626948334100001","info":{"type":"build","name":"bld_8lik3vnbn","entrypoint":"."}}
+]
+

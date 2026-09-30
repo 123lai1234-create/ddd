@@ -1,0 +1,38 @@
+﻿[
+{"created":1790738532530,"date":1790738532530,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738532530559371105100000","text":"Running build in Washington, D.C., USA (East) â iad1","type":"stdout","serial":"1790738532530559371105100000","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738532531,"date":1790738532531,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738532531559371105100000","text":"Build machine configuration: 2 cores, 8 GB","type":"stdout","serial":"1790738532531559371105100000","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738532707,"date":1790738532707,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738532707559371105100000","text":"Cloning github.com/123lai1234-create/ddd (Branch: 123lai1234-create, Commit: 2374cf7)","type":"stdout","serial":"1790738532707559371105100000","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552217,"date":1790738552217,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552217559371105100000","text":"Warning: Failed to fetch one or more git submodules","type":"stdout","serial":"1790738552217559371105100000","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."},"level":"warning"}
+,
+{"created":1790738552218,"date":1790738552218,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552218559371105100000","text":"Cloning completed: 19.511s","type":"stdout","serial":"1790738552218559371105100000","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552393,"date":1790738552393,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552393559371105100000","text":"Found .vercelignore","type":"stdout","serial":"1790738552393559371105100000","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552412,"date":1790738552412,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552412559371105100000","text":"Removed 70 ignored files defined in .vercelignore","type":"stdout","serial":"1790738552412559371105100000","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552413,"date":1790738552413,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552413559371105100000","text":"  /.secrets/_capture_stderr.log","type":"stdout","serial":"1790738552413559371105100000","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552413,"date":1790738552413,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552413559371105100001","text":"  /.secrets/_capture_stdout.log","type":"stdout","serial":"1790738552413559371105100001","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552413,"date":1790738552413,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552413559371105100002","text":"  /.secrets/_oauth_full.log","type":"stdout","serial":"1790738552413559371105100002","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552413,"date":1790738552413,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552413559371105100003","text":"  /.secrets/_oauth_now_stderr.log","type":"stdout","serial":"1790738552413559371105100003","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552413,"date":1790738552413,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552413559371105100004","text":"  /.secrets/_oauth_now_stdout.log","type":"stdout","serial":"1790738552413559371105100004","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552413,"date":1790738552413,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552413559371105100005","text":"  /.secrets/_oauth_now.log","type":"stdout","serial":"1790738552413559371105100005","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552413,"date":1790738552413,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552413559371105100006","text":"  /.secrets/authorize.log","type":"stdout","serial":"1790738552413559371105100006","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552413,"date":1790738552413,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552413559371105100007","text":"  /.secrets/oauth_full.log","type":"stdout","serial":"1790738552413559371105100007","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552413,"date":1790738552413,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552413559371105100008","text":"  /add-5269-out.log","type":"stdout","serial":"1790738552413559371105100008","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552413,"date":1790738552413,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552413559371105100009","text":"  /artifacts/pip_install.log","type":"stdout","serial":"1790738552413559371105100009","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+,
+{"created":1790738552569,"date":1790738552569,"deploymentId":"dpl_9gh4z1e2Hy3EQHQ16UGVCnUdG83W","id":"1790738552569559371105100000","text":"Restored build cache from previous deployment (HmFxL5zDbDyrytNr4b2H7mnfEQ2Z)","type":"stdout","serial":"1790738552569559371105100000","info":{"type":"build","name":"bld_jlbyukifg","entrypoint":"."}}
+]
+

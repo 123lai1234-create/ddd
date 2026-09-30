@@ -1,0 +1,62 @@
+﻿[
+{"created":1790670506902,"date":1790670506902,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670506902360354284700000","text":"Running build in Washington, D.C., USA (East) â iad1","type":"stdout","serial":"1790670506902360354284700000","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."}}
+,
+{"created":1790670506903,"date":1790670506903,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670506903360354284700000","text":"Build machine configuration: 2 cores, 8 GB","type":"stdout","serial":"1790670506903360354284700000","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."}}
+,
+{"created":1790670506937,"date":1790670506937,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670506937360354284700000","text":"Retrieving list of deployment files...","type":"stdout","serial":"1790670506937360354284700000","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."}}
+,
+{"created":1790670507263,"date":1790670507263,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670507263360354284700000","text":"Concatenating deployment archive files...","type":"stdout","serial":"1790670507263360354284700000","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."}}
+,
+{"created":1790670507265,"date":1790670507265,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670507265360354284700000","text":"Extracting deployment files...","type":"stdout","serial":"1790670507265360354284700000","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."}}
+,
+{"created":1790670510246,"date":1790670510246,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670510246360354284700000","text":"Extracted 368 deployment files...","type":"stdout","serial":"1790670510246360354284700000","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."}}
+,
+{"created":1790670511475,"date":1790670511475,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511475432650046900000","text":"Using prebuilt build artifacts from .vercel/output","type":"stdout","serial":"1790670511475432650046900000","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."}}
+,
+{"created":1790670511476,"date":1790670511476,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511476432650046900000","text":"Learn more: https://vercel.link/build-output-api","type":"stdout","serial":"1790670511476432650046900000","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."}}
+,
+{"created":1790670511486,"date":1790670511486,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511486432650046900000","text":"Deploying outputs...","type":"stdout","serial":"1790670511486432650046900000","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."}}
+,
+{"created":1790670511650,"date":1790670511650,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511650432650046900000","text":"Warning: Override path \"about_me\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511650432650046900000","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511650,"date":1790670511650,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511650432650046900001","text":"Warning: Override path \"about\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511650432650046900001","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511650,"date":1790670511650,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511650432650046900002","text":"Warning: Override path \"ai-demo\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511650432650046900002","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900000","text":"Warning: Override path \"blog\\esm2-protein-language-model\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900000","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900001","text":"Warning: Override path \"blog\\genetic-algorithm-trading\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900001","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900002","text":"Warning: Override path \"blog\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900002","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900003","text":"Warning: Override path \"blog\\ngs-sequencing-design\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900003","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900004","text":"Warning: Override path \"demo\\music\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900004","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900005","text":"Warning: Override path \"diving\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900005","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900006","text":"Warning: Override path \"firmware\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900006","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900007","text":"Warning: Override path \"games\\xian-godot\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900007","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900008","text":"Warning: Override path \"games\\xian\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900008","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900009","text":"Warning: Override path \"gene_ai\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900009","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900010","text":"Warning: Override path \"gene-ai\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900010","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900011","text":"Warning: Override path \"index-optimized\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900011","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900012","text":"Warning: Override path \"ingest\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900012","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900013","text":"Warning: Override path \"interactive-showcase\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900013","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900014","text":"Warning: Override path \"interview_prep\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900014","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900015","text":"Warning: Override path \"interview\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900015","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900016","text":"Warning: Override path \"music\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900016","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+,
+{"created":1790670511651,"date":1790670511651,"deploymentId":"dpl_ELqVt2PYeJbAb9ETT4C34MVk9uVZ","id":"1790670511651432650046900017","text":"Warning: Override path \"ngs\\index.html\" was not detected as an output path","type":"stderr","serial":"1790670511651432650046900017","info":{"type":"build","name":"bld_go8y6kqik","entrypoint":"."},"level":"warning"}
+]
+
