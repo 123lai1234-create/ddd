@@ -1758,10 +1758,12 @@ async function etfClearCache(request) {
 }
 
 // ── new handlers: rebalance/* ────────────────────────────────────────
-async function rebalanceCompute(request) {
+async function rebalanceComputeCore(request) {
   const watch = await getWatchMap();
   const codes = Array.from(watch.keys());
-  if (!codes.length) return json({ ok: true, source: "stub", count: 0, items: [], holdings: [] });
+  if (!codes.length) {
+    return { ok: true, source: "stub", count: 0, items: [], holdings: [] };
+  }
   // Equal-weight target as default. If a body has {weights:{CODE:pct}}, use that.
   let customWeights = null;
   let body = null;
@@ -1823,7 +1825,7 @@ async function rebalanceCompute(request) {
       };
     });
     const maxDrift = items.reduce((m, it) => Math.max(m, Math.abs(it.diff_pct || 0)), 0);
-    return json({
+    return {
       ok: true,
       source: "db",
       count: items.length,
@@ -1842,10 +1844,69 @@ async function rebalanceCompute(request) {
       thresholds: [],
       guardrails: [],
       generated_at: Date.now(),
-    });
+    };
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], holdings: [], error: e?.message });
+    return { ok: true, source: "stub", count: 0, items: [], holdings: [], error: e?.message };
   }
+}
+
+async function rebalanceCompute(request) {
+  return json(await rebalanceComputeCore(request));
+}
+
+// 0050 牛熊切換判定：last close vs MA200
+//  - close > MA200 → bull
+//  - MA200 較前一日上升 → ma_rising=true
+//  - 切換權重：bull 100% 靜態買持；bear 40% 現金 + 60% 防禦三檔 (00713B/00635U/00719B)
+//  - 從 market_price_bars 拉近 250 個交易日（MA200 需要 200 個 + 30 個 buffer）
+async function computeRegime0050() {
+  try {
+    const { rows } = await q(
+      `SELECT trade_date, close_price FROM market_price_bars
+       WHERE symbol = $1 AND asset_type='etf' AND close_price IS NOT NULL AND trade_date IS NOT NULL
+       ORDER BY trade_date DESC LIMIT 250`,
+      ['0050']
+    );
+    if (!rows || rows.length < 200) {
+      return { current_regime: null, current_regime_label: '資料不足', ma_window: 200 };
+    }
+    // 反轉成時間正序（舊→新）
+    const closes = rows.slice().reverse().map(r => Number(r.close_price)).filter(n => n > 0);
+    if (closes.length < 200) {
+      return { current_regime: null, current_regime_label: '資料不足', ma_window: 200 };
+    }
+    const maWindow = 200;
+    const maNow  = closes.slice(-maWindow).reduce((a, b) => a + b, 0) / maWindow;
+    const maPrev = closes.slice(-(maWindow + 1), -1).reduce((a, b) => a + b, 0) / maWindow;
+    const last   = closes[closes.length - 1];
+    const regime   = last > maNow ? 'bull' : 'bear';
+    const maRising = maNow > maPrev;
+    const label    = regime === 'bull' ? '牛市' : '熊市';
+    // 推薦權重
+    const dynamicWeights = regime === 'bull'
+      ? {}                                  // 牛市：用原目標權重，不切換
+      : { 'CASH': 40, '00713B': 20, '00635U': 20, '00719B': 20 }; // 熊市：40% 現金 + 60% 防禦三檔
+    return {
+      current_regime: regime,
+      current_regime_label: label,
+      signal_close: r2(last),
+      signal_ma: r2(maNow),
+      ma_window: maWindow,
+      ma_rising: maRising,
+      dynamic_weights: dynamicWeights,
+      as_of_trade_date: rows[0].trade_date, // 最新交易日
+    };
+  } catch (e) {
+    return { current_regime: null, current_regime_label: '查詢失敗', ma_window: 200, error: e?.message };
+  }
+}
+
+async function rebalanceDynamic(request) {
+  // 1. 跟 rebalanceCompute 一樣算 holdings
+  const core = await rebalanceComputeCore(request);
+  // 2. 加 0050 牛熊判定
+  const regime = await computeRegime0050();
+  return json({ ...core, ...regime });
 }
 
 async function rebalanceGroups(request) {
@@ -1872,10 +1933,6 @@ async function rebalanceGroups(request) {
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, groups: [], error: e?.message });
   }
-}
-
-async function rebalanceDynamic(request) {
-  return rebalanceCompute(request);
 }
 
 // ── new handlers: uptrend_watch/* ────────────────────────────────────
