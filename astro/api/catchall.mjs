@@ -1725,6 +1725,22 @@ async function _runEtfAnalysis() {
   // Find common holdings (top 20 by avg weight)
   const allSymbols = new Set();
   for (const list of byEtf.values()) for (const h of list) allSymbols.add(h.stock_code);
+  // Lookup display_name from market_instruments (covers both TWSE + TPEx).
+  // Fallback gracefully if table missing/empty — name just shows the symbol.
+  const nameMap = new Map();
+  if (allSymbols.size > 0) {
+    try {
+      const { rows: nm } = await q(
+        `SELECT symbol, display_name
+         FROM market_instruments
+         WHERE symbol = ANY($1::text[]) AND asset_type='stock'`,
+        [Array.from(allSymbols)]
+      );
+      for (const r of (nm || [])) {
+        if (r.symbol && r.display_name) nameMap.set(String(r.symbol), String(r.display_name));
+      }
+    } catch { /* table may not exist yet — keep names as symbols */ }
+  }
   const common = [];
   for (const sym of allSymbols) {
     const appearances = [];
@@ -1735,7 +1751,8 @@ async function _runEtfAnalysis() {
     if (appearances.length >= 2) {
       const avg = appearances.reduce((s, a) => s + (a.weight || 0), 0) / appearances.length;
       const max = Math.max(...appearances.map(a => a.weight || 0));
-      common.push({ stock_code: sym, stock_name: sym, etf_count: appearances.length, avg_weight: +avg.toFixed(2), max_weight: +max.toFixed(2), etf_list: appearances.map(a => a.code) });
+      const stockName = nameMap.get(sym) || sym;
+      common.push({ stock_code: sym, stock_name: stockName, etf_count: appearances.length, avg_weight: +avg.toFixed(2), max_weight: +max.toFixed(2), etf_list: appearances.map(a => a.code) });
     }
   }
   common.sort((a, b) => b.avg_weight - a.avg_weight);
