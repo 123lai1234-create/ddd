@@ -4,7 +4,7 @@
 
 // 2026-09-24 v8: line 91 fetch() 加 .catch()，避免 network 抖動時
 //   throw `Uncaught (in promise) TypeError: Failed to fetch`。
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 const CACHE_NAME = `portfolio-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
