@@ -3679,7 +3679,9 @@ async function macroYield2yHistory(request) {
 // ── price_compare / heatmap ──────────────────────────────────────────
 async function priceCompare(request) {
   const u = urlOf(request);
-  const kind = pickStr(u.searchParams.get("kind") || "stocks");
+  const kindRaw = pickStr(u.searchParams.get("kind") || "stocks");
+  // Normalize: stocks→stock, etfs→etf
+  const kind = kindRaw === "etf" || kindRaw === "etfs" ? "etf" : "stock";
   const codesParam = pickStr(u.searchParams.get("codes") || "");
   let codes = codesParam ? codesParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
   // FALLBACK: no ?codes= → use watchlist (etf_watchlist for kind=etf) so the page
@@ -3696,39 +3698,81 @@ async function priceCompare(request) {
       return json({ ok: false, error: "missing or invalid ?codes= (and watchlist is empty)" }, { status: 400 });
     }
   }
-  const days = Math.min(500, Math.max(10, parseInt(u.searchParams.get("days") || "60", 10) || 60));
+  // Range → days. Frontend sends range=1w/1m/3m/6m/1y/3y/5y, but allow direct days= too.
+  const rangeMap = { "1w": 7, "1m": 30, "3m": 92, "6m": 184, "1y": 365, "3y": 365 * 3, "5y": 365 * 5 };
+  const rangeParam = pickStr(u.searchParams.get("range") || "");
+  let days = Math.min(2000, Math.max(10, parseInt(u.searchParams.get("days") || "60", 10) || 60));
+  if (rangeParam && rangeMap[rangeParam]) days = rangeMap[rangeParam];
+  // Custom start/end (YYYY-MM-DD) takes precedence if both present.
+  const startParam = pickStr(u.searchParams.get("start") || "");
+  const endParam = pickStr(u.searchParams.get("end") || "");
+  const hasCustomRange = /^\d{4}-\d{2}-\d{2}$/.test(startParam) && /^\d{4}-\d{2}-\d{2}$/.test(endParam);
   try {
-    const { rows } = await q(
-      `SELECT b.symbol, b.trade_date, b.close_price, COALESCE(m.display_name, NULL) AS name
+    const dateFilter = hasCustomRange
+      ? `b.trade_date BETWEEN $2::date AND $3::date`
+      : `b.trade_date >= (SELECT MAX(trade_date) FROM market_price_bars WHERE asset_type=$4) - ($5 || ' days')::interval`;
+    const sql =
+      `SELECT b.symbol, b.trade_date, b.close_price,
+              COALESCE(m.display_name, w.name, NULL) AS name
        FROM market_price_bars b
-       LEFT JOIN market_instruments m ON m.symbol = b.symbol AND m.asset_type = 'stock'
-       WHERE b.symbol = ANY($1::text[]) AND b.asset_type='stock' AND b.trade_date IS NOT NULL
-         AND b.trade_date >= (SELECT MAX(trade_date) FROM market_price_bars) - ($2 || ' days')::interval
-       ORDER BY b.symbol, b.trade_date ASC`,
-      [codes, String(days)]
-    );
+       LEFT JOIN market_instruments m ON m.symbol = b.symbol AND m.asset_type = $4
+       LEFT JOIN etf_watchlist w ON w.code = b.symbol
+       WHERE b.symbol = ANY($1::text[]) AND b.asset_type = $4 AND b.trade_date IS NOT NULL
+         AND ${dateFilter}
+       ORDER BY b.symbol, b.trade_date ASC`;
+    const params = hasCustomRange
+      ? [codes, startParam, endParam, kind]
+      : [codes, "", "", kind, String(days)];
+    const { rows } = await q(sql, params);
     // Group by symbol
-    const series = new Map();
+    const grouped = new Map();
     for (const r of rows) {
-      if (!series.has(r.symbol)) series.set(r.symbol, { name: r.name, points: [] });
-      series.get(r.symbol).points.push({ date: toTwseStyleDate(String(r.trade_date).slice(0, 10)), close: Number(r.close_price) });
+      if (!grouped.has(r.symbol)) grouped.set(r.symbol, { name: r.name, points: [] });
+      grouped.get(r.symbol).points.push({
+        date: toTwseStyleDate(String(r.trade_date).slice(0, 10)),
+        close: Number(r.close_price),
+      });
     }
-    const items = Array.from(series.entries()).map(([code, payload]) => {
+    // Build date union (sorted) so all series share the same x-axis. Series
+    // with no value on a given date get null → echarts shows a gap.
+    const dateSet = new Set();
+    for (const payload of grouped.values()) for (const p of payload.points) dateSet.add(p.date);
+    const dates = Array.from(dateSet).sort();
+    const series = Array.from(grouped.entries()).map(([code, payload]) => {
       const points = payload.points;
       const base = points[0]?.close || 0;
       const last = points[points.length - 1]?.close || 0;
+      const ret = base ? r2(((last - base) / base) * 100) : 0;
+      const lookup = new Map(points.map((p) => [p.date, p.close]));
       return {
-        code, name: payload.name,
-        base, last,
-        change_pct: base ? r2(((last - base) / base) * 100) : 0,
+        code,
+        name: payload.name || null,
+        base,
+        last,
+        ret,
+        change_pct: ret, // legacy alias
         points,
+        // Frontend (echarts) wants a flat numeric array aligned to top-level `dates`.
+        data: dates.map((d) => {
+          const v = lookup.get(d);
+          return v == null ? null : r2(v);
+        }),
       };
     });
-    return json({ ok: true, source: "db", kind, count: items.length, items, series: items, days,
-      start: items[0]?.points?.[0]?.date || null,
-      end: items[0]?.points?.[items[0].points.length - 1]?.date || null });
+    return json({
+      ok: true,
+      source: "db",
+      kind,
+      count: series.length,
+      series,
+      dates,
+      range: rangeParam || undefined,
+      days: hasCustomRange ? null : days,
+      start: dates[0] || null,
+      end: dates[dates.length - 1] || null,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message });
+    return json({ ok: true, source: "stub", count: 0, series: [], dates: [], error: e?.message });
   }
 }
 
