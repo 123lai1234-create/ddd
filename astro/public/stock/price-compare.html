@@ -66,6 +66,11 @@
     .chk:hover{background:var(--panel2);color:var(--txt);}
     .chk input{accent-color:var(--accent);}
     .chk .rt{font-family:monospace;}
+    .tag{display:inline-block;padding:0 5px;border-radius:4px;font-size:10px;
+         font-weight:600;margin-left:4px;line-height:1.5;vertical-align:middle;}
+    .tag-leverage{background:#7c3aed;color:#fff;}
+    .tag-inverse{background:#ef4d56;color:#fff;}
+    .tag-bond{background:#3b82f6;color:#fff;}
     .up{color:var(--red);} .down{color:var(--green);} .flat{color:var(--txt2);}
     .loading{color:var(--txt2);text-align:center;padding:40px 0;}
     .hint{color:var(--txt2);font-size:12px;line-height:1.7;background:var(--panel);
@@ -162,6 +167,20 @@ function fmtPct(v){
 function clsPct(v){
   if(v===null||v===undefined||isNaN(v)) return 'flat';
   return v>0?'up':(v<0?'down':'flat');
+}
+// 從中文名稱 pattern 辨識槓桿/反向/債券類型（無 DB 依賴）
+function typeTag(name){
+  if(!name || typeof name !== 'string') return null;
+  const mLev = /正(\d)/.exec(name);
+  const mInv = /反(\d)/.exec(name);
+  if(mLev) return { tag:'正'+mLev[1], cls:'leverage' };
+  if(mInv) return { tag:'反'+mInv[1], cls:'inverse' };
+  if(/債/.test(name)) return { tag:'債', cls:'bond' };
+  return null;
+}
+function tagHtml(name){
+  const t = typeTag(name);
+  return t ? ` <span class="tag tag-${t.cls}">${t.tag}</span>` : '';
 }
 
 function buildQuery(kind){
@@ -268,7 +287,7 @@ function renderPicker(kind){
     // ★ 修正 BUG-4：後端可能回傳 name=null，避免顯示字串 "null"
     const displayName = (x.name == null || x.name === '' || x.name === 'null') ? '—' : x.name;
     return `<label class="chk"><input type="checkbox" data-code="${x.code}" ${checked}>`
-      + `<span>${x.code} ${displayName}</span>`
+      + `<span>${x.code} ${displayName}${tagHtml(x.name)}</span>`
       + `<span class="rt ${clsPct(x.ret)}">${fmtPct(x.ret)}</span></label>`;
   }).join('');
   $(s.elPick).querySelectorAll('input[type=checkbox]').forEach(cb=>{
@@ -293,7 +312,7 @@ function renderChart(kind){
   if(!s.chart || s.chart.isDisposed()){ el.innerHTML=''; s.chart = echarts.init(el, 'dark'); }
   const picked = s.data.series.filter(x=>s.selected.has(x.code));
   const series = picked.map((x,i)=>({
-    name: x.code+' '+((x.name == null || x.name === '' || x.name === 'null') ? '—' : x.name),
+    name: x.code+' '+((x.name == null || x.name === '' || x.name === 'null') ? '—' : x.name) + (typeTag(x.name) ? ' ['+typeTag(x.name).tag+']' : ''),
     type: 'line',
     showSymbol: false,
     smooth: false,
