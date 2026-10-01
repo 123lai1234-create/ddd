@@ -343,7 +343,8 @@
           body: JSON.stringify({code, password}),
         });
         const d = await r.json();
-        setListMsg(d.msg, d.ok ? 'var(--green)' : 'var(--red)');
+        const msg = d.msg || (d.ok ? '已移除' : (d.error || '移除失敗'));
+        setListMsg(msg, d.ok ? 'var(--green)' : 'var(--red)');
         if (d.ok) loadEtfList();
       } catch (e) { setListMsg('請求失敗：' + e, 'var(--red)'); }
     }
