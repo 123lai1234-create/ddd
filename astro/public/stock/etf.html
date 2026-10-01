@@ -2375,6 +2375,13 @@ function loadStock(code, days) {
   fetch("/api/stock/"+code+"?days="+currentDays)
     .then(function(r){ if(!r.ok) throw new Error("API error "+r.status); return r.json(); })
     .then(function(data){
+      // ★ 防禦：DB 沒 seed 的股票 API 會回 latest=null，這裡要明確告知使用者而非炸 TypeError
+      if (!data.latest) {
+        showToast("⚠️ " + code + " 尚無 K 線資料（DB 未 seed）", "info");
+        document.getElementById("chartTitle").textContent = data.name || code;
+        document.getElementById("chartSub").textContent = code + ".TW · TWSE · 無資料";
+        return;
+      }
       document.getElementById("chartTitle").textContent=data.name;
       document.getElementById("chartSub").textContent=data.code+".TW · TWSE";
       var lt=data.latest, isUp=lt.change>=0;
