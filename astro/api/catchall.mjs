@@ -290,7 +290,12 @@ async function stockKlines(request, ticker) {
     const { rows } = await q(
       `SELECT DISTINCT ON (trade_date) trade_date, open_price, high_price, low_price, close_price, volume, change_value
        FROM market_price_bars
-       WHERE symbol = $1 AND asset_type='stock' AND market='TWSE' AND trade_date IS NOT NULL
+       WHERE symbol = $1
+         AND trade_date IS NOT NULL
+         AND (
+           (asset_type = 'stock' AND market = 'TWSE')
+           OR asset_type = 'etf'
+         )
        ORDER BY trade_date DESC,
          (source_name = 'twse_STOCK_DAY_ALL') DESC,
          fetched_at DESC NULLS LAST
