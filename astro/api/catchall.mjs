@@ -1861,6 +1861,14 @@ async function _runEtfAnalysis() {
         `INSERT INTO etf_analysis_history (ran_at, top_holdings) VALUES (NOW(), $1::jsonb)`,
         [JSON.stringify(common.slice(0, 20))]
       );
+      // Cap history rows (保留最近 30 筆，避免 unbounded growth)
+      await q(
+        `DELETE FROM etf_analysis_history
+         WHERE id NOT IN (
+           SELECT id FROM etf_analysis_history
+           ORDER BY ran_at DESC LIMIT 30
+         )`
+      );
     } catch { /* history write failed — analyze 仍回傳成功結果 */ }
   }
   return result;
@@ -8213,13 +8221,21 @@ async function lineBroadcastHandler(request) {
   }
   const u = urlOf(request);
   const dry = u.searchParams.get("dry") === "1";
+  const onlyBatchParam = u.searchParams.get("onlyBatch");
+  const onlyBatch = onlyBatchParam ? Math.max(1, Math.min(3, parseInt(onlyBatchParam, 10))) : null;
+  // 2026-10-01 v22 fix: Vercel edge runtime (lhr1) fetch 到 api.line.me 會卡
+  //   超過 60s timeout。改走 GitHub Actions 直接打 LINE API（無 edge 限制）。
+  //   本 endpoint 保留為 ad-hoc 測試 / 預覽用，正式排程靠 .github/workflows/
+  //   line-push-daily.yml 直接 broadcast。
   const BATCH = 10; // 26 拆 10+10+6 (LINE carousel 上限 12 bubbles)
   const batches = [];
   for (let i = 0; i < LINE_CARDS.length; i += BATCH) {
     batches.push(LINE_CARDS.slice(i, i + BATCH));
   }
   const results = [];
-  for (const batch of batches) {
+  for (let bi = 0; bi < batches.length; bi++) {
+    const batch = batches[bi];
+    if (onlyBatch !== null && (bi + 1) !== onlyBatch) continue;
     const first = batch[0], last = batch[batch.length - 1];
     const flex = {
       type: "flex",
