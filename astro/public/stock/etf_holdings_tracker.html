@@ -124,9 +124,9 @@
   </div>
 
   <div class="container">
-    <div style="background:rgba(255,145,0,.12);border:1px solid #ff9100;color:#ffb74d;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;line-height:1.7">
+    <div id="emptyWarning" style="background:rgba(255,145,0,.12);border:1px solid #ff9100;color:#ffb74d;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;line-height:1.7">
       <b style="color:#ff9100">⚠ 快照資料為空</b><br>
-      持股變動追蹤需 <code>etf_holdings</code> 歷史快照，目前 <b>0 筆快照</b>。
+      持股變動追蹤需 <code>etf_holdings</code> 歷史快照，目前尚未建立 history。
       因為沒有 bulk source、且 ETF 發行商頁面沒有歷史 archive（只顯示最新一期），
       抓一次快照也只能跟「無」比對，無法看變動。
       <br>下方按鈕「立即抓快照」可單次抓最新一期，但變動比較仍會是空。
@@ -571,12 +571,26 @@
       } catch (e) { /* 忽略 */ }
     })();
 
+    // 動態更新「快照資料為空」警告框：用 /api/etf_holdings/status 的 last_refresh
+    // 判斷全站有沒有任何 etf_snapshot 紀錄。有 last_refresh 表示 history 存在 → 隱藏警告。
+    async function updateEmptyWarning() {
+      try {
+        const r = await fetch('/api/etf_holdings/status');
+        const d = await r.json();
+        const warn = document.getElementById('emptyWarning');
+        if (!warn) return;
+        warn.style.display = d.last_refresh ? 'none' : '';
+      } catch (e) { /* 忽略：警告框保持顯示 */ }
+    }
+
     document.getElementById('etfSelect').addEventListener('change', () => {
       loadAll();
       resetScanUI();
       tryLoadCachedScan();
+      updateEmptyWarning();
     });
     loadAll();
+    updateEmptyWarning();
 
     // ───── 個股新聞 AI 掃描 ─────
     function el(tag, opts = {}, children = []) {
