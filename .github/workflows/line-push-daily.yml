@@ -1,0 +1,60 @@
+name: LINE Daily Digest Broadcast
+
+# 每日 7:30 AM (Asia/Taipei) 推送 26-card Flex carousel 到 LINE 追蹤者。
+#
+# 為何不用 Vercel edge endpoint 直接推：
+#   Vercel edge runtime (lhr1 region) fetch api.line.me 會 hang 超過 60s
+#   （FUNCTION_INVOCATION_TIMEOUT），是 edge runtime 對部分 egress 目的地的
+#   已知限制。改走 GitHub Actions runner 直接打 LINE API（無 edge 限制）。
+#
+# 設定方式：
+#   GitHub repo → Settings → Secrets and variables → Actions：
+#     LINE_CHANNEL_ACCESS_TOKEN = LINE Official Account 的 long-lived channel access token
+#
+# 手動測試：Actions tab → "LINE Daily Digest Broadcast" → Run workflow
+#   → 選 dry-run=1 看 JSON 不推 / dry-run=0 真的 broadcast
+
+on:
+  schedule:
+    # 30 23 UTC = 07:30 Asia/Taipei（避開 MOPS 09:00 排程衝突）
+    - cron: '30 23 * * *'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'dry-run=1 只 build JSON 不推播；dry-run=0 才真的 broadcast'
+        required: true
+        default: '1'
+        type: choice
+        options:
+          - '1'
+          - '0'
+
+permissions:
+  contents: read
+
+jobs:
+  broadcast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Broadcast daily LINE digest
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$LINE_CHANNEL_ACCESS_TOKEN" ]; then
+            echo "::error::LINE_CHANNEL_ACCESS_TOKEN secret not set"
+            exit 1
+          fi
+          args=""
+          if [ "${{ inputs.dry-run || '1' }}" = "1" ]; then
+            args="--dry-run"
+          fi
+          python scripts/line_broadcast.py $args

@@ -244,7 +244,7 @@ async function addStock(request) {
   const body = await readJson(request);
   if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const code = pickStr(body?.code).trim();
-  if (!/^\d{4,6}$/.test(code)) return json({ error: "缺少或無效的代號" }, { status: 400 });
+  if (!/^[A-Za-z0-9]{4,7}$/.test(code)) return json({ error: "缺少或無效的代號" }, { status: 400 });
   const name = pickStr(body?.name).trim() || code;
   const ticker = `${code}.TW`;
   try {
@@ -275,7 +275,7 @@ async function removeStock(request, code) {
 }
 
 async function stockKlines(request, ticker) {
-  if (!/^\d{4,6}$/.test(ticker)) return json({ error: "invalid ticker" }, { status: 400 });
+  if (!/^[A-Za-z0-9]{4,7}$/.test(ticker)) return json({ error: "invalid ticker" }, { status: 400 });
   const u = urlOf(request);
   const days = Math.min(500, Math.max(60, parseInt(u.searchParams.get("days") || "200", 10) || 200));
   const strategy = u.searchParams.get("strategy") || "original";
@@ -727,7 +727,7 @@ async function indexKlines(request, ticker) {
 
 // GET /api/stock/<code>/etf_membership — list ETFs that hold this stock
 async function stockEtfMembership(request, code) {
-  if (!/^\d{4,6}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
+  if (!/^[A-Za-z0-9]{4,7}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
   try {
     const { rows } = await q(
       `SELECT etf_code, weight_pct, as_of_date::text
@@ -745,7 +745,7 @@ async function stockEtfMembership(request, code) {
 
 // GET /api/stock/<code>/events?days=120 — markers/signals for this stock
 async function stockEvents(request, code) {
-  if (!/^\d{4,6}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
+  if (!/^[A-Za-z0-9]{4,7}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
   const u = urlOf(request);
   const days = Math.min(365, Math.max(1, parseInt(u.searchParams.get("days") || "120", 10) || 120));
   try {
@@ -765,7 +765,7 @@ async function stockEvents(request, code) {
 
 // GET /api/stock/<code>/intro — basic stock metadata (sector, display_name, etc)
 async function stockIntro(request, code) {
-  if (!/^\d{4,6}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
+  if (!/^[A-Za-z0-9]{4,7}$/.test(code)) return json({ ok: false, error: "invalid code" }, { status: 400 });
   try {
     const { rows } = await q(
       `SELECT id, symbol, display_name, market, exchange_name, reference_url, metadata_text, fetched_at
@@ -1058,7 +1058,7 @@ async function newsMarket(request)   { return newsListImpl(request, { recordType
 // uses data.news + data.combined + renderNewsBox(...). FALLBACK: search
 // knowledge_library by query_term (no per-stock news table yet).
 async function newsByCode(request, code) {
-  if (!code || !/^\d{4,6}$/.test(code)) {
+  if (!code || !/^[A-Za-z0-9]{4,7}$/.test(code)) {
     return json({ ok: false, error: "invalid code", news: [], combined: [] }, { status: 400 });
   }
   const u = urlOf(request);
@@ -1185,7 +1185,7 @@ async function markersRecordImpl(request) {
   if (request.method !== "POST") return json({ error: "method not allowed" }, { status: 405 });
   const body = await readJson(request);
   const code = pickStr(body?.code).trim();
-  if (!/^\d{4,6}$/.test(code)) return json({ error: "invalid code" }, { status: 400 });
+  if (!/^[A-Za-z0-9]{4,7}$/.test(code)) return json({ error: "invalid code" }, { status: 400 });
 
   // 兩種寫入模式:
   //   A) 管理員手動:body 帶 password + 單筆 (date/type/text/price)    → 需要密碼
@@ -1375,7 +1375,7 @@ async function markersExport(request) {
 }
 
 async function strategySignals(request, code) {
-  if (code && /^\d{4,6}$/.test(code)) {
+  if (code && /^[A-Za-z0-9]{4,7}$/.test(code)) {
     const r = await screenOne(code, null);
     return json({ ok: true, source: r ? "db" : "stub", code, signals: r ? [r] : [] });
   }
@@ -1489,7 +1489,7 @@ async function marketGaps(request) {
 }
 
 async function fibonacciFor(request, code) {
-  if (!/^\d{4,6}$/.test(code)) return json({ error: "invalid code" }, { status: 400 });
+  if (!/^[A-Za-z0-9]{4,7}$/.test(code)) return json({ error: "invalid code" }, { status: 400 });
   const u = urlOf(request);
   const window = Math.min(500, Math.max(20, parseInt(u.searchParams.get("window") || "60", 10) || 60));
   try {
@@ -1563,7 +1563,7 @@ async function etfListAdd(request) {
   if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
   const code = pickStr(body?.code).trim();
   const name = pickStr(body?.name).trim() || code;
-  if (!/^\d{4,6}$/.test(code)) return json({ error: "缺少或無效的代號" }, { status: 400 });
+  if (!/^[A-Za-z0-9]{4,7}$/.test(code)) return json({ error: "缺少或無效的代號" }, { status: 400 });
   const ticker = `${code}.TW`;
   try {
     await q(
@@ -2961,7 +2961,7 @@ async function conferenceSentimentStats(request) {
 // table; FALLBACK: search knowledge_library by query_term and synthesize a
 // minimal shape. If 0 rows, frontend hides the panel (already coded).
 async function conferenceByCode(request, code) {
-  if (!code || !/^\d{4,6}$/.test(code)) {
+  if (!code || !/^[A-Za-z0-9]{4,7}$/.test(code)) {
     return json({ ok: true, data: [], conferences: [], code, source: "stub", error: "invalid code" });
   }
   const u = urlOf(request);
@@ -3805,13 +3805,13 @@ async function priceCompare(request) {
   // Normalize: stocks→stock, etfs→etf
   const kind = kindRaw === "etf" || kindRaw === "etfs" ? "etf" : "stock";
   const codesParam = pickStr(u.searchParams.get("codes") || "");
-  let codes = codesParam ? codesParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  let codes = codesParam ? codesParam.split(",").map((c) => c.trim()).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c)) : [];
   // FALLBACK: no ?codes= → use watchlist (etf_watchlist for kind=etf) so the page
   // shows something on first load instead of an error.
   if (!codes.length) {
     if (kind === "etf") {
       const etfs = await getEtfList();
-      codes = etfs.map((e) => e.code).filter((c) => /^\d{4,6}$/.test(c));
+      codes = etfs.map((e) => e.code).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c));
     } else {
       const watch = await getWatchMap();
       codes = Array.from(watch.keys());
@@ -4143,7 +4143,7 @@ async function stockNewsScanStub(request) {
 async function etfPivotOverlap(request) {
   const u = urlOf(request);
   const etfsParam = pickStr(u.searchParams.get("etfs") || "");
-  const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c)) : [];
   try {
     let sql = `SELECT etf_code, symbol, weight_pct, as_of_date
                FROM etf_holdings`;
@@ -4237,7 +4237,7 @@ async function etfPivotConsensus(request) {
 async function etfPivotWeightMatrix(request) {
   const u = urlOf(request);
   const etfsParam = pickStr(u.searchParams.get("etfs") || "");
-  const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c)) : [];
   try {
     let sql = `SELECT etf_code, symbol, weight_pct
                FROM etf_holdings`;
@@ -4277,7 +4277,7 @@ async function etfPivotTurnover(request) {
   const u = urlOf(request);
   const etfsParam = pickStr(u.searchParams.get("etfs") || "");
   const lookback = Math.min(180, Math.max(7, parseInt(u.searchParams.get("lookback") || "30", 10) || 30));
-  const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c)) : [];
   try {
     let sql = `WITH snaps AS (
        SELECT etf_code, as_of_date, symbol, weight_pct
@@ -4413,7 +4413,7 @@ async function etfStockScan(request, code) {
       `SELECT DISTINCT symbol FROM etf_holdings WHERE etf_code = $1 LIMIT 50`,
       [code]
     );
-    const codes = rows.map((r) => r.symbol).filter((s) => /^\d{4,6}$/.test(s));
+    const codes = rows.map((r) => r.symbol).filter((s) => /^[A-Za-z0-9]{4,7}$/.test(s));
     if (!codes.length) return json({ ok: true, source: "db", code, count: 0, items: [], message: "ETF has no holdings recorded" });
     const results = (await Promise.all(codes.map(async (c) => screenOne(c, null)))).filter(Boolean);
     return json({ ok: true, source: "db", code, count: results.length, items: results });
@@ -4593,7 +4593,7 @@ async function loadInstitutionalForDate(dateYmd) {
   const dealerBuy = [], dealerSell = [], dealerNet = [];
   for (const r of data.data) {
     const sym = String(r[0] || "").trim();
-    if (!/^\d{4,6}$/.test(sym)) continue; // 只收純股票代號
+    if (!/^[A-Za-z0-9]{4,7}$/.test(sym)) continue; // 只收純股票代號
     symbols.push(sym);
     foreignBuy.push(numFromStr(r[2]) + numFromStr(r[5]));   // 外陸資 + 外資自營
     foreignSell.push(numFromStr(r[3]) + numFromStr(r[6]));
@@ -5275,7 +5275,7 @@ async function loadFinancialReportsFinMind(request) {
 async function loadIssuedSharesFinMind(request) {
   const u = urlOf(request);
   const codesParam = pickStr(u.searchParams.get("codes") || "");
-  let codes = codesParam ? codesParam.split(",").map((c) => c.trim()).filter((c) => /^\d{4,6}$/.test(c)) : [];
+  let codes = codesParam ? codesParam.split(",").map((c) => c.trim()).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c)) : [];
   if (!codes.length) {
     const wl = await q(`SELECT code FROM watchlist ORDER BY sort_order LIMIT 200`);
     codes = wl.rows.map((r) => r.code);
@@ -5344,7 +5344,7 @@ async function loadExdivForDate(dateYmd) {
   const symbols = [], ex_dates = [], cash = [], stock = [], types = [];
   for (const r of data.data) {
     const sym = String(r[1] || "").trim();
-    if (!/^\d{4,6}$/.test(sym)) continue;
+    if (!/^[A-Za-z0-9]{4,7}$/.test(sym)) continue;
     const ex_date = rocToIsoDate(String(r[0] || ""));
     if (!ex_date) continue;
     const kind = String(r[6] || ""); // 息 / 權 / 權息
@@ -5913,7 +5913,7 @@ async function loadMarketPricesBackfill(request) {
     // 1) target stocks: watchlist (skip those that already have 60+ days)
     const wlRes = await q(`SELECT code FROM watchlist ORDER BY code`);
     const wlRows = wlRes.rows || wlRes;
-    let targets = wlRows.map((r) => String(r.code ?? r[0])).filter((c) => /^\d{4,6}$/.test(c));
+    let targets = wlRows.map((r) => String(r.code ?? r[0])).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c));
     if (onlyCode) targets = targets.filter((c) => c === onlyCode);
     if (targets.length === 0) {
       return json({ ok: true, source: "stub", count: 0, message: "no watchlist stocks to backfill" });
@@ -6181,7 +6181,7 @@ async function loadRevenueForMonth(yearRoc, month, typek = "sii") {
     const parts = line.slice(1, -1).split('","');
     if (parts.length < 13) continue;
     const sym = (parts[2] || "").trim();
-    if (!/^\d{4,6}$/.test(sym)) continue;
+    if (!/^[A-Za-z0-9]{4,7}$/.test(sym)) continue;
     const key = `${sym}-${year}-${month}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -6883,7 +6883,7 @@ async function loadMopsPrivate(request) {
       const code = _textOnly(cells[0]);
       const name = _textOnly(cells[1]);
       const kind = _textOnly(cells[2]);
-      if (!code || !/^\d{4,6}$/.test(code)) continue;
+      if (!code || !/^[A-Za-z0-9]{4,7}$/.test(code)) continue;
       let decideDate = null;
       const inpRe = /name=['"]([^'"]+)['"][^>]*value=['"]([^'"]*)['"]/g;
       let im;
@@ -7117,7 +7117,7 @@ async function mopsCronHandler(request) {
         const code = _textOnly(cells[0]);
         const name = _textOnly(cells[1]);
         const kind = _textOnly(cells[2]);
-        if (!code || !/^\d{4,6}$/.test(code)) continue;
+        if (!code || !/^[A-Za-z0-9]{4,7}$/.test(code)) continue;
         let decideDate = null;
         const inpRe = /name=['"]([^'"]+)['"][^>]*value=['"]([^'"]*)['"]/g;
         let im;
@@ -7370,7 +7370,7 @@ async function loadMopsFromHtml(request) {
         const code = _textOnly(cells[0]);
         const name = _textOnly(cells[1]);
         const kind = _textOnly(cells[2]);
-        if (!code || !/^\d{4,6}$/.test(code)) continue;
+        if (!code || !/^[A-Za-z0-9]{4,7}$/.test(code)) continue;
         let decideDate = null;
         const inpRe = /name=['"]([^'"]+)['"][^>]*value=['"]([^'"]*)['"]/g;
         let im;
