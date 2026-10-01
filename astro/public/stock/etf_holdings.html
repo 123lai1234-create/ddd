@@ -381,14 +381,15 @@
     function renderResult(result) {
       document.getElementById('resultSection').style.display = 'block';
       const dataDate = result.prev_compared_at;
-      // 注意：prev_compared_at 是 DB 裡 holdings 的最新 as_of_date，不是上次分析時間。
-      //   排名變動功能尚未啟用（沒歷史 compare snapshot），所以這行只是告訴使用者資料新舊。
-      const compareNote = dataDate
+      // prev_compared_at 是 DB holdings 的最新 as_of_date
+      // has_prev_snapshot: 上次是否有存 analyze 結果（決定排名變動欄位能不能算）
+      const compareNote = result.has_prev_snapshot
         ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px">
-             資料日期：<b style="color:var(--cyan)">${dataDate}</b>（DB holdings 最新 as_of_date；排名變動功能尚未啟用）
+             資料日期：<b style="color:var(--cyan)">${dataDate || '—'}</b>　·　排名變動：與上次 analyze 比較 ▲ 上升 / ▼ 下降 / NEW 新進榜
            </div>`
         : `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px">
-             無 holdings 資料
+             首次 analyze，無上次紀錄可比對。資料日期：<b style="color:var(--cyan)">${dataDate || '—'}</b>。
+             下次按「重新分析」即可看到排名變動。
            </div>`;
       // failed_etf 可能是 number (目前 API 行為) 或 string[] (舊/未來格式)
       const failedCount = Array.isArray(result.failed_etf)

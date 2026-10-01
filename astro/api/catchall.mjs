@@ -1701,7 +1701,55 @@ async function etfAnalyze(request) {
 }
 
 // Inline ETF analysis: top holdings per ETF + cross-ETF common
+// ── etf_analysis_history: 每次 analyze 存一筆 top_holdings snapshot，供下次 rank diff 用 ──
+let _etfHistoryTableReady = false;
+async function ensureEtfHistoryTable() {
+  if (_etfHistoryTableReady) return;
+  try {
+    await q(`CREATE TABLE IF NOT EXISTS etf_analysis_history (
+      id           BIGSERIAL PRIMARY KEY,
+      ran_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      top_holdings JSONB       NOT NULL
+    )`);
+    await q(`CREATE INDEX IF NOT EXISTS etf_analysis_history_ran_at_idx
+      ON etf_analysis_history (ran_at DESC)`);
+    _etfHistoryTableReady = true;
+  } catch (e) { /* table may not be creatable — fail soft, history simply empty */ }
+}
+
+// 取最近一次 (排除 currentRunId) 的 snapshot top_holdings 對照用
+async function loadPrevTopHoldings() {
+  try {
+    const { rows } = await q(
+      `SELECT top_holdings FROM etf_analysis_history
+       ORDER BY ran_at DESC LIMIT 1`
+    );
+    if (!rows || !rows.length) return null;
+    const arr = rows[0].top_holdings;
+    // PG JSONB 欄位回傳是已經 parsed 的 object/array（如果 driver 是 pg / pg-native）
+    //   為穩妥起見再 JSON.parse 一次（已是 object 時拋 → 走 catch）
+    let list = arr;
+    if (typeof arr === "string") {
+      try { list = JSON.parse(arr); } catch { return null; }
+    }
+    return Array.isArray(list) ? list : null;
+  } catch { return null; }
+}
+
 async function _runEtfAnalysis() {
+  await ensureEtfHistoryTable();
+  const prevSnapshot = await loadPrevTopHoldings();
+  // prevSnapshot: array of {stock_code, etf_count} 對照表
+  const prevRankMap = new Map();
+  const prevEtfCountMap = new Map();
+  if (prevSnapshot && Array.isArray(prevSnapshot)) {
+    prevSnapshot.forEach((h, i) => {
+      if (h && h.stock_code != null) {
+        prevRankMap.set(String(h.stock_code), i + 1);
+        prevEtfCountMap.set(String(h.stock_code), Number(h.etf_count) || 0);
+      }
+    });
+  }
   const { rows: etfs } = await q(`SELECT code, name FROM etf_watchlist ORDER BY code`);
   const byEtf = new Map();
   let prev_compared_at = null;
@@ -1756,21 +1804,66 @@ async function _runEtfAnalysis() {
       const avg = appearances.reduce((s, a) => s + (a.weight || 0), 0) / appearances.length;
       const max = Math.max(...appearances.map(a => a.weight || 0));
       const stockName = nameMap.get(sym) || sym;
-      common.push({ stock_code: sym, stock_name: stockName, etf_count: appearances.length, avg_weight: +avg.toFixed(2), max_weight: +max.toFixed(2), etf_list: appearances.map(a => a.code) });
+      const item = {
+        stock_code: sym,
+        stock_name: stockName,
+        etf_count: appearances.length,
+        avg_weight: +avg.toFixed(2),
+        max_weight: +max.toFixed(2),
+        etf_list: appearances.map(a => a.code),
+      };
+      // 排名變動欄位（與上次 snapshot 對照）
+      const prevRank = prevRankMap.get(sym);
+      if (prevRank == null) {
+        // 之前沒在榜 → 新進榜
+        item.change_status = "new";
+        item.rank_change = null;
+        item.prev_rank = null;
+      } else {
+        // 排名還沒確定（common 還沒 sort），先放 null，下面 sort + index 之後再算
+        item._prev_rank = prevRank;
+      }
+      const prevEtfCnt = prevEtfCountMap.get(sym);
+      if (prevEtfCnt != null) item.etf_count_change = appearances.length - prevEtfCnt;
+      item.prev_etf_count = prevEtfCnt ?? null;
+      common.push(item);
     }
   }
   common.sort((a, b) => b.avg_weight - a.avg_weight);
+  // 排序後補上 rank_change / prev_rank / rank
+  common.forEach((item, i) => {
+    item.rank = i + 1;
+    if (item.change_status === "new") return;  // 已是 "new"
+    const prevRank = item._prev_rank;
+    if (prevRank == null) return;
+    item.prev_rank = prevRank;
+    const curRank = i + 1;
+    const delta = prevRank - curRank;  // >0: 上升（從 prevRank 名次爬到 curRank）
+    item.rank_change = delta;
+    delete item._prev_rank;
+  });
   // Per-ETF stats
   let success = 0, failed = 0;
   for (const list of byEtf.values()) if (list.length > 0) success++; else failed++;
-  return {
+  const result = {
     total_etf: byEtf.size,
     success_etf: success,
     failed_etf: failed,
     top_holdings: common.slice(0, 20),
     source_stats: { "manual_seed": success },
     prev_compared_at,
+    has_prev_snapshot: !!prevSnapshot,
   };
+  // 存 current snapshot 到 history（只存有效資料的，非 empty）
+  if (common.length > 0) {
+    try {
+      await q(
+        `INSERT INTO etf_analysis_history (ran_at, top_holdings) VALUES (NOW(), $1::jsonb)`,
+        [JSON.stringify(common.slice(0, 20))]
+      );
+    } catch { /* history write failed — analyze 仍回傳成功結果 */ }
+  }
+  return result;
 }
 
 async function etfClearCache(request) {
@@ -4015,6 +4108,19 @@ async function stockNewsScanQuota(request) {
   } catch (e) {
     return json({ ok: true, source: "stub", used: 0, quota: 1000, remaining: 1000, left: 1000, cap: 1000, error: e?.message });
   }
+}
+
+// 2026-10-01：POST /api/stock_news_scan stub — AI 情緒掃描尚未實作，
+//   給 client 明確訊息（不要 silent 404）。
+async function stockNewsScanStub(request) {
+  let body = {};
+  try { body = await readJson(request); } catch { /* ignore */ }
+  const inputs = Array.isArray(body?.inputs) ? body.inputs : [];
+  return json({
+    ok: false,
+    msg: `AI 情緒掃描尚未實作（收到 ${inputs.length} 檔 inputs；目前 stock_news_scan endpoint 只支援 GET 撈取新聞列表）`,
+    hint: "改用 /api/etf_holdings/stock_scan/<code> 跑 holdings screener（也尚未實作真正的 AI）",
+  }, { status: 501 });  // 501 Not Implemented
 }
 
 // ── etf_pivot/* real handlers ────────────────────────────────────────
@@ -8063,7 +8169,7 @@ function makeLineBubble(card) {
       spacing: "sm",
       paddingAll: "14px",
       contents: [
-        { type: "text", text: card.emoji, size: "40px", align: "center" },
+        { type: "text", text: card.emoji, size: "5xl", align: "center" },
         { type: "text", text: card.title, size: "lg", weight: "bold", align: "center", wrap: true },
         { type: "text",
           text: "網站頁面需要登入；LINE 僅回傳公開摘要。",
@@ -8387,6 +8493,9 @@ const TABLE = [
   ["GET",  /^\/ai_capex\/?$/,                aiCapex],
   ["GET",  /^\/sold_too_early\/?$/,          soldTooEarly],
   ["GET",  /^\/stock_news_scan\/?$/,         stockNewsScan],
+  // 2026-10-01 修：etf_holdings_tracker.html startAdhocScan() POST 過來會 404，
+  //   改成誠實回「尚未實作」訊息（client 已有保護：顯示 alert-warn）。
+  ["POST", /^\/stock_news_scan\/?$/,         stockNewsScanStub],
   ["GET",  /^\/stock_news_scan\/quota\/?$/,  stockNewsScanQuota],
 
   // Configuration endpoints (no DB table — return helpful shape with hint)
