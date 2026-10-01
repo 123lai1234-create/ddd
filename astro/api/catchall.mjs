@@ -3987,6 +3987,14 @@ async function heatmap(request) {
         change_pct: chg(1),
       });
     }
+    // 2026-10-01 修：過濾掉沒有真實收盤的（close=0、chg_1d=null），
+    //   否則 treemap 會顯示「0056」「00878」這些沒資料的鬼影，
+    //   且 name 會 fallback 為 code（誤導使用者以為是股票，其實是 ETF 但 schema 標錯）。
+    const validStocks = stocks.filter(s => s.close > 0 && s.chg_1d != null);
+    const filtered = stocks.length - validStocks.length;
+    if (filtered > 0) console.warn(`[heatmap] filtered ${filtered} ghost stocks (close=0 or no chg_1d)`);
+    stocks.length = 0;
+    stocks.push(...validStocks);
     // 3) industry aggregate
     const byInd = new Map();
     for (const s of stocks) {
