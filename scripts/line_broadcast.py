@@ -10,15 +10,18 @@ Usage:
     LINE_CHANNEL_ACCESS_TOKEN=<token> python scripts/line_broadcast.py [--dry-run]
 """
 import argparse
+import http.client
 import json
 import os
 import sys
-import urllib.error
-import urllib.request
 
 # 與 astro/api/catchall.mjs 的 LINE_CARDS 同步 — 改任一邊要記得改另一邊
 SITE_BASE = "https://donttalk.vercel.app"
-LINE_BROADCAST_URL = "https://api.line.me/v2/bot/message/broadcast"
+# 用 http.client 而非 urllib.request：urllib 在 Python 3.11.16 + 含 CJK 的 JSON body
+# 對 api.line.me POST 會在 putheader() raise UnicodeEncodeError (latin-1 can't encode CJK)。
+# http.client 直接走 socket，繞過 urllib 內部那條編碼路徑。
+LINE_BROADCAST_HOST = "api.line.me"
+LINE_BROADCAST_PATH = "/v2/bot/message/broadcast"
 
 CARDS = [
     # 基本面與消息面 (1-8)
@@ -89,17 +92,18 @@ def make_bubble(card):
 
 def post_broadcast(token, flex_payload):
     body = json.dumps({"messages": [flex_payload]}, ensure_ascii=False).encode("utf-8")
-    req = urllib.request.Request(
-        LINE_BROADCAST_URL, data=body, method="POST",
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    )
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Content-Length": str(len(body)),
+    }
+    conn = http.client.HTTPSConnection(LINE_BROADCAST_HOST, timeout=20)
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            return resp.status, resp.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as e:
-        return e.code, e.read().decode("utf-8", errors="replace")
-    except urllib.error.URLError as e:
-        return 0, f"URLError: {e.reason}"
+        conn.request("POST", LINE_BROADCAST_PATH, body=body, headers=headers)
+        resp = conn.getresponse()
+        return resp.status, resp.read().decode("utf-8", errors="replace")
+    finally:
+        conn.close()
 
 
 def main():
