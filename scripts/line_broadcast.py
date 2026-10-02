@@ -91,20 +91,16 @@ def make_bubble(card):
 
 
 def post_broadcast(token, flex_payload):
+    # 容錯：GitHub secret 可能被不小心貼上後面中文註解（會污染 Authorization header 變 CJK）。
+    # HTTP header 規範只允許 ISO-8859-1，CJK 會讓 Python http.client putheader raise UnicodeEncodeError。
+    # 取第一行當真 token，剩下的丟掉。
+    clean_token = token.split("\n", 1)[0].strip()
     body = json.dumps({"messages": [flex_payload]}, ensure_ascii=False).encode("utf-8")
     headers = {
-        "Authorization": f"Bearer {token}",
+        "Authorization": f"Bearer {clean_token}",
         "Content-Type": "application/json",
         "Content-Length": str(len(body)),
     }
-    # DEBUG: dump header values to find the unicode culprit
-    for k, v in headers.items():
-        try:
-            v.encode("latin-1")
-        except UnicodeEncodeError as e:
-            print(f"BAD HEADER [{k!r}] char at pos {e.start}: {v[max(0,e.start-10):e.start+10]!r}", file=sys.stderr)
-            print(f"FULL VALUE ({len(v)} chars): {v!r}", file=sys.stderr)
-            raise
     conn = http.client.HTTPSConnection(LINE_BROADCAST_HOST, timeout=20)
     try:
         conn.request("POST", LINE_BROADCAST_PATH, body=body, headers=headers)
