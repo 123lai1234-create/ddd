@@ -97,6 +97,14 @@ def post_broadcast(token, flex_payload):
         "Content-Type": "application/json",
         "Content-Length": str(len(body)),
     }
+    # DEBUG: dump header values to find the unicode culprit
+    for k, v in headers.items():
+        try:
+            v.encode("latin-1")
+        except UnicodeEncodeError as e:
+            print(f"BAD HEADER [{k!r}] char at pos {e.start}: {v[max(0,e.start-10):e.start+10]!r}", file=sys.stderr)
+            print(f"FULL VALUE ({len(v)} chars): {v!r}", file=sys.stderr)
+            raise
     conn = http.client.HTTPSConnection(LINE_BROADCAST_HOST, timeout=20)
     try:
         conn.request("POST", LINE_BROADCAST_PATH, body=body, headers=headers)
