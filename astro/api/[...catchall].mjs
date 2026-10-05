@@ -167,7 +167,32 @@ async function getEtfList() {
   } catch { return []; }
 }
 
+// 2026-10-05：scanAll 每檔都打 Neon HTTP → cold start 1800+ 個 query 必 timeout。
+// 5 分鐘 in-memory candle cache：跨 scanAll / signal_filter / warming_zone_scan / stock_damo_filter
+// 共用，第二輪起的 stocks 直接命中 map，零 DB hit。
+const _CANDLE_CACHE_TTL_MS = 5 * 60 * 1000;
+const _candleCache = new Map(); // code -> { ts, rows: [...] }
+function _cacheGet(code) {
+  const hit = _candleCache.get(code);
+  if (!hit) return null;
+  if (Date.now() - hit.ts > _CANDLE_CACHE_TTL_MS) {
+    _candleCache.delete(code);
+    return null;
+  }
+  return hit.rows;
+}
+function _cacheSet(code, rows) {
+  _candleCache.set(code, { ts: Date.now(), rows });
+  // 防無界增長：> 4096 entries 清掉最早的
+  if (_candleCache.size > 4096) {
+    const firstKey = _candleCache.keys().next().value;
+    _candleCache.delete(firstKey);
+  }
+}
+
 async function getCandles(code, limit = 200) {
+  const cached = _cacheGet(code);
+  if (cached) return cached.slice(0, limit);
   const { rows } = await q(
     `SELECT DISTINCT ON (trade_date) trade_date, open_price AS open, high_price AS high,
             low_price AS low, close_price AS close, volume
@@ -179,7 +204,7 @@ async function getCandles(code, limit = 200) {
      LIMIT $2`,
     [code, limit]
   );
-  return rows.slice().reverse().map((r) => ({
+  const result = rows.slice().reverse().map((r) => ({
     date: toTwseStyleDate(String(r.trade_date).slice(0, 10)),
     close: Number(r.close),
     high: Number(r.high),
@@ -187,6 +212,8 @@ async function getCandles(code, limit = 200) {
     open: Number(r.open),
     volume: Number(r.volume) || 0,
   }));
+  _cacheSet(code, result);
+  return result;
 }
 async function getEtfCandles(code, limit = 200) {
   const { rows } = await q(
@@ -888,12 +915,15 @@ async function stockIntro(request, code) {
 //   2) getCandlesWithRetry 對 AbortError retry 一次（cold-start 第 1 秒放空）
 //   3) _scanCache 5 分鐘 in-memory TTL，熱門 endpoint（signal_filter / warming_zone_scan）
 //      被多瀏覽器或重整打時不重複打 Neon
-async function runWithConcurrency(items, limit, fn) {
+async function runWithConcurrency(items, limit, fn, timeBudgetMs) {
   if (!items || items.length === 0) return [];
   const out = new Array(items.length);
   let i = 0;
+  let stopped = false;
+  const deadline = timeBudgetMs ? (Date.now() + timeBudgetMs) : 0;
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
     while (true) {
+      if (stopped) break;
       const idx = i++;
       if (idx >= items.length) break;
       try {
@@ -902,6 +932,7 @@ async function runWithConcurrency(items, limit, fn) {
         // 容錯：單檔失敗不拖累整批
         out[idx] = { __err: String(e?.message || e) };
       }
+      if (deadline && Date.now() > deadline) { stopped = true; break; }
     }
   });
   await Promise.all(workers);
@@ -984,12 +1015,16 @@ async function screenOne(code, name) {
 async function scanAllImpl() {
   const watch = await getWatchMap();
   const codes = Array.from(watch.keys());
-  // 8 並行是 Neon serverless HTTP endpoint 的甜蜜點（不超過 connection pool）
-  // 容錯已在 runWithConcurrency 內，單檔失敗回傳 null，不影響整批
+  // Render free plan HTTP timeout = 30s。我們限 18s 內能掃多少算多少，
+  // 沒掃到的留 null（filter 掉），但 _scanCache 內 retry (剩餘時間) 不會被殺死整批。
+  // 第二輪起的 candle 已經在 _candleCache 內 → 整體時間大幅下降。
+  // 8 並行是 Neon serverless HTTP endpoint 的甜蜜點（不超過 connection pool）。
+  // 容錯已在 runWithConcurrency 內，單檔失敗回傳 null，不影響整批。
   const results = (await runWithConcurrency(
     codes.map((c) => [c, watch.get(c)?.name ?? c]),
     8,
-    async ([code, name]) => screenOne(code, name)
+    async ([code, name]) => screenOne(code, name),
+    18000 // 18s time budget（Render 30s timeout 留 12s buffer 給 JSON encode + 傳輸）
   )).filter(Boolean);
   return results;
 }
@@ -1004,42 +1039,58 @@ async function scanAll(request) {
 }
 
 async function warmingZoneScan(request) {
-  const data = await withScanCache("warming_zone_scan", async () => {
-    const results = await scanAllImpl();
-    const items = results
-    .filter((r) => r.cond1 && r.cond2 && r.cond3)
-    .map((r) => ({ ...r, category: r.score >= 4 ? "強勢" : "轉強" }));
-    return {
-      ok: true, source: "db", count: items.length,
-      items,
-      results: items,    // alias for warming.html (frontend uses res.results)
-      updated_at: Date.now(),
-    };
-  });
+  let data;
+  try {
+    data = await withScanCache("warming_zone_scan", async () => {
+      const results = await scanAllImpl();
+      const items = results
+      .filter((r) => r.cond1 && r.cond2 && r.cond3)
+      .map((r) => ({ ...r, category: r.score >= 4 ? "強勢" : "轉強" }));
+      return {
+        ok: true, source: "db", count: items.length,
+        items,
+        results: items,    // alias for warming.html (frontend uses res.results)
+        updated_at: Date.now(),
+      };
+    });
+  } catch (e) {
+    // 全 Neon 掛了或 time budget 超過：回 stub 不讓 user 看到 500
+    return json({ ok: true, source: "stub", count: 0, items: [], results: [], updated_at: Date.now(), error: String(e?.message || e) });
+  }
   return json(data);
 }
 
 async function warmingZoneScanStatus(request) {
-  const data = await withScanCache("warming_zone_scan", async () => {
-    const results = await scanAllImpl();
-    const items = results.filter((r) => r.score >= 3);
-    return {
-      ok: true, enabled: true, source: "db",
-      count: items.length, last_run: Date.now(),
-      items,
-      results: items,    // alias for warming.html
-      updated_at: Date.now(),
-    };
-  });
+  let data;
+  try {
+    data = await withScanCache("warming_zone_scan", async () => {
+      const results = await scanAllImpl();
+      const items = results.filter((r) => r.score >= 3);
+      return {
+        ok: true, enabled: true, source: "db",
+        count: items.length, last_run: Date.now(),
+        items,
+        results: items,    // alias for warming.html
+        updated_at: Date.now(),
+      };
+    });
+  } catch (e) {
+    return json({ ok: true, enabled: true, source: "stub", count: 0, items: [], results: [], last_run: Date.now(), error: String(e?.message || e) });
+  }
   return json(data);
 }
 
 async function signalFilter(request) {
-  const data = await withScanCache("signal_filter", async () => {
-    const results = await scanAllImpl();
-    const items = results.filter((r) => r.score >= 4);
-    return { ok: true, source: "db", count: items.length, items, generated_at: Date.now() };
-  });
+  let data;
+  try {
+    data = await withScanCache("signal_filter", async () => {
+      const results = await scanAllImpl();
+      const items = results.filter((r) => r.score >= 4);
+      return { ok: true, source: "db", count: items.length, items, generated_at: Date.now() };
+    });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], generated_at: Date.now(), error: String(e?.message || e) });
+  }
   return json(data);
 }
 async function signalFilterStatus(request) { return signalFilter(request); }
