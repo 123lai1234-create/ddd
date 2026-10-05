@@ -8362,8 +8362,9 @@ export default async function handler(request) {
   }
 }
 
-// 2026-10-02 v23: runtime switched to @vercel/node@20.0.0 via vercel.json
+// 2026-10-02 v23: runtime switched to @vercel/node@17.0.0 via vercel.json
 // functions block (removes `runtime: "edge"` to avoid Edge sandbox's disallowed
-// @vercel/og/react module references stuck in build cache).
+// @vercel/og/react module references stuck in build cache). 17.0.0 has
+// peer @vercel/build-utils@14.14.0 matching Vercel's installed build-utils.
 export const config = { maxDuration: 60 };
 
