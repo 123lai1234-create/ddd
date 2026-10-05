@@ -62,7 +62,7 @@
   ],
   "functions": {
     "api/catchall.mjs": {
-      "runtime": "edge@1.0.0",
+      "runtime": "@vercel/edge@1.3.3",
       "maxDuration": 60
     }
   },
