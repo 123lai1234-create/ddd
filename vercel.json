@@ -60,6 +60,12 @@
       "destination": "/api/healthz"
     }
   ],
+  "functions": {
+    "api/catchall.mjs": {
+      "runtime": "edge",
+      "maxDuration": 60
+    }
+  },
   "redirects": [
     {
       "source": "/stock",
