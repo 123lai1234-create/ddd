@@ -43,8 +43,11 @@
 //   cron 給 MOPS, 故改走 GitHub Actions 排程. Auth: header `X-Cron-Secret`.
 //   Env: LINE_CHANNEL_ACCESS_TOKEN, CRON_SECRET)
 
-import { ImageResponse } from '@vercel/og';
-import { createElement as h, Fragment } from 'react';
+// ImageResponse (@vercel/og) + react imports retired 2026-10: Vercel Edge Function
+// sandbox disallows them, and og image endpoint (GET /api/og) is no longer
+// used after Astro broadcast cron started pushing flex cards directly to LINE.
+// If a future caller requires it, re-introduce the import behind a nodejs
+// runtime fallback function.
 //
 // Schema (Neon Postgres, schema `public`):
 //   chat_qa_cache    (q_hash PK, q_text, a_text, hit_count, created_at, updated_at) — chatbot Q&A cache (FNV-1a hash of normalized question → LLM answer)
@@ -8055,239 +8058,12 @@ async function loadCjkFont(text) {
 }
 
 async function ogHandler(request) {
-  const { searchParams } = new URL(request.url);
-  const title = (searchParams.get("t") || "不說").slice(0, 70);
-  const sub   = (searchParams.get("s") || "工程 × 生醫 × AI 平台作品集").slice(0, 110);
-  const tag   = (searchParams.get("tag") || "").slice(0, 24);
-
-  const allText = title + sub + tag;
-  const cjkData = await loadCjkFont(allText);
-
-  const fonts = cjkData
-    ? [{ name: "NotoSansSC", data: cjkData, weight: 700, style: "normal" }]
-    : [];
-  const ff = cjkData ? '"NotoSansSC", sans-serif' : "sans-serif";
-
-  const tc = TAG_COLORS_OG[tag] || { bg: "#1a1428", border: "#7a5c1e", text: "#e8c060" };
-  const titleSize = title.length > 24 ? (title.length > 40 ? 50 : 60) : 72;
-
-  // Top-right grid decoration: 5 rows × 6 cols
-  const gridRows = [];
-  for (let r = 0; r < 5; r++) {
-    const cells = [];
-    for (let c = 0; c < 6; c++) {
-      cells.push(h("div", { key: `c${c}`, style: { width: 5, height: 5, borderRadius: "50%", background: "#e8c060" } }));
-    }
-    gridRows.push(h("div", { key: `r${r}`, style: { display: "flex", gap: 6 } }, cells));
-  }
-
-  return new ImageResponse(
-    h("div", {
-      style: {
-        height: "100%", width: "100%", display: "flex", flexDirection: "column",
-        alignItems: "flex-start", justifyContent: "center",
-        backgroundColor: "#07050d", padding: "72px 88px 64px",
-        fontFamily: ff, position: "relative",
-      }
-    },
-      h("div", { style: { position: "absolute", left: 0, top: 0, bottom: 0, width: 7,
-        background: "linear-gradient(180deg, #e8c060 0%, #9a6020 60%, #07050d 100%)" } }),
-      h("div", { style: { position: "absolute", right: 72, top: 56, display: "flex", flexDirection: "column", gap: 6, opacity: 0.18 } }, gridRows),
-      tag && h("div", { style: { display: "flex", marginBottom: 28 } },
-        h("div", {
-          style: {
-            background: tc.bg, border: `1.5px solid ${tc.border}`,
-            borderRadius: 6, padding: "7px 18px",
-            fontSize: 17, color: tc.text, letterSpacing: 2,
-            textTransform: "uppercase", fontWeight: 700,
-          }
-        }, tag)
-      ),
-      h("div", { style: { fontSize: titleSize, fontWeight: 700, color: "#f0e6c8", lineHeight: 1.2, marginBottom: 22, maxWidth: 900 } }, title),
-      h("div", { style: { fontSize: 25, color: "#5a4a2a", lineHeight: 1.55, marginBottom: 56, maxWidth: 820 } }, sub),
-      h("div", { style: { display: "flex", alignItems: "center", gap: 18 } },
-        h("div", {
-          style: {
-            width: 52, height: 52, borderRadius: "50%",
-            background: "#1a1428", border: "1.5px solid #7a5c1e",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 20, fontWeight: 700, color: "#e8c060",
-          }
-        }, "JT"),
-        h("div", { style: { display: "flex", flexDirection: "column", gap: 3 } },
-          h("div", { style: { fontSize: 15, color: "#2a1a00", letterSpacing: 1.2 } }, "donttalk.vercel.app")
-        )
-      )
-    ),
-    { width: 1200, height: 630, fonts }
-  );
-}
-
-// ── lineBroadcastHandler: 26-card daily Flex carousel push ──────────────
-// Vercel Hobby 兩條 cron 已給 MOPS, 故用 GitHub Actions 排程打這個 endpoint.
-// Auth: header `X-Cron-Secret` 需與 env `CRON_SECRET` 一致. 未設 CRON_SECRET
-//   表示開發模式（信任所有來源）; production 一定要設.
-// Env: `LINE_CHANNEL_ACCESS_TOKEN` 為 long-lived channel access token
-//   (LINE Official Account 後台 → Messaging API → Channel access token).
-// Query `?dry=1` 回傳 Flex JSON 但不真的推（測試用，不計 quota）.
-const LINE_BASE = "https://api.line.me/v2/bot/message/broadcast";
-const SITE_BASE = "https://donttalk.vercel.app";
-// 26 卡片系列：對應 astro/public/stock/ 下的 26 個頁面（用 vercel.json 短網址 alias）
-const LINE_CARDS = [
-  // 基本面與消息面 (1-8)
-  { idx:  1, cat: "基本面與消息面", title: "月營收排行",     url: "/revenue",                    emoji: "📊" },
-  { idx:  2, cat: "基本面與消息面", title: "除息行事曆",     url: "/exdiv",                      emoji: "💰" },
-  { idx:  3, cat: "基本面與消息面", title: "法說會行程",     url: "/conference",                 emoji: "📅" },
-  { idx:  4, cat: "基本面與消息面", title: "庫藏股快訊",     url: "/buyback",                    emoji: "🛡️" },
-  { idx:  5, cat: "基本面與消息面", title: "AI 資本支出",    url: "/ai-capex",                   emoji: "🤖" },
-  { idx:  6, cat: "基本面與消息面", title: "總體經濟指標",   url: "/macro",                      emoji: "🌍" },
-  { idx:  7, cat: "基本面與消息面", title: "大盤熱力圖",     url: "/heatmap",                    emoji: "🔥" },
-  { idx:  8, cat: "基本面與消息面", title: "AI 戰情室",      url: "/ai-warroom",                 emoji: "🧠" },
-  // ETF 持股分析 (9-14)
-  { idx:  9, cat: "ETF 持股分析",   title: "ETF 列表",       url: "/etf",                        emoji: "📋" },
-  { idx: 10, cat: "ETF 持股分析",   title: "ETF 篩選器",     url: "/etf-filter",                 emoji: "🔍" },
-  { idx: 11, cat: "ETF 持股分析",   title: "ETF 持股明細",   url: "/etf_holdings",               emoji: "📑" },
-  { idx: 12, cat: "ETF 持股分析",   title: "ETF 持股樞紐",   url: "/stock/etf_holdings_pivot",   emoji: "🔄" },
-  { idx: 13, cat: "ETF 持股分析",   title: "ETF 持股追蹤",   url: "/etf_holdings_tracker",       emoji: "📈" },
-  { idx: 14, cat: "ETF 持股分析",   title: "升溫清單",       url: "/warming",                    emoji: "🌡️" },
-  // 技術面 (15-20)
-  { idx: 15, cat: "技術面",         title: "漲幅排行",       url: "/ranking",                    emoji: "🏆" },
-  { idx: 16, cat: "技術面",         title: "強勢股觀察",     url: "/uptrend-watch",              emoji: "🚀" },
-  { idx: 17, cat: "技術面",         title: "賣太早回測",     url: "/sold-too-early",             emoji: "💸" },
-  { idx: 18, cat: "技術面",         title: "價格比較",       url: "/price-compare",              emoji: "⚖️" },
-  { idx: 19, cat: "技術面",         title: "大摩因子篩選",   url: "/stock/stock-damo-filter",    emoji: "🏛️" },
-  { idx: 20, cat: "技術面",         title: "訊號篩選 v2",    url: "/signal-filter",              emoji: "🎯" },
-  // 加密貨幣 (21-23)
-  { idx: 21, cat: "加密貨幣",       title: "BTC 即時",       url: "/btc",                        emoji: "₿" },
-  { idx: 22, cat: "加密貨幣",       title: "加密回測",       url: "/stock/backtest",             emoji: "📉" },
-  { idx: 23, cat: "加密貨幣",       title: "匯率追蹤",       url: "/currency",                   emoji: "💱" },
-  // 資產配置 (24-26)
-  { idx: 24, cat: "資產配置",       title: "投資組合再平衡", url: "/rebalance",                  emoji: "⚖️" },
-  { idx: 25, cat: "資產配置",       title: "期貨避險",       url: "/futures",                    emoji: "🛡️" },
-  { idx: 26, cat: "資產配置",       title: "投資儀表板",     url: "/dashboard",                  emoji: "📊" },
-];
-
-function makeLineBubble(card) {
-  return {
-    type: "bubble",
-    size: "micro",
-    header: {
-      type: "box",
-      layout: "vertical",
-      backgroundColor: "#6E5BD0",
-      paddingAll: "12px",
-      contents: [{
-        type: "text",
-        text: `${card.idx}/26 | ${card.cat}`,
-        color: "#FFFFFF",
-        size: "sm",
-        weight: "bold"
-      }]
-    },
-    body: {
-      type: "box",
-      layout: "vertical",
-      spacing: "sm",
-      paddingAll: "14px",
-      contents: [
-        { type: "text", text: card.emoji, size: "5xl", align: "center" },
-        { type: "text", text: card.title, size: "lg", weight: "bold", align: "center", wrap: true },
-        { type: "text",
-          text: "網站頁面需要登入；LINE 僅回傳公開摘要。",
-          size: "xxs", color: "#999999", align: "center", wrap: true }
-      ]
-    },
-    footer: {
-      type: "box",
-      layout: "vertical",
-      contents: [{
-        type: "button",
-        style: "primary",
-        color: "#2E7D5B",
-        action: {
-          type: "uri",
-          label: "開啟網頁",
-          uri: SITE_BASE + card.url
-        }
-      }]
-    }
-  };
-}
-
-async function lineBroadcastHandler(request) {
-  const required = process.env.CRON_SECRET;
-  const given = request.headers.get("x-cron-secret") || "";
-  if (required && given !== required) {
-    return json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
-  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-  if (!token) {
-    return json({ ok: false, error: "LINE_CHANNEL_ACCESS_TOKEN not set" }, { status: 500 });
-  }
-  const u = urlOf(request);
-  const dry = u.searchParams.get("dry") === "1";
-  const onlyBatchParam = u.searchParams.get("onlyBatch");
-  const onlyBatch = onlyBatchParam ? Math.max(1, Math.min(3, parseInt(onlyBatchParam, 10))) : null;
-  // 2026-10-01 v22 fix: Vercel edge runtime (lhr1) fetch 到 api.line.me 會卡
-  //   超過 60s timeout。改走 GitHub Actions 直接打 LINE API（無 edge 限制）。
-  //   本 endpoint 保留為 ad-hoc 測試 / 預覽用，正式排程靠 .github/workflows/
-  //   line-push-daily.yml 直接 broadcast。
-  const BATCH = 10; // 26 拆 10+10+6 (LINE carousel 上限 12 bubbles)
-  const batches = [];
-  for (let i = 0; i < LINE_CARDS.length; i += BATCH) {
-    batches.push(LINE_CARDS.slice(i, i + BATCH));
-  }
-  const results = [];
-  for (let bi = 0; bi < batches.length; bi++) {
-    const batch = batches[bi];
-    if (onlyBatch !== null && (bi + 1) !== onlyBatch) continue;
-    const first = batch[0], last = batch[batch.length - 1];
-    const flex = {
-      type: "flex",
-      altText: `今日理財快訊 (${first.idx}-${last.idx}/26)`,
-      contents: { type: "carousel", contents: batch.map(makeLineBubble) }
-    };
-    if (dry) {
-      results.push({ batch: `${first.idx}-${last.idx}`, dry: true, count: batch.length });
-      continue;
-    }
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 15000);
-    try {
-      const r = await fetch(LINE_BASE, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ messages: [flex] }),
-        signal: ctrl.signal
-      });
-      const text = await r.text();
-      results.push({
-        batch: `${first.idx}-${last.idx}`,
-        status: r.status,
-        ok: r.ok,
-        body: text.slice(0, 200)
-      });
-    } catch (e) {
-      results.push({
-        batch: `${first.idx}-${last.idx}`,
-        status: 0,
-        ok: false,
-        error: e?.message || String(e)
-      });
-    } finally {
-      clearTimeout(tid);
-    }
-  }
-  const ok = results.every(r => r.ok !== false);
-  return json({
-    ok,
-    totalCards: LINE_CARDS.length,
-    batches: results.length,
-    results
-  });
+  // og handler retired 2026-10: ImageResponse (@vercel/og) + react imports
+  // break Vercel Edge Function sandbox module allowlist. og image endpoint
+  // (GET /api/og) no longer used since Astro broadcast cron pushes flex cards
+  // directly to LINE with their own thumbnail URLs. Return 410 Gone so legacy
+  // clients see an explicit status instead of a runtime exception.
+  return json({ ok: false, error: "og retired" }, { status: 410 });
 }
 
 // ── router ──────────────────────────────────────────────────────────
@@ -8583,3 +8359,4 @@ export default async function handler(request) {
 }
 
 export const config = { runtime: "edge", maxDuration: 60 };
+
