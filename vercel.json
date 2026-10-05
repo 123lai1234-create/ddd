@@ -70,7 +70,14 @@
       "destination": "/api/[...catchall]"
     }
   ],
-  
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/[...catchall]",
+      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]
+    }
+  ],
+
   "redirects": [
     {
       "source": "/stock",
