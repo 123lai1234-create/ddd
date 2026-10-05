@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>除權息日曆 - 台股均線買賣訊號系統</title>
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="static/favicon.svg">
+  <link rel="shortcut icon" href="static/favicon.svg">
+
+  <style>
+    :root{--bg:#0f0f23;--bg2:#1a1a3e;--bg3:#1e1e42;--txt:#e0e0ff;--txt2:#8888aa;
+          --green:#00c853;--red:#ff1744;--orange:#ff9100;--purple:#d500f9;
+          --blue:#448aff;--cyan:#00bcd4;--bdr:#2a2a5a}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:'Segoe UI','Microsoft JhengHei',sans-serif;
+      background:var(--bg);
+      color:var(--txt);
+      min-height:100vh;
+      padding-bottom:56px;
+    }
+
+
+    .header{background:linear-gradient(135deg,var(--bg2),#12122e);padding:12px 24px;
+      display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100}
+    .header h1{font-size:18px;background:linear-gradient(90deg,var(--blue),var(--purple));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+    .page-switch-btns{display:flex;gap:3px;background:rgba(0,0,0,.3);
+      padding:3px;border-radius:8px}
+    .page-switch-btn{background:transparent;border:none;color:var(--txt2);
+      padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;
+      font-weight:600;transition:all .2s;white-space:nowrap}
+    .page-switch-btn.active{background:linear-gradient(135deg,var(--blue),var(--purple));
+      color:#fff;box-shadow:0 2px 8px rgba(68,138,255,.4)}
+    .page-switch-btn:hover:not(.active){background:rgba(68,138,255,.15);color:var(--txt)}
+
+    .container{max-width:1400px;margin:0 auto;padding:24px}
+
+    .page-title{font-size:24px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+    .page-subtitle{font-size:13px;color:var(--txt2);margin-bottom:24px}
+
+    .controls{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+    .btn{background:var(--blue);border:none;color:#fff;padding:8px 16px;
+         border-radius:6px;cursor:pointer;font-size:13px;transition:all .2s}
+    .btn:hover{opacity:.85;transform:translateY(-1px)}
+    .btn-secondary{background:var(--bg2);border:1px solid var(--bdr);color:var(--txt)}
+    .btn-secondary.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+                gap:12px;margin-bottom:24px}
+    .stat-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;
+               padding:16px;text-align:center}
+    .stat-value{font-size:28px;font-weight:700;margin-bottom:4px}
+    .stat-label{font-size:11px;color:var(--txt2);letter-spacing:1px}
+
+    .exdiv-table{width:100%;border-collapse:collapse;background:var(--bg2);
+                 border-radius:8px;overflow:hidden}
+    .exdiv-table thead{background:var(--bg3)}
+    .exdiv-table th{padding:12px;text-align:left;font-size:11px;color:var(--txt2);
+                    letter-spacing:1px;font-weight:600}
+    .exdiv-table td{padding:12px;border-top:1px solid var(--bdr);font-size:13px}
+    .exdiv-table tbody tr:hover{background:rgba(68,138,255,.05)}
+
+    .badge{display:inline-block;padding:3px 10px;border-radius:12px;
+           font-size:11px;font-weight:600}
+    .badge-stock{background:rgba(255,23,68,.15);color:var(--red)}
+    .badge-etf{background:rgba(68,138,255,.15);color:var(--blue)}
+    .badge-urgent{background:rgba(255,23,68,.2);color:var(--red);
+                  animation:pulse 2s infinite}
+    .badge-warning{background:rgba(255,145,0,.2);color:var(--orange)}
+    .badge-normal{background:rgba(68,138,255,.15);color:var(--blue)}
+
+    /* ★ 新增：Google 日曆按鈕樣式 */
+    .btn-calendar{
+      background:linear-gradient(135deg,#4285f4,#34a853);
+      border:none;
+      color:#fff;
+      padding:6px 12px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:11px;
+      font-weight:600;
+      transition:all .2s;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      white-space:nowrap;
+    }
+    .btn-calendar:hover{
+      transform:translateY(-1px);
+      box-shadow:0 4px 12px rgba(66,133,244,.3);
+    }
+    .btn-calendar svg{
+      width:14px;
+      height:14px;
+    }
+
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+    .loading{text-align:center;padding:40px;color:var(--txt2)}
+    .spinner{width:40px;height:40px;border:4px solid var(--bdr);
+             border-top-color:var(--blue);border-radius:50%;
+             animation:spin 1s linear infinite;margin:0 auto 16px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .empty-state{text-align:center;padding:60px 20px;color:var(--txt2)}
+    .empty-state-icon{font-size:48px;margin-bottom:16px;opacity:.5}
+
+    .search-box{display:flex;gap:8px;align-items:center}
+    .search-box input{background:var(--bg);border:1px solid var(--bdr);color:var(--txt);
+                      padding:8px 12px;border-radius:6px;font-size:13px;outline:none;
+                      min-width:200px}
+    .search-box input:focus{border-color:var(--blue)}
+
+    /* =========================================
+       Footer
+    ========================================= */
+    .app-footer{
+      position:fixed;
+      bottom:0;
+      left:0;
+      right:0;
+      z-index:999;
+      background:linear-gradient(135deg,#12122e,#0f0f23);
+      border-top:1px solid #2a2a5a;
+      padding:6px 20px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      font-size:11px;
+      color:#aaaacc;
+      user-select:none;
+    }
+
+    /* =========================================
+       基本 RWD 修正
+    ========================================= */
+    .header{
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .header > div:first-child,
+    .header > div:last-child{
+      min-width:0;
+    }
+
+    /* 桌機：橫向滾動 */
+    .page-switch-btns{
+      flex-wrap:nowrap;
+      overflow-x:auto;
+      overflow-y:hidden;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+    }
+    .page-switch-btns::-webkit-scrollbar{ display:none; }
+    .page-switch-btn{ flex-shrink:0; }
+
+    /* ── 漢堡選單按鈕（桌機隱藏） ── */
+    .nav-toggle{
+      display:none;
+      background:transparent;
+      border:1px solid var(--bdr);
+      color:var(--txt2);
+      padding:5px 12px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:12px;
+      font-weight:600;
+      white-space:nowrap;
+      flex-shrink:0;
+      transition:all .2s;
+    }
+    .nav-toggle:hover{
+      border-color:var(--blue);
+      color:var(--blue);
+    }
+
+
+
+    .container{
+      padding:24px;
+    }
+
+    .page-title{
+      flex-wrap:wrap;
+      line-height:1.4;
+    }
+
+    .controls{
+      gap:10px;
+    }
+
+    .search-box{
+      min-width:0;
+    }
+
+    .search-box input{
+      width:100%;
+    }
+
+    .table-scroll{
+      width:100%;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    .exdiv-table{
+      min-width:980px;
+    }
+
+    /* =========================================
+       平板
+    ========================================= */
+    @media (max-width: 1024px){
+      .container{
+        padding:20px 16px;
+      }
+
+      .stats-grid{
+        grid-template-columns:repeat(2, minmax(0,1fr));
+      }
+    }
+
+    /* =========================================
+       手機
+    ========================================= */
+    @media (max-width: 768px){
+      body{
+        padding-bottom:84px;
+      }
+
+      .header{
+        padding:10px 12px;
+        align-items:flex-start;
+      }
+
+      .header h1{
+        font-size:16px;
+        line-height:1.4;
+      }
+
+      .header > div:first-child{
+        width:100%;
+        display:flex;
+        flex-direction:column;
+        align-items:flex-start !important;
+        gap:10px !important;
+      }
+
+      .header > div:last-child{
+        width:100%;
+        display:flex;
+        justify-content:flex-start;
+      }
+
+      /* 手機：漢堡選單 */
+      .nav-toggle{
+        display:inline-flex;
+        align-items:center;
+        gap:5px;
+      }
+
+      .page-switch-btns{
+        display:none;
+        flex-direction:column;
+        width:100%;
+        gap:6px;
+        padding:8px 0 4px;
+        overflow-x:visible;
+        background:transparent;
+      }
+
+      .page-switch-btns.open{
+        display:flex;
+      }
+
+      .page-switch-btn{
+        width:100%;
+        text-align:left;
+        padding:10px 14px;
+        border-radius:8px;
+        font-size:13px;
+        border:1px solid var(--bdr);
+        min-height:36px;
+        flex-shrink:unset;
+      }
+
+      .page-switch-btn.active{
+        border-color:transparent;
+      }
+
+
+      .container{
+        padding:16px 12px;
+      }
+
+      .page-title{
+        font-size:20px;
+        gap:8px;
+        margin-bottom:6px;
+      }
+
+      .page-subtitle{
+        font-size:12px;
+        line-height:1.7;
+        margin-bottom:18px;
+      }
+
+      .controls{
+        flex-direction:column;
+        align-items:stretch;
+        gap:10px;
+        margin-bottom:16px;
+      }
+
+      .controls .btn,
+      .controls .btn-secondary{
+        width:100%;
+        min-height:40px;
+      }
+
+      .search-box{
+        width:100%;
+        margin-left:0 !important;
+      }
+
+      .search-box input{
+        min-width:0;
+        width:100%;
+      }
+
+      .stats-grid{
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+        margin-bottom:18px;
+      }
+
+      .stat-card{
+        padding:14px 10px;
+      }
+
+      .stat-value{
+        font-size:24px;
+      }
+
+      .stat-label{
+        font-size:10px;
+      }
+
+      .table-scroll{
+        border-radius:8px;
+      }
+
+      .exdiv-table{
+        min-width:920px;
+        font-size:12px;
+      }
+
+      .exdiv-table th,
+      .exdiv-table td{
+        padding:10px 8px;
+        white-space:nowrap;
+      }
+
+      .btn-calendar{
+        font-size:10px;
+        padding:6px 10px;
+      }
+
+      .empty-state{
+        padding:40px 16px;
+      }
+
+      .empty-state-icon{
+        font-size:40px;
+      }
+
+      .loading{
+        padding:28px 12px;
+      }
+
+      .app-footer{
+        padding:8px 10px;
+        font-size:10px;
+        flex-wrap:wrap;
+        text-align:center;
+        line-height:1.6;
+      }
+
+      .app-footer a{
+        font-size:10px !important;
+      }
+    }
+
+    /* =========================================
+       小手機
+    ========================================= */
+    @media (max-width: 480px){
+      .header h1{
+        font-size:15px;
+      }
+
+      .page-switch-btn{
+        font-size:11px;
+        padding:6px 10px;
+      }
+
+      .container{
+        padding:14px 10px;
+      }
+
+      .page-title{
+        font-size:18px;
+      }
+
+      .page-subtitle{
+        font-size:11px;
+      }
+
+      .stats-grid{
+        grid-template-columns:1fr;
+      }
+
+      .stat-value{
+        font-size:22px;
+      }
+
+      .exdiv-table{
+        min-width:860px;
+      }
+
+      .exdiv-table th{
+        font-size:10px;
+      }
+
+      .exdiv-table td{
+        font-size:11px;
+      }
+
+      .btn-calendar{
+        font-size:10px;
+        padding:5px 8px;
+      }
+    }
+    @media (max-width: 768px){
+      .exdiv-table td:nth-child(2),
+      .exdiv-table th:nth-child(2){
+        text-align:center;
+      }
+
+      .btn-calendar{
+        justify-content:center;
+        min-width:92px;
+      }
+    }
+
+    @media (max-width: 480px){
+      .btn-calendar{
+        min-width:84px;
+        padding:5px 8px;
+        font-size:10px;
+      }
+
+      .btn-calendar svg{
+        width:12px;
+        height:12px;
+      }
+    }
+
+    
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0">
+
+      <!-- 第一行：標題 + 漢堡按鈕 -->
+      <div style="display:flex;align-items:center;gap:10px">
+        <h1>📊 台股均線買賣訊號系統</h1>
+        <button class="nav-toggle" id="navToggle" onclick="toggleNav()">
+          ☰ 選單
+        </button>
+      </div>
+
+      <!-- 第二行：導覽列 -->
+      <div class="page-switch-btns" id="pageNav">
+        <button class="page-switch-btn" onclick="window.location.href='index.html'">📊 股票版</button>
+        <button class="page-switch-btn" onclick="window.location.href='etf.html'">📈 ETF版</button>
+        <button class="page-switch-btn" onclick="window.location.href='warming.html'">🌡️ 升溫區調節</button>
+        <button class="page-switch-btn active" onclick="void(0)">📅 除權息</button>
+        <button class="page-switch-btn" onclick="window.location.href='macro.html'">🌐 總經數據</button>
+        <button class="page-switch-btn" onclick="window.location.href='signal-filter.html'">🔍 股票訊號篩選</button>
+        <button class="page-switch-btn" onclick="window.location.href='etf-filter.html'">🔍 ETF訊號篩選</button>
+      </div>
+
+    </div>
+
+    <!-- 右側返回按鈕（不變） -->
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="btn btn-secondary" onclick="window.history.back()">← 返回</button>
+    </div>
+  </div>
+
+
+<div class="container">
+  <div class="page-title">
+    📅 除權息日曆
+    <span id="updateTime" style="font-size:12px;color:var(--txt2);font-weight:normal"></span>
+  </div>
+  <div class="page-subtitle">
+    顯示自選股票與 ETF 的除權息資訊,按時間排序(僅顯示今日之後)
+  </div>
+
+  <div class="controls">
+    <button class="btn" onclick="loadExdivData()">🔄 重新整理</button>
+    <button class="btn-secondary" id="btn7" onclick="filterDays(7)">未來 7 天</button>
+    <button class="btn-secondary" id="btn30" onclick="filterDays(30)">未來 30 天</button>
+    <button class="btn-secondary active" id="btn90" onclick="filterDays(90)">未來 90 天</button>
+    <div class="search-box" style="margin-left:auto">
+      <input type="text" id="searchInput" placeholder="🔍 搜尋股票名稱或代碼..." 
+             oninput="filterTable()">
+    </div>
+  </div>
+
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--red)" id="statUrgent">-</div>
+      <div class="stat-label">明日除權息</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--orange)" id="statWeek">-</div>
+      <div class="stat-label">本週除權息</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--blue)" id="statMonth">-</div>
+      <div class="stat-label">本月除權息</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--txt)" id="statTotal">-</div>
+      <div class="stat-label">總計</div>
+    </div>
+  </div>
+
+  <div id="tableContainer">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div>載入中...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleNav() {
+    var nav = document.getElementById("pageNav");
+    var btn = document.getElementById("navToggle");
+    var isOpen = nav.classList.toggle("open");
+    btn.textContent = isOpen ? "✕ 關閉" : "☰ 選單";
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    var btns = document.querySelectorAll(".page-switch-btn");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener("click", function() {
+        var nav = document.getElementById("pageNav");
+        var btn = document.getElementById("navToggle");
+        if (nav && nav.classList.contains("open")) {
+          nav.classList.remove("open");
+          btn.textContent = "☰ 選單";
+        }
+      });
+    }
+  });
+
+  
+let allData = [];
+let filteredData = [];
+let currentDays = 90;
+
+  function isMobileView() {
+    return window.innerWidth <= 768;
+  }
+
+  function loadExdivData() {
+    document.getElementById('tableContainer').innerHTML = `
+      <div class="loading">
+        <div class="spinner"></div>
+        <div>載入中...</div>
+      </div>`;
+
+    fetch('/api/exdiv/calendar?days=' + currentDays)
+      .then(r => r.json())
+      .then(data => {
+        console.log('API 回應：', data);
+
+        if (data.status === 'error') {
+          throw new Error(data.message || '載入失敗');
+        }
+
+        allData = data.data || [];
+        filteredData = allData;
+
+        document.getElementById('updateTime').textContent = 
+          '更新時間：' + data.update_time;
+
+        if (data.debug) {
+          console.log('除錯資訊：', data.debug);
+
+          if (allData.length === 0 && data.debug.total_exdiv_records === 0) {
+            document.getElementById('tableContainer').innerHTML = `
+              <div class="empty-state">
+                <div class="empty-state-icon">⚠️</div>
+                <div>TWSE 未回傳除權息資料</div>
+                <div style="font-size:12px;color:#888;margin-top:12px">
+                  可能原因：<br>
+                  1. 今年度尚無除權息公告<br>
+                  2. TWSE API 暫時無法存取<br>
+                  3. 快取資料已過期
+                </div>
+              </div>`;
+            return;
+          }
+
+          if (allData.length === 0 && data.debug.matched_stocks === 0) {
+            document.getElementById('tableContainer').innerHTML = `
+              <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <div>自選股中無符合條件的除權息</div>
+                <div style="font-size:12px;color:#888;margin-top:12px">
+                  TWSE 有 ${data.debug.total_exdiv_records} 筆除權息資料<br>
+                  但你的 ${data.debug.selected_stocks} 支自選股在未來 ${currentDays} 天內無除權息
+                </div>
+              </div>`;
+            return;
+          }
+        }
+
+        renderStats();
+        renderTable();
+      })
+      .catch(e => {
+        console.error('載入失敗：', e);
+        document.getElementById('tableContainer').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">❌</div>
+            <div>載入失敗：${e.message}</div>
+            <div style="font-size:12px;color:#888;margin-top:12px">
+              請檢查瀏覽器 Console 查看詳細錯誤
+            </div>
+          </div>`;
+      });
+  }
+
+
+function renderStats() {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const weekEnd = new Date(today);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  const monthEnd = new Date(today);
+  monthEnd.setDate(monthEnd.getDate() + 30);
+
+  const urgent = allData.filter(item => {
+    const exDate = new Date(item.ex_date);
+    return exDate.toDateString() === tomorrow.toDateString();
+  }).length;
+
+  const week = allData.filter(item => {
+    const exDate = new Date(item.ex_date);
+    return exDate >= today && exDate <= weekEnd;
+  }).length;
+
+  const month = allData.filter(item => {
+    const exDate = new Date(item.ex_date);
+    return exDate >= today && exDate <= monthEnd;
+  }).length;
+
+  document.getElementById('statUrgent').textContent = urgent;
+  document.getElementById('statWeek').textContent = week;
+  document.getElementById('statMonth').textContent = month;
+  document.getElementById('statTotal').textContent = allData.length;
+}
+
+// ★ 新增：產生 Google 日曆連結
+  // ★ 修正：產生 Google 日曆連結（改為除息日當天提醒）
+  // ★ 修正：產生 Google 日曆連結（除息日當天 09:00-13:30）
+  function addToGoogleCalendar(item) {
+    // 除息日期
+    const exDate = new Date(item.ex_date + 'T00:00:00');
+
+    // 格式化為 Google Calendar 格式 (YYYYMMDDTHHmmss)
+    const formatDateTime = (date, hour, minute) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const h = String(hour).padStart(2, '0');
+      const m = String(minute).padStart(2, '0');
+      return `${year}${month}${day}T${h}${m}00`;
+    };
+
+    // 開始時間：除息日當天 09:00
+    const startDateTime = formatDateTime(exDate, 9, 0);
+
+    // 結束時間：除息日當天 13:30
+    const endDateTime = formatDateTime(exDate, 13, 30);
+
+    // 事件標題
+    const title = `【除權息日】${item.name} (${item.code})`;
+
+    // 事件詳情
+    const details = `
+  📊 股票：${item.name} (${item.code})
+  📅 除權息日：${item.ex_date}（今天）
+  💰 現金股利：${item.dividend ? item.dividend.toFixed(2) + ' 元' : '未公告'}
+  📈 殖利率：${item.yield || '未計算'}
+  ⚠️ 提醒：今日為除權息日，昨日收盤前未賣出者將參與除權息
+
+  🔗 台股均線買賣訊號系統
+    `.trim();
+
+    // 建立 Google Calendar URL（指定時間段事件）
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: title,
+      details: details,
+      dates: `${startDateTime}/${endDateTime}`,  // 09:00 到 13:30
+      ctz: 'Asia/Taipei'
+    });
+
+    const url = `https://calendar.google.com/calendar/render?${params.toString()}`;
+
+    // 開啟新視窗
+    window.open(url, '_blank', 'width=800,height=600');
+  }
+
+
+
+  function renderTable() {
+    if (filteredData.length === 0) {
+      const searchValue = document.getElementById('searchInput').value;
+      const message = searchValue 
+        ? `找不到符合「${searchValue}」的除權息資訊`
+        : `未來 ${currentDays} 天內無除權息資訊`;
+
+      document.getElementById('tableContainer').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div>${message}</div>
+        </div>`;
+      return;
+    }
+
+    const mobile = isMobileView();
+
+    let html = `
+      <div class="table-scroll">
+        <table class="exdiv-table">
+          <thead>
+            <tr>
+              <th>股票名稱</th>
+              ${mobile ? '<th style="text-align:center">加入日曆</th>' : ''}
+              <th>代碼</th>
+              <th>類別</th>
+              <th>除權息日</th>
+              <th>距今天數</th>
+              <th>現金股利</th>
+              <th>殖利率</th>
+              <th>警示</th>
+              ${mobile ? '' : '<th style="text-align:center">操作</th>'}
+            </tr>
+          </thead>
+          <tbody>`;
+
+    filteredData.forEach(item => {
+      const urgency = item.days_left === 1 ? 'urgent' : 
+                      item.days_left <= 3 ? 'warning' : 'normal';
+
+      const urgencyText = item.days_left === 1 ? '⚠️ 明日除權息' :
+                          item.days_left === 2 ? '📅 後日除權息' :
+                          item.days_left === 3 ? '📅 3日後除權息' : '';
+
+      const calendarBtn = `
+        <button class="btn-calendar" onclick='addToGoogleCalendar(${JSON.stringify(item).replace(/'/g, "&#39;")})'>
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+          </svg>
+          加入日曆
+        </button>`;
+
+      html += `
+        <tr>
+          <td style="font-weight:600">${item.name}</td>
+          ${mobile ? `<td style="text-align:center">${calendarBtn}</td>` : ''}
+          <td style="font-family:monospace;color:var(--txt2)">${item.code}</td>
+          <td>
+            <span class="badge ${item.category === '股票' ? 'badge-stock' : 'badge-etf'}">
+              ${item.category}
+            </span>
+          </td>
+          <td style="font-family:monospace">${item.ex_date}</td>
+          <td style="color:${urgency === 'urgent' ? 'var(--red)' : urgency === 'warning' ? 'var(--orange)' : 'var(--txt2)'}">
+            ${item.days_left} 天
+          </td>
+          <td style="font-weight:700;color:var(--red)">
+            ${item.dividend ? item.dividend.toFixed(2) + ' 元' : '-'}
+          </td>
+     
+          <td style="color:var(--txt2)">
+            ${item.yield
+              ? `<span style="color:var(--green)">${item.yield}%</span>`
+              : '<span style="color:#555;font-size:11px">-</span>'}
+          </td>
+
+          <td>
+            ${urgencyText ? `<span class="badge badge-${urgency}">${urgencyText}</span>` : ''}
+          </td>
+          ${mobile ? '' : `<td style="text-align:center">${calendarBtn}</td>`}
+        </tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+    document.getElementById('tableContainer').innerHTML = html;
+  }
+
+
+
+function filterDays(days) {
+  currentDays = days;
+
+  ['btn7', 'btn30', 'btn90'].forEach(id => {
+    document.getElementById(id).classList.remove('active');
+  });
+  document.getElementById('btn' + days).classList.add('active');
+
+  loadExdivData();
+}
+
+function filterTable() {
+  const searchValue = document.getElementById('searchInput').value.toLowerCase();
+
+  if (!searchValue) {
+    filteredData = allData;
+  } else {
+    filteredData = allData.filter(item => 
+      item.name.toLowerCase().includes(searchValue) ||
+      item.code.toLowerCase().includes(searchValue)
+    );
+  }
+
+  renderTable();
+}
+
+// 頁面載入時執行
+  // 頁面載入時執行
+  window.addEventListener('load', () => {
+    loadExdivData();
+    // 每 5 分鐘自動更新
+    setInterval(loadExdivData, 5 * 60 * 1000);
+  });
+
+  window.addEventListener('resize', () => {
+    renderTable();
+  });
+
+</script>
+
+<!-- Footer -->
+  <div class="app-footer">
+
+  <span>© 2026 版權所有</span>
+  <span style="color:#2a2a5a">｜</span>
+  <span style="font-size:10px;color:#555577">台股均線買賣訊號系統</span>
+</div>
+
+</body>
+</html>

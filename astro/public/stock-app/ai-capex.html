@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>美股 AI 資本支出（上游需求）</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+  <style>
+    :root{
+      --bg:#0d0f14; --panel:#161a22; --panel2:#1b212c; --bdr:#262d3a;
+      --txt:#e6eaf2; --txt2:#8b94a7; --green:#1fbf75; --red:#ef4d56;
+      --yellow:#e8b53a; --gray:#6b7280; --accent:#4da3ff;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--bg);color:var(--txt);
+      font-family:-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;font-size:14px;}
+    header{display:flex;align-items:center;gap:14px;padding:14px 20px;
+      border-bottom:1px solid var(--bdr);flex-wrap:wrap;}
+    h1{font-size:18px;margin:0;color:var(--accent);font-weight:700;}
+    .meta{color:var(--txt2);font-size:12px;}
+    .wrap{padding:16px 20px;max-width:1100px;margin:0 auto;}
+    .back{color:var(--txt2);text-decoration:none;border:1px solid var(--bdr);
+      padding:6px 12px;border-radius:8px;font-size:12px;}
+    .back:hover{color:var(--txt);}
+    .btn{background:var(--panel);color:var(--txt2);border:1px solid var(--bdr);
+      padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;}
+    .btn:hover{color:var(--txt);}
+    /* 頂部訊號燈卡 */
+    .signal{display:flex;align-items:center;gap:16px;background:var(--panel);
+      border:1px solid var(--bdr);border-radius:12px;padding:18px 20px;margin-bottom:18px;}
+    .dot{width:46px;height:46px;border-radius:50%;flex:none;
+      box-shadow:0 0 0 6px rgba(255,255,255,.04);}
+    .dot.green{background:var(--green);box-shadow:0 0 18px var(--green);}
+    .dot.yellow{background:var(--yellow);box-shadow:0 0 18px var(--yellow);}
+    .dot.red{background:var(--red);box-shadow:0 0 18px var(--red);}
+    .dot.gray{background:var(--gray);}
+    .signal .h{font-size:16px;font-weight:700;line-height:1.45;}
+    .signal .sub{color:var(--txt2);font-size:12px;margin-top:4px;}
+    .kpis{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:18px;}
+    .kpi{background:var(--panel);border:1px solid var(--bdr);border-radius:10px;
+      padding:14px 18px;min-width:150px;flex:1;}
+    .kpi .lbl{color:var(--txt2);font-size:12px;}
+    .kpi .val{font-size:22px;font-weight:700;margin-top:4px;font-family:monospace;}
+    .sec-title{font-size:15px;margin:22px 0 10px;color:var(--txt);}
+    #chart{width:100%;height:380px;background:var(--panel);
+      border:1px solid var(--bdr);border-radius:10px;}
+    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+      gap:12px;margin-top:6px;}
+    .card{background:var(--panel);border:1px solid var(--bdr);border-radius:10px;padding:14px;}
+    .card .nm{font-weight:700;}
+    .card .nm small{color:var(--txt2);font-weight:400;margin-left:5px;}
+    .card .big{font-size:20px;font-family:monospace;margin:8px 0 2px;}
+    .card .row{display:flex;justify-content:space-between;color:var(--txt2);
+      font-size:12px;margin-top:5px;}
+    .card .row b{font-family:monospace;}
+    .pos{color:var(--red);} .neg{color:var(--green);} .neu{color:var(--txt2);}
+    .spark{height:30px;margin-top:8px;}
+    .note{color:var(--txt2);font-size:12px;line-height:1.7;background:var(--panel);
+      border:1px solid var(--bdr);border-radius:10px;padding:14px 16px;margin-top:18px;}
+    .note b{color:var(--txt);}
+    .loading{color:var(--txt2);text-align:center;padding:50px 0;}
+    @media (max-width:640px){
+      .wrap{padding:12px 14px;} h1{font-size:16px;} #chart{height:300px;}
+      .kpi .val{font-size:18px;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>美股 AI 資本支出</h1>
+    <span class="meta" id="meta">載入中…</span>
+    <button class="btn" id="btnRefresh" style="margin-left:auto;">手動更新</button>
+    <a class="back" href="index.html">← 回首頁</a>
+  </header>
+
+  <div class="wrap">
+    <div id="body"><div class="loading">資料載入中，首次需抓 SEC EDGAR，約 10~30 秒…</div></div>
+  </div>
+
+<script>
+const $ = s => document.querySelector(s);
+let _chart = null;
+
+function fmtPct(v){
+  if(v===null||v===undefined||isNaN(v)) return '—';
+  return (v>0?'+':'')+v.toFixed(1)+'%';
+}
+function clsPct(v){
+  if(v===null||v===undefined||isNaN(v)) return 'neu';
+  return v>0?'pos':(v<0?'neg':'neu');
+}
+function fmtBn(v){
+  if(v===null||v===undefined||isNaN(v)) return '—';
+  return '$'+v.toFixed(1)+'B';
+}
+
+function render(j){
+  if(!j.ok){ $('#body').innerHTML='<div class="loading">載入失敗：'+(j.error||'未知錯誤')+'</div>'; return; }
+  $('#meta').textContent = '更新時間 '+j.as_of+'　來源：SEC EDGAR（季度，財報落後）'
+    + (j.data_stale ? '　⚠ 最近一次更新失敗，顯示為先前資料'+(j.refresh_error?('（'+j.refresh_error+'）'):'') : '');
+
+  const cardHtml = c=>`
+    <div class="card">
+      <div class="nm">${c.code}<small>${c.name}</small></div>
+      <div class="big">${fmtBn(c.latest_capex? c.latest_capex/1e9 : null)}</div>
+      <div class="row"><span>最新季（${c.latest_quarter||'—'}）</span></div>
+      <div class="row"><span>季增 QoQ</span><b class="${clsPct(c.qoq_pct)}">${fmtPct(c.qoq_pct)}</b></div>
+      <div class="row"><span>年增 YoY</span><b class="${clsPct(c.yoy_pct)}">${fmtPct(c.yoy_pct)}</b></div>
+      <div class="row"><span>近四季 TTM</span><b class="neu">${fmtBn(c.ttm? c.ttm/1e9 : null)}</b></div>
+      <div class="row"><span>TTM 年增</span><b class="${clsPct(c.ttm_yoy_pct)}">${fmtPct(c.ttm_yoy_pct)}</b></div>
+      <div class="spark" data-spark='${JSON.stringify(c.spark||[])}'></div>
+    </div>`;
+  const coreCards = j.companies.filter(c=>c.group!=='ext').map(cardHtml).join('');
+  const extList = j.companies.filter(c=>c.group==='ext');
+  const extCards = extList.map(cardHtml).join('');
+
+  $('#body').innerHTML = `
+    <div class="signal">
+      <div class="dot ${j.light}"></div>
+      <div>
+        <div class="h">${j.headline}</div>
+        <div class="sub">五大雲端買方（微軟 / Alphabet / 亞馬遜 / Meta / 甲骨文）資本支出合計；總 capex 已以 AI 資料中心投資為主，作為台股 AI 供應鏈上游需求代理指標。</div>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">合計 capex（近四季 TTM，年化）</div><div class="val">${fmtBn(j.agg_ttm_usd_bn)}</div></div>
+      <div class="kpi"><div class="lbl">合計 TTM 年增（YoY）</div><div class="val ${clsPct(j.agg_yoy_pct)}">${fmtPct(j.agg_yoy_pct)}</div></div>
+      <div class="kpi"><div class="lbl">成長率二階導（vs 約半年前）</div><div class="val ${clsPct(j.accel_pp)}">${j.accel_pp===null||j.accel_pp===undefined?'—':(j.accel_pp>0?'+':'')+j.accel_pp.toFixed(1)+'pp'}</div></div>
+    </div>
+
+    <div class="sec-title">合計 capex 趨勢（近四季 TTM）與年增率</div>
+    <div id="chart"></div>
+
+    <div class="sec-title">核心雲端各家最新季資本支出（計入上方合計訊號）</div>
+    <div class="cards">${coreCards}</div>
+
+    ${extList.length ? `
+    <div class="sec-title">擴充買方（僅個別追蹤，未計入上方合計訊號）</div>
+    <div class="cards">${extCards}</div>
+    <div class="note" style="margin-top:10px;">
+      <b>為何不併入合計：</b>CoreWeave 為純 AI 新雲、訂單直入台廠，但公開財報僅 2024 年起，
+      併入會把多年趨勢截短；Apple／Tesla 的 capex 並非以 AI 資料中心為主（偏供應鏈設備／工廠），
+      併入會稀釋 AI 訊號純度。故此區僅供個別觀察。<br>
+      <b>關於 Nebius：</b>為外國發行人（20-F），SEC 僅揭露「年度」capex、無單季資料，
+      無法納入本季度儀表板，暫不列入。
+    </div>` : ''}
+
+    <div class="note">
+      <b>怎麼看：</b>重點不是金額高低，而是<b>年增率（YoY）的轉折</b>。
+      綠燈＝擴張且成長率仍在加速；黃燈＝仍擴張但動能轉弱（早期警訊）；紅燈＝合計 capex 轉收縮（AI 供應鏈該轉守）。<br>
+      <b>對台股的意涵：</b>美系雲端 capex 是台廠 AI 訂單源頭（台積電 CoWoS、鴻海/廣達/緯穎 AI 伺服器、散熱、PCB、光通訊）。水龍頭開大＝結構順風；集體下修＝早期轉守訊號。<br>
+      <b>限制：</b>本指標為季度資料且財報落後 4~6 週，屬結構/趨勢判斷，非即時交易訊號；亦無法區分錢流向 Nvidia GPU 或自研 ASIC。收入端交叉驗證（Nvidia 資料中心營收）為後續階段。
+    </div>`;
+
+  drawChart(j.chart);
+  drawSparks();
+}
+
+function drawChart(ch){
+  if(!ch || !ch.labels || !ch.labels.length) return;
+  _chart = echarts.init($('#chart'), 'dark');
+  _chart.setOption({
+    backgroundColor:'transparent',
+    grid:{left:60,right:60,top:36,bottom:40},
+    tooltip:{trigger:'axis',backgroundColor:'#1b212c',borderColor:'#262d3a',textStyle:{color:'#e6eaf2'}},
+    legend:{data:['合計 capex (TTM)','合計 YoY'],textStyle:{color:'#8b94a7'},top:6},
+    xAxis:{type:'category',data:ch.labels,axisLabel:{color:'#8b94a7',fontSize:11},
+      axisLine:{lineStyle:{color:'#262d3a'}}},
+    yAxis:[
+      {type:'value',name:'十億美元',nameTextStyle:{color:'#8b94a7'},
+        axisLabel:{color:'#8b94a7',formatter:'{value}'},splitLine:{lineStyle:{color:'#1b212c'}}},
+      {type:'value',name:'YoY %',nameTextStyle:{color:'#8b94a7'},
+        axisLabel:{color:'#8b94a7',formatter:'{value}%'},splitLine:{show:false}}
+    ],
+    series:[
+      {name:'合計 capex (TTM)',type:'bar',data:ch.agg_ttm,itemStyle:{color:'#4da3ff'},barWidth:'45%'},
+      {name:'合計 YoY',type:'line',yAxisIndex:1,data:ch.agg_yoy,smooth:true,
+        itemStyle:{color:'#e8b53a'},lineStyle:{width:2.5},symbol:'circle',symbolSize:6}
+    ]
+  });
+}
+
+function drawSparks(){
+  document.querySelectorAll('.spark').forEach(el=>{
+    let arr=[]; try{arr=JSON.parse(el.getAttribute('data-spark'))||[];}catch(e){}
+    if(!arr.length) return;
+    const c=echarts.init(el,'dark');
+    c.setOption({backgroundColor:'transparent',grid:{left:2,right:2,top:2,bottom:2},
+      xAxis:{type:'category',show:false,data:arr.map((_,i)=>i)},
+      yAxis:{type:'value',show:false,scale:true},
+      tooltip:{trigger:'axis',backgroundColor:'#1b212c',borderColor:'#262d3a',
+        textStyle:{color:'#e6eaf2'},formatter:p=>'$'+p[0].value+'B'},
+      series:[{type:'line',data:arr,smooth:true,symbol:'none',
+        lineStyle:{color:'#4da3ff',width:1.6},areaStyle:{color:'rgba(77,163,255,.12)'}}]});
+  });
+}
+
+async function load(force){
+  if(force) $('#body').innerHTML='<div class="loading">更新中，抓取 SEC EDGAR 最新財報…</div>';
+  try{
+    const r = await fetch('/api/ai_capex'+(force?'?force=1':''));
+    render(await r.json());
+  }catch(e){
+    $('#body').innerHTML='<div class="loading">載入失敗：'+e.message+'</div>';
+  }
+}
+
+$('#btnRefresh').addEventListener('click', ()=>load(true));
+window.addEventListener('resize', ()=>{ if(_chart) _chart.resize(); });
+load(false);
+</script>
+</body>
+</html>

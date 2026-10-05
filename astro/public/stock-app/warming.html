@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>升溫區調節 | 台股均線系統</title>
+  <link rel="icon" type="image/svg+xml"
+        href="static/favicon.svg">
+  <style>
+    :root {
+      --bg:#0f0f23; --bg2:#1a1a3e; --bg3:#1e1e42;
+      --txt:#e0e0ff; --txt2:#8888aa;
+      --green:#00c853; --red:#ff1744;
+      --orange:#ff9100; --yellow:#ffeb3b;
+      --blue:#448aff; --cyan:#00bcd4;
+      --purple:#d500f9; --bdr:#2a2a5a;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Segoe UI','Microsoft JhengHei',sans-serif;
+      background:var(--bg); color:var(--txt);
+      min-height:100vh;
+    }
+    .header {
+      background:linear-gradient(135deg,var(--bg2),#12122e);
+      padding:12px 24px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-bottom:1px solid var(--bdr);
+      position:sticky; top:0; z-index:100;
+      flex-wrap:wrap; gap:10px;
+    }
+    .header h1 {
+      font-size:18px;
+      background:linear-gradient(90deg,var(--orange),var(--red));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .nav-btns { display:flex; gap:6px; flex-wrap:wrap; }
+    .nav-btn {
+      background:transparent; border:1px solid var(--bdr);
+      color:var(--txt2); padding:5px 14px; border-radius:6px;
+      cursor:pointer; font-size:12px; font-weight:600; transition:all .2s;
+    }
+    .nav-btn:hover { background:rgba(68,138,255,.15); color:var(--txt); }
+    .nav-btn.active {
+      background:linear-gradient(135deg,var(--orange),var(--red));
+      border-color:var(--orange); color:#fff;
+    }
+    .main { max-width:1200px; margin:0 auto; padding:24px 20px 80px; }
+    .intro-card {
+      background:var(--bg2); border:1px solid var(--bdr);
+      border-radius:12px; padding:20px 24px; margin-bottom:24px;
+    }
+    .intro-card h2 { font-size:16px; margin-bottom:12px; color:var(--orange); }
+    .cond-list { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    @media(max-width:900px){ .cond-list { grid-template-columns:1fr 1fr; } }
+    @media(max-width:480px){ .cond-list { grid-template-columns:1fr; } }
+    .cond-item {
+      background:var(--bg3); border-radius:8px; padding:14px;
+      border-left:3px solid var(--bdr);
+    }
+    .cond-item.c1 { border-left-color:var(--cyan); }
+    .cond-item.c2 { border-left-color:var(--yellow); }
+    .cond-item.c3 { border-left-color:var(--orange); }
+    .cond-item.c4 { border-left-color:var(--purple); }
+    .cond-item.c5 { border-left-color:var(--red); background:rgba(255,23,68,.08); }
+    .cond-item.c6 { border-left-color:var(--red); background:rgba(255,23,68,.08); }
+    .cond-item.c7 { border-left-color:var(--red); background:rgba(255,23,68,.08); }
+    .cond-item.c8 { border-left-color:var(--green); background:rgba(0,200,83,.08); }
+    .cond-num { font-size:11px; font-weight:700; letter-spacing:1px; margin-bottom:6px; }
+    .cond-item.c1 .cond-num { color:var(--cyan); }
+    .cond-item.c2 .cond-num { color:var(--yellow); }
+    .cond-item.c3 .cond-num { color:var(--orange); }
+    .cond-item.c4 .cond-num { color:var(--purple); }
+    .cond-item.c5 .cond-num { color:var(--red); }
+    .cond-item.c6 .cond-num { color:var(--red); }
+    .cond-item.c7 .cond-num { color:var(--red); }
+    .cond-item.c8 .cond-num { color:var(--green); }
+    .cond-desc { font-size:12px; line-height:1.7; color:var(--txt); }
+    .toolbar {
+      display:flex; align-items:center; gap:12px;
+      margin-bottom:16px; flex-wrap:wrap;
+    }
+    .btn-scan {
+      background:linear-gradient(135deg,var(--orange),var(--red));
+      border:none; color:#fff; padding:10px 24px;
+      border-radius:8px; cursor:pointer; font-size:14px;
+      font-weight:700; transition:all .2s;
+      box-shadow:0 3px 12px rgba(255,145,0,.35);
+      white-space:nowrap;
+    }
+    .btn-scan:hover { opacity:.88; transform:translateY(-1px); }
+    .btn-scan:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+    .btn-refresh {
+      background:transparent; border:1px solid var(--blue);
+      color:var(--blue); padding:10px 18px;
+      border-radius:8px; cursor:pointer; font-size:13px;
+      font-weight:600; transition:all .2s;
+      white-space:nowrap; display:none;
+    }
+    .btn-refresh:hover { background:rgba(68,138,255,.15); }
+    .btn-refresh:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-refresh.show { display:inline-flex; align-items:center; gap:6px; }
+    .cache-status-bar {
+      display:none; align-items:center; gap:10px;
+      padding:8px 14px; border-radius:8px;
+      font-size:12px; margin-bottom:12px;
+      background:rgba(68,138,255,.08);
+      border:1px solid rgba(68,138,255,.3);
+    }
+    .cache-status-bar.show { display:flex; }
+    .cache-status-bar.from-cache {
+      background:rgba(0,200,83,.08);
+      border-color:rgba(0,200,83,.3);
+    }
+    .cache-dot { width:8px; height:8px; border-radius:50%; background:var(--blue); flex-shrink:0; }
+    .from-cache .cache-dot { background:var(--green); }
+    .cache-status-text { flex:1; color:var(--txt2); }
+    .from-cache .cache-status-text { color:var(--green); }
+    .btn-force-refresh {
+      background:none; border:1px solid var(--bdr);
+      color:var(--txt2); padding:3px 10px; border-radius:4px;
+      cursor:pointer; font-size:11px; transition:all .2s;
+    }
+    .btn-force-refresh:hover { border-color:var(--orange); color:var(--orange); }
+    .search-wrap { flex:1; min-width:200px; max-width:360px; position:relative; }
+    .search-wrap input {
+      width:100%; background:var(--bg2); border:1px solid var(--bdr);
+      color:var(--txt); padding:9px 36px 9px 14px;
+      border-radius:8px; font-size:13px; outline:none; transition:border-color .2s;
+    }
+    .search-wrap input:focus { border-color:var(--orange); }
+    .search-wrap input::placeholder { color:var(--txt2); }
+    .search-clear {
+      position:absolute; right:10px; top:50%; transform:translateY(-50%);
+      background:none; border:none; color:var(--txt2);
+      cursor:pointer; font-size:16px; line-height:1; display:none;
+    }
+    .search-clear.show { display:block; }
+    .filter-btns { display:flex; gap:4px; flex-wrap:wrap; }
+    .filter-btn {
+      background:transparent; border:1px solid var(--bdr);
+      color:var(--txt2); padding:6px 14px; border-radius:6px;
+      cursor:pointer; font-size:12px; transition:all .2s; white-space:nowrap;
+    }
+    .filter-btn.active { background:rgba(255,145,0,.15); border-color:var(--orange); color:var(--orange); }
+    .sort-btns { display:flex; gap:4px; align-items:center; }
+    .sort-label { font-size:11px; color:var(--txt2); margin-right:2px; white-space:nowrap; }
+    .sort-btn {
+      background:transparent; border:1px solid var(--bdr);
+      color:var(--txt2); padding:6px 14px; border-radius:6px;
+      cursor:pointer; font-size:12px; transition:all .2s; white-space:nowrap;
+    }
+    .sort-btn.active { background:rgba(68,138,255,.15); border-color:var(--blue); color:var(--blue); }
+    .score-badge {
+      display:inline-block; padding:2px 8px; border-radius:8px;
+      font-size:10px; font-weight:700; margin-left:6px; vertical-align:middle;
+    }
+    .scan-info { font-size:12px; color:var(--txt2); margin-left:auto; }
+    .stat-banner { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:20px; }
+    @media(max-width:768px){ .stat-banner { grid-template-columns:1fr 1fr; } }
+    @media(max-width:480px){ .stat-banner { grid-template-columns:1fr 1fr 1fr; } }
+    .stat-card { background:var(--bg2); border-radius:10px; padding:14px; text-align:center; border:1px solid var(--bdr); }
+    .stat-val { font-size:22px; font-weight:700; font-family:monospace; }
+    .stat-label { font-size:10px; color:var(--txt2); margin-top:4px; }
+    .search-hint {
+      font-size:12px; color:var(--txt2); margin-bottom:12px; padding:8px 12px;
+      background:rgba(68,138,255,.08); border-radius:6px; border-left:3px solid var(--blue); display:none;
+    }
+    .search-hint.show { display:block; }
+    .stock-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px,1fr)); gap:14px; }
+    .stock-card {
+      background:var(--bg2); border:1px solid var(--bdr);
+      border-radius:12px; overflow:hidden;
+      transition:transform .2s, box-shadow .2s; cursor:pointer;
+    }
+    .stock-card:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,.4); }
+    .stock-card.two-cond {
+      border-color:var(--orange);
+      box-shadow:0 0 0 1px var(--orange), 0 4px 16px rgba(255,145,0,.2);
+    }
+    .stock-card.three-cond {
+      border-color:var(--red);
+      box-shadow:0 0 0 2px var(--red), 0 4px 20px rgba(255,23,68,.3);
+      animation:warmPulse 2s ease-in-out infinite;
+    }
+    /* ★ 派發警示（cond5/cond6 觸發）：紅色強調，視覺權重最高 */
+    .stock-card.distribution {
+      border-color:var(--red);
+      background:linear-gradient(180deg, rgba(255,23,68,.08), var(--bg2));
+      box-shadow:0 0 0 2px var(--red), 0 6px 24px rgba(255,23,68,.4);
+      animation:warmPulse 2s ease-in-out infinite;
+    }
+    /* ★ 軋空題材加溫（cond8 觸發、無派發）：綠色強調，多頭未止 */
+    .stock-card.squeeze {
+      border-color:var(--green);
+      background:linear-gradient(180deg, rgba(0,200,83,.06), var(--bg2));
+      box-shadow:0 0 0 2px var(--green), 0 6px 20px rgba(0,200,83,.3);
+    }
+    @keyframes warmPulse {
+      0%,100% { box-shadow:0 0 0 2px var(--red), 0 4px 20px rgba(255,23,68,.3); }
+      50%      { box-shadow:0 0 0 4px var(--red), 0 8px 32px rgba(255,23,68,.5); }
+    }
+    .card-header {
+      padding:12px 16px; display:flex; align-items:flex-start; justify-content:space-between;
+      border-bottom:1px solid var(--bdr); gap:8px;
+    }
+    .card-name { font-size:15px; font-weight:700; }
+    .card-meta { display:flex; align-items:center; gap:6px; margin-top:3px; flex-wrap:wrap; }
+    .card-code { font-size:11px; color:var(--txt2); }
+    .category-badge { font-size:10px; font-weight:700; padding:1px 7px; border-radius:8px; }
+    .category-badge.stock { background:rgba(68,138,255,.2); color:var(--blue); border:1px solid var(--blue); }
+    .category-badge.etf   { background:rgba(0,188,212,.2);  color:var(--cyan); border:1px solid var(--cyan); }
+    .card-right { text-align:right; flex-shrink:0; }
+    .card-price { font-size:18px; font-weight:700; font-family:monospace; }
+    .card-date  { font-size:10px; color:var(--txt2); }
+    .trigger-badge {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:3px 10px; border-radius:12px;
+      font-size:11px; font-weight:700; margin-top:4px;
+    }
+    .trigger-badge.multi { background:rgba(255,23,68,.2);   color:var(--red);    border:1px solid var(--red); }
+    .trigger-badge.two   { background:rgba(255,145,0,.2);   color:var(--orange); border:1px solid var(--orange); }
+    .trigger-badge.one   { background:rgba(255,235,59,.15); color:var(--yellow); border:1px solid var(--yellow); }
+    /* ★ 派發警示徽章 */
+    .trigger-badge.distribution {
+      background:rgba(255,23,68,.25); color:#ff5c7a;
+      border:1px solid var(--red); font-weight:800;
+    }
+    /* ★ 軋空題材徽章 */
+    .trigger-badge.squeeze {
+      background:rgba(0,200,83,.18); color:#5cffa3;
+      border:1px solid var(--green); font-weight:800;
+    }
+    .cond-rows { padding:12px 16px; display:flex; flex-direction:column; gap:6px; }
+    .cond-row {
+      display:flex; align-items:flex-start; gap:8px;
+      padding:8px 10px; border-radius:7px; font-size:11px; line-height:1.5;
+    }
+    .cond-row.met    { background:rgba(255,145,0,.08); border-left:3px solid var(--orange); }
+    .cond-row.notmet { background:rgba(136,136,170,.05); border-left:3px solid var(--bdr); opacity:.7; }
+    /* ★ 派發類條件（cond5/cond6/cond7）觸發時用紅色強調 */
+    .cond-row.met.dist { background:rgba(255,23,68,.1); border-left:3px solid var(--red); }
+    .cond-row.met.dist .cond-title { color:var(--red); }
+    /* ★ 軋空條件（cond8）觸發時用綠色強調 */
+    .cond-row.met.squeeze { background:rgba(0,200,83,.1); border-left:3px solid var(--green); }
+    .cond-row.met.squeeze .cond-title { color:var(--green); }
+    /* ★ 籌碼小卡 */
+    .ms-mini {
+      display:grid; grid-template-columns:1fr 1fr 1fr;
+      gap:6px; margin-top:8px;
+      background:rgba(68,138,255,.05); border:1px solid var(--bdr);
+      border-radius:7px; padding:8px;
+    }
+    .ms-mini .mm-item { background:var(--bg3); border-radius:5px; padding:5px 7px; font-size:10px; }
+    .ms-mini .mm-label { color:var(--txt2); font-size:9px; margin-bottom:1px; }
+    .ms-mini .mm-val { font-weight:700; }
+    .ms-mini .mm-val.up { color:var(--red); }
+    .ms-mini .mm-val.dn { color:var(--green); }
+    .cond-icon { font-size:14px; flex-shrink:0; margin-top:1px; }
+    .cond-title { font-weight:700; margin-bottom:2px; }
+    .cond-row.met    .cond-title { color:var(--orange); }
+    .cond-row.notmet .cond-title { color:var(--txt2); }
+    .cond-detail { color:var(--txt2); font-size:10px; }
+    .card-detail { padding:10px 16px 14px; border-top:1px solid var(--bdr); display:none; }
+    .card-detail.show { display:block; }
+    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px; }
+    .detail-item { background:var(--bg3); border-radius:6px; padding:6px 8px; font-size:11px; }
+    .detail-item .d-label { color:var(--txt2); font-size:10px; }
+    .detail-item .d-val   { font-weight:700; margin-top:2px; }
+    .card-footer { padding:8px 16px 12px; display:flex; gap:8px; }
+    .btn-chart {
+      flex:1; padding:6px;
+      background:rgba(68,138,255,.15); border:1px solid var(--blue);
+      color:var(--blue); border-radius:6px;
+      cursor:pointer; font-size:11px; font-weight:600; transition:all .2s;
+    }
+    .btn-chart:hover { background:rgba(68,138,255,.3); }
+    .empty-state { text-align:center; padding:60px 20px; color:var(--txt2); }
+    .empty-state .icon { font-size:48px; margin-bottom:16px; }
+    .empty-state p { font-size:14px; }
+    .loading-wrap { text-align:center; padding:60px 20px; color:var(--txt2); }
+    .spinner {
+      width:36px; height:36px;
+      border:3px solid var(--bdr); border-top-color:var(--orange);
+      border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 16px;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .toast-container { position:fixed; top:70px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+    .toast {
+      padding:12px 20px; border-radius:8px; font-size:13px;
+      animation:slideIn .3s ease, fadeOut .5s ease 4.5s forwards;
+      max-width:360px; box-shadow:0 4px 20px rgba(0,0,0,.5);
+    }
+    .toast.info    { background:#002244; border:1px solid var(--blue); }
+    .toast.warn    { background:#3d2000; border:1px solid var(--orange); }
+    .toast.error   { background:#4d0011; border:1px solid var(--red); }
+    .toast.success { background:#003311; border:1px solid var(--green); }
+    @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+    @keyframes fadeOut { to{opacity:0;transform:translateY(-10px)} }
+    .footer {
+      position:fixed; bottom:0; left:0; right:0;
+      background:linear-gradient(135deg,#12122e,#0f0f23);
+      border-top:1px solid var(--bdr); padding:6px 20px;
+      display:flex; align-items:center; justify-content:center;
+      gap:10px; font-size:11px; color:#aaaacc; z-index:99;
+    }
+    @media(max-width:768px){
+      .header { padding:8px 12px; }
+      .main { padding:16px 12px 80px; }
+      .toolbar { gap:8px; }
+      .search-wrap { max-width:none; width:100%; order:-1; }
+      .scan-info { display:none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div><h1>🌡️ 升溫區調節偵測</h1></div>
+  <div class="nav-btns">
+    <button class="nav-btn" onclick="location.href='index.html'">📊 股票版</button>
+    <button class="nav-btn" onclick="location.href='etf.html'">📈 ETF版</button>
+    <button class="nav-btn active">🌡️ 升溫區調節</button>
+    <button class="nav-btn" onclick="location.href='exdiv.html'">📅 除權息</button>
+    <button class="nav-btn" onclick="location.href='macro.html'">🌐 總經數據</button>
+    <button class="nav-btn" onclick="location.href='signal-filter.html'">🔍 股票訊號篩選</button>
+    <button class="nav-btn" onclick="location.href='etf-filter.html'">🔍 ETF訊號篩選</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ── 說明卡片 ── -->
+  <div class="intro-card">
+    <h2>📋 觸發條件說明</h2>
+    <div style="background:rgba(255,145,0,.08);border:1px solid var(--orange);
+                border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px">
+      ⚡ <strong style="color:var(--orange)">初級警示（橘）</strong>：
+      組1～組4 任一全成立即觸發（漲幅+量縮／漲幅+爆量／KD高+跳空／假突破）<br>
+      <span style="color:var(--txt2);font-size:11px">
+        ※ 嚴格模式（預設）已收斂條件：cond1 漲幅 ≥ 6% + 量縮 0.7 + 距高 ≤ 5%、cond2 加 KD&gt;80 + 距高 ≤ 3%、cond4 加 7日漲 ≥ 8% + 距高 ≤ 8%
+      </span>
+    </div>
+    <div style="background:rgba(255,23,68,.1);border:1px solid var(--red);
+                border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px">
+      🔴 <strong style="color:var(--red)">高位融資爆增警示．建議減碼觀察（紅）</strong>：
+      組7 成立即觸發 ─「<strong>高位 + 散戶追高、籌碼鬆動</strong>」<br>
+      <span style="color:var(--txt2);font-size:11px">
+        融資前提：90日漲幅 ≥ 20% 且 距高點 ≤ 10%；回測 30 檔重災股，觸發後 10 日內 78% 機率回檔（中位數 -3.7%）<br>
+        ※ 組5／組6（借券派發）回測無效（觸發後仍漲 +9%）已於嚴格模式停用
+      </span>
+    </div>
+    <div style="background:rgba(0,200,83,.08);border:1px solid var(--green);
+                border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px">
+      🟢 <strong style="color:var(--green)">軋空題材加溫（綠）</strong>：
+      組8 觸發且未派發 ─ 「<strong>融券長期不減 + 券資比偏高</strong>」可能蘊含軋空動能<br>
+      <span style="color:var(--txt2);font-size:11px">
+        排序鍵：券資比 × 融券5日變化%（融券下降記為 0），分數越高代表「空單未死」越強
+      </span>
+    </div>
+    <div class="cond-list">
+      <div class="cond-item c1">
+        <div class="cond-num">組1 ─ 漲幅 + 量縮（嚴格）</div>
+        <div class="cond-desc">
+          7日漲幅 <strong>≥ 6%</strong><br>
+          <strong>且</strong> 近3日均量 &lt; 前3日均量 × <strong>70%</strong><br>
+          <strong>且</strong> 距 90日高 <strong>≤ 5%</strong><br>
+          <span style="color:var(--txt2);font-size:11px">（高位漲幅達標 + 量能萎縮，過濾下跌反彈雜訊）</span>
+        </div>
+      </div>
+      <div class="cond-item c2">
+        <div class="cond-num">組2 ─ 漲幅 + 爆量（嚴格）</div>
+        <div class="cond-desc">
+          7日漲幅 <strong>≥ 10%</strong><br>
+          <strong>且</strong> 今日量 ≥ 20日均量 × 2<br>
+          <strong>且</strong> KD <strong>&gt; 80</strong> 且 距 90日高 <strong>≤ 3%</strong><br>
+          <span style="color:var(--txt2);font-size:11px">（峰值爆量殺手，回測 precision 25.7%）</span>
+        </div>
+      </div>
+      <div class="cond-item c3">
+        <div class="cond-num">組3 ─ KD高 + 跳空</div>
+        <div class="cond-desc">
+          KD 值 <strong>&gt; 80</strong>（K 或 D）<br>
+          <strong>且</strong> 近5日向下跳空未回補<br>
+          <span style="color:var(--txt2);font-size:11px">（超買區出現跳空風險）</span>
+        </div>
+      </div>
+      <div class="cond-item c4">
+        <div class="cond-num">組4 ─ 假突破（即時，嚴格）</div>
+        <div class="cond-desc">
+          今日盤中曾站上任一均線 <strong>但</strong> 收盤跌破<br>
+          <strong>且</strong> 7日漲幅 <strong>≥ 8%</strong> 且 距 90日高 <strong>≤ 8%</strong><br>
+          <span style="color:var(--txt2);font-size:11px">（嚴格化後從 151 次/檔/2年降至 ~3 次）</span>
+        </div>
+      </div>
+      <div class="cond-item c5" style="opacity:0.45">
+        <div class="cond-num">組5 ─ 派發A·漲緩+借券 <span style="color:var(--txt2);font-size:11px;font-weight:400">（嚴格模式停用）</span></div>
+        <div class="cond-desc">
+          90日漲幅 ≥ 30% 且 距高點 ≤ 5% + 5日漲幅放緩 + 連續借券<br>
+          <span style="color:var(--txt2);font-size:11px">※ 30 檔回測：觸發後 10 日仍漲 +8.94%，借券派發邏輯失效</span>
+        </div>
+      </div>
+      <div class="cond-item c6" style="opacity:0.45">
+        <div class="cond-num">組6 ─ 派發B·量縮+借券 <span style="color:var(--txt2);font-size:11px;font-weight:400">（嚴格模式停用）</span></div>
+        <div class="cond-desc">
+          90日漲幅 ≥ 30% 且 距高點 ≤ 5% + 紅K量縮 + 連續借券<br>
+          <span style="color:var(--txt2);font-size:11px">※ 30 檔回測：觸發後 10 日仍漲 +9.49%，借券派發邏輯失效</span>
+        </div>
+      </div>
+      <div class="cond-item c7">
+        <div class="cond-num">組7 ─ 融資爆增（高位籌碼鬆動）</div>
+        <div class="cond-desc">
+          90日漲幅 <strong>≥ 20%</strong> 且 距高點 <strong>≤ 10%</strong><br>
+          <strong>且</strong> 5日融資增量 ≥ 60日均5日增量 × 2<br>
+          <span style="color:var(--txt2);font-size:11px">（散戶追高、籌碼鬆動的領先指標）</span><br>
+          <span style="color:var(--red);font-size:11px;font-weight:700">→ 建議減碼觀察（10 日 78% 回檔，中位 -3.7%）</span>
+        </div>
+      </div>
+      <div class="cond-item c8">
+        <div class="cond-num">組8 ─ 軋空題材加溫</div>
+        <div class="cond-desc">
+          券資比 <strong>≥ 15%</strong><br>
+          <strong>且</strong> 融券近5日不減 ≥ 4 天 且 融券餘額 &gt; 0<br>
+          <span style="color:var(--txt2);font-size:11px">（空單長期未死，多頭可借勢軋空）</span><br>
+          <span style="color:var(--green);font-size:11px;font-weight:700">→ 觀察：可能蘊含軋空動能</span>
+        </div>
+      </div>
+      <div class="cond-item c9" style="border-left:3px solid var(--red)">
+        <div class="cond-num">組9 ─ ETF 集體出清（外部結構性警訊）</div>
+        <div class="cond-desc">
+          <strong>今日 vs 前 1 日 ≥ 3 檔</strong> 或 <strong>今日 vs 前 2 日 ≥ 4 檔</strong> 追蹤 ETF 同期剔除<br>
+          <span style="color:var(--txt2);font-size:11px">（資料來源：ETF 樞紐分析共識雷達）</span><br>
+          <span style="color:var(--red);font-size:11px;font-weight:700">→ 派發警示·建議減碼 50%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 操作列 ── -->
+  <div class="toolbar">
+    <button class="btn-scan" id="btnScan" onclick="runScan()">
+      🔍 掃描全部股票 + ETF
+    </button>
+    <button class="btn-refresh" id="btnRefresh" onclick="runRefresh()">
+      🔄 重新抓取
+    </button>
+    <div class="search-wrap">
+      <input type="text" id="searchInput"
+             placeholder="🔍 搜尋股票名稱或代碼..."
+             oninput="onSearchInput()"
+             onkeydown="if(event.key==='Escape') clearSearch()">
+      <button class="search-clear" id="btnSearchClear" onclick="clearSearch()">✕</button>
+    </div>
+    <div class="filter-btns">
+      <button class="filter-btn active" id="filterAll"   onclick="setFilter('all')">全部</button>
+      <button class="filter-btn"        id="filterStock" onclick="setFilter('stock')">📊 股票</button>
+      <button class="filter-btn"        id="filterEtf"   onclick="setFilter('etf')">📈 ETF</button>
+      <button class="filter-btn"        id="filterMulti" onclick="setFilter('multi')">🔥 多組觸發</button>
+      <button class="filter-btn"        id="filterDist"  onclick="setFilter('dist')">🔴 高位融資爆增</button>
+      <button class="filter-btn"        id="filterSqueeze" onclick="setFilter('squeeze')">🟢 軋空標的</button>
+      <button class="filter-btn"        id="filterEtfKick" onclick="setFilter('etfkick')">🔻 ETF集體出清</button>
+    </div>
+    <div class="sort-btns">
+      <span class="sort-label">排序：</span>
+      <button class="sort-btn active" id="sortWarm"  onclick="setSort('warm')">🌡️ 升溫程度</button>
+      <button class="sort-btn"        id="sortScore" onclick="setSort('score')">📊 綜合評分↑</button>
+      <button class="sort-btn"        id="sortShortAlive" onclick="setSort('short_alive')">🟢 空單未死</button>
+    </div>
+    <div class="scan-info" id="scanInfo">點擊掃描按鈕開始偵測</div>
+  </div>
+
+  <!-- ── 快取狀態列 ── -->
+  <div class="cache-status-bar" id="cacheStatusBar">
+    <div class="cache-dot"></div>
+    <span class="cache-status-text" id="cacheStatusText"></span>
+    <button class="btn-force-refresh" onclick="runRefresh()">強制重新掃描</button>
+  </div>
+
+  <!-- ── 統計橫幅 ── -->
+  <div class="stat-banner" id="statBanner" style="display:none">
+    <div class="stat-card">
+      <div class="stat-val" id="statTotal"     style="color:var(--blue)">0</div>
+      <div class="stat-label">掃描總數</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="statTriggered" style="color:var(--orange)">0</div>
+      <div class="stat-label">升溫觸發</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="statStock"     style="color:var(--blue)">0</div>
+      <div class="stat-label">股票觸發</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="statEtf"       style="color:var(--cyan)">0</div>
+      <div class="stat-label">ETF 觸發</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="statMulti"     style="color:var(--red)">0</div>
+      <div class="stat-label">多組觸發</div>
+    </div>
+  </div>
+
+  <!-- ── 搜尋提示 ── -->
+  <div class="search-hint" id="searchHint"></div>
+
+  <!-- ── 股票卡片區 ── -->
+  <div id="stockGrid" class="stock-grid">
+    <div class="empty-state">
+      <div class="icon">🌡️</div>
+      <p>點擊「掃描全部股票 + ETF」開始偵測升溫區調節訊號</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="footer">
+  <span>© 2026 版權所有</span>
+  <span style="color:#2a2a5a">｜</span>
+  <span style="font-size:10px;color:#555577">台股均線買賣訊號系統</span>
+</div>
+
+<script>
+var _allData   = [];
+var _filter    = "all";
+var _searchKw  = "";
+var _scanTime  = "";
+var _sortMode  = "warm";
+var _fromCache = false;
+var _pollTimer = null;
+
+// ── Toast ──
+function showToast(msg, type) {
+  var c = document.getElementById("toastContainer");
+  var t = document.createElement("div");
+  t.className = "toast " + (type || "info");
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(function() { t.remove(); }, 5000);
+}
+
+// ── 排序 ──
+function setSort(mode) {
+  _sortMode = mode;
+  document.getElementById("sortWarm").classList.toggle("active",  mode === "warm");
+  document.getElementById("sortScore").classList.toggle("active", mode === "score");
+  var btnSA = document.getElementById("sortShortAlive");
+  if (btnSA) btnSA.classList.toggle("active", mode === "short_alive");
+  renderCards();
+}
+
+// ── 掃描 ──
+function runScan() { _doFetch(false); }
+
+function runRefresh() {
+  showToast("🔄 正在觸發重新掃描...", "info");
+  fetch("/api/warming_zone_scan/refresh", { method: "POST" })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      showToast("⏳ " + res.message, "info");
+      _showScanningState("伺服器重新掃描中，約需 2~5 分鐘...");
+      _startPolling();
+    })
+    .catch(function(e) { showToast("❌ 觸發失敗：" + e.message, "error"); });
+}
+
+function _doFetch(isRefresh) {
+  var btn  = document.getElementById("btnScan");
+  var btnR = document.getElementById("btnRefresh");
+  btn.disabled = true;
+  btn.textContent = "⏳ 查詢中...";
+  if (btnR) btnR.disabled = true;
+  document.getElementById("scanInfo").textContent = "查詢中...";
+  document.getElementById("cacheStatusBar").classList.remove("show", "from-cache");
+
+  fetch("/api/warming_zone_scan" + (isRefresh ? "?refresh=1" : ""))
+    .then(function(r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(function(res) {
+      if (res.scanning) {
+        _showScanningState(res.message || "資料掃描中，請稍後...");
+        _startPolling();
+        return;
+      }
+      _stopPolling();
+      _applyData(res);
+    })
+    .catch(function(e) {
+      document.getElementById("stockGrid").innerHTML =
+        '<div class="empty-state"><div class="icon">❌</div><p>查詢失敗：' + e.message + '</p></div>';
+      showToast("❌ 查詢失敗：" + e.message, "error");
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.textContent = "🔍 掃描全部股票 + ETF";
+      if (btnR) btnR.disabled = false;
+    });
+}
+
+function _showScanningState(msg) {
+  document.getElementById("stockGrid").innerHTML =
+    '<div class="loading-wrap"><div class="spinner"></div><p>' + msg + '</p>'
+    + '<p style="font-size:11px;color:var(--txt2);margin-top:8px">系統正在背景掃描，完成後自動更新</p></div>';
+  document.getElementById("scanInfo").textContent = "掃描中...";
+}
+
+function _applyData(res) {
+  _allData   = res.results || [];
+  _fromCache = res.cache_hit || false;
+  _scanTime  = res.updated_at || "";
+  updateStats(_allData);
+  renderCards();
+  document.getElementById("statBanner").style.display = "grid";
+  document.getElementById("btnRefresh").classList.add("show");
+  document.getElementById("scanInfo").textContent =
+    (_fromCache ? "快取資料：" : "掃描完成：") + _scanTime + "　觸發 " + _allData.length + " 支";
+
+  var bar = document.getElementById("cacheStatusBar");
+  var txt = document.getElementById("cacheStatusText");
+  if (_fromCache && _scanTime) {
+    bar.classList.add("show", "from-cache");
+    txt.textContent = "📦 使用伺服器快取（" + _scanTime + " 建立）　共 " + _allData.length + " 筆";
+  } else {
+    bar.classList.remove("show", "from-cache");
+  }
+  showToast(
+    _fromCache ? "📦 使用伺服器快取（" + _scanTime + "）" : "✅ 掃描完成，共 " + _allData.length + " 支觸發",
+    "success"
+  );
+}
+
+function _startPolling() {
+  _stopPolling();
+  _pollTimer = setInterval(function() {
+    fetch("/api/warming_zone_scan/status")
+      .then(function(r) { return r.json(); })
+      .then(function(status) {
+        if (status.ready) { _stopPolling(); _doFetch(false); }
+      })
+      .catch(function() {});
+  }, 15000);
+}
+
+function _stopPolling() {
+  if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+}
+
+// ── 統計 ──
+function updateStats(data) {
+  var stockCount = data.filter(function(d){ return d.category === "股票"; }).length;
+  var etfCount   = data.filter(function(d){ return d.category === "ETF"; }).length;
+  var multiCount = data.filter(function(d){ return d.met_count >= 2; }).length;
+  document.getElementById("statTotal").textContent     = data.length;
+  document.getElementById("statTriggered").textContent = data.length;
+  document.getElementById("statStock").textContent     = stockCount;
+  document.getElementById("statEtf").textContent       = etfCount;
+  document.getElementById("statMulti").textContent     = multiCount;
+}
+
+// ── 搜尋 ──
+function onSearchInput() {
+  _searchKw = document.getElementById("searchInput").value.trim().toLowerCase();
+  document.getElementById("btnSearchClear").classList.toggle("show", _searchKw.length > 0);
+  renderCards();
+}
+function clearSearch() {
+  document.getElementById("searchInput").value = "";
+  _searchKw = "";
+  document.getElementById("btnSearchClear").classList.remove("show");
+  document.getElementById("searchHint").classList.remove("show");
+  renderCards();
+}
+
+// ── 篩選 ──
+function setFilter(f) {
+  _filter = f;
+  ["filterAll","filterStock","filterEtf","filterMulti","filterDist","filterSqueeze","filterEtfKick"].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove("active");
+  });
+  var map = {
+    all:"filterAll", stock:"filterStock", etf:"filterEtf",
+    multi:"filterMulti", dist:"filterDist", squeeze:"filterSqueeze",
+    etfkick:"filterEtfKick"
+  };
+  var btn = document.getElementById(map[f]);
+  if (btn) btn.classList.add("active");
+  renderCards();
+}
+
+// ── 過濾 + 排序 ──
+function filterData(data) {
+  var result = data.slice();
+  if (_filter === "stock") result = result.filter(function(d){ return d.category === "股票"; });
+  else if (_filter === "etf") result = result.filter(function(d){ return d.category === "ETF"; });
+  else if (_filter === "multi") result = result.filter(function(d){
+    return d.met_count >= 2 || d.level === "distribution";
+  });
+  else if (_filter === "dist") result = result.filter(function(d){
+    return d.level === "distribution" || d.cond5 || d.cond6 || d.cond7;
+  });
+  else if (_filter === "squeeze") result = result.filter(function(d){
+    return d.cond8 || d.level === "squeeze";
+  });
+  else if (_filter === "etfkick") result = result.filter(function(d){
+    if (d.cond9) return true;
+    var c9 = d.details && d.details.cond9;
+    return !!(c9 && (c9.etf_count || 0) >= 2);
+  });
+  if (_searchKw) {
+    result = result.filter(function(d) {
+      return d.name.toLowerCase().indexOf(_searchKw) >= 0
+          || d.code.toLowerCase().indexOf(_searchKw) >= 0;
+    });
+  }
+  if (_sortMode === "warm") result.sort(function(a, b){
+    // ★ 派發警示優先 → 軋空次之 → 觸發組數 → 空單未死分數（與後端一致）
+    function prio(x) {
+      if (x.level === "distribution") return 2;
+      if (x.level === "squeeze")      return 1;
+      return 0;
+    }
+    var pd = prio(b) - prio(a);
+    if (pd !== 0) return pd;
+    var md = b.met_count - a.met_count;
+    if (md !== 0) return md;
+    return (b.short_alive_score || 0) - (a.short_alive_score || 0);
+  });
+  else if (_sortMode === "score") {
+    result.sort(function(a, b) {
+      var sa = (a.combined_score != null) ? a.combined_score : 9999;
+      var sb = (b.combined_score != null) ? b.combined_score : 9999;
+      return sa - sb;
+    });
+  }
+  else if (_sortMode === "short_alive") {
+    result.sort(function(a, b) {
+      var sa = a.short_alive_score || 0;
+      var sb = b.short_alive_score || 0;
+      return sb - sa;
+    });
+  }
+  return result;
+}
+
+// ── 渲染卡片 ──
+function renderCards() {
+  var filtered = filterData(_allData);
+  var grid = document.getElementById("stockGrid");
+  var hint = document.getElementById("searchHint");
+  if (_searchKw) {
+    hint.textContent = '搜尋「' + _searchKw + '」：找到 ' + filtered.length + ' 筆結果';
+    hint.classList.add("show");
+  } else {
+    hint.classList.remove("show");
+  }
+  if (!filtered.length) {
+    var emptyMsg = _searchKw
+      ? '搜尋「' + _searchKw + '」無符合結果'
+      : (_allData.length === 0 ? "無資料，請先執行掃描" : "目前無符合篩選條件的股票");
+    grid.innerHTML = '<div class="empty-state"><div class="icon">' + (_searchKw ? "🔍" : "✅") + '</div><p>' + emptyMsg + '</p></div>';
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < filtered.length; i++) html += buildCard(filtered[i]);
+  grid.innerHTML = html;
+}
+
+// ── 建立卡片 ──
+function buildCard(d) {
+  var cardCls = "stock-card";
+  var isDistribution = (d.level === "distribution") || d.cond5 || d.cond6 || d.cond7;
+  var isSqueeze      = !isDistribution && (d.level === "squeeze" || d.cond8);
+  // ★ 派發警示優先：cond5/cond6/cond7 觸發 → distribution（紅）
+  //   軋空題材：cond8 且未派發 → squeeze（綠）
+  if (isDistribution)              cardCls += " distribution";
+  else if (isSqueeze)              cardCls += " squeeze";
+  else if (d.met_count >= 3)       cardCls += " three-cond";
+  else if (d.met_count === 2)      cardCls += " two-cond";
+
+  var badgeCls, badgeText;
+  if (isDistribution) {
+    badgeCls = "distribution";
+    badgeText = "🔴 高位融資爆增·建議減碼觀察";
+  } else if (isSqueeze) {
+    badgeCls = "squeeze";
+    badgeText = "🟢 軋空題材加溫";
+  } else if (d.met_count >= 3) {
+    badgeCls = "multi"; badgeText = "🔥 " + d.met_count + " 組觸發";
+  } else if (d.met_count === 2) {
+    badgeCls = "two";   badgeText = "⚠️ 二組觸發";
+  } else {
+    badgeCls = "one";   badgeText = "🌡️ 一組觸發";
+  }
+
+  var scoreBadge = "";
+  if (d.combined_score != null) {
+    scoreBadge = '<span class="score-badge" style="border:1px solid ' + (d.combined_color || "#888") + ';color:' + (d.combined_color || "#888") + '">'
+      + '綜合 ' + d.combined_score + '分　' + (d.recommendation || "") + '</span>';
+  }
+  var catCls = d.category === "ETF" ? "etf" : "stock";
+
+  return '<div class="' + cardCls + '" onclick="toggleDetail(\'' + d.code + '\')">'
+    + '<div class="card-header">'
+    +   '<div style="flex:1;min-width:0">'
+    +     '<div class="card-name">' + d.name + '</div>'
+    +     '<div class="card-meta">'
+    +       '<span class="card-code">' + d.code + '.TW</span>'
+    +       '<span class="category-badge ' + catCls + '">' + d.category + '</span>'
+    +     '</div>'
+    +     '<span class="trigger-badge ' + badgeCls + '">' + badgeText + '</span>'
+    +     scoreBadge
+    +   '</div>'
+    +   '<div class="card-right">'
+    +     '<div class="card-price">' + d.latest_close + '</div>'
+    +     '<div class="card-date">'  + d.latest_date  + '</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="cond-rows">' + buildCondRows(d) + '</div>'
+    + '<div class="card-detail" id="detail-' + d.code + '">' + buildDetailHtml(d) + '</div>'
+    + '<div class="card-footer">'
+    +   '<button class="btn-chart" onclick="event.stopPropagation();goToChart(\'' + d.code + '\',\'' + d.category + '\')">'
+    +     '📈 查看K線圖'
+    +   '</button>'
+    + '</div>'
+    + '</div>';
+}
+
+// ── 條件列 ──
+function buildCondRows(d) {
+  var html = "";
+  var conds = [
+    { key: "cond1", title: "組1：漲幅+量縮",         desc: buildCond1Desc(d), kind: "" },
+    { key: "cond2", title: "組2：漲幅+爆量",         desc: buildCond2Desc(d), kind: "" },
+    { key: "cond3", title: "組3：KD高+跳空",         desc: buildCond3Desc(d), kind: "" },
+    { key: "cond4", title: "組4：假突破（即時）",     desc: buildCond4Desc(d), kind: "" },
+    { key: "cond5", title: "組5：派發A·漲緩+借券",   desc: buildCond5Desc(d), kind: "dist" },
+    { key: "cond6", title: "組6：派發B·量縮+借券",   desc: buildCond6Desc(d), kind: "dist" },
+    { key: "cond7", title: "組7：融資爆增（派發）",   desc: buildCond7Desc(d), kind: "dist" },
+    { key: "cond8", title: "組8：軋空題材加溫",       desc: buildCond8Desc(d), kind: "squeeze" },
+    { key: "cond9", title: "組9：ETF 集體出清",         desc: buildCond9Desc(d), kind: "dist" },
+  ];
+  for (var i = 0; i < conds.length; i++) {
+    var c   = conds[i];
+    var met = d[c.key];
+    var rowCls = met ? "met" : "notmet";
+    if (met && c.kind) rowCls += " " + c.kind;
+    var icon = met
+      ? (c.kind === "dist" ? "🔴" : (c.kind === "squeeze" ? "🟢" : "⚠️"))
+      : "✅";
+    html += '<div class="cond-row ' + rowCls + '">'
+      + '<div class="cond-icon">' + icon + '</div>'
+      + '<div>'
+      + '<div class="cond-title">' + c.title + '</div>'
+      + '<div class="cond-detail">' + c.desc + '</div>'
+      + '</div></div>';
+  }
+  // ★ 融資/融券小卡（有資料就顯示）
+  if (d.margin_short && d.margin_short.has_data) {
+    var ms = d.margin_short;
+    var mClass = ms.margin_change_5d_pct >= 0 ? "up" : "dn";
+    var sClass = ms.short_change_5d_pct  >= 0 ? "up" : "dn";
+    var msSign = ms.margin_change_5d_pct >= 0 ? "+" : "";
+    var ssSign = ms.short_change_5d_pct  >= 0 ? "+" : "";
+    html += '<div class="ms-mini">'
+      + '<div class="mm-item">'
+      +   '<div class="mm-label">融資餘額</div>'
+      +   '<div class="mm-val">' + fmtVol(ms.margin_balance) + '</div>'
+      +   '<div class="mm-label" style="margin-top:2px">5日 <span class="mm-val ' + mClass + '">' + msSign + ms.margin_change_5d_pct.toFixed(1) + '%</span></div>'
+      + '</div>'
+      + '<div class="mm-item">'
+      +   '<div class="mm-label">融券餘額</div>'
+      +   '<div class="mm-val">' + fmtVol(ms.short_balance) + '</div>'
+      +   '<div class="mm-label" style="margin-top:2px">5日 <span class="mm-val ' + sClass + '">' + ssSign + ms.short_change_5d_pct.toFixed(1) + '%</span></div>'
+      + '</div>'
+      + '<div class="mm-item">'
+      +   '<div class="mm-label">券資比</div>'
+      +   '<div class="mm-val" style="color:' + (ms.short_margin_ratio >= 15 ? 'var(--green)' : 'var(--txt)') + '">'
+      +     ms.short_margin_ratio.toFixed(1) + '%</div>'
+      +   '<div class="mm-label" style="margin-top:2px">空單未死 <strong>' + ms.short_alive_score.toFixed(1) + '</strong></div>'
+      + '</div>'
+      + '</div>';
+  }
+  return html;
+}
+
+// ✅ 修正：各組描述函式對應新版後端欄位
+function buildCond1Desc(d) {
+  var det = (d.details && d.details.cond1) || {};
+  if (det.gain_7d_pct === undefined)
+    return "7日漲幅 ≥ 4% 且近3日均量 < 前3日均量 × 80%";
+  return "7日漲幅 " + det.gain_7d_pct + "% "
+    + (det.gain_7d_pct >= 4 ? "✓" : "✗")
+    + "　近3日均量 " + fmtVol(det.recent_3d_avg)
+    + " vs 前3日 " + fmtVol(det.past_3d_avg)
+    + "　" + (det.volume_decrease ? "✓ 量縮" : "✗ 未量縮");
+}
+
+function buildCond2Desc(d) {
+  var det = (d.details && d.details.cond2) || {};
+  if (det.gain_7d_pct === undefined)
+    return "7日漲幅 ≥ 10% 且今日爆量（≥ 20日均量 × 2）";
+  return "7日漲幅 " + det.gain_7d_pct + "% "
+    + (det.gain_7d_pct >= 10 ? "✓" : "✗")
+    + "　今日量 " + fmtVol(det.vol_today)
+    + " / 20日均 " + fmtVol(det.vol_ma20)
+    + "（" + det.vol_ratio + "倍）"
+    + "　" + (det.is_surge ? "✓ 爆量" : "✗ 未爆量");
+}
+
+function buildCond3Desc(d) {
+  var det = (d.details && d.details.cond3) || {};
+  if (det.kd_k === undefined)
+    return "KD > 80 且近5日有向下跳空缺口未回補";
+  var gaps = det.bearish_gaps || [];
+  var gapStr = gaps.length > 0
+    ? gaps.map(function(g) { return g.date + "(" + g.gap_pct + "%)"; }).join("、")
+    : "無缺口";
+  return "K=" + det.kd_k + " D=" + det.kd_d
+    + "　" + (det.kd_above_80 ? "✓ KD>80" : "✗ KD≤80")
+    + "　跳空：" + gapStr;
+}
+
+function buildCond4Desc(d) {
+  var det = (d.details && d.details.cond4) || {};
+  var bmas = det.broken_mas || [];
+  if (!bmas.length) return "今日無假突破均線情況";
+  return "盤中站上後跌破：" + bmas.map(function(m) {
+    return m.ma_name + "(" + m.ma_value + ")";
+  }).join("、");
+}
+
+// 組5：漲緩 + 借券
+function buildCond5Desc(d) {
+  if (d.category === "ETF") return "ETF 不適用派發判斷";
+  var det = (d.details && d.details.cond5) || {};
+  if (det.gain_90d_pct === undefined) return "前提：90日漲幅≥30% 且 距高點≤5%";
+  if (!det.pre_pass) {
+    return "前提未過：90日漲幅 " + det.gain_90d_pct + "%（需≥30%）"
+      + "／距高點 " + det.dist_high_pct + "%（需≤5%）";
+  }
+  var slowStr = det.slowdown_by_gain ? "✓ 漲幅放緩" : (det.slowdown_by_slope ? "✓ MA20斜率減速" : "✗ 未放緩");
+  var lend = det.lending || {};
+  var lendStr = det.lending_pass
+    ? "✓ 連續借券（" + lend.active_days + "/5天，5日量 " + fmtVol(lend.sum_recent) + " ÷ 60日均 " + fmtVol(Math.round(lend.avg_60d || 0)) + " = " + (lend.ratio || 0).toFixed(2) + "倍）"
+    : "✗ 借券未連續";
+  return "5日漲幅 " + det.gain_5d_pct + "% vs 20日 " + det.gain_20d_pct + "%　"
+    + slowStr + "　" + lendStr;
+}
+
+// 組6：量縮 + 借券
+function buildCond6Desc(d) {
+  if (d.category === "ETF") return "ETF 不適用派發判斷";
+  var det = (d.details && d.details.cond6) || {};
+  if (det.gain_90d_pct === undefined) return "前提：90日漲幅≥30% 且 距高點≤5%";
+  if (!det.pre_pass) {
+    return "前提未過：90日漲幅 " + det.gain_90d_pct + "%（需≥30%）"
+      + "／距高點 " + det.dist_high_pct + "%（需≤5%）";
+  }
+  var redStr = det.is_red_k ? "✓ 紅K" : "✗ 非紅K";
+  var volStr = det.vol_shrink_loose ? ("✓ 量縮 " + det.vol_ratio_10d + "倍") : ("✗ 量未縮 " + det.vol_ratio_10d + "倍");
+  var lend = det.lending || {};
+  var lendStr = det.lending_pass
+    ? "✓ 連續借券（" + lend.active_days + "/5天）"
+    : "✗ 借券未連續";
+  return redStr + "　" + volStr + "（vs 10日均量×0.85）　" + lendStr;
+}
+
+// 組7：融資爆增
+function buildCond7Desc(d) {
+  if (d.category === "ETF") return "ETF 不適用融資判斷";
+  var det = (d.details && d.details.cond7) || {};
+  if (det.gain_90d_pct === undefined || !d.margin_short || !d.margin_short.has_data) {
+    return "需 90日漲幅≥20% 且 距高點≤10%（無融資資料）";
+  }
+  var prePass = (det.gain_90d_pct >= 20.0) && (det.dist_high_pct <= 10.0);
+  if (!prePass) {
+    return "前提未過：90日漲幅 " + (det.gain_90d_pct || 0).toFixed(1) + "%（需≥20%）"
+      + "／距高點 " + (det.dist_high_pct || 0).toFixed(1) + "%（需≤10%）";
+  }
+  var ratioStr = (det.margin_surge_ratio || 0).toFixed(2) + "倍";
+  var passStr = (det.margin_surge_ratio || 0) >= 2.0 ? "✓ 融資爆增" : "✗ 融資未爆增";
+  return "5日融資增量 " + (det.margin_5d_increase || 0)
+    + " vs 60日均增量 " + (det.margin_avg_5d_increase_60d || 0).toFixed(0)
+    + "（" + ratioStr + "）　" + passStr;
+}
+
+// 組8：軋空題材
+function buildCond8Desc(d) {
+  if (d.category === "ETF") return "ETF 不適用融券判斷";
+  var det = (d.details && d.details.cond8) || {};
+  if (!d.margin_short || !d.margin_short.has_data) return "（無融券資料）";
+  var ratio = det.short_margin_ratio || 0;
+  var noDec = det.short_no_decrease_days || 0;
+  var bal   = det.short_balance || 0;
+  var rStr  = ratio >= 15 ? ("✓ 券資比 " + ratio.toFixed(1) + "%") : ("✗ 券資比 " + ratio.toFixed(1) + "%");
+  var nStr  = noDec >= 4  ? ("✓ 不減 " + noDec + "/5天") : ("✗ 不減 " + noDec + "/5天");
+  var bStr  = bal > 0     ? "✓ 有融券" : "✗ 無融券";
+  return rStr + "　" + nStr + "　" + bStr;
+}
+
+// 組9：ETF 集體出清
+function buildCond9Desc(d) {
+  var det = (d.details && d.details.cond9) || {};
+  var n = det.etf_count || 0;
+  var arr = det.etfs || [];
+  if (!n) return "✗ 未達 ETF 集體剔除門檻（前1日≥3檔 或 前2日≥4檔）";
+  var names = arr.map(function(e){
+    return (e && (e.etf_name || e.etf_code)) || "";
+  }).filter(function(x){ return !!x; }).join("、");
+  return "✓ 短期內被 " + n + " 檔 ETF 同期剔除：" + (names || "—");
+}
+
+// ── 詳細資料 ──
+function buildDetailHtml(d) {
+  var html = '<div style="font-size:11px;color:var(--txt2);margin-bottom:8px">▼ 詳細資料</div>';
+
+  // 綜合評分
+  if (d.combined_score != null) {
+    var scColor = d.combined_color || "#888888";
+    var finStr  = d.financial_score != null ? d.financial_score + " 分" : "－";
+    var newsStr = d.news_score      != null ? String(d.news_score)       : "－";
+    html += '<div style="background:rgba(68,138,255,.06);border:1px solid var(--bdr);'
+      + 'border-radius:8px;padding:10px 12px;margin-bottom:10px">'
+      + '<div style="font-size:10px;color:var(--blue);font-weight:700;margin-bottom:8px">📊 綜合評分明細</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">'
+      + mkDetailItem("綜合評分", d.combined_score + " 分", scColor)
+      + mkDetailItem("建議",     d.recommendation || "－", scColor)
+      + mkDetailItem("技術訊號", d.tech_signal    || "－", "var(--txt)")
+      + mkDetailItem("財報評分", finStr,                   "var(--txt)")
+      + mkDetailItem("新聞情緒", newsStr,                  "var(--txt)")
+      + '</div></div>';
+  }
+
+  // ✅ 修正：組1 詳細（對應新版欄位）
+  if (d.cond1 && d.details && d.details.cond1) {
+    var c1 = d.details.cond1;
+    html += '<div style="margin-bottom:8px">'
+      + '<div style="font-size:10px;color:var(--cyan);font-weight:700;margin-bottom:4px">組1 漲幅+量縮</div>'
+      + '<div class="detail-grid">'
+      + mkDetailItem("7日漲幅",   c1.gain_7d_pct + "%",       c1.gain_7d_pct >= 4 ? "var(--orange)" : "var(--txt2)")
+      + mkDetailItem("近3日均量", fmtVol(c1.recent_3d_avg),   "var(--txt)")
+      + mkDetailItem("前3日均量", fmtVol(c1.past_3d_avg),     "var(--txt2)")
+      + mkDetailItem("量縮門檻",  fmtVol(c1.threshold_vol),   "var(--txt2)")
+      + '</div></div>';
+  }
+
+  // ✅ 修正：組2 詳細（對應新版欄位）
+  if (d.cond2 && d.details && d.details.cond2) {
+    var c2 = d.details.cond2;
+    html += '<div style="margin-bottom:8px">'
+      + '<div style="font-size:10px;color:var(--yellow);font-weight:700;margin-bottom:4px">組2 漲幅+爆量</div>'
+      + '<div class="detail-grid">'
+      + mkDetailItem("7日漲幅",   c2.gain_7d_pct + "%",   c2.gain_7d_pct >= 10 ? "var(--orange)" : "var(--txt2)")
+      + mkDetailItem("今日量",    fmtVol(c2.vol_today),   c2.is_surge ? "var(--orange)" : "var(--txt)")
+      + mkDetailItem("20日均量",  fmtVol(c2.vol_ma20),    "var(--txt2)")
+      + mkDetailItem("量能倍數",  c2.vol_ratio + "倍",    c2.is_surge ? "var(--orange)" : "var(--txt2)")
+      + '</div></div>';
+  }
+
+  // ✅ 修正：組3 詳細（對應新版欄位）
+  if (d.cond3 && d.details && d.details.cond3) {
+    var c3 = d.details.cond3;
+    html += '<div style="margin-bottom:8px">'
+      + '<div style="font-size:10px;color:var(--orange);font-weight:700;margin-bottom:4px">組3 KD高+跳空</div>'
+      + '<div class="detail-grid" style="margin-bottom:6px">'
+      + mkDetailItem("K值", c3.kd_k, c3.kd_above_80 ? "var(--orange)" : "var(--txt)")
+      + mkDetailItem("D值", c3.kd_d, c3.kd_above_80 ? "var(--orange)" : "var(--txt)")
+      + '</div>';
+    var gaps3 = c3.bearish_gaps || [];
+    if (gaps3.length > 0) {
+      for (var gi = 0; gi < gaps3.length; gi++) {
+        var g = gaps3[gi];
+        html += '<div style="background:var(--bg3);border-radius:6px;padding:6px 8px;'
+          + 'margin-bottom:4px;font-size:11px;border-left:3px solid var(--green)">'
+          + '<span style="color:var(--green);font-weight:700">↓向下跳空</span>'
+          + '　' + g.date
+          + '　' + g.gap_bottom + ' → ' + g.gap_top
+          + '　<span style="color:var(--green)">(' + g.gap_pct + '%)</span>'
+          + '</div>';
+      }
+    } else {
+      html += '<div style="font-size:10px;color:var(--txt2)">無未回補跳空缺口</div>';
+    }
+    html += '</div>';
+  }
+
+  // ✅ 組4 詳細（假突破）
+  if (d.cond4 && d.details && d.details.cond4) {
+    var bmas4 = d.details.cond4.broken_mas || [];
+    html += '<div style="margin-bottom:8px">'
+      + '<div style="font-size:10px;color:var(--purple);font-weight:700;margin-bottom:4px">組4 假突破均線</div>';
+    if (bmas4.length > 0) {
+      for (var bi = 0; bi < bmas4.length; bi++) {
+        var bm = bmas4[bi];
+        html += '<div style="background:var(--bg3);border-radius:6px;padding:6px 8px;'
+          + 'margin-bottom:4px;font-size:11px;border-left:3px solid var(--purple)">'
+          + '<span style="color:var(--purple);font-weight:700">' + bm.ma_name + '</span>'
+          + '　均線 ' + bm.ma_value
+          + '　盤中高 ' + bm.today_high
+          + '　收盤 <span style="color:var(--red)">' + bm.today_close + '</span>'
+          + '</div>';
+      }
+    } else {
+      html += '<div style="font-size:10px;color:var(--txt2)">今日無假突破</div>';
+    }
+    html += '</div>';
+  }
+
+  // ★ 組5 詳細（派發 A：漲緩 + 借券）
+  if (d.cond5 && d.details && d.details.cond5) {
+    var c5 = d.details.cond5;
+    var lend5 = c5.lending || {};
+    html += '<div style="margin-bottom:8px;background:rgba(255,23,68,.06);'
+      + 'border:1px solid var(--red);border-radius:8px;padding:10px 12px">'
+      + '<div style="font-size:10px;color:var(--red);font-weight:700;margin-bottom:6px">'
+      + '🔴 組5 派發A·漲緩+借券（建議減碼 50%）</div>'
+      + '<div class="detail-grid">'
+      + mkDetailItem("90日漲幅", c5.gain_90d_pct + "%", c5.gain_90d_pct >= 30 ? "var(--orange)" : "var(--txt2)")
+      + mkDetailItem("距高點",   c5.dist_high_pct + "%", c5.dist_high_pct <= 5 ? "var(--orange)" : "var(--txt2)")
+      + mkDetailItem("5日漲幅",  c5.gain_5d_pct  + "%", "var(--txt)")
+      + mkDetailItem("20日漲幅", c5.gain_20d_pct + "%", "var(--txt)")
+      + mkDetailItem("MA20斜率(5日)",  c5.slope_5d,  "var(--txt2)")
+      + mkDetailItem("MA20斜率(20日)", c5.slope_20d, "var(--txt2)")
+      + mkDetailItem("漲幅放緩",  c5.slowdown_by_gain  ? "✓" : "✗", c5.slowdown_by_gain  ? "var(--orange)" : "var(--txt2)")
+      + mkDetailItem("斜率減速",  c5.slowdown_by_slope ? "✓" : "✗", c5.slowdown_by_slope ? "var(--orange)" : "var(--txt2)")
+      + '</div>'
+      + '<div style="margin-top:8px;padding:6px 8px;background:var(--bg3);border-radius:6px;font-size:11px">'
+      + '<span style="color:var(--red);font-weight:700">借券（議借）</span>　'
+      + '近5日有議借天數 <strong>' + (lend5.active_days || 0) + '/5</strong>　'
+      + '5日累積 <strong>' + fmtVol(lend5.sum_recent || 0) + '</strong> 張　'
+      + '60日均（有議借日） <strong>' + fmtVol(Math.round(lend5.avg_60d || 0)) + '</strong> 張　'
+      + '倍率 <strong style="color:' + ((lend5.ratio || 0) >= 1.5 ? 'var(--red)' : 'var(--txt2)') + '">'
+      + (lend5.ratio || 0).toFixed(2) + '×</strong>'
+      + '</div></div>';
+  }
+
+  // ★ 組6 詳細（派發 B：量縮 + 借券）
+  if (d.cond6 && d.details && d.details.cond6) {
+    var c6 = d.details.cond6;
+    var lend6 = c6.lending || {};
+    html += '<div style="margin-bottom:8px;background:rgba(255,23,68,.06);'
+      + 'border:1px solid var(--red);border-radius:8px;padding:10px 12px">'
+      + '<div style="font-size:10px;color:var(--red);font-weight:700;margin-bottom:6px">'
+      + '🔴 組6 派發B·量縮+借券（建議減碼 50%）</div>'
+      + '<div class="detail-grid">'
+      + mkDetailItem("90日漲幅", c6.gain_90d_pct + "%", c6.gain_90d_pct >= 30 ? "var(--orange)" : "var(--txt2)")
+      + mkDetailItem("距高點",   c6.dist_high_pct + "%", c6.dist_high_pct <= 5 ? "var(--orange)" : "var(--txt2)")
+      + mkDetailItem("今日 K 線", c6.is_red_k ? "✓ 紅K" : "✗ 非紅K",
+                     c6.is_red_k ? "var(--orange)" : "var(--txt2)")
+      + mkDetailItem("量/10日均", c6.vol_ratio_10d + "×",
+                     c6.vol_shrink_loose ? "var(--orange)" : "var(--txt2)")
+      + '</div>'
+      + '<div style="margin-top:8px;padding:6px 8px;background:var(--bg3);border-radius:6px;font-size:11px">'
+      + '<span style="color:var(--red);font-weight:700">借券（議借）</span>　'
+      + '近5日有議借天數 <strong>' + (lend6.active_days || 0) + '/5</strong>　'
+      + '5日累積 <strong>' + fmtVol(lend6.sum_recent || 0) + '</strong> 張　'
+      + '60日均 <strong>' + fmtVol(Math.round(lend6.avg_60d || 0)) + '</strong> 張　'
+      + '倍率 <strong style="color:' + ((lend6.ratio || 0) >= 1.5 ? 'var(--red)' : 'var(--txt2)') + '">'
+      + (lend6.ratio || 0).toFixed(2) + '×</strong>'
+      + '</div></div>';
+  }
+
+  // ★ 組7 詳細（融資爆增）
+  if (d.cond7 && d.details && d.details.cond7) {
+    var c7 = d.details.cond7;
+    html += '<div style="margin-bottom:8px;background:rgba(255,23,68,.06);'
+      + 'border:1px solid var(--red);border-radius:8px;padding:10px 12px">'
+      + '<div style="font-size:10px;color:var(--red);font-weight:700;margin-bottom:6px">'
+      + '🔴 組7 融資爆增（建議減碼 50%）</div>'
+      + '<div class="detail-grid">'
+      + mkDetailItem("90日漲幅", (c7.gain_90d_pct || 0).toFixed(1) + "%",
+                     (c7.gain_90d_pct || 0) >= 20 ? "var(--orange)" : "var(--txt2)")
+      + mkDetailItem("距高點", (c7.dist_high_pct || 0).toFixed(1) + "%",
+                     (c7.dist_high_pct || 0) <= 10 ? "var(--orange)" : "var(--txt2)")
+      + mkDetailItem("5日融資增量", String(c7.margin_5d_increase || 0), "var(--red)")
+      + mkDetailItem("60日均5日增量", (c7.margin_avg_5d_increase_60d || 0).toFixed(0), "var(--txt2)")
+      + mkDetailItem("爆增倍率", (c7.margin_surge_ratio || 0).toFixed(2) + "×",
+                     (c7.margin_surge_ratio || 0) >= 2.0 ? "var(--red)" : "var(--txt2)")
+      + mkDetailItem("融資5日變化", (c7.margin_change_5d_pct || 0).toFixed(1) + "%", "var(--txt)")
+      + '</div></div>';
+  }
+
+  // ★ 組8 詳細（軋空題材）
+  if (d.cond8 && d.details && d.details.cond8) {
+    var c8 = d.details.cond8;
+    html += '<div style="margin-bottom:8px;background:rgba(0,200,83,.06);'
+      + 'border:1px solid var(--green);border-radius:8px;padding:10px 12px">'
+      + '<div style="font-size:10px;color:var(--green);font-weight:700;margin-bottom:6px">'
+      + '🟢 組8 軋空題材加溫（觀察）</div>'
+      + '<div class="detail-grid">'
+      + mkDetailItem("券資比", (c8.short_margin_ratio || 0).toFixed(1) + "%",
+                     (c8.short_margin_ratio || 0) >= 15 ? "var(--green)" : "var(--txt2)")
+      + mkDetailItem("融券不減天數", (c8.short_no_decrease_days || 0) + "/5",
+                     (c8.short_no_decrease_days || 0) >= 4 ? "var(--green)" : "var(--txt2)")
+      + mkDetailItem("融券餘額", fmtVol(c8.short_balance || 0), "var(--txt)")
+      + mkDetailItem("融券5日變化", (c8.short_change_5d_pct || 0).toFixed(1) + "%",
+                     (c8.short_change_5d_pct || 0) >= 0 ? "var(--green)" : "var(--txt2)")
+      + '</div></div>';
+  }
+
+  // ★ 組9 詳細（ETF 集體出清）
+  if (d.cond9 && d.details && d.details.cond9) {
+    var c9 = d.details.cond9;
+    var arr9 = c9.etfs || [];
+    var listHtml = arr9.map(function(e){
+      var nm = (e && (e.etf_name || e.etf_code)) || "";
+      var cd = (e && e.etf_code) || "";
+      return '<span style="display:inline-block;background:rgba(255,23,68,.15);'
+           + 'border:1px solid var(--red);border-radius:4px;padding:2px 8px;'
+           + 'margin:2px 4px 2px 0;font-size:11px;color:var(--red)">'
+           + (nm || cd) + '</span>';
+    }).join("");
+    html += '<div style="margin-bottom:8px;background:rgba(255,23,68,.06);'
+      + 'border:1px solid var(--red);border-radius:8px;padding:10px 12px">'
+      + '<div style="font-size:10px;color:var(--red);font-weight:700;margin-bottom:6px">'
+      + '🔻 組9 ETF 集體出清（前1日≥3檔 或 前2日≥4檔 同期剔除）</div>'
+      + '<div class="detail-grid">'
+      + mkDetailItem("剔除 ETF 數", String(c9.etf_count || 0) + " 檔",
+                     (c9.etf_count || 0) >= 2 ? "var(--red)" : "var(--txt2)")
+      + '</div>'
+      + '<div style="margin-top:6px">' + (listHtml || '<span style="color:var(--txt2);font-size:11px">—</span>') + '</div>'
+      + '</div>';
+  }
+
+  return html;
+}
+
+function mkDetailItem(label, val, color) {
+  return '<div class="detail-item">'
+    + '<div class="d-label">' + label + '</div>'
+    + '<div class="d-val" style="color:' + color + '">' + val + '</div>'
+    + '</div>';
+}
+
+function toggleDetail(code) {
+  var el = document.getElementById("detail-" + code);
+  if (el) el.classList.toggle("show");
+}
+
+function goToChart(code, category) {
+  var path = category === "ETF" ? "/etf?code=" : "index.html?code=";
+  window.open(path + code, "_blank");
+}
+
+function fmtVol(v) {
+  if (!v && v !== 0) return "-";
+  if (v >= 100000000) return (v / 100000000).toFixed(1) + "億";
+  if (v >= 10000000)  return (v / 10000000).toFixed(1)  + "千萬";
+  if (v >= 1000000)   return (v / 1000000).toFixed(1)   + "百萬";
+  if (v >= 1000)      return (v / 1000).toFixed(0)      + "K";
+  return String(v);
+}
+
+window.addEventListener("load", function() { runScan(); });
+</script>
+</body>
+</html>

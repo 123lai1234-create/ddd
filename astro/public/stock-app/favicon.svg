@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a3e"/>
+      <stop offset="100%" style="stop-color:#0f0f23"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#448aff"/>
+      <stop offset="100%" style="stop-color:#d500f9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景圓角矩形 -->
+  <rect width="32" height="32" rx="6" fill="url(#bg)"/>
+
+  <!-- K線柱（左） -->
+  <rect x="5" y="14" width="3" height="10" rx="1" fill="#00c853" opacity="0.9"/>
+  <line x1="6.5" y1="12" x2="6.5" y2="14" stroke="#00c853" stroke-width="1.2"/>
+  <line x1="6.5" y1="24" x2="6.5" y2="26" stroke="#00c853" stroke-width="1.2"/>
+
+  <!-- K線柱（中） -->
+  <rect x="11" y="10" width="3" height="12" rx="1" fill="#ff1744" opacity="0.9"/>
+  <line x1="12.5" y1="8" x2="12.5" y2="10" stroke="#ff1744" stroke-width="1.2"/>
+  <line x1="12.5" y1="22" x2="12.5" y2="24" stroke="#ff1744" stroke-width="1.2"/>
+
+  <!-- K線柱（右） -->
+  <rect x="17" y="8" width="3" height="14" rx="1" fill="#ff1744" opacity="0.9"/>
+  <line x1="18.5" y1="6" x2="18.5" y2="8" stroke="#ff1744" stroke-width="1.2"/>
+  <line x1="18.5" y1="22" x2="18.5" y2="25" stroke="#ff1744" stroke-width="1.2"/>
+
+  <!-- 均線（漸層藍紫） -->
+  <polyline
+    points="4,22 8,18 13,15 18,11 24,8 28,6"
+    fill="none"
+    stroke="url(#line)"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- 右上角小三角（買入訊號） -->
+  <polygon points="26,18 30,26 22,26" fill="#00e676" opacity="0.85"/>
+</svg>

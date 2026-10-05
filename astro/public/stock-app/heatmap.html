@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>漲跌市值熱力圖</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+  <style>
+    :root{
+      --bg:#0d0f14; --panel:#161a22; --panel2:#1b212c; --bdr:#262d3a;
+      --txt:#e6eaf2; --txt2:#8b94a7; --green:#1fbf75; --red:#ef4d56;
+      --accent:#4da3ff;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--bg);color:var(--txt);
+      font-family:-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;font-size:14px;}
+    header{display:flex;align-items:center;gap:14px;padding:14px 20px;
+      border-bottom:1px solid var(--bdr);flex-wrap:wrap;}
+    h1{font-size:18px;margin:0;color:var(--accent);font-weight:700;}
+    .meta{color:var(--txt2);font-size:12px;}
+    .wrap{padding:16px 20px;}
+    .controls{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+    .seg{display:inline-flex;border:1px solid var(--bdr);border-radius:8px;overflow:hidden;}
+    .seg button{background:var(--panel);color:var(--txt2);border:none;padding:8px 16px;
+      cursor:pointer;font-size:13px;}
+    .seg button.active{background:var(--accent);color:#06121f;font-weight:700;}
+    .ctl-label{color:var(--txt2);font-size:12px;margin-right:6px;}
+    select{background:var(--panel);color:var(--txt);border:1px solid var(--bdr);
+      border-radius:8px;padding:8px 12px;font-size:13px;}
+    .legend{display:flex;align-items:center;gap:8px;color:var(--txt2);font-size:12px;margin-left:auto;}
+    .legend .bar{width:160px;height:12px;border-radius:3px;
+      background:linear-gradient(90deg,#1a7f37,#374047,#c0392b);}
+    #treemap{width:100%;height:560px;background:var(--panel);border:1px solid var(--bdr);
+      border-radius:10px;}
+    .loading{color:var(--txt2);text-align:center;padding:60px 0;}
+    .rank-wrap{margin-top:24px;}
+    .rank-wrap h2{font-size:15px;margin:0 0 10px;color:var(--txt);}
+    table{width:100%;border-collapse:collapse;background:var(--panel);
+      border:1px solid var(--bdr);border-radius:10px;overflow:hidden;}
+    th,td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--bdr);font-size:13px;}
+    th:first-child,td:first-child{text-align:left;}
+    th{color:var(--txt2);font-weight:600;background:var(--panel2);}
+    th.sortable{cursor:pointer;user-select:none;}
+    th.sortable:hover{color:var(--accent);}
+    th.sortable .arr{font-size:10px;opacity:.5;margin-left:3px;}
+    th.sortable.active .arr{opacity:1;color:var(--accent);}
+    tbody tr:hover{background:var(--panel2);}
+    .rank-no{color:var(--txt2);font-family:monospace;}
+    .pos{color:var(--red);font-family:monospace;}
+    .neg{color:var(--green);font-family:monospace;}
+    .neu{color:var(--txt2);font-family:monospace;}
+    .back{color:var(--txt2);text-decoration:none;border:1px solid var(--bdr);
+      padding:6px 12px;border-radius:8px;font-size:12px;}
+    .back:hover{color:var(--txt);}
+    /* 排名表：水平捲動容器（手機用） */
+    #rankTable{overflow-x:auto;-webkit-overflow-scrolling:touch;
+      border-radius:10px;}
+    td .rank-no{margin-right:2px;}
+    /* 手機 RWD */
+    @media (max-width:640px){
+      header{padding:12px 14px;gap:8px;}
+      h1{font-size:16px;}
+      .wrap{padding:12px 14px;}
+      #treemap{height:460px;}
+      .legend{margin-left:0;width:100%;}
+      .legend .bar{width:100px;}
+      .rank-wrap h2{font-size:14px;}
+      #rankTable table{min-width:560px;}
+      th,td{padding:8px 9px;font-size:12px;white-space:nowrap;}
+      /* 第一欄（產業名稱）凍結，捲動時保留情境 */
+      th:first-child,td:first-child{position:sticky;left:0;z-index:1;}
+      th:first-child{background:var(--panel2);}
+      td:first-child{background:var(--panel);}
+      tbody tr:hover td:first-child{background:var(--panel2);}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>漲跌市值熱力圖</h1>
+    <span class="meta" id="meta">載入中…</span>
+    <a class="back" href="index.html" >← 回首頁</a>
+  </header>
+
+  <div class="wrap">
+    <div class="controls">
+      <div>
+        <span class="ctl-label">熱力圖期間</span>
+        <div class="seg" id="segMetric">
+          <button data-m="chg_1d" class="active">當日</button>
+          <button data-m="chg_5d">近 5 日</button>
+          <button data-m="chg_20d">近 20 日</button>
+        </div>
+      </div>
+      <div>
+        <span class="ctl-label">產業篩選</span>
+        <select id="selIndustry"><option value="__all__">全部產業</option></select>
+      </div>
+      <div class="legend">
+        <span>跌</span><span class="bar"></span><span>漲</span>
+        <span style="margin-left:6px;">（方塊大小＝市值）</span>
+      </div>
+    </div>
+
+    <div id="treemap"></div>
+    <div id="treeLoading" class="loading">資料載入中，首次載入需抓取市值，約 15~40 秒…</div>
+
+    <div class="rank-wrap">
+      <h2>各產業漲跌排名（市值加權平均）</h2>
+      <div id="rankTable"></div>
+    </div>
+  </div>
+
+<script>
+const $ = s => document.querySelector(s);
+let _data = null;
+let _metric = 'chg_1d';
+let _industry = '__all__';
+let _chart = null;
+let _rankSortKey = 'chg_5d';
+let _rankSortDir = 'desc';
+
+function fmtPct(v){
+  if(v===null||v===undefined||isNaN(v)) return '—';
+  return (v>0?'+':'')+v.toFixed(2)+'%';
+}
+function clsPct(v){
+  if(v===null||v===undefined||isNaN(v)) return 'neu';
+  return v>0?'pos':(v<0?'neg':'neu');
+}
+function fmtCap(v){
+  if(!v) return '—';
+  const yi = v/1e8;
+  if(yi>=10000) return (yi/10000).toFixed(2)+' 兆';
+  return yi.toFixed(0)+' 億';
+}
+function lerp(a,b,t){return a.map((x,i)=>Math.round(x+(b[i]-x)*t));}
+function pctColor(v){
+  if(v===null||v===undefined||isNaN(v)) return '#454b57';
+  const cap=6;
+  const t=Math.max(-cap,Math.min(cap,v))/cap;
+  const mid=[55,64,71], pos=[192,57,43], neg=[26,127,55];
+  const c = t>=0 ? lerp(mid,pos,t) : lerp(mid,neg,-t);
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function buildTreeData(){
+  let list = _data.stocks;
+  if(_industry!=='__all__') list = list.filter(s=>s.industry===_industry);
+  const groups = {};
+  for(const s of list){
+    const lbl = s.industry || '其他';
+    (groups[lbl] = groups[lbl]||[]).push(s);
+  }
+  const data = [];
+  for(const lbl in groups){
+    const children = groups[lbl].map(s=>{
+      const v = s[_metric];
+      return {
+        name: s.code,
+        value: Math.max(s.market_cap||0, 1e7),
+        _chg: v, _name: s.name, _cap: s.market_cap,
+        itemStyle:{ color: pctColor(v) },
+        cursor:'pointer',
+      };
+    });
+    data.push({ name: lbl, children });
+  }
+  return data;
+}
+
+function renderTreemap(){
+  if(!_chart) return;
+  const data = buildTreeData();
+  _chart.setOption({
+    tooltip:{
+      backgroundColor:'#1b212c', borderColor:'#262d3a',
+      textStyle:{color:'#e6eaf2'},
+      formatter: p=>{
+        if(p.data && p.data._name===undefined) return p.name; // 產業節點
+        const d=p.data;
+        return `<b>${d.name} ${d._name||''}</b><br>市值：${fmtCap(d._cap)}<br>漲跌：${fmtPct(d._chg)}`;
+      }
+    },
+    series:[{
+      type:'treemap', roam:false, nodeClick:false,
+      breadcrumb:{show:false}, animation:false,
+      width:'100%', height:'100%', top:0,left:0,right:0,bottom:0,
+      upperLabel:{ show:true, height:22, color:'#cbd3e0', fontSize:12,
+        fontWeight:700, formatter:'{b}' },
+      label:{ show:true, color:'#fff', fontSize:11, overflow:'truncate',
+        formatter: p=>{
+          const c=p.data._chg;
+          return `${p.name}\n${c===null||c===undefined?'—':((c>0?'+':'')+c+'%')}`;
+        }
+      },
+      itemStyle:{ borderColor:'#0d0f14', borderWidth:1, gapWidth:1 },
+      levels:[
+        { itemStyle:{ borderColor:'#0d0f14', borderWidth:3, gapWidth:3 } },
+        { itemStyle:{ gapWidth:1 } }
+      ],
+      data
+    }]
+  }, true);
+}
+
+const RANK_COLS = [
+  {k:'label', t:'產業', type:'str'},
+  {k:'count', t:'檔數', type:'num'},
+  {k:'market_cap', t:'總市值', type:'num'},
+  {k:'chg_5d', t:'近 5 日', type:'num'},
+  {k:'chg_10d', t:'近 10 日', type:'num'},
+  {k:'chg_20d', t:'近 20 日', type:'num'},
+  {k:'chg_60d', t:'近 60 日', type:'num'},
+];
+
+function sortRank(rows){
+  const k=_rankSortKey, dir=_rankSortDir;
+  const col = RANK_COLS.find(c=>c.k===k) || {type:'num'};
+  const arr = rows.slice();
+  if(col.type==='num'){
+    arr.sort((x,y)=>{
+      const a=(x[k]==null||isNaN(x[k]))?-Infinity:x[k];
+      const b=(y[k]==null||isNaN(y[k]))?-Infinity:y[k];
+      return dir==='desc'?(b-a):(a-b);
+    });
+  }else{
+    arr.sort((x,y)=>{
+      const a=String(x[k]||''), b=String(y[k]||'');
+      return dir==='desc'?b.localeCompare(a):a.localeCompare(b);
+    });
+  }
+  return arr;
+}
+function rankArr(k){
+  if(_rankSortKey!==k) return '<span class="arr">⇅</span>';
+  return _rankSortDir==='desc'?'<span class="arr">▼</span>':'<span class="arr">▲</span>';
+}
+function setRankSort(k){
+  if(_rankSortKey===k) _rankSortDir=_rankSortDir==='desc'?'asc':'desc';
+  else { _rankSortKey=k; _rankSortDir='desc'; }
+  renderRank();
+}
+
+function renderRank(){
+  if(!_data || !_data.industries){ $('#rankTable').innerHTML=''; return; }
+  const rows = sortRank(_data.industries);
+  const sCls = k => 'sortable'+(_rankSortKey===k?' active':'');
+  let html = '<table><thead><tr>';
+  for(const c of RANK_COLS){
+    html += `<th class="${sCls(c.k)}" data-sort="${c.k}">${c.t}${rankArr(c.k)}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+  rows.forEach((r,i)=>{
+    html += '<tr>'
+      + `<td><span class="rank-no">${i+1}.</span> ${r.label}</td>`
+      + `<td class="neu">${r.count}</td>`
+      + `<td class="neu">${fmtCap(r.market_cap)}</td>`
+      + `<td class="${clsPct(r.chg_5d)}">${fmtPct(r.chg_5d)}</td>`
+      + `<td class="${clsPct(r.chg_10d)}">${fmtPct(r.chg_10d)}</td>`
+      + `<td class="${clsPct(r.chg_20d)}">${fmtPct(r.chg_20d)}</td>`
+      + `<td class="${clsPct(r.chg_60d)}">${fmtPct(r.chg_60d)}</td>`
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+  $('#rankTable').innerHTML = html;
+}
+
+function populateIndustries(){
+  const labels = [...new Set(_data.stocks.map(s=>s.industry||'其他'))].sort();
+  const sel = $('#selIndustry');
+  for(const l of labels){
+    const o = document.createElement('option');
+    o.value=l; o.textContent=l; sel.appendChild(o);
+  }
+}
+
+async function load(){
+  $('#meta').textContent='載入中…';
+  try{
+    const r = await fetch('/api/heatmap');
+    const j = await r.json();
+    if(!j.ok){ $('#treeLoading').textContent='載入失敗：'+(j.error||'未知錯誤'); return; }
+    _data = j;
+    $('#meta').textContent = `更新時間 ${j.as_of}　共 ${j.count} 檔`;
+    $('#treeLoading').style.display='none';
+    populateIndustries();
+    _chart = echarts.init($('#treemap'), 'dark');
+    _chart.on('click', p=>{
+      // 只在個股方塊上動作（產業大框 _name 為 undefined）
+      if(!p || !p.data || p.data._name===undefined) return;
+      const code = p.data.name;
+      if(code) window.open(`index.html?code=${encodeURIComponent(code)}`, '_blank');
+    });
+    renderTreemap();
+    renderRank();
+  }catch(e){
+    $('#treeLoading').textContent='載入失敗：'+e.message;
+  }
+}
+
+$('#segMetric').addEventListener('click', ev=>{
+  const b = ev.target.closest('button'); if(!b) return;
+  _metric = b.getAttribute('data-m');
+  document.querySelectorAll('#segMetric button').forEach(x=>x.classList.toggle('active', x===b));
+  renderTreemap();
+});
+$('#selIndustry').addEventListener('change', ev=>{ _industry=ev.target.value; renderTreemap(); });
+$('#rankTable').addEventListener('click', ev=>{
+  const th = ev.target.closest && ev.target.closest('th.sortable');
+  if(!th) return;
+  const k = th.getAttribute('data-sort'); if(k) setRankSort(k);
+});
+window.addEventListener('resize', ()=>{ if(_chart) _chart.resize(); });
+load();
+</script>
+</body>
+</html>

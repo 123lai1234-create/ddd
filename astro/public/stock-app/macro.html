@@ -1,0 +1,1928 @@
+    <!DOCTYPE html>
+    <html lang="zh-TW">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+      <title>美國總經分析儀表板</title>
+      <link rel="icon" type="image/svg+xml" href="static/favicon.svg">
+      <style>
+        :root {
+          --bg: #0f0f23; --bg2: #1a1a3e; --bg3: #1e1e42;
+          --txt: #e0e0ff; --txt2: #8888aa;
+          --green: #00c853; --red: #ff1744; --orange: #ff9100;
+          --blue: #448aff; --cyan: #00bcd4; --purple: #d500f9;
+          --yellow: #ffeb3b; --bdr: #2a2a5a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: 'Segoe UI','Microsoft JhengHei',sans-serif;
+          background: var(--bg);
+          color: var(--txt);
+          min-height: 100vh;
+          overflow-x: hidden;
+        }
+
+        .header {
+          background: linear-gradient(135deg, var(--bg2), #12122e);
+          padding: 12px 24px;
+          display: flex;
+          align-items: flex-start;   /* ← 改成 flex-start，避免垂直置中破壞 column 排列 */
+          border-bottom: 1px solid var(--bdr);
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          gap: 12px;
+        }
+
+        .header h1 {
+          font-size: 18px;
+          background: linear-gradient(90deg, var(--orange), var(--red));
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .page-switch-btns { display: flex; gap: 3px; background: rgba(0,0,0,.3); padding: 3px; border-radius: 8px; }
+        .page-switch-btn {
+          background: transparent; border: none; color: var(--txt2);
+          padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 12px;
+          font-weight: 600; transition: all .2s; white-space: nowrap;
+        }
+        .page-switch-btn.active {
+          background: linear-gradient(135deg, var(--orange), var(--red));
+          color: #fff; box-shadow: 0 2px 8px rgba(255,145,0,.4);
+        }
+        .page-switch-btn:hover:not(.active) { background: rgba(255,145,0,.15); color: var(--txt); }
+        .refresh-btn {
+          background: var(--orange); border: none; color: #fff;
+          padding: 7px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;
+          font-weight: 600; transition: all .2s;
+        }
+        .refresh-btn:hover { opacity: .85; }
+        .refresh-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px 24px 40px; }
+        .update-bar {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 8px 16px; background: var(--bg2); border-radius: 8px;
+          margin-bottom: 20px; font-size: 12px; color: var(--txt2);
+          border: 1px solid var(--bdr);
+        }
+        .update-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-right: 6px; display: inline-block; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+        .phase-banner {
+          padding: 16px 20px; border-radius: 10px; margin-bottom: 20px;
+          border: 2px solid; display: flex; align-items: center; gap: 16px;
+        }
+        .phase-icon { font-size: 32px; }
+        .phase-title { font-size: 18px; font-weight: 700; }
+        .phase-desc { font-size: 13px; margin-top: 4px; opacity: .85; }
+        .alerts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .alert-card { padding: 12px 16px; border-radius: 8px; border-left: 4px solid; font-size: 13px; line-height: 1.6; }
+        .alert-card.red { background: rgba(255,23,68,.1); border-color: var(--red); }
+        .alert-card.yellow { background: rgba(255,145,0,.1); border-color: var(--orange); }
+        .alert-card.green { background: rgba(0,200,83,.1); border-color: var(--green); }
+        .alert-card .alert-title { font-weight: 700; margin-bottom: 2px; }
+        .alert-card .alert-val { font-size: 11px; color: var(--txt2); }
+        .section-title {
+          font-size: 15px; font-weight: 700; margin-bottom: 12px;
+          padding-bottom: 8px; border-bottom: 1px solid var(--bdr);
+          display: flex; align-items: center; gap: 8px;
+        }
+        .data-table-wrap { overflow-x: auto; margin-bottom: 24px; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--bg2); border-radius: 10px; overflow: hidden; }
+        .data-table th { background: #12122e; color: var(--txt2); font-size: 11px; padding: 10px 14px; text-align: left; letter-spacing: .5px; }
+        .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--bdr); }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover td { background: rgba(68,138,255,.05); }
+        .sig-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+        .sig-red { background: rgba(255,23,68,.15); color: var(--red); }
+        .sig-green { background: rgba(0,200,83,.15); color: var(--green); }
+        .sig-yellow { background: rgba(255,145,0,.15); color: var(--orange); }
+        .sig-gray { background: rgba(136,136,170,.15); color: var(--txt2); }
+        .chg-up { color: var(--red); font-weight: 600; }
+        .chg-down { color: var(--green); font-weight: 600; }
+        .impact-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .impact-card { background: var(--bg2); border-radius: 10px; padding: 16px; border: 1px solid var(--bdr); transition: border-color .2s; }
+        .impact-card:hover { border-color: var(--blue); }
+        .impact-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .impact-icon { font-size: 24px; }
+        .impact-name { font-size: 14px; font-weight: 700; }
+        .impact-subtitle { font-size: 11px; color: var(--txt2); margin-top: 2px; }
+        .impact-rating { margin-left: auto; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        .rating-bull { background: rgba(255,23,68,.2); color: var(--red); }
+        .rating-bear { background: rgba(0,200,83,.2); color: var(--green); }
+        .rating-neutral { background: rgba(68,138,255,.2); color: var(--blue); }
+        .rating-caution { background: rgba(255,145,0,.2); color: var(--orange); }
+        .impact-items { list-style: none; }
+        .impact-items li { padding: 5px 0; font-size: 12px; line-height: 1.6; border-bottom: 1px solid rgba(42,42,90,.5); display: flex; align-items: flex-start; gap: 6px; }
+        .impact-items li:last-child { border-bottom: none; }
+        .impact-items .dot-bull { color: var(--red); flex-shrink: 0; }
+        .impact-items .dot-bear { color: var(--green); flex-shrink: 0; }
+        .impact-items .dot-neutral { color: var(--blue); flex-shrink: 0; }
+        .conclusion-box { background: var(--bg2); border-radius: 12px; padding: 24px; border: 1px solid var(--bdr); margin-bottom: 24px; }
+        .conclusion-box h2 { font-size: 16px; margin-bottom: 16px; }
+        .conclusion-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 768px) { .conclusion-grid { grid-template-columns: 1fr; } }
+        .conclusion-item { padding: 14px; background: var(--bg); border-radius: 8px; border-left: 3px solid; }
+        .conclusion-item h3 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+        .conclusion-item ul { list-style: none; }
+        .conclusion-item ul li { font-size: 12px; line-height: 2; }
+        .conclusion-item ul li::before { content: "• "; color: inherit; }
+        .final-conclusion {
+          background: linear-gradient(135deg, rgba(255,145,0,.15), rgba(255,23,68,.1));
+          border: 2px solid var(--orange); border-radius: 12px;
+          padding: 20px 24px; margin-bottom: 24px;
+        }
+        .final-conclusion h2 { font-size: 16px; margin-bottom: 12px; color: var(--orange); }
+        .final-conclusion p { font-size: 13px; line-height: 2; }
+        .loading-mask {
+          position: fixed; inset: 0; background: rgba(15,15,35,.9);
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          z-index: 999; gap: 16px;
+        }
+        .loading-mask.hide { display: none; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--bdr); border-top-color: var(--orange); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-size: 14px; color: var(--txt2); }
+        /* @media (max-width: 768px) {
+          .impact-grid { grid-template-columns: 1fr; }
+          .alerts-grid { grid-template-columns: 1fr; }
+          .container { padding: 12px; }
+        } */
+
+        /* ★ 關鍵修正：讓 header 內層 div 可以正確截斷 */
+        .header > div {
+          min-width: 0;
+          overflow: visible;  /* 不能用 hidden，會截掉滾動容器 */
+          flex: 1;            /* 讓內層 div 撐滿 header 寬度 */
+        }
+
+        .page-switch-btns {
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          overflow-y: hidden;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          width: 100%;
+        }
+
+        .page-switch-btns::-webkit-scrollbar {
+          display: none;
+        }
+
+        .page-switch-btn {
+          flex-shrink: 0;
+        }
+
+        /* =========================================
+           基本 RWD 補強
+        ========================================= */
+
+        /* ── 漢堡選單按鈕（手機才顯示）── */
+        .nav-toggle {
+          display: none;
+          background: transparent;
+          border: 1px solid var(--bdr);
+          color: var(--txt2);
+          padding: 6px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .nav-toggle:hover {
+          border-color: var(--orange);
+          color: var(--orange);
+        }
+
+        /* 手機才顯示漢堡按鈕，導覽列預設收起 */
+        @media (max-width: 768px) {
+          .nav-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+          }
+
+          .page-switch-btns {
+            display: none;           /* 預設收起 */
+            flex-direction: column;  /* 展開時垂直排列 */
+            width: 100%;
+            gap: 6px;
+            padding: 8px 0 4px;
+          }
+
+          .page-switch-btns.open {
+            display: flex;           /* 展開 */
+          }
+
+          .page-switch-btn {
+            width: 100%;
+            text-align: left;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            border: 1px solid var(--bdr);
+          }
+
+          .page-switch-btn.active {
+            border-color: transparent;
+          }
+        }
+
+        
+        .header{
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .header > div:first-child,
+        .header > button{
+          min-width: 0;
+        }
+
+        
+
+        .container{
+          padding: 20px 24px 40px;
+        }
+
+        .update-bar{
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .phase-banner{
+          flex-wrap: wrap;
+        }
+
+        .data-table-wrap{
+          width: 100%;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .data-table{
+          min-width: 720px;
+        }
+
+        /* =========================================
+           平板
+        ========================================= */
+        @media (max-width: 1024px){
+          .container{
+            padding: 16px 16px 32px;
+          }
+
+          .impact-grid{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .alerts-grid{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .conclusion-grid{
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* =========================================
+           手機
+        ========================================= */
+        @media (max-width: 768px){
+          .header{
+            padding: 10px 12px;
+            align-items: flex-start;
+          }
+
+          .header > div:first-child{
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 10px !important;
+          }
+
+          .header h1{
+            font-size: 16px;
+            line-height: 1.4;
+          }
+
+          .page-switch-btn {
+            min-height: 36px;
+          }
+
+
+          .refresh-btn{
+            width: 100%;
+            min-height: 40px;
+          }
+
+          .container{
+            padding: 12px;
+          }
+
+          .update-bar{
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 10px 12px;
+            font-size: 11px;
+          }
+
+          .phase-banner{
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 14px;
+          }
+
+          .phase-icon{
+            font-size: 28px;
+          }
+
+          .phase-title{
+            font-size: 16px;
+            line-height: 1.4;
+          }
+
+          .phase-desc{
+            font-size: 12px;
+            line-height: 1.7;
+          }
+
+          .section-title{
+            font-size: 14px;
+            margin-bottom: 10px;
+            line-height: 1.5;
+          }
+
+          .alerts-grid{
+            grid-template-columns: 1fr;
+            gap: 10px;
+          }
+
+          .alert-card{
+            padding: 12px;
+            font-size: 12px;
+          }
+
+          .alert-card .alert-title{
+            font-size: 13px;
+          }
+
+          .data-table{
+            min-width: 680px;
+            font-size: 12px;
+          }
+
+          .data-table th,
+          .data-table td{
+            padding: 10px 10px;
+            white-space: nowrap;
+          }
+
+          .impact-grid{
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+
+          .impact-card{
+            padding: 14px;
+          }
+
+          .impact-card-header{
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 8px;
+          }
+
+          .impact-icon{
+            font-size: 22px;
+          }
+
+          .impact-name{
+            font-size: 13px;
+            line-height: 1.5;
+          }
+
+          .impact-subtitle{
+            font-size: 11px;
+            line-height: 1.5;
+          }
+
+          .impact-rating{
+            margin-left: 0;
+            font-size: 11px;
+            padding: 4px 8px;
+          }
+
+          .impact-items li{
+            font-size: 12px;
+            line-height: 1.7;
+          }
+
+          .final-conclusion{
+            padding: 16px;
+          }
+
+          .final-conclusion h2{
+            font-size: 15px;
+            line-height: 1.5;
+          }
+
+          .final-conclusion p{
+            font-size: 12px;
+            line-height: 1.9;
+          }
+
+          .conclusion-box{
+            padding: 16px;
+          }
+
+          .conclusion-box h2{
+            font-size: 15px;
+            margin-bottom: 12px;
+          }
+
+          .conclusion-grid{
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+
+          .conclusion-item{
+            padding: 12px;
+          }
+
+          .conclusion-item h3{
+            font-size: 13px;
+            line-height: 1.5;
+          }
+
+          .conclusion-item ul li{
+            font-size: 12px;
+            line-height: 1.8;
+          }
+
+          .loading-text{
+            text-align: center;
+            padding: 0 16px;
+            line-height: 1.6;
+          }
+        }
+
+        /* =========================================
+           小手機
+        ========================================= */
+        @media (max-width: 480px){
+          .header h1{
+            font-size: 15px;
+          }
+
+          .page-switch-btn{
+            font-size: 11px;
+            padding: 6px 10px;
+          }
+
+          .container{
+            padding: 10px;
+          }
+
+          .update-bar{
+            font-size: 10px;
+          }
+
+          .phase-banner{
+            padding: 12px;
+          }
+
+          .phase-title{
+            font-size: 15px;
+          }
+
+          .phase-desc{
+            font-size: 11px;
+          }
+
+          .section-title{
+            font-size: 13px;
+          }
+
+          .data-table{
+            min-width: 620px;
+          }
+
+          .data-table th{
+            font-size: 10px;
+          }
+
+          .data-table td{
+            font-size: 11px;
+          }
+
+          .impact-card{
+            padding: 12px;
+          }
+
+          .impact-items li{
+            font-size: 11px;
+          }
+
+          .final-conclusion,
+          .conclusion-box{
+            padding: 14px;
+          }
+
+          .final-conclusion p,
+          .conclusion-item ul li{
+            font-size: 11px;
+          }
+        }
+
+        @media (max-width: 768px){
+          .loading-mask{
+            padding: 20px;
+          }
+
+          .spinner{
+            width: 36px;
+            height: 36px;
+          }
+        }
+
+        /* ── 一鍵複製按鈕 ── */
+        .copy-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 4px 12px;
+          border-radius: 6px;
+          border: 1px solid var(--bdr);
+          background: transparent;
+          color: var(--txt2);
+          font-size: 11px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all .2s;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .copy-btn:hover {
+          border-color: var(--orange);
+          color: var(--orange);
+        }
+        .copy-btn.copied {
+          border-color: var(--green);
+          color: var(--green);
+          background: rgba(0,200,83,.08);
+        }
+
+
+        /* ★ 新增折線圖容器樣式 */
+        .chart-container {
+          background: var(--bg2);
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 24px;
+          border: 1px solid var(--bdr);
+        }
+
+        .chart-wrapper {
+          position: relative;
+          height: 300px;
+          margin-top: 16px;
+        }
+
+        .dot-plot-container {
+          background: var(--bg2);
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 24px;
+          border: 1px solid var(--bdr);
+        }
+
+        .dot-plot-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+          margin-top: 16px;
+        }
+
+        .dot-plot-item {
+          background: var(--bg);
+          padding: 16px;
+          border-radius: 8px;
+          text-align: center;
+          border: 1px solid var(--bdr);
+        }
+
+        .dot-plot-year {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--orange);
+          margin-bottom: 8px;
+        }
+
+        .dot-plot-median {
+          font-size: 24px;
+          font-weight: 700;
+          color: var(--txt);
+          margin: 8px 0;
+        }
+
+        .dot-plot-range {
+          font-size: 11px;
+          color: var(--txt2);
+        }
+
+        /* RWD: 手機版調整 */
+        @media (max-width: 768px) {
+          .chart-wrapper {
+            height: 250px;
+          }
+
+          .dot-plot-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+
+          .dot-plot-median {
+            font-size: 20px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .chart-wrapper {
+            height: 220px;
+          }
+
+          .dot-plot-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .chart-container div[style*="border-left"] {
+            padding: 12px;
+            font-size: 11px;
+            line-height: 1.8;
+          }
+
+          .chart-container div[style*="border-left"] strong {
+            display: block;
+            margin-top: 8px;
+          }
+        }
+
+
+      </style>
+    </head>
+    <body>
+
+    <div class="loading-mask" id="loadingMask">
+      <div class="spinner"></div>
+      <div class="loading-text">正在抓取最新總經數據，請稍候...</div>
+      <div class="loading-text" id="loadingProgress" style="font-size:11px;color:#555577"></div>
+    </div>
+
+      <div class="header">
+        <div style="display:flex;flex-direction:column;gap:8px;width:100%">
+
+          <!-- 第一行：標題 + 漢堡按鈕 + 功能按鈕 -->
+          <div style="display:flex;align-items:center;gap:10px">
+            <h1>🌐 美國總經分析儀表板</h1>
+
+            <!-- 漢堡按鈕（手機才顯示） -->
+            <button class="nav-toggle" id="navToggle" onclick="toggleNav()">
+              ☰ 選單
+            </button>
+
+            <!-- 功能按鈕推到右邊 -->
+            <button class="refresh-btn" id="btnRefresh"
+                    onclick="loadMacroData(true)"
+                    style="margin-left:auto">
+              🔄 重新整理數據
+            </button>
+          </div>
+
+          <!-- 第二行：導覽列 -->
+          <div class="page-switch-btns" id="pageNav">
+            <button class="page-switch-btn" onclick="location.href='index.html'">📊 股票版</button>
+            <button class="page-switch-btn" onclick="location.href='etf.html'">📈 ETF版</button>
+            <button class="page-switch-btn" onclick="location.href='warming.html'">🌡️ 升溫區調節</button>
+            <button class="page-switch-btn" onclick="location.href='exdiv.html'">📅 除權息</button>
+            <button class="page-switch-btn active">🌐 總經分析</button>
+            <button class="page-switch-btn" onclick="window.location.href='signal-filter.html'">🔍 股票訊號篩選</button>
+            <button class="page-switch-btn" onclick="window.location.href='etf-filter.html'">🔍 ETF訊號篩選</button>
+          </div>
+
+        </div>
+      </div>
+
+
+
+    <div class="container">
+      <div class="update-bar">
+        <div><span class="dot"></span>數據來源：FRED / Yahoo Finance / multpl.com（FRED 不可用時自動切換 yfinance / BLS 備援）</div>
+        <div id="loadingStatus">⏳ 載入中...</div>
+      </div>
+
+      <div class="phase-banner" id="phaseBanner" style="background:rgba(255,145,0,.1);border-color:var(--orange)">
+        <div class="phase-icon" id="phaseIcon">⏳</div>
+        <div>
+          <div class="phase-title" id="phaseTitle">載入中...</div>
+          <div class="phase-desc" id="phaseDesc">正在分析總經數據</div>
+        </div>
+      </div>
+
+      <div class="section-title">🚨 市場警示訊號</div>
+      <div class="alerts-grid" id="alertsGrid">
+        <div style="color:var(--txt2);font-size:13px;padding:12px">載入中...</div>
+      </div>
+
+      <!-- 替換為 -->
+      <div class="section-title" style="justify-content:space-between">
+        <span>📊 FRED 總經原始數據</span>
+        <button class="copy-btn" id="btnCopyFred" onclick="copyTable('fred')">
+          📋 複製數據
+        </button>
+      </div>
+      
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>指標</th><th>最新值</th><th>日期</th><th>前值</th><th>變化</th><th>訊號</th></tr></thead>
+          <tbody id="fredTableBody"><tr><td colspan="6" style="text-align:center;color:var(--txt2);padding:20px">載入中...</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- 替換為 -->
+      <div class="section-title" style="justify-content:space-between">
+        <span>📈 市場即時數據</span>
+        <button class="copy-btn" id="btnCopyYahoo" onclick="copyTable('yahoo')">
+          📋 複製數據
+        </button>
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>指標</th><th>最新值</th><th>日期</th><th>漲跌</th><th>訊號</th></tr></thead>
+          <tbody id="yahooTableBody"><tr><td colspan="5" style="text-align:center;color:var(--txt2);padding:20px">載入中...</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- 2年期公債殖利率折線圖 -->
+      <!-- 2年期公債殖利率折線圖 -->
+      <div class="section-title">📉 美國2年期公債殖利率走勢（近5期）</div>
+      <div class="chart-container">
+        <div class="chart-wrapper">
+          <canvas id="yield2yChart"></canvas>
+        </div>
+
+        <!-- ★ 新增：詳細說明區塊 -->
+        <div style="margin-top:20px;padding:16px;background:var(--bg);border-radius:8px;border-left:3px solid var(--orange)">
+          <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:10px">
+            💡 為什麼2年期公債殖利率是升降息領先指標？
+          </div>
+          <div style="font-size:12px;line-height:1.9;color:var(--txt)">
+            <strong style="color:var(--yellow)">① 反映市場對短期利率預期</strong><br>
+            2年期公債殖利率高度敏感於聯準會（Fed）政策利率變化，當市場預期 Fed 即將升息時，2年債殖利率會<strong>提前上升</strong>；反之，當市場預期降息時，2年債殖利率會<strong>提前下降</strong>，通常領先 Fed 實際動作 <strong>3-6 個月</strong>。
+            <br><br>
+
+            <strong style="color:var(--yellow)">② 殖利率曲線倒掛的關鍵指標</strong><br>
+            當 <strong>2年債殖利率 > 10年債殖利率</strong> 時，稱為「殖利率曲線倒掛」，歷史上這是<strong>經濟衰退的高準確度領先指標</strong>（過去50年準確率超過80%）。倒掛後通常 <strong>12-18 個月內</strong> 會出現經濟衰退，此時 Fed 被迫快速降息救市。
+            <br><br>
+
+            <strong style="color:var(--yellow)">③ 投資策略應用</strong><br>
+            • <strong style="color:var(--red)">2年債殖利率快速上升</strong> → Fed 可能持續升息，<strong>科技成長股承壓</strong>，建議減碼高估值股票，增持現金或短債。<br>
+            • <strong style="color:var(--green)">2年債殖利率快速下降</strong> → Fed 可能即將降息，<strong>成長股估值修復</strong>，可提前布局科技股、長天期債券（TLT）。<br>
+            • <strong style="color:var(--orange)">2年債 > 10年債（倒掛）</strong> → 衰退風險上升，建議<strong>降低股票倉位</strong>，增持黃金、美債避險。
+            <br><br>
+
+            <strong style="color:var(--yellow)">④ 當前解讀</strong><br>
+            觀察圖表中 2年債殖利率的<strong>趨勢變化</strong>：<br>
+            • 若<strong>持續上升</strong> → Fed 鷹派立場未變，股市短期承壓。<br>
+            • 若<strong>開始回落</strong> → 市場預期 Fed 轉向，可能是股市反彈訊號。<br>
+            • 若<strong>急速下降</strong> → 可能是經濟急速惡化，Fed 被迫緊急降息（如 2008、2020），短期恐慌但中期是買點。
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:var(--txt2);margin-top:12px;text-align:center">
+          數據來源：FRED (DGS2) | 更新時間：<span id="yield2yUpdateTime">載入中...</span>
+        </div>
+      </div>
+
+
+      <!-- 聯準會點陣圖 -->
+      <!-- 聯準會點陣圖 -->
+      <div class="section-title" style="justify-content:space-between;align-items:center">
+        <span>🎯 聯準會利率預測點陣圖</span>
+      </div>
+
+      <div class="dot-plot-container" style="text-align:center;padding:24px">
+        <a href="https://www.investing.com/central-banks/fed-rate-monitor"
+           target="_blank"
+           rel="noopener noreferrer"
+           style="display:inline-flex;align-items:center;gap:8px;
+                  padding:14px 28px;border-radius:8px;
+                  background:rgba(68,138,255,.15);
+                  border:1px solid var(--blue);
+                  color:var(--blue);font-size:15px;font-weight:700;
+                  text-decoration:none;transition:all .2s"
+           onmouseover="this.style.background='rgba(68,138,255,.3)'"
+           onmouseout="this.style.background='rgba(68,138,255,.15)'">
+          📊 前往 Investing.com 查看即時 Fed 點陣圖 →
+        </a>
+        <div style="font-size:11px;color:var(--txt2);margin-top:12px">
+          數據來源：Federal Reserve FOMC（每季更新）
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:var(--bg);border-radius:8px;border-left:3px solid var(--blue)">
+        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:10px">
+          💡 點陣圖怎麼看？
+        </div>
+        <div style="font-size:12px;line-height:1.9;color:var(--txt)">
+          每個點代表一位 FOMC 委員對該年底利率的預測，<strong>中位數</strong>（Median）是市場最關注的數字。<br>
+          • 若中位數<strong>上調</strong> → Fed 鷹派，利率將維持高位更久。<br>
+          • 若中位數<strong>下調</strong> → Fed 轉鴿，降息預期升溫，利多股市。<br><br>
+          <a href="https://www.investing.com/central-banks/fed-rate-monitor"
+             target="_blank"
+             rel="noopener noreferrer"
+             style="color:var(--blue);font-size:12px;text-decoration:none;
+                    border-bottom:1px solid var(--blue);padding-bottom:1px">
+            📊 查看即時 Fed 利率預測工具 →
+          </a>
+        </div>
+      </div>
+
+
+
+
+      <div class="section-title">🔍 各資產類別影響分析</div>
+      <div class="impact-grid" id="impactGrid">
+        <div style="color:var(--txt2);font-size:13px;padding:12px">載入中...</div>
+      </div>
+
+      <div class="final-conclusion">
+        <h2>📌 總體結論與投資建議</h2>
+        <p id="finalText">載入中...</p>
+      </div>
+
+      <div class="conclusion-box">
+        <h2>📋 各板塊操作建議</h2>
+        <div class="conclusion-grid" id="conclusionGrid">
+          <div style="color:var(--txt2);font-size:13px">載入中...</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ══════════════════════════════════════════
+      // 一鍵複製表格數據
+      // ══════════════════════════════════════════
+      function copyTable(type) {
+        var rows = [];
+        var btnId = type === "fred" ? "btnCopyFred" : "btnCopyYahoo";
+        var btn = document.getElementById(btnId);
+
+        // 從 macroData 過濾對應來源
+        var source = type === "fred" ? "FRED" : ["Yahoo", "multpl"];
+        var items = macroData.filter(function(d) {
+          if (type === "fred") return d["來源"] === "FRED";
+          return d["來源"] === "Yahoo" || d["來源"] === "multpl";
+        });
+
+        if (!items.length) {
+          alert("尚無數據，請先載入。");
+          return;
+        }
+
+        // 表頭
+        if (type === "fred") {
+          rows.push(["指標", "最新值", "日期", "前值", "變化", "訊號"].join("\t"));
+        } else {
+          rows.push(["指標", "最新值", "日期", "漲跌", "訊號"].join("\t"));
+        }
+
+        // 資料列
+        items.forEach(function(d) {
+          var val = d["最新值"];
+          if (val && !isNaN(parseFloat(val))) {
+            var fv = parseFloat(val);
+            val = fv > 1000 ? fv.toLocaleString() : fv.toFixed(3).replace(/\.?0+$/, "");
+          }
+
+          if (type === "fred") {
+            rows.push([
+              d["指標"]  || "-",
+              val        || "-",
+              d["日期"]  || "-",
+              d["前值"]  || "-",
+              d["變化"]  || "-",
+              d["訊號"]  || "-"
+            ].join("\t"));
+          } else {
+            rows.push([
+              d["指標"]  || "-",
+              val        || "-",
+              d["日期"]  || "-",
+              d["變化"]  || "-",
+              d["訊號"]  || "-"
+            ].join("\t"));
+          }
+        });
+
+        // 加上標題與時間戳
+        var header = type === "fred"
+          ? "📊 FRED 總經原始數據"
+          : "📈 市場即時數據";
+        var timestamp = "更新時間：" + new Date().toLocaleString("zh-TW");
+        var text = header + "\n" + timestamp + "\n\n" + rows.join("\n");
+
+        // 複製到剪貼簿
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function() {
+            _showCopied(btn);
+          }).catch(function() {
+            _fallbackCopy(text, btn);
+          });
+        } else {
+          _fallbackCopy(text, btn);
+        }
+      }
+
+      function _fallbackCopy(text, btn) {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy");
+          _showCopied(btn);
+        } catch (e) {
+          alert("複製失敗，請手動選取後複製。");
+        }
+        document.body.removeChild(ta);
+      }
+
+      function _showCopied(btn) {
+        if (!btn) return;
+        var original = btn.innerHTML;
+        btn.innerHTML = "✅ 已複製";
+        btn.classList.add("copied");
+        setTimeout(function() {
+          btn.innerHTML = original;
+          btn.classList.remove("copied");
+        }, 2000);
+      }
+
+      function toggleNav() {
+        var nav = document.getElementById("pageNav");
+        var btn = document.getElementById("navToggle");
+        var isOpen = nav.classList.toggle("open");
+        btn.textContent = isOpen ? "✕ 關閉" : "☰ 選單";
+      }
+
+      // 點選任一導覽按鈕後自動收起
+      document.addEventListener("DOMContentLoaded", function() {
+        var btns = document.querySelectorAll(".page-switch-btn");
+        for (var i = 0; i < btns.length; i++) {
+          btns[i].addEventListener("click", function() {
+            var nav = document.getElementById("pageNav");
+            var btn = document.getElementById("navToggle");
+            if (nav && nav.classList.contains("open")) {
+              nav.classList.remove("open");
+              btn.textContent = "☰ 選單";
+            }
+          });
+        }
+      });
+
+      // ══════════════════════════════════════════
+      // 全域數據（新增圖表變數）
+      // ══════════════════════════════════════════
+      var macroData = [];
+      var yield2yChart = null;  // ★ 圖表實例
+
+      // ══════════════════════════════════════════
+      // 渲染2年期公債殖利率折線圖
+      // ══════════════════════════════════════════
+      function renderYield2yChart() {
+        // 從後端 API 取得近5期數據
+        fetch("/api/macro_yield2y_history")
+          .then(r => r.json())
+          .then(data => {
+            if (!data.history || data.history.length === 0) {
+              document.getElementById("yield2yUpdateTime").textContent = "無數據";
+              return;
+            }
+
+            var labels = data.history.map(d => d.date);
+            var values = data.history.map(d => d.value);
+
+            var ctx = document.getElementById("yield2yChart").getContext("2d");
+
+            // 銷毀舊圖表
+            if (yield2yChart) {
+              yield2yChart.destroy();
+            }
+
+            yield2yChart = new Chart(ctx, {
+              type: "line",
+              data: {
+                labels: labels,
+                datasets: [{
+                  label: "美2年公債殖利率 (%)",
+                  data: values,
+                  borderColor: "#ff9100",
+                  backgroundColor: "rgba(255,145,0,0.1)",
+                  borderWidth: 3,
+                  tension: 0.3,
+                  fill: true,
+                  pointRadius: 5,
+                  pointHoverRadius: 7,
+                  pointBackgroundColor: "#ff9100",
+                  pointBorderColor: "#fff",
+                  pointBorderWidth: 2
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: true,
+                    labels: { color: "#e0e0ff", font: { size: 13 } }
+                  },
+                  tooltip: {
+                    backgroundColor: "rgba(26,26,62,0.95)",
+                    titleColor: "#ff9100",
+                    bodyColor: "#e0e0ff",
+                    borderColor: "#ff9100",
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                      label: function(context) {
+                        return context.parsed.y.toFixed(3) + "%";
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  x: {
+                    ticks: { color: "#8888aa", font: { size: 11 } },
+                    grid: { color: "rgba(42,42,90,0.3)" }
+                  },
+                  y: {
+                    ticks: { 
+                      color: "#8888aa", 
+                      font: { size: 11 },
+                      callback: function(value) {
+                        return value.toFixed(2) + "%";
+                      }
+                    },
+                    grid: { color: "rgba(42,42,90,0.3)" }
+                  }
+                }
+              }
+            });
+
+            document.getElementById("yield2yUpdateTime").textContent = data.update_time || "剛剛";
+          })
+          .catch(e => {
+            console.error("折線圖載入失敗:", e);
+            document.getElementById("yield2yUpdateTime").textContent = "載入失敗";
+          });
+      }
+
+      // ══════════════════════════════════════════
+      // 渲染聯準會點陣圖
+      // ══════════════════════════════════════════
+      
+
+      // ══════════════════════════════════════════
+      // 修改 renderAll() 加入圖表渲染
+      // ══════════════════════════════════════════
+      function renderAll() {
+        renderFredTable();
+        renderYahooTable();
+        renderPhaseBanner();
+        renderAlerts();
+        renderYield2yChart();
+        renderImpactCards();
+        renderConclusion();
+      }
+
+
+      
+    // ══════════════════════════════════════════
+    // 全域數據
+    // ══════════════════════════════════════════
+    //var macroData = [];
+
+    // ══════════════════════════════════════════
+    // 數據載入（修復版：正確 id、正確賦值 macroData、隱藏 loading mask）
+    // ══════════════════════════════════════════
+    function loadMacroData(forceRefresh) {
+      forceRefresh = forceRefresh || false;
+      var statusEl = document.getElementById("loadingStatus");
+      var mask     = document.getElementById("loadingMask");
+      var btn      = document.getElementById("btnRefresh");
+
+      if (mask) mask.classList.remove("hide");
+      if (btn)  btn.disabled = true;
+      statusEl.innerHTML = forceRefresh ? "🔄 強制重新抓取中..." : "⏳ 載入總經數據...";
+
+      var url = forceRefresh ? "/api/macro_data?refresh=1" : "/api/macro_data";
+
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          macroData = data.data || [];
+          if (data.cached) {
+            statusEl.innerHTML = "✅ 使用快取資料（" + data.cache_age_min + " 分鐘前更新）"
+              + "<button onclick=\"loadMacroData(true)\" "
+              + "style=\"margin-left:8px;padding:2px 8px;background:#448aff;border:none;"
+              + "color:#fff;border-radius:4px;cursor:pointer;font-size:11px\">🔄 強制刷新</button>";
+          } else {
+            statusEl.innerHTML = "✅ 已更新：" + (data.updated || "");
+          }
+          renderAll();
+          if (mask) mask.classList.add("hide");
+          if (btn)  btn.disabled = false;
+        })
+        .catch(function(e) {
+          statusEl.innerHTML = "❌ 載入失敗：" + e.message;
+          if (mask) mask.classList.add("hide");
+          if (btn)  btn.disabled = false;
+        });
+    }
+
+    // ══════════════════════════════════════════
+    // 取值輔助
+    // ══════════════════════════════════════════
+    function gv(name) {
+      for (var i = 0; i < macroData.length; i++) {
+        if (macroData[i]["指標"] === name) {
+          var v = parseFloat(macroData[i]["最新值"]);
+          return isNaN(v) ? null : v;
+        }
+      }
+      return null;
+    }
+    function gd(name) {
+      for (var i = 0; i < macroData.length; i++) {
+        if (macroData[i]["指標"] === name) return macroData[i];
+      }
+      return null;
+    }
+
+    // 取前值
+    function gp(name) {
+        for (var i = 0; i < macroData.length; i++) {
+            if (macroData[i]["指標"] === name) {
+                var v = parseFloat(macroData[i]["前值"]);
+                return isNaN(v) ? null : v;
+            }
+        }
+        return null;
+    }
+
+
+    // ══════════════════════════════════════════
+    // 渲染全部
+    // ══════════════════════════════════════════
+    // function renderAll() {
+    //   renderFredTable();
+    //   renderYahooTable();
+    //   renderPhaseBanner();
+    //   renderAlerts();
+    //   renderImpactCards();
+    //   renderConclusion();
+    // }
+
+    // ══════════════════════════════════════════
+    // FRED 表格
+    // ══════════════════════════════════════════
+    function renderFredTable() {
+      var items = macroData.filter(function(d) { return d["來源"] === "FRED"; });
+      var html = "";
+      for (var i = 0; i < items.length; i++) {
+        var d = items[i];
+        var sig = d["訊號"] || "➖";
+        var sigClass = sig.indexOf("偏高") >= 0 || sig.indexOf("偏弱") >= 0 ? "sig-red"
+                     : sig.indexOf("偏低") >= 0 || sig.indexOf("強勢") >= 0 ? "sig-green"
+                     : sig.indexOf("正常") >= 0 ? "sig-yellow" : "sig-gray";
+        var chg = d["變化"] || "─";
+        var chgClass = chg.indexOf("▲") >= 0 ? "chg-up" : chg.indexOf("▼") >= 0 ? "chg-down" : "";
+        var val = d["最新值"];
+        var hasVal = val !== null && val !== undefined && val !== "" && !isNaN(parseFloat(val));
+        var valTxt = hasVal ? parseFloat(val).toFixed(3).replace(/\.?0+$/, "") : "-";
+        var prevV = d["前值"];
+        var hasPrev = prevV !== null && prevV !== undefined && prevV !== "" && !isNaN(parseFloat(prevV));
+        var prevTxt = hasPrev ? prevV : "-";
+        var srcTag = "";
+        if (d["來源標記"] === "BLS" || d["來源標記"] === "yfinance") {
+          srcTag = " <span style='font-size:10px;color:var(--txt2);font-weight:400'>(" + d["來源標記"] + ")</span>";
+        }
+        html += "<tr>"
+          + "<td style='font-weight:600'>" + d["指標"] + srcTag + "</td>"
+          + "<td style='font-family:monospace;font-weight:700'>" + valTxt + "</td>"
+          + "<td style='color:var(--txt2);font-size:11px'>" + (d["日期"] || "-") + "</td>"
+          + "<td style='font-family:monospace;color:var(--txt2)'>" + prevTxt + "</td>"
+          + "<td class='" + chgClass + "'>" + chg + "</td>"
+          + "<td><span class='sig-badge " + sigClass + "'>" + sig + "</span></td>"
+          + "</tr>";
+      }
+      document.getElementById("fredTableBody").innerHTML = html || "<tr><td colspan='6' style='text-align:center;color:var(--txt2)'>無數據</td></tr>";
+    }
+
+    // ══════════════════════════════════════════
+    // Yahoo / multpl 表格
+    // ══════════════════════════════════════════
+    function renderYahooTable() {
+      var items = macroData.filter(function(d) { return d["來源"] === "Yahoo" || d["來源"] === "multpl"; });
+      var html = "";
+      for (var i = 0; i < items.length; i++) {
+        var d = items[i];
+        var sig = d["訊號"] || "➖";
+        var sigClass = sig.indexOf("偏高") >= 0 || sig.indexOf("偏弱") >= 0 ? "sig-red"
+                     : sig.indexOf("偏低") >= 0 || sig.indexOf("強勢") >= 0 ? "sig-green"
+                     : sig.indexOf("正常") >= 0 ? "sig-yellow" : "sig-gray";
+        var chg = d["變化"] || "─";
+        var chgClass = chg.indexOf("+") >= 0 || chg.indexOf("▲") >= 0 ? "chg-up"
+                     : chg.indexOf("-") >= 0 || chg.indexOf("▼") >= 0 ? "chg-down" : "";
+        var val = d["最新值"];
+        if (val && !isNaN(parseFloat(val))) {
+          var fv = parseFloat(val);
+          val = fv > 1000 ? fv.toLocaleString() : fv.toFixed(2);
+        }
+        html += "<tr>"
+          + "<td style='font-weight:600'>" + d["指標"] + "</td>"
+          + "<td style='font-family:monospace;font-weight:700'>" + (val || "-") + "</td>"
+          + "<td style='color:var(--txt2);font-size:11px'>" + (d["日期"] || "-") + "</td>"
+          + "<td class='" + chgClass + "'>" + chg + "</td>"
+          + "<td><span class='sig-badge " + sigClass + "'>" + sig + "</span></td>"
+          + "</tr>";
+      }
+      document.getElementById("yahooTableBody").innerHTML = html || "<tr><td colspan='5' style='text-align:center;color:var(--txt2)'>無數據</td></tr>";
+    }
+
+    // ══════════════════════════════════════════
+    // 景氣階段判斷
+    // ══════════════════════════════════════════
+    function renderPhaseBanner() {
+      var bei  = gv("美債平衡通膨率BEI(%)");
+      var y10  = gv("美10年公債殖利率(%)");
+      var sp3m = gv("10年-3月公債利差");
+      var fed  = gv("聯邦基金利率(%)");
+      var gdp  = gv("GDP成長率年化(%)");
+      var vix  = gv("VIX恐慌指數");
+
+      var phase, icon, desc, color, borderColor;
+
+      if (sp3m !== null && sp3m < 0) {
+        phase = "③ 緊縮末期 / 衰退初期"; icon = "⚠️";
+        desc = "殖利率曲線倒掛，衰退風險上升。建議：準備抄底長天期債券ETF（TLT/IEF），持有美元現金，等待Fed轉向訊號。";
+        color = "rgba(255,23,68,.12)"; borderColor = "var(--red)";
+      } else if (vix !== null && vix >= 30) {
+        phase = "④ 市場恐慌期"; icon = "🚨";
+        desc = "VIX恐慌指數飆升，市場極度恐慌。歷史上VIX>30往往是中長期買點，但短期波動劇烈，建議分批布局。";
+        color = "rgba(255,145,0,.12)"; borderColor = "var(--orange)";
+      } else if (bei !== null && bei >= 2.25 && y10 !== null && y10 > 4.0) {
+        phase = "② 通膨升溫期"; icon = "🔥";
+        desc = "通膨預期升溫，長債殖利率偏高，科技成長股估值受壓。此階段若 Fed 更偏鷹、美元維持強勢，黃金未必立即受惠。建議：減碼高估值科技股，偏向價值股（金融/能源/基建），黃金以分批防禦配置為主，不宜單純因通膨升溫就大幅追價。";
+        color = "rgba(255,145,0,.12)"; borderColor = "var(--orange)";
+      } else if (fed !== null && fed <= 2.5) {
+        phase = "① 低利率寬鬆期"; icon = "🚀";
+        desc = "聯邦基金利率處於低位，流動性充裕，成長股環境有利。建議：積極布局科技成長股、金融壽險，適度加槓桿。";
+        color = "rgba(0,200,83,.12)"; borderColor = "var(--green)";
+      } else if (gdp !== null && gdp >= 3.0 && bei !== null && bei < 2.25) {
+        phase = "① 景氣擴張期"; icon = "📈";
+        desc = "GDP強勁成長，通膨溫和，為股市最佳環境。建議：滿倉持股，偏重景氣循環股（科技/消費/工業），享受牛市紅利。";
+        color = "rgba(0,200,83,.12)"; borderColor = "var(--green)";
+      } else {
+        phase = "🟡 過渡觀察期"; icon = "🔍";
+        desc = "各指標混合訊號，景氣方向尚不明確。建議：均衡配置，持續觀察Fed政策、通膨走向與就業數據，保留現金彈性。";
+        color = "rgba(68,138,255,.12)"; borderColor = "var(--blue)";
+      }
+
+      var banner = document.getElementById("phaseBanner");
+      banner.style.background = color;
+      banner.style.borderColor = borderColor;
+      document.getElementById("phaseIcon").textContent = icon;
+      document.getElementById("phaseTitle").textContent = phase;
+      document.getElementById("phaseDesc").textContent = desc;
+    }
+
+    // ══════════════════════════════════════════
+    // 警示訊號
+    // ══════════════════════════════════════════
+      function renderAlerts() {
+          var html = "";
+          var triggered = {};
+
+          // ── 共用 Alert Card 建構函式（顯示變化量）──
+          function addAlert(key, level, msg, detail, name, changeVal) {
+              if (triggered[key]) return;
+              triggered[key] = true;
+              var v = name ? gv(name) : null;
+              var changeStr = "";
+              if (changeVal !== undefined && changeVal !== null && !isNaN(changeVal)) {
+                  var sign = changeVal >= 0 ? "▲+" : "▼";
+                  changeStr = "<div class='alert-val' style='color:var(--orange)'>"
+                            + "變化：" + sign + parseFloat(changeVal).toFixed(3)
+                            + "</div>";
+              }
+              html += "<div class='alert-card " + level + "'>"
+                    + "<div class='alert-title'>" + msg + "</div>"
+                    + "<div style='font-size:12px;margin:2px 0'>" + detail + "</div>"
+                    + (v !== null ? "<div class='alert-val'>" + name + " = " + v + "</div>" : "")
+                    + changeStr
+                    + "</div>";
+          }
+
+          // ── 取值 ──
+          var bei   = gv("美債平衡通膨率BEI(%)"),  beiP  = gp("美債平衡通膨率BEI(%)");
+          var y10   = gv("美10年公債殖利率(%)");
+          var sp3m  = gv("10年-3月公債利差"),       sp3mP = gp("10年-3月公債利差");
+          var sp2y  = gv("10年-2年公債利差");
+          var unemp = gv("美國失業率(%)"),          unempP = gp("美國失業率(%)");
+          var umcs  = gv("密大消費者信心"),          umcsP  = gp("密大消費者信心");
+          var gdp   = gv("GDP成長率年化(%)"),        gdpP   = gp("GDP成長率年化(%)");
+          var vix   = gv("VIX恐慌指數");
+          var cape  = gv("席勒本益比(CAPE)"),        capeP  = gp("席勒本益比(CAPE)");
+
+          // VIX 變化率（Yahoo 來源，變化欄位是百分比字串）
+          var vixRow = gd("VIX恐慌指數");
+          var vixChgPct = 0;
+          if (vixRow && vixRow["變化"]) {
+              vixChgPct = parseFloat(
+                  String(vixRow["變化"]).replace("%","").replace("+","")
+              ) || 0;
+          }
+
+          // ════════════════════════════════════════
+          // 通膨（絕對值 + 收斂趨勢）
+          // ════════════════════════════════════════
+          if (bei !== null) {
+              var beiChg = beiP !== null ? bei - beiP : null;
+              if (bei >= 2.5) {
+                  if (beiP !== null && bei < beiP)
+                      addAlert("BEI", "yellow", "🟡 通膨高檔收斂",
+                          "BEI>2.5%但已開始回落，壓力微幅減輕",
+                          "美債平衡通膨率BEI(%)", beiChg);
+                  else
+                      addAlert("BEI", "red", "🔴 通膨惡化",
+                          "BEI突破2.5%且未見回落，科技股建議減碼",
+                          "美債平衡通膨率BEI(%)", beiChg);
+              } else if (bei >= 2.25) {
+                  addAlert("BEI", "yellow", "🟡 通膨升溫",
+                      "BEI超過2.25%，留意科技股壓力",
+                      "美債平衡通膨率BEI(%)", beiChg);
+              } else if (beiChg !== null && beiChg >= 0.10) {
+                  addAlert("BEI_SPIKE", "yellow", "🟠 通膨預期急升",
+                      "BEI單期急升超0.10%，通膨升溫速度加快",
+                      "美債平衡通膨率BEI(%)", beiChg);
+              }
+          }
+
+          // ════════════════════════════════════════
+          // 殖利率（絕對值 + 急升）
+          // ════════════════════════════════════════
+          if (y10 !== null) {
+              var y10P = gp("美10年公債殖利率(%)");
+              var y10Chg = y10P !== null ? y10 - y10P : null;
+              if (y10 >= 4.5)
+                  addAlert("Y10_HIGH", "red", "🔴 殖利率過高",
+                      "10年債>4.5%，成長股估值嚴重壓縮",
+                      "美10年公債殖利率(%)", y10Chg);
+              else if (y10 >= 4.0)
+                  addAlert("Y10_MID", "yellow", "🟡 殖利率偏高",
+                      "10年債>4.0%，科技股有估值壓力",
+                      "美10年公債殖利率(%)", y10Chg);
+              else if (y10Chg !== null && y10Chg >= 0.20)
+                  addAlert("Y10_SPIKE", "red", "🔴 殖利率急速上升",
+                      "10年債單期急升超0.20%，成長股估值壓力驟增",
+                      "美10年公債殖利率(%)", y10Chg);
+          }
+
+          // ════════════════════════════════════════
+          // 殖利率曲線（倒掛 + 核彈級：倒掛轉正）
+          // ════════════════════════════════════════
+          if (sp3m !== null) {
+              var sp3mChg = sp3mP !== null ? sp3m - sp3mP : null;
+              if (sp3m < 0)
+                  addAlert("SP3M_INV", "red", "🔴 殖利率曲線倒掛",
+                      "歷史上倒掛後12-18個月內衰退機率高",
+                      "10年-3月公債利差", sp3mChg);
+              else if (sp3mP !== null && sp3mP < 0)
+                  addAlert("SP3M_FLIP", "red", "🚨 倒掛急遽轉正",
+                      "倒掛後轉正往往是主跌段開始，Fed 可能被迫快速降息",
+                      "10年-3月公債利差", sp3mChg);
+          }
+          if (sp2y !== null && sp2y >= 0.5)
+              addAlert("SP2Y_OK", "green", "🟢 殖利率曲線正常",
+                  "10Y-2Y利差>0.5%，景氣擴張訊號",
+                  "10年-2年公債利差", null);
+
+          // ════════════════════════════════════════
+          // 失業率（薩姆法則）
+          // ════════════════════════════════════════
+          if (unemp !== null) {
+              var unempChg = unempP !== null ? unemp - unempP : null;
+              if (unemp >= 5.0)
+                  addAlert("UNEMP_HIGH", "red", "🔴 失業率過高",
+                      "失業率>5%，景氣明顯降溫",
+                      "美國失業率(%)", unempChg);
+              else if (unempP !== null && unemp >= unempP + 0.1 && unemp >= 4.3)
+                  addAlert("UNEMP_SAHM", "red", "🔴 衰退疑慮（薩姆法則）",
+                      "失業率連續上升且>4.3%，歷史衰退前兆",
+                      "美國失業率(%)", unempChg);
+          }
+
+          // ════════════════════════════════════════
+          // 失業率 vs 通膨（失業率低於通膨 → 景氣過熱 / 升息預警；BofA「there be dragons」）
+          // 注意：此判斷的門檻與文案在總經週報信件也有一份（macro_data_fetcher.build_macro_email_html），改這裡要同步改那邊
+          // ════════════════════════════════════════
+          var cpiYoY = gv("美國CPI年增率(%)");
+          if (unemp !== null && cpiYoY !== null) {
+              var ucGap = unemp - cpiYoY;
+              if (ucGap <= 0)
+                  addAlert("UNEMP_CPI_GAP", "red", "🚨 失業率低於通膨（升息 / 景氣過熱預警）",
+                      "失業率(" + unemp.toFixed(1) + "%) 已低於 CPI 年增率(" + cpiYoY.toFixed(1)
+                      + "%)，差值 " + ucGap.toFixed(1) + "。歷史上多為景氣過熱末端、Fed 傾向升息或維持高利率，常為衰退 / 股災前兆。",
+                      null, null);
+              else if (ucGap <= 1.0)
+                  addAlert("UNEMP_CPI_NEAR", "yellow", "🟡 失業率逼近通膨",
+                      "失業率(" + unemp.toFixed(1) + "%) 與 CPI 年增率(" + cpiYoY.toFixed(1)
+                      + "%) 差距收斂至 " + ucGap.toFixed(1) + "（≤1），留意景氣過熱與升息壓力訊號。",
+                      null, null);
+          }
+
+          // ════════════════════════════════════════
+          // 消費者信心（低檔 + 築底反彈）
+          // ════════════════════════════════════════
+          if (umcs !== null && umcs < 60) {
+              var umcsChg = umcsP !== null ? umcs - umcsP : null;
+              if (umcsP !== null && umcs > umcsP + 2.0)
+                  addAlert("UMCS_BOTTOM", "yellow", "🟡 消費信心築底回溫",
+                      "信心指數雖低於60，但已顯著反彈，可留意消費股轉折",
+                      "密大消費者信心", umcsChg);
+              else
+                  addAlert("UMCS_WEAK", "red", "🔴 消費者信心偏弱",
+                      "信心指數<60且持續低迷，未來1-5個月股市承壓",
+                      "密大消費者信心", umcsChg);
+          }
+
+          // ════════════════════════════════════════
+          // GDP（急速惡化）
+          // ════════════════════════════════════════
+          if (gdp !== null) {
+              var gdpChg = gdpP !== null ? gdp - gdpP : null;
+              if (gdp < 1.0)
+                  addAlert("GDP_LOW", "yellow", "🟡 GDP成長偏低",
+                      "年化GDP<1%，景氣趨緩",
+                      "GDP成長率年化(%)", gdpChg);
+              else if (gdpChg !== null && gdpChg <= -1.5)
+                  addAlert("GDP_CRASH", "red", "🔴 GDP急速惡化",
+                      "GDP季度跌幅超1.5%，景氣急速降溫",
+                      "GDP成長率年化(%)", gdpChg);
+          }
+
+          // ════════════════════════════════════════
+          // VIX（絕對值 + 暴漲速度）
+          // ════════════════════════════════════════
+          if (vix !== null) {
+              if (vix >= 30)
+                  addAlert("VIX_PANIC", "red", "🔴 VIX極度恐慌",
+                      "VIX>30，市場極度恐慌，短期觀望或分批買入",
+                      "VIX恐慌指數", null);
+              else if (vix >= 25 || vixChgPct >= 15)
+                // 修正為：
+                  addAlert("VIX_WARN", "red", "🔴 波動加劇", "VIX急升或>25，市場情緒轉趨恐慌", "VIX恐慌指數", vixChgPct);
+              else if (vix < 15)
+                  addAlert("VIX_LOW", "yellow", "🟡 VIX過度樂觀",
+                      "VIX<15，市場過度樂觀，留意回調風險",
+                      "VIX恐慌指數", null);
+          }
+
+          // ════════════════════════════════════════
+          // CAPE（高估 + 高檔收斂）
+          // ════════════════════════════════════════
+          if (cape !== null) {
+              var capeChg = capeP !== null ? cape - capeP : null;
+              if (cape >= 35) {
+                  if (capeP !== null && cape < capeP)
+                      addAlert("CAPE_CONV", "yellow", "🟡 估值高檔收斂",
+                          "席勒PE>35但已開始回落，下殺動能可能減弱",
+                          "席勒本益比(CAPE)", capeChg);
+                  else
+                      addAlert("CAPE_HIGH", "red", "🔴 CAPE股市高估",
+                          "席勒PE>35且未見收斂，股市估值過高",
+                          "席勒本益比(CAPE)", capeChg);
+              } else if (cape < 20)
+                  addAlert("CAPE_LOW", "green", "🟢 CAPE估值偏低",
+                      "席勒PE<20，股市估值合理，可分批布局",
+                      "席勒本益比(CAPE)", capeChg);
+          }
+
+          if (!html) html = "<div class='alert-card green'>"
+              + "<div class='alert-title'>✅ 目前無重大警示</div>"
+              + "<div style='font-size:12px'>各項指標處於正常範圍，市場環境相對穩定。</div>"
+              + "</div>";
+
+          document.getElementById("alertsGrid").innerHTML = html;
+      }
+
+
+    // ══════════════════════════════════════════
+    // 各資產影響分析卡片
+    // ══════════════════════════════════════════
+    function renderImpactCards() {
+      var bei   = gv("美債平衡通膨率BEI(%)");
+      var y10   = gv("美10年公債殖利率(%)");
+      var sp3m  = gv("10年-3月公債利差");
+      var sp2y  = gv("10年-2年公債利差");
+      var fed   = gv("聯邦基金利率(%)");
+      var gdp   = gv("GDP成長率年化(%)");
+      var unemp = gv("美國失業率(%)");
+      var cpi   = gv("核心CPI YoY(%)");
+      var vix   = gv("VIX恐慌指數");
+      var cape  = gv("席勒本益比(CAPE)");
+      var dxy   = gv("美元指數");
+      var oil   = gv("WTI原油");
+      var umcs  = gv("密大消費者信心");
+      var m2    = gv("M2貨幣供給(十億)");
+      var y2   = gv("新美2年公債殖利率(%)");
+      var y2p  = gp("美2年公債殖利率(%)");
+      var y2Falling = y2 !== null && y2p !== null && y2 < y2p;
+
+      var inflationHot = (bei !== null && bei >= 2.25) || (cpi !== null && cpi >= 3.0);
+      var dollarStrong = dxy !== null && dxy >= 103;
+      var recessionRisk = (sp3m !== null && sp3m < 0) || (unemp !== null && unemp >= 4.3);
+
+      var techRating = "rating-neutral", techLabel = "中性";
+
+      if (
+        y10 !== null && y10 >= 4.5 &&
+        dollarStrong &&
+        cape !== null && cape >= 30
+      ) {
+        techRating = "rating-bear";
+        techLabel = "⚠️ 高壓";
+      }
+      else if (
+        y10 !== null && y10 <= 3.7 &&
+        inflationHot === false &&
+        (dxy === null || dxy < 103)
+      ) {
+        techRating = "rating-bull";
+        techLabel = "✅ 偏多";
+      }
+      else if (
+        inflationHot ||
+        (y10 !== null && y10 >= 4.0) ||
+        (dxy !== null && dxy >= 103)
+      ) {
+        techRating = "rating-caution";
+        techLabel = "⚠️ 謹慎";
+      }
+
+      var finRating = "rating-neutral", finLabel = "中性";
+      if (sp2y !== null && sp2y >= 0.5 && gdp !== null && gdp >= 2.0)  { finRating = "rating-bull"; finLabel = "✅ 偏多"; }
+      else if (sp3m !== null && sp3m < 0)                               { finRating = "rating-bear"; finLabel = "⚠️ 偏空"; }
+
+      var energyRating = "rating-neutral", energyLabel = "中性";
+      if (bei !== null && bei >= 2.25)       { energyRating = "rating-bull"; energyLabel = "✅ 偏多"; }
+      else if (gdp !== null && gdp < 1.0)    { energyRating = "rating-bear"; energyLabel = "⚠️ 偏空"; }
+
+      var bondRating = "rating-neutral", bondLabel = "中性";
+
+      if (recessionRisk && y10 !== null && y10 >= 4.0) {
+        bondRating = "rating-bull";
+        bondLabel = "✅ 避險";
+      }
+      else if (y10 !== null && y10 >= 4.5 && y2Falling) {
+        bondRating = "rating-bull";
+        bondLabel = "✅ 偏多";
+      }
+      else if (y10 !== null && y10 >= 4.5) {
+        bondRating = "rating-caution";
+        bondLabel = "⚠️ 分批";
+      }
+
+      var goldRating = "rating-neutral", goldLabel = "中性";
+
+      // 先看最明確利空：高利率 / 強美元
+      if (
+        ((bei !== null && bei >= 2.25) || (cpi !== null && cpi >= 3.0)) &&
+        ((y10 !== null && y10 >= 4.3) || (fed !== null && fed >= 4.5)) &&
+        (dxy !== null && dxy >= 102)
+      ) {
+        goldRating = "rating-bear";
+        goldLabel = "⚠️ 偏空";
+      }
+      // 再看避險 or 美元轉弱利多
+      else if (
+        (vix !== null && vix >= 25) ||
+        (sp3m !== null && sp3m < 0) ||
+        ((bei !== null && bei >= 2.25) && (dxy !== null && dxy < 100) && (y10 === null || y10 < 4.3))
+      ) {
+        goldRating = "rating-bull";
+        goldLabel = "✅ 偏多";
+      }
+      // 中間型：通膨有，但利率壓力也有
+      else if (
+        (bei !== null && bei >= 2.25) ||
+        (cpi !== null && cpi >= 3.0)
+      ) {
+        goldRating = "rating-caution";
+        goldLabel = "⚠️ 分歧";
+      }
+
+      var cryptoRating = "rating-neutral", cryptoLabel = "中性";
+      if (vix !== null && vix >= 30)                                    { cryptoRating = "rating-bear"; cryptoLabel = "🔴 高風險"; }
+      else if (fed !== null && fed <= 3.0 && vix !== null && vix < 20)  { cryptoRating = "rating-bull"; cryptoLabel = "✅ 偏多"; }
+
+      var dxyRating = "rating-neutral", dxyLabel = "中性";
+      if (fed !== null && fed >= 4.5)                                   { dxyRating = "rating-bull"; dxyLabel = "✅ 強勢"; }
+      else if (sp3m !== null && sp3m < 0 && vix !== null && vix >= 25)  { dxyRating = "rating-bull"; dxyLabel = "✅ 避險需求"; }
+
+      var consumerRating = "rating-neutral", consumerLabel = "中性";
+      if (umcs !== null && umcs >= 80 && unemp !== null && unemp <= 4.0){ consumerRating = "rating-bull"; consumerLabel = "✅ 偏多"; }
+      else if (umcs !== null && umcs < 60)                              { consumerRating = "rating-bear"; consumerLabel = "⚠️ 偏空"; }
+
+      var cards = [
+        { icon:"💻", name:"科技股 / 成長股", subtitle:"NASDAQ / QQQ / 台積電", rating:techRating, label:techLabel, items:[
+          { dot: y10 !== null && y10 >= 4.5 ? "bear":"bull", text:"10年債殖利率 "+(y10||"-")+"% — "+(y10>=4.5?"高殖利率壓縮估值，DCF折現率上升":y10>=4.0?"殖利率偏高，有壓力但尚可承受":"殖利率友善，估值空間充足") },
+          { dot: bei !== null && bei >= 2.25 ? "bear":"bull", text:"通膨預期 BEI "+(bei||"-")+"% — "+(bei>=2.5?"通膨惡化，實質利率上升，科技股首當其衝":bei>=2.25?"通膨升溫，留意科技股壓力":"通膨溫和，有利成長股") },
+          { dot: cape !== null && cape >= 35 ? "bear":"neutral", text:"席勒本益比 CAPE "+(cape||"-")+" — "+(cape>=35?"估值過高，下跌空間大":cape>=25?"估值偏高，需靠業績支撐":"估值合理") },
+          { dot:"neutral", text:"操作建議："+(y10>=4.5||bei>=2.5?"減碼科技股，等待殖利率回落再布局":y10>=4.0?"謹慎持有，選擇獲利能力強的龍頭股":"可積極布局，聚焦AI/半導體/雲端") }
+        ]},
+        { icon:"🏦", name:"金融股 / 壽險", subtitle:"銀行 / 保險 / 券商", rating:finRating, label:finLabel, items:[
+          { dot: sp2y !== null && sp2y >= 0.5 ? "bull":"bear", text:"10Y-2Y利差 "+(sp2y||"-")+" — "+(sp2y>=0.5?"利差擴大，銀行淨利差改善，有利金融股":sp2y>=0?"利差收窄，銀行獲利壓力增加":"利差倒掛，銀行業務嚴重受壓") },
+          { dot: fed !== null && fed >= 3.0 ? "bull":"neutral", text:"聯邦基金利率 "+(fed||"-")+"% — "+(fed>=4.0?"高利率環境，壽險投資收益率提升":fed>=2.5?"利率適中，金融股表現穩健":"低利率壓縮金融股獲利空間") },
+          { dot: gdp !== null && gdp >= 2.0 ? "bull":"bear", text:"GDP成長 "+(gdp||"-")+"% — "+(gdp>=3.0?"景氣強勁，信貸需求旺盛，有利銀行":gdp>=1.5?"景氣溫和，金融股表現平穩":"景氣趨緩，壞帳風險上升") },
+          { dot:"neutral", text:"操作建議："+(sp2y>=0.5&&gdp>=2.0?"積極布局金融股，尤其壽險受惠高利率":sp3m<0?"迴避銀行股，倒掛環境壞帳風險高":"選擇性布局，偏重壽險勝於銀行") }
+        ]},
+        { icon:"⚡", name:"能源 / 原物料", subtitle:"石油 / 天然氣 / 銅 / 鐵礦", rating:energyRating, label:energyLabel, items:[
+          { dot: bei !== null && bei >= 2.25 ? "bull":"neutral", text:"通膨預期 BEI "+(bei||"-")+"% — "+(bei>=2.25?"通膨升溫，能源原物料受惠，可作通膨對沖":"通膨溫和，能源股缺乏上漲動能") },
+          { dot: oil !== null && oil >= 80 ? "bull":"bear", text:"WTI原油 $"+(oil||"-")+" — "+(oil>=90?"油價高位，能源股獲利豐厚":oil>=70?"油價適中，能源股表現穩健":"油價偏低，能源股獲利承壓") },
+          { dot: gdp !== null && gdp >= 2.0 ? "bull":"bear", text:"GDP成長 "+(gdp||"-")+"% — "+(gdp>=2.5?"工業需求旺盛，基本金屬需求強勁":gdp<1.0?"景氣趨緩，原物料需求走弱":"需求溫和，原物料表現平穩") },
+          { dot:"neutral", text:"操作建議："+(bei>=2.25?"布局能源ETF（XLE）、黃金、銅等通膨受惠資產":gdp<1.0?"迴避景氣循環原物料，等待景氣回升":"選擇性持有，偏重能源勝於金屬") }
+        ]},
+        { icon:"📊", name:"美國公債 / 債券ETF", subtitle:"TLT / IEF / BND", rating:bondRating, label:bondLabel, items:[
+          { dot: y10 !== null && y10 >= 4.5 ? "bull":"neutral", text:"10年債殖利率 "+(y10||"-")+"% — "+(y10>=4.5?"殖利率高位，長債ETF具吸引力，等待降息收益":y10>=4.0?"殖利率偏高，可開始分批布局長債":"殖利率偏低，債券吸引力有限") },
+          { dot: sp3m !== null && sp3m < 0 ? "bull":"neutral", text:"10Y-3M利差 "+(sp3m||"-")+" — "+(sp3m<0?"曲線倒掛，衰退預期強，長債避險需求高":sp3m>=0.5?"曲線正常，景氣擴張，短債優於長債":"利差收窄，景氣轉折訊號") },
+          { dot: fed !== null && fed >= 4.0 ? "bull":"neutral", text:"聯邦基金利率 "+(fed||"-")+"% — "+(fed>=4.5?"高利率接近頂部，降息預期支撐長債":fed>=3.0?"利率仍高，短債殖利率具競爭力":"低利率環境，債券吸引力下降") },
+          { dot:"neutral", text:"操作建議："+(y10>=4.5?"積極布局TLT/IEF，等待降息週期獲取資本利得":sp3m<0?"布局長天期債券作為衰退避險，搭配現金":"保守持有短債，等待更好進場時機") }
+        ]},
+        { icon:"🥇", name:"黃金 / 貴金屬", subtitle:"GLD / GC / 黃金ETF", rating:goldRating, label:goldLabel, items:[
+          { 
+            dot: ((bei !== null && bei >= 2.25) || (cpi !== null && cpi >= 3.0))
+                  ? (((y10 !== null && y10 >= 4.3) || (fed !== null && fed >= 4.5)) ? "bear" : "bull")
+                  : "neutral",
+            text: "通膨 / 利率組合 — "
+                + (
+                    ((bei !== null && bei >= 2.25) || (cpi !== null && cpi >= 3.0))
+                      ? (
+                          ((y10 !== null && y10 >= 4.3) || (fed !== null && fed >= 4.5))
+                            ? "通膨升溫但利率維持高檔，實質利率壓力偏大，黃金未必受惠"
+                            : "通膨升溫但利率壓力不重，黃金通膨對沖功能較容易發揮"
+                        )
+                      : "通膨溫和，黃金主要看美元與避險需求"
+                  )
+          },
+          { 
+            dot: dxy !== null && dxy < 100 ? "bull" : "bear",
+            text: "美元指數 " + (dxy || "-") + " — "
+                + (dxy !== null && dxy < 100
+                    ? "美元轉弱，有利黃金"
+                    : dxy !== null && dxy >= 102
+                      ? "美元偏強，黃金承壓"
+                      : "美元中性，影響有限")
+          },
+          { 
+            dot: (vix !== null && vix >= 25) || (sp3m !== null && sp3m < 0) ? "bull" : "neutral",
+            text: "避險需求 — "
+                + (
+                    (vix !== null && vix >= 30)
+                      ? "市場恐慌升高，黃金避險買盤明顯增強"
+                      : (vix !== null && vix >= 25) || (sp3m !== null && sp3m < 0)
+                        ? "風險升溫，黃金具防禦價值"
+                        : "市場風險情緒平穩，黃金避險需求一般"
+                  )
+          },
+          { 
+            dot:"neutral",
+            text:"操作建議："
+                + (
+                    (((bei !== null && bei >= 2.25) || (cpi !== null && cpi >= 3.0)) &&
+                     ((y10 !== null && y10 >= 4.3) || (fed !== null && fed >= 4.5)) &&
+                     (dxy !== null && dxy >= 102))
+                      ? "先偏保守看待黃金，等待美元轉弱或殖利率回落"
+                      : ((vix !== null && vix >= 25) || (sp3m !== null && sp3m < 0))
+                        ? "可提高黃金配置至 8-12%，作為避險部位"
+                        : ((bei !== null && bei >= 2.25) && (dxy !== null && dxy < 100))
+                          ? "可逐步布局黃金，作為通膨對沖"
+                          : "維持 5-8% 基本配置，等待更明確訊號"
+                  )
+          }
+        ]},
+        { icon:"₿", name:"加密貨幣", subtitle:"BTC / ETH / 數位資產", rating:cryptoRating, label:cryptoLabel, items:[
+          { dot: vix !== null && vix < 20 ? "bull":"bear", text:"VIX恐慌指數 "+(vix||"-")+" — "+(vix<15?"市場過度樂觀，加密貨幣投機情緒高漲":vix<20?"市場穩定，加密貨幣風險偏好正常":vix>=30?"市場恐慌，加密貨幣通常跌幅更大":"市場謹慎，加密貨幣波動加大") },
+          { dot: fed !== null && fed <= 3.0 ? "bull":"bear", text:"聯邦基金利率 "+(fed||"-")+"% — "+(fed<=2.5?"低利率寬鬆，風險資產包含加密貨幣受惠":fed>=4.5?"高利率環境，加密貨幣吸引力大幅下降":"利率中性，加密貨幣走勢取決於市場情緒") },
+          { dot: m2 !== null ? "bull":"neutral", text:"M2貨幣供給 "+(m2?(m2/1000).toFixed(1)+"兆":"-")+" — "+(m2>=22000?"M2持續擴張，流動性充裕，有利加密貨幣":"M2收縮，流動性減少，加密貨幣承壓") },
+          { dot:"neutral", text:"操作建議："+(vix>=30?"迴避加密貨幣，等待恐慌消退再考慮布局":fed<=3.0&&vix<20?"可配置5%以內加密貨幣，以BTC為主":"保守觀望，加密貨幣波動風險高，謹慎配置") }
+        ]},
+        { icon:"💱", name:"匯率 / 美元指數", subtitle:"DXY / 台幣 / 日圓 / 歐元", rating:dxyRating, label:dxyLabel, items:[
+          { dot: fed !== null && fed >= 4.0 ? "bull":"bear", text:"聯邦基金利率 "+(fed||"-")+"% — "+(fed>=4.5?"高利率吸引資金流入美國，美元強勢":fed<=2.5?"低利率削弱美元吸引力，美元走弱":"利率中性，美元走勢取決於相對利差") },
+          { dot: dxy !== null && dxy >= 100 ? "bull":"bear", text:"美元指數 "+(dxy||"-")+" — "+(dxy>=103?"美元強勢，新興市場貨幣承壓，台幣可能貶值":dxy<98?"美元走弱，台幣/日圓等亞幣升值壓力":"美元中性，亞幣走勢相對穩定") },
+          { dot: sp3m !== null && sp3m < 0 ? "bull":"neutral", text:"殖利率曲線 "+(sp3m!==null?(sp3m<0?"倒掛":"正常"):"-")+" — "+(sp3m<0?"衰退預期推升美元避險需求":"景氣正常，美元走勢平穩") },
+          { dot:"neutral", text:"操作建議："+(dxy>=103?"美元強勢期，持有美元現金有利，減少非美資產配置":dxy<98?"美元走弱，可增加黃金、歐元資產，台股外資回流":"匯率中性，維持正常配置，不需特別調整") }
+        ]},
+        { icon:"🛒", name:"消費股 / 民生必需", subtitle:"零售 / 食品 / 醫療", rating:consumerRating, label:consumerLabel, items:[
+          { dot: umcs !== null && umcs >= 70 ? "bull":"bear", text:"密大消費信心 "+(umcs||"-")+" — "+(umcs>=80?"消費者信心強勁，零售消費旺盛":umcs>=65?"消費信心溫和，消費股表現平穩":umcs<60?"消費信心低迷，零售股承壓":"消費信心偏弱，謹慎看待") },
+          { dot: unemp !== null && unemp <= 4.5 ? "bull":"bear", text:"失業率 "+(unemp||"-")+"% — "+(unemp<=3.5?"就業市場強勁，消費能力強，有利消費股":unemp<=4.5?"就業穩健，消費支出維持":"失業率上升，消費能力下降") },
+          { dot: cpi !== null && cpi <= 3.0 ? "bull":"bear", text:"核心CPI "+(cpi?cpi.toFixed(2):"-")+"% — "+(cpi<=2.5?"通膨溫和，消費者購買力維持":cpi>=3.5?"高通膨侵蝕購買力，消費者縮減開支":"通膨偏高，消費者謹慎消費") },
+          { dot:"neutral", text:"操作建議："+(umcs>=75&&unemp<=4.0?"積極布局消費股，尤其可選消費（XLY）表現優異":umcs<60?"轉向必需消費（XLP），迴避可選消費":"均衡配置，必需消費防禦性優於可選消費") }
+        ]}
+      ];
+
+      var html = "";
+      for (var i = 0; i < cards.length; i++) {
+        var c = cards[i];
+        html += "<div class='impact-card'><div class='impact-card-header'>"
+          + "<div class='impact-icon'>" + c.icon + "</div>"
+          + "<div><div class='impact-name'>" + c.name + "</div>"
+          + "<div class='impact-subtitle'>" + c.subtitle + "</div></div>"
+          + "<div class='impact-rating " + c.rating + "'>" + c.label + "</div>"
+          + "</div><ul class='impact-items'>";
+        for (var j = 0; j < c.items.length; j++) {
+          html += "<li><span class='dot-" + c.items[j].dot + "'>●</span><span>" + c.items[j].text + "</span></li>";
+        }
+        html += "</ul></div>";
+      }
+      document.getElementById("impactGrid").innerHTML = html;
+    }
+
+    // ══════════════════════════════════════════
+    // 結論（修復：補完截斷的函數）
+    // ══════════════════════════════════════════
+      // ══════════════════════════════════════════
+      // 結論
+      // ══════════════════════════════════════════
+      function renderConclusion() {
+        var bei   = gv("美債平衡通膨率BEI(%)");
+        var y10   = gv("美10年公債殖利率(%)");
+        var sp3m  = gv("10年-3月公債利差");
+        var fed   = gv("聯邦基金利率(%)");
+        var gdp   = gv("GDP成長率年化(%)");
+        var vix   = gv("VIX恐慌指數");
+        var cape  = gv("席勒本益比(CAPE)");
+        var unemp = gv("美國失業率(%)");
+        var umcs  = gv("密大消費者信心");
+        var dxy   = gv("美元指數");
+
+        // ── 風險評分（加入趨勢加權）──
+        var riskLevel = 0;
+        var sp3mP  = gp("10年-3月公債利差");
+        var beiP   = gp("美債平衡通膨率BEI(%)");
+        var capeP  = gp("席勒本益比(CAPE)");
+        var unempP = gp("美國失業率(%)");
+        var umcsP  = gp("密大消費者信心");
+        var vixRow = gd("VIX恐慌指數");
+        var vixChgPct = vixRow && vixRow["變化"]
+            ? parseFloat(String(vixRow["變化"]).replace("%","").replace("+","")) || 0
+            : 0;
+
+        // 殖利率曲線（倒掛轉正最危險 +4）
+        if      (sp3m !== null && sp3m >= 0 && sp3mP !== null && sp3mP < 0) riskLevel += 4;
+        else if (sp3m !== null && sp3m < 0)                                  riskLevel += 3;
+
+        // VIX
+        if      (vix !== null && vix >= 30)   riskLevel += 3;
+        else if (vix !== null && vix >= 25)   riskLevel += 2;
+        else if (vixChgPct >= 15)             riskLevel += 2;  // 暴漲加分
+
+        // 通膨（收斂則減輕）
+        if      (bei !== null && bei >= 2.5)  riskLevel += (beiP !== null && bei < beiP) ? 1 : 2;
+        else if (bei !== null && bei >= 2.25) riskLevel += 1;
+
+        // 殖利率
+        if      (y10 !== null && y10 >= 4.5)  riskLevel += 2;
+        else if (y10 !== null && y10 >= 4.0)  riskLevel += 1;
+
+        // CAPE（收斂則減輕）
+        if (cape !== null && cape >= 35) riskLevel += (capeP !== null && cape < capeP) ? 1 : 2;
+
+        // 失業率（薩姆法則）
+        if      (unemp !== null && unemp >= 5.0)                                         riskLevel += 2;
+        else if (unemp !== null && unempP !== null && unemp >= unempP + 0.1 && unemp >= 4.3) riskLevel += 2;
+
+        // 消費信心（築底不加分）
+        if (umcs !== null && umcs < 60) riskLevel += (umcsP !== null && umcs > umcsP + 2.0) ? 0 : 1;
+
+        // GDP
+        if (gdp !== null && gdp < 1.0) riskLevel += 1;
+
+        // ── 總結論文字 ──
+        var finalText = "";
+        if (riskLevel >= 8) {
+          finalText = "⚠️ 【高風險警戒】目前總經環境多項指標同時亮紅燈，市場面臨較大下行風險。"
+            + (sp3m !== null && sp3m < 0 ? "殖利率曲線倒掛（" + sp3m.toFixed(2) + "），歷史上衰退機率極高。" : "")
+            + (vix !== null && vix >= 30 ? "VIX恐慌指數飆升至 " + vix.toFixed(1) + "，市場極度恐慌。" : "")
+            + "建議：大幅降低股票倉位至30%以下，增持現金與短期美債，等待Fed明確轉向後再積極布局。";
+        } else if (riskLevel >= 5) {
+          finalText = "🟡 【謹慎觀望】總經環境出現多項警示訊號，建議降低風險敞口。"
+            + (bei !== null && bei >= 2.25 ? "通膨預期BEI=" + bei.toFixed(2) + "%，通膨壓力仍在。" : "")
+            + (y10 !== null && y10 >= 4.0 ? "10年債殖利率=" + y10.toFixed(2) + "%，成長股估值承壓。" : "")
+            + "建議：股票倉位降至50-60%，增加防禦性資產（黃金、短債、必需消費），避免追高科技股。";
+        } else if (riskLevel >= 2) {
+          finalText = "🔵 【中性偏謹慎】總經環境尚可，但存在部分隱憂，建議均衡配置。"
+            + (gdp !== null ? "GDP成長率=" + gdp.toFixed(1) + "%，景氣溫和。" : "")
+            + (fed !== null ? "聯邦基金利率=" + fed.toFixed(2) + "%。" : "")
+            + "建議：維持均衡配置，股債比約60/40，持續追蹤Fed政策動向與通膨數據，保留10-15%現金彈性。";
+        } else {
+          finalText = "✅ 【相對樂觀】目前總經環境整體偏正面，適合積極布局。"
+            + (gdp !== null && gdp >= 2.0 ? "GDP成長強勁（" + gdp.toFixed(1) + "%），景氣擴張。" : "")
+            + (vix !== null && vix < 20 ? "VIX=" + vix.toFixed(1) + "，市場情緒穩定。" : "")
+            + "建議：可積極布局成長股（科技/AI/半導體），搭配部分金融股受惠利率環境，維持較高股票倉位（70-80%）。";
+        }
+        document.getElementById("finalText").textContent = finalText;
+
+        // ── 各板塊操作建議 ──
+        var sections = [
+          {
+            color: "var(--blue)", title: "📈 股票配置建議",
+            items: [
+              "科技股：" + (y10 !== null && y10 >= 4.5 ? "減碼，等待殖利率回落" : bei !== null && bei >= 2.25 ? "謹慎持有龍頭股" : "可積極布局AI/半導體"),
+              "金融股：" + (sp3m !== null && sp3m < 0 ? "迴避銀行，可持壽險" : gdp !== null && gdp >= 2.0 ? "積極布局，受惠景氣擴張" : "中性持有"),
+              "能源股：" + (bei !== null && bei >= 2.25 ? "布局XLE，通膨對沖" : "中性，等待油價訊號"),
+              "消費股：" + (umcs !== null && umcs < 60 ? "轉向必需消費XLP" : unemp !== null && unemp <= 4.0 ? "可選消費XLY表現佳" : "均衡配置必需與可選消費"),
+              "台股：" + (vix !== null && vix >= 25 ? "短期謹慎，AI題材逢低布局" : "正常配置，台積電/聯發科為核心")
+            ]
+          },
+          {
+            color: "var(--yellow)", title: "🏦 固定收益配置",
+            items: [
+              "短期美債：" + (fed !== null && fed >= 4.0 ? "積極持有，殖利率具吸引力" : "維持基本配置"),
+              "長期美債：" + (y10 !== null && y10 >= 4.5 ? "分批布局TLT，等待降息" : sp3m !== null && sp3m < 0 ? "積極布局，衰退避險" : "觀望，等待更高殖利率"),
+              "投資級企業債：" + (sp3m !== null && sp3m >= 0 && gdp !== null && gdp >= 1.5 ? "可適度配置" : "謹慎，信用利差可能擴大"),
+              "新興市場債：" + (dxy !== null && dxy >= 103 ? "迴避，強美元壓力大" : "可小幅配置，分散風險")
+            ]
+          },
+          {
+            color: "var(--orange)", title: "🥇 另類資產配置",
+            items: [
+              "黃金：" + (
+                ((bei !== null && bei >= 2.25) || (gv("核心CPI YoY(%)") !== null && gv("核心CPI YoY(%)") >= 3.0))
+                  ? (
+                      ((y10 !== null && y10 >= 4.3) || (fed !== null && fed >= 4.5)) && (dxy !== null && dxy >= 102)
+                        ? "先維持5-8%基本配置，高利率與強美元下不宜因通膨單獨追價"
+                        : "可提高至8-10%，作為通膨對沖部位"
+                    )
+                  : (vix !== null && vix >= 25 || sp3m !== null && sp3m < 0)
+                    ? "可提高至8-12%，作為避險配置"
+                    : "維持5-8%基本配置"
+              ),
+              "原油/能源：" + (bei !== null && bei >= 2.25 ? "布局XLE/原油ETF，通膨受惠" : "中性，等待供需訊號"),
+              "加密貨幣：" + (vix !== null && vix >= 30 ? "迴避，恐慌期跌幅更大" : fed !== null && fed <= 3.0 ? "可配置3-5%，以BTC為主" : "保守，配置不超過3%"),
+              "REITs：" + (y10 !== null && y10 >= 4.5 ? "迴避，高利率壓縮估值" : "可小幅配置，選擇優質REITs")
+            ]
+          },
+          {
+            color: "var(--green)", title: "💵 現金與風險管理",
+            items: [
+              "現金比例：" + (riskLevel >= 8 ? "建議持有40%以上現金" : riskLevel >= 5 ? "建議持有20-30%現金" : riskLevel >= 2 ? "建議持有10-15%現金" : "建議持有5-10%現金"),
+              "停損設定：" + (vix !== null && vix >= 25 ? "嚴格執行停損，波動加大" : "正常停損設定，追蹤均線"),
+              "分批布局：" + (vix !== null && vix >= 30 ? "恐慌期分3-5批進場，降低成本" : "正常定期定額，長期持有"),
+              "風險評分：" + riskLevel + "/15 — " + (riskLevel >= 8 ? "高風險，大幅降倉" : riskLevel >= 5 ? "中高風險，謹慎操作" : riskLevel >= 2 ? "中等風險，均衡配置" : "低風險，積極布局")
+            ]
+          }
+        ];
+
+        var html = "";
+        for (var i = 0; i < sections.length; i++) {
+          var s = sections[i];
+          html += "<div class='conclusion-item' style='border-color:" + s.color + ";color:" + s.color + "'>"
+            + "<h3>" + s.title + "</h3><ul>";
+          for (var j = 0; j < s.items.length; j++) {
+            html += "<li style='color:var(--txt)'>" + s.items[j] + "</li>";
+          }
+          html += "</ul></div>";
+        }
+        document.getElementById("conclusionGrid").innerHTML = html;
+      }
+
+
+// ══════════════════════════════════════════
+// 啟動
+// ══════════════════════════════════════════
+document.addEventListener("DOMContentLoaded", function() {
+  loadMacroData(false);
+});
+</script>
+</body>
+</html>

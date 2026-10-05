@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📈 月營收警報</title>
+<link rel="icon" type="image/svg+xml" href="static/favicon.svg">
+<style>
+  :root{--bg:#0f0f23;--bg2:#1a1a3e;--bg3:#1e1e42;--txt:#e0e0ff;--txt2:#8888aa;
+        --green:#00c853;--red:#ff1744;--orange:#ff9100;--purple:#d500f9;
+        --blue:#448aff;--cyan:#00bcd4;--bdr:#2a2a5a}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--txt);padding:20px}
+  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+  h1{font-size:20px;background:linear-gradient(90deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .meta{color:var(--txt2);font-size:13px}
+  .filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .filter-bar select, .filter-bar button{
+    background:var(--bg2);border:1px solid var(--bdr);color:var(--txt);
+    padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px
+  }
+  .filter-bar button:hover{background:var(--bg3)}
+  .filter-bar a{color:var(--cyan);text-decoration:none;padding:6px 12px;border:1px solid var(--bdr);border-radius:6px;font-size:13px}
+  .filter-bar a:hover{background:var(--bg2)}
+  table{width:100%;border-collapse:collapse;background:var(--bg2);border-radius:8px;overflow:hidden}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--bdr);font-size:13px}
+  th{background:var(--bg3);color:var(--txt2);font-weight:600;font-size:12px;letter-spacing:0.5px}
+  tr:hover{background:rgba(68,138,255,.08)}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .lvl{font-weight:600;white-space:nowrap}
+  .lvl-burst{color:#ff1744}
+  .lvl-strong{color:#00c853}
+  .lvl-stable{color:#8888aa}
+  .lvl-crash{color:#448aff}
+  .lvl-decline{color:#00bcd4}
+  .lvl-minor{color:#ff9100}
+  .lvl-none{color:#555}
+  .pos{color:#ff1744}.neg{color:#00c853}
+  .err{padding:20px;text-align:center;color:var(--red);background:var(--bg2);border-radius:8px}
+  .empty{padding:40px;text-align:center;color:var(--txt2);background:var(--bg2);border-radius:8px}
+  .loading{padding:40px;text-align:center;color:var(--cyan)}
+
+  /* ───── 桌機表格 / 手機卡片切換 ───── */
+  .mobile-cards{display:none}
+  @media (max-width: 720px){
+    body{padding:12px}
+    h1{font-size:18px}
+    .meta{font-size:12px}
+    .filter-bar select, .filter-bar button, .filter-bar a{
+      padding:8px 10px;font-size:13px;flex:1;min-width:0;text-align:center
+    }
+    .desktop-table{display:none}
+    .mobile-cards{display:block}
+    .rcard{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;
+      padding:12px;margin-bottom:8px}
+    .rcard-head{display:flex;justify-content:space-between;align-items:center;
+      gap:8px;margin-bottom:8px;flex-wrap:wrap}
+    .rcard-title{font-size:15px;font-weight:600}
+    .rcard-title a{color:#7ab8ff;text-decoration:none}
+    .rcard-lvl{font-size:12px;font-weight:600;padding:3px 8px;border-radius:6px;
+      background:rgba(255,255,255,0.05);white-space:nowrap}
+    .rcard-yoy{font-size:22px;font-weight:700;margin:6px 0}
+    .rcard-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;
+      font-size:12px;color:var(--txt2);margin-top:6px}
+    .rcard-grid b{color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums}
+    .rcard-month{font-size:11px;color:var(--txt2);float:right}
+  }
+
+  /* 可排序欄位標題 */
+  th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+  th.sortable:hover{background:#2a2a5a;color:var(--txt)}
+  th.sortable .arr{display:inline-flex;flex-direction:column;
+    margin-left:4px;vertical-align:middle;line-height:0.6}
+  th.sortable .arr span{font-size:8px;color:#555}
+  th.sortable .arr span.on{color:var(--cyan)}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📈 月營收警報</h1>
+  <div class="meta" id="meta">資料源：MOPS 公開資訊觀測站</div>
+</div>
+
+<div class="filter-bar">
+  <select id="ymSel"><option value="">最新月份</option></select>
+  <select id="lvlSel">
+    <option value="">全部評級</option>
+    <option value="burst">🚀 營收爆發</option>
+    <option value="strong">📈 強勢成長</option>
+    <option value="crash">🔻 重挫</option>
+    <option value="decline">📉 衰退</option>
+    <option value="stable">➕ 穩健</option>
+    <option value="minor">➖ 微幅衰退</option>
+  </select>
+  <button onclick="loadData()">重新整理</button>
+  <button onclick="exportCSV()">📥 匯出 CSV</button>
+  <a href="index.html">← 回首頁</a>
+</div>
+
+<div id="content"><div class="loading">載入中...</div></div>
+
+<script>
+let rawData = [];
+let sortKey = null;   // 'revenue_current' | 'mom_pct' | 'yoy_pct' | 'ytd_revenue' | 'ytd_yoy_pct'
+let sortDir = null;   // 'asc' | 'desc' | null（null = 預設排序）
+
+function toggleSort(key){
+  // 同欄循環：null → desc → asc → null（回預設）
+  if (sortKey !== key){ sortKey = key; sortDir = 'desc'; }
+  else if (sortDir === 'desc'){ sortDir = 'asc'; }
+  else { sortKey = null; sortDir = null; }
+  render();
+}
+
+function arrHtml(key){
+  const up = (sortKey===key && sortDir==='asc') ? 'on' : '';
+  const dn = (sortKey===key && sortDir==='desc') ? 'on' : '';
+  return `<span class="arr"><span class="${up}">▲</span><span class="${dn}">▼</span></span>`;
+}
+
+const CLASSIFY = (yoy, mom) => {
+  if (yoy === null || yoy === undefined) return {icon:"?",label:"資料不足",level:"none",priority:0};
+  if (yoy >= 30 && (mom || 0) >= 5) return {icon:"🚀",label:"營收爆發",level:"burst",priority:100};
+  if (yoy >= 15) return {icon:"📈",label:"強勢成長",level:"strong",priority:80};
+  if (yoy >= 0) return {icon:"➕",label:"穩健",level:"stable",priority:40};
+  if (yoy <= -25) return {icon:"🔻",label:"重挫",level:"crash",priority:90};
+  if (yoy <= -15) return {icon:"📉",label:"衰退",level:"decline",priority:70};
+  return {icon:"➖",label:"微幅衰退",level:"minor",priority:30};
+};
+
+function fmtInt(v){
+  if (v === null || v === undefined) return "—";
+  return Number(v).toLocaleString();
+}
+function fmtPct(v){
+  if (v === null || v === undefined) return "—";
+  const sign = v >= 0 ? "+" : "";
+  return `<span class="${v >= 0 ? 'pos' : 'neg'}">${sign}${v.toFixed(1)}%</span>`;
+}
+
+function render(){
+  const lvl = document.getElementById("lvlSel").value;
+  let rows = rawData.slice();
+  rows.forEach(r => r._sig = CLASSIFY(r.yoy_pct, r.mom_pct));
+  if (lvl) rows = rows.filter(r => r._sig.level === lvl);
+  if (sortKey){
+    const dir = sortDir === 'asc' ? 1 : -1;
+    const NA = sortDir === 'asc' ? Infinity : -Infinity;  // null 永遠排尾
+    rows.sort((a,b) => {
+      const va = (a[sortKey] === null || a[sortKey] === undefined) ? NA : a[sortKey];
+      const vb = (b[sortKey] === null || b[sortKey] === undefined) ? NA : b[sortKey];
+      return (va - vb) * dir;
+    });
+  } else {
+    rows.sort((a,b) => (b._sig.priority - a._sig.priority) || ((b.yoy_pct||-999) - (a.yoy_pct||-999)));
+  }
+
+  const c = document.getElementById("content");
+  if (!rows.length){
+    c.innerHTML = '<div class="empty">沒有命中的資料</div>';
+    return;
+  }
+  // 桌機表格
+  let tableHtml = '<table class="desktop-table"><thead><tr>'
+    + '<th>評級</th><th>代號</th><th>名稱</th><th>月份</th>'
+    + `<th class="num sortable" data-sort="revenue_current">本月營收(千)${arrHtml('revenue_current')}</th>`
+    + `<th class="num sortable" data-sort="mom_pct">MoM${arrHtml('mom_pct')}</th>`
+    + `<th class="num sortable" data-sort="yoy_pct">YoY${arrHtml('yoy_pct')}</th>`
+    + `<th class="num sortable" data-sort="ytd_revenue">累計營收${arrHtml('ytd_revenue')}</th>`
+    + `<th class="num sortable" data-sort="ytd_yoy_pct">累計YoY${arrHtml('ytd_yoy_pct')}</th>`
+    + '</tr></thead><tbody>';
+  // 手機卡片
+  let cardsHtml = '<div class="mobile-cards">';
+  rows.forEach(r => {
+    const s = r._sig;
+    const codeLink = `<a href="index.html?code=${encodeURIComponent(r.code)}" target="_blank" `
+      + `style="color:#7ab8ff;text-decoration:none" title="開新分頁看 K 線">${r.code}</a>`;
+    const nameLink = r.name
+      ? `<a href="index.html?code=${encodeURIComponent(r.code)}" target="_blank" `
+        + `style="color:#7ab8ff;text-decoration:none" title="開新分頁看 K 線">${r.name}</a>`
+      : '';
+    tableHtml += `<tr><td class="lvl lvl-${s.level}">${s.icon} ${s.label}</td>`
+      + `<td>${codeLink}</td><td>${nameLink}</td><td>${r.year_month||''}</td>`
+      + `<td class="num">${fmtInt(r.revenue_current)}</td>`
+      + `<td class="num">${fmtPct(r.mom_pct)}</td>`
+      + `<td class="num"><b>${fmtPct(r.yoy_pct)}</b></td>`
+      + `<td class="num">${fmtInt(r.ytd_revenue)}</td>`
+      + `<td class="num">${fmtPct(r.ytd_yoy_pct)}</td></tr>`;
+    // 卡片版（手機）
+    cardsHtml += `<div class="rcard">`
+      + `<div class="rcard-head">`
+      + `<div class="rcard-title">${codeLink} ${nameLink}`
+      + `<span class="rcard-month"> ${r.year_month||''}</span></div>`
+      + `<span class="rcard-lvl lvl-${s.level}">${s.icon} ${s.label}</span>`
+      + `</div>`
+      + `<div class="rcard-yoy">YoY ${fmtPct(r.yoy_pct)}</div>`
+      + `<div class="rcard-grid">`
+      + `<div>本月營收：<b>${fmtInt(r.revenue_current)}</b> 千</div>`
+      + `<div>MoM：<b>${fmtPct(r.mom_pct)}</b></div>`
+      + `<div>累計營收：<b>${fmtInt(r.ytd_revenue)}</b> 千</div>`
+      + `<div>累計 YoY：<b>${fmtPct(r.ytd_yoy_pct)}</b></div>`
+      + `</div></div>`;
+  });
+  tableHtml += '</tbody></table>';
+  cardsHtml += '</div>';
+  c.innerHTML = tableHtml + cardsHtml;
+  // 綁定排序點擊（render 後重新綁，因為 innerHTML 整段重畫）
+  c.querySelectorAll('th.sortable').forEach(th => {
+    th.onclick = () => toggleSort(th.dataset.sort);
+  });
+}
+
+function exportCSV(){
+  if (!rawData.length){ alert("無資料可匯出"); return; }
+  const headers = ["評級","代號","名稱","月份","本月營收","MoM%","YoY%","累計營收","累計YoY%"];
+  const lines = [headers.join(",")];
+  rawData.forEach(r => {
+    const s = CLASSIFY(r.yoy_pct, r.mom_pct);
+    lines.push([s.label, r.code, r.name, r.year_month,
+      r.revenue_current||'', r.mom_pct||'', r.yoy_pct||'',
+      r.ytd_revenue||'', r.ytd_yoy_pct||''].join(","));
+  });
+  const blob = new Blob(["\uFEFF" + lines.join("\n")], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `revenue_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function loadData(){
+  document.getElementById("content").innerHTML = '<div class="loading">載入中...</div>';
+  const ym = document.getElementById("ymSel").value;
+  const qs = ym ? `?year_month=${ym}` : '';
+  fetch('/api/revenue' + qs)
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok){
+        document.getElementById("content").innerHTML =
+          `<div class="err">資料暫時無法取得：${d.error||'未知錯誤'}</div>`;
+        return;
+      }
+      rawData = d.data || [];
+      // 更新 meta + 月份下拉
+      document.getElementById("meta").textContent =
+        `命中自選股 ${rawData.length} 筆 · 最後更新：${d.last_update || '—'} · 資料源：MOPS`;
+      // 月份選單
+      const ymSel = document.getElementById("ymSel");
+      const months = [...new Set(rawData.map(r => r.year_month))].sort().reverse();
+      const cur = ymSel.value;
+      ymSel.innerHTML = '<option value="">最新月份</option>' +
+        months.map(m => `<option value="${m}" ${m===cur?'selected':''}>${m}</option>`).join('');
+      render();
+    })
+    .catch(err => {
+      document.getElementById("content").innerHTML =
+        `<div class="err">資料載入失敗：${err.message}</div>`;
+    });
+}
+
+document.getElementById("lvlSel").onchange = render;
+document.getElementById("ymSel").onchange = loadData;
+loadData();
+</script>
+</body>
+</html>

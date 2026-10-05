@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>走勢比較圖（個股 / ETF）</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+  <style>
+    :root{
+      --bg:#0d0f14; --panel:#161a22; --panel2:#1b212c; --bdr:#262d3a;
+      --txt:#e6eaf2; --txt2:#8b94a7; --green:#1fbf75; --red:#ef4d56;
+      --yellow:#e8b53a; --gray:#6b7280; --accent:#4da3ff;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--bg);color:var(--txt);
+      font-family:-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;font-size:14px;}
+    header{display:flex;align-items:center;gap:14px;padding:14px 20px;
+      border-bottom:1px solid var(--bdr);flex-wrap:wrap;}
+    h1{font-size:18px;margin:0;color:var(--accent);font-weight:700;}
+    .meta{color:var(--txt2);font-size:12px;}
+    .wrap{padding:16px 20px;max-width:1280px;margin:0 auto;}
+    .back{color:var(--txt2);text-decoration:none;border:1px solid var(--bdr);
+      padding:6px 12px;border-radius:8px;font-size:12px;}
+    .back:hover{color:var(--txt);}
+    /* 控制列 */
+    .controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+      background:var(--panel);border:1px solid var(--bdr);border-radius:10px;
+      padding:12px 14px;margin-bottom:16px;}
+    .rng-btns{display:flex;gap:6px;flex-wrap:wrap;}
+    .rng-btn{background:transparent;border:1px solid var(--bdr);color:var(--txt2);
+      padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;}
+    .rng-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .rng-btn:hover:not(.active){color:var(--txt);border-color:var(--accent);}
+    .sep{width:1px;height:22px;background:var(--bdr);margin:0 4px;}
+    .controls label{color:var(--txt2);font-size:12px;}
+    .controls input[type=date]{background:var(--panel2);border:1px solid var(--bdr);
+      color:var(--txt);border-radius:7px;padding:5px 8px;font-size:12px;
+      color-scheme:dark;}
+    .btn{background:var(--panel2);color:var(--txt);border:1px solid var(--bdr);
+      padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;}
+    .btn:hover{border-color:var(--accent);}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+    /* 區塊 */
+    .section{margin-bottom:26px;}
+    .sec-title{font-size:15px;margin:0 0 10px;color:var(--txt);font-weight:700;
+      display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+    .sec-title .cnt{color:var(--txt2);font-size:12px;font-weight:400;}
+    .panel-box{background:var(--panel);border:1px solid var(--bdr);border-radius:10px;
+      padding:12px;}
+    .chart{width:100%;height:440px;}
+    /* 勾選清單 */
+    .picker-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+      margin-bottom:8px;}
+    .picker-head .lk{color:var(--accent);font-size:12px;cursor:pointer;
+      text-decoration:none;}
+    .picker-head .lk:hover{text-decoration:underline;}
+    .pick-search{background:var(--panel2);border:1px solid var(--bdr);color:var(--txt);
+      border-radius:7px;padding:5px 8px;font-size:12px;min-width:140px;}
+    .picker{display:flex;flex-wrap:wrap;gap:6px 10px;max-height:140px;overflow-y:auto;
+      padding:4px 2px;}
+    .chk{display:inline-flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;
+      color:var(--txt2);white-space:nowrap;padding:2px 4px;border-radius:6px;}
+    .chk:hover{background:var(--panel2);color:var(--txt);}
+    .chk input{accent-color:var(--accent);}
+    .chk .rt{font-family:monospace;}
+    .up{color:var(--red);} .down{color:var(--green);} .flat{color:var(--txt2);}
+    .loading{color:var(--txt2);text-align:center;padding:40px 0;}
+    .hint{color:var(--txt2);font-size:12px;line-height:1.7;background:var(--panel);
+      border:1px solid var(--bdr);border-radius:10px;padding:12px 14px;margin-top:8px;}
+    .hint b{color:var(--txt);}
+    @media (max-width:640px){
+      .wrap{padding:12px 14px;} h1{font-size:16px;} .chart{height:340px;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>走勢比較圖</h1>
+    <span class="meta" id="meta">以「自起點累積漲跌幅(%)」正規化比較</span>
+    <a class="back" href="index.html" style="margin-left:auto;">← 回首頁</a>
+  </header>
+
+  <div class="wrap">
+    <div class="controls">
+      <div class="rng-btns" id="rngBtns">
+        <button class="rng-btn" data-r="1w">近一週</button>
+        <button class="rng-btn" data-r="1m">近一月</button>
+        <button class="rng-btn" data-r="3m">近三月</button>
+        <button class="rng-btn" data-r="6m">近半年</button>
+        <button class="rng-btn active" data-r="1y">近一年</button>
+        <button class="rng-btn" data-r="3y">近三年</button>
+        <button class="rng-btn" data-r="5y">近五年</button>
+      </div>
+      <span class="sep"></span>
+      <label>自訂：</label>
+      <input type="date" id="dStart">
+      <span style="color:var(--txt2);">~</span>
+      <input type="date" id="dEnd">
+      <button class="btn primary" id="btnApply">套用區間</button>
+    </div>
+
+    <div class="section">
+      <div class="sec-title">📈 個股走勢比較 <span class="cnt" id="cntStock"></span></div>
+      <div class="panel-box">
+        <div class="picker-head">
+          <a class="lk" data-act="all" data-kind="stock">全選</a>
+          <a class="lk" data-act="none" data-kind="stock">全不選</a>
+          <a class="lk" data-act="top10" data-kind="stock">僅前 10 強</a>
+          <input class="pick-search" id="searchStock" placeholder="搜尋代碼/名稱…">
+          <span class="cnt" id="selStock" style="margin-left:auto;"></span>
+        </div>
+        <div class="picker" id="pickStock"></div>
+        <div class="chart" id="chartStock"><div class="loading">個股資料載入中…</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="sec-title">🧺 ETF 走勢比較 <span class="cnt" id="cntEtf"></span></div>
+      <div class="panel-box">
+        <div class="picker-head">
+          <a class="lk" data-act="all" data-kind="etf">全選</a>
+          <a class="lk" data-act="none" data-kind="etf">全不選</a>
+          <a class="lk" data-act="top10" data-kind="etf">僅前 10 強</a>
+          <input class="pick-search" id="searchEtf" placeholder="搜尋代碼/名稱…">
+          <span class="cnt" id="selEtf" style="margin-left:auto;"></span>
+        </div>
+        <div class="picker" id="pickEtf"></div>
+        <div class="chart" id="chartEtf"><div class="loading">ETF 資料載入中…</div></div>
+      </div>
+    </div>
+
+    <div class="hint">
+      <b>怎麼看：</b>每條線代表一檔標的，皆從區間起點的 0% 出發，向上＝相對起點上漲、向下＝下跌，
+      可直接比較同一期間誰漲得多／抗跌。預設全部勾選，可用上方勾選區自由增減比較對象（含搜尋、全選、僅前 10 強）。
+      勾選清單後的百分比為該檔在目前區間的總報酬。<br>
+      <b>歷史不足：</b>若某檔上市較晚、抓不到那麼久的資料，會自動以其可得最早資料起算，該線從較晚的日期才開始。
+    </div>
+  </div>
+
+<script>
+const $ = s => document.querySelector(s);
+const PALETTE = ['#4da3ff','#ef4d56','#1fbf75','#e8b53a','#a78bfa','#22d3ee','#fb7185',
+  '#34d399','#f59e0b','#818cf8','#f472b6','#2dd4bf','#facc15','#60a5fa','#c084fc',
+  '#fca5a5','#86efac','#fcd34d','#93c5fd','#d8b4fe'];
+
+const ST = {
+  stock: {chart:null, data:null, selected:new Set(), elPick:'#pickStock', elChart:'#chartStock',
+          elCnt:'#cntStock', elSel:'#selStock', elSearch:'#searchStock'},
+  etf:   {chart:null, data:null, selected:new Set(), elPick:'#pickEtf', elChart:'#chartEtf',
+          elCnt:'#cntEtf', elSel:'#selEtf', elSearch:'#searchEtf'},
+};
+let curRange = '1y';   // 為空字串時代表使用自訂區間
+let curStart = null, curEnd = null;
+
+function fmtPct(v){
+  if(v===null||v===undefined||isNaN(v)) return '—';
+  return (v>0?'+':'')+v.toFixed(2)+'%';
+}
+function clsPct(v){
+  if(v===null||v===undefined||isNaN(v)) return 'flat';
+  return v>0?'up':(v<0?'down':'flat');
+}
+
+function buildQuery(kind){
+  const p = new URLSearchParams();
+  p.set('kind', kind);
+  if(curRange){ p.set('range', curRange); }
+  else { p.set('start', curStart); p.set('end', curEnd); }
+  return p.toString();
+}
+
+// 背景補抓輪詢上限：前 ~60s 每 3s、之後每 6s，最多約 7 分鐘（後端通常 < 1 分鐘即收斂）。
+const POLL_MAX_TICKS = 80;
+
+async function loadSection(kind, silent, token){
+  const s = ST[kind];
+  if(!silent){
+    // 主動載入 / 切換週期：開新一輪（作廢舊輪背景輪詢）、重置狀態。
+    s.token = (s.token||0) + 1;
+    token = s.token;
+    s.elapsed = 0;
+    $(s.elChart).innerHTML = '<div class="loading">資料載入中…（背景補抓中，會逐步顯示）</div>';
+    $(s.elPick).innerHTML = '';
+  }
+  // 背景輪詢：若已被新一輪載入（切換週期）取代，立即停止本輪。
+  if(silent && token !== s.token) return;
+  try{
+    const r = await fetch('/api/price_compare?'+buildQuery(kind));
+    const j = await r.json();
+    if(token !== s.token) return;  // await 期間被新一輪載入取代（含切換週期）
+    if(!j.ok){
+      if(j.busy){
+        $(s.elChart).innerHTML = '<div class="loading">系統忙碌中，3 秒後自動重試…</div>';
+        s.elapsed = (s.elapsed||0) + 1;
+        if(s.elapsed <= POLL_MAX_TICKS){ setTimeout(()=>loadSection(kind, true, token), 3000); }
+        return;
+      }
+      $(s.elChart).innerHTML = '<div class="loading">載入失敗：'+(j.error||'未知錯誤')+'</div>'; return;
+    }
+    const prevCodes = s.data ? new Set(s.data.series.map(x=>x.code)) : null;
+    s.data = j;
+    if(!silent){
+      // 主動載入 / 切換週期：預設全選
+      s.selected = new Set(j.series.map(x=>x.code));
+    }else{
+      // 背景補抓：保留使用者既有勾選，新到的標的預設加入（讓逐步顯示自然帶出新線）
+      j.series.forEach(x=>{ if(!prevCodes || !prevCodes.has(x.code)) s.selected.add(x.code); });
+    }
+    let cnt = '（共 '+j.count+' 檔，'+j.start+' ~ '+j.end+'）';
+    if(j.partial){
+      cnt += '　⚠ 背景補抓中（已 '+(j.fetched||j.count)+'index.html'+(j.total||'?')
+        + ' 檔，自動補齊中…）';
+    }
+    // 有資料才畫圖；尚無任何標的時保留載入提示，避免出現空白圖表。
+    if(j.count > 0){
+      $(s.elCnt).textContent = cnt;
+      renderPicker(kind);
+      renderChart(kind);
+    }else if(j.partial){
+      $(s.elCnt).textContent = cnt;
+      $(s.elChart).innerHTML = '<div class="loading">資料載入中…（已 '
+        + (j.fetched||0) + 'index.html' + (j.total||'?') + ' 檔，背景補齊中，會逐步顯示）</div>';
+    }else{
+      $(s.elCnt).textContent = cnt;
+      renderPicker(kind);
+      renderChart(kind);
+    }
+    // 仍在補抓 → 持續輪詢直到後端回報完成（partial=false）。後端一定會收斂
+    // （各標的最終為有資料或確定無資料），故以「後端回報」為準，不再因短暫沒進度就放棄。
+    if(j.partial){
+      s.elapsed = (s.elapsed||0) + 1;
+      if(s.elapsed <= POLL_MAX_TICKS){
+        const delay = s.elapsed <= 20 ? 3000 : 6000;  // 前 ~60s 每 3s，之後每 6s（溫和退避）
+        setTimeout(()=>loadSection(kind, true, token), delay);
+      }else{
+        // 極端情況仍未補齊 → 停止輪詢並提供手動重試（保留已顯示的資料）。
+        $(s.elCnt).innerHTML = cnt
+          + ' <a href="#" class="lk" onclick="loadSection(\''+kind+'\');return false;">重新載入</a>';
+      }
+    }else{
+      s.elapsed = 0;
+    }
+  }catch(e){
+    if(token !== s.token) return;  // 已被新一輪載入取代
+    if(silent){
+      // 背景暫時性錯誤：保留現有圖、稍後重試（同樣受總時限約束）
+      s.elapsed = (s.elapsed||0) + 1;
+      if(s.elapsed <= POLL_MAX_TICKS){ setTimeout(()=>loadSection(kind, true, token), 5000); }
+      return;
+    }
+    $(s.elChart).innerHTML = '<div class="loading">載入失敗：'+e+'</div>';
+  }
+}
+
+function renderPicker(kind){
+  const s = ST[kind];
+  const q = ($(s.elSearch).value||'').trim().toLowerCase();
+  const rows = s.data.series.filter(x=>{
+    if(!q) return true;
+    return (x.code+'').toLowerCase().includes(q) || (x.name+'').toLowerCase().includes(q);
+  });
+  $(s.elPick).innerHTML = rows.map(x=>{
+    const checked = s.selected.has(x.code) ? 'checked' : '';
+    return `<label class="chk"><input type="checkbox" data-code="${x.code}" ${checked}>`
+      + `<span>${x.code} ${x.name}</span>`
+      + `<span class="rt ${clsPct(x.ret)}">${fmtPct(x.ret)}</span></label>`;
+  }).join('');
+  $(s.elPick).querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const c = cb.getAttribute('data-code');
+      if(cb.checked) s.selected.add(c); else s.selected.delete(c);
+      renderChart(kind);
+    });
+  });
+  updateSelCount(kind);
+}
+
+function updateSelCount(kind){
+  const s = ST[kind];
+  $(s.elSel).textContent = '已選 '+s.selected.size+' / '+(s.data?s.data.series.length:0);
+}
+
+function renderChart(kind){
+  const s = ST[kind];
+  if(!s.data) return;
+  const el = $(s.elChart);
+  if(!s.chart || s.chart.isDisposed()){ el.innerHTML=''; s.chart = echarts.init(el, 'dark'); }
+  const picked = s.data.series.filter(x=>s.selected.has(x.code));
+  const series = picked.map((x,i)=>({
+    name: x.code+' '+x.name,
+    type: 'line',
+    showSymbol: false,
+    smooth: false,
+    connectNulls: false,
+    sampling: 'lttb',
+    lineStyle:{width:1.4},
+    emphasis:{focus:'series', lineStyle:{width:3}},
+    data: x.data,
+    color: PALETTE[i % PALETTE.length],
+  }));
+  s.chart.setOption({
+    backgroundColor:'transparent',
+    grid:{left:54, right:18, top:18, bottom:64},
+    tooltip:{trigger:'axis', confine:true, order:'valueDesc',
+      backgroundColor:'#161a22', borderColor:'#262d3a',
+      textStyle:{color:'#e6eaf2', fontSize:12},
+      valueFormatter:v=> (v===null||v===undefined)?'—':((v>0?'+':'')+(+v).toFixed(2)+'%')},
+    xAxis:{type:'category', data:s.data.dates, boundaryGap:false,
+      axisLabel:{color:'#8b94a7', fontSize:11},
+      axisLine:{lineStyle:{color:'#262d3a'}}},
+    yAxis:{type:'value', axisLabel:{color:'#8b94a7', fontSize:11, formatter:'{value}%'},
+      splitLine:{lineStyle:{color:'#1b212c'}}},
+    dataZoom:[{type:'inside'},{type:'slider', height:18, bottom:18,
+      borderColor:'#262d3a', fillerColor:'rgba(77,163,255,.15)',
+      textStyle:{color:'#8b94a7'}}],
+    series: series,
+  }, true);
+  updateSelCount(kind);
+}
+
+// ── 勾選操作（全選 / 全不選 / 僅前 10 強）──
+document.querySelectorAll('.lk').forEach(a=>{
+  a.addEventListener('click', ()=>{
+    const kind = a.getAttribute('data-kind');
+    const act = a.getAttribute('data-act');
+    const s = ST[kind];
+    if(!s.data) return;
+    if(act==='all') s.selected = new Set(s.data.series.map(x=>x.code));
+    else if(act==='none') s.selected = new Set();
+    else if(act==='top10') s.selected = new Set(s.data.series.slice(0,10).map(x=>x.code));
+    renderPicker(kind);
+    renderChart(kind);
+  });
+});
+
+// ── 搜尋 ──
+['stock','etf'].forEach(kind=>{
+  $(ST[kind].elSearch).addEventListener('input', ()=>renderPicker(kind));
+});
+
+// ── 區間切換 ──
+function reloadAll(){ loadSection('stock'); loadSection('etf'); }
+
+$('#rngBtns').querySelectorAll('.rng-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    $('#rngBtns').querySelectorAll('.rng-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    curRange = b.getAttribute('data-r');
+    curStart = curEnd = null;
+    $('#dStart').value=''; $('#dEnd').value='';
+    reloadAll();
+  });
+});
+
+$('#btnApply').addEventListener('click', ()=>{
+  const a = $('#dStart').value, z = $('#dEnd').value;
+  if(!a || !z){ alert('請選擇起訖日期'); return; }
+  curRange = '';
+  curStart = a; curEnd = z;
+  $('#rngBtns').querySelectorAll('.rng-btn').forEach(x=>x.classList.remove('active'));
+  reloadAll();
+});
+
+window.addEventListener('resize', ()=>{
+  ['stock','etf'].forEach(k=>{ if(ST[k].chart && !ST[k].chart.isDisposed()) ST[k].chart.resize(); });
+});
+
+reloadAll();
+</script>
+</body>
+</html>
