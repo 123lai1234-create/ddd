@@ -66,6 +66,12 @@
       "destination": "/api/healthz"
     }
   ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/catchall"
+    }
+  ],
   
   "redirects": [
     {
