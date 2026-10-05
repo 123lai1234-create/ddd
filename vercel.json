@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "node ../vercel-install.mjs",
   "buildCommand": "node ../vercel-build.mjs",
-  "outputDirectory": "dist",
+  "outputDirectory": "astro/dist",
   "cleanUrls": true,
   "trailingSlash": false,
   "env": {
@@ -60,12 +60,13 @@
       "destination": "/api/healthz"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/.*",
-      "dest": "/api/catchall"
+  "functions": {
+    "api/catchall.mjs": {
+      "runtime": "nodejs20.x",
+      "regions": ["iad1"],
+      "maxDuration": 60
     }
-  ],
+  },
   "redirects": [
     {
       "source": "/stock",

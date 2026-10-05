@@ -1,10 +1,14 @@
-// Cross-platform build wrapper for Vercel CLI (runs from D:\project\astro)
+// Cross-platform build wrapper for Vercel CLI (runs from D:\project/astro)
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { copyFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const astroDir = path.resolve(here, 'astro');
+const repoRoot = path.resolve(here);  // D:\project
+const apiSrcDir = path.join(astroDir, 'api');
+const apiDestDir = path.join(repoRoot, 'api');
 
 // 1. 拉 LFS 物件（dist/ 與 public/ 下的 mp3/wav/flac/ogg/m4a/aac/lrc 都靠它）。
 //    Vercel 用淺 clone，dist 已 commit 但 LFS 物件是 pointer；沒這步 dist/*.mp3 會是 132 bytes pointer，音樂就壞了。
@@ -17,6 +21,20 @@ try {
 } catch (err) {
     console.error('[build] LFS pull FAILED — dist 中會留下 LFS pointer（132 bytes），音樂/影片資產會壞。');
     throw err;
+}
+
+// 1.5. Sync astro/api/* → repo-root api/ for Vercel Edge Functions.
+//      Vercel framework=null 會自動 deploy repo-root api/<name>.mjs 為 function，
+//      所以 Astro source (astro/api/catchall.mjs 等) 必須在 build 時 mirror 到 repo-root。
+//      沒有這步，/api/* 從 2026-07 stock-app Express 被關後一直 404。
+if (existsSync(apiSrcDir)) {
+    if (!existsSync(apiDestDir)) mkdirSync(apiDestDir, { recursive: true });
+    for (const f of readdirSync(apiSrcDir)) {
+        const src = path.join(apiSrcDir, f);
+        const dst = path.join(apiDestDir, f);
+        copyFileSync(src, dst);
+        console.log('[build] synced api/' + f);
+    }
 }
 
 // 2. 跑 astro build
