@@ -42,6 +42,10 @@
 //   push, 拆 3 個 carousel (≤12 bubbles/each, LINE 上限). Vercel Hobby 已用 2
 //   cron 給 MOPS, 故改走 GitHub Actions 排程. Auth: header `X-Cron-Secret`.
 //   Env: LINE_CHANNEL_ACCESS_TOKEN, CRON_SECRET)
+// 2026-10-02 v23 marker (switch runtime edge → @vercel/node@5.0.0 to bypass
+//   Edge sandbox disallowed-module error stuck on cached build that still
+//   references @vercel/og/react even though source is clean; Node.js runtime
+//   supports full npm, 250MB size limit, no Edge sandbox restrictions)
 
 // ImageResponse (@vercel/og) + react imports retired 2026-10: Vercel Edge Function
 // sandbox disallows them, and og image endpoint (GET /api/og) is no longer
@@ -8358,5 +8362,8 @@ export default async function handler(request) {
   }
 }
 
-export const config = { runtime: "edge", maxDuration: 60 };
+// 2026-10-02 v23: runtime switched to @vercel/node@5.0.0 via vercel.json
+// functions block (removes `runtime: "edge"` to avoid Edge sandbox's disallowed
+// @vercel/og/react module references stuck in build cache).
+export const config = { maxDuration: 60 };
 

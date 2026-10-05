@@ -5,6 +5,12 @@
   "outputDirectory": "astro/dist",
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "api/catchall.mjs": {
+      "runtime": "@vercel/node@5.0.0",
+      "maxDuration": 60
+    }
+  },
   "env": {
     "API_PROXY_TARGET": "https://vercel-edge-function"
   },
