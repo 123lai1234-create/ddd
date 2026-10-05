@@ -7,6 +7,24 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>台股均線買賣訊號系統</title>
+  <!-- 2026-10-05: Vercel /api/* catchall dead (since 2026-07 stock-app shutdown).
+       Render catchall is alive at donttalk-catchall.onrender.com — rewrite
+       all /api/* fetches to it. Stays ahead of the legacy 38 fetch('/api/...')
+       call sites that hardcode the Vercel origin. -->
+  <script>
+  (function(){
+    var _f = window.fetch;
+    var _RENDER = 'https://donttalk-catchall.onrender.com';
+    window.fetch = function(r, i){
+      if (typeof r === 'string' && r.indexOf('/api/') === 0) {
+        r = _RENDER + r;
+      } else if (r && typeof r.url === 'string' && r.url.indexOf('/api/') === 0) {
+        r = new Request(_RENDER + r.url, r);
+      }
+      return _f.call(this, r, i);
+    };
+  })();
+  </script>
   <script>
     // 國際財經跑馬燈速度：可用 ?duration=N 覆寫（單位秒，範圍 5–600，預設 80）
     // 手機版自動取一半（最少 15s）。改這裡不會影響 production：直接用 query string 試。
