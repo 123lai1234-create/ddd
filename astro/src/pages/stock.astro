@@ -126,24 +126,31 @@
 
       async function probe() {
         setConnecting();
-        try {
-          const ctrl = new AbortController();
-          const tid = setTimeout(() => ctrl.abort(), 5000);
-          const r = await fetch('/api/healthz', { signal: ctrl.signal, cache: 'no-store' });
-          clearTimeout(tid);
-          if (!r.ok) {
-            setOffline(`healthz HTTP ${r.status}`);
+        // 2026-10-05: Vercel /api/* catchall broken since 2026-07 stock-app shutdown.
+        // Probe Render catchall first (live at donttalk-catchall.onrender.com).
+        const probes = [
+          'https://donttalk-catchall.onrender.com/api/healthz',
+          '/api/healthz',
+        ];
+        for (const url of probes) {
+          try {
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), 5000);
+            const r = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
+            clearTimeout(tid);
+            if (!r.ok) continue;
+            const j = await r.json().catch(() => ({}));
+            if (j && j.db === false) {
+              setOffline('Neon DB 連線失敗 (db=false)');
+              return;
+            }
+            setOnline();
             return;
+          } catch (e) {
+            // try next probe
           }
-          const j = await r.json().catch(() => ({}));
-          if (j && j.db === false) {
-            setOffline('Neon DB 連線失敗 (db=false)');
-            return;
-          }
-          setOnline();
-        } catch (e) {
-          setOffline(`healthz 探測失敗：${e?.message || e}`);
         }
+        setOffline('所有 healthz 探測端點都失敗');
       }
       probe();
       setInterval(probe, 30000);
