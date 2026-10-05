@@ -1,0 +1,24 @@
+# Render Blueprint for donttalk-catchall (Vercel catchall fallback).
+# Apply via Render dashboard "New → Blueprint" pointing at this file,
+# or `render blueprint launch` from CLI.
+services:
+  - type: web
+    name: donttalk-catchall
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: astro/catchall-server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TZ
+        value: Asia/Taipei
+      - key: LOG_LEVEL
+        value: info
+      # DATABASE_URL is set via Render dashboard (sensitive)
+      # LINE_CHANNEL_ACCESS_TOKEN is set via Render dashboard if needed
+      # CRON_SECRET is set via Render dashboard if needed

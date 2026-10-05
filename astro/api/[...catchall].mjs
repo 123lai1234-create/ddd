@@ -7340,6 +7340,20 @@ async function loadMopsRows(request) {
   }
 }
 
+// 2026-10-02: lineBroadcastHandler stub. v22 marker added TABLE entries but
+// the actual function body was never written. To keep the file syntactically
+// valid on Node.js (which evaluates module-level references eagerly, unlike
+// Vercel Edge which was lazy), provide a stub returning 410. The broadcast
+// flow now lives entirely in the LINE bot service on Render (cron/line/broadcast
+// trigger from GitHub Actions). If/when re-implemented server-side, replace
+// this stub with the real handler.
+async function lineBroadcastHandler(request) {
+  return json({
+    ok: false,
+    error: "line broadcast retired — use Render LINE bot service instead",
+  }, { status: 410 });
+}
+
 // loadMopsFromHtml: legacy — Vercel edge still can't fit, kept for Pro upgrade path
 async function loadMopsFromHtml(request) {
   let body;

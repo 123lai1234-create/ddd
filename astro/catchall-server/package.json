@@ -1,0 +1,17 @@
+{
+  "name": "donttalk-catchall-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Express wrapper around astro/api/[...catchall].mjs — moved off Vercel because Vercel Edge Function can't route to repo-root api/[...] files (framework=astro auto-detect overrides vercel.json routes). Deployed on Render.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
