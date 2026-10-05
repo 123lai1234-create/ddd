@@ -7,7 +7,7 @@
   "trailingSlash": false,
   "functions": {
     "api/catchall.mjs": {
-      "runtime": "@vercel/node@3.0.0",
+      "runtime": "@vercel/node@20.0.0",
       "maxDuration": 60
     }
   },
