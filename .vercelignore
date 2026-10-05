@@ -133,8 +133,6 @@ test_results.json
 test_run.log
 trigger.txt
 /tsconfig.json
-/vercel-build.mjs
-/vercel-install.mjs
 /vercel.json
 verify-*.cjs
 verify_*.py
