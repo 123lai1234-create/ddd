@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "node ../vercel-install.mjs",
-  "buildCommand": "node ../vercel-build.mjs",
+  "installCommand": "node ./vercel-install.mjs",
+  "buildCommand": "node ./vercel-build.mjs",
   "outputDirectory": "astro/dist",
   "cleanUrls": true,
   "trailingSlash": false,
