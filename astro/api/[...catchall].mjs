@@ -881,8 +881,77 @@ async function stockIntro(request, code) {
   }
 }
 
+// 2026-10-05：scanAll 用 Promise.all(1800+ stocks) 一次打 Neon serverless HTTP，
+// cold start 時 HTTP endpoint 連線池被打滿 → 大批 AbortError → 整批 500。
+// 解法三層：
+//   1) runWithConcurrency 限並行 8 個，避免 Neon connection pool exhaustion
+//   2) getCandlesWithRetry 對 AbortError retry 一次（cold-start 第 1 秒放空）
+//   3) _scanCache 5 分鐘 in-memory TTL，熱門 endpoint（signal_filter / warming_zone_scan）
+//      被多瀏覽器或重整打時不重複打 Neon
+async function runWithConcurrency(items, limit, fn) {
+  if (!items || items.length === 0) return [];
+  const out = new Array(items.length);
+  let i = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const idx = i++;
+      if (idx >= items.length) break;
+      try {
+        out[idx] = await fn(items[idx], idx);
+      } catch (e) {
+        // 容錯：單檔失敗不拖累整批
+        out[idx] = { __err: String(e?.message || e) };
+      }
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
+async function getCandlesWithRetry(code, limit, maxAttempts) {
+  const N = maxAttempts || 2;
+  let lastErr;
+  for (let attempt = 1; attempt <= N; attempt++) {
+    try {
+      return await getCandles(code, limit);
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      const isAbort = e?.name === 'AbortError' || msg.includes('AbortError');
+      if (!isAbort || attempt === N) break;
+      // 線性 backoff 給 Neon compute 拉起的時間
+      await new Promise((r) => setTimeout(r, 250 * attempt));
+    }
+  }
+  throw lastErr;
+}
+
+const _SCAN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 分鐘
+const _scanCache = new Map(); // key -> { ts, data }
+async function withScanCache(key, runFn) {
+  const now = Date.now();
+  const hit = _scanCache.get(key);
+  if (hit && (now - hit.ts) < _SCAN_CACHE_TTL_MS) {
+    return { ...hit.data, cached: true, cache_age_ms: now - hit.ts };
+  }
+  const data = await runFn();
+  _scanCache.set(key, { ts: now, data });
+  // 避免記憶體無界成長
+  if (_scanCache.size > 64) {
+    const firstKey = _scanCache.keys().next().value;
+    _scanCache.delete(firstKey);
+  }
+  return { ...data, cached: false };
+}
+
 async function screenOne(code, name) {
-  const candles = await getCandles(code, 200);
+  let candles;
+  try {
+    candles = await getCandlesWithRetry(code, 200);
+  } catch (_e) {
+    // cold-start 還是 timeout，丟棄單筆，runWithConcurrency 已容錯
+    return null;
+  }
   if (candles.length < 60) return null;
   const closes = candles.map((c) => c.close);
   const last = closes[closes.length - 1];
@@ -915,7 +984,13 @@ async function screenOne(code, name) {
 async function scanAllImpl() {
   const watch = await getWatchMap();
   const codes = Array.from(watch.keys());
-  const results = (await Promise.all(codes.map(async (c) => screenOne(c, watch.get(c)?.name ?? c)))).filter(Boolean);
+  // 8 並行是 Neon serverless HTTP endpoint 的甜蜜點（不超過 connection pool）
+  // 容錯已在 runWithConcurrency 內，單檔失敗回傳 null，不影響整批
+  const results = (await runWithConcurrency(
+    codes.map((c) => [c, watch.get(c)?.name ?? c]),
+    8,
+    async ([code, name]) => screenOne(code, name)
+  )).filter(Boolean);
   return results;
 }
 
@@ -929,34 +1004,43 @@ async function scanAll(request) {
 }
 
 async function warmingZoneScan(request) {
-  const results = await scanAllImpl();
-  const items = results
+  const data = await withScanCache("warming_zone_scan", async () => {
+    const results = await scanAllImpl();
+    const items = results
     .filter((r) => r.cond1 && r.cond2 && r.cond3)
     .map((r) => ({ ...r, category: r.score >= 4 ? "強勢" : "轉強" }));
-  return json({
-    ok: true, source: "db", count: items.length,
-    items,
-    results: items,    // alias for warming.html (frontend uses res.results)
-    updated_at: Date.now(),
+    return {
+      ok: true, source: "db", count: items.length,
+      items,
+      results: items,    // alias for warming.html (frontend uses res.results)
+      updated_at: Date.now(),
+    };
   });
+  return json(data);
 }
 
 async function warmingZoneScanStatus(request) {
-  const results = await scanAllImpl();
-  const items = results.filter((r) => r.score >= 3);
-  return json({
-    ok: true, enabled: true, source: "db",
-    count: items.length, last_run: Date.now(),
-    items,
-    results: items,    // alias for warming.html
-    updated_at: Date.now(),
+  const data = await withScanCache("warming_zone_scan", async () => {
+    const results = await scanAllImpl();
+    const items = results.filter((r) => r.score >= 3);
+    return {
+      ok: true, enabled: true, source: "db",
+      count: items.length, last_run: Date.now(),
+      items,
+      results: items,    // alias for warming.html
+      updated_at: Date.now(),
+    };
   });
+  return json(data);
 }
 
 async function signalFilter(request) {
-  const results = await scanAllImpl();
-  const items = results.filter((r) => r.score >= 4);
-  return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+  const data = await withScanCache("signal_filter", async () => {
+    const results = await scanAllImpl();
+    const items = results.filter((r) => r.score >= 4);
+    return { ok: true, source: "db", count: items.length, items, generated_at: Date.now() };
+  });
+  return json(data);
 }
 async function signalFilterStatus(request) { return signalFilter(request); }
 
