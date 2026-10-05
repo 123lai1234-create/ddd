@@ -6,7 +6,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/catchall.mjs": {
+    "api/[...catchall].mjs": {
       "runtime": "@vercel/node@17.0.0",
       "maxDuration": 60
     }
@@ -64,12 +64,6 @@
     {
       "source": "/healthz",
       "destination": "/api/healthz"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/catchall"
     }
   ],
   
