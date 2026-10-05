@@ -62,7 +62,7 @@
   ],
   "functions": {
     "api/catchall.mjs": {
-      "runtime": "edge",
+      "runtime": "edge@1.0.0",
       "maxDuration": 60
     }
   },
