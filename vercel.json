@@ -60,13 +60,6 @@
       "destination": "/api/healthz"
     }
   ],
-  "functions": {
-    "api/catchall.mjs": {
-      "runtime": "nodejs20.x",
-      "regions": ["iad1"],
-      "maxDuration": 60
-    }
-  },
   "redirects": [
     {
       "source": "/stock",
