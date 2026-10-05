@@ -28,13 +28,7 @@ if (existsSync(path.join(repoRoot, '.git'))) {
     console.log('[build] (skip LFS: no .git/ in build container — Vercel deploys LFS files directly)');
 }
 
-// 1.5. Sync astro/api/* → repo-root api/ AND into astro/dist/api/ so Vercel
-//      sees the functions inside outputDirectory (which it auto-scans).
-//      Without copying into astro/dist/api/, framework=astro + outputDirectory
-//      = astro/dist makes Vercel only look inside dist/ for functions, so
-//      repo-root api/ files are built but never routed.
-//      The repo-root copy is kept as a fallback in case outputDirectory
-//      config changes back to repo-root.
+// 1.5. Sync astro/api/* → repo-root api/ (Vercel fallback when outputDirectory=repo-root).
 if (existsSync(apiSrcDir)) {
     if (!existsSync(apiDestDir)) mkdirSync(apiDestDir, { recursive: true });
     for (const f of readdirSync(apiSrcDir)) {
@@ -43,8 +37,17 @@ if (existsSync(apiSrcDir)) {
         copyFileSync(src, dst);
         console.log('[build] synced repo-root api/' + f);
     }
-    // Also place functions inside outputDirectory so Vercel's framework=astro
-    // adapter finds them and auto-creates /api/<*> routes.
+}
+
+// 2. 跑 astro build
+console.log('[build] cd to', astroDir, 'and running astro build...');
+execSync('npx --no-install astro build', { cwd: astroDir, stdio: 'inherit' });
+
+// 2.5. Copy astro/api/* → astro/dist/api/ AFTER build so Vercel framework=astro
+//      + outputDirectory=astro/dist finds the functions inside the output dir
+//      and auto-creates /api/<*> routes. Must happen after `astro build` which
+//      wipes dist/.
+if (existsSync(apiSrcDir)) {
     const distApiDir = path.join(astroDir, 'dist', 'api');
     if (!existsSync(distApiDir)) mkdirSync(distApiDir, { recursive: true });
     for (const f of readdirSync(apiSrcDir)) {
@@ -54,10 +57,6 @@ if (existsSync(apiSrcDir)) {
         console.log('[build] synced astro/dist/api/' + f);
     }
 }
-
-// 2. 跑 astro build
-console.log('[build] cd to', astroDir, 'and running astro build...');
-execSync('npx --no-install astro build', { cwd: astroDir, stdio: 'inherit' });
 
 // 3. pagefind 索引
 console.log('[build] running pagefind index...');
