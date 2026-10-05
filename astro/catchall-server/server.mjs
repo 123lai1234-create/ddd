@@ -14,6 +14,27 @@ import handler from '../api/[...catchall].mjs';
 const app = express();
 app.disable('x-powered-by');
 
+// 2026-10-05: Frontend now fetches this Render service directly from
+// browser (via monkey-patch on /stock/ and /stock-app/ HTML), so we
+// need permissive CORS for donttalk.vercel.app (and localhost for dev).
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || 'https://donttalk.vercel.app,http://localhost:4321')
+  .split(',').map(s => s.trim()).filter(Boolean);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && CORS_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Operator-Password, X-Cron-Secret, X-Sync-Token');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
+
 // Body parsing for JSON / urlencoded. The catchall handler reads
 // request.json() / request.formData() internally so we just pass raw
 // stream through (see below).
