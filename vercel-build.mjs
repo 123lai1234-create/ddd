@@ -28,17 +28,30 @@ if (existsSync(path.join(repoRoot, '.git'))) {
     console.log('[build] (skip LFS: no .git/ in build container — Vercel deploys LFS files directly)');
 }
 
-// 1.5. Sync astro/api/* → repo-root api/ for Vercel Edge Functions.
-//      Vercel framework=null 會自動 deploy repo-root api/<name>.mjs 為 function，
-//      所以 Astro source (astro/api/catchall.mjs 等) 必須在 build 時 mirror 到 repo-root。
-//      沒有這步，/api/* 從 2026-07 stock-app Express 被關後一直 404。
+// 1.5. Sync astro/api/* → repo-root api/ AND into astro/dist/api/ so Vercel
+//      sees the functions inside outputDirectory (which it auto-scans).
+//      Without copying into astro/dist/api/, framework=astro + outputDirectory
+//      = astro/dist makes Vercel only look inside dist/ for functions, so
+//      repo-root api/ files are built but never routed.
+//      The repo-root copy is kept as a fallback in case outputDirectory
+//      config changes back to repo-root.
 if (existsSync(apiSrcDir)) {
     if (!existsSync(apiDestDir)) mkdirSync(apiDestDir, { recursive: true });
     for (const f of readdirSync(apiSrcDir)) {
         const src = path.join(apiSrcDir, f);
         const dst = path.join(apiDestDir, f);
         copyFileSync(src, dst);
-        console.log('[build] synced api/' + f);
+        console.log('[build] synced repo-root api/' + f);
+    }
+    // Also place functions inside outputDirectory so Vercel's framework=astro
+    // adapter finds them and auto-creates /api/<*> routes.
+    const distApiDir = path.join(astroDir, 'dist', 'api');
+    if (!existsSync(distApiDir)) mkdirSync(distApiDir, { recursive: true });
+    for (const f of readdirSync(apiSrcDir)) {
+        const src = path.join(apiSrcDir, f);
+        const dst = path.join(distApiDir, f);
+        copyFileSync(src, dst);
+        console.log('[build] synced astro/dist/api/' + f);
     }
 }
 

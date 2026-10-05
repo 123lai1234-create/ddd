@@ -64,6 +64,10 @@
     {
       "source": "/healthz",
       "destination": "/api/healthz"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/[...catchall]"
     }
   ],
   
