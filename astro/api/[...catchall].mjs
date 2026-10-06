@@ -4413,37 +4413,6 @@ async function heatmap(request) {
 // ── etf_signal_filter / stock_damo_filter / stock_news_scan ──────────
 async function etfSignalFilter(request) {
   const etfs = await getEtfList();
-  if (!etfs.length) return json({ ok: true, source: "db", count: 0, items: [], message: "etf_watchlist empty" });
-  try {
-    const codes = etfs.map((e) => e.code);
-    const { rows } = await q(
-      `SELECT symbol, close_price, change_value, volume, trade_date
-       FROM market_price_bars
-       WHERE symbol = ANY($1::text[]) AND asset_type='etf' AND trade_date IS NOT NULL
-         AND trade_date = (SELECT MAX(trade_date) FROM market_price_bars
-                           WHERE symbol = market_price_bars.symbol AND asset_type='etf')`,
-      [codes]
-    );
-    const items = rows.map((r) => {
-      const last = Number(r.close_price);
-      const chg = Number(r.change_value) || 0;
-      const chgPct = last ? (chg / (last - chg)) * 100 : 0;
-      const etf = etfs.find((e) => e.code === r.symbol);
-      return {
-        code: r.symbol, name: etf?.name || r.symbol,
-        close: last, change: chg, change_pct: r2(chgPct),
-        volume: Number(r.volume) || 0,
-        date: toTwseStyleDate(String(r.trade_date).slice(0, 10)),
-      };
-    });
-    return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
-  } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message });
-  }
-}
-
-async function etfSignalFilter(request) {
-  const etfs = await getEtfList();
   if (!etfs.length) return json({ ok: true, source: "db", count: 0, items: [], results: [], message: "etf_watchlist empty" });
   try {
     const codes = etfs.map((e) => e.code);
