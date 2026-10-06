@@ -1,6 +1,10 @@
 # Render Blueprint for donttalk-catchall (Vercel catchall fallback).
 # Apply via Render dashboard "New → Blueprint" pointing at this file,
 # or `render blueprint launch` from CLI.
+#
+# ⚠️ 2026-10-06：Render cron job 用 REST API 建過才生效（render.yaml 改動不會 retroactive
+#   套用到既有 service）。要重新建 cron 跑 create_cron.py：
+#     RENDER_TOKEN=... python astro/catchall-server/create_cron.py
 services:
   - type: web
     name: donttalk-catchall
@@ -24,23 +28,31 @@ services:
       # CRON_SECRET is set via Render dashboard if needed
 
   # 2026-10-06：每日收盤後自動維護 markers 表
-  #   1. 清掉 'x' / 'test' / 空字串 placeholder
+  #   1. 清掉 'x' / 'test' / 空字串 placeholder（含 'x || {...JSON...}' 污染形態）
   #   2. 重跑 screener，insert 今日真實買賣訊號
   #   schedule 用 UTC → "30 6 * * 1-5" = 週一至週五 14:30 Asia/Taipei（收盤後）
-  #   Render cron 環境變數會自動帶 RENDER_INSTANCE_ID，但這 endpoint 不需要密碼
-  - type: cron
+  #   serviceDetails.schedule 才是正確位置（top-level schedule 不被吃）
+  #   對應 service id: crn-db26fmmi0phs73dg27mg（建立於 2026-10-06）
+  - type: cron_job
     name: donttalk-markers-maintenance
-    runtime: node
     plan: free
     region: oregon
-    rootDir: astro/catchall-server
-    buildCommand: npm install
-    startCommand: node scripts/cron_markers_maintenance.mjs
-    schedule: "30 6 * * 1-5"
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: TZ
-        value: Asia/Taipei
-      - key: MAINTENANCE_URL
-        value: https://donttalk-catchall.onrender.com/admin/markers/maintenance
+    repo: https://github.com/123lai1234-create/ddd
+    branch: 123lai1234-create
+    autoDeploy: true
+    serviceDetails:
+      env: node
+      rootDir: astro/catchall-server
+      schedule: "30 6 * * 1-5"
+      envVars:
+        - key: NODE_ENV
+          value: production
+        - key: TZ
+          value: Asia/Taipei
+        - key: MAINTENANCE_URL
+          value: https://donttalk-catchall.onrender.com/admin/markers/maintenance
+      envSpecificDetails:
+        buildPlan: starter
+        nodeVersion: "22"
+        buildCommand: npm install
+        startCommand: node scripts/cron_markers_maintenance.mjs
