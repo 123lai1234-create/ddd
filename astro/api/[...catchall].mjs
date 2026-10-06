@@ -4376,8 +4376,27 @@ async function etfSignalFilter(request) {
   }
 }
 
-async function etfSignalFilterStatus(request) { return etfSignalFilter(request); }
-async function etfSignalFilterRefresh(request) { return etfSignalFilter(request); }
+async function etfSignalFilterStatus(request) {
+  // 2026-10-06：加 ready:true 讓前端 _pollScanStatus 一次 poll 就成功，
+  //   不用等 30 × 10 秒 timeout。
+  const res = await etfSignalFilter(request);
+  try {
+    const body = await res.clone().json();
+    return json({ ...body, ready: true, message: body.message || "已就緒" });
+  } catch {
+    return res;
+  }
+}
+async function etfSignalFilterRefresh(request) {
+  // POST /refresh 也回 ready:true，前端 POST 完直接進 polling → 第一次就拿到 ready=true。
+  const res = await etfSignalFilter(request);
+  try {
+    const body = await res.clone().json();
+    return json({ ...body, ready: true, message: "✅ ETF 重新整理完成" });
+  } catch {
+    return res;
+  }
+}
 
 async function stockDamoFilter(request) {
   // "大毛" filter: cond2+cond3+cond4 + above MA20 (similar to signal_filter but a different threshold view)
@@ -4385,8 +4404,26 @@ async function stockDamoFilter(request) {
   const items = results.filter((r) => r.cond2 && r.cond3 && r.cond4).map((r) => ({ ...r, status: "大毛候選" }));
   return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
 }
-async function stockDamoFilterStatus(request) { return stockDamoFilter(request); }
-async function stockDamoFilterRefresh(request) { return stockDamoFilter(request); }
+async function stockDamoFilterStatus(request) {
+  // 2026-10-06：加 ready:true 讓前端 _pollScanStatus 一次 poll 就成功。
+  const res = await stockDamoFilter(request);
+  try {
+    const body = await res.clone().json();
+    return json({ ...body, ready: true, message: body.message || "已就緒" });
+  } catch {
+    return res;
+  }
+}
+async function stockDamoFilterRefresh(request) {
+  // POST /refresh 也回 ready:true。
+  const res = await stockDamoFilter(request);
+  try {
+    const body = await res.clone().json();
+    return json({ ...body, ready: true, message: "✅ DAMO 重新整理完成" });
+  } catch {
+    return res;
+  }
+}
 
 async function stockNewsScan(request) {
   const u = urlOf(request);
@@ -8599,12 +8636,18 @@ const TABLE = [
   ["GET",  /^\/exdiv\/upcoming\/?$/,         exdivUpcoming],
 
   // Real screener handlers (use etf_watchlist + market_price_bars)
+  // 2026-10-06 v25 marker：前端 refreshCache() 用 fetch(POST) 打 /refresh，
+  //   之前 signal_filter 已加 POST row，stock_damo_filter / etf_signal_filter 漏掉
+  //   → POST 直接 404 fall-through。補 POST row + handler 多回 ready/message
+  //   讓前端 _pollScanStatus 不用等 5 分鐘 timeout。
   ["GET",  /^\/etf_signal_filter\/?$/,       etfSignalFilter],
   ["GET",  /^\/etf_signal_filter\/status\/?$/, etfSignalFilterStatus],
   ["GET",  /^\/etf_signal_filter\/refresh\/?$/, etfSignalFilterRefresh],
+  ["POST", /^\/etf_signal_filter\/refresh\/?$/, etfSignalFilterRefresh],
   ["GET",  /^\/stock_damo_filter\/?$/,       stockDamoFilter],
   ["GET",  /^\/stock_damo_filter\/status\/?$/, stockDamoFilterStatus],
   ["GET",  /^\/stock_damo_filter\/refresh\/?$/, stockDamoFilterRefresh],
+  ["POST", /^\/stock_damo_filter\/refresh\/?$/, stockDamoFilterRefresh],
 
   // Real table-backed handlers (will return empty + message when table is empty)
   ["GET",  /^\/foreign_futures\/?$/,         foreignFutures],
