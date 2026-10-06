@@ -1540,15 +1540,17 @@ async function markersMaintenance(request) {
   try {
     // Step 1: 清掉 placeholder 爛資料
     //   markers 表用 `text` 欄位（不是 marker_text，後端讀寫都對齊 text）
+    //   2026-10-06：先前 markerRecord 寫入污染的資料形狀是 "x || {...JSON...}"，
+    //   所以比對必須用 REGEXP_REPLACE 把 || {…} 截掉才算對齊 marker_history.html 看到的 marker_text。
     const cleanupSql = `DELETE FROM markers
         WHERE text IS NULL
            OR TRIM(text) = ''
-           OR text IN ('x', 'test', 'placeholder')`;
+           OR REGEXP_REPLACE(text, '\\s*\\|\\|\\s*\\{.*$', '') IN ('x', 'test', 'placeholder', 'x', 'test')`;
     if (dryRun) {
       const { rows } = await q(`SELECT COUNT(*)::int AS n FROM markers
         WHERE text IS NULL
            OR TRIM(text) = ''
-           OR text IN ('x', 'test', 'placeholder')`);
+           OR REGEXP_REPLACE(text, '\\s*\\|\\|\\s*\\{.*$', '') IN ('x', 'test', 'placeholder', 'x', 'test')`);
       result.steps.cleanup = { willDelete: rows[0]?.n ?? 0 };
     } else {
       const { rows } = await q(cleanupSql);
