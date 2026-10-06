@@ -1086,10 +1086,18 @@ async function signalFilter(request) {
     data = await withScanCache("signal_filter", async () => {
       const results = await scanAllImpl();
       const items = results.filter((r) => r.score >= 4);
-      return { ok: true, source: "db", count: items.length, items, generated_at: Date.now() };
+      // 2026-10-06：前端 renderResults 讀 data.results / data.total / data.updated_at /
+      //   data.cache_hit。catchall 只回 items，加別名讓 signal-filter*.html renderResults
+      //   一次到位（之前點「套用篩選」會看到「無符合條件」潛在 bug）。
+      return {
+        ok: true, source: "db", count: items.length,
+        items, results: items, total: items.length,
+        updated_at: Date.now(), generated_at: Date.now(),
+        cache_hit: true,
+      };
     });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], generated_at: Date.now(), error: String(e?.message || e) });
+    return json({ ok: true, source: "stub", count: 0, items: [], results: [], total: 0, generated_at: Date.now(), error: String(e?.message || e) });
   }
   return json(data);
 }
@@ -4376,6 +4384,45 @@ async function etfSignalFilter(request) {
   }
 }
 
+async function etfSignalFilter(request) {
+  const etfs = await getEtfList();
+  if (!etfs.length) return json({ ok: true, source: "db", count: 0, items: [], results: [], message: "etf_watchlist empty" });
+  try {
+    const codes = etfs.map((e) => e.code);
+    const { rows } = await q(
+      `SELECT symbol, close_price, change_value, volume, trade_date
+       FROM market_price_bars
+       WHERE symbol = ANY($1::text[]) AND asset_type='etf' AND trade_date IS NOT NULL
+         AND trade_date = (SELECT MAX(trade_date) FROM market_price_bars
+                           WHERE symbol = market_price_bars.symbol AND asset_type='etf')`,
+      [codes]
+    );
+    const items = rows.map((r) => {
+      const last = Number(r.close_price);
+      const chg = Number(r.change_value) || 0;
+      const chgPct = last ? (chg / (last - chg)) * 100 : 0;
+      const etf = etfs.find((e) => e.code === r.symbol);
+      return {
+        code: r.symbol, name: etf?.name || r.symbol,
+        close: last, change: chg, change_pct: r2(chgPct),
+        volume: Number(r.volume) || 0,
+        date: toTwseStyleDate(String(r.trade_date).slice(0, 10)),
+      };
+    });
+    // 2026-10-06：前端 renderResults 讀 data.results，但 catchall 一律回 items。
+    //   加 results = items 別名 + total = count + updated_at = generated_at + cache_hit
+    //   讓 stock-damo-filter.html / etf-filter.html / signal-filter-v2.html 都能 render。
+    return json({
+      ok: true, source: "db", count: items.length,
+      items, results: items, total: items.length,
+      updated_at: Date.now(), generated_at: Date.now(),
+      cache_hit: false,
+    });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], results: [], total: 0, error: e?.message });
+  }
+}
+
 async function etfSignalFilterStatus(request) {
   // 2026-10-06：加 ready:true 讓前端 _pollScanStatus 一次 poll 就成功，
   //   不用等 30 × 10 秒 timeout。
@@ -4402,7 +4449,14 @@ async function stockDamoFilter(request) {
   // "大毛" filter: cond2+cond3+cond4 + above MA20 (similar to signal_filter but a different threshold view)
   const results = await scanAllImpl();
   const items = results.filter((r) => r.cond2 && r.cond3 && r.cond4).map((r) => ({ ...r, status: "大毛候選" }));
-  return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+  // 2026-10-06：前端 renderResults 讀 data.results / data.total / data.updated_at / data.cache_hit。
+  //   catchall 只回 items，加別名讓 stock-damo-filter.html renderResults 一次到位。
+  return json({
+    ok: true, source: "db", count: items.length,
+    items, results: items, total: items.length,
+    updated_at: Date.now(), generated_at: Date.now(),
+    cache_hit: false,
+  });
 }
 async function stockDamoFilterStatus(request) {
   // 2026-10-06：加 ready:true 讓前端 _pollScanStatus 一次 poll 就成功。
