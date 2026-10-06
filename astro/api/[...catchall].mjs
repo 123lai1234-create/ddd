@@ -978,7 +978,8 @@ async function withScanCache(key, runFn) {
 async function screenOne(code, name) {
   let candles;
   try {
-    candles = await getCandlesWithRetry(code, 200);
+    // 2026-10-06：抓 250 根 K 線以涵蓋 ma240（年線）計算
+    candles = await getCandlesWithRetry(code, 250);
   } catch (_e) {
     // cold-start 還是 timeout，丟棄單筆，runWithConcurrency 已容錯
     return null;
@@ -990,6 +991,7 @@ async function screenOne(code, name) {
   const ma10 = sma(closes, 10) ?? 0;
   const ma20 = sma(closes, 20) ?? 0;
   const ma60 = sma(closes, 60) ?? 0;
+  const ma240 = sma(closes, 240) ?? 0;  // 年線
   const dh60 = distHighPct(closes, 60);
   const dh20 = distHighPct(closes, 20);
   const g5  = gainPct(closes, 5);
@@ -999,11 +1001,66 @@ async function screenOne(code, name) {
   const cond3 = last > ma5 && ma5 > ma20;
   const cond4 = g5 > 0 && g20 > 0;
   const cond5 = candles[candles.length - 1].volume > 1_000_000;
-  // 2026-10-06：前端 stock-damo-filter buildCard() 讀舊欄位名（close / ema10 / date /
-  //   inst_foreign_* / trade_plan / has_*）。screenOne 只算簡化 cond1-5 + MA，
-  //   與 DAMO 策略計算口徑不同，這裡只給「資料型別」別名（價格、EMA、日期），
-  //   has_* / trade_plan / inst_* 設為 null/false（前端 fmtNet/fmtPct 會回 "-"），
-  //   不偽造 DAMO 策略標籤（避免誤導交易決策）。
+
+  // ──────────────────────────────────────────────────────────────
+  // DAMO 策略 has_* 標籤（2026-10-06）
+  //   計算口徑（簡化版，與前端 buildCard 預期對齊；非偽造）：
+  //     has_short_buy        (短線買)   ← EMA10>20>50 proxy: cond2 && cond3 (last > ma20 > ma60 && last > ma5 > ma20)
+  //     has_chan_to_bull     (通道轉多)  ← cond1 (距 60 日高 < 5%)
+  //     has_year_break_buy   (年線-25%)  ← ma240 > 0 && close < ma240 * 0.75
+  //     has_dip_ma60_buy     (季線抄底)  ← ma60 > 0 && |close/ma60 - 1| < 0.03 (接近季線)
+  //     has_dip_ma240_buy    (年線抄底)  ← ma240 > 0 && |close/ma240 - 1| < 0.03
+  //     has_ma60_touch_buy    (季線觸碰)  ← 過去 5 日內有日 low ≤ ma60 * 1.005
+  //     has_consol_buy       (盤整買)    ← needs Bollinger Band；先 false
+  //     has_consol_sell      (盤整賣)    ← needs Bollinger Band；先 false
+  //     has_macd_div_sell    (頂背離賣)  ← needs MACD series + divergence；先 false
+  //     has_bear_gate_sell   (BearGate賣) ← ma20 < ma60 (死亡交叉)
+  //     has_fib              (Fib 支撐)   ← needs swing point detection；先 false
+  //     has_vcp              (VCP)        ← needs volatility contraction；先 false
+  //   inst_* / has_foreign_buy_2d → 由 scanAllImpl 後處理從 institutional 表批次 join
+  const has_short_buy      = cond2 && cond3;
+  const has_chan_to_bull   = cond1;
+  const has_year_break_buy = ma240 > 0 && last < ma240 * 0.75;
+  const has_dip_ma60_buy   = ma60 > 0 && Math.abs(last / ma60 - 1) < 0.03 && last < ma60 * 1.005;
+  const has_dip_ma240_buy  = ma240 > 0 && Math.abs(last / ma240 - 1) < 0.03 && last < ma240 * 1.005;
+  // 過去 5 日內（含今日）曾經 low ≤ ma60 * 1.005 → 觸碰季線
+  let touched_ma60_recent = false;
+  if (ma60 > 0) {
+    for (let k = Math.max(0, candles.length - 5); k < candles.length; k++) {
+      if (candles[k].low <= ma60 * 1.005) { touched_ma60_recent = true; break; }
+    }
+  }
+  const has_ma60_touch_buy = touched_ma60_recent && last > ma60;  // 觸碰後站上
+  const has_bear_gate_sell = ma20 > 0 && ma60 > 0 && ma20 < ma60;
+
+  // ──────────────────────────────────────────────────────────────
+  // trade_plan（簡化版 — 進場 / 停損 / 目標 / 風險回報比）
+  //   SL  = max(min(low_20d, last * 0.92), 0)  → 近 20 日低點或 -8% 跌幅，取高者
+  //   TP  = max(max(high_20d, last * 1.10), last * 1.05)  → 近 20 日高點或 +10%，取高者
+  //   進場 = last（最新收盤）
+  //   RR  = (TP - entry) / (entry - SL)，< 0 表示 SL 在 entry 上方（不合理 → 設 null）
+  let trade_plan = null;
+  if (candles.length >= 20) {
+    const lows20 = candles.slice(-20).map((c) => c.low);
+    const highs20 = candles.slice(-20).map((c) => c.high);
+    const minLow20 = Math.min(...lows20);
+    const maxHigh20 = Math.max(...highs20);
+    const entry = last;
+    const sl = Math.max(minLow20, last * 0.92);
+    const tp = Math.max(maxHigh20, last * 1.10);
+    const risk = entry - sl;
+    const reward = tp - entry;
+    const rr = risk > 0 ? (reward / risk) : null;
+    trade_plan = {
+      buy_price: r2(entry),
+      sl: r2(sl),
+      tp: r2(tp),
+      rr: rr != null ? Number(rr.toFixed(2)) : null,
+      sl_pct: Number(((sl - entry) / entry * 100).toFixed(2)),
+      tp_pct: Number(((tp - entry) / entry * 100).toFixed(2)),
+    };
+  }
+
   return {
     code, name,
     latest_close: r2(last),
@@ -1012,32 +1069,32 @@ async function screenOne(code, name) {
     close: r2(last),
     close_price: r2(last),
     date: candles[candles.length - 1].date,
-    ema10: r2(ma10), ema20: r2(ma20), ema60: r2(ma60),
-    ma5: r2(ma5), ma10: r2(ma10), ma20: r2(ma20), ma60: r2(ma60),
+    ema10: r2(ma10), ema20: r2(ma20), ema60: r2(ma60), ema240: r2(ma240),
+    ma5: r2(ma5), ma10: r2(ma10), ma20: r2(ma20), ma60: r2(ma60), ma240: r2(ma240),
     dist_high_60d_pct: r2(dh60),
     dist_high_20d_pct: r2(dh20),
     gain_5d_pct: r2(g5), gain_20d_pct: r2(g20),
     cond1, cond2, cond3, cond4, cond5,
     score: [cond1, cond2, cond3, cond4, cond5].filter(Boolean).length,
-    // DAMO 策略 has_* / trade_plan / inst_* → null/false（不偽造）
-    has_short_buy: false,
-    has_chan_to_bull: false,
-    has_year_break_buy: false,
-    has_consol_buy: false,
-    has_dip_ma60_buy: false,
-    has_dip_ma240_buy: false,
-    has_ma60_touch_buy: false,
+    // DAMO 策略 has_*（計算版）
+    has_short_buy,
+    has_chan_to_bull,
+    has_year_break_buy,
+    has_dip_ma60_buy,
+    has_dip_ma240_buy,
+    has_ma60_touch_buy,
+    has_consol_buy: false,         // 需 Bollinger Band；後續可加
     has_consol_sell: false,
-    has_macd_div_sell: false,
-    has_bear_gate_sell: false,
-    has_fib: false,
-    has_vcp: false,
+    has_macd_div_sell: false,      // 需 MACD series
+    has_bear_gate_sell,
+    has_fib: false,                // 需 swing point detection
+    has_vcp: false,                // 需 volatility analysis
     vcp_quality: 0,
-    has_foreign_buy_2d: false,
+    has_foreign_buy_2d: false,    // 由 scanAllImpl 後處理從 institutional 表 join
     inst_foreign_today: null,
     inst_foreign_5d: null,
     inst_trust_5d: null,
-    trade_plan: null,
+    trade_plan,
   };
 }
 
@@ -1300,7 +1357,8 @@ async function macroData(request) {
        WHERE series IN ('yield_5y','yield_10y','yield_30y','yield_13w','vix',
                         'yield_2y_fred','yield_10y_fred','bei_10y',
                         'spread_10y_3m_fred','spread_10y_2y_fred',
-                        'us_unrate','fed_funds','cpi_all','cpi_core','us_gdp_real','umich_sent')
+                        'us_unrate','fed_funds','cpi_all','cpi_core','us_gdp_real','umich_sent',
+                        'cape')
        ORDER BY series, trade_date DESC`
     );
     const yldMap = new Map();
@@ -1356,6 +1414,8 @@ async function macroData(request) {
     const lastGdp = yoyOf("us_gdp_real", lastOf("us_gdp_real"));
     const lastUmich = lastOf("umich_sent");
     const prevUmich = prevOf("umich_sent");
+    const lastCape = lastOf("cape");
+    const prevCape = prevOf("cape");
     // Yahoo 來源的 5y/10y/30y/13w/vix（real-time）
     const last10y = lastOf("yield_10y");
     const prev10y = prevOf("yield_10y");
@@ -1392,6 +1452,7 @@ async function macroData(request) {
       { "指標": "美國CPI年增率(%)",        "最新值": lastCpi,   "前值": null,      "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF + " (YoY 自己算)" },
       { "指標": "核心CPI YoY(%)",          "最新值": lastCpiCore, "前值": null,    "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF + " (YoY 自己算)" },
       { "指標": "密大消費者信心",           "最新值": lastUmich, "前值": prevUmich, "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
+      { "指標": "席勒本益比(CAPE)",          "最新值": lastCape,  "前值": prevCape, "更新時間": asOfLabel, "來源": srcY, "來源標記": "multpl.com" },
     ];
     return json({
       ok: true,
@@ -1417,6 +1478,7 @@ async function macroData(request) {
         cpi_core_yoy: lastCpiCore,
         gdp_yoy: lastGdp,
         umich_sent: lastUmich,
+        cape: lastCape,
       },
     });
   } catch (e) {
@@ -5280,7 +5342,7 @@ const FRED_SERIES = [
   { sid: "CPIAUCSL",  series: "cpi_all",       },  // CPI index，要自己算 YoY
   { sid: "CPILFESL",  series: "cpi_core",      },  // Core CPI
   { sid: "GDPC1",     series: "us_gdp_real",   },  // Real GDP billions
-  { sid: "MICH",      series: "umich_sent",    },  // 密大消費者信心
+  { sid: "UMCSENT",   series: "umich_sent",    },  // 密大消費者信心 — 2026-10 從 MICH 換成 UMCSENT（FRED 已把 MICH 重新導向到衍生指標，跟 60-100 的 raw index 不一樣）
 ];
 async function loadMacroFredForSymbol(sid, series) {
   const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${encodeURIComponent(sid)}`;
@@ -5346,8 +5408,64 @@ async function loadMacroFred(request) {
     }
     await new Promise((res) => setTimeout(res, 600));
   }
+  // 順便抓 Shiller CAPE（從 multpl.com scrape）
+  try {
+    const capeRes = await loadCapeFromMultpl();
+    results.push(capeRes);
+  } catch (e) {
+    results.push({ ok: false, series: "cape", error: e?.message });
+  }
   const okCount = results.map(r => ({ok: r.ok, count: (r && r.count) || 0})).filter(x => x.ok).reduce((s, x) => s + x.count, 0);
   return json({ ok: true, source: "fred", inserted: okCount, results });
+}
+
+// ── loadCapeFromMultpl: scrape multpl.com/shiller-pe/table → macro_yields as monthly snapshots ─
+// 2026-10-06：FRED CAPE 已 deprecated，multpl.com 是 Robert Shiller 學生維護的常用來源，
+//   scrape 出 Date / Value table，存成 cape 系列（每月一筆，當月用最新那筆覆蓋）。
+async function loadCapeFromMultpl() {
+  const url = "https://www.multpl.com/shiller-pe/table";
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 15000);
+  let resp;
+  try {
+    resp = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible: donttalk-macro/1.0)", "Accept": "text/html" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+  } catch (e) {
+    clearTimeout(tid);
+    if (e.name === "AbortError") throw new Error("multpl timeout");
+    throw e;
+  }
+  if (!resp.ok) throw new Error(`multpl HTTP ${resp.status}`);
+  const html = await resp.text();
+  // Parse <tr><td>Oct 1, 2026</td><td> 41.67 </td></tr>
+  const rowRe = /<tr[^>]*>\s*<td[^>]*>([^<]+)<\/td>\s*<td[^>]*>\s*&#?\w+;?\s*([\d.]+)\s*<\/td>\s*<\/tr>/g;
+  const rows = [];
+  let mm;
+  while ((mm = rowRe.exec(html)) !== null) {
+    const dateStr = mm[1].trim();
+    const value = Number(mm[2]);
+    if (!Number.isFinite(value)) continue;
+    // "Oct 5, 2026" → "2026-10-05"
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) continue;
+    const iso = d.toISOString().slice(0, 10);
+    rows.push({ date: iso, value });
+  }
+  if (rows.length === 0) return { ok: false, series: "cape", error: "no rows parsed", count: 0 };
+  const dates = rows.map((r) => r.date);
+  const values = rows.map((r) => r.value);
+  const sql = `
+    INSERT INTO macro_yields (series, trade_date, value, source)
+    SELECT $1, unnest($2::date[]), unnest($3::numeric[]), 'multpl'
+    ON CONFLICT (series, trade_date) DO UPDATE SET
+      value = EXCLUDED.value,
+      source = EXCLUDED.source,
+      fetched_at = now()`;
+  await q(sql, ["cape", dates, values]);
+  return { ok: true, series: "cape", count: rows.length };
 }
 
 // ── loadMacroNews: Google News RSS → knowledge_library (record_type=news) ─
