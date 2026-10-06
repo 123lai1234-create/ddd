@@ -1114,40 +1114,57 @@ async function scanAllImpl() {
   )).filter(Boolean);
   // 2026-10-06：批次 join institutional（外資 / 投信 / 自營商）→ 補 inst_foreign_* /
   //   has_foreign_buy_2d 欄位。一次 SELECT 抓完 watchlist 全部近 10 交易日資料，避開 per-stock query。
+  let instDebug = null;
   try {
-    await mergeInstitutionalIntoResults(results);
+    instDebug = await mergeInstitutionalIntoResults(results);
   } catch (e) {
     console.error('[scanAllImpl] mergeInstitutional failed:', e?.message || e);
     // 法人 join 失敗不影響主流程，inst_* 欄位保持 null / has_foreign_buy_2d = false
+  }
+  // 2026-10-06：debug — 把 join 統計掛在第一個 item，render JSON response 就能看到
+  if (instDebug && results.length > 0) {
+    results[0]._inst_debug = instDebug;
   }
   return results;
 }
 
 // 2026-10-06：批次把 institutional 資料 merge 進 scanAll 結果
+// 回傳 debug 統計給 caller（queriedCodes / matchedCodes / totalRows / error）
 async function mergeInstitutionalIntoResults(results) {
-  if (!Array.isArray(results) || results.length === 0) return;
+  const debug = { queriedCodes: 0, matchedCodes: 0, totalRows: 0, error: null };
+  if (!Array.isArray(results) || results.length === 0) return debug;
   const codes = results.map((r) => r.code);
+  debug.queriedCodes = codes.length;
   // 抓近 10 個交易日（已足夠算 has_foreign_buy_2d + inst_foreign_5d / trust_5d）
   // symbol = ANY($1) + ORDER BY trade_date DESC → 全部 symbol × 10d 一次回傳
   // Neon HTTP SQL 對 LIMIT $N 參數化有時不穩；用 inline 數字（與 institutional() endpoint 一致）
-  const instResult = await q(
-    `SELECT symbol, trade_date, foreign_net, trust_net
-     FROM institutional
-     WHERE symbol = ANY($1::text[])
-       AND trade_date IS NOT NULL
-     ORDER BY trade_date DESC
-     LIMIT ${codes.length * 10}`,
-    [codes]
-  );
+  let instResult;
+  try {
+    instResult = await q(
+      `SELECT symbol, trade_date, foreign_net, trust_net
+       FROM institutional
+       WHERE symbol = ANY($1::text[])
+         AND trade_date IS NOT NULL
+       ORDER BY trade_date DESC
+       LIMIT ${codes.length * 10}`,
+      [codes]
+    );
+  } catch (e) {
+    debug.error = e?.message || String(e);
+    console.error('[mergeInstitutional] query failed:', e?.message || e);
+    return debug;
+  }
+  debug.totalRows = (instResult?.rows || []).length;
   // group by symbol
   const byCode = new Map();
-  for (const r of instResult.rows) {
+  for (const r of (instResult?.rows || [])) {
     if (!byCode.has(r.symbol)) byCode.set(r.symbol, []);
     byCode.get(r.symbol).push(r);
   }
   for (const item of results) {
     const instRows = byCode.get(item.code) || [];
     if (instRows.length === 0) continue;
+    debug.matchedCodes++;
     // 最新一筆（trade_date 最大）→ today
     const today = instRows[0];
     item.inst_foreign_today = today.foreign_net != null ? Number(today.foreign_net) : null;
@@ -1161,6 +1178,7 @@ async function mergeInstitutionalIntoResults(results) {
       item.has_foreign_buy_2d = Number(instRows[0].foreign_net) > 0 && Number(instRows[1].foreign_net) > 0;
     }
   }
+  return debug;
 }
 
 async function scanAll(request) {
