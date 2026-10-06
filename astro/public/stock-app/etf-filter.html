@@ -2,6 +2,23 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+  <!-- 2026-10-05: Vercel /api/* catchall dead (since 2026-07 stock-app shutdown).
+       Render catchall is alive at donttalk-catchall.onrender.com — rewrite
+       all /api/* fetches to it. -->
+  <script>
+  (function(){
+    var _f = window.fetch;
+    var _RENDER = 'https://donttalk-catchall.onrender.com';
+    window.fetch = function(r, i){
+      if (typeof r === 'string' && r.indexOf('/api/') === 0) {
+        r = _RENDER + r;
+      } else if (r && typeof r.url === 'string' && r.url.indexOf('/api/') === 0) {
+        r = new Request(_RENDER + r.url, r);
+      }
+      return _f.call(this, r, i);
+    };
+  })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ETF 買賣訊號篩選器 | 台股均線系統</title>
@@ -596,7 +613,7 @@
           <span class="strategy-badge sb-sell">出場</span>
         </div>
         <div class="strategy-desc">
-          ETF 任一賣出訊號成立<br>
+          <span id="damo_sell_desc">ETF 任一賣出訊號成立</span><br>
           <span class="cond-tag">盤整賣50%</span>
           <span class="cond-tag">頂背離賣</span>
           <span class="cond-tag">BearGate賣</span>
@@ -609,7 +626,7 @@
   <!-- 篩選面板 -->
   <div class="filter-panel">
     <div class="filter-panel-header" onclick="toggleFilterPanel()">
-      <h2>⚙️ ETF 篩選條件</h2>
+      <h2 id="damo_filter_title">⚙️ ETF 篩選條件</h2>
       <span class="filter-toggle-icon" id="filterToggleIcon">▲</span>
     </div>
 
@@ -806,9 +823,9 @@
   <!-- 初始狀態 -->
   <div id="initState" class="empty-state">
     <div class="icon">🔍</div>
-    <h3>設定 ETF 篩選條件後點擊「套用篩選」</h3>
+    <h3 id="damo_init_h">設定 ETF 篩選條件後點擊「套用篩選」</h3>
     <p style="margin-top:8px">
-      針對 ETF 的 DAMO 策略進行掃描<br>
+      針對<span id="damo_init_target"> ETF</span> 的 DAMO 策略進行掃描<br>
       <span style="color:var(--txt2);font-size:11px">
         系統每日 15:10 自動更新快取
       </span>
@@ -884,6 +901,15 @@
       var navStockDamo = document.getElementById('nav_stock_damo');
       if (navStockDamo) navStockDamo.classList.add('active');
       // resultToolbar 顯示由 renderResults 控制（避免覆寫 flex display）
+      // Swap static ETF labels → 股票 (HTML body shared with stock-damo-filter.html)
+      var sellDesc = document.getElementById('damo_sell_desc');
+      if (sellDesc) sellDesc.textContent = '股票 任一賣出訊號成立';
+      var ftitle = document.getElementById('damo_filter_title');
+      if (ftitle) ftitle.textContent = '⚙️ 股票 DAMO 篩選條件';
+      var ih = document.getElementById('damo_init_h');
+      if (ih) ih.textContent = '設定股票 DAMO 篩選條件後點擊「套用篩選」';
+      var it = document.getElementById('damo_init_target');
+      if (it) it.textContent = ' 股票';
     } else {
       var navEtf = document.getElementById('nav_etf_filter');
       if (navEtf) navEtf.classList.add('active');

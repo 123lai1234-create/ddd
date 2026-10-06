@@ -1521,6 +1521,61 @@ async function markersExport(request) {
   }
 }
 
+// 2026-10-06：Render cron 維護用 endpoint
+//   - 清掉 marker_text 是 'x' / 'test' / 空字串的測試資料
+//   - 重跑 screener，從 scanAll() 結果重新 insert 真實買賣訊號
+//   - 不需要密碼（Render cron 內網呼叫，未對外暴露）
+//   - 觸發方式：Render cron 或外部 scheduler 打 GET/POST 即可
+async function markersMaintenance(request) {
+  const t0 = Date.now();
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  // 公開 endpoint 但接受 optional password（與其他 admin 一致）
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  // dryRun 模式只回報會做什麼，不真的改 DB
+  const dryRun = pickStr(u.searchParams.get("dry_run") || body?.dry_run || "") === "1";
+  const result = { ok: true, dryRun, steps: {} };
+  try {
+    // Step 1: 清掉 placeholder 爛資料
+    const cleanupSql = `DELETE FROM markers
+        WHERE marker_text IS NULL
+           OR TRIM(marker_text) = ''
+           OR marker_text IN ('x', 'test', 'placeholder')`;
+    if (dryRun) {
+      const { rows } = await q(`SELECT COUNT(*)::int AS n FROM markers
+        WHERE marker_text IS NULL
+           OR TRIM(marker_text) = ''
+           OR marker_text IN ('x', 'test', 'placeholder')`);
+      result.steps.cleanup = { willDelete: rows[0]?.n ?? 0 };
+    } else {
+      const { rows } = await q(cleanupSql);
+      result.steps.cleanup = { deleted: rows.length || 0 };
+    }
+    // Step 2: 重跑 screener，insert 今日真實 marker
+    if (dryRun) {
+      result.steps.refresh = { willRun: "loadMarkers (scan + insert)" };
+    } else {
+      // 直接呼叫 loadMarkers（它本身已經是 scanAll + 條件式 INSERT）
+      const refreshResp = await loadMarkers(request);
+      const refreshJson = await refreshResp.json().catch(() => ({}));
+      result.steps.refresh = {
+        scanned: refreshJson.scanned,
+        inserted: refreshJson.inserted,
+        as_of: refreshJson.as_of,
+      };
+    }
+    result.elapsedMs = Date.now() - t0;
+    return json(result);
+  } catch (e) {
+    result.ok = false;
+    result.error = e?.message;
+    result.elapsedMs = Date.now() - t0;
+    return json(result, { status: 500 });
+  }
+}
+
 async function strategySignals(request, code) {
   if (code && /^[A-Za-z0-9]{4,7}$/.test(code)) {
     const r = await screenOne(code, null);
@@ -8285,6 +8340,10 @@ const TABLE = [
   ["GET",  /^\/markers\/batch_scan\/status\/([^/]+?)\/?$/, markersBatchScanStatus],
   ["GET",  /^\/markers\/export\.csv\/?$/,    markersExport],
   ["GET",  /^\/markers\/([^/]+?)\/?$/,       markerById],
+
+  // 2026-10-06：Render cron 維護用（清掉 'x'/'test'/空 marker → 重跑 screener insert 今日真實訊號）
+  ["GET",  /^\/admin\/markers\/maintenance\/?$/, markersMaintenance],
+  ["POST", /^\/admin\/markers\/maintenance\/?$/, markersMaintenance],
 
   ["GET",  /^\/strategy_signals\/?$/,        strategySignals],
   ["GET",  /^\/strategy_signals\/([^/]+?)\/?$/, strategySignals],

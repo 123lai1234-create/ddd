@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+  <!-- 2026-10-05: Vercel /api/* catchall dead (since 2026-07 stock-app shutdown).
+       Render catchall is alive at donttalk-catchall.onrender.com — rewrite
+       all /api/* fetches to it. -->
+  <script>
+  (function(){
+    var _f = window.fetch;
+    var _RENDER = 'https://donttalk-catchall.onrender.com';
+    window.fetch = function(r, i){
+      if (typeof r === 'string' && r.indexOf('/api/') === 0) {
+        r = _RENDER + r;
+      } else if (r && typeof r.url === 'string' && r.url.indexOf('/api/') === 0) {
+        r = new Request(_RENDER + r.url, r);
+      }
+      return _f.call(this, r, i);
+    };
+  })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>走勢比較圖（個股 / ETF）</title>

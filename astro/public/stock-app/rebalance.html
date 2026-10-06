@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+  <!-- 2026-10-05: Vercel /api/* catchall dead (since 2026-07 stock-app shutdown).
+       Render catchall is alive at donttalk-catchall.onrender.com — rewrite
+       all /api/* fetches to it. -->
+  <script>
+  (function(){
+    var _f = window.fetch;
+    var _RENDER = 'https://donttalk-catchall.onrender.com';
+    window.fetch = function(r, i){
+      if (typeof r === 'string' && r.indexOf('/api/') === 0) {
+        r = _RENDER + r;
+      } else if (r && typeof r.url === 'string' && r.url.indexOf('/api/') === 0) {
+        r = new Request(_RENDER + r.url, r);
+      }
+      return _f.call(this, r, i);
+    };
+  })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>資產再平衡建議</title>
@@ -297,7 +314,8 @@ async function loadGroups(){
     GROUPS.forEach((g, i)=>{
       const o = document.createElement('option');
       o.value = String(i);
-      o.textContent = `${g.label}（${g.count} 檔）`;
+      // API 用 sector 欄位，舊版曾用 label，兩者皆支援
+      o.textContent = `${g.label || g.sector || '未命名'}（${g.count} 檔）`;
       sel.appendChild(o);
     });
   }catch(e){ /* ignore */ }

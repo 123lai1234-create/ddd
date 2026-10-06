@@ -1,6 +1,23 @@
 ﻿<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+  <!-- 2026-10-05: Vercel /api/* catchall dead (since 2026-07 stock-app shutdown).
+       Render catchall is alive at donttalk-catchall.onrender.com — rewrite
+       all /api/* fetches to it. -->
+  <script>
+  (function(){
+    var _f = window.fetch;
+    var _RENDER = 'https://donttalk-catchall.onrender.com';
+    window.fetch = function(r, i){
+      if (typeof r === 'string' && r.indexOf('/api/') === 0) {
+        r = _RENDER + r;
+      } else if (r && typeof r.url === 'string' && r.url.indexOf('/api/') === 0) {
+        r = new Request(_RENDER + r.url, r);
+      }
+      return _f.call(this, r, i);
+    };
+  })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
@@ -432,30 +449,32 @@
     try {
       const r = await fetch(API + '/api/markers/history?days=1');
       const j = await r.json();
-      const rows = (j.rows || j.history || j.items || []).slice(0, 12);
-      if (!rows.length) { document.getElementById('markersContent').innerHTML = '<div class="error-text">今日無訊號</div>'; return; }
-      const typeMap = { buy_chase: '進場', sell_stop: '退場', limit_up: '漲停', foreign_buy_3d: '外資連買' };
+      const allRows = j.rows || j.history || j.items || [];
+      // 2026-10-06 fix:
+      //   1) 後端欄位是 marker_text / source，不是 text / type（前端寫死舊名 → 全空 → 全部變「2330」）
+      //   2) DB 200 列有 174 列是 'x' / 9 列空 / 7 列 'test'（之前測試塞的 placeholder）→ 過濾
+      //   3) 訊息長度排序，較有內容的優先；最多 12 列
+      const sorted = [...allRows].sort((a, b) =>
+        String(b.marker_text || '').length - String(a.marker_text || '').length
+      );
+      const rows = [];
+      for (const m of sorted) {
+        const code = String(m.code || '').trim();
+        if (!code) continue;
+        const txt = String(m.marker_text || '').trim();
+        if (!txt || txt === 'x' || txt === 'test') continue;
+        rows.push(m);
+        if (rows.length >= 12) break;
+      }
+      if (!rows.length) { document.getElementById('markersContent').innerHTML = '<div class="error-text">今日無訊號</div>'; document.getElementById('markersCount').textContent = '0 個'; return; }
+      const sourceMap = { event: '事件', trade: '交易', auto: '自動' };
       let html = '';
       for (const m of rows) {
-        const t = typeMap[m.type] || m.type;
-        const c = (m.type === 'sell_stop') ? 'down' : 'up';
-        let text = m.text;
-        if (typeof text === 'string') {
-          const trimmed = text.trim();
-          if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-            try {
-              const obj = JSON.parse(trimmed);
-              text = obj.message || obj.msg || obj.note || obj.summary || summarizeMarkerPayload(obj);
-            } catch (_) {
-              text = trimmed.slice(0, 40);
-            }
-          }
-        } else if (text && typeof text === 'object') {
-          text = text.message || text.msg || text.note || text.summary || summarizeMarkerPayload(text);
-        }
-        if (text == null) text = '';
-        const code = m.code || (typeof m.text === 'object' ? (m.text.code || '') : '');
-        html += '<div class="row"><span class="label"><span class="pill-tag ' + c + '">' + esc(t) + '</span>' + esc(code) + '</span><span class="val neutral">' + esc(String(text).slice(0, 60)) + '</span></div>';
+        const t = sourceMap[m.source] || m.source || '訊號';
+        const c = (m.source === 'trade') ? 'down' : 'up';
+        const text = String(m.marker_text || '').slice(0, 60);
+        const code = m.code || '';
+        html += '<div class="row"><span class="label"><span class="pill-tag ' + c + '">' + esc(t) + '</span>' + esc(code) + '</span><span class="val neutral">' + esc(text) + '</span></div>';
       }
       document.getElementById('markersContent').innerHTML = html;
       document.getElementById('markersCount').textContent = rows.length + ' 個';

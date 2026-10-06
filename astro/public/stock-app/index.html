@@ -2273,7 +2273,20 @@ function _mergeAndSetMarkers(){
   if (!candleSeries) return;
   var ev = _showEventMarkers ? (_eventMarkers||[]) : [];
   var all = (_baseMarkers||[]).concat(ev).concat(_macdDivMarkers||[]);
-  all.sort(function(a,b){ return (a.time<b.time)?-1:((a.time>b.time)?1:0); });
+  // ★ 防禦：marker.time 必填（UTCTimestamp number 或 BusinessDay 物件），缺/格式錯就丟掉
+  all = all.filter(function(m){
+    if (!m) return false;
+    if (typeof m.time === "number" && isFinite(m.time)) return true;
+    if (m.time && typeof m.time === "object" && typeof m.time.year === "number") return true;
+    return false;
+  });
+  all.sort(function(a,b){
+    var ta = (typeof a.time === "number") ? a.time : 0;
+    var tb = (typeof b.time === "number") ? b.time : 0;
+    if (a.time && typeof a.time === "object") ta = Date.UTC(a.time.year, (a.time.month||1)-1, a.time.day||1) / 1000;
+    if (b.time && typeof b.time === "object") tb = Date.UTC(b.time.year, (b.time.month||1)-1, b.time.day||1) / 1000;
+    return ta < tb ? -1 : (ta > tb ? 1 : 0);
+  });
   try { candleSeries.setMarkers(all); } catch(e) { console.warn("setMarkers 失敗:", e); }
 }
 function toggleEventMarkers(){
@@ -2331,7 +2344,27 @@ function loadStockEvents(code, days, stockData){
       // 切股 / 切指數模式時忽略舊請求
       if (currentMode !== "stock" || _eventsReqCode !== code || currentCode !== code) return;
       if (d && d.ok && Array.isArray(d.events)) {
-        _eventMarkers = d.events;
+        _eventMarkers = (d.events || []).map(function(e){
+          // ★ 把事件轉成 lightweight-charts 接受的格式：
+          //   1) `date` 是 "YYYY-MM-DD" → BusinessDay {year, month, day}
+          //   2) 若沒有 `date` 但 `time` 是 number（UTCTimestamp），直接用
+          //   3) 都沒有就丟掉（marker.time 是必填）
+          var t = null;
+          if (e && typeof e.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.date)) {
+            var p = e.date.split("-");
+            t = { year: parseInt(p[0],10), month: parseInt(p[1],10), day: parseInt(p[2],10) };
+          } else if (e && typeof e.time === "number") {
+            t = e.time;
+          }
+          if (t === null) return null;
+          return {
+            time: t,
+            text: e.text || "",
+            position: e.position || "aboveBar",
+            shape: e.shape || "circle",
+            color: e.color || "#ff9800"
+          };
+        }).filter(function(m){ return m !== null; });
         _mergeAndSetMarkers();
       }
       // ★ 事件 + 交易訊號都到齊後寫入 DB（背景，失敗不影響）
