@@ -56,3 +56,30 @@ services:
         nodeVersion: "22"
         buildCommand: npm install
         startCommand: node scripts/cron_markers_maintenance.mjs
+
+  # 2026-10-06：盤中即時 refresh（不 cleanup，只 INSERT 當日新訊號）
+  #   schedule UTC: */30 1-5 * * 1-5 = 每 30 分鐘、09:00-13:59 Asia/Taipei 週一至週五
+  #   對應 service id: crn-...（建立於 2026-10-06 via create_intraday_cron.py）
+  - type: cron_job
+    name: donttalk-markers-intraday
+    plan: free
+    region: oregon
+    repo: https://github.com/123lai1234-create/ddd
+    branch: 123lai1234-create
+    autoDeploy: true
+    serviceDetails:
+      env: node
+      rootDir: astro/catchall-server
+      schedule: "*/30 1-5 * * 1-5"
+      envVars:
+        - key: NODE_ENV
+          value: production
+        - key: TZ
+          value: Asia/Taipei
+        - key: MAINTENANCE_URL
+          value: https://donttalk-catchall.onrender.com/admin/markers/intraday
+      envSpecificDetails:
+        buildPlan: starter
+        nodeVersion: "22"
+        buildCommand: npm install
+        startCommand: node scripts/cron_markers_intraday.mjs

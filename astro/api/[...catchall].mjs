@@ -1583,6 +1583,32 @@ async function markersMaintenance(request) {
   }
 }
 
+// 2026-10-06：盤中即時 refresh endpoint
+//   - 不做 cleanup（每天只跑一次維護就夠）
+//   - 只跑 loadMarkers() 重抓今日訊號
+//   - 適合 Render cron 每 30 分鐘盤中（09:00-13:30 Asia/Taipei）打一次
+async function markersIntraday(request) {
+  const t0 = Date.now();
+  if (request.method === "POST") {
+    const body = await readJson(request).catch(() => ({}));
+    if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  try {
+    const refreshResp = await loadMarkers(request);
+    const refreshJson = await refreshResp.json().catch(() => ({}));
+    return json({
+      ok: true,
+      mode: "intraday",
+      scanned: refreshJson.scanned,
+      inserted: refreshJson.inserted,
+      as_of: refreshJson.as_of,
+      elapsedMs: Date.now() - t0,
+    });
+  } catch (e) {
+    return json({ ok: false, mode: "intraday", error: e?.message, elapsedMs: Date.now() - t0 }, { status: 500 });
+  }
+}
+
 async function strategySignals(request, code) {
   if (code && /^[A-Za-z0-9]{4,7}$/.test(code)) {
     const r = await screenOne(code, null);
@@ -8351,6 +8377,10 @@ const TABLE = [
   // 2026-10-06：Render cron 維護用（清掉 'x'/'test'/空 marker → 重跑 screener insert 今日真實訊號）
   ["GET",  /^\/admin\/markers\/maintenance\/?$/, markersMaintenance],
   ["POST", /^\/admin\/markers\/maintenance\/?$/, markersMaintenance],
+
+  // 2026-10-06：Render cron 盤中即時用（不 cleanup，只重跑 screener INSERT 今日新訊號；loadMarkers 內部用 ON CONFLICT DO NOTHING 不會爆衝）
+  ["GET",  /^\/admin\/markers\/intraday\/?$/, markersIntraday],
+  ["POST", /^\/admin\/markers\/intraday\/?$/, markersIntraday],
 
   ["GET",  /^\/strategy_signals\/?$/,        strategySignals],
   ["GET",  /^\/strategy_signals\/([^/]+?)\/?$/, strategySignals],
