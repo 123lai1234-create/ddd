@@ -1171,6 +1171,12 @@ function toggleFilterPanel() {
     fetch(API_BASE + "?" + buildQueryString(params))
     .then(r => r.json())
     .then(data => {
+      // 2026-10-06：catchall 統一回 data.items / data.count / data.generated_at，
+      // 但 renderResults 傳統用 data.results / data.total / data.updated_at。
+      // 加別名相容，items 也能 render。
+      if (!data.results && Array.isArray(data.items)) data.results = data.items;
+      if (data.total == null) data.total = data.count;
+      if (!data.updated_at) data.updated_at = data.generated_at || Date.now();
       if (data.scanning) {
         // ★ 還在掃描 → 更新提示 + 繼續等
         var elapsed = attempt * (INTERVAL_MS / 1000);
