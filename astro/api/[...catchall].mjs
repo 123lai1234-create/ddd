@@ -1112,7 +1112,53 @@ async function scanAllImpl() {
     async ([code, name]) => screenOne(code, name),
     18000 // 18s time budget（Render 30s timeout 留 12s buffer 給 JSON encode + 傳輸）
   )).filter(Boolean);
+  // 2026-10-06：批次 join institutional（外資 / 投信 / 自營商）→ 補 inst_foreign_* /
+  //   has_foreign_buy_2d 欄位。一次 SELECT 抓完 watchlist 全部近 10 交易日資料，避開 per-stock query。
+  try {
+    await mergeInstitutionalIntoResults(results);
+  } catch (_e) {
+    // 法人 join 失敗不影響主流程，inst_* 欄位保持 null / has_foreign_buy_2d = false
+  }
   return results;
+}
+
+// 2026-10-06：批次把 institutional 資料 merge 進 scanAll 結果
+async function mergeInstitutionalIntoResults(results) {
+  if (!Array.isArray(results) || results.length === 0) return;
+  const codes = results.map((r) => r.code);
+  // 抓近 10 個交易日（已足夠算 has_foreign_buy_2d + inst_foreign_5d / trust_5d）
+  // symbol = ANY($1) + ORDER BY trade_date DESC → 全部 symbol × 10d 一次回傳
+  const instResult = await q(
+    `SELECT symbol, trade_date, foreign_net, trust_net
+     FROM institutional
+     WHERE symbol = ANY($1::text[])
+       AND trade_date IS NOT NULL
+     ORDER BY trade_date DESC
+     LIMIT $2`,
+    [codes, codes.length * 10]
+  );
+  // group by symbol
+  const byCode = new Map();
+  for (const r of instResult.rows) {
+    if (!byCode.has(r.symbol)) byCode.set(r.symbol, []);
+    byCode.get(r.symbol).push(r);
+  }
+  for (const item of results) {
+    const instRows = byCode.get(item.code) || [];
+    if (instRows.length === 0) continue;
+    // 最新一筆（trade_date 最大）→ today
+    const today = instRows[0];
+    item.inst_foreign_today = today.foreign_net != null ? Number(today.foreign_net) : null;
+    item.inst_trust_today   = today.trust_net   != null ? Number(today.trust_net)   : null;
+    // 近 5 個交易日加總
+    const last5 = instRows.slice(0, 5);
+    item.inst_foreign_5d = last5.reduce((a, r) => a + (Number(r.foreign_net) || 0), 0);
+    item.inst_trust_5d   = last5.reduce((a, r) => a + (Number(r.trust_net)   || 0), 0);
+    // 外資連 2 日買超（近 2 筆 foreign_net > 0）
+    if (instRows.length >= 2) {
+      item.has_foreign_buy_2d = Number(instRows[0].foreign_net) > 0 && Number(instRows[1].foreign_net) > 0;
+    }
+  }
 }
 
 async function scanAll(request) {
