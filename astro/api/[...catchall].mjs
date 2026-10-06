@@ -1609,6 +1609,61 @@ async function markersIntraday(request) {
   }
 }
 
+// 2026-10-06：完整 markers dump（cron 備份用）
+//   - GET /admin/markers/backup → JSON 含所有 rows + meta
+//   - 用 date DESC 排序，預設 LIMIT 5000
+//   - 沒密碼（Render cron 內網呼叫，跟 maintenance 一樣的策略）
+async function markersBackup(request) {
+  const u = urlOf(request);
+  const limit = Math.min(50000, Math.max(1, parseInt(u.searchParams.get("limit") || "5000", 10) || 5000));
+  try {
+    const { rows } = await q(
+      `SELECT id, code, date, type, text, price
+       FROM markers
+       ORDER BY date DESC, id DESC
+       LIMIT ${limit}`
+    );
+    const totalRes = await q("SELECT COUNT(*)::int AS n FROM markers");
+    const total = totalRes.rows[0]?.n ?? 0;
+    return json({
+      ok: true,
+      source: "db",
+      generated_at: new Date().toISOString(),
+      total,
+      returned: rows.length,
+      rows,
+    });
+  } catch (e) {
+    return json({ ok: false, source: "db", error: e?.message }, { status: 500 });
+  }
+}
+
+// 2026-10-06：每張重要 table 的 row count（健康檢查用）
+//   - 看 markers / watchlist / big_holders / market_price_bars / strategy_signals 等
+//   - 用於dashboard 右上角狀態、或 cron 失敗時 debug
+async function healthTables(request) {
+  const tables = [
+    "markers",
+    "watchlist",
+    "big_holders",
+    "market_price_bars",
+    "etf_holdings",
+    "strategy_signals",
+    "signal_history",
+    "marker_history",
+  ];
+  const out = { ok: true, source: "db", generated_at: new Date().toISOString(), tables: {} };
+  for (const t of tables) {
+    try {
+      const { rows } = await q(`SELECT COUNT(*)::int AS n FROM ${t}`);
+      out.tables[t] = rows[0]?.n ?? 0;
+    } catch (e) {
+      out.tables[t] = { error: e?.message };
+    }
+  }
+  return json(out);
+}
+
 async function strategySignals(request, code) {
   if (code && /^[A-Za-z0-9]{4,7}$/.test(code)) {
     const r = await screenOne(code, null);
@@ -8381,6 +8436,10 @@ const TABLE = [
   // 2026-10-06：Render cron 盤中即時用（不 cleanup，只重跑 screener INSERT 今日新訊號；loadMarkers 內部用 ON CONFLICT DO NOTHING 不會爆衝）
   ["GET",  /^\/admin\/markers\/intraday\/?$/, markersIntraday],
   ["POST", /^\/admin\/markers\/intraday\/?$/, markersIntraday],
+
+  // 2026-10-06：backup / health check
+  ["GET",  /^\/admin\/markers\/backup\/?$/, markersBackup],
+  ["GET",  /^\/admin\/health\/tables\/?$/, healthTables],
 
   ["GET",  /^\/strategy_signals\/?$/,        strategySignals],
   ["GET",  /^\/strategy_signals\/([^/]+?)\/?$/, strategySignals],
