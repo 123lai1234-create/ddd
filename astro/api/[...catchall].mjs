@@ -999,16 +999,45 @@ async function screenOne(code, name) {
   const cond3 = last > ma5 && ma5 > ma20;
   const cond4 = g5 > 0 && g20 > 0;
   const cond5 = candles[candles.length - 1].volume > 1_000_000;
+  // 2026-10-06：前端 stock-damo-filter buildCard() 讀舊欄位名（close / ema10 / date /
+  //   inst_foreign_* / trade_plan / has_*）。screenOne 只算簡化 cond1-5 + MA，
+  //   與 DAMO 策略計算口徑不同，這裡只給「資料型別」別名（價格、EMA、日期），
+  //   has_* / trade_plan / inst_* 設為 null/false（前端 fmtNet/fmtPct 會回 "-"），
+  //   不偽造 DAMO 策略標籤（避免誤導交易決策）。
   return {
     code, name,
     latest_close: r2(last),
     latest_date: candles[candles.length - 1].date,
+    // 別名給前端 buildCard() 用（價格 / EMA / 日期）
+    close: r2(last),
+    close_price: r2(last),
+    date: candles[candles.length - 1].date,
+    ema10: r2(ma10), ema20: r2(ma20), ema60: r2(ma60),
     ma5: r2(ma5), ma10: r2(ma10), ma20: r2(ma20), ma60: r2(ma60),
     dist_high_60d_pct: r2(dh60),
     dist_high_20d_pct: r2(dh20),
     gain_5d_pct: r2(g5), gain_20d_pct: r2(g20),
     cond1, cond2, cond3, cond4, cond5,
     score: [cond1, cond2, cond3, cond4, cond5].filter(Boolean).length,
+    // DAMO 策略 has_* / trade_plan / inst_* → null/false（不偽造）
+    has_short_buy: false,
+    has_chan_to_bull: false,
+    has_year_break_buy: false,
+    has_consol_buy: false,
+    has_dip_ma60_buy: false,
+    has_dip_ma240_buy: false,
+    has_ma60_touch_buy: false,
+    has_consol_sell: false,
+    has_macd_div_sell: false,
+    has_bear_gate_sell: false,
+    has_fib: false,
+    has_vcp: false,
+    vcp_quality: 0,
+    has_foreign_buy_2d: false,
+    inst_foreign_today: null,
+    inst_foreign_5d: null,
+    inst_trust_5d: null,
+    trade_plan: null,
   };
 }
 

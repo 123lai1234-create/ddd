@@ -1174,6 +1174,17 @@ function toggleFilterPanel() {
       if (!data.results && Array.isArray(data.items)) data.results = data.items;
       if (data.total == null) data.total = data.count;
       if (!data.updated_at) data.updated_at = data.generated_at || Date.now();
+      // 2026-10-06：欄位別名（latest_close / latest_date / ma10 → close / date / ema10）
+      if (Array.isArray(data.results)) {
+        for (var i = 0; i < data.results.length; i++) {
+          var r = data.results[i];
+          if (r.close == null) r.close = r.latest_close || r.close_price;
+          if (!r.date && r.latest_date) r.date = r.latest_date;
+          if (r.ema10 == null) r.ema10 = r.ma10;
+          if (r.ema20 == null) r.ema20 = r.ma20;
+          if (r.ema60 == null) r.ema60 = r.ma60;
+        }
+      }
       if (data.scanning) {
         // ★ 還在掃描 → 更新提示 + 繼續等
         var elapsed = attempt * (INTERVAL_MS / 1000);
