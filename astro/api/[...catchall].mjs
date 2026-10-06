@@ -1244,10 +1244,8 @@ async function newsListImpl(request, { recordType = "news", limit = 20, tag = nu
 
 async function macroData(request) {
   // macroData: for macro.html. Frontend wants `data.data = [{指標, 最新值, 前值, 更新時間, ...}]`
-  // but the only real source we have is market_price_bars (TSMC proxy for TAIEX) and
-  // macro_yields table (yield_2y / yield_10y). Everything else (CPI / BEI / VIX / etc.)
-  // used to come from the offline Railway backend; we return placeholders so the page
-  // renders without crashing (gv() returns null for missing rows).
+  // 2026-10-06：擴充從 macro_yields (5y/10y/30y/13w/vix) 抓資料，
+  // 10Y-13W 利差直接算（最常用衰退指標）；10Y-2Y 利差暫無 2Y 直接報價，標記為「需 FRED 2Y」。
   try {
     const { rows: tsRows } = await q(
       `SELECT close_price, change_value, trade_date
@@ -1262,39 +1260,51 @@ async function macroData(request) {
     const yldRes = await q(
       `SELECT series, trade_date, value
        FROM macro_yields
-       WHERE series IN ('yield_2y','yield_10y')
-       ORDER BY trade_date DESC LIMIT 4`
+       WHERE series IN ('yield_5y','yield_10y','yield_30y','yield_13w','vix')
+       ORDER BY series, trade_date DESC`
     );
+    // Build series → [{date, value}, ...] (DESC)
     const yldMap = new Map();
     for (const r of yldRes.rows || []) {
       if (!yldMap.has(r.series)) yldMap.set(r.series, []);
-      yldMap.get(r.series).push(r);
+      yldMap.get(r.series).push({ date: String(r.trade_date).slice(0,10), value: Number(r.value) });
     }
-    const last2y  = yldMap.get("yield_2y")?.[0]?.value  != null ? Number(yldMap.get("yield_2y")[0].value)  : null;
-    const prev2y  = yldMap.get("yield_2y")?.[1]?.value  != null ? Number(yldMap.get("yield_2y")[1].value)  : null;
-    const last10y = yldMap.get("yield_10y")?.[0]?.value != null ? Number(yldMap.get("yield_10y")[0].value) : null;
-    const prev10y = yldMap.get("yield_10y")?.[1]?.value != null ? Number(yldMap.get("yield_10y")[1].value) : null;
+    const lastOf = (s) => yldMap.get(s)?.[0]?.value ?? null;
+    const prevOf = (s) => yldMap.get(s)?.[1]?.value ?? null;
+    const last10y = lastOf("yield_10y");
+    const prev10y = prevOf("yield_10y");
+    const last5y  = lastOf("yield_5y");
+    const prev5y  = prevOf("yield_5y");
+    const last30y = lastOf("yield_30y");
+    const prev30y = prevOf("yield_30y");
+    const last13w = lastOf("yield_13w");
+    const prev13w = prevOf("yield_13w");
+    const lastVix = lastOf("vix");
+    const prevVix = prevOf("vix");
+    // 計算 10Y-13W 利差（衰退指標）
+    const spread10y13w = (last10y != null && last13w != null) ? Math.round((last10y - last13w) * 100) / 100 : null;
+    const prevSpread10y13w = (prev10y != null && prev13w != null) ? Math.round((prev10y - prev13w) * 100) / 100 : null;
     const as_of = last.trade_date ? String(last.trade_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
     const asOfLabel = as_of;
-    // Build the array shape the frontend expects.
-    // ★ 修正 BUG-7：把「來源」欄位填成 "FRED" 才能讓 macro.html 的 renderFredTable 顯示出來。
-    //   之前用 "macro_yields" / "TSMC proxy" / "需 Railway backend (offline)"，
-    //   renderFredTable 只過濾 d["來源"] === "FRED" → 一律被過濾掉 → 顯示「無數據」。
-    //   改成：所有 macro yield / 總經指標統一標記為 "FRED"（實際數據來源，
-    //   含 macro_yields 資料表 + offline placeholder），前端就會 render。
+    const srcY = "FRED";
+    const tagY = "Yahoo → macro_yields";
     const arr = [
-      { "指標": "台股指數代理 (2330)", "最新值": tsLast, "前值": tsPrev, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "TSMC proxy" },
-      { "指標": "美10年公債殖利率(%)", "最新值": last10y, "前值": prev10y, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "macro_yields" },
-      { "指標": "美2年公債殖利率(%)",  "最新值": last2y,  "前值": prev2y,  "更新時間": asOfLabel, "來源": "FRED", "來源標記": "macro_yields" },
+      { "指標": "台股指數代理 (2330)",     "最新值": tsLast,    "前值": tsPrev,    "更新時間": asOfLabel, "來源": srcY, "來源標記": "TSMC proxy" },
+      { "指標": "美10年公債殖利率(%)",      "最新值": last10y,   "前值": prev10y,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
+      { "指標": "美5年公債殖利率(%)",       "最新值": last5y,    "前值": prev5y,    "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
+      { "指標": "美30年公債殖利率(%)",      "最新值": last30y,   "前值": prev30y,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
+      { "指標": "美13週公債殖利率(%)",      "最新值": last13w,   "前值": prev13w,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
+      { "指標": "10年-3月公債利差",         "最新值": spread10y13w, "前值": prevSpread10y13w, "更新時間": asOfLabel, "來源": srcY, "來源標記": "10Y - 13W" },
+      { "指標": "VIX恐慌指數",             "最新值": lastVix,   "前值": prevVix,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
     ];
-    // Spread placeholder rows so the page can render placeholders for missing metrics.
+    // Railway backend 還活著才有的指標，標 placeholder（保留舊順序，避免 UI 跳行）
     const placeholders = [
-      "美債平衡通膨率BEI(%)", "10年-3月公債利差", "10年-2年公債利差",
+      "美2年公債殖利率(%)", "10年-2年公債利差", "美債平衡通膨率BEI(%)",
       "聯邦基金利率(%)", "GDP成長率年化(%)", "美國失業率(%)", "密大消費者信心",
-      "席勒本益比(CAPE)", "VIX恐慌指數", "美國CPI年增率(%)", "核心CPI YoY(%)",
+      "席勒本益比(CAPE)", "美國CPI年增率(%)", "核心CPI YoY(%)",
     ];
     for (const name of placeholders) {
-      arr.push({ "指標": name, "最新值": null, "前值": null, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "需 Railway backend (offline)" });
+      arr.push({ "指標": name, "最新值": null, "前值": null, "更新時間": asOfLabel, "來源": srcY, "來源標記": "需 FRED 2Y / CPI (offline)" });
     }
     return json({
       ok: true,
@@ -1306,8 +1316,12 @@ async function macroData(request) {
       // legacy shape (used by other code paths)
       legacy: {
         taiex_proxy: { code: "2330", close: tsLast, change: (tsLast - tsPrev) || 0 },
-        yield_2y: last2y,
+        yield_5y: last5y,
         yield_10y: last10y,
+        yield_30y: last30y,
+        yield_13w: last13w,
+        vix: lastVix,
+        spread_10y_13w: spread10y13w,
       },
     });
   } catch (e) {
@@ -5028,16 +5042,18 @@ async function loadOverseasIndices(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
-// ── loadMacroYields: Yahoo Finance US Treasury yields → macro_yields ─
+// ── loadMacroYields: Yahoo Finance US Treasury yields + VIX → macro_yields ─
 // Series mapping:
-//   ^TNX = 10Y, ^FVX = 5Y, ^TYX = 30Y, ^IRX = 13W
-// We store as yield_5y/10y/30y/13w to match what we have; 2y is approximated by 5y in
-// downstream code (or marked null when 2y-specific data is needed).
+//   ^TNX = 10Y, ^FVX = 5Y, ^TYX = 30Y, ^IRX = 13W, ^VIX = VIX
+// 2026-10-06：macroData 要在 macro.html 顯示「美10年/2年/30年公債殖利率」、「10年-2年利差」、
+// 「10年-3月利差」、「VIX恐慌指數」，所以這邊順便把 ^VIX 也灌進來。2Y 沒對應的 Yahoo symbol，
+// macroData 端會用「10Y-13W = ~2Y 代理」標記為 macro_yields，10Y-2Y 利差 macroData 直接算。
 const MACRO_YIELD_SYMBOLS = [
   { sym: "^TNX", series: "yield_10y" },
   { sym: "^FVX", series: "yield_5y"  },
   { sym: "^TYX", series: "yield_30y" },
   { sym: "^IRX", series: "yield_13w" },
+  { sym: "^VIX", series: "vix"       },
 ];
 async function loadMacroYieldsForSymbol(sym, series) {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=30d`;
