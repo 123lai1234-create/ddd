@@ -1539,15 +1539,16 @@ async function markersMaintenance(request) {
   const result = { ok: true, dryRun, steps: {} };
   try {
     // Step 1: 清掉 placeholder 爛資料
+    //   markers 表用 `text` 欄位（不是 marker_text，後端讀寫都對齊 text）
     const cleanupSql = `DELETE FROM markers
-        WHERE marker_text IS NULL
-           OR TRIM(marker_text) = ''
-           OR marker_text IN ('x', 'test', 'placeholder')`;
+        WHERE text IS NULL
+           OR TRIM(text) = ''
+           OR text IN ('x', 'test', 'placeholder')`;
     if (dryRun) {
       const { rows } = await q(`SELECT COUNT(*)::int AS n FROM markers
-        WHERE marker_text IS NULL
-           OR TRIM(marker_text) = ''
-           OR marker_text IN ('x', 'test', 'placeholder')`);
+        WHERE text IS NULL
+           OR TRIM(text) = ''
+           OR text IN ('x', 'test', 'placeholder')`);
       result.steps.cleanup = { willDelete: rows[0]?.n ?? 0 };
     } else {
       const { rows } = await q(cleanupSql);
