@@ -44,15 +44,19 @@ def main():
         if code != 200:
             sys.exit(f"list failed: {code} {data}")
         for d in data[:5]:
-            msg = (d.get("commit", {}).get("message") or "").splitlines()[0]
-            print(f"{d.get('createdAt'):<30} {d.get('status'):<12} {msg}")
+            commit = d.get("commit") or {}
+            msg = (commit.get("message") or "(no message)") if isinstance(commit, dict) else "(no commit)"
+            first_line = msg.splitlines()[0] if msg else "(empty)"
+            print(f"{d.get('createdAt','?'):<30} {d.get('status','?'):<12} {first_line}")
         return
 
     print(f"Triggering deploy on {args.service} ...")
     code, data = http("POST", f"/services/{args.service}/deploys", body={"clearCache": "do_not_clear"})
     if code in (200, 201, 202):
-        deploy_id = data.get("id", "?")
-        print(f"✓ Deploy triggered: {deploy_id}")
+        # Response shape: {"id": "...", "status": "...", ...} or wrapped in {"deploy": {...}}
+        deploy_obj = data.get("deploy") if isinstance(data.get("deploy"), dict) else data
+        deploy_id = deploy_obj.get("id") or data.get("id", "?")
+        print(f"[OK] Deploy triggered: {deploy_id}")
         print(f"  Track: {API}/services/{args.service}/deploys/{deploy_id}")
         print(f"  Wait 1-3 min, then test: curl https://donttalk-catchall.onrender.com/api/signal_filter")
     else:
