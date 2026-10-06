@@ -1214,22 +1214,20 @@ function toggleFilterPanel() {
   }
 
   function refreshCache() {
+    // 2026-10-06：原本 POST /refresh → 404（catchall TABLE 缺 POST row，handler
+    //   即使補了也只是 etf_signal_filter alias，不會真的 async 觸發 scan，
+    //   還要 _pollScanStatus 等 30×10 秒 timeout）。改成直接套用篩選（GET），
+    //   一次到位拿當下最新快取資料。
     var btn = document.getElementById("btnRefresh");
     btn.disabled = true;
-    btn.textContent = "⏳ 掃描中...";
-    showToast("🔄 ETF 重新掃描已啟動，請稍候...", "info");
-
-    fetch(REFRESH_API, { method: "POST" })
-      .then(r => r.json())
-      .then(d => {
-        showToast("✅ " + d.message, "success");
-        _pollScanStatus(btn, 0);
-      })
-      .catch(() => {
-        showToast("❌ 觸發失敗，請稍後再試", "error");
-        btn.disabled = false;
-        btn.textContent = "🔄 重新掃描";
-      });
+    btn.textContent = "⏳ 重新整理中...";
+    showToast("🔄 重新整理中...", "info");
+    applyFilter();
+    // applyFilter 結束時只 re-enable btnFilter，btnRefresh 給 1.5 秒延遲恢復
+    setTimeout(function() {
+      btn.disabled = false;
+      btn.textContent = "🔄 重新掃描";
+    }, 1500);
   }
 
   function _pollScanStatus(btn, attempt) {
