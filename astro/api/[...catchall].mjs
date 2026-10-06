@@ -1116,7 +1116,8 @@ async function scanAllImpl() {
   //   has_foreign_buy_2d 欄位。一次 SELECT 抓完 watchlist 全部近 10 交易日資料，避開 per-stock query。
   try {
     await mergeInstitutionalIntoResults(results);
-  } catch (_e) {
+  } catch (e) {
+    console.error('[scanAllImpl] mergeInstitutional failed:', e?.message || e);
     // 法人 join 失敗不影響主流程，inst_* 欄位保持 null / has_foreign_buy_2d = false
   }
   return results;
@@ -1128,14 +1129,15 @@ async function mergeInstitutionalIntoResults(results) {
   const codes = results.map((r) => r.code);
   // 抓近 10 個交易日（已足夠算 has_foreign_buy_2d + inst_foreign_5d / trust_5d）
   // symbol = ANY($1) + ORDER BY trade_date DESC → 全部 symbol × 10d 一次回傳
+  // Neon HTTP SQL 對 LIMIT $N 參數化有時不穩；用 inline 數字（與 institutional() endpoint 一致）
   const instResult = await q(
     `SELECT symbol, trade_date, foreign_net, trust_net
      FROM institutional
      WHERE symbol = ANY($1::text[])
        AND trade_date IS NOT NULL
      ORDER BY trade_date DESC
-     LIMIT $2`,
-    [codes, codes.length * 10]
+     LIMIT ${codes.length * 10}`,
+    [codes]
   );
   // group by symbol
   const byCode = new Map();
