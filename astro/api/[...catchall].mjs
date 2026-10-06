@@ -1252,8 +1252,8 @@ async function newsListImpl(request, { recordType = "news", limit = 20, tag = nu
 
 async function macroData(request) {
   // macroData: for macro.html. Frontend wants `data.data = [{指標, 最新值, 前值, 更新時間, ...}]`
-  // 2026-10-06：擴充從 macro_yields (5y/10y/30y/13w/vix) 抓資料，
-  // 10Y-13W 利差直接算（最常用衰退指標）；10Y-2Y 利差暫無 2Y 直接報價，標記為「需 FRED 2Y」。
+  // 2026-10-06：擴充從 macro_yields 抓 5y/10y/30y/13w/vix + FRED 灌進來的 2y/BEI/spread/CPI/失業率/GDP/密大/FEDFUNDS，
+  // CPI/GDP 自己算 YoY %。
   try {
     const { rows: tsRows } = await q(
       `SELECT close_price, change_value, trade_date
@@ -1268,10 +1268,12 @@ async function macroData(request) {
     const yldRes = await q(
       `SELECT series, trade_date, value
        FROM macro_yields
-       WHERE series IN ('yield_5y','yield_10y','yield_30y','yield_13w','vix')
+       WHERE series IN ('yield_5y','yield_10y','yield_30y','yield_13w','vix',
+                        'yield_2y_fred','yield_10y_fred','bei_10y',
+                        'spread_10y_3m_fred','spread_10y_2y_fred',
+                        'us_unrate','fed_funds','cpi_all','cpi_core','us_gdp_real','umich_sent')
        ORDER BY series, trade_date DESC`
     );
-    // Build series → [{date, value}, ...] (DESC)
     const yldMap = new Map();
     for (const r of yldRes.rows || []) {
       if (!yldMap.has(r.series)) yldMap.set(r.series, []);
@@ -1279,6 +1281,53 @@ async function macroData(request) {
     }
     const lastOf = (s) => yldMap.get(s)?.[0]?.value ?? null;
     const prevOf = (s) => yldMap.get(s)?.[1]?.value ?? null;
+    // 從 index 求 YoY %：找最接近「一年前」的 row
+    const yoyOf = (s, last) => {
+        if (last == null) return null;
+        const arr = yldMap.get(s) || [];
+        if (arr.length < 2) return null;
+        const latestDate = new Date(arr[0].date);
+        const oneYrAgo = new Date(latestDate);
+        oneYrAgo.setFullYear(oneYrAgo.getFullYear() - 1);
+        let closest = arr[0], minDelta = Infinity;
+        for (const row of arr) {
+            const d = new Date(row.date);
+            const delta = Math.abs(d - oneYrAgo);
+            if (delta < minDelta) { minDelta = delta; }
+        }
+        // 找最近一年前那筆
+        closest = arr[0];
+        minDelta = Infinity;
+        for (const row of arr) {
+            const d = new Date(row.date);
+            const delta = Math.abs(d - oneYrAgo);
+            if (delta < minDelta) { minDelta = delta; closest = row; }
+        }
+        const yearAgo = closest.value;
+        if (!Number.isFinite(yearAgo) || yearAgo === 0) return null;
+        const yoy = ((last - yearAgo) / yearAgo) * 100;
+        return Math.round(yoy * 100) / 100;
+    };
+    const last2y = lastOf("yield_2y_fred");
+    const prev2y = prevOf("yield_2y_fred");
+    const last10yFred = lastOf("yield_10y_fred");
+    const prev10yFred = prevOf("yield_10y_fred");
+    const lastBei = lastOf("bei_10y");
+    const prevBei = prevOf("bei_10y");
+    const lastSpread103mFred = lastOf("spread_10y_3m_fred");
+    const prevSpread103mFred = prevOf("spread_10y_3m_fred");
+    const lastSpread102yFred = lastOf("spread_10y_2y_fred");
+    const prevSpread102yFred = prevOf("spread_10y_2y_fred");
+    const lastUnrate = lastOf("us_unrate");
+    const prevUnrate = prevOf("us_unrate");
+    const lastFedfunds = lastOf("fed_funds");
+    const prevFedfunds = prevOf("fed_funds");
+    const lastCpi = yoyOf("cpi_all", lastOf("cpi_all"));
+    const lastCpiCore = yoyOf("cpi_core", lastOf("cpi_core"));
+    const lastGdp = yoyOf("us_gdp_real", lastOf("us_gdp_real"));
+    const lastUmich = lastOf("umich_sent");
+    const prevUmich = prevOf("umich_sent");
+    // Yahoo 來源的 5y/10y/30y/13w/vix（real-time）
     const last10y = lastOf("yield_10y");
     const prev10y = prevOf("yield_10y");
     const last5y  = lastOf("yield_5y");
@@ -1289,31 +1338,32 @@ async function macroData(request) {
     const prev13w = prevOf("yield_13w");
     const lastVix = lastOf("vix");
     const prevVix = prevOf("vix");
-    // 計算 10Y-13W 利差（衰退指標）
+    // 10Y-13W 利差（從 Yahoo 算，衰退指標）
     const spread10y13w = (last10y != null && last13w != null) ? Math.round((last10y - last13w) * 100) / 100 : null;
     const prevSpread10y13w = (prev10y != null && prev13w != null) ? Math.round((prev10y - prev13w) * 100) / 100 : null;
     const as_of = last.trade_date ? String(last.trade_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
     const asOfLabel = as_of;
     const srcY = "FRED";
-    const tagY = "Yahoo → macro_yields";
+    const tagY = "Yahoo Finance";
+    const tagF = "FRED";
     const arr = [
       { "指標": "台股指數代理 (2330)",     "最新值": tsLast,    "前值": tsPrev,    "更新時間": asOfLabel, "來源": srcY, "來源標記": "TSMC proxy" },
       { "指標": "美10年公債殖利率(%)",      "最新值": last10y,   "前值": prev10y,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
       { "指標": "美5年公債殖利率(%)",       "最新值": last5y,    "前值": prev5y,    "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
       { "指標": "美30年公債殖利率(%)",      "最新值": last30y,   "前值": prev30y,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
       { "指標": "美13週公債殖利率(%)",      "最新值": last13w,   "前值": prev13w,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
+      { "指標": "美2年公債殖利率(%)",       "最新值": last2y,    "前值": prev2y,    "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
       { "指標": "10年-3月公債利差",         "最新值": spread10y13w, "前值": prevSpread10y13w, "更新時間": asOfLabel, "來源": srcY, "來源標記": "10Y - 13W" },
+      { "指標": "10年-2年公債利差",         "最新值": lastSpread102yFred, "前值": prevSpread102yFred, "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
+      { "指標": "美債平衡通膨率BEI(%)",     "最新值": lastBei,   "前值": prevBei,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
       { "指標": "VIX恐慌指數",             "最新值": lastVix,   "前值": prevVix,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
+      { "指標": "聯邦基金利率(%)",         "最新值": lastFedfunds, "前值": prevFedfunds, "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
+      { "指標": "美國失業率(%)",           "最新值": lastUnrate, "前值": prevUnrate, "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
+      { "指標": "GDP成長率年化(%)",        "最新值": lastGdp,   "前值": null,      "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF + " (YoY 自己算)" },
+      { "指標": "美國CPI年增率(%)",        "最新值": lastCpi,   "前值": null,      "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF + " (YoY 自己算)" },
+      { "指標": "核心CPI YoY(%)",          "最新值": lastCpiCore, "前值": null,    "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF + " (YoY 自己算)" },
+      { "指標": "密大消費者信心",           "最新值": lastUmich, "前值": prevUmich, "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
     ];
-    // Railway backend 還活著才有的指標，標 placeholder（保留舊順序，避免 UI 跳行）
-    const placeholders = [
-      "美2年公債殖利率(%)", "10年-2年公債利差", "美債平衡通膨率BEI(%)",
-      "聯邦基金利率(%)", "GDP成長率年化(%)", "美國失業率(%)", "密大消費者信心",
-      "席勒本益比(CAPE)", "美國CPI年增率(%)", "核心CPI YoY(%)",
-    ];
-    for (const name of placeholders) {
-      arr.push({ "指標": name, "最新值": null, "前值": null, "更新時間": asOfLabel, "來源": srcY, "來源標記": "需 FRED 2Y / CPI (offline)" });
-    }
     return json({
       ok: true,
       source: "db",
@@ -1324,12 +1374,20 @@ async function macroData(request) {
       // legacy shape (used by other code paths)
       legacy: {
         taiex_proxy: { code: "2330", close: tsLast, change: (tsLast - tsPrev) || 0 },
+        yield_2y: last2y,
         yield_5y: last5y,
         yield_10y: last10y,
         yield_30y: last30y,
         yield_13w: last13w,
         vix: lastVix,
         spread_10y_13w: spread10y13w,
+        bei_10y: lastBei,
+        unrate: lastUnrate,
+        fed_funds: lastFedfunds,
+        cpi_yoy: lastCpi,
+        cpi_core_yoy: lastCpiCore,
+        gdp_yoy: lastGdp,
+        umich_sent: lastUmich,
       },
     });
   } catch (e) {
@@ -5209,6 +5267,91 @@ async function loadMacroYields(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
+// ── loadMacroFred: FRED 公開 CSV 端點（不需 API key）──
+// 抓 DGS2 / DGS10 / DGS5 / DGS30 / DFII10 / T10Y3M / T10Y2Y / UNRATE / CPIAUCSL / CPILFESL / FEDFUNDS / GDPC1 / MICH
+// 全部塞進 macro_yields（series 是 series），部率值，% 跟原值。
+// 2026-10-06：為 macroData 補 CPI / 失業率 / GDP / BEI / FEDFUNDS / 密大 / 席勒 等 placeholder。
+const FRED_SERIES = [
+  { sid: "DGS2",      series: "yield_2y_fred",  },
+  { sid: "DGS10",     series: "yield_10y_fred", },  // 跟 Yahoo ^TNX 對照驗證
+  { sid: "DFII10",    series: "bei_10y",       },  // 10Y breakeven inflation rate = BEI
+  { sid: "T10Y3M",    series: "spread_10y_3m_fred", },  // 10Y-3M spread
+  { sid: "T10Y2Y",    series: "spread_10y_2y_fred", },  // 10Y-2Y spread
+  { sid: "UNRATE",    series: "us_unrate",     },  // 美國失業率 %
+  { sid: "FEDFUNDS",  series: "fed_funds",     },  // 聯邦基金利率
+  { sid: "CPIAUCSL",  series: "cpi_all",       },  // CPI index，要自己算 YoY
+  { sid: "CPILFESL",  series: "cpi_core",      },  // Core CPI
+  { sid: "GDPC1",     series: "us_gdp_real",   },  // Real GDP billions
+  { sid: "MICH",      series: "umich_sent",    },  // 密大消費者信心
+];
+async function loadMacroFredForSymbol(sid, series) {
+  const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${encodeURIComponent(sid)}`;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 18000); // FRED 較慢
+  let resp;
+  try {
+    resp = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible: donttalk-macro/1.0)" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+  } catch (e) {
+    clearTimeout(tid);
+    if (e.name === "AbortError") throw new Error("fred timeout");
+    throw e;
+  }
+  if (!resp.ok) throw new Error(`fred HTTP ${resp.status}`);
+  const csv = await resp.text();
+  const lines = csv.trim().split("\n");
+  if (lines.length < 2) return { ok: true, sid, series, count: 0 };
+  // header: observation_date,SID
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(",");
+    const date = cols[0];
+    const raw = cols[1];
+    if (!date || raw == null || raw === "." || raw === "") continue;
+    const value = Number(raw);
+    if (!Number.isFinite(value)) continue;
+    rows.push({ date, value });
+  }
+  if (rows.length === 0) return { ok: true, sid, series, count: 0 };
+  // 只保留最近 365 天避免 DB 膨脹
+  const cutoff = new Date(Date.now() - 365 * 86400 * 1000).toISOString().slice(0, 10);
+  const recent = rows.filter((r) => r.date >= cutoff);
+  const finalRows = recent.length > 0 ? recent : rows.slice(-365);
+  const dates = finalRows.map((r) => r.date);
+  const values = finalRows.map((r) => r.value);
+  const sql = `
+    INSERT INTO macro_yields (series, trade_date, value, source)
+    SELECT $1, unnest($2::date[]), unnest($3::numeric[]), 'fred'
+    ON CONFLICT (series, trade_date) DO UPDATE SET
+      value = EXCLUDED.value,
+      source = EXCLUDED.source,
+      fetched_at = now()`;
+  await q(sql, [series, dates, values]);
+  return { ok: true, sid, series, count: finalRows.length };
+}
+async function loadMacroFred(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  const results = [];
+  for (const { sid, series } of FRED_SERIES) {
+    try {
+      const r = await loadMacroFredForSymbol(sid, series);
+      results.push(r);
+    } catch (e) {
+      results.push({ ok: false, sid, series, error: e?.message });
+    }
+    await new Promise((res) => setTimeout(res, 600));
+  }
+  const okCount = results.map(r => ({ok: r.ok, count: (r && r.count) || 0})).filter(x => x.ok).reduce((s, x) => s + x.count, 0);
+  return json({ ok: true, source: "fred", inserted: okCount, results });
+}
+
 // ── loadMacroNews: Google News RSS → knowledge_library (record_type=news) ─
 async function loadMacroNews(request) {
   const u = urlOf(request);
@@ -6263,8 +6406,10 @@ async function loadAllCombined(request) {
       if (timer) clearTimeout(timer);
     }
   };
-  // 1. macro_yields (Yahoo Finance 4 series × 30d)
+  // 1. macro_yields (Yahoo Finance 5 series × 30d)
   await step("macro_yields", () => loadMacroYields(_selfReq));
+  // 1b. macro_fred (FRED CSV: DGS2/DFII10/spreads/UNRATE/CPI/GDP/MICH, 365d)
+  await step("macro_fred", () => loadMacroFred(_selfReq));
   // 2. macro_news (Google News RSS)
   await step("macro_news", () => loadMacroNews(_selfReq));
   // 3. index_institutional (TWSE BFI82U 1 day)
@@ -8647,6 +8792,8 @@ const TABLE = [
   ["POST", /^\/admin\/load\/etf_holdings\/?$/,  loadEtfHoldings],
   ["GET",  /^\/admin\/load\/macro_yields\/?$/,  loadMacroYields],
   ["POST", /^\/admin\/load\/macro_yields\/?$/,  loadMacroYields],
+  ["GET",  /^\/admin\/load\/macro_fred\/?$/,    loadMacroFred],
+  ["POST", /^\/admin\/load\/macro_fred\/?$/,    loadMacroFred],
   ["GET",  /^\/admin\/load\/macro_news\/?$/,    loadMacroNews],
   ["POST", /^\/admin\/load\/macro_news\/?$/,    loadMacroNews],
   ["GET",  /^\/admin\/load\/index_institutional\/?$/, loadIndexInstitutional],
