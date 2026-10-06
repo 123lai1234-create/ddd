@@ -1553,8 +1553,12 @@ async function markersMaintenance(request) {
            OR REGEXP_REPLACE(text, '\\s*\\|\\|\\s*\\{.*$', '') IN ('x', 'test', 'placeholder', 'x', 'test')`);
       result.steps.cleanup = { willDelete: rows[0]?.n ?? 0 };
     } else {
-      const { rows } = await q(cleanupSql);
-      result.steps.cleanup = { deleted: rows.length || 0 };
+      // DELETE 不會回傳 rows，所以用「刪除前 vs 刪除後」的 COUNT 差當作 deleted 數
+      const beforeQ = await q(`SELECT COUNT(*)::int AS n FROM markers`);
+      await q(cleanupSql);
+      const afterQ = await q(`SELECT COUNT(*)::int AS n FROM markers`);
+      const deleted = (beforeQ.rows[0]?.n ?? 0) - (afterQ.rows[0]?.n ?? 0);
+      result.steps.cleanup = { deleted, before: beforeQ.rows[0]?.n, after: afterQ.rows[0]?.n };
     }
     // Step 2: 重跑 screener，insert 今日真實 marker
     if (dryRun) {
