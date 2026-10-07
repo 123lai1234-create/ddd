@@ -1098,7 +1098,7 @@ async function screenOne(code, name) {
   //     has_consol_sell      (盤整賣)    ← BB upper 觸碰 + 收盤跌破 BB mid
   //     has_macd_div_sell    (頂背離賣)  ← 近 60 日價格創新高但 MACD 高點沒過前高
   //     has_bear_gate_sell   (BearGate賣) ← ma20 < ma60 (死亡交叉)
-  //     has_fib              (Fib 支撐)   ← 近 60 日 swing high/low → 0.236/0.382/0.5/0.618/0.786 回撤 ±3% + 5 日均量 ≥ 20 日均量 1.1 倍
+  //     has_fib              (Fib 支撐)   ← 近 60 日 swing high/low → 0.236/0.382/0.5/0.618/0.786 回撤 ±5%（去掉爆量條件）
   //     has_vcp              (VCP)        ← 近 5 日 ATR < 前 30 日 ATR 的 65%（波動收縮）
   //   inst_* / has_foreign_buy_2d → 由 scanAllImpl 後處理從 institutional 表批次 join
   const has_short_buy      = cond2 && cond3;
@@ -1167,9 +1167,9 @@ async function screenOne(code, name) {
   }
 
   // Fib 支撐（has_fib）：近 60 日區段找擺盪高低點，計算 Fibonacci 回撤 0.236 / 0.382 / 0.5 / 0.618 / 0.786 水平，
-  //   現價接近任一 Fib 水平（±3%），且最近 5 日平均量 ≥ 20 日均量的 1.1 倍（爆量）。
-  //   放寬後驗證：DAMO 預選 cond2+3+4 強勢股 → 0.382~0.618 回撤很常見，但 ±2% 太嚴、
-  //   1.3x 爆量強勢股也未必達標。改 ±3% + 1.1x 平衡 false-positive 與涵蓋率。
+  //   現價接近任一 Fib 水平（±5%）。DAMO 預選強勢股（cond2+3+4）通常是 cond1 接近 60 日高點，
+  //   所以 fib 0.786（low + 0.786 * range，最淺回撤）最容易 hit。
+  //   去掉 volume surge 條件（原 1.1x）— 強勢股爆量不常見，但拉回到 fib 本身就是訊號。
   let has_fib = false;
   if (candles.length >= 60) {
     const recent60 = candles.slice(-60);
@@ -1179,13 +1179,8 @@ async function screenOne(code, name) {
       const range = swingHigh - swingLow;
       // Fibonacci 回撤（從低點往高點拉回）：0.236 / 0.382 / 0.5 / 0.618 / 0.786
       const fibLevels = [0.236, 0.382, 0.500, 0.618, 0.786].map((p) => swingLow + p * range);
-      const within = (level) => Math.abs(last / level - 1) < 0.03;
-      const nearFibLevel = fibLevels.some(within);
-      // 爆量：近 5 日均量 ≥ 20 日均量的 1.1 倍
-      const recent5Vol = candles.slice(-5).reduce((s, c) => s + c.volume, 0) / 5;
-      const recent20Vol = candles.slice(-20).reduce((s, c) => s + c.volume, 0) / 20;
-      const volumeSurge = recent20Vol > 0 && recent5Vol >= recent20Vol * 1.1;
-      has_fib = nearFibLevel && volumeSurge;
+      const within = (level) => Math.abs(last / level - 1) < 0.05;
+      has_fib = fibLevels.some(within);
     }
   }
 
