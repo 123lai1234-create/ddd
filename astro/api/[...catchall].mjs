@@ -8858,7 +8858,11 @@ async function buybackListHandler(request) {
     plans,
     executions,
     as_of: new Date().toISOString(),
-    hint: plans.length === 0 ? "未對接 treasury_buyback 表 · 啟用後可從 MOPS 公開資訊抓取" : undefined,
+    // 2026-10-07：MOPS / TWSE 開放資料都從 Render 抓不到（前者 SSL 卡 30s、後者 Cloudflare HTML），
+    // 表已 CREATE 過但 loader 都拿 0 rows。告訴前端「需要其他 source」而不是「表還沒建」。
+    hint: plans.length === 0
+      ? "treasury_buyback 表已建好 · 但 MOPS 與 TWSE 開放資料（t05sb01）都從 Render 抓不到（SSL/Cloudflare）。需要換 source 或手動塞資料。"
+      : undefined,
   });
 }
 
@@ -8878,7 +8882,10 @@ async function privatePlacementHandler(request) {
   return json({
     items,
     as_of: new Date().toISOString(),
-    hint: items.length === 0 ? "未對接 private_placement 表 · 啟用後可從 MOPS 公開資訊抓取" : undefined,
+    // 2026-10-07：MOPS / TWSE 開放資料（t16sb06）都從 Render 抓不到
+    hint: items.length === 0
+      ? "private_placement 表已建好 · 但 MOPS 與 TWSE 開放資料（t16sb06）都從 Render 抓不到（SSL/Cloudflare）。需要換 source 或手動塞資料。"
+      : undefined,
   });
 }
 
