@@ -1098,8 +1098,8 @@ async function screenOne(code, name) {
   //     has_consol_sell      (盤整賣)    ← BB upper 觸碰 + 收盤跌破 BB mid
   //     has_macd_div_sell    (頂背離賣)  ← 近 60 日價格創新高但 MACD 高點沒過前高
   //     has_bear_gate_sell   (BearGate賣) ← ma20 < ma60 (死亡交叉)
-  //     has_fib              (Fib 支撐)   ← needs swing point detection；先 false
-  //     has_vcp              (VCP)        ← 近 5 日 ATR < 前 30 日 ATR 的 50%（波動收縮）
+  //     has_fib              (Fib 支撐)   ← 近 60 日 swing high/low → 0.382/0.5/0.618 回撤 ±2% + 5 日均量 ≥ 20 日均量 1.3 倍
+  //     has_vcp              (VCP)        ← 近 5 日 ATR < 前 30 日 ATR 的 65%（波動收縮）
   //   inst_* / has_foreign_buy_2d → 由 scanAllImpl 後處理從 institutional 表批次 join
   const has_short_buy      = cond2 && cond3;
   const has_chan_to_bull   = cond1;
