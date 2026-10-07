@@ -1487,8 +1487,11 @@ function buildCard(r) {
   if (r.has_bear_gate_sell) tags += '<span class="sig-tag bear-gate-sell">BearGate賣</span>';
 
   if (r.has_fib) {
-    for (var fi = 0; fi < r.fib_signals.length; fi++) {
-      tags += '<span class="sig-tag fib">📐' + r.fib_signals[fi] + '</span>';
+    // 2026-10-07：r.fib_signals 原本預期是陣列，backend 只回 has_fib bool；
+    //   若 fib_signals 不存在或為空，就顯示通用「Fib 支撐」tag。
+    var fibLabels = (r.fib_signals && r.fib_signals.length) ? r.fib_signals : ['Fib 支撐'];
+    for (var fi = 0; fi < fibLabels.length; fi++) {
+      tags += '<span class="sig-tag fib">📐' + fibLabels[fi] + '</span>';
     }
   }
 
