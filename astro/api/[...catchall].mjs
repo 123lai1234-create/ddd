@@ -1131,27 +1131,30 @@ async function scanAllImpl() {
 // 2026-10-06：批次把 institutional 資料 merge 進 scanAll 結果
 // 回傳 debug 統計給 caller（queriedCodes / matchedCodes / totalRows / error）
 async function mergeInstitutionalIntoResults(results) {
-  const debug = { queriedCodes: 0, matchedCodes: 0, totalRows: 0, error: null };
+  const debug = { queriedCodes: 0, matchedCodes: 0, totalRows: 0, error: null, queryType: null, sampleCodes: [] };
   if (!Array.isArray(results) || results.length === 0) return debug;
-  const codes = results.map((r) => r.code);
+  const codes = results.map((r) => r.code).filter(Boolean);
   debug.queriedCodes = codes.length;
-  // 抓近 10 個交易日（已足夠算 has_foreign_buy_2d + inst_foreign_5d / trust_5d）
-  // symbol = ANY($1) + ORDER BY trade_date DESC → 全部 symbol × 10d 一次回傳
-  // Neon HTTP SQL 對 LIMIT $N 參數化有時不穩；用 inline 數字（與 institutional() endpoint 一致）
+  debug.sampleCodes = codes.slice(0, 5);
+  if (codes.length === 0) return debug;
+  // 改用 inline IN (...) 字串拼接，避免 Neon HTTP SQL 對 text[] 參數化的相容性。
+  // 已 escape 單引號；codes 是 stock codes 不含特殊字元，安全。
+  const esc = codes.map((c) => `'${String(c).replace(/'/g, "''")}'`).join(',');
   let instResult;
   try {
     instResult = await q(
       `SELECT symbol, trade_date, foreign_net, trust_net
        FROM institutional
-       WHERE symbol = ANY($1::text[])
+       WHERE symbol IN (${esc})
          AND trade_date IS NOT NULL
        ORDER BY trade_date DESC
-       LIMIT ${codes.length * 10}`,
-      [codes]
+       LIMIT ${codes.length * 10}`
     );
+    debug.queryType = 'IN';
   } catch (e) {
     debug.error = e?.message || String(e);
-    console.error('[mergeInstitutional] query failed:', e?.message || e);
+    debug.queryType = 'IN_failed';
+    console.error('[mergeInstitutional] IN query failed:', e?.message || e);
     return debug;
   }
   debug.totalRows = (instResult?.rows || []).length;
@@ -8328,14 +8331,22 @@ async function futuresKlineHandler(request, contract, interval) {
   // 2026-09-22 v15: filter out spread contracts (e.g. '202609/202610' which store
   // price differentials 100-1500, not actual futures prices 46000+) so kline chart
   // doesn't mix tiny spread values with huge main-contract values.
+  // 2026-10-07: also accept equivalent symbols ('TX' ↔ 'TXF') since DB historically
+  // stored 'TX' but TAIFEX exposes 'TXF'. Without this fallback, /api/futures/TXF/quote
+  // returns 404 even though /api/futures/TX/quote works.
   if (!bars.length) {
+    const symbolAliases = {
+      TXF: ["TXF", "TX"],
+      MTX: ["MTX"],
+    };
+    const aliases = symbolAliases[contract] || [contract];
     try {
       const { rows } = await q(
         `SELECT trade_date, open_price, high_price, low_price, close_price, volume
          FROM futures
-         WHERE symbol = $1 AND contract NOT LIKE '%/%'
+         WHERE symbol = ANY($1::text[]) AND contract NOT LIKE '%/%'
          ORDER BY trade_date DESC LIMIT 60`,
-        [contract]
+        [aliases]
       );
       bars = rows.map(r => ({
         time: new Date(r.trade_date).getTime(),
