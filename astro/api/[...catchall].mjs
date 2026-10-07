@@ -130,6 +130,83 @@ function smaSeries(closes, candles, period) {
   }
   return out;
 }
+// 2026-10-07：DAMO 策略擴充用的技術指標 helpers
+// Bollinger Bands（20 日 SMA ± 2σ）
+function bbands(closes, period = 20, k = 2) {
+  if (closes.length < period) return null;
+  const slice = closes.slice(-period);
+  const mean = slice.reduce((s, v) => s + v, 0) / period;
+  const variance = slice.reduce((s, v) => s + (v - mean) ** 2, 0) / period;
+  const sd = Math.sqrt(variance);
+  return { mid: mean, upper: mean + k * sd, lower: mean - k * sd, sd };
+}
+// EMA（指數移動平均）— 用標準 k = 2/(N+1) 平滑係數
+function emaSeries(closes, period) {
+  if (closes.length < period) return [];
+  const k = 2 / (period + 1);
+  const out = [];
+  let prev = null;
+  for (let i = 0; i < closes.length; i++) {
+    if (i < period - 1) { out.push(null); continue; }
+    if (prev === null) {
+      // seed = 前 period 個的 SMA
+      prev = closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
+    } else {
+      prev = closes[i] * k + prev * (1 - k);
+    }
+    out.push(prev);
+  }
+  return out;
+}
+// MACD（12 / 26 / 9）：回傳 { macd, signal, hist } 最新值 + 最近 60 根 series（給 divergence 判斷用）
+function macd(closes) {
+  const ema12 = emaSeries(closes, 12);
+  const ema26 = emaSeries(closes, 26);
+  if (!ema26.length || ema26[ema26.length - 1] == null) return null;
+  const macdLine = ema12.map((v, i) => v != null && ema26[i] != null ? v - ema26[i] : null);
+  // signal = 9-day EMA of macdLine
+  const macdForSignal = macdLine.filter((v) => v != null);
+  if (macdForSignal.length < 9) return null;
+  const k = 2 / (9 + 1);
+  const sigSeries = [];
+  let prev = macdForSignal.slice(0, 9).reduce((s, v) => s + v, 0) / 9;
+  sigSeries.push(prev);
+  for (let i = 1; i < macdForSignal.length; i++) {
+    prev = macdForSignal[i] * k + prev * (1 - k);
+    sigSeries.push(prev);
+  }
+  // 對齊回 closes 序列（前面 padding null）
+  const padLen = closes.length - macdForSignal.length;
+  const sigFull = Array(padLen).fill(null).concat(sigSeries);
+  const hist = macdLine.map((v, i) => v != null && sigFull[i] != null ? v - sigFull[i] : null);
+  const lastIdx = closes.length - 1;
+  return {
+    macd: macdLine[lastIdx],
+    signal: sigFull[lastIdx],
+    hist: hist[lastIdx],
+    macdSeries: macdLine,
+    sigSeries: sigFull,
+    histSeries: hist,
+  };
+}
+// ATR（14-day True Range 平均）：用於波動率判斷（VCP / 風險評估）
+function atr(candles, period = 14) {
+  if (candles.length < period + 1) return null;
+  const trs = [];
+  for (let i = 1; i < candles.length; i++) {
+    const c = candles[i];
+    const prevClose = candles[i - 1].close;
+    const tr = Math.max(c.high - c.low, Math.abs(c.high - prevClose), Math.abs(c.low - prevClose));
+    trs.push(tr);
+  }
+  // Wilder's smoothing：前 period 個 SMA，之後 (prev * (period-1) + tr) / period
+  let prev = trs.slice(0, period).reduce((s, v) => s + v, 0) / period;
+  for (let i = period; i < trs.length; i++) {
+    prev = (prev * (period - 1) + trs[i]) / period;
+  }
+  return prev;
+}
+
 const r2 = (n) => Math.round(Number(n) * 100) / 100;
 const r1 = (n) => Math.round(Number(n) * 10) / 10;
 function toTwseStyleDate(s) {
@@ -1003,20 +1080,26 @@ async function screenOne(code, name) {
   const cond5 = candles[candles.length - 1].volume > 1_000_000;
 
   // ──────────────────────────────────────────────────────────────
-  // DAMO 策略 has_* 標籤（2026-10-06）
+  // 2026-10-07：BB / MACD / ATR 技術指標
+  const bb = bbands(closes, 20, 2);              // 20-day ± 2σ Bollinger Band
+  const mac = macd(closes);                       // 12 / 26 / 9 MACD
+  const atrVal = atr(candles, 14);                // 14-day Wilder ATR
+
+  // ──────────────────────────────────────────────────────────────
+  // DAMO 策略 has_* 標籤（2026-10-06 + 2026-10-07）
   //   計算口徑（簡化版，與前端 buildCard 預期對齊；非偽造）：
-  //     has_short_buy        (短線買)   ← EMA10>20>50 proxy: cond2 && cond3 (last > ma20 > ma60 && last > ma5 > ma20)
+  //     has_short_buy        (短線買)   ← cond2 && cond3
   //     has_chan_to_bull     (通道轉多)  ← cond1 (距 60 日高 < 5%)
   //     has_year_break_buy   (年線-25%)  ← ma240 > 0 && close < ma240 * 0.75
-  //     has_dip_ma60_buy     (季線抄底)  ← ma60 > 0 && |close/ma60 - 1| < 0.03 (接近季線)
+  //     has_dip_ma60_buy     (季線抄底)  ← ma60 > 0 && |close/ma60 - 1| < 0.03
   //     has_dip_ma240_buy    (年線抄底)  ← ma240 > 0 && |close/ma240 - 1| < 0.03
-  //     has_ma60_touch_buy    (季線觸碰)  ← 過去 5 日內有日 low ≤ ma60 * 1.005
-  //     has_consol_buy       (盤整買)    ← needs Bollinger Band；先 false
-  //     has_consol_sell      (盤整賣)    ← needs Bollinger Band；先 false
-  //     has_macd_div_sell    (頂背離賣)  ← needs MACD series + divergence；先 false
+  //     has_ma60_touch_buy    (季線觸碰)  ← 過去 5 日內 low ≤ ma60 * 1.005 且現價站上
+  //     has_consol_buy       (盤整買)    ← BB lower 觸碰 + 收盤站回 BB mid
+  //     has_consol_sell      (盤整賣)    ← BB upper 觸碰 + 收盤跌破 BB mid
+  //     has_macd_div_sell    (頂背離賣)  ← 近 60 日價格創新高但 MACD 高點沒過前高
   //     has_bear_gate_sell   (BearGate賣) ← ma20 < ma60 (死亡交叉)
   //     has_fib              (Fib 支撐)   ← needs swing point detection；先 false
-  //     has_vcp              (VCP)        ← needs volatility contraction；先 false
+  //     has_vcp              (VCP)        ← 近 5 日 ATR < 前 30 日 ATR 的 50%（波動收縮）
   //   inst_* / has_foreign_buy_2d → 由 scanAllImpl 後處理從 institutional 表批次 join
   const has_short_buy      = cond2 && cond3;
   const has_chan_to_bull   = cond1;
@@ -1030,8 +1113,58 @@ async function screenOne(code, name) {
       if (candles[k].low <= ma60 * 1.005) { touched_ma60_recent = true; break; }
     }
   }
-  const has_ma60_touch_buy = touched_ma60_recent && last > ma60;  // 觸碰後站上
+  const has_ma60_touch_buy = touched_ma60_recent && last > ma60;
   const has_bear_gate_sell = ma20 > 0 && ma60 > 0 && ma20 < ma60;
+
+  // Bollinger Band 觸碰判斷（過去 10 日內任一筆 low/high 觸及 ±2σ band）
+  let touched_bb_lower = false, touched_bb_upper = false;
+  if (bb) {
+    for (let k = Math.max(0, candles.length - 10); k < candles.length; k++) {
+      if (candles[k].low <= bb.lower) touched_bb_lower = true;
+      if (candles[k].high >= bb.upper) touched_bb_upper = true;
+    }
+  }
+  const has_consol_buy  = bb ? (touched_bb_lower && last > bb.mid) : false;
+  const has_consol_sell = bb ? (touched_bb_upper && last < bb.mid) : false;
+
+  // MACD 頂背離賣：近 60 日內股價創新高（high 比前一個 60 日區段高點高），但同期 MACD 高點較低
+  let has_macd_div_sell = false;
+  if (mac && mac.macdSeries && candles.length >= 120) {
+    const recent60High = Math.max(...candles.slice(-60).map((c) => c.high));
+    const prev60High   = Math.max(...candles.slice(-120, -60).map((c) => c.high));
+    const recent60MacdPeaks = [];
+    const prev60MacdPeaks   = [];
+    for (let k = Math.max(0, candles.length - 60); k < candles.length; k++) {
+      const m = mac.macdSeries[k];
+      if (m != null) recent60MacdPeaks.push(m);
+    }
+    for (let k = Math.max(0, candles.length - 120); k < candles.length - 60; k++) {
+      const m = mac.macdSeries[k];
+      if (m != null) prev60MacdPeaks.push(m);
+    }
+    if (recent60MacdPeaks.length && prev60MacdPeaks.length && prev60High > 0) {
+      const recentHigh = Math.max(...recent60MacdPeaks);
+      const prevHigh   = Math.max(...prev60MacdPeaks);
+      // 價格新高（前段高點 X% 之上），MACD 高點反而較低 → 頂背離
+      has_macd_div_sell = (recent60High >= prev60High * 1.02) && (recentHigh < prevHigh * 0.98);
+    }
+  }
+
+  // VCP（Volatility Contraction Pattern）：近 5 日平均 True Range < 前 30 日平均 True Range 的 50%
+  //   且收盤波動（high-low 範圍）也在收縮
+  let has_vcp = false;
+  let vcp_quality = 0;
+  if (atrVal && candles.length >= 35) {
+    const recent5 = candles.slice(-5);
+    const prev30  = candles.slice(-35, -5);
+    const avgTR5  = recent5.reduce((s, c) => s + (c.high - c.low), 0) / 5;
+    const avgTR30 = prev30.reduce((s, c) => s + (c.high - c.low), 0) / 30;
+    if (avgTR30 > 0 && avgTR5 < avgTR30 * 0.5) {
+      has_vcp = true;
+      // quality：收縮比例（0~1，越小越緊）
+      vcp_quality = Number((avgTR5 / avgTR30).toFixed(2));
+    }
+  }
 
   // ──────────────────────────────────────────────────────────────
   // trade_plan（簡化版 — 進場 / 停損 / 目標 / 風險回報比）
@@ -1083,13 +1216,13 @@ async function screenOne(code, name) {
     has_dip_ma60_buy,
     has_dip_ma240_buy,
     has_ma60_touch_buy,
-    has_consol_buy: false,         // 需 Bollinger Band；後續可加
-    has_consol_sell: false,
-    has_macd_div_sell: false,      // 需 MACD series
+    has_consol_buy,
+    has_consol_sell,
+    has_macd_div_sell,
     has_bear_gate_sell,
-    has_fib: false,                // 需 swing point detection
-    has_vcp: false,                // 需 volatility analysis
-    vcp_quality: 0,
+    has_fib: false,                // 需 swing point detection；後續可加
+    has_vcp,
+    vcp_quality,
     has_foreign_buy_2d: false,    // 由 scanAllImpl 後處理從 institutional 表 join
     inst_foreign_today: null,
     inst_foreign_5d: null,
