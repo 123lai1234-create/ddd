@@ -79,6 +79,12 @@ const rides = [
         sub: '展示 · 試玩',
     },
 ];
+
+// Daily pick: 一年中的第幾天 % 8 = 今日推薦
+const now = new Date();
+const yearStart = new Date(now.getFullYear(), 0, 0);
+const dayOfYear = Math.floor((now.getTime() - yearStart.getTime()) / 86400000);
+const pickIndex = dayOfYear % rides.length;
 ---
 
 <Base
@@ -115,37 +121,83 @@ const rides = [
         <!-- Theme Park Map -->
         <section class="park-map" aria-label="8 個 app 入口設施">
             <div class="park-sky">
+                <div class="park-sun" aria-hidden="true">
+                    <svg viewBox="0 0 60 60" width="60" height="60">
+                        <g class="sun-spin">
+                            {Array.from({ length: 8 }).map((_, k) => {
+                                const a = (k * Math.PI) / 4;
+                                const x1 = 30 + 12 * Math.cos(a);
+                                const y1 = 30 + 12 * Math.sin(a);
+                                const x2 = 30 + 22 * Math.cos(a);
+                                const y2 = 30 + 22 * Math.sin(a);
+                                return <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#c44536" stroke-width="2" stroke-linecap="round" />;
+                            })}
+                        </g>
+                        <circle cx="30" cy="30" r="10" fill="#f9c74f" stroke="#c44536" stroke-width="2" />
+                    </svg>
+                </div>
                 <div class="cloud cloud-1" aria-hidden="true"></div>
                 <div class="cloud cloud-2" aria-hidden="true"></div>
                 <div class="cloud cloud-3" aria-hidden="true"></div>
+            </div>
+
+            {/* Park decoration: trees */}
+            <div class="park-tree park-tree-left" aria-hidden="true">
+                <svg viewBox="0 0 40 80" width="40" height="80">
+                    <rect x="17" y="50" width="6" height="28" fill="#8b5a3c" stroke="#3a2f2a" stroke-width="1.4" />
+                    <path d="M 20 10 Q 6 30 8 50 Q 14 56 20 50 Q 26 56 32 50 Q 34 30 20 10 Z"
+                          fill="#6a8c4f" stroke="#3a2f2a" stroke-width="1.4" stroke-linejoin="round" />
+                </svg>
+            </div>
+            <div class="park-tree park-tree-right" aria-hidden="true">
+                <svg viewBox="0 0 40 80" width="40" height="80">
+                    <rect x="17" y="50" width="6" height="28" fill="#8b5a3c" stroke="#3a2f2a" stroke-width="1.4" />
+                    <path d="M 20 10 Q 6 30 8 50 Q 14 56 20 50 Q 26 56 32 50 Q 34 30 20 10 Z"
+                          fill="#6a8c4f" stroke="#3a2f2a" stroke-width="1.4" stroke-linejoin="round" />
+                </svg>
             </div>
 
             <div class="park-rides">
                 {rides.map((ride, i) => (
                     <a
                         href={ride.url}
-                        class={`ride ride-${ride.id}`}
+                        class={`ride ride-${ride.id}${i === pickIndex ? ' ride-pick' : ''}`}
                         style={`--ride-color:${ride.color};--ride-soft:${ride.softColor};--ride-i:${i};`}
                         data-ride-id={ride.id}
+                        data-pick={i === pickIndex ? 'true' : 'false'}
+                        aria-label={`${ride.name} — ${ride.tag}。${i === pickIndex ? '今日推薦。' : ''} ${ride.sub}`}
                     >
                         <span class="ride-facility-tag">設施</span>
                         <div class="ride-art" aria-hidden="true">
                             {ride.id === 'ferris' && (
                                 <svg viewBox="0 0 120 140" class="ride-svg">
-                                    <line x1="60" y1="40" x2="60" y2="135" stroke="currentColor" stroke-width="1.4" />
-                                    <line x1="22" y1="135" x2="98" y2="135" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                                    <g class="ferris-spin" style="transform-origin: 60px 70px;">
-                                        <circle cx="60" cy="70" r="30" fill="none" stroke="currentColor" stroke-width="1.6" />
-                                        <circle cx="60" cy="70" r="3" fill="currentColor" />
-                                        <line x1="60" y1="40" x2="60" y2="100" stroke="currentColor" stroke-width="1" />
-                                        <line x1="30" y1="70" x2="90" y2="70" stroke="currentColor" stroke-width="1" />
-                                        <line x1="39" y1="49" x2="81" y2="91" stroke="currentColor" stroke-width="1" />
-                                        <line x1="39" y1="91" x2="81" y2="49" stroke="currentColor" stroke-width="1" />
-                                        {Array.from({ length: 8 }).map((_, k) => {
-                                            const a = (k * Math.PI) / 4;
-                                            const cx = 60 + 30 * Math.sin(a);
-                                            const cy = 70 - 30 * Math.cos(a);
-                                            return <rect x={cx - 5} y={cy - 5} width="10" height="10" fill={ride.softColor} stroke="currentColor" stroke-width="1" rx="1" />;
+                                    {/* base ground */}
+                                    <line x1="20" y1="135" x2="100" y2="135" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                                    {/* A-frame support legs */}
+                                    <line x1="40" y1="135" x2="60" y2="55" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                                    <line x1="80" y1="135" x2="60" y2="55" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                                    {/* cross brace */}
+                                    <line x1="48" y1="105" x2="72" y2="105" stroke="currentColor" stroke-width="0.8" />
+                                    {/* central post (visible behind the wheel) */}
+                                    <line x1="60" y1="55" x2="60" y2="135" stroke="currentColor" stroke-width="1.4" />
+                                    {/* wheel — rotating */}
+                                    <g class="ferris-spin" style="transform-origin: 60px 60px;">
+                                        {/* outer rim */}
+                                        <circle cx="60" cy="60" r="32" fill="none" stroke="currentColor" stroke-width="2" />
+                                        <circle cx="60" cy="60" r="30" fill="none" stroke="currentColor" stroke-width="0.6" />
+                                        {/* hub */}
+                                        <circle cx="60" cy="60" r="3.5" fill="currentColor" />
+                                        {/* 6 spokes */}
+                                        <line x1="60" y1="28" x2="60" y2="92" stroke="currentColor" stroke-width="1" />
+                                        <line x1="28" y1="60" x2="92" y2="60" stroke="currentColor" stroke-width="1" />
+                                        <line x1="38" y1="38" x2="82" y2="82" stroke="currentColor" stroke-width="1" />
+                                        <line x1="38" y1="82" x2="82" y2="38" stroke="currentColor" stroke-width="1" />
+                                        {/* 6 cabins on the outside of the rim (12, 2, 4, 6, 8, 10 o'clock) */}
+                                        {Array.from({ length: 6 }).map((_, k) => {
+                                            const a = (k * Math.PI) / 3 - Math.PI / 2;
+                                            const cx = 60 + 38 * Math.cos(a);
+                                            const cy = 60 + 38 * Math.sin(a);
+                                            return <rect x={cx - 5} y={cy - 5} width="10" height="10" fill={ride.softColor} stroke="currentColor" stroke-width="1.2" rx="1.5" />;
                                         })}
                                     </g>
                                 </svg>
@@ -169,34 +221,61 @@ const rides = [
                             )}
                             {ride.id === 'carousel' && (
                                 <svg viewBox="0 0 120 140" class="ride-svg">
-                                    <line x1="20" y1="130" x2="100" y2="130" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                                    <line x1="20" y1="130" x2="20" y2="120" stroke="currentColor" stroke-width="1" />
-                                    <line x1="100" y1="130" x2="100" y2="120" stroke="currentColor" stroke-width="1" />
-                                    <g class="carousel-spin" style="transform-origin: 60px 90px;">
-                                        <ellipse cx="60" cy="90" rx="38" ry="6" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5" />
-                                        <path d="M 22 90 L 38 50 L 82 50 L 98 90 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                                        <circle cx="60" cy="48" r="3" fill="currentColor" />
-                                        <line x1="38" y1="50" x2="38" y2="80" stroke="currentColor" stroke-width="1" />
-                                        <line x1="82" y1="50" x2="82" y2="80" stroke="currentColor" stroke-width="1" />
-                                        <line x1="60" y1="50" x2="60" y2="80" stroke="currentColor" stroke-width="1" />
-                                        <path d="M 34 80 L 38 92 L 42 80 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1" />
-                                        <path d="M 56 80 L 60 92 L 64 80 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1" />
-                                        <path d="M 78 80 L 82 92 L 86 80 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1" />
+                                    {/* ground */}
+                                    <line x1="14" y1="130" x2="106" y2="130" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                                    {/* static support frame (does NOT rotate) */}
+                                    <line x1="22" y1="130" x2="22" y2="116" stroke="currentColor" stroke-width="1.4" />
+                                    <line x1="98" y1="130" x2="98" y2="116" stroke="currentColor" stroke-width="1.4" />
+                                    <line x1="14" y1="116" x2="106" y2="116" stroke="currentColor" stroke-width="1.4" />
+                                    {/* rotating group: canopy + horses + pole + base */}
+                                    <g class="carousel-spin" style="transform-origin: 60px 116px;">
+                                        {/* (note: inline style matches CSS; transform-box: view-box lets origin be SVG user units) */}
+                                        {/* base platform (oval) */}
+                                        <ellipse cx="60" cy="116" rx="38" ry="4" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" />
+                                        {/* central pole */}
+                                        <line x1="60" y1="38" x2="60" y2="116" stroke="currentColor" stroke-width="1.6" />
+                                        {/* canopy: simple wide cone */}
+                                        <path d="M 22 58 Q 60 24 98 58 Z" fill={ride.color} stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                                        {/* canopy bottom trim (front edge curve) */}
+                                        <path d="M 22 58 Q 60 70 98 58" fill="none" stroke="currentColor" stroke-width="1.2" />
+                                        {/* canopy finial + flag */}
+                                        <line x1="60" y1="24" x2="60" y2="14" stroke="currentColor" stroke-width="1.4" />
+                                        <path d="M 60 14 L 72 16 L 60 19 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
+                                        {/* horse 1 - left (compact horse silhouette) */}
+                                        <line x1="38" y1="58" x2="38" y2="78" stroke="currentColor" stroke-width="1.2" />
+                                        <path d="M 28 92 L 28 84 Q 28 78 34 78 L 42 78 Q 48 78 48 84 L 48 92 L 44 92 L 44 86 L 38 86 L 38 92 L 34 92 L 34 86 L 28 86 Z M 48 81 L 52 78 L 48 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                                        {/* horse 2 - center */}
+                                        <line x1="60" y1="58" x2="60" y2="78" stroke="currentColor" stroke-width="1.2" />
+                                        <path d="M 50 92 L 50 84 Q 50 78 56 78 L 64 78 Q 70 78 70 84 L 70 92 L 66 92 L 66 86 L 60 86 L 60 92 L 56 92 L 56 86 L 50 86 Z M 70 81 L 74 78 L 70 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                                        {/* horse 3 - right */}
+                                        <line x1="82" y1="58" x2="82" y2="78" stroke="currentColor" stroke-width="1.2" />
+                                        <path d="M 72 92 L 72 84 Q 72 78 78 78 L 86 78 Q 92 78 92 84 L 92 92 L 88 92 L 88 86 L 82 86 L 82 92 L 78 92 L 78 86 L 72 86 Z M 92 81 L 96 78 L 92 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
                                     </g>
                                 </svg>
                             )}
                             {ride.id === 'coaster' && (
                                 <svg viewBox="0 0 120 140" class="ride-svg">
-                                    <line x1="10" y1="130" x2="110" y2="130" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-                                    <path d="M 10 130 Q 20 50 50 60 Q 70 70 70 100 Q 70 130 90 130" fill="none" stroke={ride.color} stroke-width="3" stroke-linecap="round" />
-                                    <path d="M 10 130 Q 20 50 50 60 Q 70 70 70 100 Q 70 130 90 130" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-                                    <line x1="22" y1="55" x2="22" y2="100" stroke="currentColor" stroke-width="0.8" />
-                                    <line x1="22" y1="100" x2="30" y2="100" stroke="currentColor" stroke-width="0.8" />
-                                    <line x1="22" y1="55" x2="30" y2="55" stroke="currentColor" stroke-width="0.8" />
+                                    {/* ground */}
+                                    <line x1="10" y1="135" x2="110" y2="135" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                                    {/* support pillars (2 trestles, simple) */}
+                                    <line x1="30" y1="135" x2="30" y2="100" stroke="currentColor" stroke-width="1.2" />
+                                    <line x1="22" y1="100" x2="38" y2="100" stroke="currentColor" stroke-width="1.2" />
+                                    <line x1="90" y1="135" x2="90" y2="100" stroke="currentColor" stroke-width="1.2" />
+                                    <line x1="82" y1="100" x2="98" y2="100" stroke="currentColor" stroke-width="1.2" />
+                                    {/* main track - clear hill shape */}
+                                    <path d="M 10 130 L 30 100 L 60 50 L 90 100 L 110 130" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+                                    {/* car — drawn at origin, animated to follow the track */}
                                     <g class="coaster-car">
-                                        <rect x="18" y="80" width="14" height="8" fill={ride.softColor} stroke="currentColor" stroke-width="1.2" rx="1.5" />
-                                        <circle cx="22" cy="90" r="2" fill="currentColor" />
-                                        <circle cx="29" cy="90" r="2" fill="currentColor" />
+                                        {/* main body */}
+                                        <rect x="-10" y="-4" width="20" height="9" rx="2" fill={ride.softColor} stroke="currentColor" stroke-width="1.6" />
+                                        {/* window strip */}
+                                        <rect x="-7" y="-2" width="14" height="4" rx="0.8" fill={ride.color} stroke="currentColor" stroke-width="0.8" />
+                                        {/* two small passengers (head silhouettes) */}
+                                        <circle cx="-3" cy="-0.5" r="1.2" fill="#faf6ec" />
+                                        <circle cx="3" cy="-0.5" r="1.2" fill="#faf6ec" />
+                                        {/* wheels (clearly visible under the body) */}
+                                        <circle cx="-6" cy="5" r="2.2" fill="#faf6ec" stroke="currentColor" stroke-width="1.2" />
+                                        <circle cx="6" cy="5" r="2.2" fill="#faf6ec" stroke="currentColor" stroke-width="1.2" />
                                     </g>
                                 </svg>
                             )}
@@ -427,11 +506,30 @@ const rides = [
     font-weight: 600;
 }
 
-/* ════════ Sky (clouds) ════════ */
+/* ════════ Sky (clouds + sun) ════════ */
 .park-sky {
     position: relative;
     height: 80px;
     margin-bottom: 12px;
+}
+
+.park-sun {
+    position: absolute;
+    top: 4px;
+    left: 48%;
+    pointer-events: none;
+    filter: drop-shadow(0 0 12px rgba(249, 199, 79, 0.5));
+}
+
+.sun-spin {
+    transform-origin: 30px 30px;
+    transform-box: fill-box;
+    animation: sun-rotate 40s linear infinite;
+}
+
+@keyframes sun-rotate {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
 }
 
 .cloud {
@@ -520,9 +618,44 @@ const rides = [
 }
 
 .ride:hover {
-    transform: translate(-2px, -3px) rotate(-0.6deg);
-    box-shadow: 6px 8px 0 #3a2f2a;
+    transform: translate(-2px, -3px) rotate(-0.6deg) perspective(800px) rotateX(2deg);
+    box-shadow: 6px 8px 0 #3a2f2a, 0 14px 30px rgba(58, 47, 42, 0.18);
     background: #fffcf3;
+}
+
+.ride:focus-visible {
+    outline: 3px solid #c44536;
+    outline-offset: 4px;
+    background: #fffcf3;
+}
+
+.ride[data-pick="true"] {
+    border-color: #c44536;
+    border-width: 2.2px;
+    box-shadow: 4px 5px 0 #3a2f2a, 0 0 0 4px rgba(196, 69, 54, 0.12);
+}
+
+.ride[data-pick="true"]::after {
+    content: "★ 今日推薦";
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    background: #c44536;
+    color: #faf6ec;
+    padding: 3px 8px;
+    border: 1.4px solid #3a2f2a;
+    border-radius: 3px;
+    z-index: 3;
+    box-shadow: 2px 2px 0 #3a2f2a;
+    animation: pick-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pick-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.05); }
 }
 
 .ride-facility-tag {
@@ -619,9 +752,12 @@ const rides = [
 }
 
 /* ════════ Animations (SVG groups) ════════ */
+/* Note: 用 transform-box: view-box + SVG user units 當 transform-origin
+   避免 fill-box 把座標系鎖在元素 bbox 內造成「轉歪」*/
 .ferris-spin {
-    animation: ferris-rotate 18s linear infinite;
-    transform-box: fill-box;
+    animation: ferris-rotate 24s linear infinite;
+    transform-box: view-box;
+    transform-origin: 60px 60px;
 }
 
 @keyframes ferris-rotate {
@@ -631,8 +767,8 @@ const rides = [
 
 .balloon-float {
     animation: balloon-bob 4.5s ease-in-out infinite;
-    transform-box: fill-box;
-    transform-origin: center;
+    transform-box: view-box;
+    transform-origin: 60px 50px;
 }
 
 @keyframes balloon-bob {
@@ -641,9 +777,9 @@ const rides = [
 }
 
 .carousel-spin {
-    animation: carousel-rotate 12s linear infinite;
-    transform-box: fill-box;
-    transform-origin: center;
+    animation: carousel-rotate 20s linear infinite;
+    transform-box: view-box;
+    transform-origin: 60px 116px;
 }
 
 @keyframes carousel-rotate {
@@ -651,17 +787,21 @@ const rides = [
     to   { transform: rotate(360deg); }
 }
 
+/* Coaster car — 跟著軌道跑（不是原地抖動）
+   軌道是 M 10 130 L 30 100 L 60 50 L 90 100 L 110 130
+   用 5 個 keyframe 模擬上坡→下坡，rotate 跟著坡度 */
 .coaster-car {
-    animation: coaster-glide 6s ease-in-out infinite;
-    transform-box: fill-box;
-    transform-origin: center;
+    animation: coaster-glide 5s ease-in-out infinite;
+    transform-box: view-box;
+    transform-origin: 0 0;
 }
 
 @keyframes coaster-glide {
-    0%, 100% { transform: translate(0, 0) rotate(0); }
-    25%      { transform: translate(-2px, -25px) rotate(-12deg); }
-    50%      { transform: translate(0, 0) rotate(0); }
-    75%      { transform: translate(20px, 30px) rotate(8deg); }
+    0%   { transform: translate(10px, 130px) rotate(0deg); }
+    25%  { transform: translate(30px, 100px) rotate(35deg); }
+    50%  { transform: translate(60px, 50px)  rotate(0deg); }
+    75%  { transform: translate(90px, 100px) rotate(-35deg); }
+    100% { transform: translate(110px, 130px) rotate(0deg); }
 }
 
 .clock-hand-min {
@@ -724,11 +864,37 @@ const rides = [
     margin-top: 4px;
     height: 40px;
     opacity: 0.6;
+    position: relative;
+    z-index: 0;
 }
 
 .park-ground svg {
     width: 100%;
     height: 100%;
+}
+
+/* ════════ Park decorations (trees) ════════ */
+.park-tree {
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.85;
+}
+
+.park-tree-left {
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%) scale(0.85);
+}
+
+.park-tree-right {
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%) scale(0.85);
+}
+
+@media (max-width: 700px) {
+    .park-tree-left, .park-tree-right { display: none; }
 }
 
 /* ════════ Footer info ════════ */
@@ -804,6 +970,128 @@ const rides = [
 .scroll-top {
     background: #2a201c !important;
     color: #f0ebe0 !important;
+}
+
+/* ════════ Index-only overrides: paper-theme the rest of the shell ════════ */
+body[data-page="index"] {
+    background-color: #f0ebe0;
+}
+
+/* Top nav: paper background + dark text + dashed border */
+body[data-page="index"] nav,
+body[data-page="index"] header {
+    background: #f0ebe0 !important;
+    background-color: #f0ebe0 !important;
+    color: #2a201c !important;
+    border-bottom: 1.5px dashed #3a2f2a !important;
+    box-shadow: none !important;
+}
+body[data-page="index"] nav a,
+body[data-page="index"] header a,
+body[data-page="index"] nav .nav-links a,
+body[data-page="index"] nav .nav-brand {
+    color: #2a201c !important;
+    text-decoration: none;
+}
+body[data-page="index"] nav a:hover,
+body[data-page="index"] header a:hover {
+    color: #c44536 !important;
+}
+body[data-page="index"] nav .nav-dot {
+    background: #c44536 !important;
+    box-shadow: 0 0 0 3px rgba(196, 69, 54, 0.2) !important;
+}
+body[data-page="index"] nav .nav-cta,
+body[data-page="index"] nav a.nav-cta {
+    background: #c44536 !important;
+    color: #faf6ec !important;
+    border: 1.5px solid #3a2f2a !important;
+}
+body[data-page="index"] #theme-toggle-btn,
+body[data-page="index"] #hamburger {
+    color: #2a201c !important;
+    background: transparent !important;
+    border-color: #3a2f2a !important;
+}
+
+/* Site footer (if any) — paper theme */
+body[data-page="index"] [data-site-footer],
+body[data-page="index"] body > footer:not(.park-footer) {
+    background: #f0ebe0 !important;
+    color: #2a201c !important;
+    border-top: 1.5px dashed #3a2f2a !important;
+}
+body[data-page="index"] [data-site-footer] a,
+body[data-page="index"] body > footer:not(.park-footer) a {
+    color: #2a201c !important;
+}
+
+/* Hide chatbot on the park page (overlaps Protein AI card) */
+body[data-page="index"] #chatbot-anchor {
+    display: none !important;
+}
+
+/* Re-skin the search button to paper theme */
+body[data-page="index"] #pf-btn {
+    background: linear-gradient(135deg, #c44536, #e07a5f) !important;
+    box-shadow: 0 4px 16px rgba(196, 69, 54, 0.35) !important;
+    border: 1.5px solid #3a2f2a !important;
+}
+body[data-page="index"] #pf-btn:hover {
+    box-shadow: 0 6px 24px rgba(196, 69, 54, 0.55) !important;
+}
+body[data-page="index"] #pf-btn #search-icon circle {
+    stroke: #faf6ec !important;
+}
+body[data-page="index"] #pf-btn #search-icon line {
+    stroke: #faf6ec !important;
+}
+
+/* Pagefind search modal: paper */
+body[data-page="index"] #pf-modal {
+    background: rgba(58, 47, 42, 0.5) !important;
+}
+body[data-page="index"] #pf-modal > div {
+    background: #faf6ec !important;
+    border: 1.5px dashed #3a2f2a !important;
+    color: #2a201c !important;
+}
+body[data-page="index"] #pf-modal input {
+    color: #2a201c !important;
+}
+body[data-page="index"] #pf-modal kbd {
+    color: #6a554a !important;
+    border-color: #3a2f2a !important;
+}
+body[data-page="index"] #pf-modal #pf-results a {
+    color: #2a201c !important;
+    border-bottom-color: rgba(58, 47, 42, 0.15) !important;
+}
+
+/* ════════ Polish: smooth scroll + reduced-motion respect ════════ */
+html {
+    scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ferris-spin,
+    .balloon-float,
+    .carousel-spin,
+    .coaster-car,
+    .clock-hand-min,
+    .clock-hand-hour,
+    .flag,
+    .lab-smoke,
+    .prize-hang,
+    .sun-spin,
+    .cloud-1, .cloud-2, .cloud-3,
+    .ride[data-pick="true"]::after {
+        animation: none !important;
+    }
+    .ride:hover {
+        transform: rotate(-0.6deg);
+    }
+    html { scroll-behavior: auto; }
 }
 </style>
 
