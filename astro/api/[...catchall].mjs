@@ -7588,12 +7588,72 @@ function mopsYearPeriodToIso(s) {
 
 const _textOnly = (s) => s.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
 
+// 2026-10-07：MOPS 庫藏股/私募表自動 DDL，確保 loadMopsBuyback / loadMopsPrivate
+// 有地方寫資料；先 CREATE TABLE IF NOT EXISTS 再 INSERT 就不會有「relation does not exist」。
+const _TREASURY_DDL = `
+  CREATE TABLE IF NOT EXISTS treasury_buyback (
+    id SERIAL PRIMARY KEY,
+    code TEXT NOT NULL,
+    name TEXT,
+    start_date DATE,
+    end_date DATE,
+    planned_shares BIGINT,
+    actual_shares BIGINT,
+    planned_amount BIGINT,
+    actual_amount BIGINT,
+    avg_price NUMERIC,
+    source TEXT,
+    fetched_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (code, start_date, end_date)
+  );
+  CREATE TABLE IF NOT EXISTS treasury_buyback_exec (
+    id SERIAL PRIMARY KEY,
+    code TEXT NOT NULL,
+    name TEXT,
+    trade_date DATE,
+    shares BIGINT,
+    price NUMERIC,
+    source TEXT,
+    fetched_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE TABLE IF NOT EXISTS private_placement (
+    id SERIAL PRIMARY KEY,
+    announce_date DATE,
+    code TEXT NOT NULL,
+    name TEXT,
+    amount BIGINT,
+    private_price NUMERIC,
+    discount_pct NUMERIC,
+    purpose TEXT,
+    source TEXT,
+    fetched_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_treasury_buyback_code ON treasury_buyback(code);
+  CREATE INDEX IF NOT EXISTS idx_treasury_buyback_dates ON treasury_buyback(end_date DESC);
+  CREATE INDEX IF NOT EXISTS idx_treasury_buyback_exec_code ON treasury_buyback_exec(code);
+  CREATE INDEX IF NOT EXISTS idx_treasury_buyback_exec_date ON treasury_buyback_exec(trade_date DESC);
+  CREATE INDEX IF NOT EXISTS idx_private_placement_code ON private_placement(code);
+  CREATE INDEX IF NOT EXISTS idx_private_placement_date ON private_placement(announce_date DESC);
+`;
+let _treasuryDdlDone = false;
+async function ensureTreasuryTables() {
+  if (_treasuryDdlDone) return;
+  try {
+    // DDL 不支援 parameterized query；用 dbq 跑 raw SQL（q() 也支援多 statement）
+    await dbq(_TREASURY_DDL);
+    _treasuryDdlDone = true;
+  } catch (e) {
+    // table exists 或權限不足等不致命，下次 call 還會重試
+  }
+}
+
 // 私募 (private placement) — t116sb01 returns BIG HTML table with all rows for all companies
 async function loadMopsPrivate(request) {
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password)) {
     return json({ error: "密碼錯誤" }, { status: 403 });
   }
+  await ensureTreasuryTables();
   try {
     const resultUrl = await mopsPost("ajax_t116sb01", { co_id: "" });
     const html = await mopsFetchPage(resultUrl);
@@ -7667,6 +7727,7 @@ async function loadMopsPrivate(request) {
 // 庫藏股 (treasury buyback) — t35sb01_q1 needs co_id, so iterate per-company from watchlist
 async function loadMopsBuyback(request) {
   const body = request.method !== "GET" ? await readJson(request) : {};
+  await ensureTreasuryTables();
   if (request.method === "POST" && !operatorOk(body?.password)) {
     return json({ error: "密碼錯誤" }, { status: 403 });
   }
