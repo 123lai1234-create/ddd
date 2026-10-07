@@ -6756,6 +6756,9 @@ async function loadAllCombined(request) {
   await step("macro_yields", () => loadMacroYields(_selfReq));
   // 1b. macro_fred (FRED CSV: DGS2/DFII10/spreads/UNRATE/CPI/GDP/MICH, 365d)
   await step("macro_fred", () => loadMacroFred(_selfReq));
+  // 1c. twse 庫藏股 / 私募（MOPS 抓不到時的備援，開放資料 JSON）
+  await step("twse_buyback", () => loadTwseBuyback(_selfReq));
+  await step("twse_private", () => loadTwsePrivate(_selfReq));
   // 2. macro_news (Google News RSS)
   await step("macro_news", () => loadMacroNews(_selfReq));
   // 3. index_institutional (TWSE BFI82U 1 day)
@@ -7960,6 +7963,165 @@ async function loadMopsBuyback(request) {
   } catch (e) {
     return json({ ok: false, error: e.message }, { status: 502 });
   }
+}
+
+// ── loadTwseBuyback: TWSE 開放資料庫藏股 → treasury_buyback ─────────
+// 2026-10-07：MOPS 從 Render 抓不穩（SSL 卡 30s+），改用 TWSE 開放資料 JSON endpoint。
+// 開放資料回傳當下所有「進行中」的庫藏股計畫，每天更新。
+// https://openapi.twse.com.tw/v1/opendata/t05sb01
+async function loadTwseBuyback(request) {
+  await ensureTreasuryTables();
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  try {
+    const url = "https://openapi.twse.com.tw/v1/opendata/t05sb01";
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 30000);
+    let resp;
+    try {
+      resp = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible: donttalk-stock/1.0)", "Accept": "application/json" },
+        signal: ctrl.signal,
+      });
+      clearTimeout(tid);
+    } catch (e) {
+      clearTimeout(tid);
+      if (e.name === "AbortError") throw new Error("twse timeout");
+      throw e;
+    }
+    if (!resp.ok) throw new Error(`twse HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (!Array.isArray(data)) return json({ ok: false, error: "twse 開放資料格式非陣列" }, { status: 502 });
+    const rows = [];
+    for (const r of data) {
+      const code = String(r["公司代號"] || r["證券代號"] || "").trim();
+      const name = String(r["公司名稱"] || r["證券名稱"] || "").trim();
+      if (!code) continue;
+      // TWSE t05sb01 欄位 (2026 確認): 公司代號, 公司名稱, 董監決議日期, 預定買回股數, 預定買回區間價格-下限, 預定買回區間價格-上限, 預定買回期間-起, 預定買回期間-迄, 實際買回股數, 實際累計已買回股數, 實際已買回總金額, 執行進度
+      const startDate = _twseDateToIso(r["預定買回期間-起"] || "");
+      const endDate = _twseDateToIso(r["預定買回期間-迄"] || "");
+      const plannedShares = Number(String(r["預定買回股數"] || "0").replace(/,/g, "")) || null;
+      const actualShares = Number(String(r["實際累計已買回股數"] || "0").replace(/,/g, "")) || null;
+      const plannedAmount = null;  // 開放資料沒提供
+      const actualAmount = Number(String(r["實際已買回總金額"] || "0").replace(/,/g, "")) || null;
+      const avgPrice = null;  // 開放資料沒提供
+      rows.push({ code, name, start_date: startDate, end_date: endDate, planned_shares: plannedShares, actual_shares: actualShares, planned_amount: plannedAmount, actual_amount: actualAmount, avg_price: avgPrice, source: "twse_t05sb01" });
+    }
+    if (!rows.length) return json({ ok: true, source: "twse_t05sb01", count: 0, inserted: 0, message: "twse 回傳空陣列" });
+    // Bulk upsert: UNIQUE (code, start_date, end_date)
+    const codes = rows.map((r) => r.code);
+    const names = rows.map((r) => r.name);
+    const startDates = rows.map((r) => r.start_date);
+    const endDates = rows.map((r) => r.end_date);
+    const plannedSharesArr = rows.map((r) => r.planned_shares);
+    const actualSharesArr = rows.map((r) => r.actual_shares);
+    const plannedAmountsArr = rows.map((r) => r.planned_amount);
+    const actualAmountsArr = rows.map((r) => r.actual_amount);
+    const avgPricesArr = rows.map((r) => r.avg_price);
+    const sources = rows.map((r) => r.source);
+    const sql = `
+      INSERT INTO treasury_buyback (code, name, start_date, end_date, planned_shares, actual_shares, planned_amount, actual_amount, avg_price, source)
+      SELECT s, n, sd::date, ed::date, ps, as_, pa, aa, avgp, src
+      FROM UNNEST(
+        $1::text[], $2::text[], $3::date[], $4::date[],
+        $5::bigint[], $6::bigint[], $7::bigint[], $8::bigint[], $9::numeric[], $10::text[]
+      ) AS x(s, n, sd, ed, ps, as_, pa, aa, avgp, src)
+      ON CONFLICT (code, start_date, end_date) DO UPDATE SET
+        name = EXCLUDED.name,
+        planned_shares = EXCLUDED.planned_shares,
+        actual_shares = EXCLUDED.actual_shares,
+        actual_amount = EXCLUDED.actual_amount,
+        source = EXCLUDED.source,
+        fetched_at = now()`;
+    await dbq(sql, [codes, names, startDates, endDates, plannedSharesArr, actualSharesArr, plannedAmountsArr, actualAmountsArr, avgPricesArr, sources]);
+    return json({ ok: true, source: "twse_t05sb01", fetched: rows.length, upserted: rows.length, sample: rows.slice(0, 3) });
+  } catch (e) {
+    return json({ ok: false, source: "twse_t05sb01", error: e?.message }, { status: 502 });
+  }
+}
+
+// ── loadTwsePrivate: TWSE 開放資料私募 → private_placement ─────────────
+// https://openapi.twse.com.tw/v1/opendata/t16sb06
+async function loadTwsePrivate(request) {
+  await ensureTreasuryTables();
+  if (request.method === "POST") {
+    const body = await readJson(request).catch(() => ({}));
+    if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  try {
+    const url = "https://openapi.twse.com.tw/v1/opendata/t16sb06";
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 30000);
+    let resp;
+    try {
+      resp = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible: donttalk-stock/1.0)", "Accept": "application/json" },
+        signal: ctrl.signal,
+      });
+      clearTimeout(tid);
+    } catch (e) {
+      clearTimeout(tid);
+      if (e.name === "AbortError") throw new Error("twse timeout");
+      throw e;
+    }
+    if (!resp.ok) throw new Error(`twse HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (!Array.isArray(data)) return json({ ok: false, error: "twse 開放資料格式非陣列" }, { status: 502 });
+    const rows = [];
+    for (const r of data) {
+      const code = String(r["公司代號"] || r["證券代號"] || "").trim();
+      const name = String(r["公司名稱"] || r["證券名稱"] || "").trim();
+      if (!code) continue;
+      // TWSE t16sb06 欄位 (2026): 公司代號, 公司名稱, 私募董事會決議日期, 私募股數, 私募價格, 私募總金額, 議事手冊
+      const announceDate = _twseDateToIso(r["私募董事會決議日期"] || r["私募申報日期"] || "");
+      const amount = Number(String(r["私募總金額"] || "0").replace(/,/g, "")) || null;
+      const privatePrice = Number(String(r["私募價格"] || "0").replace(/,/g, "")) || null;
+      const purpose = String(r["議事手冊"] || "").trim() || null;
+      rows.push({ code, name, announce_date: announceDate, amount, private_price: privatePrice, discount_pct: null, purpose, source: "twse_t16sb06" });
+    }
+    if (!rows.length) return json({ ok: true, source: "twse_t16sb06", count: 0, inserted: 0, message: "twse 回傳空陣列" });
+    const codes = rows.map((r) => r.code);
+    const names = rows.map((r) => r.name);
+    const announceDates = rows.map((r) => r.announce_date);
+    const amounts = rows.map((r) => r.amount);
+    const privatePrices = rows.map((r) => r.private_price);
+    const purposes = rows.map((r) => r.purpose);
+    const sources = rows.map((r) => r.source);
+    const sql = `
+      INSERT INTO private_placement (announce_date, code, name, amount, private_price, discount_pct, purpose, source)
+      SELECT ad::date, s, n, amt, pp, NULL, pur, src
+      FROM UNNEST(
+        $1::date[], $2::text[], $3::text[], $4::bigint[], $5::numeric[], $6::text[], $7::text[]
+      ) AS x(ad, s, n, amt, pp, pur, src)
+      ON CONFLICT (announce_date, code) DO UPDATE SET
+        name = EXCLUDED.name,
+        amount = EXCLUDED.amount,
+        private_price = EXCLUDED.private_price,
+        purpose = EXCLUDED.purpose,
+        source = EXCLUDED.source,
+        fetched_at = now()`;
+    await dbq(sql, [announceDates, codes, names, amounts, privatePrices, purposes, sources]);
+    return json({ ok: true, source: "twse_t16sb06", fetched: rows.length, upserted: rows.length, sample: rows.slice(0, 3) });
+  } catch (e) {
+    return json({ ok: false, source: "twse_t16sb06", error: e?.message }, { status: 502 });
+  }
+}
+
+// 2026-10-07：TWSE 開放資料日期格式 "114/10/05"（民國年），轉成 "2025-10-05"（西元）。
+function _twseDateToIso(s) {
+  if (!s || typeof s !== "string") return null;
+  const m = String(s).trim().match(/^(\d{2,3})\/(\d{1,2})\/(\d{1,2})$/);
+  if (!m) {
+    // 已經是 ISO 格式
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(s).trim())) return String(s).trim();
+    return null;
+  }
+  const rocYear = parseInt(m[1], 10);
+  const month = m[2].padStart(2, "0");
+  const day = m[3].padStart(2, "0");
+  const year = rocYear < 1911 ? 1911 + rocYear : rocYear;  // 防呆：如果是 4-digit 也直接用
+  return `${year}-${month}-${day}`;
 }
 
 // ── mopsCronHandler: chunked MOPS load via Vercel cron ──────────────────
@@ -9242,6 +9404,11 @@ const TABLE = [
   ["POST", /^\/admin\/load\/mops_private\/?$/,    loadMopsPrivate],
   ["GET",  /^\/admin\/load\/mops_buyback\/?$/,    loadMopsBuyback],
   ["POST", /^\/admin\/load\/mops_buyback\/?$/,    loadMopsBuyback],
+  // 2026-10-07：TWSE 開放資料庫藏股 / 私募（MOPS 從 Render 抓不穩時的備援）
+  ["GET",  /^\/admin\/load\/twse_buyback\/?$/,    loadTwseBuyback],
+  ["POST", /^\/admin\/load\/twse_buyback\/?$/,    loadTwseBuyback],
+  ["GET",  /^\/admin\/load\/twse_private\/?$/,    loadTwsePrivate],
+  ["POST", /^\/admin\/load\/twse_private\/?$/,    loadTwsePrivate],
   // MOPS cron: chunked incremental load (Hobby 60s edge limit split into N cron ticks)
   ["GET",  /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
   ["POST", /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
