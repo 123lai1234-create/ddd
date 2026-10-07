@@ -8940,10 +8940,11 @@ async function seedTreasuryBuybackExec(request) {
     placeholders.push(`($${params.length + 1}::text, $${params.length + 2}::text, $${params.length + 3}::date, $${params.length + 4}::bigint, $${params.length + 5}::numeric)`);
     params.push(r[0], r[1], r[2], r[3], r[4]);
   }
+  // exec 沒有 (code, trade_date, shares) UNIQUE 約束 — 直接 INSERT
+  // sample_seed 是一次性，重新塞前手動 TRUNCATE 或忽略 PK 衝突
   const sql = `
     INSERT INTO treasury_buyback_exec (code, name, trade_date, shares, price)
-    VALUES ${placeholders.join(",")}
-    ON CONFLICT (code, trade_date, shares) DO NOTHING`;
+    VALUES ${placeholders.join(",")}`;
   try {
     await q(sql, params);
     return json({ ok: true, source: "sample_seed", inserted: rows.length });
