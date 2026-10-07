@@ -7723,8 +7723,9 @@ const _textOnly = (s) => s.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim(
 
 // 2026-10-07：MOPS 庫藏股/私募表自動 DDL，確保 loadMopsBuyback / loadMopsPrivate
 // 有地方寫資料；先 CREATE TABLE IF NOT EXISTS 再 INSERT 就不會有「relation does not exist」。
-const _TREASURY_DDL = `
-  CREATE TABLE IF NOT EXISTS treasury_buyback (
+// Neon HTTP endpoint 不支援 multi-statement DDL；拆成單條跑。
+const _TREASURY_DDL_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS treasury_buyback (
     id SERIAL PRIMARY KEY,
     code TEXT NOT NULL,
     name TEXT,
@@ -7738,8 +7739,8 @@ const _TREASURY_DDL = `
     source TEXT,
     fetched_at TIMESTAMPTZ DEFAULT now(),
     UNIQUE (code, start_date, end_date)
-  );
-  CREATE TABLE IF NOT EXISTS treasury_buyback_exec (
+  )`,
+  `CREATE TABLE IF NOT EXISTS treasury_buyback_exec (
     id SERIAL PRIMARY KEY,
     code TEXT NOT NULL,
     name TEXT,
@@ -7748,8 +7749,8 @@ const _TREASURY_DDL = `
     price NUMERIC,
     source TEXT,
     fetched_at TIMESTAMPTZ DEFAULT now()
-  );
-  CREATE TABLE IF NOT EXISTS private_placement (
+  )`,
+  `CREATE TABLE IF NOT EXISTS private_placement (
     id SERIAL PRIMARY KEY,
     announce_date DATE,
     code TEXT NOT NULL,
@@ -7760,24 +7761,27 @@ const _TREASURY_DDL = `
     purpose TEXT,
     source TEXT,
     fetched_at TIMESTAMPTZ DEFAULT now()
-  );
-  CREATE INDEX IF NOT EXISTS idx_treasury_buyback_code ON treasury_buyback(code);
-  CREATE INDEX IF NOT EXISTS idx_treasury_buyback_dates ON treasury_buyback(end_date DESC);
-  CREATE INDEX IF NOT EXISTS idx_treasury_buyback_exec_code ON treasury_buyback_exec(code);
-  CREATE INDEX IF NOT EXISTS idx_treasury_buyback_exec_date ON treasury_buyback_exec(trade_date DESC);
-  CREATE INDEX IF NOT EXISTS idx_private_placement_code ON private_placement(code);
-  CREATE INDEX IF NOT EXISTS idx_private_placement_date ON private_placement(announce_date DESC);
-`;
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_treasury_buyback_code ON treasury_buyback(code)`,
+  `CREATE INDEX IF NOT EXISTS idx_treasury_buyback_dates ON treasury_buyback(end_date DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_treasury_buyback_exec_code ON treasury_buyback_exec(code)`,
+  `CREATE INDEX IF NOT EXISTS idx_treasury_buyback_exec_date ON treasury_buyback_exec(trade_date DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_private_placement_code ON private_placement(code)`,
+  `CREATE INDEX IF NOT EXISTS idx_private_placement_date ON private_placement(announce_date DESC)`,
+];
 let _treasuryDdlDone = false;
 async function ensureTreasuryTables() {
   if (_treasuryDdlDone) return;
-  try {
-    // DDL 不支援 parameterized query；用 dbq 跑 raw SQL（q() 也支援多 statement）
-    await dbq(_TREASURY_DDL);
-    _treasuryDdlDone = true;
-  } catch (e) {
-    // table exists 或權限不足等不致命，下次 call 還會重試
+  let ok = 0;
+  for (const sql of _TREASURY_DDL_STATEMENTS) {
+    try {
+      await dbq(sql);
+      ok++;
+    } catch (e) {
+      // 重複 index / 已有 table 等不致命
+    }
   }
+  if (ok >= 3) _treasuryDdlDone = true;  // 至少 3 張表 CREATE 成功才標記 done
 }
 
 // 私募 (private placement) — t116sb01 returns BIG HTML table with all rows for all companies
