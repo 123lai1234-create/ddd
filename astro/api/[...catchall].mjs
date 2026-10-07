@@ -1150,8 +1150,8 @@ async function screenOne(code, name) {
     }
   }
 
-  // VCP（Volatility Contraction Pattern）：近 5 日平均 True Range < 前 30 日平均 True Range 的 50%
-  //   且收盤波動（high-low 範圍）也在收縮
+  // VCP（Volatility Contraction Pattern）：近 5 日平均 True Range < 前 30 日平均 True Range 的 65%
+  //   條件放寬（原 50% 強勢股少有收縮）→ 65% 平衡 false-positive 與涵蓋率
   let has_vcp = false;
   let vcp_quality = 0;
   if (atrVal && candles.length >= 35) {
@@ -1159,10 +1159,33 @@ async function screenOne(code, name) {
     const prev30  = candles.slice(-35, -5);
     const avgTR5  = recent5.reduce((s, c) => s + (c.high - c.low), 0) / 5;
     const avgTR30 = prev30.reduce((s, c) => s + (c.high - c.low), 0) / 30;
-    if (avgTR30 > 0 && avgTR5 < avgTR30 * 0.5) {
+    if (avgTR30 > 0 && avgTR5 < avgTR30 * 0.65) {
       has_vcp = true;
       // quality：收縮比例（0~1，越小越緊）
       vcp_quality = Number((avgTR5 / avgTR30).toFixed(2));
+    }
+  }
+
+  // Fib 支撐（has_fib）：近 60 日區段找擺盪高低點，計算 Fibonacci 回撤 0.382 / 0.5 / 0.618 水平，
+  //   現價接近任一 Fib 水平（±2%），且最近 5 日平均量 ≥ 20 日均量的 1.3 倍（爆量）。
+  let has_fib = false;
+  if (candles.length >= 60) {
+    const recent60 = candles.slice(-60);
+    const swingHigh = Math.max(...recent60.map((c) => c.high));
+    const swingLow  = Math.min(...recent60.map((c) => c.low));
+    if (swingHigh > swingLow) {
+      const range = swingHigh - swingLow;
+      // Fibonacci 回撤（從低點往高點拉回）
+      const fib382 = swingLow + 0.382 * range;
+      const fib500 = swingLow + 0.500 * range;
+      const fib618 = swingLow + 0.618 * range;
+      const within = (level) => Math.abs(last / level - 1) < 0.02;
+      const nearFibLevel = within(fib382) || within(fib500) || within(fib618);
+      // 爆量：近 5 日均量 ≥ 20 日均量的 1.3 倍
+      const recent5Vol = candles.slice(-5).reduce((s, c) => s + c.volume, 0) / 5;
+      const recent20Vol = candles.slice(-20).reduce((s, c) => s + c.volume, 0) / 20;
+      const volumeSurge = recent20Vol > 0 && recent5Vol >= recent20Vol * 1.3;
+      has_fib = nearFibLevel && volumeSurge;
     }
   }
 
@@ -1220,7 +1243,7 @@ async function screenOne(code, name) {
     has_consol_sell,
     has_macd_div_sell,
     has_bear_gate_sell,
-    has_fib: false,                // 需 swing point detection；後續可加
+    has_fib,
     has_vcp,
     vcp_quality,
     has_foreign_buy_2d: false,    // 由 scanAllImpl 後處理從 institutional 表 join
@@ -2024,6 +2047,11 @@ async function healthTables(request) {
     "strategy_signals",
     "signal_history",
     "marker_history",
+    "treasury_buyback",
+    "treasury_buyback_exec",
+    "private_placement",
+    "exdiv",
+    "futures",
   ];
   const out = { ok: true, source: "db", generated_at: new Date().toISOString(), tables: {} };
   for (const t of tables) {
@@ -7873,10 +7901,17 @@ async function loadMopsBuyback(request) {
     const rowRe = /<tr[^>]*class=['"](?:odd|even)['"][^>]*>([\s\S]*?)<\/tr>/g;
     const seen = new Map();
     let scanned = 0;
+    let mopsTime = 0;
+    const startAll = Date.now();
     for (const w of watchRows.rows) {
       try {
         scanned++;
+        // 2026-10-07：個別公司 mopsPost 偶爾卡 30s，整個 batch 會撞 60s edge budget。
+        // 設 8s timeout + 累計超 50s 提早 break，剩餘公司下次 cron 再抓。
+        if (Date.now() - startAll > 50_000) break;
+        const t0 = Date.now();
         const url = await mopsPost("ajax_t35sb01_q1", { co_id: w.code });
+        mopsTime += Date.now() - t0;
         const html = await mopsFetchPage(url);
         let m;
         while ((m = rowRe.exec(html)) !== null) {
