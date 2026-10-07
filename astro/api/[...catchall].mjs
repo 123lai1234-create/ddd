@@ -8892,6 +8892,95 @@ async function privatePlacementHandler(request) {
 // ── Ranking (up / down / volume / limit up / limit down) ───────────────
 // Reads last trade_date slice from market_price_bars + market_instruments
 // and returns ranked lists. scope = all|weighted|otc|midcap|smallcap maps
+// 2026-10-07：手動塞 sample 資料到 treasury_buyback / treasury_buyback_exec / private_placement
+// MOPS / TWSE 開放資料都從 Render 抓不到，用這三個 endpoint 把固定 sample 灌進 DB，
+// 讓 /stock/buyback 跟 /stock/buyback.html 馬上有東西顯示。
+async function seedTreasuryBuyback(request) {
+  await ensureTreasuryTables();
+  if (request.method !== "POST") return json({ error: "use POST" }, { status: 405 });
+  const body = await readJson(request);
+  const rows = Array.isArray(body?.rows) ? body.rows : [];
+  if (!rows.length) return json({ ok: false, error: "rows[] is empty" }, { status: 400 });
+  // row = [code, name, start_date, end_date, planned_shares, actual_shares, planned_amount, actual_amount, avg_price, source]
+  const placeholders = [];
+  const params = [];
+  for (const r of rows) {
+    placeholders.push(`($${params.length + 1}::text, $${params.length + 2}::text, $${params.length + 3}::date, $${params.length + 4}::date, $${params.length + 5}::bigint, $${params.length + 6}::bigint, $${params.length + 7}::bigint, $${params.length + 8}::bigint, $${params.length + 9}::numeric, $${params.length + 10}::text)`);
+    params.push(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9] || "sample_seed");
+  }
+  const sql = `
+    INSERT INTO treasury_buyback (code, name, start_date, end_date, planned_shares, actual_shares, planned_amount, actual_amount, avg_price, source)
+    VALUES ${placeholders.join(",")}
+    ON CONFLICT (code, start_date, end_date) DO UPDATE SET
+      name = EXCLUDED.name,
+      planned_shares = EXCLUDED.planned_shares,
+      actual_shares = EXCLUDED.actual_shares,
+      planned_amount = EXCLUDED.planned_amount,
+      actual_amount = EXCLUDED.actual_amount,
+      avg_price = EXCLUDED.avg_price,
+      source = EXCLUDED.source,
+      fetched_at = now()`;
+  try {
+    await q(sql, params);
+    return json({ ok: true, source: "sample_seed", upserted: rows.length });
+  } catch (e) {
+    return json({ ok: false, error: e?.message }, { status: 500 });
+  }
+}
+async function seedTreasuryBuybackExec(request) {
+  await ensureTreasuryTables();
+  if (request.method !== "POST") return json({ error: "use POST" }, { status: 405 });
+  const body = await readJson(request);
+  const rows = Array.isArray(body?.rows) ? body.rows : [];
+  if (!rows.length) return json({ ok: false, error: "rows[] is empty" }, { status: 400 });
+  // row = [code, name, trade_date, shares, price]
+  const placeholders = [];
+  const params = [];
+  for (const r of rows) {
+    placeholders.push(`($${params.length + 1}::text, $${params.length + 2}::text, $${params.length + 3}::date, $${params.length + 4}::bigint, $${params.length + 5}::numeric)`);
+    params.push(r[0], r[1], r[2], r[3], r[4]);
+  }
+  const sql = `
+    INSERT INTO treasury_buyback_exec (code, name, trade_date, shares, price)
+    VALUES ${placeholders.join(",")}
+    ON CONFLICT (code, trade_date, shares) DO NOTHING`;
+  try {
+    await q(sql, params);
+    return json({ ok: true, source: "sample_seed", inserted: rows.length });
+  } catch (e) {
+    return json({ ok: false, error: e?.message }, { status: 500 });
+  }
+}
+async function seedPrivatePlacement(request) {
+  await ensureTreasuryTables();
+  if (request.method !== "POST") return json({ error: "use POST" }, { status: 405 });
+  const body = await readJson(request);
+  const rows = Array.isArray(body?.rows) ? body.rows : [];
+  if (!rows.length) return json({ ok: false, error: "rows[] is empty" }, { status: 400 });
+  // row = [announce_date, code, name, amount, private_price, purpose]
+  const placeholders = [];
+  const params = [];
+  for (const r of rows) {
+    placeholders.push(`($${params.length + 1}::date, $${params.length + 2}::text, $${params.length + 3}::text, $${params.length + 4}::bigint, $${params.length + 5}::numeric, $${params.length + 6}::text)`);
+    params.push(r[0], r[1], r[2], r[3], r[4], r[5]);
+  }
+  const sql = `
+    INSERT INTO private_placement (announce_date, code, name, amount, private_price, purpose)
+    VALUES ${placeholders.join(",")}
+    ON CONFLICT (announce_date, code) DO UPDATE SET
+      name = EXCLUDED.name,
+      amount = EXCLUDED.amount,
+      private_price = EXCLUDED.private_price,
+      purpose = EXCLUDED.purpose,
+      fetched_at = now()`;
+  try {
+    await q(sql, params);
+    return json({ ok: true, source: "sample_seed", upserted: rows.length });
+  } catch (e) {
+    return json({ ok: false, error: e?.message }, { status: 500 });
+  }
+}
+
 // to a filter on the `exchange_name`/`market` column when present.
 async function rankingHandler(request) {
   const u = new URL(request.url);
@@ -9411,6 +9500,10 @@ const TABLE = [
   ["POST", /^\/admin\/load\/twse_buyback\/?$/,    loadTwseBuyback],
   ["GET",  /^\/admin\/load\/twse_private\/?$/,    loadTwsePrivate],
   ["POST", /^\/admin\/load\/twse_private\/?$/,    loadTwsePrivate],
+  // 2026-10-07：手動塞 sample 資料庫（MOPS/TWSE 都抓不到時的 fallback）
+  ["POST", /^\/admin\/seed\/treasury_buyback\/?$/,    seedTreasuryBuyback],
+  ["POST", /^\/admin\/seed\/treasury_buyback_exec\/?$/, seedTreasuryBuybackExec],
+  ["POST", /^\/admin\/seed\/private_placement\/?$/,     seedPrivatePlacement],
   // MOPS cron: chunked incremental load (Hobby 60s edge limit split into N cron ticks)
   ["GET",  /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
   ["POST", /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
