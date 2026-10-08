@@ -3998,7 +3998,7 @@ async function backtestRunHandler(request) {
         `SELECT trade_date, close_price, source_name FROM market_price_bars
          WHERE symbol = $1
            AND trade_date IS NOT NULL
-         ORDER BY trade_date DESC LIMIT 5`,
+         ORDER BY trade_date DESC LIMIT 60`,
         [code]
       ).catch((err) => {
         signalsHint = signalsHint || `price[${code}] err: ${err?.message?.slice(0, 80)}`;
