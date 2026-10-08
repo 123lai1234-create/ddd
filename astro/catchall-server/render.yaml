@@ -113,3 +113,43 @@ services:
         nodeVersion: "22"
         buildCommand: npm install
         startCommand: node scripts/cron_load_all.mjs
+
+  # 2026-10-08：每日 14:30 Asia/Taipei（收盤後 30 分鐘，load_all 跑完後）跑
+  #   daily_health_check.mjs：19 個 API/HTML 健康檢查 + 自動修復
+  #   - Tier 1: Render catchall 9 個核心 API（healthz, stock/2330, damo, etf_signal, signal_filter,
+  #     macro_data, markers/history, uptrend_watch, warming_zone_scan, etf/0050）
+  #   - Tier 2: Vercel 7 個關鍵 HTML 頁（/, /stock/, /stock/stock-damo-filter/,
+  #     /stock/dashboard/, /stock/etf-filter/, /stock/signal-filter-v2/, /music/）
+  #   - Tier 3: admin 診斷（/admin/health/tables, /admin/markers/backup）
+  #   - Auto-fix: damo/etf/signal 沒資料 → POST /refresh；markers 空 → POST /admin/load/all
+  #   - 結果寫 Neon health_check_log 表 → GET /api/admin/health/latest 讀
+  #   - 對應 service id: crn-...（建立於 2026-10-08 via create_healthcheck_cron.py）
+  - type: cron_job
+    name: donttalk-healthcheck-cron
+    plan: free
+    region: oregon
+    repo: https://github.com/123lai1234-create/ddd
+    branch: 123lai1234-create
+    autoDeploy: true
+    serviceDetails:
+      env: node
+      rootDir: astro/catchall-server
+      schedule: "30 6 * * 1-5"
+      envVars:
+        - key: NODE_ENV
+          value: production
+        - key: TZ
+          value: Asia/Taipei
+        - key: RENDER_BASE
+          value: https://donttalk-catchall.onrender.com
+        - key: VERCEL_BASE
+          value: https://donttalk.vercel.app
+        - key: TIMEOUT_MS
+          value: "15000"
+        - key: FIX_ENABLED
+          value: "1"
+      envSpecificDetails:
+        buildPlan: starter
+        nodeVersion: "22"
+        buildCommand: npm install
+        startCommand: node scripts/daily_health_check.mjs
