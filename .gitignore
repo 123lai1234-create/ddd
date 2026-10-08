@@ -26,6 +26,10 @@ _backup_lrc_*/
 # Sibling LINE bot project (has its own repo, not part of ddd)
 line/
 
+# Orphan gitlink at HEAD (no .gitmodules → broken submodule, was probably
+# the original "import" sibling repo before refactor)
+dontalk-import/
+
 # Debug / dogfood scripts (one-off, not part of the codebase)
 _*.py
 _*.log
