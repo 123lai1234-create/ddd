@@ -4051,10 +4051,16 @@ async function backtestRunHandler(request) {
         if (sd === lastSignalDate) continue;
         lastSignalDate = sd;
         const entry = priceAt(code, sd);
-        if (!entry) continue; // 沒當日收盤 = 跳過（不要追漲）
+        if (!entry) {
+          if (debugSamples.length < 3) debugSamples.push(`${code}/no-entry@${sd}`);
+          continue;
+        }
         const exitDate = new Date(new Date(sd).getTime() + BACKTEST_HOLD_DAYS * 86400e3).toISOString().slice(0, 10);
         const exit = priceAt(code, exitDate);
-        if (!exit) continue; // 沒出場日收盤 = 跳過
+        if (!exit) {
+          if (debugSamples.length < 3) debugSamples.push(`${code}/no-exit@${exitDate}`);
+          continue;
+        }
         const entryAdj = entry * (1 + slippageBps);
         const exitAdj = exit * (1 - slippageBps);
         const pnl = exitAdj - entryAdj;
