@@ -4046,6 +4046,7 @@ async function backtestRunHandler(request) {
       const codeSignals = signals.filter(s => s.code === code);
       const trades = [];
       let lastSignalDate = ""; // dedupe 同日多次 sign
+      if (debugSamples.length < 3) debugSamples.push(`${code}=${codeSignals.length}sigs`);
       for (const sig of codeSignals) {
         const sd = String(sig.date).slice(0, 10);
         if (sd === lastSignalDate) continue;
