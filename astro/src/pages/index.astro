@@ -227,27 +227,30 @@ const pickIndex = dayOfYear % rides.length;
                                     <line x1="22" y1="130" x2="22" y2="116" stroke="currentColor" stroke-width="1.4" />
                                     <line x1="98" y1="130" x2="98" y2="116" stroke="currentColor" stroke-width="1.4" />
                                     <line x1="14" y1="116" x2="106" y2="116" stroke="currentColor" stroke-width="1.4" />
-                                    {/* rotating group: canopy + horses + pole + base */}
-                                    <g class="carousel-spin" style="transform-origin: 60px 116px;">
-                                        {/* (note: inline style matches CSS; transform-box: view-box lets origin be SVG user units) */}
-                                        {/* base platform (oval) */}
-                                        <ellipse cx="60" cy="116" rx="38" ry="4" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" />
-                                        {/* central pole */}
-                                        <line x1="60" y1="38" x2="60" y2="116" stroke="currentColor" stroke-width="1.6" />
-                                        {/* canopy: simple wide cone */}
-                                        <path d="M 22 58 Q 60 24 98 58 Z" fill={ride.color} stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                                        {/* canopy bottom trim (front edge curve) */}
-                                        <path d="M 22 58 Q 60 70 98 58" fill="none" stroke="currentColor" stroke-width="1.2" />
-                                        {/* canopy finial + flag */}
-                                        <line x1="60" y1="24" x2="60" y2="14" stroke="currentColor" stroke-width="1.4" />
+                                    {/* base platform (static) */}
+                                    <ellipse cx="60" cy="116" rx="38" ry="4" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" />
+                                    {/* central pole (static) */}
+                                    <line x1="60" y1="38" x2="60" y2="116" stroke="currentColor" stroke-width="1.6" />
+                                    {/* canopy (static — conical, looks the same from any angle) */}
+                                    <path d="M 22 58 Q 60 24 98 58 Z" fill={ride.color} stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                                    <path d="M 22 58 Q 60 70 98 58" fill="none" stroke="currentColor" stroke-width="1.2" />
+                                    {/* flag (static position, wave in place) */}
+                                    <line x1="60" y1="24" x2="60" y2="14" stroke="currentColor" stroke-width="1.4" />
+                                    <g class="carousel-flag" style="transform-origin: 60px 16px;">
                                         <path d="M 60 14 L 72 16 L 60 19 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
-                                        {/* horse 1 - left (compact horse silhouette) */}
+                                    </g>
+                                    {/* horse 1 - left (bobs up and down) */}
+                                    <g class="carousel-horse carousel-horse-1">
                                         <line x1="38" y1="58" x2="38" y2="78" stroke="currentColor" stroke-width="1.2" />
                                         <path d="M 28 92 L 28 84 Q 28 78 34 78 L 42 78 Q 48 78 48 84 L 48 92 L 44 92 L 44 86 L 38 86 L 38 92 L 34 92 L 34 86 L 28 86 Z M 48 81 L 52 78 L 48 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-                                        {/* horse 2 - center */}
+                                    </g>
+                                    {/* horse 2 - center (bobs with offset phase) */}
+                                    <g class="carousel-horse carousel-horse-2">
                                         <line x1="60" y1="58" x2="60" y2="78" stroke="currentColor" stroke-width="1.2" />
                                         <path d="M 50 92 L 50 84 Q 50 78 56 78 L 64 78 Q 70 78 70 84 L 70 92 L 66 92 L 66 86 L 60 86 L 60 92 L 56 92 L 56 86 L 50 86 Z M 70 81 L 74 78 L 70 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-                                        {/* horse 3 - right */}
+                                    </g>
+                                    {/* horse 3 - right (bobs with another offset) */}
+                                    <g class="carousel-horse carousel-horse-3">
                                         <line x1="82" y1="58" x2="82" y2="78" stroke="currentColor" stroke-width="1.2" />
                                         <path d="M 72 92 L 72 84 Q 72 78 78 78 L 86 78 Q 92 78 92 84 L 92 92 L 88 92 L 88 86 L 82 86 L 82 92 L 78 92 L 78 86 L 72 86 Z M 92 81 L 96 78 L 92 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
                                     </g>
@@ -777,14 +780,37 @@ const pickIndex = dayOfYear % rides.length;
 }
 
 .carousel-spin {
-    animation: carousel-rotate 20s linear infinite;
-    transform-box: view-box;
-    transform-origin: 60px 116px;
+    /* v6: carousel 不再整個旋轉，改成馬各自 bob + 旗子擺動
+       真實旋轉木馬的馬不會跟著轉，只會上下 */
+    animation: none;
 }
 
-@keyframes carousel-rotate {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
+/* 旗子擺動（固定位置，繞旗桿轉一點點） */
+.carousel-flag {
+    animation: flag-wave 2.4s ease-in-out infinite;
+    transform-box: view-box;
+    transform-origin: 60px 16px;
+}
+
+@keyframes flag-wave {
+    0%, 100% { transform: rotate(0deg); }
+    50%      { transform: rotate(10deg); }
+}
+
+/* 馬上下 bob — 3 隻不同 phase 模擬「在繞圈」 */
+.carousel-horse {
+    animation: horse-bob 2.4s ease-in-out infinite;
+    transform-box: view-box;
+    transform-origin: center bottom;
+}
+
+.carousel-horse-1 { animation-delay: 0s; }
+.carousel-horse-2 { animation-delay: -0.8s; }  /* 1/3 週期前移 */
+.carousel-horse-3 { animation-delay: -1.6s; }  /* 2/3 週期前移 */
+
+@keyframes horse-bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-3.5px); }
 }
 
 /* Coaster car — 跟著軌道跑（不是原地抖動）
@@ -1076,7 +1102,8 @@ html {
 @media (prefers-reduced-motion: reduce) {
     .ferris-spin,
     .balloon-float,
-    .carousel-spin,
+    .carousel-flag,
+    .carousel-horse,
     .coaster-car,
     .clock-hand-min,
     .clock-hand-hour,
