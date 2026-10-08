@@ -2068,6 +2068,122 @@ async function strategySignals(request, code) {
   return json({ ok: true, source: "stub", code: code || null, signals: [] });
 }
 
+// 2026-10-08：每日網站健康檢查 + 自動修復 log（Render cron daily_health_check.mjs 寫入）
+//   - 健康檢查結果存 Neon，Vercel 跟 Render catchall 都能讀
+//   - 用於 dashboard 上顯示「最近一次健康檢查 N/M pass」
+//   - failures 陣列只存失敗的 id+error，避免 log 太大
+//   - 保留 30 天，舊的自動清掉
+async function healthCheckEnsureTable() {
+  // Neon HTTP 不支援 multi-statement，拆成單條
+  const stmts = [
+    `CREATE TABLE IF NOT EXISTS health_check_log (
+       id SERIAL PRIMARY KEY,
+       run_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+       passed INT NOT NULL DEFAULT 0,
+       failed INT NOT NULL DEFAULT 0,
+       auto_fixed INT NOT NULL DEFAULT 0,
+       total INT NOT NULL DEFAULT 0,
+       duration_ms INT NOT NULL DEFAULT 0,
+       failures JSONB,
+       summary JSONB,
+       trigger TEXT
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_health_check_log_run_at
+       ON health_check_log (run_at DESC)`,
+  ];
+  for (const sql of stmts) {
+    try { await q(sql); } catch (_) { /* 已經存在就略過 */ }
+  }
+}
+async function healthCheckRecord(request) {
+  try {
+    await healthCheckEnsureTable();
+    const body = await readJson(request);
+    const passed = Number(body?.passed || 0);
+    const failed = Number(body?.failed || 0);
+    const autoFixed = Number(body?.auto_fixed || body?.autoFixed || 0);
+    const total = Number(body?.total || (passed + failed));
+    const durationMs = Number(body?.duration_ms || body?.durationMs || 0);
+    const failures = Array.isArray(body?.failures) ? body.failures : [];
+    const summary = body?.summary || body || {};
+    const trigger = String(body?.trigger || "manual").slice(0, 64);
+    await q(
+      `INSERT INTO health_check_log
+        (passed, failed, auto_fixed, total, duration_ms, failures, summary, trigger)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8)`,
+      [passed, failed, autoFixed, total, durationMs, JSON.stringify(failures), JSON.stringify(summary), trigger]
+    );
+    // 順手清掉 30 天前的（避免 log 無限長大）
+    try { await q(`DELETE FROM health_check_log WHERE run_at < NOW() - INTERVAL '30 days'`); } catch (_) {}
+    return json({ ok: true, recorded: true, total, passed, failed, auto_fixed: autoFixed });
+  } catch (e) {
+    return json({ ok: false, error: e?.message || String(e) }, { status: 500 });
+  }
+}
+async function healthCheckLatest(request) {
+  try {
+    await healthCheckEnsureTable();
+    const { rows } = await q(
+      `SELECT run_at, passed, failed, auto_fixed, total, duration_ms, failures, summary, trigger
+       FROM health_check_log ORDER BY run_at DESC LIMIT 1`
+    );
+    if (rows.length === 0) {
+      return json({ ok: true, source: "db", found: false, message: "no health check yet" });
+    }
+    const r = rows[0];
+    return json({
+      ok: true,
+      source: "db",
+      found: true,
+      run_at: r.run_at,
+      passed: r.passed,
+      failed: r.failed,
+      auto_fixed: r.auto_fixed,
+      total: r.total,
+      duration_ms: r.duration_ms,
+      failures: r.failures || [],
+      summary: r.summary || {},
+      trigger: r.trigger,
+    });
+  } catch (e) {
+    return json({ ok: false, error: e?.message || String(e) }, { status: 500 });
+  }
+}
+async function healthCheckHistory(request) {
+  try {
+    await healthCheckEnsureTable();
+    const u = urlOf(request);
+    const days = Math.min(30, Math.max(1, parseInt(u.searchParams.get("days") || "7", 10) || 7));
+    const limit = Math.min(100, Math.max(1, parseInt(u.searchParams.get("limit") || "30", 10) || 30));
+    const { rows } = await q(
+      `SELECT run_at, passed, failed, auto_fixed, total, duration_ms, failures, trigger
+       FROM health_check_log
+       WHERE run_at > NOW() - ($1 || ' days')::interval
+       ORDER BY run_at DESC
+       LIMIT $2`,
+      [String(days), limit]
+    );
+    return json({
+      ok: true,
+      source: "db",
+      days,
+      count: rows.length,
+      runs: rows.map(r => ({
+        run_at: r.run_at,
+        passed: r.passed,
+        failed: r.failed,
+        auto_fixed: r.auto_fixed,
+        total: r.total,
+        duration_ms: r.duration_ms,
+        failures: r.failures || [],
+        trigger: r.trigger,
+      })),
+    });
+  } catch (e) {
+    return json({ ok: false, error: e?.message || String(e) }, { status: 500 });
+  }
+}
+
 async function intradayCheck(request, code) {
   if (!code) return json({ error: "missing code" }, { status: 400 });
   try {
@@ -9372,6 +9488,14 @@ const TABLE = [
   // 2026-10-06：backup / health check
   ["GET",  /^\/admin\/markers\/backup\/?$/, markersBackup],
   ["GET",  /^\/admin\/health\/tables\/?$/, healthTables],
+
+  // 2026-10-08：每日健康檢查 + 自動修復 log（Render cron daily_health_check.mjs 寫入）
+  //   - Vercel/Render catchall 都能讀
+  //   - 用於 dashboard 顯示「上次健康檢查 N/M pass」
+  //   - 30 天 retention（record handler 自動清）
+  ["POST", /^\/admin\/health\/record\/?$/,    healthCheckRecord],
+  ["GET",  /^\/admin\/health\/latest\/?$/,   healthCheckLatest],
+  ["GET",  /^\/admin\/health\/history\/?$/,  healthCheckHistory],
 
   ["GET",  /^\/strategy_signals\/?$/,        strategySignals],
   ["GET",  /^\/strategy_signals\/([^/]+?)\/?$/, strategySignals],
