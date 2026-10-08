@@ -3982,7 +3982,6 @@ async function backtestRunHandler(request) {
     signals = [];
   }
   const debugSamples = [];
-  }
 
   // 預先抓收盤價 — market_price_bars schema: symbol / trade_date(ROC 文字) / close_price
   // 一次查一檔，避免 Neon HTTP 對 IN() 的怪問題
