@@ -3988,16 +3988,18 @@ async function backtestRunHandler(request) {
   for (const code of codes) {
     try {
       const { rows } = await q(
-        `SELECT trade_date, close_price FROM market_price_bars
+        `SELECT trade_date, close_price, source_name FROM market_price_bars
          WHERE symbol = $1
-           AND asset_type='stock' AND market='TWSE'
            AND trade_date IS NOT NULL
-         ORDER BY trade_date DESC LIMIT 250`,
+         ORDER BY trade_date DESC LIMIT 5`,
         [code]
       ).catch((err) => {
         signalsHint = signalsHint || `price[${code}] err: ${err?.message?.slice(0, 80)}`;
         return { rows: [] };
       });
+      if (rows.length === 0 && !signalsHint.includes(code)) {
+        signalsHint = (signalsHint ? signalsHint + ' ' : '') + `${code}=0rows`;
+      }
       for (const r of rows) {
         const isoDate = rocToIso(r.trade_date);
         if (!isoDate) continue;
