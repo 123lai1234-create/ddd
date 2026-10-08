@@ -3983,32 +3983,30 @@ async function backtestRunHandler(request) {
   }
 
   // 預先抓收盤價 — market_price_bars schema: symbol / trade_date(ROC 文字) / close_price
-  // trade_date 是 ROC 文字 "115/10/07"，不能直接 ::date。用 ORDER BY DESC + LIMIT N 拿最近
+  // 一次查一檔，避免 Neon HTTP 對 IN() 的怪問題
   const priceMap = new Map(); // code,isoDate -> price
-  try {
-    const placeholders = codes.map((_, i) => `$${i + 1}`).join(",");
-    const params = [...codes, 250 * codes.length]; // 每檔 250 筆（≈1 年）
-    const { rows } = await q(
-      `SELECT DISTINCT ON (symbol, trade_date) symbol, trade_date, close_price
-       FROM market_price_bars
-       WHERE symbol IN (${placeholders})
-         AND asset_type='stock' AND market='TWSE'
-         AND trade_date IS NOT NULL
-       ORDER BY symbol, trade_date DESC, (source_name='twse_STOCK_DAY_ALL') DESC, fetched_at DESC NULLS LAST
-       LIMIT $${codes.length + 1}`,
-      params
-    ).catch((err) => {
-      signalsHint = signalsHint || `market_price_bars err: ${err?.message?.slice(0, 100)}`;
-      return { rows: [] };
-    });
-    for (const r of rows) {
-      const isoDate = rocToIso(r.trade_date);
-      if (!isoDate) continue;
-      const k = r.symbol + "|" + isoDate;
-      priceMap.set(k, Number(r.close_price));
+  for (const code of codes) {
+    try {
+      const { rows } = await q(
+        `SELECT trade_date, close_price FROM market_price_bars
+         WHERE symbol = $1
+           AND asset_type='stock' AND market='TWSE'
+           AND trade_date IS NOT NULL
+         ORDER BY trade_date DESC LIMIT 250`,
+        [code]
+      ).catch((err) => {
+        signalsHint = signalsHint || `price[${code}] err: ${err?.message?.slice(0, 80)}`;
+        return { rows: [] };
+      });
+      for (const r of rows) {
+        const isoDate = rocToIso(r.trade_date);
+        if (!isoDate) continue;
+        const k = code + "|" + isoDate;
+        priceMap.set(k, Number(r.close_price));
+      }
+    } catch (e) {
+      signalsHint = signalsHint || `price[${code}] catch: ${e?.message?.slice(0, 80)}`;
     }
-  } catch (e) {
-    signalsHint = signalsHint || `price fetch err: ${e?.message?.slice(0, 100)}`;
   }
 
   function priceAt(code, date) {
