@@ -3955,7 +3955,9 @@ async function backtestRunHandler(request) {
     const { rows } = await q(
       `SELECT code, date, type, text, price FROM markers
        WHERE code IN (${placeholders}) AND date >= $${codes.length + 1}
-       ORDER BY date ASC LIMIT 2000`,
+         AND (type = 'event' OR type IS NULL)
+         AND text IS NOT NULL AND text <> '' AND text NOT LIKE 'x%' AND text NOT LIKE 'test%'
+       ORDER BY date DESC LIMIT 500`,
       params
     ).catch((err) => {
       signalsHint = `markers query err: ${err?.message?.slice(0, 100)}`;
@@ -4013,13 +4015,16 @@ async function backtestRunHandler(request) {
     try {
       const codeSignals = signals.filter(s => s.code === code);
       const trades = [];
+      let lastSignalDate = ""; // dedupe 同日多次 sign
       for (const sig of codeSignals) {
         const sd = String(sig.date).slice(0, 10);
-        const entry = priceAt(code, sd) || nearestPrice(code, sd, "next");
-        if (!entry) continue;
+        if (sd === lastSignalDate) continue;
+        lastSignalDate = sd;
+        const entry = priceAt(code, sd);
+        if (!entry) continue; // 沒當日收盤 = 跳過（不要追漲）
         const exitDate = new Date(new Date(sd).getTime() + BACKTEST_HOLD_DAYS * 86400e3).toISOString().slice(0, 10);
-        const exit = priceAt(code, exitDate) || nearestPrice(code, exitDate, "next");
-        if (!exit) continue;
+        const exit = priceAt(code, exitDate);
+        if (!exit) continue; // 沒出場日收盤 = 跳過
         const entryAdj = entry * (1 + slippageBps);
         const exitAdj = exit * (1 - slippageBps);
         const pnl = exitAdj - entryAdj;
