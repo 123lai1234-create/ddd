@@ -3967,22 +3967,29 @@ async function backtestRunHandler(request) {
     signals = [];
   }
 
-  // 預先抓收盤價（過去 180 天）
+  // 預先抓收盤價（過去 180 天）— market_price_bars schema: symbol / trade_date / close_price
   const priceMap = new Map(); // code,date -> price
   try {
     const placeholders = codes.map((_, i) => `$${i + 1}`).join(",");
     const params = [...codes, since];
     const { rows } = await q(
-      `SELECT code, date, close FROM market_price_bars
-       WHERE code IN (${placeholders}) AND date >= $${codes.length + 1}
-       ORDER BY date ASC LIMIT 50000`,
+      `SELECT DISTINCT ON (symbol, trade_date) symbol, trade_date, close_price
+       FROM market_price_bars
+       WHERE symbol IN (${placeholders}) AND trade_date >= $${codes.length + 1}::date
+         AND asset_type='stock' AND market='TWSE'
+       ORDER BY symbol, trade_date ASC LIMIT 50000`,
       params
-    ).catch(() => ({ rows: [] }));
+    ).catch((err) => {
+      signalsHint = signalsHint || `market_price_bars err: ${err?.message?.slice(0, 100)}`;
+      return { rows: [] };
+    });
     for (const r of rows) {
-      const k = r.code + "|" + String(r.date).slice(0, 10);
-      priceMap.set(k, Number(r.close));
+      const k = r.symbol + "|" + String(r.trade_date).slice(0, 10);
+      priceMap.set(k, Number(r.close_price));
     }
-  } catch (_) {}
+  } catch (e) {
+    signalsHint = signalsHint || `price fetch err: ${e?.message?.slice(0, 100)}`;
+  }
 
   function priceAt(code, date) {
     return priceMap.get(code + "|" + date);
