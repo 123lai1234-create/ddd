@@ -3945,20 +3945,25 @@ async function backtestRunHandler(request) {
   }
   const strategyMeta = BACKTEST_STRATEGIES.find(s => s.id === strategy) || BACKTEST_STRATEGIES[0];
 
-  // 抓歷史訊號（過去 180 天）
+  // 抓歷史訊號（過去 180 天）— 用 markers 表（signal_history handler 也讀這個）
   const since = new Date(Date.now() - 180 * 86400e3).toISOString().slice(0, 10);
   let signals = [];
+  let signalsHint = "";
   try {
     const placeholders = codes.map((_, i) => `$${i + 1}`).join(",");
     const params = [...codes, since];
     const { rows } = await q(
-      `SELECT code, date, type, text, price FROM signal_history
+      `SELECT code, date, type, text, price FROM markers
        WHERE code IN (${placeholders}) AND date >= $${codes.length + 1}
        ORDER BY date ASC LIMIT 2000`,
       params
-    ).catch(() => ({ rows: [] }));
+    ).catch((err) => {
+      signalsHint = `markers query err: ${err?.message?.slice(0, 100)}`;
+      return { rows: [] };
+    });
     signals = rows;
-  } catch (_) {
+  } catch (e) {
+    signalsHint = `outer err: ${e?.message?.slice(0, 100)}`;
     signals = [];
   }
 
@@ -4072,11 +4077,11 @@ async function backtestRunHandler(request) {
     }
   }
 
-  // 加總
+  // 加總 — portfolio 起始 = 每股 100k × 檔數
   const okResults = results.filter(r => r.ok);
-  const portfolioInitial = 1000000;
+  const portfolioInitial = okResults.reduce((a, r) => a + r.metrics.portfolio_initial, 0) || 100000;
   const portfolioFinal = okResults.reduce((a, r) => a + r.metrics.portfolio_final, 0);
-  const portfolioReturn = (portfolioFinal - portfolioInitial) / portfolioInitial;
+  const portfolioReturn = portfolioInitial > 0 ? (portfolioFinal - portfolioInitial) / portfolioInitial : 0;
   const aggregate = okResults.length === 0 ? {} : {
     total_trades: okResults.reduce((a, r) => a + r.metrics.total_trades, 0),
     wins: okResults.reduce((a, r) => a + r.metrics.wins, 0),
@@ -4102,7 +4107,7 @@ async function backtestRunHandler(request) {
     aggregate,
     results,
     hint: signals.length === 0
-      ? "沒有 signal_history 訊號（這 180 天內）— 試其他股票或先跑 /admin/load/markers"
+      ? `沒有 markers 訊號（這 180 天內）${signalsHint ? '— ' + signalsHint : ''}`
       : (priceMap.size === 0 ? "沒有 market_price_bars 收盤價 — 試代碼如 2330 或先跑 /admin/load/market_price" : ""),
   });
 }
