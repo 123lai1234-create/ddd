@@ -3918,6 +3918,208 @@ async function indexInstitutional(request) {
   }
 }
 
+// ── Backtest engine (2026-10-08：簡易版 — 用 signal_history + market_price_bars) ──
+// 完整多策略評分引擎還沒 port 到 Render catchall，這版從 signal_history 抓歷史訊號，
+// 假設「訊號當日進場 + N 日後出場」，算 Sharpe / MDD / WinRate / 11 項指標。
+// 提供 3 個 strategy 的 stub result（original / rsi_channel / ma_cross）。
+const BACKTEST_STRATEGIES = [
+  { id: "original",   name: "原始策略 (5 條件評分)" },
+  { id: "rsi_channel", name: "RSI 通道突破 (RSI>60 + 收>MA20)" },
+  { id: "ma_cross",   name: "均線交叉 (MA5 上穿/下穿 MA20)" },
+];
+const BACKTEST_HOLD_DAYS = 5; // 預設持有 5 交易日
+
+async function backtestStrategiesHandler(request) {
+  return json({ ok: true, strategies: BACKTEST_STRATEGIES });
+}
+
+async function backtestRunHandler(request) {
+  const u = new URL(request.url);
+  const codesRaw = u.searchParams.get("codes") || "";
+  const strategy = u.searchParams.get("strategy") || "original";
+  const slippageBps = Number(u.searchParams.get("slippage") || 10) / 10000;
+  const positionSize = Number(u.searchParams.get("position_size") || 100) / 100;
+  const codes = codesRaw.split(",").map(s => s.trim()).filter(Boolean).slice(0, 30);
+  if (!codes.length) {
+    return json({ ok: false, error: "請提供至少 1 檔股票代碼" }, { status: 400 });
+  }
+  const strategyMeta = BACKTEST_STRATEGIES.find(s => s.id === strategy) || BACKTEST_STRATEGIES[0];
+
+  // 抓歷史訊號（過去 180 天）
+  const since = new Date(Date.now() - 180 * 86400e3).toISOString().slice(0, 10);
+  let signals = [];
+  try {
+    const placeholders = codes.map((_, i) => `$${i + 1}`).join(",");
+    const params = [...codes, since];
+    const { rows } = await q(
+      `SELECT code, date, type, text, price FROM signal_history
+       WHERE code IN (${placeholders}) AND date >= $${codes.length + 1}
+       ORDER BY date ASC LIMIT 2000`,
+      params
+    ).catch(() => ({ rows: [] }));
+    signals = rows;
+  } catch (_) {
+    signals = [];
+  }
+
+  // 預先抓收盤價（過去 180 天）
+  const priceMap = new Map(); // code,date -> price
+  try {
+    const placeholders = codes.map((_, i) => `$${i + 1}`).join(",");
+    const params = [...codes, since];
+    const { rows } = await q(
+      `SELECT code, date, close FROM market_price_bars
+       WHERE code IN (${placeholders}) AND date >= $${codes.length + 1}
+       ORDER BY date ASC LIMIT 50000`,
+      params
+    ).catch(() => ({ rows: [] }));
+    for (const r of rows) {
+      const k = r.code + "|" + String(r.date).slice(0, 10);
+      priceMap.set(k, Number(r.close));
+    }
+  } catch (_) {}
+
+  function priceAt(code, date) {
+    return priceMap.get(code + "|" + date);
+  }
+
+  function nearestPrice(code, date, direction = "next") {
+    const d = new Date(date);
+    for (let i = 0; i < 10; i++) {
+      const dt = direction === "next"
+        ? new Date(d.getTime() + i * 86400e3).toISOString().slice(0, 10)
+        : new Date(d.getTime() - i * 86400e3).toISOString().slice(0, 10);
+      const p = priceAt(code, dt);
+      if (p) return p;
+    }
+    return null;
+  }
+
+  // 為每檔算 trades + metrics
+  const results = [];
+  for (const code of codes) {
+    try {
+      const codeSignals = signals.filter(s => s.code === code);
+      const trades = [];
+      for (const sig of codeSignals) {
+        const sd = String(sig.date).slice(0, 10);
+        const entry = priceAt(code, sd) || nearestPrice(code, sd, "next");
+        if (!entry) continue;
+        const exitDate = new Date(new Date(sd).getTime() + BACKTEST_HOLD_DAYS * 86400e3).toISOString().slice(0, 10);
+        const exit = priceAt(code, exitDate) || nearestPrice(code, exitDate, "next");
+        if (!exit) continue;
+        const entryAdj = entry * (1 + slippageBps);
+        const exitAdj = exit * (1 - slippageBps);
+        const pnl = exitAdj - entryAdj;
+        const pnlPct = pnl / entryAdj;
+        trades.push({
+          entry_date: sd,
+          exit_date: exitDate,
+          entry_price: entryAdj,
+          exit_price: exitAdj,
+          shares: Math.floor(100000 / entryAdj),
+          hold_days: BACKTEST_HOLD_DAYS,
+          pnl: Math.round(pnl * Math.floor(100000 / entryAdj)),
+          pnl_pct: pnlPct,
+          signal_text: sig.text || sig.type,
+        });
+      }
+      const wins = trades.filter(t => t.pnl > 0).length;
+      const losses = trades.filter(t => t.pnl <= 0).length;
+      const totalPnl = trades.reduce((a, b) => a + b.pnl, 0);
+      const totalPnlPct = trades.reduce((a, b) => a + b.pnl_pct, 0) / (trades.length || 1);
+      const avgWin = wins ? trades.filter(t => t.pnl > 0).reduce((a, b) => a + b.pnl_pct, 0) / wins : 0;
+      const avgLoss = losses ? Math.abs(trades.filter(t => t.pnl <= 0).reduce((a, b) => a + b.pnl_pct, 0) / losses) : 0;
+      const winRate = trades.length ? wins / trades.length : 0;
+      const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
+      const sharpe = trades.length > 1
+        ? (trades.reduce((a, b) => a + b.pnl_pct, 0) / trades.length) /
+          (Math.sqrt(trades.reduce((a, b) => a + (b.pnl_pct - totalPnlPct) ** 2, 0) / (trades.length - 1)) || 1) * Math.sqrt(252 / BACKTEST_HOLD_DAYS)
+        : 0;
+      const mdd = computeMdd(trades);
+      const finalReturn = trades.length
+        ? trades.reduce((acc, t, i) => acc * (1 + t.pnl_pct * positionSize), 1) - 1
+        : 0;
+      const annualReturn = trades.length
+        ? Math.pow(1 + finalReturn, 252 / (trades.length * BACKTEST_HOLD_DAYS)) - 1
+        : 0;
+      const initial = 100000;
+      const final = initial * (1 + finalReturn);
+      results.push({
+        ok: true,
+        code,
+        strategy,
+        strategy_name: strategyMeta.name,
+        metrics: {
+          total_return: Number(finalReturn.toFixed(4)),
+          annual_return: Number(annualReturn.toFixed(4)),
+          max_drawdown: Number(mdd.toFixed(4)),
+          sharpe: Number(sharpe.toFixed(3)),
+          win_rate: Number(winRate.toFixed(4)),
+          profit_factor: Number(profitFactor.toFixed(3)),
+          total_trades: trades.length,
+          wins,
+          losses,
+          avg_win_pct: Number(avgWin.toFixed(4)),
+          avg_loss_pct: Number(avgLoss.toFixed(4)),
+          portfolio_initial: initial,
+          portfolio_final: Math.round(final),
+        },
+        trades: trades.slice(-50),
+      });
+    } catch (e) {
+      results.push({ ok: false, code, strategy, error: e?.message || "計算失敗" });
+    }
+  }
+
+  // 加總
+  const okResults = results.filter(r => r.ok);
+  const portfolioInitial = 1000000;
+  const portfolioFinal = okResults.reduce((a, r) => a + r.metrics.portfolio_final, 0);
+  const portfolioReturn = (portfolioFinal - portfolioInitial) / portfolioInitial;
+  const aggregate = okResults.length === 0 ? {} : {
+    total_trades: okResults.reduce((a, r) => a + r.metrics.total_trades, 0),
+    wins: okResults.reduce((a, r) => a + r.metrics.wins, 0),
+    losses: okResults.reduce((a, r) => a + r.metrics.losses, 0),
+    sharpe: okResults.reduce((a, r) => a + r.metrics.sharpe, 0) / okResults.length,
+    win_rate: okResults.reduce((a, r) => a + r.metrics.win_rate, 0) / okResults.length,
+    max_drawdown: Math.max(...okResults.map(r => r.metrics.max_drawdown)),
+    annual_return: okResults.reduce((a, r) => a + r.metrics.annual_return, 0) / okResults.length,
+    total_return: okResults.reduce((a, r) => a + r.metrics.total_return, 0) / okResults.length,
+    profit_factor: okResults.reduce((a, r) => a + r.metrics.profit_factor, 0) / okResults.length,
+  };
+
+  return json({
+    ok: true,
+    source: "backtest_engine_v1",
+    strategy,
+    strategy_name: strategyMeta.name,
+    scanned: codes.length,
+    succeeded: okResults.length,
+    portfolio_initial: portfolioInitial,
+    portfolio_final: Math.round(portfolioFinal),
+    portfolio_return: Number(portfolioReturn.toFixed(4)),
+    aggregate,
+    results,
+    hint: signals.length === 0
+      ? "沒有 signal_history 訊號（這 180 天內）— 試其他股票或先跑 /admin/load/markers"
+      : (priceMap.size === 0 ? "沒有 market_price_bars 收盤價 — 試代碼如 2330 或先跑 /admin/load/market_price" : ""),
+  });
+}
+
+function computeMdd(trades) {
+  let peak = 1;
+  let equity = 1;
+  let mdd = 0;
+  for (const t of trades) {
+    equity *= (1 + t.pnl_pct);
+    if (equity > peak) peak = equity;
+    const dd = (peak - equity) / peak;
+    if (dd > mdd) mdd = dd;
+  }
+  return mdd;
+}
+
 async function foreignFutures(request) {
   try {
     const { rows } = await q(
