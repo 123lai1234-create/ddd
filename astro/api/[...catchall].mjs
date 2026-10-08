@@ -4057,7 +4057,7 @@ async function backtestRunHandler(request) {
           continue;
         }
         const exitDate = new Date(new Date(sd).getTime() + BACKTEST_HOLD_DAYS * 86400e3).toISOString().slice(0, 10);
-        const exit = priceAt(code, exitDate);
+        const exit = priceAt(code, exitDate) || nearestPrice(code, exitDate, "next");
         if (!exit) {
           if (debugSamples.length < 3) debugSamples.push(`${code}/no-exit@${exitDate}`);
           continue;
