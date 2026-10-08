@@ -4157,7 +4157,7 @@ async function backtestRunHandler(request) {
     results,
     hint: signals.length === 0
       ? `沒有 markers 訊號（這 180 天內）${signalsHint ? '— ' + signalsHint : ''}`
-      : (priceMap.size === 0 ? `priceMap=0 signals=${signals.length} signalsHint=${signalsHint || 'none'}` : `markers=${signals.length} prices=${pricesMap.size} keys_sample=${Array.from(priceMap.keys()).slice(0, 3).join(',')} signal_date=${signals[0] ? String(signals[0].date).slice(0, 10) : 'none'}`),
+      : (priceMap.size === 0 ? `priceMap=0 signals=${signals.length} signalsHint=${signalsHint || 'none'}` : `markers=${signals.length} prices=${pricesMap.size} keys_sample=${Array.from(priceMap.keys()).slice(0, 3).join(',')} signal_date=${signals[0] ? String(signals[0].date).slice(0, 10) : 'none'} debug=${debugSamples.slice(0, 5).join(' | ') || 'none'}`),
   });
 }
 
