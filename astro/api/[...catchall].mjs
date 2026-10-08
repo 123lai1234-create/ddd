@@ -8777,6 +8777,36 @@ async function lineBroadcastHandler(request) {
   }, { status: 410 });
 }
 
+// 2026-10-08：line-push 頁面需要的兩個 stub — 回傳 empty 但 shape 對，
+// 不讓前端 console 爆 error。真正的 LINE 推播由 line-bot-api 服務 + Render cron 處理。
+async function lineLogHandler(request) {
+  return json({
+    ok: true,
+    source: "stub",
+    logs: [],
+    items: [],
+    count: 0,
+    hint: "line push log 已轉到 line-bot-api Render 服務，前端不再直接抓",
+  });
+}
+
+async function lineTriggersHandler(request) {
+  if (request.method === "POST") {
+    return json({ ok: true, saved: true, hint: "trigger 設定僅存在前端（line-push.html）" });
+  }
+  // GET：回默認的 4 個 trigger（前端 UI 預設值）
+  return json({
+    ok: true,
+    triggers: [
+      { id: "macd_golden_cross", name: "MACD 黃金交叉", enabled: true },
+      { id: "ma_breakout", name: "收盤突破 5MA / 20MA", enabled: true },
+      { id: "rsi_oversold", name: "RSI 跌破 30（超賣訊號）", enabled: true },
+      { id: "near_limit", name: "接近漲停 / 跌停", enabled: true },
+      { id: "foreign_3d", name: "外資連續 3 日買超", enabled: false },
+    ],
+  });
+}
+
 // loadMopsFromHtml: legacy — Vercel edge still can't fit, kept for Pro upgrade path
 async function loadMopsFromHtml(request) {
   let body;
@@ -9625,6 +9655,13 @@ const TABLE = [
   ["GET",  /^\/treasury\/buyback\/?$/,       buybackListHandler],
   ["GET",  /^\/treasury\/private\/?$/,       privatePlacementHandler],
   ["GET",  /^\/yahoo\/chart\/?$/,            yahooChartProxy],
+  // 2026-10-08：backtest engine (signal_history + market_price_bars → trades + Sharpe/MDD 等 11 項)
+  ["GET",  /^\/backtest\/strategies\/?$/,    backtestStrategiesHandler],
+  ["GET",  /^\/backtest\/?$/,                backtestRunHandler],
+  // 2026-10-08：line-push 頁面 stub（真正 broadcast 由 line-bot-api Render 服務處理）
+  ["GET",  /^\/line\/log\/?$/,               lineLogHandler],
+  ["GET",  /^\/line\/triggers\/?$/,          lineTriggersHandler],
+  ["POST", /^\/line\/triggers\/?$/,          lineTriggersHandler],
   ["GET",  /^\/ranking\/?$/,                 rankingHandler],
   ["GET",  /^\/stocks\/?$/,                  listStocks],
   ["GET",  /^\/stocks\/remove\/?$/,          stub.bind(null, "stocks_remove_list", { hint: "use DELETE/POST /api/stocks/remove/<code>" })],
