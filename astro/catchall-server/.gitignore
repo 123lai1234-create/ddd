@@ -1,3 +1,6 @@
 node_modules/
 package-lock.json
 *.log
+# 2026-10-08：daily health check cron 會寫 .jsonl / .json 到 logs/，每次跑都會 append
+#   留本地 debug 用、不進 repo（canonical 在 Neon health_check_log 表）
+logs/
