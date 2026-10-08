@@ -3929,15 +3929,21 @@ const BACKTEST_STRATEGIES = [
 ];
 const BACKTEST_HOLD_DAYS = 5; // 預設持有 5 交易日
 
-// ROC 日期 "115/10/07" → ISO "2026-10-07"
-function rocToIso(rocDate) {
-  const s = String(rocDate).trim();
-  const m = s.match(/^(\d{2,3})\/(\d{1,2})\/(\d{1,2})/);
-  if (!m) return null;
-  const y = String(Number(m[1]) + 1911).padStart(4, "0");
-  const mo = m[2].padStart(2, "0");
-  const d = m[3].padStart(2, "0");
-  return `${y}-${mo}-${d}`;
+// ROC 日期 "115/10/07" OR ISO "2026-10-08" → ISO "2026-10-07"
+function rocToIso(d) {
+  const s = String(d).trim();
+  // ISO yyyy-mm-dd
+  const isoM = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoM) {
+    return `${isoM[1]}-${isoM[2].padStart(2, "0")}-${isoM[3].padStart(2, "0")}`;
+  }
+  // ROC yyy/mm/dd
+  const rocM = s.match(/^(\d{2,3})\/(\d{1,2})\/(\d{1,2})/);
+  if (rocM) {
+    const y = String(Number(rocM[1]) + 1911).padStart(4, "0");
+    return `${y}-${rocM[2].padStart(2, "0")}-${rocM[3].padStart(2, "0")}`;
+  }
+  return null;
 }
 
 async function backtestStrategiesHandler(request) {
