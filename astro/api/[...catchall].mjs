@@ -4011,6 +4011,7 @@ async function backtestRunHandler(request) {
 
   // 為每檔算 trades + metrics
   const results = [];
+  const pricesMap = priceMap;
   for (const code of codes) {
     try {
       const codeSignals = signals.filter(s => s.code === code);
@@ -4120,7 +4121,7 @@ async function backtestRunHandler(request) {
     results,
     hint: signals.length === 0
       ? `沒有 markers 訊號（這 180 天內）${signalsHint ? '— ' + signalsHint : ''}`
-      : (priceMap.size === 0 ? "沒有 market_price_bars 收盤價 — 試代碼如 2330 或先跑 /admin/load/market_price" : ""),
+      : (priceMap.size === 0 ? "沒有 market_price_bars 收盤價 — 試代碼如 2330 或先跑 /admin/load/market_price" : `markers=${signals.length} prices=${pricesMap.size} keys_sample=${Array.from(priceMap.keys()).slice(0, 3).join(',')} signal_date=${signals[0] ? String(signals[0].date).slice(0, 10) : 'none'}`),
   });
 }
 
