@@ -3929,6 +3929,17 @@ const BACKTEST_STRATEGIES = [
 ];
 const BACKTEST_HOLD_DAYS = 5; // 預設持有 5 交易日
 
+// ROC 日期 "115/10/07" → ISO "2026-10-07"
+function rocToIso(rocDate) {
+  const s = String(rocDate).trim();
+  const m = s.match(/^(\d{2,3})\/(\d{1,2})\/(\d{1,2})/);
+  if (!m) return null;
+  const y = String(Number(m[1]) + 1911).padStart(4, "0");
+  const mo = m[2].padStart(2, "0");
+  const d = m[3].padStart(2, "0");
+  return `${y}-${mo}-${d}`;
+}
+
 async function backtestStrategiesHandler(request) {
   return json({ ok: true, strategies: BACKTEST_STRATEGIES });
 }
@@ -3956,7 +3967,9 @@ async function backtestRunHandler(request) {
       `SELECT code, date, type, text, price FROM markers
        WHERE code IN (${placeholders}) AND date >= $${codes.length + 1}
          AND (type = 'event' OR type IS NULL)
-         AND text IS NOT NULL AND text <> '' AND text NOT LIKE 'x%' AND text NOT LIKE 'test%'
+         AND text IS NOT NULL AND text <> ''
+         AND text NOT LIKE 'x%' AND text NOT LIKE 'test%'
+         AND text NOT LIKE '% || %'
        ORDER BY date DESC LIMIT 500`,
       params
     ).catch((err) => {
@@ -3970,6 +3983,7 @@ async function backtestRunHandler(request) {
   }
 
   // 預先抓收盤價（過去 180 天）— market_price_bars schema: symbol / trade_date / close_price
+  // trade_date 存成 ROC 格式 "YYY/MM/DD"（例 "115/10/07"），先轉 ISO 再做 key
   const priceMap = new Map(); // code,date -> price
   try {
     const placeholders = codes.map((_, i) => `$${i + 1}`).join(",");
@@ -3986,7 +4000,9 @@ async function backtestRunHandler(request) {
       return { rows: [] };
     });
     for (const r of rows) {
-      const k = r.symbol + "|" + String(r.trade_date).slice(0, 10);
+      const isoDate = rocToIso(r.trade_date);
+      if (!isoDate) continue;
+      const k = r.symbol + "|" + isoDate;
       priceMap.set(k, Number(r.close_price));
     }
   } catch (e) {
