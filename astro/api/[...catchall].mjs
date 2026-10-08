@@ -3983,15 +3983,17 @@ async function backtestRunHandler(request) {
   }
 
   // 預先抓收盤價（過去 180 天）— market_price_bars schema: symbol / trade_date / close_price
-  // trade_date 存成 ROC 格式 "YYY/MM/DD"（例 "115/10/07"），先轉 ISO 再做 key
+  // trade_date 存成 ROC 文字 "YYY/MM/DD"（例 "115/10/07"），不能直接 ::date
+  // 改用 substring 比對 ROC year (last 180 days = roc year >= since 的 ROC year)
   const priceMap = new Map(); // code,date -> price
+  const rocSinceYear = String(Number(since.slice(0, 4)) - 1911).padStart(3, "0");
   try {
     const placeholders = codes.map((_, i) => `$${i + 1}`).join(",");
-    const params = [...codes, since];
+    const params = [...codes, rocSinceYear];
     const { rows } = await q(
       `SELECT DISTINCT ON (symbol, trade_date) symbol, trade_date, close_price
        FROM market_price_bars
-       WHERE symbol IN (${placeholders}) AND trade_date >= $${codes.length + 1}::date
+       WHERE symbol IN (${placeholders}) AND trade_date >= $${codes.length + 1}
          AND asset_type='stock' AND market='TWSE'
        ORDER BY symbol, trade_date ASC LIMIT 50000`,
       params
