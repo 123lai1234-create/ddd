@@ -3981,6 +3981,8 @@ async function backtestRunHandler(request) {
     signalsHint = `outer err: ${e?.message?.slice(0, 100)}`;
     signals = [];
   }
+  const debugSamples = [];
+  }
 
   // 預先抓收盤價 — market_price_bars schema: symbol / trade_date(ROC 文字) / close_price
   // 一次查一檔，避免 Neon HTTP 對 IN() 的怪問題
@@ -4000,6 +4002,9 @@ async function backtestRunHandler(request) {
       if (rows.length === 0 && !signalsHint.includes(code)) {
         signalsHint = (signalsHint ? signalsHint + ' ' : '') + `${code}=0rows`;
       }
+      if (rows.length > 0 && debugSamples.length === 0) {
+        debugSamples.push(`${code}:${JSON.stringify(rows[0])}`);
+      }
       for (const r of rows) {
         const isoDate = rocToIso(r.trade_date);
         if (!isoDate) continue;
@@ -4010,6 +4015,7 @@ async function backtestRunHandler(request) {
       signalsHint = signalsHint || `price[${code}] catch: ${e?.message?.slice(0, 80)}`;
     }
   }
+  if (debugSamples.length) signalsHint = (signalsHint ? signalsHint + ' ' : '') + 'sample=' + debugSamples.join(' | ');
 
   function priceAt(code, date) {
     return priceMap.get(code + "|" + date);
