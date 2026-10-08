@@ -22,3 +22,21 @@ outputs/*.pt
 # LRC backup folders (created by auto-scale script)
 _backup_lrc_*/
 .lrc_backup_*/
+
+# Sibling LINE bot project (has its own repo, not part of ddd)
+line/
+
+# Debug / dogfood scripts (one-off, not part of the codebase)
+_*.py
+_*.log
+__*.py
+astro/catchall-server/_*.py
+astro/catchall-server/_*.log
+astro/catchall-server/_*.jsonl
+astro/catchall-server/create_*.py
+astro/catchall-server/logs/
+astro/catchall-server/manual_run.log
+astro/scripts/_*.py
+astro/scripts/_*.log
+.find-schema.ps1
+.render-logs.ps1
