@@ -1,0 +1,59 @@
+name: Daily Website Health Check + Auto-Fix
+
+# 每日 14:30 Asia/Taipei（= 06:30 UTC）週一至週五，自動跑網站健康檢查 + 自動修復。
+#
+# 為何走 GitHub Actions 而不是 Render cron：
+#   - Render cron 需要 RENDER_TOKEN 才能用 API 建（render.yaml declarative 不會 retroactive）
+#   - Vercel Hobby plan 2 cron 額度已用完（MOPS 2 條）
+#   - GitHub Actions 2000 min/月 free、ubuntu runner 沒 egress 限制
+#
+# 測試範圍（astro/catchall-server/scripts/daily_health_check.mjs）：
+#   - Tier 1: Render catchall 9 個核心 API（healthz, stock/2330, stock_damo_filter, etf_signal_filter,
+#     signal_filter, macro_data, markers/history, uptrend_watch, warming_zone_scan, etf_holdings/0050）
+#   - Tier 2: Vercel 7 個關鍵 HTML 頁（/, /stock/, /stock/stock-damo-filter/,
+#     /stock/dashboard/, /stock/etf-filter/, /stock/signal-filter-v2/, /music/）
+#   - Tier 3: admin 診斷（/admin/health/tables, /admin/markers/backup）
+#   - Auto-fix: damo/etf/signal 沒資料 → POST /refresh；markers 空 → POST /admin/load/all
+#   - 寫 Neon health_check_log 表 → GET /api/admin/health/latest 讀
+
+on:
+  schedule:
+    # 30 6 UTC = 14:30 Asia/Taipei（週一到週五，避開 load_all 06:00 UTC + 30 分鐘緩衝）
+    - cron: '30 6 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run daily health check + auto-fix
+        env:
+          RENDER_BASE: https://donttalk-catchall.onrender.com
+          VERCEL_BASE: https://donttalk.vercel.app
+          TIMEOUT_MS: '15000'
+          FIX_ENABLED: '1'
+          TZ: Asia/Taipei
+        run: |
+          cd astro/catchall-server
+          node scripts/daily_health_check.mjs
+        continue-on-error: false  # 失敗 workflow 直接 fail，方便 GitHub Actions UI 看紅綠
+
+      - name: Show last log line on failure
+        if: failure()
+        run: |
+          echo "=== last manual_run.log (debug) ==="
+          cat astro/catchall-server/logs/manual_run.log 2>/dev/null | tail -50 || echo "no log"
+          echo "=== latest health_latest.json ==="
+          cat astro/catchall-server/logs/health_latest.json 2>/dev/null || echo "no latest"

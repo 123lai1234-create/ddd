@@ -2,6 +2,13 @@
 """Create Render cron service 'donttalk-healthcheck-cron'.
 每日 06:30 UTC = 14:30 Asia/Taipei（load_all 之後 30 分鐘）。
 跑 scripts/daily_health_check.mjs → 19 個 API/HTML 健康檢查 + 自動修復（POST refresh/load_all）。
+
+⚠️ 2026-10-08：目前未接 Render cron — 改走 GitHub Actions
+   .github/workflows/daily-health-check.yml（同樣 '30 6 * * 1-5' UTC 觸發、
+   跑同一個 scripts/daily_health_check.mjs、寫同一個 Neon health_check_log 表）。
+   這份腳本留著備用，未來若 Render 部署策略改回 cron、或要備援排程時再跑：
+
+     RENDER_TOKEN=... python astro/catchall-server/create_healthcheck_cron.py
 """
 import os, sys, json, urllib.request, urllib.error
 
