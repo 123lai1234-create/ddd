@@ -4056,8 +4056,22 @@ async function backtestRunHandler(request) {
           if (debugSamples.length < 3) debugSamples.push(`${code}/no-entry@${sd}`);
           continue;
         }
+        // 出場：嘗試 entry+5d 的當日價，否則往後找最近的價（未來 5 日內）
+  // 最後 fallback：拿 code 最新一筆已知價（訊號當天常常 = 最新交易日，沒未來價）
         const exitDate = new Date(new Date(sd).getTime() + BACKTEST_HOLD_DAYS * 86400e3).toISOString().slice(0, 10);
-        const exit = priceAt(code, exitDate) || nearestPrice(code, exitDate, "next");
+        let exit = priceAt(code, exitDate);
+        if (!exit) exit = nearestPrice(code, exitDate, "next");
+        if (!exit) {
+          // 取該 code 在地的最新一筆已知收盤
+          let latestDate = null;
+          for (const k of priceMap.keys()) {
+            if (k.startsWith(code + "|")) {
+              const d = k.slice(code.length + 1);
+              if (!latestDate || d > latestDate) latestDate = d;
+            }
+          }
+          if (latestDate) exit = priceMap.get(code + "|" + latestDate);
+        }
         if (!exit) {
           if (debugSamples.length < 3) debugSamples.push(`${code}/no-exit@${exitDate}`);
           continue;
