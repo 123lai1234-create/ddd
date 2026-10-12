@@ -3820,7 +3820,10 @@ function _exdivTransform(rows) {
       code: r.symbol,
       name: r.symbol,
       dividend: r.cash_dividend != null ? Number(r.cash_dividend) : null,
-      yield: null,
+      // 2026-10-12: yield = dividend / close_price * 100 (r2 = round 2dp)
+      const cp = r.close_price != null ? Number(r.close_price) : null;
+      const div = r.cash_dividend != null ? Number(r.cash_dividend) : null;
+      yield: (cp && cp > 0 && div) ? r2((div / cp) * 100) : null,
       days_left,
       category: /^00[0-9]/.test(r.symbol) ? 'ETF' : '股票',
     };
@@ -3832,7 +3835,10 @@ async function exdivCalendar(request) {
   const days = Math.min(365, Math.max(1, parseInt(u.searchParams.get("days") || "30", 10) || 30));
   try {
     const { rows } = await q(
-      `SELECT id, symbol, ex_date, pay_date, record_date, cash_dividend, stock_dividend, source
+      `SELECT id, symbol, ex_date, pay_date, record_date, cash_dividend, stock_dividend, source,
+       (SELECT mpb.close_price FROM market_price_bars mpb
+        WHERE mpb.symbol = dividend_calendar.symbol
+        ORDER BY mpb.trade_date DESC LIMIT 1) AS close_price
        FROM dividend_calendar
        WHERE ex_date >= CURRENT_DATE AND ex_date <= CURRENT_DATE + ($1 || ' days')::interval
        ORDER BY ex_date ASC
@@ -3859,7 +3865,10 @@ async function exdivUpcoming(request) {
   const days = Math.min(60, Math.max(1, parseInt(u.searchParams.get("days") || "7", 10) || 7));
   try {
     const { rows } = await q(
-      `SELECT id, symbol, ex_date, pay_date, cash_dividend, stock_dividend
+      `SELECT id, symbol, ex_date, pay_date, cash_dividend, stock_dividend,
+       (SELECT mpb.close_price FROM market_price_bars mpb
+        WHERE mpb.symbol = dividend_calendar.symbol
+        ORDER BY mpb.trade_date DESC LIMIT 1) AS close_price
        FROM dividend_calendar
        WHERE ex_date >= CURRENT_DATE AND ex_date <= CURRENT_DATE + ($1 || ' days')::interval
        ORDER BY ex_date ASC
