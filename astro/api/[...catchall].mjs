@@ -3807,6 +3807,25 @@ async function conferenceByCode(request, code) {
   }
 }
 
+// 2026-10-12: exdiv.html 期待 code/name/days_left/dividend/yield，但 DB 只有 symbol/cash_dividend。
+// 加 _exdivTransform 把 DB row 攤平成 page 預期的 shape。
+function _exdivTransform(rows) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return rows.map((r) => {
+    const exDate = r.ex_date ? new Date(r.ex_date) : null;
+    const days_left = exDate ? Math.round((exDate - today) / 86400000) : null;
+    return {
+      ...r,
+      code: r.symbol,
+      name: r.symbol,
+      dividend: r.cash_dividend != null ? Number(r.cash_dividend) : null,
+      yield: null,
+      days_left,
+    };
+  });
+}
+
 async function exdivCalendar(request) {
   const u = urlOf(request);
   const days = Math.min(365, Math.max(1, parseInt(u.searchParams.get("days") || "30", 10) || 30));
@@ -3822,13 +3841,13 @@ async function exdivCalendar(request) {
     // 2026-08-14: 加 updated_at / as_of / fetched_at 給 exdiv.html 顯示「更新時間」
     const nowIso = new Date().toISOString();
     return json({
-      ok: true, source: "db", count: rows.length, items: rows, data: rows, update_time: nowIso, days,
+      ok: true, source: "db", count: rows.length, items: _exdivTransform(rows), data: _exdivTransform(rows), update_time: nowIso, days,
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
     });
   } catch (e) {
     const nowIso = new Date().toISOString();
     return json({
-      ok: true, source: "stub", count: 0, items: [], days, error: e?.message,
+      ok: true, source: "stub", count: 0, items: [], data: [], days, error: e?.message,
       message: "dividend_calendar table empty or missing",
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
     });
@@ -3848,13 +3867,13 @@ async function exdivUpcoming(request) {
     );
     const nowIso = new Date().toISOString();
     return json({
-      ok: true, source: "db", count: rows.length, items: rows, data: rows, update_time: nowIso, days,
+      ok: true, source: "db", count: rows.length, items: _exdivTransform(rows), data: _exdivTransform(rows), update_time: nowIso, days,
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
     });
   } catch (e) {
     const nowIso = new Date().toISOString();
     return json({
-      ok: true, source: "stub", count: 0, items: [], days, error: e?.message,
+      ok: true, source: "stub", count: 0, items: [], data: [], days, error: e?.message,
       message: "dividend_calendar table empty or missing",
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
     });
