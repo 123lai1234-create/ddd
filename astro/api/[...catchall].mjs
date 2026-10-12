@@ -9586,28 +9586,31 @@ async function seedDividendCalendar(request) {
   const body = await readJson(request);
   const rows = Array.isArray(body?.rows) ? body.rows : [];
   if (!rows.length) return json({ ok: false, error: "rows[] is empty" }, { status: 400 });
-  const placeholders = [];
-  const params = [];
+  // 2026-10-12: 既有 dividend_calendar 表可能沒有 UNIQUE (symbol, ex_date) constraint，
+  // 用 ON CONFLICT 會丟 42P10。改用「逐筆 insert，捕獲 23505 unique_violation 當 skip」邏輯。
+  let inserted = 0, skipped = 0;
+  const errs = [];
   for (const r of rows) {
-    placeholders.push(`($${params.length + 1}::text, $${params.length + 2}::date, $${params.length + 3}::date, $${params.length + 4}::date, $${params.length + 5}::numeric, $${params.length + 6}::numeric, $${params.length + 7}::text)`);
-    params.push(r[0], r[1], r[2] || null, r[3] || null, r[4] != null ? Number(r[4]) : null, r[5] != null ? Number(r[5]) : null, r[6] || "sample_seed");
+    const params = [r[0], r[1], r[2] || null, r[3] || null,
+                    r[4] != null ? Number(r[4]) : null,
+                    r[5] != null ? Number(r[5]) : null,
+                    r[6] || "sample_seed"];
+    const sql = `INSERT INTO dividend_calendar
+      (symbol, ex_date, pay_date, record_date, cash_dividend, stock_dividend, source)
+      VALUES ($1, $2::date, $3::date, $4::date, $5::numeric, $6::numeric, $7)`;
+    try {
+      await q(sql, params);
+      inserted++;
+    } catch (e) {
+      const msg = String(e?.message || "");
+      if (msg.includes("23505") || msg.includes("duplicate key")) {
+        skipped++;
+      } else {
+        errs.push(msg.slice(0, 120));
+      }
+    }
   }
-  const sql = `
-    INSERT INTO dividend_calendar (symbol, ex_date, pay_date, record_date, cash_dividend, stock_dividend, source)
-    VALUES ${placeholders.join(",")}
-    ON CONFLICT (symbol, ex_date) DO UPDATE SET
-      pay_date = EXCLUDED.pay_date,
-      record_date = EXCLUDED.record_date,
-      cash_dividend = EXCLUDED.cash_dividend,
-      stock_dividend = EXCLUDED.stock_dividend,
-      source = EXCLUDED.source,
-      fetched_at = now()`;
-  try {
-    await q(sql, params);
-    return json({ ok: true, source: "sample_seed", upserted: rows.length });
-  } catch (e) {
-    return json({ ok: false, error: e?.message }, { status: 500 });
-  }
+  return json({ ok: true, source: "sample_seed", total: rows.length, inserted, skipped, errors: errs.slice(0, 3) });
 }
 
 // to a filter on the `exchange_name`/`market` column when present.
