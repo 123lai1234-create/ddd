@@ -5268,6 +5268,7 @@ async function etfPivotOverlap(request) {
   const u = urlOf(request);
   const etfsParam = pickStr(u.searchParams.get("etfs") || "");
   const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c)) : [];
+  const method = pickStr(u.searchParams.get("method") || "intersection");
   try {
     let sql = `SELECT etf_code, symbol, weight_pct, as_of_date
                FROM etf_holdings`;
