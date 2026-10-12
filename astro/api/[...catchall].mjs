@@ -5471,11 +5471,13 @@ async function etfPivotTurnover(request) {
   const lookback = Math.min(180, Math.max(7, parseInt(u.searchParams.get("lookback") || "30", 10) || 30));
   const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c)) : [];
   try {
-    let sql = `WITH snaps AS (
+    // 2026-10-12: Neon HTTP 不接受 $N::text[] 的 array param — 改用 inline IN (...) 字串
+    const esc = etfs.map((c) => `'${String(c).replace(/'/g, "''")}'`).join(",");
+    const sql = `WITH snaps AS (
        SELECT etf_code, as_of_date, symbol, weight_pct
        FROM etf_holdings
        WHERE as_of_date >= CURRENT_DATE - ($1 || ' days')::interval
-         ${etfs.length ? "AND etf_code = ANY($" + (etfs.length + 1) + "::text[])" : ""}
+         ${etfs.length ? "AND etf_code IN (" + esc + ")" : ""}
     ),
     ranked AS (
        SELECT *, ROW_NUMBER() OVER (PARTITION BY etf_code, symbol ORDER BY as_of_date DESC) AS rn
@@ -5490,7 +5492,6 @@ async function etfPivotTurnover(request) {
     HAVING MAX(CASE WHEN rn = 1 THEN weight_pct END) IS NOT NULL
        AND MAX(CASE WHEN rn = (SELECT MAX(rn) FROM ranked r2 WHERE r2.etf_code = ranked.etf_code AND r2.symbol = ranked.symbol) THEN weight_pct END) IS NOT NULL`;
     const params = [String(lookback)];
-    if (etfs.length) params.push(etfs);
     const { rows } = await q(sql, params);
     const turnover = rows.map((r) => ({
       etf_code: r.etf_code, symbol: r.symbol,
