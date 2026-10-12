@@ -3815,14 +3815,14 @@ function _exdivTransform(rows) {
   return rows.map((r) => {
     const exDate = r.ex_date ? new Date(r.ex_date) : null;
     const days_left = exDate ? Math.round((exDate - today) / 86400000) : null;
+    // 2026-10-12: yield = dividend / close_price * 100 (r2 = round 2dp)
+    const cp = r.close_price != null ? Number(r.close_price) : null;
+    const div = r.cash_dividend != null ? Number(r.cash_dividend) : null;
     return {
       ...r,
       code: r.symbol,
       name: r.symbol,
-      dividend: r.cash_dividend != null ? Number(r.cash_dividend) : null,
-      // 2026-10-12: yield = dividend / close_price * 100 (r2 = round 2dp)
-      const cp = r.close_price != null ? Number(r.close_price) : null;
-      const div = r.cash_dividend != null ? Number(r.cash_dividend) : null;
+      dividend: div,
       yield: (cp && cp > 0 && div) ? r2((div / cp) * 100) : null,
       days_left,
       category: /^00[0-9]/.test(r.symbol) ? 'ETF' : '股票',
