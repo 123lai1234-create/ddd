@@ -3822,7 +3822,7 @@ async function exdivCalendar(request) {
     // 2026-08-14: 加 updated_at / as_of / fetched_at 給 exdiv.html 顯示「更新時間」
     const nowIso = new Date().toISOString();
     return json({
-      ok: true, source: "db", count: rows.length, items: rows, days,
+      ok: true, source: "db", count: rows.length, items: rows, data: rows, update_time: nowIso, days,
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
     });
   } catch (e) {
@@ -3848,7 +3848,7 @@ async function exdivUpcoming(request) {
     );
     const nowIso = new Date().toISOString();
     return json({
-      ok: true, source: "db", count: rows.length, items: rows, days,
+      ok: true, source: "db", count: rows.length, items: rows, data: rows, update_time: nowIso, days,
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
     });
   } catch (e) {
