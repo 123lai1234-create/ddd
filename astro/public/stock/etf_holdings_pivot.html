@@ -428,10 +428,10 @@ function renderOverlap(d) {
         td.classList.add('diag');
         td.textContent = '—';
       } else {
-        td.textContent = (v*100).toFixed(0) + '%';
+        td.textContent = v.toFixed(0) + '%';
         td.style.background = heatColor(v, 1.0);
         td.style.cursor = 'pointer';
-        td.title = `${a} vs ${b}: ${(v*100).toFixed(1)}% (點擊看重疊個股)`;
+        td.title = `${a} vs ${b}: ${v.toFixed(1)}% (點擊看重疊個股)`;
         td.onclick = () => loadOverlapDetail(a, b);
       }
       tr.appendChild(td);

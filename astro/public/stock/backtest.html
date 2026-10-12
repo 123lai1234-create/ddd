@@ -218,7 +218,7 @@
         ${metricCard("總報酬", fmtPct(m.total_return), `$${fmtNum(m.total_return !== null ? m.total_return * 100 : 0)}%`, colorFor(m.total_return))}
         ${metricCard("年化報酬", fmtPctRaw(m.annual_return, 2), "Sharpe " + fmtSharpe(m.sharpe), colorFor(m.annual_return))}
         ${metricCard("最大回撤", fmtPctRaw(-m.max_drawdown, 2), "MDD 越深越差", "v-neg")}
-        ${metricCard("勝率", fmtPctRaw(m.win_rate * 100, 1) + "%", `${m.wins}勝 ${m.losses}敗`, colorForWin(m.win_rate))}
+        ${metricCard("勝率", fmtPctRaw(m.win_rate * 100, 1), `${m.wins}勝 ${m.losses}敗`, colorForWin(m.win_rate))}
         ${metricCard("交易數", fmtNum(m.total_trades), `${m.avg_hold_days?.toFixed(1) ?? "-"} 天/筆`)}
         ${metricCard("獲利因子", m.profit_factor == null ? "∞" : m.profit_factor.toFixed(2), "盈虧比", m.profit_factor == null ? "v-pos" : (m.profit_factor > 1.5 ? "v-pos" : "v-neutral"))}
         ${metricCard("平均獲利", fmtPctRaw(m.avg_win * 100, 2), "單筆", m.avg_win > 0 ? "v-pos" : "")}
@@ -294,7 +294,7 @@
               <td class="${colorFor(m.annual_return)}">${fmtPctRaw(m.annual_return, 2)}</td>
               <td>${fmtPctRaw(-m.max_drawdown, 2)}</td>
               <td>${fmtSharpe(m.sharpe)}</td>
-              <td class="${colorForWin(m.win_rate)}">${fmtPctRaw(m.win_rate * 100, 1)}%</td>
+              <td class="${colorForWin(m.win_rate)}">${fmtPctRaw(m.win_rate * 100, 1)}</td>
               <td>${m.profit_factor == null ? "∞" : m.profit_factor.toFixed(2)}</td>
               <td>${fmtNum(m.total_trades)}</td>
             </tr>`;
@@ -327,7 +327,7 @@
             </div>
             <div>
               <div class="label">勝率</div>
-              <div class="value" style="font-size:14px">${fmtPctRaw(a.win_rate * 100, 1)}%</div>
+              <div class="value" style="font-size:14px">${fmtPctRaw(a.win_rate * 100, 1)}</div>
             </div>
             <div>
               <div class="label">交易數</div>

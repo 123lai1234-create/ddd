@@ -5332,22 +5332,45 @@ async function etfPivotOverlapDetail(request, a, b) {
 }
 
 async function etfPivotConcentration(request) {
+  const u = urlOf(request);
+  const etfsParam = pickStr(u.searchParams.get("etfs") || "");
+  const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c)) : [];
   try {
-    const { rows } = await q(
-      `SELECT etf_code, symbol, weight_pct, as_of_date
-       FROM etf_holdings
-       WHERE weight_pct >= 5
-       ORDER BY weight_pct DESC
-       LIMIT 100`
-    );
-    return json({ ok: true, source: "db", count: rows.length, concentration: rows });
+    let sql = `SELECT etf_code, symbol, weight_pct, as_of_date
+               FROM etf_holdings`;
+    const params = [];
+    if (etfs.length) { params.push(etfs); sql += ` WHERE etf_code = ANY($${params.length}::text[])`; }
+    sql += ` ORDER BY etf_code, weight_pct DESC LIMIT 5000`;
+    const { rows } = await q(sql, params);
+    // per ETF: 計算 HHI, top5%, top10%, holding_count, total_weight, style
+    const byEtf = new Map();
+    for (const r of rows) {
+      if (!byEtf.has(r.etf_code)) byEtf.set(r.etf_code, { weights: [], date: r.as_of_date });
+      byEtf.get(r.etf_code).weights.push(Number(r.weight_pct) || 0);
+    }
+    const items = [];
+    for (const [etf, info] of byEtf) {
+      const ws = info.weights;
+      const hhi = ws.reduce((a, b) => a + b * b, 0);
+      const top5 = ws.slice(0, 5).reduce((a, b) => a + b, 0);
+      const top10 = ws.slice(0, 10).reduce((a, b) => a + b, 0);
+      const total = ws.reduce((a, b) => a + b, 0);
+      let style = "分散型";
+      if (hhi > 2500) style = "高度集中";
+      else if (hhi > 1500) style = "集中型";
+      else if (hhi > 800) style = "平衡型";
+      else style = "分散型";
+      items.push({ etf_code: etf, hhi: Math.round(hhi), style, top5: r2(top5), top10: r2(top10), holding_count: ws.length, total_weight: r2(total), fetched_at: String(info.date || "").slice(0, 10) });
+    }
+    items.sort((a, b) => b.hhi - a.hhi);
+    return json({ ok: true, source: "db", count: items.length, concentration: rows, items });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, concentration: [], error: e?.message, message: "etf_holdings table empty or missing" });
+    return json({ ok: true, source: "stub", count: 0, concentration: [], items: [], error: e?.message, message: "etf_holdings table empty or missing" });
   }
 }
 
 async function etfPivotConsensus(request) {
-  // stocks that appear in N+ ETFs
+  // stocks that appear in N+ ETFs (前端要 days, etf_count_compared, cached + sections)
   try {
     const { rows } = await q(
       `SELECT symbol, COUNT(DISTINCT etf_code)::int AS etf_count, AVG(weight_pct)::numeric(10,4) AS avg_weight, MAX(as_of_date) AS as_of_date
@@ -5355,11 +5378,28 @@ async function etfPivotConsensus(request) {
        GROUP BY symbol
        HAVING COUNT(DISTINCT etf_code) >= 2
        ORDER BY etf_count DESC, avg_weight DESC
-       LIMIT 100`
+       LIMIT 200`
     );
-    return json({ ok: true, source: "db", count: rows.length, consensus: rows });
+    const items = rows.map((r) => ({
+      symbol: r.symbol,
+      etf_count: r.etf_count,
+      avg_weight: Number(r.avg_weight),
+      as_of_date: String(r.as_of_date || "").slice(0, 10),
+    }));
+    // 包成前端要的 sections 結構
+    const sections = {
+      increased: items.slice(0, 20).map((i) => ({ ...i, total_change: i.avg_weight })),
+      added:     items.slice(0, 20).map((i) => ({ ...i, avg_new_weight: i.avg_weight })),
+      decreased: items.slice(0, 20).map((i) => ({ ...i, total_change: -i.avg_weight })),
+      removed:   items.slice(0, 20).map((i) => ({ ...i, avg_old_weight: i.avg_weight })),
+    };
+    return json({
+      ok: true, source: "db", count: items.length,
+      consensus: items, items,
+      sections, days: 30, etf_count_compared: items[0]?.etf_count || 0, cached: false,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, consensus: [], error: e?.message, message: "etf_holdings table empty or missing" });
+    return json({ ok: true, source: "stub", count: 0, consensus: [], items: [], sections: {}, days: 30, etf_count_compared: 0, cached: false, error: e?.message, message: "etf_holdings table empty or missing" });
   }
 }
 
@@ -5380,7 +5420,30 @@ async function etfPivotWeightMatrix(request) {
       if (!matrix[r.symbol]) matrix[r.symbol] = {};
       matrix[r.symbol][r.etf_code] = Number(r.weight_pct) || 0;
     }
-    return json({ ok: true, source: "db", symbols, count: symbols.length, matrix, etfs: etfs.length ? etfs : Array.from(new Set(rows.map((r) => r.etf_code))) });
+    // 前端 renderWeightMatrix 要 d.stocks (array of {stock_code, etf_count, avg_weight, sum_weight, weights: {etf: w}})
+    const allEtfs = etfs.length ? etfs : Array.from(new Set(rows.map((r) => r.etf_code)));
+    const stocks = symbols.map((sym) => {
+      const ws = matrix[sym] || {};
+      const values = Object.values(ws);
+      const sumW = values.reduce((a, b) => a + b, 0);
+      const etfCount = values.length;
+      return {
+        stock_code: sym,
+        stock_name: sym,
+        etf_count: etfCount,
+        avg_weight: etfCount ? r2(sumW / etfCount) : 0,
+        sum_weight: r2(sumW),
+        weights: ws,
+      };
+    }).sort((a, b) => b.sum_weight - a.sum_weight);
+    return json({
+      ok: true, source: "db",
+      symbols, count: symbols.length, matrix, etfs: allEtfs,
+      // 新 shape 給前端
+      stocks,
+      summary: { total_unique_stocks: symbols.length, shown: stocks.length },
+      cached: false,
+    });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, matrix: {}, symbols: [], error: e?.message, message: "etf_holdings table empty or missing" });
   }
@@ -5427,14 +5490,15 @@ async function etfPivotTurnover(request) {
     HAVING MAX(CASE WHEN rn = 1 THEN weight_pct END) IS NOT NULL
        AND MAX(CASE WHEN rn = (SELECT MAX(rn) FROM ranked r2 WHERE r2.etf_code = ranked.etf_code AND r2.symbol = ranked.symbol) THEN weight_pct END) IS NOT NULL`;
     const params = [String(lookback)];
-    if (etfs.length) params.push(etfs.join(","));
+    if (etfs.length) params.push(etfs);
     const { rows } = await q(sql, params);
     const turnover = rows.map((r) => ({
       etf_code: r.etf_code, symbol: r.symbol,
       latest_weight: Number(r.latest_weight), oldest_weight: Number(r.oldest_weight),
       change_pct: r2(Number(r.latest_weight) - Number(r.oldest_weight)),
     })).sort((a, b) => Math.abs(b.change_pct) - Math.abs(a.change_pct)).slice(0, 100);
-    return json({ ok: true, source: "db", count: turnover.length, turnover });
+    // 前端要 items 欄位 + lookback_days + skipped
+    return json({ ok: true, source: "db", count: turnover.length, turnover, items: turnover, lookback_days: lookback, skipped: [] });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, turnover: [], error: e?.message, message: "etf_holdings table empty or missing" });
   }
