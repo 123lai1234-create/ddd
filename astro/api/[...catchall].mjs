@@ -5293,7 +5293,11 @@ async function etfPivotOverlap(request) {
       }
     }
     overlap.sort((x, y) => y.overlap_pct - x.overlap_pct);
-    return json({ ok: true, source: "db", count: overlap.length, overlap, holdings_count: rows.length });
+    // 同時回傳 matrix (前端 heatmap 用的 N×N 對稱矩陣) 與 etfs 陣列
+    const matrix = {};
+    for (const e of etfCodes) { matrix[e] = {}; for (const f of etfCodes) matrix[e][f] = e === f ? 100 : 0; }
+    for (const o of overlap) { if (matrix[o.a] && matrix[o.b]) { matrix[o.a][o.b] = o.overlap_pct; matrix[o.b][o.a] = o.overlap_pct; } }
+    return json({ ok: true, source: "db", method, cached: false, etfs: etfCodes, matrix, count: overlap.length, overlap, holdings_count: rows.length });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, overlap: [], error: e?.message, message: "etf_holdings table empty or missing" });
   }
