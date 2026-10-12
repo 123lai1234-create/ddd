@@ -5576,9 +5576,9 @@ async function etfSnapshots(request, code) {
           MAX(source) AS source,
           MAX(fetched_at) AS fetched_at,
           COUNT(*)::int AS holdings_count,
-          MAX(total_net_value) AS total_net_value,
+          SUM(weight_pct)::numeric AS total_weight,
           (ARRAY_AGG(symbol ORDER BY weight_pct DESC))[1] AS top_holding_symbol,
-          MAX(CASE WHEN symbol = (ARRAY_AGG(symbol ORDER BY weight_pct DESC))[1] THEN weight_pct END) AS top_holding_pct
+          MAX(weight_pct)::numeric AS top_holding_pct
        FROM etf_holdings
        WHERE etf_code = $1
        GROUP BY etf_code, as_of_date
@@ -5595,7 +5595,7 @@ async function etfSnapshots(request, code) {
       fetched_at: r.fetched_at,
       holdings_count: r.holdings_count,
       holding_count: r.holdings_count,
-      total_net_value: r.total_net_value,
+      total_weight: r.total_weight,
       top_holding_symbol: r.top_holding_symbol,
       top_holding_pct: r.top_holding_pct,
     }));
