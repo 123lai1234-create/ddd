@@ -1,0 +1,35 @@
+# Upstream clones (already git-tracked at their own repos, .git stripped on copy)
+TripoSR/
+Hunyuan3D-2/
+
+# 3D experiment outputs — these were confirmed "AI recon doesn't work" and don't need VCS
+3d-models-triposr/
+3d-models-hq/
+3d-models-uhd/
+3d-models-uhd-textured/
+3d-models-icp/
+3d-models-merged/
+3d-models-textured/
+3d-models-cpu-test/
+# Keep 3d-models-mixamo/ — it's the actual deliverable for the Mixamo upload step
+# and includes MIXAMO_GUIDE.md.
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Render preview PNGs (regenerable; keep code, not output)
+preview_*.png
+
+# Temp args files (regenerable from .py)
+gen-3views-args.json
+gen-args-front.json
+gen-curious-args.json
+gen-expressions-args.json
+gen-front-retry-args.json

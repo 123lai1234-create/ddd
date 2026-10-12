@@ -1,0 +1,42 @@
+# Chibi character materials
+newmtl skin
+  Ka 0.95 0.78 0.66
+  Kd 0.95 0.78 0.66
+  Ks 0.10 0.10 0.10
+  Ns 8
+  d 1
+
+newmtl hair
+  Ka 0.10 0.10 0.12
+  Kd 0.12 0.12 0.15
+  Ks 0.20 0.20 0.20
+  Ns 16
+  d 1
+
+newmtl shirt
+  Ka 0.20 0.40 0.70
+  Kd 0.30 0.55 0.85
+  Ks 0.10 0.10 0.10
+  Ns 8
+  d 1
+
+newmtl pants
+  Ka 0.15 0.20 0.40
+  Kd 0.20 0.25 0.55
+  Ks 0.05 0.05 0.05
+  Ns 4
+  d 1
+
+newmtl shoe
+  Ka 0.10 0.10 0.12
+  Kd 0.15 0.15 0.18
+  Ks 0.30 0.30 0.30
+  Ns 32
+  d 1
+
+newmtl eye
+  Ka 0.05 0.05 0.05
+  Kd 0.05 0.05 0.05
+  Ks 0.50 0.50 0.50
+  Ns 64
+  d 1
