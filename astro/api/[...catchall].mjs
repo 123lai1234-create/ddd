@@ -5498,8 +5498,64 @@ async function etfPivotTurnover(request) {
       latest_weight: Number(r.latest_weight), oldest_weight: Number(r.oldest_weight),
       change_pct: r2(Number(r.latest_weight) - Number(r.oldest_weight)),
     })).sort((a, b) => Math.abs(b.change_pct) - Math.abs(a.change_pct)).slice(0, 100);
-    // 前端要 items 欄位 + lookback_days + skipped
-    return json({ ok: true, source: "db", count: turnover.length, turnover, items: turnover, lookback_days: lookback, skipped: [] });
+    // 2026-10-12: 同時回傳 per-ETF 聚合（前端 renderTurnover 要 1 列 1 檔，欄位 turnover_pct/days/added/removed/changed/old_date/new_date）
+    // 沒 snapshot 歷史時 latest_weight == oldest_weight → turnover=0；added/removed=0；changed=0（誠實呈現）
+    const byEtf = new Map();
+    for (const r of rows) {
+      const k = r.etf_code;
+      if (!byEtf.has(k)) byEtf.set(k, { etf_code: k, diffs: [], latest: new Set(), oldest: new Set(), latest_date: null, oldest_date: null });
+      const g = byEtf.get(k);
+      g.diffs.push({ symbol: r.symbol, latest: Number(r.latest_weight), oldest: Number(r.oldest_weight) });
+      g.latest.add(r.symbol);
+      g.oldest.add(r.symbol);
+      const ld = r.latest_date;
+      if (ld && (!g.latest_date || new Date(ld) > new Date(g.latest_date))) g.latest_date = ld;
+    }
+    // 找每檔 ETF 的最早 snapshot（用 MIN(as_of_date) 補上）
+    try {
+      const esc2 = etfs.map((c) => `'${String(c).replace(/'/g, "''")}'`).join(",");
+      const { rows: snapRows } = await q(
+        `SELECT etf_code, MIN(as_of_date) AS oldest, MAX(as_of_date) AS latest,
+                (MAX(as_of_date)::date - MIN(as_of_date)::date) AS days
+           FROM etf_holdings
+           WHERE as_of_date >= CURRENT_DATE - ($1 || ' days')::interval
+             ${etfs.length ? "AND etf_code IN (" + esc2 + ")" : ""}
+           GROUP BY etf_code`,
+        [String(lookback)]
+      );
+      for (const r of snapRows) {
+        if (!byEtf.has(r.etf_code)) byEtf.set(r.etf_code, { etf_code: r.etf_code, diffs: [], latest: new Set(), oldest: new Set(), latest_date: null, oldest_date: null });
+        const g = byEtf.get(r.etf_code);
+        g.oldest_date = r.oldest ? (r.oldest.toISOString ? r.oldest.toISOString().slice(0,10) : String(r.oldest).slice(0,10)) : null;
+        g.latest_date = r.latest ? (r.latest.toISOString ? r.latest.toISOString().slice(0,10) : String(r.latest).slice(0,10)) : g.latest_date;
+        g.days = Number(r.days) || 0;
+      }
+    } catch (_) { /* 聚合失敗時不影響主回傳 */ }
+    const items = [];
+    for (const g of byEtf.values()) {
+      const added = [...g.latest].filter((s) => !g.oldest.has(s)).length;
+      const removed = [...g.oldest].filter((s) => !g.latest.has(s)).length;
+      let turnoverAbs = 0;
+      let changed = 0;
+      const seen = new Set();
+      for (const d of g.diffs) {
+        if (seen.has(d.symbol)) continue;
+        seen.add(d.symbol);
+        const delta = Math.abs(d.latest - d.oldest);
+        if (delta > 0.001) { changed++; turnoverAbs += delta; }
+      }
+      // Σ|Δw| / 2 = 經典 turnover 公式
+      items.push({
+        etf_code: g.etf_code,
+        turnover_pct: r2(turnoverAbs / 2),
+        days: g.days || 0,
+        added, removed, changed,
+        old_date: g.oldest_date || g.latest_date,
+        new_date: g.latest_date,
+      });
+    }
+    items.sort((a, b) => b.turnover_pct - a.turnover_pct);
+    return json({ ok: true, source: "db", count: items.length, items, turnover, lookback_days: lookback, skipped: [] });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, turnover: [], error: e?.message, message: "etf_holdings table empty or missing" });
   }
