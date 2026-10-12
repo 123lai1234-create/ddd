@@ -2039,13 +2039,10 @@ async function healthTables(request) {
     "big_holders",
     "market_price_bars",
     "etf_holdings",
-    "strategy_signals",
-    "signal_history",
-    "marker_history",
     "treasury_buyback",
     "treasury_buyback_exec",
     "private_placement",
-    "exdiv",
+    "dividend_calendar",  // 2026-10-12: 改對—exdiv 頁實際用這表，不是 `exdiv`
     "futures",
   ];
   const out = { ok: true, source: "db", generated_at: new Date().toISOString(), tables: {} };
@@ -8348,6 +8345,34 @@ async function ensureTreasuryTables() {
   if (ok >= 3) _treasuryDdlDone = true;  // 至少 3 張表 CREATE 成功才標記 done
 }
 
+// 2026-10-12: dividend_calendar 表給 exdiv 頁用。TWSE 開放資料被 Cloudflare block，
+// 所以加 manual seed endpoint（schema 跟實際 query 對齊 — 只在用到時建）
+const _DIVIDEND_CALENDAR_DDL = [
+  `CREATE TABLE IF NOT EXISTS dividend_calendar (
+     id              BIGSERIAL PRIMARY KEY,
+     symbol          TEXT NOT NULL,
+     ex_date         DATE NOT NULL,
+     pay_date        DATE,
+     record_date     DATE,
+     cash_dividend   NUMERIC(10,4),
+     stock_dividend  NUMERIC(10,4),
+     source          TEXT,
+     fetched_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+     UNIQUE (symbol, ex_date)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_dividend_calendar_ex ON dividend_calendar(ex_date)`,
+  `CREATE INDEX IF NOT EXISTS idx_dividend_calendar_symbol ON dividend_calendar(symbol)`,
+];
+let _divCalDdlDone = false;
+async function ensureDividendCalendarTable() {
+  if (_divCalDdlDone) return;
+  let ok = 0;
+  for (const sql of _DIVIDEND_CALENDAR_DDL) {
+    try { await dbq(sql); ok++; } catch (_) { /* 重複 / 已存在等不致命 */ }
+  }
+  if (ok >= 1) _divCalDdlDone = true;
+}
+
 // 私募 (private placement) — t116sb01 returns BIG HTML table with all rows for all companies
 async function loadMopsPrivate(request) {
   const body = request.method !== "GET" ? await readJson(request) : {};
@@ -9550,6 +9575,39 @@ async function seedPrivatePlacement(request) {
   }
 }
 
+// 2026-10-12: seedDividendCalendar — TWSE 開放資料從 Render 抓不到（Cloudflare block），
+// 給 /stock/exdiv 頁手動塞 sample upcoming 除權息事件。
+// row = [symbol, ex_date, pay_date, record_date, cash_dividend, stock_dividend, source?]
+async function seedDividendCalendar(request) {
+  await ensureDividendCalendarTable();
+  if (request.method !== "POST") return json({ error: "use POST" }, { status: 405 });
+  const body = await readJson(request);
+  const rows = Array.isArray(body?.rows) ? body.rows : [];
+  if (!rows.length) return json({ ok: false, error: "rows[] is empty" }, { status: 400 });
+  const placeholders = [];
+  const params = [];
+  for (const r of rows) {
+    placeholders.push(`($${params.length + 1}::text, $${params.length + 2}::date, $${params.length + 3}::date, $${params.length + 4}::date, $${params.length + 5}::numeric, $${params.length + 6}::numeric, $${params.length + 7}::text)`);
+    params.push(r[0], r[1], r[2] || null, r[3] || null, r[4] != null ? Number(r[4]) : null, r[5] != null ? Number(r[5]) : null, r[6] || "sample_seed");
+  }
+  const sql = `
+    INSERT INTO dividend_calendar (symbol, ex_date, pay_date, record_date, cash_dividend, stock_dividend, source)
+    VALUES ${placeholders.join(",")}
+    ON CONFLICT (symbol, ex_date) DO UPDATE SET
+      pay_date = EXCLUDED.pay_date,
+      record_date = EXCLUDED.record_date,
+      cash_dividend = EXCLUDED.cash_dividend,
+      stock_dividend = EXCLUDED.stock_dividend,
+      source = EXCLUDED.source,
+      fetched_at = now()`;
+  try {
+    await q(sql, params);
+    return json({ ok: true, source: "sample_seed", upserted: rows.length });
+  } catch (e) {
+    return json({ ok: false, error: e?.message }, { status: 500 });
+  }
+}
+
 // to a filter on the `exchange_name`/`market` column when present.
 async function rankingHandler(request) {
   const u = new URL(request.url);
@@ -10088,6 +10146,7 @@ const TABLE = [
   ["POST", /^\/admin\/seed\/treasury_buyback\/?$/,    seedTreasuryBuyback],
   ["POST", /^\/admin\/seed\/treasury_buyback_exec\/?$/, seedTreasuryBuybackExec],
   ["POST", /^\/admin\/seed\/private_placement\/?$/,     seedPrivatePlacement],
+  ["POST", /^\/admin\/seed\/dividend_calendar\/?$/,     seedDividendCalendar],
   // MOPS cron: chunked incremental load (Hobby 60s edge limit split into N cron ticks)
   ["GET",  /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
   ["POST", /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
