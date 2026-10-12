@@ -8052,7 +8052,26 @@ async function seedEtfHoldings(request) {
   return json({ ok: true, source: "seed", etf_code: etfCode, as_of_date: asOf, inserted, updated, total: holdings.length });
 }
 
-// ── seedBigHolders: manual POST endpoint for big_holders ─────────────
+// 2026-10-12: dedupeDividendCalendar â æ¸é¤ (symbol, ex_date) éè¤è¡
+async function dedupeDividendCalendar(request) {
+  if (request.method !== "POST") return json({ error: "use POST" }, { status: 405 });
+  try {
+    await ensureDividendCalendarTable();
+    // Use MIN(id) ä¿çææ©çå­æ¡£ (older fetched_at)
+    const { rows: del } = await q(
+      `DELETE FROM dividend_calendar
+       WHERE id NOT IN (
+         SELECT MIN(id) FROM dividend_calendar
+         GROUP BY symbol, ex_date
+       ) RETURNING id, symbol, ex_date`
+    );
+    return json({ ok: true, source: "dedupe", deleted: del.length, sample: del.slice(0, 3) });
+  } catch (e) {
+    return json({ ok: false, error: e?.message }, { status: 500 });
+  }
+}
+
+// ââ seedBigHolders: manual POST endpoint for big_holders ─────────────
 // Body: { password, holders: [{ symbol, holder_type, holder_name, shares, pct, as_of_date }] }
 // Use case: real 大股東 公告 from MOPS / broker feeds / manual entry.
 async function seedBigHolders(request) {
@@ -10181,6 +10200,7 @@ const TABLE = [
   ["POST", /^\/admin\/seed\/treasury_buyback_exec\/?$/, seedTreasuryBuybackExec],
   ["POST", /^\/admin\/seed\/private_placement\/?$/,     seedPrivatePlacement],
   ["POST", /^\/admin\/seed\/dividend_calendar\/?$/,     seedDividendCalendar],
+  ["POST", /^\/admin\/dedupe\/dividend_calendar\/?$/,     dedupeDividendCalendar],
   // MOPS cron: chunked incremental load (Hobby 60s edge limit split into N cron ticks)
   ["GET",  /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
   ["POST", /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
