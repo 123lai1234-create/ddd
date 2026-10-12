@@ -5565,17 +5565,43 @@ async function etfSnapshots(request, code) {
   const u = urlOf(request);
   const limit = Math.min(200, Math.max(1, parseInt(u.searchParams.get("limit") || "30", 10) || 30));
   try {
+    // 2026-10-12: etf_snapshots 表是空（沒人填），但 etf_holdings 表有完整 snapshot 歷史
+    // 用 etf_holdings 的 DISTINCT as_of_date + 衍生 summary 欄位組出 snapshot list
+    // 這才能讓 etf_holdings_tracker.html 顯示「已 seed 的 5 檔 2 筆」而不是「無快照」
     const { rows } = await q(
-      `SELECT id, etf_code, as_of_date, total_net_value, holdings_count, top_holding_symbol, top_holding_pct
-       FROM etf_snapshots
+      `SELECT
+          MIN(id::text)::text AS id,
+          etf_code,
+          as_of_date,
+          MAX(source) AS source,
+          MAX(fetched_at) AS fetched_at,
+          COUNT(*)::int AS holdings_count,
+          MAX(total_net_value) AS total_net_value,
+          (ARRAY_AGG(symbol ORDER BY weight_pct DESC))[1] AS top_holding_symbol,
+          MAX(CASE WHEN symbol = (ARRAY_AGG(symbol ORDER BY weight_pct DESC))[1] THEN weight_pct END) AS top_holding_pct
+       FROM etf_holdings
        WHERE etf_code = $1
+       GROUP BY etf_code, as_of_date
        ORDER BY as_of_date DESC
        LIMIT $2`,
       [code, limit]
     );
-    return json({ ok: true, source: "db", code, count: rows.length, snapshots: rows });
+    // Frontend 用 holding_count 欄位，這裡補上
+    const snapshots = rows.map((r) => ({
+      id: r.id,
+      etf_code: r.etf_code,
+      as_of_date: r.as_of_date,
+      source: r.source || "manual",
+      fetched_at: r.fetched_at,
+      holdings_count: r.holdings_count,
+      holding_count: r.holdings_count,
+      total_net_value: r.total_net_value,
+      top_holding_symbol: r.top_holding_symbol,
+      top_holding_pct: r.top_holding_pct,
+    }));
+    return json({ ok: true, source: "etf_holdings", code, count: snapshots.length, snapshots });
   } catch (e) {
-    return json({ ok: true, source: "stub", code, count: 0, snapshots: [], error: e?.message, message: "etf_snapshots table empty or missing" });
+    return json({ ok: true, source: "stub", code, count: 0, snapshots: [], error: e?.message, message: "etf_holdings/snapshots 查詢失敗" });
   }
 }
 
