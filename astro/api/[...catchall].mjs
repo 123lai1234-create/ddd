@@ -3822,6 +3822,7 @@ function _exdivTransform(rows) {
       dividend: r.cash_dividend != null ? Number(r.cash_dividend) : null,
       yield: null,
       days_left,
+      category: /^00[0-9]/.test(r.symbol) ? 'ETF' : '物業',
     };
   });
 }
