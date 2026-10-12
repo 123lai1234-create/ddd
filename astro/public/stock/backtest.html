@@ -166,7 +166,18 @@
   }
 
   function escapeHtml(s) {
-    return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&", "<": "<", ">": ">", '"': """, "'": "&#39;" })[c]);
+    const AMP = String.fromCharCode(38);
+    const LT = String.fromCharCode(60);
+    const GT = String.fromCharCode(62);
+    const QUOT = String.fromCharCode(34);
+    const APOS = String.fromCharCode(39);
+    return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+      [AMP]: AMP + "amp;",
+      [LT]: LT + "t;",
+      [GT]: GT + "t;",
+      [QUOT]: QUOT + "quot;",
+      [APOS]: APOS + "#39;"
+    })[c]);
   }
 
   function fmtPct(v, dp = 2) {
