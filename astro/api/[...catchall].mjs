@@ -8357,9 +8357,11 @@ const _DIVIDEND_CALENDAR_DDL = [
      cash_dividend   NUMERIC(10,4),
      stock_dividend  NUMERIC(10,4),
      source          TEXT,
-     fetched_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-     UNIQUE (symbol, ex_date)
+     fetched_at      TIMESTAMPTZ NOT NULL DEFAULT now()
    )`,
+  // 2026-10-12: 既有 dividend_calendar 表是舊版建的（沒 UNIQUE），用獨立 CREATE UNIQUE INDEX
+  // 確保 ON CONFLICT (symbol, ex_date) 能 match。IF NOT EXISTS 確保冪等。
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_dividend_calendar_symbol_ex ON dividend_calendar(symbol, ex_date)`,
   `CREATE INDEX IF NOT EXISTS idx_dividend_calendar_ex ON dividend_calendar(ex_date)`,
   `CREATE INDEX IF NOT EXISTS idx_dividend_calendar_symbol ON dividend_calendar(symbol)`,
 ];
