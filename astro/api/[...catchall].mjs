@@ -5631,6 +5631,24 @@ async function etfSnapshots(request, code) {
   }
 }
 
+// 2026-10-12: etfHoldingsSeeded — 回答 DISTINCT etf_code 有資料的 ETF
+// 用戶前端 pivot 動態生成「熱門 ETF」列表 (保證 UI 與 DB 同步)
+async function etfHoldingsSeeded(request) {
+  try {
+    const { rows } = await q(
+      `SELECT etf_code,
+              COUNT(*)::int AS snapshot_rows,
+              MAX(as_of_date) AS latest_date
+       FROM etf_holdings
+       GROUP BY etf_code
+       ORDER BY etf_code`
+    );
+    return json({ ok: true, source: "db", count: rows.length, etfs: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, etfs: [], error: e?.message });
+  }
+}
+
 async function etfDiff(request, code) {
   // Frontend (etf_holdings_tracker.html) wants:
   //   { status, new_time, old_time, snapshot_count, summary:{added,removed,changed,unchanged},
@@ -10102,6 +10120,7 @@ const TABLE = [
   ["GET",  /^\/etf_holdings\/pivot\/consensus\/?$/, etfPivotConsensus],
   ["GET",  /^\/etf_holdings\/pivot\/weight_matrix\/?$/, etfPivotWeightMatrix],
   ["GET",  /^\/etf_holdings\/pivot\/overlap\/?$/, etfPivotOverlap],
+  ["GET",  /^\/etf_holdings\/seeded\/?$/, etfHoldingsSeeded],
   ["GET",  /^\/etf_holdings\/pivot\/overlap_detail\/([^/]+?)\/([^/]+?)\/?$/, etfPivotOverlapDetail],
   ["GET",  /^\/etf_holdings\/pivot\/time_heatmap\/([^/]+?)\/?$/, etfPivotTimeHeatmap],
   ["GET",  /^\/etf_holdings\/pivot\/turnover\/?$/, etfPivotTurnover],

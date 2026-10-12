@@ -299,7 +299,16 @@
 
 <script>
 const ETF_DICT = {"0050": "\u5143\u5927\u53f0\u706350", "0051": "\u5143\u5927\u4e2d\u578b100", "0052": "\u5bcc\u90a6\u79d1\u6280", "0053": "\u5143\u5927\u96fb\u5b50", "0055": "\u5143\u5927MSCI\u91d1\u878d", "0056": "\u5143\u5927\u9ad8\u80a1\u606f", "0057": "\u5bcc\u90a6\u6469\u53f0", "006203": "\u5143\u5927MSCI\u53f0\u7063", "006204": "\u6c38\u8c50\u81fa\u7063\u52a0\u6b0a", "006208": "\u5bcc\u90a6\u53f050", "00690": "\u5146\u8c50\u85cd\u7c4c30", "00692": "\u5bcc\u90a6\u516c\u53f8\u6cbb\u7406", "00701": "\u570b\u6cf0\u80a1\u5229\u7cbe\u907830", "00713": "\u5143\u5927\u53f0\u7063\u9ad8\u606f\u4f4e\u6ce2", "00728": "\u7b2c\u4e00\u91d1\u5de5\u696d30", "00730": "\u5bcc\u90a6\u81fa\u7063\u512a\u8cea\u9ad8\u606f", "00731": "\u5fa9\u83ef\u5bcc\u6642\u9ad8\u606f\u4f4e\u6ce2", "00733": "\u5bcc\u90a6\u81fa\u7063\u4e2d\u5c0f", "00735": "\u570b\u6cf0\u81fa\u97d3\u79d1\u6280", "00850": "\u5143\u5927\u81fa\u7063ESG\u6c38\u7e8c", "00878": "\u570b\u6cf0\u6c38\u7e8c\u9ad8\u80a1\u606f", "00881": "\u570b\u6cf0\u53f0\u70635G+", "00888": "\u6c38\u8c50\u53f0\u7063ESG", "00891": "\u4e2d\u4fe1\u95dc\u9375\u534a\u5c0e\u9ad4", "00892": "\u5bcc\u90a6\u53f0\u7063\u534a\u5c0e\u9ad4", "00894": "\u4e2d\u4fe1\u5c0f\u8cc7\u9ad8\u50f930", "00900": "\u5bcc\u90a6\u7279\u9078\u9ad8\u80a1\u606f30", "00901": "\u6c38\u8c50\u667a\u80fd\u8eca\u4f9b\u61c9\u93c8", "00905": "FT\u81fa\u7063Smart", "00907": "\u6c38\u8c50\u512a\u606f\u5b58\u80a1", "00912": "\u4e2d\u4fe1\u81fa\u7063\u667a\u616750", "00913": "\u5146\u8c50\u53f0\u7063\u6676\u5713\u88fd\u9020", "00915": "\u51f1\u57fa\u512a\u9078\u9ad8\u80a1\u606f30", "00919": "\u7fa4\u76ca\u53f0\u7063\u7cbe\u9078\u9ad8\u606f", "00921": "\u5146\u8c50\u9f8d\u982d\u7b49\u6b0a\u91cd", "00922": "\u570b\u6cf0\u53f0\u7063\u9818\u889650", "00923": "\u7fa4\u76ca\u53f0ESG\u4f4e\u78b350", "00927": "\u7fa4\u76ca\u534a\u5c0e\u9ad4\u6536\u76ca", "00929": "\u5fa9\u83ef\u53f0\u7063\u79d1\u6280\u512a\u606f", "00930": "\u6c38\u8c50ESG\u4f4e\u78b3\u9ad8\u606f", "00932": "\u5146\u8c50\u6c38\u7e8c\u9ad8\u606f\u7b49\u6b0a", "00934": "\u4e2d\u4fe1\u6210\u9577\u9ad8\u80a1\u606f", "00935": "\u91ce\u6751\u81fa\u7063\u65b0\u79d1\u628050", "00936": "\u53f0\u65b0\u6c38\u7e8c\u9ad8\u606f\u4e2d\u5c0f", "00944": "\u91ce\u6751\u8da8\u52e2\u52d5\u80fd\u9ad8\u606f", "00947": "\u53f0\u65b0\u81fa\u7063IC\u8a2d\u8a08", "00952": "\u51f1\u57fa\u53f0\u7063AI50", "009802": "\u5bcc\u90a6\u65d7\u826650", "009803": "\u4fdd\u5fb7\u4fe1\u5e02\u503c\u52d5\u80fd50", "00981A": "\u7d71\u4e00\u53f0\u80a1\u589e\u9577", "00982A": "\u7fa4\u76ca\u53f0\u7063\u5f37\u68d2"};
-const HOT_ETFS = ['0050','0051','0052','0053','0055','0056','0057','006203','006204','006208','00690','00692','00713','00728','00730','00850','00878','00881','00892','00915','00919','00929'];
+// 2026-10-12: HOT_ETFS 變動態。頁面載入時 fetch /etf_holdings/seeded 取得
+// 所有有資料的 ETF (以保證 UI 與 DB 同步，本地初始列表以防沒存針時顯示空)
+let HOT_ETFS = ['0050','0051','0052','0053','0055','0056','0057','006203','006204','006208','00690','00692','00713','00728','00730','00850','00878','00881','00892','00915','00919','00929'];
+fetch('/api/etf_holdings/seeded').then(r => r.ok ? r.json() : null).then(j => {
+  if (j && j.ok && Array.isArray(j.etfs) && j.etfs.length) {
+    HOT_ETFS = j.etfs.map(e => e.etf_code);
+    const btn = document.getElementById('btnTop');
+    if (btn) btn.textContent = `熱門 ETF（${HOT_ETFS.length} 檔）`;
+  }
+}).catch(() => {});
 
 // ---- helpers ----
 function $(id) { return document.getElementById(id); }
