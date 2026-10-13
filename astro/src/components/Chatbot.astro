@@ -8,16 +8,12 @@
  */
 ---
 
-<!-- 元嬰不說 kawaii 人偶按鈕（可拖曳 + 滑鼠追蹤 + 飄浮 + 6 表情 sprite） -->
+<!-- 元嬰不說 kawaii 人偶按鈕（可拖曳 + 滑鼠追蹤 + 3 視角切換） -->
 <div id="chatbot-anchor" aria-label="元嬰不說（可拖曳）" role="button" tabindex="0">
   <div class="kawaii-stage" id="kawaii-stage">
-    <div
-      class="kawaii-sprite"
-      id="kawaii-sprite"
-      data-mood="happy"
-      role="img"
-      aria-label="不說 mascot 頭像"
-    ></div>
+    <img class="kawaii-view active" id="kawaii-view-front" src="/img/mascot-front.png" alt="不說 mascot 正面" draggable="false" />
+    <img class="kawaii-view"        id="kawaii-view-side"  src="/img/mascot-side.png"  alt="不說 mascot 側面" draggable="false" />
+    <img class="kawaii-view"        id="kawaii-view-back"  src="/img/mascot-back.png"  alt="不說 mascot 背面" draggable="false" />
     <span class="char-drag-hint" aria-hidden="true">✥ 拖曳</span>
   </div>
 
@@ -55,26 +51,26 @@
   /* === Floating kawaii character anchor === */
   #chatbot-anchor {
     position: fixed;
-    bottom: 90px;
-    right: 24px;
+    bottom: 80px;
+    right: 18px;
     z-index: 500;
-    width: 80px;
-    height: 80px;
+    width: 124px;
+    height: 124px;
     cursor: grab;
     user-select: none;
     -webkit-user-select: none;
     touch-action: none;
-    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
     transition: filter 0.25s;
     will-change: transform;
   }
   #chatbot-anchor:hover {
-    filter: drop-shadow(0 8px 22px rgba(88, 215, 255, 0.45));
+    filter: drop-shadow(0 10px 26px rgba(88, 215, 255, 0.55));
   }
   #chatbot-anchor:active { cursor: grabbing; }
   #chatbot-anchor.dragging {
     cursor: grabbing;
-    filter: drop-shadow(0 12px 28px rgba(88, 215, 255, 0.6));
+    filter: drop-shadow(0 14px 32px rgba(88, 215, 255, 0.7));
   }
   #chatbot-anchor:focus-visible {
     outline: 2px solid #58d7ff;
@@ -90,26 +86,23 @@
     transition: transform 0.18s ease-out;
   }
 
-  .kawaii-sprite {
+  /* 3 view images stacked; CSS opacity swap drives the "rotation" effect.
+   * No border-radius: full chibi character visible (not a circular head crop). */
+  .kawaii-view {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    display: block;
-    /* Vertical sprite sheet: 6 × 360x360 frames stacked top-to-bottom
-     *   0: happy     1: sad       2: surprised
-     *   3: angry     4: sleepy    5: curious
-     * Frame swap is JS-driven via background-position-y.
-     */
-    background-image: url('/img/mascot-sprite.png');
-    background-repeat: no-repeat;
-    background-size: 100% auto;
-    background-position: 0 0;
+    object-fit: contain;
+    object-position: center bottom;
+    opacity: 0;
+    transition: opacity 0.35s ease;
     animation: kawaii-float 3.2s ease-in-out infinite;
-    transform-origin: 50% 50%;
-    border-radius: 50%;
     user-select: none;
     -webkit-user-drag: none;
-    transition: background-position 0.25s ease;
+    pointer-events: none;
   }
+  .kawaii-view.active { opacity: 1; }
 
   /* Floating bobbing animation */
   @keyframes kawaii-float {
@@ -279,40 +272,41 @@
     if (!anchor) return; // component not on this page
 
     const stage  = document.getElementById('kawaii-stage');
-    const sprite = document.getElementById('kawaii-sprite');
+    const viewFront = document.getElementById('kawaii-view-front');
+    const viewSide  = document.getElementById('kawaii-view-side');
+    const viewBack  = document.getElementById('kawaii-view-back');
     const panel  = document.getElementById('chatbot-panel');
 
-    /* ── Sprite sheet mood switching ─────────────────────────────────
-     * Vertical sprite: 6 × 360px frames. JS swaps background-position-y.
-     *   happy=0, sad=-360, surprised=-720, angry=-1080,
-     *   sleepy=-1440, curious=-1800
+    /* ── 3-view character swap ───────────────────────────────────────
+     * Three full-body chibi images (front/side/back) are stacked; CSS
+     * opacity swap drives the "rotation" effect. The mascot is NOT a
+     * cropped circle anymore — JT wants the full character visible.
      */
-    const MOOD_Y = {
-      happy: 0, sad: -360, surprised: -720,
-      angry: -1080, sleepy: -1440, curious: -1800,
-    };
-    let currentMood = 'happy';
-    let moodTimer = null;
-    let idleBlinkTimer = null;
-    function setMood(name, autoMs = 0) {
-      const y = MOOD_Y[name];
-      if (y === undefined || !sprite) return;
-      sprite.style.backgroundPosition = `0px ${y}px`;
-      sprite.dataset.mood = name;
-      currentMood = name;
-      clearTimeout(moodTimer);
-      if (autoMs > 0) {
-        moodTimer = setTimeout(() => setMood('happy'), autoMs);
+    let currentView = 'front';
+    let viewTimer = null;
+    let idlePeekTimer = null;
+    const viewEls = { front: viewFront, side: viewSide, back: viewBack };
+    function setView(name) {
+      if (!viewEls[name]) return;
+      currentView = name;
+      for (const [k, el] of Object.entries(viewEls)) {
+        el?.classList.toggle('active', k === name);
       }
     }
-    function scheduleIdleBlink() {
-      clearTimeout(idleBlinkTimer);
-      const wait = 6000 + Math.random() * 4000; // 6-10s
-      idleBlinkTimer = setTimeout(() => {
+    function peekView(name, ms) {
+      const prev = currentView;
+      setView(name);
+      clearTimeout(viewTimer);
+      viewTimer = setTimeout(() => setView(prev), ms);
+    }
+    function scheduleIdlePeek() {
+      clearTimeout(idlePeekTimer);
+      const wait = 8000 + Math.random() * 5000; // 8-13s
+      idlePeekTimer = setTimeout(() => {
         if (!anchor.classList.contains('panel-open') && !busy) {
-          setMood('sleepy', 600); // quick sleepy then back to happy
+          peekView('side', 1500);
         }
-        scheduleIdleBlink();
+        scheduleIdlePeek();
       }, wait);
     }
     const close  = document.querySelector('.chatbot-close');
@@ -325,12 +319,12 @@
     /* ── Open / close panel ───────────────────────────────────────── */
     function openPanel() {
         anchor.classList.add('panel-open');
-        setMood('surprised', 700);
+        setView('side'); // chat mode: peeks at the user sideways
         setTimeout(() => input?.focus(), 200);
     }
     function closePanel() {
         anchor.classList.remove('panel-open');
-        setMood('sad', 500);
+        setView('front');
     }
     function isPanelOpen() { return anchor.classList.contains('panel-open'); }
 
@@ -361,6 +355,7 @@
         anchor.style.left = `${rect.left}px`;
         anchor.style.top = `${rect.top}px`;
         anchor.classList.add('dragging');
+        if (!anchor.classList.contains('panel-open')) setView('side');
         try { anchor.setPointerCapture(e.pointerId); } catch (_) {}
         e.preventDefault();
     }
@@ -391,7 +386,9 @@
                 left: rect.left, top: rect.top,
             }));
         } catch (_) {}
-        if (!moved) {
+        if (moved) {
+            if (!isPanelOpen()) setView('front');
+        } else {
             if (isPanelOpen()) closePanel();
             else openPanel();
         }
@@ -421,22 +418,16 @@
         msgs.innerHTML = '';
         addMsg('bot', '對話已重置。問我任何問題吧！');
         showChips();
-        setMood('surprised', 700);
+        peekView('back', 1200);
     });
 
-    // Hover → happy jump
+    // Hover → side peek
     anchor.addEventListener('pointerenter', () => {
-        if (!anchor.classList.contains('panel-open')) setMood('happy');
-    });
-    anchor.addEventListener('pointerleave', () => {
-        if (!anchor.classList.contains('panel-open') && !busy) setMood('happy');
+        if (!anchor.classList.contains('panel-open')) peekView('side', 600);
     });
 
-    // Drag start → angry focus
-    anchor.addEventListener('dragstart', () => setMood('angry', 600));
-
-    // Start idle blink loop
-    scheduleIdleBlink();
+    // Start idle peek loop
+    scheduleIdlePeek();
 
     send.addEventListener('click', submit);
     input.addEventListener('keydown', e => {
@@ -508,6 +499,16 @@
                         if (data.cache === 'hit') {
                             reply += '\n\n_(伺服器快取回覆，不消耗 LLM token)_';
                         }
+                        // Attach RAG citations if present
+                        const rag = data.rag;
+                        if (rag && Array.isArray(rag.hits) && rag.hits.length) {
+                            const cites = rag.hits.map((h, i) =>
+                                `[${i + 1}] ${h.path} (${h.score})`
+                            ).join(' · ');
+                            reply += `\n\n📎 引用 ${rag.hits.length} 筆 · ${rag.ms}ms\n${cites}`;
+                        } else if (rag && rag.enabled && rag.error === 'no_hits_above_threshold') {
+                            reply += '\n\n_(站內資料無相關命中)_';
+                        }
                         // Save to local cache for next time
                         saveLocalCacheEntry(text, cleaned);
                         history.push({ role: 'assistant', content: cleaned });
@@ -561,7 +562,7 @@
         busy = v; send.disabled = v; input.disabled = v;
         document.getElementById('chat-typing')?.remove();
         if (v) {
-            setMood('curious'); // thinking face while waiting for API
+            setView('back'); // thinking: character turned away
             const t = document.createElement('div');
             t.id = 'chat-typing';
             t.className = 'chat-msg chat-bot chat-typing';
@@ -569,7 +570,7 @@
             msgs.appendChild(t);
             msgs.scrollTop = msgs.scrollHeight;
         } else {
-            setMood('happy');
+            setView(isPanelOpen() ? 'side' : 'front');
         }
     }
 
