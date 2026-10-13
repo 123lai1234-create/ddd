@@ -8,12 +8,31 @@
  */
 ---
 
-<!-- 元嬰不說 kawaii 人偶按鈕（可拖曳 + 滑鼠追蹤 + 3 視角切換） -->
-<div id="chatbot-anchor" aria-label="元嬰不說（可拖曳）" role="button" tabindex="0">
+<!-- 元嬰不說 真 3D 人偶 (multi-view 重建自 2D chibi 插畫 → /models/mascot-3d.glb)
+     * camera-orbit 由 JS 切換：front 0° / side 90° / back 180°
+     * 拖曳 = 移動按鈕（與模型旋轉無關）
+     * 滑鼠位置會驅動小幅 azimuth（讓人偶「看向」用戶） -->
+<div id="chatbot-anchor" aria-label="元嬰不說 3D 人偶（可拖曳）" role="button" tabindex="0">
   <div class="kawaii-stage" id="kawaii-stage">
-    <img class="kawaii-view active" id="kawaii-view-front" src="/img/mascot-front.png" alt="不說 mascot 正面" draggable="false" />
-    <img class="kawaii-view"        id="kawaii-view-side"  src="/img/mascot-side.png"  alt="不說 mascot 側面" draggable="false" />
-    <img class="kawaii-view"        id="kawaii-view-back"  src="/img/mascot-back.png"  alt="不說 mascot 背面" draggable="false" />
+    <model-viewer
+      id="kawaii-mv"
+      src="/models/mascot-3d.glb"
+      alt="元嬰不說 3D 人偶"
+      camera-controls="false"
+      interaction-prompt="none"
+      auto-rotate
+      auto-rotate-delay="0"
+      rotation-per-second="6deg"
+      camera-orbit="0deg 75deg 4m"
+      camera-target="0m 0.55m 0m"
+      shadow-intensity="0"
+      environment-intensity="1.1"
+      exposure="1.15"
+      reveal="auto"
+      style="width:100%;height:100%;--poster-color:transparent;background:transparent"
+    ></model-viewer>
+    <!-- 2D fallback: model-viewer 載入失敗時顯示（通常幾百 ms 內就被 3D 蓋住） -->
+    <img class="kawaii-fallback" id="kawaii-fallback" src="/img/mascot-front.png" alt="不說 mascot 正面" draggable="false" />
     <span class="char-drag-hint" aria-hidden="true">✥ 拖曳</span>
   </div>
 
@@ -86,23 +105,32 @@
     transition: transform 0.18s ease-out;
   }
 
-  /* 3 view images stacked; CSS opacity swap drives the "rotation" effect.
-   * No border-radius: full chibi character visible (not a circular head crop). */
-  .kawaii-view {
+  /* 真 3D 人偶 via <model-viewer> + 2D fallback image
+   * Mouse-follow azimuth 會在 JS 內調整 model-viewer camera-orbit */
+  .kawaii-stage model-viewer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    --poster-color: transparent;
+    transition: filter 0.25s;
+  }
+  .kawaii-fallback {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     object-fit: contain;
     object-position: center bottom;
-    opacity: 0;
-    transition: opacity 0.35s ease;
-    animation: kawaii-float 3.2s ease-in-out infinite;
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;
+    display: none;
+    animation: kawaii-float 3.2s ease-in-out infinite;
   }
-  .kawaii-view.active { opacity: 1; }
+  /* 模型未就緒時的後備顯示 */
+  .kawaii-fallback.show { display: block; }
 
   /* Floating bobbing animation */
   @keyframes kawaii-float {
@@ -130,7 +158,86 @@
     transform: scale(1);
   }
   #chatbot-anchor.dragging .char-drag-hint { opacity: 0; }
+
+  /* === Streaming cursor === */
+  .chat-stream-cursor {
+    display: inline-block;
+    color: #58d7ff;
+    animation: chat-blink 1s steps(2) infinite;
+    margin-left: 1px;
+  }
+  @keyframes chat-blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  /* === RAG citations block (collapsible) === */
+  .rag-block {
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: rgba(88, 215, 255, 0.06);
+    border-left: 2px solid #58d7ff;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .rag-header {
+    color: #58d7ff;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .rag-hit {
+    margin: 4px 0;
+    font-size: 11.5px;
+  }
+  .rag-hit summary {
+    cursor: pointer;
+    color: #8bbfd9;
+    padding: 2px 0;
+    list-style: none;
+  }
+  .rag-hit summary::-webkit-details-marker { display: none; }
+  .rag-hit summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-right: 4px;
+    color: #58d7ff;
+    transition: transform 0.15s;
+  }
+  .rag-hit[open] summary::before {
+    transform: rotate(90deg);
+  }
+  .rag-hit summary:hover {
+    color: #c9e8f5;
+  }
+  .rag-snippet {
+    margin: 4px 0 4px 16px;
+    padding: 6px 8px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 3px;
+    color: #c9d8e0;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .rag-empty {
+    color: #888;
+    font-style: italic;
+  }
 </style>
+
+<!-- Google <model-viewer> web component for the 3D mascot (lazy: only on first interaction) -->
+<script>
+  (function(){
+    if (window.customElements && window.customElements.get('model-viewer')) return;
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js';
+    s.crossOrigin = 'anonymous';
+    document.head.appendChild(s);
+  })();
+</script>
 
 <script is:inline>
 (function() {
@@ -272,32 +379,53 @@
     if (!anchor) return; // component not on this page
 
     const stage  = document.getElementById('kawaii-stage');
-    const viewFront = document.getElementById('kawaii-view-front');
-    const viewSide  = document.getElementById('kawaii-view-side');
-    const viewBack  = document.getElementById('kawaii-view-back');
+    const mv     = document.getElementById('kawaii-mv');
+    const fallback = document.getElementById('kawaii-fallback');
     const panel  = document.getElementById('chatbot-panel');
 
-    /* ── 3-view character swap ───────────────────────────────────────
-     * Three full-body chibi images (front/side/back) are stacked; CSS
-     * opacity swap drives the "rotation" effect. The mascot is NOT a
-     * cropped circle anymore — JT wants the full character visible.
+    /* ── 真 3D 人偶 camera-orbit 切換 ──────────────────────────────
+     * 透過 <model-viewer> cameraOrbit 切換 front/side/back：
+     *   front = 0° azimuth  （正對用戶）
+     *   side  = 90° azimuth （側面，chibi 轉 90° 看用戶聊天）
+     *   back  = 180° azimuth（背面，chibi 轉身思考/重置）
+     * 2D 圖僅在 model-viewer 尚未載入時當 fallback 顯示。
      */
+    const VIEWS = {
+      front: { az: '0deg',   el: '75deg', r: '4m' },
+      side:  { az: '90deg',  el: '75deg', r: '4m' },
+      back:  { az: '180deg', el: '75deg', r: '4m' },
+    };
     let currentView = 'front';
     let viewTimer = null;
     let idlePeekTimer = null;
-    const viewEls = { front: viewFront, side: viewSide, back: viewBack };
+
     function setView(name) {
-      if (!viewEls[name]) return;
+      if (!VIEWS[name]) return;
       currentView = name;
-      for (const [k, el] of Object.entries(viewEls)) {
-        el?.classList.toggle('active', k === name);
-      }
+      if (!mv) return;
+      const v = VIEWS[name];
+      try {
+        // 平滑過渡：model-viewer 內建 transition
+        mv.cameraOrbit = `${v.az} ${v.el} ${v.r}`;
+        mv.cameraTarget = '0m 0.55m 0m';
+      } catch (_) {}
     }
     function peekView(name, ms) {
       const prev = currentView;
       setView(name);
       clearTimeout(viewTimer);
       viewTimer = setTimeout(() => setView(prev), ms);
+    }
+
+    /* ── model-viewer 載入 / 失敗處理 ────────────────────────────── */
+    function hideFallback() { fallback?.classList.remove('show'); }
+    function showFallback() { fallback?.classList.add('show'); }
+    if (mv) {
+      // model-viewer 是 web component, 'load' event 在定義後才 fire
+      mv.addEventListener('load', () => hideFallback());
+      mv.addEventListener('error', () => showFallback());
+      // 1.5s 還沒 load 完就 show fallback
+      setTimeout(() => { if (fallback && !mv.loaded) showFallback(); }, 1500);
     }
     function scheduleIdlePeek() {
       clearTimeout(idlePeekTimer);
@@ -475,19 +603,103 @@
             }
         }
 
-        // 3) Fall through to /api/chat — which itself checks the server-side
-        //    Q&A cache (chat_qa_cache Neon table) before hitting the LLM.
+        // 3) Fall through to /api/chat — try SSE streaming (dev) first,
+        //    fall back to non-stream if server doesn't support it (production).
         if (!reply) {
             try {
                 const apiBase = (typeof window.APP_CONFIG_UTILS?.resolveApiBase === 'function')
                     ? await window.APP_CONFIG_UTILS.resolveApiBase({ cacheKey: 'chatbot' })
                     : '';
                 const endpoint = apiBase ? `${apiBase}/api/chat` : '/api/chat';
+                const streamUrl = `${endpoint}?stream=1`;
+
+                // Create a placeholder bot message we'll update as tokens arrive
+                const msgEl = document.createElement('div');
+                msgEl.className = 'chat-msg chat-bot chat-streaming';
+                msgEl.innerHTML = '<span class="chat-stream-cursor">▍</span>';
+                msgs.appendChild(msgEl);
+                msgs.scrollTop = msgs.scrollHeight;
+
+                let streamed = '';
+                let ragData = null;
+                let doneMeta = null;
+                let streamFailed = false;
+
+                try {
+                    const res = await fetch(streamUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+                        body: JSON.stringify({ system: SYSTEM, messages: history.slice(-10) }),
+                        signal: AbortSignal.timeout(60_000),
+                    });
+                    if (!res.ok || !res.body) {
+                        streamFailed = true;
+                    } else {
+                        const ctype = res.headers.get('content-type') || '';
+                        if (!ctype.includes('text/event-stream')) {
+                            streamFailed = true;
+                        } else {
+                            const reader = res.body.getReader();
+                            const decoder = new TextDecoder();
+                            let buf = '';
+                            let gotAny = false;
+                            while (true) {
+                                const { value, done } = await reader.read();
+                                if (done) break;
+                                buf += decoder.decode(value, { stream: true });
+                                let sep;
+                                while ((sep = buf.indexOf('\n\n')) >= 0) {
+                                    const frame = buf.slice(0, sep);
+                                    buf = buf.slice(sep + 2);
+                                    const ev = parseSseFrame(frame);
+                                    if (!ev) continue;
+                                    if (ev.event === 'rag') {
+                                        try { ragData = JSON.parse(ev.data); } catch (_) {}
+                                    } else if (ev.event === 'token') {
+                                        try {
+                                            const t = JSON.parse(ev.data);
+                                            if (t.text) {
+                                                streamed += t.text;
+                                                msgEl.innerHTML = renderStreamingText(streamed) + '<span class="chat-stream-cursor">▍</span>';
+                                                msgs.scrollTop = msgs.scrollHeight;
+                                                gotAny = true;
+                                            }
+                                        } catch (_) {}
+                                    } else if (ev.event === 'done') {
+                                        try { doneMeta = JSON.parse(ev.data); } catch (_) {}
+                                    } else if (ev.event === 'error') {
+                                        streamFailed = true;
+                                    }
+                                }
+                            }
+                            if (!gotAny) streamFailed = true;
+                        }
+                    }
+                } catch (_) {
+                    streamFailed = true;
+                }
+
+                if (!streamFailed && streamed) {
+                    const cleaned = stripThink(streamed);
+                    // Build final message: streamed text + RAG accordion
+                    const ragBlock = buildRagBlock(ragData);
+                    const finalHtml = renderStreamingText(cleaned) + ragBlock;
+                    msgEl.classList.remove('chat-streaming');
+                    msgEl.innerHTML = finalHtml;
+                    msgs.scrollTop = msgs.scrollHeight;
+                    history.push({ role: 'assistant', content: cleaned });
+                    saveLocalCacheEntry(text, cleaned);
+                    setBusy(false);
+                    return; // success path done
+                }
+
+                // Stream failed → fall back to non-stream
+                msgEl.remove();
                 const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ system: SYSTEM, messages: history.slice(-10) }),
-                    signal: AbortSignal.timeout(20000),
+                    signal: AbortSignal.timeout(20_000),
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -495,11 +707,9 @@
                     const cleaned = fromApi ? stripThink(fromApi) : null;
                     if (cleaned) {
                         reply = cleaned;
-                        // Mark cache provenance so user can see it
                         if (data.cache === 'hit') {
                             reply += '\n\n_(伺服器快取回覆，不消耗 LLM token)_';
                         }
-                        // Attach RAG citations if present
                         const rag = data.rag;
                         if (rag && Array.isArray(rag.hits) && rag.hits.length) {
                             const cites = rag.hits.map((h, i) =>
@@ -509,7 +719,6 @@
                         } else if (rag && rag.enabled && rag.error === 'no_hits_above_threshold') {
                             reply += '\n\n_(站內資料無相關命中)_';
                         }
-                        // Save to local cache for next time
                         saveLocalCacheEntry(text, cleaned);
                         history.push({ role: 'assistant', content: cleaned });
                     }
@@ -572,6 +781,53 @@
         } else {
             setView(isPanelOpen() ? 'side' : 'front');
         }
+    }
+
+    /* ── SSE parser ──────────────────────────────────────────────────
+     * Parse one SSE frame (lines separated by '\n', terminated by '\n\n').
+     * Returns { event, data } or null if no data.
+     */
+    function parseSseFrame(frame) {
+        const lines = frame.split('\n');
+        let event = 'message';
+        const dataParts = [];
+        for (const ln of lines) {
+            if (!ln || ln.startsWith(':')) continue;
+            if (ln.startsWith('event:')) event = ln.slice(6).trim();
+            else if (ln.startsWith('data:')) dataParts.push(ln.slice(5).trim());
+        }
+        if (!dataParts.length) return null;
+        return { event, data: dataParts.join('\n') };
+    }
+
+    /* ── Render streamed text with safe markdown-ish formatting ───── */
+    function renderStreamingText(text) {
+        return escapeHtml(text)
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+            .replace(/\n/g, '<br/>');
+    }
+
+    /* ── Build RAG citations accordion (collapsible) ──────────────── */
+    function buildRagBlock(rag) {
+        if (!rag) return '';
+        if (Array.isArray(rag.hits) && rag.hits.length) {
+            const items = rag.hits.map((h, i) => {
+                const snip = (h.snippet || '').replace(/</g, '&lt;');
+                return `<details class="rag-hit">
+                    <summary>[${i + 1}] ${h.source} · ${h.path} · ${h.score}</summary>
+                    <div class="rag-snippet">${snip}…</div>
+                </details>`;
+            }).join('');
+            return `<div class="rag-block">
+                <div class="rag-header">📎 引用 ${rag.hits.length} 筆 · ${rag.ms}ms</div>
+                ${items}
+            </div>`;
+        }
+        if (rag.error === 'no_hits_above_threshold') {
+            return `<div class="rag-block rag-empty">_(站內資料無相關命中)_</div>`;
+        }
+        return '';
     }
 
     document.addEventListener('keydown', (e) => {

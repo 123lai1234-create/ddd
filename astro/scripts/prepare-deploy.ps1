@@ -50,16 +50,19 @@ $configJson = @'
 '@
 Set-Content -Path '.vercel\output\config.json' -Value $configJson -Encoding UTF8
 
-# 3. Copy catchall function from cache
+# 3. Copy catchall function from Vercel CLI cache
+#    Note: Vercel CLI keeps its build cache at <project-root>/.vercel/.vercel/,
+#    which is D:\project\.vercel\.vercel\ (NOT astro/.vercel/.vercel/).
 Write-Host "[3/5] Copying catchall.func from cache ..." -ForegroundColor Cyan
-$cacheFunc = '.vercel\.vercel\output\functions\api\catchall.func'
+$projectRoot = Split-Path $astroDir -Parent
+$cacheFunc = Join-Path $projectRoot '.vercel\.vercel\output\functions\api\catchall.func'
 $outFunc = '.vercel\output\functions\api\catchall.func'
 if (Test-Path $cacheFunc) {
     New-Item -ItemType Directory -Force -Path $outFunc | Out-Null
     Copy-Item "$cacheFunc\catchall.mjs" "$outFunc\catchall.mjs" -Force
     Copy-Item "$cacheFunc\.vc-config.json" "$outFunc\.vc-config.json" -Force
     $size = (Get-Item "$outFunc\catchall.mjs").Length
-    Write-Host "       $outFunc\catchall.mjs ($size bytes)" -ForegroundColor Green
+    Write-Host "       $outFunc\catchall.mjs ($size bytes from $cacheFunc)" -ForegroundColor Green
 } else {
     Write-Host "ERROR: catchall func source not found at $cacheFunc" -ForegroundColor Red
     Write-Host "       Re-link via: npx vercel link --yes --project donttalk" -ForegroundColor Red
