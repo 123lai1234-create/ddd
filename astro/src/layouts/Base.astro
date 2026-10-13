@@ -127,8 +127,12 @@ const personSchema = {
     <script is:inline>
       // 註冊新版 SW，舊 cache 會在新 SW activate 時自動清掉
       // （sw.js 的 activate handler 會刪除所有非 CACHE_NAME 的 cache）
+      // 2026-10-13: bump ?v= → 強制瀏覽器抓 sw.js v11（補回 offline.html +
+      // CACHE_VERSION v11）以修 console "FetchEvent resulted in a network
+      // error response" 警告（v10 引用但 offline.html 不存在 → 導航
+      // fallback resolve undefined）
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js?v=20260930b').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=20261013').catch(() => {});
       }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.cn" />

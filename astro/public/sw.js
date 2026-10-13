@@ -8,14 +8,22 @@
 //   /rebalance 回 Response.error() 導致頁面沒 fallback 內容）；同時把 catch
 //   block 從 `Response.error()` 改成 navigation fallback 到 offline.html，
 //   避免 transient network 抖動讓使用者看到空白頁。
-const CACHE_VERSION = 'v10';
+// 2026-10-13 v11: 補回 public/offline.html（之前 v10 引用但檔案不存在，導致
+//   SW navigation fallback resolve undefined → browser console 印
+//   "FetchEvent resulted in a network error response: the promise was
+//    resolved with an error response object"）。offline.html 實檔建好後，
+//   bump v11 強制重新 install 走 precache，navigation 失敗才能真的回
+//   offline.html 而不是 undefined。
+const CACHE_VERSION = 'v11';
 const CACHE_NAME = `portfolio-${CACHE_VERSION}`;
-const OFFLINE_URL = '/offline.html';
+// 2026-10-13: 改用 `/offline`（cleanUrls: true 把 .html 拿掉，Vercel 上
+// `/offline.html` 會 404；本地 file:// 預覽時兩者皆可但 Vercel 只有 `/offline`）
+const OFFLINE_URL = '/offline';
 
 // Only assets that we *know* are static and small enough to safely cache
 // at install time. Anything else is fetched through the network.
 const PRECACHE_URLS = [
-  '/offline.html',
+  '/offline',
   '/manifest.json',
 ];
 
