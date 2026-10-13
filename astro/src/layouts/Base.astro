@@ -35,7 +35,9 @@ const {
 } = Astro.props;
 
 const ogImageUrl = ogImage
-    ?? `${SITE}/og?t=${encodeURIComponent(title)}&s=${encodeURIComponent(description || '不說 作品集')}&tag=${encodeURIComponent(ogTag)}`;
+    // 動態 /og endpoint 在 prebuilt deploy 下指向 catchall Node function 一直 404，
+    // 改用靜態 /og-image.svg（含 chibi）當 fallback。需要客製 og 的頁面可傳 ogImage prop 覆寫。
+    ?? `${SITE}/og-image.svg`;
 
 // Canonical: strip query strings & hash, force trailing-slash consistency via Astro.site.
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? SITE).toString();
@@ -119,8 +121,8 @@ const personSchema = {
         <meta name="author" content="不說" />
             <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
             <meta name="googlebot" content="index, follow" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧬</text></svg>" />
-    <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#08060e" />
     <script is:inline>
       // 註冊新版 SW，舊 cache 會在新 SW activate 時自動清掉
