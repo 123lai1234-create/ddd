@@ -8,7 +8,8 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/stem-cell', label: '🧫 幹細胞' },
         { href: '/protein-mpnn', label: 'ProteinMPNN' },
         { href: '/music', label: '🎵 音樂' },
-        { href: '/interactive-showcase', label: '⚡ Tech Lab', classes: 'nav-cta' }
+        { href: '/3d-mascot', label: '🧊 3D 模型', classes: 'nav-cta' },
+        { href: '/interactive-showcase', label: '⚡ Tech Lab' }
     ];
 
     var STD_DRAWER = [
@@ -23,7 +24,8 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/interactive-showcase', label: '⚡ 互動技術展示館' },
         { href: '/firmware', label: '🔌 韌體 MCU' },
         { href: '/interview-prep', label: '面試準備' },
-        { href: '/stem-cell', label: '🧫 幹細胞研究' }
+        { href: '/stem-cell', label: '🧫 幹細胞研究' },
+        { href: '/3d-mascot', label: '🧊 3D mascot 模型' }
     ];
 
     var STD_FOOTER_LINKS = [
@@ -37,6 +39,7 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/report', label: '專案報告' },
         { href: '/firmware', label: '韌體' },
         { href: '/stem-cell', label: '幹細胞研究' },
+        { href: '/3d-mascot', label: '🧊 3D mascot 模型' },
         { href: '/interactive-showcase', label: '⚡ Tech Lab' },
         { href: 'https://jtlai0921.wixsite.com/mysite', label: '個人網站', target: '_blank', rel: 'noreferrer' }
     ];

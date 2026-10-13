@@ -1,0 +1,224 @@
+---
+import Base from '../layouts/Base.astro';
+const headInline = `
+<!-- Google <model-viewer> web component for glTF/GLB viewing -->
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<style>
+  .mascot-3d-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+    color: #d8e4f0;
+    font-family: system-ui, -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif;
+  }
+  .mascot-3d-page h1 {
+    font-size: 1.9rem;
+    margin: 0 0 6px;
+    background: linear-gradient(120deg, #58d7ff 0%, #a8ff9e 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .mascot-3d-page .subtitle {
+    color: #8aa3bd;
+    margin: 0 0 18px;
+    font-size: 0.95rem;
+  }
+  .mascot-3d-stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    max-height: 520px;
+    background: radial-gradient(ellipse at center, #1c2738 0%, #0a1019 80%);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(88, 215, 255, 0.18);
+    margin-bottom: 18px;
+  }
+  .mascot-3d-stage model-viewer {
+    width: 100%;
+    height: 100%;
+    --poster-color: transparent;
+  }
+  .mascot-3d-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 14px 0 24px;
+  }
+  .mascot-3d-btn {
+    background: rgba(88, 215, 255, 0.12);
+    color: #c6e7ff;
+    border: 1px solid rgba(88, 215, 255, 0.35);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.18s;
+  }
+  .mascot-3d-btn:hover {
+    background: rgba(88, 215, 255, 0.25);
+    transform: translateY(-1px);
+  }
+  .mascot-3d-btn.active {
+    background: rgba(88, 215, 255, 0.35);
+    color: #fff;
+  }
+  .mascot-3d-hint {
+    font-size: 0.82rem;
+    color: #6a82a0;
+    margin: 6px 0 0;
+  }
+  .mascot-3d-info {
+    margin-top: 32px;
+    padding: 16px 18px;
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 3px solid #58d7ff;
+    border-radius: 6px;
+    line-height: 1.7;
+  }
+  .mascot-3d-info h3 {
+    margin: 0 0 8px;
+    color: #a8ff9e;
+    font-size: 1.05rem;
+  }
+  .mascot-3d-info code {
+    background: rgba(0, 0, 0, 0.35);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    color: #ffd394;
+  }
+  .mascot-3d-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6a82a0;
+    font-size: 0.95rem;
+    pointer-events: none;
+  }
+  .mascot-3d-loading.hide { display: none; }
+</style>
+`;
+---
+<Base
+    title="3D Mascot | 元嬰不說 360° 互動模型"
+    description="元嬰不說 chibi mascot 的真實 3D 模型 — 可旋轉、縮放、互動的 GLB 模型。"
+    bodyPage="index"
+    pageStyles={["/styles/index.css"]}
+    pageScripts={["/scripts/app-config.js"]}
+    headInline={headInline}
+>
+    <div class="mascot-3d-page">
+        <h1>🧒 元嬰不說 · 真 3D 模型</h1>
+        <p class="subtitle">
+            chibi mascot 的 3D 重建版本 — 可拖曳旋轉、滾輪縮放、auto-rotate。
+        </p>
+
+        <div class="mascot-3d-stage" id="stage">
+            <div class="mascot-3d-loading" id="loading">模型載入中…</div>
+            <!--
+                model-viewer 設定：
+                  - src         GLB 路徑
+                  - camera-controls  啟用軌道控制（拖曳旋轉 / 縮放）
+                  - auto-rotate     自動旋轉展示
+                  - shadow-intensity, environment-intensity  光照
+                  - alt            alt 文字
+            -->
+            <model-viewer
+                id="mascot"
+                src="/models/mascot-3d.glb"
+                alt="元嬰不說 chibi mascot 3D 模型"
+                camera-controls
+                auto-rotate
+                auto-rotate-delay="2000"
+                rotation-per-second="18deg"
+                shadow-intensity="1.1"
+                environment-intensity="1.2"
+                exposure="1.05"
+                camera-orbit="45deg 75deg 4m"
+                min-camera-orbit="auto auto 2.5m"
+                max-camera-orbit="auto auto 8m"
+                interaction-prompt="none"
+            ></model-viewer>
+        </div>
+
+        <div class="mascot-3d-controls">
+            <button class="mascot-3d-btn" data-orbit="front">正面</button>
+            <button class="mascot-3d-btn" data-orbit="side">側面</button>
+            <button class="mascot-3d-btn" data-orbit="back">背面</button>
+            <button class="mascot-3d-btn" data-orbit="top">頭頂</button>
+            <button class="mascot-3d-btn" id="btn-rotate">⏸ 暫停旋轉</button>
+            <button class="mascot-3d-btn" id="btn-reset">↻ 重置視角</button>
+        </div>
+
+        <p class="mascot-3d-hint">
+            💡 滑鼠拖曳旋轉、滾輪縮放、按住右鍵平移。
+        </p>
+
+        <div class="mascot-3d-info">
+            <h3>關於這個 3D 模型</h3>
+            <p>
+                由 2D chibi AI 插畫出發，透過多視角影像重建（multi-view reconstruction）
+                + marching cubes（mc320）演算法產生 watertight mesh，再以原圖 UV
+                對應貼上 PBR 材質，輸出為
+                <code>character_front_mc320_textured.glb</code>（6.3 MB）。
+            </p>
+            <p>
+                模型在 chatbot 浮動按鈕上的 6 表情 sprite 動畫也出自同一個角色 —
+                <a href="/" style="color:#58d7ff">首頁</a> 與
+                <a href="/about" style="color:#58d7ff">About 頁</a>
+                的 chibi 角色視覺都跟這個 3D 模型對應同一個人物設定。
+            </p>
+        </div>
+    </div>
+
+    <script is:inline>
+    (function () {
+        const mv = document.getElementById('mascot');
+        const loading = document.getElementById('loading');
+        const btnReset = document.getElementById('btn-reset');
+        const btnRotate = document.getElementById('btn-rotate');
+        const btnOrbits = document.querySelectorAll('[data-orbit]');
+        if (!mv) return;
+
+        const DEFAULT_ORBIT = '45deg 75deg 4m';
+
+        mv.addEventListener('load', () => loading?.classList.add('hide'));
+        mv.addEventListener('error', () => {
+            if (loading) loading.textContent = '❌ 模型載入失敗，請檢查 /models/mascot-3d.glb';
+        });
+
+        btnOrbits.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const k = btn.dataset.orbit;
+                const map = {
+                    front: '0deg 75deg 4m',
+                    side:  '90deg 75deg 4m',
+                    back:  '180deg 75deg 4m',
+                    top:   '0deg 0deg 3m',
+                };
+                mv.cameraOrbit = map[k];
+                mv.cameraTarget = '0m 0.5m 0m';
+                btnOrbits.forEach((b) => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        btnReset?.addEventListener('click', () => {
+            mv.cameraOrbit = DEFAULT_ORBIT;
+            mv.cameraTarget = '0m 0m 0m';
+            btnOrbits.forEach((b) => b.classList.remove('active'));
+        });
+
+        let rotating = true;
+        btnRotate?.addEventListener('click', () => {
+            rotating = !rotating;
+            mv.autoRotate = rotating;
+            btnRotate.textContent = rotating ? '⏸ 暫停旋轉' : '▶ 開始旋轉';
+        });
+    })();
+    </script>
+</Base>

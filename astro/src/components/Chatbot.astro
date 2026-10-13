@@ -8,10 +8,16 @@
  */
 ---
 
-<!-- 元嬰不說 kawaii 人偶按鈕（可拖曳 + 滑鼠追蹤 + 飄浮 + 輕眨眼） -->
+<!-- 元嬰不說 kawaii 人偶按鈕（可拖曳 + 滑鼠追蹤 + 飄浮 + 6 表情 sprite） -->
 <div id="chatbot-anchor" aria-label="元嬰不說（可拖曳）" role="button" tabindex="0">
   <div class="kawaii-stage" id="kawaii-stage">
-    <img class="kawaii-img" src="/img/mascot.png" alt="不說 mascot 頭像" draggable="false" />
+    <div
+      class="kawaii-sprite"
+      id="kawaii-sprite"
+      data-mood="happy"
+      role="img"
+      aria-label="不說 mascot 頭像"
+    ></div>
     <span class="char-drag-hint" aria-hidden="true">✥ 拖曳</span>
   </div>
 
@@ -84,17 +90,25 @@
     transition: transform 0.18s ease-out;
   }
 
-  .kawaii-img {
+  .kawaii-sprite {
     width: 100%;
     height: 100%;
     display: block;
-    object-fit: cover;
-    object-position: center top;
+    /* Vertical sprite sheet: 6 × 360x360 frames stacked top-to-bottom
+     *   0: happy     1: sad       2: surprised
+     *   3: angry     4: sleepy    5: curious
+     * Frame swap is JS-driven via background-position-y.
+     */
+    background-image: url('/img/mascot-sprite.png');
+    background-repeat: no-repeat;
+    background-size: 100% auto;
+    background-position: 0 0;
     animation: kawaii-float 3.2s ease-in-out infinite;
     transform-origin: 50% 50%;
     border-radius: 50%;
     user-select: none;
     -webkit-user-drag: none;
+    transition: background-position 0.25s ease;
   }
 
   /* Floating bobbing animation */
@@ -265,7 +279,42 @@
     if (!anchor) return; // component not on this page
 
     const stage  = document.getElementById('kawaii-stage');
+    const sprite = document.getElementById('kawaii-sprite');
     const panel  = document.getElementById('chatbot-panel');
+
+    /* ── Sprite sheet mood switching ─────────────────────────────────
+     * Vertical sprite: 6 × 360px frames. JS swaps background-position-y.
+     *   happy=0, sad=-360, surprised=-720, angry=-1080,
+     *   sleepy=-1440, curious=-1800
+     */
+    const MOOD_Y = {
+      happy: 0, sad: -360, surprised: -720,
+      angry: -1080, sleepy: -1440, curious: -1800,
+    };
+    let currentMood = 'happy';
+    let moodTimer = null;
+    let idleBlinkTimer = null;
+    function setMood(name, autoMs = 0) {
+      const y = MOOD_Y[name];
+      if (y === undefined || !sprite) return;
+      sprite.style.backgroundPosition = `0px ${y}px`;
+      sprite.dataset.mood = name;
+      currentMood = name;
+      clearTimeout(moodTimer);
+      if (autoMs > 0) {
+        moodTimer = setTimeout(() => setMood('happy'), autoMs);
+      }
+    }
+    function scheduleIdleBlink() {
+      clearTimeout(idleBlinkTimer);
+      const wait = 6000 + Math.random() * 4000; // 6-10s
+      idleBlinkTimer = setTimeout(() => {
+        if (!anchor.classList.contains('panel-open') && !busy) {
+          setMood('sleepy', 600); // quick sleepy then back to happy
+        }
+        scheduleIdleBlink();
+      }, wait);
+    }
     const close  = document.querySelector('.chatbot-close');
     const reset  = document.querySelector('.chatbot-reset');
     const msgs   = document.getElementById('chatbot-messages');
@@ -276,10 +325,12 @@
     /* ── Open / close panel ───────────────────────────────────────── */
     function openPanel() {
         anchor.classList.add('panel-open');
+        setMood('surprised', 700);
         setTimeout(() => input?.focus(), 200);
     }
     function closePanel() {
         anchor.classList.remove('panel-open');
+        setMood('sad', 500);
     }
     function isPanelOpen() { return anchor.classList.contains('panel-open'); }
 
@@ -370,7 +421,22 @@
         msgs.innerHTML = '';
         addMsg('bot', '對話已重置。問我任何問題吧！');
         showChips();
+        setMood('surprised', 700);
     });
+
+    // Hover → happy jump
+    anchor.addEventListener('pointerenter', () => {
+        if (!anchor.classList.contains('panel-open')) setMood('happy');
+    });
+    anchor.addEventListener('pointerleave', () => {
+        if (!anchor.classList.contains('panel-open') && !busy) setMood('happy');
+    });
+
+    // Drag start → angry focus
+    anchor.addEventListener('dragstart', () => setMood('angry', 600));
+
+    // Start idle blink loop
+    scheduleIdleBlink();
 
     send.addEventListener('click', submit);
     input.addEventListener('keydown', e => {
@@ -495,12 +561,15 @@
         busy = v; send.disabled = v; input.disabled = v;
         document.getElementById('chat-typing')?.remove();
         if (v) {
+            setMood('curious'); // thinking face while waiting for API
             const t = document.createElement('div');
             t.id = 'chat-typing';
             t.className = 'chat-msg chat-bot chat-typing';
             t.innerHTML = '<span></span><span></span><span></span>';
             msgs.appendChild(t);
             msgs.scrollTop = msgs.scrollHeight;
+        } else {
+            setMood('happy');
         }
     }
 
