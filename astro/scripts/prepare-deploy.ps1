@@ -27,8 +27,9 @@ $staticOut = Join-Path $astroDir '.vercel\output\static'
 if (Test-Path $distPath) {
     Write-Host "[1/5] Mirroring dist -> .vercel/output/static ..." -ForegroundColor Cyan
     if (-not (Test-Path $staticOut)) { New-Item -ItemType Directory -Force -Path $staticOut | Out-Null }
-    # Use Python for reliable cross-volume copy (robocopy hangs on some paths)
-    python -c "import shutil, os; src=r'$distPath'.replace('\\','\\\\'); dst=r'$staticOut'.replace('\\','\\\\'); [shutil.copy2(os.path.join(r,f), os.path.join(dst,f)) for r,_,fs in os.walk(src) for f in fs]" 2>&1 | Out-Null
+    # IMPORTANT: preserve relative path. dist/xian-godot/index.html must NOT overwrite
+    # dist/index.html in the mirror. Use os.path.relpath to keep directory structure.
+    python -c "import shutil, os; src=r'$distPath'.replace('\\','\\\\'); dst=r'$staticOut'.replace('\\','\\\\'); [shutil.copy2(os.path.join(r,f), os.path.join(dst, os.path.relpath(r, src), f)) for r,_,fs in os.walk(src) for f in fs]; print('mirror done')" 2>&1 | Out-Null
     $count = (Get-ChildItem -Recurse $staticOut -File).Count
     $size = [math]::Round((Get-ChildItem -Recurse $staticOut -File | Measure-Object Length -Sum).Sum / 1MB, 1)
     Write-Host "       $count files, $size MB" -ForegroundColor Green
