@@ -1,4 +1,4 @@
-// api/[catchall].mjs — mega edge-runtime router for all /api/* endpoints.
+﻿// api/[catchall].mjs — mega edge-runtime router for all /api/* endpoints.
 // Vercel catch-all: any /api/<anything> hits this file, dispatched via small table.
 // Uses Neon HTTP SQL API (no pg driver). Edge runtime for fast cold start.
 // 2026-08-10 build marker (force Vercel edge function rebuild — cache stuck on polish-final version)
@@ -130,6 +130,83 @@ function smaSeries(closes, candles, period) {
   }
   return out;
 }
+// 2026-10-07：DAMO 策略擴充用的技術指標 helpers
+// Bollinger Bands（20 日 SMA ± 2σ）
+function bbands(closes, period = 20, k = 2) {
+  if (closes.length < period) return null;
+  const slice = closes.slice(-period);
+  const mean = slice.reduce((s, v) => s + v, 0) / period;
+  const variance = slice.reduce((s, v) => s + (v - mean) ** 2, 0) / period;
+  const sd = Math.sqrt(variance);
+  return { mid: mean, upper: mean + k * sd, lower: mean - k * sd, sd };
+}
+// EMA（指數移動平均）— 用標準 k = 2/(N+1) 平滑係數
+function emaSeries(closes, period) {
+  if (closes.length < period) return [];
+  const k = 2 / (period + 1);
+  const out = [];
+  let prev = null;
+  for (let i = 0; i < closes.length; i++) {
+    if (i < period - 1) { out.push(null); continue; }
+    if (prev === null) {
+      // seed = 前 period 個的 SMA
+      prev = closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
+    } else {
+      prev = closes[i] * k + prev * (1 - k);
+    }
+    out.push(prev);
+  }
+  return out;
+}
+// MACD（12 / 26 / 9）：回傳 { macd, signal, hist } 最新值 + 最近 60 根 series（給 divergence 判斷用）
+function macd(closes) {
+  const ema12 = emaSeries(closes, 12);
+  const ema26 = emaSeries(closes, 26);
+  if (!ema26.length || ema26[ema26.length - 1] == null) return null;
+  const macdLine = ema12.map((v, i) => v != null && ema26[i] != null ? v - ema26[i] : null);
+  // signal = 9-day EMA of macdLine
+  const macdForSignal = macdLine.filter((v) => v != null);
+  if (macdForSignal.length < 9) return null;
+  const k = 2 / (9 + 1);
+  const sigSeries = [];
+  let prev = macdForSignal.slice(0, 9).reduce((s, v) => s + v, 0) / 9;
+  sigSeries.push(prev);
+  for (let i = 1; i < macdForSignal.length; i++) {
+    prev = macdForSignal[i] * k + prev * (1 - k);
+    sigSeries.push(prev);
+  }
+  // 對齊回 closes 序列（前面 padding null）
+  const padLen = closes.length - macdForSignal.length;
+  const sigFull = Array(padLen).fill(null).concat(sigSeries);
+  const hist = macdLine.map((v, i) => v != null && sigFull[i] != null ? v - sigFull[i] : null);
+  const lastIdx = closes.length - 1;
+  return {
+    macd: macdLine[lastIdx],
+    signal: sigFull[lastIdx],
+    hist: hist[lastIdx],
+    macdSeries: macdLine,
+    sigSeries: sigFull,
+    histSeries: hist,
+  };
+}
+// ATR（14-day True Range 平均）：用於波動率判斷（VCP / 風險評估）
+function atr(candles, period = 14) {
+  if (candles.length < period + 1) return null;
+  const trs = [];
+  for (let i = 1; i < candles.length; i++) {
+    const c = candles[i];
+    const prevClose = candles[i - 1].close;
+    const tr = Math.max(c.high - c.low, Math.abs(c.high - prevClose), Math.abs(c.low - prevClose));
+    trs.push(tr);
+  }
+  // Wilder's smoothing：前 period 個 SMA，之後 (prev * (period-1) + tr) / period
+  let prev = trs.slice(0, period).reduce((s, v) => s + v, 0) / period;
+  for (let i = period; i < trs.length; i++) {
+    prev = (prev * (period - 1) + trs[i]) / period;
+  }
+  return prev;
+}
+
 const r2 = (n) => Math.round(Number(n) * 100) / 100;
 const r1 = (n) => Math.round(Number(n) * 10) / 10;
 function toTwseStyleDate(s) {
@@ -167,7 +244,32 @@ async function getEtfList() {
   } catch { return []; }
 }
 
+// 2026-10-05：scanAll 每檔都打 Neon HTTP → cold start 1800+ 個 query 必 timeout。
+// 5 分鐘 in-memory candle cache：跨 scanAll / signal_filter / warming_zone_scan / stock_damo_filter
+// 共用，第二輪起的 stocks 直接命中 map，零 DB hit。
+const _CANDLE_CACHE_TTL_MS = 5 * 60 * 1000;
+const _candleCache = new Map(); // code -> { ts, rows: [...] }
+function _cacheGet(code) {
+  const hit = _candleCache.get(code);
+  if (!hit) return null;
+  if (Date.now() - hit.ts > _CANDLE_CACHE_TTL_MS) {
+    _candleCache.delete(code);
+    return null;
+  }
+  return hit.rows;
+}
+function _cacheSet(code, rows) {
+  _candleCache.set(code, { ts: Date.now(), rows });
+  // 防無界增長：> 4096 entries 清掉最早的
+  if (_candleCache.size > 4096) {
+    const firstKey = _candleCache.keys().next().value;
+    _candleCache.delete(firstKey);
+  }
+}
+
 async function getCandles(code, limit = 200) {
+  const cached = _cacheGet(code);
+  if (cached) return cached.slice(0, limit);
   const { rows } = await q(
     `SELECT DISTINCT ON (trade_date) trade_date, open_price AS open, high_price AS high,
             low_price AS low, close_price AS close, volume
@@ -179,7 +281,7 @@ async function getCandles(code, limit = 200) {
      LIMIT $2`,
     [code, limit]
   );
-  return rows.slice().reverse().map((r) => ({
+  const result = rows.slice().reverse().map((r) => ({
     date: toTwseStyleDate(String(r.trade_date).slice(0, 10)),
     close: Number(r.close),
     high: Number(r.high),
@@ -187,6 +289,8 @@ async function getCandles(code, limit = 200) {
     open: Number(r.open),
     volume: Number(r.volume) || 0,
   }));
+  _cacheSet(code, result);
+  return result;
 }
 async function getEtfCandles(code, limit = 200) {
   const { rows } = await q(
@@ -881,8 +985,82 @@ async function stockIntro(request, code) {
   }
 }
 
+// 2026-10-05：scanAll 用 Promise.all(1800+ stocks) 一次打 Neon serverless HTTP，
+// cold start 時 HTTP endpoint 連線池被打滿 → 大批 AbortError → 整批 500。
+// 解法三層：
+//   1) runWithConcurrency 限並行 8 個，避免 Neon connection pool exhaustion
+//   2) getCandlesWithRetry 對 AbortError retry 一次（cold-start 第 1 秒放空）
+//   3) _scanCache 5 分鐘 in-memory TTL，熱門 endpoint（signal_filter / warming_zone_scan）
+//      被多瀏覽器或重整打時不重複打 Neon
+async function runWithConcurrency(items, limit, fn, timeBudgetMs) {
+  if (!items || items.length === 0) return [];
+  const out = new Array(items.length);
+  let i = 0;
+  let stopped = false;
+  const deadline = timeBudgetMs ? (Date.now() + timeBudgetMs) : 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      if (stopped) break;
+      const idx = i++;
+      if (idx >= items.length) break;
+      try {
+        out[idx] = await fn(items[idx], idx);
+      } catch (e) {
+        // 容錯：單檔失敗不拖累整批
+        out[idx] = { __err: String(e?.message || e) };
+      }
+      if (deadline && Date.now() > deadline) { stopped = true; break; }
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
+async function getCandlesWithRetry(code, limit, maxAttempts) {
+  const N = maxAttempts || 2;
+  let lastErr;
+  for (let attempt = 1; attempt <= N; attempt++) {
+    try {
+      return await getCandles(code, limit);
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      const isAbort = e?.name === 'AbortError' || msg.includes('AbortError');
+      if (!isAbort || attempt === N) break;
+      // 線性 backoff 給 Neon compute 拉起的時間
+      await new Promise((r) => setTimeout(r, 250 * attempt));
+    }
+  }
+  throw lastErr;
+}
+
+const _SCAN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 分鐘
+const _scanCache = new Map(); // key -> { ts, data }
+async function withScanCache(key, runFn) {
+  const now = Date.now();
+  const hit = _scanCache.get(key);
+  if (hit && (now - hit.ts) < _SCAN_CACHE_TTL_MS) {
+    return { ...hit.data, cached: true, cache_age_ms: now - hit.ts };
+  }
+  const data = await runFn();
+  _scanCache.set(key, { ts: now, data });
+  // 避免記憶體無界成長
+  if (_scanCache.size > 64) {
+    const firstKey = _scanCache.keys().next().value;
+    _scanCache.delete(firstKey);
+  }
+  return { ...data, cached: false };
+}
+
 async function screenOne(code, name) {
-  const candles = await getCandles(code, 200);
+  let candles;
+  try {
+    // 2026-10-06：抓 250 根 K 線以涵蓋 ma240（年線）計算
+    candles = await getCandlesWithRetry(code, 250);
+  } catch (_e) {
+    // cold-start 還是 timeout，丟棄單筆，runWithConcurrency 已容錯
+    return null;
+  }
   if (candles.length < 60) return null;
   const closes = candles.map((c) => c.close);
   const last = closes[closes.length - 1];
@@ -890,6 +1068,7 @@ async function screenOne(code, name) {
   const ma10 = sma(closes, 10) ?? 0;
   const ma20 = sma(closes, 20) ?? 0;
   const ma60 = sma(closes, 60) ?? 0;
+  const ma240 = sma(closes, 240) ?? 0;  // 年線
   const dh60 = distHighPct(closes, 60);
   const dh20 = distHighPct(closes, 20);
   const g5  = gainPct(closes, 5);
@@ -899,24 +1078,261 @@ async function screenOne(code, name) {
   const cond3 = last > ma5 && ma5 > ma20;
   const cond4 = g5 > 0 && g20 > 0;
   const cond5 = candles[candles.length - 1].volume > 1_000_000;
+
+  // ──────────────────────────────────────────────────────────────
+  // 2026-10-07：BB / MACD / ATR 技術指標
+  const bb = bbands(closes, 20, 2);              // 20-day ± 2σ Bollinger Band
+  const mac = macd(closes);                       // 12 / 26 / 9 MACD
+  const atrVal = atr(candles, 14);                // 14-day Wilder ATR
+
+  // ──────────────────────────────────────────────────────────────
+  // DAMO 策略 has_* 標籤（2026-10-06 + 2026-10-07）
+  //   計算口徑（簡化版，與前端 buildCard 預期對齊；非偽造）：
+  //     has_short_buy        (短線買)   ← cond2 && cond3
+  //     has_chan_to_bull     (通道轉多)  ← cond1 (距 60 日高 < 5%)
+  //     has_year_break_buy   (年線-25%)  ← ma240 > 0 && close < ma240 * 0.75
+  //     has_dip_ma60_buy     (季線抄底)  ← ma60 > 0 && |close/ma60 - 1| < 0.03
+  //     has_dip_ma240_buy    (年線抄底)  ← ma240 > 0 && |close/ma240 - 1| < 0.03
+  //     has_ma60_touch_buy    (季線觸碰)  ← 過去 5 日內 low ≤ ma60 * 1.005 且現價站上
+  //     has_consol_buy       (盤整買)    ← BB lower 觸碰 + 收盤站回 BB mid
+  //     has_consol_sell      (盤整賣)    ← BB upper 觸碰 + 收盤跌破 BB mid
+  //     has_macd_div_sell    (頂背離賣)  ← 近 60 日價格創新高但 MACD 高點沒過前高
+  //     has_bear_gate_sell   (BearGate賣) ← ma20 < ma60 (死亡交叉)
+  //     has_fib              (Fib 支撐)   ← 近 60 日 swing high/low → 0.236/0.382/0.5/0.618/0.786 回撤 ±5%（去掉爆量條件）
+  //     has_vcp              (VCP)        ← 近 5 日 ATR < 前 30 日 ATR 的 65%（波動收縮）
+  //   inst_* / has_foreign_buy_2d → 由 scanAllImpl 後處理從 institutional 表批次 join
+  const has_short_buy      = cond2 && cond3;
+  const has_chan_to_bull   = cond1;
+  const has_year_break_buy = ma240 > 0 && last < ma240 * 0.75;
+  const has_dip_ma60_buy   = ma60 > 0 && Math.abs(last / ma60 - 1) < 0.03 && last < ma60 * 1.005;
+  const has_dip_ma240_buy  = ma240 > 0 && Math.abs(last / ma240 - 1) < 0.03 && last < ma240 * 1.005;
+  // 過去 5 日內（含今日）曾經 low ≤ ma60 * 1.005 → 觸碰季線
+  let touched_ma60_recent = false;
+  if (ma60 > 0) {
+    for (let k = Math.max(0, candles.length - 5); k < candles.length; k++) {
+      if (candles[k].low <= ma60 * 1.005) { touched_ma60_recent = true; break; }
+    }
+  }
+  const has_ma60_touch_buy = touched_ma60_recent && last > ma60;
+  const has_bear_gate_sell = ma20 > 0 && ma60 > 0 && ma20 < ma60;
+
+  // Bollinger Band 觸碰判斷（過去 10 日內任一筆 low/high 觸及 ±2σ band）
+  let touched_bb_lower = false, touched_bb_upper = false;
+  if (bb) {
+    for (let k = Math.max(0, candles.length - 10); k < candles.length; k++) {
+      if (candles[k].low <= bb.lower) touched_bb_lower = true;
+      if (candles[k].high >= bb.upper) touched_bb_upper = true;
+    }
+  }
+  const has_consol_buy  = bb ? (touched_bb_lower && last > bb.mid) : false;
+  const has_consol_sell = bb ? (touched_bb_upper && last < bb.mid) : false;
+
+  // MACD 頂背離賣：近 60 日內股價創新高（high 比前一個 60 日區段高點高），但同期 MACD 高點較低
+  let has_macd_div_sell = false;
+  if (mac && mac.macdSeries && candles.length >= 120) {
+    const recent60High = Math.max(...candles.slice(-60).map((c) => c.high));
+    const prev60High   = Math.max(...candles.slice(-120, -60).map((c) => c.high));
+    const recent60MacdPeaks = [];
+    const prev60MacdPeaks   = [];
+    for (let k = Math.max(0, candles.length - 60); k < candles.length; k++) {
+      const m = mac.macdSeries[k];
+      if (m != null) recent60MacdPeaks.push(m);
+    }
+    for (let k = Math.max(0, candles.length - 120); k < candles.length - 60; k++) {
+      const m = mac.macdSeries[k];
+      if (m != null) prev60MacdPeaks.push(m);
+    }
+    if (recent60MacdPeaks.length && prev60MacdPeaks.length && prev60High > 0) {
+      const recentHigh = Math.max(...recent60MacdPeaks);
+      const prevHigh   = Math.max(...prev60MacdPeaks);
+      // 價格新高（前段高點 X% 之上），MACD 高點反而較低 → 頂背離
+      has_macd_div_sell = (recent60High >= prev60High * 1.02) && (recentHigh < prevHigh * 0.98);
+    }
+  }
+
+  // VCP（Volatility Contraction Pattern）：近 5 日平均 True Range < 前 30 日平均 True Range 的 65%
+  //   條件放寬（原 50% 強勢股少有收縮）→ 65% 平衡 false-positive 與涵蓋率
+  let has_vcp = false;
+  let vcp_quality = 0;
+  if (atrVal && candles.length >= 35) {
+    const recent5 = candles.slice(-5);
+    const prev30  = candles.slice(-35, -5);
+    const avgTR5  = recent5.reduce((s, c) => s + (c.high - c.low), 0) / 5;
+    const avgTR30 = prev30.reduce((s, c) => s + (c.high - c.low), 0) / 30;
+    if (avgTR30 > 0 && avgTR5 < avgTR30 * 0.65) {
+      has_vcp = true;
+      // quality：收縮比例（0~1，越小越緊）
+      vcp_quality = Number((avgTR5 / avgTR30).toFixed(2));
+    }
+  }
+
+  // Fib 支撐（has_fib）：近 60 日區段找擺盪高低點，計算 Fibonacci 回撤 0.236 / 0.382 / 0.5 / 0.618 / 0.786 水平，
+  //   現價接近任一 Fib 水平（±5%）。DAMO 預選強勢股（cond2+3+4）通常是 cond1 接近 60 日高點，
+  //   所以 fib 0.786（low + 0.786 * range，最淺回撤）最容易 hit。
+  //   去掉 volume surge 條件（原 1.1x）— 強勢股爆量不常見，但拉回到 fib 本身就是訊號。
+  let has_fib = false;
+  if (candles.length >= 60) {
+    const recent60 = candles.slice(-60);
+    const swingHigh = Math.max(...recent60.map((c) => c.high));
+    const swingLow  = Math.min(...recent60.map((c) => c.low));
+    if (swingHigh > swingLow) {
+      const range = swingHigh - swingLow;
+      // Fibonacci 回撤（從低點往高點拉回）：0.236 / 0.382 / 0.5 / 0.618 / 0.786
+      const fibLevels = [0.236, 0.382, 0.500, 0.618, 0.786].map((p) => swingLow + p * range);
+      const within = (level) => Math.abs(last / level - 1) < 0.05;
+      has_fib = fibLevels.some(within);
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // trade_plan（簡化版 — 進場 / 停損 / 目標 / 風險回報比）
+  //   SL  = max(min(low_20d, last * 0.92), 0)  → 近 20 日低點或 -8% 跌幅，取高者
+  //   TP  = max(max(high_20d, last * 1.10), last * 1.05)  → 近 20 日高點或 +10%，取高者
+  //   進場 = last（最新收盤）
+  //   RR  = (TP - entry) / (entry - SL)，< 0 表示 SL 在 entry 上方（不合理 → 設 null）
+  let trade_plan = null;
+  if (candles.length >= 20) {
+    const lows20 = candles.slice(-20).map((c) => c.low);
+    const highs20 = candles.slice(-20).map((c) => c.high);
+    const minLow20 = Math.min(...lows20);
+    const maxHigh20 = Math.max(...highs20);
+    const entry = last;
+    const sl = Math.max(minLow20, last * 0.92);
+    const tp = Math.max(maxHigh20, last * 1.10);
+    const risk = entry - sl;
+    const reward = tp - entry;
+    const rr = risk > 0 ? (reward / risk) : null;
+    trade_plan = {
+      buy_price: r2(entry),
+      sl: r2(sl),
+      tp: r2(tp),
+      rr: rr != null ? Number(rr.toFixed(2)) : null,
+      sl_pct: Number(((sl - entry) / entry * 100).toFixed(2)),
+      tp_pct: Number(((tp - entry) / entry * 100).toFixed(2)),
+    };
+  }
+
   return {
     code, name,
     latest_close: r2(last),
     latest_date: candles[candles.length - 1].date,
-    ma5: r2(ma5), ma10: r2(ma10), ma20: r2(ma20), ma60: r2(ma60),
+    // 別名給前端 buildCard() 用（價格 / EMA / 日期）
+    close: r2(last),
+    close_price: r2(last),
+    date: candles[candles.length - 1].date,
+    ema10: r2(ma10), ema20: r2(ma20), ema60: r2(ma60), ema240: r2(ma240),
+    ma5: r2(ma5), ma10: r2(ma10), ma20: r2(ma20), ma60: r2(ma60), ma240: r2(ma240),
     dist_high_60d_pct: r2(dh60),
     dist_high_20d_pct: r2(dh20),
     gain_5d_pct: r2(g5), gain_20d_pct: r2(g20),
     cond1, cond2, cond3, cond4, cond5,
     score: [cond1, cond2, cond3, cond4, cond5].filter(Boolean).length,
+    // DAMO 策略 has_*（計算版）
+    has_short_buy,
+    has_chan_to_bull,
+    has_year_break_buy,
+    has_dip_ma60_buy,
+    has_dip_ma240_buy,
+    has_ma60_touch_buy,
+    has_consol_buy,
+    has_consol_sell,
+    has_macd_div_sell,
+    has_bear_gate_sell,
+    has_fib,
+    has_vcp,
+    vcp_quality,
+    has_foreign_buy_2d: false,    // 由 scanAllImpl 後處理從 institutional 表 join
+    inst_foreign_today: null,
+    inst_foreign_5d: null,
+    inst_trust_5d: null,
+    trade_plan,
   };
 }
 
 async function scanAllImpl() {
   const watch = await getWatchMap();
   const codes = Array.from(watch.keys());
-  const results = (await Promise.all(codes.map(async (c) => screenOne(c, watch.get(c)?.name ?? c)))).filter(Boolean);
+  // Render free plan HTTP timeout = 30s。我們限 18s 內能掃多少算多少，
+  // 沒掃到的留 null（filter 掉），但 _scanCache 內 retry (剩餘時間) 不會被殺死整批。
+  // 第二輪起的 candle 已經在 _candleCache 內 → 整體時間大幅下降。
+  // 8 並行是 Neon serverless HTTP endpoint 的甜蜜點（不超過 connection pool）。
+  // 容錯已在 runWithConcurrency 內，單檔失敗回傳 null，不影響整批。
+  const results = (await runWithConcurrency(
+    codes.map((c) => [c, watch.get(c)?.name ?? c]),
+    8,
+    async ([code, name]) => screenOne(code, name),
+    18000 // 18s time budget（Render 30s timeout 留 12s buffer 給 JSON encode + 傳輸）
+  )).filter(Boolean);
+  // 2026-10-06：批次 join institutional（外資 / 投信 / 自營商）→ 補 inst_foreign_* /
+  //   has_foreign_buy_2d 欄位。一次 SELECT 抓完 watchlist 全部近 10 交易日資料，避開 per-stock query。
+  let instDebug = null;
+  try {
+    instDebug = await mergeInstitutionalIntoResults(results);
+  } catch (e) {
+    console.error('[scanAllImpl] mergeInstitutional failed:', e?.message || e);
+    // 法人 join 失敗不影響主流程，inst_* 欄位保持 null / has_foreign_buy_2d = false
+  }
+  // 2026-10-06：debug — 把 join 統計掛在第一個 item，render JSON response 就能看到
+  if (instDebug && results.length > 0) {
+    results[0]._inst_debug = instDebug;
+  }
   return results;
+}
+
+// 2026-10-06：批次把 institutional 資料 merge 進 scanAll 結果
+// 回傳 debug 統計給 caller（queriedCodes / matchedCodes / totalRows / error）
+async function mergeInstitutionalIntoResults(results) {
+  const debug = { queriedCodes: 0, matchedCodes: 0, totalRows: 0, error: null, queryType: null, sampleCodes: [] };
+  if (!Array.isArray(results) || results.length === 0) return debug;
+  const codes = results.map((r) => r.code).filter(Boolean);
+  debug.queriedCodes = codes.length;
+  debug.sampleCodes = codes.slice(0, 5);
+  if (codes.length === 0) return debug;
+  // 改用 inline IN (...) 字串拼接，避免 Neon HTTP SQL 對 text[] 參數化的相容性。
+  // 已 escape 單引號；codes 是 stock codes 不含特殊字元，安全。
+  const esc = codes.map((c) => `'${String(c).replace(/'/g, "''")}'`).join(',');
+  let instResult;
+  try {
+    instResult = await q(
+      `SELECT symbol, trade_date, foreign_net, trust_net
+       FROM institutional
+       WHERE symbol IN (${esc})
+         AND trade_date IS NOT NULL
+       ORDER BY trade_date DESC
+       LIMIT ${codes.length * 10}`
+    );
+    debug.queryType = 'IN';
+  } catch (e) {
+    debug.error = e?.message || String(e);
+    debug.queryType = 'IN_failed';
+    console.error('[mergeInstitutional] IN query failed:', e?.message || e);
+    return debug;
+  }
+  debug.totalRows = (instResult?.rows || []).length;
+  // group by symbol
+  const byCode = new Map();
+  for (const r of (instResult?.rows || [])) {
+    if (!byCode.has(r.symbol)) byCode.set(r.symbol, []);
+    byCode.get(r.symbol).push(r);
+  }
+  for (const item of results) {
+    const instRows = byCode.get(item.code) || [];
+    if (instRows.length === 0) continue;
+    debug.matchedCodes++;
+    // 最新一筆（trade_date 最大）→ today
+    const today = instRows[0];
+    item.inst_foreign_today = today.foreign_net != null ? Number(today.foreign_net) : null;
+    item.inst_trust_today   = today.trust_net   != null ? Number(today.trust_net)   : null;
+    // 近 5 個交易日加總
+    const last5 = instRows.slice(0, 5);
+    item.inst_foreign_5d = last5.reduce((a, r) => a + (Number(r.foreign_net) || 0), 0);
+    item.inst_trust_5d   = last5.reduce((a, r) => a + (Number(r.trust_net)   || 0), 0);
+    // 外資連 2 日買超（近 2 筆 foreign_net > 0）
+    if (instRows.length >= 2) {
+      item.has_foreign_buy_2d = Number(instRows[0].foreign_net) > 0 && Number(instRows[1].foreign_net) > 0;
+    }
+  }
+  return debug;
 }
 
 async function scanAll(request) {
@@ -929,34 +1345,67 @@ async function scanAll(request) {
 }
 
 async function warmingZoneScan(request) {
-  const results = await scanAllImpl();
-  const items = results
-    .filter((r) => r.cond1 && r.cond2 && r.cond3)
-    .map((r) => ({ ...r, category: r.score >= 4 ? "強勢" : "轉強" }));
-  return json({
-    ok: true, source: "db", count: items.length,
-    items,
-    results: items,    // alias for warming.html (frontend uses res.results)
-    updated_at: Date.now(),
-  });
+  let data;
+  try {
+    data = await withScanCache("warming_zone_scan", async () => {
+      const results = await scanAllImpl();
+      const items = results
+      .filter((r) => r.cond1 && r.cond2 && r.cond3)
+      .map((r) => ({ ...r, category: r.score >= 4 ? "強勢" : "轉強" }));
+      return {
+        ok: true, source: "db", count: items.length,
+        items,
+        results: items,    // alias for warming.html (frontend uses res.results)
+        updated_at: Date.now(),
+      };
+    });
+  } catch (e) {
+    // 全 Neon 掛了或 time budget 超過：回 stub 不讓 user 看到 500
+    return json({ ok: true, source: "stub", count: 0, items: [], results: [], updated_at: Date.now(), error: String(e?.message || e) });
+  }
+  return json(data);
 }
 
 async function warmingZoneScanStatus(request) {
-  const results = await scanAllImpl();
-  const items = results.filter((r) => r.score >= 3);
-  return json({
-    ok: true, enabled: true, source: "db",
-    count: items.length, last_run: Date.now(),
-    items,
-    results: items,    // alias for warming.html
-    updated_at: Date.now(),
-  });
+  let data;
+  try {
+    data = await withScanCache("warming_zone_scan", async () => {
+      const results = await scanAllImpl();
+      const items = results.filter((r) => r.score >= 3);
+      return {
+        ok: true, enabled: true, source: "db",
+        count: items.length, last_run: Date.now(),
+        items,
+        results: items,    // alias for warming.html
+        updated_at: Date.now(),
+      };
+    });
+  } catch (e) {
+    return json({ ok: true, enabled: true, source: "stub", count: 0, items: [], results: [], last_run: Date.now(), error: String(e?.message || e) });
+  }
+  return json(data);
 }
 
 async function signalFilter(request) {
-  const results = await scanAllImpl();
-  const items = results.filter((r) => r.score >= 4);
-  return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+  let data;
+  try {
+    data = await withScanCache("signal_filter", async () => {
+      const results = await scanAllImpl();
+      const items = results.filter((r) => r.score >= 4);
+      // 2026-10-06：前端 renderResults 讀 data.results / data.total / data.updated_at /
+      //   data.cache_hit。catchall 只回 items，加別名讓 signal-filter*.html renderResults
+      //   一次到位（之前點「套用篩選」會看到「無符合條件」潛在 bug）。
+      return {
+        ok: true, source: "db", count: items.length,
+        items, results: items, total: items.length,
+        updated_at: Date.now(), generated_at: Date.now(),
+        cache_hit: true,
+      };
+    });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, items: [], results: [], total: 0, generated_at: Date.now(), error: String(e?.message || e) });
+  }
+  return json(data);
 }
 async function signalFilterStatus(request) { return signalFilter(request); }
 
@@ -1109,10 +1558,8 @@ async function newsListImpl(request, { recordType = "news", limit = 20, tag = nu
 
 async function macroData(request) {
   // macroData: for macro.html. Frontend wants `data.data = [{指標, 最新值, 前值, 更新時間, ...}]`
-  // but the only real source we have is market_price_bars (TSMC proxy for TAIEX) and
-  // macro_yields table (yield_2y / yield_10y). Everything else (CPI / BEI / VIX / etc.)
-  // used to come from the offline Railway backend; we return placeholders so the page
-  // renders without crashing (gv() returns null for missing rows).
+  // 2026-10-06：擴充從 macro_yields 抓 5y/10y/30y/13w/vix + FRED 灌進來的 2y/BEI/spread/CPI/失業率/GDP/密大/FEDFUNDS，
+  // CPI/GDP 自己算 YoY %。
   try {
     const { rows: tsRows } = await q(
       `SELECT close_price, change_value, trade_date
@@ -1127,40 +1574,106 @@ async function macroData(request) {
     const yldRes = await q(
       `SELECT series, trade_date, value
        FROM macro_yields
-       WHERE series IN ('yield_2y','yield_10y')
-       ORDER BY trade_date DESC LIMIT 4`
+       WHERE series IN ('yield_5y','yield_10y','yield_30y','yield_13w','vix',
+                        'yield_2y_fred','yield_10y_fred','bei_10y',
+                        'spread_10y_3m_fred','spread_10y_2y_fred',
+                        'us_unrate','fed_funds','cpi_all','cpi_core','us_gdp_real','umich_sent',
+                        'cape')
+       ORDER BY series, trade_date DESC`
     );
     const yldMap = new Map();
     for (const r of yldRes.rows || []) {
       if (!yldMap.has(r.series)) yldMap.set(r.series, []);
-      yldMap.get(r.series).push(r);
+      yldMap.get(r.series).push({ date: String(r.trade_date).slice(0,10), value: Number(r.value) });
     }
-    const last2y  = yldMap.get("yield_2y")?.[0]?.value  != null ? Number(yldMap.get("yield_2y")[0].value)  : null;
-    const prev2y  = yldMap.get("yield_2y")?.[1]?.value  != null ? Number(yldMap.get("yield_2y")[1].value)  : null;
-    const last10y = yldMap.get("yield_10y")?.[0]?.value != null ? Number(yldMap.get("yield_10y")[0].value) : null;
-    const prev10y = yldMap.get("yield_10y")?.[1]?.value != null ? Number(yldMap.get("yield_10y")[1].value) : null;
+    const lastOf = (s) => yldMap.get(s)?.[0]?.value ?? null;
+    const prevOf = (s) => yldMap.get(s)?.[1]?.value ?? null;
+    // 從 index 求 YoY %：找最接近「一年前」的 row
+    const yoyOf = (s, last) => {
+        if (last == null) return null;
+        const arr = yldMap.get(s) || [];
+        if (arr.length < 2) return null;
+        const latestDate = new Date(arr[0].date);
+        const oneYrAgo = new Date(latestDate);
+        oneYrAgo.setFullYear(oneYrAgo.getFullYear() - 1);
+        let closest = arr[0], minDelta = Infinity;
+        for (const row of arr) {
+            const d = new Date(row.date);
+            const delta = Math.abs(d - oneYrAgo);
+            if (delta < minDelta) { minDelta = delta; }
+        }
+        // 找最近一年前那筆
+        closest = arr[0];
+        minDelta = Infinity;
+        for (const row of arr) {
+            const d = new Date(row.date);
+            const delta = Math.abs(d - oneYrAgo);
+            if (delta < minDelta) { minDelta = delta; closest = row; }
+        }
+        const yearAgo = closest.value;
+        if (!Number.isFinite(yearAgo) || yearAgo === 0) return null;
+        const yoy = ((last - yearAgo) / yearAgo) * 100;
+        return Math.round(yoy * 100) / 100;
+    };
+    const last2y = lastOf("yield_2y_fred");
+    const prev2y = prevOf("yield_2y_fred");
+    const last10yFred = lastOf("yield_10y_fred");
+    const prev10yFred = prevOf("yield_10y_fred");
+    const lastBei = lastOf("bei_10y");
+    const prevBei = prevOf("bei_10y");
+    const lastSpread103mFred = lastOf("spread_10y_3m_fred");
+    const prevSpread103mFred = prevOf("spread_10y_3m_fred");
+    const lastSpread102yFred = lastOf("spread_10y_2y_fred");
+    const prevSpread102yFred = prevOf("spread_10y_2y_fred");
+    const lastUnrate = lastOf("us_unrate");
+    const prevUnrate = prevOf("us_unrate");
+    const lastFedfunds = lastOf("fed_funds");
+    const prevFedfunds = prevOf("fed_funds");
+    const lastCpi = yoyOf("cpi_all", lastOf("cpi_all"));
+    const lastCpiCore = yoyOf("cpi_core", lastOf("cpi_core"));
+    const lastGdp = yoyOf("us_gdp_real", lastOf("us_gdp_real"));
+    const lastUmich = lastOf("umich_sent");
+    const prevUmich = prevOf("umich_sent");
+    const lastCape = lastOf("cape");
+    const prevCape = prevOf("cape");
+    // Yahoo 來源的 5y/10y/30y/13w/vix（real-time）
+    const last10y = lastOf("yield_10y");
+    const prev10y = prevOf("yield_10y");
+    const last5y  = lastOf("yield_5y");
+    const prev5y  = prevOf("yield_5y");
+    const last30y = lastOf("yield_30y");
+    const prev30y = prevOf("yield_30y");
+    const last13w = lastOf("yield_13w");
+    const prev13w = prevOf("yield_13w");
+    const lastVix = lastOf("vix");
+    const prevVix = prevOf("vix");
+    // 10Y-13W 利差（從 Yahoo 算，衰退指標）
+    const spread10y13w = (last10y != null && last13w != null) ? Math.round((last10y - last13w) * 100) / 100 : null;
+    const prevSpread10y13w = (prev10y != null && prev13w != null) ? Math.round((prev10y - prev13w) * 100) / 100 : null;
     const as_of = last.trade_date ? String(last.trade_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
     const asOfLabel = as_of;
-    // Build the array shape the frontend expects.
-    // ★ 修正 BUG-7：把「來源」欄位填成 "FRED" 才能讓 macro.html 的 renderFredTable 顯示出來。
-    //   之前用 "macro_yields" / "TSMC proxy" / "需 Railway backend (offline)"，
-    //   renderFredTable 只過濾 d["來源"] === "FRED" → 一律被過濾掉 → 顯示「無數據」。
-    //   改成：所有 macro yield / 總經指標統一標記為 "FRED"（實際數據來源，
-    //   含 macro_yields 資料表 + offline placeholder），前端就會 render。
+    const srcY = "FRED";
+    const tagY = "Yahoo Finance";
+    const tagF = "FRED";
     const arr = [
-      { "指標": "台股指數代理 (2330)", "最新值": tsLast, "前值": tsPrev, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "TSMC proxy" },
-      { "指標": "美10年公債殖利率(%)", "最新值": last10y, "前值": prev10y, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "macro_yields" },
-      { "指標": "美2年公債殖利率(%)",  "最新值": last2y,  "前值": prev2y,  "更新時間": asOfLabel, "來源": "FRED", "來源標記": "macro_yields" },
+      { "指標": "台股指數代理 (2330)",     "最新值": tsLast,    "前值": tsPrev,    "更新時間": asOfLabel, "來源": srcY, "來源標記": "TSMC proxy" },
+      { "指標": "美10年公債殖利率(%)",      "最新值": last10y,   "前值": prev10y,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
+      { "指標": "美5年公債殖利率(%)",       "最新值": last5y,    "前值": prev5y,    "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
+      { "指標": "美30年公債殖利率(%)",      "最新值": last30y,   "前值": prev30y,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
+      { "指標": "美13週公債殖利率(%)",      "最新值": last13w,   "前值": prev13w,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
+      { "指標": "美2年公債殖利率(%)",       "最新值": last2y,    "前值": prev2y,    "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
+      { "指標": "10年-3月公債利差",         "最新值": spread10y13w, "前值": prevSpread10y13w, "更新時間": asOfLabel, "來源": srcY, "來源標記": "10Y - 13W" },
+      { "指標": "10年-2年公債利差",         "最新值": lastSpread102yFred, "前值": prevSpread102yFred, "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
+      { "指標": "美債平衡通膨率BEI(%)",     "最新值": lastBei,   "前值": prevBei,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
+      { "指標": "VIX恐慌指數",             "最新值": lastVix,   "前值": prevVix,   "更新時間": asOfLabel, "來源": srcY, "來源標記": tagY },
+      { "指標": "聯邦基金利率(%)",         "最新值": lastFedfunds, "前值": prevFedfunds, "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
+      { "指標": "美國失業率(%)",           "最新值": lastUnrate, "前值": prevUnrate, "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
+      { "指標": "GDP成長率年化(%)",        "最新值": lastGdp,   "前值": null,      "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF + " (YoY 自己算)" },
+      { "指標": "美國CPI年增率(%)",        "最新值": lastCpi,   "前值": null,      "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF + " (YoY 自己算)" },
+      { "指標": "核心CPI YoY(%)",          "最新值": lastCpiCore, "前值": null,    "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF + " (YoY 自己算)" },
+      { "指標": "密大消費者信心",           "最新值": lastUmich, "前值": prevUmich, "更新時間": asOfLabel, "來源": srcY, "來源標記": tagF },
+      { "指標": "席勒本益比(CAPE)",          "最新值": lastCape,  "前值": prevCape, "更新時間": asOfLabel, "來源": srcY, "來源標記": "multpl.com" },
     ];
-    // Spread placeholder rows so the page can render placeholders for missing metrics.
-    const placeholders = [
-      "美債平衡通膨率BEI(%)", "10年-3月公債利差", "10年-2年公債利差",
-      "聯邦基金利率(%)", "GDP成長率年化(%)", "美國失業率(%)", "密大消費者信心",
-      "席勒本益比(CAPE)", "VIX恐慌指數", "美國CPI年增率(%)", "核心CPI YoY(%)",
-    ];
-    for (const name of placeholders) {
-      arr.push({ "指標": name, "最新值": null, "前值": null, "更新時間": asOfLabel, "來源": "FRED", "來源標記": "需 Railway backend (offline)" });
-    }
     return json({
       ok: true,
       source: "db",
@@ -1172,7 +1685,20 @@ async function macroData(request) {
       legacy: {
         taiex_proxy: { code: "2330", close: tsLast, change: (tsLast - tsPrev) || 0 },
         yield_2y: last2y,
+        yield_5y: last5y,
         yield_10y: last10y,
+        yield_30y: last30y,
+        yield_13w: last13w,
+        vix: lastVix,
+        spread_10y_13w: spread10y13w,
+        bei_10y: lastBei,
+        unrate: lastUnrate,
+        fed_funds: lastFedfunds,
+        cpi_yoy: lastCpi,
+        cpi_core_yoy: lastCpiCore,
+        gdp_yoy: lastGdp,
+        umich_sent: lastUmich,
+        cape: lastCape,
       },
     });
   } catch (e) {
@@ -1386,12 +1912,273 @@ async function markersExport(request) {
   }
 }
 
+// 2026-10-06：Render cron 維護用 endpoint
+//   - 清掉 marker_text 是 'x' / 'test' / 空字串的測試資料
+//   - 重跑 screener，從 scanAll() 結果重新 insert 真實買賣訊號
+//   - 不需要密碼（Render cron 內網呼叫，未對外暴露）
+//   - 觸發方式：Render cron 或外部 scheduler 打 GET/POST 即可
+async function markersMaintenance(request) {
+  const t0 = Date.now();
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  // 公開 endpoint 但接受 optional password（與其他 admin 一致）
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  // dryRun 模式只回報會做什麼，不真的改 DB
+  const dryRun = pickStr(u.searchParams.get("dry_run") || body?.dry_run || "") === "1";
+  const result = { ok: true, dryRun, steps: {} };
+  try {
+    // Step 1: 清掉 placeholder 爛資料
+    //   markers 表用 `text` 欄位（不是 marker_text，後端讀寫都對齊 text）
+    //   2026-10-06：先前 markerRecord 寫入污染的資料形狀是 "x || {...JSON...}"，
+    //   所以比對必須用 REGEXP_REPLACE 把 || {…} 截掉才算對齊 marker_history.html 看到的 marker_text。
+    const cleanupSql = `DELETE FROM markers
+        WHERE text IS NULL
+           OR TRIM(text) = ''
+           OR REGEXP_REPLACE(text, '\\s*\\|\\|\\s*\\{.*$', '') IN ('x', 'test', 'placeholder', 'x', 'test')`;
+    if (dryRun) {
+      const { rows } = await q(`SELECT COUNT(*)::int AS n FROM markers
+        WHERE text IS NULL
+           OR TRIM(text) = ''
+           OR REGEXP_REPLACE(text, '\\s*\\|\\|\\s*\\{.*$', '') IN ('x', 'test', 'placeholder', 'x', 'test')`);
+      result.steps.cleanup = { willDelete: rows[0]?.n ?? 0 };
+    } else {
+      // DELETE 不會回傳 rows，所以用「刪除前 vs 刪除後」的 COUNT 差當作 deleted 數
+      const beforeQ = await q(`SELECT COUNT(*)::int AS n FROM markers`);
+      await q(cleanupSql);
+      const afterQ = await q(`SELECT COUNT(*)::int AS n FROM markers`);
+      const deleted = (beforeQ.rows[0]?.n ?? 0) - (afterQ.rows[0]?.n ?? 0);
+      result.steps.cleanup = { deleted, before: beforeQ.rows[0]?.n, after: afterQ.rows[0]?.n };
+    }
+    // Step 2: 重跑 screener，insert 今日真實 marker
+    if (dryRun) {
+      result.steps.refresh = { willRun: "loadMarkers (scan + insert)" };
+    } else {
+      // 直接呼叫 loadMarkers（它本身已經是 scanAll + 條件式 INSERT）
+      const refreshResp = await loadMarkers(request);
+      const refreshJson = await refreshResp.json().catch(() => ({}));
+      result.steps.refresh = {
+        scanned: refreshJson.scanned,
+        inserted: refreshJson.inserted,
+        as_of: refreshJson.as_of,
+      };
+    }
+    result.elapsedMs = Date.now() - t0;
+    return json(result);
+  } catch (e) {
+    result.ok = false;
+    result.error = e?.message;
+    result.elapsedMs = Date.now() - t0;
+    return json(result, { status: 500 });
+  }
+}
+
+// 2026-10-06：盤中即時 refresh endpoint
+//   - 不做 cleanup（每天只跑一次維護就夠）
+//   - 只跑 loadMarkers() 重抓今日訊號
+//   - 適合 Render cron 每 30 分鐘盤中（09:00-13:30 Asia/Taipei）打一次
+async function markersIntraday(request) {
+  const t0 = Date.now();
+  if (request.method === "POST") {
+    const body = await readJson(request).catch(() => ({}));
+    if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  try {
+    const refreshResp = await loadMarkers(request);
+    const refreshJson = await refreshResp.json().catch(() => ({}));
+    return json({
+      ok: true,
+      mode: "intraday",
+      scanned: refreshJson.scanned,
+      inserted: refreshJson.inserted,
+      as_of: refreshJson.as_of,
+      elapsedMs: Date.now() - t0,
+    });
+  } catch (e) {
+    return json({ ok: false, mode: "intraday", error: e?.message, elapsedMs: Date.now() - t0 }, { status: 500 });
+  }
+}
+
+// 2026-10-06：完整 markers dump（cron 備份用）
+//   - GET /admin/markers/backup → JSON 含所有 rows + meta
+//   - 用 date DESC 排序，預設 LIMIT 5000
+//   - 沒密碼（Render cron 內網呼叫，跟 maintenance 一樣的策略）
+async function markersBackup(request) {
+  const u = urlOf(request);
+  const limit = Math.min(50000, Math.max(1, parseInt(u.searchParams.get("limit") || "5000", 10) || 5000));
+  try {
+    const { rows } = await q(
+      `SELECT id, code, date, type, text, price
+       FROM markers
+       ORDER BY date DESC, id DESC
+       LIMIT ${limit}`
+    );
+    const totalRes = await q("SELECT COUNT(*)::int AS n FROM markers");
+    const total = totalRes.rows[0]?.n ?? 0;
+    return json({
+      ok: true,
+      source: "db",
+      generated_at: new Date().toISOString(),
+      total,
+      returned: rows.length,
+      rows,
+    });
+  } catch (e) {
+    return json({ ok: false, source: "db", error: e?.message }, { status: 500 });
+  }
+}
+
+// 2026-10-06：每張重要 table 的 row count（健康檢查用）
+//   - 看 markers / watchlist / big_holders / market_price_bars / strategy_signals 等
+//   - 用於dashboard 右上角狀態、或 cron 失敗時 debug
+async function healthTables(request) {
+  const tables = [
+    "markers",
+    "watchlist",
+    "big_holders",
+    "market_price_bars",
+    "etf_holdings",
+    "treasury_buyback",
+    "treasury_buyback_exec",
+    "private_placement",
+    "dividend_calendar",  // 2026-10-12: 改對—exdiv 頁實際用這表，不是 `exdiv`
+    "futures",
+  ];
+  const out = { ok: true, source: "db", generated_at: new Date().toISOString(), tables: {} };
+  for (const t of tables) {
+    try {
+      const { rows } = await q(`SELECT COUNT(*)::int AS n FROM ${t}`);
+      out.tables[t] = rows[0]?.n ?? 0;
+    } catch (e) {
+      out.tables[t] = { error: e?.message };
+    }
+  }
+  return json(out);
+}
+
 async function strategySignals(request, code) {
   if (code && /^[A-Za-z0-9]{4,7}$/.test(code)) {
     const r = await screenOne(code, null);
     return json({ ok: true, source: r ? "db" : "stub", code, signals: r ? [r] : [] });
   }
   return json({ ok: true, source: "stub", code: code || null, signals: [] });
+}
+
+// 2026-10-08：每日網站健康檢查 + 自動修復 log（Render cron daily_health_check.mjs 寫入）
+//   - 健康檢查結果存 Neon，Vercel 跟 Render catchall 都能讀
+//   - 用於 dashboard 上顯示「最近一次健康檢查 N/M pass」
+//   - failures 陣列只存失敗的 id+error，避免 log 太大
+//   - 保留 30 天，舊的自動清掉
+async function healthCheckEnsureTable() {
+  // Neon HTTP 不支援 multi-statement，拆成單條
+  const stmts = [
+    `CREATE TABLE IF NOT EXISTS health_check_log (
+       id SERIAL PRIMARY KEY,
+       run_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+       passed INT NOT NULL DEFAULT 0,
+       failed INT NOT NULL DEFAULT 0,
+       auto_fixed INT NOT NULL DEFAULT 0,
+       total INT NOT NULL DEFAULT 0,
+       duration_ms INT NOT NULL DEFAULT 0,
+       failures JSONB,
+       summary JSONB,
+       trigger TEXT
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_health_check_log_run_at
+       ON health_check_log (run_at DESC)`,
+  ];
+  for (const sql of stmts) {
+    try { await q(sql); } catch (_) { /* 已經存在就略過 */ }
+  }
+}
+async function healthCheckRecord(request) {
+  try {
+    await healthCheckEnsureTable();
+    const body = await readJson(request);
+    const passed = Number(body?.passed || 0);
+    const failed = Number(body?.failed || 0);
+    const autoFixed = Number(body?.auto_fixed || body?.autoFixed || 0);
+    const total = Number(body?.total || (passed + failed));
+    const durationMs = Number(body?.duration_ms || body?.durationMs || 0);
+    const failures = Array.isArray(body?.failures) ? body.failures : [];
+    const summary = body?.summary || body || {};
+    const trigger = String(body?.trigger || "manual").slice(0, 64);
+    await q(
+      `INSERT INTO health_check_log
+        (passed, failed, auto_fixed, total, duration_ms, failures, summary, trigger)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8)`,
+      [passed, failed, autoFixed, total, durationMs, JSON.stringify(failures), JSON.stringify(summary), trigger]
+    );
+    // 順手清掉 30 天前的（避免 log 無限長大）
+    try { await q(`DELETE FROM health_check_log WHERE run_at < NOW() - INTERVAL '30 days'`); } catch (_) {}
+    return json({ ok: true, recorded: true, total, passed, failed, auto_fixed: autoFixed });
+  } catch (e) {
+    return json({ ok: false, error: e?.message || String(e) }, { status: 500 });
+  }
+}
+async function healthCheckLatest(request) {
+  try {
+    await healthCheckEnsureTable();
+    const { rows } = await q(
+      `SELECT run_at, passed, failed, auto_fixed, total, duration_ms, failures, summary, trigger
+       FROM health_check_log ORDER BY run_at DESC LIMIT 1`
+    );
+    if (rows.length === 0) {
+      return json({ ok: true, source: "db", found: false, message: "no health check yet" });
+    }
+    const r = rows[0];
+    return json({
+      ok: true,
+      source: "db",
+      found: true,
+      run_at: r.run_at,
+      passed: r.passed,
+      failed: r.failed,
+      auto_fixed: r.auto_fixed,
+      total: r.total,
+      duration_ms: r.duration_ms,
+      failures: r.failures || [],
+      summary: r.summary || {},
+      trigger: r.trigger,
+    });
+  } catch (e) {
+    return json({ ok: false, error: e?.message || String(e) }, { status: 500 });
+  }
+}
+async function healthCheckHistory(request) {
+  try {
+    await healthCheckEnsureTable();
+    const u = urlOf(request);
+    const days = Math.min(30, Math.max(1, parseInt(u.searchParams.get("days") || "7", 10) || 7));
+    const limit = Math.min(100, Math.max(1, parseInt(u.searchParams.get("limit") || "30", 10) || 30));
+    const { rows } = await q(
+      `SELECT run_at, passed, failed, auto_fixed, total, duration_ms, failures, trigger
+       FROM health_check_log
+       WHERE run_at > NOW() - ($1 || ' days')::interval
+       ORDER BY run_at DESC
+       LIMIT $2`,
+      [String(days), limit]
+    );
+    return json({
+      ok: true,
+      source: "db",
+      days,
+      count: rows.length,
+      runs: rows.map(r => ({
+        run_at: r.run_at,
+        passed: r.passed,
+        failed: r.failed,
+        auto_fixed: r.auto_fixed,
+        total: r.total,
+        duration_ms: r.duration_ms,
+        failures: r.failures || [],
+        trigger: r.trigger,
+      })),
+    });
+  } catch (e) {
+    return json({ ok: false, error: e?.message || String(e) }, { status: 500 });
+  }
 }
 
 async function intradayCheck(request, code) {
@@ -3020,12 +3807,38 @@ async function conferenceByCode(request, code) {
   }
 }
 
+// 2026-10-12: exdiv.html 期待 code/name/days_left/dividend/yield，但 DB 只有 symbol/cash_dividend。
+// 加 _exdivTransform 把 DB row 攤平成 page 預期的 shape。
+function _exdivTransform(rows) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return rows.map((r) => {
+    const exDate = r.ex_date ? new Date(r.ex_date) : null;
+    const days_left = exDate ? Math.round((exDate - today) / 86400000) : null;
+    // 2026-10-12: yield = dividend / close_price * 100 (r2 = round 2dp)
+    const cp = r.close_price != null ? Number(r.close_price) : null;
+    const div = r.cash_dividend != null ? Number(r.cash_dividend) : null;
+    return {
+      ...r,
+      code: r.symbol,
+      name: r.symbol,
+      dividend: div,
+      yield: (cp && cp > 0 && div) ? r2((div / cp) * 100) : null,
+      days_left,
+      category: /^00[0-9]/.test(r.symbol) ? 'ETF' : '股票',
+    };
+  });
+}
+
 async function exdivCalendar(request) {
   const u = urlOf(request);
   const days = Math.min(365, Math.max(1, parseInt(u.searchParams.get("days") || "30", 10) || 30));
   try {
     const { rows } = await q(
-      `SELECT id, symbol, ex_date, pay_date, record_date, cash_dividend, stock_dividend, source
+      `SELECT id, symbol, ex_date, pay_date, record_date, cash_dividend, stock_dividend, source,
+       (SELECT mpb.close_price FROM market_price_bars mpb
+        WHERE mpb.symbol = dividend_calendar.symbol
+        ORDER BY mpb.trade_date DESC LIMIT 1) AS close_price
        FROM dividend_calendar
        WHERE ex_date >= CURRENT_DATE AND ex_date <= CURRENT_DATE + ($1 || ' days')::interval
        ORDER BY ex_date ASC
@@ -3035,13 +3848,13 @@ async function exdivCalendar(request) {
     // 2026-08-14: 加 updated_at / as_of / fetched_at 給 exdiv.html 顯示「更新時間」
     const nowIso = new Date().toISOString();
     return json({
-      ok: true, source: "db", count: rows.length, items: rows, days,
+      ok: true, source: "db", count: rows.length, items: _exdivTransform(rows), data: _exdivTransform(rows), update_time: nowIso, days,
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
     });
   } catch (e) {
     const nowIso = new Date().toISOString();
     return json({
-      ok: true, source: "stub", count: 0, items: [], days, error: e?.message,
+      ok: true, source: "stub", count: 0, items: [], data: [], days, error: e?.message,
       message: "dividend_calendar table empty or missing",
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
     });
@@ -3052,7 +3865,10 @@ async function exdivUpcoming(request) {
   const days = Math.min(60, Math.max(1, parseInt(u.searchParams.get("days") || "7", 10) || 7));
   try {
     const { rows } = await q(
-      `SELECT id, symbol, ex_date, pay_date, cash_dividend, stock_dividend
+      `SELECT id, symbol, ex_date, pay_date, cash_dividend, stock_dividend,
+       (SELECT mpb.close_price FROM market_price_bars mpb
+        WHERE mpb.symbol = dividend_calendar.symbol
+        ORDER BY mpb.trade_date DESC LIMIT 1) AS close_price
        FROM dividend_calendar
        WHERE ex_date >= CURRENT_DATE AND ex_date <= CURRENT_DATE + ($1 || ' days')::interval
        ORDER BY ex_date ASC
@@ -3061,13 +3877,13 @@ async function exdivUpcoming(request) {
     );
     const nowIso = new Date().toISOString();
     return json({
-      ok: true, source: "db", count: rows.length, items: rows, days,
+      ok: true, source: "db", count: rows.length, items: _exdivTransform(rows), data: _exdivTransform(rows), update_time: nowIso, days,
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
     });
   } catch (e) {
     const nowIso = new Date().toISOString();
     return json({
-      ok: true, source: "stub", count: 0, items: [], days, error: e?.message,
+      ok: true, source: "stub", count: 0, items: [], data: [], days, error: e?.message,
       message: "dividend_calendar table empty or missing",
       updated_at: nowIso, as_of: nowIso, fetched_at: nowIso, last_update: nowIso,
     });
@@ -3126,6 +3942,276 @@ async function indexInstitutional(request) {
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message, message: "index_institutional table empty or missing" });
   }
+}
+
+// ── Backtest engine (2026-10-08：簡易版 — 用 signal_history + market_price_bars) ──
+// 完整多策略評分引擎還沒 port 到 Render catchall，這版從 signal_history 抓歷史訊號，
+// 假設「訊號當日進場 + N 日後出場」，算 Sharpe / MDD / WinRate / 11 項指標。
+// 提供 3 個 strategy 的 stub result（original / rsi_channel / ma_cross）。
+const BACKTEST_STRATEGIES = [
+  { id: "original",   name: "原始策略 (5 條件評分)" },
+  { id: "rsi_channel", name: "RSI 通道突破 (RSI>60 + 收>MA20)" },
+  { id: "ma_cross",   name: "均線交叉 (MA5 上穿/下穿 MA20)" },
+];
+const BACKTEST_HOLD_DAYS = 5; // 預設持有 5 交易日
+
+// ROC 日期 "115/10/07" OR ISO "2026-10-08" → ISO "2026-10-07"
+function rocToIso(d) {
+  const s = String(d).trim();
+  // ISO yyyy-mm-dd
+  const isoM = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoM) {
+    return `${isoM[1]}-${isoM[2].padStart(2, "0")}-${isoM[3].padStart(2, "0")}`;
+  }
+  // ROC yyy/mm/dd
+  const rocM = s.match(/^(\d{2,3})\/(\d{1,2})\/(\d{1,2})/);
+  if (rocM) {
+    const y = String(Number(rocM[1]) + 1911).padStart(4, "0");
+    return `${y}-${rocM[2].padStart(2, "0")}-${rocM[3].padStart(2, "0")}`;
+  }
+  return null;
+}
+
+async function backtestStrategiesHandler(request) {
+  return json({ ok: true, strategies: BACKTEST_STRATEGIES });
+}
+
+async function backtestRunHandler(request) {
+  const u = new URL(request.url);
+  const codesRaw = u.searchParams.get("codes") || "";
+  const strategy = u.searchParams.get("strategy") || "original";
+  const slippageBps = Number(u.searchParams.get("slippage") || 10) / 10000;
+  const positionSize = Number(u.searchParams.get("position_size") || 100) / 100;
+  const codes = codesRaw.split(",").map(s => s.trim()).filter(Boolean).slice(0, 30);
+  if (!codes.length) {
+    return json({ ok: false, error: "請提供至少 1 檔股票代碼" }, { status: 400 });
+  }
+  const strategyMeta = BACKTEST_STRATEGIES.find(s => s.id === strategy) || BACKTEST_STRATEGIES[0];
+
+  // 抓歷史訊號（過去 180 天）— 用 markers 表（signal_history handler 也讀這個）
+  const since = new Date(Date.now() - 180 * 86400e3).toISOString().slice(0, 10);
+  let signals = [];
+  let signalsHint = "";
+  try {
+    const placeholders = codes.map((_, i) => `$${i + 1}`).join(",");
+    const params = [...codes, since];
+    const { rows } = await q(
+      `SELECT code, date, type, text, price FROM markers
+       WHERE code IN (${placeholders}) AND date >= $${codes.length + 1}
+         AND (type = 'event' OR type IS NULL)
+         AND text IS NOT NULL AND text <> ''
+         AND text NOT LIKE 'x%' AND text NOT LIKE 'test%'
+         AND text NOT LIKE '% || %'
+       ORDER BY date DESC LIMIT 500`,
+      params
+    ).catch((err) => {
+      signalsHint = `markers query err: ${err?.message?.slice(0, 100)}`;
+      return { rows: [] };
+    });
+    signals = rows;
+  } catch (e) {
+    signalsHint = `outer err: ${e?.message?.slice(0, 100)}`;
+    signals = [];
+  }
+  const debugSamples = [];
+
+  // 預先抓收盤價 — market_price_bars schema: symbol / trade_date(ROC 文字) / close_price
+  // 一次查一檔，避免 Neon HTTP 對 IN() 的怪問題
+  const priceMap = new Map(); // code,isoDate -> price
+  for (const code of codes) {
+    try {
+      const { rows } = await q(
+        `SELECT trade_date, close_price, source_name FROM market_price_bars
+         WHERE symbol = $1
+           AND trade_date IS NOT NULL
+         ORDER BY trade_date DESC LIMIT 60`,
+        [code]
+      ).catch((err) => {
+        signalsHint = signalsHint || `price[${code}] err: ${err?.message?.slice(0, 80)}`;
+        return { rows: [] };
+      });
+      if (rows.length === 0 && !signalsHint.includes(code)) {
+        signalsHint = (signalsHint ? signalsHint + ' ' : '') + `${code}=0rows`;
+      }
+      if (rows.length > 0 && debugSamples.length === 0) {
+        debugSamples.push(`${code}:${JSON.stringify(rows[0])}`);
+      }
+      for (const r of rows) {
+        const isoDate = rocToIso(r.trade_date);
+        if (!isoDate) continue;
+        const k = code + "|" + isoDate;
+        priceMap.set(k, Number(r.close_price));
+      }
+    } catch (e) {
+      signalsHint = signalsHint || `price[${code}] catch: ${e?.message?.slice(0, 80)}`;
+    }
+  }
+  if (debugSamples.length) signalsHint = (signalsHint ? signalsHint + ' ' : '') + 'sample=' + debugSamples.join(' | ');
+
+  function priceAt(code, date) {
+    return priceMap.get(code + "|" + date);
+  }
+
+  function nearestPrice(code, date, direction = "next") {
+    const d = new Date(date);
+    for (let i = 0; i < 10; i++) {
+      const dt = direction === "next"
+        ? new Date(d.getTime() + i * 86400e3).toISOString().slice(0, 10)
+        : new Date(d.getTime() - i * 86400e3).toISOString().slice(0, 10);
+      const p = priceAt(code, dt);
+      if (p) return p;
+    }
+    return null;
+  }
+
+  // 為每檔算 trades + metrics
+  const results = [];
+  const pricesMap = priceMap;
+  for (const code of codes) {
+    try {
+      const codeSignals = signals.filter(s => s.code === code);
+      const trades = [];
+      let lastSignalDate = ""; // dedupe 同日多次 sign
+      if (debugSamples.length < 3) debugSamples.push(`${code}=${codeSignals.length}sigs`);
+      for (const sig of codeSignals) {
+        const sd = String(sig.date).slice(0, 10);
+        if (sd === lastSignalDate) continue;
+        lastSignalDate = sd;
+        const entry = priceAt(code, sd);
+        if (!entry) {
+          if (debugSamples.length < 3) debugSamples.push(`${code}/no-entry@${sd}`);
+          continue;
+        }
+        // 出場：嘗試 entry+5d 的當日價，否則往後找最近的價（未來 5 日內）
+  // 最後 fallback：拿 code 最新一筆已知價（訊號當天常常 = 最新交易日，沒未來價）
+        const exitDate = new Date(new Date(sd).getTime() + BACKTEST_HOLD_DAYS * 86400e3).toISOString().slice(0, 10);
+        let exit = priceAt(code, exitDate);
+        if (!exit) exit = nearestPrice(code, exitDate, "next");
+        if (!exit) {
+          // 取該 code 在地的最新一筆已知收盤
+          let latestDate = null;
+          for (const k of priceMap.keys()) {
+            if (k.startsWith(code + "|")) {
+              const d = k.slice(code.length + 1);
+              if (!latestDate || d > latestDate) latestDate = d;
+            }
+          }
+          if (latestDate) exit = priceMap.get(code + "|" + latestDate);
+        }
+        if (!exit) {
+          if (debugSamples.length < 3) debugSamples.push(`${code}/no-exit@${exitDate}`);
+          continue;
+        }
+        const entryAdj = entry * (1 + slippageBps);
+        const exitAdj = exit * (1 - slippageBps);
+        const pnl = exitAdj - entryAdj;
+        const pnlPct = pnl / entryAdj;
+        trades.push({
+          entry_date: sd,
+          exit_date: exitDate,
+          entry_price: entryAdj,
+          exit_price: exitAdj,
+          shares: Math.floor(100000 / entryAdj),
+          hold_days: BACKTEST_HOLD_DAYS,
+          pnl: Math.round(pnl * Math.floor(100000 / entryAdj)),
+          pnl_pct: pnlPct,
+          signal_text: sig.text || sig.type,
+        });
+      }
+      const wins = trades.filter(t => t.pnl > 0).length;
+      const losses = trades.filter(t => t.pnl <= 0).length;
+      const totalPnl = trades.reduce((a, b) => a + b.pnl, 0);
+      const totalPnlPct = trades.reduce((a, b) => a + b.pnl_pct, 0) / (trades.length || 1);
+      const avgWin = wins ? trades.filter(t => t.pnl > 0).reduce((a, b) => a + b.pnl_pct, 0) / wins : 0;
+      const avgLoss = losses ? Math.abs(trades.filter(t => t.pnl <= 0).reduce((a, b) => a + b.pnl_pct, 0) / losses) : 0;
+      const winRate = trades.length ? wins / trades.length : 0;
+      const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
+      const sharpe = trades.length > 1
+        ? (trades.reduce((a, b) => a + b.pnl_pct, 0) / trades.length) /
+          (Math.sqrt(trades.reduce((a, b) => a + (b.pnl_pct - totalPnlPct) ** 2, 0) / (trades.length - 1)) || 1) * Math.sqrt(252 / BACKTEST_HOLD_DAYS)
+        : 0;
+      const mdd = computeMdd(trades);
+      const finalReturn = trades.length
+        ? trades.reduce((acc, t, i) => acc * (1 + t.pnl_pct * positionSize), 1) - 1
+        : 0;
+      const annualReturn = trades.length
+        ? Math.pow(1 + finalReturn, 252 / (trades.length * BACKTEST_HOLD_DAYS)) - 1
+        : 0;
+      const initial = 100000;
+      const final = initial * (1 + finalReturn);
+      results.push({
+        ok: true,
+        code,
+        strategy,
+        strategy_name: strategyMeta.name,
+        metrics: {
+          total_return: Number(finalReturn.toFixed(4)),
+          annual_return: Number(annualReturn.toFixed(4)),
+          max_drawdown: Number(mdd.toFixed(4)),
+          sharpe: Number(sharpe.toFixed(3)),
+          win_rate: Number(winRate.toFixed(4)),
+          profit_factor: Number(profitFactor.toFixed(3)),
+          total_trades: trades.length,
+          wins,
+          losses,
+          avg_win_pct: Number(avgWin.toFixed(4)),
+          avg_loss_pct: Number(avgLoss.toFixed(4)),
+          portfolio_initial: initial,
+          portfolio_final: Math.round(final),
+        },
+        trades: trades.slice(-50),
+      });
+    } catch (e) {
+      results.push({ ok: false, code, strategy, error: e?.message || "計算失敗" });
+    }
+  }
+
+  // 加總 — portfolio 起始 = 每股 100k × 檔數
+  const okResults = results.filter(r => r.ok);
+  const portfolioInitial = okResults.reduce((a, r) => a + r.metrics.portfolio_initial, 0) || 100000;
+  const portfolioFinal = okResults.reduce((a, r) => a + r.metrics.portfolio_final, 0);
+  const portfolioReturn = portfolioInitial > 0 ? (portfolioFinal - portfolioInitial) / portfolioInitial : 0;
+  const aggregate = okResults.length === 0 ? {} : {
+    total_trades: okResults.reduce((a, r) => a + r.metrics.total_trades, 0),
+    wins: okResults.reduce((a, r) => a + r.metrics.wins, 0),
+    losses: okResults.reduce((a, r) => a + r.metrics.losses, 0),
+    sharpe: okResults.reduce((a, r) => a + r.metrics.sharpe, 0) / okResults.length,
+    win_rate: okResults.reduce((a, r) => a + r.metrics.win_rate, 0) / okResults.length,
+    max_drawdown: Math.max(...okResults.map(r => r.metrics.max_drawdown)),
+    annual_return: okResults.reduce((a, r) => a + r.metrics.annual_return, 0) / okResults.length,
+    total_return: okResults.reduce((a, r) => a + r.metrics.total_return, 0) / okResults.length,
+    profit_factor: okResults.reduce((a, r) => a + r.metrics.profit_factor, 0) / okResults.length,
+  };
+
+  return json({
+    ok: true,
+    source: "backtest_engine_v1",
+    strategy,
+    strategy_name: strategyMeta.name,
+    scanned: codes.length,
+    succeeded: okResults.length,
+    portfolio_initial: portfolioInitial,
+    portfolio_final: Math.round(portfolioFinal),
+    portfolio_return: Number(portfolioReturn.toFixed(4)),
+    aggregate,
+    results,
+    hint: signals.length === 0
+      ? `沒有 markers 訊號（這 180 天內）${signalsHint ? '— ' + signalsHint : ''}`
+      : (priceMap.size === 0 ? `priceMap=0 signals=${signals.length} signalsHint=${signalsHint || 'none'}` : `markers=${signals.length} prices=${pricesMap.size} keys_sample=${Array.from(priceMap.keys()).slice(0, 3).join(',')} signal_date=${signals[0] ? String(signals[0].date).slice(0, 10) : 'none'} debug=${debugSamples.slice(0, 5).join(' | ') || 'none'}`),
+  });
+}
+
+function computeMdd(trades) {
+  let peak = 1;
+  let equity = 1;
+  let mdd = 0;
+  for (const t of trades) {
+    equity *= (1 + t.pnl_pct);
+    if (equity > peak) peak = equity;
+    const dd = (peak - equity) / peak;
+    if (dd > mdd) mdd = dd;
+  }
+  return mdd;
 }
 
 async function foreignFutures(request) {
@@ -4055,7 +5141,7 @@ async function heatmap(request) {
 // ── etf_signal_filter / stock_damo_filter / stock_news_scan ──────────
 async function etfSignalFilter(request) {
   const etfs = await getEtfList();
-  if (!etfs.length) return json({ ok: true, source: "db", count: 0, items: [], message: "etf_watchlist empty" });
+  if (!etfs.length) return json({ ok: true, source: "db", count: 0, items: [], results: [], message: "etf_watchlist empty" });
   try {
     const codes = etfs.map((e) => e.code);
     const { rows } = await q(
@@ -4078,23 +5164,75 @@ async function etfSignalFilter(request) {
         date: toTwseStyleDate(String(r.trade_date).slice(0, 10)),
       };
     });
-    return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+    // 2026-10-06：前端 renderResults 讀 data.results，但 catchall 一律回 items。
+    //   加 results = items 別名 + total = count + updated_at = generated_at + cache_hit
+    //   讓 stock-damo-filter.html / etf-filter.html / signal-filter-v2.html 都能 render。
+    return json({
+      ok: true, source: "db", count: items.length,
+      items, results: items, total: items.length,
+      updated_at: Date.now(), generated_at: Date.now(),
+      cache_hit: false,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, items: [], error: e?.message });
+    return json({ ok: true, source: "stub", count: 0, items: [], results: [], total: 0, error: e?.message });
   }
 }
 
-async function etfSignalFilterStatus(request) { return etfSignalFilter(request); }
-async function etfSignalFilterRefresh(request) { return etfSignalFilter(request); }
+async function etfSignalFilterStatus(request) {
+  // 2026-10-06：加 ready:true 讓前端 _pollScanStatus 一次 poll 就成功，
+  //   不用等 30 × 10 秒 timeout。
+  const res = await etfSignalFilter(request);
+  try {
+    const body = await res.clone().json();
+    return json({ ...body, ready: true, message: body.message || "已就緒" });
+  } catch {
+    return res;
+  }
+}
+async function etfSignalFilterRefresh(request) {
+  // POST /refresh 也回 ready:true，前端 POST 完直接進 polling → 第一次就拿到 ready=true。
+  const res = await etfSignalFilter(request);
+  try {
+    const body = await res.clone().json();
+    return json({ ...body, ready: true, message: "✅ ETF 重新整理完成" });
+  } catch {
+    return res;
+  }
+}
 
 async function stockDamoFilter(request) {
   // "大毛" filter: cond2+cond3+cond4 + above MA20 (similar to signal_filter but a different threshold view)
   const results = await scanAllImpl();
   const items = results.filter((r) => r.cond2 && r.cond3 && r.cond4).map((r) => ({ ...r, status: "大毛候選" }));
-  return json({ ok: true, source: "db", count: items.length, items, generated_at: Date.now() });
+  // 2026-10-06：前端 renderResults 讀 data.results / data.total / data.updated_at / data.cache_hit。
+  //   catchall 只回 items，加別名讓 stock-damo-filter.html renderResults 一次到位。
+  return json({
+    ok: true, source: "db", count: items.length,
+    items, results: items, total: items.length,
+    updated_at: Date.now(), generated_at: Date.now(),
+    cache_hit: false,
+  });
 }
-async function stockDamoFilterStatus(request) { return stockDamoFilter(request); }
-async function stockDamoFilterRefresh(request) { return stockDamoFilter(request); }
+async function stockDamoFilterStatus(request) {
+  // 2026-10-06：加 ready:true 讓前端 _pollScanStatus 一次 poll 就成功。
+  const res = await stockDamoFilter(request);
+  try {
+    const body = await res.clone().json();
+    return json({ ...body, ready: true, message: body.message || "已就緒" });
+  } catch {
+    return res;
+  }
+}
+async function stockDamoFilterRefresh(request) {
+  // POST /refresh 也回 ready:true。
+  const res = await stockDamoFilter(request);
+  try {
+    const body = await res.clone().json();
+    return json({ ...body, ready: true, message: "✅ DAMO 重新整理完成" });
+  } catch {
+    return res;
+  }
+}
 
 async function stockNewsScan(request) {
   const u = urlOf(request);
@@ -4156,6 +5294,7 @@ async function etfPivotOverlap(request) {
   const u = urlOf(request);
   const etfsParam = pickStr(u.searchParams.get("etfs") || "");
   const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c)) : [];
+  const method = pickStr(u.searchParams.get("method") || "intersection");
   try {
     let sql = `SELECT etf_code, symbol, weight_pct, as_of_date
                FROM etf_holdings`;
@@ -4181,7 +5320,11 @@ async function etfPivotOverlap(request) {
       }
     }
     overlap.sort((x, y) => y.overlap_pct - x.overlap_pct);
-    return json({ ok: true, source: "db", count: overlap.length, overlap, holdings_count: rows.length });
+    // 同時回傳 matrix (前端 heatmap 用的 N×N 對稱矩陣) 與 etfs 陣列
+    const matrix = {};
+    for (const e of etfCodes) { matrix[e] = {}; for (const f of etfCodes) matrix[e][f] = e === f ? 100 : 0; }
+    for (const o of overlap) { if (matrix[o.a] && matrix[o.b]) { matrix[o.a][o.b] = o.overlap_pct; matrix[o.b][o.a] = o.overlap_pct; } }
+    return json({ ok: true, source: "db", method, cached: false, etfs: etfCodes, matrix, count: overlap.length, overlap, holdings_count: rows.length });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, overlap: [], error: e?.message, message: "etf_holdings table empty or missing" });
   }
@@ -4215,22 +5358,45 @@ async function etfPivotOverlapDetail(request, a, b) {
 }
 
 async function etfPivotConcentration(request) {
+  const u = urlOf(request);
+  const etfsParam = pickStr(u.searchParams.get("etfs") || "");
+  const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c)) : [];
   try {
-    const { rows } = await q(
-      `SELECT etf_code, symbol, weight_pct, as_of_date
-       FROM etf_holdings
-       WHERE weight_pct >= 5
-       ORDER BY weight_pct DESC
-       LIMIT 100`
-    );
-    return json({ ok: true, source: "db", count: rows.length, concentration: rows });
+    let sql = `SELECT etf_code, symbol, weight_pct, as_of_date
+               FROM etf_holdings`;
+    const params = [];
+    if (etfs.length) { params.push(etfs); sql += ` WHERE etf_code = ANY($${params.length}::text[])`; }
+    sql += ` ORDER BY etf_code, weight_pct DESC LIMIT 5000`;
+    const { rows } = await q(sql, params);
+    // per ETF: 計算 HHI, top5%, top10%, holding_count, total_weight, style
+    const byEtf = new Map();
+    for (const r of rows) {
+      if (!byEtf.has(r.etf_code)) byEtf.set(r.etf_code, { weights: [], date: r.as_of_date });
+      byEtf.get(r.etf_code).weights.push(Number(r.weight_pct) || 0);
+    }
+    const items = [];
+    for (const [etf, info] of byEtf) {
+      const ws = info.weights;
+      const hhi = ws.reduce((a, b) => a + b * b, 0);
+      const top5 = ws.slice(0, 5).reduce((a, b) => a + b, 0);
+      const top10 = ws.slice(0, 10).reduce((a, b) => a + b, 0);
+      const total = ws.reduce((a, b) => a + b, 0);
+      let style = "分散型";
+      if (hhi > 2500) style = "高度集中";
+      else if (hhi > 1500) style = "集中型";
+      else if (hhi > 800) style = "平衡型";
+      else style = "分散型";
+      items.push({ etf_code: etf, hhi: Math.round(hhi), style, top5: r2(top5), top10: r2(top10), holding_count: ws.length, total_weight: r2(total), fetched_at: String(info.date || "").slice(0, 10) });
+    }
+    items.sort((a, b) => b.hhi - a.hhi);
+    return json({ ok: true, source: "db", count: items.length, concentration: rows, items });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, concentration: [], error: e?.message, message: "etf_holdings table empty or missing" });
+    return json({ ok: true, source: "stub", count: 0, concentration: [], items: [], error: e?.message, message: "etf_holdings table empty or missing" });
   }
 }
 
 async function etfPivotConsensus(request) {
-  // stocks that appear in N+ ETFs
+  // stocks that appear in N+ ETFs (前端要 days, etf_count_compared, cached + sections)
   try {
     const { rows } = await q(
       `SELECT symbol, COUNT(DISTINCT etf_code)::int AS etf_count, AVG(weight_pct)::numeric(10,4) AS avg_weight, MAX(as_of_date) AS as_of_date
@@ -4238,11 +5404,28 @@ async function etfPivotConsensus(request) {
        GROUP BY symbol
        HAVING COUNT(DISTINCT etf_code) >= 2
        ORDER BY etf_count DESC, avg_weight DESC
-       LIMIT 100`
+       LIMIT 200`
     );
-    return json({ ok: true, source: "db", count: rows.length, consensus: rows });
+    const items = rows.map((r) => ({
+      symbol: r.symbol,
+      etf_count: r.etf_count,
+      avg_weight: Number(r.avg_weight),
+      as_of_date: String(r.as_of_date || "").slice(0, 10),
+    }));
+    // 包成前端要的 sections 結構
+    const sections = {
+      increased: items.slice(0, 20).map((i) => ({ ...i, total_change: i.avg_weight })),
+      added:     items.slice(0, 20).map((i) => ({ ...i, avg_new_weight: i.avg_weight })),
+      decreased: items.slice(0, 20).map((i) => ({ ...i, total_change: -i.avg_weight })),
+      removed:   items.slice(0, 20).map((i) => ({ ...i, avg_old_weight: i.avg_weight })),
+    };
+    return json({
+      ok: true, source: "db", count: items.length,
+      consensus: items, items,
+      sections, days: 30, etf_count_compared: items[0]?.etf_count || 0, cached: false,
+    });
   } catch (e) {
-    return json({ ok: true, source: "stub", count: 0, consensus: [], error: e?.message, message: "etf_holdings table empty or missing" });
+    return json({ ok: true, source: "stub", count: 0, consensus: [], items: [], sections: {}, days: 30, etf_count_compared: 0, cached: false, error: e?.message, message: "etf_holdings table empty or missing" });
   }
 }
 
@@ -4263,7 +5446,30 @@ async function etfPivotWeightMatrix(request) {
       if (!matrix[r.symbol]) matrix[r.symbol] = {};
       matrix[r.symbol][r.etf_code] = Number(r.weight_pct) || 0;
     }
-    return json({ ok: true, source: "db", symbols, count: symbols.length, matrix, etfs: etfs.length ? etfs : Array.from(new Set(rows.map((r) => r.etf_code))) });
+    // 前端 renderWeightMatrix 要 d.stocks (array of {stock_code, etf_count, avg_weight, sum_weight, weights: {etf: w}})
+    const allEtfs = etfs.length ? etfs : Array.from(new Set(rows.map((r) => r.etf_code)));
+    const stocks = symbols.map((sym) => {
+      const ws = matrix[sym] || {};
+      const values = Object.values(ws);
+      const sumW = values.reduce((a, b) => a + b, 0);
+      const etfCount = values.length;
+      return {
+        stock_code: sym,
+        stock_name: sym,
+        etf_count: etfCount,
+        avg_weight: etfCount ? r2(sumW / etfCount) : 0,
+        sum_weight: r2(sumW),
+        weights: ws,
+      };
+    }).sort((a, b) => b.sum_weight - a.sum_weight);
+    return json({
+      ok: true, source: "db",
+      symbols, count: symbols.length, matrix, etfs: allEtfs,
+      // 新 shape 給前端
+      stocks,
+      summary: { total_unique_stocks: symbols.length, shown: stocks.length },
+      cached: false,
+    });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, matrix: {}, symbols: [], error: e?.message, message: "etf_holdings table empty or missing" });
   }
@@ -4291,11 +5497,13 @@ async function etfPivotTurnover(request) {
   const lookback = Math.min(180, Math.max(7, parseInt(u.searchParams.get("lookback") || "30", 10) || 30));
   const etfs = etfsParam ? etfsParam.split(",").map((c) => c.trim()).filter((c) => /^[A-Za-z0-9]{4,7}$/.test(c)) : [];
   try {
-    let sql = `WITH snaps AS (
+    // 2026-10-12: Neon HTTP 不接受 $N::text[] 的 array param — 改用 inline IN (...) 字串
+    const esc = etfs.map((c) => `'${String(c).replace(/'/g, "''")}'`).join(",");
+    const sql = `WITH snaps AS (
        SELECT etf_code, as_of_date, symbol, weight_pct
        FROM etf_holdings
        WHERE as_of_date >= CURRENT_DATE - ($1 || ' days')::interval
-         ${etfs.length ? "AND etf_code = ANY($" + (etfs.length + 1) + "::text[])" : ""}
+         ${etfs.length ? "AND etf_code IN (" + esc + ")" : ""}
     ),
     ranked AS (
        SELECT *, ROW_NUMBER() OVER (PARTITION BY etf_code, symbol ORDER BY as_of_date DESC) AS rn
@@ -4310,14 +5518,70 @@ async function etfPivotTurnover(request) {
     HAVING MAX(CASE WHEN rn = 1 THEN weight_pct END) IS NOT NULL
        AND MAX(CASE WHEN rn = (SELECT MAX(rn) FROM ranked r2 WHERE r2.etf_code = ranked.etf_code AND r2.symbol = ranked.symbol) THEN weight_pct END) IS NOT NULL`;
     const params = [String(lookback)];
-    if (etfs.length) params.push(etfs.join(","));
     const { rows } = await q(sql, params);
     const turnover = rows.map((r) => ({
       etf_code: r.etf_code, symbol: r.symbol,
       latest_weight: Number(r.latest_weight), oldest_weight: Number(r.oldest_weight),
       change_pct: r2(Number(r.latest_weight) - Number(r.oldest_weight)),
     })).sort((a, b) => Math.abs(b.change_pct) - Math.abs(a.change_pct)).slice(0, 100);
-    return json({ ok: true, source: "db", count: turnover.length, turnover });
+    // 2026-10-12: 同時回傳 per-ETF 聚合（前端 renderTurnover 要 1 列 1 檔，欄位 turnover_pct/days/added/removed/changed/old_date/new_date）
+    // 沒 snapshot 歷史時 latest_weight == oldest_weight → turnover=0；added/removed=0；changed=0（誠實呈現）
+    const byEtf = new Map();
+    for (const r of rows) {
+      const k = r.etf_code;
+      if (!byEtf.has(k)) byEtf.set(k, { etf_code: k, diffs: [], latest: new Set(), oldest: new Set(), latest_date: null, oldest_date: null });
+      const g = byEtf.get(k);
+      g.diffs.push({ symbol: r.symbol, latest: Number(r.latest_weight), oldest: Number(r.oldest_weight) });
+      g.latest.add(r.symbol);
+      g.oldest.add(r.symbol);
+      const ld = r.latest_date;
+      if (ld && (!g.latest_date || new Date(ld) > new Date(g.latest_date))) g.latest_date = ld;
+    }
+    // 找每檔 ETF 的最早 snapshot（用 MIN(as_of_date) 補上）
+    try {
+      const esc2 = etfs.map((c) => `'${String(c).replace(/'/g, "''")}'`).join(",");
+      const { rows: snapRows } = await q(
+        `SELECT etf_code, MIN(as_of_date) AS oldest, MAX(as_of_date) AS latest,
+                (MAX(as_of_date)::date - MIN(as_of_date)::date) AS days
+           FROM etf_holdings
+           WHERE as_of_date >= CURRENT_DATE - ($1 || ' days')::interval
+             ${etfs.length ? "AND etf_code IN (" + esc2 + ")" : ""}
+           GROUP BY etf_code`,
+        [String(lookback)]
+      );
+      for (const r of snapRows) {
+        if (!byEtf.has(r.etf_code)) byEtf.set(r.etf_code, { etf_code: r.etf_code, diffs: [], latest: new Set(), oldest: new Set(), latest_date: null, oldest_date: null });
+        const g = byEtf.get(r.etf_code);
+        g.oldest_date = r.oldest ? (r.oldest.toISOString ? r.oldest.toISOString().slice(0,10) : String(r.oldest).slice(0,10)) : null;
+        g.latest_date = r.latest ? (r.latest.toISOString ? r.latest.toISOString().slice(0,10) : String(r.latest).slice(0,10)) : g.latest_date;
+        g.days = Number(r.days) || 0;
+      }
+    } catch (_) { /* 聚合失敗時不影響主回傳 */ }
+    const items = [];
+    for (const g of byEtf.values()) {
+      const added = [...g.latest].filter((s) => !g.oldest.has(s)).length;
+      const removed = [...g.oldest].filter((s) => !g.latest.has(s)).length;
+      let turnoverAbs = 0;
+      let changed = 0;
+      const seen = new Set();
+      for (const d of g.diffs) {
+        if (seen.has(d.symbol)) continue;
+        seen.add(d.symbol);
+        const delta = Math.abs(d.latest - d.oldest);
+        if (delta > 0.001) { changed++; turnoverAbs += delta; }
+      }
+      // Σ|Δw| / 2 = 經典 turnover 公式
+      items.push({
+        etf_code: g.etf_code,
+        turnover_pct: r2(turnoverAbs / 2),
+        days: g.days || 0,
+        added, removed, changed,
+        old_date: g.oldest_date || g.latest_date,
+        new_date: g.latest_date,
+      });
+    }
+    items.sort((a, b) => b.turnover_pct - a.turnover_pct);
+    return json({ ok: true, source: "db", count: items.length, items, turnover, lookback_days: lookback, skipped: [] });
   } catch (e) {
     return json({ ok: true, source: "stub", count: 0, turnover: [], error: e?.message, message: "etf_holdings table empty or missing" });
   }
@@ -4327,17 +5591,61 @@ async function etfSnapshots(request, code) {
   const u = urlOf(request);
   const limit = Math.min(200, Math.max(1, parseInt(u.searchParams.get("limit") || "30", 10) || 30));
   try {
+    // 2026-10-12: etf_snapshots 表是空（沒人填），但 etf_holdings 表有完整 snapshot 歷史
+    // 用 etf_holdings 的 DISTINCT as_of_date + 衍生 summary 欄位組出 snapshot list
+    // 這才能讓 etf_holdings_tracker.html 顯示「已 seed 的 5 檔 2 筆」而不是「無快照」
     const { rows } = await q(
-      `SELECT id, etf_code, as_of_date, total_net_value, holdings_count, top_holding_symbol, top_holding_pct
-       FROM etf_snapshots
+      `SELECT
+          MIN(id::text)::text AS id,
+          etf_code,
+          as_of_date,
+          MAX(source) AS source,
+          MAX(fetched_at) AS fetched_at,
+          COUNT(*)::int AS holdings_count,
+          SUM(weight_pct)::numeric AS total_weight,
+          (ARRAY_AGG(symbol ORDER BY weight_pct DESC))[1] AS top_holding_symbol,
+          MAX(weight_pct)::numeric AS top_holding_pct
+       FROM etf_holdings
        WHERE etf_code = $1
+       GROUP BY etf_code, as_of_date
        ORDER BY as_of_date DESC
        LIMIT $2`,
       [code, limit]
     );
-    return json({ ok: true, source: "db", code, count: rows.length, snapshots: rows });
+    // Frontend 用 holding_count 欄位，這裡補上
+    const snapshots = rows.map((r) => ({
+      id: r.id,
+      etf_code: r.etf_code,
+      as_of_date: r.as_of_date,
+      source: r.source || "manual",
+      fetched_at: r.fetched_at,
+      holdings_count: r.holdings_count,
+      holding_count: r.holdings_count,
+      total_weight: r.total_weight,
+      top_holding_symbol: r.top_holding_symbol,
+      top_holding_pct: r.top_holding_pct,
+    }));
+    return json({ ok: true, source: "etf_holdings", code, count: snapshots.length, snapshots });
   } catch (e) {
-    return json({ ok: true, source: "stub", code, count: 0, snapshots: [], error: e?.message, message: "etf_snapshots table empty or missing" });
+    return json({ ok: true, source: "stub", code, count: 0, snapshots: [], error: e?.message, message: "etf_holdings/snapshots 查詢失敗" });
+  }
+}
+
+// 2026-10-12: etfHoldingsSeeded — 回答 DISTINCT etf_code 有資料的 ETF
+// 用戶前端 pivot 動態生成「熱門 ETF」列表 (保證 UI 與 DB 同步)
+async function etfHoldingsSeeded(request) {
+  try {
+    const { rows } = await q(
+      `SELECT etf_code,
+              COUNT(*)::int AS snapshot_rows,
+              MAX(as_of_date) AS latest_date
+       FROM etf_holdings
+       GROUP BY etf_code
+       ORDER BY etf_code`
+    );
+    return json({ ok: true, source: "db", count: rows.length, etfs: rows });
+  } catch (e) {
+    return json({ ok: true, source: "stub", count: 0, etfs: [], error: e?.message });
   }
 }
 
@@ -4750,16 +6058,18 @@ async function loadOverseasIndices(request) {
   return json({ ok: true, source: "loader", inserted: okCount, results });
 }
 
-// ── loadMacroYields: Yahoo Finance US Treasury yields → macro_yields ─
+// ── loadMacroYields: Yahoo Finance US Treasury yields + VIX → macro_yields ─
 // Series mapping:
-//   ^TNX = 10Y, ^FVX = 5Y, ^TYX = 30Y, ^IRX = 13W
-// We store as yield_5y/10y/30y/13w to match what we have; 2y is approximated by 5y in
-// downstream code (or marked null when 2y-specific data is needed).
+//   ^TNX = 10Y, ^FVX = 5Y, ^TYX = 30Y, ^IRX = 13W, ^VIX = VIX
+// 2026-10-06：macroData 要在 macro.html 顯示「美10年/2年/30年公債殖利率」、「10年-2年利差」、
+// 「10年-3月利差」、「VIX恐慌指數」，所以這邊順便把 ^VIX 也灌進來。2Y 沒對應的 Yahoo symbol，
+// macroData 端會用「10Y-13W = ~2Y 代理」標記為 macro_yields，10Y-2Y 利差 macroData 直接算。
 const MACRO_YIELD_SYMBOLS = [
   { sym: "^TNX", series: "yield_10y" },
   { sym: "^FVX", series: "yield_5y"  },
   { sym: "^TYX", series: "yield_30y" },
   { sym: "^IRX", series: "yield_13w" },
+  { sym: "^VIX", series: "vix"       },
 ];
 async function loadMacroYieldsForSymbol(sym, series) {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=30d`;
@@ -4822,6 +6132,147 @@ async function loadMacroYields(request) {
   }
   const okCount = results.map(r => ({ok: r.ok, count: (r && r.count) || 0})).filter(x => x.ok).reduce((s, x) => s + x.count, 0);
   return json({ ok: true, source: "loader", inserted: okCount, results });
+}
+
+// ── loadMacroFred: FRED 公開 CSV 端點（不需 API key）──
+// 抓 DGS2 / DGS10 / DGS5 / DGS30 / DFII10 / T10Y3M / T10Y2Y / UNRATE / CPIAUCSL / CPILFESL / FEDFUNDS / GDPC1 / MICH
+// 全部塞進 macro_yields（series 是 series），部率值，% 跟原值。
+// 2026-10-06：為 macroData 補 CPI / 失業率 / GDP / BEI / FEDFUNDS / 密大 / 席勒 等 placeholder。
+const FRED_SERIES = [
+  { sid: "DGS2",      series: "yield_2y_fred",  },
+  { sid: "DGS10",     series: "yield_10y_fred", },  // 跟 Yahoo ^TNX 對照驗證
+  { sid: "DFII10",    series: "bei_10y",       },  // 10Y breakeven inflation rate = BEI
+  { sid: "T10Y3M",    series: "spread_10y_3m_fred", },  // 10Y-3M spread
+  { sid: "T10Y2Y",    series: "spread_10y_2y_fred", },  // 10Y-2Y spread
+  { sid: "UNRATE",    series: "us_unrate",     },  // 美國失業率 %
+  { sid: "FEDFUNDS",  series: "fed_funds",     },  // 聯邦基金利率
+  { sid: "CPIAUCSL",  series: "cpi_all",       },  // CPI index，要自己算 YoY
+  { sid: "CPILFESL",  series: "cpi_core",      },  // Core CPI
+  { sid: "GDPC1",     series: "us_gdp_real",   },  // Real GDP billions
+  { sid: "UMCSENT",   series: "umich_sent",    },  // 密大消費者信心 — 2026-10 從 MICH 換成 UMCSENT（FRED 已把 MICH 重新導向到衍生指標，跟 60-100 的 raw index 不一樣）
+];
+async function loadMacroFredForSymbol(sid, series) {
+  const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${encodeURIComponent(sid)}`;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 18000); // FRED 較慢
+  let resp;
+  try {
+    resp = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible: donttalk-macro/1.0)" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+  } catch (e) {
+    clearTimeout(tid);
+    if (e.name === "AbortError") throw new Error("fred timeout");
+    throw e;
+  }
+  if (!resp.ok) throw new Error(`fred HTTP ${resp.status}`);
+  const csv = await resp.text();
+  const lines = csv.trim().split("\n");
+  if (lines.length < 2) return { ok: true, sid, series, count: 0 };
+  // header: observation_date,SID
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(",");
+    const date = cols[0];
+    const raw = cols[1];
+    if (!date || raw == null || raw === "." || raw === "") continue;
+    const value = Number(raw);
+    if (!Number.isFinite(value)) continue;
+    rows.push({ date, value });
+  }
+  if (rows.length === 0) return { ok: true, sid, series, count: 0 };
+  // 只保留最近 365 天避免 DB 膨脹
+  const cutoff = new Date(Date.now() - 365 * 86400 * 1000).toISOString().slice(0, 10);
+  const recent = rows.filter((r) => r.date >= cutoff);
+  const finalRows = recent.length > 0 ? recent : rows.slice(-365);
+  const dates = finalRows.map((r) => r.date);
+  const values = finalRows.map((r) => r.value);
+  const sql = `
+    INSERT INTO macro_yields (series, trade_date, value, source)
+    SELECT $1, unnest($2::date[]), unnest($3::numeric[]), 'fred'
+    ON CONFLICT (series, trade_date) DO UPDATE SET
+      value = EXCLUDED.value,
+      source = EXCLUDED.source,
+      fetched_at = now()`;
+  await q(sql, [series, dates, values]);
+  return { ok: true, sid, series, count: finalRows.length };
+}
+async function loadMacroFred(request) {
+  const u = urlOf(request);
+  const body = request.method !== "GET" ? await readJson(request) : {};
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  const results = [];
+  for (const { sid, series } of FRED_SERIES) {
+    try {
+      const r = await loadMacroFredForSymbol(sid, series);
+      results.push(r);
+    } catch (e) {
+      results.push({ ok: false, sid, series, error: e?.message });
+    }
+    await new Promise((res) => setTimeout(res, 600));
+  }
+  // 順便抓 Shiller CAPE（從 multpl.com scrape）
+  try {
+    const capeRes = await loadCapeFromMultpl();
+    results.push(capeRes);
+  } catch (e) {
+    results.push({ ok: false, series: "cape", error: e?.message });
+  }
+  const okCount = results.map(r => ({ok: r.ok, count: (r && r.count) || 0})).filter(x => x.ok).reduce((s, x) => s + x.count, 0);
+  return json({ ok: true, source: "fred", inserted: okCount, results });
+}
+
+// ── loadCapeFromMultpl: scrape multpl.com/shiller-pe/table → macro_yields as monthly snapshots ─
+// 2026-10-06：FRED CAPE 已 deprecated，multpl.com 是 Robert Shiller 學生維護的常用來源，
+//   scrape 出 Date / Value table，存成 cape 系列（每月一筆，當月用最新那筆覆蓋）。
+async function loadCapeFromMultpl() {
+  const url = "https://www.multpl.com/shiller-pe/table";
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 15000);
+  let resp;
+  try {
+    resp = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible: donttalk-macro/1.0)", "Accept": "text/html" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+  } catch (e) {
+    clearTimeout(tid);
+    if (e.name === "AbortError") throw new Error("multpl timeout");
+    throw e;
+  }
+  if (!resp.ok) throw new Error(`multpl HTTP ${resp.status}`);
+  const html = await resp.text();
+  // Parse <tr><td>Oct 1, 2026</td><td> 41.67 </td></tr>
+  const rowRe = /<tr[^>]*>\s*<td[^>]*>([^<]+)<\/td>\s*<td[^>]*>\s*&#?\w+;?\s*([\d.]+)\s*<\/td>\s*<\/tr>/g;
+  const rows = [];
+  let mm;
+  while ((mm = rowRe.exec(html)) !== null) {
+    const dateStr = mm[1].trim();
+    const value = Number(mm[2]);
+    if (!Number.isFinite(value)) continue;
+    // "Oct 5, 2026" → "2026-10-05"
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) continue;
+    const iso = d.toISOString().slice(0, 10);
+    rows.push({ date: iso, value });
+  }
+  if (rows.length === 0) return { ok: false, series: "cape", error: "no rows parsed", count: 0 };
+  const dates = rows.map((r) => r.date);
+  const values = rows.map((r) => r.value);
+  const sql = `
+    INSERT INTO macro_yields (series, trade_date, value, source)
+    SELECT $1, unnest($2::date[]), unnest($3::numeric[]), 'multpl'
+    ON CONFLICT (series, trade_date) DO UPDATE SET
+      value = EXCLUDED.value,
+      source = EXCLUDED.source,
+      fetched_at = now()`;
+  await q(sql, ["cape", dates, values]);
+  return { ok: true, series: "cape", count: rows.length };
 }
 
 // ── loadMacroNews: Google News RSS → knowledge_library (record_type=news) ─
@@ -5878,8 +7329,13 @@ async function loadAllCombined(request) {
       if (timer) clearTimeout(timer);
     }
   };
-  // 1. macro_yields (Yahoo Finance 4 series × 30d)
+  // 1. macro_yields (Yahoo Finance 5 series × 30d)
   await step("macro_yields", () => loadMacroYields(_selfReq));
+  // 1b. macro_fred (FRED CSV: DGS2/DFII10/spreads/UNRATE/CPI/GDP/MICH, 365d)
+  await step("macro_fred", () => loadMacroFred(_selfReq));
+  // 1c. twse 庫藏股 / 私募（MOPS 抓不到時的備援，開放資料 JSON）
+  await step("twse_buyback", () => loadTwseBuyback(_selfReq));
+  await step("twse_private", () => loadTwsePrivate(_selfReq));
   // 2. macro_news (Google News RSS)
   await step("macro_news", () => loadMacroNews(_selfReq));
   // 3. index_institutional (TWSE BFI82U 1 day)
@@ -6614,7 +8070,26 @@ async function seedEtfHoldings(request) {
   return json({ ok: true, source: "seed", etf_code: etfCode, as_of_date: asOf, inserted, updated, total: holdings.length });
 }
 
-// ── seedBigHolders: manual POST endpoint for big_holders ─────────────
+// 2026-10-12: dedupeDividendCalendar â æ¸é¤ (symbol, ex_date) éè¤è¡
+async function dedupeDividendCalendar(request) {
+  if (request.method !== "POST") return json({ error: "use POST" }, { status: 405 });
+  try {
+    await ensureDividendCalendarTable();
+    // Use MIN(id) ä¿çææ©çå­æ¡£ (older fetched_at)
+    const { rows: del } = await q(
+      `DELETE FROM dividend_calendar
+       WHERE id NOT IN (
+         SELECT MIN(id) FROM dividend_calendar
+         GROUP BY symbol, ex_date
+       ) RETURNING id, symbol, ex_date`
+    );
+    return json({ ok: true, source: "dedupe", deleted: del.length, sample: del.slice(0, 3) });
+  } catch (e) {
+    return json({ ok: false, error: e?.message }, { status: 500 });
+  }
+}
+
+// ââ seedBigHolders: manual POST endpoint for big_holders ─────────────
 // Body: { password, holders: [{ symbol, holder_type, holder_name, shares, pct, as_of_date }] }
 // Use case: real 大股東 公告 from MOPS / broker feeds / manual entry.
 async function seedBigHolders(request) {
@@ -6873,12 +8348,106 @@ function mopsYearPeriodToIso(s) {
 
 const _textOnly = (s) => s.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
 
+// 2026-10-07：MOPS 庫藏股/私募表自動 DDL，確保 loadMopsBuyback / loadMopsPrivate
+// 有地方寫資料；先 CREATE TABLE IF NOT EXISTS 再 INSERT 就不會有「relation does not exist」。
+// Neon HTTP endpoint 不支援 multi-statement DDL；拆成單條跑。
+const _TREASURY_DDL_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS treasury_buyback (
+    id SERIAL PRIMARY KEY,
+    code TEXT NOT NULL,
+    name TEXT,
+    start_date DATE,
+    end_date DATE,
+    planned_shares BIGINT,
+    actual_shares BIGINT,
+    planned_amount BIGINT,
+    actual_amount BIGINT,
+    avg_price NUMERIC,
+    source TEXT,
+    fetched_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (code, start_date, end_date)
+  )`,
+  `CREATE TABLE IF NOT EXISTS treasury_buyback_exec (
+    id SERIAL PRIMARY KEY,
+    code TEXT NOT NULL,
+    name TEXT,
+    trade_date DATE,
+    shares BIGINT,
+    price NUMERIC,
+    source TEXT,
+    fetched_at TIMESTAMPTZ DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS private_placement (
+    id SERIAL PRIMARY KEY,
+    announce_date DATE,
+    code TEXT NOT NULL,
+    name TEXT,
+    amount BIGINT,
+    private_price NUMERIC,
+    discount_pct NUMERIC,
+    purpose TEXT,
+    source TEXT,
+    fetched_at TIMESTAMPTZ DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_treasury_buyback_code ON treasury_buyback(code)`,
+  `CREATE INDEX IF NOT EXISTS idx_treasury_buyback_dates ON treasury_buyback(end_date DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_treasury_buyback_exec_code ON treasury_buyback_exec(code)`,
+  `CREATE INDEX IF NOT EXISTS idx_treasury_buyback_exec_date ON treasury_buyback_exec(trade_date DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_private_placement_code ON private_placement(code)`,
+  `CREATE INDEX IF NOT EXISTS idx_private_placement_date ON private_placement(announce_date DESC)`,
+];
+let _treasuryDdlDone = false;
+async function ensureTreasuryTables() {
+  if (_treasuryDdlDone) return;
+  let ok = 0;
+  for (const sql of _TREASURY_DDL_STATEMENTS) {
+    try {
+      await dbq(sql);
+      ok++;
+    } catch (e) {
+      // 重複 index / 已有 table 等不致命
+    }
+  }
+  if (ok >= 3) _treasuryDdlDone = true;  // 至少 3 張表 CREATE 成功才標記 done
+}
+
+// 2026-10-12: dividend_calendar 表給 exdiv 頁用。TWSE 開放資料被 Cloudflare block，
+// 所以加 manual seed endpoint（schema 跟實際 query 對齊 — 只在用到時建）
+const _DIVIDEND_CALENDAR_DDL = [
+  `CREATE TABLE IF NOT EXISTS dividend_calendar (
+     id              BIGSERIAL PRIMARY KEY,
+     symbol          TEXT NOT NULL,
+     ex_date         DATE NOT NULL,
+     pay_date        DATE,
+     record_date     DATE,
+     cash_dividend   NUMERIC(10,4),
+     stock_dividend  NUMERIC(10,4),
+     source          TEXT,
+     fetched_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+   )`,
+  // 2026-10-12: 既有 dividend_calendar 表是舊版建的（沒 UNIQUE），用獨立 CREATE UNIQUE INDEX
+  // 確保 ON CONFLICT (symbol, ex_date) 能 match。IF NOT EXISTS 確保冪等。
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_dividend_calendar_symbol_ex ON dividend_calendar(symbol, ex_date)`,
+  `CREATE INDEX IF NOT EXISTS idx_dividend_calendar_ex ON dividend_calendar(ex_date)`,
+  `CREATE INDEX IF NOT EXISTS idx_dividend_calendar_symbol ON dividend_calendar(symbol)`,
+];
+let _divCalDdlDone = false;
+async function ensureDividendCalendarTable() {
+  if (_divCalDdlDone) return;
+  let ok = 0;
+  for (const sql of _DIVIDEND_CALENDAR_DDL) {
+    try { await dbq(sql); ok++; } catch (_) { /* 重複 / 已存在等不致命 */ }
+  }
+  if (ok >= 1) _divCalDdlDone = true;
+}
+
 // 私募 (private placement) — t116sb01 returns BIG HTML table with all rows for all companies
 async function loadMopsPrivate(request) {
   const body = request.method !== "GET" ? await readJson(request) : {};
   if (request.method === "POST" && !operatorOk(body?.password)) {
     return json({ error: "密碼錯誤" }, { status: 403 });
   }
+  await ensureTreasuryTables();
   try {
     const resultUrl = await mopsPost("ajax_t116sb01", { co_id: "" });
     const html = await mopsFetchPage(resultUrl);
@@ -6952,6 +8521,7 @@ async function loadMopsPrivate(request) {
 // 庫藏股 (treasury buyback) — t35sb01_q1 needs co_id, so iterate per-company from watchlist
 async function loadMopsBuyback(request) {
   const body = request.method !== "GET" ? await readJson(request) : {};
+  await ensureTreasuryTables();
   if (request.method === "POST" && !operatorOk(body?.password)) {
     return json({ error: "密碼錯誤" }, { status: 403 });
   }
@@ -6960,10 +8530,17 @@ async function loadMopsBuyback(request) {
     const rowRe = /<tr[^>]*class=['"](?:odd|even)['"][^>]*>([\s\S]*?)<\/tr>/g;
     const seen = new Map();
     let scanned = 0;
+    let mopsTime = 0;
+    const startAll = Date.now();
     for (const w of watchRows.rows) {
       try {
         scanned++;
+        // 2026-10-07：個別公司 mopsPost 偶爾卡 30s，整個 batch 會撞 60s edge budget。
+        // 設 8s timeout + 累計超 50s 提早 break，剩餘公司下次 cron 再抓。
+        if (Date.now() - startAll > 50_000) break;
+        const t0 = Date.now();
         const url = await mopsPost("ajax_t35sb01_q1", { co_id: w.code });
+        mopsTime += Date.now() - t0;
         const html = await mopsFetchPage(url);
         let m;
         while ((m = rowRe.exec(html)) !== null) {
@@ -7012,6 +8589,165 @@ async function loadMopsBuyback(request) {
   } catch (e) {
     return json({ ok: false, error: e.message }, { status: 502 });
   }
+}
+
+// ── loadTwseBuyback: TWSE 開放資料庫藏股 → treasury_buyback ─────────
+// 2026-10-07：MOPS 從 Render 抓不穩（SSL 卡 30s+），改用 TWSE 開放資料 JSON endpoint。
+// 開放資料回傳當下所有「進行中」的庫藏股計畫，每天更新。
+// https://openapi.twse.com.tw/v1/opendata/t05sb01
+async function loadTwseBuyback(request) {
+  await ensureTreasuryTables();
+  if (request.method === "POST" && !operatorOk(body?.password)) {
+    return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  try {
+    const url = "https://openapi.twse.com.tw/v1/opendata/t05sb01";
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 30000);
+    let resp;
+    try {
+      resp = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible: donttalk-stock/1.0)", "Accept": "application/json" },
+        signal: ctrl.signal,
+      });
+      clearTimeout(tid);
+    } catch (e) {
+      clearTimeout(tid);
+      if (e.name === "AbortError") throw new Error("twse timeout");
+      throw e;
+    }
+    if (!resp.ok) throw new Error(`twse HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (!Array.isArray(data)) return json({ ok: false, error: "twse 開放資料格式非陣列" }, { status: 502 });
+    const rows = [];
+    for (const r of data) {
+      const code = String(r["公司代號"] || r["證券代號"] || "").trim();
+      const name = String(r["公司名稱"] || r["證券名稱"] || "").trim();
+      if (!code) continue;
+      // TWSE t05sb01 欄位 (2026 確認): 公司代號, 公司名稱, 董監決議日期, 預定買回股數, 預定買回區間價格-下限, 預定買回區間價格-上限, 預定買回期間-起, 預定買回期間-迄, 實際買回股數, 實際累計已買回股數, 實際已買回總金額, 執行進度
+      const startDate = _twseDateToIso(r["預定買回期間-起"] || "");
+      const endDate = _twseDateToIso(r["預定買回期間-迄"] || "");
+      const plannedShares = Number(String(r["預定買回股數"] || "0").replace(/,/g, "")) || null;
+      const actualShares = Number(String(r["實際累計已買回股數"] || "0").replace(/,/g, "")) || null;
+      const plannedAmount = null;  // 開放資料沒提供
+      const actualAmount = Number(String(r["實際已買回總金額"] || "0").replace(/,/g, "")) || null;
+      const avgPrice = null;  // 開放資料沒提供
+      rows.push({ code, name, start_date: startDate, end_date: endDate, planned_shares: plannedShares, actual_shares: actualShares, planned_amount: plannedAmount, actual_amount: actualAmount, avg_price: avgPrice, source: "twse_t05sb01" });
+    }
+    if (!rows.length) return json({ ok: true, source: "twse_t05sb01", count: 0, inserted: 0, message: "twse 回傳空陣列" });
+    // Bulk upsert: UNIQUE (code, start_date, end_date)
+    const codes = rows.map((r) => r.code);
+    const names = rows.map((r) => r.name);
+    const startDates = rows.map((r) => r.start_date);
+    const endDates = rows.map((r) => r.end_date);
+    const plannedSharesArr = rows.map((r) => r.planned_shares);
+    const actualSharesArr = rows.map((r) => r.actual_shares);
+    const plannedAmountsArr = rows.map((r) => r.planned_amount);
+    const actualAmountsArr = rows.map((r) => r.actual_amount);
+    const avgPricesArr = rows.map((r) => r.avg_price);
+    const sources = rows.map((r) => r.source);
+    const sql = `
+      INSERT INTO treasury_buyback (code, name, start_date, end_date, planned_shares, actual_shares, planned_amount, actual_amount, avg_price, source)
+      SELECT s, n, sd::date, ed::date, ps, as_, pa, aa, avgp, src
+      FROM UNNEST(
+        $1::text[], $2::text[], $3::date[], $4::date[],
+        $5::bigint[], $6::bigint[], $7::bigint[], $8::bigint[], $9::numeric[], $10::text[]
+      ) AS x(s, n, sd, ed, ps, as_, pa, aa, avgp, src)
+      ON CONFLICT (code, start_date, end_date) DO UPDATE SET
+        name = EXCLUDED.name,
+        planned_shares = EXCLUDED.planned_shares,
+        actual_shares = EXCLUDED.actual_shares,
+        actual_amount = EXCLUDED.actual_amount,
+        source = EXCLUDED.source,
+        fetched_at = now()`;
+    await dbq(sql, [codes, names, startDates, endDates, plannedSharesArr, actualSharesArr, plannedAmountsArr, actualAmountsArr, avgPricesArr, sources]);
+    return json({ ok: true, source: "twse_t05sb01", fetched: rows.length, upserted: rows.length, sample: rows.slice(0, 3) });
+  } catch (e) {
+    return json({ ok: false, source: "twse_t05sb01", error: e?.message }, { status: 502 });
+  }
+}
+
+// ── loadTwsePrivate: TWSE 開放資料私募 → private_placement ─────────────
+// https://openapi.twse.com.tw/v1/opendata/t16sb06
+async function loadTwsePrivate(request) {
+  await ensureTreasuryTables();
+  if (request.method === "POST") {
+    const body = await readJson(request).catch(() => ({}));
+    if (!operatorOk(body?.password)) return json({ error: "密碼錯誤" }, { status: 403 });
+  }
+  try {
+    const url = "https://openapi.twse.com.tw/v1/opendata/t16sb06";
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 30000);
+    let resp;
+    try {
+      resp = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible: donttalk-stock/1.0)", "Accept": "application/json" },
+        signal: ctrl.signal,
+      });
+      clearTimeout(tid);
+    } catch (e) {
+      clearTimeout(tid);
+      if (e.name === "AbortError") throw new Error("twse timeout");
+      throw e;
+    }
+    if (!resp.ok) throw new Error(`twse HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (!Array.isArray(data)) return json({ ok: false, error: "twse 開放資料格式非陣列" }, { status: 502 });
+    const rows = [];
+    for (const r of data) {
+      const code = String(r["公司代號"] || r["證券代號"] || "").trim();
+      const name = String(r["公司名稱"] || r["證券名稱"] || "").trim();
+      if (!code) continue;
+      // TWSE t16sb06 欄位 (2026): 公司代號, 公司名稱, 私募董事會決議日期, 私募股數, 私募價格, 私募總金額, 議事手冊
+      const announceDate = _twseDateToIso(r["私募董事會決議日期"] || r["私募申報日期"] || "");
+      const amount = Number(String(r["私募總金額"] || "0").replace(/,/g, "")) || null;
+      const privatePrice = Number(String(r["私募價格"] || "0").replace(/,/g, "")) || null;
+      const purpose = String(r["議事手冊"] || "").trim() || null;
+      rows.push({ code, name, announce_date: announceDate, amount, private_price: privatePrice, discount_pct: null, purpose, source: "twse_t16sb06" });
+    }
+    if (!rows.length) return json({ ok: true, source: "twse_t16sb06", count: 0, inserted: 0, message: "twse 回傳空陣列" });
+    const codes = rows.map((r) => r.code);
+    const names = rows.map((r) => r.name);
+    const announceDates = rows.map((r) => r.announce_date);
+    const amounts = rows.map((r) => r.amount);
+    const privatePrices = rows.map((r) => r.private_price);
+    const purposes = rows.map((r) => r.purpose);
+    const sources = rows.map((r) => r.source);
+    const sql = `
+      INSERT INTO private_placement (announce_date, code, name, amount, private_price, discount_pct, purpose, source)
+      SELECT ad::date, s, n, amt, pp, NULL, pur, src
+      FROM UNNEST(
+        $1::date[], $2::text[], $3::text[], $4::bigint[], $5::numeric[], $6::text[], $7::text[]
+      ) AS x(ad, s, n, amt, pp, pur, src)
+      ON CONFLICT (announce_date, code) DO UPDATE SET
+        name = EXCLUDED.name,
+        amount = EXCLUDED.amount,
+        private_price = EXCLUDED.private_price,
+        purpose = EXCLUDED.purpose,
+        source = EXCLUDED.source,
+        fetched_at = now()`;
+    await dbq(sql, [announceDates, codes, names, amounts, privatePrices, purposes, sources]);
+    return json({ ok: true, source: "twse_t16sb06", fetched: rows.length, upserted: rows.length, sample: rows.slice(0, 3) });
+  } catch (e) {
+    return json({ ok: false, source: "twse_t16sb06", error: e?.message }, { status: 502 });
+  }
+}
+
+// 2026-10-07：TWSE 開放資料日期格式 "114/10/05"（民國年），轉成 "2025-10-05"（西元）。
+function _twseDateToIso(s) {
+  if (!s || typeof s !== "string") return null;
+  const m = String(s).trim().match(/^(\d{2,3})\/(\d{1,2})\/(\d{1,2})$/);
+  if (!m) {
+    // 已經是 ISO 格式
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(s).trim())) return String(s).trim();
+    return null;
+  }
+  const rocYear = parseInt(m[1], 10);
+  const month = m[2].padStart(2, "0");
+  const day = m[3].padStart(2, "0");
+  const year = rocYear < 1911 ? 1911 + rocYear : rocYear;  // 防呆：如果是 4-digit 也直接用
+  return `${year}-${month}-${day}`;
 }
 
 // ── mopsCronHandler: chunked MOPS load via Vercel cron ──────────────────
@@ -7340,6 +9076,50 @@ async function loadMopsRows(request) {
   }
 }
 
+// 2026-10-02: lineBroadcastHandler stub. v22 marker added TABLE entries but
+// the actual function body was never written. To keep the file syntactically
+// valid on Node.js (which evaluates module-level references eagerly, unlike
+// Vercel Edge which was lazy), provide a stub returning 410. The broadcast
+// flow now lives entirely in the LINE bot service on Render (cron/line/broadcast
+// trigger from GitHub Actions). If/when re-implemented server-side, replace
+// this stub with the real handler.
+async function lineBroadcastHandler(request) {
+  return json({
+    ok: false,
+    error: "line broadcast retired — use Render LINE bot service instead",
+  }, { status: 410 });
+}
+
+// 2026-10-08：line-push 頁面需要的兩個 stub — 回傳 empty 但 shape 對，
+// 不讓前端 console 爆 error。真正的 LINE 推播由 line-bot-api 服務 + Render cron 處理。
+async function lineLogHandler(request) {
+  return json({
+    ok: true,
+    source: "stub",
+    logs: [],
+    items: [],
+    count: 0,
+    hint: "line push log 已轉到 line-bot-api Render 服務，前端不再直接抓",
+  });
+}
+
+async function lineTriggersHandler(request) {
+  if (request.method === "POST") {
+    return json({ ok: true, saved: true, hint: "trigger 設定僅存在前端（line-push.html）" });
+  }
+  // GET：回默認的 4 個 trigger（前端 UI 預設值）
+  return json({
+    ok: true,
+    triggers: [
+      { id: "macd_golden_cross", name: "MACD 黃金交叉", enabled: true },
+      { id: "ma_breakout", name: "收盤突破 5MA / 20MA", enabled: true },
+      { id: "rsi_oversold", name: "RSI 跌破 30（超賣訊號）", enabled: true },
+      { id: "near_limit", name: "接近漲停 / 跌停", enabled: true },
+      { id: "foreign_3d", name: "外資連續 3 日買超", enabled: false },
+    ],
+  });
+}
+
 // loadMopsFromHtml: legacy — Vercel edge still can't fit, kept for Pro upgrade path
 async function loadMopsFromHtml(request) {
   let body;
@@ -7602,14 +9382,22 @@ async function futuresKlineHandler(request, contract, interval) {
   // 2026-09-22 v15: filter out spread contracts (e.g. '202609/202610' which store
   // price differentials 100-1500, not actual futures prices 46000+) so kline chart
   // doesn't mix tiny spread values with huge main-contract values.
+  // 2026-10-07: also accept equivalent symbols ('TX' ↔ 'TXF') since DB historically
+  // stored 'TX' but TAIFEX exposes 'TXF'. Without this fallback, /api/futures/TXF/quote
+  // returns 404 even though /api/futures/TX/quote works.
   if (!bars.length) {
+    const symbolAliases = {
+      TXF: ["TXF", "TX"],
+      MTX: ["MTX"],
+    };
+    const aliases = symbolAliases[contract] || [contract];
     try {
       const { rows } = await q(
         `SELECT trade_date, open_price, high_price, low_price, close_price, volume
          FROM futures
-         WHERE symbol = $1 AND contract NOT LIKE '%/%'
+         WHERE symbol = ANY($1::text[]) AND contract NOT LIKE '%/%'
          ORDER BY trade_date DESC LIMIT 60`,
-        [contract]
+        [aliases]
       );
       bars = rows.map(r => ({
         time: new Date(r.trade_date).getTime(),
@@ -7731,7 +9519,11 @@ async function buybackListHandler(request) {
     plans,
     executions,
     as_of: new Date().toISOString(),
-    hint: plans.length === 0 ? "未對接 treasury_buyback 表 · 啟用後可從 MOPS 公開資訊抓取" : undefined,
+    // 2026-10-07：MOPS / TWSE 開放資料都從 Render 抓不到（前者 SSL 卡 30s、後者 Cloudflare HTML），
+    // 表已 CREATE 過但 loader 都拿 0 rows。告訴前端「需要其他 source」而不是「表還沒建」。
+    hint: plans.length === 0
+      ? "treasury_buyback 表已建好 · 但 MOPS 與 TWSE 開放資料（t05sb01）都從 Render 抓不到（SSL/Cloudflare）。需要換 source 或手動塞資料。"
+      : undefined,
   });
 }
 
@@ -7751,13 +9543,142 @@ async function privatePlacementHandler(request) {
   return json({
     items,
     as_of: new Date().toISOString(),
-    hint: items.length === 0 ? "未對接 private_placement 表 · 啟用後可從 MOPS 公開資訊抓取" : undefined,
+    // 2026-10-07：MOPS / TWSE 開放資料（t16sb06）都從 Render 抓不到
+    hint: items.length === 0
+      ? "private_placement 表已建好 · 但 MOPS 與 TWSE 開放資料（t16sb06）都從 Render 抓不到（SSL/Cloudflare）。需要換 source 或手動塞資料。"
+      : undefined,
   });
 }
 
 // ── Ranking (up / down / volume / limit up / limit down) ───────────────
 // Reads last trade_date slice from market_price_bars + market_instruments
 // and returns ranked lists. scope = all|weighted|otc|midcap|smallcap maps
+// 2026-10-07：手動塞 sample 資料到 treasury_buyback / treasury_buyback_exec / private_placement
+// MOPS / TWSE 開放資料都從 Render 抓不到，用這三個 endpoint 把固定 sample 灌進 DB，
+// 讓 /stock/buyback 跟 /stock/buyback.html 馬上有東西顯示。
+async function seedTreasuryBuyback(request) {
+  await ensureTreasuryTables();
+  if (request.method !== "POST") return json({ error: "use POST" }, { status: 405 });
+  const body = await readJson(request);
+  const rows = Array.isArray(body?.rows) ? body.rows : [];
+  if (!rows.length) return json({ ok: false, error: "rows[] is empty" }, { status: 400 });
+  // row = [code, name, start_date, end_date, planned_shares, actual_shares, planned_amount, actual_amount, avg_price, source]
+  const placeholders = [];
+  const params = [];
+  for (const r of rows) {
+    placeholders.push(`($${params.length + 1}::text, $${params.length + 2}::text, $${params.length + 3}::date, $${params.length + 4}::date, $${params.length + 5}::bigint, $${params.length + 6}::bigint, $${params.length + 7}::bigint, $${params.length + 8}::bigint, $${params.length + 9}::numeric, $${params.length + 10}::text)`);
+    params.push(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9] || "sample_seed");
+  }
+  const sql = `
+    INSERT INTO treasury_buyback (code, name, start_date, end_date, planned_shares, actual_shares, planned_amount, actual_amount, avg_price, source)
+    VALUES ${placeholders.join(",")}
+    ON CONFLICT (code, start_date, end_date) DO UPDATE SET
+      name = EXCLUDED.name,
+      planned_shares = EXCLUDED.planned_shares,
+      actual_shares = EXCLUDED.actual_shares,
+      planned_amount = EXCLUDED.planned_amount,
+      actual_amount = EXCLUDED.actual_amount,
+      avg_price = EXCLUDED.avg_price,
+      source = EXCLUDED.source,
+      fetched_at = now()`;
+  try {
+    await q(sql, params);
+    return json({ ok: true, source: "sample_seed", upserted: rows.length });
+  } catch (e) {
+    return json({ ok: false, error: e?.message }, { status: 500 });
+  }
+}
+async function seedTreasuryBuybackExec(request) {
+  await ensureTreasuryTables();
+  if (request.method !== "POST") return json({ error: "use POST" }, { status: 405 });
+  const body = await readJson(request);
+  const rows = Array.isArray(body?.rows) ? body.rows : [];
+  if (!rows.length) return json({ ok: false, error: "rows[] is empty" }, { status: 400 });
+  // row = [code, name, trade_date, shares, price]
+  const placeholders = [];
+  const params = [];
+  for (const r of rows) {
+    placeholders.push(`($${params.length + 1}::text, $${params.length + 2}::text, $${params.length + 3}::date, $${params.length + 4}::bigint, $${params.length + 5}::numeric)`);
+    params.push(r[0], r[1], r[2], r[3], r[4]);
+  }
+  // exec 有 UNIQUE (trade_date, code) 約束 → 用 DO NOTHING 而不是 UPSERT
+  const sql = `
+    INSERT INTO treasury_buyback_exec (code, name, trade_date, shares, price)
+    VALUES ${placeholders.join(",")}
+    ON CONFLICT (trade_date, code) DO NOTHING`;
+  try {
+    const r = await q(sql, params);
+    return json({ ok: true, source: "sample_seed", inserted: rows.length, db_inserted: r.rowCount ?? null });
+  } catch (e) {
+    return json({ ok: false, error: e?.message }, { status: 500 });
+  }
+}
+async function seedPrivatePlacement(request) {
+  await ensureTreasuryTables();
+  if (request.method !== "POST") return json({ error: "use POST" }, { status: 405 });
+  const body = await readJson(request);
+  const rows = Array.isArray(body?.rows) ? body.rows : [];
+  if (!rows.length) return json({ ok: false, error: "rows[] is empty" }, { status: 400 });
+  // row = [announce_date, code, name, amount, private_price, purpose]
+  const placeholders = [];
+  const params = [];
+  for (const r of rows) {
+    placeholders.push(`($${params.length + 1}::date, $${params.length + 2}::text, $${params.length + 3}::text, $${params.length + 4}::bigint, $${params.length + 5}::numeric, $${params.length + 6}::text)`);
+    params.push(r[0], r[1], r[2], r[3], r[4], r[5]);
+  }
+  const sql = `
+    INSERT INTO private_placement (announce_date, code, name, amount, private_price, purpose)
+    VALUES ${placeholders.join(",")}
+    ON CONFLICT (announce_date, code) DO UPDATE SET
+      name = EXCLUDED.name,
+      amount = EXCLUDED.amount,
+      private_price = EXCLUDED.private_price,
+      purpose = EXCLUDED.purpose,
+      fetched_at = now()`;
+  try {
+    await q(sql, params);
+    return json({ ok: true, source: "sample_seed", upserted: rows.length });
+  } catch (e) {
+    return json({ ok: false, error: e?.message }, { status: 500 });
+  }
+}
+
+// 2026-10-12: seedDividendCalendar — TWSE 開放資料從 Render 抓不到（Cloudflare block），
+// 給 /stock/exdiv 頁手動塞 sample upcoming 除權息事件。
+// row = [symbol, ex_date, pay_date, record_date, cash_dividend, stock_dividend, source?]
+async function seedDividendCalendar(request) {
+  await ensureDividendCalendarTable();
+  if (request.method !== "POST") return json({ error: "use POST" }, { status: 405 });
+  const body = await readJson(request);
+  const rows = Array.isArray(body?.rows) ? body.rows : [];
+  if (!rows.length) return json({ ok: false, error: "rows[] is empty" }, { status: 400 });
+  // 2026-10-12: 既有 dividend_calendar 表可能沒有 UNIQUE (symbol, ex_date) constraint，
+  // 用 ON CONFLICT 會丟 42P10。改用「逐筆 insert，捕獲 23505 unique_violation 當 skip」邏輯。
+  let inserted = 0, skipped = 0;
+  const errs = [];
+  for (const r of rows) {
+    const params = [r[0], r[1], r[2] || null, r[3] || null,
+                    r[4] != null ? Number(r[4]) : null,
+                    r[5] != null ? Number(r[5]) : null,
+                    r[6] || "sample_seed"];
+    const sql = `INSERT INTO dividend_calendar
+      (symbol, ex_date, pay_date, record_date, cash_dividend, stock_dividend, source)
+      VALUES ($1, $2::date, $3::date, $4::date, $5::numeric, $6::numeric, $7)`;
+    try {
+      await q(sql, params);
+      inserted++;
+    } catch (e) {
+      const msg = String(e?.message || "");
+      if (msg.includes("23505") || msg.includes("duplicate key")) {
+        skipped++;
+      } else {
+        errs.push(msg.slice(0, 120));
+      }
+    }
+  }
+  return json({ ok: true, source: "sample_seed", total: rows.length, inserted, skipped, errors: errs.slice(0, 3) });
+}
+
 // to a filter on the `exchange_name`/`market` column when present.
 async function rankingHandler(request) {
   const u = new URL(request.url);
@@ -8083,6 +10004,13 @@ const TABLE = [
   ["GET",  /^\/treasury\/buyback\/?$/,       buybackListHandler],
   ["GET",  /^\/treasury\/private\/?$/,       privatePlacementHandler],
   ["GET",  /^\/yahoo\/chart\/?$/,            yahooChartProxy],
+  // 2026-10-08：backtest engine (signal_history + market_price_bars → trades + Sharpe/MDD 等 11 項)
+  ["GET",  /^\/backtest\/strategies\/?$/,    backtestStrategiesHandler],
+  ["GET",  /^\/backtest\/?$/,                backtestRunHandler],
+  // 2026-10-08：line-push 頁面 stub（真正 broadcast 由 line-bot-api Render 服務處理）
+  ["GET",  /^\/line\/log\/?$/,               lineLogHandler],
+  ["GET",  /^\/line\/triggers\/?$/,          lineTriggersHandler],
+  ["POST", /^\/line\/triggers\/?$/,          lineTriggersHandler],
   ["GET",  /^\/ranking\/?$/,                 rankingHandler],
   ["GET",  /^\/stocks\/?$/,                  listStocks],
   ["GET",  /^\/stocks\/remove\/?$/,          stub.bind(null, "stocks_remove_list", { hint: "use DELETE/POST /api/stocks/remove/<code>" })],
@@ -8137,6 +10065,26 @@ const TABLE = [
   ["GET",  /^\/markers\/export\.csv\/?$/,    markersExport],
   ["GET",  /^\/markers\/([^/]+?)\/?$/,       markerById],
 
+  // 2026-10-06：Render cron 維護用（清掉 'x'/'test'/空 marker → 重跑 screener insert 今日真實訊號）
+  ["GET",  /^\/admin\/markers\/maintenance\/?$/, markersMaintenance],
+  ["POST", /^\/admin\/markers\/maintenance\/?$/, markersMaintenance],
+
+  // 2026-10-06：Render cron 盤中即時用（不 cleanup，只重跑 screener INSERT 今日新訊號；loadMarkers 內部用 ON CONFLICT DO NOTHING 不會爆衝）
+  ["GET",  /^\/admin\/markers\/intraday\/?$/, markersIntraday],
+  ["POST", /^\/admin\/markers\/intraday\/?$/, markersIntraday],
+
+  // 2026-10-06：backup / health check
+  ["GET",  /^\/admin\/markers\/backup\/?$/, markersBackup],
+  ["GET",  /^\/admin\/health\/tables\/?$/, healthTables],
+
+  // 2026-10-08：每日健康檢查 + 自動修復 log（Render cron daily_health_check.mjs 寫入）
+  //   - Vercel/Render catchall 都能讀
+  //   - 用於 dashboard 顯示「上次健康檢查 N/M pass」
+  //   - 30 天 retention（record handler 自動清）
+  ["POST", /^\/admin\/health\/record\/?$/,    healthCheckRecord],
+  ["GET",  /^\/admin\/health\/latest\/?$/,   healthCheckLatest],
+  ["GET",  /^\/admin\/health\/history\/?$/,  healthCheckHistory],
+
   ["GET",  /^\/strategy_signals\/?$/,        strategySignals],
   ["GET",  /^\/strategy_signals\/([^/]+?)\/?$/, strategySignals],
 
@@ -8172,6 +10120,7 @@ const TABLE = [
   ["GET",  /^\/etf_holdings\/pivot\/consensus\/?$/, etfPivotConsensus],
   ["GET",  /^\/etf_holdings\/pivot\/weight_matrix\/?$/, etfPivotWeightMatrix],
   ["GET",  /^\/etf_holdings\/pivot\/overlap\/?$/, etfPivotOverlap],
+  ["GET",  /^\/etf_holdings\/seeded\/?$/, etfHoldingsSeeded],
   ["GET",  /^\/etf_holdings\/pivot\/overlap_detail\/([^/]+?)\/([^/]+?)\/?$/, etfPivotOverlapDetail],
   ["GET",  /^\/etf_holdings\/pivot\/time_heatmap\/([^/]+?)\/?$/, etfPivotTimeHeatmap],
   ["GET",  /^\/etf_holdings\/pivot\/turnover\/?$/, etfPivotTurnover],
@@ -8236,6 +10185,8 @@ const TABLE = [
   ["POST", /^\/admin\/load\/etf_holdings\/?$/,  loadEtfHoldings],
   ["GET",  /^\/admin\/load\/macro_yields\/?$/,  loadMacroYields],
   ["POST", /^\/admin\/load\/macro_yields\/?$/,  loadMacroYields],
+  ["GET",  /^\/admin\/load\/macro_fred\/?$/,    loadMacroFred],
+  ["POST", /^\/admin\/load\/macro_fred\/?$/,    loadMacroFred],
   ["GET",  /^\/admin\/load\/macro_news\/?$/,    loadMacroNews],
   ["POST", /^\/admin\/load\/macro_news\/?$/,    loadMacroNews],
   ["GET",  /^\/admin\/load\/index_institutional\/?$/, loadIndexInstitutional],
@@ -8258,6 +10209,17 @@ const TABLE = [
   ["POST", /^\/admin\/load\/mops_private\/?$/,    loadMopsPrivate],
   ["GET",  /^\/admin\/load\/mops_buyback\/?$/,    loadMopsBuyback],
   ["POST", /^\/admin\/load\/mops_buyback\/?$/,    loadMopsBuyback],
+  // 2026-10-07：TWSE 開放資料庫藏股 / 私募（MOPS 從 Render 抓不穩時的備援）
+  ["GET",  /^\/admin\/load\/twse_buyback\/?$/,    loadTwseBuyback],
+  ["POST", /^\/admin\/load\/twse_buyback\/?$/,    loadTwseBuyback],
+  ["GET",  /^\/admin\/load\/twse_private\/?$/,    loadTwsePrivate],
+  ["POST", /^\/admin\/load\/twse_private\/?$/,    loadTwsePrivate],
+  // 2026-10-07：手動塞 sample 資料庫（MOPS/TWSE 都抓不到時的 fallback）
+  ["POST", /^\/admin\/seed\/treasury_buyback\/?$/,    seedTreasuryBuyback],
+  ["POST", /^\/admin\/seed\/treasury_buyback_exec\/?$/, seedTreasuryBuybackExec],
+  ["POST", /^\/admin\/seed\/private_placement\/?$/,     seedPrivatePlacement],
+  ["POST", /^\/admin\/seed\/dividend_calendar\/?$/,     seedDividendCalendar],
+  ["POST", /^\/admin\/dedupe\/dividend_calendar\/?$/,     dedupeDividendCalendar],
   // MOPS cron: chunked incremental load (Hobby 60s edge limit split into N cron ticks)
   ["GET",  /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
   ["POST", /^\/cron\/mops\/load\/?$/,            mopsCronHandler],
@@ -8279,12 +10241,18 @@ const TABLE = [
   ["GET",  /^\/exdiv\/upcoming\/?$/,         exdivUpcoming],
 
   // Real screener handlers (use etf_watchlist + market_price_bars)
+  // 2026-10-06 v25 marker：前端 refreshCache() 用 fetch(POST) 打 /refresh，
+  //   之前 signal_filter 已加 POST row，stock_damo_filter / etf_signal_filter 漏掉
+  //   → POST 直接 404 fall-through。補 POST row + handler 多回 ready/message
+  //   讓前端 _pollScanStatus 不用等 5 分鐘 timeout。
   ["GET",  /^\/etf_signal_filter\/?$/,       etfSignalFilter],
   ["GET",  /^\/etf_signal_filter\/status\/?$/, etfSignalFilterStatus],
   ["GET",  /^\/etf_signal_filter\/refresh\/?$/, etfSignalFilterRefresh],
+  ["POST", /^\/etf_signal_filter\/refresh\/?$/, etfSignalFilterRefresh],
   ["GET",  /^\/stock_damo_filter\/?$/,       stockDamoFilter],
   ["GET",  /^\/stock_damo_filter\/status\/?$/, stockDamoFilterStatus],
   ["GET",  /^\/stock_damo_filter\/refresh\/?$/, stockDamoFilterRefresh],
+  ["POST", /^\/stock_damo_filter\/refresh\/?$/, stockDamoFilterRefresh],
 
   // Real table-backed handlers (will return empty + message when table is empty)
   ["GET",  /^\/foreign_futures\/?$/,         foreignFutures],
