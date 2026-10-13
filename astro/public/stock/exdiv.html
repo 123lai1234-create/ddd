@@ -542,6 +542,7 @@
     <button class="btn-secondary" id="btn7" onclick="filterDays(7)">未來 7 天</button>
     <button class="btn-secondary" id="btn30" onclick="filterDays(30)">未來 30 天</button>
     <button class="btn-secondary active" id="btn90" onclick="filterDays(90)">未來 90 天</button>
+    <button class="btn-secondary" id="btn180" onclick="filterDays(180)">未來 180 天</button>
     <div class="search-box" style="margin-left:auto">
       <input type="text" id="searchInput" placeholder="🔍 搜尋股票名稱或代碼..." 
              oninput="filterTable()">
@@ -856,7 +857,7 @@ function renderStats() {
 function filterDays(days) {
   currentDays = days;
 
-  ['btn7', 'btn30', 'btn90'].forEach(id => {
+  ['btn7', 'btn30', 'btn90', 'btn180'].forEach(id => {
     document.getElementById(id).classList.remove('active');
   });
   document.getElementById('btn' + days).classList.add('active');
