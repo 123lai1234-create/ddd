@@ -122,22 +122,7 @@ const worksData = [
     links: [{ text: '作品影片', href: 'https://www.youtube.com/watch?v=EvhITMTTl48' }],
     score: '互動開發基礎',
   },
-  {
-    id: 9,
-    categories: ['interface'],
-    kicker: 'Browser Game · Canvas 2D',
-    title: '仙俠傳 · 回合制 RPG',
-    desc: '純瀏覽器、零依賴的回合制 RPG，仙劍奇俠傳風格。三位角色、三張地圖、完整戰鬥 AI、裝備技能系統，全以 Canvas 2D API 手繪實作。',
-    meta: [
-      { k: '技術', v: 'Canvas 2D · Vanilla JS' },
-      { k: '特色', v: '回合制 AI · 存檔系統' },
-      { k: '類型', v: '完整遊戲實作' },
-    ],
-    tags: ['JavaScript', 'Canvas', 'RPG', 'Game Design'],
-    links: [{ text: '立即遊玩', href: '/games/xian/' }],
-    score: '完整遊戲',
-  },
-];
+  ];
 
 const filters = [
   { id: 'all', label: '全部' },
