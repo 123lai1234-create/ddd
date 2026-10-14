@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 
 /**
  * 不說樂園 — App 入口網站
- * 8 個遊樂設施，每個對應一個 app
+ * 7 個遊樂設施，每個對應一個 app
  */
 const rides = [
     {
@@ -69,18 +69,9 @@ const rides = [
         softColor: '#7fb069',
         sub: '定序 · QC · 圖表',
     },
-    {
-        id: 'game',
-        name: '互動遊戲攤',
-        tag: 'Interactive',
-        url: '/interactive-showcase',
-        color: '#c89b3c',
-        softColor: '#f9c74f',
-        sub: '展示 · 試玩',
-    },
 ];
 
-// Daily pick: 一年中的第幾天 % 8 = 今日推薦
+// Daily pick: 一年中的第幾天 % rides.length = 今日推薦
 const now = new Date();
 const yearStart = new Date(now.getFullYear(), 0, 0);
 const dayOfYear = Math.floor((now.getTime() - yearStart.getTime()) / 86400000);
@@ -89,7 +80,7 @@ const pickIndex = dayOfYear % rides.length;
 
 <Base
     title="不說樂園 — App 入口"
-    description="不說的 8 個 app 入口：股票、音樂、部落格、Protein AI、Gene AI、NGS、面試準備、互動展示一站直達。"
+    description="不說的 7 個 app 入口：股票、音樂、部落格、Protein AI、Gene AI、NGS、面試準備一站直達。"
     ogTag="App Portal"
     bodyPage="index"
     schemaType="WebPage"
@@ -330,24 +321,6 @@ const pickIndex = dayOfYear % rides.length;
                                     <rect x="78" y="100" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" />
                                     <line x1="85" y1="100" x2="85" y2="114" stroke="currentColor" stroke-width="1" />
                                     <line x1="78" y1="107" x2="92" y2="107" stroke="currentColor" stroke-width="1" />
-                                </svg>
-                            )}
-                            {ride.id === 'game' && (
-                                <svg viewBox="0 0 120 140" class="ride-svg">
-                                    <line x1="10" y1="135" x2="110" y2="135" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-                                    <path d="M 25 60 L 95 60 L 95 130 L 25 130 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.6" />
-                                    <path d="M 25 60 Q 60 35 95 60" fill={ride.color} stroke="currentColor" stroke-width="1.6" />
-                                    <line x1="30" y1="40" x2="30" y2="60" stroke="currentColor" stroke-width="1" />
-                                    <line x1="90" y1="40" x2="90" y2="60" stroke="currentColor" stroke-width="1" />
-                                    <line x1="30" y1="40" x2="90" y2="40" stroke="currentColor" stroke-width="1" />
-                                    <g class="prize-hang">
-                                        <circle cx="42" cy="80" r="5" fill={ride.color} stroke="currentColor" stroke-width="1" />
-                                        <circle cx="58" cy="80" r="5" fill="#e07a5f" stroke="currentColor" stroke-width="1" />
-                                        <circle cx="74" cy="80" r="5" fill="#8b6f9c" stroke="currentColor" stroke-width="1" />
-                                    </g>
-                                    <rect x="40" y="100" width="40" height="6" fill="currentColor" />
-                                    <circle cx="60" cy="120" r="4" fill="none" stroke="currentColor" stroke-width="1.2" />
-                                    <line x1="60" y1="106" x2="60" y2="116" stroke="currentColor" stroke-width="1" />
                                 </svg>
                             )}
                         </div>
@@ -746,11 +719,10 @@ const pickIndex = dayOfYear % rides.length;
 .ride-tower    { transform: rotate(0.1deg); }
 .ride-castle   { transform: rotate(-0.2deg); }
 .ride-lab      { transform: rotate(0.3deg); }
-.ride-game     { transform: rotate(-0.1deg); }
 
 .ride-ferris:hover, .ride-balloon:hover, .ride-carousel:hover,
 .ride-coaster:hover, .ride-tower:hover, .ride-castle:hover,
-.ride-lab:hover, .ride-game:hover {
+.ride-lab:hover {
     transform: translate(-2px, -3px) rotate(-0.6deg);
 }
 

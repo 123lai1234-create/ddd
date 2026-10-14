@@ -8,8 +8,7 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/stem-cell', label: '🧫 幹細胞' },
         { href: '/protein-mpnn', label: 'ProteinMPNN' },
         { href: '/music', label: '🎵 音樂' },
-        { href: '/3d-mascot', label: '🧊 3D 模型', classes: 'nav-cta' },
-        { href: '/interactive-showcase', label: '⚡ Tech Lab' }
+        { href: '/3d-mascot', label: '🧊 3D 模型', classes: 'nav-cta' }
     ];
 
     var STD_DRAWER = [
@@ -21,7 +20,6 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/report', label: '專案報告' },
         { href: '/protein-mpnn', label: 'ProteinMPNN' },
         { href: '/music', label: '🎵 音樂播放' },
-        { href: '/interactive-showcase', label: '⚡ 互動技術展示館' },
         { href: '/firmware', label: '🔌 韌體 MCU' },
         { href: '/interview-prep', label: '面試準備' },
         { href: '/stem-cell', label: '🧫 幹細胞研究' },
@@ -40,7 +38,6 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/firmware', label: '韌體' },
         { href: '/stem-cell', label: '幹細胞研究' },
         { href: '/3d-mascot', label: '🧊 3D mascot 模型' },
-        { href: '/interactive-showcase', label: '⚡ Tech Lab' },
         { href: 'https://jtlai0921.wixsite.com/mysite', label: '個人網站', target: '_blank', rel: 'noreferrer' }
     ];
 
@@ -145,13 +142,6 @@ window.SITE_SHELL_CONFIG = (function () {
             navLinks: STD_NAV,
             drawerLinks: STD_DRAWER,
             footer: stdFooter('資料擷取平台', '自動化資料同步 · API 整合 · 2026')
-        },
-        interactive_showcase: {
-            brandHref: '/',
-            brandHtml: '<span class="nav-dot"></span>⚡ Tech Lab',
-            navLinks: STD_NAV,
-            drawerLinks: STD_DRAWER,
-            footer: stdFooter('互動技術展示館', 'Three.js · Canvas · Web Animations API · A-Frame VR · WebAssembly · PWA · 2026')
         },
         music: {
             brandHref: '/',
