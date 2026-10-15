@@ -101,7 +101,59 @@ const personSchema = {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script is:inline>document.documentElement.classList.add('js-reveal');</script>
+    <script is:inline>
+      document.documentElement.classList.add('js-reveal');
+      try { if (!document.referrer || document.referrer.indexOf(location.host) === -1) { window.scrollTo(0, 0); } } catch(_) { window.scrollTo(0, 0); }
+      /*  Fix: JS injects inline opacity:0 transform on .sc-section, override reveal CSS. Clear inline styles + watch for re-injection.  */
+      setTimeout(function() {
+        var props = ['opacity','transform','translate','rotate','scale'];
+        function clearInline(el) { props.forEach(function(p) { el.style.removeProperty(p); }); }
+        document.querySelectorAll('.sc-section.reveal.visible').forEach(clearInline);
+        var obs = new MutationObserver(function(muts) {
+          muts.forEach(function(m) {
+            if (m.type === 'attributes' && m.target.classList && m.target.classList.contains('visible') && m.target.classList.contains('sc-section')) { clearInline(m.target); }
+          });
+        });
+        document.querySelectorAll('.sc-section').forEach(function(el) { obs.observe(el, {attributes:true}); });
+        setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 800);
+      }, 200);
+      // Chart guard with real data
+      function tryBuildCharts() {
+        if (typeof Chart === 'undefined') { setTimeout(tryBuildCharts, 100); return; }
+        setTimeout(function() {
+          Chart.defaults.color = '#94a59f';
+          Chart.defaults.font.family = "'Inter', sans-serif";
+          var gc = 'rgba(151,190,181,0.08)';
+          function build(id, cfg) { var c = document.getElementById(id); if (c && !Chart.getChart(c) && c.offsetParent) { try { new Chart(c, cfg); } catch(e){} } }
+          build('chartLesion', { type: 'line', data: { labels: ['Day 7','Day 14','Day 21','Day 28'], datasets: [
+            { label: 'Co', data: [38.026,20.238,10.957,6.868], borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.12)', pointBackgroundColor: '#7bf0be', tension: .3, fill: true, borderWidth: 2, pointRadius: 5 },
+            { label: 'TBI', data: [30.472,26.654,16.534,10.681], borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.08)', pointBackgroundColor: '#ff8392', tension: .3, fill: true, borderWidth: 2, pointRadius: 5, borderDash: [5,4] }
+          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { grid: { color: gc }, ticks: { color: '#5a716b' } } } } });
+          build('chartAngio', { type: 'line', data: { labels: ['Day 1','Day 3','Day 5','Day 7'], datasets: [
+            { label: '50k', data: [250,400,900,2500], borderColor: '#7bf0be', pointBackgroundColor: '#7bf0be', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 },
+            { label: '100k', data: [300,600,1200,3200], borderColor: '#58d7ff', pointBackgroundColor: '#58d7ff', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 },
+            { label: '250k', data: [400,800,1800,5500], borderColor: '#ffbc72', pointBackgroundColor: '#ffbc72', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 }
+          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { grid: { color: gc }, ticks: { color: '#5a716b' } } } } });
+          build('chartDiff', { type: 'bar', data: { labels: ['A','B','C','D','E'], datasets: [
+            { label: 'NeuN+', data: [22,34,18,41,28], backgroundColor: 'rgba(88,215,255,.75)' },
+            { label: 'GFAP+', data: [35,28,42,22,38], backgroundColor: 'rgba(181,156,255,.75)' },
+            { label: 'Olig2+', data: [18,22,15,20,14], backgroundColor: 'rgba(255,188,114,.75)' },
+            { label: 'Undiff', data: [25,16,25,17,20], backgroundColor: 'rgba(107,115,153,.5)' }
+          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { stacked: true, grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { stacked: true, grid: { color: gc }, ticks: { color: '#5a716b' }, max: 100 } } } });
+          build('chartSurvival', { type: 'line', data: { labels: ['1hr','6hr','D1','D3','D7','D14'], datasets: [
+            { label: 'Cell Sheet', data: [96,91,84,76,68,61], borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.12)', pointBackgroundColor: '#7bf0be', tension: .3, fill: true, borderWidth: 2 },
+            { label: 'Inj', data: [82,64,48,35,26,19], borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.08)', pointBackgroundColor: '#ff8392', tension: .3, fill: true, borderWidth: 2, borderDash: [5,4] }
+          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { grid: { color: gc }, ticks: { color: '#5a716b' }, min: 0, max: 100 } } } });
+          build('chartBehav', { type: 'line', data: { labels: ['W1','W2','W3','W4','W6','W8'], datasets: [
+            { label: 'Cell Sheet', data: [58,48,37,28,21,16], borderColor: '#7bf0be', pointBackgroundColor: '#7bf0be', tension: .35, fill: false, borderWidth: 2 },
+            { label: 'MSC', data: [60,52,43,35,29,24], borderColor: '#58d7ff', pointBackgroundColor: '#58d7ff', tension: .35, fill: false, borderWidth: 2 },
+            { label: 'Sham', data: [18,14,12,11,10,10], borderColor: '#b59cff', pointBackgroundColor: '#b59cff', tension: .35, fill: false, borderWidth: 1.5, borderDash: [3,3] },
+            { label: 'TBI', data: [62,58,55,52,50,48], borderColor: '#6b7399', pointBackgroundColor: '#6b7399', tension: .35, fill: false, borderWidth: 1.5, borderDash: [5,4] }
+          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { reverse: true, min: 8, max: 70, grid: { color: gc }, ticks: { color: '#5a716b' } } } } });
+        }, 1500);
+      }
+      tryBuildCharts();
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta property="og:title" content={title} />
