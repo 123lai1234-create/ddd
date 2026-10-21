@@ -68,8 +68,12 @@
       // 用純 <script> 載入,瀏覽器不在乎來源網域
 
       script.onload = () => {
-        cleanup();
+        // 順序很重要:先讀 window.Data_Array_48hr 再 cleanup()。
+        // cleanup() 會清掉這個全域變數,而 var 宣告的全域屬性是
+        // non-configurable,delete 在 strict mode 會 throw、被 catch
+        // 設成 undefined —— 先讀才拿得到資料。
         const raw = window.Data_Array_48hr;
+        cleanup();
         if (raw && typeof raw === 'object') {
           resolve({ ok: true, data: normalize(raw, stationId), source: url });
         } else {
