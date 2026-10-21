@@ -1,228 +1,103 @@
 ---
 import Base from '../layouts/Base.astro';
-const headInline = `
-<!-- Google <model-viewer> web component for glTF/GLB viewing -->
-<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
-<style>
-  .mascot-3d-page {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 24px 20px 80px;
-    color: #d8e4f0;
-    font-family: system-ui, -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif;
-  }
-  .mascot-3d-page h1 {
-    font-size: 1.9rem;
-    margin: 0 0 6px;
-    background: linear-gradient(120deg, #58d7ff 0%, #a8ff9e 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .mascot-3d-page .subtitle {
-    color: #8aa3bd;
-    margin: 0 0 18px;
-    font-size: 0.95rem;
-  }
-  .mascot-3d-stage {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    max-height: 520px;
-    background: radial-gradient(ellipse at center, #1c2738 0%, #0a1019 80%);
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(88, 215, 255, 0.18);
-    margin-bottom: 18px;
-  }
-  .mascot-3d-stage model-viewer {
-    width: 100%;
-    height: 100%;
-    --poster-color: transparent;
-  }
-  .mascot-3d-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin: 14px 0 24px;
-  }
-  .mascot-3d-btn {
-    background: rgba(88, 215, 255, 0.12);
-    color: #c6e7ff;
-    border: 1px solid rgba(88, 215, 255, 0.35);
-    padding: 7px 14px;
-    border-radius: 8px;
-    font-size: 0.88rem;
-    cursor: pointer;
-    transition: background 0.18s, transform 0.18s;
-  }
-  .mascot-3d-btn:hover {
-    background: rgba(88, 215, 255, 0.25);
-    transform: translateY(-1px);
-  }
-  .mascot-3d-btn.active {
-    background: rgba(88, 215, 255, 0.35);
-    color: #fff;
-  }
-  .mascot-3d-hint {
-    font-size: 0.82rem;
-    color: #6a82a0;
-    margin: 6px 0 0;
-  }
-  .mascot-3d-info {
-    margin-top: 32px;
-    padding: 16px 18px;
-    background: rgba(255, 255, 255, 0.04);
-    border-left: 3px solid #58d7ff;
-    border-radius: 6px;
-    line-height: 1.7;
-  }
-  .mascot-3d-info h3 {
-    margin: 0 0 8px;
-    color: #a8ff9e;
-    font-size: 1.05rem;
-  }
-  .mascot-3d-info code {
-    background: rgba(0, 0, 0, 0.35);
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-size: 0.85em;
-    color: #ffd394;
-  }
-  .mascot-3d-loading {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #6a82a0;
-    font-size: 0.95rem;
-    pointer-events: none;
-  }
-  .mascot-3d-loading.hide { display: none; }
-</style>
-`;
 ---
+
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<style is:inline>
+    model-viewer { display: block; width: 100%; height: 100%; --poster-color: transparent; background: linear-gradient(180deg, #d8dde2 0%, #b8bcc2 100%); }
+</style>
+
 <Base
-    title="3D Mascot | 元嬰不說 360° 互動模型"
-    description="元嬰不說 chibi mascot 的真實 3D 模型 — Three.js 程序化生成的 GLB（~270 KB），可旋轉、縮放、互動。"
+    title="3D Mascot | 元嬰不說 真 3D 互動模型"
+    description="元嬰不說 chibi mascot — Blender 4.5 LTS 從頭建模的真 3D 模型，可用滑鼠旋轉縮放。"
     bodyPage="index"
     pageStyles={["/styles/index.css"]}
     pageScripts={["/scripts/app-config.js"]}
-    headInline={headInline}
+    headInline=""
 >
     <div class="mascot-3d-page">
-        <h1>🧒 元嬰不說 · 真 3D 模型</h1>
+        <h1>🧒 元嬰不說 · Blender 原生建模</h1>
         <p class="subtitle">
-            chibi mascot 的程序化 3D 模型 — 由 Three.js primitives（sphere 頭 + capsule 四肢）組成，可拖曳旋轉、滾輪縮放、auto-rotate。
+            黑尖刺頭髮、3 頭身 chibi 男孩。滑鼠拖曳可以旋轉、滾輪縮放（<model-viewer /> 提供）。
         </p>
 
         <div class="mascot-3d-stage" id="stage">
-            <div class="mascot-3d-loading" id="loading">模型載入中…</div>
-            <!--
-                model-viewer 設定：
-                  - src         GLB 路徑
-                  - camera-controls  啟用軌道控制（拖曳旋轉 / 縮放）
-                  - auto-rotate     自動旋轉展示
-                  - shadow-intensity, environment-intensity  光照
-                  - alt            alt 文字
-            -->
             <model-viewer
-                id="mascot"
+                id="chibiViewer"
                 src="/models/mascot-3d.glb"
-                alt="元嬰不說 chibi mascot 3D 模型"
-                camera-controls
+                alt="元嬰不說 chibi mascot 真 3D 模型"
+                camera-orbit="38deg 78deg 4.6m"
+                camera-target="0m 1m 0m"
+                field-of-view="28deg"
+                shadow-intensity="0.55"
+                shadow-softness="0.8"
+                exposure="1.0"
                 auto-rotate
-                auto-rotate-delay="2000"
-                rotation-per-second="18deg"
-                shadow-intensity="1.1"
-                environment-intensity="1.2"
-                exposure="1.05"
-                camera-orbit="45deg 75deg 4m"
-                min-camera-orbit="auto auto 2.5m"
-                max-camera-orbit="auto auto 8m"
-                interaction-prompt="none"
-            ></model-viewer>
+                auto-rotate-delay="1400"
+                rotation-per-second="9deg"
+                interaction-prompt="auto"
+                interaction-prompt-style="wiggle"
+                touch-action="pan-y"
+                ar-modes="none"
+                style="width: 100%; height: 100%;"
+            >
+                <div slot="progress-bar" class="mascot-3d-progress"></div>
+            </model-viewer>
+            <div class="mascot-3d-floor"></div>
         </div>
 
-        <div class="mascot-3d-controls">
-            <button class="mascot-3d-btn" data-orbit="front">正面</button>
-            <button class="mascot-3d-btn" data-orbit="side">側面</button>
-            <button class="mascot-3d-btn" data-orbit="back">背面</button>
-            <button class="mascot-3d-btn" data-orbit="top">頭頂</button>
-            <button class="mascot-3d-btn" id="btn-rotate">⏸ 暫停旋轉</button>
-            <button class="mascot-3d-btn" id="btn-reset">↻ 重置視角</button>
+        <div class="stats-row">
+            <div><div class="num">74</div><div class="lbl">mesh 部件</div></div>
+            <div><div class="num">40 386</div><div class="lbl">三角面</div></div>
+            <div><div class="num">1.0 MB</div><div class="lbl">GLB 大小</div></div>
+            <div><div class="num">4.5.14</div><div class="lbl">Blender LTS</div></div>
         </div>
 
         <p class="mascot-3d-hint">
-            💡 滑鼠拖曳旋轉、滾輪縮放、按住右鍵平移。
+            💡 全部都是 <b>用 Blender Python 腳本</b>（<code>D:\project\blender\chibi_build.py</code>）從頭建模匯出，
+            <code>headless blender --background --python chibi_build.py</code> 不開 GUI 也能跑。
+            拖曳 = 旋轉，滾輪 = 縮放，閒置會慢轉 360° 展示。
         </p>
 
         <div class="mascot-3d-info">
-            <h3>關於這個 3D 模型</h3>
+            <h3>為什麼從 Meshy AI 換成 Blender 自建？</h3>
             <p>
-                由 Three.js primitives 組成 — sphere（頭 + 眼睛 + 鞋子）、hemisphere（頭髮）、
-                capsule（四肢 + 帽子）、cylinder（身體）。色彩參考 2D chibi 插畫
-                （黑髮、淺膚、藍襯衫、深褲、棕鞋）。整套場景用一個 ambient light +
-                一個 key directional light + 一個 fill light 照亮。
+                舊版是 <b>Meshy AI</b> 生 31 MB mesh（<code>mascot-3d-full.glb</code>，719k 面，CC-BY-4.0），
+                拓樸跟 reference 差距大：
             </p>
+            <ul style="line-height: 1.8; padding-left: 1.5em;">
+                <li>頭髮做不出 reference 的尖刺輪廓</li>
+                <li>眼睛只是黑方塊，缺眼白+瞳孔+高光三層</li>
+                <li>沒有頰紅、沒有 plaid 腰結、沒有手</li>
+                <li>臉部比例與身體結構無法微調</li>
+            </ul>
             <p>
-                模型從 <code>astro/scripts/export-mascot-glb.mjs</code> 用 Three.js 的
-                <code>GLTFExporter</code> 在 Node.js 端組裝並輸出
-                <code>/public/models/mascot-3d.glb</code>（~270 KB）。
-                chatbot 浮動按鈕的 3D 人偶直接由 <code>/scripts/chibi-3d.js</code>
-                渲染，與這個 GLB 視覺一致。
+                改用 <b>Blender 4.5 LTS 原生建模</b>：用 <code>bpy</code> 寫腳本組裝 <code>UV sphere</code> 頭、
+                <code>profile_tube</code> 身體、<code>stretched icosphere</code> 頭髮鎖，
+                全部對齊 reference 像素量測比例（2.2 頭身、眼睛 Z=1.19、衣著配色採樣自 <code>chibi-hero.png</code>）。
             </p>
-            <p style="font-size: 0.85em; opacity: 0.75;">
-                （前一版 GLB 是 2026-08 multi-view reconstruction 出來的 mc320 mesh，
-                表面太過粗糙像石頭 — 2026-10-13 改用 procedural 生成，約縮小 24×。）
+            <p style="font-size: 0.85em; opacity: 0.78;">
+                腳本原始檔：<code>D:\project\blender\chibi_build.py</code>。<br />
+                預覽圖：<code>out/preview_front.png</code>、<code>out/preview_three_quarter.png</code>、
+                <code>out/preview_side.png</code>、<code>out/preview_back.png</code>。<br />
+                同一份 <code>mascot-3d.glb</code> 也用在 chatbot 浮動按鈕（之後可換上）。
             </p>
         </div>
     </div>
 
     <script is:inline>
     (function () {
-        const mv = document.getElementById('mascot');
-        const loading = document.getElementById('loading');
-        const btnReset = document.getElementById('btn-reset');
-        const btnRotate = document.getElementById('btn-rotate');
-        const btnOrbits = document.querySelectorAll('[data-orbit]');
-        if (!mv) return;
-
-        const DEFAULT_ORBIT = '45deg 75deg 4m';
-
-        mv.addEventListener('load', () => loading?.classList.add('hide'));
-        mv.addEventListener('error', () => {
-            if (loading) loading.textContent = '❌ 模型載入失敗，請檢查 /models/mascot-3d.glb';
+        const viewer = document.getElementById('chibiViewer');
+        if (!viewer) return;
+        // gentle 360 walk-around when the model first appears
+        viewer.addEventListener('load', () => {
+            viewer.autoRotate = true;
         });
-
-        btnOrbits.forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const k = btn.dataset.orbit;
-                const map = {
-                    front: '0deg 75deg 4m',
-                    side:  '90deg 75deg 4m',
-                    back:  '180deg 75deg 4m',
-                    top:   '0deg 0deg 3m',
-                };
-                mv.cameraOrbit = map[k];
-                mv.cameraTarget = '0m 0.5m 0m';
-                btnOrbits.forEach((b) => b.classList.remove('active'));
-                btn.classList.add('active');
+        // pause auto-rotate while user interacts
+        ['pointerdown', 'wheel'].forEach((ev) => {
+            viewer.addEventListener(ev, () => {
+                viewer.autoRotate = false;
             });
-        });
-
-        btnReset?.addEventListener('click', () => {
-            mv.cameraOrbit = DEFAULT_ORBIT;
-            mv.cameraTarget = '0m 0m 0m';
-            btnOrbits.forEach((b) => b.classList.remove('active'));
-        });
-
-        let rotating = true;
-        btnRotate?.addEventListener('click', () => {
-            rotating = !rotating;
-            mv.autoRotate = rotating;
-            btnRotate.textContent = rotating ? '⏸ 暫停旋轉' : '▶ 開始旋轉';
         });
     })();
     </script>

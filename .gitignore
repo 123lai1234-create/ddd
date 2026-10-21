@@ -44,3 +44,5 @@ astro/scripts/_*.py
 astro/scripts/_*.log
 .find-schema.ps1
 .render-logs.ps1
+blender/__pycache__/
+blender/out/*.blend1
