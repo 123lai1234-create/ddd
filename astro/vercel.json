@@ -1,7 +1,8 @@
 {
     "$schema":  "https://openapi.vercel.sh/vercel.json",
     "installCommand":  "node scripts/fetch_lfs.mjs \u0026\u0026 npm install --prefer-offline --no-audit",
-    "buildCommand":  "npx --no-install astro build \u0026\u0026 cp -r public/music dist/music/ 2\u003e/dev/null || true",
+    "_comment_build":  "2026-10-22: 本檔只在 Vercel 專案 rootDirectory=astro 時才會被讀取;目前 rootDirectory=null,實際生效的是 repo 根那份 vercel.json。原本 buildCommand 是空字串,一旦被讀到就等於不跑 build、output 為空、全站 404。改成真的 build 命令,兩種 rootDirectory 都能用。",
+    "buildCommand":  "npm run build",
     "outputDirectory":  "dist",
     "cleanUrls":  true,
     "trailingSlash":  false,
