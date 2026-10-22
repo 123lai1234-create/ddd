@@ -132,7 +132,14 @@ test_results.json
 test_run.log
 trigger.txt
 /tsconfig.json
-/vercel.json
+# ★ 2026-10-22 修正：根目錄 vercel.json 必須上傳，不能排除。
+#   它是帶 installCommand(vercel-install.mjs) / buildCommand(vercel-build.mjs)
+#   / outputDirectory(astro/dist) 的唯一來源。排除掉之後 Vercel 收不到設定 →
+#   退回 Dashboard 預設(buildCommand=null) → 不跑 astro build → astro/dist
+#   不存在 → git push auto-deploy 全站 404（就是「state=READY 但 URL 全 404」
+#   的真正原因，不是 framework 設錯、也不是 dist 沒 commit）。
+#   專案 rootDirectory = null（repo 根），所以用的是根目錄這份，不是 astro/vercel.json。
+#/vercel.json
 verify-*.cjs
 verify_*.py
 works_screenshot.png
