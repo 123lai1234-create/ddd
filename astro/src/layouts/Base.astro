@@ -6,6 +6,14 @@ import Chatbot from '../components/Chatbot.astro';
 
 const SITE = 'https://donttalk.vercel.app';
 
+// Build-time cache buster for pageScripts. Astro 6 exposes BUILD_TIMESTAMP;
+// fallback to Date.now() still changes on every build, which is all we need.
+// Astro 定義 `BUILD_TIMESTAMP` 在 `astro:env` / import.meta.env 都拿得到，
+// 這裡用 typeof 防呆避免舊版 Astro 報 undefined。
+const BUILD_STAMP: string = import.meta.env.BUILD_TIMESTAMP
+    ? String(import.meta.env.BUILD_TIMESTAMP)
+    : String(Date.now());
+
 interface Props {
     title: string;
     description?: string;
@@ -128,28 +136,75 @@ const personSchema = {
           build('chartLesion', { type: 'line', data: { labels: ['Day 7','Day 14','Day 21','Day 28'], datasets: [
             { label: 'Co', data: [38.026,20.238,10.957,6.868], borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.12)', pointBackgroundColor: '#7bf0be', tension: .3, fill: true, borderWidth: 2, pointRadius: 5 },
             { label: 'TBI', data: [30.472,26.654,16.534,10.681], borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.08)', pointBackgroundColor: '#ff8392', tension: .3, fill: true, borderWidth: 2, pointRadius: 5, borderDash: [5,4] }
-          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { grid: { color: gc }, ticks: { color: '#5a716b' } } } } });
+          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: true, position: 'top', labels: { color: '#94a59f', font: { size: 11 }, usePointStyle: true, padding: 12, boxWidth: 8 } }, tooltip: { backgroundColor: 'rgba(15,24,33,0.95)', titleColor: '#7bf0be', bodyColor: '#e9f0ec', borderColor: 'rgba(123,240,190,0.3)', borderWidth: 1, padding: 10, cornerRadius: 6, displayColors: true } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { grid: { color: gc }, ticks: { color: '#5a716b' } } } } });
           build('chartAngio', { type: 'line', data: { labels: ['Day 1','Day 3','Day 5','Day 7'], datasets: [
             { label: '50k', data: [250,400,900,2500], borderColor: '#7bf0be', pointBackgroundColor: '#7bf0be', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 },
             { label: '100k', data: [300,600,1200,3200], borderColor: '#58d7ff', pointBackgroundColor: '#58d7ff', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 },
             { label: '250k', data: [400,800,1800,5500], borderColor: '#ffbc72', pointBackgroundColor: '#ffbc72', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 }
-          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { grid: { color: gc }, ticks: { color: '#5a716b' } } } } });
+          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: true, position: 'top', labels: { color: '#94a59f', font: { size: 11 }, usePointStyle: true, padding: 12, boxWidth: 8 } }, tooltip: { backgroundColor: 'rgba(15,24,33,0.95)', titleColor: '#7bf0be', bodyColor: '#e9f0ec', borderColor: 'rgba(123,240,190,0.3)', borderWidth: 1, padding: 10, cornerRadius: 6, displayColors: true } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { grid: { color: gc }, ticks: { color: '#5a716b' } } } } });
           build('chartDiff', { type: 'bar', data: { labels: ['A','B','C','D','E'], datasets: [
             { label: 'NeuN+', data: [22,34,18,41,28], backgroundColor: 'rgba(88,215,255,.75)' },
             { label: 'GFAP+', data: [35,28,42,22,38], backgroundColor: 'rgba(181,156,255,.75)' },
             { label: 'Olig2+', data: [18,22,15,20,14], backgroundColor: 'rgba(255,188,114,.75)' },
             { label: 'Undiff', data: [25,16,25,17,20], backgroundColor: 'rgba(107,115,153,.5)' }
-          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { stacked: true, grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { stacked: true, grid: { color: gc }, ticks: { color: '#5a716b' }, max: 100 } } } });
+          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: true, position: 'top', labels: { color: '#94a59f', font: { size: 11 }, usePointStyle: true, padding: 12, boxWidth: 8 } }, tooltip: { backgroundColor: 'rgba(15,24,33,0.95)', titleColor: '#7bf0be', bodyColor: '#e9f0ec', borderColor: 'rgba(123,240,190,0.3)', borderWidth: 1, padding: 10, cornerRadius: 6, displayColors: true } }, scales: { x: { stacked: true, grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { stacked: true, grid: { color: gc }, ticks: { color: '#5a716b' }, max: 100 } } } });
           build('chartSurvival', { type: 'line', data: { labels: ['1hr','6hr','D1','D3','D7','D14'], datasets: [
             { label: 'Cell Sheet', data: [96,91,84,76,68,61], borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.12)', pointBackgroundColor: '#7bf0be', tension: .3, fill: true, borderWidth: 2 },
             { label: 'Inj', data: [82,64,48,35,26,19], borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.08)', pointBackgroundColor: '#ff8392', tension: .3, fill: true, borderWidth: 2, borderDash: [5,4] }
-          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { grid: { color: gc }, ticks: { color: '#5a716b' }, min: 0, max: 100 } } } });
+          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: true, position: 'top', labels: { color: '#94a59f', font: { size: 11 }, usePointStyle: true, padding: 12, boxWidth: 8 } }, tooltip: { backgroundColor: 'rgba(15,24,33,0.95)', titleColor: '#7bf0be', bodyColor: '#e9f0ec', borderColor: 'rgba(123,240,190,0.3)', borderWidth: 1, padding: 10, cornerRadius: 6, displayColors: true } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { grid: { color: gc }, ticks: { color: '#5a716b' }, min: 0, max: 100 } } } });
           build('chartBehav', { type: 'line', data: { labels: ['W1','W2','W3','W4','W6','W8'], datasets: [
             { label: 'Cell Sheet', data: [58,48,37,28,21,16], borderColor: '#7bf0be', pointBackgroundColor: '#7bf0be', tension: .35, fill: false, borderWidth: 2 },
             { label: 'MSC', data: [60,52,43,35,29,24], borderColor: '#58d7ff', pointBackgroundColor: '#58d7ff', tension: .35, fill: false, borderWidth: 2 },
             { label: 'Sham', data: [18,14,12,11,10,10], borderColor: '#b59cff', pointBackgroundColor: '#b59cff', tension: .35, fill: false, borderWidth: 1.5, borderDash: [3,3] },
             { label: 'TBI', data: [62,58,55,52,50,48], borderColor: '#6b7399', pointBackgroundColor: '#6b7399', tension: .35, fill: false, borderWidth: 1.5, borderDash: [5,4] }
-          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { reverse: true, min: 8, max: 70, grid: { color: gc }, ticks: { color: '#5a716b' } } } } });
+          ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: true, position: 'top', labels: { color: '#94a59f', font: { size: 11 }, usePointStyle: true, padding: 12, boxWidth: 8 } }, tooltip: { backgroundColor: 'rgba(15,24,33,0.95)', titleColor: '#7bf0be', bodyColor: '#e9f0ec', borderColor: 'rgba(123,240,190,0.3)', borderWidth: 1, padding: 10, cornerRadius: 6, displayColors: true } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { reverse: true, min: 8, max: 70, grid: { color: gc }, ticks: { color: '#5a716b' } } } } });
+          // Wire up chart tab/button click handlers
+          function wireLesion() {
+            var data = { volume: { co: [38.026,20.238,10.957,6.868], tbi: [30.472,26.654,16.534,10.681], unit: 'mm3' }, area: { co: [6.5,3.469,1.67,2.29], tbi: [6.92,5.487,3.67,2.65], unit: 'mm2' }, depth: { co: [1.574,0.951,0.670,1.230], tbi: [2.114,1.358,1.248,1.290], unit: 'mm' }, width: { co: [4.496,4.332,3.988,2.520], tbi: [3.834,4.479,3.677,2.940], unit: 'mm' } };
+            var labels = ['Day 7','Day 14','Day 21','Day 28'];
+            document.querySelectorAll('.sc-mtbtn[data-metric]').forEach(function(btn) {
+              btn.addEventListener('click', function() {
+                document.querySelectorAll('.sc-mtbtn[data-metric]').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                var c = document.getElementById('chartLesion');
+                var old = Chart.getChart(c); if (old) old.destroy();
+                var d = data[btn.dataset.metric];
+                new Chart(c, { type: 'line', data: { labels: labels, datasets: [
+                  { label: 'Co', data: d.co, borderColor: '#7bf0be', backgroundColor: 'rgba(123,240,190,.12)', pointBackgroundColor: '#7bf0be', tension: .3, fill: true, borderWidth: 2, pointRadius: 5 },
+                  { label: 'TBI', data: d.tbi, borderColor: '#ff8392', backgroundColor: 'rgba(255,131,146,.08)', pointBackgroundColor: '#ff8392', tension: .3, fill: true, borderWidth: 2, pointRadius: 5, borderDash: [5,4] }
+                ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: true, position: 'top', labels: { color: '#94a59f', font: { size: 11 }, usePointStyle: true, padding: 12, boxWidth: 8 } }, tooltip: { backgroundColor: 'rgba(15,24,33,0.95)', titleColor: '#7bf0be', bodyColor: '#e9f0ec', borderColor: 'rgba(123,240,190,0.3)', borderWidth: 1, padding: 10, cornerRadius: 6, displayColors: true } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { grid: { color: gc }, ticks: { color: '#5a716b' } } } } });
+              });
+            });
+          }
+          function wireAngio() {
+            var data = { '0': { '50k': [250,400,900,2500], '100k': [300,600,1200,3200], '250k': [400,800,1800,5500] }, '1': { '50k': [350,700,1800,4500], '100k': [500,900,2500,6000], '250k': [600,1100,3500,8000] }, '10': { '50k': [400,900,2200,5800], '100k': [700,1400,3800,7500], '250k': [900,2000,6000,9800] } };
+            var labels = ['Day 1','Day 3','Day 5','Day 7'];
+            document.querySelectorAll('[data-ang]').forEach(function(btn) {
+              btn.addEventListener('click', function() {
+                document.querySelectorAll('[data-ang]').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                var c = document.getElementById('chartAngio');
+                var old = Chart.getChart(c); if (old) old.destroy();
+                var d = data[btn.dataset.ang];
+                new Chart(c, { type: 'line', data: { labels: labels, datasets: [
+                  { label: '50k', data: d['50k'], borderColor: '#7bf0be', pointBackgroundColor: '#7bf0be', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 },
+                  { label: '100k', data: d['100k'], borderColor: '#58d7ff', pointBackgroundColor: '#58d7ff', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 },
+                  { label: '250k', data: d['250k'], borderColor: '#ffbc72', pointBackgroundColor: '#ffbc72', tension: .3, fill: false, borderWidth: 2, pointRadius: 5 }
+                ]}, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: true, position: 'top', labels: { color: '#94a59f', font: { size: 11 }, usePointStyle: true, padding: 12, boxWidth: 8 } }, tooltip: { backgroundColor: 'rgba(15,24,33,0.95)', titleColor: '#7bf0be', bodyColor: '#e9f0ec', borderColor: 'rgba(123,240,190,0.3)', borderWidth: 1, padding: 10, cornerRadius: 6, displayColors: true } }, scales: { x: { grid: { color: gc }, ticks: { color: '#5a716b' } }, y: { grid: { color: gc }, ticks: { color: '#5a716b' } } } } });
+              });
+            });
+          }
+          function wireTabs() {
+            document.querySelectorAll('.sc-tab').forEach(function(btn) {
+              btn.addEventListener('click', function() {
+                document.querySelectorAll('.sc-tab').forEach(function(b) { b.classList.remove('active'); });
+                document.querySelectorAll('.sc-chart-panel').forEach(function(p) { p.classList.remove('active'); });
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+              });
+            });
+          }
+          setTimeout(function() { wireLesion(); wireAngio(); wireTabs(); }, 1700);
         }, 1500);
       }
       tryBuildCharts();
@@ -260,7 +315,13 @@ const personSchema = {
     {pageScripts.includes('/scripts/index-charts.js') && (
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
     )}
-    {pageScripts.map((src) => <script src={src}></script>)}
+    {/* pageScripts 全部自動附 build stamp。沒有這段的話，/scripts/*.js 沒有
+        cache buster，瀏覽器與 CDN 會長期 serve 舊檔 —— 改完 JS 部署上去，
+        回訪的使用者還是看到舊行為（2026-10-21 diving 海況不見就是這個）。
+        已自帶 ?v= 的（music.astro 手動 bump 版）用 & 接在後面，兩者都保留。 */}
+    {pageScripts.map((src) => (
+        <script src={`${src}${src.includes('?') ? '&' : '?'}v=${BUILD_STAMP}`}></script>
+    ))}
     {/* <Analytics /> */}
 
     <!-- ── Search modal (Pagefind) ── -->

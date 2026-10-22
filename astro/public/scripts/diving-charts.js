@@ -569,17 +569,54 @@
      6. 進場動畫(IntersectionObserver)
      ───────────────────────────────────────────────────────────── */
   function mountRevealAnim() {
-    if (!('IntersectionObserver' in window)) return;
+    // 同時加 in-view(給 diving-charts.css) 與 visible(給全站 .reveal 規則)。
+    // 只加其中一個會被另一套 CSS 的優先級蓋掉: .js-reveal .reveal:not(.visible)
+    // 是 (0,3,0),高於 .dive-anim.in-view 的 (0,2,0),結果 opacity 永遠卡在 0。
+    const reveal = (el) => {
+      // 重點:必須清掉行內樣式。這些 section 帶著行內
+      // style="...opacity: 0; transform: translate(0px, 40px)",
+      // 而行內樣式優先度 高於 任何 CSS class 規則 —— 只加 class 永遠不會顯示。
+      el.style.removeProperty('opacity');
+      el.style.removeProperty('transform');
+      el.style.removeProperty('translate');
+      el.style.removeProperty('rotate');
+      el.style.removeProperty('scale');
+      el.classList.add('in-view');
+      el.classList.add('visible');
+    };
+
+    const targets = document.querySelectorAll('.dive-anim');
+
+    // 已經在視窗內的直接顯示,不排隊等 observer
+    targets.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight && r.bottom > 0) reveal(el);
+    });
+
+    if (!('IntersectionObserver' in window)) {
+      targets.forEach(reveal);
+      return;
+    }
+
     const io = new IntersectionObserver((entries) => {
       entries.forEach(e => {
         if (e.isIntersecting) {
-          e.target.classList.add('in-view');
+          reveal(e.target);
           io.unobserve(e.target);
         }
       });
-    }, { threshold: 0.15 });
+    }, { threshold: 0.15, rootMargin: '0px 0px -10% 0px' });
 
-    document.querySelectorAll('.dive-anim').forEach(el => io.observe(el));
+    targets.forEach((el) => {
+      if (!el.classList.contains('in-view')) io.observe(el);
+    });
+
+    // 保險:3 秒後仍未進場的直接顯示。動畫是加分項,不能是「看得到資料」的門檻。
+    setTimeout(() => {
+      targets.forEach((el) => {
+        if (!el.classList.contains('in-view')) reveal(el);
+      });
+    }, 3000);
   }
 
   /* ─────────────────────────────────────────────────────────────
@@ -599,21 +636,19 @@
     }
 
     // 3. 抓 CWA 資料
+    //   走 cwa-loader.js 的 <script> 注入(免 CORS、免 server proxy)。
+    //   之前打 /api/cwa-wave 會 404(catchall 沒註冊這條 route)→ abort 6s timeout。
     let cwaData = null;
     try {
-      // 直接呼叫 Vercel proxy(部署在 /api/cwa-wave.js)
-      const r = await fetch('/api/cwa-wave?station=46694A', {
-        signal: AbortSignal.timeout(6000)
-      });
-      const json = await r.json();
-      if (json.ok && json.data) {
-        cwaData = window.CWALoader.loadFromJSON(json.data, json.station);
+      const result = await window.CWALoader.load('46694A');
+      if (result.ok && result.data) {
+        cwaData = result.data;
         console.log('[diving] CWA data loaded:', cwaData.snapshot);
       } else {
-        console.warn('[diving] CWA proxy returned error:', json.error);
+        console.warn('[diving] CWA load failed:', result && result.error);
       }
     } catch (e) {
-      console.warn('[diving] CWA fetch failed:', e.message);
+      console.warn('[diving] CWA load exception:', e && e.message);
     }
 
     // 4. 用 CWA 資料掛載儀表板 + 時序圖

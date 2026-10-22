@@ -392,6 +392,21 @@
 .dive-anim:nth-child(3).in-view { transition-delay: 0.2s; }
 .dive-anim:nth-child(4).in-view { transition-delay: 0.3s; }
 
+/* ── 強制可見(2026-10-22)─────────────────────────────────────────────
+   實測有外部程式(瀏覽器擴充套件)在執行期對 .section.dive-anim 注入
+   行內 style="opacity:0; transform:translate(0px,40px)"。
+   行內樣式的優先度 高於 任何一般 class 規則,所以 in-view / visible
+   都救不了 —— 整塊海況儀表板因此永遠看不到。
+   CSS !important 可以蓋過「沒有 !important 的行內樣式」,這是唯一
+   擋得住它的手段。看不到資料比沒有進場動畫嚴重得多。 */
+.section.dive-anim {
+  opacity: 1 !important;
+  transform: none !important;
+  translate: none !important;
+  rotate: none !important;
+  scale: none !important;
+}
+
 /* 鍵盤可達性:focus 樣式 */
 .dash-card:focus-within {
   outline: 2px solid var(--accent, #58d7ff);
