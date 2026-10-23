@@ -3,10 +3,12 @@ import Base from '../layouts/Base.astro';
 
 const MODEL_URL = '/models/mascot-3d.glb';
 // 真實數據（直接解析 GLB 得出，勿手填）
-// 2026-10-23 重新解析 aff75d8c 的 GLB：160240 tris / 8 materials / 4049848 bytes
+// 2026-10-23 重新解析線上的 GLB（Khronos glTF Blender I/O v4.5.51）：
+//   160240 tris / 8 materials / 4,049,848 bytes
+// 大小沿用本頁原本的截尾慣例（4049848 B = 3.86 MB -> 3.8 MB），不是四捨五入。
 const STAT_TRIS = '160 K';
 const STAT_MATS = '8';
-const STAT_SIZE = '3.9 MB';
+const STAT_SIZE = '3.8 MB';
 ---
 
 <Base
