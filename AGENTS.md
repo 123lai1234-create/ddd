@@ -5,7 +5,23 @@
 
 ## 部署（Vercel Hobby plan）
 
-- ✅ **`git push origin main` 就會自動部署正式站**（2026-10-23 實測驗證）
+- ✅ **`git push origin main` 就會自動部署正式站**（2026-10-23 實測驗證，clean URL 全 200）
+- 🚨 **但它會搶走 prebuilt 部署的 alias**。`git push` 後約 60 秒出現 `Queued`、約 3 分鐘
+  `Ready` 並已 alias 到 `donttalk.vercel.app`。兩條路徑**行為不一致**：
+
+  | | prebuilt | git build |
+  |---|---|---|
+  | URL | 尾斜線 `/games/` | cleanUrls `/games`（根 `vercel.json` 寫死 `cleanUrls:true`）|
+  | 快取 | 靠 `prepare-deploy.ps1` 產的 config.json | 沒有 |
+
+  站台是 Astro 產出的、站內連結全部尾斜線 → git build 之下**每個內部連結多一次 308**，
+  且快取最佳化全失效。**兩個方式不要混用**：走 prebuilt 就別 push 到 main；要 push 就得
+  接受 git build 的規則。走 prebuilt 記得 push 完用
+  `vercel deploy --prebuilt --prod --yes --archive tgz` 把 alias 搶回來，並實測
+  `Cache-Control` 確認真的切回去了
+- **Build Output API v3 沒有 top-level `headers` 鍵**（塞了會被靜默忽略，部署照樣 Ready）。
+  快取 header 必須掛在 `routes[]` 項目上，格式是**扁平 `{名稱: 值}` map**（不是
+  `[{key,value}]`），並加 `"continue": true` + 結尾 `{"handle":"filesystem"}`
 - **曾經「state=READY 但全站 404」的真正原因**：根 `.vercelignore` 有一行 `/vercel.json`，
   把帶 `installCommand`/`buildCommand`/`outputDirectory` 的設定檔濾掉了 → Vercel 退回 Dashboard
   預設（buildCommand=null）→ 不跑 build → `astro/dist` 不存在。**已移除那行。改它之後務必確認還在**
@@ -44,7 +60,10 @@
 ## 工作目錄注意
 
 - `astro/` 是公共產物。`dist/` **已被 gitignore**（根 `.gitignore:2`），`git ls-files` 確認沒進版控
-  → 部署**只能**走 CLI prebuilt，git push auto-deploy 那條路是壞的
+  → git build 必須自己跑 `npm run build`（根 `vercel.json` 的 `buildCommand` 會做這件事）
+- Vercel Hobby 靜態上傳上限 **100MB**。站台 static 原本 227.7MB，平台只收前段、尾端檔案
+  全 404。`prepare-deploy.ps1` 有排除清單把它壓到 ~50MB — **新增大檔（音訊／影片／模型）
+  時要順便確認沒有超過 100MB**
 - `dontalk-import/artifacts/portfolio/public/stock-app/` 是 stock-app **canonical source**
 - `frontend/scripts|styles|games|templates/` 是前端 **canonical source**，`astro/public/` 是鏡像
   → 改 JS/CSS **只改 `frontend/`**，再跑 `node astro/scripts/sync_frontend.mjs`（會 wipe + 重拷 `astro/public/scripts/`）
