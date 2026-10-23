@@ -6,22 +6,18 @@
 ## 部署（Vercel Hobby plan）
 
 - ✅ **`git push origin main` 就會自動部署正式站**（2026-10-23 實測驗證，clean URL 全 200）
-- 🚨 **但它會搶走 prebuilt 部署的 alias**。`git push` 後約 60 秒出現 `Queued`、約 3 分鐘
-  `Ready` 並已 alias 到 `donttalk.vercel.app`。兩條路徑**行為不一致**：
-
-  | | prebuilt | git build |
-  |---|---|---|
-  | URL | 尾斜線 `/games/` | cleanUrls `/games`（根 `vercel.json` 寫死 `cleanUrls:true`）|
-  | 快取 | 靠 `prepare-deploy.ps1` 產的 config.json | 沒有 |
-
-  站台是 Astro 產出的、站內連結全部尾斜線 → git build 之下**每個內部連結多一次 308**，
-  且快取最佳化全失效。**兩個方式不要混用**：走 prebuilt 就別 push 到 main；要 push 就得
-  接受 git build 的規則。走 prebuilt 記得 push 完用
-  `vercel deploy --prebuilt --prod --yes --archive tgz` 把 alias 搶回來，並實測
-  `Cache-Control` 確認真的切回去了
-- **Build Output API v3 沒有 top-level `headers` 鍵**（塞了會被靜默忽略，部署照樣 Ready）。
-  快取 header 必須掛在 `routes[]` 項目上，格式是**扁平 `{名稱: 值}` map**（不是
-  `[{key,value}]`），並加 `"continue": true` + 結尾 `{"handle":"filesystem"}`
+- 🚨 **兩條部署路徑現在產出一致，`git push origin main` 是正常流程**（2026-10-23 對齊完成）
+  - `vercel-build.mjs` 在 pagefind 之後套用與 `prepare-deploy.ps1` **完全相同**的排除清單。
+    沒有這步時 git build 會把 207MB 的 dist 原封不動上傳，遠超 Vercel Hobby 的 100MB 上限；
+    加上後是 495 檔 / 47.3MB。**改一邊就要同步改另一邊**，否則又會回到只有一邊有效。
+  - 根 `vercel.json` 的 `headers[]` 也有 `/games/confinement-escape/*` 與 `/_astro/*`
+    的 immutable 規則，讓 git build 跟 prebuilt 有相同的快取最佳化。
+  - URL 規則**仍然不同**：git build 走 `cleanUrls`（`/games`），prebuilt 走尾斜線（`/games/`）。
+    日常用 git build 就不受影響；要手動部署時注意這點。
+- ⚠️ **剛部署完約 5 分鐘內不要下結論**。Vercel 邊緣傳播期間會零星回 404，
+  2026-10-23 因此誤判「中文搜尋壞掉」。驗證前先等，且要重跑確認穩定。
+  另外比對線上檔案清單時，**不要拿本機 dist 的檔名去對** —— Pagefind 的檔名是
+  內容雜湊，本機有未提交變更時兩邊 hash 本來就不同。
 - **曾經「state=READY 但全站 404」的真正原因**：根 `.vercelignore` 有一行 `/vercel.json`，
   把帶 `installCommand`/`buildCommand`/`outputDirectory` 的設定檔濾掉了 → Vercel 退回 Dashboard
   預設（buildCommand=null）→ 不跑 build → `astro/dist` 不存在。**已移除那行。改它之後務必確認還在**
