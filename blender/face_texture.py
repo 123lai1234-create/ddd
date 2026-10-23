@@ -132,17 +132,17 @@ def _paint_face(cv, m):
 
         # blush first, everything else sits on top of it. P has to be fed world
         # z: eh is pixels, so mixing the two drops the blush off the chin.
-        bx, by = P(s * (az_e + 0.24), ez - m["eye_hh"] * 0.66)
-        d = np.hypot((X - bx) / (eh * 1.35), (Y - by) / (eh * 0.95))
-        cv.paint(np.exp(-d * d * 1.7), BLUSH, 0.72)
+        bx, by = P(s * (az_e + 0.24), ez - m["eye_hh"] * 1.05)
+        d = np.hypot((X - bx) / (eh * 1.45), (Y - by) / (eh * 1.00))
+        cv.paint(np.exp(-d * d * 1.7), BLUSH, 0.70)
 
-        # sclera, then the iris. The reference keeps a wide white crescent on
-        # the outer lid plus a thin rim top and bottom, so the iris only fills
-        # ~70% of the eye and sits inboard - a bigger iris reads as a black
-        # blob and loses the whole point of the painted look.
+        # sclera, then the iris. The reference keeps the white as a crescent on
+        # the outer lower lid only - the iris is pushed inboard and up so the
+        # inner corner and the top stay solid dark. An iris centred in the
+        # white leaves a ring all the way round and reads as a stare.
         cv.paint(_ellipse(X, Y, ex, ey, ew, eh), SCLERA)
-        cv.paint(_ellipse(X, Y, ex - mx * ew * 0.08, ey + eh * 0.05,
-                          ew * 0.780, eh * 0.840), IRIS)
+        cv.paint(_ellipse(X, Y, ex - mx * ew * 0.13, ey + eh * 0.07,
+                          ew * 0.760, eh * 0.820), IRIS)
 
         # upper lash: thick through the middle, tapering to the inner corner,
         # and jutting a little past the outer one like the painted reference

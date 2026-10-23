@@ -530,8 +530,8 @@ def face_metrics(objs, lo, hi):
             return math.atan2(x - cx, R)
         return math.atan2(h[0].x - cx, -(h[0].y - cy))
 
-    eye_z = z_lo + span * 0.645
-    az_e = abs(az_at(cx + fw * 0.415, eye_z))
+    eye_z = z_lo + span * 0.655
+    az_e = abs(az_at(cx + fw * 0.500, eye_z))
     # the cheek is curved, so an arc on it renders narrower than it measures
     corr = 1.0 / max(math.cos(az_e), 0.55)
 
@@ -539,11 +539,11 @@ def face_metrics(objs, lo, hi):
         "cx": cx, "cy": cy, "radius": R,
         "z0": z_lo, "z1": z_hi,
         "eye_z": eye_z, "eye_az": az_e,
-        "eye_hw": fw * 0.250 * corr,
-        "eye_hh": span * 0.205,
-        "mouth_z": z_lo + span * 0.240,
+        "eye_hw": fw * 0.255 * corr,
+        "eye_hh": span * 0.190,
+        "mouth_z": z_lo + span * 0.310,
         "mouth_hw": fw * 0.150,
-        "nose_z": z_lo + span * 0.40,
+        "nose_z": z_lo + span * 0.42,
     }
     print(f"[face] fw={fw:.4f} R={R:.4f} span={span:.4f} "
           f"z={z_lo:.3f}..{z_hi:.3f} eye_z={eye_z:.3f} "
