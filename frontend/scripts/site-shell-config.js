@@ -7,7 +7,9 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/firmware', label: '🔌 韌體' },
         { href: '/stem-cell', label: '🧫 幹細胞' },
         { href: '/protein-mpnn', label: 'ProteinMPNN' },
-        { href: '/music', label: '🎵 音樂' }
+        { href: '/music', label: '🎵 音樂' },
+        { href: '/games', label: '🎮 遊戲' },
+        { href: '/3d-mascot', label: '🧊 3D 模型', classes: 'nav-cta' }
     ];
 
     var STD_DRAWER = [
@@ -21,7 +23,9 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/music', label: '🎵 音樂播放' },
         { href: '/firmware', label: '🔌 韌體 MCU' },
         { href: '/interview-prep', label: '面試準備' },
-        { href: '/stem-cell', label: '🧫 幹細胞研究' }
+        { href: '/stem-cell', label: '🧫 幹細胞研究' },
+        { href: '/games', label: '🎮 線上遊戲' },
+        { href: '/3d-mascot', label: '🧊 3D mascot 模型' }
     ];
 
     var STD_FOOTER_LINKS = [
@@ -146,6 +150,13 @@ window.SITE_SHELL_CONFIG = (function () {
             navLinks: STD_NAV,
             drawerLinks: STD_DRAWER,
             footer: stdFooter('音樂播放平台', '現代化音樂播放平台 · 等化器 · 視覺化效果 · 2026')
+        },
+        games: {
+            brandHref: '/',
+            brandHtml: '<span class="nav-dot"></span>🎮 線上遊戲',
+            navLinks: STD_NAV,
+            drawerLinks: STD_DRAWER,
+            footer: stdFooter('線上遊戲', '純前端小遊戲 · 免安裝 · 存檔在瀏覽器 · 2026')
         }
     };
 })();

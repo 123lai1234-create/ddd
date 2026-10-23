@@ -8,6 +8,7 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/stem-cell', label: '🧫 幹細胞' },
         { href: '/protein-mpnn', label: 'ProteinMPNN' },
         { href: '/music', label: '🎵 音樂' },
+        { href: '/games', label: '🎮 遊戲' },
         { href: '/3d-mascot', label: '🧊 3D 模型', classes: 'nav-cta' }
     ];
 
@@ -23,6 +24,7 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/firmware', label: '🔌 韌體 MCU' },
         { href: '/interview-prep', label: '面試準備' },
         { href: '/stem-cell', label: '🧫 幹細胞研究' },
+        { href: '/games', label: '🎮 線上遊戲' },
         { href: '/3d-mascot', label: '🧊 3D mascot 模型' }
     ];
 
@@ -37,7 +39,6 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/report', label: '專案報告' },
         { href: '/firmware', label: '韌體' },
         { href: '/stem-cell', label: '幹細胞研究' },
-        { href: '/3d-mascot', label: '🧊 3D mascot 模型' },
         { href: 'https://jtlai0921.wixsite.com/mysite', label: '個人網站', target: '_blank', rel: 'noreferrer' }
     ];
 
@@ -149,6 +150,13 @@ window.SITE_SHELL_CONFIG = (function () {
             navLinks: STD_NAV,
             drawerLinks: STD_DRAWER,
             footer: stdFooter('音樂播放平台', '現代化音樂播放平台 · 等化器 · 視覺化效果 · 2026')
+        },
+        games: {
+            brandHref: '/',
+            brandHtml: '<span class="nav-dot"></span>🎮 線上遊戲',
+            navLinks: STD_NAV,
+            drawerLinks: STD_DRAWER,
+            footer: stdFooter('線上遊戲', '純前端小遊戲 · 免安裝 · 存檔在瀏覽器 · 2026')
         }
     };
 })();

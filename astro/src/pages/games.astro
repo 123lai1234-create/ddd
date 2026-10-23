@@ -1,0 +1,191 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+    title="線上遊戲 | 工程 × 生醫 × AI"
+    description="免安裝的瀏覽器小遊戲合集：禁閉逃殺：文字獄 — 抽卡 RPG、回合制戰鬥、肉鴿遠征、網路對戰。"
+    bodyPage="games"
+    pageStyles={[]}
+    pageScripts={[]}
+    headInline=""
+>
+    <div data-site-nav></div>
+
+    <div class="games-page">
+        <header class="gp-hero">
+            <div class="gp-kicker">PLAY IN BROWSER</div>
+            <h1>🎮 線上遊戲</h1>
+            <p class="gp-sub">
+                純前端、免安裝、免登入就能玩。進度存在你自己的瀏覽器裡（localStorage），關掉再開也不會消失。
+            </p>
+        </header>
+
+        <section class="gp-grid">
+            <article class="gp-card">
+                <a class="gp-cover" href="/games/confinement-escape/" target="_blank" rel="noopener" aria-label="開始玩禁閉逃殺：文字獄">
+                    <img
+                        src="/games/confinement-escape/images/bosses/overlord_1.webp"
+                        alt="禁閉逃殺：文字獄 魔王封面"
+                        width="320"
+                        height="320"
+                        loading="lazy"
+                    />
+                    <span class="gp-play">▶ 立即開始</span>
+                </a>
+                <div class="gp-body">
+                    <h2>禁閉逃殺：文字獄</h2>
+                    <div class="gp-tags">
+                        <span class="gp-tag hot">SSR 抽卡</span>
+                        <span class="gp-tag">回合制戰鬥</span>
+                        <span class="gp-tag">肉鴿遠征</span>
+                        <span class="gp-tag">網路對戰</span>
+                    </div>
+                    <p class="gp-desc">
+                        從 B7 停屍間爬到 2F 停機坪的禁閉逃殺。抽職業卡、養裝備、練突破，一層一層往上爬，
+                        躲毒氣、找物資、跟其他逃殺者結盟或背叛——但直升機只有三個座位。
+                        12 章主線 + 無盡深淵，外加魔王討伐、競技場、練功房與養成賽。
+                    </p>
+                    <div class="gp-meta">
+                        <span>⏱ 單局 10–30 分鐘</span>
+                        <span>💾 進度自動存檔</span>
+                        <span>📱 支援手機</span>
+                    </div>
+                    <div class="gp-actions">
+                        <a class="gp-btn primary" href="/games/confinement-escape/" target="_blank" rel="noopener">開始遊玩 ↗</a>
+                        <a class="gp-btn ghost" href="/games/confinement-escape/" target="_blank" rel="noopener">新分頁開啟</a>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <section class="gp-note">
+            <h3>關於這份收錄</h3>
+            <ul>
+                <li>《禁閉逃殺：文字獄》原作為 <strong>gagatim</strong> 的公開網頁遊戲，本頁為作者原始碼的鏡像收錄，版權與原作所有。</li>
+                <li>背景音樂取自 <a href="https://opengameart.org/" target="_blank" rel="noopener">OpenGameArt</a>，授權 CC0；角色與魔王插圖為原作者自製。</li>
+                <li>遊戲本身不需要後端：帳號／雲端存檔與網路對戰沿用原作的 Firebase 設定，不登入也完全玩得動。</li>
+            </ul>
+        </section>
+    </div>
+
+    <div data-site-footer></div>
+
+    <style is:inline>
+        .games-page {
+            max-width: 1040px;
+            margin: 0 auto;
+            padding: 48px 20px 80px;
+        }
+        .gp-hero { text-align: center; margin-bottom: 40px; }
+        .gp-kicker {
+            font-size: 12px;
+            letter-spacing: 6px;
+            color: #8a94a0;
+            font-weight: 700;
+        }
+        .gp-hero h1 {
+            margin: 10px 0 12px;
+            font-size: clamp(34px, 7vw, 56px);
+            letter-spacing: 4px;
+            background: linear-gradient(120deg, #e5484d 0%, #b07cff 55%, #4aa3ff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .gp-sub {
+            margin: 0 auto;
+            max-width: 640px;
+            color: #9aa4b2;
+            font-size: 15px;
+            line-height: 1.75;
+        }
+        .gp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .gp-card {
+            background: linear-gradient(160deg, rgba(229, 72, 77, 0.08), rgba(20, 24, 30, 0.9) 45%);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 18px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .gp-card:hover { transform: translateY(-3px); border-color: rgba(229, 72, 77, 0.55); }
+        .gp-cover {
+            position: relative;
+            display: block;
+            aspect-ratio: 16 / 9;
+            background: radial-gradient(circle at 50% 40%, #2a1013, #0c0e11 70%);
+            overflow: hidden;
+        }
+        .gp-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0.92;
+            transition: transform 0.4s ease;
+        }
+        .gp-card:hover .gp-cover img { transform: scale(1.05); }
+        .gp-play {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 22px;
+            border-radius: 999px;
+            background: rgba(12, 14, 17, 0.78);
+            border: 1px solid #e5484d;
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 2px;
+            backdrop-filter: blur(4px);
+        }
+        .gp-body { padding: 20px 22px 24px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+        .gp-body h2 { margin: 0; font-size: 22px; letter-spacing: 1px; }
+        .gp-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .gp-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #9aa4b2;
+        }
+        .gp-tag.hot { border-color: #f5c451; color: #f5c451; }
+        .gp-desc { margin: 0; color: #aab3bf; font-size: 14px; line-height: 1.8; flex: 1; }
+        .gp-meta { display: flex; flex-wrap: wrap; gap: 14px; color: #7d8794; font-size: 12px; }
+        .gp-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+        .gp-btn {
+            display: inline-block;
+            padding: 11px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            border: 1px solid transparent;
+            transition: background 0.18s ease, border-color 0.18s ease;
+        }
+        .gp-btn.primary { background: #4a1518; border-color: #e5484d; color: #fff; }
+        .gp-btn.primary:hover { background: #62191d; }
+        .gp-btn.ghost { background: transparent; border-color: rgba(255, 255, 255, 0.16); color: #aab3bf; }
+        .gp-btn.ghost:hover { border-color: rgba(255, 255, 255, 0.4); color: #e6edf3; }
+        .gp-note {
+            margin-top: 36px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 18px 22px;
+            color: #8a94a0;
+            font-size: 13px;
+            line-height: 1.85;
+        }
+        .gp-note h3 { margin: 0 0 8px; color: #c9ced5; font-size: 15px; }
+        .gp-note ul { margin: 0; padding-left: 20px; }
+        .gp-note li { margin-bottom: 5px; }
+        .gp-note a { color: #4aa3ff; }
+        .gp-note strong { color: #c9ced5; }
+    </style>
+</Base>
