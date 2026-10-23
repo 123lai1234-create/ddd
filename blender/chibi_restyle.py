@@ -616,7 +616,7 @@ def assign_by_region(objs, mats, lo, hi):
     # ---- vertical bands, measured off the reference render -------------
     Z_SHOE_TOP = 0.120        # frac of height
     Z_PANTS_TOP = 0.330
-    Z_PLAID_TOP = 0.382
+    Z_PLAID_TOP = 0.400
     Z_TEE_TOP = 0.522
     Z_NECK_TOP = Z_NECK_FRAC
     # face patch on the skull (world units, height is 1.8)
@@ -793,6 +793,55 @@ def face_metrics(objs, lo, hi):
     return m
 
 
+def flatten_hem_edges(objs, lo, hi, mats):
+    """Snap each garment hem onto one flat plane.
+
+    Material assignment is by height, so a hem that dips and rises turns the
+    border into a sawtooth - and the white shirt's teeth hang down in front of
+    the plaid sash, which is the most obvious artefact in the whole model.
+    Rendering the same view with every polygon forced to a single material
+    showed the teeth were real geometry, not a shading artefact, so they have to
+    be pulled up rather than smoothed.
+
+    Runs after assign_by_region so the material label says which garment each
+    vertex belongs to; the plane is the height the band's own faces sit at, so
+    nothing moves that was already flat.
+    """
+    import bmesh
+
+    H = hi.z - lo.z
+    # (material, plane as a fraction of height, how far below to pull from)
+    bands = (("tee", 0.400, 0.300),
+             ("plaid", 0.330, 0.245),
+             ("pants", 0.120, 0.080))
+
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        bm.verts.ensure_lookup_table()
+
+        for key, plane_frac, floor_frac in bands:
+            slot = ORDER.index(key)
+            plane = lo.z + plane_frac * H
+            floor = lo.z + floor_frac * H
+            faces = [f for f in bm.faces if f.material_index == slot]
+            if not faces:
+                continue
+            moved = 0
+            for f in faces:
+                for v in f.verts:
+                    if floor <= v.co.z < plane:
+                        v.co.z = plane
+                        moved += 1
+            if moved:
+                print(f"[hem] {ob.name}: {key} pulled {moved} verts up to "
+                      f"z={plane:.3f}")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+
+
 def paint_face(objs, mats, lo, hi):
     """Bake the face texture, then hand the skull its material and UVs."""
     m = face_metrics(objs, lo, hi)
@@ -948,6 +997,7 @@ def main():
     soften_cloth_edges(objs, lo, hi)
     mats = materials()
     assign_by_region(objs, mats, lo, hi)
+    flatten_hem_edges(objs, lo, hi, mats)
     # after assign_by_region so the hair material is actually on those shards
     clear_face_fringe(objs, lo, hi, mats)
     raise_fringe(objs, lo, hi, mats)

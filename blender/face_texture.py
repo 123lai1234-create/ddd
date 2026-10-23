@@ -223,11 +223,15 @@ def project_reference(m, ref_path):
     W = max(64, int(2.0 * AZ_HALF * R * PX_PER_UNIT // 32 + 1) * 32)
     H = max(64, int((z1 - z0) * PX_PER_UNIT // 32 + 1) * 32)
 
-    chin_y, hair_y, cx, K = 882.0, 526.0, 965.0, 323.0
+    chin_y, hair_y, cx, K = 868.0, 526.0, 965.0, 300.0
+    CHEEK_L, CHEEK_R = 732, 1198      # inside the ears, clear of the backdrop
 
     u = (np.arange(W) + 0.5) / W
+    # Clamp the sample to the cheek span. The reference is cut out on a
+    # transparent checkerboard, so the columns just past the cheeks are the
+    # background - sampling them painted grey-blue patches beside the ears.
     xs = np.clip(np.round(cx + K * np.sin((u - 0.5) * 2.0 * AZ_HALF)).astype(int),
-                 0, sw - 1)
+                 CHEEK_L, CHEEK_R)
     v = (np.arange(H) + 0.5) / H                    # 0 = chin = canvas bottom
     ys = np.clip(np.round(chin_y - v * (chin_y - hair_y)).astype(int), 0, sh - 1)
 
