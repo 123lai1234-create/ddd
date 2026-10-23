@@ -1,9 +1,14 @@
 """Re-style the accepted untextured Meshy chibi mesh.
 
 The earlier attempts failed because they painted *vertex colours*, which smears
-across material boundaries. Here every polygon is assigned to one of six hard
+across material boundaries. Every polygon is assigned to one of six hard
 materials by its position, so skin / hair / tee / plaid / pants / shoes stay
 crisp.
+
+The face is the exception. Per-face assignment cannot draw an eye on this grid
+- the border snaps to the nearest triangle edge and every feature comes out as
+sawteeth or a stain - so the face is painted into a texture by face_texture.py
+and the skull simply wears it.
 
 Run:
     blender --background --factory-startup --python chibi_restyle.py
@@ -18,14 +23,20 @@ from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import face_texture
 OUT = os.path.join(HERE, "out")
 os.makedirs(OUT, exist_ok=True)
 
 SRC = r"C:\Users\User\minimax-glb-tmp\chibi-tinted-low.glb"
-SRC_LOW = r"C:\Users\User\minimax-glb-tmp\chibi-tinted-low.glb"
+SRC_LOW = r"C:\Users\User\minimax-glb-tmp\chibi-tinted-low.glb"  # 8k fallback
 
 TARGET_H = 1.8
-TARGET_TRIS = 46000
+TARGET_TRIS = 48000
+SUBDIV = 2
+
+# Slot order baked into every polygon; index 7 is the painted face.
+ORDER = ["hair", "tee", "plaid", "pants", "shoe", "sole", "skin", "face"]
+Z_NECK_FRAC = 0.556        # frac of height where the neck ends and the head starts
 
 # --------------------------------------------------------------- region cuts
 # All values are fractions of total height above the soles.
@@ -51,7 +62,7 @@ def set_input(node, name, value):
 
 
 def make_material(name, color, roughness=0.55, metallic=0.0, subsurface=0.0,
-                  coat=0.0):
+                  coat=0.0, emission=0.0):
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     b = mat.node_tree.nodes["Principled BSDF"]
@@ -64,82 +75,82 @@ def make_material(name, color, roughness=0.55, metallic=0.0, subsurface=0.0,
         set_input(b, "Subsurface Radius", (0.34, 0.11, 0.07))
     if coat:
         set_input(b, "Coat Weight", coat)
+    if emission:
+        set_input(b, "Emission Color", (*color, 1.0))
+        set_input(b, "Emission Strength", emission)
     return mat
 
 
-def make_plaid(name, ca, cb, scale=9.0, band=20.0):
+def make_plaid(name, ca, cb, scale=17.0, line=17.0, line_width=0.13):
+    """Buffalo check driven by a coarse checker plus thin cross-lines.
+
+    Earlier versions stacked SIN wave masks whose factors averaged out to a
+    single flat red across the waist — the pattern has to come from the
+    checker cells themselves, with the waves only adding thin dark seams.
+    """
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     nt = mat.node_tree
     b = nt.nodes["Principled BSDF"]
-    set_input(b, "Roughness", 0.62)
-    set_input(b, "Specular IOR Level", 0.3)
+    set_input(b, "Roughness", 0.66)
+    set_input(b, "Specular IOR Level", 0.28)
 
     tc = nt.nodes.new("ShaderNodeTexCoord")
-    tc.location = (-1100, 0)
-    mp = nt.nodes.new("ShaderNodeMapping")
-    mp.location = (-920, 0)
+    tc.location = (-900, 0)
 
     ck = nt.nodes.new("ShaderNodeTexChecker")
-    ck.location = (-720, 160)
+    ck.location = (-600, 140)
     ck.inputs["Scale"].default_value = scale
     ck.inputs["Color1"].default_value = (*ca, 1.0)
     ck.inputs["Color2"].default_value = (*cb, 1.0)
 
-    waves = []
-    for i, axis in enumerate(("X", "Y")):
+    masks = []
+    for i, axis in enumerate(("X", "Z")):
         w = nt.nodes.new("ShaderNodeTexWave")
-        w.location = (-720, -140 - i * 220)
+        w.location = (-600, -160 - i * 190)
         w.wave_type = "BANDS"
         w.bands_direction = axis
-        w.wave_profile = "SIN"
-        w.inputs["Scale"].default_value = band
+        w.wave_profile = "SAW"
+        w.inputs["Scale"].default_value = line
         w.inputs["Distortion"].default_value = 0.0
         lt = nt.nodes.new("ShaderNodeMath")
-        lt.location = (-520, -140 - i * 220)
+        lt.location = (-410, -160 - i * 190)
         lt.operation = "LESS_THAN"
-        lt.inputs[1].default_value = 0.42
+        lt.inputs[1].default_value = line_width
         nt.links.new(w.outputs["Fac"], lt.inputs[0])
-        waves.append(lt)
+        masks.append(lt)
 
     uni = nt.nodes.new("ShaderNodeMath")
-    uni.location = (-340, -180)
+    uni.location = (-230, -200)
     uni.operation = "MAXIMUM"
-    nt.links.new(waves[0].outputs["Value"], uni.inputs[0])
-    nt.links.new(waves[1].outputs["Value"], uni.inputs[1])
-
-    inv = nt.nodes.new("ShaderNodeMath")
-    inv.location = (-180, -180)
-    inv.operation = "SUBTRACT"
-    inv.inputs[0].default_value = 1.0
-    nt.links.new(uni.outputs["Value"], inv.inputs[1])
+    nt.links.new(masks[0].outputs["Value"], uni.inputs[0])
+    nt.links.new(masks[1].outputs["Value"], uni.inputs[1])
 
     dark = nt.nodes.new("ShaderNodeMix")
     dark.location = (0, 0)
     dark.data_type = "RGBA"
     dark.blend_type = "MIX"
-    dark.inputs[7].default_value = (0.02, 0.02, 0.02, 1.0)
-    nt.links.new(inv.outputs["Value"], dark.inputs["Factor"])
+    dark.inputs[7].default_value = (0.012, 0.010, 0.010, 1.0)
+    nt.links.new(uni.outputs["Value"], dark.inputs["Factor"])
     nt.links.new(ck.outputs["Color"], dark.inputs[6])
     nt.links.new(dark.outputs[2], b.inputs["Base Color"])
 
-    nt.links.new(tc.outputs["Object"], mp.inputs["Vector"])
-    nt.links.new(mp.outputs["Vector"], ck.inputs["Vector"])
+    nt.links.new(tc.outputs["Object"], ck.inputs["Vector"])
     for w in [n for n in nt.nodes if n.bl_idname == "ShaderNodeTexWave"]:
-        nt.links.new(mp.outputs["Vector"], w.inputs["Vector"])
+        nt.links.new(tc.outputs["Object"], w.inputs["Vector"])
     return mat
 
 
 def materials():
     return {
-        "skin": make_material("Skin", (0.985, 0.720, 0.640), 0.48, subsurface=0.32),
+        "skin": make_material("Skin", (0.975, 0.660, 0.575), 0.50, subsurface=0.34),
         "hair": make_material("Hair", (0.028, 0.026, 0.034), 0.38, coat=0.40),
         "tee": make_material("Tee", (0.935, 0.935, 0.948), 0.68),
-        "plaid": make_plaid("Plaid", (0.740, 0.105, 0.088), (0.045, 0.038, 0.038)),
-        "pants": make_material("Pants", (0.720, 0.140, 0.130), 0.58),
+        "plaid": make_plaid("Plaid", (0.560, 0.062, 0.055), (0.030, 0.026, 0.026)),
+        "pants": make_material("Pants", (0.615, 0.092, 0.082), 0.58),
         "shoe": make_material("Shoe", (0.040, 0.040, 0.048), 0.34, coat=0.22),
         "sole": make_material("Sole", (0.955, 0.955, 0.955), 0.45),
-        "eye": make_material("Eye", (0.075, 0.045, 0.042), 0.18),
+        # "face" is built later by face_texture.bake(), it reuses Skin's shading
     }
 
 
@@ -204,8 +215,13 @@ def normalise(objs):
 
 
 def decimate_to_target(objs, target=TARGET_TRIS):
-    """Meshy output is non-manifold, so edge-collapse Decimate barely moves it.
-    Voxel remesh gives uniform clean topology first, then collapse on top."""
+    """Densify then thin back down to a web-friendly budget.
+
+    Voxel/octree remesh either OOMs or empties this Meshy mesh (bad normals),
+    and edge-collapse Decimate barely moves non-manifold input. Linear SIMPLE
+    subdivision buys face density without moving the surface, which is what
+    stops material borders from looking like sawteeth.
+    """
     bpy.ops.object.select_all(action="DESELECT")
     for ob in objs:
         ob.select_set(True)
@@ -214,14 +230,133 @@ def decimate_to_target(objs, target=TARGET_TRIS):
     fused = bpy.context.object
     fused.name = "Chibi"
 
+    sub = fused.modifiers.new("Subdiv", "SUBSURF")
+    sub.subdivision_type = "SIMPLE"
+    sub.levels = SUBDIV
+    sub.render_levels = SUBDIV
+    bpy.ops.object.modifier_apply(modifier=sub.name)
+
     n = len(fused.data.polygons)
     if n > target:
         mod = fused.modifiers.new("Decimate", "DECIMATE")
         mod.ratio = target / n
         bpy.ops.object.modifier_apply(modifier=mod.name)
 
-    print(f"[remesh+decimate] -> {len(fused.data.polygons)} faces")
+    print(f"[subdiv+decimate] {n} -> {len(fused.data.polygons)} faces")
     return [fused]
+
+
+def smooth_reconstruction_spikes(objs, lo, hi):
+    """Clean up the teeth Meshy leaves at clothing hems.
+
+    Two passes, because the two failures are different:
+    * sawtooth teeth that poke below the hem -> Laplacian pull rounds them
+    * ragged dips that the reconstruction cuts into the hem -> clamp those
+      vertices back up to the hem plane, which yields a flat clean edge
+    """
+    import bmesh
+
+    H = hi.z - lo.z
+
+    def z_at(frac):
+        return lo.z + frac * H
+
+    # (rounding band, clamping dips back up to this height)
+    bands = ((0.330, 0.420, 0.382),     # tee hem
+             (0.285, 0.370, 0.330),     # plaid / pant edge
+             (0.100, 0.175, 0.120),     # rolled cuff
+             (0.500, 0.590, 0.522))     # collar
+
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+
+        for _ in range(6):
+            # overlapping bands would feed the same vertex to smooth_vert twice
+            hot = set()
+            for a, b, _z in bands:
+                za, zb = z_at(a), z_at(b)
+                hot.update(v for v in bm.verts if za <= v.co.z <= zb)
+            if hot:
+                bmesh.ops.smooth_vert(bm, verts=list(hot), factor=0.55,
+                                      use_axis_x=True, use_axis_y=True,
+                                      use_axis_z=True)
+
+        # pull the ragged dips back up onto the hem plane
+        for a, b, target in bands:
+            za, zb, zt = z_at(a), z_at(b), z_at(target)
+            for v in bm.verts:
+                if za <= v.co.z < zt:
+                    v.co.z = zt
+
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    print("[smooth] hems flattened, spikes rounded")
+
+
+def refine_upper_head(objs, lo, hi, levels=1):
+    """Double the grid over the face and fringe.
+
+    Eyes and mouth are painted onto polygons, so they can only look sharp if
+    the grid resolves them. Only the front of the head needs that density - the
+    body and the back of the hair are smooth large surfaces already. New
+    vertices land exactly on the shared edges, so the seam is watertight.
+    """
+    import bmesh
+
+    x0 = 0.0
+    y0 = -0.45
+    r2 = 0.34 ** 2
+    zlo, zhi = 0.98, 1.34
+
+    def zone(v):
+        return (zlo <= v.co.z <= zhi
+                and (v.co.x - x0) ** 2 + (v.co.y - y0) ** 2 <= r2)
+
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        before = len(bm.faces)
+        for _ in range(levels):
+            sel = [e for e in bm.edges if zone(e.verts[0]) or zone(e.verts[1])]
+            if not sel:
+                break
+            bmesh.ops.subdivide_edges(bm, edges=sel, cuts=1, use_grid_fill=True)
+        after = len(bm.faces)
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+        print(f"[refine] {ob.name}: {before} -> {after} faces")
+
+
+def soften_hairline(objs, lo, hi):
+    """Round the ragged fringe where the bangs meet the forehead.
+
+    Meshy reconstructs that boundary as a row of big triangles, and a hard
+    material border on a ragged edge reads as sawteeth at any distance. Much
+    gentler than the hem pass, because the forehead curve has to survive.
+    """
+    import bmesh
+
+    H = hi.z - lo.z
+    za, zb = lo.z + 0.628 * H, lo.z + 0.702 * H
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        for _ in range(5):
+            hot = set()
+            for e in bm.edges:
+                if za <= (e.verts[0].co.z + e.verts[1].co.z) * 0.5 <= zb:
+                    hot.update(e.verts)
+            if hot:
+                bmesh.ops.smooth_vert(bm, verts=list(hot), factor=0.22,
+                                      use_axis_x=True, use_axis_y=True,
+                                      use_axis_z=True)
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    print(f"[hairline] fringe rounded in z {za:.3f}..{zb:.3f}")
 
 
 def assign_by_region(objs, mats, lo, hi):
@@ -234,22 +369,20 @@ def assign_by_region(objs, mats, lo, hi):
     import bmesh
 
     H = hi.z - lo.z
-    order = ["hair", "tee", "plaid", "pants", "shoe", "sole", "skin"]
     half_w = max((hi.x - lo.x) * 0.5, 1e-6)
 
     # ---- vertical bands, measured off the reference render -------------
-    Z_SHOE_TOP = 0.100        # frac of height
-    Z_PANTS_TOP = 0.312
-    Z_PLAID_TOP = 0.372
-    Z_TEE_TOP = 0.502
-    Z_NECK_TOP = 0.535
+    Z_SHOE_TOP = 0.120        # frac of height
+    Z_PANTS_TOP = 0.330
+    Z_PLAID_TOP = 0.382
+    Z_TEE_TOP = 0.522
+    Z_NECK_TOP = Z_NECK_FRAC
     # face patch on the skull (world units, height is 1.8)
-    FACE_Z = 1.068
-    FACE_RZ = 0.182
-    FACE_RX = 0.258
-    FACE_Y = -0.545           # in front of this plane is "the face"
+    # hairline as a fraction of total height, front vs. temple
+    HAIRLINE_FRONT = 0.712
+    HAIRLINE_SIDE = 0.655
 
-    def classify(p):
+    def classify(p, n=None):
         fz = (p.z - lo.z) / H
         ax = abs(p.x) / half_w
 
@@ -258,48 +391,60 @@ def assign_by_region(objs, mats, lo, hi):
         if fz < Z_SHOE_TOP:
             return "shoe"
         if fz < Z_PANTS_TOP:
-            if ax > 0.62 and fz > 0.21:
+            if ax > 0.80 and fz > 0.185:
                 return "skin"            # hands beside the legs
             return "pants"
         if fz < Z_PLAID_TOP:
-            if ax > 0.60:
+            if ax > 0.80 and fz > 0.30:
                 return "skin"            # forearms stay bare
             return "plaid"
         if fz < Z_TEE_TOP:
-            if ax > 0.60:
+            if ax > 0.80:
                 return "skin"
             return "tee"
         if fz < Z_NECK_TOP:
             return "skin"                # neck
 
         # ---- head
-        patch = (p.x / FACE_RX) ** 2 + ((p.z - FACE_Z) / FACE_RZ) ** 2
-        if patch < 1.0 and p.y < FACE_Y:
-            return "skin"
+        # A flat ellipse mask reads as a mask: its edge cuts across the hair
+        # volume and leaves an obvious oval. Instead decide from the surface
+        # normal plus an azimuth-dependent hairline, so skin is whatever faces
+        # forward below the fringe and hair is everything else.
+        if n is None or n.y < -0.42:
+            az = min(abs(math.atan2(p.x, -p.y)) / (math.pi * 0.5), 1.0)
+            hairline = lo.z + H * (HAIRLINE_FRONT
+                                   - (HAIRLINE_FRONT - HAIRLINE_SIDE) * az * az)
+            if p.z < hairline:
+                return "skin"
         return "hair"
 
     for ob in objs:
         ob.data.materials.clear()
-        for key in order:
-            ob.data.materials.append(mats[key])
+        for key in ORDER:
+            if key in mats:          # "face" is baked later, it keeps its slot
+                ob.data.materials.append(mats[key])
 
     for ob in objs:
         bm = bmesh.new()
         bm.from_mesh(ob.data)
         bm.faces.ensure_lookup_table()
-        for f in bm.faces:
-            f.material_index = order.index(classify(f.calc_center_median()))
 
-        for _ in range(6):
+        # Classify on face centres, then a couple of majority passes. Face
+        # centres give the tightest seam; per-vertex classification offsets it
+        # by a full ring and produces alternating single-face spikes, and many
+        # smoothing passes fracture the boundary into torn paper.
+        for f in bm.faces:
+            f.material_index = ORDER.index(classify(f.calc_center_median(), f.normal))
+
+        for _ in range(2):
             cur = [f.material_index for f in bm.faces]
             nxt = []
             for i, f in enumerate(bm.faces):
                 tally = {}
                 for e in f.edges:
                     for nf in e.link_faces:
-                        k = cur[nf.index]
-                        tally[k] = tally.get(k, 0) + 1
-                tally[cur[i]] = tally.get(cur[i], 0) + 2   # bias toward staying
+                        tally[cur[nf.index]] = tally.get(cur[nf.index], 0) + 1
+                tally[cur[i]] = tally.get(cur[i], 0) + 2
                 nxt.append(max(tally, key=tally.get))
             for i, f in enumerate(bm.faces):
                 f.material_index = nxt[i]
@@ -308,12 +453,155 @@ def assign_by_region(objs, mats, lo, hi):
         bm.free()
         ob.data.update()
 
-        counts = {k: 0 for k in order}
+        counts = {k: 0 for k in ORDER}
         for p in ob.data.polygons:
-            counts[order[p.material_index]] += 1
+            counts[ORDER[p.material_index]] += 1
             p.use_smooth = True
         print("[assign] " + "  ".join(f"{k}={v}" for k, v in counts.items()))
     return objs
+
+
+def face_hit(objs, x, z):
+    """Front-most surface point and outward normal at (x, z), via ray cast."""
+    origin = Vector((x, -3.0, z))
+    direction = Vector((0.0, 1.0, 0.0))
+    dg = bpy.context.evaluated_depsgraph_get()
+    best = None
+    for ob in objs:
+        ok, loc, nor, _i = ob.ray_cast(origin, direction, distance=6.0,
+                                       depsgraph=dg)
+        if ok and (best is None or loc.y < best[0].y):
+            best = (loc, nor)
+    return best
+
+
+def face_metrics(objs, lo, hi):
+    """Head frame plus feature placement, measured off the painted skin patch.
+
+    Only front-facing skin counts. The earlier version measured the whole patch,
+    which also covers the ears and the under-jaw, so the half width came out a
+    third too wide and every feature drifted out toward the sides of the head.
+    """
+    z_neck = lo.z + Z_NECK_FRAC * (hi.z - lo.z)
+    idx = ORDER.index("skin")
+    xs, zs, probe = [], [], []
+    for ob in objs:
+        for p in ob.data.polygons:
+            if p.material_index != idx or p.center.z <= z_neck:
+                continue
+            if p.normal.y > -0.35:
+                continue
+            xs.append(p.center.x)
+            zs.append(p.center.z)
+            probe.append((p.center.x, p.center.y, p.center.z))
+    if not xs:
+        raise RuntimeError("no front-facing skin above the neck")
+
+    x_lo, x_hi = min(xs), max(xs)
+    z_lo, z_hi = min(zs), max(zs)
+    cx = (x_lo + x_hi) * 0.5
+    fw = (x_hi - x_lo) * 0.5
+    span = z_hi - z_lo
+
+    # Head radius straight off the mesh. Two sample points from one cross
+    # section pin the sphere down exactly: for a sphere at (cx, cy) the front
+    # point sits at cy - R, and any other surface point is exactly R from the
+    # axis, which gives dx^2 + dy^2 = 2 dy R. Ray casting for it was worse - the
+    # ray at the face edge runs into the ear and reports a head a fifth too
+    # round, which is what pushed the eyes out over the cheeks.
+    z_mid = (z_lo + z_hi) * 0.5
+    band = [q for q in probe if abs(q[2] - z_mid) < span * 0.12] or probe
+    front = min(band, key=lambda q: q[1])
+    outer = max(band, key=lambda q: abs(q[0] - cx))
+    dx, dy = outer[0] - front[0], outer[1] - front[1]
+    R = (dx * dx + dy * dy) / (2.0 * dy) if dy > 1e-4 else fw * 1.15
+    R = min(max(R, fw * 0.95), fw * 1.6)
+    cy = front[1] + R
+
+    def az_at(x, z):
+        h = face_hit(objs, x, z)
+        if h is None:
+            return math.atan2(x - cx, R)
+        return math.atan2(h[0].x - cx, -(h[0].y - cy))
+
+    eye_z = z_lo + span * 0.62
+    az_e = abs(az_at(cx + fw * 0.485, eye_z))
+    # the cheek is curved, so an arc on it renders narrower than it measures
+    corr = 1.0 / max(math.cos(az_e), 0.55)
+
+    m = {
+        "cx": cx, "cy": cy, "radius": R,
+        "z0": z_lo, "z1": z_hi,
+        "eye_z": eye_z, "eye_az": az_e,
+        "eye_hw": fw * 0.245 * corr,
+        "eye_hh": span * 0.215,
+        "mouth_z": z_lo + span * 0.19,
+        "mouth_hw": fw * 0.150,
+        "nose_z": z_lo + span * 0.40,
+    }
+    print(f"[face] fw={fw:.4f} R={R:.4f} span={span:.4f} "
+          f"z={z_lo:.3f}..{z_hi:.3f} eye_z={eye_z:.3f} "
+          f"eye_az={math.degrees(az_e):.1f}deg corr={corr:.2f}")
+    return m
+
+
+def paint_face(objs, mats, lo, hi):
+    """Bake the face texture, then hand the skull its material and UVs."""
+    m = face_metrics(objs, lo, hi)
+    mats["face"] = face_texture.bake(m, mats["skin"], OUT)
+    z_neck = lo.z + Z_NECK_FRAC * (hi.z - lo.z)
+    for ob in objs:
+        ob.data.materials.append(mats["face"])
+    face_texture.apply(objs, m, mats["face"], len(ORDER) - 1, z_neck,
+                       ORDER.index("skin"))
+    return m
+
+
+def relax_head_labels(objs, lo, hi, iterations=6, bias=6,
+                      frac_lo=0.545, frac_hi=0.80):
+    """Smooth material labels over the skull.
+
+    With the features moved into a texture there is nothing left here to erode,
+    so this pass has one job: clean up the hairline. Meshy rebuilds the fringe
+    as a row of big triangles, and a hard material border on a ragged edge reads
+    as sawteeth at any distance. The body seams sit outside the band so their
+    garment borders stay where they are.
+    """
+    import bmesh
+
+    z_lo = lo.z + frac_lo * (hi.z - lo.z)
+    z_hi = lo.z + frac_hi * (hi.z - lo.z)
+
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+
+        hot = {f.index for f in bm.faces if z_lo <= f.calc_center_median().z <= z_hi}
+        if not hot:
+            bm.free()
+            continue
+
+        for _ in range(iterations):
+            cur = [f.material_index for f in bm.faces]
+            nxt = list(cur)
+            for f in bm.faces:
+                if f.index not in hot:
+                    continue
+                tally = {}
+                for e in f.edges:
+                    for nf in e.link_faces:
+                        k = cur[nf.index]
+                        tally[k] = tally.get(k, 0) + 1
+                tally[cur[f.index]] = tally.get(cur[f.index], 0) + bias
+                nxt[f.index] = max(tally, key=tally.get)
+            for f in bm.faces:
+                f.material_index = nxt[f.index]
+
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    print(f"[relax] head labels smoothed in z {z_lo:.3f}..{z_hi:.3f}")
 
 
 def setup_scene():
@@ -329,6 +617,7 @@ def setup_scene():
     try:
         scn.view_settings.view_transform = "Standard"
         scn.view_settings.look = "None"
+        scn.view_settings.exposure = -0.45
     except (TypeError, ValueError):
         pass
 
@@ -339,9 +628,10 @@ def setup_scene():
 
     for name, loc, rot, size, energy in (
             ("Key", (-1.6, -2.1, 2.5), (math.radians(52), 0, math.radians(-36)), 2.6, 130),
-            ("Fill", (2.3, -1.4, 1.4), (math.radians(76), 0, math.radians(58)), 3.2, 48),
+            ("Fill", (2.3, -1.4, 1.4), (math.radians(76), 0, math.radians(58)), 3.2, 62),
             ("Rim", (0.9, 2.4, 2.1), (math.radians(128), 0, math.radians(196)), 2.3, 95),
-            ("Top", (0.0, 0.0, 3.4), (0, 0, 0), 3.2, 34)):
+            ("Top", (0.0, 0.0, 3.4), (0, 0, 0), 3.2, 34),
+            ("Face", (0.0, -2.2, 1.35), (math.radians(90), 0, 0), 1.6, 12)):
         bpy.ops.object.light_add(type="AREA", location=loc)
         lt = bpy.context.object
         lt.name = name
@@ -353,7 +643,7 @@ def setup_scene():
     world.use_nodes = True
     bg = world.node_tree.nodes["Background"]
     bg.inputs[0].default_value = (0.56, 0.58, 0.63, 1.0)
-    bg.inputs[1].default_value = 0.40
+    bg.inputs[1].default_value = 0.34
     scn.world = world
 
     cam_data = bpy.data.cameras.new("Cam")
@@ -379,6 +669,15 @@ def render_views(cam):
         bpy.ops.render.render(write_still=True)
         print(f"[render] restyle_{name}.png")
 
+    # head close-up, the only way to actually judge the face detail
+    cam.data.lens = 85
+    head = Vector((0.0, -0.25, 1.15))
+    cam.location = (0.0, -2.62, 1.15)
+    cam.rotation_euler = (head - cam.location).to_track_quat("-Z", "Y").to_euler()
+    bpy.context.scene.render.filepath = os.path.join(OUT, "restyle_head.png")
+    bpy.ops.render.render(write_still=True)
+    print("[render] restyle_head.png")
+
 
 def main():
     src = SRC if os.path.exists(SRC) else SRC_LOW
@@ -394,7 +693,13 @@ def main():
     bpy.context.view_layer.objects.active = objs[0]
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
-    assign_by_region(objs, materials(), lo, hi)
+    refine_upper_head(objs, lo, hi)
+    smooth_reconstruction_spikes(objs, lo, hi)
+    soften_hairline(objs, lo, hi)
+    mats = materials()
+    assign_by_region(objs, mats, lo, hi)
+    relax_head_labels(objs, lo, hi)
+    paint_face(objs, mats, lo, hi)
 
     for ob in objs:
         if ob.type == "MESH":
@@ -414,9 +719,10 @@ def main():
                               use_selection=False, export_apply=True,
                               export_yup=True)
     tris = 0
-    for ob in objs:
-        ob.data.calc_loop_triangles()
-        tris += len(ob.data.loop_triangles)
+    for ob in bpy.data.objects:
+        if ob.type == "MESH":
+            ob.data.calc_loop_triangles()
+            tris += len(ob.data.loop_triangles)
     print(f"[done] tris={tris} glb={glb} size={os.path.getsize(glb)}")
 
     render_views(setup_scene())
