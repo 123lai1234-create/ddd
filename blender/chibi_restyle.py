@@ -27,15 +27,19 @@ import face_texture
 OUT = os.path.join(HERE, "out")
 os.makedirs(OUT, exist_ok=True)
 
-_DEFAULT_SRC = r"C:\Users\User\minimax-glb-tmp\chibi-tinted-low.glb"
+_DEFAULT_SRC = r"C:\Users\User\minimax-glb-tmp\chibi-tinted-full.glb"
 # Override with CHIBI_SRC to point at a different base mesh.
 #
-# Worth knowing before you re-export: the current base has NO texture at all
-# (0 images, no UVs, only POSITION/NORMAL and one flat baseColorFactor), which
-# is the only reason this script paints the face by hand. A Meshy export made
-# with PBR textures enabled carries the reference artwork in a baseColorTexture
-# and is already closer to the artwork than anything painted here - parse the
-# GLB's JSON chunk and check images/baseColorTexture before running this.
+# Use the FULL resolution export. chibi-tinted-low.glb is the same character
+# decimated to 24k triangles, and that reduction is what wrecked the hair:
+# Meshy's locks are rounded tubes, and collapsing them that hard leaves flat
+# angular shards - nothing like the reference. The full mesh has the
+# reference's rounded locks and real eye sockets.
+#
+# Worth knowing before you re-export: the base has NO texture at all
+# (0 images, no UVs, only POSITION/NORMAL and one flat baseColorFactor),
+# which is the only reason this script paints the face from the reference
+# photo rather than reusing a baseColorTexture.
 SRC = os.environ.get("CHIBI_SRC", _DEFAULT_SRC)
 SRC_LOW = _DEFAULT_SRC
 
@@ -47,7 +51,7 @@ REF_FACE = os.environ.get(
     "CHIBI_FACE", os.path.join(HERE, "ref", "chibi-ref-meshy.png"))
 
 TARGET_H = 1.8
-TARGET_TRIS = 48000
+TARGET_TRIS = 180000
 SUBDIV = 2
 
 # Slot order baked into every polygon; index 7 is the painted face.
@@ -97,13 +101,40 @@ def make_material(name, color, roughness=0.55, metallic=0.0, subsurface=0.0,
     return mat
 
 
-def make_plaid(name, ca, cb, scale=17.0, line=17.0, line_width=0.13):
-    """Buffalo check driven by a coarse checker plus thin cross-lines.
+def make_plaid_image(name="PlaidTex", size=512, cells=8,
+                     ca=(0.560, 0.062, 0.055), cb=(0.030, 0.026, 0.026)):
+    """Buffalo-check tartan as an ordinary image texture.
 
-    Earlier versions stacked SIN wave masks whose factors averaged out to a
-    single flat red across the waist — the pattern has to come from the
-    checker cells themselves, with the waves only adding thin dark seams.
+    The plaid used to be a procedural node graph (checker + wave masks). glTF
+    has no procedural textures: the exporter drops the whole node tree, and
+    a material with no base colour and no baseColorTexture falls back to
+    white - so the waist band rendered as a plain white belt on the website
+    while every Blender render showed red-and-black tartan. A plain image
+    travels through glTF untouched.
     """
+    import numpy as np
+
+    px = size // cells
+    ys, xs = np.mgrid[0:size, 0:size]
+    checker = (((xs // px) + (ys // px)) % 2).astype(np.float32)
+    rgb = np.empty((size, size, 3), np.float32)
+    for i in range(3):
+        rgb[:, :, i] = checker * cb[i] + (1.0 - checker) * ca[i]
+    seam = ((xs % px) < 3) | ((ys % px) < 3)
+    rgb[seam] = 0.018
+
+    img = bpy.data.images.new(name, size, size, alpha=False)
+    img.colorspace_settings.name = "sRGB"
+    rgba = np.ones((size, size, 4), np.float32)
+    rgba[:, :, :3] = rgb
+    img.pixels.foreach_set(np.ascontiguousarray(rgba).ravel())
+    img.update()
+    img.pack()
+    return img
+
+
+def make_plaid(name, ca, cb, size=512, cells=8):
+    """Buffalo check driven by a coarse checker plus thin dark seams."""
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     nt = mat.node_tree
@@ -111,50 +142,41 @@ def make_plaid(name, ca, cb, scale=17.0, line=17.0, line_width=0.13):
     set_input(b, "Roughness", 0.66)
     set_input(b, "Specular IOR Level", 0.28)
 
-    tc = nt.nodes.new("ShaderNodeTexCoord")
-    tc.location = (-900, 0)
-
-    ck = nt.nodes.new("ShaderNodeTexChecker")
-    ck.location = (-600, 140)
-    ck.inputs["Scale"].default_value = scale
-    ck.inputs["Color1"].default_value = (*ca, 1.0)
-    ck.inputs["Color2"].default_value = (*cb, 1.0)
-
-    masks = []
-    for i, axis in enumerate(("X", "Z")):
-        w = nt.nodes.new("ShaderNodeTexWave")
-        w.location = (-600, -160 - i * 190)
-        w.wave_type = "BANDS"
-        w.bands_direction = axis
-        w.wave_profile = "SAW"
-        w.inputs["Scale"].default_value = line
-        w.inputs["Distortion"].default_value = 0.0
-        lt = nt.nodes.new("ShaderNodeMath")
-        lt.location = (-410, -160 - i * 190)
-        lt.operation = "LESS_THAN"
-        lt.inputs[1].default_value = line_width
-        nt.links.new(w.outputs["Fac"], lt.inputs[0])
-        masks.append(lt)
-
-    uni = nt.nodes.new("ShaderNodeMath")
-    uni.location = (-230, -200)
-    uni.operation = "MAXIMUM"
-    nt.links.new(masks[0].outputs["Value"], uni.inputs[0])
-    nt.links.new(masks[1].outputs["Value"], uni.inputs[1])
-
-    dark = nt.nodes.new("ShaderNodeMix")
-    dark.location = (0, 0)
-    dark.data_type = "RGBA"
-    dark.blend_type = "MIX"
-    dark.inputs[7].default_value = (0.012, 0.010, 0.010, 1.0)
-    nt.links.new(uni.outputs["Value"], dark.inputs["Factor"])
-    nt.links.new(ck.outputs["Color"], dark.inputs[6])
-    nt.links.new(dark.outputs[2], b.inputs["Base Color"])
-
-    nt.links.new(tc.outputs["Object"], ck.inputs["Vector"])
-    for w in [n for n in nt.nodes if n.bl_idname == "ShaderNodeTexWave"]:
-        nt.links.new(tc.outputs["Object"], w.inputs["Vector"])
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = make_plaid_image(name + "Image", size, cells, ca, cb)
+    tex.location = (-400, 200)
+    nt.links.new(tex.outputs["Color"], b.inputs["Base Color"])
     return mat
+
+
+def uv_plaid(objs, lo, hi, slot, tiles=4.0, cx=0.0, cy=-0.05, radius=0.35):
+    """Wrap the tartan around the waist.
+
+    The plaid is a band, so it wants a cylindrical unwrap rather than the
+    flat UVs the rest of the mesh carries. The whole waist is a whole
+    number of tiles so the pattern wraps seamlessly, and the tile size puts
+    about eight squares across the front - which is what the reference
+    shows.
+    """
+    H = hi.z - lo.z
+    z0 = lo.z + 0.330 * H
+    tile = (2.0 * math.pi * radius) / tiles
+    u_span = tiles
+
+    for ob in objs:
+        uvl = ob.data.uv_layers.get("HeadUV") or ob.data.uv_layers.new(name="HeadUV")
+        ob.data.uv_layers.active = uvl
+        data = uvl.data
+        for p in ob.data.polygons:
+            if p.material_index != slot:
+                continue
+            for li in p.loop_indices:
+                v = ob.data.vertices[ob.data.loops[li].vertex_index].co
+                az = math.atan2(v.x - cx, -(v.y - cy))
+                data[li].uv = ((az / (2.0 * math.pi)) * u_span,
+                               (v.z - z0) / tile)
+        ob.data.update()
+    print(f"[plaid] tartan unwrapped, u span {u_span:.2f} tiles")
 
 
 def materials():
@@ -163,7 +185,7 @@ def materials():
         "hair": make_material("Hair", (0.028, 0.026, 0.034), 0.38, coat=0.40),
         "tee": make_material("Tee", (0.935, 0.935, 0.948), 0.68),
         "plaid": make_plaid("Plaid", (0.560, 0.062, 0.055), (0.030, 0.026, 0.026)),
-        "pants": make_material("Pants", (0.615, 0.092, 0.082), 0.58),
+        "pants": make_material("Pants", (0.430, 0.064, 0.057), 0.58),
         "shoe": make_material("Shoe", (0.040, 0.040, 0.048), 0.34, coat=0.22),
         "sole": make_material("Sole", (0.955, 0.955, 0.955), 0.45),
         # "face" is built later by face_texture.bake(), it reuses Skin's shading
@@ -231,12 +253,18 @@ def normalise(objs):
 
 
 def decimate_to_target(objs, target=TARGET_TRIS):
-    """Densify then thin back down to a web-friendly budget.
+    """Thin the source mesh down to the web budget.
 
-    Voxel/octree remesh either OOMs or empties this Meshy mesh (bad normals),
-    and edge-collapse Decimate barely moves non-manifold input. Linear SIMPLE
-    subdivision buys face density without moving the surface, which is what
-    stops material borders from looking like sawteeth.
+    The source is Meshy's full-resolution export (719k faces) and it is what
+    carries the reference's rounded hair locks. Collapse decimation keeps
+    them well down to ~150k faces, so that is where the budget sits - the
+    24k-triangle copy that was used before has the locks as flat angular
+    shards, which is the single biggest reason the model did not look like
+    the reference.
+
+    There is no subdivision pass any more. SIMPLE subdiv followed by collapse
+    was the original recipe for the low-poly base, and running it over an
+    already dense mesh only burns time and rounds off the locks.
     """
     bpy.ops.object.select_all(action="DESELECT")
     for ob in objs:
@@ -246,19 +274,13 @@ def decimate_to_target(objs, target=TARGET_TRIS):
     fused = bpy.context.object
     fused.name = "Chibi"
 
-    sub = fused.modifiers.new("Subdiv", "SUBSURF")
-    sub.subdivision_type = "SIMPLE"
-    sub.levels = SUBDIV
-    sub.render_levels = SUBDIV
-    bpy.ops.object.modifier_apply(modifier=sub.name)
-
     n = len(fused.data.polygons)
     if n > target:
         mod = fused.modifiers.new("Decimate", "DECIMATE")
         mod.ratio = target / n
         bpy.ops.object.modifier_apply(modifier=mod.name)
 
-    print(f"[subdiv+decimate] {n} -> {len(fused.data.polygons)} faces")
+    print(f"[decimate] {n} -> {len(fused.data.polygons)} faces")
     return [fused]
 
 
@@ -385,37 +407,42 @@ def resculpt_proportions(objs, lo, hi,
           f"shoe={moved['shoe']} (hair_k={hair_k} leg_k={leg_k} shoe_k={shoe_k})")
 
 
-def clear_face_fringe(objs, lo, hi, mats, z_top=0.640, z_bot=0.500, y_face=Y_FACE,
-                      z_sl=0.610, z_sh=0.690, y_sb_lo=-0.33, y_sb_hi=-0.15):
-    """Delete the flat shards of fringe that hang in front of the face.
+def clear_face_fringe(objs, lo, hi, mats, m=None, margin=0.0, y_front=-0.16,
+                      skip_faces=()):
+    """Delete hair that actually covers the eyes or the mouth.
 
-    Meshy reconstructs the bangs as thin sheets that dangle across the eyes and
-    nose. Moving their vertices does not help - pulling them back or lifting
-    them just turns a few slabs into a dense curtain over the face (tried, it
-    made the model strictly worse).
+    The old version shaved a horizontal band off the whole head, which cut the
+    bangs flat across the forehead - a ruler line where the reference has a
+    row of separate locks. The bangs were never the problem: the material
+    classifier was painting them into the face, and this band was the clumsy
+    attempt to hide the result. With the shells classified as hair they hang
+    where Meshy put them, which is already correct.
 
-    They are separate sheets floating in front of the skull, and the painted
-    face already sits on the skull behind them. So the fix is to delete the
-    hair-material polygons that are in front of the face plane within the
-    fringe height band, which uncovers the painted face.
-
-    Only hair-material polygons are touched: the face polygons live at y >
-    y_face, so the painted features are never candidates in the first place.
+    So this now only removes hair that intrudes into the eye sockets or the
+    mouth, using the measured face frame. The lock that hangs between the eyes
+    down to the nose bridge stays - the reference has exactly that - and so do
+    the detached bang shells, which Meshy already placed by hand.
     """
     import bmesh
 
+    if m is None:
+        print("[fringe] no face frame, skipping")
+        return 0
+
     hm = mats.get("hair")
     hair_names = {hm.name} if hm is not None else {
-        m.name for m in mats.values() if m and m.name.lower().startswith("hair")
+        mm.name for mm in mats.values() if mm and mm.name.lower().startswith("hair")
     }
-    H = hi.z - lo.z
-    z_hi = lo.z + z_top * H
-    z_lo = lo.z + z_bot * H
-    # z_sl / z_sh are FRACTIONS of the height - they must be converted to
-    # absolute z before they can be compared against a vertex coordinate.
-    z_sl_abs = lo.z + z_sl * H
-    z_sh_abs = lo.z + z_sh * H
 
+    cx, R = m["cx"], m["radius"]
+    eye_x = R * math.sin(m["eye_az"])
+    zones = []
+    for sgn in (-1.0, 1.0):
+        zones.append((cx + sgn * eye_x, m["eye_z"],
+                      m["eye_hw"] * 0.78 + margin, m["eye_hh"] * 0.78 + margin))
+    zones.append((cx, m["mouth_z"], m["mouth_hw"] + margin, 0.045 + margin))
+
+    skip = set(skip_faces)
     removed = 0
     for ob in objs:
         me = ob.data
@@ -431,18 +458,15 @@ def clear_face_fringe(objs, lo, hi, mats, z_top=0.640, z_bot=0.500, y_face=Y_FAC
         for f in bm.faces:
             if f.material_index not in hair_slots:
                 continue
-            c = f.calc_center_median()
-            # (a) sheets hanging in front of the face
-            if z_lo <= c.z <= z_hi and c.y < y_face:
-                doomed.append(f)
+            if f.index in skip:
                 continue
-            # (b) the flat slabs standing beside the cheeks - the "headphone"
-            # blocks. They sit much less far forward than the fringe over the
-            # forehead (measured: slabs at y ~ -0.24, fringe at y ~ -0.38 and
-            # beyond), so a Y window separates the two cleanly.
-            if (z_sl_abs <= c.z <= z_sh_abs and abs(c.x) > 0.22
-                    and y_sb_lo < c.y < y_sb_hi):
-                doomed.append(f)
+            c = f.calc_center_median()
+            if c.y > y_front:
+                continue
+            for zx, zz, rx, rz in zones:
+                if ((c.x - zx) / rx) ** 2 + ((c.z - zz) / rz) ** 2 <= 1.0:
+                    doomed.append(f)
+                    break
         if doomed:
             bmesh.ops.delete(bm, geom=doomed, context="FACES")
             removed += len(doomed)
@@ -450,9 +474,8 @@ def clear_face_fringe(objs, lo, hi, mats, z_top=0.640, z_bot=0.500, y_face=Y_FAC
         bm.free()
         me.update()
 
-    print(f"[fringe] removed {removed} hair polygons "
-          f"(front band z {z_lo:.3f}..{z_hi:.3f} y<{y_face}; "
-          f"side plates z {z_sl_abs:.3f}..{z_sh_abs:.3f})")
+    print(f"[fringe] removed {removed} hair polygons over the eyes / mouth")
+    return removed
 
 
 def soften_cloth_edges(objs, lo, hi,
@@ -500,6 +523,11 @@ def refine_upper_head(objs, lo, hi, levels=1):
     vertices land exactly on the shared edges, so the seam is watertight.
     """
     import bmesh
+
+    if levels <= 0:
+        # The full-resolution base is dense enough everywhere already; the
+        # subdivision only existed to sharpen the face on the low-poly copy.
+        return
 
     x0 = 0.0
     y0 = -0.45
@@ -575,6 +603,15 @@ def raise_fringe(objs, lo, hi, mats, shrink=0.30, at=0.735, reach=0.17):
     """
     import bmesh
 
+    if shrink >= 0.999:
+        # Scaling one axis cannot shorten a fringe: it compresses the spikes'
+        # length and thickness by the same factor, so at shrink=0.30 the whole
+        # band collapses into a thin slab and the hair reads as a flat-bottomed
+        # helmet. Disabled by default - do not turn it back up without changing
+        # the maths to a rigid move of the bang shell.
+        print("[fringe] skipped: single-axis squeeze flattens the spikes")
+        return
+
     H = hi.z - lo.z
     top = lo.z + at * H
     floor = top - reach * H
@@ -601,6 +638,109 @@ def raise_fringe(objs, lo, hi, mats, shrink=0.30, at=0.735, reach=0.17):
     print(f"[fringe] bangs shrunk to {shrink:.0%} in z {floor:.3f}..{top:.3f}")
 
 
+def shell_map(objs):
+    """Connected-component id for every face, plus each shell's bounding box.
+
+    Meshy ships the character as one fused mesh, but the bangs and the side
+    locks are *detached sheets* floating in front of the skull. Nothing about
+    them says "hair": they face forward and they hang below the hairline, so
+    the normal-based classifier files them under skin and the face texture
+    then paints the whole hairstyle into the forehead. Their identity as
+    separate shells is the only reliable signal.
+    """
+    import bmesh
+
+    out = []
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        n = len(bm.faces)
+        parent = list(range(n))
+
+        def find(a):
+            while parent[a] != a:
+                parent[a] = parent[parent[a]]
+                a = parent[a]
+            return a
+
+        for f in bm.faces:
+            for e in f.edges:
+                for nf in e.link_faces:
+                    ra, rb = find(f.index), find(nf.index)
+                    if ra != rb:
+                        parent[rb] = ra
+
+        cid = [find(f.index) for f in bm.faces]
+        boxes = {}
+        for f in bm.faces:
+            c = f.calc_center_median()
+            b = boxes.get(cid[f.index])
+            if b is None:
+                b = boxes[cid[f.index]] = [1e18, -1e18, 1e18, -1e18, 1e18,
+                                           -1e18, 0]
+            b[0] = min(b[0], c.x)
+            b[1] = max(b[1], c.x)
+            b[2] = min(b[2], c.y)
+            b[3] = max(b[3], c.y)
+            b[4] = min(b[4], c.z)
+            b[5] = max(b[5], c.z)
+            b[6] += 1
+        bm.free()
+        out.append((cid, boxes))
+    return out
+
+
+def hair_shell_faces(objs, z_neck, front_y=-0.10):
+    """Face indices belonging to detached hair shells.
+
+    A shell counts as hair when it hangs in front of the head (the bangs) and
+    sits entirely above the neck. Shells at the back or at the sides of the
+    skull are the ears and the neck, which stay skin.
+    """
+    out = []
+    for ob, (cid, boxes) in zip(objs, shell_map(objs)):
+        if not boxes:
+            out.append(set())
+            continue
+        biggest = max(b[6] for b in boxes.values())
+        hair_shells = set()
+        for key, b in boxes.items():
+            if b[6] > biggest * 0.5:
+                continue                       # the fused body, not a sheet
+            if b[2] < front_y and b[4] > z_neck:
+                hair_shells.add(key)
+        out.append({i for i, c in enumerate(cid) if c in hair_shells})
+        for key in sorted(hair_shells):
+            b = boxes[key]
+            print(f"[shell] hair sheet faces={b[6]} x {b[0]:+.3f}..{b[1]:+.3f} "
+                  f"y {b[2]:+.3f}..{b[3]:+.3f} z {b[4]:.3f}..{b[5]:.3f}")
+    return out
+
+
+def mark_hair_shells(objs, faces_by_obj):
+    """Force the detached bang shells back to the hair material."""
+    import bmesh
+
+    total = 0
+    for ob, faces in zip(objs, faces_by_obj):
+        if not faces:
+            continue
+        slot = ORDER.index("hair")
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        for f in bm.faces:
+            if f.index in faces:
+                f.material_index = slot
+                total += 1
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    print(f"[shells] {total} polygons forced back to hair")
+    return total
+
+
 def assign_by_region(objs, mats, lo, hi):
     """Hard per-face material assignment, then neighbour majority smoothing.
 
@@ -623,6 +763,9 @@ def assign_by_region(objs, mats, lo, hi):
     # hairline as a fraction of total height, front vs. temple
     HAIRLINE_FRONT = 0.712
     HAIRLINE_SIDE = 0.655
+    # inside this azimuth (1.0 = 90 deg) the head is the face oval, whatever
+    # its surface normal says - see the head branch of classify()
+    FACE_AZ = 0.55
 
     # Bare arms. x alone cannot tell an arm from the hip - they touch, and the
     # vertex profile through the band is continuous. But the arms hang clear
@@ -654,16 +797,22 @@ def assign_by_region(objs, mats, lo, hi):
             return "skin"                # neck
 
         # ---- head
-        # A flat ellipse mask reads as a mask: its edge cuts across the hair
-        # volume and leaves an obvious oval. Instead decide from the surface
-        # normal plus an azimuth-dependent hairline, so skin is whatever faces
-        # forward below the fringe and hair is everything else.
+        # The face oval decides, not the surface normal. This mesh carries
+        # real eye sockets, brow ridges, a nose and a mouth slit, and every
+        # one of those features turns its face sideways - the normal test
+        # files them under hair and they come out as black rings around the
+        # painted eyes. Inside the oval it is all face; outside it the
+        # normal still decides, so the ears (which face straight out) stay
+        # skin.
+        az = min(abs(math.atan2(p.x, -p.y)) / (math.pi * 0.5), 1.0)
+        hairline = lo.z + H * (HAIRLINE_FRONT
+                               - (HAIRLINE_FRONT - HAIRLINE_SIDE) * az * az)
+        if p.z >= hairline:
+            return "hair"
+        if az <= FACE_AZ:
+            return "skin"
         if n is None or n.y < -0.42:
-            az = min(abs(math.atan2(p.x, -p.y)) / (math.pi * 0.5), 1.0)
-            hairline = lo.z + H * (HAIRLINE_FRONT
-                                   - (HAIRLINE_FRONT - HAIRLINE_SIDE) * az * az)
-            if p.z < hairline:
-                return "skin"
+            return "skin"
         return "hair"
 
     for ob in objs:
@@ -672,7 +821,10 @@ def assign_by_region(objs, mats, lo, hi):
             if key in mats:          # "face" is baked later, it keeps its slot
                 ob.data.materials.append(mats[key])
 
-    for ob in objs:
+    z_neck_abs = lo.z + Z_NECK_FRAC * H
+    shell_faces = hair_shell_faces(objs, z_neck_abs)
+
+    for oi, ob in enumerate(objs):
         bm = bmesh.new()
         bm.from_mesh(ob.data)
         bm.faces.ensure_lookup_table()
@@ -696,6 +848,15 @@ def assign_by_region(objs, mats, lo, hi):
                 nxt.append(max(tally, key=tally.get))
             for i, f in enumerate(bm.faces):
                 f.material_index = nxt[i]
+
+        # The bang sheets hang in front of the skull, so the majority pass
+        # votes them straight into the face - and the face texture then paints
+        # the whole hairstyle into the forehead. Shell identity outranks the
+        # vote: put them back.
+        slot = ORDER.index("hair")
+        for f in bm.faces:
+            if f.index in shell_faces[oi]:
+                f.material_index = slot
 
         bm.to_mesh(ob.data)
         bm.free()
@@ -810,10 +971,19 @@ def flatten_hem_edges(objs, lo, hi, mats):
     import bmesh
 
     H = hi.z - lo.z
-    # (material, plane as a fraction of height, how far below to pull from)
-    bands = (("tee", 0.400, 0.300),
-             ("plaid", 0.330, 0.245),
-             ("pants", 0.120, 0.080))
+    # (material, plane as a fraction of height, how far below to pull from,
+    #  how far to tuck the ring inside the garment above it)
+    #
+    # The tee hem goes all the way up to the plaid's top edge: in the
+    # reference the white tee ends in one clean horizontal line right where
+    # the plaid starts. Meshy cut the shirt off at a ragged radius, and that
+    # ragged edge pokes through the plaid as a row of white teeth.
+    bands = (("tee", 0.4183, 0.0, 0.006),
+             ("plaid", 0.330, 0.245, 0.004),
+             ("pants", 0.120, 0.080, 0.0))
+
+    AX = (0.0, -0.05)          # body axis
+    BINS = 24                  # angular bins for the ring radius
 
     for ob in objs:
         bm = bmesh.new()
@@ -821,7 +991,7 @@ def flatten_hem_edges(objs, lo, hi, mats):
         bm.faces.ensure_lookup_table()
         bm.verts.ensure_lookup_table()
 
-        for key, plane_frac, floor_frac in bands:
+        for key, plane_frac, floor_frac, margin in bands:
             slot = ORDER.index(key)
             plane = lo.z + plane_frac * H
             floor = lo.z + floor_frac * H
@@ -834,6 +1004,51 @@ def flatten_hem_edges(objs, lo, hi, mats):
                     if floor <= v.co.z < plane:
                         v.co.z = plane
                         moved += 1
+
+            # The hem ring is ragged: Meshy cut the garment off at an uneven
+            # radius, and the spikes poke straight through the garment above
+            # it - which reads as a row of white teeth over the red plaid.
+            # Smooth the radius per angle and tuck the ring just inside.
+            #
+            # The ring is every vertex sitting on the plane, not just the ones
+            # that were pulled up: most of the hem was already flat and the
+            # jag is in the radius, not the height.
+            if margin > 0.0:
+                ring_verts = []
+                seen = set()
+                for f in faces:
+                    for v in f.verts:
+                        if v.index in seen:
+                            continue
+                        if abs(v.co.z - plane) > 0.002:
+                            continue
+                        seen.add(v.index)
+                        ring_verts.append(v)
+                bins = {}
+                for v in ring_verts:
+                    dx = v.co.x - AX[0]
+                    dy = v.co.y - AX[1]
+                    a = int((math.atan2(dy, dx) + math.pi) / (2 * math.pi)
+                            * BINS) % BINS
+                    bins.setdefault(a, []).append(math.hypot(dx, dy))
+                if bins:
+                    med = {k: sorted(v)[len(v) // 2] for k, v in bins.items()}
+                    flat = sorted(r for v in bins.values() for r in v)
+                    flat = flat[len(flat) // 2]
+                    for v in ring_verts:
+                        dx = v.co.x - AX[0]
+                        dy = v.co.y - AX[1]
+                        a = int((math.atan2(dy, dx) + math.pi) / (2 * math.pi)
+                                * BINS) % BINS
+                        r = math.hypot(dx, dy)
+                        if r <= 1e-6:
+                            continue
+                        target = med.get(a, flat) - margin
+                        if r > target:
+                            s = target / r
+                            v.co.x = AX[0] + dx * s
+                            v.co.y = AX[1] + dy * s
+
             if moved:
                 print(f"[hem] {ob.name}: {key} pulled {moved} verts up to "
                       f"z={plane:.3f}")
@@ -842,9 +1057,10 @@ def flatten_hem_edges(objs, lo, hi, mats):
         ob.data.update()
 
 
-def paint_face(objs, mats, lo, hi):
+def paint_face(objs, mats, lo, hi, m=None):
     """Bake the face texture, then hand the skull its material and UVs."""
-    m = face_metrics(objs, lo, hi)
+    if m is None:
+        m = face_metrics(objs, lo, hi)
     mats["face"] = face_texture.bake(m, mats["skin"], OUT, REF_FACE)
     z_neck = lo.z + Z_NECK_FRAC * (hi.z - lo.z)
     for ob in objs:
@@ -990,19 +1206,30 @@ def main():
     bpy.context.view_layer.objects.active = objs[0]
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
-    resculpt_proportions(objs, lo, hi)
-    refine_upper_head(objs, lo, hi)
+    resculpt_proportions(objs, lo, hi, hair_k=1.0, leg_k=1.0, shoe_k=1.0)
+    refine_upper_head(objs, lo, hi, levels=0)
     smooth_reconstruction_spikes(objs, lo, hi)
     soften_hairline(objs, lo, hi)
     soften_cloth_edges(objs, lo, hi)
     mats = materials()
     assign_by_region(objs, mats, lo, hi)
+    # The face frame has to exist before anything can ask where the eyes are.
+    m = face_metrics(objs, lo, hi)
+    shell_faces = hair_shell_faces(objs, lo.z + Z_NECK_FRAC * (hi.z - lo.z))
     flatten_hem_edges(objs, lo, hi, mats)
     # after assign_by_region so the hair material is actually on those shards
-    clear_face_fringe(objs, lo, hi, mats)
-    raise_fringe(objs, lo, hi, mats)
+    clear_face_fringe(objs, lo, hi, mats, m, skip_faces=shell_faces[0])
+    raise_fringe(objs, lo, hi, mats, shrink=1.0)
     relax_head_labels(objs, lo, hi)
-    paint_face(objs, mats, lo, hi)
+    # relax_head_labels smooths the hairline, and the detached bang shells have
+    # to outrank that vote or the hairstyle slides back into the forehead.
+    # Recompute: clear_face_fringe deleted polygons, so the old face indices
+    # no longer point at the same faces.
+    mark_hair_shells(objs, hair_shell_faces(
+        objs, lo.z + Z_NECK_FRAC * (hi.z - lo.z)))
+    paint_face(objs, mats, lo, hi, m)
+    # after paint_face: the face pass flattens every non-face UV to (0,0)
+    uv_plaid(objs, lo, hi, ORDER.index("plaid"))
 
     for ob in objs:
         if ob.type == "MESH":
@@ -1018,9 +1245,15 @@ def main():
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, "chibi_restyle.blend"))
 
     glb = os.path.join(OUT, "chibi_restyle.glb")
+    # Draco: the model is 180k triangles of smooth-shaded geometry, which is
+    # 9.6 MB as raw float attributes and 1.6 MB compressed. model-viewer
+    # decodes Draco natively, and this page already loads model-viewer from a
+    # Google CDN, so it adds no new external dependency.
     bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB",
                               use_selection=False, export_apply=True,
-                              export_yup=True)
+                              export_yup=True,
+                              export_draco_mesh_compression_enable=True,
+                              export_draco_mesh_compression_level=6)
     tris = 0
     for ob in bpy.data.objects:
         if ob.type == "MESH":

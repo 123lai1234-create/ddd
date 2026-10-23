@@ -3,11 +3,11 @@ import Base from '../layouts/Base.astro';
 
 const MODEL_URL = '/models/mascot-3d.glb';
 // 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/mascot-3d.glb 得出，不要手填。
-// 解析結果：118,107 tris / 8 materials / 3,249,044 bytes
-// 大小用截尾（3.0 MB）；改用另一種請加 --round 後重跑。
-const STAT_TRIS = '118 K';
+// 解析結果：179,554 tris / 8 materials / 1,794,852 bytes
+// 大小用截尾（1.7 MB）；改用另一種請加 --round 後重跑。
+const STAT_TRIS = '180 K';
 const STAT_MATS = '8';
-const STAT_SIZE = '3.0 MB';
+const STAT_SIZE = '1.7 MB';
 ---
 
 <Base
@@ -32,12 +32,12 @@ const STAT_SIZE = '3.0 MB';
                 id="chibiViewer"
                 src={MODEL_URL}
                 alt="元嬰不說 chibi mascot 真 3D 模型"
-                camera-orbit="0deg 82deg 3.9m"
+                camera-orbit="180deg 82deg 3.9m"
                 camera-target="0m 0.9m 0.2m"
                 field-of-view="30deg"
                 shadow-intensity="0.7"
                 shadow-softness="0.85"
-                exposure="1.05"
+                exposure="0.85"
                 auto-rotate
                 auto-rotate-delay="1400"
                 rotation-per-second="9deg"
@@ -71,15 +71,20 @@ const STAT_SIZE = '3.0 MB';
             <p>
                 逐面材質在這種網格上畫不出銳利的五官：材質邊界只能落在最近的三角形邊上，
                 眼睛會變成一圈鋸齒；改用壓扁的球體貼在頭顱上，又會因為彎曲而離開表面糊成一塊污漬。
-                參考圖本身也是畫的，所以最後改成一樣的做法 ——
-                用 numpy 把眼白、虹膜、睫毛、眉毛、腮紅、鼻子、嘴巴畫進一張 2D 貼圖。
+                最後改成<b>把參考圖投影上去</b> ——
+                參考圖本身就是這顆頭的紋理，用 numpy 取樣後繞到頭上，五官自然就是對的。
             </p>
             <ul>
-                <li>貼圖以<b>方位角</b>（而不是平面投影）繞到頭上，所以 3/4 視角不會撕開</li>
-                <li>unwrap 是<b>等向</b>的：水平像素是弧長、垂直像素是高度，同樣 px/unit</li>
+                <li>水平用<b>方位角</b>映射（<code>x = cx + K·sin(az)</code>）而不是平面投影，臉頰不會二次前縮</li>
+                <li>垂直維持線性，並用參考圖的 alpha 逐欄夾住取樣列 —— 顎線往上彎才不會取到背景</li>
                 <li>頭部半徑直接由網格解球，ray cast 會打到耳朵、把頭算得過圓</li>
                 <li>只有 skin 換成臉材質 —— 瀏海是獨立殼層，一起換會把整個髮型變成額頭</li>
             </ul>
+            <p>
+                底模用 Meshy 的<b>全解析度</b>匯出檔（719k 面）：低模版（24k 面）會把圓潤的髮束
+                壓成稜角碎片，跟參考圖完全不像。GLB 另外走 <b>Draco</b> 壓縮，
+                180k 面從 9.6 MB 降到 1.7 MB。
+            </p>
             <p class="mascot-3d-foot">
                 腳本原始檔：<code>D:\project\blender\chibi_restyle.py</code>（五官貼圖見
                 <code>face_texture.py</code>）。<br />

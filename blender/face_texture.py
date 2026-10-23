@@ -217,7 +217,19 @@ def project_reference(m, ref_path):
     sw, sh = src.size
     buf = np.empty(sw * sh * 4, dtype=np.float32)
     src.pixels.foreach_get(buf)
-    ref = buf.reshape(sh, sw, 4)[::-1, :, :3]      # top-down rows
+    flat = buf.reshape(sh, sw, 4)
+    ref = flat[::-1, :, :3]                  # top-down rows
+    alpha = flat[::-1, :, 3]                # the cut-out mask
+
+    # The reference is a cut-out on a transparent background, so alpha says
+    # exactly where the face is. Clamp the vertical sample to the opaque span
+    # of each column: the jaw curves up at the sides, and a flat chin line
+    # samples straight through it onto the backdrop - which is what put the
+    # pale patches beside the jaw.
+    opaque = alpha > 0.5
+    top_row = np.argmax(opaque, axis=0)
+    bot_row = sh - 1 - np.argmax(opaque[::-1], axis=0)
+    any_op = opaque.any(axis=0)
 
     z0, z1, R = m["z0"], m["z1"], m["radius"]
     W = max(64, int(2.0 * AZ_HALF * R * PX_PER_UNIT // 32 + 1) * 32)
@@ -232,10 +244,14 @@ def project_reference(m, ref_path):
     # background - sampling them painted grey-blue patches beside the ears.
     xs = np.clip(np.round(cx + K * np.sin((u - 0.5) * 2.0 * AZ_HALF)).astype(int),
                  CHEEK_L, CHEEK_R)
+    xs = np.where(any_op[xs], xs, CHEEK_L)
+
     v = (np.arange(H) + 0.5) / H                    # 0 = chin = canvas bottom
     ys = np.clip(np.round(chin_y - v * (chin_y - hair_y)).astype(int), 0, sh - 1)
+    # per column, stay inside the cut-out
+    ys2 = np.clip(ys[:, None], top_row[xs][None, :], bot_row[xs][None, :])
 
-    rgb = ref[np.ix_(ys, xs)].copy()
+    rgb = ref[ys2, xs[None, :]].copy()
 
     # The photo already carries baked 3D shading. Left at full strength the
     # render's own lighting lands on top of it and the face goes muddy - the
