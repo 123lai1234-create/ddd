@@ -1,3 +1,41 @@
 #!/bin/sh
 command -v git-lfs >/dev/null 2>&1 || { echo >&2 "\nThis repository is configured for Git LFS but 'git-lfs' was not found on your path. If you no longer wish to use Git LFS, remove this hook by deleting '.git/hooks/pre-push'.\n"; exit 2; }
 git lfs pre-push "$@"
+
+# ── 3d-mascot 的統計必須跟實際 GLB 一致 ─────────────────────────
+# /3d-mascot 頁的 STAT_TRIS / STAT_MATS / STAT_SIZE 是直接解析
+# astro/public/models/mascot-3d.glb 得來的。Blender 每重產一次模型這三個數就會
+# 漂移（2026-10-23 當天模型就重產了至少四次），而沒有任何機制提醒。
+#
+# 只在 mascot-3d.glb 或 3d-mascot.astro 有被 stage 時才檢查，
+# 避免其他不相干的 commit 被擋。
+#
+# 沒有 node 就跳過而不是擋下 —— 這是檢查不是安全閘門。
+
+staged=$(git diff --cached --name-only)
+case "$staged" in
+  *mascot-3d.glb*|*3d-mascot.astro*) ;;
+  *) exit 0 ;;
+esac
+
+if ! command -v node >/dev/null 2>&1; then
+  echo >&2 ""
+  echo >&2 "  ⚠ 找不到 node，略過 mascot 統計檢查。"
+  echo >&2 ""
+  exit 0
+fi
+
+if ! (cd "$(git rev-parse --show-toplevel)/astro" && node scripts/sync-mascot-stats.mjs --check); then
+  cat >&2 <<'EOF'
+
+  ✗ /3d-mascot 頁的統計跟 mascot-3d.glb 對不上，這次 push 被擋下。
+
+    修法：cd astro && npm run mascot:stats
+
+  確認真的可以忽略（例如你只想改文案、故意不更新統計）就加 --no-verify 重推。
+
+EOF
+  exit 1
+fi
+
+exit 0
