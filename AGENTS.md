@@ -12,8 +12,15 @@
     加上後是 495 檔 / 47.3MB。**改一邊就要同步改另一邊**，否則又會回到只有一邊有效。
   - 根 `vercel.json` 的 `headers[]` 也有 `/games/confinement-escape/*` 與 `/_astro/*`
     的 immutable 規則，讓 git build 跟 prebuilt 有相同的快取最佳化。
-  - URL 規則**仍然不同**：git build 走 `cleanUrls`（`/games`），prebuilt 走尾斜線（`/games/`）。
-    日常用 git build 就不受影響；要手動部署時注意這點。
+  - 兩邊的**網址規則現在也一致**：都是乾淨網址。`prepare-deploy.ps1` 的 config.json
+    加了一條 `{src: "/(.*)/", status: 308, headers: {Location: "/$1"}}` 放在
+    `{"handle":"filesystem"}` **之前**，把 `/games/` 正規化到 `/games`。
+    站內連結本來就全是無尾斜線的（實測 9 個 href、0 個帶尾斜線）。
+  - ⚠️ **`prepare-deploy.ps1` 的 inline python 必須維持純 ASCII**。PowerShell 5.1 用
+    ANSI 讀 .ps1，python 裡寫中文註解會被解成亂碼並**靜默吞掉後面的 route**，
+    腳本還照樣報 ok 不報錯（2026-10-23 踩過）。中文說明寫在 here-string 外面。
+    同理 `'/ $1'` 這種寫法會被 PowerShell 變數插值吃掉，要用
+    `'/' + chr(0x24) + '1'`。
 - ⚠️ **剛部署完約 5 分鐘內不要下結論**。Vercel 邊緣傳播期間會零星回 404，
   2026-10-23 因此誤判「中文搜尋壞掉」。驗證前先等，且要重跑確認穩定。
   另外比對線上檔案清單時，**不要拿本機 dist 的檔名去對** —— Pagefind 的檔名是
