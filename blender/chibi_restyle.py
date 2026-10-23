@@ -27,8 +27,17 @@ import face_texture
 OUT = os.path.join(HERE, "out")
 os.makedirs(OUT, exist_ok=True)
 
-SRC = r"C:\Users\User\minimax-glb-tmp\chibi-tinted-low.glb"
-SRC_LOW = r"C:\Users\User\minimax-glb-tmp\chibi-tinted-low.glb"  # 8k fallback
+_DEFAULT_SRC = r"C:\Users\User\minimax-glb-tmp\chibi-tinted-low.glb"
+# Override with CHIBI_SRC to point at a different base mesh.
+#
+# Worth knowing before you re-export: the current base has NO texture at all
+# (0 images, no UVs, only POSITION/NORMAL and one flat baseColorFactor), which
+# is the only reason this script paints the face by hand. A Meshy export made
+# with PBR textures enabled carries the reference artwork in a baseColorTexture
+# and is already closer to the artwork than anything painted here - parse the
+# GLB's JSON chunk and check images/baseColorTexture before running this.
+SRC = os.environ.get("CHIBI_SRC", _DEFAULT_SRC)
+SRC_LOW = _DEFAULT_SRC
 
 TARGET_H = 1.8
 TARGET_TRIS = 48000
