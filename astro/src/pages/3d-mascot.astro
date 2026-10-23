@@ -3,9 +3,10 @@ import Base from '../layouts/Base.astro';
 
 const MODEL_URL = '/models/mascot-3d.glb';
 // 真實數據（直接解析 GLB 得出，勿手填）
-const STAT_TRIS = '98 K';
-const STAT_MATS = '12';
-const STAT_SIZE = '2.1 MB';
+// 2026-10-23 重新解析 aff75d8c 的 GLB：160240 tris / 8 materials / 4049848 bytes
+const STAT_TRIS = '160 K';
+const STAT_MATS = '8';
+const STAT_SIZE = '3.9 MB';
 ---
 
 <Base
@@ -30,8 +31,8 @@ const STAT_SIZE = '2.1 MB';
                 id="chibiViewer"
                 src={MODEL_URL}
                 alt="元嬰不說 chibi mascot 真 3D 模型"
-                camera-orbit="28deg 84deg 3.8m"
-                camera-target="0m 0.9m 0m"
+                camera-orbit="35deg 82deg 3.9m"
+                camera-target="0m 0.9m 0.37m"
                 field-of-view="30deg"
                 shadow-intensity="0.7"
                 shadow-softness="0.85"
@@ -58,42 +59,32 @@ const STAT_SIZE = '2.1 MB';
         </div>
 
         <p class="mascot-3d-hint">
-            💡 整隻模型用 <b>Blender 4.5 LTS 原生建模</b>（<code>bpy</code> 腳本組裝，
-            零外部資產）。頭髮是 <code>stretched icosphere</code> 鎖出來的尖刺輪廓，
-            眼睛分眼白 / 瞳孔 / 高光三層，格紋腰結是烘焙成頂點色的 pattern。
+            💡 幾何沿用 <b>Meshy AI</b> 的底模（分層尖刺頭髮、格紋腰結本來就對），
+            在 <b>Blender 4.5 LTS</b> 裡重新上色：衣服皮膚用<b>逐面材質指派</b>，
+            臉部五官則是<b>畫進貼圖</b>再以 cylindrical unwrap 繞到頭上。
             拖曳 = 旋轉，滾輪 = 縮放。
         </p>
 
         <div class="mascot-3d-info">
-            <h3>這版修掉的三個 bug</h3>
+            <h3>臉為什麼是貼圖，不是逐面材質？</h3>
             <p>
-                舊版整張臉被頭髮埋掉，只看得到後腦勺。疊了三層原因：
+                逐面材質在這種網格上畫不出銳利的五官：材質邊界只能落在最近的三角形邊上，
+                眼睛會變成一圈鋸齒；改用壓扁的球體貼在頭顱上，又會因為彎曲而離開表面糊成一塊污漬。
+                參考圖本身也是畫的，所以最後改成一樣的做法 ——
+                用 numpy 把眼白、虹膜、睫毛、眉毛、腮紅、鼻子、嘴巴畫進一張 2D 貼圖。
             </p>
             <ul>
-                <li>
-                    <b>臉的開孔切反邊</b> —— 角色朝 <code>-Y</code>，但 boolean 的切割方塊寫在
-                    <code>[y_face, y_face+1.2]</code>，那是後腦勺。一直在挖錯的地方。
-                </li>
-                <li>
-                    <b>有一個邏輯正確但從未被呼叫的函式</b> —— 看起來能用的那段程式是死碼，
-                    真正執行的是切錯邊的那版。已刪除，避免再被騙一次。
-                </li>
-                <li>
-                    <b>劉海長在臉前面</b> —— 建模階段就生成，所以跟著被切掉。
-                    現在改成 weld + 切孔<b>之後</b>才加 3 根短劉海，尖端停在眉線不遮眼。
-                </li>
+                <li>貼圖以<b>方位角</b>（而不是平面投影）繞到頭上，所以 3/4 視角不會撕開</li>
+                <li>unwrap 是<b>等向</b>的：水平像素是弧長、垂直像素是高度，同樣 px/unit</li>
+                <li>頭部半徑直接由網格解球，ray cast 會打到耳朵、把頭算得過圓</li>
+                <li>只有 skin 換成臉材質 —— 瀏海是獨立殼層，一起換會把整個髮型變成額頭</li>
             </ul>
-            <p>
-                格紋腰結原本是<b>程序化節點</b>材質，而 glTF 格式無法承載程序化材質，
-                匯出後 <code>Base Color</code> 退回預設白，整條腰結變成白色圍裙。
-                改成烘焙成頂點色 <code>COLOR_0</code> —— 那是 glTF 2.0 核心規格的一部分，
-                所有檢視器都會把它乘進基礎色，於是 Blender 與瀏覽器終於一致。
-            </p>
             <p class="mascot-3d-foot">
-                腳本原始檔：<code>D:\project\blender\chibi_build.py</code>（helper 見
-                <code>chibi_lib.py</code>）。<br />
-                預覽圖：<code>out/preview_front.png</code>、<code>out/preview_three_quarter.png</code>、
-                <code>out/preview_side.png</code>、<code>out/preview_back.png</code>。
+                腳本原始檔：<code>D:\project\blender\chibi_restyle.py</code>（五官貼圖見
+                <code>face_texture.py</code>）。<br />
+                預覽圖：<code>out/restyle_front.png</code>、<code>out/restyle_three_quarter.png</code>、
+                <code>out/restyle_side.png</code>、<code>out/restyle_back.png</code>、
+                <code>out/restyle_head.png</code>。臉部貼圖本體：<code>out/face_paint.png</code>。
             </p>
         </div>
     </div>
