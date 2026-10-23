@@ -5,22 +5,31 @@
 
 ## 部署（Vercel Hobby plan）
 
-- ✅ **`git push origin main` 就會自動部署正式站**（2026-10-23 實測驗證，clean URL 全 200）
-- 🚨 **兩條部署路徑現在產出一致，`git push origin main` 是正常流程**（2026-10-23 對齊完成）
+- 🚨🚨 **生產站只能用 CLI prebuilt 部署。`git push origin main` 會部署出一個沒有 API 的站。**
+  這是 2026-10-23 親自踩出來的：push 觸發的自動部署約 3 分鐘後搶走 alias，
+  頁面、搜尋、快取看起來全部正常，但**所有 `/api/*` 都回 404**（股票後端掛掉）。
+  對照實測：`/api/stock/2330` 在 git build 的 3 個部署（8q9276295 / ct9w81tw4 /
+  7ip7k8nrv）全是 404，在 prebuilt 的部署是 200。
+  - **真正原因**：Astro `output: "static"` 不會 build 出 edge function。`/api/*`
+    靠的是 `prepare-deploy.ps1` 把 `catchall.func` 複製進 `.vercel/output/functions/`
+    —— 這一步 git build 沒有、也不做得到。
+  - 所以：**改完部署 → 跑 `npm run build` → `prepare-deploy.ps1` → `vercel deploy --prebuilt --prod`。
+    不要把東西 push 到 main。** 真的需要 push 的話（版本紀錄），push 完**立刻**重跑
+    prebuilt 部署把 alias 搶回來，否則 API 會死到下一次手動部署為止。
+  - 驗證一定要打 `/api/stock/2330`，不能只看頁面 200 —— 這個故障在頁面上完全看不出來。
+- git build 與 prebuilt 的**靜態產出**現在是一致的（2026-10-23 對齊）：
   - `vercel-build.mjs` 在 pagefind 之後套用與 `prepare-deploy.ps1` **完全相同**的排除清單。
     沒有這步時 git build 會把 207MB 的 dist 原封不動上傳，遠超 Vercel Hobby 的 100MB 上限；
-    加上後是 495 檔 / 47.3MB。**改一邊就要同步改另一邊**，否則又會回到只有一邊有效。
+    加上後是 495 檔 / 47.3MB。**改一邊就要同步改另一邊**。
   - 根 `vercel.json` 的 `headers[]` 也有 `/games/confinement-escape/*` 與 `/_astro/*`
-    的 immutable 規則，讓 git build 跟 prebuilt 有相同的快取最佳化。
-  - 兩邊的**網址規則現在也一致**：都是乾淨網址。`prepare-deploy.ps1` 的 config.json
-    加了一條 `{src: "/(.*)/", status: 308, headers: {Location: "/$1"}}` 放在
-    `{"handle":"filesystem"}` **之前**，把 `/games/` 正規化到 `/games`。
-    站內連結本來就全是無尾斜線的（實測 9 個 href、0 個帶尾斜線）。
+    的 immutable 規則，快取最佳化一致。
+  - 網址規則一致：prebuilt 的 config.json 加了
+    `{src: "/(.*)/", status: 308, headers: {Location: "/$1"}}` 放在
+    `{"handle":"filesystem"}` **之前**（站內連結本來就全是無尾斜線的，實測 9 個 href）。
   - ⚠️ **`prepare-deploy.ps1` 的 inline python 必須維持純 ASCII**。PowerShell 5.1 用
     ANSI 讀 .ps1，python 裡寫中文註解會被解成亂碼並**靜默吞掉後面的 route**，
     腳本還照樣報 ok 不報錯（2026-10-23 踩過）。中文說明寫在 here-string 外面。
-    同理 `'/ $1'` 這種寫法會被 PowerShell 變數插值吃掉，要用
-    `'/' + chr(0x24) + '1'`。
+    同理 `'$1'` 會被 PowerShell 變數插值吃掉，要用 `'/' + chr(0x24) + '1'`。
 - ⚠️ **剛部署完約 5 分鐘內不要下結論**。Vercel 邊緣傳播期間會零星回 404，
   2026-10-23 因此誤判「中文搜尋壞掉」。驗證前先等，且要重跑確認穩定。
   另外比對線上檔案清單時，**不要拿本機 dist 的檔名去對** —— Pagefind 的檔名是
