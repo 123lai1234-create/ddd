@@ -260,8 +260,6 @@ b.sA{color:var(--sideA)} b.sB{color:var(--sideB)}
 /* footer / bgm */
 footer.credit{margin-top:30px;padding:14px 0 6px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 footer.credit a{color:var(--gold)}
-#bgmBox{width:200px;height:113px;border-radius:8px;overflow:hidden;background:#000;flex-shrink:0}
-#bgmBox iframe{width:100%;height:100%;border:0}
 
 
 /* ===== 稀有度特效（只用 transform/opacity/box-shadow，手機也跑得動；系統設定「減少動態效果」時關閉） ===== */
@@ -427,7 +425,7 @@ footer.credit a{color:var(--gold)}
   </header>
   <main id="view"></main>
   <footer class="credit">
-    <div id="bgmBox"><div id="bgmPlayer"></div></div>
+    
     <div>🎵 背景音樂<br>
       ・主頁等選單：<b>Ambient Horror Track 01</b> — Music by Cleyton Kauffman（<a href="https://soundcloud.com/cleytonkauffman" target="_blank" rel="noopener">soundcloud.com/cleytonkauffman</a>）・
       出處 <a href="https://opengameart.org/content/ambient-horror-track-01" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
@@ -448,8 +446,6 @@ footer.credit a{color:var(--gold)}
       出處 <a href="https://opengameart.org/content/jrpg-epic-rock-battle-theme-1" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
       ・無盡深淵：<b>Dark Cavern Ambient</b> — by Paul Wortmann・
       出處 <a href="https://opengameart.org/content/dark-cavern-ambient" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      ・戰鬥／破關：<b>DEgITx - Machine Paradigm</b>・出處 <a href="https://www.youtube.com/watch?v=2uGf8-vfFLI" target="_blank" rel="noopener">YouTube</a>
-      （作者頻道 <a href="https://www.youtube.com/@DEgITx" target="_blank" rel="noopener">@DEgITx</a>），版權屬於原作者，透過 YouTube 嵌入播放器播放。<br>
       右上角 🎵 可以開關背景音樂。<br>
       <button class="mini" style="margin-top:6px" onclick="openStuck()">🐞 遊戲卡住了／回報問題</button></div>
     <audio id="bgm_main" src="music/ambient_horror_track01.mp3" loop preload="auto"></audio>
@@ -1025,29 +1021,23 @@ const SFX={
 function toggleMute(){SAVE.muted=!SAVE.muted;save();renderHeader();}
 
 /* ===================== BGM ===================== */
-// 依場景換曲：選單 main、遠征探索 run、無盡深淵 abyss（music/ 裡的 CC0 曲子）；
-// 戰鬥中與逃出成功的畫面 battle 改播 YouTube 嵌入播放器（不下載音檔）。
-// 瀏覽器規定要使用者點過頁面才能出聲，所以第一次點擊時才開始播
-const BGM_ID="2uGf8-vfFLI";
-let BGM=null,BGM_READY=false,BGM_STARTED=false,BGM_CUR=null;
+// 依場景換曲：選單 main、遠征探索 run、無盡深淵 abyss（music/ 裡的 CC0 曲子）。
+// 瀏覽器規定要使用者點過頁面才能出聲，所以第一次點擊時才開始播。
+// 2026-10-23：戰鬥與逃出成功原本走 YouTube 嵌入播放器，已整段移除
+// （第三方 iframe + 非 CC0 曲目），改播 music/ 裡既有的 CC0 曲子。
+let BGM_STARTED=false,BGM_CUR=null;
 function loadBgm(){
   ["main","town","shop","ach","train","run","abyss","story","arena","duel"].forEach(k=>{const a=$("#bgm_"+k);if(a)a.volume=.4;});
-  window.onYouTubeIframeAPIReady=()=>{
-    BGM=new YT.Player("bgmPlayer",{videoId:BGM_ID,
-      playerVars:{loop:1,playlist:BGM_ID,controls:1,playsinline:1,rel:0,modestbranding:1},
-      events:{onReady(){BGM_READY=true;BGM.setVolume(35);BGM_CUR=null;syncBgm();}}});
-  };
-  const s=document.createElement("script");s.src="https://www.youtube.com/iframe_api";document.head.appendChild(s);
 }
 function bgmWant(){
   if(!BGM_STARTED||SAVE.bgm===false)return null;
-  if(VIEW==="battle"){ // 競技場、雙人對決（含網路對戰）的戰鬥用各自的專屬曲，其他戰鬥用 YouTube 那首
+  if(VIEW==="battle"){ // 競技場、雙人對決（含網路對戰）用各自的專屬曲，其餘戰鬥用 Epic Boss Battle
     if(CUR_B&&(CUR_B.online||CUR_B.guest||BATTLE_HOME==="duel"))return "duel";
     if(BATTLE_HOME==="arena")return "arena";
     if(BATTLE_HOME==="train")return "train"; // 練功房的戰鬥也用練功房專屬曲
-    return "battle";
+    return "arena";
   }
-  if(VIEW==="run"&&RUN&&!RUN.active&&RUN.escaped)return "battle";
+  if(VIEW==="run"&&RUN&&!RUN.active&&RUN.escaped)return "ach"; // 逃出成功：凱旋號角
   if(VIEW==="shop")return "shop"; // 商店：輕鬆的爵士
   if(VIEW==="ach")return "ach"; // 成就：凱旋的號角與弦樂
   if(VIEW==="train")return "train"; // 練功房：熱血的重金屬搖滾
@@ -1062,7 +1052,6 @@ function syncBgm(){
   const w=bgmWant();if(w===BGM_CUR)return;BGM_CUR=w;
   ["main","town","shop","ach","train","run","abyss","story","arena","duel"].forEach(k=>{const a=$("#bgm_"+k);if(!a||!a.play)return;
     if(w===k){a.currentTime=0;a.play().catch(()=>{});}else a.pause();});
-  if(BGM_READY){if(w==="battle"){BGM.seekTo(0,true);BGM.playVideo();}else BGM.pauseVideo();}
 }
 function startBgm(){if(BGM_STARTED)return;BGM_STARTED=true;syncBgm();}
 function toggleBgm(){
