@@ -115,7 +115,6 @@ export default function AboutApp() {
             </p>
             <div className="cta-row">
               <a href="/works" className="btn btn-primary">看代表作品</a>
-              <a href="https://www.linkedin.com/in/ctlai" target="_blank" rel="noreferrer" className="btn btn-secondary">LinkedIn</a>
             </div>
           </div>
           <div className="hero-panel">
@@ -375,24 +374,26 @@ export default function AboutApp() {
           <section>
             <div className="section-label">Links</div>
             <h2 className="section-title">延伸入口</h2>
+            {/* 原本這裡放個人網站 / LinkedIn 的外部連結，會直接外洩可反查的
+                個人網域。依公開身份匿名化的原則改成站內入口。 */}
             <div className="link-grid">
               <div className="link-card">
-                <div className="tiny">External</div>
-                <h3>個人網站首頁</h3>
-                <p>Wix 原始個人站，包含 About Me、Research Blog 與作品入口。</p>
-                <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer">前往網站</a>
+                <div className="tiny">本站</div>
+                <h3>作品總覽</h3>
+                <p>跨域作品地圖：研究主題、工具流程與介面產品。</p>
+                <a href="/works">前往作品總覽</a>
               </div>
               <div className="link-card">
-                <div className="tiny">External</div>
-                <h3>About Me 原頁</h3>
-                <p>保留原始 About Me 版面，方便比對本站本地化整理後的版本。</p>
-                <a href="https://jtlai0921.wixsite.com/mysite/about-me" target="_blank" rel="noreferrer">開啟 About Me</a>
+                <div className="tiny">本站</div>
+                <h3>部落格</h3>
+                <p>技術筆記與研究紀錄。</p>
+                <a href="/blog">前往部落格</a>
               </div>
               <div className="link-card">
-                <div className="tiny">External</div>
-                <h3>LinkedIn</h3>
-                <p>補充履歷與社群身份入口。</p>
-                <a href="https://www.linkedin.com/in/ctlai" target="_blank" rel="noreferrer">前往 LinkedIn</a>
+                <div className="tiny">本站</div>
+                <h3>合作洽詢</h3>
+                <p>歡迎透過站內表單聯繫，不公開個人聯絡方式。</p>
+                <a href="/about#contact">聯絡方式</a>
               </div>
             </div>
           </section>

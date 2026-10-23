@@ -468,6 +468,16 @@ body[data-page="firmware"] > * { position: relative; z-index: 1; }
 .fw-articles .title  { flex: 1; font-size: .94rem; color: var(--fw-ink); }
 .fw-articles .arrow  { color: var(--fw-cyan); font-family: 'JetBrains Mono', monospace; }
 
+/* 舊站（Wix）文章連結會外洩個人網域，已改為不可點的純文字條列。
+   版面比照原本的 <a>，但拿掉 hover 位移與游標暗示。 */
+.fw-articles .fw-article-plain {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 20px; margin-bottom: 8px; border-radius: 10px;
+  background: var(--fw-panel); border: 1px solid var(--fw-border);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.fw-articles .fw-article-plain .title { color: var(--fw-muted, var(--fw-ink)); }
+
 /* ── Callout ─────────────────────────────────── */
 .fw-callout {
   padding: 24px 28px; border-radius: 14px;

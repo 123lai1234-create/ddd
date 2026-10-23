@@ -38,8 +38,7 @@ window.SITE_SHELL_CONFIG = (function () {
         { href: '/music', label: '🎵 音樂播放' },
         { href: '/report', label: '專案報告' },
         { href: '/firmware', label: '韌體' },
-        { href: '/stem-cell', label: '幹細胞研究' },
-        { href: 'https://jtlai0921.wixsite.com/mysite', label: '個人網站', target: '_blank', rel: 'noreferrer' }
+        { href: '/stem-cell', label: '幹細胞研究' }
     ];
 
     function stdFooter(title, note) {

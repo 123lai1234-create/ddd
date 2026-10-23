@@ -104,7 +104,8 @@ const worksData = [
       { k: '價值', v: 'AI 平台後台基礎' },
     ],
     tags: ['Database', 'Management', 'System'],
-    links: [{ text: '原始文章', href: 'https://jtlai0921.wixsite.com/mysite/post/資料庫管理系統' }],
+    // 原本指向個人 Wix 網域，會外洩可反查的個人網址，改為站內入口
+    links: [{ text: '看資料平台', href: '/ngs' }],
     score: '平台骨架能力',
   },
   {
@@ -160,7 +161,6 @@ export default function WorksApp() {
           <p className="hero-sub">跨域作品一覽：研究主題、工具流程與介面產品，連成同一條能力線。</p>
           <div className="cta-row">
             <a href="/about" className="btn btn-primary">先看 About Me</a>
-            <a href="https://jtlai0921.wixsite.com/mysite" target="_blank" rel="noreferrer" className="btn btn-secondary">原始個人網站</a>
           </div>
         </div>
       </header>
