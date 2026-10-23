@@ -364,6 +364,85 @@ const pickIndex = dayOfYear % rides.length;
 
 <style is:global>
 /* ════════ 不說樂園 — Theme Park Portal ════════ */
+
+/* ─── Design tokens ─────────────────────────────────────────────────
+   這頁原本完全沒有 token，所有顏色都是硬寫的字面值。結果是全域殼層
+   （nav / drawer / search modal / site-shell footer）拿不到 --text / --bg /
+   --border，全部掉回 polish.css 的深色 fallback —— 白字 (#edf1ff) 直接畫在
+   米色紙 (#f0ebe0) 上、footer 連結變成瀏覽器預設藍色。
+
+   這裡一次把 polish.css 和 shared.css 兩套 token 家族都重映射成紙感主題。
+   index.astro 的 <style> 是 <head> 最後一個 stylesheet，這裡的 :root 直接蓋掉
+   polish.css 的 :root，不需 !important。
+   ────────────────────────────────────────────────────────────────── */
+:root {
+    /* 紙感主題核心色票 */
+    --paper:        #f0ebe0;   /* 頁面底 */
+    --paper-card:   #faf6ec;   /* 卡片 / 浮層底 */
+    --paper-raised: #fffcf3;   /* hover 抬亮 */
+    --ink:          #2a201c;   /* 主要文字 */
+    --ink-soft:     #6a554a;   /* 次要文字 */
+    --ink-faint:    #8a7568;   /* 註記 / tertiary */
+    --rule:         #3a2f2a;   /* 線條實色 */
+    --accent:       #c44536;   /* 主強調（磚紅） */
+
+    /* ── 映射到 polish.css 的 token 家族 ── */
+    --bg-0:    var(--paper);
+    --bg-1:    var(--paper);
+    --bg-2:    var(--paper-card);
+    --surface-1: rgba(58, 47, 42, 0.04);
+    --surface-2: rgba(58, 47, 42, 0.06);
+    --surface-hi: rgba(58, 47, 42, 0.10);
+    --hairline:   rgba(58, 47, 42, 0.16);
+    --hairline-hi: rgba(196, 69, 54, 0.45);
+    --ink-1:   var(--ink);
+    --ink-2:   var(--ink-soft);
+    --ink-3:   var(--ink-faint);
+    --shadow-sm: 0 1px 2px rgba(58, 47, 42, 0.10);
+    --shadow-md: 0 4px 14px rgba(58, 47, 42, 0.12);
+    --shadow-lg: 0 14px 40px rgba(58, 47, 42, 0.16);
+
+    /* ── 映射到 shared.css 的 token 家族 ── */
+    --bg:       var(--paper);
+    --bg2:      var(--paper-card);
+    --surface:  var(--paper-card);
+    --surface2: var(--paper-card);
+    --surface-hover: var(--paper-raised);
+    --text:     var(--ink);
+    --muted:    var(--ink-soft);
+    --dim:      var(--ink-faint);
+    --border:   rgba(58, 47, 42, 0.16);
+    --border-hover: rgba(196, 69, 54, 0.45);
+    --teal:     var(--accent);
+    --teal2:    #e07a5f;
+    --nav-accent: var(--accent);
+    --red:      var(--accent);
+    --green:    #6a8c4f;
+    --orange:   #b26a3c;
+    --purple:   #8b6f9c;
+}
+
+/* ─── Nav CTA：實心紅塊改成外框式 ─────────────────────────────────
+   原本是一塊 #c44536 實心紅夾在整排純文字連結中間，視覺上像警示或壞掉，
+   跟紙感主題的「細線 + 米白」語言不一致。改成米白底 + 深色虛線框 + 磚紅字。 ── */
+body[data-page="index"] nav .nav-cta,
+body[data-page="index"] nav a.nav-cta {
+    background: #faf6ec !important;
+    color: var(--accent) !important;
+    border: 1.5px dashed var(--rule) !important;
+    border-radius: 4px !important;
+    padding: 4px 12px !important;
+    font-weight: 600 !important;
+    box-shadow: 2px 2px 0 rgba(58, 47, 42, 0.18);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s !important;
+}
+body[data-page="index"] nav .nav-cta:hover {
+    background: var(--accent) !important;
+    color: #faf6ec !important;
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 rgba(58, 47, 42, 0.35);
+}
+
 .minion-park {
     min-height: calc(100vh - 64px);
     background-color: #f0ebe0;
@@ -393,13 +472,13 @@ const pickIndex = dayOfYear % rides.length;
 .park-header {
     position: relative;
     max-width: 1200px;
-    margin: 0 auto 56px;
+    margin: 0 auto 20px;
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: end;
     gap: 32px;
-    border-bottom: 1.5px dashed #3a2f2a;
-    padding-bottom: 32px;
+    border-bottom: 1.5px dashed var(--rule);
+    padding-bottom: 28px;
 }
 
 .park-titles {
@@ -483,10 +562,12 @@ const pickIndex = dayOfYear % rides.length;
 }
 
 /* ════════ Sky (clouds + sun) ════════ */
+/* 高度原本 80px 但裡面只有一顆小太陽 + 三片小雲，首屏在 header 與卡片之間
+   會出現一整塊幾乎全空的帶狀留白。收到 56px，視覺上仍是「天空」但不拖节奏。 */
 .park-sky {
     position: relative;
-    height: 80px;
-    margin-bottom: 12px;
+    height: 56px;
+    margin-bottom: 8px;
 }
 
 .park-sun {
@@ -561,9 +642,13 @@ const pickIndex = dayOfYear % rides.length;
     margin: 0 auto;
 }
 
+/* 7 張卡在 4 欄 grid 會讓最後一排（3 張）靠左留一個空洞，版面重心失衡。
+   改成 flex + wrap + justify-content:center：4+3 兩排都自動置中，
+   不管卡片數是 7 還是 8 都成立。 */
 .park-rides {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 18px;
     margin-bottom: 24px;
 }
@@ -572,14 +657,16 @@ const pickIndex = dayOfYear % rides.length;
     position: relative;
     display: flex;
     flex-direction: column;
-    background: #faf6ec;
-    border: 1.6px solid #3a2f2a;
+    flex: 0 1 calc(25% - 13.5px);   /* 4 欄：4×(25%-13.5px) + 3×18px = 100% */
+    min-width: 210px;
+    background: var(--paper-card);
+    border: 1.6px solid var(--rule);
     border-radius: 14px;
     padding: 16px 14px 14px;
     text-decoration: none;
     color: var(--ride-color);
     transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
-    box-shadow: 3px 4px 0 #3a2f2a;
+    box-shadow: 3px 4px 0 var(--rule);
     overflow: hidden;
     min-height: 220px;
 }
@@ -634,6 +721,9 @@ const pickIndex = dayOfYear % rides.length;
     50%      { transform: scale(1.05); }
 }
 
+/* 7 張卡原本各掛一個不同 pastel（--ride-soft）當 badge 底色 → 七個顏色互相打架。
+   改成統一的中性米白 + 虛線框。ride 的身份已經由插圖、ride-tag、arrow 三處
+   的 var(--ride-color) 承載，badge 不需要再重複一次。 */
 .ride-facility-tag {
     position: absolute;
     top: 8px;
@@ -641,10 +731,10 @@ const pickIndex = dayOfYear % rides.length;
     font-family: "JetBrains Mono", monospace;
     font-size: 0.65rem;
     letter-spacing: 0.1em;
-    background: var(--ride-soft);
-    color: #2a201c;
-    border: 1px solid #3a2f2a;
-    padding: 2px 6px;
+    background: rgba(250, 246, 236, 0.92);
+    color: var(--ink-soft);
+    border: 1px dashed var(--rule);
+    padding: 2px 7px;
     border-radius: 3px;
     z-index: 2;
 }
@@ -953,13 +1043,13 @@ const pickIndex = dayOfYear % rides.length;
         text-align: left;
     }
     .park-date-block { justify-self: start; }
-    .park-rides { grid-template-columns: repeat(2, 1fr); }
+    .ride { flex-basis: calc(50% - 9px); }
 }
 
 @media (max-width: 480px) {
     .minion-park { padding: 32px 16px 64px; }
-    .park-rides { grid-template-columns: 1fr; gap: 14px; }
-    .ride { min-height: 180px; }
+    .park-rides { gap: 14px; }
+    .ride { flex-basis: 100%; min-height: 180px; }
     .park-title { font-size: 2.2rem; }
     .park-greeting { font-size: 1.2rem; }
 }
@@ -999,12 +1089,9 @@ body[data-page="index"] nav .nav-dot {
     background: #c44536 !important;
     box-shadow: 0 0 0 3px rgba(196, 69, 54, 0.2) !important;
 }
-body[data-page="index"] nav .nav-cta,
-body[data-page="index"] nav a.nav-cta {
-    background: #c44536 !important;
-    color: #faf6ec !important;
-    border: 1.5px solid #3a2f2a !important;
-}
+/* Nav CTA 已在上方 token 區用外框式改寫（米白底 + 磚紅字）。
+   這裡原本有一條實心紅的舊規則，同樣帶 !important 且位置較後會蓋掉新的，
+   已移除避免兩套互相覆蓋。 */
 body[data-page="index"] #theme-toggle-btn,
 body[data-page="index"] #hamburger {
     color: #2a201c !important;
@@ -1012,16 +1099,66 @@ body[data-page="index"] #hamburger {
     border-color: #3a2f2a !important;
 }
 
-/* Site footer (if any) — paper theme */
-body[data-page="index"] [data-site-footer],
-body[data-page="index"] body > footer:not(.park-footer) {
-    background: #f0ebe0 !important;
-    color: #2a201c !important;
-    border-top: 1.5px dashed #3a2f2a !important;
+/* Site footer — paper theme.
+   ⚠ 舊寫法是 `body[data-page="index"] body > footer:not(.park-footer)`，
+   多包了一層 body —— body 不可能是 body 的子元素，整條規則永遠不匹配。
+   所以 footer 一直是「白字 + 瀏覽器預設藍色連結 + 零間距 + 貼齊視窗左緣」。
+   這裡改成 `body[data-page="index"] > footer`，並補上 .footer-links 的 layout
+   （index.css 有定義但首頁根本沒載入該檔）。 */
+body[data-page="index"] > footer:not(.park-footer) {
+    background: var(--paper) !important;
+    color: var(--ink) !important;
+    border-top: 1.5px dashed var(--rule) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 20px 36px !important;
+    padding: 34px 24px 44px !important;
+    font-family: "Inter", "Microsoft JhengHei", system-ui, sans-serif !important;
 }
-body[data-page="index"] [data-site-footer] a,
-body[data-page="index"] body > footer:not(.park-footer) a {
-    color: #2a201c !important;
+body[data-page="index"] > footer:not(.park-footer) > div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+body[data-page="index"] > footer:not(.park-footer) .footer-brand {
+    color: var(--ink) !important;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+}
+body[data-page="index"] > footer:not(.park-footer) .footer-note {
+    color: var(--ink-soft) !important;
+    font-size: 0.78rem;
+    margin-top: 0;
+}
+body[data-page="index"] > footer:not(.park-footer) .footer-links {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    align-items: center;
+}
+body[data-page="index"] > footer:not(.park-footer) .footer-links a {
+    color: var(--ink-soft) !important;
+    text-decoration: none !important;
+    font-size: 0.82rem;
+    padding: 3px 0;
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+body[data-page="index"] > footer:not(.park-footer) .footer-links a:hover {
+    color: var(--accent) !important;
+    border-bottom-color: var(--accent) !important;
+}
+@media (max-width: 760px) {
+    body[data-page="index"] > footer:not(.park-footer) {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 18px;
+        padding: 28px 20px 36px;
+    }
 }
 
 /* Hide chatbot on the park page (overlaps Protein AI card) */
