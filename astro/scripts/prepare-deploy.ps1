@@ -52,7 +52,10 @@ EXCLUDE = [
     'models/mascot-3d-tiny.glb',
     'models/chibi-blender-v1.glb',
     'models/chibi-restyle-v1.glb',
-    'img/mascot-*.png',          # reference sheets, not referenced by any page
+    # 2026-10-23: img/mascot-*.png was excluded as a reference sheet that no page
+    # referenced - stale. /3d-mascot/ loads /img/mascot-front.png as its kawaii
+    # fallback, so excluding the pattern 404'd the fallback on both deploy paths.
+    # All four together are ~1.2MB, noise against the 100MB cap.
     'images/chibi-hero-run.jpg',
     'music/*.mp3',               # the player streams audio from jsDelivr (tracks.json url field)
     'music/*.txt',               # legacy plain-text lyrics
@@ -122,6 +125,11 @@ if payload > 100 * 1048576:
 #
 #    Note: `Set-Content -Encoding UTF8` in PowerShell 5.1 writes a BOM, so the
 #    file is emitted through python instead (json.dump is UTF-8 without BOM).
+#    Below also adds a cleanUrls parity route: every internal link on this site
+#    is already a clean URL (verified: 9 internal hrefs, 0 with a trailing
+#    slash), which matches the git build's root vercel.json (cleanUrls:true).
+#    Without it the prebuilt deploy serves trailing-slash URLs and every
+#    internal link costs an extra 308.
 Write-Host "[2/5] Writing config.json with catchall routes + cache headers ..." -ForegroundColor Cyan
 python -c @"
 import json
@@ -171,6 +179,10 @@ cfg = {
         {'src': '/api/(.*)', 'dest': '/api/catchall'},
         {'src': '/healthz',  'dest': '/api/catchall/healthz'},
         {'src': '/og',       'dest': '/api/catchall/og'},
+        # cleanUrls parity with the git build (root vercel.json cleanUrls:true).
+        # Must sit before the filesystem handler: normalise the URL first, then
+        # look up the real file.
+        {'src': '/(.*)/', 'status': 308, 'headers': {'Location': '/' + chr(0x24) + '1'}},
         {'handle': 'filesystem'},
     ],
 }

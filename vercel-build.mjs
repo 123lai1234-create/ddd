@@ -50,8 +50,10 @@ const EXCLUDE = [
     (rel) => /\.(old|bak)$/.test(rel),
     // 已被取代的 3D 模型（頁面現在只用 models/mascot-3d.glb）
     (rel) => /^models\/(?:mascot-3d-full|mascot-3d-tiny|chibi-blender-v1|chibi-restyle-v1)\.glb$/.test(rel),
-    // 參考用素材表，沒有任何頁面引用
-    (rel) => /^img\/mascot-.*\.png$/.test(rel),
+    // 2026-10-23: 原本這裡還排除了 img/mascot-*.png，理由寫「沒有任何頁面引用」——
+    // 已經不成立。/3d-mascot/ 把它當 kawaii fallback 載入
+    // (/img/mascot-front.png)，排除掉會讓兩條部署路徑都 404。
+    // 四張加起來約 1.2MB，對 100MB 上限來說是雜訊，不值得為省它而壞頁面。
     (rel) => rel === 'images/chibi-hero-run.jpg',
     // 站台音檔走 jsDelivr CDN（tracks.json 的 url 欄位），歌詞已內嵌在 tracks.json
     // 的 lyricsTimed —— 本地副本不需要部署。
