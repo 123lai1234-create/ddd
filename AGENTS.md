@@ -5,18 +5,24 @@
 
 ## 部署（Vercel Hobby plan）
 
-- 🚨🚨 **生產站只能用 CLI prebuilt 部署。`git push origin main` 會部署出一個沒有 API 的站。**
-  這是 2026-10-23 親自踩出來的：push 觸發的自動部署約 3 分鐘後搶走 alias，
-  頁面、搜尋、快取看起來全部正常，但**所有 `/api/*` 都回 404**（股票後端掛掉）。
-  對照實測：`/api/stock/2330` 在 git build 的 3 個部署（8q9276295 / ct9w81tw4 /
-  7ip7k8nrv）全是 404，在 prebuilt 的部署是 200。
-  - **真正原因**：Astro `output: "static"` 不會 build 出 edge function。`/api/*`
-    靠的是 `prepare-deploy.ps1` 把 `catchall.func` 複製進 `.vercel/output/functions/`
-    —— 這一步 git build 沒有、也不做得到。
-  - 所以：**改完部署 → 跑 `npm run build` → `prepare-deploy.ps1` → `vercel deploy --prebuilt --prod`。
-    不要把東西 push 到 main。** 真的需要 push 的話（版本紀錄），push 完**立刻**重跑
-    prebuilt 部署把 alias 搶回來，否則 API 會死到下一次手動部署為止。
-  - 驗證一定要打 `/api/stock/2330`，不能只看頁面 200 —— 這個故障在頁面上完全看不出來。
+- 🚨🚨 **正式站要 API 穩定就走 CLI prebuilt。`git push origin main` 也會上 production，但 `/api/*` 有就緒競態。**
+  - **真正原因**：根目錄的 `api/[...catchall].mjs` 會被 Vercel 自動偵測成 serverless function，
+    所以 **git build 其實「有」`/api/*`**。問題是**就緒順序**：靜態部分先 READY 並搶走 alias，
+    edge function 還沒起來 —— 那段窗口 `/api/*` 會回 504（逾時）或 404（還沒路由到）。
+  - **實測對照**（2026-10-23，同一個 commit `daca6fbd`）：
+    | deployment | 時間 | /api/healthz | /api/stock/2330 |
+    |---|---|---|---|
+    | dpl_9Hb6p15v | 23:11 | 200 | 200 |
+    | dpl_UUZ6ijaz | 23:08 | 504 | 404 |
+    | dpl_26BsQe1J | 23:00 | 504 | 404 |
+    | dpl_BJrGxvZu | 22:58 | 504 | 404 |
+    | dpl_6uD2pPGu | 22:57 | 504 | 404 |
+    同一個 commit 23:08 是壞的、23:11 是好的 → **不是「git build 一定沒有 API」，是競態**。
+  - 所以：**改完部署 → 跑 `npm run build` → `prepare-deploy.ps1` → `vercel deploy --prebuilt --prod`，
+    這條路徑會確定把 `catchall.func` 複製進 `.vercel/output/functions/`**，API 一定在。
+    只改靜態內容、且能接受 API 短暫失效時，`git push origin main` 也有 production
+    （production branch = `main`，約 3 分鐘後生效）。
+  - 驗證一定要打 `/api/stock/2330` 或 `/api/healthz`，不能只看頁面 200 —— 這個故障在頁面上完全看不出來。
 - git build 與 prebuilt 的**靜態產出**現在是一致的（2026-10-23 對齊）：
   - `vercel-build.mjs` 在 pagefind 之後套用與 `prepare-deploy.ps1` **完全相同**的排除清單。
     沒有這步時 git build 會把 207MB 的 dist 原封不動上傳，遠超 Vercel Hobby 的 100MB 上限；

@@ -212,6 +212,8 @@ def clean_seams(objs, lo, hi):
             relabelled = 0
             for f in bm.faces:
                 c = f.calc_center_median()
+                if abs(c.x) > 0.225:
+                    continue        # the arms hang through this band
                 if plane - band <= c.z <= plane + band:
                     want = ia if c.z >= plane else ib
                     if f.material_index != want:
@@ -467,6 +469,117 @@ def slim_hair(objs, lo, hi):
     print(f"[hair] slimmed {moved} verts (k={HAIR_K})")
 
 
+def build_plaid_texture(size=512, cells=8):
+    """Draw the buffalo check into an image.
+
+    The pipeline drives the sash with a Checker + Wave node pair fed by
+    Object texture coordinates. glTF has no object space, so the exporter
+    drops the whole chain and the sash exports as flat white - the tartan only
+    ever existed in the Blender render. An image texture survives the export,
+    so the pattern is drawn here instead.
+    """
+    img = bpy.data.images.new("PlaidTex", width=size, height=size, alpha=False)
+    px = [0.0] * (size * size * 4)
+    c = size // cells
+    red = (0.560, 0.062, 0.055)
+    black = (0.030, 0.026, 0.026)
+    seam = (0.012, 0.010, 0.010)
+    for y in range(size):
+        for x in range(size):
+            cx, cy = x // c, y // c
+            col = black if (cx % 2 == 0 or cy % 2 == 0) else red
+            if (x % c) < 2 or (y % c) < 2:
+                col = seam
+            i = (y * size + x) * 4
+            px[i] = col[0]
+            px[i + 1] = col[1]
+            px[i + 2] = col[2]
+            px[i + 3] = 1.0
+    img.pixels = px
+    img.pack()
+    print(f"[plaid] drew {size}x{size} check, {cells} cells")
+    return img
+
+
+def separate_by_material():
+    """Split the fused mesh so the sash can carry its own UV map.
+
+    UVs live on the mesh, not on the material, and the painted face already
+    owns the UV layout of the front of the head. The sash is a separate
+    object so a planar projection can be laid over it without touching the
+    face texture.
+    """
+    bpy.ops.object.select_all(action="DESELECT")
+    meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+    for ob in meshes:
+        ob.select_set(True)
+    bpy.context.view_layer.objects.active = meshes[0]
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.separate(type="MATERIAL")
+    bpy.ops.object.mode_set(mode="OBJECT")
+    print(f"[plaid] split into {len([o for o in bpy.context.scene.objects if o.type=='MESH'])} meshes")
+
+
+def apply_plaid_texture(uv_scale=0.30):
+    """Give the sash a polar UV map and hang the check on it.
+
+    The sash is a band tied round the waist, so it is unwrapped in polar
+    coordinates: u runs along the circumference, v up the height. That keeps
+    the checks continuous all the way round the waist instead of smearing
+    them at the sides.
+    """
+    plaid_mat = None
+    for ob in bpy.context.scene.objects:
+        if ob.type != "MESH":
+            continue
+        for s in ob.material_slots:
+            if s.material and s.material.name.lower().startswith("plaid"):
+                plaid_mat = s.material
+                target = ob
+                break
+        if plaid_mat:
+            break
+    if plaid_mat is None:
+        print("[plaid] no sash found")
+        return
+
+    img = build_plaid_texture()
+    nt = plaid_mat.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    out.location = (300, 0)
+    bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+    bsdf.location = (0, 0)
+    bsdf.inputs["Roughness"].default_value = 0.66
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.location = (-300, 0)
+    tex.image = img
+    tex.interpolation = "Linear"
+    tex.extension = "REPEAT"
+    nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    nt.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+
+    mesh = target.data
+    while mesh.uv_layers:
+        mesh.uv_layers.remove(mesh.uv_layers[0])
+    uv = mesh.uv_layers.new(name="UVMap")
+    # centre of the waist, used as the polar origin
+    zs = [v.co.z for v in mesh.vertices]
+    z_mid = (min(zs) + max(zs)) * 0.5
+    rs = [math.hypot(v.co.x, v.co.y) for v in mesh.vertices]
+    r_mid = sum(rs) / max(len(rs), 1)
+    for loop in mesh.loops:
+        co = mesh.vertices[loop.vertex_index].co
+        dx, dy = co.x, co.y
+        r = math.hypot(dx, dy)
+        theta = math.atan2(dy, dx)
+        u = (theta + math.pi) * max(r, 1e-6) / uv_scale
+        v = (co.z - z_mid) / uv_scale
+        uv.data[loop.index].uv = (u, v)
+    print(f"[plaid] {target.name}: {len(mesh.polygons)} faces unwrapped "
+          f"(scale {uv_scale})")
+
+
 def tune_materials(objs):
     """Make the hair read as black lacquer instead of grey felt.
 
@@ -600,6 +713,10 @@ def main():
     # cutting on top of that only leaves a ragged edge behind.
     slim_hair(objs, lo, hi)
     tune_materials(objs)
+    # the tartan only exists as a procedural node graph, and glTF cannot
+    # carry that - bake it into a real image texture
+    separate_by_material()
+    apply_plaid_texture()
 
     for ob in objs:
         for p in ob.data.polygons:
