@@ -311,6 +311,186 @@ def smooth_reconstruction_spikes(objs, lo, hi):
     print("[smooth] hems flattened, spikes rounded")
 
 
+def resculpt_proportions(objs, lo, hi,
+                          hair_k=0.80, hair_from=0.60, hair_to=0.70,
+                          hair_r0=0.20,
+                          leg_from=0.10, leg_to=0.32, leg_k=0.93,
+                          shoe_from=0.10, shoe_k=0.90):
+    """Pull the silhouette in so it stops reading as a fuzzy helmet on a stump.
+
+    Meshy ships the character as ONE fused mesh (decimate_to_target joins
+    every part), so hair / body / limbs cannot be scaled as separate objects.
+    The scalp is not a separate shell either - shrinking the whole upper head
+    would shrink the skull with it and leave the face tiny inside a big head.
+
+    Instead each move is radius-limited and height-blended:
+
+    * hair: vertices above `hair_from` get pulled toward the head axis, but
+      only the part that sticks out past `hair_r0`. The skull (inside r0)
+      is untouched, so the face keeps its size while the spikes come in.
+    * legs / shoes: narrow the lower body, which is the other thing that
+      makes the proportions read as "oversized chibi".
+
+    `hair_k` is the factor applied to the protruding radius, so 0.80 removes
+    about a fifth of the volume without visibly squashing the skull.
+    """
+    import bmesh
+
+    H = hi.z - lo.z
+    z_hair_from = lo.z + hair_from * H
+    z_hair_to = lo.z + hair_to * H
+    z_leg_from = lo.z + leg_from * H
+    z_leg_to = lo.z + leg_to * H
+    z_shoe = lo.z + shoe_from * H
+
+    # head axis: the character is centred on x=0, and the skull sits slightly
+    # forward of the body centre.
+    cx, cy = 0.0, -0.05
+
+    moved = {"hair": 0, "leg": 0, "shoe": 0}
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        for v in bm.verts:
+            co = v.co
+
+            # --- hair: shrink only what protrudes past r0, faded in by height
+            if co.z >= z_hair_from:
+                t = min((co.z - z_hair_from) / max(z_hair_to - z_hair_from, 1e-6), 1.0)
+                k = 1.0 + (hair_k - 1.0) * t
+                dx, dy = co.x - cx, co.y - cy
+                r = math.hypot(dx, dy)
+                if r > hair_r0:
+                    r2 = hair_r0 + (r - hair_r0) * k
+                    s = r2 / r
+                    co.x = cx + dx * s
+                    co.y = cy + dy * s
+                    moved["hair"] += 1
+
+            # --- legs
+            if z_leg_from <= co.z <= z_leg_to:
+                co.x *= leg_k
+                moved["leg"] += 1
+
+            # --- shoes (below the cuff they flare out)
+            if co.z <= z_shoe:
+                co.x *= shoe_k
+                moved["shoe"] += 1
+
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+
+    print(f"[proportions] hair verts={moved['hair']} leg={moved['leg']} "
+          f"shoe={moved['shoe']} (hair_k={hair_k} leg_k={leg_k} shoe_k={shoe_k})")
+
+
+def clear_face_fringe(objs, lo, hi, mats, z_top=0.640, z_bot=0.500, y_face=Y_FACE,
+                      z_sl=0.610, z_sh=0.690, y_sb_lo=-0.33, y_sb_hi=-0.15):
+    """Delete the flat shards of fringe that hang in front of the face.
+
+    Meshy reconstructs the bangs as thin sheets that dangle across the eyes and
+    nose. Moving their vertices does not help - pulling them back or lifting
+    them just turns a few slabs into a dense curtain over the face (tried, it
+    made the model strictly worse).
+
+    They are separate sheets floating in front of the skull, and the painted
+    face already sits on the skull behind them. So the fix is to delete the
+    hair-material polygons that are in front of the face plane within the
+    fringe height band, which uncovers the painted face.
+
+    Only hair-material polygons are touched: the face polygons live at y >
+    y_face, so the painted features are never candidates in the first place.
+    """
+    import bmesh
+
+    hm = mats.get("hair")
+    hair_names = {hm.name} if hm is not None else {
+        m.name for m in mats.values() if m and m.name.lower().startswith("hair")
+    }
+    H = hi.z - lo.z
+    z_hi = lo.z + z_top * H
+    z_lo = lo.z + z_bot * H
+    # z_sl / z_sh are FRACTIONS of the height - they must be converted to
+    # absolute z before they can be compared against a vertex coordinate.
+    z_sl_abs = lo.z + z_sl * H
+    z_sh_abs = lo.z + z_sh * H
+
+    removed = 0
+    for ob in objs:
+        me = ob.data
+        slot_names = [s.material.name if s.material else "" for s in ob.material_slots]
+        hair_slots = {i for i, n in enumerate(slot_names) if n in hair_names}
+        if not hair_slots:
+            continue
+
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        bm.normal_update()
+        doomed = []
+        for f in bm.faces:
+            if f.material_index not in hair_slots:
+                continue
+            c = f.calc_center_median()
+            # (a) sheets hanging in front of the face
+            if z_lo <= c.z <= z_hi and c.y < y_face:
+                doomed.append(f)
+                continue
+            # (b) the flat slabs standing beside the cheeks - the "headphone"
+            # blocks. They sit much less far forward than the fringe over the
+            # forehead (measured: slabs at y ~ -0.24, fringe at y ~ -0.38 and
+            # beyond), so a Y window separates the two cleanly.
+            if (z_sl_abs <= c.z <= z_sh_abs and abs(c.x) > 0.22
+                    and y_sb_lo < c.y < y_sb_hi):
+                doomed.append(f)
+        if doomed:
+            bmesh.ops.delete(bm, geom=doomed, context="FACES")
+            removed += len(doomed)
+        bm.to_mesh(me)
+        bm.free()
+        me.update()
+
+    print(f"[fringe] removed {removed} hair polygons "
+          f"(front band z {z_lo:.3f}..{z_hi:.3f} y<{y_face}; "
+          f"side plates z {z_sl_abs:.3f}..{z_sh_abs:.3f})")
+
+
+def soften_cloth_edges(objs, lo, hi,
+                        hem=0.352, shoulder=0.455, band=0.030,
+                        rounds=5, factor=0.22):
+    """Round the torn edges of the tee at the hem and the shoulders.
+
+    Same problem as the hairline: Meshy rebuilds the cloth boundary as a row
+    of big triangles, and a hard material border on a ragged edge reads as
+    shredded fabric. Smoothing those vertices rounds the edge without
+    changing the silhouette the way deleting faces would.
+    """
+    import bmesh
+
+    H = hi.z - lo.z
+    bands = [(lo.z + (hem - band) * H, lo.z + (hem + band) * H),
+             (lo.z + (shoulder - band) * H, lo.z + (shoulder + band) * H)]
+
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        for _ in range(rounds):
+            hot = set()
+            for e in bm.edges:
+                zm = (e.verts[0].co.z + e.verts[1].co.z) * 0.5
+                if any(za <= zm <= zb for za, zb in bands):
+                    hot.update(e.verts)
+            if hot:
+                bmesh.ops.smooth_vert(bm, verts=list(hot), factor=factor,
+                                      use_axis_x=True, use_axis_y=True,
+                                      use_axis_z=True)
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    print(f"[cloth] hem & shoulder edges rounded "
+          f"(z frac {hem}+-{band}, {shoulder}+-{band})")
+
+
 def refine_upper_head(objs, lo, hi, levels=1):
     """Double the grid over the face and fringe.
 
@@ -373,6 +553,52 @@ def soften_hairline(objs, lo, hi):
         bm.free()
         ob.data.update()
     print(f"[hairline] fringe rounded in z {za:.3f}..{zb:.3f}")
+
+
+def raise_fringe(objs, lo, hi, mats, shrink=0.30, at=0.735, reach=0.17):
+    """Shorten the bangs so the brows clear them.
+
+    The reference shows both brows above the lash line. Here the fringe hangs
+    almost to the eyes - not a texture problem, the hair volume itself reaches
+    too low. Hair is a separate shell resting on the skull, so it can be moved:
+    every hair vertex in the forehead band is scaled toward the hairline, which
+    shortens the spikes without flattening them, plus a small forward push so
+    they stay in front of the forehead instead of sinking into it.
+
+    Two things this must not do, both hit on the first attempt:
+    * select by position only. normal.y <= -0.22 matches the entire front of the
+      body - 28316 of 51568 verts moved, and the mesh exploded. Run after
+      assign_by_region and test the material instead.
+    * translate. The bangs fan out from the crown, so a flat offset lifts the
+      outer spikes into the skull while the centre one barely moves. Scaling
+      toward the hairline keeps the fan intact.
+    """
+    import bmesh
+
+    H = hi.z - lo.z
+    top = lo.z + at * H
+    floor = top - reach * H
+    hair = ORDER.index("hair")
+
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        moved = 0
+        for v in bm.verts:
+            if not (floor <= v.co.z < top):
+                continue
+            faces = v.link_faces
+            if not faces or any(f.material_index != hair for f in faces):
+                continue          # shared with skin -> part of the skull, leave it
+            drop = top - v.co.z
+            v.co.z = top - drop * shrink
+            v.co.y -= drop * shrink * 0.45       # stay in front of the brow
+            moved += 1
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+        print(f"[fringe] {ob.name}: {moved} hair verts lifted toward z={top:.3f}")
+    print(f"[fringe] bangs shrunk to {shrink:.0%} in z {floor:.3f}..{top:.3f}")
 
 
 def assign_by_region(objs, mats, lo, hi):
@@ -715,11 +941,16 @@ def main():
     bpy.context.view_layer.objects.active = objs[0]
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
+    resculpt_proportions(objs, lo, hi)
     refine_upper_head(objs, lo, hi)
     smooth_reconstruction_spikes(objs, lo, hi)
     soften_hairline(objs, lo, hi)
+    soften_cloth_edges(objs, lo, hi)
     mats = materials()
     assign_by_region(objs, mats, lo, hi)
+    # after assign_by_region so the hair material is actually on those shards
+    clear_face_fringe(objs, lo, hi, mats)
+    raise_fringe(objs, lo, hi, mats)
     relax_head_labels(objs, lo, hi)
     paint_face(objs, mats, lo, hi)
 
