@@ -177,7 +177,13 @@ cfg = {
             'continue': True,
         },
         {'src': '/api/(.*)', 'dest': '/api/catchall'},
-        {'src': '/healthz',  'dest': '/api/catchall/healthz'},
+        # Redirect (not rewrite): the edge function normalises the path it sees,
+        # and a dest under /api/catchall reaches it as /api//healthz which its
+        # /^\/healthz\/?$/ dispatcher rejects. Redirecting the client to the known
+        # good /api/healthz is what astro/vercel.json intends anyway. This route
+        # used to 404 on every prebuilt deploy - stock.astro's error banner links
+        # to /healthz and app-config.js probes it as a fallback.
+        {'src': '/healthz',  'status': 308, 'headers': {'Location': '/api/healthz'}},
         {'src': '/og',       'dest': '/api/catchall/og'},
         # cleanUrls parity with the git build (root vercel.json cleanUrls:true).
         # Must sit before the filesystem handler: normalise the URL first, then
