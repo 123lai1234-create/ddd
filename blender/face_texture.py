@@ -192,21 +192,76 @@ def _paint_face(cv, m):
     cv.paint(_stroke(X, Y, pts, wid, 1.5), MOUTH)
 
 
-def bake(m, skin_mat, out_dir=None):
-    """Render the face into an image and wrap it in a matching material."""
-    z0, z1, R = m["z0"], m["z1"], m["radius"]
-    raw_w = 2.0 * AZ_HALF * R * PX_PER_UNIT
-    raw_h = (z1 - z0) * PX_PER_UNIT
-    w = max(64, int(raw_w // 32 + 1) * 32)
-    h = max(64, int(raw_h // 32 + 1) * 32)
+def project_reference(m, ref_path):
+    """Build the head texture by projecting the reference photo onto the skull.
 
-    cv = Canvas(w, h, SKIN)
-    _paint_face(cv, m)
+    Hand-painting the features gets close but never close *enough*: an anime eye
+    is a lash shape, an iris gradient and two speculars, and no set of ellipses
+    reads the same. The reference already has all of it, so use its pixels.
+
+    Horizontal mapping is angular on purpose. A naive x = f(u) paste would
+    double-foreshorten the cheeks, because the photo is already a projection of a
+    round head; x_ref = cx + K*sin(azimuth) undoes that so the outer corners land
+    where they are on the model. Vertical stays linear - the head is tall enough
+    there that sin() buys nothing and costs the jaw.
+
+    Measured off ref/chibi-ref-meshy.png (1920x1920): chin 882, hairline 526.
+    cx/K describe the *cheek* span, not the head: the ears sit outside it and
+    painting them onto the canvas edge smeared their red inner ear across both
+    sides of the face. Cheek skin runs x 700..1230, so cx 965 and
+    K = 265/sin(55 deg) = 323 - which at the canvas edge (+/-58 deg) samples
+    x 691..1239, still inside the cheeks.
+    """
+    src = bpy.data.images.load(ref_path)
+    src.colorspace_settings.name = "sRGB"
+    sw, sh = src.size
+    buf = np.empty(sw * sh * 4, dtype=np.float32)
+    src.pixels.foreach_get(buf)
+    ref = buf.reshape(sh, sw, 4)[::-1, :, :3]      # top-down rows
+
+    z0, z1, R = m["z0"], m["z1"], m["radius"]
+    W = max(64, int(2.0 * AZ_HALF * R * PX_PER_UNIT // 32 + 1) * 32)
+    H = max(64, int((z1 - z0) * PX_PER_UNIT // 32 + 1) * 32)
+
+    chin_y, hair_y, cx, K = 882.0, 526.0, 965.0, 323.0
+
+    u = (np.arange(W) + 0.5) / W
+    xs = np.clip(np.round(cx + K * np.sin((u - 0.5) * 2.0 * AZ_HALF)).astype(int),
+                 0, sw - 1)
+    v = (np.arange(H) + 0.5) / H                    # 0 = chin = canvas bottom
+    ys = np.clip(np.round(chin_y - v * (chin_y - hair_y)).astype(int), 0, sh - 1)
+
+    rgb = ref[np.ix_(ys, xs)].copy()
+
+    # The photo already carries baked 3D shading. Left at full strength the
+    # render's own lighting lands on top of it and the face goes muddy - the
+    # blush in particular turns into a red mask. Pull the contrast back so the
+    # realtime lighting is what shades the face.
+    rgb = 0.5 + (rgb - 0.5) * 0.72
+    rgb[:, :, 0] *= 0.94                          # blush reads far too hot
+
+    bpy.data.images.remove(src)
+    print(f"[face] projected {ref_path} -> {W}x{H} texture")
+    return rgb
+
+
+def bake(m, skin_mat, out_dir=None, ref_path=None):
+    """Wrap the head texture in a material matched to the skin shader."""
+    if ref_path:
+        rgb = project_reference(m, ref_path)
+        h, w = rgb.shape[0], rgb.shape[1]
+    else:
+        z0, z1, R = m["z0"], m["z1"], m["radius"]
+        w = max(64, int(2.0 * AZ_HALF * R * PX_PER_UNIT // 32 + 1) * 32)
+        h = max(64, int((z1 - z0) * PX_PER_UNIT // 32 + 1) * 32)
+        cv = Canvas(w, h, SKIN)
+        _paint_face(cv, m)
+        rgb = cv.rgb
 
     img = bpy.data.images.new("FacePaint", w, h, alpha=False)
     img.colorspace_settings.name = "sRGB"
     rgba = np.empty((h, w, 4), np.float32)
-    rgba[:, :, :3] = cv.rgb
+    rgba[:, :, :3] = rgb
     rgba[:, :, 3] = 1.0
     img.pixels.foreach_set(np.ascontiguousarray(rgba).ravel())
     img.file_format = "PNG"
@@ -232,9 +287,9 @@ def bake(m, skin_mat, out_dir=None):
     tex.location = (-420, 220)
     nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
 
-    print(f"[face] baked {w}x{h} texture "
-          f"(az +/-{math.degrees(AZ_HALF):.0f} deg, "
-          f"eye_az={math.degrees(m['eye_az']):.1f} deg, R={R:.4f})")
+    print(f"[face] {w}x{h} texture, az +/-{math.degrees(AZ_HALF):.0f} deg, "
+          f"eye_az={math.degrees(m['eye_az']):.1f} deg, "
+          f"source={'reference ' + ref_path if ref_path else 'painted'}")
     return mat
 
 

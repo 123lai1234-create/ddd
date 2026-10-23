@@ -39,6 +39,13 @@ _DEFAULT_SRC = r"C:\Users\User\minimax-glb-tmp\chibi-tinted-low.glb"
 SRC = os.environ.get("CHIBI_SRC", _DEFAULT_SRC)
 SRC_LOW = _DEFAULT_SRC
 
+# When set, the head texture is the reference photo projected onto the skull
+# instead of hand-painted features - the reference already contains the artwork,
+# so its pixels beat anything drawn from scratch. Set CHIBI_FACE="" to go back
+# to the painted version.
+REF_FACE = os.environ.get(
+    "CHIBI_FACE", os.path.join(HERE, "ref", "chibi-ref-meshy.png"))
+
 TARGET_H = 1.8
 TARGET_TRIS = 48000
 SUBDIV = 2
@@ -563,7 +570,7 @@ def face_metrics(objs, lo, hi):
 def paint_face(objs, mats, lo, hi):
     """Bake the face texture, then hand the skull its material and UVs."""
     m = face_metrics(objs, lo, hi)
-    mats["face"] = face_texture.bake(m, mats["skin"], OUT)
+    mats["face"] = face_texture.bake(m, mats["skin"], OUT, REF_FACE)
     z_neck = lo.z + Z_NECK_FRAC * (hi.z - lo.z)
     for ob in objs:
         ob.data.materials.append(mats["face"])
