@@ -1,11 +1,12 @@
 ---
 import Base from '../layouts/Base.astro';
----
 
-<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
-<style is:inline>
-    model-viewer { display: block; width: 100%; height: 100%; --poster-color: transparent; background: linear-gradient(180deg, #d8dde2 0%, #b8bcc2 100%); }
-</style>
+const MODEL_URL = '/models/mascot-3d.glb';
+// 真實數據（直接解析 GLB 得出，勿手填）
+const STAT_TRIS = '160 K';
+const STAT_MATS = '8';
+const STAT_SIZE = '3.8 MB';
+---
 
 <Base
     title="3D Mascot | 元嬰不說 真 3D 互動模型"
@@ -13,25 +14,28 @@ import Base from '../layouts/Base.astro';
     bodyPage="index"
     pageStyles={["/styles/index.css"]}
     pageScripts={["/scripts/app-config.js"]}
-    headInline=""
+    headInline={`<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>`}
 >
     <div class="mascot-3d-page">
-        <h1>🧒 元嬰不說 · 真 3D 模型</h1>
-        <p class="subtitle">
-            黑尖刺頭髮、3 頭身 chibi 男孩。滑鼠拖曳可以旋轉、滾輪縮放（<model-viewer /> 提供）。
-        </p>
+        <header class="mascot-3d-head">
+            <h1>🧒 元嬰不說 · 真 3D 模型</h1>
+            <p class="subtitle">
+                黑尖刺頭髮、chibi 比例的 3D 男孩。滑鼠拖曳可以旋轉、滾輪縮放，閒置會慢轉 360° 展示。
+            </p>
+        </header>
 
+        <!-- model-viewer 需要「父容器有明確高度」，這裡是整頁能不能看到模型的關鍵 -->
         <div class="mascot-3d-stage" id="stage">
             <model-viewer
                 id="chibiViewer"
-                src="/models/mascot-3d.glb"
+                src={MODEL_URL}
                 alt="元嬰不說 chibi mascot 真 3D 模型"
-                camera-orbit="38deg 78deg 4.6m"
-                camera-target="0m 1m 0m"
-                field-of-view="28deg"
-                shadow-intensity="0.55"
-                shadow-softness="0.8"
-                exposure="1.0"
+                camera-orbit="35deg 82deg 3.9m"
+                camera-target="0m 0.9m 0.37m"
+                field-of-view="30deg"
+                shadow-intensity="0.7"
+                shadow-softness="0.85"
+                exposure="1.05"
                 auto-rotate
                 auto-rotate-delay="1400"
                 rotation-per-second="9deg"
@@ -39,47 +43,47 @@ import Base from '../layouts/Base.astro';
                 interaction-prompt-style="wiggle"
                 touch-action="pan-y"
                 ar-modes="none"
-                style="width: 100%; height: 100%;"
             >
-                <div slot="progress-bar" class="mascot-3d-progress"></div>
+                <div slot="progress-bar" class="mascot-3d-progress" aria-hidden="true"></div>
             </model-viewer>
-            <div class="mascot-3d-floor"></div>
+            <div class="mascot-3d-floor" aria-hidden="true"></div>
+            <p class="mascot-3d-loading" id="mvLoading">載入 3D 模型中…</p>
         </div>
 
         <div class="stats-row">
-            <div><div class="num">8 000</div><div class="lbl">三角面</div></div>
-            <div><div class="num">7</div><div class="lbl">材質區</div></div>
-            <div><div class="num">185 KB</div><div class="lbl">GLB 大小</div></div>
-            <div><div class="num">4.5.14</div><div class="lbl">Blender LTS</div></div>
+            <div><div class="num">{STAT_TRIS}</div><div class="lbl">三角面</div></div>
+            <div><div class="num">{STAT_MATS}</div><div class="lbl">材質區</div></div>
+            <div><div class="num">{STAT_SIZE}</div><div class="lbl">GLB 大小</div></div>
+            <div><div class="num">4.5</div><div class="lbl">Blender LTS</div></div>
         </div>
 
         <p class="mascot-3d-hint">
-            💡 Meshy 產出的 <b>幾何</b>（拓樸乾淨、分層頭髮正確）+ Blender 腳本重新
-            <b>逐面材質指派</b>。拖曳 = 旋轉，滾輪 = 縮放，閒置會慢轉 360° 展示。
+            💡 幾何沿用 <b>Meshy AI</b> 的底模（分層尖刺頭髮、格紋腰結本來就對），
+            在 <b>Blender 4.5 LTS</b> 裡重新上色：衣服皮膚用<b>逐面材質指派</b>，
+            臉部五官則是<b>畫進貼圖</b>再以 cylindrical unwrap 繞到頭上。
+            拖曳 = 旋轉，滾輪 = 縮放。
         </p>
 
         <div class="mascot-3d-info">
-            <h3>為什麼不再用 vertex color 上色？</h3>
+            <h3>臉為什麼是貼圖，不是逐面材質？</h3>
             <p>
-                舊版是 <b>Meshy AI</b> 生 31 MB mesh（<code>mascot-3d-full.glb</code>，719k 面，CC-BY-4.0），
-                拓樸跟 reference 差距大：
+                逐面材質在這種網格上畫不出銳利的五官：材質邊界只能落在最近的三角形邊上，
+                眼睛會變成一圈鋸齒；改用壓扁的球體貼在頭顱上，又會因為彎曲而離開表面糊成一塊污漬。
+                參考圖本身也是畫的，所以最後改成一樣的做法 ——
+                用 numpy 把眼白、虹膜、睫毛、眉毛、腮紅、鼻子、嘴巴畫進一張 2D 貼圖。
             </p>
-            <ul style="line-height: 1.8; padding-left: 1.5em;">
-                <li>頭髮做不出 reference 的尖刺輪廓</li>
-                <li>眼睛只是黑方塊，缺眼白+瞳孔+高光三層</li>
-                <li>沒有頰紅、沒有 plaid 腰結、沒有手</li>
-                <li>臉部比例與身體結構無法微調</li>
+            <ul>
+                <li>貼圖以<b>方位角</b>（而不是平面投影）繞到頭上，所以 3/4 視角不會撕開</li>
+                <li>unwrap 是<b>等向</b>的：水平像素是弧長、垂直像素是高度，同樣 px/unit</li>
+                <li>頭部半徑直接由網格解球，ray cast 會打到耳朵、把頭算得過圓</li>
+                <li>只有 skin 換成臉材質 —— 瀏海是獨立殼層，一起換會把整個髮型變成額頭</li>
             </ul>
-            <p>
-                改用 <b>Blender 4.5 LTS 原生建模</b>：用 <code>bpy</code> 寫腳本組裝 <code>UV sphere</code> 頭、
-                <code>profile_tube</code> 身體、<code>stretched icosphere</code> 頭髮鎖，
-                全部對齊 reference 像素量測比例（2.2 頭身、眼睛 Z=1.19、衣著配色採樣自 <code>chibi-hero.png</code>）。
-            </p>
-            <p style="font-size: 0.85em; opacity: 0.78;">
-                腳本原始檔：<code>D:\project\blender\chibi_build.py</code>。<br />
-                預覽圖：<code>out/preview_front.png</code>、<code>out/preview_three_quarter.png</code>、
-                <code>out/preview_side.png</code>、<code>out/preview_back.png</code>。<br />
-                同一份 <code>mascot-3d.glb</code> 也用在 chatbot 浮動按鈕（之後可換上）。
+            <p class="mascot-3d-foot">
+                腳本原始檔：<code>D:\project\blender\chibi_restyle.py</code>（五官貼圖見
+                <code>face_texture.py</code>）。<br />
+                預覽圖：<code>out/restyle_front.png</code>、<code>out/restyle_three_quarter.png</code>、
+                <code>out/restyle_side.png</code>、<code>out/restyle_back.png</code>、
+                <code>out/restyle_head.png</code>。臉部貼圖本體：<code>out/face_paint.png</code>。
             </p>
         </div>
     </div>
@@ -87,17 +91,196 @@ import Base from '../layouts/Base.astro';
     <script is:inline>
     (function () {
         const viewer = document.getElementById('chibiViewer');
+        const loading = document.getElementById('mvLoading');
         if (!viewer) return;
-        // gentle 360 walk-around when the model first appears
-        viewer.addEventListener('load', () => {
+
+        const done = () => {
+            if (loading) {
+                loading.textContent = '';
+                loading.hidden = true;
+            }
             viewer.autoRotate = true;
-        });
-        // pause auto-rotate while user interacts
+        };
+        const fail = () => {
+            if (loading) {
+                loading.textContent = '3D 模型載入失敗（' + (viewer.getAttribute('src') || 'unknown') + '）';
+                loading.hidden = false;
+                loading.classList.add('is-error');
+            }
+        };
+
+        viewer.addEventListener('load', done);
+        viewer.addEventListener('error', fail);
+
+        // 使用者操作時停掉自動旋轉，停止操作 4 秒後恢復
+        let resume = null;
         ['pointerdown', 'wheel'].forEach((ev) => {
             viewer.addEventListener(ev, () => {
                 viewer.autoRotate = false;
+                clearTimeout(resume);
+                resume = setTimeout(() => { viewer.autoRotate = true; }, 4000);
             });
         });
     })();
     </script>
 </Base>
+
+<style>
+    .mascot-3d-page {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+    }
+
+    .mascot-3d-head h1 {
+        margin: 0 0 0.5rem;
+        font-size: clamp(1.6rem, 4vw, 2.4rem);
+        letter-spacing: -0.02em;
+    }
+
+    .mascot-3d-head .subtitle {
+        margin: 0;
+        color: var(--muted, #8b949e);
+        font-size: 0.95rem;
+        line-height: 1.7;
+    }
+
+    /* 關鍵：model-viewer 是 height:100%，父容器必須給「明確高度」，
+       否則 auto height 會讓 percentage 解析為 0 → 整隻模型看不到。 */
+    .mascot-3d-stage {
+        position: relative;
+        width: 100%;
+        height: clamp(360px, 68vh, 680px);
+        margin: 1.75rem 0;
+        border-radius: 18px;
+        overflow: hidden;
+        isolation: isolate;
+        border: 1px solid rgba(88, 215, 255, 0.16);
+        background:
+            radial-gradient(120% 90% at 50% 16%, rgba(88, 215, 255, 0.14), transparent 62%),
+            linear-gradient(180deg, #101a24 0%, #08060e 100%);
+        box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.9);
+    }
+
+    model-viewer {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        --poster-color: transparent;
+    }
+
+    .mascot-3d-floor {
+        position: absolute;
+        left: 50%;
+        bottom: 7%;
+        width: 58%;
+        height: 9%;
+        transform: translateX(-50%);
+        background: radial-gradient(ellipse at center, rgba(123, 240, 190, 0.24), rgba(123, 240, 190, 0) 70%);
+        filter: blur(6px);
+        pointer-events: none;
+    }
+
+    .mascot-3d-loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        color: var(--muted, #8b949e);
+        font-size: 0.9rem;
+        letter-spacing: 0.04em;
+        pointer-events: none;
+        transition: opacity 0.4s;
+    }
+
+    .mascot-3d-loading[hidden] {
+        display: none;
+    }
+
+    .mascot-3d-loading.is-error {
+        color: #ff8392;
+    }
+
+    .mascot-3d-progress {
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, #58d7ff, #7bf0be);
+        transform: scaleX(0);
+        transform-origin: 0 50%;
+        transition: transform 0.3s;
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.75rem;
+        margin: 1.25rem 0;
+    }
+
+    .stats-row > div {
+        padding: 0.9rem 0.75rem;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .stats-row .num {
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #7bf0be;
+    }
+
+    .stats-row .lbl {
+        margin-top: 0.25rem;
+        font-size: 0.75rem;
+        letter-spacing: 0.06em;
+        color: var(--muted, #8b949e);
+    }
+
+    .mascot-3d-hint {
+        margin: 1.5rem 0 0;
+        padding: 1rem 1.15rem;
+        font-size: 0.9rem;
+        line-height: 1.85;
+        color: var(--text, #e9f0ec);
+        border: 1px solid rgba(123, 240, 190, 0.22);
+        border-radius: 12px;
+        background: rgba(123, 240, 190, 0.05);
+    }
+
+    .mascot-3d-info {
+        margin-top: 1.75rem;
+        font-size: 0.92rem;
+        line-height: 1.9;
+        color: var(--text, #e9f0ec);
+    }
+
+    .mascot-3d-info h3 {
+        margin: 0 0 0.75rem;
+        font-size: 1.05rem;
+        color: #58d7ff;
+    }
+
+    .mascot-3d-info ul {
+        margin: 0 0 1rem;
+        padding-left: 1.5em;
+    }
+
+    .mascot-3d-info code {
+        padding: 0.1em 0.4em;
+        border-radius: 5px;
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 0.85em;
+        background: rgba(255, 255, 255, 0.07);
+    }
+
+    .mascot-3d-foot {
+        font-size: 0.85em;
+        opacity: 0.78;
+    }
+</style>
