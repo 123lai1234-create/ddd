@@ -599,10 +599,16 @@ def tune_materials(objs):
             if not b:
                 continue
             if "Coat Weight" in b.inputs:
-                b.inputs["Coat Weight"].default_value = 0.12
+                b.inputs["Coat Weight"].default_value = 0.06
             if "Roughness" in b.inputs:
-                b.inputs["Roughness"].default_value = 0.42
-            print(f"[mat] {mat.name}: coat 0.12 roughness 0.42")
+                b.inputs["Roughness"].default_value = 0.48
+            # The page renders under model-viewer's studio environment, and a
+            # near-black base colour with a strong specular lobe just mirrors
+            # that environment back as silver. Dropping the specular factor
+            # keeps the highlight without turning the hair grey.
+            if "Specular IOR Level" in b.inputs:
+                b.inputs["Specular IOR Level"].default_value = 0.12
+            print(f"[mat] {mat.name}: coat 0.06 roughness 0.48 specular 0.12")
 
 
 def setup_scene():
