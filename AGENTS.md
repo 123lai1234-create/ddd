@@ -5,12 +5,18 @@
 
 ## 部署（Vercel Hobby plan）
 
-- ❌ `git push` auto-deploy 在 Hobby plan 壞掉（state=READY 但 URL 全 404）
-- ✅ 部署前先 `npm run build` → `powershell -ExecutionPolicy Bypass -File scripts/prepare-deploy.ps1`
-  → 再 `npx vercel deploy --prebuilt --prod --yes --archive tgz --scope donttalk`
+- ✅ **`git push origin main` 就會自動部署正式站**（2026-10-23 實測驗證）
+- **曾經「state=READY 但全站 404」的真正原因**：根 `.vercelignore` 有一行 `/vercel.json`，
+  把帶 `installCommand`/`buildCommand`/`outputDirectory` 的設定檔濾掉了 → Vercel 退回 Dashboard
+  預設（buildCommand=null）→ 不跑 build → `astro/dist` 不存在。**已移除那行。改它之後務必確認還在**
+- 專案 `rootDirectory = null`（repo 根），所以用的是**根目錄**那份 `vercel.json`，
+  不是 `astro/vercel.json`（那份只有 rootDirectory=astro 時才生效）
+- Production Branch = `main`（`main` 已指向 active branch `123lai1234-create`；
+  舊 main 保留在 `main-backup-20261023`）
+- 要手動部署才用：`npm run build` → `prepare-deploy.ps1` → `npx vercel deploy --prebuilt --prod --yes --scope donttalk`
 - ❌ **不要帶 `--token`**。`.vercel/.env.development.local` 存的是 `VERCEL_OIDC_TOKEN`（JWT 含 `-` `.`），
   CLI 會擋掉（`Must not contain: "-", "."`）。CLI 已有既存登入，`npx vercel whoami` 可確認
-- 部署完 **比對 SHA256**（線上 `cwa-loader.js` vs 本地 `dist/`），不信 CLI Ready / `x-vercel-cache: MISS`
+- `vercel.json` 是嚴格 schema，**不准加自訂註解欄位**（加 `_comment_*` 會讓 CLI 直接拒絕部署）
 - 細節 → agent memory `vercel-deploy.md`
 
 ## Stock-app 硬規則（股票/LINE bot）
