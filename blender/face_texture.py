@@ -132,24 +132,24 @@ def _paint_face(cv, m):
 
         # blush first, everything else sits on top of it. P has to be fed world
         # z: eh is pixels, so mixing the two drops the blush off the chin.
-        bx, by = P(s * (az_e + 0.26), ez - m["eye_hh"] * 0.72)
-        d = np.hypot((X - bx) / (eh * 1.25), (Y - by) / (eh * 0.88))
-        cv.paint(np.exp(-d * d * 1.9), BLUSH, 0.55)
+        bx, by = P(s * (az_e + 0.24), ez - m["eye_hh"] * 0.66)
+        d = np.hypot((X - bx) / (eh * 1.35), (Y - by) / (eh * 0.95))
+        cv.paint(np.exp(-d * d * 1.7), BLUSH, 0.72)
 
-        # sclera, then the iris that fills most of it, like the reference. The
-        # iris sits inboard and a touch high so the white survives as a crescent
-        # on the outer lower lid, which is how the reference reads; a symmetric
-        # ring of white just looks like a face-paint mask.
+        # sclera, then the iris. The reference keeps a wide white crescent on
+        # the outer lid plus a thin rim top and bottom, so the iris only fills
+        # ~70% of the eye and sits inboard - a bigger iris reads as a black
+        # blob and loses the whole point of the painted look.
         cv.paint(_ellipse(X, Y, ex, ey, ew, eh), SCLERA)
-        cv.paint(_ellipse(X, Y, ex - mx * ew * 0.05, ey + eh * 0.02,
-                          ew * 0.840, eh * 0.940), IRIS)
+        cv.paint(_ellipse(X, Y, ex - mx * ew * 0.08, ey + eh * 0.05,
+                          ew * 0.780, eh * 0.840), IRIS)
 
         # upper lash: thick through the middle, tapering to the inner corner,
         # and jutting a little past the outer one like the painted reference
         n = 26
         pts = _arc(ex, ey, ew * 1.03, eh * 1.05, -0.05, math.pi * 1.76,
                    n=n, mirror=mx, lift=eh * 0.04)
-        wid = [eh * (0.115 + 0.145 * math.sin(math.pi * (t ** 0.8)) - 0.085 * t ** 2.5)
+        wid = [eh * (0.135 + 0.160 * math.sin(math.pi * (t ** 0.8)) - 0.090 * t ** 2.5)
                for t in (i / (n - 1.0) for i in range(n))]
         cv.paint(_stroke(X, Y, pts, wid, 1.8), LASH)
 

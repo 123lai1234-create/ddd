@@ -382,6 +382,14 @@ def assign_by_region(objs, mats, lo, hi):
     HAIRLINE_FRONT = 0.712
     HAIRLINE_SIDE = 0.655
 
+    # Bare arms. x alone cannot tell an arm from the hip - they touch, and the
+    # vertex profile through the band is continuous. But the arms hang clear
+    # of the leg silhouette, so a threshold well under the leg does separate
+    # them. The old guess was ax > 0.80, which never fired at all: max ax
+    # anywhere in z/H 0.19..0.46 is 0.77, so every forearm came out red.
+    ARM_AX = 0.62
+    ARM_SLEEVE_END = 0.415    # the tee is short-sleeved: bare below the elbow
+
     def classify(p, n=None):
         fz = (p.z - lo.z) / H
         ax = abs(p.x) / half_w
@@ -390,17 +398,15 @@ def assign_by_region(objs, mats, lo, hi):
             return "sole"
         if fz < Z_SHOE_TOP:
             return "shoe"
+
+        if 0.170 < fz < Z_TEE_TOP and ax > ARM_AX:
+            return "skin" if fz < ARM_SLEEVE_END else "tee"
+
         if fz < Z_PANTS_TOP:
-            if ax > 0.80 and fz > 0.185:
-                return "skin"            # hands beside the legs
             return "pants"
         if fz < Z_PLAID_TOP:
-            if ax > 0.80 and fz > 0.30:
-                return "skin"            # forearms stay bare
             return "plaid"
         if fz < Z_TEE_TOP:
-            if ax > 0.80:
-                return "skin"
             return "tee"
         if fz < Z_NECK_TOP:
             return "skin"                # neck
@@ -524,8 +530,8 @@ def face_metrics(objs, lo, hi):
             return math.atan2(x - cx, R)
         return math.atan2(h[0].x - cx, -(h[0].y - cy))
 
-    eye_z = z_lo + span * 0.62
-    az_e = abs(az_at(cx + fw * 0.485, eye_z))
+    eye_z = z_lo + span * 0.645
+    az_e = abs(az_at(cx + fw * 0.415, eye_z))
     # the cheek is curved, so an arc on it renders narrower than it measures
     corr = 1.0 / max(math.cos(az_e), 0.55)
 
@@ -533,9 +539,9 @@ def face_metrics(objs, lo, hi):
         "cx": cx, "cy": cy, "radius": R,
         "z0": z_lo, "z1": z_hi,
         "eye_z": eye_z, "eye_az": az_e,
-        "eye_hw": fw * 0.245 * corr,
-        "eye_hh": span * 0.215,
-        "mouth_z": z_lo + span * 0.19,
+        "eye_hw": fw * 0.250 * corr,
+        "eye_hh": span * 0.205,
+        "mouth_z": z_lo + span * 0.240,
         "mouth_hw": fw * 0.150,
         "nose_z": z_lo + span * 0.40,
     }
