@@ -46,3 +46,37 @@ astro/scripts/_*.log
 .render-logs.ps1
 blender/__pycache__/
 blender/out/*.blend1
+
+# ── 2026-10-23 清理：agent 跑出來的一次性產物 ──────────────────
+# RAG 檢索索引（LanceDB），26 MB 全是 .lance 分片，重跑即可再生
+.rag/
+.tmp/
+
+# 根目錄與 scripts/ 下的一次性 patch / 查證腳本（每個 session 產一批）
+patch-*.py
+scripts/patch_*.py
+scripts/check_*.py
+scripts/debug_*.py
+scripts/find_*.py
+scripts/fix_*.py
+scripts/verify_*.py
+scripts/parse_deploys*.py
+scripts/compare_*.py
+scripts/recheck_*.py
+
+# astro/ 下同性質的一次性腳本（gitignore 不支援 brace expansion，只能逐條列）
+astro/scripts/cache-test.mjs
+astro/scripts/lance-bench.mjs
+astro/scripts/lance-migrate.mjs
+astro/scripts/ollama-bench.mjs
+astro/scripts/qa-compare.mjs
+astro/scripts/smoke-test.mjs
+astro/scripts/stream-test.mjs
+astro/tmp-ignore-test.cjs
+
+# Blender 中間產物：model-viewer 檢查頁、bake 預覽、日誌、被取代的 GLB
+blender/out/_mv_*.html
+blender/out/*_log.txt
+blender/out/chibi_baked.*
+blender/out/baked_*.png
+blender/out/mascot-3d.restyle-*.glb
