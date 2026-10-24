@@ -674,6 +674,72 @@ def plaid_has_texture():
     return False
 
 
+def drop_floating_shards(objs, lo, hi, max_faces=600):
+    """Delete the small islands floating in front of the head.
+
+    Meshy rebuilds stray slabs and shards as separate pieces that hover in
+    front of the face. They are not connected to the head, so they can be
+    found as their own connected components - and because they are separate,
+    cutting them out does not tear the cheek open the way cutting faces does.
+
+    Only islands that sit in front of the head and inside the head height
+    band are removed; the hair shell and the body are big islands and are
+    never touched.
+    """
+    H = hi.z - lo.z
+    z_lo = lo.z + 0.48 * H
+    z_hi = lo.z + 0.82 * H
+    total = 0
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        bm.verts.ensure_lookup_table()
+
+        label = {}
+        cur = 0
+        for f in bm.faces:
+            if f.index in label:
+                continue
+            stack = [f]
+            label[f.index] = cur
+            while stack:
+                fa = stack.pop()
+                for e in fa.edges:
+                    for nf in e.link_faces:
+                        if nf.index not in label:
+                            label[nf.index] = cur
+                            stack.append(nf)
+            cur += 1
+
+        groups = {}
+        for f in bm.faces:
+            groups.setdefault(label[f.index], []).append(f)
+        main = max(groups, key=lambda k: len(groups[k]))
+
+        doomed = []
+        for key, faces in groups.items():
+            if key == main or len(faces) > max_faces:
+                continue
+            cs = [f.calc_center_median() for f in faces]
+            zmin = min(c.z for c in cs)
+            zmax = max(c.z for c in cs)
+            if zmin < z_lo or zmax > z_hi:
+                continue
+            if max(c.y for c in cs) > 0.05:
+                continue            # has to float in front of the head
+            doomed.extend(faces)
+        if doomed:
+            print(f"[shards] removing {len(doomed)} faces in "
+                  f"{len({label[f.index] for f in doomed})} islands")
+            bmesh.ops.delete(bm, geom=doomed, context="FACES")
+            total += len(doomed)
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    print(f"[shards] total {total} faces removed")
+
+
 def tune_materials(objs):
     """Make the hair read as black lacquer instead of grey felt.
 
@@ -807,6 +873,7 @@ def main():
     trim_tee_hem(objs, lo, hi)
     clean_seams(objs, lo, hi)
     flatten_waist_edge(objs, lo, hi)
+    drop_floating_shards(objs, lo, hi)
     # clean_head_slab is NOT called on the full resolution base model. It was
     # written for the low resolution one, where Meshy left flat headphone
     # slabs beside the cheeks; on the new base those patches are already
