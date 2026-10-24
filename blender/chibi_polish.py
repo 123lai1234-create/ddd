@@ -27,6 +27,7 @@ import bpy
 import bmesh
 import math
 import os
+import numpy as np
 from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -675,20 +676,20 @@ def plaid_has_texture():
 
 
 def drop_floating_shards(objs, lo, hi, max_faces=600):
-    """Delete the small islands floating in front of the head.
+    """Delete the small islands floating off the body.
 
     Meshy rebuilds stray slabs and shards as separate pieces that hover in
-    front of the face. They are not connected to the head, so they can be
-    found as their own connected components - and because they are separate,
-    cutting them out does not tear the cheek open the way cutting faces does.
+    front of the face and along the hems. They are not connected to the
+    body, so they can be found as their own connected components - and
+    because they are separate, cutting them out does not tear the body open
+    the way cutting faces does.
 
-    Only islands that sit in front of the head and inside the head height
-    band are removed; the hair shell and the body are big islands and are
-    never touched.
+    Only islands that float in front of the body are removed; the hair shell
+    and the body itself are big islands and are never touched.
     """
     H = hi.z - lo.z
-    z_lo = lo.z + 0.48 * H
-    z_hi = lo.z + 0.82 * H
+    z_lo = lo.z + 0.02 * H
+    z_hi = lo.z + 0.98 * H
     total = 0
     for ob in objs:
         bm = bmesh.new()
@@ -727,7 +728,7 @@ def drop_floating_shards(objs, lo, hi, max_faces=600):
             if zmin < z_lo or zmax > z_hi:
                 continue
             if max(c.y for c in cs) > 0.05:
-                continue            # has to float in front of the head
+                continue            # has to float in front of the body
             doomed.extend(faces)
         if doomed:
             print(f"[shards] removing {len(doomed)} faces in "
@@ -738,6 +739,797 @@ def drop_floating_shards(objs, lo, hi, max_faces=600):
         bm.free()
         ob.data.update()
     print(f"[shards] total {total} faces removed")
+
+
+def clear_eye_fringe(objs, lo, hi, z_lo=0.605, z_hi=0.700, y_front=-0.045):
+    """Repaint the ragged hair edge that crosses the eyes.
+
+    The hair shell is a separate volume sitting on the skull, and its lower
+    boundary falls right across the eyes. The boundary is a row of triangles,
+    so it reads as a torn black frame around both eyes - the single ugliest
+    thing on the model.
+
+    Moving the fringe does not work: pulling it up packs the spikes together
+    and turns it into a metal comb. The edge is repainted as plain skin
+    instead, so the boundary disappears into the face and the eyes come out
+    clean.
+    """
+    H = hi.z - lo.z
+    za = lo.z + z_lo * H
+    zb = lo.z + z_hi * H
+    changed = 0
+    for ob in objs:
+        slots = slot_map(ob)
+        hair = find_slot(slots, "hair")
+        skin = find_slot(slots, "skin")
+        if hair is None or skin is None:
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        for f in bm.faces:
+            if f.material_index != hair:
+                continue
+            c = f.calc_center_median()
+            if not (za <= c.z <= zb):
+                continue
+            if c.y >= y_front:
+                continue            # has to be in front of the face
+            f.material_index = skin
+            changed += 1
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    print(f"[eyes] {changed} fringe faces repainted as skin "
+          f"(z {za:.3f}..{zb:.3f}, y < {y_front})")
+
+
+def tuck_front_edges(objs, lo, hi, push=0.022):
+    """Slide the ragged front edges back onto the surface behind them.
+
+    Two things stand a little in front of the body and are built as sheets
+    with a row of triangles along their boundary: the hair shell around the
+    eyes, and the teeth of the tee hem. The boundary is what reads as a torn
+    edge - the hair becomes a black frame around the eyes, the tee grows
+    white teeth over the plaid sash.
+
+    Moving the geometry is not enough on its own - the edge just moves with
+    it. But pushing the sheet back until it sits against the surface behind
+    it hides the boundary: the body in front now covers it.
+    """
+    from mathutils.bvhtree import BVHTree
+
+    H = hi.z - lo.z
+    # (what to push, what it should sit against, height band)
+    jobs = (
+        ("hair", ("face", "skin"), 0.600, 0.715),
+        ("tee", ("plaid", "pants", "skin"), 0.600, 0.720),
+    )
+
+    for ob in objs:
+        slots = slot_map(ob)
+        if not slots:
+            continue
+        for mover_key, back_keys, z_lo_f, z_hi_f in jobs:
+            mover = find_slot(slots, mover_key)
+            if mover is None:
+                continue
+            back_idx = {find_slot(slots, k) for k in back_keys}
+            back_idx.discard(None)
+            if not back_idx:
+                continue
+
+            bm = bmesh.new()
+            bm.from_mesh(ob.data)
+            bm.faces.ensure_lookup_table()
+            bm.verts.ensure_lookup_table()
+
+            # BVH of the surface the sheet should sit against
+            vmap = {}
+            bverts = []
+            bpolys = []
+            for f in bm.faces:
+                if f.material_index not in back_idx:
+                    continue
+                vs = []
+                for v in f.verts:
+                    if v.index not in vmap:
+                        vmap[v.index] = len(bverts)
+                        bverts.append(v.co.copy())
+                    vs.append(vmap[v.index])
+                if len(vs) >= 3:
+                    bpolys.append(tuple(vs))
+            if not bpolys:
+                bm.free()
+                continue
+            bvh = BVHTree.FromPolygons(bverts, bpolys)
+
+            z_lo = lo.z + z_lo_f * H
+            z_hi = lo.z + z_hi_f * H
+            moved = 0
+            for v in bm.verts:
+                if not (z_lo <= v.co.z <= z_hi):
+                    continue
+                faces = v.link_faces
+                if not faces:
+                    continue
+                if not any(f.material_index == mover for f in faces):
+                    continue
+                # the vertex has to actually be in front of the surface
+                if v.co.y > 0.0:
+                    continue
+                origin = Vector((v.co.x, -3.0, v.co.z))
+                hit = bvh.ray_cast(origin, Vector((0.0, 1.0, 0.0)), 6.0)
+                if hit[0] is None:
+                    continue
+                surface_y = hit[0].y
+                if v.co.y < surface_y - push:
+                    v.co.y = surface_y - push
+                    moved += 1
+            if moved:
+                print(f"[tuck] {mover_key}: {moved} verts pushed back")
+            bm.to_mesh(ob.data)
+            bm.free()
+            ob.data.update()
+
+
+def tuck_fringe_behind_brow(objs, lo, hi, z_lo_f=0.715, push=0.012):
+    """Hide the fringe tips inside the brow instead of over the eyes.
+
+    The fringe is a shell of hair sitting in front of the forehead, and its
+    lower edge is a row of triangles that crosses the eyes. The pipeline
+    paints those tips with the face texture, so they pick up the painted
+    lashes and the face ends up wearing a torn black frame.
+
+    Re-labelling the tips does not help: the material border lands on the
+    same ragged edge. The tips have to move. Every face-textured vertex above
+    the brow line is slid back until it sits just behind the surface of the
+    face, so the forehead covers the edge and the tips disappear into it.
+    """
+    from mathutils.bvhtree import BVHTree
+
+    H = hi.z - lo.z
+    z_lo = lo.z + z_lo_f * H
+    for ob in objs:
+        slots = slot_map(ob)
+        face = find_slot(slots, "face")
+        if face is None:
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        bm.verts.ensure_lookup_table()
+
+        vmap = {}
+        bverts = []
+        bpolys = []
+        for f in bm.faces:
+            vs = []
+            for v in f.verts:
+                if v.index not in vmap:
+                    vmap[v.index] = len(bverts)
+                    bverts.append(v.co.copy())
+                vs.append(vmap[v.index])
+            if len(vs) >= 3:
+                bpolys.append(tuple(vs))
+        if not bpolys:
+            bm.free()
+            continue
+        bvh = BVHTree.FromPolygons(bverts, bpolys)
+
+        moved = 0
+        for v in bm.verts:
+            if v.co.z < z_lo:
+                continue
+            faces = v.link_faces
+            if not faces or not any(f.material_index == face for f in faces):
+                continue
+            hit = bvh.ray_cast(Vector((v.co.x, -3.0, v.co.z)),
+                               Vector((0.0, 1.0, 0.0)), 6.0)
+            if hit[0] is None:
+                continue
+            surface_y = hit[0].y
+            if v.co.y < surface_y - 0.006:
+                v.co.y = surface_y - push
+                moved += 1
+        if moved:
+            print(f"[fringe] {moved} verts tucked behind the brow")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+
+
+def flatten_face_overhang(objs, lo, hi):
+    """Fold the face material that hangs off the head back onto the head.
+
+    The painted face is wrapped onto the front of the skull, but the
+    reconstruction also left broken flaps around the cheeks, the jaw and the
+    neck carrying the same material. They pick up the blank edge of the
+    texture and read as black shards lying over the face.
+
+    A flap is recognisable by its normal. The front of the face points
+    forward; a flap points sideways or backwards. Those faces are re-labelled
+    as plain skin and folded down onto the surface of the head, so the cheek
+    and the jaw are flat again.
+
+    Re-labelling on its own is not enough - a flap is still a flap, and it
+    still stands proud of the face and catches a shadow. It has to be folded
+    back onto the surface as well.
+    """
+    from mathutils.bvhtree import BVHTree
+
+    for ob in objs:
+        slots = slot_map(ob)
+        face = find_slot(slots, "face")
+        skin = find_slot(slots, "skin")
+        if face is None or skin is None:
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        bm.verts.ensure_lookup_table()
+
+        # the skin shell is the surface the flaps have to lie on
+        vmap = {}
+        bverts = []
+        bpolys = []
+        for f in bm.faces:
+            if f.material_index != skin:
+                continue
+            vs = []
+            for v in f.verts:
+                if v.index not in vmap:
+                    vmap[v.index] = len(bverts)
+                    bverts.append(v.co.copy())
+                vs.append(vmap[v.index])
+            if len(vs) >= 3:
+                bpolys.append(tuple(vs))
+        if not bpolys:
+            bm.free()
+            continue
+        bvh = BVHTree.FromPolygons(bverts, bpolys)
+
+        front = [f for f in bm.faces if f.material_index == face]
+        if not front:
+            bm.free()
+            continue
+        cx = sum(f.calc_center_median().x for f in front) / len(front)
+        cy = sum(f.calc_center_median().y for f in front) / len(front)
+
+        flaps = [f for f in front if f.normal.y > -0.30]
+        if not flaps:
+            bm.free()
+            continue
+        for f in flaps:
+            f.material_index = skin
+
+        folded = 0
+        for f in flaps:
+            c = f.calc_center_median()
+            d = Vector((c.x - cx, c.y - cy, 0.0))
+            if d.length < 1e-5:
+                continue
+            d.normalize()
+            for v in f.verts:
+                origin = Vector((cx, cy, v.co.z))
+                hit = bvh.ray_cast(origin, d, 2.0)
+                if hit[0] is not None:
+                    v.co = hit[0] + d * 0.002
+                    folded += 1
+        print(f"[flaps] {len(flaps)} face flaps folded onto the head "
+              f"({folded} verts)")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+
+
+def _flood_from_border(mask):
+    """Every pixel of `mask` that is reachable from the border of the image."""
+    reach = np.zeros_like(mask)
+    reach[0, :] |= mask[0, :]
+    reach[-1, :] |= mask[-1, :]
+    reach[:, 0] |= mask[:, 0]
+    reach[:, -1] |= mask[:, -1]
+    while True:
+        nxt = reach.copy()
+        nxt[1:, :] |= reach[:-1, :]
+        nxt[:-1, :] |= reach[1:, :]
+        nxt[:, 1:] |= reach[:, :-1]
+        nxt[:, :-1] |= reach[:, 1:]
+        nxt &= mask
+        if nxt.sum() == reach.sum():
+            return reach
+        reach = nxt
+
+
+def _erode(mask, r):
+    out = mask
+    for _ in range(r):
+        nxt = out.copy()
+        nxt[1:, :] &= out[:-1, :]
+        nxt[:-1, :] &= out[1:, :]
+        nxt[:, 1:] &= out[:, :-1]
+        nxt[:, :-1] &= out[:, 1:]
+        out = nxt
+    return out
+
+
+def _dilate(mask, r):
+    out = mask
+    for _ in range(r):
+        nxt = out.copy()
+        nxt[1:, :] |= out[:-1, :]
+        nxt[:-1, :] |= out[1:, :]
+        nxt[:, 1:] |= out[:, :-1]
+        nxt[:, :-1] |= out[:, 1:]
+        out = nxt
+    return out
+
+
+def clean_face_texture(objs, threshold=0.32, erode=3):
+    """Take the reference photo's hair out of the projected face texture.
+
+    The head texture is the reference photo wrapped onto the skull, so the
+    photo's own hair rides along with it: the fringe lands on the forehead and
+    the side locks land on the cheeks and the jaw. The face shell is torn
+    along its silhouette, and a torn edge samples the border of the texture -
+    which is exactly where the hair is - so the result is a ring of black
+    shards around the eyes, the cheeks and the chin.
+
+    The hair is the only dark thing that touches the border of the texture.
+    The brows, the lashes and the iris all float in the middle, surrounded by
+    skin, so flooding the dark pixels inward from the border separates the
+    hair from the features without needing to know where the eyes are.
+
+    A plain flood is not enough: in the photo the lash of the left eye runs
+    into the hair beside it, and the flood walks straight down the lash and
+    eats the eye. Eroding the dark mask first cuts those thin bridges while
+    the thick hair mass survives; the brows and the lashes are thin enough to
+    be eroded away, so they stay out of the flood and survive untouched. The
+    hair mask is dilated back afterwards so the fringe keeps its edge.
+
+    The hair is then filled with the nearest skin pixel in its own column,
+    which for the fringe is the forehead right below it.
+
+    Returns the number of pixels that were replaced.
+    """
+    import numpy as np
+
+    face_mat = None
+    for ob in objs:
+        for s in ob.material_slots:
+            if s.material and s.material.name.lower().startswith("face"):
+                face_mat = s.material
+                break
+        if face_mat:
+            break
+    if face_mat is None:
+        print("[texture] no face material - skipping")
+        return 0
+
+    tex = None
+    for n in face_mat.node_tree.nodes:
+        if n.type == "TEX_IMAGE" and n.image:
+            tex = n
+            break
+    if tex is None:
+        print("[texture] face material has no image - skipping")
+        return 0
+
+    img = tex.image
+    w, h = img.size
+    buf = np.empty(w * h * 4, dtype=np.float32)
+    img.pixels.foreach_get(buf)
+    px = buf.reshape(h, w, 4)[::-1]          # top-down rows
+    rgb = px[:, :, :3].copy()
+
+    luma = (rgb[:, :, 0] * 0.2126 + rgb[:, :, 1] * 0.7152
+            + rgb[:, :, 2] * 0.0722)
+    dark = luma < threshold
+    core = _erode(dark, erode)
+    hair = _dilate(_flood_from_border(core), erode) & dark
+    n_hair = int(hair.sum())
+    if n_hair == 0:
+        print("[texture] no hair found at the border - leaving it alone")
+        return 0
+
+    # Fill the hair with a smooth skin field. Copying the nearest skin pixel
+    # down each column would work too, but the photo's columns each carry a
+    # different shade and the result is a curtain of vertical streaks across
+    # the forehead. A heavily downsampled copy of the skin is smooth enough
+    # to pass for a forehead and keeps the photo's broad shading.
+    out = rgb.copy()
+    hx, hy = max(1, w // 32), max(1, h // 32)
+    skin_src = (luma > 0.62) & (~hair)
+    acc = np.zeros((hy, hx, 3), np.float32)
+    cnt = np.zeros((hy, hx), np.float32)
+    hh, ww = hy * 32, hx * 32
+    pad_l = np.where(skin_src[:hh, :ww][:, :, None], rgb[:hh, :ww], 0.0)
+    pad_c = skin_src[:hh, :ww].astype(np.float32)
+    for by in range(hy):
+        for bx in range(hx):
+            blk = pad_l[by * 32:(by + 1) * 32, bx * 32:(bx + 1) * 32]
+            bc = pad_c[by * 32:(by + 1) * 32, bx * 32:(bx + 1) * 32]
+            n = bc.sum()
+            if n > 0:
+                acc[by, bx] = blk.reshape(-1, 3).sum(axis=0) / n
+                cnt[by, bx] = 1.0
+    acc = acc / np.maximum(cnt, 1.0)[:, :, None]
+    field = np.repeat(np.repeat(acc, 32, axis=0), 32, axis=1)[:h, :w]
+    out[hair] = field[hair]
+
+    # The face shell is torn along its silhouette, and a torn edge samples the
+    # border of the texture. Flatten the border band to plain skin so those
+    # edges come out as skin instead of shards.
+    luma2 = (out[:, :, 0] * 0.2126 + out[:, :, 1] * 0.7152
+             + out[:, :, 2] * 0.0722)
+    skin = luma2 > 0.62
+    if skin.any():
+        skin_col = np.median(out[skin], axis=0)
+        bx = max(4, int(w * 0.045))
+        by = max(4, int(h * 0.045))
+        out[:, :bx] = skin_col
+        out[:, w - bx:] = skin_col
+        out[h - by:, :] = skin_col
+        out[:by, :] = skin_col
+        print(f"[texture] flattened the border to skin {skin_col.round(3)}")
+
+    px[:, :, :3] = out
+    img.update()
+    img.pack()
+    try:
+        img.file_format = "PNG"
+        img.filepath_raw = os.path.join(OUT, "face_clean.png")
+        img.save()
+        img.filepath_raw = ""
+    except (OSError, RuntimeError) as exc:
+        print(f"[texture] could not write the preview: {exc}")
+    print(f"[texture] stripped {n_hair} hair pixels out of {w}x{h} "
+          f"({100.0 * n_hair / (w * h):.1f}%)")
+    return n_hair
+
+
+def trim_hair_over_face(objs, lo, hi, z_cut=1.30, nx=320, nz=320, near_eps=0.012):
+    """Cut away the hair that hangs in front of the face.
+
+    Meshy rebuilds the hair as a handful of separate shells. On the skull they
+    look right, but the shells that fall across the forehead and the eyes come
+    out torn - thin flakes with a sawtooth edge - and a sawtooth of black hair
+    across the eyes is what makes the face read as broken.
+
+    The test is a front projection: for every column of the head, shoot a ray
+    forward through the model and see whether it passes through the face
+    shell. Anything made of hair that lands inside that outline is hair that
+    is covering the face, and it goes.
+
+    z_cut is the hairline. Hair above it is the cap and stays.
+    """
+    from mathutils.bvhtree import BVHTree
+
+    for ob in objs:
+        slots = slot_map(ob)
+        hair = find_slot(slots, "hair")
+        face = find_slot(slots, "face")
+        if hair is None or face is None:
+            continue
+
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        bm.verts.ensure_lookup_table()
+
+        verts = [v.co.copy() for v in bm.verts]
+        polys = [tuple(v.index for v in f.verts) for f in bm.faces]
+        bvh = BVHTree.FromPolygons(verts, polys, all_triangles=False)
+
+        # a second tree over the face shell alone, for the distance test
+        fverts, fpolys, fmap = [], [], []
+        for f in bm.faces:
+            if f.material_index != face:
+                continue
+            idx = []
+            for v in f.verts:
+                idx.append(len(fverts))
+                fverts.append(v.co.copy())
+            fpolys.append(tuple(idx))
+            fmap.append(f)
+        bvh_face = BVHTree.FromPolygons(fverts, fpolys, all_triangles=False)
+
+        # inside[x][z] = a ray forward through this column meets the face
+        x0, x1 = lo.x, hi.x
+        z0, z1 = lo.z, hi.z
+        inside = np.zeros((nz, nx), dtype=bool)
+        for iz in range(nz):
+            z = z0 + (iz / (nz - 1.0)) * (z1 - z0)
+            for ix in range(nx):
+                x = x0 + (ix / (nx - 1.0)) * (x1 - x0)
+                # shoot from the front and step through every surface, so a
+                # strand of hair lying over the face does not hide it
+                origin = Vector((x, lo.y - 1.0, z))
+                direction = Vector((0.0, 1.0, 0.0))
+                for _ in range(12):
+                    hit = bvh.ray_cast(origin, direction, 20.0)
+                    if hit[0] is None:
+                        break
+                    fi = hit[2]
+                    if fi is not None and fi < len(bm.faces) \
+                            and bm.faces[fi].material_index == face:
+                        inside[iz, ix] = True
+                        break
+                    origin = hit[0] + direction * 0.002
+
+        kill = []
+        near = []
+        for f in bm.faces:
+            if f.material_index != hair:
+                continue
+            c = f.calc_center_median()
+            hit = bvh_face.find_nearest(c)
+            if hit[0] is not None and hit[3] < near_eps:
+                near.append(f)
+                continue
+            if c.z > z_cut:
+                continue
+            ix = int((c.x - x0) / (x1 - x0) * (nx - 1))
+            iz = int((c.z - z0) / (z1 - z0) * (nz - 1))
+            if not (0 <= ix < nx and 0 <= iz < nz):
+                continue
+            if inside[iz, ix]:
+                kill.append(f)
+        print(f"[hair] cut {len(near)} hair faces touching the face and "
+              f"{len(kill)} more covering it")
+        if near or kill:
+            bmesh.ops.delete(bm, geom=near + kill, context="FACES")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+
+
+def drop_untextured_face(objs):
+    """Re-label the face faces that never got real UVs.
+
+    The head texture is unwrapped cylindrically, and everything that is not
+    part of the face gets a flat (0, 0). A handful of faces are re-labelled as
+    face material after that, so they keep the flat UV and sample the corner
+    of the texture instead of the face. They show up as a ring of grey shards
+    around the eyes and along the jaw. Sending them back to plain skin gets
+    rid of them.
+    """
+    for ob in objs:
+        slots = slot_map(ob)
+        face = find_slot(slots, "face")
+        skin = find_slot(slots, "skin")
+        if face is None or skin is None:
+            continue
+        uvl = ob.data.uv_layers.active
+        if uvl is None:
+            continue
+        n = 0
+        for p in ob.data.polygons:
+            if p.material_index != face:
+                continue
+            us = [uvl.data[li].uv[0] for li in p.loop_indices]
+            vs = [uvl.data[li].uv[1] for li in p.loop_indices]
+            if not us:
+                continue
+            if max(abs(u) for u in us) < 1e-4 and max(abs(v) for v in vs) < 1e-4:
+                p.material_index = skin
+                n += 1
+        print(f"[face] sent {n} untextured faces back to skin")
+        ob.data.update()
+
+
+def repaint_face(objs, lo, hi):
+    """Re-bake the face texture and the head UVs against the current geometry.
+
+    The head texture is the reference photo projected onto the skull, and the
+    unwrap is cylindrical: azimuth to u, height to v. Both were solved when
+    the pipeline ran. Since then the skull was resculpted - the fringe was
+    cut back, the hair was slimmed - so the projection no longer matches the
+    head it is sitting on. The photo's eyes land in the wrong place and the
+    parts of the texture that fall on the temples are the photo's side hair,
+    which is what the black shards around the eyes are.
+
+    The fix is to solve the projection again from the geometry as it is now
+    and bake the photo back on. The helpers live in chibi_restyle.py; this
+    imports them with CHIBI_RUN=0 so the pipeline does not re-run.
+    """
+    import sys
+
+    os.environ["CHIBI_RUN"] = "0"
+    here = os.path.dirname(os.path.abspath(__file__))
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    import chibi_restyle
+
+    face_slot = None
+    skin_slot = None
+    plaid_slot = None
+    skin_mat = None
+    for ob in objs:
+        slots = slot_map(ob)
+        if face_slot is None:
+            face_slot = find_slot(slots, "face")
+            skin_slot = find_slot(slots, "skin")
+            plaid_slot = find_slot(slots, "plaid")
+            skin_mat = ob.material_slots[skin_slot].material
+    if face_slot is None or skin_mat is None:
+        print("[face] no face material - skipping the repaint")
+        return None
+
+    m = chibi_restyle.face_metrics(objs, lo, hi)
+    m["K"] = chibi_restyle.photo_scale(objs, m)
+    print(f"[face] K={m['K']:.1f} eye_az={math.degrees(m['eye_az']):.1f}deg "
+          f"z={m['z0']:.3f}..{m['z1']:.3f}")
+
+    new_mat = chibi_restyle.face_texture.bake(m, skin_mat, OUT,
+                                               chibi_restyle.REF_FACE)
+    for ob in objs:
+        ob.material_slots[face_slot].material = new_mat
+    z_neck = lo.z + chibi_restyle.Z_NECK_FRAC * (hi.z - lo.z)
+    chibi_restyle.face_texture.apply(objs, m, new_mat, face_slot, z_neck,
+                                     (skin_slot, face_slot))
+    # apply() flattens every UV that is not the face, so the tartan has to be
+    # unwrapped again
+    chibi_restyle.uv_plaid(objs, lo, hi, plaid_slot)
+    return m
+
+
+def _fit_uv_frame(objs, face_slot):
+    """Recover the cylindrical frame the head texture was unwrapped with.
+
+    u = 0.5 + atan2(x - cx, -(y - cy)) / (2 * 58 deg)
+    v = (z - z0) / (z1 - z0)
+
+    The v part is a straight line through the samples. The u part needs the
+    head's axis, which is solved by searching: the axis that makes the
+    measured u and the measured azimuth agree is the axis the texture was
+    baked with.
+    """
+    samples = []
+    for ob in objs:
+        uvl = ob.data.uv_layers.active
+        if uvl is None:
+            continue
+        for p in ob.data.polygons:
+            if p.material_index != face_slot:
+                continue
+            for li in p.loop_indices:
+                v = ob.data.vertices[ob.data.loops[li].vertex_index].co
+                uv = uvl.data[li].uv
+                samples.append((uv[0], uv[1], v.x, v.y, v.z))
+    if len(samples) < 50:
+        return None
+
+    # v: z = z0 + (z1 - z0) * v
+    n = len(samples)
+    sv = sum(s[1] for s in samples)
+    svv = sum(s[1] * s[1] for s in samples)
+    sz = sum(s[4] for s in samples)
+    svz = sum(s[1] * s[4] for s in samples)
+    det = n * svv - sv * sv
+    if abs(det) < 1e-9:
+        return None
+    slope = (n * svz - sv * sz) / det
+    z0 = (sz - slope * sv) / n
+    z1 = z0 + slope
+
+    # u: search the head's axis
+    du = 1.0 / (2.0 * math.radians(58.0))
+    best = None
+    for cx in [i * 0.004 for i in range(-20, 21)]:
+        for cy in [i * 0.01 for i in range(-48, -8)]:
+            err = 0.0
+            n2 = 0
+            for u, v, x, y, z in samples:
+                if u < 0.03 or u > 0.97:
+                    continue
+                az = math.atan2(x - cx, -(y - cy))
+                err += (0.5 + az * du - u) ** 2
+                n2 += 1
+            if n2 < 20:
+                continue
+            err /= n2
+            if best is None or err < best[0]:
+                best = (err, cx, cy)
+    if best is None:
+        return None
+    _, cx, cy = best
+    print(f"[face] uv frame cx={cx:.3f} cy={cy:.3f} z0={z0:.3f} z1={z1:.3f} "
+          f"(fit err {best[0]:.5f})")
+    return cx, cy, z0, z1
+
+
+def fill_face_holes(objs, z_lo=0.99, rounds=2):
+    """Close the holes in the face shell.
+
+    Meshy leaves the reconstruction open around the eye sockets, and the face
+    shell inherits those holes. A hole is not a shading problem - the
+    background shows straight through it, so the eye ends up ringed by grey
+    shards that look exactly like debris stuck to the face.
+
+    The holes are closed with more face, not with plain skin: the new faces
+    take the UVs of the vertices they are stitched to, so the texture runs
+    straight through the patch and the repair is invisible.
+    """
+    for ob in objs:
+        slots = slot_map(ob)
+        face = find_slot(slots, "face")
+        skin = find_slot(slots, "skin")
+        if face is None:
+            continue
+        uvl = ob.data.uv_layers.active
+        if uvl is None:
+            continue
+        frame = _fit_uv_frame(objs, face)
+        if frame is None:
+            frame = (0.0, -0.30, 1.0, 1.28)
+        cx, cy, z0, z1 = frame
+        du = 1.0 / (2.0 * math.radians(58.0))
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.edges.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+
+        # the UV of every vertex that already belongs to the face
+        vmap = {}
+        for f in bm.faces:
+            if f.material_index != face:
+                continue
+            for loop in f.loops:
+                v = loop.vert.index
+                if v not in vmap:
+                    vmap[v] = tuple(uvl.data[loop.index].uv)
+
+        mark = bm.faces.layers.int.get("polish_mark")
+        if mark is None:
+            mark = bm.faces.layers.int.new("polish_mark")
+        for f in bm.faces:
+            f[mark] = 1
+
+        for _ in range(rounds):
+            edges = []
+            for e in bm.edges:
+                if len(e.link_faces) != 1:
+                    continue
+                f = e.link_faces[0]
+                if f.material_index != face:
+                    continue
+                if e.verts[0].co.z < z_lo and e.verts[1].co.z < z_lo:
+                    continue
+                edges.append(e)
+            if not edges:
+                break
+            before = len(bm.faces)
+            bmesh.ops.holes_fill(bm, edges=edges, sides=0)
+            made = len(bm.faces) - before
+            if made == 0:
+                bmesh.ops.triangle_fill(bm, edges=edges)
+                made = len(bm.faces) - before
+            if made == 0:
+                break
+            for f in bm.faces:
+                if f[mark] == 1:
+                    continue
+                f[mark] = 1
+                f.material_index = face
+                for loop in f.loops:
+                    co = loop.vert.co
+                    az = math.atan2(co.x - cx, -(co.y - cy))
+                    u = 0.5 + az * du
+                    u = min(1.0, max(0.0, u))
+                    v = (co.z - z0) / max(1e-6, (z1 - z0))
+                    v = min(1.0, max(0.0, v))
+                    uvl.data[loop.index].uv = (u, v)
+            print(f"[face] closed {made} faces")
+
+        try:
+            bm.faces.layers.int.remove(mark)
+        except (RuntimeError, ReferenceError):
+            pass
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
 
 
 def tune_materials(objs):
@@ -874,6 +1666,8 @@ def main():
     clean_seams(objs, lo, hi)
     flatten_waist_edge(objs, lo, hi)
     drop_floating_shards(objs, lo, hi)
+    tuck_fringe_behind_brow(objs, lo, hi)
+    tuck_front_edges(objs, lo, hi)
     # clean_head_slab is NOT called on the full resolution base model. It was
     # written for the low resolution one, where Meshy left flat headphone
     # slabs beside the cheeks; on the new base those patches are already
@@ -883,6 +1677,13 @@ def main():
     # the eyes (the hairline now sits at z 1.31 of a 1.8 tall model), and
     # cutting on top of that only leaves a ragged edge behind.
     slim_hair(objs, lo, hi)
+    # the face texture is the reference photo wrapped onto the skull, so the
+    # photo's own hair rides along with it and lands on the forehead and the
+    # cheeks; and the reconstruction is open around the eye sockets, so the
+    # background shows straight through the face
+    clean_face_texture(objs, threshold=0.50)
+    fill_face_holes(objs)
+    trim_hair_over_face(objs, lo, hi, z_cut=1.24, near_eps=0.012)
     tune_materials(objs)
     # the tartan only exists as a procedural node graph, and glTF cannot
     # carry that - bake it into a real image texture, unless the pipeline
@@ -920,4 +1721,5 @@ def main():
     render_views(setup_scene())
 
 
-main()
+if __name__ == "__main__":
+    main()
