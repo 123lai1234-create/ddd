@@ -53,6 +53,27 @@
 - `vercel.json` 是嚴格 schema，**不准加自訂註解欄位**（加 `_comment_*` 會讓 CLI 直接拒絕部署）
 - 細節 → agent memory `vercel-deploy.md`
 
+## 3D mascot（`/3d-mascot`）
+
+- 模型來源：`blender/chibi_restyle.py`（pipeline）→ `blender/chibi_polish.py`（後處理）。
+  底模是 `chibi-tinted-full.glb`，**不要換回 `chibi-tinted-low.glb`** ——
+  low 版會把 Meshy 的圓潤髮束壓成稜角碎片。
+- **相機：`camera-orbit="0deg 82deg 3.9m"` 才是正面。** 2026-10-24 用四個角度並排
+  實測（同一個 model-viewer、無 auto-rotate）：0°=正面、90°=側面、180°=背面、270°=側面。
+  設成 180° 開頁面只會看到背面。
+  - 判角度**一定**要另開乾淨的對照 viewer 並排截圖。不要用頁面原生那個 ——
+    頁面有 `auto-rotate`，會持續改 theta；`getCameraOrbit()` 回報的是**目標值**
+    不是當前渲染值。踩過兩次誤判。
+  - `camera-target="0m 0.9m 0.2m"`：model-viewer 是 Y-up，**第二個數字才是垂直高度**
+    （0.9m ≈ 模型中心），第三個是水平微偏移。別動它。
+- 統計數字（`STAT_TRIS` / `STAT_MATS` / `STAT_SIZE`）**不要手填**：
+  `cd astro && npm run mascot:stats` 會直接解析 GLB 產生。改完 GLB 一定要重跑。
+- 匯出**必須開 Draco**（`export_draco_mesh_compression_enable=True, level=6`）：
+  180k 三角面 raw float 屬性 9.6 MB → 壓縮後 1.7 MB。沒開會產出 10 MB 的怪物。
+- 改 GLB 後的部署順序：`npm run build` → `prepare-deploy.ps1` → prebuilt 部署，
+  並且一定要打 `/api/healthz` 確認 200（見部署章節的競態）。
+- 細節 → agent memory `mascot-colorize.md`
+
 ## Stock-app 硬規則（股票/LINE bot）
 
 - 個股只抓 `https://donttalk.vercel.app/api/stock/<ticker>`，**不準** fallback Yahoo
