@@ -1066,6 +1066,26 @@ def _dilate(mask, r):
     return out
 
 
+def _box_blur(a, r):
+    """Separable box blur over the first two axes of an (h, w, c) array."""
+    k = 2 * r + 1
+    out = a
+    for axis in (0, 1):
+        pad = np.pad(out, ((r, r), (0, 0), (0, 0)) if axis == 0
+                     else ((0, 0), (r, r), (0, 0)), mode="edge")
+        cs = np.cumsum(pad, axis=axis)
+        shape = list(cs.shape)
+        shape[axis] = 1
+        zero = np.zeros(shape, cs.dtype)
+        cs = np.concatenate([zero, cs], axis=axis)
+        hi = [slice(None)] * 3
+        lo = [slice(None)] * 3
+        hi[axis] = slice(k, None)
+        lo[axis] = slice(0, -k)
+        out = (cs[tuple(hi)] - cs[tuple(lo)]) / k
+    return out
+
+
 def clean_face_texture(objs, threshold=0.32, erode=3):
     """Take the reference photo's hair out of the projected face texture.
 
@@ -1157,6 +1177,27 @@ def clean_face_texture(objs, threshold=0.32, erode=3):
     acc = acc / np.maximum(cnt, 1.0)[:, :, None]
     field = np.repeat(np.repeat(acc, 32, axis=0), 32, axis=1)[:h, :w]
     out[hair] = field[hair]
+
+    # The reference's eye is much bigger than the socket the reconstruction
+    # left in the skull, so the painted white runs out past the eye and lands
+    # on the cheek. Wherever the face shell is torn there, that stray white
+    # shows up as a pale patch over the face. Keep the white only where it
+    # belongs - close around the iris - and give the rest back to the skin.
+    luma3 = (out[:, :, 0] * 0.2126 + out[:, :, 1] * 0.7152
+             + out[:, :, 2] * 0.0722)
+    near_eye = _dilate(luma3 < 0.30, 22)
+    stray = (luma3 > 0.82) & (~near_eye)
+    if stray.any():
+        out[stray] = field[stray]
+        print(f"[texture] pulled {int(stray.sum())} stray eye-white pixels "
+              f"back to skin")
+
+    # A light blur over the whole texture. The photo is a poster-sharp JPEG,
+    # and the edge of every painted feature lands on a jagged triangle edge
+    # in the mesh. A couple of pixels of blur takes the shine off those
+    # edges and the face reads as painted rather than as a decal.
+    out = _box_blur(out, 2)
+    print("[texture] softened the painted edges")
 
     # The face shell is torn along its silhouette, and a torn edge samples the
     # border of the texture. Flatten the border band to plain skin so those
@@ -1682,7 +1723,7 @@ def main():
     # cheeks; and the reconstruction is open around the eye sockets, so the
     # background shows straight through the face
     clean_face_texture(objs, threshold=0.50)
-    fill_face_holes(objs)
+    fill_face_holes(objs, rounds=4)
     trim_hair_over_face(objs, lo, hi, z_cut=1.24, near_eps=0.012)
     tune_materials(objs)
     # the tartan only exists as a procedural node graph, and glTF cannot
