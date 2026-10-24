@@ -580,6 +580,69 @@ def apply_plaid_texture(uv_scale=0.30):
           f"(scale {uv_scale})")
 
 
+def trim_face_edges():
+    """Re-label the faces that fall off the painted face texture.
+
+    The face is a cylindrical unwrap that spans +/-58 degrees around the head
+    (face_texture.AZ_HALF), and the texture is the reference photo cut out on
+    a transparent background. Everything outside that span - the sides of the
+    head, the patch under the chin - has its UVs clamped onto the blank
+    margin of the texture, and shows up on the page as white flecks beside
+    the cheeks and under the jaw.
+
+    Those faces are re-labelled as plain skin, which is what they actually
+    are. Clamped faces are easy to spot: every one of their loops sits
+    exactly on 0.0 or 1.0 of the texture.
+    """
+    skin_mat = None
+    for ob in bpy.context.scene.objects:
+        if ob.type != "MESH":
+            continue
+        for s in ob.material_slots:
+            if s.material and s.material.name.lower().startswith("skin"):
+                skin_mat = s.material
+                break
+        if skin_mat is not None:
+            break
+    if skin_mat is None:
+        print("[face] no skin material in the scene")
+        return
+
+    for ob in bpy.context.scene.objects:
+        if ob.type != "MESH":
+            continue
+        slots = slot_map(ob)
+        face = find_slot(slots, "face")
+        uvl = ob.data.uv_layers.active
+        if uvl is None and len(ob.data.uv_layers):
+            uvl = ob.data.uv_layers[0]
+        if face is None or uvl is None:
+            continue
+        # the split left this mesh with its own material only, so borrow the
+        # skin one from the rest of the scene
+        skin = slots.get("skin")
+        if skin is None:
+            ob.data.materials.append(skin_mat)
+            skin = len(ob.data.materials) - 1
+        names = [s.material.name for s in ob.material_slots if s.material]
+        print(f"[face] {ob.name}: mats={names} uvs={[l.name for l in ob.data.uv_layers]}")
+        changed = 0
+        for p in ob.data.polygons:
+            if p.material_index != face:
+                continue
+            us = [uvl.data[li].uv[0] for li in p.loop_indices]
+            vs = [uvl.data[li].uv[1] for li in p.loop_indices]
+            if not us:
+                continue
+            side = all(u <= 0.0 for u in us) or all(u >= 1.0 for u in us)
+            vert = all(v <= 0.0 for v in vs) or all(v >= 1.0 for v in vs)
+            if side or vert:
+                p.material_index = skin
+                changed += 1
+        ob.data.update()
+        print(f"[face] {ob.name}: {changed} faces off the texture -> skin")
+
+
 def tune_materials(objs):
     """Make the hair read as black lacquer instead of grey felt.
 
@@ -722,6 +785,7 @@ def main():
     # the tartan only exists as a procedural node graph, and glTF cannot
     # carry that - bake it into a real image texture
     separate_by_material()
+    trim_face_edges()
     apply_plaid_texture()
 
     for ob in objs:
