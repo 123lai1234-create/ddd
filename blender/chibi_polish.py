@@ -330,9 +330,9 @@ def flatten_waist_edge(objs, lo, hi, plane_f=0.400, band=0.020):
     """Pull the waist to one clean line.
 
     The tee's hem and the top of the plaid sash are the same row of teeth,
-    pointing at each other, and between them they read as a torn edge. Both
-    sides of that row are clamped onto the seam plane, so the tee's hem ends
-    in a straight line and the sash starts from it.
+    pointing at each other, and between them they read as a torn edge. Only
+    the tee's own vertices are clamped onto the seam plane - clamping every
+    vertex in the band would flatten the whole sash into a sheet.
 
     Only the middle of the body is touched - the arms hang in the same height
     band and must keep their sleeve.
@@ -343,18 +343,26 @@ def flatten_waist_edge(objs, lo, hi, plane_f=0.400, band=0.020):
     hi_z = plane + band * H
     moved = 0
     for ob in objs:
+        slots = slot_map(ob)
+        tee = find_slot(slots, "tee")
+        if tee is None:
+            continue
         bm = bmesh.new()
         bm.from_mesh(ob.data)
-        for v in bm.verts:
-            if abs(v.co.x) > 0.225:
+        bm.faces.ensure_lookup_table()
+        for f in bm.faces:
+            if f.material_index != tee:
                 continue
-            if lo_z <= v.co.z <= hi_z:
-                v.co.z = plane
-                moved += 1
+            for v in f.verts:
+                if abs(v.co.x) > 0.225:
+                    continue        # the arms hang through this band
+                if lo_z <= v.co.z <= hi_z:
+                    v.co.z = plane
+                    moved += 1
         bm.to_mesh(ob.data)
         bm.free()
         ob.data.update()
-    print(f"[waist] clamped {moved} verts to z={plane:.3f}")
+    print(f"[waist] clamped {moved} tee verts to z={plane:.3f}")
 
 
 def trim_tee_hem(objs, lo, hi, plane_f=0.400, keep=0.010):
@@ -643,6 +651,29 @@ def trim_face_edges():
         print(f"[face] {ob.name}: {changed} faces off the texture -> skin")
 
 
+def plaid_has_texture():
+    """Does the sash already carry a real image texture?
+
+    The pipeline can bake the tartan into an image, and when it does, that is
+    better than anything this file can do: splitting the mesh apart to give
+    the sash its own UV map copies the whole vertex set and multiplies the
+    GLB by six.
+    """
+    for ob in bpy.context.scene.objects:
+        if ob.type != "MESH":
+            continue
+        for s in ob.material_slots:
+            m = s.material
+            if not m or not m.name.lower().startswith("plaid"):
+                continue
+            if not m.use_nodes:
+                return False
+            for n in m.node_tree.nodes:
+                if n.bl_idname == "ShaderNodeTexImage" and n.image:
+                    return True
+    return False
+
+
 def tune_materials(objs):
     """Make the hair read as black lacquer instead of grey felt.
 
@@ -776,17 +807,29 @@ def main():
     trim_tee_hem(objs, lo, hi)
     clean_seams(objs, lo, hi)
     flatten_waist_edge(objs, lo, hi)
-    clean_head_slab(objs, lo, hi)
+    # clean_head_slab is NOT called on the full resolution base model. It was
+    # written for the low resolution one, where Meshy left flat headphone
+    # slabs beside the cheeks; on the new base those patches are already
+    # hair, and re-labelling them only scatters black shards over the cheek.
+    # trim_face_edges below does the useful half of the job instead.
     # cut_fringe is NOT called: the pipeline already lifts the fringe clear of
     # the eyes (the hairline now sits at z 1.31 of a 1.8 tall model), and
     # cutting on top of that only leaves a ragged edge behind.
     slim_hair(objs, lo, hi)
     tune_materials(objs)
     # the tartan only exists as a procedural node graph, and glTF cannot
-    # carry that - bake it into a real image texture
-    separate_by_material()
-    trim_face_edges()
-    apply_plaid_texture()
+    # carry that - bake it into a real image texture, unless the pipeline
+    # already did it
+    if plaid_has_texture():
+        print("[plaid] sash already carries a baked texture - leaving it alone")
+    else:
+        separate_by_material()
+        apply_plaid_texture()
+    # trim_face_edges is NOT called on the full resolution base model. It was
+    # written for the low resolution one, whose face texture was a cut-out
+    # with a white margin, so the faces clamped onto that margin showed up
+    # as white flecks. The new texture's margin is already skin coloured, so
+    # re-labelling those faces only chops the cheek into loose patches.
 
     for ob in objs:
         for p in ob.data.polygons:
@@ -794,7 +837,12 @@ def main():
 
     bpy.ops.export_scene.gltf(filepath=DST, export_format="GLB",
                               use_selection=False, export_apply=True,
-                              export_yup=True)
+                              export_yup=True,
+                              # 180k triangles of smooth geometry is 9.6 MB as raw
+                              # float attributes and ~1.6 MB with Draco. model-viewer
+                              # decodes Draco natively.
+                              export_draco_mesh_compression_enable=True,
+                              export_draco_mesh_compression_level=6)
     tris = 0
     for ob in bpy.data.objects:
         if ob.type == "MESH":

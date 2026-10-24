@@ -3,11 +3,11 @@ import Base from '../layouts/Base.astro';
 
 const MODEL_URL = '/models/mascot-3d.glb';
 // 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/mascot-3d.glb 得出，不要手填。
-// 解析結果：118,107 tris / 8 materials / 3,250,624 bytes
-// 大小用截尾（3.1 MB）；改用另一種請加 --round 後重跑。
-const STAT_TRIS = '118 K';
+// 解析結果：179,279 tris / 8 materials / 1,800,432 bytes
+// 大小用截尾（1.7 MB）；改用另一種請加 --round 後重跑。
+const STAT_TRIS = '179 K';
 const STAT_MATS = '8';
-const STAT_SIZE = '3.1 MB';
+const STAT_SIZE = '1.7 MB';
 ---
 
 <Base
