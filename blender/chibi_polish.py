@@ -1481,7 +1481,7 @@ def _fit_uv_frame(objs, face_slot):
     return cx, cy, z0, z1
 
 
-def fill_face_holes(objs, z_lo=0.99, rounds=2):
+def fill_face_holes(objs, z_lo=0.99, rounds=2, mats=("face",)):
     """Close the holes in the face shell.
 
     Meshy leaves the reconstruction open around the eye sockets, and the face
@@ -1499,6 +1499,11 @@ def fill_face_holes(objs, z_lo=0.99, rounds=2):
         skin = find_slot(slots, "skin")
         if face is None:
             continue
+        targets = {face}
+        for key in mats:
+            idx = find_slot(slots, key)
+            if idx is not None:
+                targets.add(idx)
         uvl = ob.data.uv_layers.active
         if uvl is None:
             continue
@@ -1530,15 +1535,17 @@ def fill_face_holes(objs, z_lo=0.99, rounds=2):
 
         for _ in range(rounds):
             edges = []
+            owner = {}
             for e in bm.edges:
                 if len(e.link_faces) != 1:
                     continue
                 f = e.link_faces[0]
-                if f.material_index != face:
+                if f.material_index not in targets:
                     continue
                 if e.verts[0].co.z < z_lo and e.verts[1].co.z < z_lo:
                     continue
                 edges.append(e)
+                owner[e.index] = f.material_index
             if not edges:
                 break
             before = len(bm.faces)
@@ -1553,7 +1560,16 @@ def fill_face_holes(objs, z_lo=0.99, rounds=2):
                 if f[mark] == 1:
                     continue
                 f[mark] = 1
-                f.material_index = face
+                # the patch takes the material of the surface it closes
+                mat = face
+                for loop in f.loops:
+                    for e in loop.edge.link_faces:
+                        if e.material_index in targets:
+                            mat = e.material_index
+                            break
+                f.material_index = mat
+                if mat != face:
+                    continue
                 for loop in f.loops:
                     co = loop.vert.co
                     az = math.atan2(co.x - cx, -(co.y - cy))
@@ -1571,6 +1587,240 @@ def fill_face_holes(objs, z_lo=0.99, rounds=2):
         bm.to_mesh(ob.data)
         bm.free()
         ob.data.update()
+
+
+def deborder_face(objs, layers=1):
+    """Send the face shell's outermost ring to plain skin.
+
+    The face shell ends in a torn edge, and that edge curls out of the skull
+    like a paper rim - a bright band under the jaw and a row of spikes along
+    the cheeks. Plain skin is what is there in the reference, so the rim goes
+    back to plain skin.
+    """
+    for ob in objs:
+        slots = slot_map(ob)
+        face = find_slot(slots, "face")
+        skin = find_slot(slots, "skin")
+        if face is None or skin is None:
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        ring = set()
+        for f in bm.faces:
+            if f.material_index != face:
+                continue
+            for e in f.edges:
+                if len(e.link_faces) != 1 or e.link_faces[0].material_index != face:
+                    ring.add(f)
+                    break
+        for _ in range(max(0, layers - 1)):
+            nxt = set()
+            for f in ring:
+                for e in f.edges:
+                    for g in e.link_faces:
+                        if g.material_index == face and g not in ring:
+                            nxt.add(g)
+            ring |= nxt
+        for f in ring:
+            f.material_index = skin
+        print(f"[face] sent {len(ring)} rim faces to skin")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+
+
+def even_face_texture(objs, v_lo=0.17, u_edge=0.06, lo=0.55, hi=0.92):
+    """Flatten the neck shadow and the side hair out of the face texture.
+
+    The face texture is the reference photo, so its bottom edge is the
+    reference's neck in shadow and its left and right edges are the
+    reference's side hair. On the model those land on the jaw and the
+    temples, and they show up as a dark band under the chin and a row of
+    bright spikes along the cheeks. Flatten both borders to plain skin.
+    """
+    import numpy as np
+
+    face_mat = None
+    for ob in objs:
+        for s in ob.material_slots:
+            if s.material and s.material.name.lower().startswith("face"):
+                face_mat = s.material
+                break
+        if face_mat:
+            break
+    if face_mat is None:
+        return 0
+    tex = None
+    for n in face_mat.node_tree.nodes:
+        if n.type == "TEX_IMAGE" and n.image:
+            tex = n
+            break
+    if tex is None:
+        return 0
+
+    img = tex.image
+    w, h = img.size
+    buf = np.empty(w * h * 4, dtype=np.float32)
+    img.pixels.foreach_get(buf)
+    px = buf.reshape(h, w, 4)[::-1]
+    rgb = px[:, :, :3].copy()
+
+    luma = (rgb[:, :, 0] * 0.2126 + rgb[:, :, 1] * 0.7152
+            + rgb[:, :, 2] * 0.0722)
+    skin = rgb[(luma > 0.60) & (luma < 0.92)]
+    if skin.size == 0:
+        return 0
+    skin_col = np.median(skin, axis=0)
+
+    rows = int(h * v_lo)
+    cols = int(w * u_edge)
+    bad = np.zeros((h, w), bool)
+    bad[h - rows:, :] = luma[h - rows:, :] < lo
+    bad[:, :cols] |= luma[:, :cols] < lo
+    bad[:, w - cols:] |= luma[:, w - cols:] < lo
+    bright = np.zeros((h, w), bool)
+    bright[h - rows:, :] = luma[h - rows:, :] > hi
+    bright[:, :cols] |= luma[:, :cols] > hi
+    bright[:, w - cols:] |= luma[:, w - cols:] > hi
+    bad |= bright
+    if not bad.any():
+        return 0
+    rgb[bad] = skin_col
+
+    px[:, :, :3] = rgb
+    img.pixels.foreach_set(np.ascontiguousarray(px[::-1]).ravel())
+    img.update()
+    img.pack()
+    print(f"[texture] flattened {int(bad.sum())} border pixels to skin "
+          f"{skin_col.round(3)}")
+    return int(bad.sum())
+
+
+def fold_skin_into_face(objs, z_lo=1.0, nx=320, nz=320):
+    """Send the skin faces that poke into the face back to the face.
+
+    The face shell's silhouette is torn, and the reconstruction left slivers
+    of skin standing inside it. They are lit like skin and stand out of the
+    painted face as pale spikes along the cheeks and the temples. Re-labelling
+    them as face puts them back under the same texture as the rest of the
+    face.
+    """
+    from mathutils.bvhtree import BVHTree
+
+    for ob in objs:
+        slots = slot_map(ob)
+        face = find_slot(slots, "face")
+        skin = find_slot(slots, "skin")
+        if face is None or skin is None:
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        bm.verts.ensure_lookup_table()
+        verts = [v.co.copy() for v in bm.verts]
+        polys = [tuple(v.index for v in f.verts) for f in bm.faces]
+        bvh = BVHTree.FromPolygons(verts, polys, all_triangles=False)
+
+        lo, hi = world_bounds([ob])
+        x0, x1 = lo.x, hi.x
+        z0, z1 = lo.z, hi.z
+        inside = np.zeros((nz, nx), dtype=bool)
+        for iz in range(nz):
+            z = z0 + (iz / (nz - 1.0)) * (z1 - z0)
+            for ix in range(nx):
+                x = x0 + (ix / (nx - 1.0)) * (x1 - x0)
+                origin = Vector((x, lo.y - 1.0, z))
+                direction = Vector((0.0, 1.0, 0.0))
+                for _ in range(12):
+                    hit = bvh.ray_cast(origin, direction, 20.0)
+                    if hit[0] is None:
+                        break
+                    fi = hit[2]
+                    if fi is not None and fi < len(bm.faces) \
+                            and bm.faces[fi].material_index == face:
+                        inside[iz, ix] = True
+                        break
+                    origin = hit[0] + direction * 0.002
+
+        n = 0
+        for f in bm.faces:
+            if f.material_index != skin:
+                continue
+            c = f.calc_center_median()
+            if c.z < z_lo:
+                continue
+            ix = int((c.x - x0) / (x1 - x0) * (nx - 1))
+            iz = int((c.z - z0) / (z1 - z0) * (nz - 1))
+            if not (0 <= ix < nx and 0 <= iz < nz):
+                continue
+            if inside[iz, ix]:
+                f.material_index = face
+                n += 1
+        print(f"[face] folded {n} skin slivers back into the face")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+
+
+def drop_inward_faces(objs, center, z_lo=1.0):
+    """Delete the face material that has curled back into the skull.
+
+    The face shell is torn, and the torn edges fold inwards. A face that
+    points at the head's axis is one of those folds: it samples the texture
+    at a grazing angle, so the dark of the eye's lash is what shows. Around
+    the eye sockets that reads as a ring of black sawteeth, and under the jaw
+    the same folds make a flat plate with the photo's neck banding across it.
+
+    A face that points away from the axis is the outside of the head and
+    stays.
+    """
+    cx, cy, cz = center
+    for ob in objs:
+        slots = slot_map(ob)
+        face = find_slot(slots, "face")
+        if face is None:
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        kill = []
+        for f in bm.faces:
+            if f.material_index != face:
+                continue
+            c = f.calc_center_median()
+            if c.z < z_lo:
+                continue
+            d = Vector((c.x - cx, c.y - cy, (c.z - cz) * 0.4))
+            if d.length < 1e-6:
+                continue
+            if f.normal.dot(d.normalized()) < 0.0:
+                kill.append(f)
+        print(f"[face] dropped {len(kill)} inward curling faces")
+        if kill:
+            bmesh.ops.delete(bm, geom=kill, context="FACES")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+
+
+def polish_face_only(objs, lo, hi, z_cut=1.24, near_eps=0.012):
+    """The face-only pass, for a build that already looks right everywhere else.
+
+    Four things and nothing else:
+
+    - close the holes in the face shell, so the background stops showing
+      through the face
+    - cut the hair that lies against the face and the strands that hang
+      across the eyes, both of which shred into sawteeth
+    - flatten the neck shadow and the side hair out of the borders of the
+      face texture, so the jaw is not a dark band
+    - drop the face material that has curled back into the skull
+    """
+    fill_face_holes(objs, rounds=4)
+    trim_hair_over_face(objs, lo, hi, z_cut=z_cut, near_eps=near_eps)
+    even_face_texture(objs)
+    drop_inward_faces(objs, (0.0, -0.310, 1.14))
 
 
 def tune_materials(objs):
