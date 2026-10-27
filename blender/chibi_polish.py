@@ -1823,7 +1823,7 @@ def _shell_uv(co, cx, cy, z0, z1):
 
 
 def close_face_shell(objs, grow=0, rounds=3, max_new=1200,
-                     z_lo=1.02, z_hi=1.31, x_max=0.27):
+                     z_lo=1.02, z_hi=1.31, x_max=0.27, absorb_mats=("skin",)):
     """Close the face shell over the eye sockets and the mouth.
 
     The shell is a separate piece of skin laid over the head, and the head has
@@ -1836,6 +1836,9 @@ def close_face_shell(objs, grow=0, rounds=3, max_new=1200,
     the shell, so the eyeball and the lips become part of the painted face.
     Then whatever is still open is closed with more shell.  The fill is limited
     to the face area, otherwise it runs away into the open hair sheet.
+
+    Only skin is absorbed: hair that touches the shell is a side lock of the
+    fringe and has to stay hair.
     """
     ob, fs = _face_slot(objs)
     if ob is None:
@@ -1844,6 +1847,8 @@ def close_face_shell(objs, grow=0, rounds=3, max_new=1200,
     if frame is None:
         frame = (0.0, -0.310, 1.001, 1.281)
     cx, cy, z0, z1 = frame
+    want_mats = {find_slot(slot_map(o), k) for o in objs for k in absorb_mats}
+    want_mats.discard(None)
 
     # --- faces that touch the shell but are not it
     picked = {}
@@ -1857,14 +1862,16 @@ def close_face_shell(objs, grow=0, rounds=3, max_new=1200,
                 continue
             for e in f.edges:
                 for g in e.link_faces:
-                    if g.material_index != fs:
+                    if g.material_index != fs and g.material_index in want_mats:
                         ring.add(g)
         for _ in range(grow):
             nxt = set()
             for f in ring:
                 for e in f.edges:
                     for g in e.link_faces:
-                        if g.material_index != fs and g not in ring:
+                        if (g.material_index != fs
+                                and g.material_index in want_mats
+                                and g not in ring):
                             nxt.add(g)
             ring |= nxt
         picked[o.name] = {f.index for f in ring}
@@ -1992,6 +1999,40 @@ def deborder_jaw(objs, z_cut=1.035, x_keep=0.0):
     print(f"[jaw] cut {len(doomed)} shell faces off the bottom rim")
 
 
+def smooth_shell_border(objs, rounds=4, factor=0.35):
+    """Round off the sawtooth along the face shell's outer edge.
+
+    The shell is cut to the head's silhouette, and the cut follows the
+    triangles, so its border is a row of sawteeth.  Where skin shows between
+    the teeth the border reads as a torn edge.  Smoothing the border vertices
+    along the surface turns the sawtooth back into a curve without moving the
+    shell off the head or opening a hole in it.
+    """
+    ob, fs = _face_slot(objs)
+    if ob is None:
+        return
+    for o in objs:
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        bm.faces.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+        bm.verts.ensure_lookup_table()
+        for _ in range(rounds):
+            bverts = set()
+            for e in bm.edges:
+                if len(e.link_faces) == 1 and e.link_faces[0].material_index == fs:
+                    bverts.update(e.verts)
+            if not bverts:
+                break
+            bmesh.ops.smooth_vert(bm, verts=list(bverts), factor=factor,
+                                  use_axis_x=True, use_axis_y=True,
+                                  use_axis_z=True)
+        bm.to_mesh(o.data)
+        bm.free()
+        o.data.update()
+    print(f"[border] smoothed the shell's outer edge")
+
+
 def polish_face_only(objs, lo, hi, z_cut=1.24, near_eps=0.012):
     """The face-only pass, for a build that already looks right everywhere else.
 
@@ -2010,6 +2051,7 @@ def polish_face_only(objs, lo, hi, z_cut=1.24, near_eps=0.012):
     even_face_texture(objs)
     drop_inward_faces(objs, (0.0, -0.310, 1.14))
     close_face_shell(objs)
+    smooth_shell_border(objs)
     deborder_jaw(objs)
 
 
