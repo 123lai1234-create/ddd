@@ -57,5 +57,9 @@ def main():
             tris += len(ob.data.loop_triangles)
     print(f"[done] tris={tris} out={DST} size={os.path.getsize(DST)}")
 
+    if os.environ.get("CHIBI_RENDER"):
+        cam = P.setup_scene()
+        P.render_views(cam)
+
 
 main()

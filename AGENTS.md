@@ -58,9 +58,11 @@
 - 模型來源：`blender/chibi_restyle.py`（pipeline）→ `blender/chibi_polish.py`（後處理）。
   底模是 `chibi-tinted-full.glb`，**不要換回 `chibi-tinted-low.glb`** ——
   low 版會把 Meshy 的圓潤髮束壓成稜角碎片。
-- **相機：`camera-orbit="45deg 82deg 3.9m"` 才是正面。** 2026-10-25 在線上實測：
-  0°=側身（臉只露在頭的右緣）、45°=正面、90°=另一側、180°=背面。
-  早先寫的「0deg 是正面」是錯的，害頁面開啟只看到側身。
+- **相機：`camera-orbit="315deg 82deg 3.9m"` 才是正面。** 2026-10-26 在線上實測
+  （同一顆模型，model-viewer 的 theta 從 0 起算）：
+  45°=後腦勺、225°=臉偏在畫面右緣、270°=3/4 正面、**315°=正正面（臉置中、左右對稱）**。
+  - **正面角會隨 pipeline 換 build 而變**，不要沿用舊筆記。2026-10-25 那顆是 45°，
+    2026-10-26 這顆是 315°。換模型後一定要重測。
   - 判角度**一定**要另開乾淨的對照 viewer 並排截圖。不要用頁面原生那個 ——
     頁面有 `auto-rotate`，會持續改 theta；`getCameraOrbit()` 回報的是**目標值**
     不是當前渲染值。踩過兩次誤判。

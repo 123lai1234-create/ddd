@@ -1804,6 +1804,194 @@ def drop_inward_faces(objs, center, z_lo=1.0):
         ob.data.update()
 
 
+def _face_slot(objs):
+    """The (object, slot) that holds the face texture."""
+    for ob in objs:
+        for i, s in enumerate(ob.material_slots):
+            if s.material and s.material.name.lower() == "face":
+                return ob, i
+    return None, None
+
+
+def _shell_uv(co, cx, cy, z0, z1):
+    """UV of a point in the shell's cylindrical frame."""
+    du = 1.0 / (2.0 * math.radians(58.0))
+    az = math.atan2(co.x - cx, -(co.y - cy))
+    u = min(1.0, max(0.0, 0.5 + az * du))
+    v = min(1.0, max(0.0, (co.z - z0) / max(1e-6, (z1 - z0))))
+    return (u, v)
+
+
+def close_face_shell(objs, grow=0, rounds=3, max_new=1200,
+                     z_lo=1.02, z_hi=1.31, x_max=0.27):
+    """Close the face shell over the eye sockets and the mouth.
+
+    The shell is a separate piece of skin laid over the head, and the head has
+    deep sockets where the eyes and the mouth go.  The pipeline cut the shell
+    along those sockets, and the cut follows the triangles, so every socket is
+    ringed by sawteeth.  Through the teeth you see the eyeball underneath,
+    which is why the eyes come out ringed with bright shards.
+
+    Two steps fix it.  First the faces that touch the shell are pulled into
+    the shell, so the eyeball and the lips become part of the painted face.
+    Then whatever is still open is closed with more shell.  The fill is limited
+    to the face area, otherwise it runs away into the open hair sheet.
+    """
+    ob, fs = _face_slot(objs)
+    if ob is None:
+        return
+    frame = _fit_uv_frame(objs, fs)
+    if frame is None:
+        frame = (0.0, -0.310, 1.001, 1.281)
+    cx, cy, z0, z1 = frame
+
+    # --- faces that touch the shell but are not it
+    picked = {}
+    for o in objs:
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        bm.faces.ensure_lookup_table()
+        ring = set()
+        for f in bm.faces:
+            if f.material_index != fs:
+                continue
+            for e in f.edges:
+                for g in e.link_faces:
+                    if g.material_index != fs:
+                        ring.add(g)
+        for _ in range(grow):
+            nxt = set()
+            for f in ring:
+                for e in f.edges:
+                    for g in e.link_faces:
+                        if g.material_index != fs and g not in ring:
+                            nxt.add(g)
+            ring |= nxt
+        picked[o.name] = {f.index for f in ring}
+        bm.free()
+
+    absorbed = 0
+    for o in objs:
+        want = picked.get(o.name, set())
+        if not want:
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        bm.faces.ensure_lookup_table()
+        for f in bm.faces:
+            if f.index in want:
+                f.material_index = fs
+        bm.to_mesh(o.data)
+        bm.free()
+        o.data.update()
+        absorbed += len(want)
+        uvl = o.data.uv_layers.active
+        if uvl is None:
+            continue
+        for p in o.data.polygons:
+            if p.index not in want:
+                continue
+            for li in p.loop_indices:
+                co = o.data.vertices[o.data.loops[li].vertex_index].co
+                uvl.data[li].uv = _shell_uv(co, cx, cy, z0, z1)
+    print(f"[shell] absorbed {absorbed} faces into the face shell")
+
+    # --- close what is still open, inside the face only
+    for o in objs:
+        if not any(s.material and s.material.name.lower() == "face"
+                   for s in o.material_slots):
+            continue
+        if o.data.uv_layers.active is None:
+            continue
+        for _ in range(rounds):
+            bm = bmesh.new()
+            bm.from_mesh(o.data)
+            bm.faces.ensure_lookup_table()
+            edges = []
+            for e in bm.edges:
+                if len(e.link_faces) != 1:
+                    continue
+                f = e.link_faces[0]
+                if f.material_index != fs:
+                    continue
+                zs = [v.co.z for v in e.verts]
+                xs = [abs(v.co.x) for v in e.verts]
+                if min(zs) < z_lo or max(zs) > z_hi:
+                    continue
+                if max(xs) > x_max:
+                    continue
+                edges.append(e)
+            if not edges:
+                bm.free()
+                break
+            before = len(bm.faces)
+            bmesh.ops.holes_fill(bm, edges=edges, sides=0)
+            made = len(bm.faces) - before
+            if made == 0:
+                bmesh.ops.triangle_fill(bm, edges=edges)
+                made = len(bm.faces) - before
+            if made == 0 or made > max_new:
+                print(f"[shell] refused a fill of {made} faces")
+                bm.free()
+                break
+            newfaces = [f for f in bm.faces if f.index >= before]
+            outside = 0
+            for f in newfaces:
+                c = f.calc_center_median()
+                if not (z_lo <= c.z <= z_hi and abs(c.x) <= x_max):
+                    outside += 1
+            if outside:
+                print(f"[shell] {outside} new faces fell outside the face")
+                bm.free()
+                break
+            for f in newfaces:
+                f.material_index = fs
+            bm.to_mesh(o.data)
+            bm.free()
+            o.data.update()
+            uvl = o.data.uv_layers.active
+            for p in o.data.polygons:
+                if p.index < before:
+                    continue
+                for li in p.loop_indices:
+                    co = o.data.vertices[o.data.loops[li].vertex_index].co
+                    uvl.data[li].uv = _shell_uv(co, cx, cy, z0, z1)
+            o.data.update()
+            print(f"[shell] closed {made} faces")
+
+
+def deborder_jaw(objs, z_cut=1.035, x_keep=0.0):
+    """Cut the face shell's bottom rim off the jaw.
+
+    The shell wraps around the sides of the head, and where it turns under the
+    jaw its surface is nearly edge-on to the camera.  The texture is squeezed
+    into horizontal bands there and the silhouette is ragged, so the jaw ends
+    in a stack of white slats.  The middle of the rim is kept, because that is
+    where the shell meets the neck.
+    """
+    ob, fs = _face_slot(objs)
+    if ob is None:
+        return
+    doomed = []
+    for f in ob.data.polygons:
+        if f.material_index != fs:
+            continue
+        c = f.center
+        if c.z < z_cut and abs(c.x) > x_keep:
+            doomed.append(f)
+    if doomed:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        idx = {f.index for f in doomed}
+        kill = [f for f in bm.faces if f.index in idx]
+        bmesh.ops.delete(bm, geom=kill, context="FACES")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    print(f"[jaw] cut {len(doomed)} shell faces off the bottom rim")
+
+
 def polish_face_only(objs, lo, hi, z_cut=1.24, near_eps=0.012):
     """The face-only pass, for a build that already looks right everywhere else.
 
@@ -1821,6 +2009,8 @@ def polish_face_only(objs, lo, hi, z_cut=1.24, near_eps=0.012):
     trim_hair_over_face(objs, lo, hi, z_cut=z_cut, near_eps=near_eps)
     even_face_texture(objs)
     drop_inward_faces(objs, (0.0, -0.310, 1.14))
+    close_face_shell(objs)
+    deborder_jaw(objs)
 
 
 def tune_materials(objs):
