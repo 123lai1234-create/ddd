@@ -22,7 +22,7 @@ const STAT_SIZE = '1.4 MB';
         <header class="mascot-3d-head">
             <h1>🧒 元嬰不說 · 真 3D 模型</h1>
             <p class="subtitle">
-                黑尖刺頭髮、chibi 比例的 3D 男孩。滑鼠拖曳可以旋轉、滾輪縮放，閒置會慢轉 360° 展示。
+                黑尖刺頭髮、chibi 比例的 3D 男孩。滑鼠拖曳可以旋轉、滾輪縮放。
             </p>
         </header>
 
@@ -38,9 +38,6 @@ const STAT_SIZE = '1.4 MB';
                 shadow-intensity="0.7"
                 shadow-softness="0.85"
                 exposure="0.85"
-                auto-rotate
-                auto-rotate-delay="1400"
-                rotation-per-second="9deg"
                 interaction-prompt="auto"
                 interaction-prompt-style="wiggle"
                 touch-action="pan-y"
@@ -106,7 +103,6 @@ const STAT_SIZE = '1.4 MB';
                 loading.textContent = '';
                 loading.hidden = true;
             }
-            viewer.autoRotate = true;
         };
         const fail = () => {
             if (loading) {
@@ -118,16 +114,6 @@ const STAT_SIZE = '1.4 MB';
 
         viewer.addEventListener('load', done);
         viewer.addEventListener('error', fail);
-
-        // 使用者操作時停掉自動旋轉，停止操作 4 秒後恢復
-        let resume = null;
-        ['pointerdown', 'wheel'].forEach((ev) => {
-            viewer.addEventListener(ev, () => {
-                viewer.autoRotate = false;
-                clearTimeout(resume);
-                resume = setTimeout(() => { viewer.autoRotate = true; }, 4000);
-            });
-        });
     })();
     </script>
 </Base>
