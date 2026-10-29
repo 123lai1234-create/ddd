@@ -1416,6 +1416,68 @@ def repaint_face(objs, lo, hi):
     return m
 
 
+def repaint_face_painted(objs, lo, hi):
+    """Re-bake the face texture as painted artwork instead of a photo.
+
+    The head texture is a photo of the reference projected onto the skull, and
+    the reference's own fringe comes along with it: the strands hang between
+    the eyes and over the brows, and the cylindrical unwrap smears them into
+    black shards.  They are in the texture, not in the mesh - hiding the hair
+    does not remove them - and no amount of geometry work will.
+
+    The painted path draws the same features on plain skin: blush, sclera,
+    iris, lashes, speculars, brow, nose and smile.  Nothing but skin goes
+    into it, so there is nothing to smear.
+
+    The painted canvas is built from the same frame and comes out the same
+    size as the photo version, so the UVs that are already on the face shell
+    still land on the same features - only the pixels change.
+    """
+    import sys
+
+    os.environ["CHIBI_RUN"] = "0"
+    here = os.path.dirname(os.path.abspath(__file__))
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    import chibi_restyle
+
+    face_slot = None
+    skin_mat = None
+    for ob in objs:
+        slots = slot_map(ob)
+        if face_slot is None:
+            face_slot = find_slot(slots, "face")
+            skin_slot = find_slot(slots, "skin")
+            if skin_slot is None:
+                continue
+            skin_mat = ob.material_slots[skin_slot].material
+    if face_slot is None or skin_mat is None:
+        print("[face] no face material - keeping the old texture")
+        return None
+
+    m = chibi_restyle.face_metrics(objs, lo, hi)
+    print(f"[face] painted texture, eye_az={math.degrees(m['eye_az']):.1f}deg "
+          f"z={m['z0']:.3f}..{m['z1']:.3f}")
+
+    out_dir = os.path.join(OUT, "polish")
+    os.makedirs(out_dir, exist_ok=True)
+    new_mat = chibi_restyle.face_texture.bake(m, skin_mat, out_dir, None)
+    # bake() asks for a material called "Face", which Blender renames to
+    # "Face.001" because one is already loaded - and the shell steps look the
+    # slot up by that exact name, so it would quietly skip the whole face.
+    # Free the name first: Blender never swaps two names, it only appends a
+    # number to the one that is being set.
+    for ob in objs:
+        slot = ob.material_slots[face_slot]
+        if slot.material:
+            slot.material.name = "FaceOld"
+    new_mat.name = "Face"
+    for ob in objs:
+        ob.material_slots[face_slot].material = new_mat
+    print(f"[face] face material is now {new_mat.name!r}")
+    return m
+
+
 def _fit_uv_frame(objs, face_slot):
     """Recover the cylindrical frame the head texture was unwrapped with.
 
@@ -2033,6 +2095,52 @@ def smooth_shell_border(objs, rounds=4, factor=0.35):
     print(f"[border] smoothed the shell's outer edge")
 
 
+def drop_jaw_plug(objs, names=("jawplug",)):
+    """Throw the jaw plug away.
+
+    It is a separate blade of skin that sits in front of the neck.  Seen from
+    the front it reads as a bright sliver under the chin, and from the side it
+    juts out like a knife.  The neck closes on its own once the face shell
+    covers the jaw, so the plug only ever gets in the way.
+    """
+    gone = 0
+    for ob in list(objs):
+        if ob.name.strip().lower() in names:
+            name = ob.name
+            bpy.data.objects.remove(ob, do_unlink=True)
+            if ob in objs:
+                objs.remove(ob)
+            gone += 1
+            print(f"[plug] removed {name}")
+    return gone
+
+
+def reskin_jaw(objs, z_cut=1.06):
+    """Give the shell's bottom rim back to the skin.
+
+    close_face_shell() pulls the skin that touches the shell into the shell,
+    so the chin ends up wearing the face texture.  The texture is unwrapped
+    cylindrically, so its bottom edge is squeezed into a row of near-vertical
+    slivers, and the jaw reads as a bright row of teeth under the chin.  The
+    jaw is not part of the face - put the skin back on it and it joins the
+    neck again.
+    """
+    ob, fs = _face_slot(objs)
+    if ob is None:
+        return 0
+    ss = find_slot(slot_map(ob), "skin")
+    if ss is None:
+        return 0
+    n = 0
+    for p in ob.data.polygons:
+        if p.material_index == fs and p.center.z < z_cut:
+            p.material_index = ss
+            n += 1
+    ob.data.update()
+    print(f"[jaw] gave {n} shell faces on the chin back to the skin")
+    return n
+
+
 def polish_face_only(objs, lo, hi, z_cut=1.24, near_eps=0.012):
     """The face-only pass, for a build that already looks right everywhere else.
 
@@ -2045,14 +2153,25 @@ def polish_face_only(objs, lo, hi, z_cut=1.24, near_eps=0.012):
     - flatten the neck shadow and the side hair out of the borders of the
       face texture, so the jaw is not a dark band
     - drop the face material that has curled back into the skull
+
+    The hair is cut twice, and the order matters.  The first pass runs while
+    the shell still has its eye sockets open, so the front-projection test
+    cannot tell that the sockets are still "face" and the strands hanging
+    over the eyes survive.  The second pass runs after the shell is closed,
+    when every column in front of the eyes really does land on face
+    material, and that is the pass that takes the sawtooth off the forehead.
     """
+    drop_jaw_plug(objs)
+    repaint_face_painted(objs, lo, hi)
     fill_face_holes(objs, rounds=4)
+    trim_hair_over_face(objs, lo, hi, z_cut=z_cut, near_eps=near_eps)
+    close_face_shell(objs)
     trim_hair_over_face(objs, lo, hi, z_cut=z_cut, near_eps=near_eps)
     even_face_texture(objs)
     drop_inward_faces(objs, (0.0, -0.310, 1.14))
-    close_face_shell(objs)
-    smooth_shell_border(objs)
+    smooth_shell_border(objs, rounds=8, factor=0.42)
     deborder_jaw(objs)
+    reskin_jaw(objs)
 
 
 def tune_materials(objs):

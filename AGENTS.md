@@ -67,10 +67,33 @@
     `offset = r·(sinφ·sinθ, cosφ, sinφ·cosθ)`，gltf(x,y,z) → blender(x, −z, y)，
     渲染 theta = 0/90/180/270 四張，哪張是正臉就定那個角。
   - 判角度**一定**要另開乾淨的對照 viewer 並排截圖。不要用頁面原生那個 ——
-    頁面有 `auto-rotate`，會持續改 theta；`getCameraOrbit()` 回報的是**目標值**
-    不是當前渲染值。踩過兩次誤判。
+    頁面的內嵌腳本有 `viewer.autoRotate = true`，會**覆蓋**你的 `removeAttribute('auto-rotate')`，
+    截到的圖永遠是轉到一半的角度。踩過三次誤判。
   - `camera-target="0m 0.9m 0.2m"`：model-viewer 是 Y-up，**第二個數字才是垂直高度**
     （0.9m ≈ 模型中心），第三個是水平微偏移。別動它。
+- **臉部鋸齒的病根在「貼圖來源」，不是 mesh。**
+  - 貼圖有兩條路：`face_texture.project_reference()`（把 Meshy 參考照投影到頭上）
+    vs `face_texture._paint_face()`（程式手繪）。**照片版會把參考照自己的瀏海
+    一起帶進來**，被圓柱投影拉成眼周／額頭的黑色鋸齒。
+  - 證明方法：在瀏覽器把 Hair mesh 隱藏 —— 鋸齒**還在** → 它在貼圖裡，不在幾何裡。
+  - `chibi_polish.repaint_face_painted()` 已改用**手繪版**，乾淨無鋸齒。
+    手繪版跟照片版**同寬高（2240×928）、同 frame（z0/z1/cx/cy）**，
+    所以既有 UV 不用重算就對得上。
+  - **踩坑**：`face_texture.bake()` 會 `materials.new("Face")`，但舊的 "Face" 還在 →
+    Blender 命名成 **"Face.001"**。而 `_face_slot()` 是**完全匹配** "face"，
+    於是 `close_face_shell` / `smooth_shell_border` / `deborder_jaw` **全部靜默跳過**，
+    臉部等於沒修。要先把舊材質改名讓出 "Face"，再把新的命名回 "Face"。
+- 後處理順序有講究：`trim_hair_over_face` 要跑**兩次** ——
+  第一次在 `close_face_shell` 之前（清大塊頭髮），第二次在之後
+  （眼窩封起來之後，前投影測試才判得出「這裡有臉」，才能砍掉眼睛上方的鋸齒）。
+- `chibi_polish.drop_jaw_plug()`：JawPlug 是一塊獨立的下巴皮片，正面看是下巴底下
+  一道亮白刀片。直接刪掉整個物件。
+- `chibi_polish.reskin_jaw()`：殼的下緣被吸成臉材質後，圓柱投影把貼圖下緣擠成一排
+  直立細條，下巴看起來像一排牙齒。把下顎的殼面改回 Skin 材質就接回脖子了。
+- **本地預覽（比部署快 100 倍）**：`cd astro/public` 跑 `python -m http.server 8899`，
+  放一個 `model-viewer` 測試頁，`<model-viewer src="/models/mascot-3d.glb">`。
+  改完 GLB 直接複製到 `astro/public/models/` 就會重載（記得加 `?cb=` 破快取）。
+  這個迴路才是 QA 的主場，Blender 渲染只當交叉驗證。
 - 統計數字（`STAT_TRIS` / `STAT_MATS` / `STAT_SIZE`）**不要手填**：
   `cd astro && npm run mascot:stats` 會直接解析 GLB 產生。改完 GLB 一定要重跑。
 - 匯出**必須開 Draco**（`export_draco_mesh_compression_enable=True, level=6`）：
