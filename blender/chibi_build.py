@@ -58,19 +58,20 @@ HCAP_Z = 1.318
 
 CHIN_Z = 0.950
 
-# Eye geometry, measured off the reference (blender/measure_eye.py plus the
-# ASCII map in blender/dbg_face.py):
-#   aperture   x 0.062 .. 0.216,  z 1.150 .. 1.258
-#   iris       x 0.062 .. 0.176,  z 1.150 .. 1.258   (near black)
-#   sclera     a crescent on the OUTER side only
-#   lash       a thick arc topping the eye, reaching z 1.272
-#   highlight  a big silver disc at x 0.148, z 1.243
+# Eye geometry, measured off the reference (blender/measure_eye.py plus
+# blender/measure_fringe.py, which finds the dark eye blob in the reference):
+#   the eye box (lash included) spans x 0.080 .. 0.219 and z 1.155 .. 1.284
+#   so the eye is 0.139 wide and 0.129 tall, centred at (0.150, 1.220)
+#   the reference iris is nearly as big as the eye: the sclera is a thin
+#   crescent at the bottom and the outer corner only
+#   lash       a thick arc topping the eye
+#   highlight  a big silver disc at the upper inner corner of the iris
 #   brow       |x| 0.095 .. 0.185,  z 1.305 .. 1.330
-EYE_AP_X, EYE_AP_Z = 0.139, 1.204
-EYE_AP_RX, EYE_AP_RZ = 0.077, 0.050
-IRIS_X, IRIS_Z = 0.119, 1.203
-IRIS_RX, IRIS_RZ = 0.055, 0.050
-BROW_Z = 1.312
+EYE_AP_X, EYE_AP_Z = 0.150, 1.218
+EYE_AP_RX, EYE_AP_RZ = 0.070, 0.058
+IRIS_X, IRIS_Z = 0.1385, 1.223
+IRIS_RX, IRIS_RZ = 0.0635, 0.0505
+BROW_Z = 1.316
 NOSE_Z = 1.140
 MOUTH_Z = 1.078
 
@@ -209,7 +210,7 @@ PLAID_B = (0.020, 0.018, 0.018)   # near-black
 # The reference check squares measure ~0.028 units across, so the period is
 # 0.058.  It also has to be COARSE enough for the vertex grid to resolve:
 # the old 0.034 period aliased into black blotches that read as damage.
-PLAID_PERIOD = 0.072
+PLAID_PERIOD = 0.104
 
 
 def _stripe(v, period, duty):
@@ -222,9 +223,9 @@ def plaid_rgb(x, z):
     The reference is a big red check with black squares at the crossings and
     a thin black line running through every red square - not a fine hatch.
     """
-    dark = ((_stripe(x, PLAID_PERIOD, 0.5) and _stripe(z, PLAID_PERIOD, 0.5))
-            or _stripe(x, PLAID_PERIOD, 0.24)
-            or _stripe(z, PLAID_PERIOD, 0.24))
+    dark = ((_stripe(x, PLAID_PERIOD, 0.40) and _stripe(z, PLAID_PERIOD, 0.40))
+            or _stripe(x, PLAID_PERIOD, 0.06)
+            or _stripe(z, PLAID_PERIOD, 0.06))
     return PLAID_B if dark else PLAID_A
 
 
@@ -369,18 +370,35 @@ def build_ears(m):
 
 
 # ------------------------------------------------------------------ the hair
-# The reference hair is a sculpted mass with ~30 pointed locks sweeping out of
-# the crown, and a fringe that falls over the forehead in blades.  A lock is a
-# quadratic Bezier swept with a taper (chibi_lib.strand), so it is a smooth
-# blade with a real point at the tip - the old ico-sphere cones read as shark
-# fins because a cone has no direction to bend in.
+# The reference hair is NOT a smooth helmet with a few spikes on it.  It is a
+# thick hood of hair carrying a pile of BROAD, overlapping crescent leaves
+# that shingle over each other like roof tiles - and the leaf tips are what
+# makes the silhouette.  A thin cap with needle spikes gives the hedgehog
+# look the reference does not have.
 #
-# Measured off chibi-hero.png (the character is 1.80 tall):
-#     hair top        1.800      widest half width  0.436 at z 1.50
-#     skull top       1.605      hair half width    0.416 at z 1.30
-HAIR_CAP_MARGIN = 0.032
+# Every number below is measured off chibi-hero.png:
+#
+#   blender/measure_hero.py    -> the silhouette table
+#   blender/measure_fringe.py  -> the LEFT and RIGHT extreme of the hair at
+#                                 every height (the half width alone cannot
+#                                 tell a single crown horn from two)
+#
+# The measured extremes - the hair is swept to the character's left:
+#
+#     z 1.795   L -0.277   R +0.038     the crown horn, leaning left
+#     z 1.755   L -0.285   R +0.080
+#     z 1.655   L -0.281   R +0.291     a leaf tip on the right
+#     z 1.622   L -0.327   R +0.127     a leaf tip on the left
+#     z 1.565   L -0.441   R +0.156     the widest leaf on the left
+#     z 1.490   L -0.419   R +0.440     the widest leaf on the right
+#     z 1.300   L -0.415   R +0.417     the lower tier
+#     z 1.235   L -0.345   R +0.350     the cheek locks
+#     z 1.020   L -0.194   R +0.193     the nape
+#
+# So the hood itself is ~0.33 wide at z 1.45 and the leaves stick out another
+# 0.10 to 0.15 to make the points.
 
-# The hairline: the curve where the hair mass stops and the forehead starts.
+# The hairline: the curve where the hair stops and the forehead starts.
 # A flat cut reads as the brim of a hat sitting on the head - the reference
 # hair has a rounded hairline that stays high over the forehead and drops at
 # the temples, so the ears can come through.
@@ -398,270 +416,273 @@ def hairline_z(x):
     return z - 0.010 * math.exp(-((x / 0.08) ** 2))
 
 
-def cap_y(x, z):
-    """Front surface of the hair mass at a given (x, z).
+# The hood the leaves sit on: (z, x_left, x_right, half depth).
+# The hood is asymmetric because the reference hair is swept to the left:
+# at z 1.58 the hair reaches -0.294 on the left but only +0.144 on the right.
+HAIR_MASS = [
+    (1.000, -0.100, 0.100, 0.094),
+    (1.040, -0.175, 0.180, 0.158),
+    (1.080, -0.205, 0.208, 0.184),
+    (1.130, -0.224, 0.228, 0.200),
+    (1.170, -0.242, 0.248, 0.214),
+    (1.210, -0.256, 0.260, 0.228),
+    (1.250, -0.272, 0.274, 0.242),
+    (1.290, -0.294, 0.292, 0.258),
+    (1.330, -0.308, 0.302, 0.270),
+    (1.370, -0.318, 0.308, 0.280),
+    (1.410, -0.324, 0.312, 0.288),
+    (1.450, -0.330, 0.318, 0.294),
+    (1.490, -0.330, 0.318, 0.294),
+    (1.530, -0.320, 0.246, 0.268),
+    (1.570, -0.294, 0.182, 0.232),
+    (1.610, -0.268, 0.140, 0.200),
+    (1.645, -0.232, 0.104, 0.165),
+    (1.672, -0.182, 0.074, 0.126),
+    (1.692, -0.122, 0.050, 0.088),
+    (1.708, -0.062, 0.030, 0.054),
+    (1.718, -0.014, 0.008, 0.018),
+]
 
-    The mass hugs the skull, so its front is the face surface pushed out by
-    the cap margin.
-    """
-    return face_point(x, z, out=HAIR_CAP_MARGIN).y
+
+def hair_mass_dims(z):
+    """(x_left, x_right, half depth) of the hair hood at height z."""
+    p = HAIR_MASS
+    if z <= p[0][0]:
+        return p[0][1], p[0][2], p[0][3]
+    if z >= p[-1][0]:
+        return p[-1][1], p[-1][2], p[-1][3]
+    for i in range(len(p) - 1):
+        z0, l0, r0, d0 = p[i]
+        z1, l1, r1, d1 = p[i + 1]
+        if z0 <= z <= z1:
+            f = (z - z0) / (z1 - z0)
+            f = f * f * (3.0 - 2.0 * f)          # smoothstep between stops
+            return (l0 + (l1 - l0) * f, r0 + (r1 - r0) * f, d0 + (d1 - d0) * f)
+    return p[-1][1], p[-1][2], p[-1][3]
 
 
-def _tip(a_deg, r, z):
-    """A tip position from an azimuth and a horizontal radius."""
+def _spow(v, power=HEAD_POWER):
+    """Signed power used by the superellipse cross sections."""
+    return math.copysign(abs(v) ** (2.0 / power), v)
+
+
+def mass_point(z, a_deg, lift=0.0):
+    """A point on the hood's surface.  a = 0 is the front (-Y), +a is +X."""
+    l, r, d = hair_mass_dims(z)
+    c = (l + r) * 0.5
+    hw = max(0.002, (r - l) * 0.5)
     a = math.radians(a_deg)
-    return (r * math.sin(a), -r * math.cos(a), z)
+    x = c + hw * _spow(math.sin(a))
+    y = -d * _spow(math.cos(a))
+    n = Vector((x - c, y, 0.0))
+    if n.length > 1e-6:
+        n.normalize()
+    return Vector((x, y, z)) + n * lift
+
+
+def mass_front_y(x, z):
+    """The front surface of the hood at a given x."""
+    l, r, d = hair_mass_dims(z)
+    c = (l + r) * 0.5
+    hw = max(0.002, (r - l) * 0.5)
+    u = min(1.0, abs(x - c) / hw)
+    return -d * (max(0.0, 1.0 - u ** HEAD_POWER)) ** (1.0 / HEAD_POWER)
 
 
 # ---------------------------------------------------------------------------
-# The reference hair is a sculpted mass of BROAD, overlapping leaves with
-# sharp tips - not a bundle of needles.  The silhouette measured off the
-# reference has a clear double bump:
+# The leaves.  Each one is a quadratic Bezier with two control points that
+# are placed by hand so the tip lands exactly on the measured silhouette.
 #
-#     z 1.800  half width 0.000   (the top spike)
-#     z 1.700  half width 0.221
-#     z 1.675  half width 0.282
-#     z 1.600  half width 0.300
-#     z 1.575  half width 0.376
-#     z 1.500  half width 0.436   <- widest
-#     z 1.375  half width 0.373
-#     z 1.300  half width 0.416   <- second bump
-#     z 1.175  half width 0.351
-#     z 1.050  half width 0.260
-#     z 1.025  half width 0.191
-#
-# The locks below put their tips on that outline: a crown sweep and a horn,
-# a wide tier at z 1.50, a second tier at z 1.30, cheek locks at z 1.18 and
-# nape locks that hang to z 1.03.
-#
-# (z_root, a_root, tip, bow_dir, bow, r_base)
-#   z_root   height the lock leaves the scalp
-#   a_root   azimuth of the root, 0 = straight ahead (-Y)
-#   tip      (x, y, z) of the point
-#   bow_dir  direction the arc bulges towards
-#   bow      how far it bulges
-#   r_base   half width of the blade at the root
-HAIR_LOCKS = [
-    # --- crown: a big sweep to the upper left and a horn in the middle
-    (1.420,  -34, (-0.267, -0.030, 1.780), (-0.75,  0.10,  0.65), 0.110, 0.130),
-    (1.480,   12, ( 0.045,  0.030, 1.797), ( 0.15,  0.30,  0.94), 0.055, 0.090),
-    # the two in between, so the crown is a continuous mass and not two horns
-    (1.480,  -14, (-0.130, -0.020, 1.752), (-0.55,  0.10,  0.83), 0.070, 0.115),
-    (1.470,   30, ( 0.180,  0.010, 1.735), ( 0.60, -0.05,  0.80), 0.070, 0.105),
-    # --- left side, from the crown down to the jaw
-    (1.480,  -54, (-0.317,  0.020, 1.638), (-0.92,  0.06,  0.38), 0.070, 0.105),
-    (1.450,  -70, (-0.434,  0.000, 1.576), (-0.95,  0.00,  0.30), 0.080, 0.115),
-    (1.380,  -80, (-0.426, -0.020, 1.462), (-0.88, -0.04, -0.45), 0.070, 0.105),
-    (1.300,  -88, (-0.390, -0.060, 1.350), (-0.80, -0.10, -0.58), 0.060, 0.098),
-    (1.240,  -94, (-0.348, -0.090, 1.200), (-0.70, -0.15, -0.70), 0.055, 0.092),
-    (1.190,  -98, (-0.300, -0.100, 1.100), (-0.55, -0.20, -0.81), 0.050, 0.084),
-    (1.140, -100, (-0.262, -0.090, 1.035), (-0.45, -0.25, -0.86), 0.045, 0.074),
-    # --- right side
-    (1.480,   34, ( 0.270,  0.020, 1.664), ( 0.85,  0.10,  0.52), 0.070, 0.100),
-    (1.450,   58, ( 0.442,  0.000, 1.508), ( 0.96,  0.00,  0.26), 0.080, 0.125),
-    (1.380,   70, ( 0.411, -0.020, 1.456), ( 0.90, -0.04, -0.42), 0.070, 0.100),
-    (1.300,   80, ( 0.390, -0.060, 1.350), ( 0.82, -0.10, -0.55), 0.060, 0.098),
-    (1.240,   88, ( 0.348, -0.090, 1.200), ( 0.72, -0.15, -0.68), 0.055, 0.092),
-    (1.190,   94, ( 0.300, -0.100, 1.100), ( 0.58, -0.20, -0.79), 0.050, 0.084),
-    (1.140,   98, ( 0.262, -0.090, 1.035), ( 0.48, -0.25, -0.84), 0.045, 0.074),
-    # --- the locks that fill the volume between the outline ones
-    (1.500,  -20, (-0.415,  0.060, 1.500), (-0.90,  0.10,  0.42), 0.060, 0.095),
-    (1.500,   20, ( 0.420,  0.060, 1.550), ( 0.92,  0.08,  0.38), 0.060, 0.095),
-    (1.470,  -62, (-0.375, -0.030, 1.380), (-0.85, -0.08, -0.52), 0.055, 0.090),
-    (1.470,   64, ( 0.375, -0.030, 1.380), ( 0.85, -0.08, -0.52), 0.055, 0.090),
-    # --- the back of the head, visible when the model is turned around
-    (1.520,  150, (-0.280,  0.220, 1.540), (-0.35,  0.85,  0.45), 0.070, 0.100),
-    (1.520, -150, ( 0.280,  0.220, 1.540), ( 0.35, -0.85,  0.45), 0.070, 0.100),
-    (1.360,  180, ( 0.000,  0.265, 1.320), ( 0.00,  0.95, -0.30), 0.060, 0.100),
-    (1.180,  180, ( 0.000,  0.235, 1.070), ( 0.00,  0.95, -0.30), 0.050, 0.090),
+# (p0, p1, p2, half width)
+#   p0        where the leaf leaves the hood
+#   p1        where the arc bulges - this is what lifts the leaf off the
+#             hood so it does not sink into it
+#   p2        the tip, on the measured silhouette
+#   half width  half of the leaf's width across the screen
+HAIR_LEAVES = [
+    # --- the crown horn: one big blade sweeping up and to the left
+    ((-0.150, -0.210, 1.510), (-0.330, -0.055, 1.690), (-0.277, 0.020, 1.795),
+     0.092),
+    # --- the blade standing up on the right of the crown: it is the one that
+    #     gives the hair its +0.29 edge at z 1.655
+    ((0.050, -0.205, 1.500), (0.235, -0.005, 1.640), (0.038, 0.030, 1.790),
+     0.086),
+    # --- a third blade between the two, so the crown is a layered mass
+    ((-0.020, -0.215, 1.520), (-0.120, -0.040, 1.660), (-0.085, 0.020, 1.760),
+     0.088),
+    # --- and two more that lie over the crown itself, so the hood does not
+    #     show as a smooth dome between the blades
+    ((-0.040, -0.175, 1.540), (-0.180, -0.060, 1.610), (-0.245, 0.000, 1.690),
+     0.072),
+    ((0.020, -0.175, 1.545), (0.140, -0.060, 1.610), (0.205, 0.000, 1.672),
+     0.068),
+    # --- the leaf whose tip reaches +0.291 at z 1.655
+    ((0.120, -0.230, 1.500), (0.255, -0.070, 1.610), (0.291, 0.020, 1.655),
+     0.058),
+    # --- the leaf whose tip reaches -0.327 at z 1.622
+    ((-0.190, -0.230, 1.490), (-0.310, -0.090, 1.580), (-0.327, 0.010, 1.622),
+     0.055),
+    # --- the widest leaf on the left, tip at -0.441 / z 1.565
+    ((-0.235, -0.185, 1.440), (-0.395, -0.115, 1.545), (-0.441, -0.010, 1.565),
+     0.074),
+    # --- the widest leaf on the right, tip at +0.440 / z 1.490
+    ((0.230, -0.190, 1.440), (0.390, -0.120, 1.500), (0.440, -0.010, 1.490),
+     0.074),
+    # --- the lower tier, tips at +-0.42 / z 1.30
+    ((-0.250, -0.150, 1.400), (-0.380, -0.090, 1.350), (-0.415, -0.030, 1.300),
+     0.064),
+    ((0.250, -0.150, 1.400), (0.380, -0.090, 1.350), (0.417, -0.030, 1.295),
+     0.064),
+    # --- the cheek locks, tips at +-0.35 / z 1.235
+    ((-0.240, -0.120, 1.320), (-0.320, -0.080, 1.270), (-0.350, -0.050, 1.235),
+     0.074),
+    ((0.240, -0.120, 1.320), (0.320, -0.080, 1.270), (0.349, -0.050, 1.232),
+     0.074),
+    # --- the nape, tips at +-0.193 / z 1.02
+    ((-0.170, 0.070, 1.300), (-0.235, 0.110, 1.130), (-0.255, 0.020, 1.020),
+     0.046),
+    ((0.170, 0.070, 1.300), (0.235, 0.110, 1.130), (0.255, 0.020, 1.020),
+     0.046),
+    # --- the back of the head
+    ((0.000, -0.120, 1.560), (0.020, 0.120, 1.610), (0.010, 0.200, 1.660),
+     0.058),
+    ((-0.120, 0.090, 1.500), (-0.240, 0.170, 1.520), (-0.300, 0.160, 1.500),
+     0.055),
+    ((0.120, 0.090, 1.500), (0.240, 0.170, 1.520), (0.300, 0.160, 1.500),
+     0.055),
+    ((0.000, 0.080, 1.400), (0.000, 0.230, 1.380), (0.000, 0.290, 1.320),
+     0.055),
 ]
 
-# The volume under the locks.  These are welded into the mass and remeshed,
-# so they only have to give the hair its bulk - their tips are never seen.
-HAIR_FILL = [
-    (1.500,    0, (-0.120, -0.230, 1.620), (-0.55,  0.25,  0.80), 0.060, 0.100),
-    (1.500,  180, ( 0.120,  0.230, 1.620), ( 0.55, -0.25,  0.80), 0.060, 0.100),
-    (1.430,  -70, (-0.320,  0.000, 1.470), (-0.92,  0.00,  0.36), 0.070, 0.105),
-    (1.430,   70, ( 0.320,  0.000, 1.470), ( 0.92,  0.00,  0.36), 0.070, 0.105),
-    (1.330,  150, (-0.240,  0.190, 1.330), (-0.45,  0.75, -0.48), 0.060, 0.095),
-    (1.330, -150, ( 0.240,  0.190, 1.330), ( 0.45, -0.75, -0.48), 0.060, 0.095),
-    (1.180,  180, ( 0.000,  0.230, 1.060), ( 0.00,  0.95, -0.30), 0.050, 0.090),
+# The shingles: broad leaves that lie flat on the hood and overlap each
+# other.  They are what stops the hood from reading as a smooth dome, and
+# they are the roof tiles the reference hair is made of.
+#
+# (a_root, z_root, a_tip, z_tip, half width)
+HAIR_SHINGLES = [
+    (-72, 1.460, -104, 1.320, 0.048),
+    (-46, 1.510, -78, 1.360, 0.048),
+    (-20, 1.545, -50, 1.400, 0.046),
+    (10, 1.550, 44, 1.410, 0.046),
+    (40, 1.510, 78, 1.360, 0.048),
+    (74, 1.460, 104, 1.320, 0.048),
+    (-96, 1.400, -124, 1.250, 0.044),
+    (96, 1.400, 124, 1.250, 0.044),
+    (150, 1.500, 190, 1.420, 0.046),
+    (-150, 1.500, -190, 1.420, 0.046),
 ]
 
-# The volume locks are welded into the mass so the hair is a carved volume
-# and not a hat with leaves stuck on it.  They stay inside the silhouette.
-
-# The fringe: thirteen broad locks lying on the forehead.
+# The fringe: broad leaves lying on the forehead.
 #
-# (x_tip, z_tip, a_root)
-#   x_tip   where the tip lands on the forehead
-#   z_tip   how low it hangs - the brows sit at 1.31, so the tips stop
-#           between 1.25 and 1.39 and the lower edge stays ragged instead of
-#           reading as one straight row of triangles
-#   a_root  azimuth of the root on the skull cap
+# Ten of them, not twenty-four.  A dense row of narrow spikes reads as a
+# sawtooth band across the brow, which is not what the reference looks like:
+# the reference has a handful of big leaves whose tips reach different
+# depths, overlapping each other.
+#
+# (x_tip, z_tip, a_root, half width, depth)
 HAIR_FRONGE = [
-    (-0.300, 1.160, -94),
-    (-0.278, 1.190, -86),
-    (-0.256, 1.212, -80),
-    (-0.232, 1.232, -74),
-    (-0.208, 1.248, -68),
-    (-0.186, 1.262, -62),
-    (-0.164, 1.276, -56),
-    (-0.140, 1.290, -50),
-    (-0.116, 1.302, -44),
-    (-0.092, 1.314, -38),
-    (-0.066, 1.322, -32),
-    (-0.038, 1.330, -25),
-    (-0.010, 1.336, -17),
-    ( 0.020, 1.338,  -8),
-    ( 0.050, 1.336,   2),
-    ( 0.080, 1.330,  12),
-    ( 0.108, 1.322,  22),
-    ( 0.136, 1.310,  32),
-    ( 0.162, 1.296,  42),
-    ( 0.188, 1.278,  52),
-    ( 0.214, 1.256,  62),
-    ( 0.238, 1.230,  74),
-    ( 0.262, 1.202,  86),
-    ( 0.286, 1.172,  96),
+    (-0.268, 1.322, -96, 0.112, 0.030),
+    (-0.216, 1.258, -80, 0.118, 0.020),
+    (-0.164, 1.308, -64, 0.120, 0.032),
+    (-0.110, 1.242, -48, 0.118, 0.016),
+    (-0.050, 1.292, -30, 0.114, 0.026),
+    (0.014, 1.238, -12, 0.114, 0.014),
+    (0.076, 1.288, 10, 0.116, 0.024),
+    (0.136, 1.240, 32, 0.118, 0.016),
+    (0.198, 1.302, 54, 0.118, 0.028),
+    (0.254, 1.254, 78, 0.112, 0.020),
 ]
 
 
-def _skull_point(z, a_deg, inset=0.0):
-    """A point on the scalp.  z = height, a = azimuth (0 = front / -Y).
+def _leaf_radii(half_w, tip_r, steps, hold=0.55, power=1.8, ramp=0.18):
+    """Width profile of a leaf: thin at the root, broad through the middle,
+    and a long taper to a sharp point.
 
-    `inset` pushes the point into the skull so a lock's root is buried
-    instead of sitting on the surface.
+    The reference leaves are broad petals - a quarter of the head across -
+    and the point is only the last third of the leaf.  A profile that tapers
+    straight from the root turns every leaf into a triangle, and a head of
+    triangles is the sea-urchin look the reference does not have.
     """
-    rx, ry = head_dims(z)
-    a = math.radians(a_deg)
-    p = Vector((rx * math.sin(a), -ry * math.cos(a), z))
-    if inset:
-        n = Vector((p.x, p.y, 0.0))
-        if n.length > 1e-6:
-            p -= n.normalized() * inset
-    return p
-
-
-# The surface leaves are gone: the crescent locks below now do that job.
-# A separate set of small leaves lying on the mass only added noise - the
-# reference hair is made of big blades, not of a helmet with scales on it.
-
-
-def _lock(name, z_root, a_root, tip, bow_dir, bow, r_base, mat,
-          tip_r0=0.005, steps=20, flatten=0.34, hold=0.34, inset=0.010):
-    """One crescent lock of hair.
-
-    A broad blade that leaves the scalp, arcs outward and ends in a sharp
-    point.  The locks are built AFTER the mass is carved and booleaned: a
-    voxel remesh rounds every tip into a petal, and the reference hair is all
-    sharp points - so the silhouette is made of separate blades that are never
-    remeshed.
-
-    The blade is swept with its wide axis in the screen plane, so a lock
-    shows its full width to the viewer the way the reference locks do.
-    """
-    root = _skull_point(z_root, a_root, inset=inset)
-    tip = Vector(tip)
-    ctrl = (root + tip) * 0.5 + Vector(bow_dir).normalized() * bow
-    pts = L.bezier_pts(root, ctrl, tip, steps)
-    radii = L.blade_radii(r_base, tip_r0, steps, hold)
-    v, f = L.blade(pts, radii, radial=20, flatten=flatten)
-    return L.make_obj(name, v, f, mat)
-
-
-def _sweep_taper(name, pts, r0, r1, mat, sides=12, flat=0.40, hold=0.0):
-    """Sweep a flattened tube with a linear taper along a polyline.
-
-    The cross section is squashed along the depth axis, so a lock stays flat
-    against the forehead instead of rolling like a rope.  `hold` keeps the
-    full width up to that fraction of the path and only then tapers, which
-    is what makes a fringe lock a broad leaf with a point instead of a
-    narrow spike.
-    """
-    pts = [Vector(p) for p in pts]
-    n = len(pts)
-    tangents = []
-    for i in range(n):
-        a = pts[max(i - 1, 0)]
-        b = pts[min(i + 1, n - 1)]
-        d = b - a
-        tangents.append(d.normalized() if d.length > 1e-9 else Vector((0.0, 0.0, 1.0)))
-
-    ref = Vector((0.0, 0.0, 1.0))
-    if abs(tangents[0].dot(ref)) > 0.95:
-        ref = Vector((1.0, 0.0, 0.0))
-
-    rings = []
-    for i in range(n):
-        t = tangents[i]
-        nn = ref - t * ref.dot(t)
-        if nn.length < 1e-6:
-            ref = Vector((1.0, 0.0, 0.0))
-            nn = ref - t * ref.dot(t)
-        nn.normalize()
-        bn = t.cross(nn)
-        f = i / float(n - 1)
-        if f <= hold:
-            r = r0
+    out = []
+    for i in range(steps + 1):
+        t = i / float(steps)
+        g = min(1.0, t / ramp)
+        g = g * g * (3.0 - 2.0 * g)
+        if t <= hold:
+            r = half_w * g
         else:
-            r = r0 + (r1 - r0) * ((f - hold) / max(1e-6, 1.0 - hold))
-        ring = []
-        for j in range(sides):
-            ang = TAU * j / sides
-            p = (pts[i] + nn * (math.cos(ang) * r)
-                 + bn * (math.sin(ang) * r * flat))
-            ring.append(tuple(p))
-        rings.append(ring)
+            f = (t - hold) / (1.0 - hold)
+            r = tip_r + (half_w - tip_r) * (1.0 - f) ** power
+        out.append(r)
+    return out
 
-    # collapse the last ring to a point: the tip has to be sharp
-    rings[-1] = [tuple(pts[-1])] * sides
-    v, f = L.loft(rings, cap_start=True, cap_end=False)
+
+def _leaf(name, p0, p1, p2, half_w, mat, steps=16, flatten=0.58,
+          hold=0.55, tip_r=0.005, power=1.8):
+    """One broad crescent leaf of hair.
+
+    The reference hair is a mass of big overlapping leaves, so a leaf has to
+    be WIDE - a quarter of the head across - and it has to lie ON the hood
+    instead of hiding inside it.  The root is buried in the hood, so the
+    leaf grows out of the mass the way the reference locks do.
+    """
+    pts = L.bezier_pts(Vector(p0), Vector(p1), Vector(p2), steps)
+    radii = _leaf_radii(half_w, tip_r, steps, hold, power)
+    v, f = L.blade(pts, radii, radial=18, flatten=flatten)
     return L.make_obj(name, v, f, mat)
 
 
-def _bang(name, x_tip, z_tip, a_root, mat, r_base=0.150, hold=0.70):
-    """One fringe lock: it leaves the hair mass at the hairline and lies on
-    the forehead from there down to its tip.
+def _shingle_specs():
+    """Control points for the leaves that lie flat on the hood."""
+    out = []
+    for a0, z0, a1, z1, hw in HAIR_SHINGLES:
+        p0 = mass_point(z0, a0, -0.025)
+        p2 = mass_point(z1, a1, -0.025)
+        mid = (p0 + p2) * 0.5
+        n = Vector((mid.x, mid.y, 0.0))
+        n = n.normalized() if n.length > 1e-6 else Vector((0.0, -1.0, 0.0))
+        out.append((p0, mid + n * 0.042, p2, hw))
+    return out
 
-    The lock has to follow the FOREHEAD, not the cap.  The cap is 32 mm in
-    front of the face, so a lock that starts at the crown and falls
+
+def _bang(name, x_tip, z_tip, a_root, mat, half_w=0.052, depth=0.020):
+    """One fringe leaf lying on the forehead.
+
+    The leaf has to follow the FOREHEAD, not the hood: the hood is 80 mm in
+    front of the face, so a fringe that starts at the crown and falls
     straight down ends up inside the skull and only its tip shows - that is
     exactly the row of black triangles this replaced.
 
-    The blade is swept with its wide axis in the screen plane, so a fringe
-    lock shows its full width to the viewer the way the reference bangs do.
+    `depth` pushes the tip further in front of the skin so the fringe
+    leaves layer over each other instead of z-fighting on one plane.
     """
     x0 = 0.150 * math.sin(math.radians(a_root))
-    z0 = hairline_z(x0) + 0.075
-    x1 = x_tip * 0.92
-    z1 = hairline_z(x1) - 0.030
+    z0 = hairline_z(x0) + 0.060
+    x1 = x_tip * 0.90
+    z1 = hairline_z(x1) - 0.020
 
-    steps = 18
+    steps = 16
     pts = []
     for i in range(steps + 1):
         t = i / float(steps)
         mt = 1.0 - t
         x = mt * mt * x0 + 2 * mt * t * x1 + t * t * x_tip
         z = mt * mt * z0 + 2 * mt * t * z1 + t * t * z_tip
-        f = max(0.0, min(1.0, t / 0.45))
+        f = max(0.0, min(1.0, t / 0.40))
         f = f * f * (3.0 - 2.0 * f)
-        # The lock has to sit ON TOP of the hair mass, not inside it: a fringe
-        # buried under the cap surface shows nothing but its tip, which is the
-        # row of black teeth the reference does not have.
-        y_cap = cap_y(x, z) + 0.022
-        y_face = face_point(x, z, out=0.014).y
-        pts.append(Vector((x, y_cap * (1.0 - f) + y_face * f, z)))
+        y_hood = mass_front_y(x, z) - 0.012
+        y_face = face_point(x, z, out=0.012 + depth).y
+        pts.append(Vector((x, y_hood * (1.0 - f) + y_face * f, z)))
 
-    radii = L.blade_radii(r_base, 0.012, steps, hold, power=2.0)
-    v, f = L.blade(pts, radii, radial=20, flatten=0.40)
+    radii = _leaf_radii(half_w, 0.012, steps, hold=0.52, power=1.45, ramp=0.12)
+    v, f = L.blade(pts, radii, radial=18, flatten=0.50)
     return L.make_obj(name, v, f, mat)
 
 
 def _join(objs, name):
     """Join meshes into one object without welding them.
 
-    The locks must stay separate surfaces: a voxel remesh would swallow the
+    The leaves must stay separate surfaces: a voxel remesh would swallow the
     points, and a join keeps every tip intact.
     """
     objs = [o for o in objs if o is not None]
@@ -709,48 +730,48 @@ def _groove_strands(ob, depth=0.0025):
 
 
 def build_hair(m):
-    """Hair = a scalp shell + crescent locks + a fringe.
+    """Hair = a thick hood + big overlapping leaves + a fringe.
 
-    The mass and the fringe are built in that order on purpose: the face
-    opening and the ear pockets are booleans, and a lock that is welded into
-    the mass gets cut away with it.  The crescent locks are added last so the
+    The hood is built first on purpose: the face opening and the ear
+    pockets are booleans on it, and the leaves are added afterwards so the
     voxel remesh cannot round their points off.
     """
-    # ---------- 1. the mass: the scalp shell plus the volume under it
-    sections = []
-    for z, rx, ry in HEAD_PROFILE:
-        if z < 1.060 or z > 1.582:
-            continue
-        if z < 1.120:
-            margin = -0.020         # tuck the rim inside the skull
-        elif z < 1.180:
-            margin = 0.012
-        else:
-            margin = HAIR_CAP_MARGIN
-        sections.append((z, rx + margin, ry + margin))
-    v, f = L.profile_tube(sections, sides=64, power=HEAD_POWER,
-                           cap_start=True, cap_end=True)
-    cap = L.make_obj("HairCap", v, f, m["hair"])
+    # ---------- 1. the hood: a loft through the measured silhouette
+    rings = []
+    for z, xl, xr, d in HAIR_MASS:
+        c = (xl + xr) * 0.5
+        hw = max(0.002, (xr - xl) * 0.5)
+        ring = []
+        for j in range(64):
+            a = TAU * j / 64
+            ring.append((c + hw * _spow(math.sin(a)),
+                         -d * _spow(math.cos(a)),
+                         z))
+        rings.append(ring)
+    v, f = L.loft(rings, cap_start=True, cap_end=True)
+    hood = L.make_obj("HairHood", v, f, m["hair"])
 
-    parts = [cap]
-    for i, spec in enumerate(HAIR_FILL):
-        parts.append(_lock(f"Hair_Fill{i}", *spec, m["hair"]))
-
-    mass = _weld_hair(parts, smooth_factor=0.10, smooth_iters=2,
+    mass = _weld_hair([hood], smooth_factor=0.12, smooth_iters=2,
                       voxel=0.008)[0]
     _groove_strands(mass)
 
-    # ---------- 2. the crescent locks: the silhouette
-    locks = [_lock(f"Hair_Lock{i}", *spec, m["hair"])
-             for i, spec in enumerate(HAIR_LOCKS)]
-    lock_ob = _join(locks, "HairLocks")
+    # ---------- 2. the leaves: the silhouette
+    leaves = []
+    for i, spec in enumerate(HAIR_LEAVES):
+        p0, p1, p2, hw = spec
+        leaves.append(_leaf(f"Hair_Leaf{i}", p0, p1, p2, hw, m["hair"]))
+    for i, spec in enumerate(_shingle_specs()):
+        p0, p1, p2, hw = spec
+        leaves.append(_leaf(f"Hair_Shingle{i}", p0, p1, p2, hw, m["hair"]))
+    leaf_ob = _join(leaves, "HairLeaves")
 
     # ---------- 3. the fringe, lying on the forehead
-    fringe = [_bang(f"Hair_Fringe{i}", spec[0], spec[1], spec[2], m["hair"])
+    fringe = [_bang(f"Hair_Fringe{i}", spec[0], spec[1], spec[2], m["hair"],
+                    half_w=spec[3], depth=spec[4])
               for i, spec in enumerate(HAIR_FRONGE)]
     fringe_ob = _join(fringe, "HairFringe")
 
-    return [mass, lock_ob, fringe_ob]
+    return [mass, leaf_ob, fringe_ob]
 
 
 def _add_fringe(lock):
@@ -812,7 +833,7 @@ def _boolean_cut(target, cutter, name):
     bpy.data.objects.remove(cutter, do_unlink=True)
 
 
-def _cut_face_opening(hair_obj, y_face=-0.128, x_max=0.34, z_floor=0.50):
+def _cut_face_opening(hair_obj, y_face=-0.215, x_max=0.30, z_floor=0.50):
     """Cut the face opening along the hairline.
 
     The cutter is a prism whose cross section IS the hairline curve, not a
@@ -894,7 +915,7 @@ def _weld_hair(hair_parts, smooth_factor=0.5, smooth_iters=6,
     # follows the skull instead of running flat across the forehead.
     # Deleting faces by a centre test leaves a stair-stepped rim, which reads
     # as damage once the mass is remeshed.
-    _cut_face_opening(fused, y_face=-0.128)
+    _cut_face_opening(fused, y_face=-0.215, x_max=0.30)
 
     # Ear pockets: the reference has big ears sticking out under the hair.
     _carve_ear_pockets(fused)
@@ -1052,9 +1073,9 @@ def build_face(m):
         parts.append(_sweep_poly(
             f"Lash_{tag}",
             _eye_rim(s, 166, 16, out=0.010, n=11),
-            0.009, m["hair"], sides=10, flat=0.50,
-            radii=[0.006, 0.0085, 0.0105, 0.0120, 0.0130, 0.0135, 0.0135,
-                   0.0125, 0.0105, 0.0080, 0.0045]))
+            0.010, m["hair"], sides=10, flat=0.50,
+            radii=[0.010, 0.012, 0.014, 0.0155, 0.0165, 0.017, 0.017,
+                   0.0155, 0.0135, 0.011, 0.0075]))
 
         # A thin lower lid under the iris.
         parts.append(_sweep_poly(
@@ -1063,13 +1084,13 @@ def build_face(m):
             0.0045, m["hair"], sides=8, flat=0.45,
             radii=[0.002, 0.0035, 0.0042, 0.0042, 0.0035, 0.0028, 0.0018]))
 
-        # The big highlight sits at the upper OUTER corner of the iris and a
-        # small one at the lower inner - that is the reference's glint pair.
+        # The big highlight sits at the upper INNER corner of the iris and a
+        # small one at the lower outer - that is the reference's glint pair.
         # They have to sit ON the iris dome or they sink into it and the eye
         # reads as a flat black hole.
         for gname, gx, gz, gr, gy, go in (
-                ("Big", 0.128, 1.226, 0.017, 0.006, 0.0090),
-                ("Small", 0.095, 1.176, 0.010, 0.005, 0.0085)):
+                ("Big", 0.130, 1.242, 0.016, 0.006, 0.0090),
+                ("Small", 0.170, 1.194, 0.009, 0.005, 0.0085)):
             hp = face_point(s * gx, gz, out=go)
             bpy.ops.mesh.primitive_uv_sphere_add(
                 segments=26, ring_count=16, radius=1.0,
@@ -1094,8 +1115,8 @@ def build_face(m):
                    0.0035, 0.0012]))
 
         # The blush is a soft gradient on the lower cheek, not a pink dot.
-        parts.append(_blush_patch(f"Blush_{tag}", s * 0.192, 1.100,
-                                   0.050, 0.044, m["blush"],
+        parts.append(_blush_patch(f"Blush_{tag}", s * 0.178, 1.092,
+                                   0.043, 0.038, m["blush"],
                                    (0.776, 0.426, 0.321),
                                    (0.715, 0.205, 0.180)))
 
