@@ -274,6 +274,82 @@ def strand(p0, p1, p2, r_base, r_tip=0.018, steps=20, radial=18,
     return loft(rings, cap_start=True, cap_end=False)
 
 
+def blade(pts, radii, radial=14, flatten=0.45, flat_ref=(0.0, 1.0, 0.0)):
+    """Sweep a tapered ribbon along a polyline, keeping it in the screen plane.
+
+    The WIDE axis is perpendicular to both the path and `flat_ref` (the Y axis
+    by default), so the ribbon always faces the viewer and shows its full
+    width.  A ribbon framed from the path's own up-vector instead turns
+    edge-on and reads as a thin spike - which is exactly what the hair used
+    to look like.
+
+    `radii` is a per-point half width.
+    """
+    pts = [Vector(p) for p in pts]
+    n = len(pts)
+    if n < 2:
+        return [], []
+    ref = Vector(flat_ref).normalized()
+
+    tangents = []
+    for i in range(n):
+        a = pts[max(i - 1, 0)]
+        b = pts[min(i + 1, n - 1)]
+        d = b - a
+        tangents.append(d.normalized() if d.length > 1e-9 else Vector((0, 0, 1)))
+
+    rings = []
+    for i in range(n):
+        t = tangents[i]
+        wide = t.cross(ref)
+        if wide.length < 1e-5:
+            wide = t.cross(Vector((1.0, 0.0, 0.0)))
+            if wide.length < 1e-5:
+                wide = t.cross(Vector((0.0, 0.0, 1.0)))
+        wide.normalize()
+        thin = t.cross(wide).normalized()
+        r = float(radii[i])
+        ring = []
+        for j in range(radial):
+            ang = TAU * j / radial
+            p = (pts[i] + wide * (math.cos(ang) * r)
+                 + thin * (math.sin(ang) * r * flatten))
+            ring.append(tuple(p))
+        rings.append(ring)
+
+    rings[-1] = [tuple(pts[-1])] * radial
+    return loft(rings, cap_start=True, cap_end=False)
+
+
+def bezier_pts(p0, p1, p2, steps):
+    """Sample a quadratic Bezier into a list of points."""
+    p0, p1, p2 = Vector(p0), Vector(p1), Vector(p2)
+    out = []
+    for i in range(int(steps) + 1):
+        t = float(i) / float(steps)
+        mt = 1.0 - t
+        out.append(p0 * (mt * mt) + p1 * (2.0 * mt * t) + p2 * (t * t))
+    return out
+
+
+def blade_radii(r_base, r_tip=0.006, steps=20, hold=0.34, power=1.5):
+    """Radius profile of a leaf: full width, then a long taper to a point.
+
+    A higher `power` keeps the blade broad almost all the way to the tip,
+    which is what a fringe lock needs - a low power turns it into a triangle.
+    """
+    out = []
+    for i in range(int(steps) + 1):
+        t = float(i) / float(steps)
+        if t <= hold:
+            out.append(r_base)
+        else:
+            f = (t - hold) / (1.0 - hold)
+            out.append(r_tip + (r_base - r_tip) * (1.0 - f) ** power)
+    return out
+
+
+
 def limb(name, a, b, ra, rb, mat=None, sides=20, power=2.0, caps=0.45):
     """Tapered capsule between two points; radii are absolute, not scaled."""
     a, b = Vector(a), Vector(b)
