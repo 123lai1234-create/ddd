@@ -55,55 +55,57 @@
 
 ## 3D mascot（`/3d-mascot`）
 
-- 模型來源：`blender/chibi_restyle.py`（pipeline）→ `blender/chibi_polish.py`（後處理）。
-  底模是 `chibi-tinted-full.glb`，**不要換回 `chibi-tinted-low.glb`** ——
-  low 版會把 Meshy 的圓潤髮束壓成稜角碎片。
-- **相機：`camera-orbit="0deg 82deg 3.9m"` 才是正面。**
-  - 2026-10-27 這顆 build（`chibi_polish.glb`）實測：model-viewer theta **0°=正正面**、
-    90°=側面、180°=後腦勺、270°=另一側。
-  - **正面角會隨 pipeline 換 build 而變**，不要沿用舊筆記。歷史紀錄：2026-10-25 那顆 45°、
-    2026-10-26 那顆 315°、2026-10-27 這顆 **0°**。換模型後一定要重測。
-  - **怎麼重測（不用開瀏覽器）**：用 model-viewer 的相機公式在 Blender 模擬 ——
+- **模型來源：`blender/chibi_build.py`（Blender 4.5 LTS 從零手建）**，
+  參考圖就是 `astro/public/images/chibi-hero.png`（跟首頁浮動立繪同一隻）。
+  量測腳本 `blender/measure_hero.py` 會把參考圖的輪廓/眼睛/配色印出來，
+  換設計稿時重跑它，不要憑眼睛估數字。
+- **不要再走 AI 重建**（TripoSR / Hunyuan3D / Meshy）：餵 2D chibi 設定圖只會得到
+  胖 blob，五官還得靠貼圖投影 → 臉頰鋸齒。純色材質 + 參數化曲面才可控。
+  舊的 Meshy 流程（`chibi_restyle.py` / `chibi_polish.py` / `face_texture.py`）
+  已經不是線上模型，別回頭改那條線。
+- **相機：`camera-orbit="0deg 82deg 4.4m"` 才是正面**（頁面 `3d-mascot.astro`）。
+  - model-viewer theta **0°=正正面**、90°=側面、180°=後腦勺、270°=另一側。
+  - **正面角會隨 build 換而變**，換模型後一定要重測：
+    用 model-viewer 的相機公式在 Blender 模擬 ——
     `offset = r·(sinφ·sinθ, cosφ, sinφ·cosθ)`，gltf(x,y,z) → blender(x, −z, y)，
-    渲染 theta = 0/90/180/270 四張，哪張是正臉就定那個角。
-  - 判角度**一定**要另開乾淨的對照 viewer 並排截圖。不要用頁面原生那個 ——
-    頁面的內嵌腳本有 `viewer.autoRotate = true`，會**覆蓋**你的 `removeAttribute('auto-rotate')`，
-    截到的圖永遠是轉到一半的角度。踩過三次誤判。
-  - **2026-10-29 起頁面不再自動旋轉。** 理由：這顆模型只有正面是乾淨的，
-    轉到側背面就會露出臉殼的背面與下緣碎邊，而訪客看到的時間遠多於正面的 1.4 秒。
-    頁面固定停在 `theta=0` 的正臉，使用者自己拖曳。要加回旋轉前先想清楚這一點。
-  - `camera-target="0m 0.9m 0.2m"`：model-viewer 是 Y-up，**第二個數字才是垂直高度**
-    （0.9m ≈ 模型中心），第三個是水平微偏移。別動它。
-- **臉部鋸齒的病根在「貼圖來源」，不是 mesh。**
-  - 貼圖有兩條路：`face_texture.project_reference()`（把 Meshy 參考照投影到頭上）
-    vs `face_texture._paint_face()`（程式手繪）。**照片版會把參考照自己的瀏海
-    一起帶進來**，被圓柱投影拉成眼周／額頭的黑色鋸齒。
-  - 證明方法：在瀏覽器把 Hair mesh 隱藏 —— 鋸齒**還在** → 它在貼圖裡，不在幾何裡。
-  - `chibi_polish.repaint_face_painted()` 已改用**手繪版**，乾淨無鋸齒。
-    手繪版跟照片版**同寬高（2240×928）、同 frame（z0/z1/cx/cy）**，
-    所以既有 UV 不用重算就對得上。
-  - **踩坑**：`face_texture.bake()` 會 `materials.new("Face")`，但舊的 "Face" 還在 →
-    Blender 命名成 **"Face.001"**。而 `_face_slot()` 是**完全匹配** "face"，
-    於是 `close_face_shell` / `smooth_shell_border` / `deborder_jaw` **全部靜默跳過**，
-    臉部等於沒修。要先把舊材質改名讓出 "Face"，再把新的命名回 "Face"。
-- 後處理順序有講究：`trim_hair_over_face` 要跑**兩次** ——
-  第一次在 `close_face_shell` 之前（清大塊頭髮），第二次在之後
-  （眼窩封起來之後，前投影測試才判得出「這裡有臉」，才能砍掉眼睛上方的鋸齒）。
-- `chibi_polish.drop_jaw_plug()`：JawPlug 是一塊獨立的下巴皮片，正面看是下巴底下
-  一道亮白刀片。直接刪掉整個物件。
-- `chibi_polish.reskin_jaw()`：殼的下緣被吸成臉材質後，圓柱投影把貼圖下緣擠成一排
-  直立細條，下巴看起來像一排牙齒。把下顎的殼面改回 Skin 材質就接回脖子了。
+    渲染 theta = 0/90/180/270 四張。
+  - 判角度**一定**要另開乾淨的對照 viewer 並排截圖，不要用頁面原生那個。
+  - `camera-target="0m 0.9m 0.2m"`：model-viewer 是 Y-up，**第二個數字才是垂直高度**。
+- **頭髮 = 殼層 + 貝茲髮片，不要用錐體**：
+  - 錐體（ico-sphere 拉尖）會變成一排**鯊魚鰭**。改成 `chibi_lib.strand()`
+    沿二次貝茲曲線掃出、末端收尖的**葉片**（`flatten=0.6`），才是動漫亂髮。
+  - **殼層必須保持封閉（watertight）**才能跑 EXACT 布林切臉部開口。
+    舊流程把帽子和髮片 join + voxel remesh 一起做才會封閉；
+    拆開做時若刪掉帽子底面，布林會**啃穿帽子前端 → 整隻變光頭**。
+  - **髮片尖端的座標是絕對值**：埋進頭裡（y 太靠後）就整片看不見；
+    戳出來（y 太前）就變成一根根朝著鏡頭的刺。額前瀏海要**平貼在額頭上**。
+  - 髮片**不要跟帽子一起 remesh**：remesh 會把尖端吃掉。
+  - **臉部開口要切「曲線髮際線」，不能切方塊**：方塊會在額頭留一條水平邊
+    → 看起來像戴帽子。用 `hairline_z(x)` 的剖面做成沿 Y 的 prism 再 EXACT 布林。
+  - **瀏海必須貼著「額頭」而不是帽子**：帽子比臉前 27 mm，瀏海若從頭頂垂下來
+    會整段埋進頭顱裡 → 只剩尖端露出 → 看起來就是一排黑三角。
+    路徑要從 `hairline_z(x)` 起、沿 `face_point()` 往下，最後才收尖。
+  - **`_tip()` 的角度鏡像是 `-a` 不是 `180-a`**：`sin(180-a)==sin(a)`，
+    用 180-a 會讓左右兩邊的鎖片**全部長在同一側**，整隻看起來像轉身。
+  - **耳朵會埋在帽子裡**（帽子是包住頭顱的實心球）：要沿 X 開一個貫通的
+    橢圓柱槽才看得到耳朵；只挖內部會變成一個藏耳朵的空腔。
+  - 鎖片粗細 `THICK` 別調太大：太胖會從「尖刺」變成「花瓣」。
+- **眼睛是四層**（眼白 → 虹膜 → 瞳孔 → 高光），再加一條**睫毛上緣**：
+  - 睫毛必須**坐在眼白上**。黑線壓在黑色虹膜上等於看不見。
+  - 眼白要比虹膜大，否則整顆眼睛是「黑豆＋白圈」，不像畫出來的眼睛。
+- **配色直接抄參考圖的線性值**（sRGB → linear 後填 Base Color）。
+  燈光過曝會把膚色洗成 255,255,252 → 整隻看起來像塑膠。
+- **格紋腰結是頂點色不是節點貼圖**：程序化節點在 glTF 匯出時會整個消失，變白圍裙。
+- 匯出**必須開 Draco**（`export_draco_mesh_compression_enable=True, level=6`）：
+  84k 三角面沒開會是 MB 級的怪物。
 - **本地預覽（比部署快 100 倍）**：`cd astro/public` 跑 `python -m http.server 8899`，
   放一個 `model-viewer` 測試頁，`<model-viewer src="/models/mascot-3d.glb">`。
   改完 GLB 直接複製到 `astro/public/models/` 就會重載（記得加 `?cb=` 破快取）。
-  這個迴路才是 QA 的主場，Blender 渲染只當交叉驗證。
 - 統計數字（`STAT_TRIS` / `STAT_MATS` / `STAT_SIZE`）**不要手填**：
   `cd astro && npm run mascot:stats` 會直接解析 GLB 產生。改完 GLB 一定要重跑。
-- 匯出**必須開 Draco**（`export_draco_mesh_compression_enable=True, level=6`）：
-  180k 三角面 raw float 屬性 9.6 MB → 壓縮後 1.7 MB。沒開會產出 10 MB 的怪物。
 - 改 GLB 後的部署順序：`npm run build` → `prepare-deploy.ps1` → prebuilt 部署，
   並且一定要打 `/api/healthz` 確認 200（見部署章節的競態）。
-- 細節 → agent memory `mascot-colorize.md`
+- 建模細節 → skill `blender-chibi-parametric`（`.agents/skills/blender-chibi-parametric/`）
 
 ## Stock-app 硬規則（股票/LINE bot）
 

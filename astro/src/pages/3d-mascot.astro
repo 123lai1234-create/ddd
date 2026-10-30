@@ -3,11 +3,11 @@ import Base from '../layouts/Base.astro';
 
 const MODEL_URL = '/models/mascot-3d.glb';
 // 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/mascot-3d.glb 得出，不要手填。
-// 解析結果：166,488 tris / 8 materials / 1,532,820 bytes
-// 大小用截尾（1.4 MB）；改用另一種請加 --round 後重跑。
-const STAT_TRIS = '166 K';
-const STAT_MATS = '8';
-const STAT_SIZE = '1.4 MB';
+// 解析結果：116,292 tris / 13 materials / 386,504 bytes
+// 大小用截尾（0.3 MB）；改用另一種請加 --round 後重跑。
+const STAT_TRIS = '116 K';
+const STAT_MATS = '13';
+const STAT_SIZE = '0.3 MB';
 ---
 
 <Base
@@ -22,7 +22,8 @@ const STAT_SIZE = '1.4 MB';
         <header class="mascot-3d-head">
             <h1>🧒 元嬰不說 · 真 3D 模型</h1>
             <p class="subtitle">
-                黑尖刺頭髮、chibi 比例的 3D 男孩。滑鼠拖曳可以旋轉、滾輪縮放。
+                亂黑髮、白 T 恤、紅色寬褲、腰間綁著格紋襯衫的 2 頭身 chibi ——
+                跟右下角那隻浮動立繪是<b>同一個角色</b>。滑鼠拖曳可以旋轉、滾輪縮放。
             </p>
         </header>
 
@@ -32,8 +33,9 @@ const STAT_SIZE = '1.4 MB';
                 id="chibiViewer"
                 src={MODEL_URL}
                 alt="元嬰不說 chibi mascot 真 3D 模型"
-                camera-orbit="0deg 82deg 3.9m"
+                camera-orbit="0deg 82deg 4.4m"
                 camera-target="0m 0.9m 0.2m"
+                camera-controls
                 field-of-view="30deg"
                 shadow-intensity="0.7"
                 shadow-softness="0.85"
@@ -57,37 +59,39 @@ const STAT_SIZE = '1.4 MB';
         </div>
 
         <p class="mascot-3d-hint">
-            💡 幾何沿用 <b>Meshy AI</b> 的底模（分層尖刺頭髮、格紋腰結本來就對），
-            在 <b>Blender 4.5 LTS</b> 裡重新上色：衣服皮膚用<b>逐面材質指派</b>，
-            臉部五官則是<b>畫進貼圖</b>再以 cylindrical unwrap 繞到頭上。
+            💡 這顆是<b>從零手工建</b>的：沒有 AI 重建、沒有任何貼圖，
+            幾何全部在 <b>Blender 4.5 LTS</b> 裡用參數化曲面組成，
+            每個部位一個<b>純色材質</b>，所以顏色不會跑掉、也不會有貼圖鋸齒。
             拖曳 = 旋轉，滾輪 = 縮放。
         </p>
 
         <div class="mascot-3d-info">
-            <h3>臉為什麼是貼圖，不是逐面材質？</h3>
+            <h3>為什麼不給 AI 重建，要一個部位一個部位自己建？</h3>
             <p>
-                逐面材質在這種網格上畫不出銳利的五官：材質邊界只能落在最近的三角形邊上，
-                眼睛會變成一圈鋸齒；改用壓扁的球體貼在頭顱上，又會因為彎曲而離開表面糊成一塊污漬。
-                最後改成<b>把參考圖投影上去</b> ——
-                參考圖本身就是這顆頭的紋理，用 numpy 取樣後繞到頭上，五官自然就是對的。
+                試過 <b>TripoSR</b>、<b>Hunyuan3D</b>、<b>Meshy</b>：把 2D chibi 設定圖餵進去，
+                出來的都是「胖嘟嘟的 blob」，完全不像小朋友。所以改成
+                <b>照設定圖手動建模</b> —— 把參考圖上的尺寸一個一個量下來，寫成參數。
             </p>
             <ul>
-                <li>水平用<b>方位角</b>映射（<code>x = cx + K·sin(az)</code>）而不是平面投影，臉頰不會二次前縮</li>
-                <li>垂直維持線性，並用參考圖的 alpha 逐欄夾住取樣列 —— 顎線往上彎才不會取到背景</li>
-                <li>頭部半徑直接由網格解球，ray cast 會打到耳朵、把頭算得過圓</li>
-                <li>只有 skin 換成臉材質 —— 瀏海是獨立殼層，一起換會把整個髮型變成額頭</li>
+                <li>頭顱是<b>超橢圓截面</b>逐層堆疊（15 層）出來的，不是球體縮放</li>
+                <li>眼睛是<b>貼在臉上再往外鼓起</b>的曲面片：眼白 → 虹膜 → 瞳孔 → 高光，
+                    再加一條<b>坐在眼白上的睫毛上緣</b> —— 少了那條黑線，眼睛會變成蟲眼</li>
+                <li>頭髮是<b>一整片參數化殼層</b>加上 <b>30 幾片貝茲曲線掃出的髮片</b>：
+                    髮片是沿著二次曲線掃出、末端收尖的葉片，不是錐體
+                    （錐體會變成一排鯊魚鰭），額前那 8 片再平貼在額頭上</li>
+                <li>格紋腰結是<b>頂點色</b>不是節點貼圖：程序化節點貼圖在 glTF 匯出時會直接消失，
+                    變成一片白圍裙</li>
+                <li>全部用<b>純色材質</b>、不貼任何 texture，匯出開 <b>Draco</b> 壓縮</li>
             </ul>
             <p>
-                底模用 Meshy 的<b>全解析度</b>匯出檔（719k 面）：低模版（24k 面）會把圓潤的髮束
-                壓成稜角碎片，跟參考圖完全不像。GLB 另外走 <b>Draco</b> 壓縮，
-                180k 面從 9.6 MB 降到 1.7 MB。
+                這顆跟首頁那隻浮動立繪是<b>同一個設計稿</b>（<code>astro/public/images/chibi-hero.png</code>），
+                尺寸與配色都是從那張圖上量出來的。
             </p>
             <p class="mascot-3d-foot">
-                腳本原始檔：<code>D:\project\blender\chibi_restyle.py</code>（五官貼圖見
-                <code>face_texture.py</code>）。<br />
-                預覽圖：<code>out/restyle_front.png</code>、<code>out/restyle_three_quarter.png</code>、
-                <code>out/restyle_side.png</code>、<code>out/restyle_back.png</code>、
-                <code>out/restyle_head.png</code>。臉部貼圖本體：<code>out/face_paint.png</code>。
+                腳本原始檔：<code>D:\project\blender\chibi_build.py</code>；
+                量測腳本：<code>D:\project\blender\measure_hero.py</code>。<br />
+                預覽圖：<code>out/preview_front.png</code>、<code>out/preview_three_quarter.png</code>、
+                <code>out/preview_side.png</code>、<code>out/preview_back.png</code>。
             </p>
         </div>
     </div>

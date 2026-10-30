@@ -33,7 +33,7 @@ def set_input(node, name, value):
 
 def make_material(name, color, roughness=0.55, metallic=0.0,
                   subsurface=0.0, sss_radius=(0.36, 0.14, 0.08),
-                  coat=0.0, specular=0.5):
+                  coat=0.0, specular=0.5, sheen=0.0, sss_ior=0.0):
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes["Principled BSDF"]
@@ -44,6 +44,11 @@ def make_material(name, color, roughness=0.55, metallic=0.0,
     if subsurface:
         set_input(bsdf, "Subsurface Weight", subsurface)
         set_input(bsdf, "Subsurface Radius", sss_radius)
+    if sss_ior:
+        set_input(bsdf, "Subsurface IOR", sss_ior)
+    if sheen:
+        set_input(bsdf, "Sheen Weight", sheen)
+        set_input(bsdf, "Sheen Roughness", 0.5)
     if coat:
         set_input(bsdf, "Coat Weight", coat)
     return mat
@@ -226,7 +231,10 @@ def strand(p0, p1, p2, r_base, r_tip=0.018, steps=20, radial=18,
             radii.append(rb * (0.72 + 0.28 * (t / 0.42)))
         else:
             f = (t - 0.42) / 0.58
-            radii.append(rt + (rb - rt) * (1.0 - f) ** 1.05)
+            # (1.0 - 0.42) / 0.58 evaluates to 1.0000000000000002 at t=1.0,
+            # so the base can go slightly negative - and a negative base with
+            # a fractional exponent returns a complex number in Python.
+            radii.append(rt + (rb - rt) * max(0.0, 1.0 - f) ** 1.05)
 
     tangents = []
     for i in range(steps_i + 1):
