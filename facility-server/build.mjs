@@ -11,7 +11,7 @@
 
 import { createRequire } from "node:module";
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, copyFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -57,4 +57,26 @@ const r = spawnSync(
   ],
   { stdio: "inherit" },
 );
-process.exit(r.status ?? 1);
+if (r.status !== 0) process.exit(r.status ?? 1);
+
+// 2026-11-02: 本站 framework=null（非 Next.js），Vercel 把 [...all] 當成
+// 單一動態段而非多段 catch-all：實測 /api/games/rooms 可通（1 段），
+// /api/games/rooms/<code>、/join 等多段一律回 Vercel NOT_FOUND，
+// 連 /api/foo/bar 也一樣，證明不是遊戲邏輯問題，是路由問題。
+// 故把同一份 bundle 再複製到每個深度，讓 Vercel 用檔案路由精確匹配：
+//   rooms（建房，[...all] 已覆蓋）
+//   rooms/[code]（輪詢）
+//   rooms/[code]/[action]（join/setup/start/ready/action/use-item/trade）
+//   rooms/[code]/trade/respond（交易回應，4 段）
+// 各檔內容相同，handler 依 req.url 全路徑分派，故行為一致。
+const depthFiles = [
+  join(here, "..", "api", "games", "rooms", "[code].mjs"),
+  join(here, "..", "api", "games", "rooms", "[code]", "[action].mjs"),
+  join(here, "..", "api", "games", "rooms", "[code]", "trade", "respond.mjs"),
+];
+for (const f of depthFiles) {
+  mkdirSync(dirname(f), { recursive: true });
+  copyFileSync(outFile, f);
+  console.log("[build] copied games bundle ->", f);
+}
+process.exit(0);
