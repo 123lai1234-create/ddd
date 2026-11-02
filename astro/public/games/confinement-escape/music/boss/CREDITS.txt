@@ -1,0 +1,5 @@
+支線魔王戰配樂（OpenGameArt，作者 MintoDog，授權 CC0 / 公有領域，免標示）
+- boss_hard_battle_3.ogg   ← Hard Battle 2        https://opengameart.org/content/hard-battle-2
+- boss_hard_battle_2.ogg   ← Hard Boss Battle 2   https://opengameart.org/content/hard-boss-battle-2
+- boss_heavy_battle_1.ogg  ← Heavy Boss Battle 1  https://opengameart.org/node/183631
+- boss_heavy_battle_2.ogg  ← Heavy Boss Battle 2  https://opengameart.org/content/heavy-boss-battle-2

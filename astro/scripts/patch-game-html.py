@@ -40,20 +40,47 @@ TARGET = os.path.join(
 
 OGG_SRC = re.compile(r'(src="music/)([^"]+)\.ogg(")')
 
+# The mirror is served from /games/confinement-escape/, so every relative asset
+# path (images/, music/, sfx/, voice/) has to resolve from that folder. Upstream
+# ships the game for a site root and has no <base>, so a re-sync that only copies
+# index.html over would 404 every asset. Inserted idempotently here so the
+# re-sync path can never lose it again.
+BASE_ANCHOR = '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
+BASE_TAG = '<base href="/games/confinement-escape/">\n'
+
 # Exact (old, new) pairs. Exact strings rather than regex because these touch
 # minified-ish JS where a greedy pattern would silently eat the wrong lines.
+#
+# 2026-11-02: upstream reshuffled the BGM block (BGM_KEYS / BOSS_BGM now sit
+# between BGM_ID and the BGM globals) and rewrote the footer credit line. The
+# old rules stopped matching and the patch silently stopped firing, so both the
+# pre- and post-reshuffle wordings are listed side by side.
 YOUTUBE_REMOVALS = [
     # the header comment + the player setup + iframe_api injection in loadBgm()
     (
         '// 依場景換曲：選單 main、遠征探索 run、無盡深淵 abyss（music/ 裡的 CC0 曲子）；\n'
         '// 戰鬥中與逃出成功的畫面 battle 改播 YouTube 嵌入播放器（不下載音檔）。\n'
         '// 瀏覽器規定要使用者點過頁面才能出聲，所以第一次點擊時才開始播\n'
+        'const BGM_ID="2uGf8-vfFLI";\n',
+        '// 依場景換曲：選單 main、遠征探索 run、無盡深淵 abyss（music/ 裡的 CC0 曲子）。\n'
+        '// 瀏覽器規定要使用者點過頁面才能出聲，所以第一次點擊時才開始播。\n'
+        '// 2026-10-23：戰鬥與逃出成功原本走 YouTube 嵌入播放器，已整段移除\n'
+        '// （第三方 iframe + 非 CC0 曲目），改播 music/ 裡既有的 CC0 曲子。\n',
+    ),
+    (
+        '// 依場景換曲：選單 main、遠征探索 run、無盡深淵 abyss（music/ 裡的 CC0 曲子）；\n'
+        '// 戰鬥中與逃出成功的畫面 battle 改播 YouTube 嵌入播放器（不下載音檔）。\n'
+        '// 瀏覽器規定要使用者點過頁面才能出聲，所以第一次點擊時才開始播\n'
         'const BGM_ID="2uGf8-vfFLI";\n'
-        'let BGM=null,BGM_READY=false,BGM_STARTED=false,BGM_CUR=null;',
+        'const BGM_KEYS=',
         '// 依場景換曲：選單 main、遠征探索 run、無盡深淵 abyss（music/ 裡的 CC0 曲子）。\n'
         '// 瀏覽器規定要使用者點過頁面才能出聲，所以第一次點擊時才開始播。\n'
         '// 2026-10-23：戰鬥與逃出成功原本走 YouTube 嵌入播放器，已整段移除\n'
         '// （第三方 iframe + 非 CC0 曲目），改播 music/ 裡既有的 CC0 曲子。\n'
+        'const BGM_KEYS=',
+    ),
+    (
+        'let BGM=null,BGM_READY=false,BGM_STARTED=false,BGM_CUR=null;',
         'let BGM_STARTED=false,BGM_CUR=null;',
     ),
     (
@@ -72,6 +99,10 @@ YOUTUBE_REMOVALS = [
         '其他戰鬥用 YouTube 那首\n',
         'if(VIEW==="battle"){ // 競技場、雙人對決（含網路對戰）用各自的專屬曲，'
         '其餘戰鬥用 Epic Boss Battle\n',
+    ),
+    (
+        '    // 競技場、雙人對決（含網路對戰）的戰鬥用各自的專屬曲，其他戰鬥用 YouTube 那首\n',
+        '    // 競技場、雙人對決（含網路對戰）用各自的專屬曲，其餘戰鬥用 Epic Boss Battle\n',
     ),
     (
         '    return "battle";\n'
@@ -99,6 +130,7 @@ YOUTUBE_REMOVALS = [
     ),
     # the YouTube credit line in the footer - the track is gone, so the
     # attribution has to go with it. The CC0 OpenGameArt credits stay.
+    # Both the old wording and the 2026-11-02 rewrite are listed.
     (
         '      ・戰鬥／破關：<b>DEgITx - Machine Paradigm</b>・出處 '
         '<a href="https://www.youtube.com/watch?v=2uGf8-vfFLI" target="_blank" '
@@ -107,12 +139,35 @@ YOUTUBE_REMOVALS = [
         'rel="noopener">@DEgITx</a>），版權屬於原作者，透過 YouTube 嵌入播放器播放。<br>\n',
         '',
     ),
+    (
+        '      ・戰鬥／破關：<b>Machine Paradigm</b> — Music: Alexey Kasyanchuk (DEgITx)・出處 '
+        '<a href="https://www.youtube.com/watch?v=2uGf8-vfFLI" target="_blank" '
+        'rel="noopener">YouTube</a>\n'
+        '      （<a href="https://degitx.com/links" target="_blank" rel="noopener">作者連結</a>・'
+        '<a href="https://www.youtube.com/@DEgITx" target="_blank" rel="noopener">@DEgITx</a>）・授權 '
+        '<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" '
+        'rel="noopener">CC BY 4.0</a>，透過 YouTube 嵌入播放器播放。<br>\n',
+        '',
+    ),
+    # the changelog entry announcing that credit line. This fork does not ship
+    # that track, so the entry would describe a change players cannot see.
+    (
+        '  {d:"2026-11-02",t:["說明頁的配樂標示補上「戰鬥／破關」曲目的作者全名'
+        '（Alexey Kasyanchuk / DEgITx）、作者連結與 CC BY 4.0 授權連結"]},\n',
+        '',
+    ),
 ]
 
 
 def main():
     with io.open(TARGET, 'r', encoding='utf-8', newline='') as fh:
         src = fh.read()
+
+    # 1. base tag for the /games/confinement-escape/ mount point
+    before_base = 0
+    if BASE_TAG not in src and BASE_ANCHOR in src:
+        src = src.replace(BASE_ANCHOR, BASE_ANCHOR + BASE_TAG, 1)
+        before_base = 1
 
     before_audio = len(OGG_SRC.findall(src))
     src = OGG_SRC.sub(r'\1\2.mp3\3', src)
@@ -123,11 +178,13 @@ def main():
     src = img_tag.sub(r'<img loading="lazy" decoding="async"\1>', src)
 
     youtube_hits = 0
+    fired = 0
     for old, new in YOUTUBE_REMOVALS:
         n = src.count(old)
         if n:
             src = src.replace(old, new)
             youtube_hits += n
+            fired += 1
 
     with io.open(TARGET, 'w', encoding='utf-8', newline='') as fh:
         fh.write(src)
@@ -143,9 +200,10 @@ def main():
         src, re.IGNORECASE,
     ))
 
+    print('base tag inserted      : %d' % before_base)
     print('audio src  .ogg -> .mp3 : %d' % before_audio)
     print('img loading hints added : %d' % before_img)
-    print('youtube edits applied   : %d (%d rule(s))' % (youtube_hits, len(YOUTUBE_REMOVALS)))
+    print('youtube edits applied   : %d (%d rule(s) fired)' % (youtube_hits, fired))
     print('remaining .ogg refs     : %d' % len(OGG_SRC.findall(src)))
     print('youtube leftovers       : %d' % leftovers)
     print('BOM present             : %s' % (raw[:3] == b'\xef\xbb\xbf'))

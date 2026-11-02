@@ -1,0 +1,46 @@
+《禁閉逃殺：文字獄》配音聲音使用清單
+（方便查詢哪些聲音已經用過，避免重複。詳細授權與來源見 CREDITS.txt）
+
+================ 已使用的聲音 ================
+
+用途                                  工具          聲音                        備註
+------------------------------------  ------------  --------------------------  ----------------------------
+旁白（第 13～15 章結局）              Kokoro-82M    zm_yunxi                    語速 0.85
+支線魔王台詞（8 位魔王）              Kokoro-82M    zm_yunjian / zm_yunyang     中文男聲，僅調整語速
+阿燼（對話配音）                      edge-tts      zh-CN-YunxiNeural（雲希）   voice/story/ashen_*.mp3
+晴（對話配音）                        edge-tts      zh-CN-XiaoyiNeural（曉伊）  語速 -5%，voice/story/qing_*.mp3
+第 13～15 章結局裡阿燼、晴的台詞      edge-tts      同上（雲希、曉伊）          voice/story/end*.mp3
+
+================ 肥宅物語（已完成） ================
+
+旁白        沿用上面的旁白（Kokoro zm_yunxi，語速 0.85）
+肥宅        edge-tts   zh-TW-YunJheNeural（雲哲，台灣腔男聲）   只有肥宅使用
+檔案        voice/story/fatty{章}_{類型}_NN.mp3，共 80 個。類型：
+              intro＝開場、end＝結局、boss＝魔王戰前、story＝聽魔王的故事（選聽）、snack＝泡麵角落
+產生工具    voice/gen_fatty_voice.py（台詞文字寫在裡面，要改台詞就改這個檔案再重跑）
+
+強迫聽規則：每章開場與結局，第一次進入要聽完才能按按鈕；之後重打不強迫，結局畫面可按「重聽結局」。
+  - 開場、魔王戰前、泡麵角落：聽完後記在存檔（SAVE.lore.fv16～fv20、fvboss*、fvsnack*），之後不再強迫。
+  - 結局：第一次通關該章才強迫。
+  - 聽魔王的故事：自動播放，但不強迫。
+
+================ 這次試聽的 10 個候選（供參考） ================
+
+編號  聲音                                     說明
+----  ---------------------------------------  ------------------------------
+01    zh-TW-YunJheNeural（雲哲）               台灣腔，自然隨性   <-- 已選用（肥宅）
+02    zh-TW-YunJheNeural，語速 -10%、音調 -5Hz  慢速懶散
+03    zh-CN-YunxiaNeural（雲夏）               少年感
+04    zh-CN-YunxiaNeural，語速 +5%、音調 -8Hz   少年感，稍低
+05    zh-CN-YunjianNeural（雲健）              熱血
+06    zh-CN-YunyangNeural（雲揚），音調 -4Hz    穩重
+07    zh-HK-WanLungNeural（雲龍）              香港腔
+08    en-US-AndrewMultilingualNeural           多語男聲
+09    en-US-BrianMultilingualNeural            多語男聲
+10    zh-CN-YunxiNeural，語速 +8%、音調 -10Hz   與阿燼同一聲音變調，不建議
+
+edge-tts 可用的中文男聲只有 6 種：
+zh-CN-YunjianNeural、zh-CN-YunxiNeural、zh-CN-YunxiaNeural、zh-CN-YunyangNeural、zh-TW-YunJheNeural、zh-HK-WanLungNeural。
+其中雲希已給阿燼使用，雲健、雲揚在 Kokoro 魔王配音用過同名系列聲音（Kokoro 與 edge-tts 是不同引擎）。
+
+注意：edge-tts 授權為灰色地帶，正式公開前建議改用 Azure 官方語音服務或自行授權的配音。

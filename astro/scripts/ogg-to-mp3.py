@@ -68,16 +68,24 @@ def main(argv):
         print('not a directory: %s' % music_dir)
         return 1
 
-    oggs = sorted(f for f in os.listdir(music_dir) if f.lower().endswith('.ogg'))
+    # 2026-11-02: upstream added music/boss/*.ogg (per-boss-fight loops). The scan
+    # has to walk sub-directories, otherwise those loops stay Ogg-only and play
+    # silently on iOS Safari.
+    oggs = []
+    for root, _, files in os.walk(music_dir):
+        for f in files:
+            if f.lower().endswith('.ogg'):
+                oggs.append(os.path.relpath(os.path.join(root, f), music_dir))
+    oggs.sort()
     if not oggs:
         print('no .ogg files in %s - nothing to do' % music_dir)
         return 0
 
     print('scanning %s (%d ogg file(s))' % (music_dir, len(oggs)))
     before = after = 0
-    for name in oggs:
-        src = os.path.join(music_dir, name)
-        dst = os.path.join(music_dir, name[:-4] + '.mp3')
+    for rel in oggs:
+        src = os.path.join(music_dir, rel)
+        dst = os.path.join(music_dir, rel[:-4] + '.mp3')
 
         if os.path.exists(dst) and not force:
             print('  skip   %-34s (mp3 already exists)' % name)
@@ -95,7 +103,7 @@ def main(argv):
         size = os.path.getsize(dst)
         after += size
         print('  ok     %-34s -> %-30s %6.2f MB'
-              % (name, os.path.basename(dst), size / 1048576.0))
+              % (rel, os.path.basename(dst), size / 1048576.0))
 
     if before and after:
         print('ogg %.2f MB -> mp3 %.2f MB (%.0f%% of original)'
