@@ -23,6 +23,13 @@
     只改靜態內容、且能接受 API 短暫失效時，`git push origin main` 也有 production
     （production branch = `main`，約 3 分鐘後生效）。
   - 驗證一定要打 `/api/stock/2330` 或 `/api/healthz`，不能只看頁面 200 —— 這個故障在頁面上完全看不出來。
+  - ⚠️ **推完 main 之後要再跑一次 prebuilt**。git push 觸發的自動部署會在約 3 分鐘後
+    **搶走 production alias**，而且就是那個有競態的部署。2026-11-02 實測：
+    push main 後 11:41 出現新的 production deployment，11:42:40 輪詢到
+    `/api/healthz` = 000（連線失敗）、`/api/stock/2330` = 404，靜態頁面仍是 200。
+    正確順序：**push → 等 git 部署完成 → 再跑 prebuilt 讓 alias 指向有 `catchall.func` 的版本**。
+  - `vercel` CLI **不在 `astro/node_modules`**（在 repo 根的 `D:\project\node_modules\.bin\vercel.cmd`），
+    用相對路徑 `& node_modules\.bin\vercel.cmd` 會被 PowerShell 當成模組名稱而失敗。
 - git build 與 prebuilt 的**靜態產出**現在是一致的（2026-10-23 對齊）：
   - `vercel-build.mjs` 在 pagefind 之後套用與 `prepare-deploy.ps1` **完全相同**的排除清單。
     沒有這步時 git build 會把 207MB 的 dist 原封不動上傳，遠超 Vercel Hobby 的 100MB 上限；
@@ -135,6 +142,29 @@
 - `music.astro` 寫死 `?v=N` cache buster，改 JS 後**手動 bump** 版本號
 - LRC 檔放 `astro/public/music/*.lrc`，UTF-8 no BOM
 - 編碼：CJK 用 `new TextDecoder('utf-8').decode(buf)` 處理 binary 來源
+
+## 遊戲鏡像同步（禁閉逃殺：文字獄）
+
+- **上游 canonical source 是 `github.com/gagatim/confinement-escape-text`**，不是本 repo。
+  `astro/public/games/confinement-escape/` 只是**鏡像**，靠 `astro/scripts/` 兩個腳本維持。
+- 同步流程（照順序跑，**不要手改 index.html**）：
+  1. 從上游 `main` 取 `index.html` + `images/` + `voice/` + `music/` 覆蓋到鏡像資料夾
+  2. `python astro/scripts/ogg-to-mp3.py` → 上游用 .ogg，**iOS Safari 解不了 Ogg 會整個沒聲音**，統一轉 mp3
+  3. 刪掉 .ogg（這個鏡像只出 mp3，兩種格式都放只會多一倍 payload；轉碼反而省 8MB）
+  4. `python astro/scripts/patch-game-html.py` → 套本地補丁（冪等，可重複跑）
+- **本地補丁只有兩件事**（都由 patch 腳本負責）：
+  - `<base href="/games/confinement-escape/">` —— 上游沒有這個標籤，沒有它 `images/`、`music/`、`voice/`
+    的相對路徑會全部 404。**覆蓋 index.html 後一定要確認它在**
+  - 移除 YouTube 內嵌播放器 —— 戰鬥／逃出成功改播 `music/` 裡的 CC0 曲子
+    （戰鬥→Epic Boss Battle、逃出成功→Triumphant），donttalk 維持零第三方請求
+- ⚠️ **patch 腳本靠 exact string 匹配，上游改版會靜默失效**（count==0 不報錯）。
+  2026-11-02 上游重排了 BGM 區塊並改寫頁尾標示，舊規則字串對不上 → 補丁整個沒套到。
+  **同步後一定要看 patch 腳本印的 `youtube edits applied` 是不是 0**，是 0 就是沒套到，要更新規則。
+  規則要同時保留上游改版前後兩種寫法。
+- 音檔轉碼後**檔名不變但內容可能變**，而 `music/` 是 immutable 快取 → 舊檔會留在玩家瀏覽器。
+  同步後用 `git status` 看既有 mp3 有沒有變成 `M`；有變就要 bump 版本或另命名。
+- 遊戲資料夾約 38MB，部署 payload 目前 69.6MB（Vercel Hobby 上限 100MB）。
+  新增大檔前先算一下餘裕。
 
 ## Branch 策略
 
