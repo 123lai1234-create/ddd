@@ -10296,7 +10296,7 @@ function maybeCacheHeaders(path, method, response) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-export default async function handler(request) {
+async function handleWebRequest(request) {
   try {
     const u = new URL(request.url);
     const raw = u.pathname || "";
@@ -10327,6 +10327,54 @@ export default async function handler(request) {
     return json({ ok: false, error: "not found", path: raw, method: request.method }, { status: 404 });
   } catch (e) {
     return json({ ok: false, error: e?.message, stack: e?.stack }, { status: 500 });
+  }
+}
+
+// 2026-11-02 fix: Vercel Node runtime 要求 default export 為 (req, res) => void。
+// 先前版本直接 export Web handler (request) => Response，Node runtime 會忽略
+// 回傳值並印出 WARN: default export returned a 'Response'，請求因此永遠不結束
+// 直到 FUNCTION_INVOCATION_TIMEOUT（healthz 60 秒、games 300 秒皆由此而起）。
+// 本 wrapper 偵測 Node (req, res)：把 Node req 轉成 Web Request 交給
+// handleWebRequest，再把 Web Response 寫回 Node res；若呼叫端仍是 Web
+// Request（本機 harness），則綠持舊行為直接回傳 Response。
+async function readNodeBody(req) {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  return Buffer.concat(chunks);
+}
+
+export default async function handler(req, res) {
+  const isNodeRes = res && typeof res.setHeader === "function" && typeof res.end === "function";
+  if (!isNodeRes) {
+    return handleWebRequest(req);
+  }
+  try {
+    const host = (req.headers && req.headers.host) || "localhost";
+    const proto = (req.headers && req.headers["x-forwarded-proto"]) || "https";
+    const url = `${proto}://${host}${req.url || "/"}`;
+    const headers = new Headers();
+    for (const [k, v] of Object.entries(req.headers || {})) {
+      if (v === undefined) continue;
+      try { headers.set(k, Array.isArray(v) ? v.join(", ") : String(v)); } catch {}
+    }
+    let body;
+    if (req.method && req.method !== "GET" && req.method !== "HEAD") {
+      const buf = await readNodeBody(req);
+      if (buf.length > 0) body = buf;
+    }
+    const webReq = new Request(url, { method: req.method || "GET", headers, body });
+    const webRes = await handleWebRequest(webReq);
+    res.statusCode = webRes.status;
+    webRes.headers.forEach((value, key) => {
+      try { res.setHeader(key, value); } catch {}
+    });
+    const text = await webRes.text();
+    res.end(text);
+  } catch (e) {
+    try {
+      if (!res.headersSent) res.statusCode = 500;
+      res.end(JSON.stringify({ ok: false, error: (e && e.message) || "伺服器錯誤" }));
+    } catch {}
   }
 }
 

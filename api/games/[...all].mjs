@@ -1,4 +1,4 @@
-// facility-server/game-engine.ts
+// game-engine.ts
 var ROOMS = [
   { id: "201", floor: "2F", name: "201 \u7A7A\u623F", kind: "empty", spawn: true },
   { id: "202", floor: "2F", name: "202 \u6FC0\u5149\u5BA4", kind: "laser", spawn: false },
@@ -630,7 +630,7 @@ function publicView(room, token) {
   };
 }
 
-// facility-server/game-ai.ts
+// game-ai.ts
 var AI_NAMES = ["\u963F\u9435", "\u5C0F\u591C", "\u8001\u83AB", "\u963F\u8475"];
 function aiName(index) {
   return AI_NAMES[index % AI_NAMES.length];
@@ -776,7 +776,7 @@ function aiAcceptTrade(receiveKind, giveKind) {
   return (ITEM_VALUE[receiveKind] ?? 0) > (ITEM_VALUE[giveKind] ?? 0);
 }
 
-// facility-server/neon.ts
+// neon.ts
 function dbUrl() {
   const url = process.env.DATABASE_URL || process.env.DATABASE_URL_NEON;
   return url && url.length > 0 ? url : null;
@@ -821,7 +821,7 @@ async function neonQuery(sql, params = []) {
   return { rows };
 }
 
-// facility-server/store.ts
+// store.ts
 var TABLE = "facility_rooms";
 var ROOM_TTL_MS = 12 * 60 * 60 * 1e3;
 var CREATE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS ${TABLE} (
@@ -893,7 +893,7 @@ async function sweepExpired() {
   ).catch(() => void 0);
 }
 
-// facility-server/handler.ts
+// handler.ts
 var CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function newCode() {
   let code = "";
@@ -1189,29 +1189,65 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
   }
 }
 
-// facility-server/vercel-entry.ts
+// vercel-entry.ts
+async function readNodeBody(req) {
+  const chunks = [];
+  const it = req[Symbol.asyncIterator];
+  if (!it) return "";
+  for await (const chunk of req) chunks.push(chunk);
+  return Buffer.concat(chunks).toString("utf-8");
+}
 function jsonResponse(body, status) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json" }
   });
 }
-async function handler(request) {
+async function handler(req, res) {
+  const nodeRes = res;
+  const isNodeRes = nodeRes && typeof nodeRes.setHeader === "function" && typeof nodeRes.end === "function";
+  if (!isNodeRes) {
+    const request = req;
+    try {
+      const url = new URL(request.url);
+      let bodyText = "";
+      if (request.method === "POST") {
+        bodyText = await request.text().catch(() => "");
+      }
+      const result = await handleGamesRequest(
+        request.method,
+        url.pathname,
+        url.searchParams,
+        bodyText
+      );
+      return jsonResponse(result.body, result.status);
+    } catch (e) {
+      return jsonResponse({ error: e.message || "\u4F3A\u670D\u5668\u932F\u8AA4" }, 500);
+    }
+  }
+  const nodeReq = req;
   try {
-    const url = new URL(request.url);
+    const url = new URL(nodeReq.url || "/", "https://localhost");
     let bodyText = "";
-    if (request.method === "POST") {
-      bodyText = await request.text().catch(() => "");
+    if (nodeReq.method === "POST") {
+      bodyText = await readNodeBody(nodeReq);
     }
     const result = await handleGamesRequest(
-      request.method,
+      nodeReq.method || "GET",
       url.pathname,
       url.searchParams,
       bodyText
     );
-    return jsonResponse(result.body, result.status);
+    nodeRes.statusCode = result.status;
+    nodeRes.setHeader("Content-Type", "application/json");
+    nodeRes.end(JSON.stringify(result.body));
   } catch (e) {
-    return jsonResponse({ error: e.message || "\u4F3A\u670D\u5668\u932F\u8AA4" }, 500);
+    try {
+      if (!nodeRes.headersSent) nodeRes.statusCode = 500;
+      nodeRes.setHeader("Content-Type", "application/json");
+      nodeRes.end(JSON.stringify({ error: e.message || "\u4F3A\u670D\u5668\u932F\u8AA4" }));
+    } catch {
+    }
   }
 }
 var config = { maxDuration: 60 };
