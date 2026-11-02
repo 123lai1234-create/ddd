@@ -4,7 +4,7 @@ import Base from '../layouts/Base.astro';
 
 <Base
     title="線上遊戲 | 工程 × 生醫 × AI"
-    description="免安裝的瀏覽器小遊戲合集：禁閉逃殺：文字獄 — 抽卡 RPG、回合制戰鬥、肉鴿遠征、網路對戰。"
+    description="免安裝的瀏覽器小遊戲合集：禁閉逃殺：文字獄 — 抽卡 RPG、回合制戰鬥、肉鴿遠征、網路對戰；封鎖設施求生 — 多人連線生存遊戲。"
     bodyPage="games"
     pageStyles={[]}
     pageScripts={[]}
@@ -54,6 +54,34 @@ import Base from '../layouts/Base.astro';
                     <div class="gp-actions">
                         <a class="gp-btn primary" href="/games/confinement-escape/" target="_blank" rel="noopener">開始遊玩 ↗</a>
                         <a class="gp-btn ghost" href="/games/confinement-escape/" target="_blank" rel="noopener">新分頁開啟</a>
+                    </div>
+                </div>
+            </article>
+            <article class="gp-card">
+                <a class="gp-cover" href="/facility-survival" aria-label="開始玩封鎖設施求生">
+                    <div class="gp-cover-fallback" aria-hidden="true">🏢</div>
+                    <span class="gp-play">▶ 立即開始</span>
+                </a>
+                <div class="gp-body">
+                    <h2>封鎖設施求生</h2>
+                    <div class="gp-tags">
+                        <span class="gp-tag hot">多人連線</span>
+                        <span class="gp-tag">生存逃殺</span>
+                        <span class="gp-tag">毒氣投票</span>
+                        <span class="gp-tag">AI 補位</span>
+                    </div>
+                    <p class="gp-desc">
+                        2–4 人連線生存遊戲：10 點基因配點、3 層 × 5 房設施、6 天三階段循環。
+                        搜刮水糧武器、投票封死毒樓層、同房戰鬥、死後化為暗影吸血復活——
+                        建房分享房間碼就能和朋友一起玩，未滿由 AI 補到 4 人。
+                    </p>
+                    <div class="gp-meta">
+                        <span>⏱ 單局約 20–40 分鐘</span>
+                        <span>👥 2–4 人（可 AI 補位）</span>
+                        <span>📱 支援手機</span>
+                    </div>
+                    <div class="gp-actions">
+                        <a class="gp-btn primary" href="/facility-survival">開始遊玩 ↗</a>
                     </div>
                 </div>
             </article>
@@ -130,6 +158,15 @@ import Base from '../layouts/Base.astro';
             transition: transform 0.4s ease;
         }
         .gp-card:hover .gp-cover img { transform: scale(1.05); }
+        .gp-cover-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            font-size: 96px;
+            background: radial-gradient(circle at 50% 40%, #123038, #0c0e11 70%);
+        }
         .gp-play {
             position: absolute;
             left: 50%;
