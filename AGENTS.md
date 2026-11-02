@@ -147,6 +147,9 @@
 
 - **上游 canonical source 是 `github.com/gagatim/confinement-escape-text`**，不是本 repo。
   `astro/public/games/confinement-escape/` 只是**鏡像**，靠 `astro/scripts/` 兩個腳本維持。
+- ⚠️ **鏡像上還有上游沒有的功能**（每日任務、主線第 16 章、強化保底…），
+  細節與重套步驟在 `astro/public/games/confinement-escape/MIRROR_FEATURES.md`。
+  **同步會覆蓋 index.html → 覆蓋後務必照那份文件把鏡像專屬功能重套回來。**
 - 同步流程（照順序跑，**不要手改 index.html**）：
   1. 從上游 `main` 取 `index.html` + `images/` + `voice/` + `music/` 覆蓋到鏡像資料夾
   2. `python astro/scripts/ogg-to-mp3.py` → 上游用 .ogg，**iOS Safari 解不了 Ogg 會整個沒聲音**，統一轉 mp3
