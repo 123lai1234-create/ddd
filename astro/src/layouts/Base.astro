@@ -238,8 +238,11 @@ const personSchema = {
       // CACHE_VERSION v11）以修 console "FetchEvent resulted in a network
       // error response" 警告（v10 引用但 offline.html 不存在 → 導航
       // fallback resolve undefined）
+      // 2026-11-02: bump ?v= → 強制瀏覽器抓 sw.js v12（新頁面上線後舊 SW
+      // 對新頁回 error response；v12 補上內嵌 offline 保底，保證導覽
+      // 永遠拿到 200 HTML）
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js?v=20261013').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=20261102').catch(() => {});
       }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.cn" />

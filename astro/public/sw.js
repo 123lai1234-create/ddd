@@ -14,7 +14,14 @@
 //    resolved with an error response object"）。offline.html 實檔建好後，
 //   bump v11 強制重新 install 走 precache，navigation 失敗才能真的回
 //   offline.html 而不是 undefined。
-const CACHE_VERSION = 'v11';
+// 2026-11-02 v12: 新頁面 /facility-survival 上線後，舊 SW 對該頁回
+//   Response.error()（console 再現 "FetchEvent resulted in a network
+//   error response"）。主因是 fallback 鏈仍有缺口：navigation 快取與
+//   /offline 都 miss 時 resolve undefined；非導覽的 HTML 請求在
+//   /offline miss 時回 Response.error()。本版補上最後一層內嵌
+//   offline 頁，保證導覽與 HTML 請求永遠拿到一個 200 HTML，
+//   不再 resolve undefined / error；同時 bump 強制重裝清舊 cache。
+const CACHE_VERSION = 'v12';
 const CACHE_NAME = `portfolio-${CACHE_VERSION}`;
 // 2026-10-13: 改用 `/offline`（cleanUrls: true 把 .html 拿掉，Vercel 上
 // `/offline.html` 會 404；本地 file:// 預覽時兩者皆可但 Vercel 只有 `/offline`）
@@ -26,6 +33,25 @@ const PRECACHE_URLS = [
   '/offline',
   '/manifest.json',
 ];
+
+// 最後一層 fallback：不依賴任何快取，永遠回一個 200 HTML。
+// 用途：navigation 或 HTML 請求在 network 失敗、快取與 /offline
+// 都 miss 時，絕對不能 resolve undefined 或 Response.error()，
+// 否則瀏覽器直接顯示網路錯誤頁。
+function offlineFallbackResponse() {
+  const html = '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>目前無法連線</title></head><body style="font-family:system-ui,sans-serif;'
+    + 'background:#08060e;color:#e8e6f0;text-align:center;padding:20vh 1rem">'
+    + '<h1>目前無法連線</h1><p>網路暫時有問題，請檢查連線後再試一次。</p>'
+    + '<p><a href="/" style="color:#9ecbff">回首頁</a> · '
+    + '<a href="javascript:location.reload()" style="color:#9ecbff">重新整理</a></p>'
+    + '</body></html>';
+  return new Response(html, {
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  });
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -91,11 +117,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for HTML navigations: fall back to cache, then offline page.
+  // Network-first for HTML navigations: fall back to cache, then offline
+  // page, then the inline fallback — never undefined, never error.
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
-        .catch(() => caches.match(request).then((cached) => cached || caches.match(OFFLINE_URL)))
+        .catch(() => caches.match(request).then(
+          (cached) => cached
+            || caches.match(OFFLINE_URL).then((off) => off || offlineFallbackResponse())
+        ))
     );
     return;
   }
@@ -106,9 +136,10 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(request).then((cached) => cached || fetch(request).catch((err) => {
       console.warn('[SW] resource fetch failed', request.url, err && err.message);
-      // Accept: text/html → 視為 navigation 失敗，給 offline.html；其他→ Response.error()
+      // Accept: text/html → 視為 navigation 失敗，給 offline.html，連 offline
+      // 都沒有時給內嵌 fallback（不再回 Response.error()）；其他→ Response.error()
       if ((request.headers.get('Accept') || '').includes('text/html')) {
-        return caches.match(OFFLINE_URL).then((off) => off || Response.error());
+        return caches.match(OFFLINE_URL).then((off) => off || offlineFallbackResponse());
       }
       return Response.error();
     }))
