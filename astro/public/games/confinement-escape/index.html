@@ -722,6 +722,11 @@ const CARDS={
     skill:{name:"唸出名字",cd:4,t:"none",kind:"heal",desc:"全體隊友各恢復22.5%最大生命（至少5），並解除中毒與減益。",
       use(B,u){blog(B,`${nm(u)} 輕聲唸出每一個名字。`);mates(B,u).forEach(m=>{heal(B,m,Math.max(5,Math.round(m.maxHp*.225)));cleanse(m);});}},
     passive:{name:"我記得你",desc:"每當有隊友倒下，全體隊友攻擊永久+4%（至少+1），本場最多疊3次。羈絆「名冊合照」：與阿燼同時在場時，晴的治療量+7.5%。"}},
+  /* ===== MIRROR FEATURE: CHAPTER 16 通關獎勵角色：老國王（通關第 16 章後進入招募池；美術用 👑 emoji，不新增立繪）===== */
+  oldking:{name:"老國王",r:"SSR",story:true,gachaCh:16,emoji:"👑",hp:40,atk:5,def:3,spd:3,
+    skill:{name:"守夜人的提燈",cd:4,t:"none",kind:"buff",desc:"全體隊友防禦+3（3回合），並各恢復10%最大生命（至少3）。",
+      use(B,u){mates(B,u).forEach(m=>{buff(B,m,"def",3,3);heal(B,m,Math.max(3,Math.round(m.maxHp*.1)));});blog(B,`${nm(u)} 舉起提燈：「夜還長，別怕。」`);}},
+    passive:{name:"守夜",desc:"每回合開始時，生命最低的隊友恢復5%最大生命（至少2）。"}},
   // 《肥宅物語》通關後，由 SR 肥宅進化而來（不進招募池）
   fatty2:{name:"肥宅",r:"SSR",story:true,evolveFrom:"fatty",gachaCh:9999,hp:54,atk:6,def:3,spd:3,
     skill:{name:"肉盾坦克",cd:3,t:"self",kind:"buff",desc:"嘲諷（敵人優先攻擊自己）2回合，防禦+4（2回合），並恢復10%最大生命。",use(B,u){u.st.taunt=3;buff(B,u,"def",4,2);heal(B,u,Math.max(2,Math.round(u.maxHp*.1)));blog(B,`${nm(u)} 戴上耳機：「好，這一關，我來扛。」`);}},
@@ -1163,9 +1168,11 @@ function loadSave(){
   return newSave();
 }
 const isInt=(v,a,b)=>Number.isInteger(v)&&v>=a&&v<=b;
-// 出戰人數：平常最多 3 人；主線 15 章（簡單難度即可）＋肥宅物語通關＋無盡深淵到達 D150，三個都達成後一次解鎖到 5 人
+// 出戰人數：平常最多 3 人；主線 15 章（簡單難度即可）＋肥宅物語通關＋無盡深淵到達 D150，三個都達成後一次解鎖到 5 人（MIRROR FEATURE：第 16 章不提高此門檻，見 FIVE_REQ）
 const TEAM_BASE=3,TEAM_BIG=5,FIVE_ABYSS=150;
-const fiveOk=p=>!!p&&(p.cleared||0)>=ABYSS&&(p.fatty||0)>=5&&(p.abyssBest||0)>=FIVE_ABYSS;
+/* ===== MIRROR FEATURE: 5 人出戰門檻維持通關 15 章（不跟著 ABYSS 移到 16），否則已通關 15 章的 5 人隊伍會被 validSave 判定「隊伍資料異常」而清空存檔 ===== */
+const FIVE_REQ=15;
+const fiveOk=p=>!!p&&(p.cleared||0)>=FIVE_REQ&&(p.fatty||0)>=5&&(p.abyssBest||0)>=FIVE_ABYSS;
 const teamMax=()=>fiveOk(SAVE.prog)?TEAM_BIG:TEAM_BASE;
 const extraFoes=()=>Math.max(0,SAVE.team.length-TEAM_BASE); // 隊伍比 3 人多幾人，敵人就跟著多幾隻
 // 檢查存檔裡有沒有遊戲規則不可能出現的數值，有的話回傳原因
@@ -1273,6 +1280,8 @@ function migrate(s){
   if(s.chv<6){if(s.run&&s.run.ch===12)s.run.ch=13;if(s.runCk&&s.runCk.ch===12)s.runCk.ch=13;s.chv=6;}
   // 第14、15章《名冊》插在無盡深淵前面：深淵 ch 從 13 改成 15
   if(s.chv<7){if(s.run&&s.run.ch===13)s.run.ch=15;if(s.runCk&&s.runCk.ch===13)s.runCk.ch=15;s.chv=7;}
+  // MIRROR FEATURE 第 16 章插在無盡深淵前面：深淵 ch 從 15 改成 16（舊存檔進行中的深淵遠征跟著移；主線第 16 章本身是新內容，不影響舊進度）
+  if(s.chv<8){if(s.run&&s.run.ch===15)s.run.ch=16;if(s.runCk&&s.runCk.ch===15)s.runCk.ch=16;s.chv=8;}
   if(!s.gear){s.gear=[];s.gearUid=0;}
   // 詞條上限調降（例如吸血 -3）：舊裝備超過「新上限 +1（稀有詞條）」的數值壓回新上限，避免存檔檢查誤判
   for(const g of s.gear){const G=GEAR[g.base];if(!G||!Array.isArray(g.fx))continue;
@@ -1290,6 +1299,9 @@ function migrate(s){
   if(s.charms.stone==null)s.charms.stone=0;
   if(!s.shards)s.shards={R:0,SR:0,SSR:0};
   if(!s.login)s.login={last:"",streak:0};
+  /* ===== MIRROR FEATURE: DAILY QUESTS / ENHANCE PITY 存檔欄位（舊存檔自動補）===== */
+  if(!s.dailyq)s.dailyq={d:"",run:0,arena:0,gacha:0,claimed:{}};
+  if(s.enhBonus==null)s.enhBonus=0;
   return s;
 }
 function exportSave(){
@@ -1536,6 +1548,49 @@ function loginPanel(){
       return `<div style="flex:1;min-width:84px;padding:6px;border:1px solid ${cur?"var(--gold)":"#444"};border-radius:6px;text-align:center;${got?"opacity:.45":""}">第 ${n} 天<br>${loginTxt(r)}${got?"<br>✅":""}</div>`;}).join("")}</div>
     <div class="dim small" style="margin-top:6px">連續登入才會往下一天，中斷就從第 1 天重新開始；第 7 天領完會回到第 1 天。</div></div>`;
 }
+/* ===== MIRROR FEATURE: DAILY QUESTS（每日任務）=====
+   主頁每日登入獎勵下方顯示。每天 3 個任務（遠征／競技場／招募各 1 次），
+   依日期重置（沿用 dateStr，與每日登入獎勵、合作討伐同一套日期邏輯）。
+   每個任務獎勵 🪙150，三項全完成可再領 💎突破石×2。
+   進度掛鉤：endRun（遠征結算）、startArena 的 onEnd 勝場、doPull（招募）。
+   存檔欄位 SAVE.dailyq（migrate 補預設值；packSave 全量序列化，無白名單問題）。 */
+const DAILYQ_DEFS=[
+  {id:"run",icon:"🪜",name:"完成 1 次遠征"},
+  {id:"arena",icon:"⚔️",name:"競技場勝利 1 次"},
+  {id:"gacha",icon:"🎴",name:"招募 1 次"}];
+const DAILYQ_GOLD=150,DAILYQ_ALL_STONE=2;
+function dailyQ(){
+  if(!SAVE.dailyq||SAVE.dailyq.d!==dateStr())SAVE.dailyq={d:dateStr(),run:0,arena:0,gacha:0,claimed:{}};
+  return SAVE.dailyq;
+}
+function dailyQuestProgress(id){
+  const q=dailyQ();
+  if(q[id])return;
+  q[id]=1;
+  const def=DAILYQ_DEFS.find(d=>d.id===id);
+  toast(`📋 每日任務完成：${def?def.name:id}，回主頁領取 🪙${DAILYQ_GOLD}！`);
+}
+function claimDailyQuest(id){
+  const q=dailyQ();
+  if(!q[id]||q.claimed[id])return;
+  q.claimed[id]=1;SAVE.gold+=DAILYQ_GOLD;save();SFX.sr();
+  toast(`📋 每日任務獎勵：🪙${DAILYQ_GOLD}`);render();
+}
+function claimDailyQuestBonus(){
+  const q=dailyQ();
+  if(q.claimed.all||!(q.run&&q.arena&&q.gacha))return;
+  q.claimed.all=1;SAVE.charms.stone+=DAILYQ_ALL_STONE;save();SFX.ssr();
+  toast(`📋 每日任務全完成：💎突破石×${DAILYQ_ALL_STONE}`);render();
+}
+function dailyQuestPanel(){
+  const q=dailyQ(),allDone=!!(q.run&&q.arena&&q.gacha);
+  return `<div class="panel"><div class="row"><b style="margin-right:auto">📋 每日任務</b><span class="dim small">每天重置</span></div>
+    ${DAILYQ_DEFS.map(d=>`<div class="row" style="margin-top:6px"><span>${d.icon} ${d.name}</span>
+      <span style="margin-left:auto">${q[d.id]?`<span style="color:var(--green)">✅ 已完成</span>`:`<span class="dim">⭕ 未完成</span>`}
+      ${q[d.id]&&!q.claimed[d.id]?`<button class="gold mini" style="margin-left:8px" onclick="claimDailyQuest('${d.id}')">領取 🪙${DAILYQ_GOLD}</button>`:q.claimed[d.id]?`<span class="dim small" style="margin-left:8px">已領取</span>`:""}</span></div>`).join("")}
+    <div class="row" style="margin-top:6px"><span>🏆 三項全完成獎勵：💎突破石×${DAILYQ_ALL_STONE}</span>
+      <span style="margin-left:auto">${q.claimed.all?`<span class="dim small">已領取</span>`:allDone?`<button class="gold mini" onclick="claimDailyQuestBonus()">領取</button>`:`<span class="dim small">${(q.run?1:0)+(q.arena?1:0)+(q.gacha?1:0)}／3</span>`}</span></div></div>`;
+}
 function viewHome(){
   const own=Object.keys(SAVE.owned).length,st=SAVE.stats;
   return `<div class="hero"><h1>禁閉逃殺</h1><div class="sub">文 字 獄 ・ 抽 卡 ・ 結 盟 ・ 背 叛</div></div>
@@ -1544,6 +1599,7 @@ function viewHome(){
     <span class="dim">招募囚犯、組成三人小隊，從 B7 一路殺上停機坪。路上遇到的人——可以結盟，也可以先下手為強。</span></p>
   </div>
   ${loginPanel()}
+  ${dailyQuestPanel()}
   ${skinPanel()}
   ${(h=>`<div class="nexthint"><span>👉 ${h[0]}</span><button class="pri mini" style="margin-left:auto" onclick="go('${h[1]}')">${h[2]}</button></div>`)(nextHint())}
   <div class="modes">
@@ -1687,7 +1743,7 @@ function doPull(n){
   if($("#gacha").classList.contains("show")||!tapOk())return;
   const cost=n===50?FIFTY_COST:n===10?TEN_COST:PULL_COST;
   if(SAVE.gold<cost){toast("金條不足！去遠征或競技場賺一些吧");return;}
-  SAVE.gold-=cost;SAVE.pulls+=n;
+  SAVE.gold-=cost;SAVE.pulls+=n;dailyQuestProgress("gacha");
   const rs=[];for(let i=0;i<n;i++)rs.push(rollRarity());
   if(n===10&&SAVE.firstTen){SAVE.firstTen=false;if(!rs.includes("SSR")){rs[9]="SSR";SAVE.pity=0;}}
   if(n>=10)for(let b=0;b<n;b+=10)if(!rs.slice(b,b+10).some(r=>r==="SR"||r==="SSR"))rs[b+9]="SR"; // 每 10 張一組，至少 1 張 SR 以上
@@ -1750,7 +1806,7 @@ function fiveTip(){
   if(fiveOk(SAVE.prog))return "";
   const P=SAVE.prog,it=(ok,t,v)=>`<span style="white-space:nowrap">${ok?"✅":"⬜"} ${t}<span class="dim">（${v}）</span></span>`;
   return `<span class="small" style="display:inline-flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline"><b>🔒 解鎖 5 人出戰：</b>
-    ${it((P.cleared||0)>=ABYSS,"主線 15 章全破",`${Math.min(P.cleared||0,ABYSS)}/${ABYSS}・簡單即可`)}
+    ${it((P.cleared||0)>=ABYSS,"主線 16 章全破",`${Math.min(P.cleared||0,ABYSS)}/${ABYSS}・簡單即可`)}
     ${it((P.fatty||0)>=5,"通關肥宅物語",`${P.fatty||0}/5`)}
     ${it((P.abyssBest||0)>=FIVE_ABYSS,`深淵到達 D${FIVE_ABYSS}`,`目前 D${P.abyssBest||0}`)}</span>`;
 }
@@ -2570,20 +2626,29 @@ function doGearSwap(){
 }
 // 強化：成功率依目前等級遞減；幸運符 +10%；保護符防止失敗時掉級。裝備不會因強化失敗而損毀
 let ENH={uid:0,protect:false,luck:false,res:null};
+/* ===== MIRROR FEATURE: ENHANCE PITY（強化保底）=====
+   每次強化失敗累積 +5% 成功率加成（SAVE.enhBonus，上限 +25%），下次強化計入；
+   超頻區（目前等級 +10 以上，即衝 +11～+20）加成減半；成功後歸零。
+   加成存在 SAVE（migrate 補 0），跨重整保留。 */
+function enhBonusNow(g){
+  const b=Math.min(25,SAVE.enhBonus||0);
+  return g&&g.lv>=10?Math.floor(b/2):b;
+}
 function openEnhance(uid){
   if(ENH.uid!==uid)ENH={uid,protect:false,luck:false,res:null};
   const g=gearById(uid);
   if(!g){openModal(`${ENH.res?`<div class="enhres bad">${ENH.res.msg}</div>`:""}<div class="row"><button onclick="closeModal();render()">關閉</button></div>`);return;}
   if(!SAVE.charms.protect)ENH.protect=false;
   if(!SAVE.charms.luck||g.lv>LUCK_MAX_LV)ENH.luck=false;
-  const cap=enhCap(g),max=g.lv>=cap,rate=max?0:Math.min(100,ENH_RATE[g.lv]+(ENH.luck?10:0)),cost=enhCost(g.lv);
+  const cap=enhCap(g),max=g.lv>=cap,bonus=enhBonusNow(g),rate=max?0:Math.min(100,ENH_RATE[g.lv]+(ENH.luck?10:0)+bonus),cost=enhCost(g.lv);
   const risk=g.lv<4?"失敗：沒有損失":g.lv>=ENH_MAX?"⚡超頻區：失敗掉 1 級":"失敗：掉 1 級";
   const nx={...g,lv:g.lv+1};
   openModal(`<h3>🔨 強化 ${qTag(GEAR[g.base].q)}${gearName(g)}</h3>
     ${ENH.res?`<div class="enhres ${ENH.res.ok?"ok":"bad"}">${ENH.res.msg}</div>`:""}
     ${max?`<p>已經強化到 +${cap}，無法再強化。</p>`:`
     <div>${statStr(gearStats(g))} <b>→</b> <span style="color:var(--green)">${statStr(gearStats(nx))}</span></div>
-    <div style="margin-top:8px">成功率 <b style="color:var(--gold)">${rate}%</b>　<span class="dim small">${ENH.protect?"🧿 已使用保護符：失敗不掉級":risk}</span></div>
+    <div style="margin-top:8px">成功率 <b style="color:var(--gold)">${rate}%</b>${bonus?`　<span style="color:var(--gold)">🍀 手氣加成 +${bonus}%</span>`:""}　<span class="dim small">${ENH.protect?"🧿 已使用保護符：失敗不掉級":risk}</span></div>
+    <div class="dim small">🍀 手氣加成：每次強化失敗 +5%（上限 +25%），成功後歸零；超頻區減半計算。</div>
     <div class="ratebar"><i style="width:${rate}%"></i></div>
     <div class="row small" style="margin-top:6px">
       <label><input type="checkbox" ${ENH.protect?"checked":""} ${SAVE.charms.protect?"":"disabled"} onchange="ENH.protect=this.checked;openEnhance(${uid})"> 🧿 保護符（剩 ${SAVE.charms.protect}）</label>
@@ -2598,7 +2663,7 @@ function doEnhance(uid){
   SAVE.gold-=cost;
   const prot=ENH.protect&&SAVE.charms.protect>0,luck=ENH.luck&&SAVE.charms.luck>0&&g.lv<=LUCK_MAX_LV;
   if(luck)SAVE.charms.luck--;
-  const rate=Math.min(100,ENH_RATE[g.lv]+(luck?10:0)),from=g.lv;
+  const bonus=enhBonusNow(g),rate=Math.min(100,ENH_RATE[g.lv]+(luck?10:0)+bonus),from=g.lv;
   if(rnd()*100<rate){g.lv++;ENH.res={ok:true,msg:`✨ 強化成功！+${from} → +${g.lv}`};g.lv>=7?SFX.ssr():SFX.sr();
     if(g.lv===ENH_OC){ // +20：額外增加 1 條隨機詞條（不與現有的重複）
       g.fx=g.fx||[];const [k]=pickAffixKeys(1,g.fx.map(f=>f.k));
@@ -2607,6 +2672,9 @@ function doEnhance(uid){
   else if(from<4){ENH.res={ok:false,msg:`💥 強化失敗……（+${from}，沒有損失）`};SFX.lose();}
   else if(prot){SAVE.charms.protect--;ENH.res={ok:false,msg:`💥 強化失敗！🧿 保護符碎了，等級保住在 +${from}`};SFX.miss();}
   else{g.lv--;ENH.res={ok:false,msg:`💥 強化失敗！+${from} → +${g.lv}`};SFX.lose();}
+  /* ===== MIRROR FEATURE: ENHANCE PITY 結算：成功歸零，失敗 +5%（上限 +25%）===== */
+  if(ENH.res.ok){if(bonus>0)ENH.res.msg+=`（🍀 手氣加成 +${bonus}% 已歸零）`;SAVE.enhBonus=0;}
+  else{SAVE.enhBonus=Math.min(25,(SAVE.enhBonus||0)+5);ENH.res.msg+=`（🍀 手氣加成累積到 +${SAVE.enhBonus}%）`;}
   save();renderHeader();openEnhance(uid);
 }
 
@@ -3142,6 +3210,15 @@ async function battleLoopInner(B){
   while(!checkEnd(B)){
     B.round++;
     blog(B,`── 第 ${B.round} 回合 ──`,"rnd");
+    /* ===== MIRROR FEATURE: 老國王被動「守夜」：每回合開始時，生命最低的隊友恢復 5% 最大生命（至少 2）===== */
+    for(const _side of ["A","B"]){
+      const _k=B.units.find(u=>u.alive&&u.id==="oldking"&&u.side===_side);
+      if(!_k)continue;
+      const _allies=B.units.filter(u=>u.alive&&u.side===_side&&u!==_k);
+      if(!_allies.length)continue;
+      const _low=_allies.reduce((a,b)=>a.hp/a.maxHp<b.hp/b.maxHp?a:b);
+      if(_low.hp<_low.maxHp){heal(B,_low,Math.max(2,Math.round(_low.maxHp*.05)));blog(B,`👑 ${nm(_k)} 的提燈亮著：${nm(_low)} 恢復了些生命。`);}
+    }
     const order=B.units.filter(u=>u.alive).map(u=>[u,stat(u,"spd")+rnd()*.5]).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
     for(const u of order){
       if(checkEnd(B))break;
@@ -3489,7 +3566,7 @@ function startArena(){
     resultNote:B=>B.over==="A"?`獲得 🪙${reward}，晉級第 ${SAVE.arenaTier+1} 層`:"再接再厲。抽更多卡或升星後再來。",
     onEnd(win,B){
       let ups=[];
-      if(win){const xp=8+SAVE.arenaTier*3;SAVE.gold+=reward;SAVE.arenaTier++;SAVE.stats.arenaWins++;
+      if(win){const xp=8+SAVE.arenaTier*3;SAVE.gold+=reward;SAVE.arenaTier++;SAVE.stats.arenaWins++;dailyQuestProgress("arena");
         ups=gainExp(SAVE.team.slice(),xp,B.units.filter(u=>u.side==="A"&&!u.alive).map(u=>u.id));toast(`📈 參戰角色經驗 +${xp}`);
         if(rnd()<.3)toast("🎁 觀眾丟下了 "+dropGear(SAVE.arenaTier>=8&&rnd()<.35?"SR":"R")+"（已放進裝備）");}
       save();genArenaFoes();CUR_B=null;VIEW="arena";render();
@@ -4119,6 +4196,8 @@ const ACH=[
   {g:"遠征",id:"ch13",n:"守夜人",d:"通關第 13 章（遇見阿燼）",v:s=>s.prog.cleared,t:13,r:{stone:8}},
   {g:"遠征",id:"ch14",n:"我記得你",d:"通關第 14 章（遇見晴）",v:s=>s.prog.cleared,t:14,r:{stone:9}},
   {g:"遠征",id:"ch15",n:"第三十七個座位",d:"通關第 15 章（阿燼、晴進入招募池）",v:s=>s.prog.cleared,t:15,r:{stone:12}},
+  /* ===== MIRROR FEATURE: CHAPTER 16 成就 ===== */
+  {g:"遠征",id:"ch16",n:"最後一頁",d:"通關第 16 章（老國王進入招募池）",v:s=>s.prog.cleared,t:16,r:{stone:14}},
   {g:"遠征",id:"hard1",n:"自找麻煩",d:"以困難難度逃出任一章",v:s=>Object.values(s.prog.dclears||{}).some(d=>d[3])?1:0,t:1,r:{stone:5}},
   {g:"遠征",id:"abyss10",n:"深淵行者",d:"無盡深淵到達 D10",v:s=>s.prog.abyssBest||0,t:10,r:{gold:80}},
   {g:"遠征",id:"lore",n:"傾聽者",d:"聽完老國王在 12 章說的全部 36 段話",v:s=>Object.keys(s.lore||{}).filter(k=>/^[ibe]\d+$/.test(k)).length,t:36,r:{stone:10}},
@@ -4572,6 +4651,15 @@ Object.assign(ROOM_EV,{墜落處:"morgue",廢鐵山:"warehouse",傾倒的貨櫃:
 const FLOORS_ARCHIVE=mkFloors("K",[1,4,5,6,5,6,5,1,6,5,1,5,4,2]);
 // 第15章《名冊》：第三十七個座位（第7層：無名的低語；第11層：第三十七個座位）
 const FLOORS_SEAT=mkFloors("N",[1,4,5,6,5,6,1,6,5,6,1,5,6,4,2]);
+// 第16章《名冊》：最後一頁（MIRROR FEATURE: CHAPTER 16；第 7 層殘頁之間、第 10 層墨水池、第 13 層提燈之間）
+// 注意：魔王房名不用「最後一頁」，因為 ROOM_EV 已把「最後一頁」對應到第 14 章的晴劇情（qing2）；魔王房改名「終章之間」對應 helipad，準備房「未寫完的桌子」對應 gene
+const FLOORS_LAST=mkFloors("M",[1,4,5,6,5,6,5,1,6,5,1,5,4,2]);
+Object.assign(ROOM_NAME,{
+  M101:"未寫完的走廊",M201:"藥房",M203:"配給站",M301:"武器庫",M303:"手術室",M401:"金庫",M404:"樂透房",M501:"水塔",M505:"控制室",
+  M601:"手術室",M605:"樂透房",M701:"殘頁之間",M801:"酒窖",M803:"糧倉",M901:"控制室",M904:"大倉庫",M1001:"墨水池",M1101:"傳送室",
+  M1104:"金庫",M1201:"手術室",M1203:"藥房",M1301:"提燈之間",M1303:"武器庫",M1401:"未寫完的桌子",M1402:"終章之間"
+});
+Object.assign(ROOM_EV,{未寫完的走廊:"morgue",殘頁之間:"shade",墨水池:"shade",提燈之間:"shade",未寫完的桌子:"gene",終章之間:"helipad"});
 Object.assign(ROOM_NAME,{
   K101:"升降梯口",K201:"書架迷宮",K203:"配給站",K301:"藥房",K303:"借閱室",K401:"武器庫",K403:"黑市",K501:"冷凍艙",K503:"禮拜堂",
   K601:"手術室",K603:"抹除走廊",K701:"水塔",K801:"封存的牢房",K901:"金庫",K903:"樂透房",K1001:"配給站",K1101:"最後一頁",K1201:"黑市",K1301:"手術室",
@@ -4582,14 +4670,15 @@ Object.assign(ROOM_NAME,{
 });
 Object.assign(ROOM_EV,{升降梯口:"morgue",書架迷宮:"shade",借閱室:"warehouse",抹除走廊:"shade",封存的牢房:"qing",最後一頁:"qing2",名冊室外的小桌:"gene",剪輯室:"helipad",
   沉默的階梯:"morgue",椅子堆:"warehouse",低語走廊:"shade",座位迷宮:"shade",無名的低語:"whisper",第三十七個座位:"seat37",舞台後方的小桌:"gene",舞台:"helipad"});
-const ABYSS=15;
+/* ===== MIRROR FEATURE: CHAPTER 16 —— 深淵哨兵從 15 號移到 16 號（第 16 章插在深淵前面）===== */
+const ABYSS=16;
 // 深淵的特殊房間（不放傳送、基因庫這類依賴固定樓層的事件）
 const ABYSS_ROOMS={ration:"配給站",pharmacy:"藥房",armory:"武器庫",blackmarket:"黑市",casino:"賭場",surgery:"手術室",cryo:"冷凍艙",
   lotto:"樂透房",control:"控制室",respec:"操作室",water:"水塔",chapel:"禮拜堂",laser:"激光室",vault:"金庫",warehouse:"大倉庫",
   granary:"糧倉",prisoncell:"牢房",wine:"酒窖",scrap:"回收廠",forge:"重鑄爐"};
 // 平衡：主線全破約需 40 次遠征（機器人模擬）。金條收入刻意壓低，抽卡要省著用
-const FIRST_CLEAR=[40,50,60,70,80,90,100,120,150,200,250,300,350,400,450];
-const CH_POW=[1,1.3,1.5,1.6,1.65,1.45,1.8,1.6,1.95,2.0,2.45,1.75,1.85,1.95,2.05]; // 第6、8章魔王會復活，倍數稍低以免變成高牆；第9、10章刻意偏難
+const FIRST_CLEAR=[40,50,60,70,80,90,100,120,150,200,250,300,350,400,450,500];
+const CH_POW=[1,1.3,1.5,1.6,1.65,1.45,1.8,1.6,1.95,2.0,2.45,1.75,1.85,1.95,2.05,2.15]; // 第6、8章魔王會復活，倍數稍低以免變成高牆；第9、10章刻意偏難
 function chPow(){return RUN&&RUN.ch!==ABYSS?CH_POW[effCh()]*((CHAPTERS[RUN.ch]&&CHAPTERS[RUN.ch].pw)||1):1;}
 const CHAPTERS=[
   {name:"禁閉室",sub:"B7 停屍間 → 2F 停機坪",icon:"⛓",floors:FLOORS,minion:"ghost",boss:"warden",bossScale:1,bossHp:n=>48+n*12,
@@ -4794,6 +4883,25 @@ const CHAPTERS=[
     bossIntro:"「……有人，記得我嗎？」",lose:"影子們安靜地圍了上來，把你們也變成了其中一把空椅子。",
     fall:"無名者的身影一個一個散開。每散開一個，晴就輕聲唸出一個名字。",
     escape:"晴翻開名冊，把最後一個名字也唸了出來。大廳裡，影子一個一個，變回了人的樣子。有人哭了，有人沒有說話，有人只是站在原地，像是第一次聽見自己的名字。<br>阿燼站在晴的身邊，一直沒有放下劍，直到最後一個人也被唸完。<br>升降梯的門打開了。這一次，往上的燈，是亮著的。<br>往上升的時候，有人輕聲問：「外面……有天亮嗎？」阿燼看著樓層的數字，一格一格往上跳。「……會有的。」<br>數字停在了最後一格之前。螢幕閃了一下，跳出一行字：<b>【第三季・參賽名單更新中——新成員：你們。】</b><br>晴合上名冊。「……故事，還沒有結束。」"},
+  /* ===== MIRROR FEATURE: CHAPTER 16「最後一頁」：接續第 15 章《名冊》劇情；魔王沿用編輯者（editor），小怪沿用抹除者（eraser），同伴沿用阿燼與晴 ===== */
+  {name:"最後一頁",sub:"M1 未寫完的走廊 → M14 終章之間",icon:"🪶",floors:FLOORS_LAST,minion:"eraser",boss:"editor",bossScale:2.15,bossHp:n=>200+n*44,noSeats:true,mates:["ashen","qing"],
+    veh:"升降梯",vehIcon:"🛗",bossLoc:"M14 · M1402 終章之間",bossRoom:"終章之間",prepLoc:"M14 · M1401 未寫完的桌子",
+    startLoc:"M101 · 未寫完的走廊",startTitle:"🪶 還沒寫完",
+    intro:it=>["升降梯又往下了一層。這一層沒有廣播，也沒有守衛，只有一條鋪著白紙的走廊——紙上寫滿了名字，又被一條一條劃掉。",
+      "晴蹲下來，撿起一張紙。「……這些，都是被剪掉的人。」她輕聲說。「名冊寫到這裡，就沒有下一頁了。」",
+      "走廊的盡頭有一扇門，門後傳來羽毛筆寫字的聲音，沙沙的，沒有停過。<b>「還沒寫完。」</b>有人在門後說，「……還沒寫完。」",
+      `你們在紙堆裡摸到了 ${it}。`,
+      "阿燼推開門。門後坐著一個戴著眼鏡的人，桌上堆著一疊又一疊的名冊。他沒有抬頭。「……你們來早了，」他說，「這一頁，我還沒剪完。」"],
+    shade:["墨水在地上自己流動，拼成一個被劃掉的名字，又慢慢暈開。","有人在耳邊低語：「不要寫下來。寫下來，就會被帶走。」","走廊的牆上貼滿了寫到一半的紙。每一張的結尾，都是空白。"],
+    prep:"桌子上只有一支羽毛筆，和一小瓶墨水。老國王的聲音從很遠的地方傳來——他說，這是最後一瓶「記得」的墨水，寫下去，就不能改了。只夠用一次。",
+    bossTitle:"🪶 終章之間",bossLines:["編輯者終於抬起頭。他的眼睛後面，是一整座圖書館的影子。",
+      "「名冊寫滿了，故事就結束了。」他把羽毛筆指向你們——<b style='color:var(--red)'>編輯者</b>。「你們不該，再往下寫。」"],
+    story:["編輯者原本也是參賽者。","他是第一個從禁閉室逃出去的人——但他沒有離開。他留了下來，接下了這份工作：把每一季的故事，剪成「好看的樣子」。","被剪掉的人，就變成了無名者。被剪掉的結局，就變成了空白的最後一頁。","他不是壞人。他只是怕——怕故事沒有結局，怕所有人白白被記得。"],
+    recap:["升降梯又往下一層——名冊的最底層，編輯者的終章之間。","編輯者正在把名字一個一個劃掉。他說：寫滿，就是結束。","你們打倒了他。晴在最後一頁寫下了所有人的名字——最後一個，是老國王的。"],
+    finale:"📖 <b>《名冊》第二部完。</b>……但升降梯的按鈕，又多了一顆。<br>💖 老國王出現在招募所了！",
+    bossIntro:"「寫滿，就是結束。」",lose:"編輯者合上名冊。你們的名字，從紙上被輕輕劃掉。",
+    fall:"編輯者手裡的羽毛筆掉在地上，墨水灑了一桌，像一場小小的雨。",
+    escape:"晴翻開名冊，翻到最後一頁。那一頁是空白的——她深吸一口氣，寫下了第一個名字。然後是第二個、第三個……每寫一個，終章之間就亮起一盞燈。<br>最後一個名字，是老國王的。晴寫完，把筆放下。「……守夜的事，」老國王站在門口，第一次沒有穿著那件舊斗篷，「交給你們了。」<br>升降梯的門打開了。這一次，往上的燈全是亮著的。按鈕盤上，多了一顆以前沒有的按鈕，上面沒有編號，只有一個小小的、羽毛的圖案。<br>晴合上名冊。「……故事，還沒有結束。」"},
   {name:"無盡深淵",sub:"沒有出口。每 5 層一個守門者，打倒後可以選擇撤離",icon:"🕳",abyss:true,
     startLoc:"D0 · 深淵入口",startTitle:"🕳 深淵",
     intro:it=>["禁閉室的停屍間底下還有一道暗門。門後的樓梯一直往下，看不到盡頭。",
@@ -4806,7 +4914,7 @@ const CHAPTERS=[
 /* ===================== 肥宅物語（支線故事線，5 章） ===================== */
 // 通關主線第 FATTY_REQ 章後開放。章節放在 CHAPTERS 的 16～20 號（fatty:true），進度記在 SAVE.prog.fatty；
 // eq＝敵人強度比照主線的哪一章（只用在數值，不代表解鎖條件）；pw＝再額外乘上的強度倍率（全部比第 15 章魔王更強）。肥宅本人以劇情隊友加入，通關第 5 章後 SR 肥宅可以進化成 SSR。
-const FATTY_REQ=ABYSS; // 通關主線全部 15 章後開放（後期內容）
+const FATTY_REQ=15; // 通關主線前 15 章後開放（後期內容；MIRROR FEATURE 第 16 章不提高此門檻，避免已通關 15 章的舊玩家被鎖住肥宅物語）
 const FATTY_FIRST=[300,350,400,450,600];
 const FLOORS_F1=mkFloors("F1",[1,4,5,5,5,4,5,4,2]);
 const FLOORS_F2=mkFloors("F2",[1,4,5,5,5,4,5,4,2]);
@@ -6102,7 +6210,7 @@ function endRun(escaped,lines=[]){
   const gain=escaped?r.gold+bonus:Math.floor(r.gold/2);
   out.push(`帶回 🪙${gain}（本次遠征共搜得 🪙${r.gold}${bonus?`，${abyss?"深度":"逃出"}獎勵+${bonus}`:""}）`);
   if(abyss){P.abyssBest=Math.max(P.abyssBest,reached);out.push(`<span class="dim">本次到達 D${reached}，最深紀錄 D${P.abyssBest}。</span>`);}
-  SAVE.gold+=gain;if(r.ch===0)SAVE.stats.best=Math.max(SAVE.stats.best,reached);save();
+  SAVE.gold+=gain;if(r.ch===0)SAVE.stats.best=Math.max(SAVE.stats.best,reached);dailyQuestProgress("run");save();
   r.scene={loc:escaped?"夜空":"黑暗",title:escaped?(abyss?"🪜 撤離深淵":`${C.vehIcon} 逃出生天`):"✝ 遠征失敗",lines:out,opts:[{label:"回到主頁",cls:"pri",act(){RUN=null;go("home");}},{label:"再來一次",act(){RUN=null;startRun(r.ch,r.diff);}},
     ...(escaped&&!abyss&&END_VOX[r.ch]?[{label:"🔊 重聽結局",act(){playEndVoice(r.ch);}}]:[]),
     ...(escaped&&!abyss&&!fat&&CHAPTERS[r.ch+1]&&r.ch+1<ABYSS?[{label:`➡ 前往第 ${r.ch+2} 章`,act(){RUN=null;startRun(r.ch+1,r.diff);}}]:[]),
