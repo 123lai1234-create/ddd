@@ -778,7 +778,7 @@ function aiAcceptTrade(receiveKind, giveKind) {
 
 // facility-server/neon.ts
 function dbUrl() {
-  const url = process.env.DATABASE_URL;
+  const url = process.env.DATABASE_URL || process.env.DATABASE_URL_NEON;
   return url && url.length > 0 ? url : null;
 }
 function neonConfigured() {
@@ -789,7 +789,7 @@ function endpoint(url) {
 }
 async function neonQuery(sql, params = []) {
   const url = dbUrl();
-  if (!url) throw new Error("DATABASE_URL is not set");
+  if (!url) throw new Error("DATABASE_URL / DATABASE_URL_NEON is not set");
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), 6e3);
   let res;
@@ -997,7 +997,7 @@ function matchPath(path) {
 }
 async function handleGamesRequest(method, fullPath, query, bodyText) {
   if (!neonConfigured()) {
-    return err(503, "\u8CC7\u6599\u5EAB\u5C1A\u672A\u8A2D\u5B9A\uFF08DATABASE_URL\uFF09\uFF0C\u8ACB\u806F\u7D61\u7AD9\u9577");
+    return err(503, "\u8CC7\u6599\u5EAB\u5C1A\u672A\u8A2D\u5B9A\uFF08DATABASE_URL\uFF0FDATABASE_URL_NEON\uFF09\uFF0C\u8ACB\u806F\u7D61\u7AD9\u9577");
   }
   let body = {};
   if (method === "POST") {

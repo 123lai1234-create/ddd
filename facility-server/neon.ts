@@ -2,15 +2,17 @@
 //
 // 機制與本站 catchall 相同：對 Neon 主機的 /sql 端點 POST
 // { query, params }，連線字串放在 Neon-Connection-String header。
-// 唯一差別：這裡只用 process.env.DATABASE_URL，沒有任何寫死 fallback；
-// 未設定時呼叫端應回 503（見 handler.ts），絕對不要把連線字串寫進程式碼。
+// 連線字串來源：優先 process.env.DATABASE_URL，未設定時改讀
+// process.env.DATABASE_URL_NEON（2026-11-02 查核：正式環境只設了
+// 後者，前者不存在）；兩者皆無時呼叫端應回 503（見 handler.ts）。
+// 絕對不要把連線字串寫進程式碼。
 
 export interface NeonResult {
   rows: Record<string, unknown>[];
 }
 
 function dbUrl(): string | null {
-  const url = process.env.DATABASE_URL;
+  const url = process.env.DATABASE_URL || process.env.DATABASE_URL_NEON;
   return url && url.length > 0 ? url : null;
 }
 
@@ -25,7 +27,7 @@ function endpoint(url: string): string {
 /** 單一查詢。params 只用純量（字串／數字）；JSON 一律以字串傳入並在 SQL 內 ::jsonb 轉型。 */
 export async function neonQuery(sql: string, params: unknown[] = []): Promise<NeonResult> {
   const url = dbUrl();
-  if (!url) throw new Error("DATABASE_URL is not set");
+  if (!url) throw new Error("DATABASE_URL / DATABASE_URL_NEON is not set");
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), 6000);
   let res: Response;

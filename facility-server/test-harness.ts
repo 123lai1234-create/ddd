@@ -133,10 +133,19 @@ function roomOf(res: { body: Record<string, unknown> }): RoomView {
 async function main() {
   installFakeNeon();
 
-  // 1. 未設定 DATABASE_URL → 503
+  // 1. 兩者皆未設定 → 503
   delete process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL_NEON;
   let r = await call("POST", "/api/games/rooms", { name: "阿明" });
-  check("no DATABASE_URL → 503", r.status === 503, r.status);
+  check("no DATABASE_URL/NEON → 503", r.status === 503, r.status);
+
+  // 1b. 只有 DATABASE_URL_NEON → fallback 生效，不再 503
+  delete process.env.DATABASE_URL;
+  process.env.DATABASE_URL_NEON =
+    "postgresql://user:pass@fake-host.neon.tech/neondb?sslmode=require";
+  r = await call("POST", "/api/games/rooms", { name: "阿明" });
+  check("only DATABASE_URL_NEON → 201 (fallback)", r.status === 201, r.status);
+  delete process.env.DATABASE_URL_NEON;
   process.env.DATABASE_URL =
     "postgresql://user:pass@fake-host.neon.tech/neondb?sslmode=require";
 

@@ -184,7 +184,7 @@ export async function handleGamesRequest(
   bodyText: string,
 ): Promise<GamesResponse> {
   if (!neonConfigured()) {
-    return err(503, "資料庫尚未設定（DATABASE_URL），請聯絡站長");
+    return err(503, "資料庫尚未設定（DATABASE_URL／DATABASE_URL_NEON），請聯絡站長");
   }
   let body: Record<string, unknown> = {};
   if (method === "POST") {
