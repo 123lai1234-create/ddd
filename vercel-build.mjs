@@ -11,6 +11,10 @@ const repoRoot = path.resolve(here);  // D:\project
 // 1. 拉 LFS 物件（dist/ 與 public/ 下的 mp3/wav/flac/ogg/m4a/aac/lrc 都靠它）。
 //    Vercel 用淺 clone，dist 已 commit 但 LFS 物件是 pointer；沒這步 dist/*.mp3 會是 132 bytes pointer，音樂就壞了。
 //    但 Vercel build container 是 shallow snapshot 沒 .git/,`git lfs install` 會 fail — 跳過。
+//    2026-11-02: 本步改為非致命。實測有部署的容器裡 .git 存在但
+//    `git lfs install --local` 以 exit 128 失敗，舊寫法把錯誤往外丟，
+//    整個部署因此失敗；LFS 只是音樂資產的 best-effort（Vercel 本就
+//    直接部署 LFS 檔案），不值得賠上整個部署。失敗時只印警告就繼續。
 if (existsSync(path.join(repoRoot, '.git'))) {
     try {
         console.log('[build] git lfs install --local...');
@@ -19,8 +23,7 @@ if (existsSync(path.join(repoRoot, '.git'))) {
         execSync('git lfs pull', { stdio: 'inherit' });
         console.log('[build] LFS pull OK');
     } catch (err) {
-        console.error('[build] LFS pull FAILED — dist 中會留下 LFS pointer（132 bytes），音樂/影片資產會壞。');
-        throw err;
+        console.warn('[build] LFS pull FAILED — 繼續 build（非致命）。dist 中可能留下 LFS pointer（132 bytes），音樂/影片資產可能壞，但部署本身不受影響。');
     }
 } else {
     console.log('[build] (skip LFS: no .git/ in build container — Vercel deploys LFS files directly)');
