@@ -504,10 +504,8 @@ footer.credit a{color:var(--gold)}
     <nav id="nav"></nav>
     <div class="wallet" id="wallet"></div>
     <button class="muteBtn" id="acctBtn" onclick="openAccount()" title="帳號／雲端存檔">👤</button>
-    <button class="muteBtn" onclick="openGuide(0)" title="玩法導引">❓</button>
-    <button class="muteBtn" id="cdBtn" onclick="toggleCd()" title="戰鬥中角色左上角的技能冷卻數字（開／關）"></button>
-    <button class="muteBtn" id="bgmBtn" onclick="toggleBgm()" title="背景音樂"></button>
-    <button class="muteBtn" id="muteBtn" onclick="toggleMute()" title="音效"></button>
+    <button class="muteBtn" id="stuckBtn" onclick="openStuck()" title="遊戲卡住了／回報問題">🐞</button>
+    <button class="muteBtn" id="setBtn" onclick="openSettings()" title="設定（背景音樂、音效、技能冷卻數字、玩法導引）">⚙</button>
   </header>
   <main id="view"></main>
   <footer class="credit">
@@ -532,7 +530,7 @@ footer.credit a{color:var(--gold)}
       出處 <a href="https://opengameart.org/content/jrpg-epic-rock-battle-theme-1" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
       ・無盡深淵：<b>Dark Cavern Ambient</b> — by Paul Wortmann・
       出處 <a href="https://opengameart.org/content/dark-cavern-ambient" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      右上角 🎵 可以開關背景音樂。<br>
+      右上角 ⚙ 設定裡可以開關背景音樂。<br>
       <button class="mini" style="margin-top:6px" onclick="openStuck()">🐞 遊戲卡住了／回報問題</button></div>
     <audio id="bgm_main" src="music/ambient_horror_track01.mp3" loop preload="auto"></audio>
     <audio id="bgm_run" src="music/determined_pursuit_loop.mp3" loop preload="none"></audio>
@@ -1293,6 +1291,7 @@ function migrate(s){
   if(!s.train)s.train={best:0};
   if(!s.bosses)s.bosses={};
   if(!s.coop)s.coop={d:"",n:0};
+  if(!s.dino)s.dino={d:"",n:0};
   if(!s.ach)s.ach={};
   if(!s.lore)s.lore={};
   s.team=(s.team||[]).filter(id=>s.owned[id]);
@@ -1371,7 +1370,17 @@ const SFX={
   gas:()=>tone(80,.6,"sawtooth",.04,40)
 };
 function toggleMute(){SAVE.muted=!SAVE.muted;save();renderHeader();}
-function toggleCd(){SAVE.showCd=SAVE.showCd===false;save();render();} // 技能冷卻數字的顯示開關（預設開）；render() 會連同右上角圖示一起更新
+function toggleCd(){SAVE.showCd=SAVE.showCd===false;save();render();} // 技能冷卻數字的顯示開關（預設開）
+// 右上角 ⚙ 的設定視窗：背景音樂、音效、技能冷卻數字三個開關，加上玩法導引；切換後視窗重開，狀態馬上更新
+function openSettings(){
+  const row=(ic,name,on,fn)=>`<div class="row" style="align-items:center;margin:8px 0"><span style="flex:1">${ic} ${name}</span><button class="mini ${on?"ok":""}" style="min-width:64px" onclick="${fn};openSettings()">${on?"開":"關"}</button></div>`;
+  openModal(`<h3>⚙ 設定</h3>
+    ${row("🎵","背景音樂",SAVE.bgm!==false,"toggleBgm()")}
+    ${row("🔊","音效",!SAVE.muted,"toggleMute()")}
+    ${row("✦","技能冷卻數字（戰鬥中角色左上角）",SAVE.showCd!==false,"toggleCd()")}
+    <div class="row" style="align-items:center;margin:8px 0"><span style="flex:1">❓ 玩法導引</span><button class="mini" onclick="closeModal();openGuide(0)">開啟</button></div>
+    <div class="row" style="margin-top:12px"><button onclick="closeModal()" style="margin-left:auto">關閉</button></div>`);
+}
 
 /* ===================== BGM ===================== */
 // 依場景換曲：選單 main、遠征探索 run、無盡深淵 abyss（music/ 裡的 CC0 曲子）。
@@ -1452,10 +1461,7 @@ function renderHeader(){
   const cur=NAV.find(([k])=>k===navOf());
   $("#menuBtn").textContent=(NAV_OPEN?"✕ ":"☰ ")+(cur?cur[1]:"選單");
   $("#wallet").textContent="🪙 "+SAVE.gold;
-  $("#muteBtn").textContent=SAVE.muted?"🔇":"🔊";
   $("#acctBtn").textContent=ACCT?"👤 "+ACCT.name:"👤";
-  $("#bgmBtn").textContent=SAVE.bgm===false?"🎵✕":"🎵";
-  $("#cdBtn").textContent=SAVE.showCd===false?"✦✕":"✦";
 }
 let BATTLE_HOME="arena";
 // 畫面出錯時不要整個卡死：記錄錯誤，顯示自救按鈕
@@ -1489,7 +1495,7 @@ function openModal(html){$("#mbox").innerHTML=html;$("#modal").classList.add("sh
 function closeModal(){$("#modal").classList.remove("show");}
 
 /* ===================== GUIDE ===================== */
-// 超簡單導引：第一次進來自動打開，之後按右上角 ❓ 重看
+// 超簡單導引：第一次進來自動打開，之後按右上角 ⚙ 設定裡的「玩法導引」重看
 const GUIDE=[
   {ic:"⛓",t:"這是什麼遊戲？",b:["你和同伴被關在禁閉室，要一路往上爬、搶上只有 <b>三個座位</b> 的直升機。","玩法只有三件事：<b>抽角色 → 組隊 → 出發遠征</b>。"]},
   {ic:"🎴",t:"① 抽角色",b:["到「招募」花金條抽卡。<b>第一次十連必出 SSR</b>，開局的金條剛好夠。","抽到重複的角色會記成「重複卡」，到角色頁手動升星（最多 5★），每 1 星能力 +10%。","5★ 後可以用 💎突破石「突破」（隊伍頁點角色 →「✨突破」，最多 10 次）：星星回到 1★ 再升，能力保留並再 +1.5%，突破後每升 1 星 +2.5%。","第 n 次突破要 💎×2n，成功率 30% 起每次 ×0.85（30→26→22→…→7%）。失敗突破石消失，但不會降星。","突破石來源：商店、主線魔王、深淵守門者、練功房、成就。練過的角色（3★ 以上、Lv.50 以上、突破過；有重複卡不算）不會被一鍵合成、一鍵遣散動到，也不能整張遣散、合成或熔煉掉。"]},
@@ -2881,9 +2887,11 @@ function startTrain(){
 }
 
 /* ===================== 恐龍蛋專區 ===================== */
-// 遠征頁的獨立專區：連續 10 關，每關 5 顆恐龍蛋；打完一關立刻接下一關（同一場戰鬥，血量不回復）。目前沒有任何掉落物，也不記進度。
+// 遠征頁的獨立專區：連續 10 關，每關 5 顆恐龍蛋；打完一關立刻接下一關（同一場戰鬥，血量不回復）。
+// 獎勵：10 關全過才有 🪙DINO_GOLD，沒有其他掉落物；每人每天最多領 DINO_DAILY 次（用這台裝置的日期計算，跟合作討伐一樣）。
 // 強度：血厚、傷害低。要調整就改下面幾個數字（hp／atk 是第 1 關的基礎值，每關再乘 dinoScale）
-const DINO_WAVES=10,DINO_EGGS=5,DINO_MAXROUND=1000,DINO_PICS=40;
+const DINO_WAVES=10,DINO_EGGS=5,DINO_MAXROUND=1000,DINO_PICS=40,DINO_GOLD=200,DINO_DAILY=50;
+function dinoLeft(){const c=SAVE.dino;return c&&c.d===coopToday()?Math.max(0,DINO_DAILY-c.n):DINO_DAILY;}
 MONSTERS.dinoegg={name:"恐龍蛋",emoji:"🥚",r:"R",hp:800,atk:3,def:5,spd:3, // 生命 800（原本 80 的 10 倍）；防禦 5（每點讓每次受到的傷害少 0.7，防禦不隨關卡增加）
   skill:{name:"孵化震動",cd:3,t:"enemy",kind:"dmg",desc:"造成1.2倍攻擊傷害。",use(B,u,t){hit(B,u,t,1.2);}},
   passive:{name:"厚實蛋殼",desc:"防禦+15。"}};
@@ -2891,19 +2899,25 @@ MONSTERS.dinoegg={name:"恐龍蛋",emoji:"🥚",r:"R",hp:800,atk:3,def:5,spd:3, 
 for(let i=1;i<=DINO_PICS;i++)MONSTERS["dinoegg"+i]={...MONSTERS.dinoegg,pic:true};
 const dinoScale=w=>1+(w-1)*.35;
 const dinoWave=w=>Array.from({length:DINO_EGGS},()=>({id:"dinoegg"+ri(1,DINO_PICS),stars:1,scale:dinoScale(w)}));
+// 區域：第一區就是目前的設定（10 關、每關 5 顆恐龍蛋）；第二到第五區先佔位，還沒有怪物，之後要開放就把 open 改成 true 並補上內容
+const DINO_ZONES=[{n:"第一區",open:true},{n:"第二區"},{n:"第三區"},{n:"第四區"},{n:"第五區"}];
+let DINO_ZONE=1;
 function viewDino(){
-  const s=cardStats("dinoegg",1,dinoScale(1)),e=cardStats("dinoegg",1,dinoScale(DINO_WAVES));
-  return `<h2>逃殺遠征</h2>${runTabs()}
-  <div class="panel"><h3 style="margin-top:0">🥚 恐龍蛋專區</h3>
+  const s=cardStats("dinoegg",1,dinoScale(1)),e=cardStats("dinoegg",1,dinoScale(DINO_WAVES)),z=DINO_ZONES[DINO_ZONE-1];
+  const tabs=`<div class="filters">${DINO_ZONES.map((o,i)=>`<button class="${i+1===DINO_ZONE?"on":""}" onclick="DINO_ZONE=${i+1};render()">${o.open?"":"🔒 "}${o.n}</button>`).join("")}</div>`;
+  if(!z.open)return `<h2>逃殺遠征</h2>${runTabs()}${tabs}
+  <div class="panel"><h3 style="margin-top:0">🥚 ${z.n}</h3><p class="dim">🔒 尚未開放。這一區目前還沒有怪物，敬請期待。</p></div>`;
+  return `<h2>逃殺遠征</h2>${runTabs()}${tabs}
+  <div class="panel"><h3 style="margin-top:0">🥚 ${z.n}</h3>
     <p>連續 <b>${DINO_WAVES}</b> 關，每關 <b>${DINO_EGGS}</b> 顆恐龍蛋。打完一關<b>馬上接著下一關</b>，中間不會回血，也不能換人。</p>
     <ul class="dim small" style="padding-left:18px;margin:0">
       <li>恐龍蛋血很厚、傷害很低，考驗隊伍的持久力。</li>
       <li>每顆約 ❤${s.maxHp} ⚔${s.atk} 🛡${s.def+15}（第 1 關）→ ❤${e.maxHp} ⚔${e.atk} 🛡${e.def+15}（第 ${DINO_WAVES} 關）。防禦含被動「厚實蛋殼」+15。</li>
-      <li>全隊倒下就結束；戰敗沒有懲罰。</li>
-      <li>目前沒有任何掉落物。</li>
+      <li>全隊倒下就結束；戰敗沒有懲罰，也沒有獎勵。</li>
+      <li>獎勵：<b>${DINO_WAVES} 關全部通過</b>可得 🪙${DINO_GOLD}，沒有其他掉落物。每天最多領 ${DINO_DAILY} 次（今天還剩 <b>${dinoLeft()}</b> 次，用這台裝置的日期計算）。</li>
     </ul></div>
-  <h3>出戰隊伍</h3><div class="cardgrid">${SAVE.team.map(id=>cardTile(id,`showCard('${id}')`)).join("")||"<span class='dim'>尚未編隊</span>"}</div>
-  <div class="row" style="margin-top:14px"><button class="pri" onclick="startDino()" ${SAVE.team.length?"":"disabled"}>⚔ 開始挑戰</button></div>`;
+  <div class="row" style="margin-top:14px"><button class="pri" onclick="startDino()" ${SAVE.team.length?"":"disabled"}>⚔ 開始挑戰</button></div>
+  <h3>出戰隊伍</h3><div class="cardgrid">${SAVE.team.map(id=>cardTile(id,`showCard('${id}')`)).join("")||"<span class='dim'>尚未編隊</span>"}</div>`;
 }
 function startDino(){
   if(!SAVE.team.length)return;
@@ -2914,8 +2928,16 @@ function startDino(){
     resultNote:B=>B.over==="A"?`${DINO_WAVES} 關全部通過！`:`撐到第 ${B.wave} 關倒下了。`,
     onEnd(win,B){
       const n=win?DINO_WAVES:B.wave-1;
+      let note="";
+      if(win){
+        if(dinoLeft()>0){
+          const t=coopToday(),c=SAVE.dino;
+          SAVE.dino={d:t,n:(c&&c.d===t?c.n:0)+1};SAVE.gold+=DINO_GOLD;save();
+          note=`<br>🪙+${DINO_GOLD}（今天還可以領 ${dinoLeft()} 次）`;
+        }else note=`<br><span class="dim">今天的獎勵已經領滿 ${DINO_DAILY} 次了，明天再來。</span>`;
+      }
       CUR_B=null;RUN_TAB="dino";VIEW="run";render();
-      openModal(`<h3>🥚 恐龍蛋專區${win?"・全數通過":""}</h3><p>${win?`${DINO_WAVES} 關全部打完了！`:`通過了 ${n}／${DINO_WAVES} 關，第 ${B.wave} 關倒下了。`}</p>
+      openModal(`<h3>🥚 恐龍蛋專區${win?"・全數通過":""}</h3><p>${win?`${DINO_WAVES} 關全部打完了！${note}`:`通過了 ${n}／${DINO_WAVES} 關，第 ${B.wave} 關倒下了。`}</p>
         <div class="row"><button class="pri" onclick="closeModal();startDino()">再挑戰一次</button><button onclick="closeModal()">關閉</button></div>`);
     }});
 }
@@ -3159,7 +3181,7 @@ function aiChoose(B,u){
 function startBattle(cfg){
   const B={title:cfg.title,units:[],log:[],round:0,ctrl:cfg.ctrl||{A:"human",B:"ai"},items:cfg.items||null,
     wall:{},flags:{},auto:false,fast:false,wait:null,done:false,over:null,cfg,labels:cfg.labels||{A:"我方",B:"敵方"},
-    online:cfg.online||null,rseq:0,mySide:"A",coop:!!cfg.coop,wave:1};
+    online:cfg.online||null,rseq:0,mySide:"A",coop:!!cfg.coop,t2:!!cfg.t2,mySeat:"0",wave:1};
   B.units=cfg.A.map(o=>mkUnit({...o,side:"A"})).concat(cfg.B.map(o=>mkUnit({...o,side:"B"})));
   B.units.forEach(u=>{if(FRENZY_IDS.includes(u.id)&&B.units.filter(x=>x.side!==u.side).length>=5){u.flags.frenzy=1;blog(B,`🔥 ${nm(u)} 面對五人的隊伍，進入了激動模式！`,"bad");}});
   CUR_B=B;BATTLE_HOME=cfg.home||"arena";VIEW="battle";
@@ -3229,11 +3251,13 @@ async function battleLoopInner(B){
       if(checkEnd(B))break;
       await sleep(B.fast?120:450);
     }
-    if(B.round>(B.cfg.maxRound||60)){B.over="B";blog(B,"戰鬥拖太久，毒氣淹沒了一切……","bad");}
+    if(B.round>(B.cfg.maxRound||60)){
+      if(B.t2){B.over="D";blog(B,"戰鬥拖太久，雙方都筋疲力盡……","bad");} // 團隊賽打滿回合數判平手
+      else{B.over="B";blog(B,"戰鬥拖太久，毒氣淹沒了一切……","bad");}}
   }
   B.active=null;B.wait=null;
-  blog(B,B.over==="A"?`🏆 ${B.labels.A} 獲勝！`:`☠ ${B.labels.B} 獲勝。`,"big");
-  (B.ctrl.B==="human"||B.over==="A")?SFX.win():SFX.lose();
+  blog(B,B.over==="D"?"🤝 回合數用盡，雙方平手。":B.over==="A"?`🏆 ${B.labels.A} 獲勝！`:`☠ ${B.labels.B} 獲勝。`,"big");
+  if(B.over==="D")SFX.click();else(B.ctrl.B==="human"||B.over==="A")?SFX.win():SFX.lose();
   render();
 }
 async function takeTurn(B,u){
@@ -3265,7 +3289,7 @@ async function takeTurn(B,u){
     if(checkEnd(B))return;
   }
   for(let n=0;n<2;n++){
-    const ctl=B.coop&&u.side==="A"&&u.pl==="B"?"remote":B.ctrl[u.side],human=ctl==="human"&&!u.ally&&!B.auto;
+    const ctl=B.t2?(u.pl==="0"?"human":"remote"):B.coop&&u.side==="A"&&u.pl==="B"?"remote":B.ctrl[u.side],human=ctl==="human"&&!u.ally&&!B.auto;
     const act=human?await waitHuman(B,u):ctl==="remote"?await waitRemote(B,u):aiChoose(B,u);
     if(!act)return;
     doAction(B,u,act);
@@ -3352,7 +3376,7 @@ function unitCard(B,u){
   return `<div class="ucard s${u.side} ${CARDS[u.id]?"q-"+CARDS[u.id].r:""} ${d.boss2?"bossu":""} ${u.flags&&u.flags.p2?"p2":""} ${u.flags&&u.flags.frenzy?"frenzy":""} ${u.br?brTier(u.br):""} ${u.alive?"":"dead"} ${B.active===u&&!B.over?"active":""} ${tg?"targetable":""}" id="u${u.uid}" onclick="onUnitClick(${u.uid})" title="${d.skill.name}：${d.skill.desc}\n${d.passive.name}：${d.passive.desc}">
     <div class="uav">${avatar(u.id,u.flags&&u.flags.p2)}</div>
     ${u.cd>0&&u.alive&&SAVE.showCd!==false?`<div class="cdbadge">✦${u.cd}</div>`:""}
-    <div class="uname">${cl?`<span title="${cl.name}：${cl.desc}">${cl.icon}</span>`:""}${u.ally?"🤝":""}${B.coop&&u.pl?`<span class="tag" style="margin-right:3px">${u.pl===(B.guest?"B":"A")?"我":"隊友"}</span>`:""}${u.name}${u.br?`<span class="brkname">突破${u.br}</span>`:""}</div>
+    <div class="uname">${cl?`<span title="${cl.name}：${cl.desc}">${cl.icon}</span>`:""}${u.ally?"🤝":""}${(B.coop||B.t2)&&u.pl?`<span class="tag" style="margin-right:3px">${B.t2?(u.pl===B.mySeat?"我":"P"+(+u.pl+1)):u.pl===(B.guest?"B":"A")?"我":"隊友"}</span>`:""}${u.name}${u.br?`<span class="brkname">突破${u.br}</span>`:""}</div>
     <div class="hpbar ${pct>50?"hi":""}"><i style="width:${pct}%"></i><span>${Math.max(0,u.hp)}/${u.maxHp}</span></div>
     <div class="ustat">⚔${stat(u,"atk")} 🛡${stat(u,"def")} 💨${stat(u,"spd")}</div>
     <div class="ust">${st.join(" ")}</div></div>`;
@@ -3360,8 +3384,8 @@ function unitCard(B,u){
 function actionPanel(B){
   if(B.over){
     const hot=B.ctrl.A==="human"&&B.ctrl.B==="human",win=B.over===B.mySide;
-    const head=hot?`${B.labels[B.over]} 勝利！`:win?"勝利":"敗北";
-    return `<div class="result ${win||hot?"win":"lose"}"><h2>${head}</h2><div class="dim">${B.cfg.resultNote?B.cfg.resultNote(B):""}</div>
+    const draw=B.over==="D",head=draw?"平手":hot?`${B.labels[B.over]} 勝利！`:win?"勝利":"敗北";
+    return `<div class="result ${win||hot||draw?"win":"lose"}"><h2>${head}</h2><div class="dim">${B.cfg.resultNote?B.cfg.resultNote(B):""}</div>
       <button class="pri" data-kb="continue" style="margin-top:8px" onclick="finishBattle()">繼續</button>${KB_HINT}</div>`;
   }
   const w=B.wait;
@@ -3377,7 +3401,7 @@ function actionPanel(B){
     <button data-kb="skill" onclick="act('skill')" ${canUseSkill(B,u)?"":"disabled"} class="${canUseSkill(B,u)?"pri":""}">✦ ${sk.name}${u.cd>0?`（${u.cd}）`:""}</button>
     <button data-kb="guard" onclick="act('guard')">🛡 防禦</button>
     ${B.items?`<button data-kb="items" onclick="act('items')" ${usable?"":"disabled"}>🎒 道具 ${usable}</button>`:""}
-  </div>${KB_HINT}${B.guest?`<div class="skdesc">（${REMOTE_TIMEOUT/1000} 秒內沒有行動會自動出手）</div>`:""}<div class="skdesc">✦ ${sk.desc}　◈ ${DEF(u.id).passive.name}：${DEF(u.id).passive.desc}</div></div>`;
+  </div>${KB_HINT}${B.guest?`<div class="skdesc">（${(B.t2?T2_TIMEOUT:REMOTE_TIMEOUT)/1000} 秒內沒有行動會自動出手）</div>`:""}<div class="skdesc">✦ ${sk.desc}　◈ ${DEF(u.id).passive.name}：${DEF(u.id).passive.desc}</div></div>`;
 }
 
 /* ---- 鍵盤操作（戰鬥中） ----
@@ -3523,7 +3547,7 @@ function viewBattle(){
   const ctl=B.over?"":`<div class="bctl">
     ${B.ctrl.A==="human"&&B.ctrl.B!=="human"?`<button data-kb="auto" onclick="act('auto')" class="${B.auto?"ok":""}">${B.auto?"自動中":"自動"}</button>`:""}
     ${B.guest?"":`<button data-kb="fast" onclick="CUR_B.fast=!CUR_B.fast;render()" class="${B.fast?"ok":""}">${B.fast?"⏩ 快速":"▶ 正常"}</button>`}
-    <button class="mini" data-kb="stuck" onclick="openStuck()" title="畫面卡住時用">🐞 卡住了</button></div>`;
+    </div>`;
   return `<div class="btop"><div class="ttl">${B.title}　<span class="dim small">第 ${B.round} 回合</span></div></div>
     <div class="side B ${B.units.filter(u=>u.side===op).length>3?"big":""}">${B.units.filter(u=>u.side===op).map(u=>unitCard(B,u)).join("")}</div>
     <div class="vs">— ${B.labels[op]} ／ ${B.labels[me]} —</div>
@@ -3617,7 +3641,7 @@ const FB_CFG={apiKey:"AIzaSyBFcsgw6urVdIyJbvH1aZLaK0MQNJ1yfSg",authDomain:"confi
   databaseURL:"https://confinement-escape-text-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId:"confinement-escape-text",appId:"1:523494416946:web:9e95a3d65ec4f17e87d22b"};
 const FB_SDK="https://www.gstatic.com/firebasejs/10.12.2/";
-const REMOTE_TIMEOUT=60000;
+const REMOTE_TIMEOUT=60000,T2_TIMEOUT=60000; // 團隊賽逾時（與一般網路對戰相同，60 秒）
 let FB_DB=null,NET=null,DUEL_MODE="local",JOIN_CODE="",SNAP_T=null;
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error("無法載入連線元件"));document.head.appendChild(s);});}
 // SDK 只在進入網路對戰時才載入，其他模式仍可離線遊玩
@@ -3638,7 +3662,8 @@ async function hostRoom(mode){
   if(NET)return;
   if(mode==="own"&&!SAVE.team.length){toast("先到「隊伍」編好至少 1 名角色");return;}
   if(mode==="coop"&&!Object.keys(SAVE.owned).length){toast("還沒有角色");return;}
-  const md=mode==="own"||mode==="coop"?mode:"std";
+  if(mode==="t2"&&!SAVE.team.length){toast("先到「隊伍」編好至少 1 名角色");return;}
+  const md=mode==="own"||mode==="coop"||mode==="t2"?mode:"std";
   NET={status:"connecting"};render();
   try{
     const db=await fbDb();let code=null,ref=null;
@@ -3649,7 +3674,15 @@ async function hostRoom(mode){
     }
     if(!code)throw new Error("無法建立房間");
     ref.onDisconnect().remove();
-    NET={ref,code,side:"A",status:"room",gone:false,mode:md};
+    NET={ref,code,side:"A",status:"room",gone:false,mode:md,seat:0,team:"A"};
+    if(md==="t2"){ // 團隊賽：房主是座位 0（A 隊），訪客座位 1～3（1 在 A 隊，2、3 在 B 隊）
+      DUEL={phase:"own",step:0,picks:{A:[],B:[]},online:true,own:{},seats:{}};
+      ref.child("g").on("value",onSeatsT2);
+      ref.child("own").on("value",onOwnT2);
+      ref.child("gl").on("value",onGoneT2);
+      ref.child("act").on("value",s=>{const v=s.val();if(v&&CUR_B&&CUR_B.remoteResolve)CUR_B.remoteResolve(v);});
+      render();return;
+    }
     DUEL={phase:"lobby",step:0,picks:{A:[],B:[]},online:true,own:{}};
     if(md==="coop")coopInit();
     ref.child("guest").on("value",s=>{if(s.val()&&DUEL&&DUEL.phase==="lobby"){DUEL.phase=isOwnMode(NET.mode)?"own":"draft";SFX.sr();toast(NET.mode==="coop"?"隊友加入了！":"對手加入了！");render();}});
@@ -3668,6 +3701,7 @@ async function joinRoom(code){
   try{
     const db=await fbDb(),ref=db.ref("rooms/"+code);
     if(!(await ref.child("t").once("value")).exists())throw new Error("找不到房間 "+code);
+    if((await ref.child("m").once("value")).val()==="t2"){await joinT2(ref,code);return;}
     const tx=await ref.child("guest").transaction(cur=>cur?undefined:Date.now());
     if(!tx.committed)throw new Error("房間已經有人了");
     const mv=(await ref.child("m").once("value")).val(),mode=mv==="own"||mv==="coop"?mv:"std";
@@ -3714,7 +3748,11 @@ function readyOwn(){
     DUEL.coopPick=DUEL.coopPick.filter(id=>!taken.includes(id));
     if(!DUEL.coopPick.length){toast("至少要選 1 名角色");return;}
   }else if(!SAVE.team.length){toast("先到「隊伍」編好角色");return;}
-  DUEL.ownReady=true;NET.ref.child("own/"+NET.side).set(myOwnSpec()).catch(netFail);SFX.click();render();
+  if(NET.mode==="t2"){ // 隊友已經先帶了同樣的角色：全部重複的話沒有角色能上場，不讓準備
+    const mate=DUEL.own&&DUEL.own[NET.seat^1],taken=mate?mate.map(x=>x.id):[];
+    if(!myOwnSpec().some(u=>!taken.includes(u.id))){toast("你的出戰角色全都被隊友先帶走了，請先離開房間，到「隊伍」換掉前 3 名再加入");return;}
+  }
+  DUEL.ownReady=true;NET.ref.child("own/"+(NET.mode==="t2"?NET.seat:NET.side)).set(myOwnSpec()).catch(netFail);SFX.click();render();
 }
 // ---- 合作討伐：兩個帳號各帶 4 名角色，一起打偽永夜帝王；同一角色先按準備的人先用，目前不掉落裝備 ----
 const COOP_N=4;
@@ -3764,6 +3802,101 @@ function startOwnBattle(){
     A:a,B:b,intro:"連線建立。兩支養成過的隊伍在禁閉室中央對峙。",
     onEnd(){leaveOnline();}});
 }
+// ---- 團隊賽 2v2（養成賽規則）：4 個座位，房主 = 座位 0；座位 0、1 是 A 隊，座位 2、3 是 B 隊。每人帶隊伍前 3 名，沒有獎勵 ----
+// 資料庫：g/{1~3} 訪客佔位、gl/{1~3} 訪客離開、own/{0~3} 各人的出戰隊伍、act（訪客操作，帶座位 s）、snap（房主推送的戰況）
+async function joinT2(ref,code){
+  if(!SAVE.team.length)throw new Error("這是團隊賽，請先到「隊伍」編好角色");
+  let seat=0;
+  for(let n=1;n<=3&&!seat;n++){
+    const tx=await ref.child("g/"+n).transaction(cur=>cur?undefined:Date.now());
+    if(tx.committed)seat=n;
+  }
+  if(!seat)throw new Error("房間已經滿了（最多 4 人）");
+  ref.child("gl/"+seat).onDisconnect().set(true);
+  NET={ref,code,side:"B",status:"room",gone:false,mode:"t2",seat,team:seat===1?"A":"B"};
+  DUEL={phase:"own",step:0,picks:{A:[],B:[]},online:true,own:{},seats:{}};
+  ref.child("g").on("value",onSeatsT2);
+  ref.child("own").on("value",onOwnT2);
+  ref.child("t").on("value",s=>{if(!s.exists())hostLeft();});
+  ref.child("snap").on("value",s=>applySnap(s.val()));
+  render();
+}
+function onSeatsT2(s){
+  if(!DUEL||!NET||NET.mode!=="t2")return;
+  const v=s.val()||{},old=DUEL.seats||{},seats={1:!!v[1],2:!!v[2],3:!!v[3]};
+  DUEL.seats=seats;
+  if([1,2,3].some(k=>seats[k]&&!old[k]))SFX.sr();
+  if(VIEW==="duel")render();
+  onOwnT2(null);
+}
+function onOwnT2(s){
+  if(!DUEL||!DUEL.online||!NET||NET.mode!=="t2")return;
+  if(s){
+    const v=s.val()||{};DUEL.ownRaw=v;
+  }
+  const v=DUEL.ownRaw||{};DUEL.own={};DUEL.ownOrder=(DUEL.ownOrder||[]).filter(k=>v[k]); // 誰先按準備，同隊同一角色就算誰的
+  [0,1,2,3].forEach(k=>{const x=v[k];DUEL.own[k]=x?Object.values(x):null;if(x&&!DUEL.ownOrder.includes(k))DUEL.ownOrder.push(k);});
+  if(VIEW==="duel")render();
+  const seats=DUEL.seats||{};
+  if(NET.side==="A"&&!DUEL.started&&[0,1,2,3].every(k=>DUEL.own[k]&&(k===0||seats[k])))setTimeout(startT2Battle,900);
+}
+// 房主：訪客離開。開打前把座位讓出來；開打後只讓 AI 接手那個人的角色，其他人繼續打
+function onGoneT2(s){
+  if(!NET||NET.mode!=="t2"||NET.side!=="A"||!DUEL)return;
+  const v=s.val()||{};
+  [1,2,3].forEach(n=>{
+    if(!v[n])return;
+    const B=CUR_B;
+    if(B&&B.t2&&!B.over){
+      NET.gs=NET.gs||{};
+      if(NET.gs[n])return;
+      NET.gs[n]=true;blog(B,`📴 玩家${n+1} 斷線了，由 AI 接手他的角色。`,"bad");
+      if(B.rwait&&B.rwait.pl===String(n)&&B.remoteResolve)B.remoteResolve({ai:true});
+      render();
+    }else if(!DUEL.started){
+      ["g/","own/","gl/"].forEach(p=>NET.ref.child(p+n).remove().catch(()=>{}));
+    }
+  });
+}
+function startT2Battle(){
+  if(!NET||!DUEL||DUEL.started||NET.mode!=="t2")return;
+  const seats=DUEL.seats||{};
+  if(![0,1,2,3].every(k=>DUEL.own[k]&&(k===0||seats[k])))return; // 等待的 0.9 秒內有人離開：不開打，等人補上
+  const seen={A:new Set(),B:new Set()},dup=[],team={A:[],B:[]};
+  (DUEL.ownOrder||[]).forEach(k=>{
+    const sd=k<2?"A":"B";
+    sanOwn(DUEL.own[k],3).forEach(u=>{
+      if(seen[sd].has(u.id)){dup.push(CARDS[u.id].name);return;}
+      seen[sd].add(u.id);team[sd].push({...u,pl:String(k)});
+    });
+  });
+  if(!team.A.length||!team.B.length){toast("有玩家的隊伍資料異常");leaveOnline();return;}
+  ["A","B"].forEach(sd=>team[sd].sort((a,b)=>a.pl-b.pl));
+  DUEL.started=true;DUEL.phase="battle";
+  startBattle({title:"團隊賽 2v2 · 房間 "+NET.code,home:"duel",t2:true,maxRound:100,ctrl:{A:"remote",B:"remote"},labels:{A:"A隊",B:"B隊"},online:NET,
+    A:team.A,B:team.B,
+    intro:`連線建立。A 隊（玩家1、玩家2）對上 B 隊（玩家3、玩家4）。${dup.length?`（${dup.join("、")} 在同隊已被先準備的玩家帶上場，後面的玩家不能重複上場）`:""}`,
+    onEnd(){leaveOnline();}});
+}
+function viewT2(){
+  const leave=`<button onclick="leaveOnline()">離開房間</button>`,me=NET.seat,own=DUEL.own||{},seats=DUEL.seats||{};
+  const here=k=>k===0||!!seats[k];
+  const av=u=>`<div class="ccard ${CARDS[u.id].r}"><div class="av">${avatar(u.id)}</div><div class="nm">${CARDS[u.id].name}</div><div class="small">${u.stars}★${u.br?" 突破"+u.br:""}</div></div>`;
+  const box=k=>{const x=own[k];
+    return `<div class="panel" style="flex:1;min-width:200px;${k===me?"border-color:var(--gold)":""}"><b>玩家${k+1}${k===0?"（房主）":""}${k===me?"（你）":""}</b>
+      <span class="dim small">${here(k)?(x?"✅ 已準備":"準備中……"):"等待加入……"}</span>${x?`<div class="cardgrid">${sanOwn(x).map(av).join("")}</div>`:""}</div>`;};
+  const team=(t,ks)=>`<h3>${t} 隊${ks.includes(me)?"（你的隊伍）":""}</h3><div class="row">${ks.map(box).join("")}</div>`;
+  const link=location.origin+location.pathname+"?room="+NET.code;
+  return `<div class="row"><span class="dim">房間 ${NET.code}・團隊賽 2v2</span><span style="margin-left:auto">${leave}</span></div>
+    ${me===0?`<div class="panel" style="text-align:center"><div class="dim">房號</div>
+      <div style="font-size:44px;font-weight:900;letter-spacing:10px;color:var(--gold)">${NET.code}</div>
+      <div class="small dim" style="word-break:break-all">${link}</div>
+      <div class="row" style="justify-content:center;margin-top:10px"><button class="gold" onclick="copyLink('${link}')">📋 複製邀請連結</button></div></div>`:""}
+    ${team("A",[0,1])}${team("B",[2,3])}
+    ${own[me]?"":`<h3>你的出戰角色</h3><div class="cardgrid">${myOwnSpec().map(av).join("")}</div>`}
+    <div class="row" style="margin-top:12px">${DUEL.ownReady?`<span class="dim">已準備，等其他玩家……（4 人都準備好會自動開始）</span>`:`<button class="pri" onclick="readyOwn()">✅ 準備好了</button>`}</div>
+    <p class="dim small">玩家 1、2 組成 A 隊，玩家 3、4 組成 B 隊（依加入順序）。每人帶「隊伍」頁編好的前 3 名角色（等級、星數、突破、裝備都算），沒有獎勵。同隊不能重複帶同一個角色，先按準備的先用。你只操作自己的角色；${T2_TIMEOUT/1000} 秒沒動作或斷線，改由 AI 代打。房主關掉網頁，對戰就結束。</p>`;
+}
 function onDraft(s){
   if(!DUEL||!DUEL.online||!NET)return;
   const v=s.val(),p=(v&&v.p)||[];
@@ -3794,10 +3927,10 @@ function waitRemote(B,u){
   return new Promise(res=>{
     const seq=++B.rseq;let done=false,tm=null;
     const finish=a=>{if(done)return;done=true;clearTimeout(tm);B.rwait=null;B.remoteResolve=null;res(a);};
-    B.rwait={uid:u.uid,seq};
-    B.remoteResolve=m=>{if(m.ai)return finish(aiChoose(B,u));if(m.seq===seq)finish(decodeAction(B,u,m));};
-    if(B.online.gone)return finish(aiChoose(B,u));
-    tm=setTimeout(()=>{blog(B,`⏰ ${nm(u)} 逾時未行動，自動出手。`);finish(aiChoose(B,u));},REMOTE_TIMEOUT);
+    B.rwait={uid:u.uid,seq,pl:u.pl||""};
+    B.remoteResolve=m=>{if(m.ai)return finish(aiChoose(B,u));if(m.seq===seq&&(!B.t2||String(m.s)===String(u.pl)))finish(decodeAction(B,u,m));};
+    if(B.online.gone||(B.t2&&B.online.gs&&B.online.gs[u.pl]))return finish(aiChoose(B,u));
+    tm=setTimeout(()=>{blog(B,`⏰ ${nm(u)} 逾時未行動，自動出手。`);finish(aiChoose(B,u));},B.t2?T2_TIMEOUT:REMOTE_TIMEOUT);
     render();
   });
 }
@@ -3816,7 +3949,7 @@ function pushSnap(B){
   if(SNAP_T||!NET||!NET.ref)return;
   SNAP_T=setTimeout(()=>{
     SNAP_T=null;if(!NET||!NET.ref)return;
-    NET.ref.child("snap").set({title:B.title,coop:B.coop?1:0,round:B.round,over:B.over||"",active:B.active?B.active.uid:0,wall:B.wall,
+    NET.ref.child("snap").set({title:B.title,coop:B.coop?1:0,t2:B.t2?1:0,waitPl:B.rwait?B.rwait.pl||"":"",round:B.round,over:B.over||"",active:B.active?B.active.uid:0,wall:B.wall,
       waitUid:B.rwait?B.rwait.uid:0,waitSeq:B.rwait?B.rwait.seq:0,log:B.log.slice(-40),
       units:B.units.map(u=>({uid:u.uid,id:u.id,name:u.name,side:u.side,stars:u.stars,maxHp:u.maxHp,hp:u.hp,atk:u.atk,def:u.def,spd:u.spd,
         cd:u.cd,buffs:u.buffs,st:u.st,perm:u.perm,alive:u.alive,ally:u.ally,pl:u.pl||"",p2:u.flags.p2?1:0,fr:u.flags.frenzy?1:0}))
@@ -3836,14 +3969,15 @@ function applySnap(s){
   const prev=CUR_B&&CUR_B.guest?CUR_B:null;
   // Firebase 不存空陣列／空物件，要補回預設值
   const units=(s.units||[]).map(u=>Object.assign(u,{buffs:u.buffs||[],st:u.st||{},perm:u.perm||{},flags:{p2:u.p2||0,frenzy:u.fr||0}}));
-  const B=prev||(s.coop?{guest:true,coop:true,ctrl:{A:"remote",B:"ai"},labels:{A:"我方",B:"偽王"},mySide:"A",items:null,flags:{},done:false,online:NET,
+  const B=prev||(s.t2?{guest:true,t2:true,ctrl:{A:"remote",B:"remote"},labels:{A:"A隊",B:"B隊"},mySide:NET.team,mySeat:String(NET.seat),items:null,flags:{},done:false,online:NET,
+    cfg:{onEnd:()=>leaveOnline()}}:s.coop?{guest:true,coop:true,ctrl:{A:"remote",B:"ai"},labels:{A:"我方",B:"偽王"},mySide:"A",items:null,flags:{},done:false,online:NET,
     cfg:{onEnd:win=>{coopReward(win);leaveOnline();}}}:{guest:true,ctrl:{A:"remote",B:"human"},labels:{A:"對手",B:"你"},mySide:"B",items:null,flags:{},done:false,online:NET,
     cfg:{onEnd:()=>leaveOnline()}});
   const diffs=[];
   if(prev)units.forEach(u=>{const o=prev.units.find(x=>x.uid===u.uid);if(o&&o.hp!==u.hp)diffs.push([u,u.hp-o.hp]);});
   Object.assign(B,{title:s.title,round:s.round,units,log:s.log||[],wall:s.wall||{},over:s.over||null});
   B.active=units.find(u=>u.uid===s.active)||null;
-  if(s.waitUid&&s.waitSeq>(B.sentSeq||0)){
+  if(s.waitUid&&s.waitSeq>(B.sentSeq||0)&&(!B.t2||String(s.waitPl)===B.mySeat)){
     const u=units.find(x=>x.uid===s.waitUid);
     if(B.wait&&B.wait.seq===s.waitSeq)B.wait.u=u;
     else{B.wait={u,mode:"menu",seq:s.waitSeq,res:a=>sendAct(B,s.waitSeq,a)};SFX.click();}
@@ -3853,11 +3987,11 @@ function applySnap(s){
   if(B.done)return;
   VIEW="battle";render();
   diffs.forEach(([u,d])=>{fx(B,u,(d>0?"+":"")+d,d>0?"heal":"dmg");d>0?SFX.heal():SFX.hit();});
-  if(B.over&&!B.overSfx){B.overSfx=1;B.over===B.mySide?SFX.win():SFX.lose();}
+  if(B.over&&!B.overSfx){B.overSfx=1;B.over==="D"?SFX.click():B.over===B.mySide?SFX.win():SFX.lose();}
 }
 function sendAct(B,seq,a){
   B.sentSeq=seq;
-  if(NET&&NET.ref)NET.ref.child("act").set({seq,type:a.type,t:a.target?a.target.uid:0}).catch(netFail);
+  if(NET&&NET.ref){const o={seq,type:a.type,t:a.target?a.target.uid:0};if(B.t2)o.s=NET.seat;NET.ref.child("act").set(o).catch(netFail);}
   render();
 }
 function hostLeft(){
@@ -3868,9 +4002,10 @@ function hostLeft(){
 function leaveOnline(){
   const n=NET;NET=null;
   if(n&&n.ref){
-    ["guest","gl","draft","own","act","t","snap"].forEach(k=>n.ref.child(k).off());
+    ["guest","gl","draft","own","act","t","snap","g"].forEach(k=>n.ref.child(k).off());
+    const gk=n.mode==="t2"?"gl/"+n.seat:"gl";
     if(n.side==="A"){n.ref.onDisconnect().cancel();n.ref.remove().catch(()=>{});}
-    else{n.ref.child("gl").onDisconnect().cancel();n.ref.child("gl").set(true).catch(()=>{});}
+    else{n.ref.child(gk).onDisconnect().cancel();n.ref.child(gk).set(true).catch(()=>{});}
   }
   clearTimeout(SNAP_T);SNAP_T=null;
   if(CUR_B&&CUR_B.online)CUR_B.done=true;
@@ -3883,13 +4018,15 @@ function viewOnline(){
   if(!NET)return `<div class="panel"><p style="margin-top:0">和朋友在不同裝置上連線對打：一人建立房間，把房號或邀請連結傳給對方。</p>
     <div class="row"><button class="pri" onclick="hostRoom()">🏠 建立房間（標準・3★ 選角）</button>
       <button class="gold" onclick="hostRoom('own')">🏠 建立房間（養成賽・帶自己的隊伍）</button>
-      <button class="gold" onclick="hostRoom('coop')">🏠 建立房間（合作討伐・偽永夜帝王）</button></div>
+      <button class="gold" onclick="hostRoom('coop')">🏠 建立房間（合作討伐・偽永夜帝王）</button>
+      <button class="gold" onclick="hostRoom('t2')">🏠 建立房間（團隊賽 2v2・4 人）</button></div>
     <h3>加入房間</h3>
     <div class="row"><input id="joinCode" maxlength="5" placeholder="5碼房號" value="${JOIN_CODE}" autocomplete="off"
       style="font:inherit;font-size:18px;letter-spacing:4px;text-transform:uppercase;width:150px;padding:6px 10px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px">
     <button class="gold" onclick="joinRoom($('#joinCode').value)">加入</button></div>
-    <p class="dim small">標準：雙方都以 3★ 參戰，蛇形選角。養成賽：雙方帶自己的隊伍（等級、星數、突破、裝備都算），沒有公平限制，也沒有獎勵；加入房間時會自動判斷是哪種。合作討伐：兩人各帶 4 名角色，一起打偽永夜帝王（測試階段，不掉落裝備）。房主的裝置負責計算戰鬥：房主關掉網頁，對戰就結束；挑戰者斷線或 60 秒沒動作，改由 AI 代打。</p></div>`;
+    <p class="dim small">標準：雙方都以 3★ 參戰，蛇形選角。養成賽：雙方帶自己的隊伍（等級、星數、突破、裝備都算），沒有公平限制，也沒有獎勵；加入房間時會自動判斷是哪種。合作討伐：兩人各帶 4 名角色，一起打偽永夜帝王（測試階段，不掉落裝備）。團隊賽 2v2：4 位玩家（2 對 2）各帶隊伍前 3 名角色，規則同養成賽，沒有獎勵。房主的裝置負責計算戰鬥：房主關掉網頁，對戰就結束；挑戰者斷線或 60 秒沒動作，改由 AI 代打。</p></div>`;
   if(NET.status==="connecting")return `<div class="panel">🌐 連線中……</div>`;
+  if(NET.mode==="t2")return viewT2();
   const leave=`<button onclick="leaveOnline()">離開房間</button>`;
   if(DUEL.phase==="lobby"){
     const link=location.origin+location.pathname+"?room="+NET.code;
@@ -5178,6 +5315,16 @@ function npcBox(n){
 /* ---- 故事頁：老國王說過的話與魔王的背景，通關或聽過就會解鎖 ---- */
 /* ---- 更新說明：以後每次更新，都在 CHANGELOG 最前面加一筆（新的在上） ---- */
 const CHANGELOG=[
+  {d:"2026-11-02",t:["團隊賽 2v2 修正：①4 人準備好後的等待時間內如果有人離開，不會少一個人硬開打，會等人補上；②出戰角色全部被同隊隊友先帶走的玩家，現在會收到提示、不能按準備（以前會變成旁觀者）"]},
+  {d:"2026-11-02",t:["團隊賽 2v2 打滿 100 回合還沒分出勝負，改判「平手」（原本是 B 隊獲勝）"]},
+  {d:"2026-11-02",t:["團隊賽 2v2 的逾時時間從 30 秒改成 60 秒：60 秒沒動作或斷線，改由 AI 代打"]},
+  {d:"2026-11-02",t:["Q&A 新增「團隊賽 2v2（4 人網路對戰）怎麼玩？規則與流程」，詳細說明準備、分隊、戰鬥、重複角色、逾時與斷線"]},
+  {d:"2026-11-02",t:["雙人對決 → 網路對戰新增「團隊賽 2v2」：4 位玩家連線，玩家 1、2 一隊，玩家 3、4 一隊（依加入順序），每人帶「隊伍」頁前 3 名角色，規則同養成賽、沒有獎勵；每人只操作自己的角色，30 秒沒動作或斷線改由 AI 代打，其他人繼續打；房主關掉網頁對戰就結束"]},
+  {d:"2026-11-02",t:["恐龍蛋專區的「⚔ 開始挑戰」按鈕移到說明的正下方，不用再捲到出戰隊伍下面"]},
+  {d:"2026-11-02",t:["恐龍蛋專區分成「第一區」到「第五區」：第一區就是目前的玩法與獎勵，第二到第五區先放上鎖住的佔位頁面，目前還沒有怪物"]},
+  {d:"2026-11-02",t:["恐龍蛋專區新增獎勵：10 關全部通過可得 🪙200，每天最多領 50 次（以這台裝置的日期計算）；沒有通關或領滿次數不給獎勵，仍然沒有其他掉落物"]},
+  {d:"2026-11-02",t:["移除戰鬥畫面按鈕列裡的「🐞 卡住了」，戰鬥中請用右上角的「🐞」（效果相同）"]},
+  {d:"2026-11-02",t:["右上角的 ❓、✦、🎵、🔊 合併成一顆「⚙ 設定」，點開可以切換背景音樂、音效、技能冷卻數字，也能開啟玩法導引；右上角另外新增「🐞」按鈕，隨時可以開啟「卡住了／回報問題」視窗"]},
   {d:"2026-11-02",t:["技能冷卻數字的開關改放在右上角的小圖示「✦」（點一下切換，關閉時顯示「✦✕」），戰鬥畫面裡的「✦ 冷卻」按鈕移除"]},
   {d:"2026-11-02",t:["移除右下角的 🆘 圓形按鈕，相關提示文字（畫面錯誤、Q&A、戰鬥卡住提醒）一併改成指向「🐞 卡住了」（戰鬥畫面）與頁面最下方的「🐞 遊戲卡住了／回報問題」"]},
   {d:"2026-11-02",t:["戰鬥畫面新增「✦ 冷卻 開／關」按鈕，可以顯示或隱藏角色左上角的技能冷卻回合數（預設開啟，設定會記住）"]},
@@ -5241,9 +5388,10 @@ const QA=[
   ["遠征中怎麼補血？","背包的藥片、酒可以一個一個選隊員使用，也可以按「一鍵補血」：從隊伍最前面開始補滿，先用藥片，藥片用完才用酒。酒的效果是隨機的，可能補 6、補 2，也可能扣 2。"],
   ["遠征中放棄會怎樣？","視同全隊覆沒，只帶回一半的金條。"],
   ["魔王討伐一定要打嗎？","不用，是支線。8 位魔王打倒一位才會出現下一位；打倒第一條命後魔王會爆氣進入第二階段。打贏有機會掉落魔王專屬的 EX 裝備。"],
+  ["團隊賽 2v2（4 人網路對戰）怎麼玩？規則與流程","<b>是什麼</b>：4 位玩家各用自己的帳號連線，分成 2 對 2 對打。屬於養成賽規則：等級、星數、突破、裝備都算進去，<b>沒有任何獎勵</b>，也不影響你的存檔。<br><br><b>事前準備</b>：每位玩家先到「整備室 → 隊伍」編好隊伍，出戰的是<b>隊伍前 3 名</b>角色。隊伍是空的不能加入。<br><br><b>流程</b><br>① 房主：「競技場 → 雙人對決 → 🌐 網路對戰」按「🏠 建立房間（團隊賽 2v2・4 人）」，會得到 5 碼房號和邀請連結。<br>② 其他 3 人：輸入房號按「加入」，或直接點邀請連結。依加入順序成為玩家 2、3、4，房間滿 4 人後就不能再加入。<br>③ 分隊：<b>玩家 1（房主）＋玩家 2 ＝ A 隊</b>，<b>玩家 3 ＋玩家 4 ＝ B 隊</b>，不能自己換。想跟朋友同隊，請約好加入順序。<br>④ 準備：每人看過自己的出戰角色後按「✅ 準備好了」，<b>4 人都準備好會自動開打</b>。按下準備後不能換人，要換請先離開房間。<br>⑤ 戰鬥：全場依速度排出行動順序，輪到你的角色時才會出現操作按鈕（攻擊、技能、防禦），其他人只看戰況。角色名稱旁的「我」是你的角色，「P1」到「P4」是其他玩家的角色。<br>⑥ 結束：一隊全員倒下，另一隊獲勝；打滿 100 回合還沒分勝負，判<b>平手</b>。結算後按「繼續」離開房間。<br><br><b>重複角色</b>：同一隊內不能重複帶同一個角色，先按準備的人先用，後面的人那一隻不會上場（戰鬥開頭會提示）。不同隊可以帶同一個角色。<br><br><b>逾時與斷線</b>：輪到你 60 秒沒操作，這一手會自動出招。有人斷線或關掉網頁，只有他的角色改由 AI 代打，其他人繼續打。開打前有人離開，座位會空出來讓別人加入。<br><br><b>注意</b>：戰鬥由房主的裝置負責計算，<b>房主關掉網頁或離線，整場就直接結束</b>，請選網路穩定的人當房主。建議 4 人都先按 Ctrl＋F5 更新到最新版再開房。"],
   ["畫面提示「請重新整理」是什麼意思？","遊戲更新後，舊頁面讀到新版存檔時會提示。重新整理頁面載入新版即可，存檔不會消失。"],
   ["存檔被清掉了怎麼辦？","遊戲偵測到存檔異常而清空時，會先自動備份，跳出的提示裡有「♻ 還原備份」按鈕可以還原（還原時會再檢查一次）。"],
-  ["遊戲卡住或畫面出錯怎麼辦？","戰鬥中按畫面上的「🐞 卡住了」；其他畫面把頁面捲到最下面，按「🐞 遊戲卡住了／回報問題」，複製紀錄回報；遠征卡住可以先試「重置這一層」。"]
+  ["遊戲卡住或畫面出錯怎麼辦？","按右上角的「🐞」開啟「卡住了／回報問題」視窗，複製紀錄回報；遠征卡住可以先試「重置這一層」。"]
 ];
 function viewQA(){
   return `<h2>❓ Q&amp;A</h2><p class="dim small">常見問題。點問題展開答案。</p>
@@ -6420,7 +6568,7 @@ setInterval(()=>{
   const B=CUR_B;if(!B||B.done||B.over||B.wait||B.guest||B.rwait)return;
   const sig=B.round+"|"+B.log.length;
   if(B.wd!==sig){B.wd=sig;B.wdT=Date.now();return;}
-  if(Date.now()-B.wdT>20000&&!B.wdWarned){B.wdWarned=true;glog("⏰STUCK",`戰鬥 20 秒沒有進展：${B.title} 第${B.round}回合`);toast("戰鬥好像卡住了，可以按畫面上的「🐞 卡住了」自救");}
+  if(Date.now()-B.wdT>20000&&!B.wdWarned){B.wdWarned=true;glog("⏰STUCK",`戰鬥 20 秒沒有進展：${B.title} 第${B.round}回合`);toast("戰鬥好像卡住了，可以按右上角的「🐞」自救");}
 },5000);
 render();
 bootAcct();
