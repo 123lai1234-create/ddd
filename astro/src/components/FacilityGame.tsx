@@ -1,14 +1,14 @@
 import type { CSSProperties } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// 「封鎖設施求生」多人連線遊戲前端。
-// 原創遊戲，玩法致敬公開規則頁「禁閉逃殺」的核心機制
-// （基因配點、六天循環、毒樓層投票、同房戰鬥、暗影復活），
-// 名稱、文案、地圖皆為本站自訂。
+// 「封鎖設施求生」多人連線遊戲前端（多人完整規則版）。
+// 地圖與規則移植自本站自有資產 /games/lockdown-survival/ 單人版
+// （42 房、9 樓層、6 回合），後端是 /api/games（Neon 房間）。
 // 伺服器權威狀態：前端每 2 秒輪詢 /api/games/rooms/:code，不用 WebSocket。
-// 房間是短暫的（後端重啟就消失），房間碼就是入場憑證，不需登入。
+// 房間碼就是入場憑證，不需登入；房間 12 小時後過期。
+// 不做登入牆、信譽分、觀戰、成就戰績（超出本次範圍）。
 
-type FloorId = '2F' | '1F' | 'B1';
+type FloorId = '2F' | '1F' | 'B1' | 'B2' | 'B3' | 'B4' | 'B5' | 'B6' | 'B7';
 
 interface Item {
   id: string;
@@ -23,10 +23,12 @@ interface PlayerView {
   might: number;
   carry: number;
   speed: number;
-  speedBoost: number;
+  adrenalineActive: boolean;
+  helicopter: boolean;
   hp: number;
   alive: boolean;
   shadowHp: number;
+  lastAliveHp: number;
   room: string;
   ready: boolean;
   hasSetup: boolean;
@@ -54,9 +56,13 @@ interface RoomView {
   players: PlayerView[];
   submittedCount: number;
   submittedPlayerIds: string[];
-  lootedRooms: string[];
+  gassedFloors: string[];
   detoxedRooms: string[];
-  morgueCount: number;
+  poolCounts: Record<string, number>;
+  airdropCount: number;
+  usedPileCount: number;
+  discardCount: number;
+  lastGasTally: { floorId: string; votes: number; all: Record<string, number> } | null;
   log: { day: number; text: string }[];
   trades: TradeView[];
   ranking: { playerId: string; finalHp: number; might: number; alive: boolean; rank: number }[];
@@ -72,72 +78,213 @@ interface Session {
 const SESSION_KEY = 'facility-game-session';
 const POLL_MS = 2000;
 
-const ROOM_DEFS: { id: string; floor: FloorId; name: string; kind: string; spawn: boolean }[] = [
-  { id: '201', floor: '2F', name: '201 空房', kind: 'empty', spawn: true },
-  { id: '202', floor: '2F', name: '202 激光室', kind: 'laser', spawn: false },
-  { id: '203', floor: '2F', name: '203 樓梯間', kind: 'stairs', spawn: true },
-  { id: '204', floor: '2F', name: '204 傳送室', kind: 'teleport', spawn: false },
-  { id: '205', floor: '2F', name: '205 空房', kind: 'empty', spawn: true },
-  { id: '101', floor: '1F', name: '101 空房', kind: 'empty', spawn: true },
-  { id: '102', floor: '1F', name: '102 水塔', kind: 'water', spawn: false },
-  { id: '103', floor: '1F', name: '103 糧倉', kind: 'food', spawn: false },
-  { id: '104', floor: '1F', name: '104 樓梯間', kind: 'stairs', spawn: true },
-  { id: '105', floor: '1F', name: '105 手術室', kind: 'surgery', spawn: false },
-  { id: 'B101', floor: 'B1', name: 'B101 控制室', kind: 'control', spawn: false },
-  { id: 'B102', floor: 'B1', name: 'B102 空房', kind: 'empty', spawn: true },
-  { id: 'B103', floor: 'B1', name: 'B103 停屍間', kind: 'morgue', spawn: false },
-  { id: 'B104', floor: 'B1', name: 'B104 樓梯間', kind: 'stairs', spawn: true },
-  { id: 'B105', floor: 'B1', name: 'B105 武器庫', kind: 'weapons', spawn: false },
+interface RoomDef {
+  id: string;
+  floors: FloorId[];
+  name: string;
+  tag: string;
+  spawn?: boolean;
+  pool?: boolean;
+}
+
+const ROOM_DEFS: RoomDef[] = [
+  { id: '201', floors: ['2F'], name: '201 基因庫', tag: '三項能力 +1' },
+  { id: '202', floors: ['2F'], name: '202 停機坪', tag: '空投物資、飛行移動', pool: true },
+  { id: '101', floors: ['1F'], name: '101 水塔', tag: '水', pool: true },
+  { id: '102', floors: ['1F'], name: '102 激光室', tag: '經過扣 1 血' },
+  { id: '103', floors: ['1F'], name: '103', tag: '空房', spawn: true },
+  { id: '104', floors: ['1F'], name: '104', tag: '空房' },
+  { id: 'B101', floors: ['B1'], name: 'B101 控制室', tag: '毒氣票 ×10 或解毒' },
+  { id: 'B102', floors: ['B1'], name: 'B102', tag: '空房' },
+  { id: 'B103', floors: ['B1'], name: 'B103', tag: '空房', spawn: true },
+  { id: 'B104', floors: ['B1'], name: 'B104', tag: '空房' },
+  { id: 'B105', floors: ['B1'], name: 'B105 回收站', tag: '一步到垃圾場' },
+  { id: 'B106', floors: ['B1'], name: 'B106', tag: '空房' },
+  { id: 'B107', floors: ['B1'], name: 'B107 武器庫', tag: '武器', pool: true },
+  { id: 'B201', floors: ['B2'], name: 'B201', tag: '空房' },
+  { id: 'B202', floors: ['B2'], name: 'B202 手術室', tag: '剛好兩人各 +4 血' },
+  { id: 'B203', floors: ['B2'], name: 'B203', tag: '空房' },
+  { id: 'B204', floors: ['B2'], name: 'B204 餐廳', tag: '這天免繳水糧' },
+  { id: 'B205', floors: ['B2'], name: 'B205', tag: '空房' },
+  { id: 'B206', floors: ['B2'], name: 'B206 金庫', tag: '金條', pool: true },
+  { id: 'B301', floors: ['B3'], name: 'B301 藥房', tag: '藥片、腎上腺素', pool: true },
+  { id: 'B302', floors: ['B3'], name: 'B302', tag: '空房' },
+  { id: 'B303', floors: ['B3'], name: 'B303', tag: '空房', spawn: true },
+  { id: 'B304', floors: ['B3'], name: 'B304 操作室', tag: '重配能力' },
+  { id: 'B305', floors: ['B3'], name: 'B305', tag: '空房' },
+  { id: 'B306', floors: ['B3'], name: 'B306', tag: '空房' },
+  { id: 'B307', floors: ['B3'], name: 'B307', tag: '空房', spawn: true },
+  { id: 'B308', floors: ['B3'], name: 'B308', tag: '空房' },
+  { id: 'B401', floors: ['B4'], name: 'B401', tag: '空房' },
+  { id: 'B402', floors: ['B4'], name: 'B402', tag: '空房', spawn: true },
+  { id: 'B403', floors: ['B4'], name: 'B403 傳送室', tag: '傳送到空房' },
+  { id: 'B404', floors: ['B4'], name: 'B404', tag: '空房' },
+  { id: 'B405', floors: ['B4'], name: 'B405', tag: '空房' },
+  { id: 'B501', floors: ['B4', 'B5'], name: 'B501 大倉庫', tag: '大雜貨（兩層都毒才有毒）', pool: true },
+  { id: 'B502', floors: ['B5'], name: 'B502', tag: '空房' },
+  { id: 'B503', floors: ['B5'], name: 'B503 垃圾場', tag: '翻牌找神器（垃圾強制帶走）', pool: true },
+  { id: 'B504', floors: ['B5'], name: 'B504', tag: '空房' },
+  { id: 'B505', floors: ['B5'], name: 'B505 糧倉', tag: '糧食', pool: true },
+  { id: 'B601', floors: ['B6'], name: 'B601 酒窖', tag: '酒', pool: true },
+  { id: 'B602', floors: ['B6'], name: 'B602', tag: '空房' },
+  { id: 'B603', floors: ['B6'], name: 'B603', tag: '空房', spawn: true },
+  { id: 'B604', floors: ['B6'], name: 'B604', tag: '空房' },
+  { id: 'B701', floors: ['B7'], name: 'B701 停屍間', tag: '暗影誕生', pool: true },
 ];
 
 const ROOM_NAME: Record<string, string> = Object.fromEntries(ROOM_DEFS.map((r) => [r.id, r.name]));
-const ROOM_KIND: Record<string, string> = Object.fromEntries(ROOM_DEFS.map((r) => [r.id, r.kind]));
+const ROOM_FLOORS: Record<string, FloorId[]> = Object.fromEntries(ROOM_DEFS.map((r) => [r.id, r.floors]));
+const FLOOR_ROWS: { floor: FloorId; label: string; rooms: string[] }[] = [
+  { floor: '2F', label: '頂樓 2F', rooms: ['201', '202'] },
+  { floor: '1F', label: '地面 1F', rooms: ['101', '102', '103', '104'] },
+  { floor: 'B1', label: '地下 B1', rooms: ['B101', 'B102', 'B103', 'B104', 'B105', 'B106', 'B107'] },
+  { floor: 'B2', label: '地下 B2', rooms: ['B201', 'B202', 'B203', 'B204', 'B205', 'B206'] },
+  { floor: 'B3', label: '地下 B3', rooms: ['B301', 'B302', 'B303', 'B304', 'B305', 'B306', 'B307', 'B308'] },
+  { floor: 'B4', label: '地下 B4', rooms: ['B401', 'B402', 'B403', 'B404', 'B405'] },
+  { floor: 'B5', label: '地下 B5', rooms: ['B501', 'B502', 'B503', 'B504', 'B505'] },
+  { floor: 'B6', label: '地下 B6', rooms: ['B601', 'B602', 'B603', 'B604'] },
+  { floor: 'B7', label: '地下 B7', rooms: ['B701'] },
+];
+const ALL_FLOORS: FloorId[] = ['2F', '1F', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7'];
+const HELIPAD_ROOMS = ['201', '101', 'B101', 'B103', 'B105'];
+// 與後端 isEmptyRoom 一致：無特殊功能、非資源房、非激光室
+// （含出生點房；B501、B206 等資源房不算空房）。
+const EMPTY_ROOMS = new Set([
+  '103', '104',
+  'B102', 'B103', 'B104', 'B106',
+  'B201', 'B203', 'B205',
+  'B302', 'B303', 'B305', 'B306', 'B307', 'B308',
+  'B401', 'B402', 'B404', 'B405',
+  'B502', 'B504',
+  'B602', 'B603', 'B604',
+]);
 
-// 同層左右相鄰＋樓梯跨層（與後端 ADJACENCY 一致）
-const ADJ: Record<string, string[]> = (() => {
-  const adj: Record<string, string[]> = {};
-  for (const r of ROOM_DEFS) adj[r.id] = [];
-  const link = (a: string, b: string) => {
-    adj[a]?.push(b);
-    adj[b]?.push(a);
+// 與後端 game-engine.ts 的 EDGES 一致（walk＋climb＋B105→B503 直達）。
+function buildAdj(): { walk: Record<string, string[]>; climb: Record<string, string[]> } {
+  const walk: Record<string, string[]> = {};
+  const climb: Record<string, string[]> = {};
+  const chain = (ids: string[], table: Record<string, string[]>) => {
+    for (let i = 0; i < ids.length - 1; i++) {
+      const a = ids[i] as string;
+      const b = ids[i + 1] as string;
+      (table[a] ??= []).push(b);
+      (table[b] ??= []).push(a);
+    }
   };
-  const rows = [
-    ['201', '202', '203', '204', '205'],
-    ['101', '102', '103', '104', '105'],
-    ['B101', 'B102', 'B103', 'B104', 'B105'],
-  ];
-  for (const row of rows) {
-    for (let i = 0; i < row.length - 1; i++) link(row[i] as string, row[i + 1] as string);
+  const w = (ids: string[]) => chain(ids, walk);
+  const c = (ids: string[]) => chain(ids, climb);
+  w(['103', '104']);
+  w(['B101', 'B102', 'B103', 'B104', 'B105', 'B106', 'B107']);
+  w(['B201', 'B202', 'B203', 'B204', 'B205']);
+  w(['B301', 'B302', 'B303', 'B304', 'B305', 'B306', 'B307', 'B308']);
+  w(['B401', 'B402']);
+  w(['B403', 'B404', 'B405']);
+  w(['B501', 'B502', 'B503']);
+  w(['B504', 'B505']);
+  w(['B601', 'B602', 'B603', 'B604']);
+  w(['101', 'B102']);
+  w(['B102', 'B201']);
+  w(['B501', 'B601']);
+  w(['201', '102']);
+  w(['102', 'B104']);
+  w(['B105', 'B205']);
+  w(['B204', 'B305']);
+  w(['B304', 'B401']);
+  w(['B402', 'B503']);
+  w(['B602', 'B701']);
+  w(['202', '104']);
+  w(['103', 'B106']);
+  w(['B106', 'B206']);
+  w(['B206', 'B308']);
+  w(['B307', 'B404']);
+  w(['B405', 'B505']);
+  w(['B504', 'B604']);
+  c(['B101', 'B201']);
+  c(['B103', 'B202']);
+  c(['B201', 'B301']);
+  c(['B201', 'B302']);
+  c(['B202', 'B303']);
+  c(['B301', 'B501']);
+  c(['B302', 'B501']);
+  c(['B303', 'B501']);
+  c(['B104', 'B203']);
+  c(['B104', 'B204']);
+  c(['B205', 'B305']);
+  c(['B203', 'B304']);
+  c(['B401', 'B502']);
+  c(['B401', 'B503']);
+  c(['B502', 'B601']);
+  c(['B503', 'B601']);
+  c(['B305', 'B402']);
+  c(['B503', 'B602']);
+  c(['202', '103']);
+  c(['104', 'B107']);
+  c(['B107', 'B206']);
+  c(['B206', 'B306']);
+  c(['B206', 'B307']);
+  c(['B306', 'B403']);
+  c(['B308', 'B405']);
+  c(['B403', 'B504']);
+  c(['B404', 'B504']);
+  c(['B102', 'B202']);
+  c(['B202', 'B302']);
+  c(['B203', 'B303']);
+  c(['B204', 'B304']);
+  c(['B404', 'B505']);
+  c(['B401', 'B305']);
+  c(['B307', 'B403']);
+  c(['B106', '104']);
+  return { walk, climb };
+}
+const { walk: WALK, climb: CLIMB } = buildAdj();
+
+function neighborsOf(
+  from: string,
+  opts: { hasRope: boolean; isShadow: boolean; helicopterFirstStep: boolean },
+): string[] {
+  const out = new Set<string>(WALK[from] ?? []);
+  if (from === 'B105') out.add('B503');
+  if (opts.isShadow || opts.hasRope) {
+    for (const nb of CLIMB[from] ?? []) out.add(nb);
   }
-  link('203', '104');
-  link('104', 'B104');
-  return adj;
-})();
+  if (from === 'B403') {
+    for (const id of EMPTY_ROOMS) out.add(id);
+  }
+  if (opts.helicopterFirstStep) {
+    for (const h of HELIPAD_ROOMS) out.add(h);
+  }
+  out.delete(from);
+  return [...out];
+}
 
 const ITEM_NAME: Record<string, string> = {
   water: '水',
   food: '糧食',
-  supply: '生存補給',
-  gold: '金條',
+  survival_kit: '生存補給',
+  pill: '藥片',
+  adrenaline: '腎上腺素',
+  wine: '酒',
+  fine_wine: '陳年美酒',
+  gold_bar: '金條',
   knife: '刀',
   pistol: '手槍',
-  rifle: '步槍',
-  medicine: '急救藥片',
-  wine: '美酒',
-  adrenaline: '腎上腺素',
+  shotgun: '霰彈槍',
+  bayonet: '軍用刺刀',
+  rope: '繩索',
+  gas_mask: '防毒面具',
+  rocket_launcher: '火箭筒',
+  dimension_pocket: '次元口袋',
+  recycler: '循環回收裝置',
+  junk: '垃圾',
 };
 
-const KIND_DESC: Record<string, string> = {
-  laser: '經過扣 1 血',
-  teleport: '經過可傳送到空房',
-  water: '產水',
-  food: '產糧',
-  weapons: '產刀／槍',
-  surgery: '剛好 2 人時勝者吸 2 血',
-  control: '終點在此可解毒一房',
-  morgue: '暗影掉落物在此',
-  stairs: '可跨層',
-  empty: '可搜刮',
+const SPAWN_TIPS: Record<string, string> = {
+  '103': '1F 中樞，往上下都方便，但離水糧最遠。',
+  B103: '水塔在手邊，但糧食要走一趟 B3 以下。',
+  B303: '藥品與重配點近，適合醫者路線。',
+  B307: '金條與糧食都在附近，泛用性最高。',
+  B402: '物資最雜，水糧武器通通有，但人容易擠。',
+  B603: '下半場補給點，近但離安全區遠。',
 };
 
 function loadSession(): Session | null {
@@ -185,12 +332,17 @@ function FacilityGamePage() {
   const [might, setMight] = useState(4);
   const [carry, setCarry] = useState(3);
   const [speed, setSpeed] = useState(3);
-  const [spawn, setSpawn] = useState('201');
+  const [spawn, setSpawn] = useState('103');
   // 行動階段
   const [path, setPath] = useState<string[]>([]);
   const [vote, setVote] = useState<FloorId | ''>('');
-  const [teleportTo, setTeleportTo] = useState('');
-  const [detoxRoom, setDetoxRoom] = useState('');
+  const [controlMode, setControlMode] = useState<'' | 'vote' | 'detox'>('');
+  const [detoxTarget, setDetoxTarget] = useState('');
+  const [rm, setRm] = useState(4);
+  const [rc, setRc] = useState(3);
+  const [rs, setRs] = useState(3);
+  const [rocketTarget, setRocketTarget] = useState('');
+  const [itemUses, setItemUses] = useState<string[]>([]);
   // 交易
   const [tradeTo, setTradeTo] = useState('');
   const [tradeOffer, setTradeOffer] = useState('');
@@ -234,8 +386,10 @@ function FacilityGamePage() {
   useEffect(() => {
     setPath([]);
     setVote('');
-    setTeleportTo('');
-    setDetoxRoom('');
+    setControlMode('');
+    setDetoxTarget('');
+    setRocketTarget('');
+    setItemUses([]);
   }, [phaseKey]);
 
   useEffect(() => {
@@ -243,6 +397,15 @@ function FacilityGamePage() {
   }, [room?.log.length]);
 
   const self = room?.players.find((p) => p.id === room.selfId) ?? null;
+
+  // 進操作室時把重配步進器預設為目前基因
+  useEffect(() => {
+    if (self) {
+      setRm(self.might);
+      setRc(self.carry);
+      setRs(self.speed);
+    }
+  }, [self?.might, self?.carry, self?.speed]);
 
   const post = useCallback(
     async (path2: string, body: Record<string, unknown>) => {
@@ -315,7 +478,7 @@ function FacilityGamePage() {
   };
 
   const wrap: CSSProperties = {
-    maxWidth: 860,
+    maxWidth: 980,
     margin: '0 auto',
     padding: '20px 14px 60px',
     color: '#e2e8f0',
@@ -326,16 +489,14 @@ function FacilityGamePage() {
   if (!session || !room) {
     return (
       <main style={wrap}>
-        <a href="#main-content" className="skip-link" style={{ display: 'none' }}>
-          跳至主要內容
-        </a>
         <h1 style={{ fontSize: 28, marginBottom: 4 }}>封鎖設施求生</h1>
         <p style={{ color: '#94a3b8' }}>
-          4 名玩家受困於 3 層設施，撐過 6 天。配點、搜刮水糧、投票毒樓層、同房戰鬥，死後化為暗影還能吸血復活。
-          本遊戲為原創作品，玩法致敬公開規則的生存桌遊核心機制。
+          4 名玩家受困於 9 層、42 間房的設施，撐過 6 回合。配點、搜刮水糧、投票毒樓層、
+          同房戰鬥、手術室、火箭筒、控制室、操作室重配、暗影吸血復活，6 回合後按生命排名。
+          本遊戲為原創作品，規則移植自本站單人版《禁閉逃殺》玩法。
         </p>
         <p style={{ color: '#f59e0b', fontSize: 14 }}>
-          注意：房間存在伺服器記憶體裡，伺服器重啟房間就會消失；房間碼就是入場憑證，不要公開給不想一起玩的人。
+          注意：房間存在伺服器資料庫裡，12 小時後過期；房間碼就是入場憑證，不要公開給不想一起玩的人。
         </p>
         <label style={{ display: 'block', marginTop: 16 }}>
           你的名字
@@ -384,20 +545,38 @@ function FacilityGamePage() {
   const pathStart = self?.room ?? '';
   const pathLast = path.length > 0 ? (path[path.length - 1] as string) : pathStart;
   const visited = new Set([pathStart, ...path]);
-  // 暗影不受地形阻礙：可走到任一未去過的房間；存活者只能走相鄰房
+  const hasRope = (self?.items ?? []).some((it) => it.kind === 'rope');
+  const isShadow = self ? !self.alive : false;
   const candidates = new Set(
-    self && !self.alive
+    isShadow
       ? ROOM_DEFS.map((r) => r.id).filter((r) => !visited.has(r))
-      : (ADJ[pathLast] ?? []).filter((r) => !visited.has(r)),
+      : neighborsOf(pathLast, {
+          hasRope,
+          isShadow: false,
+          helicopterFirstStep: path.length === 0 && !!self?.helicopter,
+        }).filter((r) => !visited.has(r)),
   );
-  const maxSteps = (self?.speed ?? 0) + (self?.speedBoost ?? 0);
-  const finalRoom = teleportTo || (path.length > 0 ? (path[path.length - 1] as string) : pathStart);
-  const passesTeleport = path.some((r) => ROOM_KIND[r] === 'teleport');
+  const maxSteps = self ? (self.adrenalineActive ? 10 : self.speed) : 0;
+  const finalRoom = path.length > 0 ? (path[path.length - 1] as string) : pathStart;
+  const geneTotal = self ? self.might + self.carry + self.speed : 10;
+  const reallocValid = rm + rc + rs === geneTotal && rs >= 1 && rm >= 0 && rc >= 0;
+  const hasRocket = (self?.items ?? []).some((it) => it.kind === 'rocket_launcher');
+  const usableItems = (self?.items ?? []).filter((it) => ['pill', 'adrenaline', 'wine', 'fine_wine'].includes(it.kind));
   const canSubmitAction =
     self &&
     room.phase === 'action' &&
     !submitted &&
-    (self.alive ? path.length >= 1 && path.length <= maxSteps && vote !== '' : true);
+    (self.alive
+      ? path.length >= 1 && path.length <= maxSteps && vote !== '' && (finalRoom !== 'B304' || reallocValid)
+      : true);
+
+  const roomIsGassed = (id: string) => {
+    const floors = ROOM_FLOORS[id] ?? [];
+    if (floors.length === 0) return false;
+    if (room.detoxedRooms.includes(id)) return false;
+    if (id === '202') return false;
+    return floors.every((f) => room.gassedFloors.includes(f));
+  };
 
   const stepper = (label: string, value: number, set: (n: number) => void) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -425,10 +604,17 @@ function FacilityGamePage() {
         {room.status === 'playing' && (
           <>
             {' '}
-            · 第 {room.day} / 6 天 · {room.phase === 'free' ? '自由階段' : '行動階段'}
+            · 第 {room.day} / 6 回合 · {room.phase === 'free' ? '自由階段' : '行動階段'}
           </>
         )}
         {room.status === 'finished' && ' · 遊戲結束'}
+        {room.gassedFloors.length > 0 && <> · ☣️ 已中毒樓層：{room.gassedFloors.join('、')}</>}
+        {room.lastGasTally && (
+          <>
+            {' '}
+            · 上回合投票最高：{room.lastGasTally.floorId}（{room.lastGasTally.votes} 票）
+          </>
+        )}
       </p>
       {error && (
         <p role="alert" style={{ color: '#f87171' }}>
@@ -437,7 +623,7 @@ function FacilityGamePage() {
       )}
 
       {/* 玩家面板 */}
-      <section aria-label="玩家狀態" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
+      <section aria-label="玩家狀態" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
         {room.players.map((p) => (
           <div
             key={p.id}
@@ -453,6 +639,8 @@ function FacilityGamePage() {
             </div>
             <div style={{ fontSize: 14, color: '#94a3b8' }}>
               {p.alive ? `❤️ ${p.hp} / 10` : `👻 暗影（累積 ${p.shadowHp} 血）`}
+              {p.helicopter && p.alive ? ' ✈️ 下回合可飛行' : ''}
+              {p.adrenalineActive && p.alive ? ' 💉 腎上腺素生效中' : ''}
             </div>
             <div
               style={{
@@ -493,7 +681,8 @@ function FacilityGamePage() {
         <section style={{ marginTop: 20 }}>
           <h2 style={{ fontSize: 20 }}>角色創建</h2>
           <p style={{ fontSize: 14, color: '#94a3b8' }}>
-            武力／負重／速度總和必須剛好 10 點，速度至少 1 點。負重是背包上限（含武器）；速度是每回合最多步數。
+            武力／負重／速度總和必須剛好 10 點，速度至少 1 點。負重是背包上限；速度是每回合最多步數。
+            抽取自動保留：垃圾場垃圾強制帶走、非垃圾最多 2 件、停機坪空投最多 1 件。
           </p>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             {stepper('武力', might, setMight)}
@@ -517,6 +706,7 @@ function FacilityGamePage() {
               </button>
             ))}
           </div>
+          {SPAWN_TIPS[spawn] && <p style={{ fontSize: 14, color: '#94a3b8' }}>{SPAWN_TIPS[spawn]}</p>}
           <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
             <button
               type="button"
@@ -563,44 +753,49 @@ function FacilityGamePage() {
               </span>
             )}
           </h2>
-          {(['2F', '1F', 'B1'] as FloorId[]).map((floor) => (
-            <div key={floor} style={{ marginBottom: 12 }}>
+          {FLOOR_ROWS.map((row) => (
+            <div key={row.floor} style={{ marginBottom: 12 }}>
               <div style={{ fontWeight: 700, marginBottom: 6 }}>
-                {floor === '2F' ? '頂樓 2F' : floor === '1F' ? '地面 1F' : '地下 B1'}
+                {row.label}
+                {room.gassedFloors.includes(row.floor) && <span style={{ color: '#f87171' }}> ☣️ 已中毒</span>}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
-                {ROOM_DEFS.filter((r) => r.floor === floor).map((r) => {
-                  const occupants = room.players.filter((p) => p.room === r.id);
-                  const isCurrent = self.room === r.id;
-                  const isLastPath = path.length > 0 && path[path.length - 1] === r.id;
-                  const clickable = room.phase === 'action' && !submitted && (candidates.has(r.id) || isLastPath);
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${row.rooms.length}, minmax(0, 1fr))`, gap: 6 }}>
+                {row.rooms.map((id) => {
+                  const def = ROOM_DEFS.find((r) => r.id === id) as RoomDef;
+                  const occupants = room.players.filter((p) => p.room === id);
+                  const isCurrent = self.room === id;
+                  const isLastPath = path.length > 0 && path[path.length - 1] === id;
+                  const clickable = room.phase === 'action' && !submitted && (candidates.has(id) || isLastPath);
+                  const poolLeft = def.pool ? room.poolCounts[id] : undefined;
                   return (
                     <button
-                      key={r.id}
+                      key={id}
                       type="button"
                       disabled={!clickable}
                       onClick={() => {
                         if (isLastPath) setPath(path.slice(0, -1));
-                        else if (candidates.has(r.id)) setPath([...path, r.id]);
+                        else if (candidates.has(id)) setPath([...path, id]);
                       }}
                       style={{
                         minHeight: 64,
                         padding: '6px 4px',
                         borderRadius: 10,
                         border: isCurrent ? '2px solid #0e7490' : isLastPath ? '2px solid #f59e0b' : '1px solid #334155',
-                        background: room.lootedRooms.includes(r.id) ? '#1e293b' : '#0f172a',
+                        background: roomIsGassed(id) ? '#450a0a' : '#0f172a',
                         color: '#f1f5f9',
                         cursor: clickable ? 'pointer' : 'default',
                         opacity: clickable || isCurrent || occupants.length > 0 ? 1 : 0.75,
                         fontSize: 13,
                       }}
                     >
-                      <div style={{ fontWeight: 700 }}>{r.name}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>{KIND_DESC[r.kind]}</div>
+                      <div style={{ fontWeight: 700 }}>{def.name}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8' }}>{def.tag}</div>
+                      {poolLeft !== undefined && <div style={{ fontSize: 11 }}>物資剩 {poolLeft} 張{id === '202' ? `（空投 ${room.airdropCount} 張）` : ''}</div>}
+                      {room.detoxedRooms.includes(id) && <div style={{ fontSize: 11 }}>🛡️ 已解毒</div>}
+                      {roomIsGassed(id) && <div style={{ fontSize: 11, color: '#f87171' }}>☣️ 毒氣中</div>}
                       {occupants.length > 0 && (
                         <div style={{ fontSize: 12, color: '#fbbf24' }}>{occupants.map((p) => p.name).join('、')}</div>
                       )}
-                      {room.lootedRooms.includes(r.id) && <div style={{ fontSize: 11 }}>已搜刮</div>}
                     </button>
                   );
                 })}
@@ -608,7 +803,8 @@ function FacilityGamePage() {
             </div>
           ))}
           <p style={{ fontSize: 13, color: '#94a3b8' }}>
-            點相鄰房間前進（黃框為路徑最後一格，再點一次可退回）；每回合至少走 1 步、不可重複進房；樓梯間可跨層。
+            點相鄰房間前進（黃框為路徑最後一格，再點一次可退回）；每回合至少走 1 步、不可重複進房；
+            垂直通道（爬梯）需繩索或暗影；經過傳送室 B403 後可點任一空房傳送；上一回合停在停機坪者第一步可飛到 H 房（201、101、B101、B103、B105）。
             {self.alive ? '' : '暗影不受地形限制，可直接點任一房間移動，也可停留不動（提交空路徑）以吸血。'}
           </p>
 
@@ -616,23 +812,25 @@ function FacilityGamePage() {
           {room.phase === 'free' && self.alive && (
             <div style={{ border: '1px solid #334155', borderRadius: 12, padding: 14, marginTop: 12 }}>
               <h3 style={{ marginTop: 0 }}>自由階段</h3>
-              {self.items && self.items.filter((it) => ['medicine', 'wine', 'adrenaline'].includes(it.kind)).length > 0 && (
+              {self.items && self.items.filter((it) => ['pill', 'wine', 'fine_wine', 'adrenaline', 'recycler'].includes(it.kind)).length > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   <span>使用道具：</span>
                   {self.items
-                    .filter((it) => ['medicine', 'wine', 'adrenaline'].includes(it.kind))
+                    .filter((it) => ['pill', 'wine', 'fine_wine', 'adrenaline', 'recycler'].includes(it.kind))
                     .map((it) => (
                       <button
                         key={it.id}
                         type="button"
                         style={{ ...btn, margin: '4px' }}
-                        disabled={busy}
+                        disabled={busy || (it.kind === 'recycler' && room.usedPileCount === 0)}
                         onClick={() => post(`/api/games/rooms/${room.code}/use-item`, { itemId: it.id })}
                       >
                         {ITEM_NAME[it.kind]}
-                        {it.kind === 'medicine' && '（+2 血）'}
-                        {it.kind === 'wine' && '（+1 血）'}
-                        {it.kind === 'adrenaline' && '（今天速度 +1）'}
+                        {it.kind === 'pill' && '（+2 血）'}
+                        {it.kind === 'wine' && '（擲骰）'}
+                        {it.kind === 'fine_wine' && '（擲骰加倍）'}
+                        {it.kind === 'adrenaline' && '（下回合速度 10、傷害保底）'}
+                        {it.kind === 'recycler' && `（從用掉的堆抽 1 張，剩 ${room.usedPileCount} 張）`}
                       </button>
                     ))}
                 </div>
@@ -736,28 +934,65 @@ function FacilityGamePage() {
               <h3 style={{ marginTop: 0 }}>行動階段</h3>
               <p style={{ fontSize: 14 }}>
                 路徑：{path.length > 0 ? `${self.room} → ${path.join(' → ')}` : '尚未選路'}
-                {teleportTo && ` → 🌀 ${ROOM_NAME[teleportTo]}`}
               </p>
               {self.alive ? (
                 <>
                   <div style={{ marginBottom: 10 }}>
                     <span>秘密投票毒樓層：</span>
-                    {(['2F', '1F', 'B1'] as FloorId[]).map((f) => (
-                      <button key={f} type="button" style={vote === f ? btnPrimary : btn} onClick={() => setVote(f)}>
-                        {f === '2F' ? '頂樓 2F' : f === '1F' ? '地面 1F' : '地下 B1'}
+                    {ALL_FLOORS.map((f) => (
+                      <button key={f} type="button" style={{ ...(vote === f ? btnPrimary : btn), margin: '2px' }} onClick={() => setVote(f)}>
+                        {f}
                       </button>
                     ))}
                   </div>
-                  {passesTeleport && (
+                  {finalRoom === 'B101' && (
                     <div style={{ marginBottom: 10 }}>
-                      <span>經過傳送室，傳送到空房：</span>
+                      <span>終點在控制室：</span>
+                      <button type="button" style={controlMode === 'vote' ? btnPrimary : btn} onClick={() => setControlMode('vote')}>
+                        本回合毒票算 10 票
+                      </button>
+                      <button type="button" style={controlMode === 'detox' ? btnPrimary : btn} onClick={() => setControlMode('detox')}>
+                        永久解毒一房
+                      </button>
+                      {controlMode === 'detox' && (
+                        <select
+                          value={detoxTarget}
+                          onChange={(e) => setDetoxTarget(e.target.value)}
+                          style={{ minHeight: 44, borderRadius: 10, background: '#0f172a', color: '#f1f5f9', fontSize: 15, marginLeft: 8 }}
+                        >
+                          <option value="">選房間</option>
+                          {ROOM_DEFS.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
+                  {finalRoom === 'B304' && (
+                    <div style={{ marginBottom: 10 }}>
+                      <span>終點在操作室，重配基因（總和須等於目前 {geneTotal}）：</span>
+                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
+                        {stepper('武力', rm, setRm)}
+                        {stepper('負重', rc, setRc)}
+                        {stepper('速度', rs, setRs)}
+                      </div>
+                      <span style={{ color: reallocValid ? '#22c55e' : '#f87171' }}>
+                        總和 {rm + rc + rs} / {geneTotal}
+                      </span>
+                    </div>
+                  )}
+                  {hasRocket && (
+                    <div style={{ marginBottom: 10 }}>
+                      <span>火箭筒轟炸（持有才發射，可重複使用）：</span>
                       <select
-                        value={teleportTo}
-                        onChange={(e) => setTeleportTo(e.target.value)}
-                        style={{ minHeight: 44, borderRadius: 10, background: '#0f172a', color: '#f1f5f9', fontSize: 15 }}
+                        value={rocketTarget}
+                        onChange={(e) => setRocketTarget(e.target.value)}
+                        style={{ minHeight: 44, borderRadius: 10, background: '#0f172a', color: '#f1f5f9', fontSize: 15, marginLeft: 8 }}
                       >
-                        <option value="">不傳送（留在原終點）</option>
-                        {ROOM_DEFS.filter((r) => r.kind === 'empty').map((r) => (
+                        <option value="">不發射</option>
+                        {ROOM_DEFS.map((r) => (
                           <option key={r.id} value={r.id}>
                             {r.name}
                           </option>
@@ -765,21 +1000,21 @@ function FacilityGamePage() {
                       </select>
                     </div>
                   )}
-                  {finalRoom === 'B101' && (
+                  {usableItems.length > 0 && (
                     <div style={{ marginBottom: 10 }}>
-                      <span>終點在控制室，解毒一間房：</span>
-                      <select
-                        value={detoxRoom}
-                        onChange={(e) => setDetoxRoom(e.target.value)}
-                        style={{ minHeight: 44, borderRadius: 10, background: '#0f172a', color: '#f1f5f9', fontSize: 15 }}
-                      >
-                        <option value="">不解毒</option>
-                        {ROOM_DEFS.map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.name}
-                          </option>
-                        ))}
-                      </select>
+                      <span>結算時使用（戰鬥／毒氣／水糧之後才生效）：</span>
+                      {usableItems.map((it) => (
+                        <label key={it.id} style={{ marginLeft: 10, fontSize: 15 }}>
+                          <input
+                            type="checkbox"
+                            checked={itemUses.includes(it.id)}
+                            onChange={(e) =>
+                              setItemUses(e.target.checked ? [...itemUses, it.id] : itemUses.filter((x) => x !== it.id))
+                            }
+                          />{' '}
+                          {ITEM_NAME[it.kind]}
+                        </label>
+                      ))}
                     </div>
                   )}
                 </>
@@ -794,8 +1029,13 @@ function FacilityGamePage() {
                   post(`/api/games/rooms/${room.code}/action`, {
                     path,
                     voteFloor: self.alive ? vote : null,
-                    teleportTo: teleportTo || undefined,
-                    detoxRoom: detoxRoom || undefined,
+                    controlChoice:
+                      self.alive && finalRoom === 'B101' && controlMode
+                        ? { mode: controlMode, target: controlMode === 'detox' ? detoxTarget || undefined : undefined }
+                        : undefined,
+                    geneRealloc: self.alive && finalRoom === 'B304' && reallocValid ? { might: rm, carry: rc, speed: rs } : undefined,
+                    rocketTarget: rocketTarget || undefined,
+                    itemUses: itemUses.length > 0 ? itemUses : undefined,
                   })
                 }
               >
@@ -805,6 +1045,9 @@ function FacilityGamePage() {
               {self.alive && vote === '' && <span style={{ color: '#f87171', marginLeft: 8 }}>請投一票毒樓層</span>}
               {self.alive && path.length > maxSteps && (
                 <span style={{ color: '#f87171', marginLeft: 8 }}>步數超過速度上限</span>
+              )}
+              {self.alive && finalRoom === 'B304' && !reallocValid && (
+                <span style={{ color: '#f87171', marginLeft: 8 }}>重配總和必須等於目前總和</span>
               )}
             </div>
           )}
@@ -842,7 +1085,7 @@ function FacilityGamePage() {
         <section style={{ marginTop: 20 }}>
           <h2 style={{ fontSize: 20 }}>🏆 最終排名</h2>
           <p style={{ fontSize: 14, color: '#94a3b8' }}>
-            存活者優先於暗影；金條已 1:1 折算為生命（補至 10 點上限）；同生命比基因武力，再相同並列。
+            存活者優先於暗影；金條已 1:1 折算為生命（補至 10 點上限）；暗影以死前生命排在存活者之後；同分比基因武力。
           </p>
           <ol>
             {room.ranking.map((r) => {

@@ -11,6 +11,7 @@ import {
   addPlayer,
   createRoom,
   findPlayer,
+  initGameState,
   publicView,
   resolveCombatAndShadows,
   runSettlement,
@@ -79,11 +80,11 @@ function aiFreePhase(room: GameRoom): void {
   for (const p of room.players) {
     if (!p.isAI || !p.alive || p.ready) continue;
     if (p.hp <= 5) {
-      const med = p.items.find((it) => it.kind === "medicine");
+      const med = p.items.find((it) => it.kind === "pill");
       if (med) {
         p.items = p.items.filter((it) => it.id !== med.id);
         p.hp = Math.min(10, p.hp + 2);
-        room.log.push({ day: room.day, text: `💊 ${p.name} 使用急救藥片，回復至 ${p.hp} 血` });
+        room.log.push({ day: room.day, text: `💊 ${p.name} 使用藥片，回復至 ${p.hp} 血` });
       }
     }
     p.ready = true;
@@ -290,13 +291,21 @@ export async function handleGamesRequest(
         while (room.players.length < MAX_PLAYERS) {
           const ai = addPlayer(room, aiName(aiIndex), true);
           const setup = aiSetup(aiIndex);
-          setSetup(room, ai.id, setup.might, setup.carry, setup.speed, aiSpawn(room));
+          // 注意：單人版 bots.js 的政策基因總和是 11 點（例如槍手 5/3/3），
+          // 不是人類配點的 10 點，故不走 setSetup 的總和驗證，直接套用。
+          ai.might = setup.might;
+          ai.carry = setup.carry;
+          ai.speed = setup.speed;
+          ai.room = aiSpawn(room, setup.policy);
+          ai.hasSetup = true;
+          ai.policy = setup.policy;
           aiIndex += 1;
         }
         room.status = "playing";
         room.day = 1;
         room.phase = "free";
         room.log.push({ day: 1, text: "── 遊戲開始！第 1 天（自由階段）──" });
+        initGameState(room);
         resolveCombatAndShadows(room);
         aiFreePhase(room);
         return sendRoom(room, player.token);
@@ -323,12 +332,24 @@ export async function handleGamesRequest(
         const player = playerFromToken(room, body.token);
         if (!player) return err(401, "憑證無效，請重新加入房間");
         if (room.actions[player.id]) return err(400, "本回合已經提交過行動");
+        const rawControl = body.controlChoice as { mode?: unknown; target?: unknown } | undefined;
+        const controlMode = rawControl?.mode === "vote" || rawControl?.mode === "detox" ? rawControl.mode : undefined;
+        const rawGene = body.geneRealloc as { might?: unknown; carry?: unknown; speed?: unknown } | undefined;
         const action: DayAction = {
           playerId: player.id,
           path: Array.isArray(body.path) ? (body.path as unknown[]).map(String) : [],
           voteFloor: (body.voteFloor as FloorId | null) ?? null,
           teleportTo: typeof body.teleportTo === "string" ? body.teleportTo : undefined,
           detoxRoom: typeof body.detoxRoom === "string" ? body.detoxRoom : undefined,
+          controlChoice: controlMode
+            ? { mode: controlMode, target: typeof rawControl?.target === "string" ? rawControl.target : undefined }
+            : undefined,
+          geneRealloc:
+            rawGene && Number.isInteger(rawGene.might) && Number.isInteger(rawGene.carry) && Number.isInteger(rawGene.speed)
+              ? { might: Number(rawGene.might), carry: Number(rawGene.carry), speed: Number(rawGene.speed) }
+              : undefined,
+          rocketTarget: typeof body.rocketTarget === "string" ? body.rocketTarget : undefined,
+          itemUses: Array.isArray(body.itemUses) ? (body.itemUses as unknown[]).map(String) : undefined,
         };
         const e = validateAction(room, player, action);
         if (e) return err(400, e);
