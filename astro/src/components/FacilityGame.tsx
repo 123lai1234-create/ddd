@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // （42 房、9 樓層、6 回合），後端是 /api/games（Neon 房間）。
 // 伺服器權威狀態：前端每 2 秒輪詢 /api/games/rooms/:code，不用 WebSocket。
 // 房間 12 小時後過期。帳號服務（B 組）：先出登入／註冊面板，支援顯示名稱
-// 帳號＋訪客帳號＋恢復碼登入；Google 登入待接（按鈕停用，不寫假憑證）。
+// 帳號＋訪客帳號＋恢復碼登入；Google 登入為授權碼流程（未設定憑證時回 501）。
 // 房型分娛樂（信譽 80）與競技（信譽 90）；觀戰只讀不佔名額。
 // 舊版相容：只有房間 token、沒有帳號的舊流程仍可走娛樂房（後端放行），
 // 但新版前端一律先登入（訪客即登入的一種）才顯示建房／加入。
@@ -360,6 +360,17 @@ async function api(path: string, body?: unknown): Promise<unknown> {
   return data;
 }
 
+/** Google callback 回來的錯誤碼 → 面板中文訊息（不要白畫面或無限轉圈）。 */
+const GOOGLE_ERROR_TEXT: Record<string, string> = {
+  denied: '你拒絕了 Google 授權，登入未完成，請重新點 Google 登入。',
+  expired: 'Google 登入連結已過期（10 分鐘），請重新點 Google 登入。',
+  invalid: 'Google 登入連結無效，請重新點 Google 登入。',
+  token_failed: '向 Google 換取登入資訊失敗，請再試一次。',
+  userinfo_failed: '無法從 Google 取得帳號資料，請再試一次。',
+  account_failed: '建立 Google 帳號失敗，請再試一次。',
+  not_configured: 'Google 登入尚未設定，請聯絡站長。',
+};
+
 const btn: CSSProperties = {
   minHeight: 44,
   padding: '10px 16px',
@@ -386,6 +397,8 @@ function FacilityGamePage() {
   const [loginPassword, setLoginPassword] = useState('');
   const [recoveryInput, setRecoveryInput] = useState('');
   const [recoveryShown, setRecoveryShown] = useState<string | null>(null);
+  /** Google callback 回來、但恢復碼還沒被抄下的待完成登入（抄下後才正式存入）。 */
+  const [pendingGoogle, setPendingGoogle] = useState<AccountInfo | null>(null);
   const [roomType, setRoomType] = useState<'casual' | 'ranked'>('casual');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -416,6 +429,48 @@ function FacilityGamePage() {
     document.title = '封鎖設施求生｜多人連線生存遊戲';
   }, []);
 
+  // Google callback 回來：?accountToken=…（新帳號另帶 ?googleRecoveryCode=…）、
+  // 或 ?google_error=…。接住後立刻清掉網址參數（恢復碼不留網址、不存 localStorage）。
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const errCode = params.get('google_error');
+    const token = params.get('accountToken');
+    const recovery = params.get('googleRecoveryCode');
+    if (!errCode && !token) return;
+    const cleanParams = () => {
+      const u = new URL(window.location.href);
+      u.searchParams.delete('google_error');
+      u.searchParams.delete('accountToken');
+      u.searchParams.delete('googleRecoveryCode');
+      window.history.replaceState(null, '', u.pathname + u.search);
+    };
+    if (errCode) {
+      setError(GOOGLE_ERROR_TEXT[errCode] ?? 'Google 登入失敗，請再試一次。');
+      cleanParams();
+      return;
+    }
+    if (!token) return;
+    api(`/api/games/accounts/me?accountToken=${encodeURIComponent(token)}`)
+      .then((d) => {
+        const meData = d as MeData;
+        const info: AccountInfo = { ...meData.account, token };
+        if (recovery) {
+          // 新 Google 帳號：先顯示恢復碼，抄下後才正式登入（見下方按鈕）。
+          setPendingGoogle(info);
+          setRecoveryShown(recovery);
+        } else {
+          localStorage.setItem(ACCOUNT_KEY, JSON.stringify(info));
+          setAccount(info);
+        }
+        cleanParams();
+      })
+      .catch(() => {
+        setError('Google 登入完成，但讀取帳號失敗，請重新登入或用恢復碼登入。');
+        cleanParams();
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!account) {
       setMe(null);
@@ -443,6 +498,36 @@ function FacilityGamePage() {
     setAccount(null);
     setMe(null);
     setRecoveryShown(null);
+    setPendingGoogle(null);
+  };
+
+  const confirmGoogleLogin = () => {
+    if (!pendingGoogle) return;
+    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(pendingGoogle));
+    setAccount(pendingGoogle);
+    setPendingGoogle(null);
+    setRecoveryShown(null);
+    setError('');
+  };
+
+  const submitGoogle = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      // 先以 manual redirect 試探：未設定憑證時伺服器回 501 JSON，可在面板顯示；
+      // 已設定時回 302（fetch 拿不到 Location），再用瀏覽器導向走授權流程。
+      const res = await fetch('/api/games/accounts/google', { redirect: 'manual' });
+      if (res.status === 501) {
+        const d = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(d.error || 'Google 登入尚未設定，請聯絡站長。');
+        return;
+      }
+      window.location.href = '/api/games/accounts/google';
+    } catch {
+      setError('無法開啟 Google 登入，請檢查網路後再試一次。');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleAccountResponse = (data: {
@@ -710,7 +795,8 @@ function FacilityGamePage() {
         </p>
         <p style={{ color: '#f59e0b', fontSize: 14 }}>
           恢復碼只在建立帳號時顯示一次，伺服器只存雜湊、無法幫你查回明文，請務必抄下。
-          Google 登入尚未接通（需站長另外提供 Google Cloud 憑證），目前按鈕為停用狀態。
+          也可以用 Google 帳號登入：點按後會導向 Google 授權頁，授權完成自動回到遊戲；
+          新帳號的恢復碼一樣只顯示一次。
         </p>
         <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
           {(['guest', 'register', 'login', 'recover'] as const).map((t) => (
@@ -765,18 +851,31 @@ function FacilityGamePage() {
           >
             {loginTab === 'guest' ? '以訪客身分登入' : loginTab === 'register' ? '註冊' : loginTab === 'login' ? '登入' : '用恢復碼登入'}
           </button>
-          <button type="button" style={btnDisabled} disabled title="Google 登入尚未接通：需站長在 Google Cloud 建立 OAuth 憑證後才開放">
-            Google 登入（尚未接通）
+          <button type="button" style={busy ? btnDisabled : btn} disabled={busy} onClick={submitGoogle}>
+            Google 登入
           </button>
         </div>
         {recoveryShown && (
           <div style={{ marginTop: 16, padding: 12, borderRadius: 10, border: '1px solid #f59e0b', background: '#422006' }}>
             <strong>你的恢復碼（只顯示一次，請立即抄下）：{recoveryShown}</strong>
             <div style={{ marginTop: 8 }}>
-              <button type="button" style={btn} onClick={() => setRecoveryShown(null)}>
-                我已抄下
-              </button>
+              {pendingGoogle ? (
+                <button type="button" style={btnPrimary} onClick={confirmGoogleLogin}>
+                  我已抄下，進入遊戲
+                </button>
+              ) : (
+                <button type="button" style={btn} onClick={() => setRecoveryShown(null)}>
+                  我已抄下
+                </button>
+              )}
             </div>
+          </div>
+        )}
+        {pendingGoogle && !recoveryShown && (
+          <div style={{ marginTop: 16 }}>
+            <button type="button" style={btnPrimary} onClick={confirmGoogleLogin}>
+              進入遊戲（Google 登入已完成）
+            </button>
           </div>
         )}
         {error && (

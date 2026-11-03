@@ -43,7 +43,8 @@ POST /api/games/accounts/login           密碼登入（訪客帳號無密碼，
 POST /api/games/accounts/recover         恢復碼登入（發新 session token）
 GET  /api/games/accounts/me?accountToken=… 個人檔案＋戰績（只含公開欄位）
 POST /api/games/accounts/logout          登出（刪 session 列）
-GET  /api/games/accounts/google          Google 登入：目前一律 501 待接（見「帳號服務」）
+GET  /api/games/accounts/google          Google 登入起始（未設憑證回 501；已設則 302 導向 Google 授權頁）
+GET  /api/games/accounts/google/callback Google 登入回呼（授權碼換 token、取 userinfo、建／找帳號後導回遊戲頁）
 ```
 
 錯誤碼與 Express 版一致：404 找不到房間、401 憑證無效、
@@ -130,10 +131,27 @@ setup／start／ready／action／keep／gold-pick／use-item／trade／trade-res
 `first_game`（首場）／`veteran`（滿 5 場）。房間內公開檔案是 handler 每次請求
 刷新的快照（`accountProfile`），只含公開欄位；個人面板（`/accounts/me`）為即時值。
 
-Google OAuth 待接（不寫假憑證）：目前 `GET /api/games/accounts/google`
-一律回 501，前端按鈕為停用狀態。接通前需站長在 Google Cloud 建立 OAuth
-憑證並設定 `GOOGLE_CLIENT_ID`／`GOOGLE_CLIENT_SECRET`，再實作授權流程；
-程式只留端點與本段文件，不含任何假憑證或假登入。
+Google OAuth（授權碼流程，不寫假憑證）：`GET /api/games/accounts/google`
+未設定憑證時回 501；已設定時 302 導向 Google 授權頁（scope 只有
+`openid email profile`），state 為隨機值存 `facility_oauth_states`
+（10 分鐘過期、用完即刪）。`GET /api/games/accounts/google/callback`
+用授權碼向 Google 換 token、取 userinfo（只要 email 與 name），依 email
+找／建立帳號（display_name 取 Google name、kind 為 named、密碼留空、
+新帳號恢復碼仍發一次、只存雜湊），建立 session 後導回
+`/facility-survival?accountToken=…`（新帳號另帶 `googleRecoveryCode`，
+前端顯示一次後清掉網址參數、不存 localStorage）；失敗時導回
+`?google_error=denied|expired|invalid|token_failed|userinfo_failed|
+account_failed|not_configured`，前端對照成中文訊息。
+接通前站長需在 Google Cloud 建立 OAuth 憑證並設定環境變數
+`GOOGLE_CLIENT_ID`／`GOOGLE_CLIENT_SECRET`（絕不寫進程式碼或 commit）；
+redirect URI 必須登記為 `https://donttalk.vercel.app/api/games/accounts/google/callback`
+（與程式預設值一致），JavaScript 來源為 `https://donttalk.vercel.app`。
+Consent screen：測試模式只要把自己加進測試使用者即可先用；要公開給
+所有人用才需要走 Google 審核（較久）。路由注意：callback 是三段路徑，
+`api/games/accounts/google/callback.mjs` 由 build.mjs 明確輸出（不要動 catchall）。
+測試用環境變數（正式環境不要設）：`GOOGLE_TOKEN_ENDPOINT`／
+`GOOGLE_USERINFO_ENDPOINT`（harness 注入假端點用）、`GOOGLE_REDIRECT_URI`、
+`GOOGLE_OAUTH_STATE_TTL_MS`（harness 測過期用）。
 
 舊版相容（不要讓舊版前端直接 401 死掉）：只有房間 token、沒有帳號的舊流程
 仍可建房／加入娛樂房／輪詢／行動（房間 token 驗證完全不動）；競技房才要求帳號。
@@ -151,7 +169,7 @@ Google OAuth 待接（不寫假憑證）：目前 `GET /api/games/accounts/googl
   顯示名稱帳號相同，伺服器沒有明文可查）。
 - 前端帳號面板、房型選擇、觀戰、棄權按鈕只通過 `astro build`（34 頁），
   未在本機實機點按驗證（無真實 Neon 與瀏覽器實測）；後端行為以假 Neon harness 為準。
-- Google OAuth 待接（見上）。
+- Google OAuth 流程已實作，但真實憑證與 Vercel 環境變數尚未設定（見上）；上線後需實測一次真實 Google 登入。
 
 公開視圖新增欄位：`gassedFloors`、`poolCounts`（各房剩餘張數）、
 `airdropCount`、`usedPileCount`、`discardCount`、`lastGasTally`、
@@ -237,7 +255,7 @@ node /tmp/facility-harness.mjs
 # 6 回合終局排名（8 人）→垃圾場選留＋逾時自動保留→大倉庫選留
 # （超量被拒、選留成功）→金條挑選（不能挑金條、只剩金條空手、
 # 挑中、垃圾場禁用）→8 名真人房（第 9 名被拒、開局無 AI）
-# →帳號服務（註冊／登入／恢復碼／訪客／Google 501／me 不洩雜湊）
+# →帳號服務（註冊／登入／恢復碼／訪客／Google OAuth／me 不洩雜湊）
 # →信譽門檻（競技 90／娛樂 80）→觀戰（只讀、行動 403、不佔名額）
 # →棄權與冷卻（對局棄權 AI 託管 −10、首位冷卻 15 分鐘、大廳不扣分）
 # →戰績寫入與同房公開顯示＋舊 token 相容（不 401 死路）

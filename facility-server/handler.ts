@@ -7,16 +7,26 @@
 // 所有原本由請求觸發的 AI 動作都必須在請求內完成。
 
 import {
+  GOOGLE_AUTH_URL,
   QUIT_COOLDOWN_MS,
   QUIT_REPUTATION_PENALTY,
   TIMEOUT_REPUTATION_PENALTY,
   TIMEOUT_STRIKES_TO_HANDOVER,
   adjustReputation,
+  consumeOAuthState,
   createAccount,
+  createOAuthState,
   gateError,
   getPublicProfile,
+  googleClientId,
+  googleClientSecret,
+  googleConfigured,
+  googleRedirectUri,
+  googleTokenUrl,
+  googleUserinfoUrl,
   loginByPassword,
   loginByRecovery,
+  loginOrCreateGoogleAccount,
   logoutSession,
   publicAccount,
   recordGameResult,
@@ -66,6 +76,8 @@ import { fetchRoom, insertRoom, sweepExpired, updateRoom } from "./store";
 export interface GamesResponse {
   status: number;
   body: unknown;
+  /** 轉址用（Google OAuth）：vercel-entry 會寫 Location header 而非 JSON。 */
+  headers?: Record<string, string>;
 }
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -84,6 +96,16 @@ function cleanName(raw: unknown): string {
 
 function err(status: number, message: string): GamesResponse {
   return { status, body: { error: message } };
+}
+
+/** 302 轉址（Google OAuth 起始／callback 回遊戲頁；body 也帶 redirect 供測試讀取）。 */
+function redirectTo(location: string): GamesResponse {
+  return { status: 302, headers: { Location: location }, body: { redirect: location } };
+}
+
+/** Google 登入失敗回遊戲頁的錯誤碼（前端對照成中文訊息，見 FacilityGame.tsx）。 */
+function googleErrorRedirect(code: string): GamesResponse {
+  return redirectTo(`/facility-survival?google_error=${encodeURIComponent(code)}`);
 }
 
 function playerFromToken(
@@ -341,6 +363,10 @@ function matchPath(
         return { name: `account-${parts[1]}` };
       }
     }
+    // Google callback 是三段路徑，須有明確檔案路由（見 build.mjs）。
+    if (parts.length === 3 && parts[1] === "google" && parts[2] === "callback") {
+      return { name: "account-google-callback" };
+    }
     return null;
   }
   if (parts[0] !== "rooms") return null;
@@ -452,11 +478,78 @@ export async function handleGamesRequest(
       if (typeof body.accountToken === "string") await logoutSession(body.accountToken);
       return { status: 200, body: { ok: true } };
     }
-    if (route.name === "account-google") {
-      // Google OAuth 待接：不寫假憑證。需站長在 Google Cloud 建立 OAuth
-      // 憑證並設定 GOOGLE_CLIENT_ID／GOOGLE_CLIENT_SECRET 後才實作授權
-      // 流程；目前一律回 501，前端按鈕為停用狀態（見 README）。
-      return err(501, "Google 登入尚未接通：需站長在 Google Cloud 建立 OAuth 憑證並設定 GOOGLE_CLIENT_ID／GOOGLE_CLIENT_SECRET（見 facility-server/README.md）");
+    if (route.name === "account-google" && method === "GET") {
+      // Google OAuth 起始：未設定憑證回 501（不寫假憑證、不導向假授權頁）。
+      if (!googleConfigured()) {
+        return err(501, "Google 登入尚未設定：站長需在 Google Cloud 建立 OAuth 憑證並設定 GOOGLE_CLIENT_ID／GOOGLE_CLIENT_SECRET（見 facility-server/README.md）");
+      }
+      const state = await createOAuthState();
+      const params = new URLSearchParams({
+        client_id: googleClientId(),
+        redirect_uri: googleRedirectUri(),
+        response_type: "code",
+        scope: "openid email profile",
+        state,
+        access_type: "online",
+      });
+      return redirectTo(`${GOOGLE_AUTH_URL}?${params.toString()}`);
+    }
+    if (route.name === "account-google-callback" && method === "GET") {
+      const state = query.get("state") ?? "";
+      // 使用者在 Google 端拒絕授權：清掉 state（若有）後回遊戲頁顯示中文錯誤。
+      if (query.get("error")) {
+        if (state) await consumeOAuthState(state).catch(() => "invalid" as const);
+        return googleErrorRedirect("denied");
+      }
+      const code = query.get("code") ?? "";
+      if (!code || !state) return googleErrorRedirect("invalid");
+      const consumed = await consumeOAuthState(state);
+      if (consumed === "invalid") return googleErrorRedirect("invalid");
+      if (consumed === "expired") return googleErrorRedirect("expired");
+      if (!googleConfigured()) return googleErrorRedirect("not_configured");
+      // 授權碼換 token（失敗不洩 Google 回應細節，只回錯誤碼）。
+      let tokenJson: { access_token?: unknown } = {};
+      try {
+        const res = await fetch(googleTokenUrl(), {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            code,
+            client_id: googleClientId(),
+            client_secret: googleClientSecret(),
+            redirect_uri: googleRedirectUri(),
+            grant_type: "authorization_code",
+          }).toString(),
+        });
+        tokenJson = (await res.json().catch(() => ({}))) as typeof tokenJson;
+        if (!res.ok || typeof tokenJson.access_token !== "string" || !tokenJson.access_token) {
+          return googleErrorRedirect("token_failed");
+        }
+      } catch {
+        return googleErrorRedirect("token_failed");
+      }
+      // 取 userinfo：只要 email（去重）與 name（顯示名稱）。
+      let userinfo: { email?: unknown; name?: unknown } = {};
+      try {
+        const res = await fetch(googleUserinfoUrl(), {
+          headers: { Authorization: `Bearer ${tokenJson.access_token as string}` },
+        });
+        userinfo = (await res.json().catch(() => ({}))) as typeof userinfo;
+      } catch {
+        return googleErrorRedirect("userinfo_failed");
+      }
+      const email = typeof userinfo.email === "string" ? userinfo.email : "";
+      if (!email) return googleErrorRedirect("userinfo_failed");
+      const created = await loginOrCreateGoogleAccount(
+        email,
+        typeof userinfo.name === "string" ? userinfo.name : "",
+      );
+      if (!created) return googleErrorRedirect("account_failed");
+      // 新帳號的恢復碼只用這次轉址帶回、前端顯示一次後清掉網址參數；
+      // 舊帳號不帶（不重發）。session token 以 accountToken 帶回。
+      const back = new URLSearchParams({ accountToken: created.token });
+      if (created.isNew && created.recoveryCode) back.set("googleRecoveryCode", created.recoveryCode);
+      return redirectTo(`/facility-survival?${back.toString()}`);
     }
     if (route.name.startsWith("account-")) return err(404, "找不到房間");
 

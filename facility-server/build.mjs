@@ -76,6 +76,9 @@ const depthFiles = [
   // 帳號服務是 /api/games/accounts/<action>（2 段），同理需要明確檔案路由，
   // 否則會被 Vercel 當成單一動態段而 NOT_FOUND（見上方 rooms 說明）。
   join(here, "..", "api", "games", "accounts", "[action].mjs"),
+  // Google callback 是 /api/games/accounts/google/callback（3 段），
+  // accounts/[action] 覆蓋不了，必須再複製一份明確檔案，否則 NOT_FOUND。
+  join(here, "..", "api", "games", "accounts", "google", "callback.mjs"),
 ];
 for (const f of depthFiles) {
   mkdirSync(dirname(f), { recursive: true });

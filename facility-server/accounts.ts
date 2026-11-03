@@ -9,9 +9,9 @@
 //     公開視圖也絕不輸出雜湊或 session token。
 //   - session token：回傳給客戶端的明文只存雜湊（facility_sessions），
 //     查 session 時以雜湊比對；登出即刪列。
-//   - Google OAuth：不寫假憑證。需站長另外在 Google Cloud 建立憑證並
-//     設定 GOOGLE_CLIENT_ID／GOOGLE_CLIENT_SECRET 後才接，目前程式只留
-//     501 待接端點與 README 說明（見 handler 的 google 路由）。
+//   - Google OAuth：授權碼流程（見 handler 的 google 路由與本檔下方的
+//     state／Google 帳號函式）。未設定 GOOGLE_CLIENT_ID／
+//     GOOGLE_CLIENT_SECRET 時起始路由回 501，不寫假憑證；憑證絕不進程式碼。
 //   - 信譽與冷卻數值（見下方常數，README 亦有表）：預設 100；
 //     對局中棄權 −10；選留逾時累積到第 2 次改 AI 託管時 −5；
 //     每房第一位棄權者冷卻 15 分鐘（冷卻中不能建房／加入新房間）。
@@ -19,9 +19,10 @@
 //
 // 資料表（皆 lazy 建表，見 withTable；與 facility_rooms 同一資料庫）：
 //   facility_accounts(id, display_name, kind, password_hash, recovery_hash,
-//                     reputation, cooldown_until, created_at)
+//                     email, reputation, cooldown_until, created_at)
 //   facility_sessions(token_hash, account_id, created_at)
 //   facility_records(account_id, games, wins, losses, best_final_hp, achievements)
+//   facility_oauth_states(state, created_at)——Google 登入 state，用完即刪
 // achievements 以 JSON 字串存（JSONB 欄位，查詢時以字串傳入）。
 
 import { createHash, randomBytes } from "node:crypto";
@@ -46,6 +47,8 @@ export interface Account {
   kind: AccountKind;
   passwordHash: string | null;
   recoveryHash: string | null;
+  /** Google 帳號的 email（去重用）；顯示名稱／訪客帳號為 null。絕不對外公開。 */
+  email: string | null;
   reputation: number;
   cooldownUntil: number;
   createdAt: number;
@@ -134,8 +137,13 @@ const CREATE_ACCOUNTS_SQL = `CREATE TABLE IF NOT EXISTS facility_accounts (
   kind TEXT NOT NULL,
   password_hash TEXT,
   recovery_hash TEXT,
+  email TEXT,
   reputation INT NOT NULL DEFAULT 100,
   cooldown_until BIGINT NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL
+)`;
+const CREATE_OAUTH_STATES_SQL = `CREATE TABLE IF NOT EXISTS facility_oauth_states (
+  state TEXT PRIMARY KEY,
   created_at BIGINT NOT NULL
 )`;
 const CREATE_SESSIONS_SQL = `CREATE TABLE IF NOT EXISTS facility_sessions (
@@ -157,13 +165,21 @@ async function withTable<T>(table: string, fn: () => Promise<T>): Promise<T> {
     return await fn();
   } catch (e) {
     const msg = (e as Error).message || "";
+    // 舊版 facility_accounts 沒有 email 欄位：SELECT email 會報
+    // column "email" does not exist，補欄位後重試（不是重建表）。
+    if (table === "facility_accounts" && /email/i.test(msg) && /does not exist/i.test(msg)) {
+      await neonQuery(`ALTER TABLE facility_accounts ADD COLUMN IF NOT EXISTS email TEXT`);
+      return await fn();
+    }
     if (/does not exist/i.test(msg)) {
       const sql =
         table === "facility_accounts"
           ? CREATE_ACCOUNTS_SQL
           : table === "facility_sessions"
             ? CREATE_SESSIONS_SQL
-            : CREATE_RECORDS_SQL;
+            : table === "facility_oauth_states"
+              ? CREATE_OAUTH_STATES_SQL
+              : CREATE_RECORDS_SQL;
       await neonQuery(sql);
       return await fn();
     }
@@ -178,6 +194,7 @@ function parseAccount(row: Record<string, unknown>): Account {
     kind: (row.kind === "guest" ? "guest" : "named") as AccountKind,
     passwordHash: (row.password_hash as string | null) ?? null,
     recoveryHash: (row.recovery_hash as string | null) ?? null,
+    email: (row.email as string | null) ?? null,
     reputation: Number(row.reputation ?? REPUTATION_DEFAULT),
     cooldownUntil: Number(row.cooldown_until ?? 0),
     createdAt: Number(row.created_at ?? 0),
@@ -204,11 +221,19 @@ function parseRecord(row: Record<string, unknown>): GameRecord {
 }
 
 const ACCOUNT_COLS =
-  "id, display_name, kind, password_hash, recovery_hash, reputation, cooldown_until, created_at";
+  "id, display_name, kind, password_hash, recovery_hash, email, reputation, cooldown_until, created_at";
 
 export async function findAccountByName(displayName: string): Promise<Account | null> {
   const { rows } = await withTable("facility_accounts", () =>
     neonQuery(`SELECT ${ACCOUNT_COLS} FROM facility_accounts WHERE display_name = $1`, [displayName]),
+  );
+  return rows.length > 0 ? parseAccount(rows[0] as Record<string, unknown>) : null;
+}
+
+/** Google 登入去重：同一 email 永遠對應同一帳號（不因改名重建）。 */
+export async function findAccountByEmail(email: string): Promise<Account | null> {
+  const { rows } = await withTable("facility_accounts", () =>
+    neonQuery(`SELECT ${ACCOUNT_COLS} FROM facility_accounts WHERE email = $1`, [email]),
   );
   return rows.length > 0 ? parseAccount(rows[0] as Record<string, unknown>) : null;
 }
@@ -223,8 +248,8 @@ export async function findAccountById(id: string): Promise<Account | null> {
 async function insertAccount(a: Account): Promise<boolean> {
   const { rows } = await withTable("facility_accounts", () =>
     neonQuery(
-      `INSERT INTO facility_accounts (id, display_name, kind, password_hash, recovery_hash, reputation, cooldown_until, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING RETURNING id`,
-      [a.id, a.displayName, a.kind, a.passwordHash, a.recoveryHash, a.reputation, a.cooldownUntil, a.createdAt],
+      `INSERT INTO facility_accounts (id, display_name, kind, password_hash, recovery_hash, email, reputation, cooldown_until, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING RETURNING id`,
+      [a.id, a.displayName, a.kind, a.passwordHash, a.recoveryHash, a.email, a.reputation, a.cooldownUntil, a.createdAt],
     ),
   );
   return rows.length > 0;
@@ -259,6 +284,7 @@ export async function createAccount(
     kind,
     passwordHash: password ? saltedHash(password) : null,
     recoveryHash: saltedHash(code),
+    email: null,
     reputation: REPUTATION_DEFAULT,
     cooldownUntil: 0,
     createdAt: Date.now(),
@@ -273,6 +299,108 @@ export async function createAccount(
     ]),
   );
   return { account, token, recoveryCode: code };
+}
+
+/* ── Google OAuth（授權碼流程）───────────────────────────────────────
+ * state：32 位元組隨機 hex，存 facility_oauth_states，用完即刪、10 分鐘
+ * 過期。TTL 可用 GOOGLE_OAUTH_STATE_TTL_MS 覆寫（harness 測過期用；
+ * 正式環境不設即預設 10 分鐘）。token／userinfo 端點亦可用環境變數
+ * 覆寫（harness 注入假端點用；正式環境不設即 Google 官方端點）。
+ * redirect URI 預設為正式站 callback；本機測試可用
+ * GOOGLE_REDIRECT_URI 覆寫，但 Google Cloud 登記的必須與實際值一致。 */
+
+export const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+export const GOOGLE_DEFAULT_TOKEN_URL = "https://oauth2.googleapis.com/token";
+export const GOOGLE_DEFAULT_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
+export const GOOGLE_DEFAULT_REDIRECT_URI =
+  "https://donttalk.vercel.app/api/games/accounts/google/callback";
+export const OAUTH_STATE_TTL_MS_DEFAULT = 10 * 60 * 1000;
+
+export function googleClientId(): string {
+  return process.env.GOOGLE_CLIENT_ID ?? "";
+}
+export function googleClientSecret(): string {
+  return process.env.GOOGLE_CLIENT_SECRET ?? "";
+}
+export function googleConfigured(): boolean {
+  return googleClientId().length > 0 && googleClientSecret().length > 0;
+}
+export function googleTokenUrl(): string {
+  return process.env.GOOGLE_TOKEN_ENDPOINT || GOOGLE_DEFAULT_TOKEN_URL;
+}
+export function googleUserinfoUrl(): string {
+  return process.env.GOOGLE_USERINFO_ENDPOINT || GOOGLE_DEFAULT_USERINFO_URL;
+}
+export function googleRedirectUri(): string {
+  return process.env.GOOGLE_REDIRECT_URI || GOOGLE_DEFAULT_REDIRECT_URI;
+}
+export function oauthStateTtlMs(): number {
+  const raw = Number(process.env.GOOGLE_OAUTH_STATE_TTL_MS ?? OAUTH_STATE_TTL_MS_DEFAULT);
+  return Number.isFinite(raw) ? raw : OAUTH_STATE_TTL_MS_DEFAULT;
+}
+
+export async function createOAuthState(): Promise<string> {
+  const state = randomBytes(32).toString("hex");
+  await withTable("facility_oauth_states", () =>
+    neonQuery(`DELETE FROM facility_oauth_states WHERE created_at < $1`, [Date.now() - oauthStateTtlMs()]),
+  ).catch(() => undefined);
+  await withTable("facility_oauth_states", () =>
+    neonQuery(`INSERT INTO facility_oauth_states (state, created_at) VALUES ($1, $2)`, [state, Date.now()]),
+  );
+  return state;
+}
+
+/** 驗證並消耗 state：用完即刪；不存在為 invalid、超過 TTL 為 expired。 */
+export async function consumeOAuthState(state: string): Promise<"ok" | "invalid" | "expired"> {
+  if (!state) return "invalid";
+  const { rows } = await withTable("facility_oauth_states", () =>
+    neonQuery(`SELECT state, created_at FROM facility_oauth_states WHERE state = $1`, [state]),
+  );
+  if (rows.length === 0) return "invalid";
+  const createdAt = Number(rows[0]?.created_at ?? 0);
+  await withTable("facility_oauth_states", () =>
+    neonQuery(`DELETE FROM facility_oauth_states WHERE state = $1`, [state]),
+  ).catch(() => undefined);
+  if (Date.now() - createdAt > oauthStateTtlMs()) return "expired";
+  return "ok";
+}
+
+/**
+ * Google 帳號登入／建立：同一 email 永遠同一帳號。
+ * 已存在回傳 isNew=false（不發新恢復碼）；新帳號 kind=named、密碼留空、
+ * 恢復碼仍發一次（只回傳明文一次、資料庫只存雜湊），顯示名稱取 Google
+ * name，撞名時在尾巴補數字（12 字元上限內）。
+ */
+export async function loginOrCreateGoogleAccount(
+  email: string,
+  googleName: string,
+): Promise<{ account: Account; token: string; recoveryCode: string | null; isNew: boolean } | null> {
+  const existing = await findAccountByEmail(email);
+  if (existing) {
+    return { account: existing, token: await issueSession(existing.id), recoveryCode: null, isNew: false };
+  }
+  let base = (googleName || "").trim().slice(0, 12) || email.split("@")[0]?.slice(0, 12) || "Google玩家";
+  let name = base;
+  for (let i = 2; i < 100; i++) {
+    if (!(await findAccountByName(name))) break;
+    name = `${base.slice(0, 12 - String(i).length)}${i}`;
+    if (i === 99) return null;
+  }
+  if (await findAccountByName(name)) return null;
+  const code = recoveryCode();
+  const account: Account = {
+    id: newId("acct"),
+    displayName: name,
+    kind: "named",
+    passwordHash: null,
+    recoveryHash: saltedHash(code),
+    email,
+    reputation: REPUTATION_DEFAULT,
+    cooldownUntil: 0,
+    createdAt: Date.now(),
+  };
+  if (!(await insertAccount(account))) return null;
+  return { account, token: await issueSession(account.id), recoveryCode: code, isNew: true };
 }
 
 async function issueSession(accountId: string): Promise<string> {

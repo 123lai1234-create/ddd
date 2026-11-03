@@ -57,6 +57,10 @@ export default async function handler(req: unknown, res?: unknown) {
         url.searchParams,
         bodyText,
       );
+      // 轉址（Google OAuth）：回 302 + Location，不包 JSON。
+      if (result.headers?.Location) {
+        return new Response(null, { status: result.status, headers: { Location: result.headers.Location } });
+      }
       return jsonResponse(result.body, result.status);
     } catch (e) {
       return jsonResponse({ error: (e as Error).message || "伺服器錯誤" }, 500);
@@ -77,6 +81,13 @@ export default async function handler(req: unknown, res?: unknown) {
       bodyText,
     );
     nodeRes.statusCode = result.status;
+    if (result.headers) {
+      for (const [k, v] of Object.entries(result.headers)) nodeRes.setHeader(k, v);
+    }
+    if (result.headers?.Location) {
+      nodeRes.end("");
+      return;
+    }
     nodeRes.setHeader("Content-Type", "application/json");
     nodeRes.end(JSON.stringify(result.body));
   } catch (e) {

@@ -41,13 +41,19 @@ function fakeResponse(rows: unknown[]) {
   };
 }
 
+// 假 Google 端點模式（harness 第 25 節切換）：ok 換 token 成功、
+// tokenFail 換 token 失敗、userinfoFail 取 userinfo 失敗。
+export let googleTestMode: "ok" | "tokenFail" | "userinfoFail" = "ok";
+
 function installFakeNeon() {
   // 假 Neon：除 facility_rooms 外，另支援 facility_accounts /
-  // facility_sessions / facility_records（accounts.ts 實際發出的語意）。
-  // 各表一開始皆不存在，CREATE TABLE 後才可用（lazy 建表測試用）。
+  // facility_sessions / facility_records / facility_oauth_states
+  // （accounts.ts 實際發出的語意）。各表一開始皆不存在，
+  // CREATE TABLE 後才可用（lazy 建表測試用）。
   const accountsById = new Map<string, Record<string, unknown>>();
   const sessions = new Map<string, string>();
   const records = new Map<string, Record<string, unknown>>();
+  const oauthStates = new Map<string, number>();
   const existingTables = new Set<string>();
   const tableOf = (query: string): string | null => {
     const m =
@@ -59,8 +65,32 @@ function installFakeNeon() {
   };
   (globalThis as unknown as { fetch: unknown }).fetch = async (
     _url: string,
-    opts: { body?: string },
+    opts: { body?: string; headers?: Record<string, string> },
   ) => {
+    // 假 Google 端點（非 Neon）：handler 的 token／userinfo fetch 走這裡，
+    // 絕不真的打 Google。端點由 GOOGLE_TOKEN_ENDPOINT／
+    // GOOGLE_USERINFO_ENDPOINT 環境變數注入（測試用 google-test.invalid）。
+    if (String(_url).startsWith("https://google-test.invalid")) {
+      const googleResponse = (ok: boolean, status: number, payload: unknown) => ({
+        ok,
+        status,
+        text: async () => JSON.stringify(payload),
+        json: async () => payload,
+      });
+      if (String(_url).endsWith("/token")) {
+        if (googleTestMode === "tokenFail") {
+          return googleResponse(false, 400, { error: "invalid_grant" });
+        }
+        return googleResponse(true, 200, { access_token: "fake-google-access", token_type: "Bearer" });
+      }
+      if (String(_url).endsWith("/userinfo")) {
+        if (googleTestMode === "userinfoFail") {
+          return googleResponse(false, 401, { error: "invalid_token" });
+        }
+        return googleResponse(true, 200, { email: "google-test@example.com", name: "Google測試" });
+      }
+      return googleResponse(false, 404, { error: "not_found" });
+    }
     const { query, params } = JSON.parse(opts.body as string) as {
       query: string;
       params: unknown[];
@@ -80,6 +110,10 @@ function installFakeNeon() {
           const row = [...accountsById.values()].find((r) => r.display_name === params[0]);
           return fakeResponse(row ? [row] : []);
         }
+        if (/WHERE email/i.test(query)) {
+          const row = [...accountsById.values()].find((r) => r.email === params[0]);
+          return fakeResponse(row ? [row] : []);
+        }
         const row = accountsById.get(String(params[0]));
         return fakeResponse(row ? [row] : []);
       }
@@ -92,9 +126,10 @@ function installFakeNeon() {
           kind: params[2],
           password_hash: params[3],
           recovery_hash: params[4],
-          reputation: params[5],
-          cooldown_until: params[6],
-          created_at: params[7],
+          email: params[5] ?? null,
+          reputation: params[6],
+          cooldown_until: params[7],
+          created_at: params[8],
         });
         return fakeResponse([{ id }]);
       }
@@ -123,6 +158,26 @@ function installFakeNeon() {
         return fakeResponse([]);
       }
       throw new Error(`fake Neon sessions: unhandled query: ${query.slice(0, 80)}`);
+    }
+    if (tbl === "facility_oauth_states") {
+      if (/SELECT/i.test(query)) {
+        const createdAt = oauthStates.get(String(params[0]));
+        return fakeResponse(createdAt === undefined ? [] : [{ state: params[0], created_at: createdAt }]);
+      }
+      if (/INSERT/i.test(query)) {
+        oauthStates.set(String(params[0]), Number(params[1]));
+        return fakeResponse([]);
+      }
+      if (/DELETE/i.test(query)) {
+        if (/created_at/i.test(query)) {
+          const cutoff = Number(params[0]);
+          for (const [s, t] of oauthStates) if (t < cutoff) oauthStates.delete(s);
+        } else {
+          oauthStates.delete(String(params[0]));
+        }
+        return fakeResponse([]);
+      }
+      throw new Error(`fake Neon oauth_states: unhandled query: ${query.slice(0, 80)}`);
     }
     if (tbl === "facility_records") {
       if (/SELECT/i.test(query)) {
@@ -285,7 +340,12 @@ async function call(
     new URLSearchParams(query),
     body === undefined ? "" : JSON.stringify(body),
   );
-  return res as { status: number; body: Record<string, unknown> };
+  return res as { status: number; body: Record<string, unknown>; headers?: Record<string, string> };
+}
+
+/** 轉址回應的 Location（headers 優先，body.redirect 備援）。 */
+function redirectOf(res: { headers?: Record<string, string>; body: Record<string, unknown> }): string {
+  return res.headers?.Location ?? (res.body.redirect as string) ?? "";
 }
 
 function roomOf(res: { body: Record<string, unknown> }): RoomView {
@@ -994,6 +1054,85 @@ async function main() {
   r = await call("GET", "/api/games/accounts/me", undefined, `accountToken=${toAcctToken}`);
   check("timeout-room: rep 100 → 95", (r.body.account as { reputation: number }).reputation === 95, r.body.account);
   void toAcctId;
+
+  // 25. Google OAuth（授權碼流程，假端點注入，不真的打 Google）：
+  //     未設憑證 501 → 起始轉址含 state → 拒絕／錯誤 state／過期 state
+  //     被拒 → 換 token 失敗被拒 → 成功建帳號＋session（新帳號帶恢復碼）
+  //     → 同一 email 第二次登入是同一帳號且不重發恢復碼。
+  delete process.env.GOOGLE_CLIENT_ID;
+  delete process.env.GOOGLE_CLIENT_SECRET;
+  r = await call("GET", "/api/games/accounts/google");
+  check("google: no credential → 501", r.status === 501, r.status);
+  process.env.GOOGLE_CLIENT_ID = "test-client-id";
+  process.env.GOOGLE_CLIENT_SECRET = "test-client-secret";
+  process.env.GOOGLE_TOKEN_ENDPOINT = "https://google-test.invalid/token";
+  process.env.GOOGLE_USERINFO_ENDPOINT = "https://google-test.invalid/userinfo";
+  googleTestMode = "ok";
+  r = await call("GET", "/api/games/accounts/google");
+  const googleStartLoc = redirectOf(r);
+  check(
+    "google: start → 302 to accounts.google.com with client_id + state",
+    r.status === 302 && googleStartLoc.includes("accounts.google.com/o/oauth2/v2/auth") && googleStartLoc.includes("client_id=test-client-id") && googleStartLoc.includes("state="),
+    googleStartLoc,
+  );
+  const googleState = new URL(googleStartLoc).searchParams.get("state") ?? "";
+  check("google: start state present", googleState.length >= 32, googleState.length);
+  r = await call("GET", "/api/games/accounts/google/callback", undefined, "error=access_denied&state=" + googleState);
+  check("google: denied → redirect google_error=denied", r.status === 302 && redirectOf(r).includes("google_error=denied"), redirectOf(r));
+  r = await call("GET", "/api/games/accounts/google/callback", undefined, "code=fake&state=not-a-real-state");
+  check("google: bad state → redirect google_error=invalid", r.status === 302 && redirectOf(r).includes("google_error=invalid"), redirectOf(r));
+  // 過期 state：TTL 設為 -1，讓剛建的 state 立刻過期。
+  process.env.GOOGLE_OAUTH_STATE_TTL_MS = "-1";
+  r = await call("GET", "/api/games/accounts/google");
+  const expiredState = new URL(redirectOf(r)).searchParams.get("state") ?? "";
+  r = await call("GET", "/api/games/accounts/google/callback", undefined, `code=fake&state=${expiredState}`);
+  check("google: expired state → redirect google_error=expired", r.status === 302 && redirectOf(r).includes("google_error=expired"), redirectOf(r));
+  delete process.env.GOOGLE_OAUTH_STATE_TTL_MS;
+  // 換 token 失敗：state 已消耗，callback 應回 token_failed（不建帳號）。
+  r = await call("GET", "/api/games/accounts/google");
+  const failState = new URL(redirectOf(r)).searchParams.get("state") ?? "";
+  googleTestMode = "tokenFail";
+  r = await call("GET", "/api/games/accounts/google/callback", undefined, `code=fake&state=${failState}`);
+  check("google: token fail → redirect google_error=token_failed", r.status === 302 && redirectOf(r).includes("google_error=token_failed"), redirectOf(r));
+  googleTestMode = "ok";
+  // 成功：新帳號（帶恢復碼參數）＋ session token 可用。
+  r = await call("GET", "/api/games/accounts/google");
+  const okState = new URL(redirectOf(r)).searchParams.get("state") ?? "";
+  r = await call("GET", "/api/games/accounts/google/callback", undefined, `code=fake&state=${okState}`);
+  const googleBack = redirectOf(r);
+  const googleToken = new URL(googleBack, "https://example.invalid").searchParams.get("accountToken") ?? "";
+  check(
+    "google: callback ok → redirect with accountToken + recoveryCode (new account)",
+    r.status === 302 && googleBack.startsWith("/facility-survival?") && googleToken.startsWith("acct_") && googleBack.includes("googleRecoveryCode="),
+    googleBack.replace(/accountToken=[^&]*/, "accountToken=…").replace(/googleRecoveryCode=[^&]*/, "googleRecoveryCode=…"),
+  );
+  r = await call("GET", "/api/games/accounts/me", undefined, `accountToken=${googleToken}`);
+  const googleAccountId = (r.body.account as { id: string }).id;
+  check(
+    "google: me → named account, rep 100, no hashes leaked",
+    r.status === 200 && (r.body.account as { kind: string }).kind === "named" && (r.body.account as { reputation: number }).reputation === 100 && !JSON.stringify(r.body).includes("password_hash"),
+    r.body.account,
+  );
+  // 同一 email 第二次：同一帳號、不重發恢復碼。
+  r = await call("GET", "/api/games/accounts/google");
+  const okState2 = new URL(redirectOf(r)).searchParams.get("state") ?? "";
+  r = await call("GET", "/api/games/accounts/google/callback", undefined, `code=fake&state=${okState2}`);
+  const googleBack2 = redirectOf(r);
+  const googleToken2 = new URL(googleBack2, "https://example.invalid").searchParams.get("accountToken") ?? "";
+  check(
+    "google: second login same email → no recoveryCode param",
+    r.status === 302 && googleToken2.startsWith("acct_") && !googleBack2.includes("googleRecoveryCode="),
+    googleBack2.replace(/accountToken=[^&]*/, "accountToken=…"),
+  );
+  r = await call("GET", "/api/games/accounts/me", undefined, `accountToken=${googleToken2}`);
+  check("google: second login → same account id", (r.body.account as { id: string }).id === googleAccountId, r.body.account);
+  // state 用完即刪：同一 state 再用一次應為 invalid。
+  r = await call("GET", "/api/games/accounts/google/callback", undefined, `code=fake&state=${okState2}`);
+  check("google: reused state → redirect google_error=invalid", r.status === 302 && redirectOf(r).includes("google_error=invalid"), redirectOf(r));
+  delete process.env.GOOGLE_CLIENT_ID;
+  delete process.env.GOOGLE_CLIENT_SECRET;
+  delete process.env.GOOGLE_TOKEN_ENDPOINT;
+  delete process.env.GOOGLE_USERINFO_ENDPOINT;
 
   console.log(failures === 0 ? "ALL PASS" : `${failures} FAILURES`);
   process.exit(failures === 0 ? 0 : 1);

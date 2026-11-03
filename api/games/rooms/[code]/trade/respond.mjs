@@ -106,8 +106,13 @@ var CREATE_ACCOUNTS_SQL = `CREATE TABLE IF NOT EXISTS facility_accounts (
   kind TEXT NOT NULL,
   password_hash TEXT,
   recovery_hash TEXT,
+  email TEXT,
   reputation INT NOT NULL DEFAULT 100,
   cooldown_until BIGINT NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL
+)`;
+var CREATE_OAUTH_STATES_SQL = `CREATE TABLE IF NOT EXISTS facility_oauth_states (
+  state TEXT PRIMARY KEY,
   created_at BIGINT NOT NULL
 )`;
 var CREATE_SESSIONS_SQL = `CREATE TABLE IF NOT EXISTS facility_sessions (
@@ -128,8 +133,12 @@ async function withTable(table, fn) {
     return await fn();
   } catch (e) {
     const msg = e.message || "";
+    if (table === "facility_accounts" && /email/i.test(msg) && /does not exist/i.test(msg)) {
+      await neonQuery(`ALTER TABLE facility_accounts ADD COLUMN IF NOT EXISTS email TEXT`);
+      return await fn();
+    }
     if (/does not exist/i.test(msg)) {
-      const sql = table === "facility_accounts" ? CREATE_ACCOUNTS_SQL : table === "facility_sessions" ? CREATE_SESSIONS_SQL : CREATE_RECORDS_SQL;
+      const sql = table === "facility_accounts" ? CREATE_ACCOUNTS_SQL : table === "facility_sessions" ? CREATE_SESSIONS_SQL : table === "facility_oauth_states" ? CREATE_OAUTH_STATES_SQL : CREATE_RECORDS_SQL;
       await neonQuery(sql);
       return await fn();
     }
@@ -143,6 +152,7 @@ function parseAccount(row) {
     kind: row.kind === "guest" ? "guest" : "named",
     passwordHash: row.password_hash ?? null,
     recoveryHash: row.recovery_hash ?? null,
+    email: row.email ?? null,
     reputation: Number(row.reputation ?? REPUTATION_DEFAULT),
     cooldownUntil: Number(row.cooldown_until ?? 0),
     createdAt: Number(row.created_at ?? 0)
@@ -166,11 +176,18 @@ function parseRecord(row) {
     achievements
   };
 }
-var ACCOUNT_COLS = "id, display_name, kind, password_hash, recovery_hash, reputation, cooldown_until, created_at";
+var ACCOUNT_COLS = "id, display_name, kind, password_hash, recovery_hash, email, reputation, cooldown_until, created_at";
 async function findAccountByName(displayName) {
   const { rows } = await withTable(
     "facility_accounts",
     () => neonQuery(`SELECT ${ACCOUNT_COLS} FROM facility_accounts WHERE display_name = $1`, [displayName])
+  );
+  return rows.length > 0 ? parseAccount(rows[0]) : null;
+}
+async function findAccountByEmail(email) {
+  const { rows } = await withTable(
+    "facility_accounts",
+    () => neonQuery(`SELECT ${ACCOUNT_COLS} FROM facility_accounts WHERE email = $1`, [email])
   );
   return rows.length > 0 ? parseAccount(rows[0]) : null;
 }
@@ -185,8 +202,8 @@ async function insertAccount(a) {
   const { rows } = await withTable(
     "facility_accounts",
     () => neonQuery(
-      `INSERT INTO facility_accounts (id, display_name, kind, password_hash, recovery_hash, reputation, cooldown_until, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING RETURNING id`,
-      [a.id, a.displayName, a.kind, a.passwordHash, a.recoveryHash, a.reputation, a.cooldownUntil, a.createdAt]
+      `INSERT INTO facility_accounts (id, display_name, kind, password_hash, recovery_hash, email, reputation, cooldown_until, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING RETURNING id`,
+      [a.id, a.displayName, a.kind, a.passwordHash, a.recoveryHash, a.email, a.reputation, a.cooldownUntil, a.createdAt]
     )
   );
   return rows.length > 0;
@@ -211,6 +228,7 @@ async function createAccount(displayName, kind, password) {
     kind,
     passwordHash: password ? saltedHash(password) : null,
     recoveryHash: saltedHash(code),
+    email: null,
     reputation: REPUTATION_DEFAULT,
     cooldownUntil: 0,
     createdAt: Date.now()
@@ -226,6 +244,88 @@ async function createAccount(displayName, kind, password) {
     ])
   );
   return { account, token, recoveryCode: code };
+}
+var GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+var GOOGLE_DEFAULT_TOKEN_URL = "https://oauth2.googleapis.com/token";
+var GOOGLE_DEFAULT_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
+var GOOGLE_DEFAULT_REDIRECT_URI = "https://donttalk.vercel.app/api/games/accounts/google/callback";
+var OAUTH_STATE_TTL_MS_DEFAULT = 10 * 60 * 1e3;
+function googleClientId() {
+  return process.env.GOOGLE_CLIENT_ID ?? "";
+}
+function googleClientSecret() {
+  return process.env.GOOGLE_CLIENT_SECRET ?? "";
+}
+function googleConfigured() {
+  return googleClientId().length > 0 && googleClientSecret().length > 0;
+}
+function googleTokenUrl() {
+  return process.env.GOOGLE_TOKEN_ENDPOINT || GOOGLE_DEFAULT_TOKEN_URL;
+}
+function googleUserinfoUrl() {
+  return process.env.GOOGLE_USERINFO_ENDPOINT || GOOGLE_DEFAULT_USERINFO_URL;
+}
+function googleRedirectUri() {
+  return process.env.GOOGLE_REDIRECT_URI || GOOGLE_DEFAULT_REDIRECT_URI;
+}
+function oauthStateTtlMs() {
+  const raw = Number(process.env.GOOGLE_OAUTH_STATE_TTL_MS ?? OAUTH_STATE_TTL_MS_DEFAULT);
+  return Number.isFinite(raw) ? raw : OAUTH_STATE_TTL_MS_DEFAULT;
+}
+async function createOAuthState() {
+  const state = randomBytes(32).toString("hex");
+  await withTable(
+    "facility_oauth_states",
+    () => neonQuery(`DELETE FROM facility_oauth_states WHERE created_at < $1`, [Date.now() - oauthStateTtlMs()])
+  ).catch(() => void 0);
+  await withTable(
+    "facility_oauth_states",
+    () => neonQuery(`INSERT INTO facility_oauth_states (state, created_at) VALUES ($1, $2)`, [state, Date.now()])
+  );
+  return state;
+}
+async function consumeOAuthState(state) {
+  if (!state) return "invalid";
+  const { rows } = await withTable(
+    "facility_oauth_states",
+    () => neonQuery(`SELECT state, created_at FROM facility_oauth_states WHERE state = $1`, [state])
+  );
+  if (rows.length === 0) return "invalid";
+  const createdAt = Number(rows[0]?.created_at ?? 0);
+  await withTable(
+    "facility_oauth_states",
+    () => neonQuery(`DELETE FROM facility_oauth_states WHERE state = $1`, [state])
+  ).catch(() => void 0);
+  if (Date.now() - createdAt > oauthStateTtlMs()) return "expired";
+  return "ok";
+}
+async function loginOrCreateGoogleAccount(email, googleName) {
+  const existing = await findAccountByEmail(email);
+  if (existing) {
+    return { account: existing, token: await issueSession(existing.id), recoveryCode: null, isNew: false };
+  }
+  let base = (googleName || "").trim().slice(0, 12) || email.split("@")[0]?.slice(0, 12) || "Google\u73A9\u5BB6";
+  let name = base;
+  for (let i = 2; i < 100; i++) {
+    if (!await findAccountByName(name)) break;
+    name = `${base.slice(0, 12 - String(i).length)}${i}`;
+    if (i === 99) return null;
+  }
+  if (await findAccountByName(name)) return null;
+  const code = recoveryCode();
+  const account = {
+    id: newId("acct"),
+    displayName: name,
+    kind: "named",
+    passwordHash: null,
+    recoveryHash: saltedHash(code),
+    email,
+    reputation: REPUTATION_DEFAULT,
+    cooldownUntil: 0,
+    createdAt: Date.now()
+  };
+  if (!await insertAccount(account)) return null;
+  return { account, token: await issueSession(account.id), recoveryCode: code, isNew: true };
 }
 async function issueSession(accountId) {
   const token = sessionToken();
@@ -1891,6 +1991,12 @@ function cleanName(raw) {
 function err(status, message) {
   return { status, body: { error: message } };
 }
+function redirectTo(location) {
+  return { status: 302, headers: { Location: location }, body: { redirect: location } };
+}
+function googleErrorRedirect(code) {
+  return redirectTo(`/facility-survival?google_error=${encodeURIComponent(code)}`);
+}
 function playerFromToken(room, token) {
   if (typeof token !== "string") return void 0;
   return room.players.find((p) => p.token === token);
@@ -2068,6 +2174,9 @@ function matchPath(path) {
         return { name: `account-${parts[1]}` };
       }
     }
+    if (parts.length === 3 && parts[1] === "google" && parts[2] === "callback") {
+      return { name: "account-google-callback" };
+    }
     return null;
   }
   if (parts[0] !== "rooms") return null;
@@ -2168,8 +2277,72 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
       if (typeof body.accountToken === "string") await logoutSession(body.accountToken);
       return { status: 200, body: { ok: true } };
     }
-    if (route.name === "account-google") {
-      return err(501, "Google \u767B\u5165\u5C1A\u672A\u63A5\u901A\uFF1A\u9700\u7AD9\u9577\u5728 Google Cloud \u5EFA\u7ACB OAuth \u6191\u8B49\u4E26\u8A2D\u5B9A GOOGLE_CLIENT_ID\uFF0FGOOGLE_CLIENT_SECRET\uFF08\u898B facility-server/README.md\uFF09");
+    if (route.name === "account-google" && method === "GET") {
+      if (!googleConfigured()) {
+        return err(501, "Google \u767B\u5165\u5C1A\u672A\u8A2D\u5B9A\uFF1A\u7AD9\u9577\u9700\u5728 Google Cloud \u5EFA\u7ACB OAuth \u6191\u8B49\u4E26\u8A2D\u5B9A GOOGLE_CLIENT_ID\uFF0FGOOGLE_CLIENT_SECRET\uFF08\u898B facility-server/README.md\uFF09");
+      }
+      const state = await createOAuthState();
+      const params = new URLSearchParams({
+        client_id: googleClientId(),
+        redirect_uri: googleRedirectUri(),
+        response_type: "code",
+        scope: "openid email profile",
+        state,
+        access_type: "online"
+      });
+      return redirectTo(`${GOOGLE_AUTH_URL}?${params.toString()}`);
+    }
+    if (route.name === "account-google-callback" && method === "GET") {
+      const state = query.get("state") ?? "";
+      if (query.get("error")) {
+        if (state) await consumeOAuthState(state).catch(() => "invalid");
+        return googleErrorRedirect("denied");
+      }
+      const code2 = query.get("code") ?? "";
+      if (!code2 || !state) return googleErrorRedirect("invalid");
+      const consumed = await consumeOAuthState(state);
+      if (consumed === "invalid") return googleErrorRedirect("invalid");
+      if (consumed === "expired") return googleErrorRedirect("expired");
+      if (!googleConfigured()) return googleErrorRedirect("not_configured");
+      let tokenJson = {};
+      try {
+        const res = await fetch(googleTokenUrl(), {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            code: code2,
+            client_id: googleClientId(),
+            client_secret: googleClientSecret(),
+            redirect_uri: googleRedirectUri(),
+            grant_type: "authorization_code"
+          }).toString()
+        });
+        tokenJson = await res.json().catch(() => ({}));
+        if (!res.ok || typeof tokenJson.access_token !== "string" || !tokenJson.access_token) {
+          return googleErrorRedirect("token_failed");
+        }
+      } catch {
+        return googleErrorRedirect("token_failed");
+      }
+      let userinfo = {};
+      try {
+        const res = await fetch(googleUserinfoUrl(), {
+          headers: { Authorization: `Bearer ${tokenJson.access_token}` }
+        });
+        userinfo = await res.json().catch(() => ({}));
+      } catch {
+        return googleErrorRedirect("userinfo_failed");
+      }
+      const email = typeof userinfo.email === "string" ? userinfo.email : "";
+      if (!email) return googleErrorRedirect("userinfo_failed");
+      const created = await loginOrCreateGoogleAccount(
+        email,
+        typeof userinfo.name === "string" ? userinfo.name : ""
+      );
+      if (!created) return googleErrorRedirect("account_failed");
+      const back = new URLSearchParams({ accountToken: created.token });
+      if (created.isNew && created.recoveryCode) back.set("googleRecoveryCode", created.recoveryCode);
+      return redirectTo(`/facility-survival?${back.toString()}`);
     }
     if (route.name.startsWith("account-")) return err(404, "\u627E\u4E0D\u5230\u623F\u9593");
     if (route.name === "create" && method === "POST") {
@@ -2563,6 +2736,9 @@ async function handler(req, res) {
         url.searchParams,
         bodyText
       );
+      if (result.headers?.Location) {
+        return new Response(null, { status: result.status, headers: { Location: result.headers.Location } });
+      }
       return jsonResponse(result.body, result.status);
     } catch (e) {
       return jsonResponse({ error: e.message || "\u4F3A\u670D\u5668\u932F\u8AA4" }, 500);
@@ -2582,6 +2758,13 @@ async function handler(req, res) {
       bodyText
     );
     nodeRes.statusCode = result.status;
+    if (result.headers) {
+      for (const [k, v] of Object.entries(result.headers)) nodeRes.setHeader(k, v);
+    }
+    if (result.headers?.Location) {
+      nodeRes.end("");
+      return;
+    }
     nodeRes.setHeader("Content-Type", "application/json");
     nodeRes.end(JSON.stringify(result.body));
   } catch (e) {
