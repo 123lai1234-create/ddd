@@ -295,11 +295,17 @@ def bake_plaid_vertex_colors(objs, mat):
     The mesh is subdivided first: the check squares are 0.029 units across and
     the tie's raw vertex grid is 0.035 units apart, so without extra vertices
     the pattern aliases into blotches.
+
+    2026-11-03 decimation (on top of c3b7945): levels 3 -> 2.  With the
+    buffalo-check period at 0.050, level 2 already puts the vertex grid at
+    ~0.0088 units, far under one check, while level 3 was 4x the triangles
+    for no visible difference in model-viewer.  Plaid drops from ~275K to
+    ~69K tris.
     """
     for ob in objs:
         if ob.type != "MESH":
             continue
-        _subdivide(ob, levels=3)
+        _subdivide(ob, levels=2)
         L.assign(ob, mat)
         me = ob.data
         if "Col" in me.color_attributes:
@@ -756,8 +762,10 @@ def build_hair(m):
     v, f = L.loft(rings, cap_start=True, cap_end=True)
     hood = L.make_obj("HairMass", v, f, m["hair"])
 
+    # 2026-11-03 decimation: voxel 0.007 -> 0.011.  HairMass drops from
+    # ~64K to ~26K tris; the silhouette is set by HAIR_BASE, not voxel size.
     mass = _weld_hair([hood], smooth_factor=0.30, smooth_iters=4,
-                      voxel=0.007)[0]
+                      voxel=0.011)[0]
     _groove_strands(mass)
 
     # ---------- 2. the locks: the silhouette
