@@ -3,16 +3,16 @@ import Base from '../layouts/Base.astro';
 
 const MODEL_URL = '/models/mascot-3d.glb';
 // 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/mascot-3d.glb 得出，不要手填。
-// 解析結果：141,342 tris / 16 materials / 439,900 bytes
-// 大小用截尾（0.4 MB）；改用另一種請加 --round 後重跑。
-const STAT_TRIS = '141 K';
-const STAT_MATS = '16';
-const STAT_SIZE = '0.4 MB';
+// 解析結果：190,876 tris / 1 materials / 6,269,268 bytes
+// 大小用截尾（5.9 MB）；改用另一種請加 --round 後重跑。
+const STAT_TRIS = '191 K';
+const STAT_MATS = '1';
+const STAT_SIZE = '5.9 MB';
 ---
 
 <Base
-    title="3D Mascot | 元嬰不說 真 3D 互動模型"
-    description="元嬰不說 chibi mascot — 真 3D 模型，可用滑鼠旋轉縮放。"
+    title="3D Mascot | 香菇柯基 真 3D 互動模型"
+    description="香菇柯基 mascot — 真 3D 模型，可用滑鼠旋轉縮放。"
     bodyPage="index"
     pageStyles={["/styles/index.css"]}
     pageScripts={["/scripts/app-config.js"]}
@@ -20,10 +20,10 @@ const STAT_SIZE = '0.4 MB';
 >
     <div class="mascot-3d-page">
         <header class="mascot-3d-head">
-            <h1>🧒 元嬰不說 · 真 3D 模型</h1>
+            <h1>🍄 香菇柯基 · 真 3D 模型</h1>
             <p class="subtitle">
-                亂黑髮、白 T 恤、紅色寬褲、腰間綁著格紋襯衫的 2 頭身 chibi ——
-                跟右下角那隻浮動立繪是<b>同一個角色</b>。滑鼠拖曳可以旋轉、滾輪縮放。
+                棕色香菇帽、米白身體、黃白柯基臉、舉手揮手的香菇狗 ——
+                跟右下角那張香菇柯基照片是<b>同一個角色</b>，3D 版是用那張照片經 3DValley 免費生成的。滑鼠拖曳可以旋轉、滾輪縮放。
             </p>
         </header>
 
@@ -32,9 +32,9 @@ const STAT_SIZE = '0.4 MB';
             <model-viewer
                 id="chibiViewer"
                 src={MODEL_URL}
-                alt="元嬰不說 chibi mascot 真 3D 模型"
-                camera-orbit="0deg 82deg 4.4m"
-                camera-target="0m 0.9m 0.2m"
+                alt="香菇柯基 mascot 真 3D 模型"
+                camera-orbit="0deg 82deg 2.8m"
+                camera-target="0m 0m 0m"
                 camera-controls
                 field-of-view="30deg"
                 shadow-intensity="0.7"
@@ -55,46 +55,32 @@ const STAT_SIZE = '0.4 MB';
             <div><div class="num">{STAT_TRIS}</div><div class="lbl">三角面</div></div>
             <div><div class="num">{STAT_MATS}</div><div class="lbl">材質區</div></div>
             <div><div class="num">{STAT_SIZE}</div><div class="lbl">GLB 大小</div></div>
-            <div><div class="num">4.5</div><div class="lbl">Blender LTS</div></div>
+            <div><div class="num">TRELLIS.2</div><div class="lbl">生成引擎</div></div>
         </div>
 
         <p class="mascot-3d-hint">
-            💡 這顆是<b>從零手工建</b>的：沒有 AI 重建、沒有任何貼圖，
-            幾何全部在 <b>Blender 4.5 LTS</b> 裡用參數化曲面組成，
-            每個部位一個<b>純色材質</b>，所以顏色不會跑掉、也不會有貼圖鋸齒。
+            💡 這顆是<b>用照片生成的</b>：把香菇柯基照片上傳到 3DValley，
+            以 <b>TRELLIS.2 Standard</b> 免費生成，背面菇帽滲進照片背景的天空藍，
+            已在貼圖裡轉成棕色（三輪修正，第三輪後只剩邊緣極淡的灰痕）。
             拖曳 = 旋轉，滾輪 = 縮放。
         </p>
 
         <div class="mascot-3d-info">
-            <h3>為什麼不給 AI 重建，要一個部位一個部位自己建？</h3>
+            <h3>這顆香菇狗是怎麼做的？</h3>
             <p>
-                試過 <b>TripoSR</b>、<b>Hunyuan3D</b>、<b>Meshy</b>：把 2D chibi 設定圖餵進去，
-                出來的都是「胖嘟嘟的 blob」，完全不像小朋友。所以改成
-                <b>照設定圖手動建模</b> —— 把參考圖上的尺寸一個一個量下來，寫成參數。
+                把使用者給的香菇柯基照片上傳到 3DValley，以 <b>TRELLIS.2 Standard</b> 免費生成，
+                全程免登入、免付費，64 秒生出 190,876 個三角面、1 個材質、2 張 2048 貼圖。
+                單張照片轉 3D 的背面只能由模型推測，但這顆正背面都完整成形。
             </p>
             <ul>
-                <li>頭顱是<b>超橢圓截面</b>逐層堆疊（15 層）出來的，不是球體縮放</li>
-                <li>眼睛是<b>貼在臉上再往外鼓起</b>的曲面片：眼白 → 虹膜 → 虹膜下緣的
-                    <b>灰色月牙</b> → 高光，再加一條<b>沿著虹膜外緣走</b>的深棕眼瞼線
-                    —— 少了那條線眼睛會變成蟲眼，虹膜下方留白則會變成戴護目鏡</li>
-                <li>頭髮是<b>一整片參數化毛量殼</b>加上 <b>21 片環形生根、貝茲曲線掃出的寬厚花瓣</b>：
-                    每片從頭頂環上長出、寬身長尖尾，根部埋進殼裡；
-                    寬度曲線必須「根部漸變長大 → 維持滿寬 → 才收尖」，
-                    一路收成三角形整頭就會變海膽，額前再疊 <b>5 片</b>寬葉瀏海</li>
-                <li>格紋腰結是<b>頂點色</b>不是節點貼圖：程序化節點貼圖在 glTF 匯出時會直接消失，
-                    變成一片白圍裙</li>
-                <li>全部用<b>純色材質</b>、不貼任何 texture，匯出開 <b>Draco</b> 壓縮</li>
+                <li>香菇帽是<b>棕色圓頂</b>，生成時背面滲進照片背景的天空藍，已在貼圖裡三輪修正成棕色</li>
+                <li>柯基臉是<b>黃白臉</b>：中間白條、黑鼻子、張嘴吐舌頭，跟照片一樣</li>
+                <li>左手<b>舉起來</b>，白手掌朝前；右側有橘色腿部斑塊</li>
+                <li>身體是<b>米白連身裝</b>，模型以原點為中心、高約 1 公尺</li>
             </ul>
             <p>
-                這顆跟首頁那隻浮動立繪是<b>同一個設計稿</b>（<code>astro/public/images/chibi-hero.png</code>），
-                尺寸與配色都是從那張圖上量出來的。
-            </p>
-            <p class="mascot-3d-foot">
-                腳本原始檔：<code>D:\project\blender\chibi_build.py</code>；
-                量測腳本：<code>D:\project\blender\measure_hero.py</code>、
-                <code>measure_parts.py</code>；剪影比對：<code>diff_silhouette.py</code>。<br />
-                預覽圖：<code>out/preview_front.png</code>、<code>out/preview_three_quarter.png</code>、
-                <code>out/preview_side.png</code>、<code>out/preview_back.png</code>。
+                這顆跟右下角那張香菇柯基照片是<b>同一個角色</b>（<code>astro/public/images/chibi-hero.png</code> 就是那張照片，
+                背面圖則是這顆 3D 模型的背面渲染）。
             </p>
         </div>
     </div>
