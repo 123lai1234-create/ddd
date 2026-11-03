@@ -66,13 +66,16 @@ if (r.status !== 0) process.exit(r.status ?? 1);
 // 故把同一份 bundle 再複製到每個深度，讓 Vercel 用檔案路由精確匹配：
 //   rooms（建房，[...all] 已覆蓋）
 //   rooms/[code]（輪詢）
-//   rooms/[code]/[action]（join/setup/start/ready/action/use-item/trade）
+//   rooms/[code]/[action]（join/setup/start/ready/action/keep/gold-pick/use-item/trade）
 //   rooms/[code]/trade/respond（交易回應，4 段）
 // 各檔內容相同，handler 依 req.url 全路徑分派，故行為一致。
 const depthFiles = [
   join(here, "..", "api", "games", "rooms", "[code].mjs"),
   join(here, "..", "api", "games", "rooms", "[code]", "[action].mjs"),
   join(here, "..", "api", "games", "rooms", "[code]", "trade", "respond.mjs"),
+  // 帳號服務是 /api/games/accounts/<action>（2 段），同理需要明確檔案路由，
+  // 否則會被 Vercel 當成單一動態段而 NOT_FOUND（見上方 rooms 說明）。
+  join(here, "..", "api", "games", "accounts", "[action].mjs"),
 ];
 for (const f of depthFiles) {
   mkdirSync(dirname(f), { recursive: true });

@@ -5,8 +5,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // 地圖與規則移植自本站自有資產 /games/lockdown-survival/ 單人版
 // （42 房、9 樓層、6 回合），後端是 /api/games（Neon 房間）。
 // 伺服器權威狀態：前端每 2 秒輪詢 /api/games/rooms/:code，不用 WebSocket。
-// 房間碼就是入場憑證，不需登入；房間 12 小時後過期。
-// 不做登入牆、信譽分、觀戰、成就戰績（超出本次範圍）。
+// 房間 12 小時後過期。帳號服務（B 組）：先出登入／註冊面板，支援顯示名稱
+// 帳號＋訪客帳號＋恢復碼登入；Google 登入待接（按鈕停用，不寫假憑證）。
+// 房型分娛樂（信譽 80）與競技（信譽 90）；觀戰只讀不佔名額。
+// 舊版相容：只有房間 token、沒有帳號的舊流程仍可走娛樂房（後端放行），
+// 但新版前端一律先登入（訪客即登入的一種）才顯示建房／加入。
 
 type FloorId = '2F' | '1F' | 'B1' | 'B2' | 'B3' | 'B4' | 'B5' | 'B6' | 'B7';
 
@@ -18,6 +21,14 @@ interface Item {
 interface PlayerView {
   id: string;
   name: string;
+  accountProfile?: {
+    displayName: string;
+    reputation: number;
+    games: number;
+    wins: number;
+    losses: number;
+    achievements: string[];
+  } | null;
   isAI: boolean;
   isHost: boolean;
   might: number;
@@ -48,14 +59,30 @@ interface TradeView {
   wantKind: string;
 }
 
+interface PendingDrawView {
+  roomId: string;
+  options: { index: number; kind: string; forced: boolean; junk: boolean }[];
+  rules: { maxNonJunk: number | null; maxTotal: number | null };
+  airdrop: boolean;
+  keepDeadline: number | null;
+}
+
 interface RoomView {
   code: string;
   status: 'lobby' | 'playing' | 'finished';
   day: number;
-  phase: 'free' | 'action';
+  phase: 'free' | 'action' | 'keep';
+  roomType?: 'casual' | 'ranked';
+  spectators?: { id: string; name: string }[];
+  isSpectator?: boolean;
+  selfSpectatorId?: string | null;
   players: PlayerView[];
   submittedCount: number;
   submittedPlayerIds: string[];
+  settlementOrder: { playerId: string; name: string; card: number }[];
+  pendingDrawPlayerIds: string[];
+  pendingDraw: PendingDrawView | null;
+  goldOptions: string[];
   gassedFloors: string[];
   detoxedRooms: string[];
   poolCounts: Record<string, number>;
@@ -73,9 +100,35 @@ interface Session {
   code: string;
   playerId: string;
   token: string;
+  isSpectator?: boolean;
+}
+
+interface AccountInfo {
+  id: string;
+  displayName: string;
+  kind: 'named' | 'guest';
+  reputation: number;
+  cooldownUntil: number;
+  cooldownRemainingMs: number;
+  token: string;
+}
+
+interface MeData {
+  account: AccountInfo;
+  record: { games: number; wins: number; losses: number; bestFinalHp: number; achievements: string[] };
 }
 
 const SESSION_KEY = 'facility-game-session';
+const ACCOUNT_KEY = 'facility-game-account';
+
+function loadAccount(): AccountInfo | null {
+  try {
+    const raw = localStorage.getItem(ACCOUNT_KEY);
+    return raw ? (JSON.parse(raw) as AccountInfo) : null;
+  } catch {
+    return null;
+  }
+}
 const POLL_MS = 2000;
 
 interface RoomDef {
@@ -326,6 +379,14 @@ function FacilityGamePage() {
   const [room, setRoom] = useState<RoomView | null>(null);
   const [name, setName] = useState('');
   const [joinCode, setJoinCode] = useState('');
+  const [account, setAccount] = useState<AccountInfo | null>(() => loadAccount());
+  const [me, setMe] = useState<MeData | null>(null);
+  const [loginTab, setLoginTab] = useState<'guest' | 'register' | 'login' | 'recover'>('guest');
+  const [loginName, setLoginName] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [recoveryInput, setRecoveryInput] = useState('');
+  const [recoveryShown, setRecoveryShown] = useState<string | null>(null);
+  const [roomType, setRoomType] = useState<'casual' | 'ranked'>('casual');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   // 大廳配點
@@ -343,15 +404,124 @@ function FacilityGamePage() {
   const [rs, setRs] = useState(3);
   const [rocketTarget, setRocketTarget] = useState('');
   const [itemUses, setItemUses] = useState<string[]>([]);
-  // 交易
+  // 交易（自由階段與行動階段結算內交易共用同一組輸入）
   const [tradeTo, setTradeTo] = useState('');
   const [tradeOffer, setTradeOffer] = useState('');
   const [tradeWant, setTradeWant] = useState('');
+  // 選留階段
+  const [keepSelected, setKeepSelected] = useState<number[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.title = '封鎖設施求生｜多人連線生存遊戲';
   }, []);
+
+  useEffect(() => {
+    if (!account) {
+      setMe(null);
+      return;
+    }
+    api(`/api/games/accounts/me?accountToken=${encodeURIComponent(account.token)}`)
+      .then((d) => setMe(d as MeData))
+      .catch(() => setMe(null));
+  }, [account]);
+
+  const saveAccount = (a: AccountInfo) => {
+    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(a));
+    setAccount(a);
+  };
+
+  const logoutAccount = async () => {
+    if (account) {
+      try {
+        await api('/api/games/accounts/logout', { accountToken: account.token });
+      } catch {
+        // 登出失敗也清掉本機登入態。
+      }
+    }
+    localStorage.removeItem(ACCOUNT_KEY);
+    setAccount(null);
+    setMe(null);
+    setRecoveryShown(null);
+  };
+
+  const handleAccountResponse = (data: {
+    account: Omit<AccountInfo, 'token'>;
+    token: string;
+    recoveryCode?: string;
+  }) => {
+    saveAccount({ ...data.account, token: data.token });
+    // 恢復碼只顯示一次：顯示後即從 state 清掉的按鈕由使用者按「我已抄下」關閉，
+    // 伺服器只存雜湊，關閉後無法再查回明文。
+    setRecoveryShown(data.recoveryCode ?? null);
+    setError('');
+  };
+
+  const submitGuest = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const data = (await api('/api/games/accounts/guest', { displayName: loginName.trim() || undefined })) as {
+        account: Omit<AccountInfo, 'token'>;
+        token: string;
+        recoveryCode: string;
+      };
+      handleAccountResponse(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '訪客登入失敗');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitRegister = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const data = (await api('/api/games/accounts/register', { displayName: loginName.trim(), password: loginPassword })) as {
+        account: Omit<AccountInfo, 'token'>;
+        token: string;
+        recoveryCode: string;
+      };
+      handleAccountResponse(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '註冊失敗');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitLogin = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const data = (await api('/api/games/accounts/login', { displayName: loginName.trim(), password: loginPassword })) as {
+        account: Omit<AccountInfo, 'token'>;
+        token: string;
+      };
+      handleAccountResponse(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '登入失敗');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitRecover = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const data = (await api('/api/games/accounts/recover', { displayName: loginName.trim(), recoveryCode: recoveryInput.trim() })) as {
+        account: Omit<AccountInfo, 'token'>;
+        token: string;
+      };
+      handleAccountResponse(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '恢復登入失敗');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const fetchRoom = useCallback(
     async (s: Session) => {
@@ -390,6 +560,10 @@ function FacilityGamePage() {
     setDetoxTarget('');
     setRocketTarget('');
     setItemUses([]);
+    setTradeTo('');
+    setTradeOffer('');
+    setTradeWant('');
+    setKeepSelected([]);
   }, [phaseKey]);
 
   useEffect(() => {
@@ -425,19 +599,21 @@ function FacilityGamePage() {
   );
 
   const createRoom = async () => {
-    if (!name.trim()) {
+    if (!name.trim() && !account) {
       setError('請先輸入名字');
       return;
     }
     setBusy(true);
     setError('');
     try {
-      const data = (await api('/api/games/rooms', { name: name.trim() })) as {
+      const data = (await api('/api/games/rooms', { name: name.trim(), accountToken: account?.token, roomType })) as {
         code: string;
         playerId: string;
         token: string;
         room: RoomView;
+        accountNote?: string;
       };
+      if (data.accountNote) setError(data.accountNote);
       const s: Session = { code: data.code, playerId: data.playerId, token: data.token };
       localStorage.setItem(SESSION_KEY, JSON.stringify(s));
       setSession(s);
@@ -450,7 +626,7 @@ function FacilityGamePage() {
   };
 
   const joinRoom = async () => {
-    if (!name.trim() || !joinCode.trim()) {
+    if ((!name.trim() && !account) || !joinCode.trim()) {
       setError('請輸入名字與房間碼');
       return;
     }
@@ -459,7 +635,9 @@ function FacilityGamePage() {
     try {
       const data = (await api(`/api/games/rooms/${joinCode.trim().toUpperCase()}/join`, {
         name: name.trim(),
-      })) as { playerId: string; token: string; room: RoomView };
+        accountToken: account?.token,
+      })) as { playerId: string; token: string; room: RoomView; accountNote?: string };
+      if (data.accountNote) setError(data.accountNote);
       const s: Session = { code: joinCode.trim().toUpperCase(), playerId: data.playerId, token: data.token };
       localStorage.setItem(SESSION_KEY, JSON.stringify(s));
       setSession(s);
@@ -477,6 +655,42 @@ function FacilityGamePage() {
     setRoom(null);
   };
 
+  const spectateRoom = async () => {
+    if (!joinCode.trim()) {
+      setError('請輸入房間碼');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const data = (await api(`/api/games/rooms/${joinCode.trim().toUpperCase()}/spectate`, {
+        name: account?.displayName ?? name.trim(),
+        accountToken: account?.token,
+      })) as { spectatorId: string; token: string; room: RoomView };
+      const s2: Session = { code: joinCode.trim().toUpperCase(), playerId: data.spectatorId, token: data.token, isSpectator: true };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(s2));
+      setSession(s2);
+      setRoom(data.room);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '觀戰加入失敗');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const quitRoom = async () => {
+    if (!session || !room) return;
+    setBusy(true);
+    try {
+      await api(`/api/games/rooms/${room.code}/quit`, { token: session.token });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '棄權失敗');
+    } finally {
+      setBusy(false);
+      leaveRoom();
+    }
+  };
+
   const wrap: CSSProperties = {
     maxWidth: 980,
     margin: '0 auto',
@@ -486,18 +700,123 @@ function FacilityGamePage() {
     lineHeight: 1.6,
   };
 
+  if (!account) {
+    return (
+      <main style={wrap}>
+        <h1 style={{ fontSize: 28, marginBottom: 4 }}>封鎖設施求生</h1>
+        <p style={{ color: '#94a3b8' }}>
+          最多 8 名玩家受困於 9 層、42 間房的設施，撐過 6 回合。請先登入：訪客帳號不用密碼、
+          也是一種正式登入；顯示名稱帳號可用密碼登入，忘記密碼可用恢復碼登入。
+        </p>
+        <p style={{ color: '#f59e0b', fontSize: 14 }}>
+          恢復碼只在建立帳號時顯示一次，伺服器只存雜湊、無法幫你查回明文，請務必抄下。
+          Google 登入尚未接通（需站長另外提供 Google Cloud 憑證），目前按鈕為停用狀態。
+        </p>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+          {(['guest', 'register', 'login', 'recover'] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              style={loginTab === t ? btnPrimary : btn}
+              onClick={() => setLoginTab(t)}
+            >
+              {t === 'guest' ? '訪客登入' : t === 'register' ? '註冊' : t === 'login' ? '登入' : '恢復碼登入'}
+            </button>
+          ))}
+        </div>
+        <label style={{ display: 'block', marginTop: 16 }}>
+          顯示名稱
+          <input
+            value={loginName}
+            onChange={(e) => setLoginName(e.target.value)}
+            placeholder={loginTab === 'guest' ? '留空自動產生訪客名稱' : '例如：阿哲'}
+            maxLength={12}
+            style={{ display: 'block', width: '100%', minHeight: 44, marginTop: 6, padding: '8px 12px', borderRadius: 10, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9', fontSize: 16 }}
+          />
+        </label>
+        {(loginTab === 'register' || loginTab === 'login') && (
+          <label style={{ display: 'block', marginTop: 12 }}>
+            密碼（至少 4 個字元）
+            <input
+              type="password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              style={{ display: 'block', width: '100%', minHeight: 44, marginTop: 6, padding: '8px 12px', borderRadius: 10, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9', fontSize: 16 }}
+            />
+          </label>
+        )}
+        {loginTab === 'recover' && (
+          <label style={{ display: 'block', marginTop: 12 }}>
+            恢復碼
+            <input
+              value={recoveryInput}
+              onChange={(e) => setRecoveryInput(e.target.value.toUpperCase())}
+              placeholder="XXXX-XXXX-XXXX"
+              style={{ display: 'block', width: '100%', minHeight: 44, marginTop: 6, padding: '8px 12px', borderRadius: 10, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9', fontSize: 16 }}
+            />
+          </label>
+        )}
+        <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            style={busy ? btnDisabled : btnPrimary}
+            disabled={busy}
+            onClick={loginTab === 'guest' ? submitGuest : loginTab === 'register' ? submitRegister : loginTab === 'login' ? submitLogin : submitRecover}
+          >
+            {loginTab === 'guest' ? '以訪客身分登入' : loginTab === 'register' ? '註冊' : loginTab === 'login' ? '登入' : '用恢復碼登入'}
+          </button>
+          <button type="button" style={btnDisabled} disabled title="Google 登入尚未接通：需站長在 Google Cloud 建立 OAuth 憑證後才開放">
+            Google 登入（尚未接通）
+          </button>
+        </div>
+        {recoveryShown && (
+          <div style={{ marginTop: 16, padding: 12, borderRadius: 10, border: '1px solid #f59e0b', background: '#422006' }}>
+            <strong>你的恢復碼（只顯示一次，請立即抄下）：{recoveryShown}</strong>
+            <div style={{ marginTop: 8 }}>
+              <button type="button" style={btn} onClick={() => setRecoveryShown(null)}>
+                我已抄下
+              </button>
+            </div>
+          </div>
+        )}
+        {error && (
+          <p role="alert" style={{ color: '#f87171', marginTop: 16 }}>
+            {error}
+          </p>
+        )}
+      </main>
+    );
+  }
+
   if (!session || !room) {
     return (
       <main style={wrap}>
         <h1 style={{ fontSize: 28, marginBottom: 4 }}>封鎖設施求生</h1>
         <p style={{ color: '#94a3b8' }}>
-          4 名玩家受困於 9 層、42 間房的設施，撐過 6 回合。配點、搜刮水糧、投票毒樓層、
+          最多 8 名玩家受困於 9 層、42 間房的設施，撐過 6 回合。配點、搜刮水糧、投票毒樓層、
           同房戰鬥、手術室、火箭筒、控制室、操作室重配、暗影吸血復活，6 回合後按生命排名。
           本遊戲為原創作品，規則移植自本站單人版《禁閉逃殺》玩法。
         </p>
         <p style={{ color: '#f59e0b', fontSize: 14 }}>
           注意：房間存在伺服器資料庫裡，12 小時後過期；房間碼就是入場憑證，不要公開給不想一起玩的人。
         </p>
+        <section aria-label="個人檔案" style={{ marginTop: 16, padding: 12, borderRadius: 12, border: '1px solid #334155', background: '#0f172a' }}>
+          <div>
+            👤 {account.displayName}（{account.kind === 'guest' ? '訪客' : '顯示名稱'}帳號）· 信譽 {me?.account.reputation ?? account.reputation} 分
+            {me && <> · 戰績 {me.record.wins} 勝 / {me.record.losses} 負（共 {me.record.games} 場）</>}
+            {me && me.record.achievements.length > 0 && <> · 成就：{me.record.achievements.join('、')}</>}
+          </div>
+          {me && me.account.cooldownRemainingMs > 0 && (
+            <div style={{ color: '#f87171', fontSize: 14 }}>
+              冷卻中：約 {Math.ceil(me.account.cooldownRemainingMs / 60000)} 分鐘後才能加入新房間（對局中棄權的冷卻）。
+            </div>
+          )}
+          <div style={{ marginTop: 8 }}>
+            <button type="button" style={btn} onClick={logoutAccount}>
+              登出
+            </button>
+          </div>
+        </section>
         <label style={{ display: 'block', marginTop: 16 }}>
           你的名字
           <input
@@ -507,6 +826,17 @@ function FacilityGamePage() {
             maxLength={12}
             style={{ display: 'block', width: '100%', minHeight: 44, marginTop: 6, padding: '8px 12px', borderRadius: 10, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9', fontSize: 16 }}
           />
+        </label>
+        <label style={{ display: 'block', marginTop: 14 }}>
+          房型
+          <select
+            value={roomType}
+            onChange={(e) => setRoomType(e.target.value as 'casual' | 'ranked')}
+            style={{ display: 'block', width: '100%', minHeight: 44, marginTop: 6, padding: '8px 12px', borderRadius: 10, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9', fontSize: 16 }}
+          >
+            <option value="casual">娛樂房（需信譽 80 分）</option>
+            <option value="ranked">競技房（需信譽 90 分）</option>
+          </select>
         </label>
         <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
           <button type="button" style={busy ? btnDisabled : btnPrimary} disabled={busy} onClick={createRoom}>
@@ -526,6 +856,9 @@ function FacilityGamePage() {
           </label>
           <button type="button" style={busy ? btnDisabled : btn} disabled={busy} onClick={joinRoom}>
             加入房間
+          </button>
+          <button type="button" style={busy ? btnDisabled : btn} disabled={busy} onClick={spectateRoom}>
+            觀戰加入（只讀）
           </button>
         </div>
         {error && (
@@ -591,6 +924,61 @@ function FacilityGamePage() {
     </div>
   );
 
+  if (session?.isSpectator && room) {
+    return (
+      <main style={wrap}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <h1 style={{ fontSize: 26, margin: 0 }}>封鎖設施求生（觀戰）</h1>
+          <button type="button" style={btn} onClick={leaveRoom}>
+            離開觀戰
+          </button>
+        </div>
+        <p style={{ color: '#94a3b8' }}>
+          房間碼：<strong style={{ color: '#fbbf24', fontSize: 22, letterSpacing: 2 }}>{room.code}</strong>
+        {room.roomType === 'ranked' ? ' · 競技房' : ' · 娛樂房'}
+        {(room.spectators?.length ?? 0) > 0 && <> · 👀 觀戰者：{room.spectators?.map((sp) => sp.name).join('、')}</>}
+          {room.roomType === 'ranked' ? ' · 競技房' : ' · 娛樂房'}
+          {room.status === 'playing' && ` · 第 ${room.day} / 6 回合`}
+          {room.status === 'finished' && ' · 遊戲結束'}
+        </p>
+        <p style={{ color: '#f59e0b', fontSize: 14 }}>觀戰模式為只讀：不能行動、交易或投票，也不會佔玩家名額。</p>
+        <section aria-label="玩家狀態" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+          {room.players.map((pl) => (
+            <div key={pl.id} style={{ border: '1px solid #334155', borderRadius: 12, padding: 12, background: '#0f172a' }}>
+              <div style={{ fontWeight: 700 }}>
+                {pl.name} {pl.isAI && '(AI)'} {pl.isHost && '👑'}
+              </div>
+              <div style={{ fontSize: 14, color: '#94a3b8' }}>
+                {pl.alive ? `❤️ ${pl.hp} / 10` : `👻 暗影（累積 ${pl.shadowHp} 血）`} · 📍 {ROOM_NAME[pl.room] ?? '？'}
+              </div>
+              {pl.accountProfile && (
+                <div style={{ fontSize: 13, color: '#94a3b8' }}>
+                  信譽 {pl.accountProfile.reputation} · {pl.accountProfile.wins} 勝 / {pl.accountProfile.losses} 負
+                  {pl.accountProfile.achievements.length > 0 && ` · ${pl.accountProfile.achievements.join('、')}`}
+                </div>
+              )}
+            </div>
+          ))}
+        </section>
+        {(room.spectators?.length ?? 0) > 0 && (
+          <p style={{ color: '#94a3b8', fontSize: 14 }}>觀戰者：{room.spectators?.map((sp) => sp.name).join('、')}</p>
+        )}
+        <div ref={logRef} style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid #334155', borderRadius: 12, padding: 12, marginTop: 16, fontSize: 14 }}>
+          {room.log.slice(-100).map((e, i) => (
+            <div key={i}>
+              第 {e.day} 天：{e.text}
+            </div>
+          ))}
+        </div>
+        {error && (
+          <p role="alert" style={{ color: '#f87171' }}>
+            {error}
+          </p>
+        )}
+      </main>
+    );
+  }
+
   return (
     <main style={wrap}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
@@ -598,13 +986,22 @@ function FacilityGamePage() {
         <button type="button" style={btn} onClick={leaveRoom}>
           離開房間
         </button>
+        <button type="button" style={btn} disabled={busy} onClick={quitRoom} title="對局中棄權改由 AI 託管並扣信譽 10 分，第一位棄權者冷卻 15 分鐘；大廳棄權不扣分">
+          棄權（對局中扣分）
+        </button>
       </div>
       <p style={{ color: '#94a3b8' }}>
         房間碼：<strong style={{ color: '#fbbf24', fontSize: 22, letterSpacing: 2 }}>{room.code}</strong>
         {room.status === 'playing' && (
           <>
             {' '}
-            · 第 {room.day} / 6 回合 · {room.phase === 'free' ? '自由階段' : '行動階段'}
+            · 第 {room.day} / 6 回合 · {room.phase === 'free' ? '自由階段' : room.phase === 'keep' ? '選留階段' : '行動階段'}
+          </>
+        )}
+        {room.status === 'playing' && room.settlementOrder.length > 0 && (
+          <>
+            {' '}
+            · 📋 行動順序：{room.settlementOrder.map((o) => `${o.name}(${o.card})`).join(' → ')}
           </>
         )}
         {room.status === 'finished' && ' · 遊戲結束'}
@@ -637,6 +1034,12 @@ function FacilityGamePage() {
             <div style={{ fontWeight: 700 }}>
               {p.name} {p.isAI && '(AI)'} {p.isHost && '👑'} {p.isSelf && '← 你'}
             </div>
+            {p.accountProfile && (
+              <div style={{ fontSize: 13, color: '#94a3b8' }}>
+                信譽 {p.accountProfile.reputation} · {p.accountProfile.wins} 勝 / {p.accountProfile.losses} 負（{p.accountProfile.games} 場）
+                {p.accountProfile.achievements.length > 0 && ` · ${p.accountProfile.achievements.join('、')}`}
+              </div>
+            )}
             <div style={{ fontSize: 14, color: '#94a3b8' }}>
               {p.alive ? `❤️ ${p.hp} / 10` : `👻 暗影（累積 ${p.shadowHp} 血）`}
               {p.helicopter && p.alive ? ' ✈️ 下回合可飛行' : ''}
@@ -670,7 +1073,11 @@ function FacilityGamePage() {
             <div style={{ fontSize: 13, color: '#94a3b8' }}>
               {room.status === 'playing' && room.phase === 'free' && (p.ready ? '✅ 已準備' : '⏳ 自由階段中')}
               {room.status === 'playing' && room.phase === 'action' && (room.submittedPlayerIds.includes(p.id) ? '✅ 已行動' : '⏳ 行動中')}
+              {room.status === 'playing' && room.phase === 'keep' && (room.pendingDrawPlayerIds.includes(p.id) ? '🎴 選留中' : '✅ 已選留')}
               {room.status === 'lobby' && (p.hasSetup ? '✅ 已配點' : '⏳ 尚未配點')}
+              {room.status === 'playing' &&
+                room.settlementOrder.find((o) => o.playerId === p.id) &&
+                ` · 順序 #${room.settlementOrder.find((o) => o.playerId === p.id)?.card}`}
             </div>
           </div>
         ))}
@@ -682,7 +1089,8 @@ function FacilityGamePage() {
           <h2 style={{ fontSize: 20 }}>角色創建</h2>
           <p style={{ fontSize: 14, color: '#94a3b8' }}>
             武力／負重／速度總和必須剛好 10 點，速度至少 1 點。負重是背包上限；速度是每回合最多步數。
-            抽取自動保留：垃圾場垃圾強制帶走、非垃圾最多 2 件、停機坪空投最多 1 件。
+            走到資源房會攤開物資讓你選留：垃圾場垃圾強制帶走、非垃圾最多 2 件、停機坪空投最多 1 件、
+            超出背包容量不能選；60 秒內未選由伺服器自動保留。
           </p>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             {stepper('武力', might, setMight)}
@@ -723,7 +1131,7 @@ function FacilityGamePage() {
                 disabled={busy}
                 onClick={() => post(`/api/games/rooms/${room.code}/start`, {})}
               >
-                開始遊戲（未滿 4 人由 AI 補滿）
+                開始遊戲（未滿 8 人由 AI 補滿）
               </button>
             )}
           </div>
@@ -835,6 +1243,30 @@ function FacilityGamePage() {
                     ))}
                 </div>
               )}
+              {(self.items ?? []).some((it) => it.kind === 'gold_bar') && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ marginBottom: 6 }}>
+                    金條攤開挑選：花 1 張金條，直接從目前房間（{ROOM_NAME[self.room] ?? self.room}）的物資池挑 1 項（不能挑金條，不佔抽取次數）：
+                  </div>
+                  {room.goldOptions.length > 0 ? (
+                    room.goldOptions.map((k) => (
+                      <button
+                        key={k}
+                        type="button"
+                        style={{ ...btn, margin: '4px' }}
+                        disabled={busy}
+                        onClick={() => post(`/api/games/rooms/${room.code}/gold-pick`, { kind: k })}
+                      >
+                        花金條換「{ITEM_NAME[k] ?? k}」
+                      </button>
+                    ))
+                  ) : (
+                    <span style={{ fontSize: 14, color: '#94a3b8' }}>
+                      這裡沒有可換的物資（物資池只剩金條、不是資源房，或垃圾場禁用金條），金條不會被扣。
+                    </span>
+                  )}
+                </div>
+              )}
               <div style={{ marginBottom: 12 }}>
                 <div style={{ marginBottom: 6 }}>交易（一物換一物，對方接受才成交）：</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -925,6 +1357,64 @@ function FacilityGamePage() {
               >
                 {self.ready ? '已準備，等待其他玩家' : '準備完成，進入行動階段'}
               </button>
+            </div>
+          )}
+
+          {/* 選留階段操作 */}
+          {room.phase === 'keep' && self && (
+            <div style={{ border: '1px solid #f59e0b', borderRadius: 12, padding: 14, marginTop: 12 }}>
+              <h3 style={{ marginTop: 0 }}>🎴 抽取攤開選留</h3>
+              {room.pendingDraw ? (
+                <>
+                  <p style={{ fontSize: 14 }}>
+                    你在 {ROOM_NAME[room.pendingDraw.roomId] ?? room.pendingDraw.roomId} 攤開了{' '}
+                    {room.pendingDraw.options.length} 張，點卡片決定帶不帶走。
+                    {room.pendingDraw.rules.maxNonJunk !== null && `（垃圾場：非垃圾最多 ${room.pendingDraw.rules.maxNonJunk} 件）`}
+                    {room.pendingDraw.rules.maxTotal !== null && `（停機坪：最多帶走 ${room.pendingDraw.rules.maxTotal} 張）`}
+                    超出背包容量或上限時整筆會被拒絕，可重選；60 秒內未選由伺服器自動保留。
+                  </p>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {room.pendingDraw.options.map((o) => {
+                      const forced = o.forced;
+                      const selected = forced || keepSelected.includes(o.index);
+                      return (
+                        <button
+                          key={o.index}
+                          type="button"
+                          disabled={forced}
+                          style={selected ? btnPrimary : btn}
+                          onClick={() =>
+                            setKeepSelected(
+                              keepSelected.includes(o.index)
+                                ? keepSelected.filter((x) => x !== o.index)
+                                : [...keepSelected, o.index],
+                            )
+                          }
+                        >
+                          {ITEM_NAME[o.kind] ?? o.kind}
+                          {forced ? '（垃圾強制帶走）' : selected ? '（帶走）' : '（不帶）'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    style={{ ...btnPrimary, marginTop: 12 }}
+                    disabled={busy}
+                    onClick={() => post(`/api/games/rooms/${room.code}/keep`, { keepIndexes: keepSelected })}
+                  >
+                    確認選留
+                  </button>
+                </>
+              ) : (
+                <p style={{ fontSize: 14 }}>
+                  你已選留完畢，等待其他玩家：
+                  {room.pendingDrawPlayerIds
+                    .map((id) => room.players.find((p) => p.id === id)?.name ?? '?')
+                    .join('、') || '無'}
+                  。逾時未選者由伺服器自動保留。
+                </p>
+              )}
             </div>
           )}
 
@@ -1021,6 +1511,59 @@ function FacilityGamePage() {
               ) : (
                 <p style={{ fontSize: 14 }}>你是暗影：不受毒氣與激光傷害，不能投票、搜刮或使用道具。與存活者同房可吸血，累積 2 血即可復活。</p>
               )}
+              {self.alive && (
+                <div style={{ marginBottom: 10 }}>
+                  <span>結算內交易（選填：結算一開始按行動順序跑，AI 對象即判，人類對象轉自由階段待回覆）：</span>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 6 }}>
+                    <select
+                      value={tradeTo}
+                      onChange={(e) => {
+                        setTradeTo(e.target.value);
+                        setTradeWant('');
+                      }}
+                      style={{ minHeight: 44, borderRadius: 10, background: '#0f172a', color: '#f1f5f9', fontSize: 15 }}
+                    >
+                      <option value="">不交易／選對象</option>
+                      {room.players
+                        .filter((p) => p.alive && p.id !== self.id)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                            {p.isAI ? '（AI）' : ''}
+                          </option>
+                        ))}
+                    </select>
+                    <select
+                      value={tradeOffer}
+                      onChange={(e) => setTradeOffer(e.target.value)}
+                      style={{ minHeight: 44, borderRadius: 10, background: '#0f172a', color: '#f1f5f9', fontSize: 15 }}
+                    >
+                      <option value="">我出</option>
+                      {(self.items ?? []).map((it) => (
+                        <option key={it.id} value={it.id}>
+                          {ITEM_NAME[it.kind]}
+                        </option>
+                      ))}
+                    </select>
+                    <span>換</span>
+                    <select
+                      value={tradeWant}
+                      onChange={(e) => setTradeWant(e.target.value)}
+                      style={{ minHeight: 44, borderRadius: 10, background: '#0f172a', color: '#f1f5f9', fontSize: 15 }}
+                    >
+                      <option value="">對方出</option>
+                      {tradeTo &&
+                        Array.from(
+                          new Set(room.players.find((p) => p.id === tradeTo)?.itemKinds ?? []),
+                        ).map((k) => (
+                          <option key={k} value={k}>
+                            {ITEM_NAME[k] ?? k}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+              )}
               <button
                 type="button"
                 style={busy || !canSubmitAction ? btnDisabled : btnPrimary}
@@ -1029,6 +1572,10 @@ function FacilityGamePage() {
                   post(`/api/games/rooms/${room.code}/action`, {
                     path,
                     voteFloor: self.alive ? vote : null,
+                    trade:
+                      self.alive && tradeTo && tradeOffer && tradeWant
+                        ? { toId: tradeTo, offerItemId: tradeOffer, wantKind: tradeWant }
+                        : undefined,
                     controlChoice:
                       self.alive && finalRoom === 'B101' && controlMode
                         ? { mode: controlMode, target: controlMode === 'detox' ? detoxTarget || undefined : undefined }

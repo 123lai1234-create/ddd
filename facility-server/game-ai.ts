@@ -22,7 +22,8 @@ import {
   type Player,
 } from "./game-engine";
 
-const AI_NAMES = ["阿鐵", "小夜", "老莫", "阿葵"];
+/** 8 人房最多 7 名 AI，名字不重複（aiName 仍用 modulo 以防萬一）。 */
+const AI_NAMES = ["阿鐵", "小夜", "老莫", "阿葵", "阿岩", "小梅", "老高", "阿雪"];
 
 /** 政策 → 基因（與單人版 startingGenes 一致）與出生點偏好（POLICY_HOME）。 */
 const POLICIES = [
@@ -42,7 +43,9 @@ export function aiSetup(index: number): { might: number; carry: number; speed: n
   return { might: p.might, carry: p.carry, speed: p.speed, policy: p.id };
 }
 
-/** 政策偏好出生點有人時，選人最少的出生點。 */
+/** 政策偏好出生點有人時，選人最少的出生點。出生點只有 6 個、
+    玩家上限 8 人時一定會共用：人最少者勝出（同票取第一個），
+    絕不回傳空白；同出生點者開局落地戰鬥由引擎處理。 */
 export function aiSpawn(room: GameRoom, policy?: string): string {
   const home = POLICIES.find((p) => p.id === policy)?.home;
   if (home && !room.players.some((p) => p.room === home)) return home;
@@ -266,6 +269,30 @@ const ITEM_VALUE: Record<ItemKind, number> = {
  */
 export function aiAcceptTrade(giveKind: ItemKind, receiveKind: ItemKind): boolean {
   return (ITEM_VALUE[receiveKind] ?? 0) >= (ITEM_VALUE[giveKind] ?? 0);
+}
+
+/**
+ * AI 金條換物資（單人版 bots.js useGoldBar 的簡化版：原版按政策
+ * KEEP_PRIORITY 排序，這裡按 ITEM_VALUE 價值排序）：自由階段持有
+ * 金條、當前房物資池有非金條物時，挑價值最高的一種；垃圾場等
+ * 無可換物時回 null（金條不扣）。
+ */
+export function aiGoldChoice(room: GameRoom, player: Player): ItemKind | null {
+  const def = ROOM_MAP[player.room];
+  if (!def || def.resourcePool === null || def.goldBarDisabled) return null;
+  if (!player.items.some((it) => it.kind === "gold_bar")) return null;
+  const pool = room.pools[player.room] ?? [];
+  let best: ItemKind | null = null;
+  let bestValue = -Infinity;
+  for (const it of pool) {
+    if (it.kind === "gold_bar") continue;
+    const v = ITEM_VALUE[it.kind] ?? 0;
+    if (v > bestValue) {
+      bestValue = v;
+      best = it.kind;
+    }
+  }
+  return best;
 }
 
 export function aiMightHint(player: Player): number {

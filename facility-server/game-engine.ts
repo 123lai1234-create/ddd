@@ -8,12 +8,26 @@
 // 傳送室、停機坪空投與飛行、垃圾場規則。
 //
 // 為了多人輪詢（2 秒 GET）可玩而做的簡化，見 README 與最終報告：
-//   - 抽取不做「攤開選留」互動：伺服器自動保留（垃圾場垃圾強制帶走、
-//     非垃圾最多 2 件、停機坪最多 1 件、背包容量為準），多餘的進棄置堆。
-//   - 金條攤開挑選不做（金條仍可由抽取取得，終局仍 1:1 折生命）。
-//   - 交易仍是自由階段一物換一物（舊版介面），不在結算內重跑交易步驟。
-//   - 成就、戰績、觀戰、信譽、帳號系統皆不做（超出本次範圍）。
-//   - 玩家人數維持 4 人（舊版上限），未滿由 AI 補滿。
+//   - 抽取攤開選留做成獨立 keep 階段（見 PendingDraw）：結算步驟 0
+//     只移動＋攤開，不卡住等某人選；人類待選留時結算暫停在 keep
+//     階段，選完或逾時（KEEP_TIMEOUT_MS，惰性檢查）才跑後續步驟。
+//     AI 選留與逾時自動保留都用原本的伺服器自動保留貪心規則
+//     （垃圾場垃圾強制帶走、非垃圾最多 2 件、停機坪最多 1 件、
+//     背包剩餘容量為準），多餘的進棄置堆（停機坪沒選的留在空投池）。
+//   - 金條攤開挑選做在自由階段（spendGoldPick）：花 1 張金條挑
+//     當前房間物資池一項（不能挑金條；垃圾場禁用；池裡只剩金條
+//     或無可換物時不扣金條、空手而歸），不佔抽取次數；花掉的金條
+//     直接消失（不進用掉的堆，回收機抽不回來，與單人版 UI 一致）。
+//   - 交易：自由階段一物換一物保留；另移植單人版結算內交易步驟
+//     （見 resolveSettlementTrades）：行動提交可附 trade，結算時按
+//     行動順序跑，AI 對象即判，人對人因輪詢不能卡結算，轉成自由
+//     階段待回覆交易（下一自由階段回覆，詳見 README）。
+//   - 帳號系統見 accounts.ts：玩家可綁 accountId（房間內公開視圖只附
+//     加入時／每次請求刷新過的公開檔案快照，不含雜湊與 token）；觀戰者
+//     另存 room.spectators，不佔玩家名額；棄權／逾時託管與戰績寫入由
+//     handler 在提交後處理（見 handler.ts），引擎本身不碰資料庫。
+//   - 玩家人數上限 8 人，未滿由 AI 補滿；出生點只有 6 個，
+//     AI 出生點取人最少的出生點（不足時循環共用，絕不空白）。
 //   - 暗影 lastAliveHp 取「致死傷害前」的生命（單人版 JS 在 hp 歸零後
 //     才記錄，實質永遠是 0，排名上所有暗影同分；此處修為合理語意）。
 //   - 容量計算用「剩餘負重」（carry − 現有件數）；單人版 JS 的 keep
@@ -46,6 +60,8 @@ export interface RoomDef {
   gasImmune: boolean;
   laser: boolean;
   maxNonJunkPickup: number | null;
+  /** 單人版 data.js 的 goldBarDisabled：此房不能用金條攤開挑選（垃圾場）。 */
+  goldBarDisabled: boolean;
 }
 
 const R = (o: Partial<RoomDef> & { id: string; floors: FloorId[] }): RoomDef => ({
@@ -58,8 +74,12 @@ const R = (o: Partial<RoomDef> & { id: string; floors: FloorId[] }): RoomDef => 
   gasImmune: false,
   laser: false,
   maxNonJunkPickup: null,
+  goldBarDisabled: false,
   ...o,
 });
+
+/** 選留逾時：keep 階段開始後這麼久未選，伺服器自動保留（惰性檢查，見 handler）。 */
+export const KEEP_TIMEOUT_MS = 60_000;
 
 export const ROOMS: RoomDef[] = [
   /* 2F */
@@ -103,7 +123,7 @@ export const ROOMS: RoomDef[] = [
   /* B5 */
   R({ id: "B501", floors: ["B4", "B5"], name: "大倉庫", resourcePool: [{ kind: "water", qty: 5 }, { kind: "food", qty: 5 }, { kind: "knife", qty: 3 }, { kind: "wine", qty: 2 }, { kind: "gold_bar", qty: 1 }, { kind: "pill", qty: 2 }, { kind: "adrenaline", qty: 2 }, { kind: "pistol", qty: 1 }, { kind: "shotgun", qty: 1 }], drawLimit: 3 }),
   R({ id: "B502", floors: ["B5"] }),
-  R({ id: "B503", floors: ["B5"], name: "垃圾場", resourcePool: [{ kind: "junk", qty: 20 }, { kind: "gas_mask", qty: 1 }, { kind: "recycler", qty: 1 }, { kind: "rocket_launcher", qty: 1 }, { kind: "dimension_pocket", qty: 1 }, { kind: "rope", qty: 1 }], drawLimit: 5, maxNonJunkPickup: 2 }),
+  R({ id: "B503", floors: ["B5"], name: "垃圾場", resourcePool: [{ kind: "junk", qty: 20 }, { kind: "gas_mask", qty: 1 }, { kind: "recycler", qty: 1 }, { kind: "rocket_launcher", qty: 1 }, { kind: "dimension_pocket", qty: 1 }, { kind: "rope", qty: 1 }], drawLimit: 5, maxNonJunkPickup: 2, goldBarDisabled: true }),
   R({ id: "B504", floors: ["B5"] }),
   R({ id: "B505", floors: ["B5"], name: "糧倉", resourcePool: [{ kind: "food", qty: 10 }], drawLimit: 4 }),
   /* B6 */
@@ -122,7 +142,7 @@ export const SPAWN_ROOM_IDS: string[] = ROOMS.filter((r) => r.spawn).map((r) => 
 export const FLOORS: FloorId[] = ["2F", "1F", "B1", "B2", "B3", "B4", "B5", "B6", "B7"];
 export const TOTAL_DAYS = 6;
 export const MAX_HP = 10;
-export const MAX_PLAYERS = 4;
+export const MAX_PLAYERS = 8;
 export const GAS_DAMAGE_BY_ROUND = [1, 2, 2, 3, 3, 4];
 /** 停機坪飛行可抵達的 H 標記房（不含停機坪本身）。 */
 export const HELIPAD_ROOMS: string[] = ROOMS.filter((r) => r.helipad).map((r) => r.id);
@@ -315,12 +335,41 @@ export interface Item {
 // ---------------------------------------------------------------------------
 // 玩家／行動／房間
 // ---------------------------------------------------------------------------
+export interface AccountProfileSnapshot {
+  displayName: string;
+  reputation: number;
+  games: number;
+  wins: number;
+  losses: number;
+  achievements: string[];
+}
+
+/** 觀戰者：只讀，不佔玩家名額，不能行動／交易／投票（handler 擋）。 */
+export interface Spectator {
+  id: string;
+  name: string;
+  token: string;
+  accountId?: string;
+}
+
+/** 待提交的信譽懲罰：由 handler 在房間寫回成功後才寫帳號表（見 handler
+    postCommit），避免房間樂觀鎖重試時重複扣分；寫回前先清空佇列。 */
+export interface PendingPenalty {
+  accountId: string;
+  repDelta: number;
+  setCooldown: boolean;
+}
+
 export interface Player {
   id: string;
   name: string;
   isAI: boolean;
   isHost: boolean;
   token: string;
+  /** 綁定的帳號（舊版匿名玩家為 undefined，流程不受影響）。 */
+  accountId?: string;
+  /** 公開檔案快照（handler 每次請求刷新，僅公開欄位）。 */
+  accountProfile?: AccountProfileSnapshot | null;
   might: number;
   carry: number;
   speed: number;
@@ -357,6 +406,9 @@ export interface DayAction {
   rocketTarget?: string;
   /** 結算步驟 6 要使用的道具 id（僅 pill／adrenaline／wine／fine_wine）。 */
   itemUses?: string[];
+  /** 結算內交易提案（單人版 resolveTrades 的移植）：一物換一物，
+      wantKind 在結算時解析為對方背包裡第一張同類道具。 */
+  trade?: { toId: string; offerItemId: string; wantKind: ItemKind };
 }
 
 export interface LogEntry {
@@ -370,6 +422,25 @@ export interface Trade {
   toId: string;
   offerItemId: string;
   wantItemId: string;
+  /** 結算內交易轉成的待回覆交易（人對人，下一自由階段回覆）。 */
+  fromSettlement?: boolean;
+  /** fromSettlement 交易建立時的回合（跨日未回覆者下一結算會被清掉）。 */
+  createdDay?: number;
+}
+
+/**
+ * 抽取攤開待選留：結算步驟 0 攤開後、玩家選留前的狀態。
+ * 非停機坪：drawn 已先從房間物資池扣除（未選的進棄置堆）；
+ * 停機坪：drawn 只是空投池的快照（未選的留在空投池，選走的才扣除）。
+ */
+export interface PendingDraw {
+  playerId: string;
+  roomId: string;
+  drawn: Item[];
+  /** 選項與 drawn 一一對應（index 即 drawn 下標）。 */
+  options: { index: number; kind: ItemKind; forced: boolean; junk: boolean }[];
+  rules: { maxNonJunk: number | null; maxTotal: number | null };
+  airdrop: boolean;
 }
 
 export interface RankingEntry {
@@ -380,7 +451,7 @@ export interface RankingEntry {
   rank: number;
 }
 
-export type GamePhase = "free" | "action";
+export type GamePhase = "free" | "action" | "keep";
 export type GameStatus = "lobby" | "playing" | "finished";
 
 export interface GameRoom {
@@ -389,6 +460,16 @@ export interface GameRoom {
   status: GameStatus;
   day: number;
   phase: GamePhase;
+  /** 房型：casual 娛樂（信譽 80）、ranked 競技（信譽 90），預設娛樂。 */
+  roomType: "casual" | "ranked";
+  spectators: Spectator[];
+  /** 本房已棄權人次（第一位棄權者才有 15 分鐘冷卻）。 */
+  quitCount: number;
+  /** 終局戰績已寫入帳號表（避免輪詢重複寫入）。 */
+  recordsWritten: boolean;
+  /** 每位玩家選留逾時累積次數（達 2 次改 AI 託管並扣分）。 */
+  timeoutStrikes: Record<string, number>;
+  pendingPenalties: PendingPenalty[];
   players: Player[];
   actions: Record<string, DayAction>;
   /** 各房剩餘物資池（死亡掉落也會回到當時房間的池子）。 */
@@ -409,6 +490,14 @@ export interface GameRoom {
   trades: Trade[];
   ranking: RankingEntry[];
   createdAt: number;
+  /** 待選留（keep 階段才有內容；AI 的在步驟 0 結束時已自動解掉）。 */
+  pendingDraws: Record<string, PendingDraw>;
+  /** keep 階段逾時時刻（epoch ms）；null 表示不在 keep 階段。 */
+  keepDeadline: number | null;
+  /** 本回合行動順序（進行動階段時洗牌，見 generateSettlementOrder）。 */
+  settlementOrder: string[];
+  /** 結算開始時腎上腺素生效中的玩家（跨 keep 階段也保留，結算結束時清除）。 */
+  adrenalineAtSettlementStart: string[];
 }
 
 export function newId(prefix: string): string {
@@ -476,6 +565,16 @@ export function ensureRoomShape(room: GameRoom): void {
   room.gassedFloors ??= [];
   room.detoxedRooms ??= [];
   room.lastGasTally ??= null;
+  room.pendingDraws ??= {};
+  room.keepDeadline ??= null;
+  room.settlementOrder ??= [];
+  room.adrenalineAtSettlementStart ??= [];
+  room.roomType ??= "casual";
+  room.spectators ??= [];
+  room.quitCount ??= 0;
+  room.recordsWritten ??= false;
+  room.timeoutStrikes ??= {};
+  room.pendingPenalties ??= [];
   for (const p of room.players) {
     (p as Partial<Player>).helicopter ??= false;
     (p as Partial<Player>).adrenalineActive ??= false;
@@ -509,13 +608,24 @@ export function addAirdrop(room: GameRoom): void {
   room.airdrop.push(makeItem(kind));
 }
 
-export function createRoom(code: string, hostName: string): GameRoom {
+export function createRoom(
+  code: string,
+  hostName: string,
+  roomType: "casual" | "ranked" = "casual",
+  hostAccountId?: string,
+): GameRoom {
   const room: GameRoom = {
     id: newId("room"),
     code,
     status: "lobby",
     day: 0,
     phase: "free",
+    roomType,
+    spectators: [],
+    quitCount: 0,
+    recordsWritten: false,
+    timeoutStrikes: {},
+    pendingPenalties: [],
     players: [],
     actions: {},
     pools: {},
@@ -529,20 +639,30 @@ export function createRoom(code: string, hostName: string): GameRoom {
     trades: [],
     ranking: [],
     createdAt: Date.now(),
+    pendingDraws: {},
+    keepDeadline: null,
+    settlementOrder: [],
+    adrenalineAtSettlementStart: [],
   };
-  addPlayer(room, hostName, false);
+  addPlayer(room, hostName, false, hostAccountId);
   const host = room.players[0] as Player;
   host.isHost = true;
   return room;
 }
 
-export function addPlayer(room: GameRoom, name: string, isAI: boolean): Player {
+export function addPlayer(
+  room: GameRoom,
+  name: string,
+  isAI: boolean,
+  accountId?: string,
+): Player {
   const player: Player = {
     id: newId("p"),
     name,
     isAI,
     isHost: false,
     token: newId("tok"),
+    accountId,
     might: 0,
     carry: 0,
     speed: 0,
@@ -690,8 +810,50 @@ export function validateAction(room: GameRoom, player: Player, action: DayAction
         }
       }
     }
+    if (action.trade) {
+      const target = findPlayer(room, action.trade.toId);
+      if (!target || target.id === player.id) return "結算交易對象無效";
+      if (!target.alive) return "結算交易對象已是暗影";
+      if (!player.items.some((it) => it.id === action.trade?.offerItemId)) {
+        return "結算交易給出的道具不在背包中";
+      }
+      if (!(action.trade.wantKind in ITEM_NAMES)) return "結算交易想要的道具種類無效";
+    }
   }
   return null;
+}
+
+/**
+ * 本回合行動順序：單人版 startRound 的移植——全員 id Fisher-Yates
+ * 洗牌（單人版用 seeded rng，伺服器版用 Math.random），orderCard
+ * 即順序下標＋1。結算各步驟按此順序跑（戰鬥按房間跑，與單人版同）。
+ */
+export function generateSettlementOrder(room: GameRoom): string[] {
+  const ids = room.players.map((p) => p.id);
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = ids[i] as string;
+    ids[i] = ids[j] as string;
+    ids[j] = tmp;
+  }
+  room.settlementOrder = ids;
+  const names = ids.map((id, i) => `${findPlayer(room, id)?.name ?? "?"}(${i + 1})`).join(" → ");
+  pushLog(room, `📋 第 ${room.day} 天行動順序：${names}`);
+  return ids;
+}
+
+/** 按行動順序排玩家；順序表缺人時（舊房間）補在最後。 */
+export function orderedPlayers(room: GameRoom): Player[] {
+  ensureRoomShape(room);
+  const order = room.settlementOrder.length > 0 ? room.settlementOrder : room.players.map((p) => p.id);
+  const byId = new Map(room.players.map((p) => [p.id, p]));
+  const out: Player[] = [];
+  for (const id of order) {
+    const p = byId.get(id);
+    if (p) out.push(p);
+  }
+  for (const p of room.players) if (!out.includes(p)) out.push(p);
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -782,65 +944,207 @@ export function resolveCombatAndShadows(room: GameRoom, skipRooms: string[] = []
 }
 
 // ---------------------------------------------------------------------------
-// 抽取（伺服器自動保留版，見檔頭簡化說明）
+// 抽取攤開＋選留（單人版 performDraw／applyKeep 的多人版移植）。
+// 步驟 0 只攤開：drawPending 產生 PendingDraw，不直接給道具；
+// 玩家在 keep 階段用 resolveKeep 選留，AI 與逾時用 autoKeep 解決。
+// 驗證規則（手動選留超量一律整筆拒絕，不靜默裁剪）：
+//   強制垃圾一定帶走（不計入選項容量）；其餘選項受背包剩餘容量、
+//   垃圾場非垃圾上限、停機坪最多 1 張約束；選項下標超出範圍也拒絕。
 // ---------------------------------------------------------------------------
-function drawLoot(room: GameRoom, player: Player, roomId: string): void {
+function drawPending(room: GameRoom, player: Player, roomId: string): PendingDraw | null {
   const def = ROOM_MAP[roomId];
-  if (!def || def.resourcePool === null) return;
+  if (!def || def.resourcePool === null) return null;
   ensureRoomShape(room);
   const roomName = def.name !== "(空房)" ? `${roomId} ${def.name}` : roomId;
 
   if (roomId === "202") {
-    // 停機坪：攤開整疊空投卡，最多帶走 1 張（被拿走的才從池子扣除）。
-    if (room.airdrop.length === 0) return;
-    const space = remainingCapacity(player);
-    const kept = space >= 1 ? room.airdrop[0] : undefined;
-    if (kept) {
-      room.airdrop.shift();
-      player.items.push(kept as Item);
-      pushLog(room, `🎒 ${player.name} 在停機坪空投帶走 ${ITEM_NAMES[(kept as Item).kind]}（還剩 ${room.airdrop.length} 張空投）`);
-    } else {
-      pushLog(room, `🎒 ${player.name} 在停機坪背包已滿，空投一張都帶不走`);
-    }
-    return;
+    // 停機坪：攤開整疊空投卡（快照，不先扣），最多帶走 1 張。
+    if (room.airdrop.length === 0) return null;
+    const drawn = [...room.airdrop];
+    const pending: PendingDraw = {
+      playerId: player.id,
+      roomId,
+      drawn,
+      options: drawn.map((it, i) => ({ index: i, kind: it.kind, forced: false, junk: it.kind === "junk" })),
+      rules: { maxNonJunk: null, maxTotal: 1 },
+      airdrop: true,
+    };
+    room.pendingDraws[player.id] = pending;
+    pushLog(room, `🎴 ${player.name} 在停機坪攤開 ${drawn.length} 張空投卡（最多帶走 1 張）：${drawn.map((it) => ITEM_NAMES[it.kind]).join("、")}`);
+    return pending;
   }
 
   const pool = (room.pools[roomId] ??= []);
-  if (pool.length === 0) return;
+  if (pool.length === 0) return null;
   const limit = def.drawLimit === "all" ? pool.length : Math.min(def.drawLimit, pool.length);
   const drawn: Item[] = [];
   for (let i = 0; i < limit; i++) {
     const idx = Math.floor(Math.random() * pool.length);
     drawn.push(pool.splice(idx, 1)[0] as Item);
   }
-  // 垃圾場：翻到的垃圾強制帶走（回合結束前可丟回——伺服器版直接帶走），非垃圾最多 2 件。
-  const forced = roomId === "B503" ? drawn.filter((it) => it.kind === "junk") : [];
-  const rest = drawn.filter((it) => !forced.includes(it));
-  const kept: Item[] = [...forced];
-  let nonJunkKept = 0;
-  let nonForcedKept = 0;
-  for (const it of rest) {
-    if (def.maxNonJunkPickup !== null && it.kind !== "junk" && nonJunkKept >= def.maxNonJunkPickup) {
-      room.discardPile.push(it);
-      continue;
-    }
-    // remainingCapacity 已扣現有背包；再扣本回合已保留的非強制件數。
-    if (remainingCapacity(player) - nonForcedKept < 1) {
-      room.discardPile.push(it);
-      continue;
-    }
-    kept.push(it);
-    nonForcedKept += 1;
-    if (it.kind !== "junk") nonJunkKept += 1;
+  const pending: PendingDraw = {
+    playerId: player.id,
+    roomId,
+    drawn,
+    options: drawn.map((it, i) => ({
+      index: i,
+      kind: it.kind,
+      forced: roomId === "B503" && it.kind === "junk",
+      junk: it.kind === "junk",
+    })),
+    rules: { maxNonJunk: def.maxNonJunkPickup, maxTotal: null },
+    airdrop: false,
+  };
+  room.pendingDraws[player.id] = pending;
+  pushLog(room, `🎴 ${player.name} 在 ${roomName} 攤開 ${drawn.length} 張：${drawn.map((it) => ITEM_NAMES[it.kind]).join("、")}`);
+  return pending;
+}
+
+/** 檢查一組選項是否合法；不合法回傳錯誤訊息（整筆拒絕用）。 */
+function validateKeepSelection(player: Player, pending: PendingDraw, keepIndexes: number[]): string | null {
+  const selected = new Set<number>();
+  for (const raw of keepIndexes) {
+    if (!Number.isInteger(raw)) return "選留索引必須是整數";
+    if (raw < 0 || raw >= pending.options.length) return "選留索引超出攤開範圍";
+    selected.add(raw);
   }
-  // 強制垃圾超出負重也照帶（與單人版 forced 行為一致）；其餘多餘的進棄置堆。
+  const budget = remainingCapacity(player);
+  let nonForcedCount = 0;
+  let nonJunkCount = 0;
+  for (const opt of pending.options) {
+    if (opt.forced) continue;
+    if (!selected.has(opt.index)) continue;
+    nonForcedCount += 1;
+    if (!opt.junk) nonJunkCount += 1;
+  }
+  if (pending.rules.maxTotal !== null && nonForcedCount > pending.rules.maxTotal) {
+    return `停機坪空投最多帶走 ${pending.rules.maxTotal} 張`;
+  }
+  if (pending.rules.maxNonJunk !== null && nonJunkCount > pending.rules.maxNonJunk) {
+    return `垃圾場非垃圾最多留 ${pending.rules.maxNonJunk} 件`;
+  }
+  if (nonForcedCount > budget) return "選留超出背包剩餘容量";
+  return null;
+}
+
+/** 套用選留（呼叫前須先通過 validateKeepSelection；autoKeep 用貪心算出索引後也走這裡）。 */
+function applyKeep(room: GameRoom, player: Player, pending: PendingDraw, keepIndexes: number[]): void {
+  ensureRoomShape(room);
+  const keepSet = new Set(keepIndexes);
+  const kept: Item[] = [];
+  const discarded: Item[] = [];
+  for (const opt of pending.options) {
+    const item = pending.drawn[opt.index] as Item;
+    if (opt.forced || keepSet.has(opt.index)) {
+      kept.push(item);
+    } else {
+      discarded.push(item);
+    }
+  }
   for (const it of kept) player.items.push(it);
+  if (pending.airdrop) {
+    // 停機坪：只有被帶走的卡才從空投池扣除（同回合後到的人還能挑剩下的）。
+    for (const it of kept) {
+      const idx = room.airdrop.findIndex((a) => a.kind === it.kind);
+      if (idx >= 0) room.airdrop.splice(idx, 1);
+    }
+  } else {
+    room.discardPile.push(...discarded);
+  }
+  delete room.pendingDraws[player.id];
+  const roomName = ROOM_MAP[pending.roomId]?.name ?? pending.roomId;
   if (kept.length > 0) {
-    pushLog(room, `🎒 ${player.name} 在 ${roomName} 撿到 ${kept.map((it) => ITEM_NAMES[it.kind]).join("、")}`);
+    pushLog(room, `🎒 ${player.name} 在 ${roomName} 帶走 ${kept.map((it) => ITEM_NAMES[it.kind]).join("、")}`);
+  } else {
+    pushLog(room, `🎒 ${player.name} 在 ${roomName} 一張都沒帶走`);
   }
-  if (kept.length === 0 && drawn.length > 0) {
-    pushLog(room, `🎒 ${player.name} 在 ${roomName} 翻到物資但背包已滿，一張都帶不走`);
+  if (discarded.length > 0 && !pending.airdrop) {
+    pushLog(room, `🗑️ ${player.name} 沒帶走的 ${discarded.map((it) => ITEM_NAMES[it.kind]).join("、")} 進了棄置堆`);
   }
+}
+
+/** 伺服器自動保留貪心規則（原本 drawLoot 的行為）：抽到順序保留，遇上限就跳過。 */
+export function autoKeep(room: GameRoom, player: Player, pending: PendingDraw): void {
+  const budget = remainingCapacity(player);
+  const keep: number[] = [];
+  let nonForcedCount = 0;
+  let nonJunkCount = 0;
+  for (const opt of pending.options) {
+    if (opt.forced) continue;
+    if (pending.rules.maxTotal !== null && nonForcedCount >= pending.rules.maxTotal) continue;
+    if (pending.rules.maxNonJunk !== null && !opt.junk && nonJunkCount >= pending.rules.maxNonJunk) continue;
+    if (nonForcedCount >= budget) continue;
+    keep.push(opt.index);
+    nonForcedCount += 1;
+    if (!opt.junk) nonJunkCount += 1;
+  }
+  applyKeep(room, player, pending, keep);
+}
+
+/** 玩家手動選留：超量整筆拒絕（pending 保留，可重選）。 */
+export function resolveKeep(room: GameRoom, playerId: string, keepIndexes: number[]): string | null {
+  ensureRoomShape(room);
+  const pending = room.pendingDraws[playerId];
+  if (!pending) return "沒有待選留的攤開";
+  const player = findPlayer(room, playerId);
+  if (!player) return "找不到玩家";
+  const err = validateKeepSelection(player, pending, keepIndexes);
+  if (err) return err;
+  applyKeep(room, player, pending, keepIndexes);
+  return null;
+}
+
+/** keep 逾時：把所有未解決的待選留自動保留（AI 的早已解掉，這裡只剩人類）。 */
+export function autoResolvePendingKeeps(room: GameRoom): void {
+  ensureRoomShape(room);
+  for (const playerId of Object.keys(room.pendingDraws)) {
+    const pending = room.pendingDraws[playerId];
+    const player = findPlayer(room, playerId);
+    if (!pending || !player) continue;
+    pushLog(room, `⏰ ${player.name} 選留逾時，伺服器自動保留`);
+    autoKeep(room, player, pending);
+  }
+  room.pendingDraws = {};
+  room.keepDeadline = null;
+}
+
+// ---------------------------------------------------------------------------
+// 金條攤開挑選（單人版 data.js／ui.js：花 1 張金條挑當前房物資一項）。
+// 只在自由階段用；不能挑金條；垃圾場禁用；池裡無可換物時不扣金條。
+// ---------------------------------------------------------------------------
+export function goldPickOptions(room: GameRoom, player: Player): ItemKind[] {
+  ensureRoomShape(room);
+  const def = ROOM_MAP[player.room];
+  if (!def || def.resourcePool === null || def.goldBarDisabled) return [];
+  const pool = room.pools[player.room] ?? [];
+  const kinds: ItemKind[] = [];
+  for (const it of pool) {
+    if (it.kind === "gold_bar") continue;
+    if (!kinds.includes(it.kind)) kinds.push(it.kind);
+  }
+  return kinds;
+}
+
+export function spendGoldPick(room: GameRoom, playerId: string, kind: ItemKind): string | null {
+  if (room.status !== "playing" || room.phase !== "free") return "只有自由階段可以用金條換物資";
+  const player = findPlayer(room, playerId);
+  if (!player || !player.alive) return "找不到玩家或玩家已是暗影";
+  const def = ROOM_MAP[player.room];
+  if (!def || def.resourcePool === null) return "這個房間沒有物資池";
+  if (def.goldBarDisabled) return "垃圾場不能用金條換物資";
+  const goldIdx = player.items.findIndex((it) => it.kind === "gold_bar");
+  if (goldIdx < 0) return "身上沒有金條";
+  if (kind === "gold_bar") return "金條攤開挑選不能挑金條";
+  if (!(kind in ITEM_NAMES)) return "想換的道具種類無效";
+  ensureRoomShape(room);
+  const pool = (room.pools[player.room] ??= []);
+  const pickIdx = pool.findIndex((it) => it.kind === kind);
+  if (pickIdx < 0) return "這個房間的物資池裡沒有這種道具（只剩金條就空手而歸，金條不會被扣）";
+  const picked = pool.splice(pickIdx, 1)[0] as Item;
+  player.items.splice(goldIdx, 1);
+  player.items.push(picked);
+  pushLog(room, `🪙 ${player.name} 花 1 張金條，在 ${def.name} 換到 ${ITEM_NAMES[kind]}`);
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -887,20 +1191,78 @@ function useConsumableInResolution(room: GameRoom, player: Player, item: Item): 
 }
 
 // ---------------------------------------------------------------------------
-// 結算（順序與單人版 resolveRound 一致；交易已在自由階段完成，不重跑）
-//   移動＋激光＋抽取＋特殊房 → 手術室 → 戰鬥／暗影吸血 → 毒氣
+// 結算（順序與單人版 resolveRound 一致；步驟按行動順序逐步跑，見 log）
+//   步驟 0 移動＋激光＋抽取攤開＋特殊房 →（有待選留時進 keep 階段）
+//   → 結算內交易 → 手術室 → 戰鬥／暗影吸血 → 毒氣
 //   → 水糧上繳 → 火箭筒 → 道具卡使用 → 暗影復活 → 生命公告
+// 結算分兩段跑，因為 keep 階段可能跨多次輪詢：phase0 只做移動與攤開，
+// 待選留解完（手動／AI／逾時）後才由呼叫端跑 runSettlementRest。
 // ---------------------------------------------------------------------------
-export function runSettlement(room: GameRoom): void {
+/** 結算內交易的裁判：AI 對象回 true／false，人類對象回 null（轉待回覆）。 */
+export type SettlementJudge = (
+  target: Player,
+  offerKind: ItemKind,
+  wantKind: ItemKind,
+) => boolean | null;
+
+/**
+ * 結算內交易（單人版 resolveTrades 的移植）：按行動順序跑，物品轉移
+ * 趕在水糧上繳之前。AI 對象由 judge 即判；人類對象不卡結算，轉成
+ * 自由階段待回覆交易（下一自由階段用既有 trade/respond 回覆）。
+ */
+export function resolveSettlementTrades(room: GameRoom, judge: SettlementJudge): void {
+  ensureRoomShape(room);
+  for (const p of orderedPlayers(room)) {
+    if (!p.alive) continue;
+    const t = room.actions[p.id]?.trade;
+    if (!t) continue;
+    const target = findPlayer(room, t.toId);
+    if (!target || !target.alive || target.id === p.id) {
+      pushLog(room, `🤝 ${p.name} 的結算交易無效（對象已不在場）`);
+      continue;
+    }
+    const offerIdx = p.items.findIndex((it) => it.id === t.offerItemId);
+    const want = target.items.find((it) => it.kind === t.wantKind);
+    if (offerIdx < 0 || !want) {
+      pushLog(room, `🤝 ${p.name} 的結算交易失敗：道具已不在背包中`);
+      continue;
+    }
+    const verdict = judge(target, (p.items[offerIdx] as Item).kind, want.kind);
+    if (verdict === null) {
+      room.trades.push({
+        id: newId("tr"),
+        fromId: p.id,
+        toId: target.id,
+        offerItemId: t.offerItemId,
+        wantItemId: want.id,
+        fromSettlement: true,
+        createdDay: room.day,
+      });
+      pushLog(room, `🤝 ${p.name} 在結算中向 ${target.name} 提出交易（待自由階段回覆）`);
+      continue;
+    }
+    if (!verdict) {
+      pushLog(room, `🤝 ${target.name} 拒絕了 ${p.name} 的結算交易`);
+      continue;
+    }
+    const offer = p.items[offerIdx] as Item;
+    p.items[offerIdx] = want;
+    const wantIdx = target.items.findIndex((it) => it.id === want.id);
+    target.items[wantIdx] = offer;
+    pushLog(room, `🤝 結算交易成交：${p.name} 的 ${ITEM_NAMES[offer.kind]} ↔ ${target.name} 的 ${ITEM_NAMES[want.kind]}`);
+  }
+}
+
+export function runSettlementPhase0(room: GameRoom, judge: SettlementJudge): void {
   ensureRoomShape(room);
   const day = room.day;
   pushLog(room, `── 第 ${day} 天結算開始 ──`);
   // 腎上腺素：結算開始時生效中的，到這次結算結束就失效；
-  // 結算步驟 6 才用的，會留到下一次結算（見文末清除段）。
-  const activeAtStart = new Set(room.players.filter((p) => p.adrenalineActive).map((p) => p.id));
+  // 結算步驟 6 才用的，會留到下一次結算（見 runSettlementRest 文末）。
+  room.adrenalineAtSettlementStart = room.players.filter((p) => p.adrenalineActive).map((p) => p.id);
 
-  // 步驟 0：移動＋激光＋抽取＋特殊房效果
-  for (const p of room.players) {
+  // 步驟 0：移動＋激光＋抽取攤開＋特殊房效果（按行動順序逐步跑）。
+  for (const p of orderedPlayers(room)) {
     const action = room.actions[p.id];
     if (!action) continue;
     const path = effectivePath(p, action);
@@ -919,8 +1281,9 @@ export function runSettlement(room: GameRoom): void {
       damage(room, p, 1, "被激光灼傷");
       if (!p.alive) continue;
     }
-    // 抽取（終點是資源房才抽；死亡掉落會回到該房池子，可重複抽）。
-    drawLoot(room, p, p.room);
+    // 抽取攤開（終點是資源房才抽；死亡掉落會回到該房池子，可重複抽）。
+    // 道具此時還不進背包，等 keep 階段選留完才給，故後續步驟不受未選道具影響。
+    drawPending(room, p, p.room);
     if (!p.alive) continue;
     // 基因庫：停留後武力、負重、速度各永久 +1。
     if (p.room === "201") {
@@ -946,6 +1309,34 @@ export function runSettlement(room: GameRoom): void {
       pushLog(room, `🎛️ ${p.name} 在操作室重配基因：武 ${g.might}／負 ${g.carry}／速 ${g.speed}`);
     }
   }
+
+  // AI 的待選留立刻自動解決（不等人）；人類待選留則進 keep 階段，
+  // 結算暫停在這裡，等選完或逾時才跑後續步驟（見 runSettlementRest）。
+  for (const p of room.players) {
+    if (!p.isAI) continue;
+    const pending = room.pendingDraws[p.id];
+    if (pending) autoKeep(room, p, pending);
+  }
+  if (Object.keys(room.pendingDraws).length > 0) {
+    room.phase = "keep";
+    room.keepDeadline = Date.now() + KEEP_TIMEOUT_MS;
+    const waitNames = Object.keys(room.pendingDraws)
+      .map((id) => findPlayer(room, id)?.name ?? "?")
+      .join("、");
+    pushLog(room, `🎴 等待選留：${waitNames}（${KEEP_TIMEOUT_MS / 1000} 秒內未選由伺服器自動保留）`);
+    return;
+  }
+  runSettlementRest(room, judge);
+}
+
+/** 結算後半段：結算內交易 → 手術室 → 戰鬥 → 毒氣 → 上繳 → 火箭筒 → 道具 → 復活 → 公告。 */
+export function runSettlementRest(room: GameRoom, judge: SettlementJudge): void {
+  ensureRoomShape(room);
+  const day = room.day;
+  const activeAtStart = new Set(room.adrenalineAtSettlementStart ?? []);
+
+  // 步驟 0.5：結算內交易（單人版 resolveRound 的第一步，趕在水糧上繳之前）。
+  resolveSettlementTrades(room, judge);
 
   // 步驟 1：手術室——剛好 2 名存活者各 +4 血，且該房不結算戰鬥。
   const surgeryOccupants = room.players.filter((p) => p.alive && p.room === "B202");
@@ -1020,7 +1411,7 @@ export function runSettlement(room: GameRoom): void {
   if (day === 1) {
     pushLog(room, "🍱 第 1 天免繳水糧");
   } else {
-    for (const p of room.players) {
+    for (const p of orderedPlayers(room)) {
       if (!p.alive) continue;
       if (p.room === "B204") {
         pushLog(room, `🍱 ${p.name} 在餐廳，免繳水糧`);
@@ -1062,7 +1453,7 @@ export function runSettlement(room: GameRoom): void {
 
   // 步驟 5：火箭筒——持有者指定房間，該房每位存活者扣 4（暗影不受影響，可重複使用）。
   const bombedRooms: string[] = [];
-  for (const p of room.players) {
+  for (const p of orderedPlayers(room)) {
     const action = room.actions[p.id];
     if (!p.alive || !action?.rocketTarget) continue;
     if (!hasItemKind(p, "rocket_launcher")) continue;
@@ -1076,8 +1467,8 @@ export function runSettlement(room: GameRoom): void {
     for (const v of victims) damage(room, v, 4, "被火箭筒轟炸");
   }
 
-  // 步驟 6：道具卡使用（僅 pill／adrenaline／wine／fine_wine）。
-  for (const p of room.players) {
+  // 步驟 6：道具卡使用（單人版按 state.order 跑，這裡按行動順序）。
+  for (const p of orderedPlayers(room)) {
     if (!p.alive) continue;
     const action = room.actions[p.id];
     if (!action?.itemUses) continue;
@@ -1133,13 +1524,22 @@ export function runSettlement(room: GameRoom): void {
     return;
   }
   // 下一天：空投累積 1 張（下一回合停機坪可用），回到自由階段。
+  // 結算內交易轉成的待回覆交易（本日建立的）保留到下一自由階段；
+  // 更早的未回覆交易與自由階段殘留交易一併清掉，避免永久殘留。
+  const settlingDay = room.day;
   room.day += 1;
   room.phase = "free";
   room.actions = {};
-  room.trades = [];
+  room.trades = room.trades.filter((t) => t.fromSettlement && t.createdDay === settlingDay);
+  room.adrenalineAtSettlementStart = [];
   for (const p of room.players) p.ready = false;
   addAirdrop(room);
   pushLog(room, `── 第 ${room.day} 天開始（自由階段）──`);
+}
+
+/** 舊版 runSettlement 的相容入口：phase0，無待選留時直接跑完後半段。 */
+export function runSettlement(room: GameRoom, judge: SettlementJudge = () => null): void {
+  runSettlementPhase0(room, judge);
 }
 
 /** 終局排名：存活者優先；金條 1:1 折生命（上限 10）；暗影以死前生命排在存活者之後；同分比武力。 */
@@ -1273,11 +1673,17 @@ export function publicView(room: GameRoom, token?: string): Record<string, unkno
     status: room.status,
     day: room.day,
     phase: room.phase,
+    roomType: room.roomType ?? "casual",
+    // 觀戰者名單（只有名字與 id，不含 token；觀戰者不佔玩家名額）。
+    spectators: (room.spectators ?? []).map((s) => ({ id: s.id, name: s.name })),
     players: room.players.map((p) => ({
       id: p.id,
       name: p.name,
       isAI: p.isAI,
       isHost: p.isHost,
+      // 同房公開檔案：只有對局相關公開資訊（信譽、場次、勝負、成就），
+      // 絕不含 accountId 以外的私密欄位，更無雜湊與 token。
+      accountProfile: p.accountProfile ?? null,
       might: p.might,
       carry: p.carry,
       speed: p.speed,
@@ -1299,6 +1705,30 @@ export function publicView(room: GameRoom, token?: string): Record<string, unkno
     submittedCount: Object.keys(room.actions).length,
     submittedPlayerIds:
       room.phase === "action" ? room.players.filter((p) => room.actions[p.id]).map((p) => p.id) : [],
+    // 行動順序（公開資訊，單人版順序卡本來就公開）：card 即順序號。
+    settlementOrder: room.settlementOrder.map((id, i) => ({
+      playerId: id,
+      name: findPlayer(room, id)?.name ?? "?",
+      card: i + 1,
+    })),
+    // 待選留：只有自己的完整內容公開；他人只公開「還在選」名單。
+    pendingDrawPlayerIds: Object.keys(room.pendingDraws),
+    pendingDraw:
+      self && room.pendingDraws[self.id]
+        ? {
+            roomId: room.pendingDraws[self.id]?.roomId,
+            options: room.pendingDraws[self.id]?.options,
+            rules: room.pendingDraws[self.id]?.rules,
+            airdrop: room.pendingDraws[self.id]?.airdrop,
+            keepDeadline: room.keepDeadline,
+          }
+        : null,
+    // 金條可換選項：只有自由階段、自己持有金條時，公開自己房間物資池
+    // 的非金條種類（否則玩家無從選；池子張數本來就公開，只差種類）。
+    goldOptions:
+      self && room.status === "playing" && room.phase === "free" && hasItemKind(self, "gold_bar")
+        ? goldPickOptions(room, self)
+        : [],
     gassedFloors: room.gassedFloors,
     detoxedRooms: room.detoxedRooms,
     poolCounts,

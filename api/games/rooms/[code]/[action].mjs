@@ -1,3 +1,346 @@
+// facility-server/accounts.ts
+import { createHash, randomBytes } from "node:crypto";
+
+// facility-server/neon.ts
+function dbUrl() {
+  const url = process.env.DATABASE_URL || process.env.DATABASE_URL_NEON;
+  return url && url.length > 0 ? url : null;
+}
+function neonConfigured() {
+  return dbUrl() !== null;
+}
+function endpoint(url) {
+  return `https://${new URL(url).hostname}/sql`;
+}
+async function neonQuery(sql, params = []) {
+  const url = dbUrl();
+  if (!url) throw new Error("DATABASE_URL / DATABASE_URL_NEON is not set");
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 6e3);
+  let res;
+  try {
+    res = await fetch(endpoint(url), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Neon-Connection-String": url
+      },
+      body: JSON.stringify({ query: sql, params }),
+      signal: ctrl.signal
+    });
+  } catch (e) {
+    clearTimeout(tid);
+    throw new Error(`Neon fetch failed: ${e.name}: ${e.message}`);
+  }
+  clearTimeout(tid);
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Neon HTTP ${res.status}: ${text.slice(0, 200)}`);
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error("Neon JSON parse failed");
+  }
+  if (json.error) throw new Error(json.error.message || "Neon error");
+  const rows = Array.isArray(json.rows) ? json.rows : [];
+  return { rows };
+}
+
+// facility-server/accounts.ts
+var REPUTATION_DEFAULT = 100;
+var REPUTATION_CASUAL_MIN = 80;
+var REPUTATION_RANKED_MIN = 90;
+var QUIT_REPUTATION_PENALTY = -10;
+var TIMEOUT_REPUTATION_PENALTY = -5;
+var QUIT_COOLDOWN_MS = 15 * 60 * 1e3;
+var TIMEOUT_STRIKES_TO_HANDOVER = 2;
+function publicAccount(a) {
+  return {
+    id: a.id,
+    displayName: a.displayName,
+    kind: a.kind,
+    reputation: a.reputation,
+    cooldownUntil: a.cooldownUntil,
+    cooldownRemainingMs: Math.max(0, a.cooldownUntil - Date.now())
+  };
+}
+function defaultRecord(accountId) {
+  return { accountId, games: 0, wins: 0, losses: 0, bestFinalHp: 0, achievements: [] };
+}
+function newId(prefix) {
+  return `${prefix}_${Date.now().toString(36)}${randomBytes(8).toString("hex")}`;
+}
+function hashValue(value, salt) {
+  return createHash("sha256").update(`${salt}:${value}`).digest("hex");
+}
+function saltedHash(value) {
+  const salt = randomBytes(8).toString("hex");
+  return `${salt}$${hashValue(value, salt)}`;
+}
+function verifySaltedHash(stored, value) {
+  if (!stored) return false;
+  const idx = stored.indexOf("$");
+  if (idx < 0) return false;
+  const salt = stored.slice(0, idx);
+  const hash = stored.slice(idx + 1);
+  return hashValue(value, salt) === hash;
+}
+function sessionHash(token) {
+  return createHash("sha256").update(token).digest("hex");
+}
+function recoveryCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < 12; i++) {
+    if (i > 0 && i % 4 === 0) out += "-";
+    out += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return out;
+}
+function sessionToken() {
+  return `acct_${randomBytes(24).toString("hex")}`;
+}
+var CREATE_ACCOUNTS_SQL = `CREATE TABLE IF NOT EXISTS facility_accounts (
+  id TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  password_hash TEXT,
+  recovery_hash TEXT,
+  reputation INT NOT NULL DEFAULT 100,
+  cooldown_until BIGINT NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL
+)`;
+var CREATE_SESSIONS_SQL = `CREATE TABLE IF NOT EXISTS facility_sessions (
+  token_hash TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL,
+  created_at BIGINT NOT NULL
+)`;
+var CREATE_RECORDS_SQL = `CREATE TABLE IF NOT EXISTS facility_records (
+  account_id TEXT PRIMARY KEY,
+  games INT NOT NULL DEFAULT 0,
+  wins INT NOT NULL DEFAULT 0,
+  losses INT NOT NULL DEFAULT 0,
+  best_final_hp INT NOT NULL DEFAULT 0,
+  achievements JSONB NOT NULL DEFAULT '[]'
+)`;
+async function withTable(table, fn) {
+  try {
+    return await fn();
+  } catch (e) {
+    const msg = e.message || "";
+    if (/does not exist/i.test(msg)) {
+      const sql = table === "facility_accounts" ? CREATE_ACCOUNTS_SQL : table === "facility_sessions" ? CREATE_SESSIONS_SQL : CREATE_RECORDS_SQL;
+      await neonQuery(sql);
+      return await fn();
+    }
+    throw e;
+  }
+}
+function parseAccount(row) {
+  return {
+    id: String(row.id),
+    displayName: String(row.display_name),
+    kind: row.kind === "guest" ? "guest" : "named",
+    passwordHash: row.password_hash ?? null,
+    recoveryHash: row.recovery_hash ?? null,
+    reputation: Number(row.reputation ?? REPUTATION_DEFAULT),
+    cooldownUntil: Number(row.cooldown_until ?? 0),
+    createdAt: Number(row.created_at ?? 0)
+  };
+}
+function parseRecord(row) {
+  const raw = row.achievements;
+  let achievements = [];
+  try {
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (Array.isArray(parsed)) achievements = parsed.filter((x) => typeof x === "string");
+  } catch {
+    achievements = [];
+  }
+  return {
+    accountId: String(row.account_id),
+    games: Number(row.games ?? 0),
+    wins: Number(row.wins ?? 0),
+    losses: Number(row.losses ?? 0),
+    bestFinalHp: Number(row.best_final_hp ?? 0),
+    achievements
+  };
+}
+var ACCOUNT_COLS = "id, display_name, kind, password_hash, recovery_hash, reputation, cooldown_until, created_at";
+async function findAccountByName(displayName) {
+  const { rows } = await withTable(
+    "facility_accounts",
+    () => neonQuery(`SELECT ${ACCOUNT_COLS} FROM facility_accounts WHERE display_name = $1`, [displayName])
+  );
+  return rows.length > 0 ? parseAccount(rows[0]) : null;
+}
+async function findAccountById(id) {
+  const { rows } = await withTable(
+    "facility_accounts",
+    () => neonQuery(`SELECT ${ACCOUNT_COLS} FROM facility_accounts WHERE id = $1`, [id])
+  );
+  return rows.length > 0 ? parseAccount(rows[0]) : null;
+}
+async function insertAccount(a) {
+  const { rows } = await withTable(
+    "facility_accounts",
+    () => neonQuery(
+      `INSERT INTO facility_accounts (id, display_name, kind, password_hash, recovery_hash, reputation, cooldown_until, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING RETURNING id`,
+      [a.id, a.displayName, a.kind, a.passwordHash, a.recoveryHash, a.reputation, a.cooldownUntil, a.createdAt]
+    )
+  );
+  return rows.length > 0;
+}
+async function createAccount(displayName, kind, password) {
+  let name = displayName;
+  if (kind === "guest" && !name) {
+    for (let i = 0; i < 10; i++) {
+      const candidate = `\u8A2A\u5BA2${randomBytes(2).toString("hex").toUpperCase()}`;
+      if (!await findAccountByName(candidate)) {
+        name = candidate;
+        break;
+      }
+    }
+    if (!name) return null;
+  }
+  if (await findAccountByName(name)) return null;
+  const code = recoveryCode();
+  const account = {
+    id: newId("acct"),
+    displayName: name,
+    kind,
+    passwordHash: password ? saltedHash(password) : null,
+    recoveryHash: saltedHash(code),
+    reputation: REPUTATION_DEFAULT,
+    cooldownUntil: 0,
+    createdAt: Date.now()
+  };
+  if (!await insertAccount(account)) return null;
+  const token = sessionToken();
+  await withTable(
+    "facility_sessions",
+    () => neonQuery(`INSERT INTO facility_sessions (token_hash, account_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (token_hash) DO NOTHING RETURNING token_hash`, [
+      sessionHash(token),
+      account.id,
+      Date.now()
+    ])
+  );
+  return { account, token, recoveryCode: code };
+}
+async function issueSession(accountId) {
+  const token = sessionToken();
+  await withTable(
+    "facility_sessions",
+    () => neonQuery(`INSERT INTO facility_sessions (token_hash, account_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (token_hash) DO NOTHING RETURNING token_hash`, [
+      sessionHash(token),
+      accountId,
+      Date.now()
+    ])
+  );
+  return token;
+}
+async function loginByPassword(displayName, password) {
+  const account = await findAccountByName(displayName);
+  if (!account || !verifySaltedHash(account.passwordHash, password)) return null;
+  return issueSession(account.id);
+}
+async function loginByRecovery(displayName, code) {
+  const account = await findAccountByName(displayName);
+  if (!account || !verifySaltedHash(account.recoveryHash, code)) return null;
+  return issueSession(account.id);
+}
+async function resolveSession(token) {
+  if (!token) return null;
+  const { rows } = await withTable(
+    "facility_sessions",
+    () => neonQuery(`SELECT token_hash, account_id FROM facility_sessions WHERE token_hash = $1`, [
+      sessionHash(token)
+    ])
+  );
+  if (rows.length === 0) return null;
+  return findAccountById(String(rows[0]?.account_id));
+}
+async function logoutSession(token) {
+  await withTable(
+    "facility_sessions",
+    () => neonQuery(`DELETE FROM facility_sessions WHERE token_hash = $1`, [sessionHash(token)])
+  ).catch(() => void 0);
+}
+async function adjustReputation(accountId, repDelta, cooldownUntil) {
+  const account = await findAccountById(accountId);
+  if (!account) return null;
+  account.reputation = Math.max(0, Math.min(200, account.reputation + repDelta));
+  if (cooldownUntil !== null) account.cooldownUntil = Math.max(account.cooldownUntil, cooldownUntil);
+  await withTable(
+    "facility_accounts",
+    () => neonQuery(`UPDATE facility_accounts SET reputation = $2, cooldown_until = $3 WHERE id = $1`, [
+      account.id,
+      account.reputation,
+      account.cooldownUntil
+    ])
+  );
+  return account;
+}
+function gateError(roomType, account) {
+  if (!account) return null;
+  if (account.cooldownUntil > Date.now()) {
+    const mins = Math.ceil((account.cooldownUntil - Date.now()) / 6e4);
+    return `\u51B7\u537B\u4E2D\uFF0C\u7D04 ${mins} \u5206\u9418\u5F8C\u624D\u80FD\u52A0\u5165\u65B0\u623F\u9593\uFF08\u5C0D\u5C40\u4E2D\u68C4\u6B0A\u7684\u51B7\u537B\uFF09`;
+  }
+  const min = roomType === "ranked" ? REPUTATION_RANKED_MIN : REPUTATION_CASUAL_MIN;
+  if (account.reputation < min) {
+    return `${roomType === "ranked" ? "\u7AF6\u6280" : "\u5A1B\u6A02"}\u623F\u9700\u8981\u4FE1\u8B7D ${min} \u5206\u4EE5\u4E0A\uFF08\u4F60\u76EE\u524D ${account.reputation} \u5206\uFF09`;
+  }
+  return null;
+}
+async function getRecord(accountId) {
+  const { rows } = await withTable(
+    "facility_records",
+    () => neonQuery(
+      `SELECT account_id, games, wins, losses, best_final_hp, achievements FROM facility_records WHERE account_id = $1`,
+      [accountId]
+    )
+  );
+  return rows.length > 0 ? parseRecord(rows[0]) : defaultRecord(accountId);
+}
+async function recordGameResult(accountId, won, alive, finalHp) {
+  const rec = await getRecord(accountId);
+  rec.games += 1;
+  if (won) rec.wins += 1;
+  else rec.losses += 1;
+  rec.bestFinalHp = Math.max(rec.bestFinalHp, finalHp);
+  const add = (a) => {
+    if (!rec.achievements.includes(a)) rec.achievements.push(a);
+  };
+  add("finisher");
+  if (alive) add("survivor");
+  if (won) add("champion");
+  if (rec.games >= 5) add("veteran");
+  if (rec.games === 1) add("first_game");
+  const existing = await withTable(
+    "facility_records",
+    () => neonQuery(
+      `INSERT INTO facility_records (account_id, games, wins, losses, best_final_hp, achievements) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (account_id) DO NOTHING RETURNING account_id`,
+      [accountId, rec.games, rec.wins, rec.losses, rec.bestFinalHp, JSON.stringify(rec.achievements)]
+    )
+  );
+  if (existing.rows.length === 0) {
+    await withTable(
+      "facility_records",
+      () => neonQuery(
+        `UPDATE facility_records SET games = $2, wins = $3, losses = $4, best_final_hp = $5, achievements = $6 WHERE account_id = $1`,
+        [accountId, rec.games, rec.wins, rec.losses, rec.bestFinalHp, JSON.stringify(rec.achievements)]
+      )
+    );
+  }
+  return rec;
+}
+async function getPublicProfile(accountId) {
+  const account = await findAccountById(accountId);
+  if (!account) return null;
+  return { account: publicAccount(account), record: await getRecord(accountId) };
+}
+
 // facility-server/game-engine.ts
 var R = (o) => ({
   name: "(\u7A7A\u623F)",
@@ -9,8 +352,10 @@ var R = (o) => ({
   gasImmune: false,
   laser: false,
   maxNonJunkPickup: null,
+  goldBarDisabled: false,
   ...o
 });
+var KEEP_TIMEOUT_MS = 6e4;
 var ROOMS = [
   /* 2F */
   R({ id: "201", floors: ["2F"], name: "\u57FA\u56E0\u5EAB", special: "gene_bank", helipad: true }),
@@ -53,7 +398,7 @@ var ROOMS = [
   /* B5 */
   R({ id: "B501", floors: ["B4", "B5"], name: "\u5927\u5009\u5EAB", resourcePool: [{ kind: "water", qty: 5 }, { kind: "food", qty: 5 }, { kind: "knife", qty: 3 }, { kind: "wine", qty: 2 }, { kind: "gold_bar", qty: 1 }, { kind: "pill", qty: 2 }, { kind: "adrenaline", qty: 2 }, { kind: "pistol", qty: 1 }, { kind: "shotgun", qty: 1 }], drawLimit: 3 }),
   R({ id: "B502", floors: ["B5"] }),
-  R({ id: "B503", floors: ["B5"], name: "\u5783\u573E\u5834", resourcePool: [{ kind: "junk", qty: 20 }, { kind: "gas_mask", qty: 1 }, { kind: "recycler", qty: 1 }, { kind: "rocket_launcher", qty: 1 }, { kind: "dimension_pocket", qty: 1 }, { kind: "rope", qty: 1 }], drawLimit: 5, maxNonJunkPickup: 2 }),
+  R({ id: "B503", floors: ["B5"], name: "\u5783\u573E\u5834", resourcePool: [{ kind: "junk", qty: 20 }, { kind: "gas_mask", qty: 1 }, { kind: "recycler", qty: 1 }, { kind: "rocket_launcher", qty: 1 }, { kind: "dimension_pocket", qty: 1 }, { kind: "rope", qty: 1 }], drawLimit: 5, maxNonJunkPickup: 2, goldBarDisabled: true }),
   R({ id: "B504", floors: ["B5"] }),
   R({ id: "B505", floors: ["B5"], name: "\u7CE7\u5009", resourcePool: [{ kind: "food", qty: 10 }], drawLimit: 4 }),
   /* B6 */
@@ -71,7 +416,7 @@ var SPAWN_ROOM_IDS = ROOMS.filter((r) => r.spawn).map((r) => r.id);
 var FLOORS = ["2F", "1F", "B1", "B2", "B3", "B4", "B5", "B6", "B7"];
 var TOTAL_DAYS = 6;
 var MAX_HP = 10;
-var MAX_PLAYERS = 4;
+var MAX_PLAYERS = 8;
 var GAS_DAMAGE_BY_ROUND = [1, 2, 2, 3, 3, 4];
 var HELIPAD_ROOMS = ROOMS.filter((r) => r.helipad).map((r) => r.id);
 function isEmptyRoom(roomId) {
@@ -206,11 +551,11 @@ function isGun(kind) {
   return kind === "pistol" || kind === "shotgun";
 }
 var USABLE_IN_RESOLUTION = ["pill", "adrenaline", "wine", "fine_wine"];
-function newId(prefix) {
+function newId2(prefix) {
   return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 function makeItem(kind) {
-  return { id: newId("it"), kind };
+  return { id: newId2("it"), kind };
 }
 function effectiveSpeed(player) {
   return player.adrenalineActive ? 10 : player.speed;
@@ -246,6 +591,16 @@ function ensureRoomShape(room) {
   room.gassedFloors ??= [];
   room.detoxedRooms ??= [];
   room.lastGasTally ??= null;
+  room.pendingDraws ??= {};
+  room.keepDeadline ??= null;
+  room.settlementOrder ??= [];
+  room.adrenalineAtSettlementStart ??= [];
+  room.roomType ??= "casual";
+  room.spectators ??= [];
+  room.quitCount ??= 0;
+  room.recordsWritten ??= false;
+  room.timeoutStrikes ??= {};
+  room.pendingPenalties ??= [];
   for (const p of room.players) {
     p.helicopter ??= false;
     p.adrenalineActive ??= false;
@@ -274,13 +629,19 @@ function addAirdrop(room) {
   const kind = pool[Math.floor(Math.random() * pool.length)];
   room.airdrop.push(makeItem(kind));
 }
-function createRoom(code, hostName) {
+function createRoom(code, hostName, roomType = "casual", hostAccountId) {
   const room = {
-    id: newId("room"),
+    id: newId2("room"),
     code,
     status: "lobby",
     day: 0,
     phase: "free",
+    roomType,
+    spectators: [],
+    quitCount: 0,
+    recordsWritten: false,
+    timeoutStrikes: {},
+    pendingPenalties: [],
     players: [],
     actions: {},
     pools: {},
@@ -293,20 +654,25 @@ function createRoom(code, hostName) {
     log: [],
     trades: [],
     ranking: [],
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    pendingDraws: {},
+    keepDeadline: null,
+    settlementOrder: [],
+    adrenalineAtSettlementStart: []
   };
-  addPlayer(room, hostName, false);
+  addPlayer(room, hostName, false, hostAccountId);
   const host = room.players[0];
   host.isHost = true;
   return room;
 }
-function addPlayer(room, name, isAI) {
+function addPlayer(room, name, isAI, accountId) {
   const player = {
-    id: newId("p"),
+    id: newId2("p"),
     name,
     isAI,
     isHost: false,
-    token: newId("tok"),
+    token: newId2("tok"),
+    accountId,
     might: 0,
     carry: 0,
     speed: 0,
@@ -420,8 +786,42 @@ function validateAction(room, player, action) {
         }
       }
     }
+    if (action.trade) {
+      const target = findPlayer(room, action.trade.toId);
+      if (!target || target.id === player.id) return "\u7D50\u7B97\u4EA4\u6613\u5C0D\u8C61\u7121\u6548";
+      if (!target.alive) return "\u7D50\u7B97\u4EA4\u6613\u5C0D\u8C61\u5DF2\u662F\u6697\u5F71";
+      if (!player.items.some((it) => it.id === action.trade?.offerItemId)) {
+        return "\u7D50\u7B97\u4EA4\u6613\u7D66\u51FA\u7684\u9053\u5177\u4E0D\u5728\u80CC\u5305\u4E2D";
+      }
+      if (!(action.trade.wantKind in ITEM_NAMES)) return "\u7D50\u7B97\u4EA4\u6613\u60F3\u8981\u7684\u9053\u5177\u7A2E\u985E\u7121\u6548";
+    }
   }
   return null;
+}
+function generateSettlementOrder(room) {
+  const ids = room.players.map((p) => p.id);
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = ids[i];
+    ids[i] = ids[j];
+    ids[j] = tmp;
+  }
+  room.settlementOrder = ids;
+  const names = ids.map((id, i) => `${findPlayer(room, id)?.name ?? "?"}(${i + 1})`).join(" \u2192 ");
+  pushLog(room, `\u{1F4CB} \u7B2C ${room.day} \u5929\u884C\u52D5\u9806\u5E8F\uFF1A${names}`);
+  return ids;
+}
+function orderedPlayers(room) {
+  ensureRoomShape(room);
+  const order = room.settlementOrder.length > 0 ? room.settlementOrder : room.players.map((p) => p.id);
+  const byId = new Map(room.players.map((p) => [p.id, p]));
+  const out = [];
+  for (const id of order) {
+    const p = byId.get(id);
+    if (p) out.push(p);
+  }
+  for (const p of room.players) if (!out.includes(p)) out.push(p);
+  return out;
 }
 function damage(room, player, amount, cause) {
   if (!player.alive || amount <= 0) return;
@@ -496,57 +896,180 @@ function resolveCombatAndShadows(room, skipRooms = []) {
     }
   }
 }
-function drawLoot(room, player, roomId) {
+function drawPending(room, player, roomId) {
   const def = ROOM_MAP[roomId];
-  if (!def || def.resourcePool === null) return;
+  if (!def || def.resourcePool === null) return null;
   ensureRoomShape(room);
   const roomName = def.name !== "(\u7A7A\u623F)" ? `${roomId} ${def.name}` : roomId;
   if (roomId === "202") {
-    if (room.airdrop.length === 0) return;
-    const space = remainingCapacity(player);
-    const kept2 = space >= 1 ? room.airdrop[0] : void 0;
-    if (kept2) {
-      room.airdrop.shift();
-      player.items.push(kept2);
-      pushLog(room, `\u{1F392} ${player.name} \u5728\u505C\u6A5F\u576A\u7A7A\u6295\u5E36\u8D70 ${ITEM_NAMES[kept2.kind]}\uFF08\u9084\u5269 ${room.airdrop.length} \u5F35\u7A7A\u6295\uFF09`);
-    } else {
-      pushLog(room, `\u{1F392} ${player.name} \u5728\u505C\u6A5F\u576A\u80CC\u5305\u5DF2\u6EFF\uFF0C\u7A7A\u6295\u4E00\u5F35\u90FD\u5E36\u4E0D\u8D70`);
-    }
-    return;
+    if (room.airdrop.length === 0) return null;
+    const drawn2 = [...room.airdrop];
+    const pending2 = {
+      playerId: player.id,
+      roomId,
+      drawn: drawn2,
+      options: drawn2.map((it, i) => ({ index: i, kind: it.kind, forced: false, junk: it.kind === "junk" })),
+      rules: { maxNonJunk: null, maxTotal: 1 },
+      airdrop: true
+    };
+    room.pendingDraws[player.id] = pending2;
+    pushLog(room, `\u{1F3B4} ${player.name} \u5728\u505C\u6A5F\u576A\u6524\u958B ${drawn2.length} \u5F35\u7A7A\u6295\u5361\uFF08\u6700\u591A\u5E36\u8D70 1 \u5F35\uFF09\uFF1A${drawn2.map((it) => ITEM_NAMES[it.kind]).join("\u3001")}`);
+    return pending2;
   }
   const pool = room.pools[roomId] ??= [];
-  if (pool.length === 0) return;
+  if (pool.length === 0) return null;
   const limit = def.drawLimit === "all" ? pool.length : Math.min(def.drawLimit, pool.length);
   const drawn = [];
   for (let i = 0; i < limit; i++) {
     const idx = Math.floor(Math.random() * pool.length);
     drawn.push(pool.splice(idx, 1)[0]);
   }
-  const forced = roomId === "B503" ? drawn.filter((it) => it.kind === "junk") : [];
-  const rest = drawn.filter((it) => !forced.includes(it));
-  const kept = [...forced];
-  let nonJunkKept = 0;
-  let nonForcedKept = 0;
-  for (const it of rest) {
-    if (def.maxNonJunkPickup !== null && it.kind !== "junk" && nonJunkKept >= def.maxNonJunkPickup) {
-      room.discardPile.push(it);
-      continue;
+  const pending = {
+    playerId: player.id,
+    roomId,
+    drawn,
+    options: drawn.map((it, i) => ({
+      index: i,
+      kind: it.kind,
+      forced: roomId === "B503" && it.kind === "junk",
+      junk: it.kind === "junk"
+    })),
+    rules: { maxNonJunk: def.maxNonJunkPickup, maxTotal: null },
+    airdrop: false
+  };
+  room.pendingDraws[player.id] = pending;
+  pushLog(room, `\u{1F3B4} ${player.name} \u5728 ${roomName} \u6524\u958B ${drawn.length} \u5F35\uFF1A${drawn.map((it) => ITEM_NAMES[it.kind]).join("\u3001")}`);
+  return pending;
+}
+function validateKeepSelection(player, pending, keepIndexes) {
+  const selected = /* @__PURE__ */ new Set();
+  for (const raw of keepIndexes) {
+    if (!Number.isInteger(raw)) return "\u9078\u7559\u7D22\u5F15\u5FC5\u9808\u662F\u6574\u6578";
+    if (raw < 0 || raw >= pending.options.length) return "\u9078\u7559\u7D22\u5F15\u8D85\u51FA\u6524\u958B\u7BC4\u570D";
+    selected.add(raw);
+  }
+  const budget = remainingCapacity(player);
+  let nonForcedCount = 0;
+  let nonJunkCount = 0;
+  for (const opt of pending.options) {
+    if (opt.forced) continue;
+    if (!selected.has(opt.index)) continue;
+    nonForcedCount += 1;
+    if (!opt.junk) nonJunkCount += 1;
+  }
+  if (pending.rules.maxTotal !== null && nonForcedCount > pending.rules.maxTotal) {
+    return `\u505C\u6A5F\u576A\u7A7A\u6295\u6700\u591A\u5E36\u8D70 ${pending.rules.maxTotal} \u5F35`;
+  }
+  if (pending.rules.maxNonJunk !== null && nonJunkCount > pending.rules.maxNonJunk) {
+    return `\u5783\u573E\u5834\u975E\u5783\u573E\u6700\u591A\u7559 ${pending.rules.maxNonJunk} \u4EF6`;
+  }
+  if (nonForcedCount > budget) return "\u9078\u7559\u8D85\u51FA\u80CC\u5305\u5269\u9918\u5BB9\u91CF";
+  return null;
+}
+function applyKeep(room, player, pending, keepIndexes) {
+  ensureRoomShape(room);
+  const keepSet = new Set(keepIndexes);
+  const kept = [];
+  const discarded = [];
+  for (const opt of pending.options) {
+    const item = pending.drawn[opt.index];
+    if (opt.forced || keepSet.has(opt.index)) {
+      kept.push(item);
+    } else {
+      discarded.push(item);
     }
-    if (remainingCapacity(player) - nonForcedKept < 1) {
-      room.discardPile.push(it);
-      continue;
-    }
-    kept.push(it);
-    nonForcedKept += 1;
-    if (it.kind !== "junk") nonJunkKept += 1;
   }
   for (const it of kept) player.items.push(it);
+  if (pending.airdrop) {
+    for (const it of kept) {
+      const idx = room.airdrop.findIndex((a) => a.kind === it.kind);
+      if (idx >= 0) room.airdrop.splice(idx, 1);
+    }
+  } else {
+    room.discardPile.push(...discarded);
+  }
+  delete room.pendingDraws[player.id];
+  const roomName = ROOM_MAP[pending.roomId]?.name ?? pending.roomId;
   if (kept.length > 0) {
-    pushLog(room, `\u{1F392} ${player.name} \u5728 ${roomName} \u64BF\u5230 ${kept.map((it) => ITEM_NAMES[it.kind]).join("\u3001")}`);
+    pushLog(room, `\u{1F392} ${player.name} \u5728 ${roomName} \u5E36\u8D70 ${kept.map((it) => ITEM_NAMES[it.kind]).join("\u3001")}`);
+  } else {
+    pushLog(room, `\u{1F392} ${player.name} \u5728 ${roomName} \u4E00\u5F35\u90FD\u6C92\u5E36\u8D70`);
   }
-  if (kept.length === 0 && drawn.length > 0) {
-    pushLog(room, `\u{1F392} ${player.name} \u5728 ${roomName} \u7FFB\u5230\u7269\u8CC7\u4F46\u80CC\u5305\u5DF2\u6EFF\uFF0C\u4E00\u5F35\u90FD\u5E36\u4E0D\u8D70`);
+  if (discarded.length > 0 && !pending.airdrop) {
+    pushLog(room, `\u{1F5D1}\uFE0F ${player.name} \u6C92\u5E36\u8D70\u7684 ${discarded.map((it) => ITEM_NAMES[it.kind]).join("\u3001")} \u9032\u4E86\u68C4\u7F6E\u5806`);
   }
+}
+function autoKeep(room, player, pending) {
+  const budget = remainingCapacity(player);
+  const keep = [];
+  let nonForcedCount = 0;
+  let nonJunkCount = 0;
+  for (const opt of pending.options) {
+    if (opt.forced) continue;
+    if (pending.rules.maxTotal !== null && nonForcedCount >= pending.rules.maxTotal) continue;
+    if (pending.rules.maxNonJunk !== null && !opt.junk && nonJunkCount >= pending.rules.maxNonJunk) continue;
+    if (nonForcedCount >= budget) continue;
+    keep.push(opt.index);
+    nonForcedCount += 1;
+    if (!opt.junk) nonJunkCount += 1;
+  }
+  applyKeep(room, player, pending, keep);
+}
+function resolveKeep(room, playerId, keepIndexes) {
+  ensureRoomShape(room);
+  const pending = room.pendingDraws[playerId];
+  if (!pending) return "\u6C92\u6709\u5F85\u9078\u7559\u7684\u6524\u958B";
+  const player = findPlayer(room, playerId);
+  if (!player) return "\u627E\u4E0D\u5230\u73A9\u5BB6";
+  const err2 = validateKeepSelection(player, pending, keepIndexes);
+  if (err2) return err2;
+  applyKeep(room, player, pending, keepIndexes);
+  return null;
+}
+function autoResolvePendingKeeps(room) {
+  ensureRoomShape(room);
+  for (const playerId of Object.keys(room.pendingDraws)) {
+    const pending = room.pendingDraws[playerId];
+    const player = findPlayer(room, playerId);
+    if (!pending || !player) continue;
+    pushLog(room, `\u23F0 ${player.name} \u9078\u7559\u903E\u6642\uFF0C\u4F3A\u670D\u5668\u81EA\u52D5\u4FDD\u7559`);
+    autoKeep(room, player, pending);
+  }
+  room.pendingDraws = {};
+  room.keepDeadline = null;
+}
+function goldPickOptions(room, player) {
+  ensureRoomShape(room);
+  const def = ROOM_MAP[player.room];
+  if (!def || def.resourcePool === null || def.goldBarDisabled) return [];
+  const pool = room.pools[player.room] ?? [];
+  const kinds = [];
+  for (const it of pool) {
+    if (it.kind === "gold_bar") continue;
+    if (!kinds.includes(it.kind)) kinds.push(it.kind);
+  }
+  return kinds;
+}
+function spendGoldPick(room, playerId, kind) {
+  if (room.status !== "playing" || room.phase !== "free") return "\u53EA\u6709\u81EA\u7531\u968E\u6BB5\u53EF\u4EE5\u7528\u91D1\u689D\u63DB\u7269\u8CC7";
+  const player = findPlayer(room, playerId);
+  if (!player || !player.alive) return "\u627E\u4E0D\u5230\u73A9\u5BB6\u6216\u73A9\u5BB6\u5DF2\u662F\u6697\u5F71";
+  const def = ROOM_MAP[player.room];
+  if (!def || def.resourcePool === null) return "\u9019\u500B\u623F\u9593\u6C92\u6709\u7269\u8CC7\u6C60";
+  if (def.goldBarDisabled) return "\u5783\u573E\u5834\u4E0D\u80FD\u7528\u91D1\u689D\u63DB\u7269\u8CC7";
+  const goldIdx = player.items.findIndex((it) => it.kind === "gold_bar");
+  if (goldIdx < 0) return "\u8EAB\u4E0A\u6C92\u6709\u91D1\u689D";
+  if (kind === "gold_bar") return "\u91D1\u689D\u6524\u958B\u6311\u9078\u4E0D\u80FD\u6311\u91D1\u689D";
+  if (!(kind in ITEM_NAMES)) return "\u60F3\u63DB\u7684\u9053\u5177\u7A2E\u985E\u7121\u6548";
+  ensureRoomShape(room);
+  const pool = room.pools[player.room] ??= [];
+  const pickIdx = pool.findIndex((it) => it.kind === kind);
+  if (pickIdx < 0) return "\u9019\u500B\u623F\u9593\u7684\u7269\u8CC7\u6C60\u88E1\u6C92\u6709\u9019\u7A2E\u9053\u5177\uFF08\u53EA\u5269\u91D1\u689D\u5C31\u7A7A\u624B\u800C\u6B78\uFF0C\u91D1\u689D\u4E0D\u6703\u88AB\u6263\uFF09";
+  const picked = pool.splice(pickIdx, 1)[0];
+  player.items.splice(goldIdx, 1);
+  player.items.push(picked);
+  pushLog(room, `\u{1FA99} ${player.name} \u82B1 1 \u5F35\u91D1\u689D\uFF0C\u5728 ${def.name} \u63DB\u5230 ${ITEM_NAMES[kind]}`);
+  return null;
 }
 function applyWine(room, player, kind) {
   const roll = 1 + Math.floor(Math.random() * 6);
@@ -586,12 +1109,54 @@ function useConsumableInResolution(room, player, item) {
     applyWine(room, player, item.kind);
   }
 }
-function runSettlement(room) {
+function resolveSettlementTrades(room, judge) {
+  ensureRoomShape(room);
+  for (const p of orderedPlayers(room)) {
+    if (!p.alive) continue;
+    const t = room.actions[p.id]?.trade;
+    if (!t) continue;
+    const target = findPlayer(room, t.toId);
+    if (!target || !target.alive || target.id === p.id) {
+      pushLog(room, `\u{1F91D} ${p.name} \u7684\u7D50\u7B97\u4EA4\u6613\u7121\u6548\uFF08\u5C0D\u8C61\u5DF2\u4E0D\u5728\u5834\uFF09`);
+      continue;
+    }
+    const offerIdx = p.items.findIndex((it) => it.id === t.offerItemId);
+    const want = target.items.find((it) => it.kind === t.wantKind);
+    if (offerIdx < 0 || !want) {
+      pushLog(room, `\u{1F91D} ${p.name} \u7684\u7D50\u7B97\u4EA4\u6613\u5931\u6557\uFF1A\u9053\u5177\u5DF2\u4E0D\u5728\u80CC\u5305\u4E2D`);
+      continue;
+    }
+    const verdict = judge(target, p.items[offerIdx].kind, want.kind);
+    if (verdict === null) {
+      room.trades.push({
+        id: newId2("tr"),
+        fromId: p.id,
+        toId: target.id,
+        offerItemId: t.offerItemId,
+        wantItemId: want.id,
+        fromSettlement: true,
+        createdDay: room.day
+      });
+      pushLog(room, `\u{1F91D} ${p.name} \u5728\u7D50\u7B97\u4E2D\u5411 ${target.name} \u63D0\u51FA\u4EA4\u6613\uFF08\u5F85\u81EA\u7531\u968E\u6BB5\u56DE\u8986\uFF09`);
+      continue;
+    }
+    if (!verdict) {
+      pushLog(room, `\u{1F91D} ${target.name} \u62D2\u7D55\u4E86 ${p.name} \u7684\u7D50\u7B97\u4EA4\u6613`);
+      continue;
+    }
+    const offer = p.items[offerIdx];
+    p.items[offerIdx] = want;
+    const wantIdx = target.items.findIndex((it) => it.id === want.id);
+    target.items[wantIdx] = offer;
+    pushLog(room, `\u{1F91D} \u7D50\u7B97\u4EA4\u6613\u6210\u4EA4\uFF1A${p.name} \u7684 ${ITEM_NAMES[offer.kind]} \u2194 ${target.name} \u7684 ${ITEM_NAMES[want.kind]}`);
+  }
+}
+function runSettlementPhase0(room, judge) {
   ensureRoomShape(room);
   const day = room.day;
   pushLog(room, `\u2500\u2500 \u7B2C ${day} \u5929\u7D50\u7B97\u958B\u59CB \u2500\u2500`);
-  const activeAtStart = new Set(room.players.filter((p) => p.adrenalineActive).map((p) => p.id));
-  for (const p of room.players) {
+  room.adrenalineAtSettlementStart = room.players.filter((p) => p.adrenalineActive).map((p) => p.id);
+  for (const p of orderedPlayers(room)) {
     const action = room.actions[p.id];
     if (!action) continue;
     const path = effectivePath(p, action);
@@ -609,7 +1174,7 @@ function runSettlement(room) {
       damage(room, p, 1, "\u88AB\u6FC0\u5149\u707C\u50B7");
       if (!p.alive) continue;
     }
-    drawLoot(room, p, p.room);
+    drawPending(room, p, p.room);
     if (!p.alive) continue;
     if (p.room === "201") {
       p.might += 1;
@@ -632,6 +1197,25 @@ function runSettlement(room) {
       pushLog(room, `\u{1F39B}\uFE0F ${p.name} \u5728\u64CD\u4F5C\u5BA4\u91CD\u914D\u57FA\u56E0\uFF1A\u6B66 ${g.might}\uFF0F\u8CA0 ${g.carry}\uFF0F\u901F ${g.speed}`);
     }
   }
+  for (const p of room.players) {
+    if (!p.isAI) continue;
+    const pending = room.pendingDraws[p.id];
+    if (pending) autoKeep(room, p, pending);
+  }
+  if (Object.keys(room.pendingDraws).length > 0) {
+    room.phase = "keep";
+    room.keepDeadline = Date.now() + KEEP_TIMEOUT_MS;
+    const waitNames = Object.keys(room.pendingDraws).map((id) => findPlayer(room, id)?.name ?? "?").join("\u3001");
+    pushLog(room, `\u{1F3B4} \u7B49\u5F85\u9078\u7559\uFF1A${waitNames}\uFF08${KEEP_TIMEOUT_MS / 1e3} \u79D2\u5167\u672A\u9078\u7531\u4F3A\u670D\u5668\u81EA\u52D5\u4FDD\u7559\uFF09`);
+    return;
+  }
+  runSettlementRest(room, judge);
+}
+function runSettlementRest(room, judge) {
+  ensureRoomShape(room);
+  const day = room.day;
+  const activeAtStart = new Set(room.adrenalineAtSettlementStart ?? []);
+  resolveSettlementTrades(room, judge);
   const surgeryOccupants = room.players.filter((p) => p.alive && p.room === "B202");
   const skipRooms = [];
   if (surgeryOccupants.length === 2) {
@@ -694,7 +1278,7 @@ function runSettlement(room) {
   if (day === 1) {
     pushLog(room, "\u{1F371} \u7B2C 1 \u5929\u514D\u7E73\u6C34\u7CE7");
   } else {
-    for (const p of room.players) {
+    for (const p of orderedPlayers(room)) {
       if (!p.alive) continue;
       if (p.room === "B204") {
         pushLog(room, `\u{1F371} ${p.name} \u5728\u9910\u5EF3\uFF0C\u514D\u7E73\u6C34\u7CE7`);
@@ -734,7 +1318,7 @@ function runSettlement(room) {
     }
   }
   const bombedRooms = [];
-  for (const p of room.players) {
+  for (const p of orderedPlayers(room)) {
     const action = room.actions[p.id];
     if (!p.alive || !action?.rocketTarget) continue;
     if (!hasItemKind(p, "rocket_launcher")) continue;
@@ -747,7 +1331,7 @@ function runSettlement(room) {
     }
     for (const v of victims) damage(room, v, 4, "\u88AB\u706B\u7BAD\u7B52\u8F5F\u70B8");
   }
-  for (const p of room.players) {
+  for (const p of orderedPlayers(room)) {
     if (!p.alive) continue;
     const action = room.actions[p.id];
     if (!action?.itemUses) continue;
@@ -790,10 +1374,12 @@ function runSettlement(room) {
     pushLog(room, `\u{1F3C6} \u904A\u6232\u7D50\u675F\uFF01\u51A0\u8ECD\uFF1A${topNames.join("\u3001")}\uFF08\u6700\u7D42\u751F\u547D ${room.ranking[0]?.finalHp}\uFF09`);
     return;
   }
+  const settlingDay = room.day;
   room.day += 1;
   room.phase = "free";
   room.actions = {};
-  room.trades = [];
+  room.trades = room.trades.filter((t) => t.fromSettlement && t.createdDay === settlingDay);
+  room.adrenalineAtSettlementStart = [];
   for (const p of room.players) p.ready = false;
   addAirdrop(room);
   pushLog(room, `\u2500\u2500 \u7B2C ${room.day} \u5929\u958B\u59CB\uFF08\u81EA\u7531\u968E\u6BB5\uFF09\u2500\u2500`);
@@ -869,7 +1455,7 @@ function proposeTrade(room, fromId, toId, offerItemId, wantItemId) {
   if (fromId === toId) return "\u4E0D\u80FD\u8DDF\u81EA\u5DF1\u4EA4\u6613";
   if (!from.items.some((it) => it.id === offerItemId)) return "\u4F60\u6C92\u6709\u8981\u7D66\u51FA\u7684\u9053\u5177";
   if (!to.items.some((it) => it.id === wantItemId)) return "\u5C0D\u65B9\u6C92\u6709\u4F60\u8981\u7684\u9053\u5177";
-  room.trades.push({ id: newId("tr"), fromId, toId, offerItemId, wantItemId });
+  room.trades.push({ id: newId2("tr"), fromId, toId, offerItemId, wantItemId });
   pushLog(room, `\u{1F91D} ${from.name} \u5411 ${to.name} \u63D0\u51FA\u4EA4\u6613`);
   return null;
 }
@@ -912,11 +1498,17 @@ function publicView(room, token) {
     status: room.status,
     day: room.day,
     phase: room.phase,
+    roomType: room.roomType ?? "casual",
+    // 觀戰者名單（只有名字與 id，不含 token；觀戰者不佔玩家名額）。
+    spectators: (room.spectators ?? []).map((s) => ({ id: s.id, name: s.name })),
     players: room.players.map((p) => ({
       id: p.id,
       name: p.name,
       isAI: p.isAI,
       isHost: p.isHost,
+      // 同房公開檔案：只有對局相關公開資訊（信譽、場次、勝負、成就），
+      // 絕不含 accountId 以外的私密欄位，更無雜湊與 token。
+      accountProfile: p.accountProfile ?? null,
       might: p.might,
       carry: p.carry,
       speed: p.speed,
@@ -937,6 +1529,24 @@ function publicView(room, token) {
     })),
     submittedCount: Object.keys(room.actions).length,
     submittedPlayerIds: room.phase === "action" ? room.players.filter((p) => room.actions[p.id]).map((p) => p.id) : [],
+    // 行動順序（公開資訊，單人版順序卡本來就公開）：card 即順序號。
+    settlementOrder: room.settlementOrder.map((id, i) => ({
+      playerId: id,
+      name: findPlayer(room, id)?.name ?? "?",
+      card: i + 1
+    })),
+    // 待選留：只有自己的完整內容公開；他人只公開「還在選」名單。
+    pendingDrawPlayerIds: Object.keys(room.pendingDraws),
+    pendingDraw: self && room.pendingDraws[self.id] ? {
+      roomId: room.pendingDraws[self.id]?.roomId,
+      options: room.pendingDraws[self.id]?.options,
+      rules: room.pendingDraws[self.id]?.rules,
+      airdrop: room.pendingDraws[self.id]?.airdrop,
+      keepDeadline: room.keepDeadline
+    } : null,
+    // 金條可換選項：只有自由階段、自己持有金條時，公開自己房間物資池
+    // 的非金條種類（否則玩家無從選；池子張數本來就公開，只差種類）。
+    goldOptions: self && room.status === "playing" && room.phase === "free" && hasItemKind(self, "gold_bar") ? goldPickOptions(room, self) : [],
     gassedFloors: room.gassedFloors,
     detoxedRooms: room.detoxedRooms,
     poolCounts,
@@ -966,7 +1576,7 @@ function publicView(room, token) {
 }
 
 // facility-server/game-ai.ts
-var AI_NAMES = ["\u963F\u9435", "\u5C0F\u591C", "\u8001\u83AB", "\u963F\u8475"];
+var AI_NAMES = ["\u963F\u9435", "\u5C0F\u591C", "\u8001\u83AB", "\u963F\u8475", "\u963F\u5CA9", "\u5C0F\u6885", "\u8001\u9AD8", "\u963F\u96EA"];
 var POLICIES = [
   { id: "gunner", might: 5, carry: 3, speed: 3, home: "B307" },
   { id: "hoarder", might: 3, carry: 5, speed: 3, home: "B402" },
@@ -1175,50 +1785,22 @@ var ITEM_VALUE = {
 function aiAcceptTrade(giveKind, receiveKind) {
   return (ITEM_VALUE[receiveKind] ?? 0) >= (ITEM_VALUE[giveKind] ?? 0);
 }
-
-// facility-server/neon.ts
-function dbUrl() {
-  const url = process.env.DATABASE_URL || process.env.DATABASE_URL_NEON;
-  return url && url.length > 0 ? url : null;
-}
-function neonConfigured() {
-  return dbUrl() !== null;
-}
-function endpoint(url) {
-  return `https://${new URL(url).hostname}/sql`;
-}
-async function neonQuery(sql, params = []) {
-  const url = dbUrl();
-  if (!url) throw new Error("DATABASE_URL / DATABASE_URL_NEON is not set");
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 6e3);
-  let res;
-  try {
-    res = await fetch(endpoint(url), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Neon-Connection-String": url
-      },
-      body: JSON.stringify({ query: sql, params }),
-      signal: ctrl.signal
-    });
-  } catch (e) {
-    clearTimeout(tid);
-    throw new Error(`Neon fetch failed: ${e.name}: ${e.message}`);
+function aiGoldChoice(room, player) {
+  const def = ROOM_MAP[player.room];
+  if (!def || def.resourcePool === null || def.goldBarDisabled) return null;
+  if (!player.items.some((it) => it.kind === "gold_bar")) return null;
+  const pool = room.pools[player.room] ?? [];
+  let best = null;
+  let bestValue = -Infinity;
+  for (const it of pool) {
+    if (it.kind === "gold_bar") continue;
+    const v = ITEM_VALUE[it.kind] ?? 0;
+    if (v > bestValue) {
+      bestValue = v;
+      best = it.kind;
+    }
   }
-  clearTimeout(tid);
-  const text = await res.text();
-  if (!res.ok) throw new Error(`Neon HTTP ${res.status}: ${text.slice(0, 200)}`);
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    throw new Error("Neon JSON parse failed");
-  }
-  if (json.error) throw new Error(json.error.message || "Neon error");
-  const rows = Array.isArray(json.rows) ? json.rows : [];
-  return { rows };
+  return best;
 }
 
 // facility-server/store.ts
@@ -1230,7 +1812,7 @@ var CREATE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS ${TABLE} (
   version INT NOT NULL DEFAULT 1,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 )`;
-async function withTable(fn) {
+async function withTable2(fn) {
   try {
     return await fn();
   } catch (e) {
@@ -1249,7 +1831,7 @@ function parseRow(row) {
 }
 async function fetchRoom(code) {
   const upper = code.toUpperCase();
-  const stored = await withTable(async () => {
+  const stored = await withTable2(async () => {
     const { rows } = await neonQuery(
       `SELECT code, state, version FROM ${TABLE} WHERE code = $1`,
       [upper]
@@ -1258,7 +1840,7 @@ async function fetchRoom(code) {
   });
   if (!stored) return null;
   if (Date.now() - stored.room.createdAt > ROOM_TTL_MS) {
-    await withTable(
+    await withTable2(
       () => neonQuery(`DELETE FROM ${TABLE} WHERE code = $1`, [upper])
     ).catch(() => void 0);
     return null;
@@ -1266,7 +1848,7 @@ async function fetchRoom(code) {
   return stored;
 }
 async function insertRoom(room) {
-  return withTable(async () => {
+  return withTable2(async () => {
     const { rows } = await neonQuery(
       `INSERT INTO ${TABLE} (code, state, version, updated_at) VALUES ($1, $2::jsonb, 1, now())
        ON CONFLICT (code) DO NOTHING RETURNING code`,
@@ -1276,7 +1858,7 @@ async function insertRoom(room) {
   });
 }
 async function updateRoom(room, version) {
-  return withTable(async () => {
+  return withTable2(async () => {
     const { rows } = await neonQuery(
       `UPDATE ${TABLE} SET state = $2::jsonb, version = version + 1, updated_at = now()
        WHERE code = $1 AND version = $3 RETURNING version`,
@@ -1286,7 +1868,7 @@ async function updateRoom(room, version) {
   });
 }
 async function sweepExpired() {
-  await withTable(
+  await withTable2(
     () => neonQuery(
       `DELETE FROM ${TABLE} WHERE updated_at < now() - interval '12 hours'`
     )
@@ -1316,6 +1898,73 @@ function playerFromToken(room, token) {
 function sendRoom(room, token) {
   return { status: 200, body: { room: publicView(room, token) } };
 }
+function spectatorFromToken(room, token) {
+  if (typeof token !== "string") return void 0;
+  return (room.spectators ?? []).find((sp) => sp.token === token);
+}
+function spectatorView(room, spectatorId) {
+  return {
+    status: 200,
+    body: {
+      room: { ...publicView(room), isSpectator: true, selfSpectatorId: spectatorId }
+    }
+  };
+}
+async function resolveAccountFromBody(body) {
+  const tok = typeof body.accountToken === "string" ? body.accountToken : void 0;
+  if (!tok) return { account: null, staleToken: false };
+  try {
+    const account = await resolveSession(tok);
+    return { account, staleToken: account === null };
+  } catch {
+    return { account: null, staleToken: true };
+  }
+}
+function accountNote(staleToken) {
+  return staleToken ? "\u820A\u767B\u5165\u5DF2\u904E\u671F\uFF0C\u5DF2\u4EE5\u672A\u767B\u5165\u8EAB\u5206\u7E7C\u7E8C\uFF1B\u91CD\u65B0\u767B\u5165\uFF08\u8A2A\u5BA2\u5E33\u865F\u4EA6\u53EF\uFF09\u624D\u80FD\u7D2F\u7A4D\u6230\u7E3E\u8207\u4FE1\u8B7D" : void 0;
+}
+async function enrichProfiles(room) {
+  const ids = [...new Set(room.players.filter((p) => p.accountId).map((p) => p.accountId))];
+  for (const id of ids) {
+    try {
+      const prof = await getPublicProfile(id);
+      if (!prof) continue;
+      for (const p of room.players.filter((x) => x.accountId === id)) {
+        p.accountProfile = {
+          displayName: prof.account.displayName,
+          reputation: prof.account.reputation,
+          games: prof.record.games,
+          wins: prof.record.wins,
+          losses: prof.record.losses,
+          achievements: prof.record.achievements
+        };
+      }
+    } catch {
+    }
+  }
+}
+async function postCommit(room, penalties, finished) {
+  for (const pen of penalties) {
+    try {
+      await adjustReputation(
+        pen.accountId,
+        pen.repDelta,
+        pen.setCooldown ? Date.now() + QUIT_COOLDOWN_MS : null
+      );
+    } catch {
+    }
+  }
+  if (!finished) return;
+  for (const p of room.players) {
+    if (p.isAI || !p.accountId) continue;
+    const rank = room.ranking.find((r) => r.playerId === p.id);
+    try {
+      await recordGameResult(p.accountId, rank?.rank === 1, p.alive, rank?.finalHp ?? p.hp);
+    } catch {
+    }
+  }
+}
+var settlementJudge = (target, offerKind, wantKind) => target.isAI ? aiAcceptTrade(wantKind, offerKind) : null;
 function aiFreePhase(room) {
   for (const p of room.players) {
     if (!p.isAI || !p.alive || p.ready) continue;
@@ -1327,6 +1976,8 @@ function aiFreePhase(room) {
         room.log.push({ day: room.day, text: `\u{1F48A} ${p.name} \u4F7F\u7528\u85E5\u7247\uFF0C\u56DE\u5FA9\u81F3 ${p.hp} \u8840` });
       }
     }
+    const goldKind = aiGoldChoice(room, p);
+    if (goldKind) spendGoldPick(room, p.id, goldKind);
     p.ready = true;
   }
 }
@@ -1342,9 +1993,31 @@ function maybeSettle(room) {
   if (room.status !== "playing" || room.phase !== "action") return;
   const allSubmitted = room.players.every((p) => room.actions[p.id]);
   if (!allSubmitted) return;
-  runSettlement(room);
+  runSettlementPhase0(room, settlementJudge);
   const phaseAfterSettlement = room.phase;
   if (room.status === "playing" && phaseAfterSettlement === "free") {
+    aiFreePhase(room);
+  }
+}
+function maybeResolveKeepTimeout(room) {
+  if (room.status !== "playing" || room.phase !== "keep") return;
+  if (room.keepDeadline === null || Date.now() < room.keepDeadline) return;
+  for (const pid of Object.keys(room.pendingDraws)) {
+    const p = room.players.find((x) => x.id === pid);
+    if (!p || p.isAI) continue;
+    room.timeoutStrikes[pid] = (room.timeoutStrikes[pid] ?? 0) + 1;
+    if (room.timeoutStrikes[pid] >= TIMEOUT_STRIKES_TO_HANDOVER) {
+      p.isAI = true;
+      if (p.accountId) {
+        room.pendingPenalties.push({ accountId: p.accountId, repDelta: TIMEOUT_REPUTATION_PENALTY, setCooldown: false });
+      }
+      room.log.push({ day: room.day, text: `\u{1F916} ${p.name} \u9078\u7559\u591A\u6B21\u903E\u6642\uFF0C\u6539\u7531 AI \u8A17\u7BA1` });
+    }
+  }
+  autoResolvePendingKeeps(room);
+  runSettlementRest(room, settlementJudge);
+  const phaseAfterRest = room.phase;
+  if (room.status === "playing" && phaseAfterRest === "free") {
     aiFreePhase(room);
   }
 }
@@ -1354,9 +2027,11 @@ function maybeAdvanceToAction(room) {
   if (!allReady) return;
   room.phase = "action";
   room.log.push({ day: room.day, text: `\u2500\u2500 \u7B2C ${room.day} \u5929\u884C\u52D5\u968E\u6BB5\u958B\u59CB \u2500\u2500` });
+  generateSettlementOrder(room);
   autoAiActions(room);
 }
 function lazyAdvance(room) {
+  maybeResolveKeepTimeout(room);
   aiFreePhase(room);
   maybeAdvanceToAction(room);
   autoAiActions(room);
@@ -1367,16 +2042,34 @@ async function withRoom(code, notFoundMsg, fn) {
     const stored = await fetchRoom(code);
     if (!stored) return err(404, notFoundMsg);
     const { room, version } = stored;
+    ensureRoomShape(room);
+    await enrichProfiles(room);
     const before = JSON.stringify(room);
     lazyAdvance(room);
     const result = fn(room);
-    if (JSON.stringify(room) === before) return result;
-    if (await updateRoom(room, version)) return result;
+    const penalties = [...room.pendingPenalties ?? []];
+    room.pendingPenalties = [];
+    const finished = room.status === "finished" && !room.recordsWritten;
+    if (finished) room.recordsWritten = true;
+    const changed = JSON.stringify(room) !== before;
+    if (changed) {
+      if (!await updateRoom(room, version)) continue;
+    }
+    await postCommit(room, penalties, finished);
+    return result;
   }
   return err(409, "\u623F\u9593\u525B\u88AB\u5176\u4ED6\u73A9\u5BB6\u66F4\u65B0\uFF0C\u8ACB\u518D\u8A66\u4E00\u6B21");
 }
 function matchPath(path) {
   const parts = path.split("/").filter((s) => s.length > 0);
+  if (parts[0] === "accounts") {
+    if (parts.length === 2) {
+      if (["register", "login", "guest", "recover", "logout", "me", "google"].includes(parts[1])) {
+        return { name: `account-${parts[1]}` };
+      }
+    }
+    return null;
+  }
   if (parts[0] !== "rooms") return null;
   if (parts.length === 1) return { name: "create" };
   const code = parts[1];
@@ -1388,7 +2081,11 @@ function matchPath(path) {
     if (parts[2] === "ready") return { name: "ready", code };
     if (parts[2] === "action") return { name: "action", code };
     if (parts[2] === "use-item") return { name: "use-item", code };
+    if (parts[2] === "keep") return { name: "keep", code };
+    if (parts[2] === "gold-pick") return { name: "gold-pick", code };
     if (parts[2] === "trade") return { name: "trade", code };
+    if (parts[2] === "spectate") return { name: "spectate", code };
+    if (parts[2] === "quit") return { name: "quit", code };
   }
   if (parts.length === 4 && parts[2] === "trade" && parts[3] === "respond") {
     return { name: "trade-respond", code };
@@ -1414,11 +2111,93 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
   const route = matchPath(path);
   if (!route) return err(404, "\u627E\u4E0D\u5230\u623F\u9593");
   try {
+    if (route.name === "account-register" && method === "POST") {
+      const name = typeof body.displayName === "string" ? body.displayName.trim().slice(0, 12) : "";
+      const password = typeof body.password === "string" ? body.password : "";
+      if (!name) return err(400, "\u8ACB\u8F38\u5165\u986F\u793A\u540D\u7A31");
+      if (password.length < 4) return err(400, "\u5BC6\u78BC\u81F3\u5C11 4 \u500B\u5B57\u5143");
+      const created = await createAccount(name, "named", password);
+      if (!created) return err(409, "\u986F\u793A\u540D\u7A31\u5DF2\u88AB\u4F7F\u7528");
+      return {
+        status: 201,
+        body: {
+          account: publicAccount(created.account),
+          token: created.token,
+          // 恢復碼只在此回傳一次明文，前端只顯示一次；伺服器只存雜湊。
+          recoveryCode: created.recoveryCode,
+          record: { games: 0, wins: 0, losses: 0, bestFinalHp: 0, achievements: [] }
+        }
+      };
+    }
+    if (route.name === "account-guest" && method === "POST") {
+      const name = typeof body.displayName === "string" ? body.displayName.trim().slice(0, 12) : "";
+      const created = await createAccount(name, "guest");
+      if (!created) return err(500, "\u8A2A\u5BA2\u5E33\u865F\u5EFA\u7ACB\u5931\u6557\uFF0C\u8ACB\u518D\u8A66\u4E00\u6B21");
+      return {
+        status: 201,
+        body: {
+          account: publicAccount(created.account),
+          token: created.token,
+          recoveryCode: created.recoveryCode,
+          record: { games: 0, wins: 0, losses: 0, bestFinalHp: 0, achievements: [] }
+        }
+      };
+    }
+    if (route.name === "account-login" && method === "POST") {
+      const token = await loginByPassword(String(body.displayName ?? ""), String(body.password ?? ""));
+      if (!token) return err(401, "\u986F\u793A\u540D\u7A31\u6216\u5BC6\u78BC\u932F\u8AA4\uFF08\u8A2A\u5BA2\u5E33\u865F\u8ACB\u7528\u6062\u5FA9\u78BC\u767B\u5165\uFF09");
+      const account = await resolveSession(token);
+      if (!account) return err(401, "\u767B\u5165\u5931\u6557\uFF0C\u8ACB\u518D\u8A66\u4E00\u6B21");
+      return { status: 200, body: { account: publicAccount(account), token } };
+    }
+    if (route.name === "account-recover" && method === "POST") {
+      const token = await loginByRecovery(String(body.displayName ?? ""), String(body.recoveryCode ?? ""));
+      if (!token) return err(401, "\u986F\u793A\u540D\u7A31\u6216\u6062\u5FA9\u78BC\u932F\u8AA4");
+      const account = await resolveSession(token);
+      if (!account) return err(401, "\u6062\u5FA9\u767B\u5165\u5931\u6557\uFF0C\u8ACB\u518D\u8A66\u4E00\u6B21");
+      return { status: 200, body: { account: publicAccount(account), token } };
+    }
+    if (route.name === "account-me" && method === "GET") {
+      const account = await resolveSession(query.get("accountToken") ?? "");
+      if (!account) return err(401, "\u767B\u5165\u5DF2\u904E\u671F\uFF0C\u8ACB\u91CD\u65B0\u767B\u5165\uFF08\u8A2A\u5BA2\u5E33\u865F\u4EA6\u53EF\uFF09");
+      const profile = await getPublicProfile(account.id);
+      if (!profile) return err(401, "\u767B\u5165\u5DF2\u904E\u671F\uFF0C\u8ACB\u91CD\u65B0\u767B\u5165\uFF08\u8A2A\u5BA2\u5E33\u865F\u4EA6\u53EF\uFF09");
+      return { status: 200, body: profile };
+    }
+    if (route.name === "account-logout" && method === "POST") {
+      if (typeof body.accountToken === "string") await logoutSession(body.accountToken);
+      return { status: 200, body: { ok: true } };
+    }
+    if (route.name === "account-google") {
+      return err(501, "Google \u767B\u5165\u5C1A\u672A\u63A5\u901A\uFF1A\u9700\u7AD9\u9577\u5728 Google Cloud \u5EFA\u7ACB OAuth \u6191\u8B49\u4E26\u8A2D\u5B9A GOOGLE_CLIENT_ID\uFF0FGOOGLE_CLIENT_SECRET\uFF08\u898B facility-server/README.md\uFF09");
+    }
+    if (route.name.startsWith("account-")) return err(404, "\u627E\u4E0D\u5230\u623F\u9593");
     if (route.name === "create" && method === "POST") {
+      const { account, staleToken } = await resolveAccountFromBody(body);
+      const roomType = body.roomType === "ranked" ? "ranked" : "casual";
+      if (roomType === "ranked" && !account) {
+        return err(403, "\u7AF6\u6280\u623F\u9700\u5148\u767B\u5165\uFF08\u8A2A\u5BA2\u5E33\u865F\u4EA6\u53EF\uFF09\u4E14\u4FE1\u8B7D 90 \u5206\u4EE5\u4E0A");
+      }
+      const gate = gateError(roomType, account);
+      if (gate) return err(403, gate);
       await sweepExpired();
       for (let i = 0; i < 10; i++) {
         const code2 = newCode();
-        const room = createRoom(code2, cleanName(body.name));
+        const room = createRoom(code2, account?.displayName ?? cleanName(body.name), roomType, account?.id);
+        if (account) {
+          const prof = await getPublicProfile(account.id).catch(() => null);
+          const host = room.players[0];
+          if (host && prof) {
+            host.accountProfile = {
+              displayName: prof.account.displayName,
+              reputation: prof.account.reputation,
+              games: prof.record.games,
+              wins: prof.record.wins,
+              losses: prof.record.losses,
+              achievements: prof.record.achievements
+            };
+          }
+        }
         if (await insertRoom(room)) {
           const host = room.players[0];
           return {
@@ -1427,7 +2206,8 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
               code: code2,
               playerId: host?.id,
               token: host?.token,
-              room: publicView(room, host?.token)
+              room: publicView(room, host?.token),
+              accountNote: accountNote(staleToken)
             }
           };
         }
@@ -1436,33 +2216,126 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
     }
     const code = route.code;
     if (route.name === "join" && method === "POST") {
+      const { account, staleToken } = await resolveAccountFromBody(body);
+      const joinProfile = account ? await getPublicProfile(account.id).catch(() => null) : null;
       return withRoom(
         code,
         "\u627E\u4E0D\u5230\u623F\u9593\uFF08\u623F\u9593\u78BC\u932F\u8AA4\uFF0C\u6216\u623F\u9593\u5DF2\u904E\u671F\uFF0F\u4F3A\u670D\u5668\u91CD\u555F\uFF09",
         (room) => {
           if (room.status !== "lobby") return err(400, "\u904A\u6232\u5DF2\u7D93\u958B\u59CB\uFF0C\u7121\u6CD5\u52A0\u5165");
-          if (room.players.length >= MAX_PLAYERS) return err(400, "\u623F\u9593\u5DF2\u6EFF\uFF084 \u4EBA\uFF09");
-          const player = addPlayer(room, cleanName(body.name), false);
+          if (room.players.length >= MAX_PLAYERS) return err(400, "\u623F\u9593\u5DF2\u6EFF\uFF088 \u4EBA\uFF09");
+          if (room.roomType === "ranked" && !account) {
+            return err(403, "\u7AF6\u6280\u623F\u9700\u5148\u767B\u5165\uFF08\u8A2A\u5BA2\u5E33\u865F\u4EA6\u53EF\uFF09\u4E14\u4FE1\u8B7D 90 \u5206\u4EE5\u4E0A");
+          }
+          const gate = gateError(room.roomType ?? "casual", account);
+          if (gate) return err(403, gate);
+          const player = addPlayer(room, account?.displayName ?? cleanName(body.name), false, account?.id);
+          if (joinProfile) {
+            player.accountProfile = {
+              displayName: joinProfile.account.displayName,
+              reputation: joinProfile.account.reputation,
+              games: joinProfile.record.games,
+              wins: joinProfile.record.wins,
+              losses: joinProfile.record.losses,
+              achievements: joinProfile.record.achievements
+            };
+          }
           return {
             status: 201,
             body: {
               playerId: player.id,
               token: player.token,
-              room: publicView(room, player.token)
+              room: publicView(room, player.token),
+              accountNote: accountNote(staleToken)
             }
           };
         }
       );
     }
+    if (route.name === "spectate" && method === "POST") {
+      const { account } = await resolveAccountFromBody(body);
+      return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        const sp = {
+          id: newId2("sp"),
+          name: account?.displayName ?? cleanName(body.name),
+          token: newId2("tok"),
+          accountId: account?.id
+        };
+        room.spectators.push(sp);
+        return {
+          status: 201,
+          body: { spectatorId: sp.id, token: sp.token, room: spectatorView(room, sp.id).body.room }
+        };
+      });
+    }
+    if (route.name === "quit" && method === "POST") {
+      return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        const sp = spectatorFromToken(room, body.token);
+        if (sp) {
+          room.spectators = room.spectators.filter((x) => x.id !== sp.id);
+          return { status: 200, body: { left: true, room: publicView(room) } };
+        }
+        if (spectatorFromToken(room, body.token)) {
+          return err(403, "\u89C0\u6230\u8005\u53EA\u80FD\u89C0\u770B\uFF0C\u4E0D\u80FD\u884C\u52D5\uFF0F\u4EA4\u6613\uFF0F\u6295\u7968");
+        }
+        const player = playerFromToken(room, body.token);
+        if (!player) return err(401, "\u6191\u8B49\u7121\u6548\uFF0C\u8ACB\u91CD\u65B0\u52A0\u5165\u623F\u9593");
+        if (room.status === "finished") return sendRoom(room, player.token);
+        if (room.status === "lobby") {
+          const wasHost2 = player.isHost;
+          room.players = room.players.filter((x) => x.id !== player.id);
+          if (wasHost2 && room.players.length > 0) {
+            const next = room.players.find((x) => !x.isAI) ?? room.players[0];
+            if (next) next.isHost = true;
+          }
+          return { status: 200, body: { left: true, room: publicView(room) } };
+        }
+        const wasHost = player.isHost;
+        const firstQuit = room.quitCount === 0;
+        room.quitCount += 1;
+        if (player.accountId) {
+          room.pendingPenalties.push({ accountId: player.accountId, repDelta: QUIT_REPUTATION_PENALTY, setCooldown: firstQuit });
+        }
+        player.isAI = true;
+        player.ready = true;
+        room.log.push({ day: room.day, text: `\u{1F6AA} ${player.name} \u68C4\u6B0A\uFF0C\u6539\u7531 AI \u8A17\u7BA1${firstQuit ? "\uFF08\u7B2C\u4E00\u4F4D\u68C4\u6B0A\u8005\u51B7\u537B 15 \u5206\u9418\uFF09" : ""}` });
+        if (wasHost) {
+          const next = room.players.find((x) => !x.isAI && x.id !== player.id);
+          if (next) {
+            player.isHost = false;
+            next.isHost = true;
+          }
+        }
+        if (room.phase === "keep" && room.pendingDraws[player.id]) {
+          const pending = room.pendingDraws[player.id];
+          if (pending) autoKeep(room, player, pending);
+          if (Object.keys(room.pendingDraws).length === 0) {
+            room.keepDeadline = null;
+            runSettlementRest(room, settlementJudge);
+            const phaseAfterRest = room.phase;
+            if (room.status === "playing" && phaseAfterRest === "free") aiFreePhase(room);
+          }
+        }
+        if (room.phase === "action" && !room.actions[player.id]) {
+          room.actions[player.id] = aiAction(room, player);
+          maybeSettle(room);
+        }
+        if (room.phase === "free") aiFreePhase(room);
+        return sendRoom(room, player.token);
+      });
+    }
     if (route.name === "get" && method === "GET") {
-      return withRoom(
-        code,
-        "\u627E\u4E0D\u5230\u623F\u9593",
-        (room) => sendRoom(room, query.get("token") ?? void 0)
-      );
+      return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        const sp = spectatorFromToken(room, query.get("token") ?? void 0);
+        if (sp) return spectatorView(room, sp.id);
+        return sendRoom(room, query.get("token") ?? void 0);
+      });
     }
     if (route.name === "setup" && method === "POST") {
       return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        if (spectatorFromToken(room, body.token)) {
+          return err(403, "\u89C0\u6230\u8005\u53EA\u80FD\u89C0\u770B\uFF0C\u4E0D\u80FD\u884C\u52D5\uFF0F\u4EA4\u6613\uFF0F\u6295\u7968");
+        }
         const player = playerFromToken(room, body.token);
         if (!player) return err(401, "\u6191\u8B49\u7121\u6548\uFF0C\u8ACB\u91CD\u65B0\u52A0\u5165\u623F\u9593");
         const e = setSetup(
@@ -1479,6 +2352,9 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
     }
     if (route.name === "start" && method === "POST") {
       return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        if (spectatorFromToken(room, body.token)) {
+          return err(403, "\u89C0\u6230\u8005\u53EA\u80FD\u89C0\u770B\uFF0C\u4E0D\u80FD\u884C\u52D5\uFF0F\u4EA4\u6613\uFF0F\u6295\u7968");
+        }
         const player = playerFromToken(room, body.token);
         if (!player) return err(401, "\u6191\u8B49\u7121\u6548\uFF0C\u8ACB\u91CD\u65B0\u52A0\u5165\u623F\u9593");
         if (!player.isHost) return err(403, "\u53EA\u6709\u623F\u4E3B\u53EF\u4EE5\u958B\u59CB\u904A\u6232");
@@ -1511,6 +2387,9 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
     }
     if (route.name === "ready" && method === "POST") {
       return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        if (spectatorFromToken(room, body.token)) {
+          return err(403, "\u89C0\u6230\u8005\u53EA\u80FD\u89C0\u770B\uFF0C\u4E0D\u80FD\u884C\u52D5\uFF0F\u4EA4\u6613\uFF0F\u6295\u7968");
+        }
         const player = playerFromToken(room, body.token);
         if (!player) return err(401, "\u6191\u8B49\u7121\u6548\uFF0C\u8ACB\u91CD\u65B0\u52A0\u5165\u623F\u9593");
         if (room.status !== "playing" || room.phase !== "free") {
@@ -1523,12 +2402,17 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
     }
     if (route.name === "action" && method === "POST") {
       return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        if (spectatorFromToken(room, body.token)) {
+          return err(403, "\u89C0\u6230\u8005\u53EA\u80FD\u89C0\u770B\uFF0C\u4E0D\u80FD\u884C\u52D5\uFF0F\u4EA4\u6613\uFF0F\u6295\u7968");
+        }
         const player = playerFromToken(room, body.token);
         if (!player) return err(401, "\u6191\u8B49\u7121\u6548\uFF0C\u8ACB\u91CD\u65B0\u52A0\u5165\u623F\u9593");
         if (room.actions[player.id]) return err(400, "\u672C\u56DE\u5408\u5DF2\u7D93\u63D0\u4EA4\u904E\u884C\u52D5");
         const rawControl = body.controlChoice;
         const controlMode = rawControl?.mode === "vote" || rawControl?.mode === "detox" ? rawControl.mode : void 0;
         const rawGene = body.geneRealloc;
+        const rawTrade = body.trade;
+        const trade = rawTrade && typeof rawTrade.toId === "string" && typeof rawTrade.offerItemId === "string" && typeof rawTrade.wantKind === "string" ? { toId: rawTrade.toId, offerItemId: rawTrade.offerItemId, wantKind: rawTrade.wantKind } : void 0;
         const action = {
           playerId: player.id,
           path: Array.isArray(body.path) ? body.path.map(String) : [],
@@ -1538,7 +2422,8 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
           controlChoice: controlMode ? { mode: controlMode, target: typeof rawControl?.target === "string" ? rawControl.target : void 0 } : void 0,
           geneRealloc: rawGene && Number.isInteger(rawGene.might) && Number.isInteger(rawGene.carry) && Number.isInteger(rawGene.speed) ? { might: Number(rawGene.might), carry: Number(rawGene.carry), speed: Number(rawGene.speed) } : void 0,
           rocketTarget: typeof body.rocketTarget === "string" ? body.rocketTarget : void 0,
-          itemUses: Array.isArray(body.itemUses) ? body.itemUses.map(String) : void 0
+          itemUses: Array.isArray(body.itemUses) ? body.itemUses.map(String) : void 0,
+          trade
         };
         const e = validateAction(room, player, action);
         if (e) return err(400, e);
@@ -1547,8 +2432,47 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
         return sendRoom(room, player.token);
       });
     }
+    if (route.name === "keep" && method === "POST") {
+      return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        if (spectatorFromToken(room, body.token)) {
+          return err(403, "\u89C0\u6230\u8005\u53EA\u80FD\u89C0\u770B\uFF0C\u4E0D\u80FD\u884C\u52D5\uFF0F\u4EA4\u6613\uFF0F\u6295\u7968");
+        }
+        const player = playerFromToken(room, body.token);
+        if (!player) return err(401, "\u6191\u8B49\u7121\u6548\uFF0C\u8ACB\u91CD\u65B0\u52A0\u5165\u623F\u9593");
+        if (room.status !== "playing" || room.phase !== "keep") {
+          return err(400, "\u73FE\u5728\u4E0D\u662F\u9078\u7559\u968E\u6BB5");
+        }
+        const keepIndexes = Array.isArray(body.keepIndexes) ? body.keepIndexes.map(Number) : [];
+        const e = resolveKeep(room, player.id, keepIndexes);
+        if (e) return err(400, e);
+        if (Object.keys(room.pendingDraws).length === 0) {
+          room.keepDeadline = null;
+          runSettlementRest(room, settlementJudge);
+          const phaseAfterRest = room.phase;
+          if (room.status === "playing" && phaseAfterRest === "free") {
+            aiFreePhase(room);
+          }
+        }
+        return sendRoom(room, player.token);
+      });
+    }
+    if (route.name === "gold-pick" && method === "POST") {
+      return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        if (spectatorFromToken(room, body.token)) {
+          return err(403, "\u89C0\u6230\u8005\u53EA\u80FD\u89C0\u770B\uFF0C\u4E0D\u80FD\u884C\u52D5\uFF0F\u4EA4\u6613\uFF0F\u6295\u7968");
+        }
+        const player = playerFromToken(room, body.token);
+        if (!player) return err(401, "\u6191\u8B49\u7121\u6548\uFF0C\u8ACB\u91CD\u65B0\u52A0\u5165\u623F\u9593");
+        const e = spendGoldPick(room, player.id, String(body.kind ?? ""));
+        if (e) return err(400, e);
+        return sendRoom(room, player.token);
+      });
+    }
     if (route.name === "use-item" && method === "POST") {
       return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        if (spectatorFromToken(room, body.token)) {
+          return err(403, "\u89C0\u6230\u8005\u53EA\u80FD\u89C0\u770B\uFF0C\u4E0D\u80FD\u884C\u52D5\uFF0F\u4EA4\u6613\uFF0F\u6295\u7968");
+        }
         const player = playerFromToken(room, body.token);
         if (!player) return err(401, "\u6191\u8B49\u7121\u6548\uFF0C\u8ACB\u91CD\u65B0\u52A0\u5165\u623F\u9593");
         const e = useItem(room, player.id, String(body.itemId ?? ""));
@@ -1558,6 +2482,9 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
     }
     if (route.name === "trade" && method === "POST") {
       return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        if (spectatorFromToken(room, body.token)) {
+          return err(403, "\u89C0\u6230\u8005\u53EA\u80FD\u89C0\u770B\uFF0C\u4E0D\u80FD\u884C\u52D5\uFF0F\u4EA4\u6613\uFF0F\u6295\u7968");
+        }
         const player = playerFromToken(room, body.token);
         if (!player) return err(401, "\u6191\u8B49\u7121\u6548\uFF0C\u8ACB\u91CD\u65B0\u52A0\u5165\u623F\u9593");
         const target = room.players.find((p) => p.id === String(body.toId ?? ""));
@@ -1584,6 +2511,9 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
     }
     if (route.name === "trade-respond" && method === "POST") {
       return withRoom(code, "\u627E\u4E0D\u5230\u623F\u9593", (room) => {
+        if (spectatorFromToken(room, body.token)) {
+          return err(403, "\u89C0\u6230\u8005\u53EA\u80FD\u89C0\u770B\uFF0C\u4E0D\u80FD\u884C\u52D5\uFF0F\u4EA4\u6613\uFF0F\u6295\u7968");
+        }
         const player = playerFromToken(room, body.token);
         if (!player) return err(401, "\u6191\u8B49\u7121\u6548\uFF0C\u8ACB\u91CD\u65B0\u52A0\u5165\u623F\u9593");
         const e = respondTrade(
