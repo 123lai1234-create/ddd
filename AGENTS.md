@@ -110,8 +110,12 @@
   - `_groove_strands()` 的刻紋深度別超過 0.005，否則殼面變成一格格「甲板」。
   - 量測／比對工具：`measure_parts.py`（逐高度 skin/tee/hair/red 的 L/R 目標）、
     `diff_silhouette.py`（模型 vs 參考逐高度 L/R 差值 + 疊圖）、
-    `_ortho_render.py`（正交 2048² 渲染，1025 px/單位）、`_sbs_head.py`／`_zoom_pair.py`
-    （並排與局部放大比對）。**不要用眼睛估數字。**
+    `measure_eyes.py` / `measure_iris.py`（眼部量測）、
+    `render_ortho.py`（正交 2048² 渲染，1025 px/單位）、
+    `compare_sbs.py` / `compare_sbs_head.py` / `compare_zoom.py`
+    （整體並排、頭部並排、局部放大比對）。**不要用眼睛估數字。**
+    ⚠️ `blender/_*.py` 開頭的檔案被 `.gitignore` 忽略（`_*.py`），
+    可重跑的工具一律用**沒有底線**的檔名。
 - **眼睛是五層**（眼白 → 虹膜 → 虹膜下緣灰色月牙 → 高光），再加一條**眼瞼線**：
   - 參考圖眼框 = x 0.080..0.219、z 1.155..1.284（`measure_fringe.py` 找暗色 blob）。
     眼睛 **0.139 寬 × 0.129 高**。

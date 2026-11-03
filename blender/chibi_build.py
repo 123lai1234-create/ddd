@@ -69,11 +69,11 @@ CHIN_Z = 0.950
 #   brow       |x| 0.095 .. 0.185,  z 1.305 .. 1.330
 EYE_AP_X, EYE_AP_Z = 0.150, 1.218
 EYE_AP_RX, EYE_AP_RZ = 0.070, 0.058
-IRIS_X, IRIS_Z = 0.1385, 1.223
-IRIS_RX, IRIS_RZ = 0.0635, 0.0505
+IRIS_X, IRIS_Z = 0.1330, 1.2220
+IRIS_RX, IRIS_RZ = 0.0560, 0.0480
 BROW_Z = 1.316
 NOSE_Z = 1.140
-MOUTH_Z = 1.078
+MOUTH_Z = 1.090
 
 random.seed(20261020)
 
@@ -185,13 +185,21 @@ def build_materials():
     m["sole"] = L.make_material("Sole", (0.880, 0.875, 0.865), roughness=0.45)
     m["sclera"] = L.make_material("Sclera", (0.930, 0.900, 0.870), roughness=0.30)
     m["iris"] = L.make_material("Iris", (0.008, 0.005, 0.005), roughness=0.22)
+    # The reference iris is not a flat black disc: the lower third is a
+    # soft grey crescent (the reflected light under the pupil).  Without it
+    # the sclera reads as a white band and the eye looks like a goggle.
+    m["irislow"] = L.make_material("IrisLow", (0.052, 0.050, 0.054),
+                                   roughness=0.35)
+    # The eyelid line of the reference is a dark BROWN, not black.
+    m["eyeline"] = L.make_material("EyeLine", (0.058, 0.030, 0.024),
+                                    roughness=0.45)
     m["glint"] = L.make_material("Glint", (1.0, 1.0, 1.0), roughness=0.05)
-    m["ear"] = L.make_material("Ear", (0.620, 0.150, 0.135), roughness=0.55)
+    m["ear"] = L.make_material("Ear", (0.760, 0.250, 0.205), roughness=0.55)
     m["blush"] = make_vcol_blush_material("Blush")
     # The nose is a soft shadow, not a pink bead: it is barely darker than the
     # skin, just a touch warmer.
     m["nose"] = L.make_material("Nose", (0.700, 0.320, 0.250), roughness=0.55)
-    m["mouth"] = L.make_material("Mouth", (0.460, 0.022, 0.022), roughness=0.40)
+    m["mouth"] = L.make_material("Mouth", (0.520, 0.055, 0.050), roughness=0.40)
     return m
 
 
@@ -210,7 +218,7 @@ PLAID_B = (0.020, 0.018, 0.018)   # near-black
 # The reference check squares measure ~0.028 units across, so the period is
 # 0.058.  It also has to be COARSE enough for the vertex grid to resolve:
 # the old 0.034 period aliased into black blotches that read as damage.
-PLAID_PERIOD = 0.104
+PLAID_PERIOD = 0.050
 
 
 def _stripe(v, period, duty):
@@ -223,9 +231,8 @@ def plaid_rgb(x, z):
     The reference is a big red check with black squares at the crossings and
     a thin black line running through every red square - not a fine hatch.
     """
-    dark = ((_stripe(x, PLAID_PERIOD, 0.40) and _stripe(z, PLAID_PERIOD, 0.40))
-            or _stripe(x, PLAID_PERIOD, 0.06)
-            or _stripe(z, PLAID_PERIOD, 0.06))
+    dark = (_stripe(x, PLAID_PERIOD, 0.46)
+            and _stripe(z, PLAID_PERIOD, 0.46))
     return PLAID_B if dark else PLAID_A
 
 
@@ -342,13 +349,18 @@ def build_head(m):
 def build_ears(m):
     obs = []
     for s in (-1, 1):
+        # The reference ear is small and sits HIGH: the flesh coloured oval
+        # beside the face runs from z 1.21 to z 1.36 and reaches x 0.348.
+        # The +-0.348 at z 1.16-1.25 in the silhouette table is the HAIR
+        # beside the face, not the ear - a big ear made the head look like a
+        # cartoon mouse.
         bpy.ops.mesh.primitive_uv_sphere_add(segments=28, ring_count=18,
                                              radius=1.0,
-                                             location=(s * 0.278, 0.004, 1.246))
+                                             location=(s * 0.300, 0.000, 1.250))
         ob = bpy.context.object
         ob.name = f"Ear_{'L' if s < 0 else 'R'}"
         # flat in Y: an ear is a disc against the head, not a ball
-        ob.scale = (0.062, 0.044, 0.082)
+        ob.scale = (0.048, 0.044, 0.086)
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
         L.shade_smooth(ob)
         L.assign(ob, m["skin"])
@@ -358,10 +370,10 @@ def build_ears(m):
         # as a blank ear and the face loses its frame.
         bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=16,
                                              radius=1.0,
-                                             location=(s * 0.276, -0.024, 1.244))
+                                             location=(s * 0.292, -0.042, 1.236))
         inner = bpy.context.object
         inner.name = f"EarInner_{'L' if s < 0 else 'R'}"
-        inner.scale = (0.034, 0.016, 0.050)
+        inner.scale = (0.032, 0.016, 0.060)
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
         L.shade_smooth(inner)
         L.assign(inner, m["ear"])
@@ -370,11 +382,17 @@ def build_ears(m):
 
 
 # ------------------------------------------------------------------ the hair
-# The reference hair is NOT a smooth helmet with a few spikes on it.  It is a
-# thick hood of hair carrying a pile of BROAD, overlapping crescent leaves
-# that shingle over each other like roof tiles - and the leaf tips are what
-# makes the silhouette.  A thin cap with needle spikes gives the hedgehog
-# look the reference does not have.
+# The reference hair is NOT a smooth helmet with a few spikes on it, and it is
+# not a cap with leaves glued to the outside either.  It is a CHRYSANTHEMUM:
+# a whorl near the top of the skull with ~23 long, flat, tapering locks
+# radiating out of it like petals, every one of them ending in a sharp point.
+# The points ARE the silhouette; the dark mass between them is a backdrop.
+#
+# A lock rooted on the SURFACE of the cap only ever sticks out by the few
+# centimetres between the cap and the measured line, and that reads as
+# "blobs on a helmet" - which is what this used to look like.  The locks have
+# to be rooted at the WHORL, so each one travels the whole distance from the
+# crown to its point.
 #
 # Every number below is measured off chibi-hero.png:
 #
@@ -382,29 +400,33 @@ def build_ears(m):
 #   blender/measure_fringe.py  -> the LEFT and RIGHT extreme of the hair at
 #                                 every height (the half width alone cannot
 #                                 tell a single crown horn from two)
+#   blender/measure_parts.py   -> the per-part outline (hair / tee / pants ...)
+#   blender/diff_silhouette.py -> the overlay of the reference and the model
 #
 # The measured extremes - the hair is swept to the character's left:
 #
-#     z 1.795   L -0.277   R +0.038     the crown horn, leaning left
-#     z 1.755   L -0.285   R +0.080
-#     z 1.655   L -0.281   R +0.291     a leaf tip on the right
-#     z 1.622   L -0.327   R +0.127     a leaf tip on the left
-#     z 1.565   L -0.441   R +0.156     the widest leaf on the left
-#     z 1.490   L -0.419   R +0.440     the widest leaf on the right
+#     z 1.795   L -0.275   R +0.038     the crown horn, leaning left
+#     z 1.760   L -0.284   R +0.078
+#     z 1.655   L -0.281   R +0.291     a lock tip on the right
+#     z 1.625   L -0.327   R +0.130     a lock tip on the left
+#     z 1.565   L -0.441   R +0.156     the widest lock on the left
+#     z 1.490   L -0.419   R +0.440     the widest lock on the right
 #     z 1.300   L -0.415   R +0.417     the lower tier
-#     z 1.235   L -0.345   R +0.350     the cheek locks
+#     z 1.175   L -0.287   R +0.287     the hair above the ears
 #     z 1.020   L -0.194   R +0.193     the nape
 #
-# So the hood itself is ~0.33 wide at z 1.45 and the leaves stick out another
-# 0.10 to 0.15 to make the points.
-
+# The EARS are what reaches +-0.348 at z 1.16-1.24: they are big in the
+# reference and they stick out past the hair.  Hair that hangs down IN FRONT
+# of the face buries them, and the face loses its frame - so the locks that
+# come down beside the cheeks are kept BEHIND the ear plane.
+#
 # The hairline: the curve where the hair stops and the forehead starts.
 # A flat cut reads as the brim of a hat sitting on the head - the reference
 # hair has a rounded hairline that stays high over the forehead and drops at
 # the temples, so the ears can come through.
-HAIRLINE_Z = 1.470
+HAIRLINE_Z = 1.500
 HAIRLINE_X0 = 0.12
-HAIRLINE_DROP = 0.22
+HAIRLINE_DROP = 0.23
 HAIRLINE_SPAN = 0.19
 
 
@@ -416,49 +438,57 @@ def hairline_z(x):
     return z - 0.010 * math.exp(-((x / 0.08) ** 2))
 
 
-# The hood the leaves sit on: (z, x_left, x_right, half depth).
-# The hood is asymmetric because the reference hair is swept to the left:
-# at z 1.58 the hair reaches -0.294 on the left but only +0.144 on the right.
-HAIR_MASS = [
-    (1.000, -0.100, 0.100, 0.094),
-    (1.040, -0.175, 0.180, 0.158),
-    (1.080, -0.205, 0.208, 0.184),
-    (1.130, -0.224, 0.228, 0.200),
-    (1.170, -0.242, 0.248, 0.214),
-    (1.210, -0.256, 0.260, 0.228),
-    (1.250, -0.272, 0.274, 0.242),
-    (1.290, -0.294, 0.292, 0.258),
-    (1.330, -0.308, 0.302, 0.270),
-    (1.370, -0.318, 0.308, 0.280),
-    (1.410, -0.324, 0.312, 0.288),
-    (1.450, -0.330, 0.318, 0.294),
-    (1.490, -0.330, 0.318, 0.294),
-    (1.530, -0.320, 0.246, 0.268),
-    (1.570, -0.294, 0.182, 0.232),
-    (1.610, -0.268, 0.140, 0.200),
-    (1.645, -0.232, 0.104, 0.165),
-    (1.672, -0.182, 0.074, 0.126),
-    (1.692, -0.122, 0.050, 0.088),
-    (1.708, -0.062, 0.030, 0.054),
-    (1.718, -0.014, 0.008, 0.018),
+# The dark mass the locks are laid over: (z, x_left, x_right, half depth,
+# y centre).
+#
+# It follows the measured silhouette pulled IN by 25-50 mm, because the points
+# of the locks are what have to reach the measured line.  The top is skewed to
+# the left, because the reference crown leans that way.
+#
+# The first rows are the NAPE: a lobe BEHIND the neck.  The reference shows
+# the neck in front of the hair down to z 1.0, so a mass that wrapped all the
+# way round would cover the throat.
+HAIR_BASE = [
+    (0.985, -0.150, 0.150, 0.075, 0.155),
+    (1.025, -0.186, 0.186, 0.086, 0.128),
+    (1.065, -0.224, 0.224, 0.100, 0.078),
+    (1.105, -0.242, 0.242, 0.140, 0.026),
+    (1.145, -0.250, 0.250, 0.190, 0.000),
+    (1.185, -0.256, 0.256, 0.226, 0.000),
+    (1.225, -0.262, 0.262, 0.248, 0.000),
+    (1.265, -0.268, 0.268, 0.262, 0.000),
+    (1.305, -0.268, 0.268, 0.268, 0.000),
+    (1.345, -0.262, 0.262, 0.266, 0.000),
+    (1.385, -0.250, 0.250, 0.258, 0.000),
+    (1.425, -0.232, 0.232, 0.244, 0.000),
+    (1.465, -0.212, 0.212, 0.226, 0.000),
+    (1.505, -0.192, 0.192, 0.206, 0.000),
+    (1.545, -0.176, 0.176, 0.186, 0.000),
+    (1.585, -0.166, 0.166, 0.166, 0.000),
+    (1.625, -0.166, 0.150, 0.142, 0.000),
+    (1.665, -0.176, 0.128, 0.116, 0.000),
+    (1.705, -0.194, 0.100, 0.090, 0.000),
+    (1.745, -0.210, 0.070, 0.062, 0.000),
+    (1.778, -0.220, 0.044, 0.038, 0.000),
 ]
 
 
-def hair_mass_dims(z):
-    """(x_left, x_right, half depth) of the hair hood at height z."""
-    p = HAIR_MASS
+def hair_base_dims(z):
+    """(x_left, x_right, half depth, y centre) of the hair mass at height z."""
+    p = HAIR_BASE
     if z <= p[0][0]:
-        return p[0][1], p[0][2], p[0][3]
+        return p[0][1], p[0][2], p[0][3], p[0][4]
     if z >= p[-1][0]:
-        return p[-1][1], p[-1][2], p[-1][3]
+        return p[-1][1], p[-1][2], p[-1][3], p[-1][4]
     for i in range(len(p) - 1):
-        z0, l0, r0, d0 = p[i]
-        z1, l1, r1, d1 = p[i + 1]
+        z0, l0, r0, d0, c0 = p[i]
+        z1, l1, r1, d1, c1 = p[i + 1]
         if z0 <= z <= z1:
             f = (z - z0) / (z1 - z0)
             f = f * f * (3.0 - 2.0 * f)          # smoothstep between stops
-            return (l0 + (l1 - l0) * f, r0 + (r1 - r0) * f, d0 + (d1 - d0) * f)
-    return p[-1][1], p[-1][2], p[-1][3]
+            return (l0 + (l1 - l0) * f, r0 + (r1 - r0) * f,
+                    d0 + (d1 - d0) * f, c0 + (c1 - c0) * f)
+    return p[-1][1], p[-1][2], p[-1][3], p[-1][4]
 
 
 def _spow(v, power=HEAD_POWER):
@@ -467,112 +497,80 @@ def _spow(v, power=HEAD_POWER):
 
 
 def mass_point(z, a_deg, lift=0.0):
-    """A point on the hood's surface.  a = 0 is the front (-Y), +a is +X."""
-    l, r, d = hair_mass_dims(z)
+    """A point on the hair mass's surface.  a = 0 is the front (-Y)."""
+    l, r, d, cy = hair_base_dims(z)
     c = (l + r) * 0.5
     hw = max(0.002, (r - l) * 0.5)
     a = math.radians(a_deg)
     x = c + hw * _spow(math.sin(a))
-    y = -d * _spow(math.cos(a))
-    n = Vector((x - c, y, 0.0))
+    y = cy - d * _spow(math.cos(a))
+    n = Vector((x - c, y - cy, 0.0))
     if n.length > 1e-6:
         n.normalize()
     return Vector((x, y, z)) + n * lift
 
 
 def mass_front_y(x, z):
-    """The front surface of the hood at a given x."""
-    l, r, d = hair_mass_dims(z)
+    """The front surface of the hair mass at a given x."""
+    l, r, d, cy = hair_base_dims(z)
     c = (l + r) * 0.5
     hw = max(0.002, (r - l) * 0.5)
     u = min(1.0, abs(x - c) / hw)
-    return -d * (max(0.0, 1.0 - u ** HEAD_POWER)) ** (1.0 / HEAD_POWER)
+    return cy - d * (max(0.0, 1.0 - u ** HEAD_POWER)) ** (1.0 / HEAD_POWER)
+
+
+# The whorl: the one point every lock grows out of.  It sits slightly left of
+# and behind the crown centre, which is what gives the fan its sweep.
+WHORL = Vector((-0.030, 0.030, 1.608))
 
 
 # ---------------------------------------------------------------------------
-# The leaves.  Each one is a quadratic Bezier with two control points that
-# are placed by hand so the tip lands exactly on the measured silhouette.
+# The locks.  Each one is a quadratic Bezier:
 #
-# (p0, p1, p2, half width)
-#   p0        where the leaf leaves the hood
-#   p1        where the arc bulges - this is what lifts the leaf off the
-#             hood so it does not sink into it
-#   p2        the tip, on the measured silhouette
-#   half width  half of the leaf's width across the screen
-HAIR_LEAVES = [
-    # --- the crown horn: one big blade sweeping up and to the left
-    ((-0.150, -0.210, 1.510), (-0.330, -0.055, 1.690), (-0.277, 0.020, 1.795),
-     0.092),
-    # --- the blade standing up on the right of the crown: it is the one that
-    #     gives the hair its +0.29 edge at z 1.655
-    ((0.050, -0.205, 1.500), (0.235, -0.005, 1.640), (0.038, 0.030, 1.790),
-     0.086),
-    # --- a third blade between the two, so the crown is a layered mass
-    ((-0.020, -0.215, 1.520), (-0.120, -0.040, 1.660), (-0.085, 0.020, 1.760),
-     0.088),
-    # --- and two more that lie over the crown itself, so the hood does not
-    #     show as a smooth dome between the blades
-    ((-0.040, -0.175, 1.540), (-0.180, -0.060, 1.610), (-0.245, 0.000, 1.690),
-     0.072),
-    ((0.020, -0.175, 1.545), (0.140, -0.060, 1.610), (0.205, 0.000, 1.672),
-     0.068),
-    # --- the leaf whose tip reaches +0.291 at z 1.655
-    ((0.120, -0.230, 1.500), (0.255, -0.070, 1.610), (0.291, 0.020, 1.655),
-     0.058),
-    # --- the leaf whose tip reaches -0.327 at z 1.622
-    ((-0.190, -0.230, 1.490), (-0.310, -0.090, 1.580), (-0.327, 0.010, 1.622),
-     0.055),
-    # --- the widest leaf on the left, tip at -0.441 / z 1.565
-    ((-0.235, -0.185, 1.440), (-0.395, -0.115, 1.545), (-0.441, -0.010, 1.565),
-     0.074),
-    # --- the widest leaf on the right, tip at +0.440 / z 1.490
-    ((0.230, -0.190, 1.440), (0.390, -0.120, 1.500), (0.440, -0.010, 1.490),
-     0.074),
-    # --- the lower tier, tips at +-0.42 / z 1.30
-    ((-0.250, -0.150, 1.400), (-0.380, -0.090, 1.350), (-0.415, -0.030, 1.300),
-     0.064),
-    ((0.250, -0.150, 1.400), (0.380, -0.090, 1.350), (0.417, -0.030, 1.295),
-     0.064),
-    # --- the cheek locks, tips at +-0.35 / z 1.235
-    ((-0.240, -0.120, 1.320), (-0.320, -0.080, 1.270), (-0.350, -0.050, 1.235),
-     0.074),
-    ((0.240, -0.120, 1.320), (0.320, -0.080, 1.270), (0.349, -0.050, 1.232),
-     0.074),
-    # --- the nape, tips at +-0.193 / z 1.02
-    ((-0.170, 0.070, 1.300), (-0.235, 0.110, 1.130), (-0.255, 0.020, 1.020),
-     0.046),
-    ((0.170, 0.070, 1.300), (0.235, 0.110, 1.130), (0.255, 0.020, 1.020),
-     0.046),
-    # --- the back of the head
-    ((0.000, -0.120, 1.560), (0.020, 0.120, 1.610), (0.010, 0.200, 1.660),
-     0.058),
-    ((-0.120, 0.090, 1.500), (-0.240, 0.170, 1.520), (-0.300, 0.160, 1.500),
-     0.055),
-    ((0.120, 0.090, 1.500), (0.240, 0.170, 1.520), (0.300, 0.160, 1.500),
-     0.055),
-    ((0.000, 0.080, 1.400), (0.000, 0.230, 1.380), (0.000, 0.290, 1.320),
-     0.055),
+#   root     where it leaves the whorl (or the side of the mass)
+#   tip      the point, on the measured silhouette
+#   dir      the direction the lock points AT its tip - this is what makes
+#            the point aim outwards instead of into the skull
+#   half_w   half of its width across the screen
+#
+# The lock is wide near the root and tapers over most of its length: the
+# reference locks are petals, not needles.  A profile that tapers straight
+# from the root turns every lock into a triangle and the head into a sea
+# urchin.
+HAIR_LOCKS = [
+    # (name, ring angle, root height, ring radius, tip, tip direction,
+    #  half width, bow)
+    #
+    # The blade roots sit on a RING around the crown, not at a single point:
+    # a ring of broad petals overlapping like a chrysanthemum is what the
+    # reference hair is, and it is the only arrangement that both covers the
+    # skull and leaves the tips standing proud as points.
+    ("Horn",   -40, 1.600, 0.100, (-0.272, 0.035, 1.806), (-0.38, 0.06, 0.92), 0.118, 0.055),
+    ("CrownR",  25, 1.600, 0.100, (0.028, 0.040, 1.784), (0.26, 0.10, 0.96), 0.084, 0.038),
+    ("CrownM", -12, 1.580, 0.100, (-0.120, 0.030, 1.768), (-0.40, 0.06, 0.91), 0.112, 0.032),
+    ("UpR",     40, 1.560, 0.130, (0.272, 0.015, 1.658), (0.78, 0.06, 0.62), 0.082, 0.042),
+    ("UpL",    -55, 1.550, 0.130, (-0.327, 0.010, 1.624), (-0.88, 0.02, 0.47), 0.112, 0.042),
+    ("UpL2",   -60, 1.585, 0.115, (-0.302, 0.020, 1.706), (-0.85, 0.03, 0.53), 0.105, 0.030),
+    ("FrontL", -34, 1.575, 0.110, (-0.228, -0.050, 1.688), (-0.66, -0.34, 0.67), 0.112, 0.030),
+    ("FrontR",  12, 1.570, 0.108, (0.152, -0.055, 1.672), (0.60, -0.36, 0.71), 0.106, 0.028),
+    ("BigL",   -85, 1.520, 0.150, (-0.450, -0.012, 1.560), (-0.90, -0.04, 0.43), 0.132, 0.000),
+    ("BigR",    85, 1.530, 0.150, (0.452, -0.012, 1.505), (0.90, -0.04, 0.43), 0.132, 0.000),
+    ("MidL",  -100, 1.500, 0.160, (-0.419, -0.030, 1.492), (-0.92, -0.05, 0.38), 0.122, 0.008),
+    ("MidL2", -108, 1.470, 0.155, (-0.406, -0.030, 1.432), (-0.94, -0.05, 0.33), 0.115, 0.005),
+    ("MidR",   100, 1.500, 0.160, (0.428, -0.025, 1.462), (0.90, -0.05, 0.42), 0.118, 0.008),
+    ("LowL",  -115, 1.470, 0.170, (-0.415, -0.045, 1.296), (-0.86, -0.06, -0.50), 0.136, 0.030),
+    ("LowR",   115, 1.470, 0.170, (0.417, -0.045, 1.296), (0.86, -0.06, -0.50), 0.136, 0.030),
+    ("CheekL",-135, 1.395, 0.175, (-0.348, 0.055, 1.130), (-0.66, -0.10, -0.74), 0.112, 0.026),
+    ("CheekR", 135, 1.395, 0.175, (0.348, 0.055, 1.130), (0.66, -0.10, -0.74), 0.112, 0.026),
+    ("BackL", -150, 1.540, 0.140, (-0.300, 0.150, 1.556), (-0.56, 0.74, 0.37), 0.108, 0.032),
+    ("BackR",  150, 1.540, 0.140, (0.290, 0.150, 1.540), (0.56, 0.74, 0.37), 0.108, 0.032),
+    ("BackT",  180, 1.520, 0.140, (0.000, 0.292, 1.428), (0.00, 0.94, -0.34), 0.098, 0.022),
+    ("NapeL", -160, 1.300, 0.150, (-0.252, 0.050, 1.042), (-0.30, 0.28, -0.91), 0.086, 0.018),
+    ("NapeR",  160, 1.300, 0.150, (0.252, 0.050, 1.042), (0.30, 0.28, -0.91), 0.086, 0.018),
 ]
 
-# The shingles: broad leaves that lie flat on the hood and overlap each
-# other.  They are what stops the hood from reading as a smooth dome, and
-# they are the roof tiles the reference hair is made of.
-#
-# (a_root, z_root, a_tip, z_tip, half width)
-HAIR_SHINGLES = [
-    (-72, 1.460, -104, 1.320, 0.048),
-    (-46, 1.510, -78, 1.360, 0.048),
-    (-20, 1.545, -50, 1.400, 0.046),
-    (10, 1.550, 44, 1.410, 0.046),
-    (40, 1.510, 78, 1.360, 0.048),
-    (74, 1.460, 104, 1.320, 0.048),
-    (-96, 1.400, -124, 1.250, 0.044),
-    (96, 1.400, 124, 1.250, 0.044),
-    (150, 1.500, 190, 1.420, 0.046),
-    (-150, 1.500, -190, 1.420, 0.046),
-]
 
-# The fringe: broad leaves lying on the forehead.
+# The fringe: broad locks lying on the forehead.
 #
 # Ten of them, not twenty-four.  A dense row of narrow spikes reads as a
 # sawtooth band across the brow, which is not what the reference looks like:
@@ -581,26 +579,21 @@ HAIR_SHINGLES = [
 #
 # (x_tip, z_tip, a_root, half width, depth)
 HAIR_FRONGE = [
-    (-0.268, 1.322, -96, 0.112, 0.030),
-    (-0.216, 1.258, -80, 0.118, 0.020),
-    (-0.164, 1.308, -64, 0.120, 0.032),
-    (-0.110, 1.242, -48, 0.118, 0.016),
-    (-0.050, 1.292, -30, 0.114, 0.026),
-    (0.014, 1.238, -12, 0.114, 0.014),
-    (0.076, 1.288, 10, 0.116, 0.024),
-    (0.136, 1.240, 32, 0.118, 0.016),
-    (0.198, 1.302, 54, 0.118, 0.028),
-    (0.254, 1.254, 78, 0.112, 0.020),
+    (-0.204, 1.286, -74, 0.112, 0.032),
+    (-0.112, 1.246, -42, 0.118, 0.022),
+    (-0.016, 1.292, -6, 0.120, 0.030),
+    (0.082, 1.240, 30, 0.118, 0.020),
+    (0.182, 1.288, 66, 0.110, 0.030),
 ]
 
 
-def _leaf_radii(half_w, tip_r, steps, hold=0.55, power=1.8, ramp=0.18):
-    """Width profile of a leaf: thin at the root, broad through the middle,
+def _lock_radii(half_w, steps, hold=0.42, power=1.18, ramp=0.28, tip_r=0.005):
+    """Width profile of a lock: thin at the root, broad over the first 40%,
     and a long taper to a sharp point.
 
-    The reference leaves are broad petals - a quarter of the head across -
-    and the point is only the last third of the leaf.  A profile that tapers
-    straight from the root turns every leaf into a triangle, and a head of
+    The reference locks are broad crescents - a quarter of the head across -
+    and the point is only the last third of the lock.  A profile that tapers
+    straight from the root turns every lock into a triangle, and a head of
     triangles is the sea-urchin look the reference does not have.
     """
     out = []
@@ -617,49 +610,60 @@ def _leaf_radii(half_w, tip_r, steps, hold=0.55, power=1.8, ramp=0.18):
     return out
 
 
-def _leaf(name, p0, p1, p2, half_w, mat, steps=16, flatten=0.58,
-          hold=0.55, tip_r=0.005, power=1.8):
-    """One broad crescent leaf of hair.
-
-    The reference hair is a mass of big overlapping leaves, so a leaf has to
-    be WIDE - a quarter of the head across - and it has to lie ON the hood
-    instead of hiding inside it.  The root is buried in the hood, so the
-    leaf grows out of the mass the way the reference locks do.
-    """
-    pts = L.bezier_pts(Vector(p0), Vector(p1), Vector(p2), steps)
-    radii = _leaf_radii(half_w, tip_r, steps, hold, power)
-    v, f = L.blade(pts, radii, radial=18, flatten=flatten)
-    return L.make_obj(name, v, f, mat)
-
-
-def _shingle_specs():
-    """Control points for the leaves that lie flat on the hood."""
+def _bezier3(p0, p1, p2, p3, steps):
+    """Sample a CUBIC Bezier into a list of points."""
+    p0, p1, p2, p3 = (Vector(p0), Vector(p1), Vector(p2), Vector(p3))
     out = []
-    for a0, z0, a1, z1, hw in HAIR_SHINGLES:
-        p0 = mass_point(z0, a0, -0.025)
-        p2 = mass_point(z1, a1, -0.025)
-        mid = (p0 + p2) * 0.5
-        n = Vector((mid.x, mid.y, 0.0))
-        n = n.normalized() if n.length > 1e-6 else Vector((0.0, -1.0, 0.0))
-        out.append((p0, mid + n * 0.042, p2, hw))
+    for i in range(int(steps) + 1):
+        t = float(i) / steps
+        mt = 1.0 - t
+        out.append(p0 * (mt ** 3) + p1 * (3 * mt * mt * t)
+                   + p2 * (3 * mt * t * t) + p3 * (t ** 3))
     return out
 
 
-def _bang(name, x_tip, z_tip, a_root, mat, half_w=0.052, depth=0.020):
-    """One fringe leaf lying on the forehead.
+def _lock(name, root, tip, tip_dir, half_w, mat, bow=0.0, steps=20,
+          flatten=0.95, hold=0.42, power=1.18, ramp=0.28, tip_r=0.005):
+    """One long crescent lock of hair.
 
-    The leaf has to follow the FOREHEAD, not the hood: the hood is 80 mm in
-    front of the face, so a fringe that starts at the crown and falls
+    The reference locks are PETALS: they bow away from the head and then
+    sweep back so the point aims outwards.  A quadratic Bezier cannot do
+    that - it can only draw a slightly bent triangle - so the path is a
+    cubic: the first control point lifts the middle of the blade (the bow)
+    and the second control point sits back along the tip direction, which
+    is what makes the point aim where it should.
+    """
+    p0 = Vector(root)
+    p3 = Vector(tip)
+    out = Vector(tip_dir).normalized()
+    chord = p3 - p0
+    span = max(1e-4, chord.length)
+    p1 = p0 + chord * 0.34 + Vector((0.0, 0.0, bow))
+    p2 = p3 - out * (span * 0.34)
+    pts = _bezier3(p0, p1, p2, p3, steps)
+    radii = _lock_radii(half_w, steps, hold, power, ramp, tip_r)
+    v, f = L.blade(pts, radii, radial=20, flatten=flatten)
+    return L.make_obj(name, v, f, mat)
+
+
+def _bang(name, x_tip, z_tip, a_root, mat, half_w=0.098, depth=0.020):
+    """One fringe lock lying on the forehead.
+
+    The lock has to follow the FOREHEAD, not the hair mass: the mass is 80 mm
+    in front of the face, so a fringe that starts at the crown and falls
     straight down ends up inside the skull and only its tip shows - that is
     exactly the row of black triangles this replaced.
 
+    The root therefore sits ON the hairline, where the mass still reaches
+    the face, and the tip sits on the skin.
+
     `depth` pushes the tip further in front of the skin so the fringe
-    leaves layer over each other instead of z-fighting on one plane.
+    locks layer over each other instead of z-fighting on one plane.
     """
-    x0 = 0.150 * math.sin(math.radians(a_root))
-    z0 = hairline_z(x0) + 0.060
-    x1 = x_tip * 0.90
-    z1 = hairline_z(x1) - 0.020
+    x0 = 0.100 * math.sin(math.radians(a_root))
+    z0 = hairline_z(x0) + 0.058
+    x1 = x_tip * 1.04
+    z1 = hairline_z(x1) - 0.030
 
     steps = 16
     pts = []
@@ -668,21 +672,22 @@ def _bang(name, x_tip, z_tip, a_root, mat, half_w=0.052, depth=0.020):
         mt = 1.0 - t
         x = mt * mt * x0 + 2 * mt * t * x1 + t * t * x_tip
         z = mt * mt * z0 + 2 * mt * t * z1 + t * t * z_tip
-        f = max(0.0, min(1.0, t / 0.40))
+        y_hood = mass_front_y(x, z) - 0.010
+        y_face = face_point(x, z, out=0.010 + depth).y
+        f = max(0.0, min(1.0, t / 0.22))
         f = f * f * (3.0 - 2.0 * f)
-        y_hood = mass_front_y(x, z) - 0.012
-        y_face = face_point(x, z, out=0.012 + depth).y
         pts.append(Vector((x, y_hood * (1.0 - f) + y_face * f, z)))
 
-    radii = _leaf_radii(half_w, 0.012, steps, hold=0.52, power=1.45, ramp=0.12)
-    v, f = L.blade(pts, radii, radial=18, flatten=0.50)
+    radii = _lock_radii(half_w, steps, hold=0.58, power=1.05, ramp=0.20,
+                        tip_r=0.005)
+    v, f = L.blade(pts, radii, radial=20, flatten=0.94)
     return L.make_obj(name, v, f, mat)
 
 
 def _join(objs, name):
     """Join meshes into one object without welding them.
 
-    The leaves must stay separate surfaces: a voxel remesh would swallow the
+    The locks must stay separate surfaces: a voxel remesh would swallow the
     points, and a join keeps every tip intact.
     """
     objs = [o for o in objs if o is not None]
@@ -730,40 +735,40 @@ def _groove_strands(ob, depth=0.0025):
 
 
 def build_hair(m):
-    """Hair = a thick hood + big overlapping leaves + a fringe.
+    """Hair = a dark mass + a fan of long locks + a fringe.
 
-    The hood is built first on purpose: the face opening and the ear
-    pockets are booleans on it, and the leaves are added afterwards so the
+    The mass is built first on purpose: the face opening and the ear
+    pockets are booleans on it, and the locks are added afterwards so the
     voxel remesh cannot round their points off.
     """
-    # ---------- 1. the hood: a loft through the measured silhouette
+    # ---------- 1. the mass: a loft through the measured silhouette
     rings = []
-    for z, xl, xr, d in HAIR_MASS:
+    for z, xl, xr, d, cy in HAIR_BASE:
         c = (xl + xr) * 0.5
         hw = max(0.002, (xr - xl) * 0.5)
         ring = []
         for j in range(64):
             a = TAU * j / 64
             ring.append((c + hw * _spow(math.sin(a)),
-                         -d * _spow(math.cos(a)),
+                         cy - d * _spow(math.cos(a)),
                          z))
         rings.append(ring)
     v, f = L.loft(rings, cap_start=True, cap_end=True)
-    hood = L.make_obj("HairHood", v, f, m["hair"])
+    hood = L.make_obj("HairMass", v, f, m["hair"])
 
-    mass = _weld_hair([hood], smooth_factor=0.12, smooth_iters=2,
-                      voxel=0.008)[0]
+    mass = _weld_hair([hood], smooth_factor=0.30, smooth_iters=4,
+                      voxel=0.007)[0]
     _groove_strands(mass)
 
-    # ---------- 2. the leaves: the silhouette
-    leaves = []
-    for i, spec in enumerate(HAIR_LEAVES):
-        p0, p1, p2, hw = spec
-        leaves.append(_leaf(f"Hair_Leaf{i}", p0, p1, p2, hw, m["hair"]))
-    for i, spec in enumerate(_shingle_specs()):
-        p0, p1, p2, hw = spec
-        leaves.append(_leaf(f"Hair_Shingle{i}", p0, p1, p2, hw, m["hair"]))
-    leaf_ob = _join(leaves, "HairLeaves")
+    # ---------- 2. the locks: the silhouette
+    locks = []
+    for spec in HAIR_LOCKS:
+        name, ang, z_root, ring_r, tip, tip_dir, hw, bow = spec
+        a = math.radians(ang)
+        root = (ring_r * math.sin(a), -ring_r * math.cos(a), z_root)
+        locks.append(_lock(f"Hair_{name}", root, tip, tip_dir, hw, m["hair"],
+                           bow=bow))
+    lock_ob = _join(locks, "HairLocks")
 
     # ---------- 3. the fringe, lying on the forehead
     fringe = [_bang(f"Hair_Fringe{i}", spec[0], spec[1], spec[2], m["hair"],
@@ -771,7 +776,7 @@ def build_hair(m):
               for i, spec in enumerate(HAIR_FRONGE)]
     fringe_ob = _join(fringe, "HairFringe")
 
-    return [mass, leaf_ob, fringe_ob]
+    return [mass, lock_ob, fringe_ob]
 
 
 def _add_fringe(lock):
@@ -918,7 +923,8 @@ def _weld_hair(hair_parts, smooth_factor=0.5, smooth_iters=6,
     _cut_face_opening(fused, y_face=-0.215, x_max=0.30)
 
     # Ear pockets: the reference has big ears sticking out under the hair.
-    _carve_ear_pockets(fused)
+    _carve_ear_pockets(fused, ear_x=0.300, ear_y=-0.006, ear_z=1.244,
+                       r_y=0.084, r_z=0.118, x_in=0.248)
 
     for p in fused.data.polygons:
         p.use_smooth = True
@@ -975,12 +981,12 @@ def _blush_patch(name, cx, cz, rx, rz, mat, skin_col, blush_col,
     reference cheek, the rim is the skin colour, so the patch has no visible
     border at all.
     """
-    verts = [tuple(face_point(cx, cz, out=0.0035))]
+    verts = [tuple(face_point(cx, cz, out=0.0022))]
     for r in range(1, rings + 1):
         f = r / float(rings)
         # The rim has to stay a hair in front of the skin: exactly on it, the
         # patch z-fights with the face and the cheek gets a torn edge.
-        o = 0.0035 * (1.0 - f ** 2.0) + 0.0012
+        o = 0.0022 * (1.0 - f ** 2.0) + 0.0009
         for j in range(segs):
             a = TAU * j / segs
             x = cx + rx * f * math.cos(a)
@@ -1044,6 +1050,24 @@ def _eye_rim(s, a0_deg, a1_deg, out=0.010, n=11):
     return pts
 
 
+def _iris_rim(s, a0_deg, a1_deg, out=0.010, n=11):
+    """Sample the RIM of the IRIS disc.
+
+    The lash has to ride on the iris, not on the aperture: the reference eye
+    is a black disc with a thin brown eyelid line drawn AROUND it, and a
+    heavy lash on the aperture rim reads as a separate arc floating over the
+    eye.
+    """
+    pts = []
+    for i in range(n):
+        t = i / float(n - 1.0)
+        a = math.radians(a0_deg + (a1_deg - a0_deg) * t)
+        x = IRIS_X + IRIS_RX * math.cos(a)
+        z = IRIS_Z + IRIS_RZ * math.sin(a)
+        pts.append(face_point(s * x, z, out=out))
+    return pts
+
+
 def build_face(m):
     parts = []
     for s in (-1, 1):
@@ -1064,34 +1088,42 @@ def build_face(m):
                                   EYE_AP_RX, EYE_AP_RZ, 0.004, m["sclera"],
                                   rim=0.0, dome=1.0))
         parts.append(_face_patch(f"Iris_{tag}", s * IRIS_X, IRIS_Z,
-                                  IRIS_RX, IRIS_RZ, 0.008, m["iris"],
-                                  rim=0.0035, dome=2.0))
+                                  IRIS_RX, IRIS_RZ, 0.010, m["iris"],
+                                  rim=0.0040, dome=2.2))
+        # The soft grey crescent under the pupil.  Without it the bottom of
+        # the eye is bare white and the whole eye reads as a goggle.
+        parts.append(_face_patch(f"IrisLow_{tag}", s * IRIS_X, IRIS_Z - 0.026,
+                                  IRIS_RX * 0.90, IRIS_RZ * 0.55, 0.0105,
+                                  m["irislow"], rim=0.0045, dome=2.2))
 
-        # The upper lash line: a BOLD black band riding on the rim of the eye,
+        # The upper lash line: a black band riding on the rim of the eye,
         # thickening towards the outer corner into an eyeliner wing.  It has to
         # sit on the white - a black tube lying on a black iris is invisible.
+        # It must stay THIN though: at radius 0.017 it covered a third of the
+        # eye and the character read as permanently angry.
         parts.append(_sweep_poly(
             f"Lash_{tag}",
-            _eye_rim(s, 166, 16, out=0.010, n=11),
-            0.010, m["hair"], sides=10, flat=0.50,
-            radii=[0.010, 0.012, 0.014, 0.0155, 0.0165, 0.017, 0.017,
-                   0.0155, 0.0135, 0.011, 0.0075]))
+            _iris_rim(s, 150, 20, out=0.011, n=11),
+            0.006, m["eyeline"], sides=10, flat=0.50,
+            radii=[0.0040, 0.0050, 0.0060, 0.0068, 0.0074, 0.0078, 0.0080,
+                   0.0078, 0.0072, 0.0062, 0.0048]))
 
         # A thin lower lid under the iris.
         parts.append(_sweep_poly(
             f"LidLow_{tag}",
-            _eye_rim(s, 202, 338, out=0.007, n=7),
-            0.0045, m["hair"], sides=8, flat=0.45,
-            radii=[0.002, 0.0035, 0.0042, 0.0042, 0.0035, 0.0028, 0.0018]))
+            _eye_rim(s, 200, 340, out=0.006, n=9),
+            0.0032, m["eyeline"], sides=8, flat=0.45,
+            radii=[0.0012, 0.0022, 0.0030, 0.0034, 0.0034, 0.0030, 0.0022,
+                   0.0014, 0.0008]))
 
-        # The big highlight sits at the upper INNER corner of the iris and a
-        # small one at the lower outer - that is the reference's glint pair.
-        # They have to sit ON the iris dome or they sink into it and the eye
-        # reads as a flat black hole.
-        for gname, gx, gz, gr, gy, go in (
-                ("Big", 0.130, 1.242, 0.016, 0.006, 0.0090),
-                ("Small", 0.170, 1.194, 0.009, 0.005, 0.0085)):
-            hp = face_point(s * gx, gz, out=go)
+        # The big highlight sits at the upper LEFT of the iris and a small one
+        # at the lower right - that is the reference's glint pair, and both
+        # eyes catch the light on the SAME screen side.  They have to sit ON
+        # the iris dome or they sink into it and the eye reads as a flat
+        # black hole.
+        for gname, dx, gz, gr, gy, go in (
+                ("Big", 0.002, 1.249, 0.0135, 0.0055, 0.0092),):
+            hp = face_point(s * IRIS_X + dx, gz, out=go)
             bpy.ops.mesh.primitive_uv_sphere_add(
                 segments=26, ring_count=16, radius=1.0,
                 location=(hp.x, hp.y, hp.z))
@@ -1108,17 +1140,19 @@ def build_face(m):
         # the eye.  The fringe cuts across its inner end.
         parts.append(_sweep_poly(
             f"Brow_{tag}",
-            _eye_arc(s, (0.104, 1.296), (0.142, 1.318), (0.182, 1.300),
+            _eye_arc(s, (0.098, 1.290), (0.140, 1.318), (0.188, 1.296),
                      n=9, out=0.007),
-            0.011, m["hair"], sides=10, flat=0.45,
-            radii=[0.013, 0.0145, 0.0140, 0.0130, 0.0115, 0.0095, 0.0065,
-                   0.0035, 0.0012]))
+            0.012, m["hair"], sides=10, flat=0.45,
+            radii=[0.0050, 0.0095, 0.0125, 0.0135, 0.0125, 0.0100, 0.0062,
+                   0.0030, 0.0008]))
 
         # The blush is a soft gradient on the lower cheek, not a pink dot.
-        parts.append(_blush_patch(f"Blush_{tag}", s * 0.178, 1.092,
-                                   0.043, 0.038, m["blush"],
-                                   (0.776, 0.426, 0.321),
-                                   (0.715, 0.205, 0.180)))
+        # The reference colour is a pale pink that is barely darker than the
+        # skin; the old saturated red read as a sticker pasted on the cheek.
+        parts.append(_blush_patch(f"Blush_{tag}", s * 0.176, 1.092,
+                                   0.040, 0.025, m["blush"],
+                                   (0.824, 0.570, 0.486),
+                                   (0.790, 0.470, 0.402)))
 
     # The nose is a soft shadow just above the mouth line - barely there.
     np = face_point(0.0, NOSE_Z, out=-0.002)
@@ -1133,14 +1167,15 @@ def build_face(m):
     parts.append(ob)
 
     # The mouth is a thin, wide smile line, not a bar: a stretched sphere
-    # reads as a red blob pasted on the face.  The reference smile is ~0.126
-    # wide with sharply upturned corners.
+    # reads as a red blob pasted on the face.  The reference smile runs from
+    # z 1.082 in the middle up to z 1.152 at the corners - the corners are
+    # 7 cm higher than the centre, which is what makes it read as a smile.
     mouth_pts = []
     for u in linspace(-1.0, 1.0, 13):
-        x = u * 0.063
-        z = MOUTH_Z - 0.014 + 0.030 * (u * u)
+        x = u * 0.061
+        z = MOUTH_Z - 0.008 + 0.056 * (u * u)
         mouth_pts.append(face_point(x, z, out=0.002))
-    parts.append(_sweep_poly("Mouth", mouth_pts, 0.0030, m["mouth"],
+    parts.append(_sweep_poly("Mouth", mouth_pts, 0.0026, m["mouth"],
                               sides=8, flat=0.45))
 
     return parts
@@ -1158,8 +1193,8 @@ def build_body(m):
              (0.760, 0.186, 0.120),
              (0.820, 0.199, 0.126),
              (0.880, 0.204, 0.128),
-             (0.925, 0.186, 0.118),
-             (0.955, 0.118, 0.086)]
+             (0.940, 0.186, 0.118),
+             (0.985, 0.112, 0.086)]
     v, f = L.profile_tube(torso, sides=36, power=2.5)
     parts.append(L.make_obj("Torso", v, f, m["skin"]))
 
@@ -1168,43 +1203,51 @@ def build_body(m):
            (0.740, 0.197, 0.130),
            (0.820, 0.214, 0.139),
            (0.880, 0.219, 0.142),
-           (0.928, 0.200, 0.130),
-           (0.958, 0.128, 0.093)]
+           (0.945, 0.200, 0.130),
+           (1.000, 0.118, 0.092)]
     v, f = L.profile_tube(tee, sides=36, power=2.6)
     parts.append(L.make_obj("Tee", v, f, m["tee"]))
 
     for s in (-1, 1):
         tag = "L" if s < 0 else "R"
+        # The sleeve has to stop where the reference stops: the bare arm
+        # measures +-0.246 at z 0.76 and the sleeve is only a few mm wider.
         parts.append(L.limb(
             f"Sleeve_{tag}",
-            (s * 0.178, -0.004, 0.902), (s * 0.236, 0.002, 0.796),
-            0.082, 0.070, m["tee"], sides=24, power=2.4, caps=0.30))
+            (s * 0.166, -0.004, 0.906), (s * 0.206, 0.002, 0.802),
+            0.074, 0.066, m["tee"], sides=24, power=2.4, caps=0.75))
 
         # The upper arm starts lower and with a shorter cap than before: the
         # old cap poked out through the shoulder of the tee and left a skin
         # coloured dot on each shoulder.
+        #
+        # The arm hangs CLOSE to the body: the measured outer edge of the arm
+        # is +-0.246 at z 0.76 and only reaches +-0.275 at z 0.70, so the
+        # old arm (which sat at +-0.31) made the whole figure look bulky.
         parts.append(L.limb(f"UpperArm_{tag}",
-                            (s * 0.190, -0.002, 0.884),
-                            (s * 0.254, 0.006, 0.734),
-                            0.058, 0.048, m["skin"], sides=20, caps=0.25))
+                            (s * 0.164, -0.002, 0.882),
+                            (s * 0.196, 0.004, 0.772),
+                            0.050, 0.045, m["skin"], sides=20, caps=0.25))
         parts.append(L.limb(f"Forearm_{tag}",
-                            (s * 0.254, 0.006, 0.734),
-                            (s * 0.274, 0.016, 0.566),
-                            0.048, 0.039, m["skin"], sides=20, caps=0.55))
+                            (s * 0.196, 0.004, 0.772),
+                            (s * 0.256, 0.014, 0.596),
+                            0.045, 0.050, m["skin"], sides=20, caps=0.55))
 
+        # The hands are big mittens in the reference: the outer edge reaches
+        # +-0.322 at z 0.55 and is still +-0.30 at z 0.48.
         bpy.ops.mesh.primitive_uv_sphere_add(segments=28, ring_count=18,
                                              radius=1.0,
-                                             location=(s * 0.277, 0.018, 0.520))
+                                             location=(s * 0.266, 0.000, 0.548))
         ob = bpy.context.object
         ob.name = f"Hand_{tag}"
-        ob.scale = (0.047, 0.033, 0.063)
+        ob.scale = (0.064, 0.040, 0.080)
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
         L.shade_smooth(ob)
         L.assign(ob, m["skin"])
         parts.append(ob)
         parts.append(L.limb(f"Thumb_{tag}",
-                            (s * 0.252, -0.014, 0.520),
-                            (s * 0.238, -0.034, 0.472),
+                            (s * 0.240, -0.016, 0.532),
+                            (s * 0.222, -0.036, 0.480),
                             0.019, 0.013, m["skin"], sides=14, caps=0.6))
 
     return parts
@@ -1216,21 +1259,24 @@ def build_waist_shraph(m):
     # chibi-hero.png the band sits at z 0.587..0.694 - BELOW the hem of the
     # white tee - and it is WIDER than the tee, so it has to stick out over it
     # or the whole thing disappears behind the shirt.
-    band = [(0.700, 0.238, 0.158),
-            (0.660, 0.246, 0.163),
-            (0.620, 0.244, 0.161),
-            (0.590, 0.230, 0.150)]
-    v, f = L.profile_tube(band, sides=36, power=2.5)
+    band = [(0.702, 0.206, 0.130),
+            (0.696, 0.224, 0.144),
+            (0.678, 0.234, 0.152),
+            (0.636, 0.236, 0.154),
+            (0.606, 0.230, 0.148),
+            (0.592, 0.214, 0.136),
+            (0.586, 0.198, 0.124)]
+    v, f = L.profile_tube(band, sides=36, power=2.0)
     parts.append(L.make_obj("PlaidBand", v, f, m["plaid"]))
 
     # The knot and the hanging ends have to sit IN FRONT of the waist band
     # and the pants: tucked inside them they were invisible, and all that
     # showed was a black rectangle where the plaid pattern happened to fall.
     bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=20, radius=1.0,
-                                         location=(0.0, -0.212, 0.648))
+                                         location=(0.0, -0.222, 0.646))
     ob = bpy.context.object
     ob.name = "PlaidKnot"
-    ob.scale = (0.070, 0.048, 0.056)
+    ob.scale = (0.078, 0.054, 0.062)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     L.shade_smooth(ob)
     L.assign(ob, m["plaid"])
@@ -1240,8 +1286,8 @@ def build_waist_shraph(m):
     # pants.  A round ribbon here reads as a dark blob - the reference shows
     # broad flat ends that spread out from the knot.
     for name, x, z, ang, rx, ry, rz in (
-            ("TailA", 0.090, 0.524, -13.0, 0.072, 0.017, 0.140),
-            ("TailB", -0.084, 0.520, 13.0, 0.068, 0.017, 0.134)):
+            ("TailA", 0.076, 0.542, -18.0, 0.052, 0.013, 0.130),
+            ("TailB", -0.072, 0.538, 18.0, 0.049, 0.013, 0.124)):
         bpy.ops.mesh.primitive_uv_sphere_add(segments=28, ring_count=18,
                                              radius=1.0,
                                              location=(x, -0.192, z))
@@ -1256,10 +1302,20 @@ def build_waist_shraph(m):
 
     for s in (-1, 1):
         tag = "L" if s < 0 else "R"
-        _make_ribbon(parts, m["plaid"], f"PlaidSleeve_{tag}",
-                     Vector((s * 0.192, -0.060, 0.700)),
-                     Vector((s * 0.208, -0.050, 0.520)),
-                     (0.056, 0.028))
+        # The two ENDS of the tied shirt hang down the sides of the hips, in
+        # front of the pants.  They are broad flat flaps: a round rope here
+        # reads as a sausage stuck to the hip, which is what the old
+        # PlaidSleeve ribbons did.
+        side = [(0.700, 0.028, 0.020, s * 0.202),
+                (0.652, 0.031, 0.024, s * 0.214),
+                (0.596, 0.030, 0.024, s * 0.226),
+                (0.522, 0.027, 0.021, s * 0.236),
+                (0.460, 0.021, 0.017, s * 0.242),
+                (0.424, 0.012, 0.011, s * 0.244)]
+        v, f = L.profile_tube(side, sides=28, power=2.6)
+        ob = L.make_obj(f"PlaidSide_{tag}", v, f, m["plaid"])
+        ob.location.y = -0.072
+        parts.append(ob)
     return parts
 
 
@@ -1269,14 +1325,18 @@ def build_pants(m):
     # The hips reach BELOW the torso's bottom cap on purpose: both ended at
     # z 0.600, so the skin cap and the red pants cap were coplanar and
     # z-fought into a red wedge in the crotch.  Sections are listed bottom-up.
-    hips = [(0.470, 0.085, 0.058),
-            (0.490, 0.120, 0.082),
-            (0.520, 0.150, 0.104),
-            (0.560, 0.172, 0.120),
-            (0.600, 0.180, 0.127),
-            (0.640, 0.186, 0.130),
-            (0.690, 0.184, 0.126),
-            (0.730, 0.172, 0.118)]
+    #
+    # The waist is NARROW (+-0.195 at z 0.70, measured) and the thigh is
+    # WIDE (+-0.28 at z 0.55): the reference pants are baggy harem pants that
+    # flare out below the waist, not straight tubes.
+    hips = [(0.470, 0.110, 0.080),
+            (0.500, 0.140, 0.105),
+            (0.540, 0.165, 0.125),
+            (0.580, 0.180, 0.140),
+            (0.620, 0.188, 0.148),
+            (0.660, 0.190, 0.150),
+            (0.688, 0.190, 0.148),
+            (0.700, 0.182, 0.140)]
     v, f = L.profile_tube(hips, sides=36, power=2.5)
     parts.append(L.make_obj("PantsHip", v, f, m["pants"]))
 
@@ -1285,21 +1345,24 @@ def build_pants(m):
         # The leg centres overlap on purpose: at +-0.113 the two legs left a
         # gap at the front and the hips' rounded crotch poked through it as a
         # red nub.
-        cx = s * 0.105
-        leg = [(0.712, 0.118, 0.118, cx),
-               (0.640, 0.128, 0.126, cx),
-               (0.520, 0.132, 0.130, cx),
-               (0.400, 0.131, 0.129, cx),
-               (0.290, 0.126, 0.124, cx),
-               (0.196, 0.124, 0.121, cx),
-               (0.150, 0.131, 0.128, cx),
-               (0.132, 0.128, 0.125, cx)]
+        cx = s * 0.128
+        leg = [(0.712, 0.062, 0.058, cx),
+               (0.660, 0.088, 0.080, cx),
+               (0.600, 0.118, 0.104, cx),
+               (0.550, 0.150, 0.128, cx),
+               (0.500, 0.152, 0.132, cx),
+               (0.450, 0.132, 0.118, cx),
+               (0.400, 0.140, 0.124, cx),
+               (0.350, 0.121, 0.112, cx),
+               (0.300, 0.137, 0.122, cx),
+               (0.250, 0.127, 0.118, cx),
+               (0.196, 0.132, 0.122, cx)]
         v, f = L.profile_tube(leg, sides=32, power=2.4)
         parts.append(L.make_obj(f"PantsLeg_{tag}", v, f, m["pants"]))
 
-        cuff = [(0.132, 0.130, 0.127, cx),
-                (0.150, 0.138, 0.135, cx),
-                (0.176, 0.136, 0.133, cx)]
+        cuff = [(0.130, 0.126, 0.124, cx),
+                (0.152, 0.136, 0.132, cx),
+                (0.184, 0.128, 0.126, cx)]
         v, f = L.profile_tube(cuff, sides=32, power=2.4)
         parts.append(L.make_obj(f"Cuff_{tag}", v, f, m["pants"]))
     return parts
@@ -1312,38 +1375,33 @@ def build_shoes(m):
         cx = s * 0.128
         cy = -0.024
 
-        sole = [(0.000, 0.140, 0.184, cx, cy),
-                (0.014, 0.148, 0.192, cx, cy),
-                (0.030, 0.144, 0.188, cx, cy),
-                (0.040, 0.138, 0.181, cx, cy)]
+        # The reference sneaker has a TALL white midsole - the white band
+        # sits at the BOTTOM of the shoe, not at the ankle.
+        sole = [(0.000, 0.134, 0.178, cx, cy),
+                (0.022, 0.148, 0.192, cx, cy),
+                (0.052, 0.146, 0.190, cx, cy),
+                (0.070, 0.137, 0.181, cx, cy)]
         v, f = L.profile_tube(sole, sides=32, power=3.2)
         parts.append(L.make_obj(f"Sole_{tag}", v, f, m["sole"]))
 
-        upper = [(0.034, 0.140, 0.184, cx, cy),
-                 (0.062, 0.145, 0.190, cx, cy),
-                 (0.092, 0.142, 0.185, cx, cy),
-                 (0.118, 0.128, 0.168, cx, cy),
-                 (0.138, 0.100, 0.140, cx, cy),
-                 (0.152, 0.066, 0.100, cx, cy)]
+        upper = [(0.062, 0.137, 0.181, cx, cy),
+                 (0.094, 0.143, 0.188, cx, cy),
+                 (0.120, 0.139, 0.182, cx, cy),
+                 (0.140, 0.126, 0.166, cx, cy),
+                 (0.156, 0.098, 0.138, cx, cy),
+                 (0.168, 0.064, 0.098, cx, cy)]
         v, f = L.profile_tube(upper, sides=32, power=3.2)
         ob = L.make_obj(f"Shoe_{tag}", v, f, m["shoe"])
         ob.rotation_euler = (0.0, 0.0, s * math.radians(-9.0))
         parts.append(ob)
 
-        # The reference shoe has a white collar folded over the ankle - it is
-        # what separates the black upper from the red cuff above it.
-        collar = [(0.132, 0.118, 0.156, cx, cy),
-                  (0.146, 0.124, 0.160, cx, cy),
-                  (0.166, 0.122, 0.158, cx, cy),
-                  (0.178, 0.114, 0.150, cx, cy)]
-        v, f = L.profile_tube(collar, sides=32, power=3.2)
-        parts.append(L.make_obj(f"Collar_{tag}", v, f, m["sole"]))
-
-        for k, z in enumerate((0.108, 0.126)):
+        # Two white laces lying over the top of the shoe.  The reference has
+        # NO white band at the ankle - the white is the midsole and the laces.
+        for k, z in enumerate((0.118, 0.140)):
             _make_ribbon(parts, m["sole"], f"Lace_{tag}_{k}",
-                         Vector((cx - 0.046, cy - 0.098, z)),
-                         Vector((cx + 0.046, cy - 0.098, z)),
-                         (0.011, 0.008))
+                         Vector((cx - 0.046, cy - 0.174, z)),
+                         Vector((cx + 0.046, cy - 0.174, z)),
+                         (0.013, 0.010))
     return parts
 
 
