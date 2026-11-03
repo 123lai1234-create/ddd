@@ -46,6 +46,9 @@
 //   Edge sandbox disallowed-module error stuck on cached build that still
 //   references @vercel/og/react even though source is clean; Node.js runtime
 //   supports full npm, 250MB size limit, no Edge sandbox restrictions)
+// 2026-11-02 v24 marker (gameScoreHandler + gameLeaderboardHandler:
+//   禁閉逃殺 Lockdown Survival 成績榜。純前端遊戲的「成績層」→ Neon game_scores 表。
+//   同源 /api/game/* 呼叫，所以沒有 CORS 問題；前端上傳失敗會靜默退回 localStorage)
 
 // ImageResponse (@vercel/og) + react imports retired 2026-10: Vercel Edge Function
 // sandbox disallows them, and og image endpoint (GET /api/og) is no longer
@@ -9991,6 +9994,133 @@ async function ogHandler(request) {
   return json({ ok: false, error: "og retired" }, { status: 410 });
 }
 
+// ── 禁閉逃殺 Lockdown Survival：成績榜 ──────────────────────────────
+// 純前端遊戲的「成績層」：遊戲本體不需要後端，這裡只是跨裝置排行榜。
+// 存 Neon（跟其他專案同一個 DB），同源呼叫所以沒有 CORS 問題。
+// 2026-11-02 新增
+let _gameScoresReady = false;
+let _gameScoreInserts = 0;
+
+async function ensureGameScoresTable() {
+  if (_gameScoresReady) return true;
+  try {
+    await q(`
+      CREATE TABLE IF NOT EXISTS game_scores (
+        id BIGSERIAL PRIMARY KEY,
+        game VARCHAR(32) NOT NULL DEFAULT 'lockdown-survival',
+        name VARCHAR(40) NOT NULL,
+        score INTEGER NOT NULL DEFAULT 0,
+        hp INTEGER NOT NULL DEFAULT 0,
+        rank INTEGER NOT NULL DEFAULT 0,
+        players INTEGER NOT NULL DEFAULT 0,
+        difficulty VARCHAR(16) NOT NULL DEFAULT 'normal',
+        reason VARCHAR(32) NOT NULL DEFAULT '',
+        achievements INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`);
+    await q(`CREATE INDEX IF NOT EXISTS game_scores_score_idx ON game_scores (score DESC, created_at DESC)`);
+    _gameScoresReady = true;
+    return true;
+  } catch (e) {
+    console.error("game_scores table init failed:", String(e && e.message));
+    return false;
+  }
+}
+
+function _cleanName(v) {
+  return String(v == null ? "" : v)
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .replace(/[<>]/g, "")
+    .trim()
+    .slice(0, 24) || "玩家";
+}
+function _int(v, lo, hi) {
+  const n = Math.round(Number(v));
+  if (!Number.isFinite(n)) return lo;
+  return Math.min(hi, Math.max(lo, n));
+}
+const GAME_DIFFICULTIES = new Set(["easy", "normal", "boss"]);
+const GAME_REASONS = new Set(["last_survivor", "all_shadow", "six_rounds"]);
+
+async function gameScoreHandler(request) {
+  if (request.method !== "POST") return json({ ok: false, error: "POST only" }, { status: 405 });
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: "invalid json" }, { status: 400 });
+  }
+  if (!body || typeof body !== "object") return json({ ok: false, error: "invalid body" }, { status: 400 });
+
+  const name = _cleanName(body.name);
+  const score = _int(body.score, 0, 100000);
+  const hp = _int(body.hp, 0, 999);
+  const rank = _int(body.rank, 0, 999);
+  const players = _int(body.players, 1, 99);
+  const achievements = _int(body.achievements, 0, 999);
+  const difficulty = GAME_DIFFICULTIES.has(body.difficulty) ? body.difficulty : "normal";
+  const reason = GAME_REASONS.has(body.reason) ? body.reason : "six_rounds";
+
+  if (!(await ensureGameScoresTable())) {
+    return json({ ok: false, error: "db unavailable" }, { status: 503 });
+  }
+  try {
+    const res = await q(
+      `INSERT INTO game_scores (game, name, score, hp, rank, players, difficulty, reason, achievements)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id, created_at`,
+      ["lockdown-survival", name, score, hp, rank, players, difficulty, reason, achievements],
+    );
+    const row = (res.rows && res.rows[0]) || {};
+
+    // 表不要無限長：每 50 次插入清一次，只留前 500 名
+    _gameScoreInserts += 1;
+    if (_gameScoreInserts % 50 === 0) {
+      try {
+        await q(`DELETE FROM game_scores WHERE id NOT IN (
+                  SELECT id FROM game_scores ORDER BY score DESC, created_at DESC LIMIT 500)`);
+      } catch { /* 清理失敗不影響寫入 */ }
+    }
+    return json({ ok: true, id: row.id, createdAt: row.created_at });
+  } catch (e) {
+    console.error("game score insert failed:", String(e && e.message));
+    return json({ ok: false, error: "insert failed" }, { status: 503 });
+  }
+}
+
+async function gameLeaderboardHandler(request) {
+  const u = new URL(request.url);
+  const limit = Math.min(50, Math.max(1, Number(u.searchParams.get("limit") || 20)));
+  if (!(await ensureGameScoresTable())) {
+    return json({ ok: false, rows: [], error: "db unavailable" }, { status: 503 });
+  }
+  try {
+    const res = await q(
+      `SELECT name, score, hp, rank, players, difficulty, reason, achievements, created_at
+       FROM game_scores
+       WHERE game = $1
+       ORDER BY score DESC, created_at DESC
+       LIMIT $2`,
+      ["lockdown-survival", limit],
+    );
+    const rows = (res.rows || []).map((r) => ({
+      name: r.name,
+      score: Number(r.score) || 0,
+      hp: Number(r.hp) || 0,
+      rank: Number(r.rank) || 0,
+      players: Number(r.players) || 0,
+      difficulty: r.difficulty || "",
+      reason: r.reason || "",
+      achievements: Number(r.achievements) || 0,
+      createdAt: r.created_at || null,
+    }));
+    return json({ ok: true, rows });
+  } catch (e) {
+    console.error("game leaderboard read failed:", String(e && e.message));
+    return json({ ok: false, rows: [], error: "query failed" }, { status: 503 });
+  }
+}
+
 // ── router ──────────────────────────────────────────────────────────
 const TABLE = [
   // [method, path-regex, handler]
@@ -10012,6 +10142,9 @@ const TABLE = [
   ["GET",  /^\/line\/triggers\/?$/,          lineTriggersHandler],
   ["POST", /^\/line\/triggers\/?$/,          lineTriggersHandler],
   ["GET",  /^\/ranking\/?$/,                 rankingHandler],
+  // 2026-11-02：禁閉逃殺 Lockdown Survival 成績榜（前端遊戲的成績層）
+  ["POST", /^\/game\/score\/?$/,             gameScoreHandler],
+  ["GET",  /^\/game\/leaderboard\/?$/,       gameLeaderboardHandler],
   ["GET",  /^\/stocks\/?$/,                  listStocks],
   ["GET",  /^\/stocks\/remove\/?$/,          stub.bind(null, "stocks_remove_list", { hint: "use DELETE/POST /api/stocks/remove/<code>" })],
   ["POST", /^\/stocks\/add\/?$/,             addStock],
@@ -10296,7 +10429,7 @@ function maybeCacheHeaders(path, method, response) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-export default async function handler(request) {
+async function handleWebRequest(request) {
   try {
     const u = new URL(request.url);
     const raw = u.pathname || "";
@@ -10327,6 +10460,54 @@ export default async function handler(request) {
     return json({ ok: false, error: "not found", path: raw, method: request.method }, { status: 404 });
   } catch (e) {
     return json({ ok: false, error: e?.message, stack: e?.stack }, { status: 500 });
+  }
+}
+
+// 2026-11-02 fix: Vercel Node runtime 要求 default export 為 (req, res) => void。
+// 先前版本直接 export Web handler (request) => Response，Node runtime 會忽略
+// 回傳值並印出 WARN: default export returned a 'Response'，請求因此永遠不結束
+// 直到 FUNCTION_INVOCATION_TIMEOUT（healthz 60 秒、games 300 秒皆由此而起）。
+// 本 wrapper 偵測 Node (req, res)：把 Node req 轉成 Web Request 交給
+// handleWebRequest，再把 Web Response 寫回 Node res；若呼叫端仍是 Web
+// Request（本機 harness），則綠持舊行為直接回傳 Response。
+async function readNodeBody(req) {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  return Buffer.concat(chunks);
+}
+
+export default async function handler(req, res) {
+  const isNodeRes = res && typeof res.setHeader === "function" && typeof res.end === "function";
+  if (!isNodeRes) {
+    return handleWebRequest(req);
+  }
+  try {
+    const host = (req.headers && req.headers.host) || "localhost";
+    const proto = (req.headers && req.headers["x-forwarded-proto"]) || "https";
+    const url = `${proto}://${host}${req.url || "/"}`;
+    const headers = new Headers();
+    for (const [k, v] of Object.entries(req.headers || {})) {
+      if (v === undefined) continue;
+      try { headers.set(k, Array.isArray(v) ? v.join(", ") : String(v)); } catch {}
+    }
+    let body;
+    if (req.method && req.method !== "GET" && req.method !== "HEAD") {
+      const buf = await readNodeBody(req);
+      if (buf.length > 0) body = buf;
+    }
+    const webReq = new Request(url, { method: req.method || "GET", headers, body });
+    const webRes = await handleWebRequest(webReq);
+    res.statusCode = webRes.status;
+    webRes.headers.forEach((value, key) => {
+      try { res.setHeader(key, value); } catch {}
+    });
+    const text = await webRes.text();
+    res.end(text);
+  } catch (e) {
+    try {
+      if (!res.headersSent) res.statusCode = 500;
+      res.end(JSON.stringify({ ok: false, error: (e && e.message) || "伺服器錯誤" }));
+    } catch {}
   }
 }
 
