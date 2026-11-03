@@ -3,10 +3,10 @@ import Base from '../layouts/Base.astro';
 
 const MODEL_URL = '/models/mascot-3d.glb';
 // 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/mascot-3d.glb 得出，不要手填。
-// 解析結果：341,422 tris / 14 materials / 711,900 bytes
+// 解析結果：385,250 tris / 16 materials / 710,688 bytes
 // 大小用截尾（0.6 MB）；改用另一種請加 --round 後重跑。
-const STAT_TRIS = '341 K';
-const STAT_MATS = '14';
+const STAT_TRIS = '385 K';
+const STAT_MATS = '16';
 const STAT_SIZE = '0.6 MB';
 ---
 
@@ -74,11 +74,13 @@ const STAT_SIZE = '0.6 MB';
             </p>
             <ul>
                 <li>頭顱是<b>超橢圓截面</b>逐層堆疊（15 層）出來的，不是球體縮放</li>
-                <li>眼睛是<b>貼在臉上再往外鼓起</b>的曲面片：眼白 → 虹膜 → 瞳孔 → 高光，
-                    再加一條<b>坐在眼白上的睫毛上緣</b> —— 少了那條黑線，眼睛會變成蟲眼</li>
-                <li>頭髮是<b>一整片參數化殼層</b>加上 <b>30 幾片貝茲曲線掃出的髮片</b>：
-                    髮片是沿著二次曲線掃出、末端收尖的葉片，不是錐體
-                    （錐體會變成一排鯊魚鰭），額前那 8 片再平貼在額頭上</li>
+                <li>眼睛是<b>貼在臉上再往外鼓起</b>的曲面片：眼白 → 虹膜 → 虹膜下緣的
+                    <b>灰色月牙</b> → 高光，再加一條<b>沿著虹膜外緣走</b>的深棕眼瞼線
+                    —— 少了那條線眼睛會變成蟲眼，虹膜下方留白則會變成戴護目鏡</li>
+                <li>頭髮是<b>一整片參數化毛量殼</b>加上 <b>21 片環形生根、貝茲曲線掃出的寬厚花瓣</b>：
+                    每片從頭頂環上長出、寬身長尖尾，根部埋進殼裡；
+                    寬度曲線必須「根部漸變長大 → 維持滿寬 → 才收尖」，
+                    一路收成三角形整頭就會變海膽，額前再疊 <b>5 片</b>寬葉瀏海</li>
                 <li>格紋腰結是<b>頂點色</b>不是節點貼圖：程序化節點貼圖在 glTF 匯出時會直接消失，
                     變成一片白圍裙</li>
                 <li>全部用<b>純色材質</b>、不貼任何 texture，匯出開 <b>Draco</b> 壓縮</li>
@@ -89,7 +91,8 @@ const STAT_SIZE = '0.6 MB';
             </p>
             <p class="mascot-3d-foot">
                 腳本原始檔：<code>D:\project\blender\chibi_build.py</code>；
-                量測腳本：<code>D:\project\blender\measure_hero.py</code>。<br />
+                量測腳本：<code>D:\project\blender\measure_hero.py</code>、
+                <code>measure_parts.py</code>；剪影比對：<code>diff_silhouette.py</code>。<br />
                 預覽圖：<code>out/preview_front.png</code>、<code>out/preview_three_quarter.png</code>、
                 <code>out/preview_side.png</code>、<code>out/preview_back.png</code>。
             </p>
