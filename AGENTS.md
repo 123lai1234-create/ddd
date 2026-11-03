@@ -5,29 +5,21 @@
 
 ## 部署（Vercel Hobby plan）
 
-- 🚨🚨 **正式站要 API 穩定就走 CLI prebuilt。`git push origin main` 也會上 production，但 `/api/*` 有就緒競態。**
-  - **真正原因**：根目錄的 `api/[...catchall].mjs` 會被 Vercel 自動偵測成 serverless function，
-    所以 **git build 其實「有」`/api/*`**。問題是**就緒順序**：靜態部分先 READY 並搶走 alias，
-    edge function 還沒起來 —— 那段窗口 `/api/*` 會回 504（逾時）或 404（還沒路由到）。
-  - **實測對照**（2026-10-23，同一個 commit `daca6fbd`）：
-    | deployment | 時間 | /api/healthz | /api/stock/2330 |
-    |---|---|---|---|
-    | dpl_9Hb6p15v | 23:11 | 200 | 200 |
-    | dpl_UUZ6ijaz | 23:08 | 504 | 404 |
-    | dpl_26BsQe1J | 23:00 | 504 | 404 |
-    | dpl_BJrGxvZu | 22:58 | 504 | 404 |
-    | dpl_6uD2pPGu | 22:57 | 504 | 404 |
-    同一個 commit 23:08 是壞的、23:11 是好的 → **不是「git build 一定沒有 API」，是競態**。
-  - 所以：**改完部署 → 跑 `npm run build` → `prepare-deploy.ps1` → `vercel deploy --prebuilt --prod`，
-    這條路徑會確定把 `catchall.func` 複製進 `.vercel/output/functions/`**，API 一定在。
-    只改靜態內容、且能接受 API 短暫失效時，`git push origin main` 也有 production
-    （production branch = `main`，約 3 分鐘後生效）。
+- 🚨🚨 **2026-11-02 起 API 搬到 Render，部署以 `git push origin main` 為準，不要盲目跑 prebuilt。**
+  - **現況**：真正的後端是 `https://donttalk-catchall.onrender.com/api/*`；
+    `astro/src/pages/stock.astro` 會先探 Render 再退回 `/api/healthz`，所以頁面還能用。
+    Vercel 端仍留著 `api/[...catchall].mjs`（477KB）與 `api/games/[...all].mjs` 兩個 function
+    原始碼在 git 裡，2026-11-02 實測兩者都逾時不回應（`/api/healthz` 連線逾時、
+    `/api/stock/2330` 404、`/api/games/*` 逾時），Render 同一支則 200。
+  - ⚠️ **`prepare-deploy.ps1` 對現在的架構已經過時**：它從 Vercel CLI 快取複製
+    `.vercel/.vercel/output/functions/api/catchall.func/catchall.mjs`，那是 **2026-08 的 229KB 舊版**，
+    而 main 上是 477KB 新版；新的 `api/games/[...all].mjs` **也不在 prebuilt 輸出裡**。
+    跑 prebuilt 等於把舊 catchall 灌回去、還漏掉 facility 遊戲的 API → **會回退。**
+    要用 prebuilt 前，先把 catchall 來源更新成 main 的版本並把 `api/games/` 一起放進 functions。
+  - 所以：**改完 → `git push origin main` → 等 Vercel 自動部署（約 3 分鐘）→ 打 API 驗證**。
+    剛部署完那幾分鐘 `/api/*` 可能還在就緒中（2026-10-23 實測同 commit 23:08 是壞的、23:11 是好的，
+    是**競態**不是「git build 一定沒有 API」），等一下再驗。
   - 驗證一定要打 `/api/stock/2330` 或 `/api/healthz`，不能只看頁面 200 —— 這個故障在頁面上完全看不出來。
-  - ⚠️ **推完 main 之後要再跑一次 prebuilt**。git push 觸發的自動部署會在約 3 分鐘後
-    **搶走 production alias**，而且就是那個有競態的部署。2026-11-02 實測：
-    push main 後 11:41 出現新的 production deployment，11:42:40 輪詢到
-    `/api/healthz` = 000（連線失敗）、`/api/stock/2330` = 404，靜態頁面仍是 200。
-    正確順序：**push → 等 git 部署完成 → 再跑 prebuilt 讓 alias 指向有 `catchall.func` 的版本**。
   - `vercel` CLI **不在 `astro/node_modules`**（在 repo 根的 `D:\project\node_modules\.bin\vercel.cmd`），
     用相對路徑 `& node_modules\.bin\vercel.cmd` 會被 PowerShell 當成模組名稱而失敗。
 - git build 與 prebuilt 的**靜態產出**現在是一致的（2026-10-23 對齊）：
