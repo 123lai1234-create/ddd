@@ -622,6 +622,8 @@ export function createApp(store, opts = {}) {
           }
           if (action === 'action') {
             if (room.phase !== 'action') return err('現在不是行動階段', 409);
+            // 已提交者重送：直接回現況，不重算路徑／投票／道具，否則 AI 票會被重複計入。
+            if (me.submitted) return ok({ room: playerView(room, a.acc.id) });
             // 暗影：只允許移動（單人版規則：暗影可走垂直通道、不可傳送／飛行、不可投票／火箭／道具）。
             if (me.shadow) {
               const pathErr = validatePath(me, body?.path, room.day);
@@ -662,10 +664,11 @@ export function createApp(store, opts = {}) {
             if (vote) room.gasVotes[vote] = (room.gasVotes[vote] || 0) + (finalRoom === 'B101' && control === 'vote10' ? 10 : 1);
             me.room = finalRoom; me.voteFloor = vote;
             room.log.push(`${me.name} 移動到 ${finalRoom}${control === 'detox' ? `，控制室秘密解毒 ${detoxFloor}` : (vote ? `，投票 ${vote}` : '')}`);
-            const pending = room.players.filter(p => p.alive && !p.shadow && !p.submitted && !p.aiManaged);
             const botsPending = room.players.filter(p => p.isBot && p.alive && !p.shadow && !p.submitted);
             for (const b of botsPending) { const ba = botAction(room, b); b.submitted = ba; if (ba.vote) room.gasVotes[ba.vote] = (room.gasVotes[ba.vote] || 0) + 1; b.room = ba.path[ba.path.length - 1]; }
-            if (pending.length === 0 && room.players.filter(p => p.alive && !p.shadow).every(p => p.submitted)) {
+            // 結算條件必須在 AI 提交後重算：舊程式先算 pending 再讓 AI 提交，pending 永遠含 AI 而不為空，導致首次行動不結算。
+            const pendingAfter = room.players.filter(p => p.alive && !p.shadow && !p.submitted && !p.aiManaged);
+            if (pendingAfter.length === 0 && room.players.filter(p => p.alive && !p.shadow).every(p => p.submitted)) {
               settle(room, room.log);
             }
             await save(room); return ok({ room: playerView(room, a.acc.id) });

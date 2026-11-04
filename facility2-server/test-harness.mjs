@@ -97,6 +97,23 @@ const view2 = await get(`rooms/${code2}`, t2);
 check('private chat tea visible to member', JSON.stringify(view1.json.room.chat.messages).includes('茶水間密話'), JSON.stringify(view1.json.room.chat));
 check('private chat tea hidden from public member', !JSON.stringify(view2.json.room.chat.messages).includes('茶水間密話'), JSON.stringify(view2.json.room.chat));
 check('vote secrecy: no gasVotes in playerView', view2.json.room.gasVotes === undefined && Array.isArray(view2.json.room.gassedFloors), JSON.stringify(Object.keys(view2.json.room)));
+// 12b settlement bug regression: single human + AI bots must settle on the FIRST action, not wait for a duplicate
+const cr3 = await call('POST', 'rooms', { roomType: 'casual' }, t1);
+const code3 = cr3.json.room.code;
+await call('POST', `rooms/${code3}`, { action: 'allocate', genes: { might: 4, weight: 3, speed: 3 }, spawn: '103' }, t1);
+await call('POST', `rooms/${code3}`, { action: 'start' }, t1);
+const firstAct = await call('POST', `rooms/${code3}`, { action: 'action', path: ['104'], vote: 'B7' }, t1);
+check('single-human first action settles immediately', firstAct.status === 200 && firstAct.json.room.day === 2, `day=${firstAct.json.room.day} phase=${firstAct.json.room.phase}`);
+// 12c duplicate submission guard: in a multi-human room, resubmitting must not move the player or recount the vote
+const cr4 = await call('POST', 'rooms', { roomType: 'casual' }, t1);
+const code4 = cr4.json.room.code;
+await call('POST', `rooms/${code4}`, { action: 'join' }, t2);
+await call('POST', `rooms/${code4}`, { action: 'allocate', genes: { might: 4, weight: 3, speed: 3 }, spawn: '103' }, t1);
+await call('POST', `rooms/${code4}`, { action: 'allocate', genes: { might: 4, weight: 3, speed: 3 }, spawn: 'B402' }, t2);
+await call('POST', `rooms/${code4}`, { action: 'start' }, t1);
+const dup1 = await call('POST', `rooms/${code4}`, { action: 'action', path: ['104'], vote: 'B7' }, t1);
+const dup2 = await call('POST', `rooms/${code4}`, { action: 'action', path: ['202'], vote: 'B7' }, t1);
+check('duplicate action ignored, player stays', dup1.status === 200 && dup2.status === 200 && dup2.json.room.me.room === '104' && dup2.json.room.phase === 'action', `room=${dup2.json.room.me.room} phase=${dup2.json.room.phase}`);
 // 13 validatePath unit: teleport + flight
 const { validatePathForTest, botActionForTest, settleForTest } = app;
 const mkP = (o) => Object.assign({ hp: 10, alive: true, shadow: false, room: '103', genes: { might: 4, weight: 3, speed: 3 }, items: [], flyNext: false, adrenalineUntil: 0 }, o);
