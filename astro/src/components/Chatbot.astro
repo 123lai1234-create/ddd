@@ -11,14 +11,16 @@
  */
 ---
 
-<!-- 元嬰不說 真 3D 人偶（Three.js 程序化建模，sphere 頭 + capsule 四肢）
-     * state change -> Chibi3D.setView('front'|'side'|'back') 切換相機
-     * 拖曳 = 移動按鈕（與模型旋轉無關）
-     * auto-rotate 由 Three.js 渲染迴圈控制 -->
-<div id="chatbot-anchor" aria-label="元嬰不說 2D 立繪（可拖曳）" role="button" tabindex="0">
+<!-- 香菇柯基 真 3D（model-viewer，輕量減面版）
+     * 拖曳狗 = 旋轉模型（model-viewer camera-controls），滾輪/雙指 = 縮放
+     * 拖右上角「拖我移動」標籤 = 移動整個按鈕位置
+     * 點狗 = 循環反應（跳、轉一圈、揮手）+ 開關聊天面板
+     * state change -> setView('front'|'side'|'back') 改 camera-orbit 角度 -->
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<div id="chatbot-anchor" aria-label="香菇柯基 3D（可拖曳旋轉）" role="button" tabindex="0">
   <div class="kawaii-stage" id="kawaii-stage">
-    <img id="kawaii-canvas" src="/images/chibi-hero.png" alt="香菇柯基立繪" draggable="false" />
-    <span class="char-drag-hint" aria-hidden="true">✥ 拖曳</span>
+    <model-viewer id="kawaii-canvas" src="/models/mascot-3d-chat.glb" poster="/images/chibi-hero.png" alt="香菇柯基 3D" camera-orbit="0deg 82deg 2.8m" camera-target="0m 0m 0m" field-of-view="30deg" exposure="0.85" shadow-intensity="0.7" camera-controls interaction-prompt="none" ar-modes="none"></model-viewer>
+    <span class="char-drag-hint" id="char-drag-handle" aria-hidden="true">✥ 拖我移動</span>
   </div>
 
   <div id="chatbot-panel">
@@ -90,16 +92,15 @@
     transition: transform 0.18s ease-out;
   }
 
-  /* 2D chibi 立繪 + CSS 動畫 */
-  .kawaii-stage img#kawaii-canvas {
+  /* 真 3D 香菇狗 + CSS 動畫（poster 先顯示正面渲染，GLB 載入後換真 3D） */
+  .kawaii-stage model-viewer#kawaii-canvas {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    pointer-events: none;
-    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    display: block;
+    background: transparent;
+    --poster-color: transparent;
     transform-origin: 50% 95%;
     animation: kawaii-idle 3.6s ease-in-out infinite;
   }
@@ -109,14 +110,14 @@
     50%      { transform: translateY(-1px) rotate(0deg); }
     75%      { transform: translateY(-3px) rotate(-0.6deg); }
   }
-  #chatbot-anchor:hover .kawaii-stage img#kawaii-canvas {
+  #chatbot-anchor:hover .kawaii-stage model-viewer#kawaii-canvas {
     animation: kawaii-wiggle 1.0s ease-in-out infinite;
   }
   @keyframes kawaii-wiggle {
     0%, 100% { transform: translateY(-1px) rotate(-3deg) scale(1.04); }
     50%      { transform: translateY(-1px) rotate(3deg) scale(1.04); }
   }
-  .kawaii-stage img#kawaii-canvas.kawaii-bounce {
+  .kawaii-stage model-viewer#kawaii-canvas.kawaii-bounce {
     animation: kawaii-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
   }
   @keyframes kawaii-bounce {
@@ -125,7 +126,24 @@
     65%  { transform: translateY(0) scale(1.08, 0.92); }
     100% { transform: translateY(0) scale(1); }
   }
-  /* legacy canvas 保留 selector 防止 null ref */
+  /* 眨眼/打哈欠是模擬動作：這顆模型沒有骨架與表情 morph，
+     眨眼 = 快速縱向壓扁，哈欠 = 慢速後仰放大，皆為整隻狗的形變模擬 */
+  .kawaii-stage model-viewer#kawaii-canvas.kawaii-blink {
+    animation: kawaii-blink 0.18s ease-in-out 1;
+  }
+  @keyframes kawaii-blink {
+    0%, 100% { transform: scaleY(1); }
+    50%      { transform: scaleY(0.82); }
+  }
+  .kawaii-stage model-viewer#kawaii-canvas.kawaii-yawn {
+    animation: kawaii-yawn 1.4s ease-in-out 1;
+  }
+  @keyframes kawaii-yawn {
+    0%, 100% { transform: rotateX(0deg) scale(1); }
+    50%      { transform: rotateX(-14deg) scale(1.06); }
+  }
+  /* legacy img/canvas 保留 selector 防止 null ref */
+  .kawaii-stage img#kawaii-canvas,
   .kawaii-stage canvas#kawaii-canvas {
     position: absolute;
     inset: 0;
@@ -153,8 +171,10 @@
     opacity: 0;
     transform: scale(0.8);
     transition: opacity 0.2s, transform 0.2s;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: grab;
     white-space: nowrap;
+    z-index: 2;
   }
   #chatbot-anchor:hover .char-drag-hint {
     opacity: 1;
@@ -372,40 +392,160 @@
     const stage  = document.getElementById('kawaii-stage');
     const panel  = document.getElementById('chatbot-panel');
 
-    /* ── 2D 立繪 state ─────────────────────────────────────
-     * 不用 Three.js，改用 CSS transform + 換 src 偽 3D：
-     *   front = 顯示 /images/chibi-hero.png（這顆 3D 模型的正面渲染）
-     *   side  = 捏扁成側面感
-     *   back  = 切換到 /images/chibi-hero-back.png（這顆 3D 模型的背面渲染）
-     */
+    /* ── 真 3D state：改 camera-orbit 角度，不是換圖片 ─────────────
+     * front = 0deg（正面），side = 90deg（側面），back = 180deg（背面）
+     * 角度用 rAF 平滑插值，theta 取最短路徑，避免轉一圈繞遠路 */
     let currentView = 'front';
     let viewTimer = null;
     let idlePeekTimer = null;
-    const chibiImg = document.getElementById('kawaii-canvas');
+    const viewer = document.getElementById('kawaii-canvas');
+    let baseTheta = 0;
+    let basePhi = 82;
+    let camAnim = null;
 
+    function setCameraOrbit(theta, phi) {
+        if (!viewer) return;
+        try { viewer.setAttribute('camera-orbit', `${theta}deg ${phi}deg 2.8m`); } catch (_) {}
+    }
+    function animateCameraTo(theta, phi, duration, onDone) {
+        if (camAnim) cancelAnimationFrame(camAnim);
+        const startTheta = baseTheta;
+        const startPhi = basePhi;
+        let dTheta = ((theta - startTheta + 540) % 360) - 180;
+        const dPhi = phi - startPhi;
+        const t0 = performance.now();
+        const step = (now) => {
+            const p = Math.min(1, (now - t0) / duration);
+            const e = 1 - Math.pow(1 - p, 3);
+            const th = startTheta + dTheta * e;
+            const ph = startPhi + dPhi * e;
+            setCameraOrbit(th, ph);
+            if (p < 1) {
+                camAnim = requestAnimationFrame(step);
+            } else {
+                camAnim = null;
+                baseTheta = ((theta % 360) + 360) % 360;
+                basePhi = phi;
+                setCameraOrbit(baseTheta, basePhi);
+                if (onDone) onDone();
+            }
+        };
+        camAnim = requestAnimationFrame(step);
+    }
+    function animateThetaOffset(offset, duration, onDone) {
+        if (camAnim) cancelAnimationFrame(camAnim);
+        const t0 = performance.now();
+        const startTheta = baseTheta;
+        const step = (now) => {
+            const p = Math.min(1, (now - t0) / duration);
+            const e = 1 - Math.pow(1 - p, 3);
+            setCameraOrbit(startTheta + offset * e, basePhi);
+            if (p < 1) {
+                camAnim = requestAnimationFrame(step);
+            } else {
+                camAnim = null;
+                setCameraOrbit(baseTheta, basePhi);
+                if (onDone) onDone();
+            }
+        };
+        camAnim = requestAnimationFrame(step);
+    }
     function setView(name) {
       currentView = name;
-      if (!chibiImg) return;
-      chibiImg.style.transition = 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s';
-      if (name === 'side') {
-        chibiImg.src = '/images/chibi-hero.png';
-        chibiImg.style.transform = 'scale(0.55)';
-        chibiImg.style.opacity = '0.85';
-      } else if (name === 'back') {
-        chibiImg.src = '/images/chibi-hero-back.png';
-        chibiImg.style.transform = 'scaleX(1) scale(0.95)';
-        chibiImg.style.opacity = '1';
-      } else {
-        chibiImg.src = '/images/chibi-hero.png';
-        chibiImg.style.transform = '';
-        chibiImg.style.opacity = '1';
-      }
+      if (!viewer) return;
+      const target = name === 'side' ? 90 : name === 'back' ? 180 : 0;
+      animateCameraTo(target, 82, 400);
     }
     function peekView(name, ms) {
       const prev = currentView;
       setView(name);
       clearTimeout(viewTimer);
       viewTimer = setTimeout(() => setView(prev), ms);
+    }
+
+    /* ── 點狗循環反應：跳、轉一圈、揮手 ─────────────────────────── */
+    let reactionIndex = 0;
+    function playReaction() {
+        if (!viewer) return;
+        const list = ['jump', 'spin', 'wave'];
+        const r = list[reactionIndex % list.length];
+        reactionIndex++;
+        if (r === 'jump') {
+            viewer.classList.remove('kawaii-bounce');
+            void viewer.offsetWidth;
+            viewer.classList.add('kawaii-bounce');
+            setTimeout(() => viewer.classList.remove('kawaii-bounce'), 550);
+        } else if (r === 'spin') {
+            animateThetaOffset(360, 900);
+        } else {
+            // 揮手：左右搖兩下再回正（camera theta 搖擺模擬）
+            if (camAnim) cancelAnimationFrame(camAnim);
+            const t0 = performance.now();
+            const startTheta = baseTheta;
+            const rock = (now) => {
+                const p = Math.min(1, (now - t0) / 800);
+                const off = Math.sin(p * Math.PI * 4) * 18 * (1 - p);
+                setCameraOrbit(startTheta + off, basePhi);
+                if (p < 1) { camAnim = requestAnimationFrame(rock); }
+                else { camAnim = null; setCameraOrbit(baseTheta, basePhi); }
+            };
+            camAnim = requestAnimationFrame(rock);
+        }
+    }
+
+    /* ── 閒置動作：眨眼模擬、打哈欠模擬、左右看 ───────────────────
+     * 模型無骨架與表情 morph，眨眼/哈欠皆為整隻狗形變模擬，見 CSS 註解 */
+    function idleActionOk() {
+        return !anchor.classList.contains('panel-open') && !busy && !dragging && !camAnim;
+    }
+    function scheduleBlink() {
+        setTimeout(() => {
+            if (idleActionOk() && viewer) {
+                viewer.classList.remove('kawaii-blink');
+                void viewer.offsetWidth;
+                viewer.classList.add('kawaii-blink');
+                setTimeout(() => viewer.classList.remove('kawaii-blink'), 200);
+            }
+            scheduleBlink();
+        }, 4000 + Math.random() * 3000);
+    }
+    function scheduleYawn() {
+        setTimeout(() => {
+            if (idleActionOk() && viewer) {
+                viewer.classList.remove('kawaii-yawn');
+                void viewer.offsetWidth;
+                viewer.classList.add('kawaii-yawn');
+                setTimeout(() => viewer.classList.remove('kawaii-yawn'), 1450);
+            }
+            scheduleYawn();
+        }, 30000 + Math.random() * 15000);
+    }
+    function scheduleLookAround() {
+        setTimeout(() => {
+            if (idleActionOk()) {
+                const off = Math.random() < 0.5 ? -25 : 25;
+                animateThetaOffset(off, 600, () => animateThetaOffset(0, 600));
+            }
+            scheduleLookAround();
+        }, 12000 + Math.random() * 8000);
+    }
+
+    /* ── 點狗（未拖曳）= 反應 + 開關面板；拖曳狗 = 模型自己旋轉 ─── */
+    let viewerDownPos = null;
+    if (viewer) {
+        viewer.addEventListener('pointerdown', (e) => {
+            viewerDownPos = { x: e.clientX, y: e.clientY };
+        });
+        viewer.addEventListener('pointerup', (e) => {
+            if (!viewerDownPos) return;
+            const dx = e.clientX - viewerDownPos.x;
+            const dy = e.clientY - viewerDownPos.y;
+            viewerDownPos = null;
+            if (Math.hypot(dx, dy) > 10) return; // 拖曳旋轉，不算點
+            playReaction();
+            if (isPanelOpen()) closePanel();
+            else openPanel();
+        });
     }
 
     function scheduleIdlePeek() {
@@ -451,6 +591,8 @@
 
     function onPointerDown(e) {
         if (e.target.closest('#chatbot-panel')) return;
+        if (e.target.closest('model-viewer')) return; // 拖曳狗 = 模型旋轉，不移動按鈕
+        if (!e.target.closest('#char-drag-handle')) return; // 只有拖標籤才移動按鈕
         if (e.button !== undefined && e.button !== 0) return;
         if (!isInsideAnchor(e)) return;
         dragging = true;
@@ -535,8 +677,11 @@
         if (!anchor.classList.contains('panel-open')) peekView('side', 600);
     });
 
-    // Start idle peek loop
+    // Start idle peek loop + idle actions (blink / yawn / look-around)
     scheduleIdlePeek();
+    scheduleBlink();
+    scheduleYawn();
+    scheduleLookAround();
 
     send.addEventListener('click', submit);
     input.addEventListener('keydown', e => {
