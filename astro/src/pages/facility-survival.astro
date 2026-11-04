@@ -3,7 +3,7 @@
 // 背景與樣式皆為本站自有 CSS 漸層，未使用任何第三方圖片或程式碼。
 import Base from '../layouts/Base.astro';
 ---
-<Base title="封鎖設施求生 | 多人連線生存遊戲" description="最多 8 人連線生存遊戲：9 層 42 房設施、配點、搜刮、毒樓層投票、手術室、火箭筒、控制室、暗影復活，6 回合決勝負。建房分享房間碼就能和朋友一起玩，未滿由 AI 補位；另有世界公開房間列表與戰績回顧。">
+<Base title="封鎖設施求生 | 多人連線生存遊戲" description="最多 12 人連線生存遊戲：9 層 42 房設施、配點、搜刮、毒樓層投票、手術室、火箭筒、控制室、暗影復活，6 回合決勝負。建房分享房間碼就能和朋友一起玩，未滿由 AI 補位；另有世界公開房間列表與戰績回顧。">
 <div class="fs-lobby">
   <div class="fs-bg"></div>
   <main class="fs-main">
@@ -33,7 +33,8 @@ import Base from '../layouts/Base.astro';
       </div>
       <div class="fs-row">
         <input id="in-code" placeholder="房間碼（4 碼）" maxlength="4" style="text-transform:uppercase" />
-        <select id="sel-type"><option value="casual">娛樂（信譽 80+）</option><option value="ranked">競技（信譽 90+）</option></select>
+        <select id="sel-type"><option value="casual">娛樂（信譽 80+，真人 1+）</option><option value="ranked">競技（信譽 90+，真人 5+）</option></select>
+        <select id="sel-bot"><option value="random">AI 隨機</option><option value="novice">AI 新手</option><option value="normal">AI 一般</option><option value="demon">AI 魔王</option></select>
         <button class="fs-btn dark" id="btn-spectate">觀戰</button>
       </div>
       <div class="fs-icons">
@@ -47,22 +48,31 @@ import Base from '../layouts/Base.astro';
       <div id="players"></div>
       <div id="genes" style="display:none">
         <h3>基因配點（總和 10）</h3>
-        武力 <input id="g-might" type="number" min="0" max="10" value="4" /> 負重 <input id="g-weight" type="number" min="0" max="10" value="3" /> 速度 <input id="g-speed" type="number" min="0" max="10" value="3" />
+        武力 <input id="g-might" type="number" min="0" max="10" value="4" /> 負重 <input id="g-weight" type="number" min="0" max="10" value="3" /> 速度 <input id="g-speed" type="number" min="1" max="10" value="3" />
         出生點 <select id="g-spawn"><option>103</option><option>B103</option><option>B303</option><option>B307</option><option>B402</option><option>B603</option></select>
         <button class="fs-btn blue" id="btn-allocate">確認配點</button>
-        <button class="fs-btn dark" id="btn-start">開局（AI 補滿 8 人）</button>
+        <button class="fs-btn dark" id="btn-start">開局（AI 補滿 12 人）</button>
       </div>
       <div id="action" style="display:none">
         <h3>行動（剩餘 <span id="remain"></span> 秒）</h3>
-        <p>目前房間：<b id="cur-room"></b>　點相鄰房間組成路徑（至少 1 步，不超過速度）</p>
+        <p>目前房間：<b id="cur-room"></b>　點相鄰房間組成路徑（至少 1 步，不超過速度，不能立刻折返）</p>
+        <p class="fs-note">垂直通道需繩索（暗影除外）；在 B403 可點空房傳送；在 202 且上一回合結束時在 202，第一步可直飛 H 房（201、101、B101、B103、B105）。暗影只能移動，不能投票、火箭、傳送、飛行或用道具。</p>
         <div id="path"></div><div id="adj"></div>
-        <p>毒氣投票 <select id="sel-vote"><option value="">不投</option><option>2F</option><option>1F</option><option>B1</option><option>B2</option><option>B3</option><option>B4</option><option>B5</option><option>B6</option><option>B7</option></select>
-        控制室 <select id="sel-control"><option value="">無</option><option value="vote10">本票算 10 票</option><option value="detox">解毒</option></select>
-        火箭筒目標 <input id="in-rocket" placeholder="房間編號（可空）" /></p>
+        <p id="act-vote-row">毒氣投票（秘密，結算後才公布） <select id="sel-vote"><option value="">不投</option><option>2F</option><option>1F</option><option>B1</option><option>B2</option><option>B3</option><option>B4</option><option>B5</option><option>B6</option><option>B7</option></select>
+        控制室 <select id="sel-control"><option value="">無</option><option value="vote10">本票算 10 票</option><option value="detox">解毒（二選一，解毒回合不投票）</option></select>
+        解毒樓層 <select id="sel-detox"><option value="">—</option><option>2F</option><option>1F</option><option>B1</option><option>B2</option><option>B3</option><option>B4</option><option>B5</option><option>B6</option><option>B7</option></select>
+        火箭筒目標 <input id="in-rocket" placeholder="房間編號（可空，須持有火箭筒）" /></p>
+        <p id="act-use-row">結算時用道具 <label><input type="checkbox" class="use-cb" value="pill" /> 藥片 +2</label> <label><input type="checkbox" class="use-cb" value="adrenaline" /> 腎上腺素（下回合速度 10、傷害保底 1）</label> <label><input type="checkbox" class="use-cb" value="wine" /> 酒（擲骰）</label> <label><input type="checkbox" class="use-cb" value="fine_wine" /> 佳釀（擲骰，效果加倍）</label></p>
         <button class="fs-btn blue" id="btn-action">提交行動</button>
         <button class="fs-btn dark" id="btn-gold">金條攤開挑選</button>
         <div id="gold-list"></div>
       </div>
+      <div id="chat" style="display:none"><h3>聊天</h3>
+        <p class="fs-note">公開頻道所有人看得到；茶水間、樓梯間、鍋爐房只有同頻道的人看得到。</p>
+        <select id="sel-chat"><option value="public">公開頻道</option><option value="tea">茶水間</option><option value="stair">樓梯間</option><option value="boiler">鍋爐房</option></select>
+        <input id="in-chat" placeholder="訊息（最多 200 字）" maxlength="200" />
+        <button class="fs-btn dark" id="btn-chat">送出</button>
+        <div id="chat-log" class="fs-log"></div></div>
       <div id="keep" style="display:none"><h3>選留（60 秒內未選由系統自動保留）</h3><div id="keep-list"></div><button class="fs-btn blue" id="btn-keep">確認選留</button></div>
       <div id="free" style="display:none"><h3>自由階段：交易（一物換一物）</h3>
         <div id="trade-form"></div><div id="trade-inbox"></div>
@@ -106,9 +116,9 @@ async function api(path,method,body,raw){
 }
 function showModal(t,b){$('modal-title').textContent=t;$('modal-body').textContent=b;$('modal').style.display='flex';}
 $('btn-modal-close').onclick=()=>$('modal').style.display='none';
-$('link-rules').onclick=e=>{e.preventDefault();showModal('遊戲規則','6 回合、9 層 42 房：配點 10 點、行動走步數不超過速度、每回合投票毒樓層（票數累積不歸零）、手術室剛好 2 人 +4 且不戰鬥、火箭筒打指定房間 -4、控制室可投 10 票或解毒、操作室重配基因、基因庫三項 +1、傳送室到空房、停機坪空投與飛行、金條攤開挑選、自由階段一物換一物、180 秒行動逾時由 AI 代打（累積 2 次託管 -5）。');};
-$('link-intro').onclick=e=>{e.preventDefault();showModal('系統介紹','多人連線版：建房分享 4 碼房間碼，未滿 8 人由 AI 補位；訪客、顯示名稱與 Google 登入，信譽 100 起、棄權 -10、首位棄權冷卻 15 分鐘，娛樂門檻 80、競技 90；世界列表公開房間，觀戰唯讀，終局戰績同房公開。');};
-$('link-change').onclick=e=>{e.preventDefault();showModal('更新紀錄','2026-11-04：facility-survival 前後端全重寫版（大廳風格、42 房完整規則、帳號信譽、觀戰戰績）。');};
+$('link-rules').onclick=e=>{e.preventDefault();showModal('遊戲規則','6 回合、9 層 42 房：配點 10 點且速度至少 1、行動走步數不超過速度、不能立刻折返；每回合秘密投票毒樓層（票數累積不歸零、平票樓層全部下毒、毒過永久不解除除非控制室解毒）；第 2 天起每回合繳水＋糧各 1，缺一項扣 1，餐廳免繳，生存補給一次抵兩項（只在兩項都缺時用）；手術室剛好 2 人 +4 且不戰鬥；同房比武力差額傷害；火箭筒打指定房間 -4（須持有）；控制室二選一：本票算 10 票或秘密解一層毒，解毒回合不投票；操作室重配總點不變且速度至少 1；基因庫三項 +1；傳送室 B403 可傳送到空房；停機坪 202 空投順序為軍刺、佳釀、生存補給、手槍、腎上腺素、藥片循環，每回合最多取 1 件，上一回合結束時在 202 者次回合第一步可直飛 H 房；結算時可用藥片 +2、腎上腺素（下回合速度 10、傷害保底 1）、酒／佳釀擲骰；暗影化影後在 B701，同房吸血回 1，暗影血到 2 原地復活，復活回合免毒氣免水糧；B501 橫跨 B4–B5、毒氣歸 B5，與 B401 不相通，B105 滑道只向 B503；終局：存活者在暗影前，存活者比金條折算血量（每張 +1、上限 10）同分比武力，暗影比生前武力，全員暗影比前一輪血量，同分並列；金條攤開挑選、自由階段一物換一物、180 秒行動逾時由 AI 代打（累積 2 次託管 -5）。');};
+$('link-intro').onclick=e=>{e.preventDefault();showModal('系統介紹','多人連線版：建房分享 4 碼房間碼，未滿 12 人由 AI 補位，AI 有新手／一般／魔王／隨機四種；訪客、顯示名稱與 Google 登入，信譽 100 起、棄權 -10、首位棄權冷卻 15 分鐘，娛樂門檻信譽 80 且真人 1+、競技門檻信譽 90 且真人 5+；世界列表公開房間，觀戰唯讀，終局戰績同房公開；聊天有公開頻道與茶水間、樓梯間、鍋爐房三間私聊。');};
+$('link-change').onclick=e=>{e.preventDefault();showModal('更新紀錄','2026-11-04：facility-survival 前後端全重寫版（大廳風格、42 房完整規則、帳號信譽、觀戰戰績）。2026-11-04 對齊更新：12 人、AI 強度、平票多層毒氣、秘密投票、控制室二選一、水糧、道具使用、暗影復活、空投順序、傳送、飛行、禁回頭路、速度下限、終局比序、私聊。');};
 function setLoginMsg(m){$('login-msg').textContent=m;}
 async function doLogin(body){ const j=await api('accounts','POST',body); token=j.token; localStorage.setItem('fs2-token',token); account=j.account; if(j.recoveryCode) setLoginMsg('帳號建立成功！恢復碼（只顯示一次）：'+j.recoveryCode+'，請先抄下來。'); else setLoginMsg('登入成功：'+account.display_name); showHome(); }
 $('btn-guest').onclick=()=>{const n=$('in-name').value.trim()||'訪客'; doLogin({action:'create',displayName:n,guest:true}).catch(e=>setLoginMsg(e.message));};
@@ -116,7 +126,7 @@ $('btn-named').onclick=()=>{const n=$('in-name').value.trim(); if(!n) return set
 $('btn-recover').onclick=()=>doLogin({action:'recover',displayName:$('in-name').value.trim(),recoveryCode:$('in-recovery').value.trim()}).catch(e=>setLoginMsg(e.message));
 $('btn-google').onclick=async()=>{try{const j=await api('accounts','POST',{action:'google'}); location.href=j.redirectUrl;}catch(e){setLoginMsg(e.message);}};
 function showHome(){ $('fs-login').style.display='none'; $('fs-home').style.display='block'; $('who').textContent=account?('你是 '+account.display_name+'（信譽 '+(account.reputation??100)+'）'):''; const c=new URLSearchParams(location.search).get('code'); if(c) $('in-code').value=c.toUpperCase(); }
-$('btn-create').onclick=async()=>{try{const j=await api('rooms','POST',{roomType:$('sel-type').value}); room=j.room; showGame();}catch(e){$('home-msg').textContent=e.message;}};
+$('btn-create').onclick=async()=>{try{const j=await api('rooms','POST',{roomType:$('sel-type').value,botDifficulty:$('sel-bot').value}); room=j.room; showGame();}catch(e){$('home-msg').textContent=e.message;}};
 $('btn-join').onclick=async()=>{const code=$('in-code').value.trim().toUpperCase(); if(!code) return; try{const j=await api('rooms/'+code,'POST',{action:'join'}); room=j.room; showGame();}catch(e){$('home-msg').textContent=e.message;}};
 $('btn-spectate').onclick=()=>spectate(); $('link-spectate2').onclick=e=>{e.preventDefault(); spectate();};
 async function spectate(){const code=$('in-code').value.trim().toUpperCase(); if(!code) return; try{const j=await api('rooms/'+code+'?spectate=1','GET'); room=j.room; showGame(true);}catch(e){$('home-msg').textContent=e.message;}}
@@ -127,21 +137,28 @@ function render(){
   const me=room.me;
   $('game-title').textContent='房間 '+room.code+' · '+(room.roomType==='ranked'?'競技':'娛樂')+' · 第 '+room.day+' 天 · '+room.phase;
   $('game-meta').textContent='狀態：'+room.status+'　存活 '+(room.players?room.players.filter(p=>p.alive).length:0)+' / '+((room.players||[]).length)+' 人';
-  $('players').innerHTML=(room.players||[]).map(p=>`<div>${p.name}　HP ${p.hp}　${p.room||''}　${p.alive?'存活':(p.shadow?'暗影':'出局')}　${p.submitted?'已提交':''}</div>`).join('');
+  $('players').innerHTML=(room.players||[]).map(p=>`<div>${p.name}　HP ${p.shadow?('暗影 '+p.shadowHp):p.hp}　${p.room||''}　${p.alive?'存活':(p.shadow?'暗影':'出局')}　${p.submitted?'已提交':''}</div>`).join('');
   $('log').textContent=(room.log||[]).join('\n');
   $('genes').style.display=(room.status==='lobby')?'block':'none';
-  $('action').style.display=(room.phase==='action'&&me&&me.alive)?'block':'none';
+  $('action').style.display=(room.phase==='action'&&me&&(me.alive||me.shadow))?'block':'none';
+  $('chat').style.display=(room.status==='playing'||room.status==='finished')?'block':'none';
+  if(room.chat){ $('sel-chat').value=room.chat.channel; $('chat-log').textContent=(room.chat.messages||[]).map(m=>`${m.from}：${m.text}`).join('\n'); }
+  if(me&&me.shadow){ $('act-vote-row').style.display='none'; $('act-use-row').style.display='none'; $('btn-gold').style.display='none'; } else { $('act-vote-row').style.display='block'; $('act-use-row').style.display='block'; $('btn-gold').style.display=''; }
   $('keep').style.display=(room.phase==='keep'&&me&&me.pendingKeep&&me.pendingKeep.length)?'block':'none';
   $('free').style.display=(room.phase==='free')?'block':'none';
   if(me){ $('cur-room').textContent=me.room||''; renderAdj(me); renderKeep(me); renderTrade(me); }
   if(room.actionDeadline){ const s=Math.max(0,Math.round((room.actionDeadline-Date.now())/1000)); $('remain').textContent=s; }
 }
-const ADJ={ '103':['104','B106'], '104':['103','B107','202'], 'B101':['B102','B201'], 'B102':['B101','B103','B201','B202'], 'B103':['B102','B104','B202'], 'B104':['B103','B105','102','B203','B204'], 'B105':['B104','B106','B205','B503'], 'B106':['B105','B107','103','B206','104'], 'B107':['B106','104','B206'], 'B201':['B202','B101','B301','B302'], 'B202':['B201','B203','B103','B302','B303'], 'B203':['B202','B204','B104','B304'], 'B204':['B203','B205','B104','B305','B304'], 'B205':['B204','B105','B305'], 'B206':['B205','B106','B107','B308','B306','B307'], 'B301':['B302','B201','B501'], 'B302':['B301','B303','B201','B202','B501'], 'B303':['B302','B304','B202','B501'], 'B304':['B303','B305','B203','B204','B401'], 'B305':['B304','B306','B204','B205','B402'], 'B306':['B305','B307','B206','B403'], 'B307':['B306','B308','B206','B404','B403'], 'B308':['B307','B206','B405'], 'B401':['B402','B304','B305','B502','B503'], 'B402':['B401','B503','B305'], 'B403':['B404','B306','B307','B504'], 'B404':['B403','B405','B307','B504','B505'], 'B405':['B404','B308','B505'], 'B501':['B502','B301','B302','B303','B601'], 'B502':['B501','B503','B401','B601'], 'B503':['B502','B401','B402','B601','B602','B105'], 'B504':['B505','B403','B404','B604'], 'B505':['B504','B405','B404'], 'B601':['B602','B501','B502','B503'], 'B602':['B601','B603','B503','B701'], 'B603':['B602','B604'], 'B604':['B603','B504'], 'B701':['B602'], '101':['B102'], '102':['B104','201'], '201':['102'], '202':['104','103'] };
-function renderAdj(me){ const cur=path.length?path[path.length-1]:me.room; const opts=ADJ[cur]||[]; $('adj').innerHTML=opts.map(r=>`<button class="fs-btn dark" onclick="addStep('${r}')">${r}</button>`).join(' '); $('path').textContent='路徑：'+(path.length?path.join(' → '):'(尚未選)'); }
+const ADJ={"101":["B102"],"102":["201","B104"],"103":["104","B106","202"],"104":["103","202","B107","B106"],"201":["102"],"202":["104","103"],"B101":["B102","B201"],"B102":["B101","B103","101","B201","B202"],"B103":["B102","B104","B202"],"B104":["B103","B105","102","B203","B204"],"B105":["B104","B106","B205","B503"],"B106":["B105","B107","103","B206","104"],"B107":["B106","104","B206"],"B201":["B202","B102","B101","B301","B302"],"B202":["B201","B203","B103","B303","B102","B302"],"B203":["B202","B204","B104","B304","B303"],"B204":["B203","B205","B305","B104","B304"],"B205":["B204","B105","B305"],"B206":["B106","B308","B107","B306","B307"],"B301":["B302","B201","B501"],"B302":["B301","B303","B201","B501","B202"],"B303":["B302","B304","B202","B501","B203"],"B304":["B303","B305","B401","B203","B204"],"B305":["B304","B306","B204","B205","B402","B401"],"B306":["B305","B307","B206","B403"],"B307":["B306","B308","B404","B206","B403"],"B308":["B307","B206","B405"],"B401":["B402","B304","B502","B503","B305"],"B402":["B401","B503","B305"],"B403":["B404","B306","B504","B307"],"B404":["B403","B405","B307","B504","B505"],"B405":["B404","B505","B308"],"B501":["B502","B601","B301","B302","B303"],"B502":["B501","B503","B401","B601"],"B503":["B502","B402","B401","B601","B602"],"B504":["B505","B604","B403","B404"],"B505":["B504","B405","B404"],"B601":["B602","B501","B502","B503"],"B602":["B601","B603","B701","B503"],"B603":["B602","B604"],"B604":["B603","B504"],"B701":["B602"]};
+const EMPTY_ROOMS=["103", "104", "B102", "B103", "B104", "B105", "B106", "B201", "B203", "B205", "B302", "B303", "B305", "B306", "B307", "B308", "B401", "B402", "B404", "B405", "B502", "B504", "B602", "B603", "B604"];
+const HELIPAD_ROOMS=["201", "101", "B101", "B103", "B105"];
+function renderAdj(me){ const cur=path.length?path[path.length-1]:me.room; let opts=[...(ADJ[cur]||[])]; if(!me.shadow){ if(cur==='B403'){ for(const r of EMPTY_ROOMS) if(!opts.includes(r)) opts.push(r); } if(cur==='202'&&me.flyNext){ for(const r of HELIPAD_ROOMS) if(!opts.includes(r)) opts.push(r); } } $('adj').innerHTML=opts.map(r=>`<button class="fs-btn dark" onclick="addStep('${r}')">${r}</button>`).join(' '); $('path').textContent='路徑：'+(path.length?path.join(' → '):'(尚未選)'); }
 window.addStep=r=>{ path.push(r); render(); };
 $('btn-allocate').onclick=async()=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'allocate',genes:{might:+$('g-might').value,weight:+$('g-weight').value,speed:+$('g-speed').value},spawn:$('g-spawn').value}); room=j.room; render(); }catch(e){alert(e.message);} };
 $('btn-start').onclick=async()=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'start'}); room=j.room; render(); }catch(e){alert(e.message);} };
-$('btn-action').onclick=async()=>{ if(!path.length) return alert('至少走 1 步'); try{ const j=await api('rooms/'+room.code,'POST',{action:'action',path,vote:$('sel-vote').value||null,rocket:$('in-rocket').value.trim()||null,control:$('sel-control').value||null}); room=j.room; path=[]; render(); }catch(e){alert(e.message);} };
+$('btn-action').onclick=async()=>{ if(!path.length) return alert('至少走 1 步'); const control=$('sel-control').value||null; const uses=[...document.querySelectorAll('.use-cb:checked')].map(c=>c.value); try{ const j=await api('rooms/'+room.code,'POST',{action:'action',path,vote:control==='detox'?null:($('sel-vote').value||null),rocket:$('in-rocket').value.trim()||null,control,detoxFloor:$('sel-detox').value||null,uses}); room=j.room; path=[]; render(); }catch(e){alert(e.message);} };
+$('btn-chat').onclick=async()=>{ const t=$('in-chat').value.trim(); if(!t) return; try{ const j=await api('rooms/'+room.code,'POST',{action:'chat',text:t}); room=j.room; $('in-chat').value=''; render(); }catch(e){alert(e.message);} };
+$('sel-chat').onchange=async()=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'chatChannel',channel:$('sel-chat').value}); room=j.room; render(); }catch(e){alert(e.message);} };
 function renderKeep(me){ $('keep-list').innerHTML=(me.pendingKeep||[]).map((it,i)=>`<label><input type="checkbox" class="keep-cb" value="${it}" checked /> ${it}</label> `).join(''); }
 $('btn-keep').onclick=async()=>{ const keep=[...document.querySelectorAll('.keep-cb:checked')].map(c=>c.value); try{ const j=await api('rooms/'+room.code,'POST',{action:'keep',keep}); room=j.room; render(); }catch(e){alert(e.message);} };
 $('btn-gold').onclick=async()=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'gold'}); $('gold-list').innerHTML=(j.goldPick||[]).map(it=>`<button class="fs-btn dark" onclick="goldPick('${it}')">${it}</button>`).join(' '); }catch(e){alert(e.message);} };
