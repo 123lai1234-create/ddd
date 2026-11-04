@@ -1,0 +1,158 @@
+---
+// 封鎖設施求生（2026-11-04 全重寫版）：全螢幕大廳 + 多人遊戲，純前端 JS 直連 /api/games。
+// 背景與樣式皆為本站自有 CSS 漸層，未使用任何第三方圖片或程式碼。
+import Base from '../layouts/Base.astro';
+---
+<Base title="封鎖設施求生 | 多人連線生存遊戲" description="最多 8 人連線生存遊戲：9 層 42 房設施、配點、搜刮、毒樓層投票、手術室、火箭筒、控制室、暗影復活，6 回合決勝負。建房分享房間碼就能和朋友一起玩，未滿由 AI 補位；另有世界公開房間列表與戰績回顧。">
+<div class="fs-lobby">
+  <div class="fs-bg"></div>
+  <main class="fs-main">
+    <h1 class="fs-title">禁閉逃殺</h1>
+    <p class="fs-sub">LOCKDOWN SURVIVAL</p>
+    <p class="fs-lede">封閉設施裡的六天。各自在手機上決定，系統結算，投影幕公布。</p>
+    <div id="fs-login" class="fs-card">
+      <h2>登入</h2>
+      <input id="in-name" placeholder="顯示名稱（最多 20 字）" maxlength="20" />
+      <div class="fs-row">
+        <button class="fs-btn blue" id="btn-guest">訪客登入</button>
+        <button class="fs-btn dark" id="btn-named">用名稱登入</button>
+        <button class="fs-btn dark" id="btn-google">Google 登入</button>
+      </div>
+      <div class="fs-row">
+        <input id="in-recovery" placeholder="恢復碼（忘記帳號時用）" />
+        <button class="fs-btn dark" id="btn-recover">用恢復碼登入</button>
+      </div>
+      <p id="login-msg" class="fs-msg"></p>
+      <p class="fs-note">恢復碼只會在建立帳號時顯示一次，請先抄下來；本站只存雜湊，不存明文。</p>
+    </div>
+    <div id="fs-home" class="fs-card" style="display:none">
+      <p id="who"></p>
+      <div class="fs-row">
+        <button class="fs-btn blue" id="btn-join">加入遊戲</button>
+        <button class="fs-btn dark" id="btn-create">建立房間</button>
+      </div>
+      <div class="fs-row">
+        <input id="in-code" placeholder="房間碼（4 碼）" maxlength="4" style="text-transform:uppercase" />
+        <select id="sel-type"><option value="casual">娛樂（信譽 80+）</option><option value="ranked">競技（信譽 90+）</option></select>
+        <button class="fs-btn dark" id="btn-spectate">觀戰</button>
+      </div>
+      <div class="fs-icons">
+        <a href="/facility-world">🌐 世界</a><a href="#" id="link-spectate2">👁 觀戰</a><a href="/facility-review">🏆 成就</a><a href="/facility-review">📊 戰績</a><a href="/facility-review">🕘 回顧</a>
+      </div>
+      <p id="home-msg" class="fs-msg"></p>
+    </div>
+    <div id="fs-game" class="fs-card" style="display:none">
+      <h2 id="game-title"></h2>
+      <p id="game-meta"></p>
+      <div id="players"></div>
+      <div id="genes" style="display:none">
+        <h3>基因配點（總和 10）</h3>
+        武力 <input id="g-might" type="number" min="0" max="10" value="4" /> 負重 <input id="g-weight" type="number" min="0" max="10" value="3" /> 速度 <input id="g-speed" type="number" min="0" max="10" value="3" />
+        出生點 <select id="g-spawn"><option>103</option><option>B103</option><option>B303</option><option>B307</option><option>B402</option><option>B603</option></select>
+        <button class="fs-btn blue" id="btn-allocate">確認配點</button>
+        <button class="fs-btn dark" id="btn-start">開局（AI 補滿 8 人）</button>
+      </div>
+      <div id="action" style="display:none">
+        <h3>行動（剩餘 <span id="remain"></span> 秒）</h3>
+        <p>目前房間：<b id="cur-room"></b>　點相鄰房間組成路徑（至少 1 步，不超過速度）</p>
+        <div id="path"></div><div id="adj"></div>
+        <p>毒氣投票 <select id="sel-vote"><option value="">不投</option><option>2F</option><option>1F</option><option>B1</option><option>B2</option><option>B3</option><option>B4</option><option>B5</option><option>B6</option><option>B7</option></select>
+        控制室 <select id="sel-control"><option value="">無</option><option value="vote10">本票算 10 票</option><option value="detox">解毒</option></select>
+        火箭筒目標 <input id="in-rocket" placeholder="房間編號（可空）" /></p>
+        <button class="fs-btn blue" id="btn-action">提交行動</button>
+        <button class="fs-btn dark" id="btn-gold">金條攤開挑選</button>
+        <div id="gold-list"></div>
+      </div>
+      <div id="keep" style="display:none"><h3>選留（60 秒內未選由系統自動保留）</h3><div id="keep-list"></div><button class="fs-btn blue" id="btn-keep">確認選留</button></div>
+      <div id="free" style="display:none"><h3>自由階段：交易（一物換一物）</h3>
+        <div id="trade-form"></div><div id="trade-inbox"></div>
+        <button class="fs-btn blue" id="btn-free-done">完成自由階段</button></div>
+      <div id="log" class="fs-log"></div>
+      <button class="fs-btn dark" id="btn-quit">棄權（信譽 -10，首位棄權冷卻 15 分鐘）</button>
+    </div>
+    <footer class="fs-foot">
+      <a href="#" id="link-rules">遊戲規則</a> · <a href="#" id="link-intro">系統介紹</a> · <a href="#" id="link-change">更新紀錄</a> · <a href="/terms">隱私政策</a> · <a href="/privacy">服務條款</a>
+    </footer>
+    <div id="modal" class="fs-modal" style="display:none"><div class="fs-modal-box"><h3 id="modal-title"></h3><p id="modal-body"></p><button class="fs-btn dark" id="btn-modal-close">關閉</button></div></div>
+  </main>
+</div>
+<style is:inline>
+.fs-lobby{position:relative;min-height:100vh;color:#e5e7eb;background:#0b0f14;overflow:hidden}
+.fs-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 70% 20%,rgba(34,197,94,.25),transparent 55%),radial-gradient(ellipse at 20% 80%,rgba(234,179,8,.12),transparent 50%),linear-gradient(180deg,#111827 0%,#0b0f14 60%,#020617 100%)}
+.fs-bg:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 120px,rgba(255,255,255,.03) 120px 121px),repeating-linear-gradient(0deg,transparent 0 90px,rgba(255,255,255,.02) 90px 91px)}
+.fs-main{position:relative;max-width:760px;margin:0 auto;padding:80px 20px;text-align:center}
+.fs-title{font-size:64px;letter-spacing:14px;margin:0;text-shadow:0 4px 30px rgba(0,0,0,.8)}
+.fs-sub{letter-spacing:8px;color:#93c5fd;margin:8px 0 16px}
+.fs-lede{color:#9ca3af}
+.fs-card{background:rgba(17,24,39,.92);border:1px solid #334155;border-radius:16px;padding:24px;margin:24px 0;text-align:left}
+.fs-row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.fs-btn{border:0;border-radius:12px;padding:12px 20px;font-weight:700;cursor:pointer;color:#fff}
+.fs-btn.blue{background:#2563eb}.fs-btn.dark{background:#1f2937;border:1px solid #475569}
+.fs-card input,.fs-card select{background:#0f172a;border:1px solid #334155;color:#e5e7eb;border-radius:10px;padding:10px}
+.fs-icons{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.fs-icons a{background:#111827;border:1px solid #334155;border-radius:12px;padding:12px;color:#e5e7eb;text-decoration:none}
+.fs-msg{color:#fbbf24;min-height:1.2em}.fs-note{color:#9ca3af;font-size:13px}
+.fs-foot{margin:24px 0;color:#9ca3af}.fs-foot a{color:#9ca3af}
+.fs-log{white-space:pre-wrap;background:#020617;border-radius:10px;padding:12px;max-height:220px;overflow:auto;font-size:13px}
+.fs-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center}
+.fs-modal-box{background:#111827;border:1px solid #334155;border-radius:16px;padding:24px;max-width:600px}
+@media(max-width:640px){.fs-title{font-size:44px;letter-spacing:8px}}
+</style>
+<script>
+const $=id=>document.getElementById(id); let token=localStorage.getItem('fs2-token')||'', account=null, room=null, path=[];
+const H={'Authorization':()=>token?('Bearer '+token):''};
+async function api(path,method,body,raw){
+  const r=await fetch('/api/games/'+path,{method,headers:{'Content-Type':'application/json','Authorization':H()},body:body?JSON.stringify({...body,token:undefined}):undefined});
+  const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||('HTTP '+r.status)); return j;
+}
+function showModal(t,b){$('modal-title').textContent=t;$('modal-body').textContent=b;$('modal').style.display='flex';}
+$('btn-modal-close').onclick=()=>$('modal').style.display='none';
+$('link-rules').onclick=e=>{e.preventDefault();showModal('遊戲規則','6 回合、9 層 42 房：配點 10 點、行動走步數不超過速度、每回合投票毒樓層（票數累積不歸零）、手術室剛好 2 人 +4 且不戰鬥、火箭筒打指定房間 -4、控制室可投 10 票或解毒、操作室重配基因、基因庫三項 +1、傳送室到空房、停機坪空投與飛行、金條攤開挑選、自由階段一物換一物、180 秒行動逾時由 AI 代打（累積 2 次託管 -5）。');};
+$('link-intro').onclick=e=>{e.preventDefault();showModal('系統介紹','多人連線版：建房分享 4 碼房間碼，未滿 8 人由 AI 補位；訪客、顯示名稱與 Google 登入，信譽 100 起、棄權 -10、首位棄權冷卻 15 分鐘，娛樂門檻 80、競技 90；世界列表公開房間，觀戰唯讀，終局戰績同房公開。');};
+$('link-change').onclick=e=>{e.preventDefault();showModal('更新紀錄','2026-11-04：facility-survival 前後端全重寫版（大廳風格、42 房完整規則、帳號信譽、觀戰戰績）。');};
+function setLoginMsg(m){$('login-msg').textContent=m;}
+async function doLogin(body){ const j=await api('accounts','POST',body); token=j.token; localStorage.setItem('fs2-token',token); account=j.account; if(j.recoveryCode) setLoginMsg('帳號建立成功！恢復碼（只顯示一次）：'+j.recoveryCode+'，請先抄下來。'); else setLoginMsg('登入成功：'+account.display_name); showHome(); }
+$('btn-guest').onclick=()=>{const n=$('in-name').value.trim()||'訪客'; doLogin({action:'create',displayName:n,guest:true}).catch(e=>setLoginMsg(e.message));};
+$('btn-named').onclick=()=>{const n=$('in-name').value.trim(); if(!n) return setLoginMsg('請先輸入顯示名稱'); doLogin({action:'create',displayName:n}).catch(e=>setLoginMsg(e.message));};
+$('btn-recover').onclick=()=>doLogin({action:'recover',displayName:$('in-name').value.trim(),recoveryCode:$('in-recovery').value.trim()}).catch(e=>setLoginMsg(e.message));
+$('btn-google').onclick=async()=>{try{const j=await api('accounts','POST',{action:'google'}); location.href=j.redirectUrl;}catch(e){setLoginMsg(e.message);}};
+function showHome(){ $('fs-login').style.display='none'; $('fs-home').style.display='block'; $('who').textContent=account?('你是 '+account.display_name+'（信譽 '+(account.reputation??100)+'）'):''; const c=new URLSearchParams(location.search).get('code'); if(c) $('in-code').value=c.toUpperCase(); }
+$('btn-create').onclick=async()=>{try{const j=await api('rooms','POST',{roomType:$('sel-type').value}); room=j.room; showGame();}catch(e){$('home-msg').textContent=e.message;}};
+$('btn-join').onclick=async()=>{const code=$('in-code').value.trim().toUpperCase(); if(!code) return; try{const j=await api('rooms/'+code,'POST',{action:'join'}); room=j.room; showGame();}catch(e){$('home-msg').textContent=e.message;}};
+$('btn-spectate').onclick=()=>spectate(); $('link-spectate2').onclick=e=>{e.preventDefault(); spectate();};
+async function spectate(){const code=$('in-code').value.trim().toUpperCase(); if(!code) return; try{const j=await api('rooms/'+code+'?spectate=1','GET'); room=j.room; showGame(true);}catch(e){$('home-msg').textContent=e.message;}}
+function showGame(spec){ $('fs-home').style.display='none'; $('fs-game').style.display='block'; if(!spec) setInterval(refresh,2000); refresh(); }
+async function refresh(){ if(!room) return; try{ const j=await api('rooms/'+room.code,'GET'); room=j.room; render(); }catch(e){} }
+function render(){
+  if(!room) return;
+  const me=room.me;
+  $('game-title').textContent='房間 '+room.code+' · '+(room.roomType==='ranked'?'競技':'娛樂')+' · 第 '+room.day+' 天 · '+room.phase;
+  $('game-meta').textContent='狀態：'+room.status+'　存活 '+(room.players?room.players.filter(p=>p.alive).length:0)+' / '+((room.players||[]).length)+' 人';
+  $('players').innerHTML=(room.players||[]).map(p=>`<div>${p.name}　HP ${p.hp}　${p.room||''}　${p.alive?'存活':(p.shadow?'暗影':'出局')}　${p.submitted?'已提交':''}</div>`).join('');
+  $('log').textContent=(room.log||[]).join('\n');
+  $('genes').style.display=(room.status==='lobby')?'block':'none';
+  $('action').style.display=(room.phase==='action'&&me&&me.alive)?'block':'none';
+  $('keep').style.display=(room.phase==='keep'&&me&&me.pendingKeep&&me.pendingKeep.length)?'block':'none';
+  $('free').style.display=(room.phase==='free')?'block':'none';
+  if(me){ $('cur-room').textContent=me.room||''; renderAdj(me); renderKeep(me); renderTrade(me); }
+  if(room.actionDeadline){ const s=Math.max(0,Math.round((room.actionDeadline-Date.now())/1000)); $('remain').textContent=s; }
+}
+const ADJ={ '103':['104','B106'], '104':['103','B107','202'], 'B101':['B102','B201'], 'B102':['B101','B103','B201','B202'], 'B103':['B102','B104','B202'], 'B104':['B103','B105','102','B203','B204'], 'B105':['B104','B106','B205','B503'], 'B106':['B105','B107','103','B206','104'], 'B107':['B106','104','B206'], 'B201':['B202','B101','B301','B302'], 'B202':['B201','B203','B103','B302','B303'], 'B203':['B202','B204','B104','B304'], 'B204':['B203','B205','B104','B305','B304'], 'B205':['B204','B105','B305'], 'B206':['B205','B106','B107','B308','B306','B307'], 'B301':['B302','B201','B501'], 'B302':['B301','B303','B201','B202','B501'], 'B303':['B302','B304','B202','B501'], 'B304':['B303','B305','B203','B204','B401'], 'B305':['B304','B306','B204','B205','B402'], 'B306':['B305','B307','B206','B403'], 'B307':['B306','B308','B206','B404','B403'], 'B308':['B307','B206','B405'], 'B401':['B402','B304','B305','B502','B503'], 'B402':['B401','B503','B305'], 'B403':['B404','B306','B307','B504'], 'B404':['B403','B405','B307','B504','B505'], 'B405':['B404','B308','B505'], 'B501':['B502','B301','B302','B303','B601'], 'B502':['B501','B503','B401','B601'], 'B503':['B502','B401','B402','B601','B602','B105'], 'B504':['B505','B403','B404','B604'], 'B505':['B504','B405','B404'], 'B601':['B602','B501','B502','B503'], 'B602':['B601','B603','B503','B701'], 'B603':['B602','B604'], 'B604':['B603','B504'], 'B701':['B602'], '101':['B102'], '102':['B104','201'], '201':['102'], '202':['104','103'] };
+function renderAdj(me){ const cur=path.length?path[path.length-1]:me.room; const opts=ADJ[cur]||[]; $('adj').innerHTML=opts.map(r=>`<button class="fs-btn dark" onclick="addStep('${r}')">${r}</button>`).join(' '); $('path').textContent='路徑：'+(path.length?path.join(' → '):'(尚未選)'); }
+window.addStep=r=>{ path.push(r); render(); };
+$('btn-allocate').onclick=async()=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'allocate',genes:{might:+$('g-might').value,weight:+$('g-weight').value,speed:+$('g-speed').value},spawn:$('g-spawn').value}); room=j.room; render(); }catch(e){alert(e.message);} };
+$('btn-start').onclick=async()=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'start'}); room=j.room; render(); }catch(e){alert(e.message);} };
+$('btn-action').onclick=async()=>{ if(!path.length) return alert('至少走 1 步'); try{ const j=await api('rooms/'+room.code,'POST',{action:'action',path,vote:$('sel-vote').value||null,rocket:$('in-rocket').value.trim()||null,control:$('sel-control').value||null}); room=j.room; path=[]; render(); }catch(e){alert(e.message);} };
+function renderKeep(me){ $('keep-list').innerHTML=(me.pendingKeep||[]).map((it,i)=>`<label><input type="checkbox" class="keep-cb" value="${it}" checked /> ${it}</label> `).join(''); }
+$('btn-keep').onclick=async()=>{ const keep=[...document.querySelectorAll('.keep-cb:checked')].map(c=>c.value); try{ const j=await api('rooms/'+room.code,'POST',{action:'keep',keep}); room=j.room; render(); }catch(e){alert(e.message);} };
+$('btn-gold').onclick=async()=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'gold'}); $('gold-list').innerHTML=(j.goldPick||[]).map(it=>`<button class="fs-btn dark" onclick="goldPick('${it}')">${it}</button>`).join(' '); }catch(e){alert(e.message);} };
+window.goldPick=async it=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'goldPick',item:it}); room=j.room; render(); }catch(e){alert(e.message);} };
+function renderTrade(me){ const others=(room.players||[]).filter(p=>p.accountId!==me.accountId); $('trade-form').innerHTML='我的道具：'+(me.items||[]).join('、')+'<br/>換給 <select id="tr-to">'+others.map(p=>`<option value="${p.accountId}">${p.name}</option>`).join('')+'</select> 我出 <input id="tr-offer" placeholder="道具" /> 我要 <input id="tr-want" placeholder="道具" /> <button class="fs-btn dark" onclick="doTrade()">提出交易</button>';
+  $('trade-inbox').innerHTML=(room.trades||[]).filter(t=>t.to===me.accountId).map(t=>`<div>${t.fromName} 想用 ${t.offer} 換你的 ${t.want} <button onclick="respondTrade('${t.id}',true)">接受</button> <button onclick="respondTrade('${t.id}',false)">拒絕</button></div>`).join(''); }
+window.doTrade=async()=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'trade',targetAccountId:$('tr-to').value,offer:$('tr-offer').value.trim(),want:$('tr-want').value.trim()}); room=j.room; render(); }catch(e){alert(e.message);} };
+window.respondTrade=async(id,accept)=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'tradeRespond',tradeId:id,accept}); room=j.room; render(); }catch(e){alert(e.message);} };
+$('btn-free-done').onclick=async()=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'freeDone'}); room=j.room; render(); }catch(e){alert(e.message);} };
+$('btn-quit').onclick=async()=>{ if(!confirm('確定棄權嗎？信譽 -10')) return; try{ await api('rooms/'+room.code,'POST',{action:'quit'}); location.href='/facility-survival'; }catch(e){alert(e.message);} };
+(function init(){ const q=new URLSearchParams(location.search); const s=q.get('session'); if(s){ token=s; localStorage.setItem('fs2-token',s); history.replaceState(null,'',location.pathname); }
+  if(token){ $('fs-login').style.display='none'; $('fs-home').style.display='block'; $('who').textContent='已登入（token 已儲存）'; const c=q.get('code'); if(c) $('in-code').value=c.toUpperCase(); } })();
+</script>
+</Base>
