@@ -374,9 +374,9 @@
 
     /* ── 2D 立繪 state ─────────────────────────────────────
      * 不用 Three.js，改用 CSS transform + 換 src 偽 3D：
-     *   front = 顯示 /images/chibi-hero.png
+     *   front = 顯示 /images/chibi-hero.png（這顆 3D 模型的正面渲染）
      *   side  = 捏扁成側面感
-     *   back  = 切換到 /images/chibi-hero-back.png（AI 生成的背面）
+     *   back  = 切換到 /images/chibi-hero-back.png（這顆 3D 模型的背面渲染）
      */
     let currentView = 'front';
     let viewTimer = null;
