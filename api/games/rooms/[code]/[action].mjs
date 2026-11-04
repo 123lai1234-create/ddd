@@ -456,6 +456,7 @@ var R = (o) => ({
   ...o
 });
 var KEEP_TIMEOUT_MS = 6e4;
+var ACTION_TIMEOUT_MS = 18e4;
 var ROOMS = [
   /* 2F */
   R({ id: "201", floors: ["2F"], name: "\u57FA\u56E0\u5EAB", special: "gene_bank", helipad: true }),
@@ -693,6 +694,7 @@ function ensureRoomShape(room) {
   room.lastGasTally ??= null;
   room.pendingDraws ??= {};
   room.keepDeadline ??= null;
+  room.actionDeadline ??= null;
   room.settlementOrder ??= [];
   room.adrenalineAtSettlementStart ??= [];
   room.roomType ??= "casual";
@@ -757,6 +759,7 @@ function createRoom(code, hostName, roomType = "casual", hostAccountId) {
     createdAt: Date.now(),
     pendingDraws: {},
     keepDeadline: null,
+    actionDeadline: null,
     settlementOrder: [],
     adrenalineAtSettlementStart: []
   };
@@ -1253,6 +1256,7 @@ function resolveSettlementTrades(room, judge) {
 }
 function runSettlementPhase0(room, judge) {
   ensureRoomShape(room);
+  room.actionDeadline = null;
   const day = room.day;
   pushLog(room, `\u2500\u2500 \u7B2C ${day} \u5929\u7D50\u7B97\u958B\u59CB \u2500\u2500`);
   room.adrenalineAtSettlementStart = room.players.filter((p) => p.adrenalineActive).map((p) => p.id);
@@ -1627,6 +1631,7 @@ function publicView(room, token) {
       items: self && self.id === p.id ? p.items : void 0,
       isSelf: self ? self.id === p.id : false
     })),
+    actionDeadline: room.actionDeadline,
     submittedCount: Object.keys(room.actions).length,
     submittedPlayerIds: room.phase === "action" ? room.players.filter((p) => room.actions[p.id]).map((p) => p.id) : [],
     // 行動順序（公開資訊，單人版順序卡本來就公開）：card 即順序號。
@@ -1967,6 +1972,32 @@ async function updateRoom(room, version) {
     return rows.length > 0;
   });
 }
+async function listPublicRooms() {
+  const { rows } = await withTable2(
+    () => neonQuery(
+      `SELECT code, state FROM ${TABLE} ORDER BY updated_at DESC LIMIT 50`
+    )
+  );
+  const out = [];
+  for (const row of rows) {
+    const room = typeof row.state === "string" ? JSON.parse(row.state) : row.state;
+    if (!room || room.status === "finished") continue;
+    if (Date.now() - room.createdAt > ROOM_TTL_MS) continue;
+    out.push({
+      code: room.code,
+      roomType: room.roomType ?? "casual",
+      status: room.status,
+      day: room.day,
+      phase: room.phase,
+      playerCount: room.players.length,
+      aliveCount: room.players.filter((p) => p.alive).length,
+      spectatorCount: (room.spectators ?? []).length,
+      hostName: room.players[0]?.name ?? "",
+      createdAt: room.createdAt
+    });
+  }
+  return out;
+}
 async function sweepExpired() {
   await withTable2(
     () => neonQuery(
@@ -2132,15 +2163,36 @@ function maybeAdvanceToAction(room) {
   const allReady = room.players.filter((p) => p.alive).every((p) => p.ready);
   if (!allReady) return;
   room.phase = "action";
-  room.log.push({ day: room.day, text: `\u2500\u2500 \u7B2C ${room.day} \u5929\u884C\u52D5\u968E\u6BB5\u958B\u59CB \u2500\u2500` });
+  room.actionDeadline = Date.now() + ACTION_TIMEOUT_MS;
+  room.log.push({ day: room.day, text: `\u2500\u2500 \u7B2C ${room.day} \u5929\u884C\u52D5\u968E\u6BB5\u958B\u59CB \u2500\u2500\uFF08${ACTION_TIMEOUT_MS / 1e3} \u79D2\u5167\u672A\u63D0\u4EA4\u7531 AI \u4EE3\u6253\uFF09` });
   generateSettlementOrder(room);
   autoAiActions(room);
+}
+function maybeResolveActionTimeout(room) {
+  if (room.status !== "playing" || room.phase !== "action") return;
+  if (room.actionDeadline === null || Date.now() < room.actionDeadline) return;
+  for (const p of room.players) {
+    if (p.isAI || room.actions[p.id]) continue;
+    room.timeoutStrikes[p.id] = (room.timeoutStrikes[p.id] ?? 0) + 1;
+    if (room.timeoutStrikes[p.id] >= TIMEOUT_STRIKES_TO_HANDOVER) {
+      p.isAI = true;
+      if (p.accountId) {
+        room.pendingPenalties.push({ accountId: p.accountId, repDelta: TIMEOUT_REPUTATION_PENALTY, setCooldown: false });
+      }
+      room.log.push({ day: room.day, text: `\u{1F916} ${p.name} \u884C\u52D5\u591A\u6B21\u903E\u6642\uFF0C\u6539\u7531 AI \u8A17\u7BA1` });
+    } else {
+      room.log.push({ day: room.day, text: `\u23F0 ${p.name} \u884C\u52D5\u903E\u6642\uFF0C\u7531 AI \u4EE3\u6253\u672C\u56DE\u5408` });
+    }
+    room.actions[p.id] = aiAction(room, p);
+  }
+  maybeSettle(room);
 }
 function lazyAdvance(room) {
   maybeResolveKeepTimeout(room);
   aiFreePhase(room);
   maybeAdvanceToAction(room);
   autoAiActions(room);
+  maybeResolveActionTimeout(room);
   maybeSettle(room);
 }
 async function withRoom(code, notFoundMsg, fn) {
@@ -2179,6 +2231,7 @@ function matchPath(path) {
     }
     return null;
   }
+  if (parts[0] === "world" && parts.length === 1) return { name: "world" };
   if (parts[0] !== "rooms") return null;
   if (parts.length === 1) return { name: "create" };
   const code = parts[1];
@@ -2345,6 +2398,11 @@ async function handleGamesRequest(method, fullPath, query, bodyText) {
       return redirectTo(`/facility-survival?${back.toString()}`);
     }
     if (route.name.startsWith("account-")) return err(404, "\u627E\u4E0D\u5230\u623F\u9593");
+    if (route.name === "world" && method === "GET") {
+      const rooms = await listPublicRooms();
+      return { status: 200, body: { rooms } };
+    }
+    if (route.name === "world") return err(405, "\u4E16\u754C\u5217\u8868\u53EA\u652F\u63F4 GET");
     if (route.name === "create" && method === "POST") {
       const { account, staleToken } = await resolveAccountFromBody(body);
       const roomType = body.roomType === "ranked" ? "ranked" : "casual";

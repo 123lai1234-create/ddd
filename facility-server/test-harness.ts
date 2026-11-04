@@ -214,6 +214,12 @@ function installFakeNeon() {
       throw new Error('relation "facility_rooms" does not exist');
     }
     if (/SELECT/i.test(query)) {
+      // 世界列表：無 WHERE 的全表查詢，回全部房間。
+      if (/ORDER BY/i.test(query)) {
+        return fakeResponse(
+          [...table.values()].map((row) => ({ code: row.code, state: row.state, version: row.version })),
+        );
+      }
       const row = table.get(String(params[0]));
       return fakeResponse(
         row ? [{ code: row.code, state: row.state, version: row.version }] : [],
@@ -306,6 +312,7 @@ interface RoomView {
   status: string;
   day: number;
   phase: string;
+  actionDeadline?: number | null;
   roomType?: string;
   spectators?: { id: string; name: string }[];
   isSpectator?: boolean;
@@ -1133,6 +1140,55 @@ async function main() {
   delete process.env.GOOGLE_CLIENT_SECRET;
   delete process.env.GOOGLE_TOKEN_ENDPOINT;
   delete process.env.GOOGLE_USERINFO_ENDPOINT;
+
+  // 26. 行動階段伺服器計時＋世界列表：
+  //     (a) 第 1 次逾時：AI 代打本回合，玩家仍是人類；
+  //     (b) 第 2 次逾時：改 AI 託管並扣 5 分；
+  //     (c) 世界列表只含公開摘要、不含 token／雜湊。
+  r = await call("POST", "/api/games/accounts/guest", { displayName: "行動逾時客" });
+  const actAcctToken = r.body.token as string;
+  r = await call("POST", "/api/games/rooms", { name: "行動逾時客", accountToken: actAcctToken });
+  const codeAct = r.body.code as string;
+  const actToken = r.body.token as string;
+  const actId = r.body.playerId as string;
+  await call("POST", `/api/games/rooms/${codeAct}/setup`, { token: actToken, might: 4, carry: 3, speed: 3, spawn: "103" });
+  await call("POST", `/api/games/rooms/${codeAct}/start`, { token: actToken });
+  await call("POST", `/api/games/rooms/${codeAct}/ready`, { token: actToken });
+  r = await call("GET", `/api/games/rooms/${codeAct}`, undefined, `token=<redacted>{actToken}`);
+  check("action-timeout: ready → action phase with deadline", roomOf(r).phase === "action" && typeof roomOf(r).actionDeadline === "number", `${roomOf(r).phase} ${roomOf(r).actionDeadline}`);
+  const actPatched = await patchRoom(codeAct, (room) => {
+    room.actionDeadline = Date.now() - 1000;
+  });
+  check("action-timeout: deadline patched to past", actPatched);
+  r = await call("GET", `/api/games/rooms/${codeAct}`, undefined, `token=<redacted>{actToken}`);
+  const actView1 = roomOf(r);
+  check("action-timeout: 1st timeout → settled out of action, player still human", actView1.phase !== "action" && actView1.players.find((p) => p.id === actId)?.isAI !== true, `${actView1.phase} isAI=${actView1.players.find((p) => p.id === actId)?.isAI}`);
+  check("action-timeout: log mentions AI 代打", actView1.log.some((e) => e.text.includes("行動逾時")), actView1.log.map((e) => e.text));
+  // 第 2 次：把房間推回行動階段不易重現，改用同一房下一天：先把玩家推到下一天自由階段再 ready。
+  // 若已到 keep 階段，先用 keepValid 選留完再繼續；若已自由，直接 ready。
+  let curView = actView1;
+  if (curView.phase === "keep") curView = await keepValid(codeAct, actToken);
+  if (curView.phase === "free") {
+    await call("POST", `/api/games/rooms/${codeAct}/ready`, { token: actToken });
+    r = await call("GET", `/api/games/rooms/${codeAct}`, undefined, `token=<redacted>{actToken}`);
+    curView = roomOf(r);
+  }
+  if (curView.phase === "action") {
+    const actPatched2 = await patchRoom(codeAct, (room) => {
+      room.actionDeadline = Date.now() - 1000;
+    });
+    check("action-timeout: 2nd deadline patched to past", actPatched2);
+    r = await call("GET", `/api/games/rooms/${codeAct}`, undefined, `token=<redacted>{actToken}`);
+    const actView2 = roomOf(r);
+    check("action-timeout: 2nd timeout → player now AI", actView2.players.find((p) => p.id === actId)?.isAI === true, `isAI=${actView2.players.find((p) => p.id === actId)?.isAI}`);
+  } else {
+    check("action-timeout: 2nd round reached action phase", false, curView.phase);
+  }
+  r = await call("GET", "/api/games/world");
+  check("world: 200 with rooms array", r.status === 200 && Array.isArray((r.body as { rooms?: unknown[] }).rooms), r.status);
+  const worldRooms = (r.body as { rooms?: { code: string }[] }).rooms ?? [];
+  check("world: includes action-timeout room", worldRooms.some((w) => w.code === codeAct), worldRooms.map((w) => w.code));
+  check("world: leaks no tokens/hashes", !JSON.stringify(r.body).includes("tok_") && !JSON.stringify(r.body).includes("password_hash") && !JSON.stringify(r.body).includes("recovery_hash"));
 
   console.log(failures === 0 ? "ALL PASS" : `${failures} FAILURES`);
   process.exit(failures === 0 ? 0 : 1);

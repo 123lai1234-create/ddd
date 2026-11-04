@@ -1,0 +1,49 @@
+---
+// 封鎖設施求生：回顧（我的戰績）。資料來自登入帳號的累計戰績；已結束房間 12 小時後會清掉，
+// 故本頁是累計回顧，不是逐局重播。
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="回顧｜封鎖設施求生"
+  description="封鎖設施求生我的戰績回顧：場次、勝負、最佳最終生命與成就，須先在遊戲頁登入帳號。"
+>
+  <div data-site-nav></div>
+  <main style="max-width:720px;margin:0 auto;padding:80px 24px">
+    <h1 style="font-size:2rem;font-weight:700;margin-bottom:8px;color:var(--text)">回顧</h1>
+    <p style="line-height:1.8;color:var(--muted);font-size:.95rem">
+      這裡顯示你登入帳號的累計戰績（場次、勝負、最佳最終生命、成就）。已結束的房間 12 小時後會清掉，
+      所以本頁是累計回顧，不是逐局重播；同房公開的戰績在遊戲結束時也會寫進各玩家檔案。
+    </p>
+    <p><a href="/facility-survival" style="color:var(--cyan)">回到遊戲</a></p>
+    <div id="review-box" style="margin-top:24px;color:var(--muted)">載入中…</div>
+  </main>
+  <div data-site-footer></div>
+  <script>
+    (async () => {
+      const el = document.getElementById('review-box');
+      if (!el) return;
+      let account = null;
+      try { account = JSON.parse(localStorage.getItem('facility-game-account') || 'null'); } catch { account = null; }
+      if (!account || !account.token) {
+        el.innerHTML = '尚未登入。請先到 <a href="/facility-survival" style="color:var(--cyan)">遊戲頁</a> 登入（訪客、顯示名稱或 Google 皆可），再回來看回顧。';
+        return;
+      }
+      try {
+        const res = await fetch('/api/games/accounts/me?accountToken=' + encodeURIComponent(account.token));
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '載入失敗');
+        const a = data.account || {};
+        const r = data.record || {};
+        const ach = (r.achievements || []).length ? r.achievements.join('、') : '尚無成就';
+        el.innerHTML = '<div style="border:1px solid #334155;border-radius:12px;padding:14px 16px;line-height:1.9">'
+          + '<div>顯示名稱：' + (a.displayName || '') + '（' + (a.kind === 'guest' ? '訪客' : '顯示名稱帳號') + '）</div>'
+          + '<div>信譽：' + (a.reputation ?? '') + ' 分</div>'
+          + '<div>場次：' + (r.games ?? 0) + ' · 勝：' + (r.wins ?? 0) + ' · 負：' + (r.losses ?? 0) + ' · 最佳最終生命：' + (r.bestFinalHp ?? 0) + '</div>'
+          + '<div>成就：' + ach + '</div>'
+          + '</div>';
+      } catch (e) {
+        el.textContent = '載入失敗：' + (e instanceof Error ? e.message : '請稍後再試') + '（登入可能已過期，請回遊戲頁重新登入）';
+      }
+    })();
+  </script>
+</Base>

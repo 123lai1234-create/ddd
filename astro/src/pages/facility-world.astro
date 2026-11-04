@@ -1,0 +1,48 @@
+---
+// 封鎖設施求生：世界（公開房間列表，僅公開摘要，不含任何 token 或帳號資料）。
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="世界｜封鎖設施求生"
+  description="封鎖設施求生公開房間列表：大廳與進行中的房間、房型、人數與回合，點房間碼到遊戲頁加入或觀戰。"
+>
+  <div data-site-nav></div>
+  <main style="max-width:720px;margin:0 auto;padding:80px 24px">
+    <h1 style="font-size:2rem;font-weight:700;margin-bottom:8px;color:var(--text)">世界</h1>
+    <p style="line-height:1.8;color:var(--muted);font-size:.95rem">
+      這裡只列出未過期的大廳與進行中房間（已結束房間不列出）。點房間碼會到遊戲頁並自動填入房間碼，
+      再按加入或觀戰即可；加入仍需遵守房型信譽門檻（娛樂 80、競技 90）。
+    </p>
+    <p><a href="/facility-survival" style="color:var(--cyan)">回到遊戲</a></p>
+    <div id="world-list" style="margin-top:24px;color:var(--muted)">載入中…</div>
+  </main>
+  <div data-site-footer></div>
+  <script>
+    (async () => {
+      const el = document.getElementById('world-list');
+      if (!el) return;
+      try {
+        const res = await fetch('/api/games/world');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '載入失敗');
+        const rooms = data.rooms || [];
+        if (rooms.length === 0) {
+          el.textContent = '目前沒有公開房間，去遊戲頁建一間吧。';
+          return;
+        }
+        el.innerHTML = rooms.map((r) => {
+          const type = r.roomType === 'ranked' ? '競技' : '娛樂';
+          const status = r.status === 'lobby' ? '大廳等候' : '進行中第 ' + r.day + ' 天';
+          return '<div style="border:1px solid #334155;border-radius:12px;padding:14px 16px;margin-bottom:12px">'
+            + '<a href="/facility-survival?code=' + encodeURIComponent(r.code) + '" style="color:#fbbf24;font-size:20px;letter-spacing:2px">' + r.code + '</a>'
+            + ' · ' + type + ' · ' + status + ' · ' + r.playerCount + ' 人（存活 ' + r.aliveCount + '）'
+            + (r.spectatorCount ? ' · 觀戰 ' + r.spectatorCount + ' 人' : '')
+            + (r.hostName ? ' · 房主 ' + r.hostName : '')
+            + '</div>';
+        }).join('');
+      } catch (e) {
+        el.textContent = '載入失敗：' + (e instanceof Error ? e.message : '請稍後再試');
+      }
+    })();
+  </script>
+</Base>

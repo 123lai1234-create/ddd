@@ -77,6 +77,7 @@ interface RoomView {
   isSpectator?: boolean;
   selfSpectatorId?: string | null;
   players: PlayerView[];
+  actionDeadline: number | null;
   submittedCount: number;
   submittedPlayerIds: string[];
   settlementOrder: { playerId: string; name: string; card: number }[];
@@ -389,7 +390,14 @@ function FacilityGamePage() {
   const [session, setSession] = useState<Session | null>(() => loadSession());
   const [room, setRoom] = useState<RoomView | null>(null);
   const [name, setName] = useState('');
-  const [joinCode, setJoinCode] = useState('');
+  // 世界頁帶 ?code=XXXX 過來時直接填入加入欄位。
+  const [joinCode, setJoinCode] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('code') ?? '';
+    } catch {
+      return '';
+    }
+  });
   const [account, setAccount] = useState<AccountInfo | null>(() => loadAccount());
   const [me, setMe] = useState<MeData | null>(null);
   const [loginTab, setLoginTab] = useState<'guest' | 'register' | 'login' | 'recover'>('guest');
@@ -454,14 +462,11 @@ function FacilityGamePage() {
       .then((d) => {
         const meData = d as MeData;
         const info: AccountInfo = { ...meData.account, token };
-        if (recovery) {
-          // 新 Google 帳號：先顯示恢復碼，抄下後才正式登入（見下方按鈕）。
-          setPendingGoogle(info);
-          setRecoveryShown(recovery);
-        } else {
-          localStorage.setItem(ACCOUNT_KEY, JSON.stringify(info));
-          setAccount(info);
-        }
+        // 新 Google 帳號也立即登入（不再要第二點才登入）：恢復碼另外顯示一次，
+        // 抄下後點「我已抄下」關閉即可；就算沒抄下，之後用 Google 再登一次仍是同一帳號。
+        localStorage.setItem(ACCOUNT_KEY, JSON.stringify(info));
+        setAccount(info);
+        if (recovery) setRecoveryShown(recovery);
         cleanParams();
       })
       .catch(() => {
@@ -883,6 +888,15 @@ function FacilityGamePage() {
             {error}
           </p>
         )}
+        <p style={{ color: '#94a3b8', marginTop: 20, fontSize: 14 }}>
+          <a href="/facility-world" style={{ color: '#7dd3fc' }}>世界（公開房間）</a>
+          {' · '}
+          <a href="/facility-review" style={{ color: '#7dd3fc' }}>回顧（我的戰績）</a>
+          {' · '}
+          <a href="/terms" style={{ color: '#7dd3fc' }}>服務條款</a>
+          {' · '}
+          <a href="/privacy" style={{ color: '#7dd3fc' }}>隱私政策</a>
+        </p>
       </main>
     );
   }
@@ -1095,6 +1109,12 @@ function FacilityGamePage() {
           <>
             {' '}
             · 第 {room.day} / 6 回合 · {room.phase === 'free' ? '自由階段' : room.phase === 'keep' ? '選留階段' : '行動階段'}
+          </>
+        )}
+        {room.status === 'playing' && room.phase === 'action' && room.actionDeadline && (
+          <>
+            {' '}
+            · ⏰ 行動剩餘約 {Math.max(0, Math.ceil((room.actionDeadline - Date.now()) / 1000))} 秒（逾時由 AI 代打，累積 2 次改 AI 託管扣 5 分）
           </>
         )}
         {room.status === 'playing' && room.settlementOrder.length > 0 && (

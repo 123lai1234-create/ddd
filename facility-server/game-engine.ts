@@ -80,6 +80,8 @@ const R = (o: Partial<RoomDef> & { id: string; floors: FloorId[] }): RoomDef => 
 
 /** 選留逾時：keep 階段開始後這麼久未選，伺服器自動保留（惰性檢查，見 handler）。 */
 export const KEEP_TIMEOUT_MS = 60_000;
+/** 行動階段逾時（惰性檢查，見 handler maybeResolveActionTimeout）：期限到仍未提交者由 AI 代打，累積 2 次改 AI 託管並扣分（與選留逾時共用 timeoutStrikes）。 */
+export const ACTION_TIMEOUT_MS = 180_000;
 
 export const ROOMS: RoomDef[] = [
   /* 2F */
@@ -494,6 +496,8 @@ export interface GameRoom {
   pendingDraws: Record<string, PendingDraw>;
   /** keep 階段逾時時刻（epoch ms）；null 表示不在 keep 階段。 */
   keepDeadline: number | null;
+  /** 行動階段逾時時刻（epoch ms）；null 表示不在行動階段。 */
+  actionDeadline: number | null;
   /** 本回合行動順序（進行動階段時洗牌，見 generateSettlementOrder）。 */
   settlementOrder: string[];
   /** 結算開始時腎上腺素生效中的玩家（跨 keep 階段也保留，結算結束時清除）。 */
@@ -567,6 +571,7 @@ export function ensureRoomShape(room: GameRoom): void {
   room.lastGasTally ??= null;
   room.pendingDraws ??= {};
   room.keepDeadline ??= null;
+  room.actionDeadline ??= null;
   room.settlementOrder ??= [];
   room.adrenalineAtSettlementStart ??= [];
   room.roomType ??= "casual";
@@ -641,6 +646,7 @@ export function createRoom(
     createdAt: Date.now(),
     pendingDraws: {},
     keepDeadline: null,
+    actionDeadline: null,
     settlementOrder: [],
     adrenalineAtSettlementStart: [],
   };
@@ -1255,6 +1261,8 @@ export function resolveSettlementTrades(room: GameRoom, judge: SettlementJudge):
 
 export function runSettlementPhase0(room: GameRoom, judge: SettlementJudge): void {
   ensureRoomShape(room);
+  // 離開行動階段：行動逾時時刻不再有效（keep 階段另有自己的 keepDeadline）。
+  room.actionDeadline = null;
   const day = room.day;
   pushLog(room, `── 第 ${day} 天結算開始 ──`);
   // 腎上腺素：結算開始時生效中的，到這次結算結束就失效；
@@ -1702,6 +1710,7 @@ export function publicView(room: GameRoom, token?: string): Record<string, unkno
       items: self && self.id === p.id ? p.items : undefined,
       isSelf: self ? self.id === p.id : false,
     })),
+    actionDeadline: room.actionDeadline,
     submittedCount: Object.keys(room.actions).length,
     submittedPlayerIds:
       room.phase === "action" ? room.players.filter((p) => room.actions[p.id]).map((p) => p.id) : [],

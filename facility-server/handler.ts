@@ -35,6 +35,7 @@ import {
   type RoomType,
 } from "./accounts";
 import {
+  ACTION_TIMEOUT_MS,
   MAX_PLAYERS,
   addPlayer,
   autoKeep,
@@ -71,7 +72,7 @@ import {
   aiSpawn,
 } from "./game-ai";
 import { neonConfigured } from "./neon";
-import { fetchRoom, insertRoom, sweepExpired, updateRoom } from "./store";
+import { fetchRoom, insertRoom, listPublicRooms, sweepExpired, updateRoom } from "./store";
 
 export interface GamesResponse {
   status: number;
@@ -270,8 +271,8 @@ function maybeSettle(room: GameRoom): void {
 function maybeResolveKeepTimeout(room: GameRoom): void {
   if (room.status !== "playing" || room.phase !== "keep") return;
   if (room.keepDeadline === null || Date.now() < room.keepDeadline) return;
-  // 多次逾時被 AI 託管：keep 逾時是輪詢模型下唯一可量測的逾時（行動階段
-  // 沒有伺服器計時器，見 README）。累積 2 次者改 AI 託管並扣 5 分，
+  // 多次逾時被 AI 託管：與行動逾時共用 timeoutStrikes（見 maybeResolveActionTimeout）。
+  // 累積 2 次者改 AI 託管並扣 5 分，
   // 懲罰先進 pendingPenalties，房間寫回成功後才寫帳號表。
   for (const pid of Object.keys(room.pendingDraws)) {
     const p = room.players.find((x) => x.id === pid);
@@ -299,10 +300,32 @@ function maybeAdvanceToAction(room: GameRoom): void {
   const allReady = room.players.filter((p) => p.alive).every((p) => p.ready);
   if (!allReady) return;
   room.phase = "action";
-  room.log.push({ day: room.day, text: `── 第 ${room.day} 天行動階段開始 ──` });
+  room.actionDeadline = Date.now() + ACTION_TIMEOUT_MS;
+  room.log.push({ day: room.day, text: `── 第 ${room.day} 天行動階段開始 ──（${ACTION_TIMEOUT_MS / 1000} 秒內未提交由 AI 代打）` });
   // 單人版 startRound：回合開始洗牌決定行動順序，結算各步驟按此順序跑。
   generateSettlementOrder(room);
   autoAiActions(room);
+}
+
+/** 行動逾時（惰性檢查，輪詢觸發）：期限到仍未提交的人類玩家由 AI 代打；與選留逾時共用 timeoutStrikes，累積 2 次改 AI 託管並扣 5 分。 */
+function maybeResolveActionTimeout(room: GameRoom): void {
+  if (room.status !== "playing" || room.phase !== "action") return;
+  if (room.actionDeadline === null || Date.now() < room.actionDeadline) return;
+  for (const p of room.players) {
+    if (p.isAI || room.actions[p.id]) continue;
+    room.timeoutStrikes[p.id] = (room.timeoutStrikes[p.id] ?? 0) + 1;
+    if (room.timeoutStrikes[p.id] >= TIMEOUT_STRIKES_TO_HANDOVER) {
+      p.isAI = true;
+      if (p.accountId) {
+        room.pendingPenalties.push({ accountId: p.accountId, repDelta: TIMEOUT_REPUTATION_PENALTY, setCooldown: false });
+      }
+      room.log.push({ day: room.day, text: `🤖 ${p.name} 行動多次逾時，改由 AI 託管` });
+    } else {
+      room.log.push({ day: room.day, text: `⏰ ${p.name} 行動逾時，由 AI 代打本回合` });
+    }
+    room.actions[p.id] = aiAction(room, p);
+  }
+  maybeSettle(room);
 }
 
 function lazyAdvance(room: GameRoom): void {
@@ -310,6 +333,7 @@ function lazyAdvance(room: GameRoom): void {
   aiFreePhase(room);
   maybeAdvanceToAction(room);
   autoAiActions(room);
+  maybeResolveActionTimeout(room);
   maybeSettle(room);
 }
 
@@ -369,6 +393,7 @@ function matchPath(
     }
     return null;
   }
+  if (parts[0] === "world" && parts.length === 1) return { name: "world" };
   if (parts[0] !== "rooms") return null;
   if (parts.length === 1) return { name: "create" };
   const code = parts[1] as string;
@@ -552,6 +577,13 @@ export async function handleGamesRequest(
       return redirectTo(`/facility-survival?${back.toString()}`);
     }
     if (route.name.startsWith("account-")) return err(404, "找不到房間");
+
+    // 世界：公開房間列表（大廳／進行中，不含已結束房與任何 token／帳號資料）。
+    if (route.name === "world" && method === "GET") {
+      const rooms = await listPublicRooms();
+      return { status: 200, body: { rooms } };
+    }
+    if (route.name === "world") return err(405, "世界列表只支援 GET");
 
     // 建房（房型預設娛樂；競技房必須有帳號且信譽 90 以上）
     if (route.name === "create" && method === "POST") {

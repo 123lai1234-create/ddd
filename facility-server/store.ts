@@ -86,6 +86,47 @@ export async function updateRoom(room: GameRoom, version: number): Promise<boole
   });
 }
 
+/** 世界頁用：列出未過期的大廳／進行中房間公開摘要（不含 token、帳號 id、完整房間狀態）。 */
+export async function listPublicRooms(): Promise<
+  {
+    code: string;
+    roomType: string;
+    status: string;
+    day: number;
+    phase: string;
+    playerCount: number;
+    aliveCount: number;
+    spectatorCount: number;
+    hostName: string;
+    createdAt: number;
+  }[]
+> {
+  const { rows } = await withTable(() =>
+    neonQuery(
+      `SELECT code, state FROM ${TABLE} ORDER BY updated_at DESC LIMIT 50`,
+    ),
+  );
+  const out = [];
+  for (const row of rows) {
+    const room = (typeof row.state === "string" ? JSON.parse(row.state) : row.state) as GameRoom;
+    if (!room || room.status === "finished") continue;
+    if (Date.now() - room.createdAt > ROOM_TTL_MS) continue;
+    out.push({
+      code: room.code,
+      roomType: room.roomType ?? "casual",
+      status: room.status,
+      day: room.day,
+      phase: room.phase,
+      playerCount: room.players.length,
+      aliveCount: room.players.filter((p) => p.alive).length,
+      spectatorCount: (room.spectators ?? []).length,
+      hostName: room.players[0]?.name ?? "",
+      createdAt: room.createdAt,
+    });
+  }
+  return out;
+}
+
 /** 建房時順手清掉 12 小時未更新的舊房間（原本 in-memory 版在建房時掃全表）。 */
 export async function sweepExpired(): Promise<void> {
   await withTable(() =>
