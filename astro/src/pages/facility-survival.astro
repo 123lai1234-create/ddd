@@ -1,0 +1,32 @@
+---
+// 「封鎖設施求生」多人連線生存遊戲頁面。
+// 前端是 React 元件（由 dontalk 作品集移植，僅改型別 import 以符合 Astro TS 設定），
+// 以 Astro island 掛載；後端是本站 /api/games（Neon 持久化房間，見 facility-server/）。
+import Base from '../layouts/Base.astro';
+import FacilityGame from '../components/FacilityGame';
+---
+
+<Base
+    title="封鎖設施求生 | 多人連線生存遊戲"
+    description="2–4 人連線生存遊戲：9 層 42 房設施、配點、搜刮、毒樓層投票、手術室、火箭筒、控制室、暗影復活，6 回合決勝負。建房分享房間碼就能和朋友一起玩，未滿由 AI 補位。"
+    bodyPage="facility-survival"
+    pageStyles={[]}
+    pageScripts={[]}
+    headInline=""
+>
+    <div data-site-nav></div>
+
+    <div class="facility-page">
+        <FacilityGame client:load />
+    </div>
+
+    <div data-site-footer></div>
+
+    <style is:inline>
+        .facility-page {
+            max-width: 1040px;
+            margin: 0 auto;
+            padding: 32px 20px 80px;
+        }
+    </style>
+</Base>
