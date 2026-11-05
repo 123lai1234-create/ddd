@@ -422,33 +422,8 @@ const pickIndex = dayOfYear % rides.length;
     --purple:   #8b6f9c;
 }
 
-/* ─── Nav CTA：Uiverse 按鈕 giant-donkey-36（by adamgiebl，MIT） ───────
-   https://uiverse.io/adamgiebl/giant-donkey-36
-   暖黃 #fbca1f＋3px 實邊＋硬陰影，hover 浮起、active 下壓。邊框與陰影色用
-   本站深棕 #3a2f2a 代替原樣的純黑，貼合紙感配色；其餘照原樣。 */
-body[data-page="index"] nav .nav-cta,
-body[data-page="index"] nav a.nav-cta {
-    background: #fbca1f !important;
-    color: #3a2f2a !important;
-    border: 3px solid #3a2f2a !important;
-    border-radius: 0.4em !important;
-    padding: 0.6em 1.3em !important;
-    font-weight: 900 !important;
-    font-size: 18px !important;
-    box-shadow: 0.1em 0.1em #3a2f2a !important;
-    cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s, background 0.15s !important;
-}
-body[data-page="index"] nav .nav-cta:hover {
-    background: #fbca1f !important;
-    color: #3a2f2a !important;
-    transform: translate(-0.05em, -0.05em);
-    box-shadow: 0.15em 0.15em #3a2f2a !important;
-}
-body[data-page="index"] nav .nav-cta:active {
-    transform: translate(0.05em, 0.05em);
-    box-shadow: 0.05em 0.05em #3a2f2a !important;
-}
+/* Nav CTA（Uiverse 黃按鈕）已改由共用樣式 public/styles/shared.css 全站統一，
+   這裡不再重複寫，只留註解避免後人以為漏掉。 */
 
 .minion-park {
     min-height: calc(100vh - 64px);
@@ -1317,9 +1292,17 @@ html {
 <script>
     // 首頁進場動效改由 Anime.js v4（MIT）驅動：標題逐字升起、眉題／副標跟進、
     // 問候與日期淡入、7 張設施卡依序浮現。reduced-motion 時整段跳過，內容直接可見。
+    // 注意：動畫跑完要清掉 Anime.js 留下的行內 transform／opacity，否則會蓋掉
+    // CSS 的 hover 浮起與每張卡的微傾斜（.ride-ferris 等）。
     import { animate, stagger } from 'animejs';
     (function () {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        function clearInline(sel) {
+            document.querySelectorAll(sel).forEach(function (el) {
+                el.style.removeProperty('transform');
+                el.style.removeProperty('opacity');
+            });
+        }
         var title = document.querySelector('.park-title');
         if (title) {
             var text = title.textContent;
@@ -1338,6 +1321,7 @@ html {
                 duration: 650,
                 delay: stagger(55),
                 ease: 'outExpo',
+                onComplete: function () { clearInline('.park-title-char'); },
             });
         }
         animate('.park-eyebrow, .park-subtitle', {
@@ -1346,6 +1330,7 @@ html {
             duration: 500,
             delay: stagger(90),
             ease: 'outQuad',
+            onComplete: function () { clearInline('.park-eyebrow, .park-subtitle'); },
         });
         animate('.park-greeting-block, .park-date-block', {
             opacity: [0, 1],
@@ -1353,6 +1338,7 @@ html {
             duration: 550,
             delay: 350,
             ease: 'outQuad',
+            onComplete: function () { clearInline('.park-greeting-block, .park-date-block'); },
         });
         animate('.ride', {
             y: [18, 0],
@@ -1361,6 +1347,7 @@ html {
             duration: 650,
             delay: stagger(70, { start: 200 }),
             ease: 'outExpo',
+            onComplete: function () { clearInline('.ride'); },
         });
     })();
 </script>
