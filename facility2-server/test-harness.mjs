@@ -33,6 +33,11 @@ check('account create guest', a1.status === 200 && !!a1.json.token && !!a1.json.
 const a2 = await call('POST', 'accounts', { action: 'create', displayName: '測試二號', guest: true });
 check('account create second', a2.status === 200 && !!a2.json.token);
 const t1 = a1.json.token, t2 = a2.json.token;
+// 1b accounts me (profile for stored token)
+const me1 = await call('POST', 'accounts', { action: 'me' }, t1);
+check('accounts me returns profile', me1.status === 200 && me1.json.account?.display_name === '測試一號' && me1.json.account?.reputation === 100, JSON.stringify(me1.json).slice(0, 200));
+const meBad = await call('POST', 'accounts', { action: 'me' }, 'bad-token');
+check('accounts me rejects bad token', meBad.status === 401);
 // 2 create room
 const cr = await call('POST', 'rooms', { roomType: 'casual' }, t1);
 check('room create 201', cr.status === 201 && !!cr.json.room?.code, JSON.stringify(cr.json).slice(0, 200));

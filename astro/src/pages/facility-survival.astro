@@ -30,6 +30,7 @@ import Base from '../layouts/Base.astro';
       <div class="fs-row">
         <button class="fs-btn blue" id="btn-join">加入遊戲</button>
         <button class="fs-btn dark" id="btn-create">建立房間</button>
+        <button class="fs-btn dark" id="btn-logout">登出</button>
       </div>
       <div class="fs-row">
         <input id="in-code" placeholder="房間碼（4 碼）" maxlength="4" style="text-transform:uppercase" />
@@ -125,6 +126,7 @@ $('btn-guest').onclick=()=>{const n=$('in-name').value.trim()||'訪客'; doLogin
 $('btn-named').onclick=()=>{const n=$('in-name').value.trim(); if(!n) return setLoginMsg('請先輸入顯示名稱'); doLogin({action:'create',displayName:n}).catch(e=>setLoginMsg(e.message));};
 $('btn-recover').onclick=()=>doLogin({action:'recover',displayName:$('in-name').value.trim(),recoveryCode:$('in-recovery').value.trim()}).catch(e=>setLoginMsg(e.message));
 $('btn-google').onclick=async()=>{try{const j=await api('accounts','POST',{action:'google'}); location.href=j.redirectUrl;}catch(e){setLoginMsg(e.message);}};
+$('btn-logout').onclick=()=>{ token=''; account=null; localStorage.removeItem('fs2-token'); location.reload(); };
 function showHome(){ $('fs-login').style.display='none'; $('fs-home').style.display='block'; $('who').textContent=account?('你是 '+account.display_name+'（信譽 '+(account.reputation??100)+'）'):''; const c=new URLSearchParams(location.search).get('code'); if(c) $('in-code').value=c.toUpperCase(); }
 $('btn-create').onclick=async()=>{try{const j=await api('rooms','POST',{roomType:$('sel-type').value,botDifficulty:$('sel-bot').value}); room=j.room; showGame();}catch(e){$('home-msg').textContent=e.message;}};
 $('btn-join').onclick=async()=>{const code=$('in-code').value.trim().toUpperCase(); if(!code) return; try{const j=await api('rooms/'+code,'POST',{action:'join'}); room=j.room; showGame();}catch(e){$('home-msg').textContent=e.message;}};
@@ -169,7 +171,7 @@ window.doTrade=async()=>{ try{ const j=await api('rooms/'+room.code,'POST',{acti
 window.respondTrade=async(id,accept)=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'tradeRespond',tradeId:id,accept}); room=j.room; render(); }catch(e){alert(e.message);} };
 $('btn-free-done').onclick=async()=>{ try{ const j=await api('rooms/'+room.code,'POST',{action:'freeDone'}); room=j.room; render(); }catch(e){alert(e.message);} };
 $('btn-quit').onclick=async()=>{ if(!confirm('確定棄權嗎？信譽 -10')) return; try{ await api('rooms/'+room.code,'POST',{action:'quit'}); location.href='/facility-survival'; }catch(e){alert(e.message);} };
-(function init(){ const q=new URLSearchParams(location.search); const s=q.get('session'); if(s){ token=s; localStorage.setItem('fs2-token',s); history.replaceState(null,'',location.pathname); }
-  if(token){ $('fs-login').style.display='none'; $('fs-home').style.display='block'; $('who').textContent='已登入（token 已儲存）'; const c=q.get('code'); if(c) $('in-code').value=c.toUpperCase(); } })();
+(async function init(){ const q=new URLSearchParams(location.search); const s=q.get('session'); const c=q.get('code'); if(s){ token=s; localStorage.setItem('fs2-token',s); history.replaceState(null,'',location.pathname); }
+  if(token){ try{ const j=await api('accounts','POST',{action:'me'}); account=j.account; showHome(); if(c) $('in-code').value=c.toUpperCase(); }catch(e){ token=''; account=null; localStorage.removeItem('fs2-token'); } } })();
 </script>
 </Base>

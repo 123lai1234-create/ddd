@@ -509,6 +509,10 @@ export function createApp(store, opts = {}) {
           await store.saveSession({ token_hash: sha(token), account_id: acc.id, created_at: now() });
           return ok({ account: { id: acc.id, display_name: acc.display_name, kind: acc.kind, reputation: acc.reputation }, token });
         }
+        if (action === 'me') {
+          const a = await auth(body, headers); if (!a) return err('需要登入', 401);
+          return ok({ account: { id: a.acc.id, display_name: a.acc.display_name, kind: a.acc.kind, reputation: a.acc.reputation } });
+        }
         if (action === 'google') {
           if (!google) return err('Google 登入未設定', 501);
           const state = uid(16);
