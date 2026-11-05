@@ -32,7 +32,7 @@ const bodyHtml = `
         <!-- ── Track Info Bar ──────────────────────────────────── -->
         <section class="ck-trackbar">
             <div class="ck-tb-controls">
-                <button class="ck-ctrl-btn" id="shuffle-btn" title="隨機">🔀</button>
+                <button class="ck-ctrl-btn" id="shuffle-btn" title="隨機：關閉" aria-pressed="false">🔀</button>
                 <button class="ck-ctrl-btn" id="prev-btn" title="上一首">⏮</button>
                 <button class="ck-play-btn" id="play-btn" title="播放 (Space)" aria-label="播放/暫停" aria-pressed="false">▶</button>
                 <button class="ck-ctrl-btn" id="next-btn" title="下一首">⏭</button>
@@ -555,7 +555,7 @@ const bodyHtml = `
             </div>
         </div>
         <footer class="ck-drawer-stats">
-            <span id="total-songs">0</span> 首歌曲 · <span id="total-duration">0:00</span>
+            <span id="total-songs-drawer">0</span> 首歌曲 · <span id="total-duration">0:00</span>
         </footer>
     </aside>
     <div class="ck-drawer-backdrop" id="drawer-backdrop"></div>

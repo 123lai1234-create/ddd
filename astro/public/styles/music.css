@@ -263,7 +263,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC"
     transition: all 0.15s var(--ck-ease);
 }
 .ck-ctrl-btn:hover { background: var(--ck-card-hover); color: var(--ck-text); }
-.ck-ctrl-btn.active { color: var(--ck-accent); background: var(--ck-accent-soft); }
+.ck-ctrl-btn.active { color: var(--ck-accent); background: var(--ck-accent-soft); box-shadow: 0 0 0 2px var(--ck-accent); }
+/* 隨機開著時除了底色，也讓圖示本身更亮，避免只看底色分不出來 */
+.ck-ctrl-btn.active#shuffle-btn { filter: brightness(1.35); }
 .ck-ctrl-btn:focus-visible { outline: none; box-shadow: var(--ck-focus-ring); }
 
 .ck-tb-meta { min-width: 0; }

@@ -75,7 +75,7 @@
         if (!trackKey) { clearContainer(); return; }
         // 優先序：localStorage override > 預設 mapping
         const overrides = JSON.parse(localStorage.getItem(LS_OVERRIDES_KEY) || "{}");
-        const ytId = overrides[trackKey] || MV_VIDEO_IDS[trackKey];
+        const ytId = overrides[trackKey] || MV_VIDEO_IDS[trackKey] || window.__currentTrackMvVideoId || null;
         if (!ytId) { clearContainer(); return; }
 
         container.hidden = false;
@@ -191,7 +191,8 @@
                 return;
             }
             const overrides = JSON.parse(localStorage.getItem(LS_OVERRIDES_KEY) || "{}");
-            const haveMv = !!overrides[key];
+            // 已綁定的 MV 優先序跟 tryRenderIframe 一致：手動設定 > 內建對照表 > tracks.json 欄位
+            const haveMv = !!(overrides[key] || MV_VIDEO_IDS[key] || window.__currentTrackMvVideoId);
 
             if (mvMode) {
                 // 關閉

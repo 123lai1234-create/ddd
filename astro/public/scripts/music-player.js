@@ -355,9 +355,13 @@
     }
 
     // 從 /music/tracks.json 載入真實音樂清單
+    // 快取策略：用 manifest 版本號當 cache buster（改 tracks.json 時同步改
+    // TRACKS_MANIFEST_VERSION），不要再用 Date.now() + no-store——之前每次
+    // 進頁都重抓 148K。
+    const TRACKS_MANIFEST_VERSION = 2;
     async function loadTracksManifest() {
         try {
-            const r = await fetch("/music/tracks.json?v=" + Date.now(), { cache: "no-store" });
+            const r = await fetch("/music/tracks.json?v=" + TRACKS_MANIFEST_VERSION);
             if (!r.ok) throw new Error("HTTP " + r.status);
             const data = await r.json();
             if (data && Array.isArray(data.tracks) && data.tracks.length > 0) {
@@ -403,6 +407,7 @@
         elements.lyrics = document.getElementById("lyrics");
         elements.qualitySelect = document.getElementById("quality-select");
         elements.totalSongs = document.getElementById("total-songs");
+        elements.totalSongsDrawer = document.getElementById("total-songs-drawer");
         elements.totalDuration = document.getElementById("total-duration");
         elements.tabBtns = document.querySelectorAll(".tab-btn");
         // 抽屜
@@ -790,6 +795,10 @@
 
         // 有真實音檔 → 用 <audio> 播；沒 url 才退回模擬
         if (track.url) {
+            // 切換曲目先歸零：換 src 會讓 audio 暫停，舊的 isPlaying=true
+            // 會讓下面 300ms 保險誤判已在播而跳過，凍在 0:00（上一首 bug）
+            state.isPlaying = false;
+            updatePlayButton();
             if (simulateInterval) { clearInterval(simulateInterval); simulateInterval = null; }
             const absUrl = new URL(track.url, location.href).href;
             const srcChanged = elements.audioPlayer.src !== absUrl;
@@ -831,7 +840,7 @@
                     elements.audioPlayer.removeEventListener("canplay", onCanPlay);
                     elements.audioPlayer.removeEventListener("loadeddata", onCanPlay);
                     if (playTokenSnapshot !== state.playToken) return; // 用戶已暫停
-                    if (!state.isPlaying) tryPlay();
+                    if (elements.audioPlayer.paused) tryPlay();
                 }, 300);
             } else {
                 // src 沒變且已載入，直接 play
@@ -895,6 +904,8 @@
     function toggleShuffle() {
         state.shuffle = !state.shuffle;
         elements.shuffleBtn.classList.toggle("active", state.shuffle);
+        elements.shuffleBtn.setAttribute("aria-pressed", state.shuffle ? "true" : "false");
+        elements.shuffleBtn.title = state.shuffle ? "隨機：開啟" : "隨機：關閉";
     }
 
     function toggleRepeat() {
@@ -1017,6 +1028,9 @@
             const track = state.playlist[state.currentIndex];
             if (track) track.duration = Math.round(d);
             elements.timeTotal.textContent = formatTime(d);
+            // 同步更新抽屜裡該首顯示的秒數（不重繪整個清單，避免捲動位置跳掉）
+            const itemDur = elements.playlist.querySelector('.playlist-item[data-index="' + state.currentIndex + '"] .playlist-item-duration');
+            if (itemDur) itemDur.textContent = formatTime(d);
             updatePlaylistStats();
         }
     }
@@ -1414,6 +1428,7 @@
         const totalSeconds = state.playlist.reduce((sum, track) => sum + track.duration, 0);
 
         elements.totalSongs.textContent = totalSongs;
+        if (elements.totalSongsDrawer) elements.totalSongsDrawer.textContent = totalSongs;
         elements.totalDuration.textContent = formatTime(totalSeconds);
     }
 
@@ -1430,6 +1445,8 @@
 
         elements.trackTitle.textContent = track.title;
         elements.trackArtist.textContent = (track.artist || "") + " · " + (track.album || "");
+        // 供 music-mv.js 判斷該曲有沒有綁定 MV（tracks.json 的 mvVideoId 欄位）
+        window.__currentTrackMvVideoId = track.mvVideoId || null;
         elements.timeTotal.textContent = formatTime(track.duration);
         elements.progressFill.style.width = "0%";
         elements.progressHandle.style.left = "0%";
