@@ -1203,12 +1203,35 @@ body[data-page="index"] #pf-modal #pf-results a {
     border-bottom-color: rgba(58, 47, 42, 0.15) !important;
 }
 
+/* ════════ Reel 方法：首頁動效主視覺（只動主視覺，不改版面／內容） ════════
+   靈感取自 MotionSite＋Stitch 那種「進場＋互動視差」動效頁，但不搬任何外部素材、
+   不用外部服務，全部用本站現有 CSS／JS 手寫：進場淡入＋設施卡依序浮現＋滑鼠視差。
+   視差只動天空容器與樹（雲本身已有 drift 動畫，不動它以免覆蓋），且尊重 reduced-motion。 */
+.park-header { animation: park-hero-in 0.7s ease backwards; }
+@keyframes park-hero-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.ride { animation: ride-in 0.6s ease backwards; animation-delay: calc(var(--ride-i, 0) * 70ms); }
+@keyframes ride-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.park-sky { transform: translate(calc(var(--mx, 0) * 8px), calc(var(--my, 0) * 4px)); transition: transform 0.3s ease-out; }
+.park-tree-left { transform: translate(calc(var(--mx, 0) * -6px), 0); transition: transform 0.3s ease-out; }
+.park-tree-right { transform: translate(calc(var(--mx, 0) * 6px), 0); transition: transform 0.3s ease-out; }
+
 /* ════════ Polish: smooth scroll + reduced-motion respect ════════ */
 html {
     scroll-behavior: smooth;
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .park-header,
+    .ride { animation: none !important; }
+    .park-sky,
+    .park-tree-left,
+    .park-tree-right { transform: none !important; transition: none !important; }
     .ferris-spin,
     .balloon-float,
     .carousel-flag,
@@ -1255,6 +1278,26 @@ html {
             var dd = String(d.getDate()).padStart(2, '0');
             if (dayEl) dayEl.textContent = day;
             if (dateEl) dateEl.textContent = mm + '.' + dd;
+        }
+        // 首頁動效主視覺：滑鼠視差（只在精確指標＋未開 reduced-motion 時啟用）
+        var map = document.querySelector('.park-map');
+        if (map && window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            var raf = null;
+            map.addEventListener('pointermove', function (e) {
+                var r = map.getBoundingClientRect();
+                var mx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+                var my = ((e.clientY - r.top) / r.height - 0.5) * 2;
+                if (raf) return;
+                raf = requestAnimationFrame(function () {
+                    raf = null;
+                    map.style.setProperty('--mx', mx.toFixed(3));
+                    map.style.setProperty('--my', my.toFixed(3));
+                });
+            });
+            map.addEventListener('pointerleave', function () {
+                map.style.setProperty('--mx', '0');
+                map.style.setProperty('--my', '0');
+            });
         }
     })();
 </script>
