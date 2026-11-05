@@ -422,25 +422,32 @@ const pickIndex = dayOfYear % rides.length;
     --purple:   #8b6f9c;
 }
 
-/* ─── Nav CTA：實心紅塊改成外框式 ─────────────────────────────────
-   原本是一塊 #c44536 實心紅夾在整排純文字連結中間，視覺上像警示或壞掉，
-   跟紙感主題的「細線 + 米白」語言不一致。改成米白底 + 深色虛線框 + 磚紅字。 ── */
+/* ─── Nav CTA：Uiverse 按鈕 giant-donkey-36（by adamgiebl，MIT） ───────
+   https://uiverse.io/adamgiebl/giant-donkey-36
+   暖黃 #fbca1f＋3px 實邊＋硬陰影，hover 浮起、active 下壓。邊框與陰影色用
+   本站深棕 #3a2f2a 代替原樣的純黑，貼合紙感配色；其餘照原樣。 */
 body[data-page="index"] nav .nav-cta,
 body[data-page="index"] nav a.nav-cta {
-    background: #faf6ec !important;
-    color: var(--accent) !important;
-    border: 1.5px dashed var(--rule) !important;
-    border-radius: 4px !important;
-    padding: 4px 12px !important;
-    font-weight: 600 !important;
-    box-shadow: 2px 2px 0 rgba(58, 47, 42, 0.18);
-    transition: background 0.2s, box-shadow 0.2s, transform 0.2s !important;
+    background: #fbca1f !important;
+    color: #3a2f2a !important;
+    border: 3px solid #3a2f2a !important;
+    border-radius: 0.4em !important;
+    padding: 0.6em 1.3em !important;
+    font-weight: 900 !important;
+    font-size: 18px !important;
+    box-shadow: 0.1em 0.1em #3a2f2a !important;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s !important;
 }
 body[data-page="index"] nav .nav-cta:hover {
-    background: var(--accent) !important;
-    color: #faf6ec !important;
-    transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0 rgba(58, 47, 42, 0.35);
+    background: #fbca1f !important;
+    color: #3a2f2a !important;
+    transform: translate(-0.05em, -0.05em);
+    box-shadow: 0.15em 0.15em #3a2f2a !important;
+}
+body[data-page="index"] nav .nav-cta:active {
+    transform: translate(0.05em, 0.05em);
+    box-shadow: 0.05em 0.05em #3a2f2a !important;
 }
 
 .minion-park {
@@ -697,6 +704,17 @@ body[data-page="index"] nav .nav-cta:hover {
     border-width: 2.2px;
     box-shadow: 4px 5px 0 #3a2f2a, 0 0 0 4px rgba(196, 69, 54, 0.12);
 }
+
+/* ─── Uiverse 卡片 chilly-bird-79（by andrew-demchenk0，MIT）取其視覺語言 ──
+   https://uiverse.io/andrew-demchenk0/chilly-bird-79
+   原型是個人檔案卡，頭像 SVG 與進度條跟設施連結卡不合，不整張照搬（頭像
+   是原作者的插畫，也未複製）；取暖黃底 #EBD18D＋20px 圓角＋粗標題，套在
+   「今日推薦」那張卡上試效果，其餘 6 張不動。 */
+.ride[data-pick="true"] {
+    background: #ebd18d;
+    border-radius: 20px;
+}
+.ride[data-pick="true"] .ride-name { font-weight: 900; }
 
 .ride[data-pick="true"]::after {
     content: "★ 今日推薦";
@@ -1205,18 +1223,12 @@ body[data-page="index"] #pf-modal #pf-results a {
 
 /* ════════ Reel 方法：首頁動效主視覺（只動主視覺，不改版面／內容） ════════
    靈感取自 MotionSite＋Stitch 那種「進場＋互動視差」動效頁，但不搬任何外部素材、
-   不用外部服務，全部用本站現有 CSS／JS 手寫：進場淡入＋設施卡依序浮現＋滑鼠視差。
-   視差只動天空容器與樹（雲本身已有 drift 動畫，不動它以免覆蓋），且尊重 reduced-motion。 */
-.park-header { animation: park-hero-in 0.7s ease backwards; }
-@keyframes park-hero-in {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-.ride { animation: ride-in 0.6s ease backwards; animation-delay: calc(var(--ride-i, 0) * 70ms); }
-@keyframes ride-in {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
+   不用外部服務：進場改由 Anime.js（MIT，見下方 module script）驅動，標題逐字、
+   設施卡依序浮現；滑鼠視差仍用原本 CSS 變數＋inline script。
+   注意：進場初始狀態只由 JS 在允許動效時設定，CSS 不藏元素，關閉動效或
+   JS 失效時內容仍直接可見。視差只動天空容器與樹（雲本身已有 drift 動畫，
+   不動它以免覆蓋），且尊重 reduced-motion。 */
+.park-title-char { display: inline-block; }
 .park-sky { transform: translate(calc(var(--mx, 0) * 8px), calc(var(--my, 0) * 4px)); transition: transform 0.3s ease-out; }
 .park-tree-left { transform: translate(calc(var(--mx, 0) * -6px), 0); transition: transform 0.3s ease-out; }
 .park-tree-right { transform: translate(calc(var(--mx, 0) * 6px), 0); transition: transform 0.3s ease-out; }
@@ -1299,5 +1311,56 @@ html {
                 map.style.setProperty('--my', '0');
             });
         }
+    })();
+</script>
+
+<script>
+    // 首頁進場動效改由 Anime.js v4（MIT）驅動：標題逐字升起、眉題／副標跟進、
+    // 問候與日期淡入、7 張設施卡依序浮現。reduced-motion 時整段跳過，內容直接可見。
+    import { animate, stagger } from 'animejs';
+    (function () {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        var title = document.querySelector('.park-title');
+        if (title) {
+            var text = title.textContent;
+            title.setAttribute('aria-label', text);
+            title.textContent = '';
+            Array.from(text).forEach(function (ch) {
+                var s = document.createElement('span');
+                s.className = 'park-title-char';
+                s.setAttribute('aria-hidden', 'true');
+                s.textContent = ch;
+                title.appendChild(s);
+            });
+            animate('.park-title-char', {
+                y: [18, 0],
+                opacity: [0, 1],
+                duration: 650,
+                delay: stagger(55),
+                ease: 'outExpo',
+            });
+        }
+        animate('.park-eyebrow, .park-subtitle', {
+            opacity: [0, 1],
+            y: [8, 0],
+            duration: 500,
+            delay: stagger(90),
+            ease: 'outQuad',
+        });
+        animate('.park-greeting-block, .park-date-block', {
+            opacity: [0, 1],
+            y: [10, 0],
+            duration: 550,
+            delay: 350,
+            ease: 'outQuad',
+        });
+        animate('.ride', {
+            y: [18, 0],
+            opacity: [0, 1],
+            scale: [0.97, 1],
+            duration: 650,
+            delay: stagger(70, { start: 200 }),
+            ease: 'outExpo',
+        });
     })();
 </script>
