@@ -663,8 +663,10 @@ const pickIndex = dayOfYear % rides.length;
 }
 
 .ride:hover {
-    transform: translate(-2px, -3px) rotate(-0.6deg) perspective(800px) rotateX(2deg);
-    box-shadow: 6px 8px 0 #3a2f2a, 0 14px 30px rgba(58, 47, 42, 0.18);
+    /* 注意：不要加 perspective＋rotateX——實測它會把 translateY 吃掉大半，
+       卡片看起來只浮 3px；純 2D 位移才真的浮 8px。 */
+    transform: translate(-3px, -8px) rotate(-0.8deg);
+    box-shadow: 8px 12px 0 #3a2f2a, 0 20px 40px rgba(58, 47, 42, 0.22);
     background: #fffcf3;
 }
 
@@ -791,7 +793,7 @@ const pickIndex = dayOfYear % rides.length;
 }
 
 .ride:hover .ride-arrow {
-    transform: translateX(4px);
+    transform: translateX(7px);
 }
 
 /* Per-ride subtle tilt for organic feel */
@@ -806,7 +808,9 @@ const pickIndex = dayOfYear % rides.length;
 .ride-ferris:hover, .ride-balloon:hover, .ride-carousel:hover,
 .ride-coaster:hover, .ride-tower:hover, .ride-castle:hover,
 .ride-lab:hover {
-    transform: translate(-2px, -3px) rotate(-0.6deg);
+    /* 注意：這條與 .ride:hover 同權重、寫在後面，會蓋掉它的 transform，
+       改 hover 幅度時兩邊要一起改。 */
+    transform: translate(-3px, -8px) rotate(-0.8deg);
 }
 
 /* ════════ Animations (SVG groups) ════════ */
@@ -1235,7 +1239,7 @@ html {
         animation: none !important;
     }
     .ride:hover {
-        transform: rotate(-0.6deg);
+        transform: rotate(-0.8deg);
     }
     html { scroll-behavior: auto; }
 }
