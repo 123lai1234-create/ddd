@@ -1356,6 +1356,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC"
     .ck-eq-grid { grid-template-columns: repeat(4, 1fr); }
     .ck-tb-right { flex-direction: column; align-items: stretch; gap: 6px; }
     .ck-vol-slider { width: 100%; }
+    /* 手機版音量標籤不換行：之前在 390px 會被擠成「音／量」上下兩行 */
+    .ck-vol-label { white-space: nowrap; }
     .ck-visualizer-wrap { height: 56px; }
     .ck-knob { width: 48px; height: 48px; }
     .mini-player { bottom: 8px; right: 8px; min-width: 220px; }
