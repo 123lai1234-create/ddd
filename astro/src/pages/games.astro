@@ -4,7 +4,7 @@ import Base from '../layouts/Base.astro';
 
 <Base
     title="線上遊戲 | 工程 × 生醫 × AI"
-    description="免安裝的瀏覽器小遊戲合集：禁閉逃殺 Lockdown Survival（單機對機器人的回合制生存）、禁閉逃殺：文字獄 — 抽卡 RPG、回合制戰鬥、肉鴿遠征、網路對戰。"
+    description="免安裝的瀏覽器小遊戲合集：封閉設施求生（單機對機器人或多人連線的回合制生存）、禁閉逃殺：文字獄 — 抽卡 RPG、回合制戰鬥、肉鴿遠征、網路對戰。"
     bodyPage="games"
     pageStyles={[]}
     pageScripts={[]}
@@ -23,10 +23,10 @@ import Base from '../layouts/Base.astro';
 
         <section class="gp-grid">
             <article class="gp-card">
-                <a class="gp-cover" href="/games/lockdown-survival/" target="_blank" rel="noopener" aria-label="開始玩禁閉逃殺 Lockdown Survival">
+                <a class="gp-cover" href="/games/lockdown-survival/" target="_blank" rel="noopener" aria-label="開始玩封閉設施求生（單機）">
                     <img
                         src="/games/lockdown-survival/cover.svg"
-                        alt="禁閉逃殺 Lockdown Survival 封面"
+                        alt="封閉設施求生 封面"
                         width="320"
                         height="180"
                         loading="lazy"
@@ -34,26 +34,29 @@ import Base from '../layouts/Base.astro';
                     <span class="gp-play">▶ 立即開始</span>
                 </a>
                 <div class="gp-body">
-                    <h2>禁閉逃殺 Lockdown Survival</h2>
+                    <h2>封閉設施求生</h2>
                     <div class="gp-tags">
-                        <span class="gp-tag hot">單機 + 機器人</span>
+                        <span class="gp-tag hot">單機 + 連線</span>
                         <span class="gp-tag">六回合</span>
                         <span class="gp-tag">基因 / 物資 / 毒氣</span>
-                        <span class="gp-tag">80 項成就</span>
+                        <span class="gp-tag">AI 補位</span>
                     </div>
                     <p class="gp-desc">
-                        封閉設施裡的六天。你和最多 7 名機器人各自在暗處決定，系統公開結算。
-                        分配基因、搶水糧、投票放毒氣、拿火箭筒偷襲——生命值歸 0 就化為暗影，
-                        吸血到 2 點才能復活。最後按殘留生命值排名。
+                        封閉設施裡的六天，9 層 42 房。分配基因、搶水糧、投票放毒氣、拿火箭筒偷襲——
+                        生命值歸 0 就化為暗影，吸血到 2 點才能復活，最後按殘留生命值排名。
+                        單機：你加最多 7 名機器人，純前端、離線可玩；連線：最多 12 人，
+                        建房分享房間碼就能和朋友一起玩，未滿由 AI 補位；另有帳號、信譽、觀戰、戰績。
                     </p>
                     <div class="gp-meta">
-                        <span>⏱ 單局 10–20 分鐘</span>
-                        <span>💾 離線可玩</span>
+                        <span>⏱ 單局 10–40 分鐘</span>
+                        <span>👥 單機 8 人／連線 12 人</span>
                         <span>📱 支援手機</span>
                     </div>
                     <div class="gp-actions">
-                        <a class="gp-btn primary" href="/games/lockdown-survival/" target="_blank" rel="noopener">開始遊玩 ↗</a>
-                        <a class="gp-btn ghost" href="/games/lockdown-survival/" target="_blank" rel="noopener">新分頁開啟</a>
+                        <a class="gp-btn primary" href="/games/lockdown-survival/" target="_blank" rel="noopener">單機遊玩 ↗</a>
+                        <a class="gp-btn primary" href="/facility-survival">連線遊玩 ↗</a>
+                        <a class="gp-btn" href="/facility-world">世界 ↗</a>
+                        <a class="gp-btn" href="/facility-review">回顧 ↗</a>
                     </div>
                 </div>
             </article>
@@ -93,43 +96,12 @@ import Base from '../layouts/Base.astro';
                     </div>
                 </div>
             </article>
-            <article class="gp-card">
-                <a class="gp-cover" href="/facility-survival" aria-label="開始玩封鎖設施求生">
-                    <div class="gp-cover-fallback" aria-hidden="true">🏢</div>
-                    <span class="gp-play">▶ 立即開始</span>
-                </a>
-                <div class="gp-body">
-                    <h2>封鎖設施求生</h2>
-                    <div class="gp-tags">
-                        <span class="gp-tag hot">多人連線</span>
-                        <span class="gp-tag">生存逃殺</span>
-                        <span class="gp-tag">毒氣投票</span>
-                        <span class="gp-tag">AI 補位</span>
-                    </div>
-                    <p class="gp-desc">
-                        最多 8 人連線生存遊戲：10 點基因配點、9 層 42 房設施、6 回合循環。
-                        搜刮水糧武器、投票封死毒樓層、手術室、火箭筒、控制室、
-                        操作室重配、同房戰鬥、死後化為暗影——
-                        建房分享房間碼就能和朋友一起玩，未滿由 AI 補位；另有帳號、信譽、觀戰、戰績。
-                    </p>
-                    <div class="gp-meta">
-                        <span>⏱ 單局約 20–40 分鐘</span>
-                        <span>👥 最多 8 人（可 AI 補位）</span>
-                        <span>📱 支援手機</span>
-                    </div>
-                    <div class="gp-actions">
-                        <a class="gp-btn primary" href="/facility-survival">開始遊玩 ↗</a>
-                        <a class="gp-btn" href="/facility-world">世界 ↗</a>
-                        <a class="gp-btn" href="/facility-review">回顧 ↗</a>
-                    </div>
-                </div>
-            </article>
         </section>
 
         <section class="gp-note">
             <h3>關於這份收錄</h3>
             <ul>
-                <li><strong>《禁閉逃殺 Lockdown Survival》</strong>為本館自製的單機生存策略遊戲：六回合、九層樓、基因點數分配、毒氣投票、暗影復活，13 種機器人策略各有專長。純前端、離線可玩，成績會嘗試同步到站台排行榜（失敗也不影響遊玩）。</li>
+                <li><strong>《封閉設施求生》</strong>為本館自製的生存策略遊戲：六回合、9 層 42 房、基因點數分配、毒氣投票、暗影復活。單機版（Lockdown Survival）為純前端、離線可玩，你加最多 7 名機器人，13 種機器人策略各有專長，成績會嘗試同步到站台排行榜（失敗也不影響遊玩）；連線版最多 12 人，建房分享房間碼即可對戰。</li>
                 <li>《禁閉逃殺：文字獄》原作為 <strong>gagatim</strong> 的公開網頁遊戲，本頁為作者原始碼的鏡像收錄，版權與原作所有。</li>
                 <li>背景音樂取自 <a href="https://opengameart.org/" target="_blank" rel="noopener">OpenGameArt</a>，授權 CC0；角色與魔王插圖為原作者自製。</li>
                 <li>遊戲本身不需要後端：帳號／雲端存檔與網路對戰沿用原作的 Firebase 設定，不登入也完全玩得動。</li>
