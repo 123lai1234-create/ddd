@@ -23,6 +23,8 @@
     // （tracks.json 完整掃描的成本比直接維護這個 mapping 還高）
     const MV_VIDEO_IDS = {
         "不服輸__未知藝術家": "vAIZv1NSAHY",
+        // 優化版是同一首歌，綁同一支 MV（否則播優化版按 MV 只會跳 prompt）
+        "不服輸 (優化版)__未知藝術家": "vAIZv1NSAHY",
         "老家的巷子__未知藝術家": "UklF3mxZTGE",
     };
 
@@ -168,11 +170,15 @@
             const key = getCurrentTrackKey();
             if (key !== activeTrackKey) {
                 activeTrackKey = key;
+                syncToggleHint();
                 if (mvMode) tryRenderIframe();
             }
         });
         mo.observe(target, { childList: true, characterData: true, subtree: true });
     }
+
+    // 切歌時刷新 MV 按鈕標題（setupToggle 會把 sync 指派進來）
+    let syncToggleHint = () => {};
 
     // ── MV toggle ───────────────────────────────────────────────
     function setupToggle() {
@@ -181,8 +187,14 @@
         const sync = () => {
             btn.setAttribute("aria-pressed", mvMode ? "true" : "false");
             btn.classList.toggle("active", mvMode);
-            btn.title = mvMode ? "MV 模式（開）" : "MV 模式（關）";
+            // 有綁定才寫開／關；沒綁定就明講點按是去設定，避免看起來像按鈕壞了
+            const key = getCurrentTrackKey();
+            const overrides = JSON.parse(localStorage.getItem(LS_OVERRIDES_KEY) || "{}");
+            const bound = !!(key && (overrides[key] || MV_VIDEO_IDS[key] || window.__currentTrackMvVideoId));
+            btn.title = mvMode ? "MV 模式（開）" : (bound ? "MV 模式（關）" : "MV 模式（這首未綁定，點按設定）");
         };
+        // 切歌時也要更新標題（綁定狀態跟著歌走）
+        syncToggleHint = sync;
         sync();
         btn.addEventListener("click", () => {
             const key = getCurrentTrackKey();
