@@ -8,11 +8,39 @@ const MODEL_URL = '/models/mascot-3d.glb';
 const STAT_TRIS = '131 K';
 const STAT_MATS = '3';
 const STAT_SIZE = '3.6 MB';
+
+// 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/character-robot.glb 得出，不要手填。
+// 解析結果：185,706 tris / 4 materials / 680,604 bytes
+// 大小用截尾（0.6 MB）；改用另一種請加 --round 後重跑。
+const STAT_ROBOT_TRIS = '186 K';
+const STAT_ROBOT_MATS = '4';
+const STAT_ROBOT_SIZE = '0.6 MB';
+
+// 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/character-philosopher.glb 得出，不要手填。
+// 解析結果：146,690 tris / 13 materials / 669,988 bytes
+// 大小用截尾（0.6 MB）；改用另一種請加 --round 後重跑。
+const STAT_PHILOSOPHER_TRIS = '147 K';
+const STAT_PHILOSOPHER_MATS = '13';
+const STAT_PHILOSOPHER_SIZE = '0.6 MB';
+
+// 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/character-cat.glb 得出，不要手填。
+// 解析結果：49,556 tris / 5 materials / 244,412 bytes
+// 大小用截尾（0.2 MB）；改用另一種請加 --round 後重跑。
+const STAT_CAT_TRIS = '49.6 K';
+const STAT_CAT_MATS = '5';
+const STAT_CAT_SIZE = '0.2 MB';
+
+// 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/character-crystal.glb 得出，不要手填。
+// 解析結果：3,256 tris / 2 materials / 40,228 bytes
+// 大小用截尾（39 KB）；改用另一種請加 --round 後重跑。
+const STAT_CRYSTAL_TRIS = '3.3 K';
+const STAT_CRYSTAL_MATS = '2';
+const STAT_CRYSTAL_SIZE = '39 KB';
 ---
 
 <Base
-    title="3D Mascot | 香菇柯基 真 3D 互動模型"
-    description="香菇柯基 mascot — 真 3D 模型，可用滑鼠旋轉縮放。"
+    title="3D Mascot | 香菇柯基 真 3D 模型"
+    description="香菇柯基 mascot — 真 3D 模型，可用滑鼠旋轉縮放。五隻角色可切換：香菇柯基、綠機器人、哲學家、黑貓、水晶怪。"
     bodyPage="index"
     pageStyles={["/styles/index.css"]}
     pageScripts={["/scripts/app-config.js"]}
@@ -20,12 +48,37 @@ const STAT_SIZE = '3.6 MB';
 >
     <div class="mascot-3d-page">
         <header class="mascot-3d-head">
-            <h1>🍄 香菇柯基 · 真 3D 模型</h1>
-            <p class="subtitle">
+            <h1 id="charTitle">🍄 香菇柯基 · 真 3D 模型</h1>
+            <p class="subtitle char-subtitle" data-char="corgi">
                 棕色香菇帽、米白身體、黃白柯基臉、舉手揮手的香菇狗 ——
                 跟右下角那張香菇柯基照片是<b>同一個角色</b>，3D 版是用那張照片經 3DValley 免費生成的。滑鼠拖曳可以旋轉、滾輪縮放。
             </p>
+            <p class="subtitle char-subtitle" data-char="robot" hidden>
+                軍綠裝甲、單顆青藍大眼、胸口三條通風口的綠機器人 ——
+                用 Blender 程序化建模，沒有用到照片或 AI 生成。滑鼠拖曳可以旋轉、滾輪縮放。
+            </p>
+            <p class="subtitle char-subtitle" data-char="philosopher" hidden>
+                白髮白鬍、月桂冠、白袍藍腰帶的哲學家，左手持卷軸、右手持法杖 ——
+                用 Blender 程序化建模，沒有用到照片或 AI 生成。滑鼠拖曳可以旋轉、滾輪縮放。
+            </p>
+            <p class="subtitle char-subtitle" data-char="cat" hidden>
+                黃眼睛、粉鼻子、雙臂交叉的黑貓，尾巴翹在左後 ——
+                用 Blender 程序化建模，沒有用到照片或 AI 生成。滑鼠拖曳可以旋轉、滾輪縮放。
+            </p>
+            <p class="subtitle char-subtitle" data-char="crystal" hidden>
+                淺藍多面體小怪，黑眼睛、小嘴微笑 ——
+                用 Blender 程序化建模，沒有用到照片或 AI 生成。滑鼠拖曳可以旋轉、滾輪縮放。
+            </p>
         </header>
+
+        <!-- 人物切換：五隻角色共用同一個 model-viewer -->
+        <div class="char-switcher" role="group" aria-label="選擇角色">
+            <button type="button" class="char-btn" data-id="corgi" data-src="/models/mascot-3d.glb" data-orbit="0deg 82deg 2.8m" data-target="0m 0m 0m" data-tris={STAT_TRIS} data-mats={STAT_MATS} data-size={STAT_SIZE} data-engine="TRELLIS.2" data-title="🍄 香菇柯基 · 真 3D 模型" aria-pressed="true">🍄 香菇柯基</button>
+            <button type="button" class="char-btn" data-id="robot" data-src="/models/character-robot.glb" data-orbit="0deg 82deg 5.2m" data-target="0m 1.0m 0m" data-tris={STAT_ROBOT_TRIS} data-mats={STAT_ROBOT_MATS} data-size={STAT_ROBOT_SIZE} data-engine="Blender 程序化" data-title="🤖 綠機器人 · 真 3D 模型" aria-pressed="false">🤖 綠機器人</button>
+            <button type="button" class="char-btn" data-id="philosopher" data-src="/models/character-philosopher.glb" data-orbit="0deg 82deg 5.2m" data-target="0m 1.0m 0m" data-tris={STAT_PHILOSOPHER_TRIS} data-mats={STAT_PHILOSOPHER_MATS} data-size={STAT_PHILOSOPHER_SIZE} data-engine="Blender 程序化" data-title="🧙 哲學家 · 真 3D 模型" aria-pressed="false">🧙 哲學家</button>
+            <button type="button" class="char-btn" data-id="cat" data-src="/models/character-cat.glb" data-orbit="0deg 82deg 5.2m" data-target="0m 1.0m 0m" data-tris={STAT_CAT_TRIS} data-mats={STAT_CAT_MATS} data-size={STAT_CAT_SIZE} data-engine="Blender 程序化" data-title="🐈‍⬛ 黑貓 · 真 3D 模型" aria-pressed="false">🐈‍⬛ 黑貓</button>
+            <button type="button" class="char-btn" data-id="crystal" data-src="/models/character-crystal.glb" data-orbit="0deg 82deg 5.2m" data-target="0m 1.0m 0m" data-tris={STAT_CRYSTAL_TRIS} data-mats={STAT_CRYSTAL_MATS} data-size={STAT_CRYSTAL_SIZE} data-engine="Blender 程序化" data-title="💎 水晶怪 · 真 3D 模型" aria-pressed="false">💎 水晶怪</button>
+        </div>
 
         <!-- model-viewer 需要「父容器有明確高度」，這裡是整頁能不能看到模型的關鍵 -->
         <div class="mascot-3d-stage" id="stage">
@@ -52,20 +105,40 @@ const STAT_SIZE = '3.6 MB';
         </div>
 
         <div class="stats-row">
-            <div><div class="num">{STAT_TRIS}</div><div class="lbl">三角面</div></div>
-            <div><div class="num">{STAT_MATS}</div><div class="lbl">材質區</div></div>
-            <div><div class="num">{STAT_SIZE}</div><div class="lbl">GLB 大小</div></div>
-            <div><div class="num">TRELLIS.2</div><div class="lbl">生成引擎</div></div>
+            <div><div class="num" id="statTris">{STAT_TRIS}</div><div class="lbl">三角面</div></div>
+            <div><div class="num" id="statMats">{STAT_MATS}</div><div class="lbl">材質區</div></div>
+            <div><div class="num" id="statSize">{STAT_SIZE}</div><div class="lbl">GLB 大小</div></div>
+            <div><div class="num" id="statEngine">TRELLIS.2</div><div class="lbl">生成引擎</div></div>
         </div>
 
-        <p class="mascot-3d-hint">
+        <p class="mascot-3d-hint char-hint" data-char="corgi">
             💡 這顆是<b>用照片生成的</b>：把香菇柯基照片上傳到 3DValley，
             以 <b>TRELLIS.2 Standard</b> 免費生成，背面菇帽滲進照片背景的天空藍，
             已在貼圖裡轉成棕色（三輪修正，第三輪後只剩邊緣極淡的灰痕）。
             拖曳 = 旋轉，滾輪 = 縮放。
         </p>
+        <p class="mascot-3d-hint char-hint" data-char="robot" hidden>
+            💡 這隻是<b>用 Blender 程序化建模</b>的：裝甲、關節、眼睛都是參數化做出來的，
+            沒有用到照片或 AI 生成，帶 20 根骨頭的骨架，眼睛是青藍色發光材質。
+            拖曳 = 旋轉，滾輪 = 縮放。
+        </p>
+        <p class="mascot-3d-hint char-hint" data-char="philosopher" hidden>
+            💡 這隻是<b>用 Blender 程序化建模</b>的：白髮白鬍、月桂冠、白袍藍腰帶，
+            左手卷軸、右手法杖，都是參數化做出來的，帶 20 根骨頭的骨架。
+            拖曳 = 旋轉，滾輪 = 縮放。
+        </p>
+        <p class="mascot-3d-hint char-hint" data-char="cat" hidden>
+            💡 這隻是<b>用 Blender 程序化建模</b>的：黃色豎瞳眼睛、粉色鼻子、白色鬍鬚，
+            雙臂交叉、尾巴翹著，都是參數化做出來的，帶 20 根骨頭的骨架。
+            拖曳 = 旋轉，滾輪 = 縮放。
+        </p>
+        <p class="mascot-3d-hint char-hint" data-char="crystal" hidden>
+            💡 這隻是<b>用 Blender 程序化建模</b>的：淺藍多面體身體、黑眼睛、微笑小嘴，
+            帶 20 根骨頭的骨架。原本的漸層色轉 GLB 帶不過去，改用平均藍色。
+            拖曳 = 旋轉，滾輪 = 縮放。
+        </p>
 
-        <div class="mascot-3d-info">
+        <div class="mascot-3d-info char-info" data-char="corgi">
             <h3>這顆香菇狗是怎麼做的？</h3>
             <p>
                 把使用者給的香菇柯基照片上傳到 3DValley，以 <b>TRELLIS.2 Standard</b> 免費生成，
@@ -84,12 +157,58 @@ const STAT_SIZE = '3.6 MB';
                 都是這顆 3D 模型的正背面渲染，不再直接用照片原圖。
             </p>
         </div>
+
+        <div class="mascot-3d-info char-info" data-char="robot" hidden>
+            <h3>這隻綠機器人是怎麼做的？</h3>
+            <p>
+                用 Blender 程序化建模：軍綠裝甲、黑色關節、胸口三條通風口、單顆青藍大眼，
+                全部用參數化幾何拼出來，沒有用到照片或 AI 生成。轉 GLB 時用 Draco 壓縮，
+                39 萬面壓到 13 萬面、檔案 5.2 MB 壓到 0.7 MB。
+            </p>
+        </div>
+
+        <div class="mascot-3d-info char-info" data-char="philosopher" hidden>
+            <h3>這位哲學家是怎麼做的？</h3>
+            <p>
+                用 Blender 程序化建模：白髮白鬍、月桂冠、藍腰帶與藍邊白袍，
+                左手卷軸、右手法杖，全部用參數化幾何拼出來，沒有用到照片或 AI 生成。
+                轉 GLB 時用 Draco 壓縮，10 萬面壓到 8.7 萬面、檔案 4.2 MB 壓到 0.7 MB。
+            </p>
+        </div>
+
+        <div class="mascot-3d-info char-info" data-char="cat" hidden>
+            <h3>這隻黑貓是怎麼做的？</h3>
+            <p>
+                用 Blender 程序化建模：黑色身體、黃色豎瞳眼睛、粉色鼻子、白色鬍鬚，
+                雙臂交叉、尾巴翹在左後，全部用參數化幾何拼出來，沒有用到照片或 AI 生成。
+                轉 GLB 時用 Draco 壓縮，檔案 1.4 MB 壓到 0.2 MB。
+            </p>
+        </div>
+
+        <div class="mascot-3d-info char-info" data-char="crystal" hidden>
+            <h3>這隻水晶怪是怎麼做的？</h3>
+            <p>
+                用 Blender 程序化建模：淺藍多面體身體、黑眼睛、微笑小嘴，
+                全部用參數化幾何拼出來，沒有用到照片或 AI 生成。
+                原本的漸層色（LayerWeight ramp）轉 GLB 帶不過去，改用平均藍色；
+                轉 GLB 時用 Draco 壓縮，檔案 0.2 MB 壓到 0.04 MB。
+            </p>
+        </div>
     </div>
 
     <script is:inline>
     (function () {
         const viewer = document.getElementById('chibiViewer');
         const loading = document.getElementById('mvLoading');
+        const title = document.getElementById('charTitle');
+        const statTris = document.getElementById('statTris');
+        const statMats = document.getElementById('statMats');
+        const statSize = document.getElementById('statSize');
+        const statEngine = document.getElementById('statEngine');
+        const buttons = Array.from(document.querySelectorAll('.char-btn'));
+        const subtitles = Array.from(document.querySelectorAll('.char-subtitle'));
+        const hints = Array.from(document.querySelectorAll('.char-hint'));
+        const infos = Array.from(document.querySelectorAll('.char-info'));
         if (!viewer) return;
 
         const done = () => {
@@ -108,6 +227,29 @@ const STAT_SIZE = '3.6 MB';
 
         viewer.addEventListener('load', done);
         viewer.addEventListener('error', fail);
+
+        function select(btn) {
+            const d = btn.dataset;
+            buttons.forEach((b) => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+            if (loading) {
+                loading.textContent = '載入 3D 模型中…';
+                loading.hidden = false;
+                loading.classList.remove('is-error');
+            }
+            viewer.setAttribute('src', d.src);
+            viewer.cameraOrbit = d.orbit;
+            viewer.cameraTarget = d.target;
+            if (title) title.textContent = d.title;
+            if (statTris) statTris.textContent = d.tris;
+            if (statMats) statMats.textContent = d.mats;
+            if (statSize) statSize.textContent = d.size;
+            if (statEngine) statEngine.textContent = d.engine;
+            subtitles.forEach((el) => { el.hidden = el.dataset.char !== d.id; });
+            hints.forEach((el) => { el.hidden = el.dataset.char !== d.id; });
+            infos.forEach((el) => { el.hidden = el.dataset.char !== d.id; });
+        }
+
+        buttons.forEach((btn) => btn.addEventListener('click', () => select(btn)));
     })();
     </script>
 </Base>
@@ -130,6 +272,36 @@ const STAT_SIZE = '3.6 MB';
         color: var(--muted, #8b949e);
         font-size: 0.95rem;
         line-height: 1.7;
+    }
+
+    .char-switcher {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin: 1.5rem 0 0;
+    }
+
+    .char-btn {
+        padding: 0.55rem 1rem;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--text, #e9f0ec);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1.5px solid rgba(255, 255, 255, 0.16);
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+
+    .char-btn:hover {
+        transform: translateY(-2px);
+        border-color: rgba(251, 202, 31, 0.7);
+    }
+
+    .char-btn[aria-pressed="true"] {
+        color: #3a2f2a;
+        background: #fbca1f;
+        border-color: #3a2f2a;
     }
 
     /* 關鍵：model-viewer 是 height:100%，父容器必須給「明確高度」，
