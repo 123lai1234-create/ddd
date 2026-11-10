@@ -1095,6 +1095,21 @@ body[data-page="index"] #hamburger {
     background: transparent !important;
     border-color: #3a2f2a !important;
 }
+/* Mobile nav drawer: paper background + dark text.
+   抽屜底色是 shared.css 寫死的深色 rgba(8,12,16,0.97)，但首頁紙感主題
+   把 --text 改成深棕墨色 #2a201c，抽屜連結用 var(--text) 會變成深字印黑底、
+   手機上幾乎看不見。抽屜改成跟上方導覽列一樣的米白底＋深字。 */
+body[data-page="index"] .nav-drawer {
+    background: #f0ebe0 !important;
+    border-bottom: 1.5px dashed #3a2f2a !important;
+}
+body[data-page="index"] .nav-drawer a {
+    color: #2a201c !important;
+    border-bottom-color: rgba(58, 47, 42, 0.16) !important;
+}
+body[data-page="index"] .nav-drawer a:hover {
+    color: #c44536 !important;
+}
 
 /* Site footer — paper theme.
    ⚠ 舊寫法是 `body[data-page="index"] body > footer:not(.park-footer)`，
