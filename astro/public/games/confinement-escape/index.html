@@ -81,6 +81,12 @@ h3{margin:14px 0 8px;font-size:16px;color:#c9ced5}
 /* modal */
 #modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 #modal.show{display:flex}
+/* 3D 檢視浮層（model-viewer；按需載入，不影響首屏） */
+.mvwrap{position:relative;width:100%;height:62vh;height:62dvh;min-height:320px;background:#0b0d10;border-radius:12px;overflow:hidden}
+.mvwrap model-viewer{width:100%;height:100%;display:block;background:radial-gradient(circle at 50% 30%,#232830,#0b0d10 70%)}
+.mvloading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--dim)}
+.mverr{padding:12px;text-align:center;color:var(--dim)}
+@media (max-width:480px){.mvwrap{height:56vh;height:56dvh;min-height:280px}}
 .mbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:520px;width:100%;max-height:85vh;max-height:85dvh;overflow:auto;padding:18px}
 button,.door,.ccard,.ucard,.gcard,.chap,.bosscard,.item,.pull{touch-action:manipulation}
 .detail{display:flex;gap:14px}
@@ -1493,6 +1499,38 @@ function toast(msg){
 }
 function openModal(html){$("#mbox").innerHTML=html;$("#modal").classList.add("show");}
 function closeModal(){$("#modal").classList.remove("show");}
+// ---- 3D 檢視：51 隻 Q 版娃娃風角色 GLB（models/<id>.glb），按需載入 ----
+// model-viewer 與 Draco 解碼器皆為本站自帶檔案（model-viewer.min.js、draco/），不連外站。
+const GLB3D=new Set(['arsonist','ashen','assassin','bartender','berserker','bodyguard','bomb','boss','butcher','chair','chef','chemist','climber','courier','detective','diver','exorcist','fatty','fatty2','gambler','geneFreak','gourmet','hacker','herbalist','hunter','janitor','leader','locker','lucky','medic','mediocre','merc','miner','paramedic','qing','quilt','runner','scavenger','sentinel','shade','sniper','sock','survivor','tamer','tin','torch','trucker','tycoon','vampire','veteran','witch']);
+let MV_READY=null;
+function mvLoad(){
+  if(MV_READY)return MV_READY;
+  self.ModelViewerElement=Object.assign(self.ModelViewerElement||{},{dracoDecoderLocation:'draco/'});
+  MV_READY=import('./model-viewer.min.js').then(()=>{
+    const MV=customElements.get('model-viewer');
+    if(MV&&MV.setDRACODecoderLocation)MV.setDRACODecoderLocation('draco/');
+  }).catch(e=>{MV_READY=null;throw e;});
+  return MV_READY;
+}
+function open3D(id){
+  const c=CARDS[id];
+  openModal(`<h3 style="margin:0 0 8px">🎥 ${c.name} · 3D 檢視</h3>
+  <div class="mvwrap"><div class="mvloading">載入 3D 模型中…</div></div>
+  <div class="dim small" style="margin-top:8px">拖曳旋轉、滾輪／雙指縮放</div>
+  <div class="row" style="margin-top:12px"><button onclick="showCard('${id}')">← 返回角色</button><button onclick="closeModal()" style="margin-left:auto">關閉</button></div>`);
+  mvLoad().then(()=>{
+    const wrap=document.querySelector('.mvwrap');
+    if(!wrap)return;
+    wrap.innerHTML=`<model-viewer src="models/${id}.glb" alt="${c.name} 3D" camera-controls camera-orbit="0deg 82deg 5.2m" camera-target="0m 1.0m 0m" field-of-view="30deg" exposure="0.85" shadow-intensity="0.7" interaction-prompt="none" ar-modes="none"></model-viewer>`;
+    const mv=wrap.querySelector('model-viewer');
+    mv.addEventListener('error',()=>{
+      if(document.querySelector('.mvwrap')===wrap)wrap.innerHTML=`<div class="mverr">3D 模型載入失敗，請檢查連線後再試一次。</div>`;
+    });
+  }).catch(()=>{
+    const el=document.querySelector('.mvloading');
+    if(el)el.textContent='3D 檢視器載入失敗，請檢查連線後再試一次。';
+  });
+}
 
 /* ===================== GUIDE ===================== */
 // 超簡單導引：第一次進來自動打開，之後按右上角 ⚙ 設定裡的「玩法導引」重看
@@ -1899,6 +1937,7 @@ function showCard(id){
     <div class="r${c.r}">${c.r} ${o?starStr(o.stars,brOf(id)):""}</div><h2 style="margin:2px 0">${c.name}</h2>
     <div>${clsTag(id)} <span class="dim small">${CLASSES[c.cls].desc}</span></div>${o?lvBar(id):""}
     <div class="small">❤ ${sv("hp",s.maxHp)}　⚔ ${sv("atk",s.atk)}　🛡 ${sv("def",s.def)}　💨 ${sv("spd",s.spd)}</div>
+    ${GLB3D.has(id)?`<div class="row" style="margin-top:8px"><button class="pri" onclick="open3D('${id}')">🎥 3D 檢視</button></div>`:""}
     ${o?`<div class="gslots">${Object.keys(SLOTS).map(sl=>{const g=gearById(o.eq&&o.eq[sl]);
       return `<div class="gslot ${g?"has "+GEAR[g.base].q:""}" onclick="openSlot('${id}','${sl}')"><div class="gi">${g?gearImg(g.base):"＋"}</div>${g?`<b class="r${GEAR[g.base].q}">${qTag(GEAR[g.base].q)}${GEAR[g.base].name}${g.lv?" +"+g.lv:""}</b>${lvOk(id,g.base)?"":`<div class="req bad">⚠ 需 Lv.${GEAR_REQ[GEAR[g.base].q]}，未生效</div>`}`:`<span class="dim">${SLOTS[sl]}</span>`}</div>`;}).join("")}${lockedSlotsHtml()}</div>
     ${setHtml(id)}${e.crit||e.steal||e.dodge||e.dr?`<div class="gfx">裝備特效：${statStr({crit:e.crit,steal:e.steal,dodge:e.dodge,dr:e.dr})}</div>`:""}`:""}
