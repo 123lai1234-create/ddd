@@ -15,11 +15,13 @@
      * 拖曳狗 = 旋轉模型（model-viewer camera-controls），滾輪/雙指 = 縮放
      * 拖右上角「拖我移動」標籤 = 移動整個按鈕位置
      * 點狗 = 循環反應（跳、轉一圈、揮手）+ 開關聊天面板
+     * 點左上角 🔄 或面板標題旁 🔄 = 換下一隻人偶（五隻循環，選擇存 localStorage）
      * state change -> setView('front'|'side'|'back') 改 camera-orbit 角度 -->
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 <div id="chatbot-anchor" aria-label="香菇柯基 3D（可拖曳旋轉）" role="button" tabindex="0">
   <div class="kawaii-stage" id="kawaii-stage">
     <model-viewer id="kawaii-canvas" src="/models/mascot-3d-chat.glb" poster="/images/chibi-hero.png" alt="香菇柯基 3D" camera-orbit="0deg 82deg 2.8m" camera-target="0m 0m 0m" field-of-view="30deg" exposure="0.85" shadow-intensity="0.7" camera-controls interaction-prompt="none" ar-modes="none"></model-viewer>
+    <button class="char-switch-hint" id="char-switch-btn" aria-label="換人偶" title="換人偶">🔄</button>
     <span class="char-drag-hint" id="char-drag-handle" aria-hidden="true">✥ 拖我移動</span>
   </div>
 
@@ -30,6 +32,7 @@
         <h4>元嬰不說</h4>
       </div>
       <div class="chatbot-actions">
+        <button class="chatbot-switch" id="chatbot-switch" aria-label="換人偶" title="換人偶">🔄</button>
         <button class="chatbot-reset" aria-label="重新開始" title="重新開始對話">↻</button>
         <button class="chatbot-close" aria-label="關閉">✕</button>
       </div>
@@ -181,6 +184,51 @@
     transform: scale(1);
   }
   #chatbot-anchor.dragging .char-drag-hint { opacity: 0; }
+
+  /* 換人偶鈕（人偶左上角，hover 才出現，跟右上角拖曳標籤對稱） */
+  .char-switch-hint {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    font-size: 11px;
+    border: none;
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: auto;
+    cursor: pointer;
+    white-space: nowrap;
+    z-index: 2;
+    padding: 0;
+  }
+  #chatbot-anchor:hover .char-switch-hint {
+    opacity: 1;
+    transform: scale(1);
+  }
+  #chatbot-anchor.dragging .char-switch-hint { opacity: 0; }
+
+  /* 換人偶鈕（聊天面板標題旁，跟 ↻ 同款幽靈按鈕） */
+  .chatbot-switch {
+    background: none;
+    border: none;
+    color: var(--muted, #94a59f);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0 6px;
+    transition: transform 0.2s, color 0.2s;
+  }
+  .chatbot-switch:hover {
+    color: var(--text, #e9f0ec);
+    transform: rotate(-90deg);
+  }
 
   /* === Streaming cursor === */
   .chat-stream-cursor {
@@ -405,8 +453,59 @@
 
     function setCameraOrbit(theta, phi) {
         if (!viewer) return;
-        try { viewer.setAttribute('camera-orbit', `${theta}deg ${phi}deg 2.8m`); } catch (_) {}
+        try { viewer.setAttribute('camera-orbit', `${theta}deg ${phi}deg ${camRadius}m`); } catch (_) {}
     }
+
+    /* ── 人偶切換：五隻角色共用同一顆 model-viewer ────────────────
+     * 香菇柯基用輕量版 mascot-3d-chat.glb（poster 是柯基照片）；
+     * 其餘四隻用 Draco 壓縮版（0.04–0.7 MB，比柯基輕量版還小），
+     * 2 公尺高、腳在 y=0，所以相機要拉遠到 5.2m、目標改到 y=1.0m。
+     * 選擇存在 localStorage，換頁、重開瀏覽器都記得。 */
+    const CHARACTERS = [
+        { id: 'corgi',       name: '香菇柯基', src: '/models/mascot-3d-chat.glb',      poster: '/images/chibi-hero.png', radius: 2.8, targetY: 0,   alt: '香菇柯基 3D' },
+        { id: 'robot',       name: '綠機器人', src: '/models/character-robot.glb',      poster: null,                     radius: 5.2, targetY: 1.0, alt: '綠機器人 3D' },
+        { id: 'philosopher', name: '哲學家',   src: '/models/character-philosopher.glb', poster: null,                     radius: 5.2, targetY: 1.0, alt: '哲學家 3D' },
+        { id: 'cat',         name: '黑貓',     src: '/models/character-cat.glb',         poster: null,                     radius: 5.2, targetY: 1.0, alt: '黑貓 3D' },
+        { id: 'crystal',     name: '水晶怪',   src: '/models/character-crystal.glb',     poster: null,                     radius: 5.2, targetY: 1.0, alt: '水晶怪 3D' },
+    ];
+    const CHAR_STORE_KEY = 'chatbot_character_v1';
+    let charIndex = 0;
+    try {
+        const saved = parseInt(localStorage.getItem(CHAR_STORE_KEY) || '0', 10);
+        if (saved >= 0 && saved < CHARACTERS.length) charIndex = saved;
+    } catch (_) {}
+    let camRadius = CHARACTERS[charIndex].radius;
+    let camTargetY = CHARACTERS[charIndex].targetY;
+
+    function applyCharacter(i) {
+        const c = CHARACTERS[i];
+        if (!c || !viewer) return;
+        charIndex = i;
+        camRadius = c.radius;
+        camTargetY = c.targetY;
+        try {
+            if (viewer.getAttribute('src') !== c.src) viewer.setAttribute('src', c.src);
+            if (c.poster) viewer.setAttribute('poster', c.poster);
+            else viewer.removeAttribute('poster');
+            viewer.setAttribute('alt', c.alt);
+            viewer.setAttribute('camera-target', `0m ${c.targetY}m 0m`);
+        } catch (_) {}
+        anchor.setAttribute('aria-label', `${c.name} 3D（可拖曳旋轉）`);
+        try { localStorage.setItem(CHAR_STORE_KEY, String(i)); } catch (_) {}
+        baseTheta = 0;
+        basePhi = 82;
+        setCameraOrbit(0, 82);
+    }
+    function cycleCharacter() {
+        applyCharacter((charIndex + 1) % CHARACTERS.length);
+        if (!viewer) return;
+        viewer.classList.remove('kawaii-bounce');
+        void viewer.offsetWidth;
+        viewer.classList.add('kawaii-bounce');
+        setTimeout(() => viewer.classList.remove('kawaii-bounce'), 550);
+    }
+    // 套用上次選的人偶（預設香菇柯基；已是柯基時不重設 src，避免重載）
+    applyCharacter(charIndex);
     function animateCameraTo(theta, phi, duration, onDone) {
         if (camAnim) cancelAnimationFrame(camAnim);
         const startTheta = baseTheta;
@@ -670,6 +769,17 @@
         addMsg('bot', '對話已重置。問我任何問題吧！');
         showChips();
         peekView('back', 1200);
+    });
+
+    // 換人偶：面板標題旁 🔄 + 人偶左上角 🔄，都是換下一隻
+    document.getElementById('chatbot-switch')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        cycleCharacter();
+    });
+    document.getElementById('char-switch-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        cycleCharacter();
     });
 
     // Hover → side peek
