@@ -239,3 +239,19 @@ python line4_pdf_batch.py all         # 依序跑完以上全部
     `configs/ logs/ pipeline/` 灑在你的專案資料夾裡。
 17. **Windows cp950**：含中文的 `.ps1` 要存 UTF-8 **with BOM**；Python 檔用 UTF-8 無 BOM。
     Python 讀子行程輸出一律 `encoding="utf-8", errors="replace"`。
+
+---
+
+## 附錄
+
+| 路徑 | 內容 |
+|---|---|
+| `docs/free-adobe-replacement-cheatsheet.md` | 免費取代 Adobe CC + 剪映的完整對應表、快捷鍵對照、17 條踩坑紀錄 |
+| `demo/agent-pipeline-demo.py` | 智能體驅動示範管線：GIMP 批次改圖 / FFmpeg 轉檔 / melt 算繪 / Stirling-PDF 批次，逐項印 PASS/FAIL |
+
+示範管線獨立於四條產線，跑法：
+
+```powershell
+cd demo
+python agent-pipeline-demo.py     # 全過會 exit 0
+```
