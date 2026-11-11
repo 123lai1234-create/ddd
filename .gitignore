@@ -84,3 +84,4 @@ blender/out/mascot-3d.restyle-*.glb
 # free-toolkit 產出（每次跑都會重生，不進版控）
 tools/free-toolkit/out/
 tools/free-toolkit/**/__pycache__/
+tools/free-toolkit/demo/_demo_output/
