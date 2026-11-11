@@ -131,11 +131,20 @@ function parseLyrics(text: string, fallbackTitle: string): Parsed {
     return { title, hook, sections, lyrics };
 }
 
+/**
+ * 音檔走 jsDelivr CDN，不是本站。
+ *
+ * donttalk 的音檔放在 astro/public/music/*.mp3，但站上不直接供檔——
+ * tracks.json 裡每一首的 url 都指向 jsDelivr（分支 @123lai1234-create）。
+ * 本站的 /music/*.mp3 回 404 是正常的，頁面也必須跟著走 CDN。
+ */
+const CDN_BASE = 'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music';
+
 function findAudio(id: string): string | null {
     if (!MUSIC_DIR) return null;
     for (const ext of AUDIO_EXT) {
         if (fs.existsSync(path.join(MUSIC_DIR, id + ext))) {
-            return `/music/${id}${ext}`;
+            return `${CDN_BASE}/${encodeURIComponent(id + ext)}`;
         }
     }
     // 大小寫不拘再找一次
@@ -144,7 +153,7 @@ function findAudio(id: string): string | null {
         const ext = path.extname(fn).toLowerCase();
         if (!AUDIO_EXT.includes(ext)) continue;
         if (path.basename(fn, ext).toLowerCase() === lower) {
-            return `/music/${fn}`;
+            return `${CDN_BASE}/${encodeURIComponent(fn)}`;
         }
     }
     return null;
