@@ -1375,17 +1375,6 @@
       "color2": "#14101C",
       "audio": "20_等天亮.mp3",
       "cover": null
-    },
-    {
-      "id": "UPLOAD-GUIDE",
-      "title": "UPLOAD-GUIDE",
-      "artist": "不說",
-      "lyric": "# 音樂上傳指南",
-      "subtitle": "donttalk.vercel.app",
-      "color1": "#E8C87B",
-      "color2": "#1C1810",
-      "audio": null,
-      "cover": null
     }
   ]
 }
