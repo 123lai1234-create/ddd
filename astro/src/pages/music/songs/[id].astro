@@ -1,0 +1,308 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { loadSongs } from '../../../lib/musicSongs';
+
+export function getStaticPaths() {
+    return loadSongs().map((song) => ({
+        params: { id: song.slug },
+        props: { song },
+    }));
+}
+
+const { song } = Astro.props;
+const SITE = 'https://donttalk.vercel.app';
+const canonical = `${SITE}/music/songs/${song.slug}/`;
+
+const card = (file: string) => `/music/cards/${song.slug}/${file}`;
+/** og:image / JSON-LD 會送到外部爬蟲，中文路徑必須 percent-encode 才是一個合法 URL。 */
+const cardAbs = (file: string) => `${SITE}${encodeURI(card(file))}`;
+const hasCards = song.hasCards;
+
+const SOCIAL = [
+    { file: 'square-1080.jpg', label: 'IG 方形歌詞卡', size: '1080×1080' },
+    { file: 'story-1080x1920.jpg', label: 'IG 故事圖', size: '1080×1920' },
+    { file: 'yt-1280x720.jpg', label: 'YouTube 縮圖', size: '1280×720' },
+    { file: 'og-image.jpg', label: '網站 OG 分享圖', size: '1200×630' },
+    { file: 'share-card.jpg', label: '方形分享卡', size: '1200×1200' },
+];
+
+const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'MusicRecording',
+    name: song.title,
+    url: canonical,
+    image: cardAbs('square-1080.jpg'),
+    genre: '華語流行',
+    inLanguage: 'zh-TW',
+    byArtist: { '@type': 'MusicGroup', name: '不說' },
+    isPartOf: { '@type': 'MusicAlbum', name: '不說的作品集', url: `${SITE}/music/songs/` },
+};
+---
+
+<Base
+    title={`${song.title} | 歌曲作品集 | 不說`}
+    description={song.hook || `${song.title} — 不說的原創詞曲`}
+    ogImage={hasCards ? cardAbs('og-image.jpg') : undefined}
+    ogTag="Portfolio"
+    bodyPage="music-song"
+>
+    <div data-site-nav></div>
+
+    <main class="sg-main">
+        <a href="/music/songs/" class="sg-back">← 所有歌曲</a>
+
+        <div class="sg-grid">
+            <!-- ── 左欄：封面 + 播放 + 素材 ── -->
+            <aside class="sg-side">
+                {
+                    hasCards && (
+                        <img
+                            class="sg-art"
+                            src={card('square-1080.jpg')}
+                            alt={`${song.title} 歌詞卡`}
+                            width="1080"
+                            height="1080"
+                            loading="eager"
+                            decoding="async"
+                        />
+                    )
+                }
+
+                {
+                    song.audio && (
+                        <div class="sg-player">
+                            <audio controls preload="none" src={song.audio}>
+                                你的瀏覽器不支援音訊播放。
+                            </audio>
+                            <a class="sg-audio-link" href={song.audio} download>
+                                下載原始音檔
+                            </a>
+                        </div>
+                    )
+                }
+
+                {
+                    hasCards && (
+                        <section class="sg-assets">
+                            <h2 class="sg-assets-title">社群素材</h2>
+                            <p class="sg-assets-note">
+                                由 <code>tools/free-toolkit</code> 批次產出，可直接下載上架。
+                            </p>
+                            <ul class="sg-asset-list">
+                                {SOCIAL.map((it) => (
+                                    <li>
+                                        <a href={card(it.file)} download>
+                                            <span class="sg-asset-label">{it.label}</span>
+                                            <span class="sg-asset-size">{it.size}</span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    )
+                }
+            </aside>
+
+            <!-- ── 右欄：標題 + 歌詞 ── -->
+            <article class="sg-body">
+                <header class="sg-head">
+                    <h1 class="sg-title">{song.title}</h1>
+                    <p class="sg-artist">不說</p>
+                    {song.hook && song.hook !== song.title && <p class="sg-hook">「{song.hook}」</p>}
+                </header>
+
+                <section class="sg-lyrics" aria-label="歌詞">
+                    {
+                        song.sections.map((sec) => (
+                            <div class="sg-section">
+                                {sec.label && <h2 class="sg-section-label">{sec.label}</h2>}
+                                {sec.lines.map((line) => (
+                                    <p class="sg-line">{line}</p>
+                                ))}
+                            </div>
+                        ))
+                    }
+                </section>
+
+                <footer class="sg-foot">
+                    <a href="/music/songs/">← 回作品集</a>
+                    <a href="/music/">回到混音台</a>
+                </footer>
+            </article>
+        </div>
+    </main>
+
+    <div data-site-footer></div>
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+</Base>
+
+<style>
+    .sg-main {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 48px 24px 80px;
+    }
+    .sg-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        color: var(--muted, #8b949e);
+        text-decoration: none;
+        margin-bottom: 28px;
+    }
+    .sg-back:hover {
+        color: var(--accent, #58d7ff);
+    }
+    .sg-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+        gap: 40px;
+        align-items: start;
+    }
+    @media (max-width: 860px) {
+        .sg-grid {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 28px;
+        }
+    }
+    .sg-art {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 14px;
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+        background: #0e1620;
+    }
+    .sg-player {
+        margin-top: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .sg-player audio {
+        width: 100%;
+    }
+    .sg-audio-link {
+        font-size: 0.78rem;
+        color: var(--muted, #8b949e);
+        text-decoration: none;
+        align-self: flex-start;
+    }
+    .sg-audio-link:hover {
+        color: var(--accent, #58d7ff);
+    }
+    .sg-assets {
+        margin-top: 28px;
+        padding-top: 22px;
+        border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    }
+    .sg-assets-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text, #e6edf3);
+        margin: 0 0 6px;
+    }
+    .sg-assets-note {
+        font-size: 0.75rem;
+        color: var(--muted, #8b949e);
+        margin: 0 0 12px;
+        line-height: 1.6;
+    }
+    .sg-assets-note code {
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 3px;
+        padding: 1px 4px;
+    }
+    .sg-asset-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .sg-asset-list a {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 12px;
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+        border-radius: 8px;
+        text-decoration: none;
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .sg-asset-list a:hover {
+        border-color: rgba(88, 215, 255, 0.4);
+        background: rgba(88, 215, 255, 0.05);
+    }
+    .sg-asset-label {
+        color: var(--text, #e6edf3);
+        font-size: 0.82rem;
+    }
+    .sg-asset-size {
+        color: var(--muted, #8b949e);
+        font-size: 0.7rem;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    .sg-head {
+        margin-bottom: 28px;
+        padding-bottom: 22px;
+        border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    }
+    .sg-title {
+        font-size: clamp(1.6rem, 4.5vw, 2.3rem);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 8px;
+        color: var(--text, #e6edf3);
+        line-height: 1.25;
+    }
+    .sg-artist {
+        margin: 0 0 10px;
+        font-size: 0.9rem;
+        color: var(--accent, #58d7ff);
+        letter-spacing: 0.06em;
+    }
+    .sg-hook {
+        margin: 0;
+        font-size: 1rem;
+        color: var(--muted, #8b949e);
+        line-height: 1.7;
+    }
+    .sg-section {
+        margin-bottom: 22px;
+    }
+    .sg-section-label {
+        font-size: 0.72rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted, #8b949e);
+        margin: 0 0 10px;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    .sg-line {
+        margin: 0 0 4px;
+        font-size: 0.98rem;
+        line-height: 1.9;
+        color: var(--text, #e6edf3);
+        opacity: 0.92;
+    }
+    .sg-foot {
+        display: flex;
+        gap: 18px;
+        margin-top: 36px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+        font-size: 0.82rem;
+    }
+    .sg-foot a {
+        color: var(--muted, #8b949e);
+        text-decoration: none;
+    }
+    .sg-foot a:hover {
+        color: var(--accent, #58d7ff);
+    }
+</style>

@@ -41,6 +41,24 @@ PALETTE = [
 SKIP_FILES = {"lrc-guide.txt", "readme.txt", "readme.md"}
 
 
+def is_doc(path):
+    """判斷這個 .txt 是不是「說明文件」而不是歌詞。
+
+    donttalk 的 astro/public/music/ 裡混了 UPLOAD-GUIDE.txt 這類 markdown 說明，
+    內容以 '#' 開頭。若不排除，它會被當成第 126 首歌，連卡片都產出來。
+    """
+    try:
+        with io.open(path, encoding="utf-8") as f:
+            for line in f:
+                s = line.strip()
+                if not s:
+                    continue
+                return s.startswith("#")
+    except (OSError, UnicodeDecodeError):
+        return True
+    return False
+
+
 def parse_lyrics(path):
     """回傳 (title, hook)。hook 優先取 Chorus 段第一行，沒有就取第一句歌詞。"""
     with io.open(path, encoding="utf-8") as f:
@@ -115,6 +133,7 @@ def main():
 
     files = sorted(fn for fn in os.listdir(md)
                    if fn.lower().endswith(".txt") and fn.lower() not in SKIP_FILES)
+    files = [fn for fn in files if not is_doc(os.path.join(md, fn))]
     songs = []
     for fn in files:
         stem = os.path.splitext(fn)[0]

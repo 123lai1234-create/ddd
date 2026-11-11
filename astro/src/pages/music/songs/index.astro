@@ -1,0 +1,263 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { loadSongs } from '../../../lib/musicSongs';
+
+const songs = loadSongs();
+const withAudio = songs.filter((s) => s.audio).length;
+const withCover = songs.filter((s) => s.cover).length;
+const withCards = songs.filter((s) => s.hasCards).length;
+
+const SITE = 'https://donttalk.vercel.app';
+const firstWithCards = songs.find((s) => s.hasCards);
+const ogImage = firstWithCards
+    ? `${SITE}${encodeURI(`/music/cards/${firstWithCards.slug}/og-image.jpg`)}`
+    : undefined;
+---
+
+<Base
+    title={`歌曲作品集 | 不說`}
+    description={`${songs.length} 首原創詞曲：歌詞、專屬歌詞卡與社群分享素材，全部由免費工具鏈批次產出。`}
+    ogImage={ogImage}
+    ogTag="Portfolio"
+    bodyPage="music-songs"
+>
+    <div data-site-nav></div>
+
+    <main class="ms-main">
+        <header class="ms-head">
+            <a href="/music/" class="ms-back">← 回到混音台</a>
+            <h1 class="ms-title">歌曲作品集</h1>
+            <p class="ms-sub">
+                {songs.length} 首原創詞曲 · {withAudio} 首有完整音檔 · {withCover} 首有封面圖 ·
+                {withCards} 首備妥社群素材
+            </p>
+            <p class="ms-note">
+                每首歌的歌詞卡、封面與社群分享圖，都由
+                <code>tools/free-toolkit</code> 的批次產線自動產出（Inkscape 向量模板 → GIMP 無頭轉檔）。
+            </p>
+        </header>
+
+        <div class="ms-toolbar">
+            <input
+                type="search"
+                id="ms-filter"
+                class="ms-filter"
+                placeholder="搜尋歌名或歌詞…"
+                aria-label="搜尋歌曲"
+                autocomplete="off"
+            />
+            <span class="ms-count" id="ms-count">{songs.length} 首</span>
+        </div>
+
+        <ul class="ms-grid" id="ms-grid">
+            {
+                songs.map((s) => (
+                    <li
+                        class="ms-item"
+                        data-search={`${s.title} ${s.hook} ${s.lyrics.join(' ')}`.toLowerCase()}
+                    >
+                        <a href={`/music/songs/${s.slug}/`} class="ms-card">
+                            <span class="ms-card-top">
+                                <span class="ms-card-title">{s.title}</span>
+                                {s.hook && s.hook !== s.title && <span class="ms-hook">{s.hook}</span>}
+                            </span>
+                            <span class="ms-tags">
+                                {s.audio && <span class="ms-tag ms-tag-audio">音檔</span>}
+                                {s.cover && <span class="ms-tag ms-tag-cover">封面</span>}
+                                {s.hasCards && <span class="ms-tag ms-tag-card">素材</span>}
+                            </span>
+                        </a>
+                    </li>
+                ))
+            }
+        </ul>
+
+        <p class="ms-empty" id="ms-empty" hidden>找不到符合的歌曲。</p>
+    </main>
+
+    <div data-site-footer></div>
+
+    <script is:inline>
+        (function () {
+            var input = document.getElementById('ms-filter');
+            var grid = document.getElementById('ms-grid');
+            var count = document.getElementById('ms-count');
+            var empty = document.getElementById('ms-empty');
+            if (!input || !grid) return;
+
+            var items = Array.prototype.slice.call(grid.querySelectorAll('.ms-item'));
+            var total = items.length;
+
+            function apply() {
+                var q = input.value.trim().toLowerCase();
+                var shown = 0;
+                items.forEach(function (el) {
+                    var hit = !q || el.getAttribute('data-search').indexOf(q) !== -1;
+                    el.hidden = !hit;
+                    if (hit) shown++;
+                });
+                count.textContent = shown + ' 首';
+                if (empty) empty.hidden = shown !== 0;
+            }
+
+            input.addEventListener('input', apply);
+            apply();
+        })();
+    </script>
+</Base>
+
+<style>
+    .ms-main {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 56px 24px 80px;
+    }
+    .ms-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        color: var(--muted, #8b949e);
+        text-decoration: none;
+        margin-bottom: 28px;
+    }
+    .ms-back:hover {
+        color: var(--accent, #58d7ff);
+    }
+    .ms-title {
+        font-size: clamp(1.8rem, 5vw, 2.6rem);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 10px;
+        color: var(--text, #e6edf3);
+    }
+    .ms-sub {
+        color: var(--muted, #8b949e);
+        font-size: 0.92rem;
+        margin: 0 0 8px;
+    }
+    .ms-note {
+        color: var(--muted, #8b949e);
+        font-size: 0.82rem;
+        margin: 0 0 32px;
+        line-height: 1.7;
+        max-width: 640px;
+    }
+    .ms-note code {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-size: 0.78rem;
+    }
+    .ms-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .ms-filter {
+        flex: 1;
+        max-width: 340px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        border-radius: 8px;
+        padding: 9px 14px;
+        color: var(--text, #e6edf3);
+        font-size: 0.88rem;
+        font-family: inherit;
+    }
+    .ms-filter:focus {
+        outline: none;
+        border-color: var(--accent, #58d7ff);
+    }
+    .ms-count {
+        font-size: 0.8rem;
+        color: var(--muted, #8b949e);
+        font-family: 'JetBrains Mono', monospace;
+    }
+    .ms-grid {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 12px;
+    }
+    .ms-item[hidden] {
+        display: none;
+    }
+    .ms-card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        height: 100%;
+        padding: 16px 18px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+        border-radius: 12px;
+        text-decoration: none;
+        transition:
+            border-color 0.18s ease,
+            background 0.18s ease,
+            transform 0.18s ease;
+    }
+    .ms-card:hover {
+        border-color: rgba(88, 215, 255, 0.45);
+        background: rgba(88, 215, 255, 0.05);
+        transform: translateY(-2px);
+    }
+    .ms-card-top {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .ms-card-title {
+        color: var(--text, #e6edf3);
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+    .ms-hook {
+        color: var(--muted, #8b949e);
+        font-size: 0.83rem;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .ms-tags {
+        display: flex;
+        gap: 6px;
+        margin-top: auto;
+    }
+    .ms-tag {
+        font-size: 0.68rem;
+        padding: 2px 8px;
+        border-radius: 99px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--muted, #8b949e);
+    }
+    .ms-tag-audio {
+        border-color: rgba(88, 215, 255, 0.3);
+        color: #58d7ff;
+        background: rgba(88, 215, 255, 0.08);
+    }
+    .ms-tag-cover {
+        border-color: rgba(232, 163, 61, 0.3);
+        color: #e8a33d;
+        background: rgba(232, 163, 61, 0.08);
+    }
+    .ms-tag-card {
+        border-color: rgba(159, 214, 163, 0.3);
+        color: #9fd6a3;
+        background: rgba(159, 214, 163, 0.08);
+    }
+    .ms-empty {
+        color: var(--muted, #8b949e);
+        font-size: 0.9rem;
+        padding: 40px 0;
+        text-align: center;
+    }
+</style>
