@@ -1,0 +1,27 @@
+{
+  "music_dir": "../../../astro/public/music",
+  "songs": [
+    {
+      "id": "07_愛的模樣",
+      "title": "愛的模樣",
+      "artist": "不說",
+      "lyric": "愛的模樣，讓人想回家",
+      "subtitle": "donttalk.vercel.app",
+      "color1": "#E8A33D",
+      "color2": "#101820",
+      "audio": "07_愛的模樣.mp3",
+      "cover": "covers/07_愛的模樣.jpg"
+    },
+    {
+      "id": "10_城市的夜",
+      "title": "城市的夜",
+      "artist": "不說",
+      "lyric": "城市的夜，霓虹閃爍不眠",
+      "subtitle": "donttalk.vercel.app",
+      "color1": "#7FB3D5",
+      "color2": "#0E1A24",
+      "audio": "10_城市的夜.mp3",
+      "cover": "covers/10_城市的夜.jpg"
+    }
+  ]
+}

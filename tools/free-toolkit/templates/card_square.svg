@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="{{COLOR2}}"/>
+      <stop offset="100%" stop-color="{{COLOR3}}"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.82" cy="0.14" r="0.72">
+      <stop offset="0%" stop-color="{{COLOR1}}" stop-opacity="0.5"/>
+      <stop offset="60%" stop-color="{{COLOR1}}" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="{{COLOR1}}" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.1" cy="0.95" r="0.6">
+      <stop offset="0%" stop-color="{{COLOR1}}" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="{{COLOR1}}" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <rect width="1080" height="1080" fill="url(#glow)"/>
+  <rect width="1080" height="1080" fill="url(#glow2)"/>
+
+  <g opacity="0.16" fill="none" stroke="{{COLOR1}}" stroke-width="2">
+    <circle cx="905" cy="175" r="255"/>
+    <circle cx="905" cy="175" r="320"/>
+  </g>
+
+  <g opacity="0.9" fill="none" stroke="{{COLOR1}}" stroke-width="6">
+    <circle cx="116" cy="228" r="26"/>
+    <circle cx="185" cy="228" r="26"/>
+  </g>
+
+  {{LYRIC_LINES}}
+
+  <rect x="96" y="586" width="92" height="10" rx="5" fill="{{COLOR1}}"/>
+
+  <text x="96" y="700" font-family="{{FONT}}" font-size="104" font-weight="bold"
+        fill="{{TEXTCOLOR}}" letter-spacing="2">{{TITLE}}</text>
+
+  <text x="96" y="782" font-family="{{FONT}}" font-size="42" fill="{{COLOR1}}"
+        letter-spacing="6">{{ARTIST}}</text>
+
+  <g opacity="0.5">
+    <text x="96" y="980" font-family="{{FONT}}" font-size="26" fill="{{TEXTCOLOR}}" opacity="0.65">{{SUBTITLE}}</text>
+  </g>
+  <line x1="96" y1="1006" x2="984" y2="1006" stroke="{{COLOR1}}" stroke-width="1" opacity="0.25"/>
+</svg>
