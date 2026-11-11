@@ -1521,7 +1521,7 @@ function open3D(id){
   mvLoad().then(()=>{
     const wrap=document.querySelector('.mvwrap');
     if(!wrap)return;
-    wrap.innerHTML=`<model-viewer src="https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v1/models/${id}.glb" alt="${c.name} 3D" camera-controls camera-orbit="0deg 82deg 5.2m" camera-target="0m 1.0m 0m" field-of-view="30deg" exposure="0.85" shadow-intensity="0.7" interaction-prompt="none" ar-modes="none"></model-viewer>`;
+    wrap.innerHTML=`<model-viewer src="https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v2/models/${id}.glb" alt="${c.name} 3D" camera-controls camera-orbit="0deg 82deg 5.2m" camera-target="0m 1.0m 0m" field-of-view="30deg" exposure="0.85" shadow-intensity="0.7" interaction-prompt="none" ar-modes="none"></model-viewer>`;
     const mv=wrap.querySelector('model-viewer');
     mv.addEventListener('error',()=>{
       if(document.querySelector('.mvwrap')===wrap)wrap.innerHTML=`<div class="mverr">3D 模型載入失敗，請檢查連線後再試一次。</div>`;

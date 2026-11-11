@@ -177,10 +177,12 @@ YOUTUBE_REMOVALS = [
 # ---- 4. 3D viewer (2026-11-10) ----
 # GLB 模型走 jsDelivr CDN（2026-11-11）：新版 51 隻臉貼圖 GLB 合計約 26 MB，
 # 放進部署會讓整包衝破 Vercel Hobby 100 MB 上限，所以模型本體放在公開 repo
-# 123lai1234-create/ddd-models（models/<id>.glb），用固定 tag v1 當正式網址
+# 123lai1234-create/ddd-models（models/<id>.glb），用固定 tag v2 當正式網址
 # （tag 網址是 immutable 快取，不怕 @main 的同步延遲；新版模型出新 tag 再改
-# 這裡）。model-viewer 與 Draco 解碼器仍是本站自帶檔案，不連外站的只有模型。
-GLB_CDN_BASE = 'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v1/models'
+# 這裡，並把舊 tag 加進 OLD_GLB_CDN_BASES 讓遷移規則換掉它）。model-viewer
+# 與 Draco 解碼器仍是本站自帶檔案，不連外站的只有模型。
+GLB_CDN_BASE = 'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v2/models'
+OLD_GLB_CDN_BASES = ['https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v1/models']
 VIEWER_CSS_ANCHOR = '#modal.show{display:flex}\n'
 VIEWER_CSS = '''/* 3D 檢視浮層（model-viewer；按需載入，不影響首屏） */
 .mvwrap{position:relative;width:100%;height:62vh;height:62dvh;min-height:320px;background:#0b0d10;border-radius:12px;overflow:hidden}
@@ -192,7 +194,7 @@ VIEWER_CSS = '''/* 3D 檢視浮層（model-viewer；按需載入，不影響首�
 VIEWER_JS_ANCHOR = 'function closeModal(){$("#modal").classList.remove("show");}\n'
 VIEWER_JS = '''// ---- 3D 檢視：51 隻 Q 版娃娃風角色 GLB（jsDelivr CDN，見 GLB_CDN_BASE），按需載入 ----
 // model-viewer 與 Draco 解碼器皆為本站自帶檔案（model-viewer.min.js、draco/）；
-// 模型本體走 jsDelivr CDN（github.com/123lai1234-create/ddd-models@v1），
+// 模型本體走 jsDelivr CDN（github.com/123lai1234-create/ddd-models@v2），
 // 不放進 Vercel 部署，避開 Hobby 100 MB 上限。
 const GLB3D=new Set(['arsonist','ashen','assassin','bartender','berserker','bodyguard','bomb','boss','butcher','chair','chef','chemist','climber','courier','detective','diver','exorcist','fatty','fatty2','gambler','geneFreak','gourmet','hacker','herbalist','hunter','janitor','leader','locker','lucky','medic','mediocre','merc','miner','paramedic','qing','quilt','runner','scavenger','sentinel','shade','sniper','sock','survivor','tamer','tin','torch','trucker','tycoon','vampire','veteran','witch']);
 let MV_READY=null;
@@ -287,6 +289,13 @@ def main():
         src = src.replace('src="models/${id}.glb"',
                           'src="' + GLB_CDN_BASE + '/${id}.glb"', 1)
         viewer_fired += 1
+    # 2026-11-11: GLB 改走 v2 tag。已套過 v1 補丁的 index.html 裡 VIEWER_JS
+    # 已存在（不會重插），裡面 baked 的 v1 網址要換成新版 GLB_CDN_BASE；
+    # 舊 tag 之後都加進 OLD_GLB_CDN_BASES。
+    for old_base in OLD_GLB_CDN_BASES:
+        if old_base in src:
+            src = src.replace(old_base, GLB_CDN_BASE)
+            viewer_fired += 1
 
     with io.open(TARGET, 'w', encoding='utf-8', newline='') as fh:
         fh.write(src)
