@@ -32,6 +32,13 @@ already-patched file is a no-op, and each step prints how many times it fired.
    requests. Anchors are upstream text, so a re-sync + re-run of this script
    re-applies it. (2026-11-10 晚：按鈕從底部列移到頭部；手機 390px 上詳情內容
    951px、可見框 715px，底部按鈕落在折疊線下點不到。）
+   (2026-11-11: GLBs moved out of the deployment to jsDelivr CDN
+   (github.com/123lai1234-create/ddd-models, tag v1) so the 51 models
+   (~26 MB) no longer count against the Vercel Hobby 100 MB upload limit.
+   model-viewer + draco/ stay vendored locally; only the .glb files come
+   from the CDN. The URL is assembled in VIEWER_JS via GLB_CDN_BASE, and a
+   migration rule below rewrites the old relative models/<id>.glb URL in an
+   already-patched index.html.)
 
 Reads and writes UTF-8 without a BOM, because the file is a faithful mirror of
 upstream and the byte layout matters for future re-syncs.
@@ -168,6 +175,12 @@ YOUTUBE_REMOVALS = [
 ]
 
 # ---- 4. 3D viewer (2026-11-10) ----
+# GLB 模型走 jsDelivr CDN（2026-11-11）：新版 51 隻臉貼圖 GLB 合計約 26 MB，
+# 放進部署會讓整包衝破 Vercel Hobby 100 MB 上限，所以模型本體放在公開 repo
+# 123lai1234-create/ddd-models（models/<id>.glb），用固定 tag v1 當正式網址
+# （tag 網址是 immutable 快取，不怕 @main 的同步延遲；新版模型出新 tag 再改
+# 這裡）。model-viewer 與 Draco 解碼器仍是本站自帶檔案，不連外站的只有模型。
+GLB_CDN_BASE = 'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v1/models'
 VIEWER_CSS_ANCHOR = '#modal.show{display:flex}\n'
 VIEWER_CSS = '''/* 3D 檢視浮層（model-viewer；按需載入，不影響首屏） */
 .mvwrap{position:relative;width:100%;height:62vh;height:62dvh;min-height:320px;background:#0b0d10;border-radius:12px;overflow:hidden}
@@ -177,8 +190,10 @@ VIEWER_CSS = '''/* 3D 檢視浮層（model-viewer；按需載入，不影響首�
 @media (max-width:480px){.mvwrap{height:56vh;height:56dvh;min-height:280px}}
 '''
 VIEWER_JS_ANCHOR = 'function closeModal(){$("#modal").classList.remove("show");}\n'
-VIEWER_JS = '''// ---- 3D 檢視：51 隻 Q 版娃娃風角色 GLB（models/<id>.glb），按需載入 ----
-// model-viewer 與 Draco 解碼器皆為本站自帶檔案（model-viewer.min.js、draco/），不連外站。
+VIEWER_JS = '''// ---- 3D 檢視：51 隻 Q 版娃娃風角色 GLB（jsDelivr CDN，見 GLB_CDN_BASE），按需載入 ----
+// model-viewer 與 Draco 解碼器皆為本站自帶檔案（model-viewer.min.js、draco/）；
+// 模型本體走 jsDelivr CDN（github.com/123lai1234-create/ddd-models@v1），
+// 不放進 Vercel 部署，避開 Hobby 100 MB 上限。
 const GLB3D=new Set(['arsonist','ashen','assassin','bartender','berserker','bodyguard','bomb','boss','butcher','chair','chef','chemist','climber','courier','detective','diver','exorcist','fatty','fatty2','gambler','geneFreak','gourmet','hacker','herbalist','hunter','janitor','leader','locker','lucky','medic','mediocre','merc','miner','paramedic','qing','quilt','runner','scavenger','sentinel','shade','sniper','sock','survivor','tamer','tin','torch','trucker','tycoon','vampire','veteran','witch']);
 let MV_READY=null;
 function mvLoad(){
@@ -199,7 +214,7 @@ function open3D(id){
   mvLoad().then(()=>{
     const wrap=document.querySelector('.mvwrap');
     if(!wrap)return;
-    wrap.innerHTML=`<model-viewer src="models/${id}.glb" alt="${c.name} 3D" camera-controls camera-orbit="0deg 82deg 5.2m" camera-target="0m 1.0m 0m" field-of-view="30deg" exposure="0.85" shadow-intensity="0.7" interaction-prompt="none" ar-modes="none"></model-viewer>`;
+    wrap.innerHTML=`<model-viewer src="__GLB_CDN_BASE__/${id}.glb" alt="${c.name} 3D" camera-controls camera-orbit="0deg 82deg 5.2m" camera-target="0m 1.0m 0m" field-of-view="30deg" exposure="0.85" shadow-intensity="0.7" interaction-prompt="none" ar-modes="none"></model-viewer>`;
     const mv=wrap.querySelector('model-viewer');
     mv.addEventListener('error',()=>{
       if(document.querySelector('.mvwrap')===wrap)wrap.innerHTML=`<div class="mverr">3D 模型載入失敗，請檢查連線後再試一次。</div>`;
@@ -209,7 +224,7 @@ function open3D(id){
     if(el)el.textContent='3D 檢視器載入失敗，請檢查連線後再試一次。';
   });
 }
-'''
+'''.replace('__GLB_CDN_BASE__', GLB_CDN_BASE)
 VIEWER_BTN_OLD = '${canBreak(id)?`<button class="gold" onclick="BR_RES=null;confirmBreak(\'${id}\')">✨ 突破（${brOf(id)}→${brOf(id)+1}）</button>`:""}\n      <button onclick="closeModal()" style="margin-left:auto">關閉</button></div>'
 VIEWER_BTN_NEW = '${canBreak(id)?`<button class="gold" onclick="BR_RES=null;confirmBreak(\'${id}\')">✨ 突破（${brOf(id)}→${brOf(id)+1}）</button>`:""}\n      ${GLB3D.has(id)?`<button class="pri" onclick="open3D(\'${id}\')">🎥 3D 檢視</button>`:""}\n      <button onclick="closeModal()" style="margin-left:auto">關閉</button></div>'
 # 2026-11-10 晚：按鈕從底部列移到詳情頭部（名字／數值列下方）。手機 390px 上
@@ -264,6 +279,13 @@ def main():
         viewer_fired += 1
     if not top_present and VIEWER_BTN_TOP_ANCHOR in src:
         src = src.replace(VIEWER_BTN_TOP_ANCHOR, VIEWER_BTN_TOP_ANCHOR + VIEWER_BTN_TOP, 1)
+        viewer_fired += 1
+    # 2026-11-11: GLB 改走 jsDelivr CDN。已套過舊版補丁的 index.html 裡還
+    # 留著相對路徑 src="models/${id}.glb"，把它改成 CDN 網址；新鮮重同步的
+    # 檔案則由上面新版 VIEWER_JS 直接帶 CDN 網址，不需要這條。
+    if 'src="models/${id}.glb"' in src:
+        src = src.replace('src="models/${id}.glb"',
+                          'src="' + GLB_CDN_BASE + '/${id}.glb"', 1)
         viewer_fired += 1
 
     with io.open(TARGET, 'w', encoding='utf-8', newline='') as fh:
