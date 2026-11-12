@@ -173,6 +173,31 @@ python line4_lyric_book.py --limit 10   # 只做前 10 首（測試）
 python line4_lyric_book.py              # 全 125 首
 ```
 
+### 產線 5：YouTube 上傳 → `out/youtube/`
+
+把產線 1+ 的 MV 直接上架 YouTube：標題、描述、標籤、縮圖、播放清單全自動。
+
+```powershell
+python youtube_upload.py meta             # 產生 metadata（JSON + Studio 匯入 CSV）
+python youtube_upload.py auth             # OAuth 授權（瀏覽器點一次「允許」）
+python youtube_upload.py status           # 看 token／頻道／可讀性
+python youtube_upload.py upload          # 批次上傳（resumable + 縮圖 + 播放清單）
+python youtube_upload.py csv              # 只輸出 YouTube Studio 匯入用 CSV
+```
+
+- `--privacy public|unlisted|private`（預設 private）
+- `--kinds long,shorts`（長片 / 直式 Shorts）
+- `--limit N`（只上傳前 N 支）
+
+憑證來源：`YT_CLIENT_ID` / `YT_CLIENT_SECRET` 讀自
+`C:\Users\User\.minimax\agents\mavis\.env`；refresh token 存在 repo 外的
+`D:\Tools\youtube-oauth\token.json`（不進版控）。
+
+> ⚠️ OAuth 回呼預設用 `http://localhost:8080`（要跟 GCP 的 Authorized redirect URIs 一致）。
+> 8080 同時是 Stirling-PDF 的埠，授權前要先停掉它：
+> `Stop-Process -Id (Get-NetTCPConnection -LocalPort 8080 -State Listen).OwningProcess -Force`
+> 授權完成後再把 Stirling 開回來。
+
 ---
 
 ## 資料格式
