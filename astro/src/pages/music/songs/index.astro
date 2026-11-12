@@ -35,6 +35,11 @@ const ogImage = firstWithCards
                 每首歌的歌詞卡、封面與社群分享圖，都由
                 <code>tools/free-toolkit</code> 的批次產線自動產出（Inkscape 向量模板 → GIMP 無頭轉檔）。
             </p>
+            <a class="ms-book" href="/music/lyric-book.pdf" download>
+                <span class="ms-book-title">歌詞手冊 PDF</span>
+                <span class="ms-book-meta">125 首 · 308 頁 · 封面 + 目錄 + 完整歌詞</span>
+                <span class="ms-book-dl">下載 ↓</span>
+            </a>
         </header>
 
         <div class="ms-toolbar">
@@ -155,6 +160,40 @@ const ogImage = firstWithCards
         align-items: center;
         gap: 12px;
         margin-bottom: 20px;
+    }
+    .ms-book {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 28px;
+        padding: 12px 18px;
+        border: 1px solid rgba(232, 163, 61, 0.35);
+        background: rgba(232, 163, 61, 0.07);
+        border-radius: 12px;
+        text-decoration: none;
+        transition:
+            border-color 0.18s ease,
+            background 0.18s ease;
+    }
+    .ms-book:hover {
+        border-color: rgba(232, 163, 61, 0.7);
+        background: rgba(232, 163, 61, 0.12);
+    }
+    .ms-book-title {
+        color: #e8a33d;
+        font-weight: 600;
+        font-size: 0.95rem;
+        white-space: nowrap;
+    }
+    .ms-book-meta {
+        color: var(--muted, #8b949e);
+        font-size: 0.8rem;
+    }
+    .ms-book-dl {
+        color: var(--muted, #8b949e);
+        font-size: 0.8rem;
+        font-family: 'JetBrains Mono', monospace;
+        white-space: nowrap;
     }
     .ms-filter {
         flex: 1;
