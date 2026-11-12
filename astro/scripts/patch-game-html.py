@@ -177,12 +177,13 @@ YOUTUBE_REMOVALS = [
 # ---- 4. 3D viewer (2026-11-10) ----
 # GLB 模型走 jsDelivr CDN（2026-11-11）：新版 51 隻臉貼圖 GLB 合計約 26 MB，
 # 放進部署會讓整包衝破 Vercel Hobby 100 MB 上限，所以模型本體放在公開 repo
-# 123lai1234-create/ddd-models（models/<id>.glb），用固定 tag v2 當正式網址
+# 123lai1234-create/ddd-models（models/<id>.glb），用固定 tag v3 當正式網址
 # （tag 網址是 immutable 快取，不怕 @main 的同步延遲；新版模型出新 tag 再改
 # 這裡，並把舊 tag 加進 OLD_GLB_CDN_BASES 讓遷移規則換掉它）。model-viewer
 # 與 Draco 解碼器仍是本站自帶檔案，不連外站的只有模型。
-GLB_CDN_BASE = 'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v2/models'
-OLD_GLB_CDN_BASES = ['https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v1/models']
+GLB_CDN_BASE = 'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v3/models'
+OLD_GLB_CDN_BASES = ['https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v1/models',
+                     'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v2/models']
 VIEWER_CSS_ANCHOR = '#modal.show{display:flex}\n'
 VIEWER_CSS = '''/* 3D 檢視浮層（model-viewer；按需載入，不影響首屏） */
 .mvwrap{position:relative;width:100%;height:62vh;height:62dvh;min-height:320px;background:#0b0d10;border-radius:12px;overflow:hidden}
