@@ -102,11 +102,11 @@ def build_master(out, input_path):
 
 
 # --------------------------------------------------------------- 平台影片
-def build_video(src, dst, vf, extra_note=""):
+def build_video(src, dst, vf, extra_note="", preset="medium"):
     """單一平台影片：H.264 + AAC，yuv420p。"""
     args = [
         "-i", src, "-vf", vf, "-r", str(FPS),
-        "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+        "-c:v", "libx264", "-preset", preset, "-crf", "20",
         "-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.0",
         "-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-ac", "2",
         "-movflags", "+faststart", dst,
