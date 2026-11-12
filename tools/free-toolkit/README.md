@@ -86,6 +86,24 @@ python line1_mv_platforms.py --input D:\music\mv-master.mp4
 python line1_mv_platforms.py            # 不給 input 會自動生一支 10 秒測試母片
 ```
 
+### 產線 1+：真實歌曲歌詞影片 → `out/line1_lyric_mv/<曲名>/`
+
+不是測試母片，是拿 `astro/public/music/` 裡的**真實音檔 + 真實歌詞**直接生 MV。
+一首歌約 90 秒跑完。
+
+- 解析歌詞 txt → 分段（Verse / Pre-Chorus / Chorus / Bridge / Outro）
+- 依音檔長度把每一行**配時**（字數加權），產生 ASS 字幕；副歌換色加大
+- 背景：封面圖 → 模糊 → 慢速推近（zoompan）→ 進度條 → libass 燒中文字幕
+- 產出跟產線 1 同一套：`youtube_1080p.mp4` / `vertical_1080x1920.mp4` /
+  `square_1080x1080.mp4` / `audio.m4a` / `audio.mp3` / `title_card.mp4`(+`.mlt`) /
+  `thumb_yt_1280x720.jpg` / `thumb_ig_1080x1080.jpg`，外加 `lyrics.ass` 字幕檔
+
+```powershell
+python line1_mv_lyric.py --list            # 看會跑哪些（有音檔的 19 首）
+python line1_mv_lyric.py --limit 3          # 只跑前 3 首
+python line1_mv_lyric.py --song 07_愛的模樣   # 只跑一首
+```
+
 ### 產線 2：donttalk 網站素材批次 → `out/line2_site/`
 
 **站點層**（`_site/`）
@@ -129,6 +147,31 @@ python line4_pdf_batch.py all         # 依序跑完以上全部
 ```
 
 > 產線 4 是子命令式，**不帶參數只會印說明**（exit code 2）。`run_all.py` 會自動帶 `all`。
+
+### 產線 4+：真實歌詞手冊 PDF → `out/line4_lyric_book/`
+
+把 125 首真實歌詞排成一本可發行的 PDF 手冊（取代 Acrobat / InDesign 那條路）。
+
+1. 解析歌詞 → 排版成 HTML（封面頁 + 目錄 + 每首一頁）
+2. **Chrome 無頭列印**成 PDF（真的排版引擎，不是把圖片塞進 PDF）
+3. **Stirling-PDF**：合併 → 加頁碼 → 壓縮 → 最終成品
+
+產出：
+
+| 檔案 | 內容 |
+|---|---|
+| `lyric_book.pdf` | **最終成品**（加頁碼 + 壓縮） |
+| `lyric_book_numbered.pdf` | 加頁碼版 |
+| `lyric_book_all.pdf` | 手冊原始版 |
+| `single/01_*.pdf` … | 每首歌一份單曲 PDF（125 份） |
+| `singles-index.json` | 曲序 / 頁數 / 檔名對照 |
+
+目錄頁碼是**先量每一首幾頁、再回頭組版**，組版後會比對總頁數並自動收斂。
+
+```powershell
+python line4_lyric_book.py --limit 10   # 只做前 10 首（測試）
+python line4_lyric_book.py              # 全 125 首
+```
 
 ---
 
@@ -239,6 +282,17 @@ python line4_pdf_batch.py all         # 依序跑完以上全部
     `configs/ logs/ pipeline/` 灑在你的專案資料夾裡。
 17. **Windows cp950**：含中文的 `.ps1` 要存 UTF-8 **with BOM**；Python 檔用 UTF-8 無 BOM。
     Python 讀子行程輸出一律 `encoding="utf-8", errors="replace"`。
+18. **melt 與 GIMP 都吃不了中文路徑**：
+    - melt：`Failed to load "…\\07_愛的模樣\\title_card.mlt"`（libxml2 誤報 out of memory）
+    - GIMP：批次 job 檔含非 ASCII 字元 → 直接拒跑
+    → 解法：搬到純 ASCII 的暫存目錄做，做完再搬回去（`line1_mv_lyric.py` 的 `_stage/`）。
+19. **ffmpeg 的 `subtitles` 濾鏡不能吃 Windows 絕對路徑**（冒號被當成選項分隔符）：
+    把工作目錄設成歌曲資料夾、用相對檔名 `lyrics.ass` 就正常。
+20. **Chrome headless 同一時間只能開一個實例**（共用 profile 會報 profile in use）：
+    平行跑一定要各自給 `--user-data-dir`。
+21. **Chrome `--print-to-pdf` 預設會加頁首頁尾**（網址 + 日期），要 `--no-pdf-header-footer`。
+22. **圖片用 `file://` 絕對路徑載入不穩**，改成 base64 data URI 內嵌最可靠。
+23. **zoompan 逐幀做很慢**：先把背景圖模糊成一張 PNG 再對它 zoompan，速度差一個數量級。
 
 ---
 
