@@ -25,7 +25,7 @@
 
 - 章節資料：`CHAPTERS[15]`（插在深淵前面），名稱「最後一頁」、圖示 🪶、
   地圖 `FLOORS_LAST`（`mkFloors("M", …)`，M1 未寫完的走廊 → M14 終章之間）、
-  小怪沿用抹除者（`eraser`）、魔王沿用編輯者（`editor`，`bossScale 2.15`、`bossHp n => 200 + n*44`）、
+  小怪沿用抹除者（`eraser`）、魔王沿用編輯者（`editor`，`bossScale 2.1`、`bossHp n => 190 + n*42`，2026-11-16 由 2.15／200+44n 調弱到第 15 章水準）、
   同伴沿用阿燼與晴（`mates: ["ashen", "qing"]`）、`noSeats: true`。
 - 房間名／事件對應（`ROOM_NAME`、`ROOM_EV`）：
   魔王房叫「終章之間」→ `helipad`；準備房叫「未寫完的桌子」→ `gene`；
@@ -37,7 +37,7 @@
   美術用 👑 emoji，不新增立繪）。技能「守夜人的提燈」（全體防禦+3 三回合＋各回 10% 生命）；
   被動「守夜」在 `battleLoopInner()` 每回合開始時特判實作（比照阿燼／晴被動的特判模式），
   生命最低的隊友恢復 5% 最大生命（至少 2）。
-- 首通獎勵：`FIRST_CLEAR[15] = 500`；強度倍率：`CH_POW[15] = 2.15`。
+- 首通獎勵：`FIRST_CLEAR[15] = 500`；強度倍率：`CH_POW[15] = 2.05`（2026-11-16 由 2.15 調弱到第 15 章水準）。
 - 劇情文案：章節 `intro`／`shade`／`prep`／`bossLines`／`story`／`recap`／`finale`／`escape` 皆為鏡像原創，
   接續第 15 章《名冊》劇情（晴寫下所有人的名字、老國王交棒）。
 
@@ -66,11 +66,28 @@
 - 存檔欄位：`SAVE.enhBonus`（整數，`migrate()` 為舊存檔補 0），跨重整保留；
   `packSave()` 全量序列化，無白名單問題。
 
+## D. 魔王改名「編輯者」（BOSS RENAME，2026-11-16）
+
+- 原因：同一個魔王（`editor`）在第 14 章《名冊》與戰鬥介面叫「剪輯師」，第 16 章劇情卻叫「編輯者」，
+  玩家打王時看到的名字跟剛看完的劇情對不上。使用者決定統一叫「編輯者」。
+- 改動（`index.html`，共 9 處「剪輯師」→「編輯者」）：
+  - `MONSTERS.editor.name`：`"剪輯師"` → `"編輯者"`（戰鬥介面顯示名；錨點標記在該行上方
+    `/* ===== MIRROR FEATURE: BOSS RENAME … ===== */`）。
+  - 第 14 章《名冊》劇情：`bossLines`、`story`、`recap`、`lose`、`fall`、`escape` 共 6 處；
+    `qingLastPage` 事件選項標籤（「剪輯師就在前面」）1 處；`hit()` 內註解 1 處。
+  - 第 16 章劇情原本就叫「編輯者」，不用改。
+- **刻意不改的**（他做的事還是剪接，不是名字）：
+  房間名「剪輯室」（`bossRoom`／`bossTitle`／`ROOM_EV` 鍵）、技能「剪掉」、被動「無情剪輯」、
+  emoji ✂️、怪物代號 `editor`（圖片 `images/monsters/editor.webp` 按代號取檔，不受影響）。
+- 驗證：`grep 剪輯師 index.html` 應只剩 1 處（就是 BOSS RENAME 標記註解本身，裡面寫了舊名備查）；
+  `grep -o 編輯者 index.html | wc -l` 應為 18 處（`grep -c` 計行是 17 行：第 16 章 recap 那行有 2 處）。
+  同步重套時：上游覆蓋會把 9 處還原成「剪輯師」，照上面清單重改一次即可。
+
 ## 日後上游同步時如何重套
 
 1. 先同步上游檔案（照舊流程：轉 mp3、加 `<base href>`、lazy loading、右上角按鈕等在地化調整）。
-2. `grep "MIRROR FEATURE" index.html` 會列出本份文件對應的全部改動點——目前共 14 處標記
-   （含 ABYSS 哨兵、FIVE_REQ／FATTY_REQ 解耦、遷移區塊在內）。
+2. `grep "MIRROR FEATURE" index.html` 會列出本份文件對應的全部改動點——目前共 15 處標記
+   （含 ABYSS 哨兵、FIVE_REQ／FATTY_REQ 解耦、遷移區塊、D 節改名標記在內）。
 3. 依 A／B／C 三節把程式碼區塊、章節資料、卡片、成就、房間名對應逐一貼回；
    特別注意 B 節的哨兵與門檻解耦，漏了 `FIVE_REQ` 會造成舊玩家存檔被清空。
 4. 重套後跑驗證：抽出 inline `<script>` 用 `node --check` 檢查語法；
