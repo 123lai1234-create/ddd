@@ -42,6 +42,7 @@ const MODELS = [
   { glb: 'public/models/character-philosopher.glb', prefix: 'PHILOSOPHER' },
   { glb: 'public/models/character-cat.glb', prefix: 'CAT' },
   { glb: 'public/models/character-crystal.glb', prefix: 'CRYSTAL' },
+  { glb: 'public/models/character-pig.glb', prefix: 'PIG' },
 ];
 
 const GLB_MAGIC = 0x46546c67; // 'glTF' little-endian
@@ -224,7 +225,7 @@ function main() {
 
   writeFileSync(pagePath, lines.join('\n'), 'utf8');
   console.log('');
-  console.log(`✓ 已更新 ${PAGE_REL}（五隻角色的統計常數與註解區塊）`);
+  console.log(`✓ 已更新 ${PAGE_REL}（六隻角色的統計常數與註解區塊）`);
 }
 
 try {
