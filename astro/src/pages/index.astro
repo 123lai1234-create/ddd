@@ -109,6 +109,101 @@ const pickIndex = dayOfYear % rides.length;
             </div>
         </header>
 
+        <!-- Dolls playground: 五隻人偶在遊樂園玩耍，點一隻去 3D 頁 -->
+        <section class="dolls-playground" aria-label="人偶遊樂園">
+            <div class="dolls-head">
+                <div class="dolls-titles">
+                    <h2 class="dolls-title">🎭 人偶遊樂園</h2>
+                    <p class="dolls-sub">五隻人偶正在樂園裡玩耍，點一隻去看 3D</p>
+                </div>
+                <a href="/3d-mascot" class="dolls-link">去 3D 頁看五隻人偶 →</a>
+            </div>
+            <div class="dolls-scene">
+                <!-- 香菇柯基坐摩天輪：輪子轉、柯基反向轉保持正立 -->
+                <a href="/3d-mascot" class="doll-ride" aria-label="香菇柯基坐摩天輪，去 3D 頁看">
+                    <svg viewBox="0 0 220 210" class="doll-svg" aria-hidden="true">
+                        <line x1="82" y1="210" x2="110" y2="105" stroke="#3a2f2a" stroke-width="1.6" stroke-linecap="round" />
+                        <line x1="138" y1="210" x2="110" y2="105" stroke="#3a2f2a" stroke-width="1.6" stroke-linecap="round" />
+                        <line x1="20" y1="210" x2="200" y2="210" stroke="#3a2f2a" stroke-width="1.6" stroke-linecap="round" />
+                        <g class="ferris-spin" style="transform-origin: 110px 105px;">
+                            <circle cx="110" cy="105" r="68" fill="none" stroke="#3a2f2a" stroke-width="2" />
+                            <circle cx="110" cy="105" r="66" fill="none" stroke="#3a2f2a" stroke-width="0.6" />
+                            <line x1="110" y1="37" x2="110" y2="173" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="42" y1="105" x2="178" y2="105" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="62" y1="57" x2="158" y2="153" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="62" y1="153" x2="158" y2="57" stroke="#3a2f2a" stroke-width="1" />
+                            <circle cx="110" cy="105" r="4" fill="#c44536" />
+                            <rect x="170" y="61" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="170" y="137" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="104" y="175" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="38" y="137" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="38" y="61" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <g class="ferris-counter" style="transform-origin: 110px 29px;">
+                                <image href="/images/characters/corgi.png" x="86" y="5" width="48" height="48" />
+                            </g>
+                        </g>
+                    </svg>
+                    <span class="doll-chip">🍄 香菇柯基 · 摩天輪</span>
+                </a>
+                <!-- 綠機器人坐雲霄飛車 -->
+                <a href="/3d-mascot" class="doll-ride" aria-label="綠機器人坐雲霄飛車，去 3D 頁看">
+                    <svg viewBox="0 0 200 170" class="doll-svg" aria-hidden="true">
+                        <path d="M 25 140 L 70 90 L 105 55 L 145 95 L 180 140" fill="none" stroke="#3a2f2a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <line x1="70" y1="90" x2="70" y2="140" stroke="#3a2f2a" stroke-width="1" />
+                        <line x1="145" y1="95" x2="145" y2="140" stroke="#3a2f2a" stroke-width="1" />
+                        <line x1="10" y1="140" x2="190" y2="140" stroke="#3a2f2a" stroke-width="1.4" stroke-linecap="round" />
+                        <g class="coaster-move" transform="translate(4,86)">
+                            <image href="/images/characters/robot.png" x="0" y="0" width="52" height="52" />
+                        </g>
+                    </svg>
+                    <span class="doll-chip">🤖 綠機器人 · 雲霄飛車</span>
+                </a>
+                <!-- 哲學家坐旋轉木馬 -->
+                <a href="/3d-mascot" class="doll-ride" aria-label="哲學家坐旋轉木馬，去 3D 頁看">
+                    <svg viewBox="0 0 200 170" class="doll-svg" aria-hidden="true">
+                        <path d="M 30 62 Q 100 28 170 62 Z" fill="#d4a5a5" stroke="#3a2f2a" stroke-width="1.8" stroke-linejoin="round" />
+                        <line x1="100" y1="40" x2="100" y2="150" stroke="#3a2f2a" stroke-width="1.6" />
+                        <ellipse cx="100" cy="150" rx="70" ry="6" fill="#f1a7c0" stroke="#3a2f2a" stroke-width="1.4" />
+                        <line x1="20" y1="150" x2="180" y2="150" stroke="#3a2f2a" stroke-width="1.4" stroke-linecap="round" />
+                        <image href="/images/characters/philosopher.png" x="70" y="92" width="60" height="60" class="doll-bob" />
+                    </svg>
+                    <span class="doll-chip">🧙 哲學家 · 旋轉木馬</span>
+                </a>
+                <!-- 黑貓坐熱氣球 -->
+                <a href="/3d-mascot" class="doll-ride" aria-label="黑貓坐熱氣球，去 3D 頁看">
+                    <svg viewBox="0 0 200 200" class="doll-svg" aria-hidden="true">
+                        <g class="balloon-float">
+                            <path d="M 75 115 Q 60 55 100 40 Q 140 55 125 115 Q 118 138 100 138 Q 82 138 75 115 Z" fill="#a8dadc" stroke="#3a2f2a" stroke-width="1.6" stroke-linejoin="round" />
+                            <line x1="100" y1="40" x2="100" y2="138" stroke="#3a2f2a" stroke-width="0.8" />
+                            <path d="M 82 58 Q 100 48 118 58" fill="none" stroke="#3a2f2a" stroke-width="0.8" />
+                            <path d="M 78 82 Q 100 72 122 82" fill="none" stroke="#3a2f2a" stroke-width="0.8" />
+                            <line x1="86" y1="132" x2="80" y2="148" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="114" y1="132" x2="120" y2="148" stroke="#3a2f2a" stroke-width="1" />
+                            <image href="/images/characters/cat.png" x="70" y="110" width="60" height="60" />
+                            <rect x="74" y="148" width="52" height="22" fill="#faf6ec" stroke="#3a2f2a" stroke-width="1.4" rx="1" />
+                        </g>
+                    </svg>
+                    <span class="doll-chip">🐈⬛ 黑貓 · 熱氣球</span>
+                </a>
+                <!-- 水晶怪盪鞦韆 -->
+                <a href="/3d-mascot" class="doll-ride" aria-label="水晶怪盪鞦韆，去 3D 頁看">
+                    <svg viewBox="0 0 200 170" class="doll-svg" aria-hidden="true">
+                        <line x1="30" y1="12" x2="170" y2="12" stroke="#3a2f2a" stroke-width="2" stroke-linecap="round" />
+                        <line x1="40" y1="12" x2="25" y2="150" stroke="#3a2f2a" stroke-width="1.4" />
+                        <line x1="160" y1="12" x2="175" y2="150" stroke="#3a2f2a" stroke-width="1.4" />
+                        <line x1="20" y1="150" x2="180" y2="150" stroke="#3a2f2a" stroke-width="1.4" stroke-linecap="round" />
+                        <g class="doll-swing">
+                            <line x1="80" y1="12" x2="80" y2="82" stroke="#3a2f2a" stroke-width="1.2" />
+                            <line x1="120" y1="12" x2="120" y2="82" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="72" y="82" width="56" height="8" rx="2" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.4" />
+                            <image href="/images/characters/crystal.png" x="76" y="34" width="48" height="48" />
+                        </g>
+                    </svg>
+                    <span class="doll-chip">💎 水晶怪 · 盪鞦韆</span>
+                </a>
+            </div>
+        </section>
+
         <!-- Theme Park Map -->
         <section class="park-map" aria-label="8 個 app 入口設施">
             <div class="park-sky">
@@ -1227,6 +1322,157 @@ body[data-page="index"] #pf-modal #pf-results a {
 .park-tree-left { transform: translate(calc(var(--mx, 0) * -6px), 0); transition: transform 0.3s ease-out; }
 .park-tree-right { transform: translate(calc(var(--mx, 0) * 6px), 0); transition: transform 0.3s ease-out; }
 
+/* ════════ 人偶遊樂園：五隻人偶在遊樂園玩耍 ════════
+   五個小設施全是 inline SVG＋本站角色 PNG（/images/characters/），
+   動畫只用本頁已有的 CSS keyframe 手法（摩天輪轉、氣球浮、馬 bob），
+   不新增外部資源。點任一設施去 /3d-mascot。 */
+.dolls-playground {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto 24px;
+}
+
+.dolls-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.dolls-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin: 0;
+    color: #2a201c;
+    letter-spacing: 0.02em;
+}
+
+.dolls-sub {
+    font-size: 0.85rem;
+    color: #6a554a;
+    margin: 4px 0 0;
+}
+
+.dolls-link {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    color: #2a201c;
+    text-decoration: none;
+    border-bottom: 1px dashed #3a2f2a;
+    padding-bottom: 1px;
+    white-space: nowrap;
+}
+
+.dolls-link:hover {
+    color: #c44536;
+    border-bottom-color: #c44536;
+}
+
+.dolls-scene {
+    display: flex;
+    gap: 14px;
+    background: var(--paper-card);
+    border: 1.6px solid var(--rule);
+    border-radius: 14px;
+    box-shadow: 3px 4px 0 var(--rule);
+    padding: 18px 14px 12px;
+    overflow: hidden;
+}
+
+.doll-ride {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+}
+
+.doll-ride:hover .doll-chip {
+    background: #ebd18d;
+}
+
+.doll-svg {
+    width: 100%;
+    height: 210px;
+    display: block;
+}
+
+.doll-chip {
+    display: block;
+    text-align: center;
+    white-space: nowrap;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: #2a201c;
+    background: rgba(250, 246, 236, 0.92);
+    border: 1px dashed var(--rule);
+    border-radius: 3px;
+    padding: 3px 4px;
+    margin-top: 8px;
+    transition: background 0.2s ease;
+}
+
+/* 摩天輪：輪子轉、柯基反向轉保持正立（與 .ferris-spin 同 24s） */
+.ferris-counter {
+    animation: ferris-counter 24s linear infinite;
+    transform-box: view-box;
+}
+
+@keyframes ferris-counter {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(-360deg); }
+}
+
+/* 雲霄飛車：機器人沿軌道滑行，來回（translate 用 SVG user units） */
+.coaster-move {
+    animation: coaster-doll 4.5s ease-in-out infinite alternate;
+}
+
+@keyframes coaster-doll {
+    0%   { transform: translate(4px, 86px); }
+    25%  { transform: translate(46px, 36px); }
+    50%  { transform: translate(79px, 1px); }
+    75%  { transform: translate(119px, 41px); }
+    100% { transform: translate(152px, 86px); }
+}
+
+/* 旋轉木馬：哲學家上下 bob（跟卡片裡的馬同節奏） */
+.doll-bob {
+    animation: doll-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes doll-bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-4px); }
+}
+
+/* 盪鞦韆：整架繞頂桿前後擺 */
+.doll-swing {
+    animation: doll-swing 2.8s ease-in-out infinite;
+    transform-box: view-box;
+    transform-origin: 100px 12px;
+}
+
+@keyframes doll-swing {
+    0%, 100% { transform: rotate(-12deg); }
+    50%      { transform: rotate(12deg); }
+}
+
+@media (max-width: 700px) {
+    .dolls-scene {
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+    }
+    .doll-ride {
+        flex: 0 0 150px;
+        scroll-snap-align: start;
+    }
+}
+
 /* ════════ Polish: smooth scroll + reduced-motion respect ════════ */
 html {
     scroll-behavior: smooth;
@@ -1239,6 +1485,10 @@ html {
     .park-tree-left,
     .park-tree-right { transform: none !important; transition: none !important; }
     .ferris-spin,
+    .ferris-counter,
+    .coaster-move,
+    .doll-bob,
+    .doll-swing,
     .balloon-float,
     .carousel-flag,
     .carousel-horse,
@@ -1367,6 +1617,15 @@ html {
             delay: stagger(70, { start: 200 }),
             ease: 'outExpo',
             onComplete: function () { clearInline('.ride'); },
+        });
+        animate('.doll-ride', {
+            y: [18, 0],
+            opacity: [0, 1],
+            scale: [0.97, 1],
+            duration: 650,
+            delay: stagger(70, { start: 150 }),
+            ease: 'outExpo',
+            onComplete: function () { clearInline('.doll-ride'); },
         });
     })();
 </script>
