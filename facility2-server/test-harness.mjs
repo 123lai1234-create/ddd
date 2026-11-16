@@ -191,5 +191,18 @@ const mkS = (o) => Object.assign({ hp: 10, alive: true, shadow: false, shadowHp:
   settleForTest(room, room.log);
   check('finish ranking B,A,C,D with B winner', room.phase === 'finished' && JSON.stringify(room.ranking.map(r => r.name)) === JSON.stringify(['B', 'A', 'C', 'D']) && JSON.stringify(room.winners) === JSON.stringify(['B']), JSON.stringify(room.ranking));
 }
+// 20 settle unit: gun suppression is per-room, not global (A2)
+{
+  const room = { day: 1, players: [
+    mkS({ name: 'Strong', room: 'B102', genes: { might: 6, weight: 3, speed: 3 } }),
+    mkS({ name: 'Weak', room: 'B102', genes: { might: 2, weight: 3, speed: 3 } }),
+    mkS({ name: 'Gunner', room: 'B201', items: ['pistol'] }),
+    mkS({ name: 'Bystander', room: 'B201' }),
+  ], gasVotes: {}, detoxed: [], gassedFloors: [], taken: {}, morguePool: [], log: [], phase: 'action' };
+  settleForTest(room, room.log);
+  const h = Object.fromEntries(room.players.map(p => [p.name, p.hp]));
+  // B102 has no gun: Strong 6 vs Weak 2 -> Weak takes 4. B201 has a gun: Bystander attack 0, takes Gunner 6 -> hp 4.
+  check('gun suppression per-room only', h.Strong === 10 && h.Weak === 6 && h.Gunner === 10 && h.Bystander === 4, JSON.stringify(h));
+}
 console.log(`\nHARNESS ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

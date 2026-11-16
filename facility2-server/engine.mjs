@@ -212,14 +212,14 @@ function settle(room, log) {
   const inSurgery = alive().filter(p => p.room === 'B202');
   const surgeryOk = inSurgery.length === 2;
   if (surgeryOk) for (const p of inSurgery) { p.hp = Math.min(10, p.hp + 4); log.push(`手術室：${p.name} +4`); }
-  // combat per room (skip surgery room when surgery succeeds); anyone holding a gun zeroes non-gunners
-  const anyGun = alive().some(p => p.items.some(it => ITEMS[it]?.gun));
+  // combat per room (skip surgery room when surgery succeeds); a gun in a room zeroes non-gunners in that room only
   const byRoom = new Map();
   for (const p of alive()) { if (!byRoom.has(p.room)) byRoom.set(p.room, []); byRoom.get(p.room).push(p); }
   for (const [rid, ps] of byRoom) {
     if (rid === 'B202' && surgeryOk) continue;
     if (ps.length < 2) continue;
-    const eff = ps.map(p => ({ p, a: anyGun && !p.items.some(it => ITEMS[it]?.gun) ? 0 : atkOf(p) }));
+    const gunHere = ps.some(p => p.items.some(it => ITEMS[it]?.gun));
+    const eff = ps.map(p => ({ p, a: gunHere && !p.items.some(it => ITEMS[it]?.gun) ? 0 : atkOf(p) }));
     const mx = Math.max(...eff.map(e => e.a));
     for (const e of eff) if (e.a < mx) hurt(room, e.p, mx - e.a, log, `戰鬥 ${rid}`);
   }
