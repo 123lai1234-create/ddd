@@ -31,7 +31,7 @@ import Base from '../layouts/Base.astro';
                         height="180"
                         loading="lazy"
                     />
-                    <span class="gp-play">▶ 立即開始</span>
+                    <span class="gp-play gp-play--corner">▶ 立即開始</span>
                 </a>
                 <div class="gp-body">
                     <h2>封閉設施求生</h2>
@@ -218,6 +218,15 @@ import Base from '../layouts/Base.astro';
             font-size: 15px;
             letter-spacing: 2px;
             backdrop-filter: blur(4px);
+        }
+        /* 封閉設施求生卡專用：置中會壓住封面右側綠色小字
+           「基因 · 物資 · 毒氣 · 暗影」，改放右下角空白處 */
+        .gp-play--corner {
+            left: auto;
+            right: 12px;
+            top: auto;
+            bottom: 12px;
+            transform: none;
         }
         .gp-body { padding: 20px 22px 24px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
         .gp-body h2 { margin: 0; font-size: 22px; letter-spacing: 1px; }
