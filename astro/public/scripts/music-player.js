@@ -262,6 +262,9 @@
         // 避免 tracks.json 載入前（Vercel edge MISS 11s）頁面空白
         renderPlaylist();
         updateStats();
+        // 頂欄版本編號改顯示清單版本（之前寫死 0，從未更新）
+        const versionEl = document.querySelector(".ck-version b");
+        if (versionEl) versionEl.textContent = String(TRACKS_MANIFEST_VERSION);
         // 用真實的 manifest 啟動；失敗才退回 SAMPLE_MUSIC demo
         loadTracksManifest().then(() => {
             renderPlaylist();
