@@ -1373,4 +1373,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC"
     .ck-drawer { width: 100vw; }
     .ck-brand { font-size: 14px; }
     .ck-lyrics-actions { width: 100%; justify-content: flex-start; }
+    /* 手機版搜尋浮鈕改到左下角：右下角會蓋住卡片右側的偏移按鈕（音準偏移等） */
+    body[data-page="music"] #pf-btn { left: 16px !important; right: auto !important; bottom: 16px !important; width: 48px !important; height: 48px !important; }
 }
