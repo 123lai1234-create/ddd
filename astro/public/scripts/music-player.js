@@ -144,7 +144,7 @@
     // 播放器狀態
     // ═══════════════════════════════════════════════════════════════════
     let state = {
-        // 預設填入 SAMPLE_MUSIC 6 首歌，避免 tracks.json 載入前（首次 Vercel edge MISS 可能要 11s）
+        // 預設填入 SAMPLE_MUSIC 8 首歌，避免 tracks.json 載入前（首次 Vercel edge MISS 可能要 11s）
         // 頁面空白。tracks.json 拿到後 loadTracksManifest 會覆蓋此值。
         playlist: SAMPLE_MUSIC.slice(),
         currentIndex: -1,
@@ -365,9 +365,10 @@
             if (!r.ok) throw new Error("HTTP " + r.status);
             const data = await r.json();
             if (data && Array.isArray(data.tracks) && data.tracks.length > 0) {
-                // 保留 localStorage 裡使用者新增的（標題 + url 都不在 manifest 才算 userAdded）
+                // 保留 localStorage 裡使用者新增的（標題 + url 都不在 manifest 才算 userAdded；
+                // url 為空的是 SAMPLE_MUSIC 佔位 demo，不可保留，否則清單會多出 8 首假歌）
                 const userAdded = (state.playlist || []).filter(t =>
-                    !data.tracks.some(mt => mt.url === t.url && mt.title === t.title)
+                    t.url && !data.tracks.some(mt => mt.url === t.url && mt.title === t.title)
                 );
                 state.playlist = data.tracks.concat(userAdded);
                 return;
