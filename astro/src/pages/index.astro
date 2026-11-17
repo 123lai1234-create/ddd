@@ -1282,7 +1282,9 @@ body[data-page="index"] > footer:not(.park-footer) {
     justify-content: space-between !important;
     flex-wrap: wrap !important;
     gap: 20px 36px !important;
-    padding: 34px 24px 44px !important;
+    /* 右側留 104px：右下角固定搜尋鈕 #pf-btn 佔了右緣 24px + 56px 寬，
+       1920px 下最後一個連結「幹細胞研究」尾端會被鈕蓋住 */
+    padding: 34px 104px 44px !important;
     font-family: "Inter", "Microsoft JhengHei", system-ui, sans-serif !important;
 }
 body[data-page="index"] > footer:not(.park-footer) > div:first-child {
