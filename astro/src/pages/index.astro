@@ -109,14 +109,14 @@ const pickIndex = dayOfYear % rides.length;
             </div>
         </header>
 
-        <!-- Dolls playground: 五隻人偶在遊樂園玩耍，點一隻去 3D 頁 -->
+        <!-- Dolls playground: 六隻人偶在遊樂園玩耍，點一隻去 3D 頁 -->
         <section class="dolls-playground" aria-label="人偶遊樂園">
             <div class="dolls-head">
                 <div class="dolls-titles">
                     <h2 class="dolls-title">🎭 人偶遊樂園</h2>
-                    <p class="dolls-sub">五隻人偶正在樂園裡玩耍，點一隻去看 3D</p>
+                    <p class="dolls-sub">六隻人偶正在樂園裡玩耍，點一隻去看 3D</p>
                 </div>
-                <a href="/3d-mascot" class="dolls-link">去 3D 頁看五隻人偶 →</a>
+                <a href="/3d-mascot" class="dolls-link">去 3D 頁看六隻人偶 →</a>
             </div>
             <div class="dolls-scene">
                 <!-- 香菇柯基坐摩天輪：輪子轉、柯基反向轉保持正立 -->
@@ -215,6 +215,19 @@ const pickIndex = dayOfYear % rides.length;
                         </g>
                     </svg>
                     <span class="doll-chip">💎 水晶怪 · 盪鞦韆</span>
+                </a>
+                <!-- 小豬坐碰碰車 -->
+                <a href="/3d-mascot" class="doll-ride" aria-label="小豬坐碰碰車，去 3D 頁看">
+                    <svg viewBox="0 0 200 170" class="doll-svg" aria-hidden="true">
+                        <line x1="10" y1="140" x2="190" y2="140" stroke="#3a2f2a" stroke-width="1.4" stroke-linecap="round" />
+                        <g class="bumper-slide">
+                            <image href="/images/characters/pig.png" x="68" y="50" width="64" height="64" />
+                            <rect x="68" y="96" width="64" height="34" rx="10" fill="#f1a7c0" stroke="#3a2f2a" stroke-width="1.6" />
+                            <circle cx="80" cy="132" r="6" fill="#3a2f2a" />
+                            <circle cx="120" cy="132" r="6" fill="#3a2f2a" />
+                        </g>
+                    </svg>
+                    <span class="doll-chip">🐷 小豬 · 碰碰車</span>
                 </a>
             </div>
         </section>
@@ -1465,6 +1478,16 @@ body[data-page="index"] #pf-modal #pf-results a {
     50%      { transform: translateY(-4px); }
 }
 
+/* 碰碰車：整台車左右滑 */
+.bumper-slide {
+    animation: bumper-slide 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes bumper-slide {
+    from { transform: translateX(-18px); }
+    to   { transform: translateX(18px); }
+}
+
 /* 盪鞦韆：整架繞頂桿前後擺 */
 .doll-swing {
     animation: doll-swing 2.8s ease-in-out infinite;
@@ -1502,6 +1525,7 @@ html {
     .ferris-spin,
     .ferris-counter,
     .coaster-move,
+    .bumper-slide,
     .doll-bob,
     .doll-swing,
     .balloon-float,
