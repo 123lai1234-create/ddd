@@ -692,7 +692,7 @@ const pickIndex = dayOfYear % rides.length;
 
 .sun-spin {
     transform-origin: 30px 30px;
-    transform-box: fill-box;
+    transform-box: view-box;
     animation: sun-rotate 40s linear infinite;
 }
 
@@ -703,8 +703,8 @@ const pickIndex = dayOfYear % rides.length;
 
 .cloud {
     position: absolute;
-    background: rgba(255, 255, 255, 0.55);
-    border: 1.2px dashed #3a2f2a;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1.2px solid #3a2f2a;
     border-radius: 30px;
     pointer-events: none;
 }
@@ -712,8 +712,8 @@ const pickIndex = dayOfYear % rides.length;
 .cloud::before, .cloud::after {
     content: "";
     position: absolute;
-    background: rgba(255, 255, 255, 0.55);
-    border: 1.2px dashed #3a2f2a;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1.2px solid #3a2f2a;
     border-radius: 50%;
 }
 
