@@ -1,4 +1,4 @@
-﻿---
+---
 /**
  * Chatbot.astro — site-wide AI assistant floating widget.
  * 3D chibi avatar (Three.js procedural) + chat panel, drag-to-move,
@@ -32,11 +32,14 @@
         <h4>元嬰不說</h4>
       </div>
       <div class="chatbot-actions">
+        <button class="chatbot-switch" id="mascot-import" aria-label="匯入 GLB 人偶" title="匯入自己的 GLB 人偶">📂</button>
         <button class="chatbot-switch" id="chatbot-switch" aria-label="換人偶" title="換人偶">🔄</button>
         <button class="chatbot-reset" aria-label="重新開始" title="重新開始對話">↻</button>
         <button class="chatbot-close" aria-label="關閉">✕</button>
       </div>
     </div>
+    <input id="mascot-file" type="file" accept=".glb" hidden />
+    <p id="mascot-import-status" role="status" aria-live="polite"></p>
     <div id="chatbot-messages">
       <div class="chat-msg chat-bot">
         你好！我是元嬰不說，<strong>不說</strong> 的作品集助手 🤖<br/>
@@ -229,6 +232,9 @@
     color: var(--text, #e9f0ec);
     transform: rotate(-90deg);
   }
+
+  #mascot-import-status { margin: 0; padding: 0 16px; font-size: 12px; color: #94a59f; }
+  #mascot-import-status:not(:empty) { padding-top: 10px; padding-bottom: 10px; }
 
   /* === Streaming cursor === */
   .chat-stream-cursor {
@@ -453,7 +459,7 @@
 
     function setCameraOrbit(theta, phi) {
         if (!viewer) return;
-        try { viewer.setAttribute('camera-orbit', `${theta}deg ${phi}deg ${camRadius}m`); } catch (_) {}
+        try { viewer.setAttribute('camera-orbit', `${theta}deg ${phi}deg ${typeof camRadius === 'number' ? camRadius + 'm' : camRadius}`); } catch (_) {}
     }
 
     /* ── 人偶切換：五隻角色共用同一顆 model-viewer ────────────────
@@ -488,15 +494,16 @@
             if (c.poster) viewer.setAttribute('poster', c.poster);
             else viewer.removeAttribute('poster');
             viewer.setAttribute('alt', c.alt);
-            viewer.setAttribute('camera-target', `0m ${c.targetY}m 0m`);
+            viewer.setAttribute('camera-target', c.id === 'custom' ? 'auto auto auto' : `0m ${c.targetY}m 0m`);
         } catch (_) {}
         anchor.setAttribute('aria-label', `${c.name} 3D（可拖曳旋轉）`);
-        try { localStorage.setItem(CHAR_STORE_KEY, String(i)); } catch (_) {}
+        try { localStorage.setItem(CHAR_STORE_KEY, c.id === 'custom' ? 'custom' : String(i)); } catch (_) {}
         baseTheta = 0;
         basePhi = 82;
         setCameraOrbit(0, 82);
     }
     function cycleCharacter() {
+        characterChanged = true;
         applyCharacter((charIndex + 1) % CHARACTERS.length);
         if (!viewer) return;
         viewer.classList.remove('kawaii-bounce');
@@ -505,7 +512,26 @@
         setTimeout(() => viewer.classList.remove('kawaii-bounce'), 550);
     }
     // 套用上次選的人偶（預設香菇柯基；已是柯基時不重設 src，避免重載）
+    let restoreCustom = false;
+    try { restoreCustom = localStorage.getItem(CHAR_STORE_KEY) === 'custom'; } catch (_) {}
     applyCharacter(charIndex);
+    const builtInCount = CHARACTERS.length;
+    let characterChanged = false;
+    import('/scripts/mascot-import.js').then(({ initMascotImport }) => {
+        initMascotImport({
+            viewer,
+            wantsRestore: () => restoreCustom && !characterChanged,
+            apply: (src, name) => {
+                CHARACTERS[builtInCount] = { id: 'custom', name, src, poster: null,
+                    radius: '105%', targetY: 0, alt: `${name} 自訂 3D 人偶` };
+                applyCharacter(builtInCount);
+            },
+            restore: () => applyCharacter(0),
+        });
+    }).catch(() => {
+        document.getElementById('mascot-import-status').textContent = '匯入功能暫時無法載入，請重新整理。';
+    });
+
     function animateCameraTo(theta, phi, duration, onDone) {
         if (camAnim) cancelAnimationFrame(camAnim);
         const startTheta = baseTheta;

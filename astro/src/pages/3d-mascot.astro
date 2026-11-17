@@ -82,6 +82,10 @@ const STAT_PIG_SIZE = '0.2 MB';
             </p>
         </header>
 
+        <section aria-label="匯入自己的模型" style="margin: 1rem 0; padding: 1rem; border: 1px solid #334b50; border-radius: 16px;">
+            <button id="page-mascot-import" type="button" style="padding: .65rem 1rem; border-radius: 10px; cursor: pointer;">📂 匯入 GLB，替換右下角人偶</button>
+            <p>選擇本機建好的 .glb（上限 30 MB，貼圖需嵌入）。模型只保存在目前瀏覽器；正式公開給訪客需另外部署。</p>
+        </section>
         <!-- 人物切換：六隻角色共用同一個 model-viewer -->
         <div class="char-switcher" role="group" aria-label="選擇角色">
             <button type="button" class="char-btn" data-id="corgi" data-src="/models/mascot-3d.glb" data-orbit="0deg 82deg 2.8m" data-target="0m 0m 0m" data-tris={STAT_TRIS} data-mats={STAT_MATS} data-size={STAT_SIZE} data-engine="TRELLIS.2" data-title="🍄 香菇柯基 · 真 3D 模型" aria-pressed="true">🍄 香菇柯基</button>
