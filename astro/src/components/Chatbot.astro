@@ -464,7 +464,7 @@
 
     /* ── 人偶切換：五隻角色共用同一顆 model-viewer ────────────────
      * 香菇柯基用輕量版 mascot-3d-chat.glb（poster 是柯基照片）；
-     * 其餘四隻用 Draco 壓縮版（0.04–0.7 MB，比柯基輕量版還小），
+     * 其餘五隻用 Draco 壓縮版（0.04–0.7 MB，比柯基輕量版還小），
      * 2 公尺高、腳在 y=0，所以相機要拉遠到 5.2m、目標改到 y=1.0m。
      * 選擇存在 localStorage，換頁、重開瀏覽器都記得。 */
     const CHARACTERS = [
@@ -473,6 +473,7 @@
         { id: 'philosopher', name: '哲學家',   src: '/models/character-philosopher.glb', poster: null,                     radius: 5.2, targetY: 1.0, alt: '哲學家 3D' },
         { id: 'cat',         name: '黑貓',     src: '/models/character-cat.glb',         poster: null,                     radius: 5.2, targetY: 1.0, alt: '黑貓 3D' },
         { id: 'crystal',     name: '水晶怪',   src: '/models/character-crystal.glb',     poster: null,                     radius: 5.2, targetY: 1.0, alt: '水晶怪 3D' },
+        { id: 'pig',         name: '小豬',     src: '/models/character-pig.glb',         poster: null,                     radius: 5.2, targetY: 1.0, alt: '小豬 3D' },
     ];
     const CHAR_STORE_KEY = 'chatbot_character_v1';
     let charIndex = 0;
