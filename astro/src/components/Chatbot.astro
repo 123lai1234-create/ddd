@@ -12,13 +12,12 @@
 ---
 
 <!-- 香菇柯基 真 3D（model-viewer，輕量減面版）
-     * 拖曳狗 = 旋轉模型（model-viewer camera-controls），滾輪/雙指 = 縮放
-     * 拖右上角「拖我移動」標籤 = 移動整個按鈕位置
+     * 按住拖曳狗（或右上角「拖我移動」標籤）= 移動整個按鈕位置，滾輪/雙指 = 縮放
      * 點狗 = 循環反應（跳、轉一圈、揮手）+ 開關聊天面板
-     * 點左上角 🔄 或面板標題旁 🔄 = 換下一隻人偶（五隻循環，選擇存 localStorage）
+     * 點左上角 🔄 或面板標題旁 🔄 = 換下一隻人偶（六隻循環，選擇存 localStorage）
      * state change -> setView('front'|'side'|'back') 改 camera-orbit 角度 -->
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
-<div id="chatbot-anchor" aria-label="香菇柯基 3D（可拖曳旋轉）" role="button" tabindex="0">
+<div id="chatbot-anchor" aria-label="香菇柯基 3D（可拖曳移動）" role="button" tabindex="0">
   <div class="kawaii-stage" id="kawaii-stage">
     <model-viewer id="kawaii-canvas" src="/models/mascot-3d-chat.glb" poster="/images/chibi-hero.png" alt="香菇柯基 3D" camera-orbit="0deg 82deg 2.8m" camera-target="0m 0m 0m" field-of-view="30deg" exposure="0.85" shadow-intensity="0.7" camera-controls interaction-prompt="none" ar-modes="none"></model-viewer>
     <button class="char-switch-hint" id="char-switch-btn" aria-label="換人偶" title="換人偶">🔄</button>
@@ -462,7 +461,7 @@
         try { viewer.setAttribute('camera-orbit', `${theta}deg ${phi}deg ${typeof camRadius === 'number' ? camRadius + 'm' : camRadius}`); } catch (_) {}
     }
 
-    /* ── 人偶切換：五隻角色共用同一顆 model-viewer ────────────────
+    /* ── 人偶切換：六隻角色共用同一顆 model-viewer ────────────────
      * 香菇柯基用輕量版 mascot-3d-chat.glb（poster 是柯基照片）；
      * 其餘五隻用 Draco 壓縮版（0.04–0.7 MB，比柯基輕量版還小），
      * 2 公尺高、腳在 y=0，所以相機要拉遠到 5.2m、目標改到 y=1.0m。
@@ -497,7 +496,7 @@
             viewer.setAttribute('alt', c.alt);
             viewer.setAttribute('camera-target', c.id === 'custom' ? 'auto auto auto' : `0m ${c.targetY}m 0m`);
         } catch (_) {}
-        anchor.setAttribute('aria-label', `${c.name} 3D（可拖曳旋轉）`);
+        anchor.setAttribute('aria-label', `${c.name} 3D（可拖曳移動）`);
         try { localStorage.setItem(CHAR_STORE_KEY, c.id === 'custom' ? 'custom' : String(i)); } catch (_) {}
         baseTheta = 0;
         basePhi = 82;
@@ -656,7 +655,7 @@
         }, 12000 + Math.random() * 8000);
     }
 
-    /* ── 點狗（未拖曳）= 反應 + 開關面板；拖曳狗 = 模型自己旋轉 ─── */
+    /* ── 點狗（未拖曳）= 反應 + 開關面板；按住拖曳狗 = 整顆人偶移動 ─── */
     let viewerDownPos = null;
     if (viewer) {
         viewer.addEventListener('pointerdown', (e) => {
@@ -703,11 +702,14 @@
     }
     function isPanelOpen() { return anchor.classList.contains('panel-open'); }
 
-    /* ── Drag-to-move the character anywhere on screen ───────────── */
+    /* ── Drag-to-move the character anywhere on screen ─────────────
+       按住人偶本體（或右上角「拖我移動」標籤）拖著走；輕點人偶 = 反應 + 開關面板 */
     let dragging = false;
     let dragPointerId = null;
     let dragOffset = { x: 0, y: 0 };
     let didDrag = false;
+    let dragFromViewer = false;
+    let dragStartPos = null;
 
     function isInsideAnchor(e) {
         const r = anchor.getBoundingClientRect();
@@ -717,10 +719,13 @@
 
     function onPointerDown(e) {
         if (e.target.closest('#chatbot-panel')) return;
-        if (e.target.closest('model-viewer')) return; // 拖曳狗 = 模型旋轉，不移動按鈕
-        if (!e.target.closest('#char-drag-handle')) return; // 只有拖標籤才移動按鈕
+        const onViewer = !!e.target.closest('model-viewer');
+        const onHandle = !!e.target.closest('#char-drag-handle');
+        if (!onViewer && !onHandle) return; // 只有按人偶或拖標籤才移動
         if (e.button !== undefined && e.button !== 0) return;
         if (!isInsideAnchor(e)) return;
+        dragFromViewer = onViewer;
+        dragStartPos = { x: e.clientX, y: e.clientY };
         dragging = true;
         didDrag = false;
         dragPointerId = e.pointerId;
@@ -734,11 +739,14 @@
         anchor.classList.add('dragging');
         if (!anchor.classList.contains('panel-open')) setView('side');
         try { anchor.setPointerCapture(e.pointerId); } catch (_) {}
+        if (onViewer) e.stopPropagation(); // 別讓 model-viewer 同時轉模型
         e.preventDefault();
     }
 
     function onPointerMove(e) {
         if (!dragging || e.pointerId !== dragPointerId) return;
+        // 輕點容錯：8px 內不算拖曳（跟點狗的 10px 門檻一致）
+        if (!didDrag && dragStartPos && Math.hypot(e.clientX - dragStartPos.x, e.clientY - dragStartPos.y) <= 8) return;
         const newLeft = e.clientX - dragOffset.x;
         const newTop  = e.clientY - dragOffset.y;
         const maxX = window.innerWidth - anchor.offsetWidth;
@@ -754,8 +762,11 @@
         if (!dragging) return;
         if (e.pointerId !== dragPointerId) return;
         const moved = didDrag;
+        const fromViewer = dragFromViewer;
         dragging = false;
         dragPointerId = null;
+        dragFromViewer = false;
+        dragStartPos = null;
         anchor.classList.remove('dragging');
         try {
             const rect = anchor.getBoundingClientRect();
@@ -766,6 +777,7 @@
         if (moved) {
             if (!isPanelOpen()) setView('front');
         } else {
+            if (fromViewer) playReaction(); // 輕點人偶：反應 + 開關面板
             if (isPanelOpen()) closePanel();
             else openPanel();
         }
