@@ -1200,7 +1200,9 @@ const pickIndex = dayOfYear % rides.length;
 }
 
 @media (max-width: 480px) {
-    .minion-park { padding: 32px 16px 64px; }
+    /* 上方留 72px：導覽列 fixed 高 64px，32px 會讓標頭眉題＋標題頂部
+       被導覽列蓋住（390px 下標題頂被切 14px） */
+    .minion-park { padding: 72px 16px 64px; }
     .park-rides { gap: 14px; }
     .ride { flex-basis: 100%; min-height: 180px; }
     .park-title { font-size: 2.2rem; }
