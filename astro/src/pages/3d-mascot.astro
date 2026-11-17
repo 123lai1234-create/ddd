@@ -42,12 +42,19 @@ const STAT_CRYSTAL_SIZE = '39 KB';
 // 大小用截尾（0.2 MB）；改用另一種請加 --round 後重跑。
 const STAT_PIG_TRIS = '55.9 K';
 const STAT_PIG_MATS = '8';
+// 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/character-boss-v1.glb 得出，不要手填。
+// 解析結果：50,049 tris / 21 materials / 227,020 bytes
+// 大小用截尾（0.2 MB）；改用另一種請加 --round 後重跑。
+const STAT_BOSS_TRIS = '50.0 K';
+const STAT_BOSS_MATS = '21';
+const STAT_BOSS_SIZE = '0.2 MB';
+
 const STAT_PIG_SIZE = '0.2 MB';
 ---
 
 <Base
     title="3D Mascot | 香菇柯基 真 3D 模型"
-    description="香菇柯基 mascot — 真 3D 模型，可用滑鼠旋轉縮放。六隻角色可切換：香菇柯基、綠機器人、哲學家、黑貓、水晶怪、小豬。"
+    description="香菇柯基 mascot — 真 3D 模型，可用滑鼠旋轉縮放。七隻角色可切換：香菇柯基、綠機器人、哲學家、黑貓、水晶怪、小豬、老大（重建測試）。"
     bodyPage="index"
     pageStyles={["/styles/index.css"]}
     pageScripts={["/scripts/app-config.js"]}
@@ -80,13 +87,10 @@ const STAT_PIG_SIZE = '0.2 MB';
                 粉紅身體、橢圓豬鼻、垂耳捲尾的小豬，黑珠眼睛帶白高光 ——
                 用 Blender 程序化建模，沒有用到照片或 AI 生成。滑鼠拖曳可以旋轉、滾輪縮放。
             </p>
+            <p class="subtitle char-subtitle" data-char="boss" hidden>老大 · 黑西裝、墨鏡與毛領大衣。此為重建測試版，可直接在右下角按 🔄 切換使用。</p>
         </header>
 
-        <section aria-label="匯入自己的模型" style="margin: 1rem 0; padding: 1rem; border: 1px solid #334b50; border-radius: 16px;">
-            <button id="page-mascot-import" type="button" style="padding: .65rem 1rem; border-radius: 10px; cursor: pointer;">📂 匯入 GLB，替換右下角人偶</button>
-            <p>選擇本機建好的 .glb（上限 30 MB，貼圖需嵌入）。模型只保存在目前瀏覽器；正式公開給訪客需另外部署。</p>
-        </section>
-        <!-- 人物切換：六隻角色共用同一個 model-viewer -->
+        <!-- 人物切換：七隻角色共用同一個 model-viewer -->
         <div class="char-switcher" role="group" aria-label="選擇角色">
             <button type="button" class="char-btn" data-id="corgi" data-src="/models/mascot-3d.glb" data-orbit="0deg 82deg 2.8m" data-target="0m 0m 0m" data-tris={STAT_TRIS} data-mats={STAT_MATS} data-size={STAT_SIZE} data-engine="TRELLIS.2" data-title="🍄 香菇柯基 · 真 3D 模型" aria-pressed="true">🍄 香菇柯基</button>
             <button type="button" class="char-btn" data-id="robot" data-src="/models/character-robot.glb" data-orbit="0deg 82deg 5.2m" data-target="0m 1.0m 0m" data-tris={STAT_ROBOT_TRIS} data-mats={STAT_ROBOT_MATS} data-size={STAT_ROBOT_SIZE} data-engine="Blender 程序化" data-title="🤖 綠機器人 · 真 3D 模型" aria-pressed="false">🤖 綠機器人</button>
@@ -94,6 +98,7 @@ const STAT_PIG_SIZE = '0.2 MB';
             <button type="button" class="char-btn" data-id="cat" data-src="/models/character-cat.glb" data-orbit="0deg 82deg 5.2m" data-target="0m 1.0m 0m" data-tris={STAT_CAT_TRIS} data-mats={STAT_CAT_MATS} data-size={STAT_CAT_SIZE} data-engine="Blender 程序化" data-title="🐈‍⬛ 黑貓 · 真 3D 模型" aria-pressed="false">🐈‍⬛ 黑貓</button>
             <button type="button" class="char-btn" data-id="crystal" data-src="/models/character-crystal.glb" data-orbit="0deg 82deg 5.2m" data-target="0m 1.0m 0m" data-tris={STAT_CRYSTAL_TRIS} data-mats={STAT_CRYSTAL_MATS} data-size={STAT_CRYSTAL_SIZE} data-engine="Blender 程序化" data-title="💎 水晶怪 · 真 3D 模型" aria-pressed="false">💎 水晶怪</button>
             <button type="button" class="char-btn" data-id="pig" data-src="/models/character-pig.glb" data-orbit="0deg 82deg 5.2m" data-target="0m 1.0m 0m" data-tris={STAT_PIG_TRIS} data-mats={STAT_PIG_MATS} data-size={STAT_PIG_SIZE} data-engine="Blender 程序化" data-title="🐷 小豬 · 真 3D 模型" aria-pressed="false">🐷 小豬</button>
+            <button type="button" class="char-btn" data-id="boss" data-src="/models/character-boss-v1.glb" data-orbit="0deg 82deg 5.2m" data-target="0m 1.0m 0m" data-tris={STAT_BOSS_TRIS} data-mats={STAT_BOSS_MATS} data-size={STAT_BOSS_SIZE} data-engine="重建測試版" data-title="🕶️ 老大 · 重建測試版" aria-pressed="false">🕶️ 老大（重建測試）</button>
         </div>
 
         <!-- model-viewer 需要「父容器有明確高度」，這裡是整頁能不能看到模型的關鍵 -->

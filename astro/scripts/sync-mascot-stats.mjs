@@ -43,6 +43,7 @@ const MODELS = [
   { glb: 'public/models/character-cat.glb', prefix: 'CAT' },
   { glb: 'public/models/character-crystal.glb', prefix: 'CRYSTAL' },
   { glb: 'public/models/character-pig.glb', prefix: 'PIG' },
+  { glb: 'public/models/character-boss-v1.glb', prefix: 'BOSS' },
 ];
 
 const GLB_MAGIC = 0x46546c67; // 'glTF' little-endian
