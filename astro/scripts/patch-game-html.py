@@ -56,6 +56,18 @@ TARGET = os.path.join(
 
 OGG_SRC = re.compile(r'(src="music/)([^"]+)\.ogg(")')
 
+# 5. BGM credits removal (2026-11-17). The footer <div> lists every BGM
+# track's author / OpenGameArt source / CC0 licence plus a "toggle BGM in
+# settings" hint. The user asked for that whole text block to go. The
+# 🐞 "game stuck / report problem" button lives in the same <div>, so the
+# pattern stops right before it - the button and the <audio> elements stay,
+# only the credit text is removed. Idempotent: once removed the anchor
+# (🎵 背景音樂) is gone, so re-runs are no-ops.
+BGM_CREDIT = re.compile(
+    r'    <div>🎵 背景音樂<br>.*?右上角 ⚙ 設定裡可以開關背景音樂。<br>\n',
+    re.DOTALL,
+)
+
 # The mirror is served from /games/confinement-escape/, so every relative asset
 # path (images/, music/, sfx/, voice/) has to resolve from that folder. Upstream
 # ships the game for a site root and has no <base>, so a re-sync that only copies
@@ -264,6 +276,11 @@ def main():
             youtube_hits += n
             fired += 1
 
+    # 5. BGM credits removal (2026-11-17): footer credit text only.
+    bgm_hits = len(BGM_CREDIT.findall(src))
+    if bgm_hits:
+        src = BGM_CREDIT.sub('    <div>\n', src, count=1)
+
     # 4. 3D viewer: CSS, JS, and the showCard button. Each fires only when
     # its marker is absent, so re-running on an already-patched file is a
     # no-op (and a re-sync that wipes the viewer gets all four back).
@@ -317,6 +334,7 @@ def main():
     print('audio src  .ogg -> .mp3 : %d' % before_audio)
     print('img loading hints added : %d' % before_img)
     print('youtube edits applied   : %d (%d rule(s) fired)' % (youtube_hits, fired))
+    print('bgm credits removed     : %d' % bgm_hits)
     print('3d viewer rules applied : %d (of 4)' % viewer_fired)
     print('remaining .ogg refs     : %d' % len(OGG_SRC.findall(src)))
     print('youtube leftovers       : %d' % leftovers)
