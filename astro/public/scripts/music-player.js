@@ -361,7 +361,7 @@
     // 快取策略：用 manifest 版本號當 cache buster（改 tracks.json 時同步改
     // TRACKS_MANIFEST_VERSION），不要再用 Date.now() + no-store——之前每次
     // 進頁都重抓 148K。
-    const TRACKS_MANIFEST_VERSION = 3;
+    const TRACKS_MANIFEST_VERSION = 4;
     async function loadTracksManifest() {
         try {
             const r = await fetch("/music/tracks.json?v=" + TRACKS_MANIFEST_VERSION);
