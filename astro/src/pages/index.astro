@@ -284,123 +284,77 @@ const pickIndex = dayOfYear % rides.length;
                         <span class="ride-facility-tag">設施</span>
                         <div class="ride-art" aria-hidden="true">
                             {ride.id === 'ferris' && (
-                                <svg viewBox="0 0 120 140" class="ride-svg">
-                                    {/* base ground */}
-                                    <line x1="20" y1="135" x2="100" y2="135" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                                    {/* A-frame support legs */}
-                                    <line x1="40" y1="135" x2="60" y2="55" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                                    <line x1="80" y1="135" x2="60" y2="55" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                                    {/* cross brace */}
-                                    <line x1="48" y1="105" x2="72" y2="105" stroke="currentColor" stroke-width="0.8" />
-                                    {/* central post (visible behind the wheel) */}
-                                    <line x1="60" y1="55" x2="60" y2="135" stroke="currentColor" stroke-width="1.4" />
-                                    {/* wheel — rotating */}
-                                    <g class="ferris-spin" style="transform-origin: 60px 60px;">
-                                        {/* outer rim */}
-                                        <circle cx="60" cy="60" r="32" fill="none" stroke="currentColor" stroke-width="2" />
-                                        <circle cx="60" cy="60" r="30" fill="none" stroke="currentColor" stroke-width="0.6" />
-                                        {/* hub */}
-                                        <circle cx="60" cy="60" r="3.5" fill="currentColor" />
-                                        {/* 6 spokes */}
-                                        <line x1="60" y1="28" x2="60" y2="92" stroke="currentColor" stroke-width="1" />
-                                        <line x1="28" y1="60" x2="92" y2="60" stroke="currentColor" stroke-width="1" />
-                                        <line x1="38" y1="38" x2="82" y2="82" stroke="currentColor" stroke-width="1" />
-                                        <line x1="38" y1="82" x2="82" y2="38" stroke="currentColor" stroke-width="1" />
-                                        {/* 6 cabins on the outside of the rim (12, 2, 4, 6, 8, 10 o'clock) */}
-                                        {Array.from({ length: 6 }).map((_, k) => {
-                                            const a = (k * Math.PI) / 3 - Math.PI / 2;
-                                            const cx = 60 + 38 * Math.cos(a);
-                                            const cy = 60 + 38 * Math.sin(a);
-                                            return <rect x={cx - 5} y={cy - 5} width="10" height="10" fill={ride.softColor} stroke="currentColor" stroke-width="1.2" rx="1.5" />;
-                                        })}
-                                    </g>
-                                </svg>
+                                <svg viewBox="0 0 220 210" class="ride-svg">
+                        <line x1="82" y1="210" x2="110" y2="105" stroke="#3a2f2a" stroke-width="1.6" stroke-linecap="round" />
+                        <line x1="138" y1="210" x2="110" y2="105" stroke="#3a2f2a" stroke-width="1.6" stroke-linecap="round" />
+                        <line x1="20" y1="210" x2="200" y2="210" stroke="#3a2f2a" stroke-width="1.6" stroke-linecap="round" />
+                        <g class="ferris-spin" style="transform-origin: 110px 105px;">
+                            <circle cx="110" cy="105" r="68" fill="none" stroke="#3a2f2a" stroke-width="2" />
+                            <circle cx="110" cy="105" r="66" fill="none" stroke="#3a2f2a" stroke-width="0.6" />
+                            <line x1="110" y1="37" x2="110" y2="173" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="42" y1="105" x2="178" y2="105" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="62" y1="57" x2="158" y2="153" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="62" y1="153" x2="158" y2="57" stroke="#3a2f2a" stroke-width="1" />
+                            <circle cx="110" cy="105" r="4" fill="#c44536" />
+                            <rect x="170" y="61" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="170" y="137" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="104" y="175" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="38" y="137" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="38" y="61" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <g class="ferris-counter" style="transform-origin: 110px 29px;">
+                                <image href="/images/characters/corgi.png" x="86" y="5" width="48" height="48" />
+                            </g>
+                        </g>
+                    </svg>
                             )}
                             {ride.id === 'balloon' && (
-                                <svg viewBox="0 0 120 140" class="ride-svg">
-                                    <line x1="60" y1="2" x2="60" y2="14" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 2" />
-                                    <g class="balloon-float">
-                                        <path d="M 40 60 Q 30 30 60 20 Q 90 30 80 60 Q 75 80 60 80 Q 45 80 40 60 Z"
-                                              fill={ride.softColor} stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                                        <line x1="60" y1="20" x2="60" y2="80" stroke="currentColor" stroke-width="0.8" />
-                                        <path d="M 45 32 Q 60 24 75 32" fill="none" stroke="currentColor" stroke-width="0.8" />
-                                        <path d="M 42 46 Q 60 38 78 46" fill="none" stroke="currentColor" stroke-width="0.8" />
-                                        <path d="M 44 60 Q 60 54 76 60" fill="none" stroke="currentColor" stroke-width="0.8" />
-                                        <line x1="55" y1="80" x2="52" y2="100" stroke="currentColor" stroke-width="1" />
-                                        <line x1="65" y1="80" x2="68" y2="100" stroke="currentColor" stroke-width="1" />
-                                        <rect x="50" y="100" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.4" rx="1" />
-                                        <line x1="50" y1="106" x2="70" y2="106" stroke="currentColor" stroke-width="0.8" />
-                                    </g>
-                                </svg>
+                                <svg viewBox="0 0 200 200" class="ride-svg">
+                        <g class="balloon-float">
+                            <path d="M 75 115 Q 60 55 100 40 Q 140 55 125 115 Q 118 138 100 138 Q 82 138 75 115 Z" fill="#a8dadc" stroke="#3a2f2a" stroke-width="1.6" stroke-linejoin="round" />
+                            <line x1="100" y1="40" x2="100" y2="138" stroke="#3a2f2a" stroke-width="0.8" />
+                            <path d="M 82 58 Q 100 48 118 58" fill="none" stroke="#3a2f2a" stroke-width="0.8" />
+                            <path d="M 78 82 Q 100 72 122 82" fill="none" stroke="#3a2f2a" stroke-width="0.8" />
+                            <line x1="86" y1="132" x2="80" y2="148" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="114" y1="132" x2="120" y2="148" stroke="#3a2f2a" stroke-width="1" />
+                            <image href="/images/characters/cat.png" x="70" y="110" width="60" height="60" />
+                            <rect x="74" y="148" width="52" height="22" fill="#faf6ec" stroke="#3a2f2a" stroke-width="1.4" rx="1" />
+                        </g>
+                    </svg>
                             )}
                             {ride.id === 'carousel' && (
-                                <svg viewBox="0 0 120 140" class="ride-svg">
-                                    {/* ground */}
-                                    <line x1="14" y1="130" x2="106" y2="130" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                                    {/* static support frame (does NOT rotate) */}
-                                    <line x1="22" y1="130" x2="22" y2="116" stroke="currentColor" stroke-width="1.4" />
-                                    <line x1="98" y1="130" x2="98" y2="116" stroke="currentColor" stroke-width="1.4" />
-                                    <line x1="14" y1="116" x2="106" y2="116" stroke="currentColor" stroke-width="1.4" />
-                                    {/* base platform (static) */}
-                                    <ellipse cx="60" cy="116" rx="38" ry="4" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" />
-                                    {/* central pole (static) */}
-                                    <line x1="60" y1="38" x2="60" y2="116" stroke="currentColor" stroke-width="1.6" />
-                                    {/* canopy (static — conical, looks the same from any angle) */}
-                                    <path d="M 22 58 Q 60 24 98 58 Z" fill={ride.color} stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                                    <path d="M 22 58 Q 60 70 98 58" fill="none" stroke="currentColor" stroke-width="1.2" />
-                                    {/* flag (static position, wave in place) */}
-                                    <line x1="60" y1="24" x2="60" y2="14" stroke="currentColor" stroke-width="1.4" />
-                                    <g class="carousel-flag" style="transform-origin: 60px 16px;">
-                                        <path d="M 60 14 L 72 16 L 60 19 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
-                                    </g>
-                                    {/* horse 1 - left (orbits + bobs) */}
-                                    <g class="carousel-orbit carousel-orbit-1">
-                                        <g class="carousel-horse carousel-horse-1">
-                                            <line x1="38" y1="58" x2="38" y2="78" stroke="currentColor" stroke-width="1.2" />
-                                            <path d="M 28 92 L 28 84 Q 28 78 34 78 L 42 78 Q 48 78 48 84 L 48 92 L 44 92 L 44 86 L 38 86 L 38 92 L 34 92 L 34 86 L 28 86 Z M 48 81 L 52 78 L 48 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-                                        </g>
-                                    </g>
-                                    {/* horse 2 - center (orbits + bobs, 1/3 period offset) */}
-                                    <g class="carousel-orbit carousel-orbit-2">
-                                        <g class="carousel-horse carousel-horse-2">
-                                            <line x1="60" y1="58" x2="60" y2="78" stroke="currentColor" stroke-width="1.2" />
-                                            <path d="M 50 92 L 50 84 Q 50 78 56 78 L 64 78 Q 70 78 70 84 L 70 92 L 66 92 L 66 86 L 60 86 L 60 92 L 56 92 L 56 86 L 50 86 Z M 70 81 L 74 78 L 70 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-                                        </g>
-                                    </g>
-                                    {/* horse 3 - right (orbits + bobs, 2/3 period offset) */}
-                                    <g class="carousel-orbit carousel-orbit-3">
-                                        <g class="carousel-horse carousel-horse-3">
-                                            <line x1="82" y1="58" x2="82" y2="78" stroke="currentColor" stroke-width="1.2" />
-                                            <path d="M 72 92 L 72 84 Q 72 78 78 78 L 86 78 Q 92 78 92 84 L 92 92 L 88 92 L 88 86 L 82 86 L 82 92 L 78 92 L 78 86 L 72 86 Z M 92 81 L 96 78 L 92 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-                                        </g>
-                                    </g>
-                                </svg>
+                                <svg viewBox="0 0 200 170" class="ride-svg">
+                        <path d="M 30 62 Q 100 28 170 62 Z" fill="#d4a5a5" stroke="#3a2f2a" stroke-width="1.8" stroke-linejoin="round" />
+                        <line x1="100" y1="40" x2="100" y2="150" stroke="#3a2f2a" stroke-width="1.6" />
+                        <ellipse cx="100" cy="150" rx="70" ry="6" fill="#f1a7c0" stroke="#3a2f2a" stroke-width="1.4" />
+                        <line x1="20" y1="150" x2="180" y2="150" stroke="#3a2f2a" stroke-width="1.4" stroke-linecap="round" />
+                        <line x1="50" y1="62" x2="50" y2="130" stroke="#3a2f2a" stroke-width="1.2" />
+                        <g transform="translate(-14,0) scale(1.6)">
+                            <g class="carousel-horse carousel-horse-1">
+                                <path d="M 28 92 L 28 84 Q 28 78 34 78 L 42 78 Q 48 78 48 84 L 48 92 L 44 92 L 44 86 L 38 86 L 38 92 L 34 92 L 34 86 L 28 86 Z M 48 81 L 52 78 L 48 78 Z" fill="#f1a7c0" stroke="#3a2f2a" stroke-width="1.4" stroke-linejoin="round" />
+                            </g>
+                        </g>
+                        <line x1="150" y1="62" x2="150" y2="130" stroke="#3a2f2a" stroke-width="1.2" />
+                        <g transform="translate(86,0) scale(1.6)">
+                            <g class="carousel-horse carousel-horse-2">
+                                <path d="M 28 92 L 28 84 Q 28 78 34 78 L 42 78 Q 48 78 48 84 L 48 92 L 44 92 L 44 86 L 38 86 L 38 92 L 34 92 L 34 86 L 28 86 Z M 48 81 L 52 78 L 48 78 Z" fill="#f1a7c0" stroke="#3a2f2a" stroke-width="1.4" stroke-linejoin="round" />
+                            </g>
+                        </g>
+                        <image href="/images/characters/philosopher.png" x="70" y="92" width="60" height="60" class="doll-bob" />
+                    </svg>
                             )}
                             {ride.id === 'coaster' && (
-                                <svg viewBox="0 0 120 140" class="ride-svg">
-                                    {/* ground */}
-                                    <line x1="10" y1="135" x2="110" y2="135" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-                                    {/* support pillars (2 trestles, simple) */}
-                                    <line x1="30" y1="135" x2="30" y2="100" stroke="currentColor" stroke-width="1.2" />
-                                    <line x1="22" y1="100" x2="38" y2="100" stroke="currentColor" stroke-width="1.2" />
-                                    <line x1="90" y1="135" x2="90" y2="100" stroke="currentColor" stroke-width="1.2" />
-                                    <line x1="82" y1="100" x2="98" y2="100" stroke="currentColor" stroke-width="1.2" />
-                                    {/* main track - clear hill shape */}
-                                    <path d="M 10 130 L 30 100 L 60 50 L 90 100 L 110 130" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
-                                    {/* car — drawn at origin, animated to follow the track */}
-                                    <g class="coaster-car">
-                                        {/* main body */}
-                                        <rect x="-10" y="-4" width="20" height="9" rx="2" fill={ride.softColor} stroke="currentColor" stroke-width="1.6" />
-                                        {/* window strip */}
-                                        <rect x="-7" y="-2" width="14" height="4" rx="0.8" fill={ride.color} stroke="currentColor" stroke-width="0.8" />
-                                        {/* two small passengers (head silhouettes) */}
-                                        <circle cx="-3" cy="-0.5" r="1.2" fill="#faf6ec" />
-                                        <circle cx="3" cy="-0.5" r="1.2" fill="#faf6ec" />
-                                        {/* wheels (clearly visible under the body) */}
-                                        <circle cx="-6" cy="5" r="2.2" fill="#faf6ec" stroke="currentColor" stroke-width="1.2" />
-                                        <circle cx="6" cy="5" r="2.2" fill="#faf6ec" stroke="currentColor" stroke-width="1.2" />
-                                    </g>
-                                </svg>
+                                <svg viewBox="0 0 200 170" class="ride-svg">
+                        <path d="M 25 140 L 70 90 L 105 55 L 145 95 L 180 140" fill="none" stroke="#3a2f2a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <line x1="70" y1="90" x2="70" y2="140" stroke="#3a2f2a" stroke-width="1" />
+                        <line x1="145" y1="95" x2="145" y2="140" stroke="#3a2f2a" stroke-width="1" />
+                        <line x1="10" y1="140" x2="190" y2="140" stroke="#3a2f2a" stroke-width="1.4" stroke-linecap="round" />
+                        <g class="coaster-move" transform="translate(4,86)">
+                            <image href="/images/characters/robot.png" x="0" y="0" width="52" height="52" />
+                            <rect x="0" y="32" width="52" height="20" rx="6" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.6" />
+                            <circle cx="10" cy="50" r="4.5" fill="#3a2f2a" />
+                            <circle cx="42" cy="50" r="4.5" fill="#3a2f2a" />
+                        </g>
+                    </svg>
                             )}
                             {ride.id === 'tower' && (
                                 <svg viewBox="0 0 120 140" class="ride-svg">
