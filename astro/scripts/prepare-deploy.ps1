@@ -115,6 +115,20 @@ if payload > 100 * 1048576:
     Write-Host "WARN: dist/ not found, run 'npm run build' first" -ForegroundColor Yellow
 }
 
+# 1.5 ASCII mirror: the Vercel CLI on Windows skips every path that contains
+#     non-ASCII characters, so music/ (Chinese song titles) would never be
+#     uploaded and the whole music section would 404. Writing a percent-encoded
+#     ASCII copy of every such path makes the CLI upload them; browsers and
+#     crawlers request the percent-encoded form anyway, so the public URLs and
+#     Astro stay untouched.
+#     Measured 2026-11-18: 1654 files -> CLI only found 889 without this step.
+Write-Host "[1.5/5] Mirroring non-ASCII paths to percent-encoded ASCII copies ..." -ForegroundColor Cyan
+python scripts\ascii_mirror.py '.vercel\output\static'
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: ascii mirror step failed - aborting deploy" -ForegroundColor Red
+    exit 1
+}
+
 # 2. config.json: version 3 + routes for catchall + cache headers
 #
 #    2026-10-23: every asset shipped with `Cache-Control: public, max-age=0,
