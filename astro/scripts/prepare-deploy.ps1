@@ -14,6 +14,20 @@
 # Usage: after `npm run build`, run this from astro/:
 #   powershell -ExecutionPolicy Bypass -File scripts/prepare-deploy.ps1
 #   & node_modules\.bin\vercel.cmd deploy --prebuilt --prod --yes --archive tgz
+#
+# ---------------------------------------------------------------------------
+# IMPORTANT: do NOT `vercel alias set ... donttalk.vercel.app` afterwards.
+#   donttalk.vercel.app is the project's own production domain (it shows up in
+#   GET /v10/projects/<id>/domains with verified=true). Vercel points it at
+#   every production deployment automatically - a push to the production branch
+#   (main) is all it takes.
+#   A manual alias overrides that, and then every future push deploys without
+#   ever reaching donttalk.vercel.app (verified 2026-11-18: after a manual
+#   `alias set`, a git push to main produced a Ready production deployment that
+#   never moved the alias; the site silently kept serving the old build).
+#   If you ever do create a manual alias, remove it with
+#   `vercel alias rm donttalk.vercel.app` so the automatic assignment works again.
+# ---------------------------------------------------------------------------
 
 $ErrorActionPreference = 'Stop'
 

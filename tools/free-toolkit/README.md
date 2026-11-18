@@ -688,6 +688,20 @@ Invoke-WebRequest -Uri 'https://donttalk.vercel.app/music/cards/05_雨夜出租/
     `--prebuilt` 才是這台機器上唯一可行的路徑。
 51. **payload 136.6MB 不是問題**：Vercel Hobby 的 100MB 限制沒有在這裡生效
     （雲端 build 的舊部署同樣大小且完整上線）。真正砍掉整個 `music/` 的是坑 48。
+52. **不要對 `donttalk.vercel.app` 手動 `vercel alias set`**：它是專案自己的
+    production domain（`GET /v10/projects/<id>/domains` 會列出、verified=true），
+    Vercel 會在每次 production 部署完成時自動指過去 —— 也就是說 **push 到
+    production branch（`main`）就會自動更新正式站**。
+    一旦手動 `alias set`，manual alias 會**蓋掉自動指派**：
+    實測 2026-11-18，`alias set` 之後 push main 產生了 Ready 的 production 部署，
+    但 `donttalk.vercel.app` 完全沒動，網站靜靜地繼續跑舊版本。
+    → 要恢復自動更新：`npx vercel alias rm donttalk.vercel.app`，
+    再 push 一次讓 Vercel 重新指派。
+53. **Vercel 的 production branch 是 `main`**（`link.productionBranch`）：
+    push 到 `main` → **Production** 部署（自動更新正式站）；
+    push 到其他分支（例如 `123lai1234-create`）→ 只有 **Preview** 部署，
+    正式站不會變動。這個欄位**只能用 Vercel API 的 `link` 改（已被 v9 拒絕），
+    只能走 Dashboard**。
 
 ---
 
