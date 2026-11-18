@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>不說農場｜香菇柯基的種田小遊戲</title>
+<meta name="description" content="單人農場經營小遊戲：種田收成、捕蟲圖鑑、挖寶藏、釣魚、村民任務與每日競賽。純前端、免登入，進度存在你的瀏覽器裡。" />
+<meta name="theme-color" content="#5b8c3e" />
+<!-- 無尾斜線網址也會由 Vercel 回 index.html，沒有 base 時 ./style.css、./game.js
+     會被解析到 /games/ 下 404。跟小茶坊同一招：base 釘死在遊戲資料夾。 -->
+<base href="/games/farm/" />
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<div class="fm-app" id="app">
+  <header class="fm-top">
+    <button class="fm-title" id="titleBtn" type="button" aria-label="不說農場">
+      <span class="fm-title-icon">🍄🐶</span>
+      <span class="fm-title-name">不說農場</span>
+      <span class="fm-title-lv" id="lvBadge">Lv.1</span>
+    </button>
+    <div class="fm-stats" role="status">
+      <span title="金幣">🪙<b id="goldVal">0</b></span>
+      <span title="天數">📅<b id="dayVal">第 1 天</b></span>
+      <span title="經驗">⭐<b id="xpVal">0</b></span>
+    </div>
+    <button class="fm-icon-btn" id="shopBtn" type="button" aria-label="商店">🛒</button>
+    <button class="fm-icon-btn" id="helpBtn" type="button" aria-label="玩法說明">❓</button>
+    <button class="fm-icon-btn" id="resetBtn" type="button" aria-label="重開新局">🔄</button>
+  </header>
+
+  <div class="fm-event" id="eventBar" hidden></div>
+
+  <main class="fm-main" id="main">
+    <section class="fm-tab" id="tab-farm" data-tab="farm"></section>
+    <section class="fm-tab" id="tab-bugs" data-tab="bugs" hidden></section>
+    <section class="fm-tab" id="tab-fish" data-tab="fish" hidden></section>
+    <section class="fm-tab" id="tab-dig" data-tab="dig" hidden></section>
+    <section class="fm-tab" id="tab-npc" data-tab="npc" hidden></section>
+    <section class="fm-tab" id="tab-dex" data-tab="dex" hidden></section>
+  </main>
+
+  <nav class="fm-bottom" aria-label="分頁">
+    <button type="button" data-tab="farm" class="active">🌱<span>農田</span></button>
+    <button type="button" data-tab="bugs">🦋<span>捕蟲</span></button>
+    <button type="button" data-tab="fish">🎣<span>釣魚</span></button>
+    <button type="button" data-tab="dig">⛏️<span>挖寶</span></button>
+    <button type="button" data-tab="npc">🧑‍🌾<span>村民</span></button>
+    <button type="button" data-tab="dex">📖<span>圖鑑</span></button>
+  </nav>
+</div>
+
+<div class="fm-modal-root" id="modalRoot"></div>
+<div class="fm-toast" id="toast" role="status"></div>
+
+<script src="./game.js"></script>
+</body>
+</html>
