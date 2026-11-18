@@ -118,11 +118,11 @@ YCbCr Matrix: TV.709
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Verse,{font},{fs_verse},{c_verse},&H000000FF,&H00101018,&H78000000,0,0,0,0,100,100,0.6,0,1,3,2,2,140,140,170,1
-Style: Chorus,{font},{fs_chorus},{c_chorus},&H000000FF,&H00101018,&H78000000,-1,0,0,0,100,100,1.2,0,1,3.5,2,2,140,140,170,1
-Style: Prechorus,{font},{fs_verse},{c_pre},&H000000FF,&H00101018,&H78000000,0,0,0,0,100,100,0.6,0,1,3,2,2,140,140,170,1
-Style: Bridge,{font},{fs_verse},{c_bridge},&H000000FF,&H00101018,&H78000000,0,0,0,0,100,100,0.6,0,1,3,2,2,140,140,170,1
-Style: Meta,{font},{fs_meta},{c_meta},&H000000FF,&H00101018,&H78000000,0,0,0,0,100,100,0,0,1,2,1,7,64,64,54,1
+Style: Verse,{font},{fs_verse},{c_verse},&H000000FF,&H00101018,&H78000000,0,0,0,0,100,100,0.6,0,1,3,2,2,{mar_l},{mar_r},{mar_v},1
+Style: Chorus,{font},{fs_chorus},{c_chorus},&H000000FF,&H00101018,&H78000000,-1,0,0,0,100,100,1.2,0,1,3.5,2,2,{mar_l},{mar_r},{mar_v},1
+Style: Prechorus,{font},{fs_verse},{c_pre},&H000000FF,&H00101018,&H78000000,0,0,0,0,100,100,0.6,0,1,3,2,2,{mar_l},{mar_r},{mar_v},1
+Style: Bridge,{font},{fs_verse},{c_bridge},&H000000FF,&H00101018,&H78000000,0,0,0,0,100,100,0.6,0,1,3,2,2,{mar_l},{mar_r},{mar_v},1
+Style: Meta,{font},{fs_meta},{c_meta},&H000000FF,&H00101018,&H78000000,0,0,0,0,100,100,0,0,1,2,1,{meta_align},64,64,54,1
 Style: Kicker,{font},{fs_meta},{c_meta},&H000000FF,&H00101018,&H78000000,0,0,0,0,100,100,0,0,1,2,1,8,64,64,54,1
 
 [Events]
@@ -140,8 +140,13 @@ KIND_STYLE = {
 }
 
 
-def build_ass(song, parsed, duration, accent):
-    """依音檔長度把每一行配時，產生 ASS 內容字串。"""
+def build_ass(song, parsed, duration, accent, vertical=False):
+    """依音檔長度把每一行配時，產生 ASS 內容字串。
+
+    vertical=True → 直式 Shorts 用的 1080x1920 版：
+      - 字幕移到下三分之一（MarginV 加大），不會被 Shorts UI 遮住
+      - 標題（Meta）移到上方置中
+    """
     lead = min(4.0, max(2.0, duration * 0.035))
     tail = min(3.0, max(1.5, duration * 0.025))
     sing = max(6.0, duration - lead - tail)
@@ -157,14 +162,21 @@ def build_ass(song, parsed, duration, accent):
     weights = [max(5.0, float(len(t))) + 2.0 for _, t in entries]
     total = sum(weights) or 1.0
 
+    if vertical:
+        geo = dict(w=1080, h=1920, fs_verse=64, fs_chorus=74, fs_meta=36,
+                   mar_l=80, mar_r=80, mar_v=430, meta_align=8)
+    else:
+        geo = dict(w=1920, h=1080, fs_verse=58, fs_chorus=66, fs_meta=30,
+                   mar_l=140, mar_r=140, mar_v=170, meta_align=7)
+
     head = ASS_HEADER.format(
-        w=1920, h=1080, font=FONT,
-        fs_verse=58, fs_chorus=66, fs_meta=30,
+        font=FONT,
         c_verse=hex_to_ass("#F2F2F2"),
         c_chorus=hex_to_ass(accent),
         c_pre=hex_to_ass("#FFE0B2"),
         c_bridge=hex_to_ass("#BFD9F2"),
         c_meta=hex_to_ass("#C8D2DE"),
+        **geo
     )
 
     events = []

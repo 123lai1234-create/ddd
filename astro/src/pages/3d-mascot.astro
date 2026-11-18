@@ -1,13 +1,49 @@
 ---
 import Base from '../layouts/Base.astro';
 
-const MODEL_URL = '/models/mascot-3d.glb';
+// 本頁有兩顆可切換的 3D 模型：手工建模的 chibi ＋ 本機 photo→3D 重建版。
+// 統計數字一律由 scripts/sync-mascot-stats.mjs 解析 GLB 後寫回，不要手填。
+
 // 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/mascot-3d.glb 得出，不要手填。
 // 解析結果：141,342 tris / 16 materials / 406,756 bytes
 // 大小用截尾（0.3 MB）；改用另一種請加 --round 後重跑。
 const STAT_TRIS = '141 K';
 const STAT_MATS = '16';
 const STAT_SIZE = '0.3 MB';
+
+// 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 public/models/mascot-photo-v1.glb 得出，不要手填。
+// 解析結果：115,136 tris / 1 materials / 2,055,548 bytes
+// 大小用截尾（1.9 MB）；改用另一種請加 --round 後重跑。
+const PHOTO_STAT_TRIS = '115 K';
+const PHOTO_STAT_MATS = '1';
+const PHOTO_STAT_SIZE = '1.9 MB';
+
+const MODELS = [
+    {
+        id: 'chibi',
+        label: '手工 chibi',
+        note: 'Blender 4.5 LTS 逐部位參數化建模',
+        src: '/models/mascot-3d.glb',
+        alt: '元嬰不說 chibi mascot 真 3D 模型',
+        tris: STAT_TRIS,
+        mats: STAT_MATS,
+        size: STAT_SIZE,
+        tool: '4.5',
+        toolLabel: 'Blender LTS',
+    },
+    {
+        id: 'photo',
+        label: '照片重建版',
+        note: '本機 TripoSR photo→3D 重建',
+        src: '/models/mascot-photo-v1.glb',
+        alt: '由 2D 參考照本機重建的 3D 模型：正面是真照片像素，側面是投影佔位',
+        tris: PHOTO_STAT_TRIS,
+        mats: PHOTO_STAT_MATS,
+        size: PHOTO_STAT_SIZE,
+        tool: '本機',
+        toolLabel: 'TripoSR',
+    },
+];
 ---
 
 <Base
@@ -22,17 +58,34 @@ const STAT_SIZE = '0.3 MB';
         <header class="mascot-3d-head">
             <h1>🧒 元嬰不說 · 真 3D 模型</h1>
             <p class="subtitle">
-                亂黑髮、白 T 恤、紅色寬褲、腰間綁著格紋襯衫的 2 頭身 chibi ——
-                跟右下角那隻浮動立繪是<b>同一個角色</b>。滑鼠拖曳可以旋轉、滾輪縮放。
+                同一個角色的<b>兩種 3D 做法</b>都擺在這裡：一顆是從零手工建出來的 chibi，
+                另一顆是<b>本機跑 photo→3D</b> 重建的版本。按上面的切換鈕可以直接比較。
             </p>
         </header>
+
+        <div class="mascot-3d-switch" role="tablist" aria-label="模型版本切換">
+            {MODELS.map((m, i) => (
+                <button
+                    type="button"
+                    role="tab"
+                    class="mascot-3d-switch-btn"
+                    data-model-id={m.id}
+                    data-model-src={m.src}
+                    data-model-alt={m.alt}
+                    aria-selected={i === 0 ? 'true' : 'false'}
+                >
+                    <span class="mv-switch-label">{m.label}</span>
+                    <span class="mv-switch-note">{m.note}</span>
+                </button>
+            ))}
+        </div>
 
         <!-- model-viewer 需要「父容器有明確高度」，這裡是整頁能不能看到模型的關鍵 -->
         <div class="mascot-3d-stage" id="stage">
             <model-viewer
                 id="chibiViewer"
-                src={MODEL_URL}
-                alt="元嬰不說 chibi mascot 真 3D 模型"
+                src={MODELS[0].src}
+                alt={MODELS[0].alt}
                 camera-orbit="0deg 82deg 4.4m"
                 camera-target="0m 0.9m 0.2m"
                 camera-controls
@@ -51,21 +104,30 @@ const STAT_SIZE = '0.3 MB';
             <p class="mascot-3d-loading" id="mvLoading">載入 3D 模型中…</p>
         </div>
 
-        <div class="stats-row">
-            <div><div class="num">{STAT_TRIS}</div><div class="lbl">三角面</div></div>
-            <div><div class="num">{STAT_MATS}</div><div class="lbl">材質區</div></div>
-            <div><div class="num">{STAT_SIZE}</div><div class="lbl">GLB 大小</div></div>
-            <div><div class="num">4.5</div><div class="lbl">Blender LTS</div></div>
-        </div>
+        {MODELS.map((m) => (
+            <div class="stats-row" data-model-block={m.id} hidden={m.id !== 'chibi'}>
+                <div><div class="num">{m.tris}</div><div class="lbl">三角面</div></div>
+                <div><div class="num">{m.mats}</div><div class="lbl">材質區</div></div>
+                <div><div class="num">{m.size}</div><div class="lbl">GLB 大小</div></div>
+                <div><div class="num">{m.tool}</div><div class="lbl">{m.toolLabel}</div></div>
+            </div>
+        ))}
 
-        <p class="mascot-3d-hint">
+        <p class="mascot-3d-hint" data-model-block="chibi">
             💡 這顆是<b>從零手工建</b>的：沒有 AI 重建、沒有任何貼圖，
             幾何全部在 <b>Blender 4.5 LTS</b> 裡用參數化曲面組成，
             每個部位一個<b>純色材質</b>，所以顏色不會跑掉、也不會有貼圖鋸齒。
             拖曳 = 旋轉，滾輪 = 縮放。
         </p>
 
-        <div class="mascot-3d-info">
+        <p class="mascot-3d-hint" data-model-block="photo" hidden>
+            💡 這顆是<b>本機跑出來的</b>：把 2D 參考照餵進 <b>TripoSR</b>（MIT 授權、權重非 gated、可商用），
+            在自己的 RTX 4060 上推論成 3D 網格。貼圖不是 AI 畫的，是<b>拿原照片做相機透視投影</b>——
+            所以<b>正面就是真照片像素</b>，側面／背面則是同一張照片被「拉」過去的<b>投影佔位</b>。
+            單張正面照本來就沒有背面資訊，那一面只能長這樣。
+        </p>
+
+        <div class="mascot-3d-info" data-model-block="chibi">
             <h3>為什麼不給 AI 重建，要一個部位一個部位自己建？</h3>
             <p>
                 試過 <b>TripoSR</b>、<b>Hunyuan3D</b>、<b>Meshy</b>：把 2D chibi 設定圖餵進去，
@@ -97,6 +159,35 @@ const STAT_SIZE = '0.3 MB';
                 <code>out/preview_side.png</code>、<code>out/preview_back.png</code>。
             </p>
         </div>
+
+        <div class="mascot-3d-info" data-model-block="photo" hidden>
+            <h3>這顆 photo→3D 是怎麼生出來的？</h3>
+            <p>
+                全程在本機跑，<b>沒有呼叫任何雲端 API</b>：
+                <b>去背（rembg / u2net）</b> → <b>TripoSR 前向推論</b> →
+                <b>marching cubes 取等值面</b> → <b>Taubin 平滑</b> →
+                <b>相機透視投影算 per-vertex UV</b> → 貼圖 GLB。
+                管線程式碼與權重都在 <code>D:\Tools\triposr</code>。
+            </p>
+            <ul>
+                <li>取樣 384³ + 30 次平滑 → 約 105k 頂點的網格</li>
+                <li>貼圖降到 1024² JPEG、<b>Draco level 6</b> 壓縮、面數 decimate 到 115,136 三角面 → 1.9 MB</li>
+                <li>座標已對齊站上 chibi：<b>高 1.25、腳踩 y = 0、正面朝 +Z</b>，兩顆可以直接疊在一起比</li>
+                <li>UV 是<b>相機投影</b>不是 UV unwrap：正面像素正確、深度恆正不會翻面，側面自然退化成投影佔位</li>
+            </ul>
+            <h3>為什麼不拿它取代手工 chibi？</h3>
+            <p>
+                單張正面照沒有背面資訊，TripoSR 只能「猜」體積，形狀會偏成胖嘟嘟的 blob——
+                這也正是本站原本寫「AI 重建出來都是 blob」的原因。所以
+                <b>手工版留著當主模型</b>，照片版當成<b>本機管線的成果</b>並排擺，
+                切一下就能直接比較兩種做法。
+            </p>
+            <p class="mascot-3d-foot">
+                管線說明：<code>D:\Tools\triposr\README.md</code>、
+                <code>run_local.py</code>（推論 + 投影貼圖）、<code>prep_site_asset.py</code>（壓縮 + Draco）。<br />
+                參考照：<code>D:\project\blender\ref\chibi-ref-meshy.png</code>（本站角色設定圖）。
+            </p>
+        </div>
     </div>
 
     <script is:inline>
@@ -121,6 +212,39 @@ const STAT_SIZE = '0.3 MB';
 
         viewer.addEventListener('load', done);
         viewer.addEventListener('error', fail);
+
+        // ── 模型版本切換（手工 chibi ⇄ 照片重建版）──
+        const btns = Array.prototype.slice.call(document.querySelectorAll('.mascot-3d-switch-btn'));
+        if (btns.length < 2) return;
+        const blocks = Array.prototype.slice.call(document.querySelectorAll('[data-model-block]'));
+
+        const show = (btn) => {
+            const id = btn.dataset.modelId;
+            const src = btn.dataset.modelSrc;
+
+            btns.forEach((b) => {
+                const on = b === btn;
+                b.classList.toggle('is-active', on);
+                b.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            blocks.forEach((b) => {
+                b.hidden = b.dataset.modelBlock !== id;
+            });
+
+            if (src && viewer.getAttribute('src') !== src) {
+                if (loading) {
+                    loading.hidden = false;
+                    loading.textContent = '載入 3D 模型中…';
+                    loading.classList.remove('is-error');
+                }
+                if (btn.dataset.modelAlt) viewer.setAttribute('alt', btn.dataset.modelAlt);
+                viewer.setAttribute('src', src);
+            }
+        };
+
+        btns.forEach((b) => {
+            b.addEventListener('click', () => show(b));
+        });
     })();
     </script>
 </Base>
@@ -147,6 +271,56 @@ const STAT_SIZE = '0.3 MB';
 
     /* 關鍵：model-viewer 是 height:100%，父容器必須給「明確高度」，
        否則 auto height 會讓 percentage 解析為 0 → 整隻模型看不到。 */
+    .mascot-3d-switch {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin: 1.35rem 0 0;
+    }
+
+    .mascot-3d-switch-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.2rem;
+        padding: 0.6rem 0.95rem;
+        cursor: pointer;
+        text-align: left;
+        font-family: inherit;
+        color: var(--text, #e9f0ec);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        transition: border-color 0.2s, background 0.2s, transform 0.2s;
+    }
+
+    .mascot-3d-switch-btn:hover {
+        border-color: rgba(88, 215, 255, 0.45);
+        transform: translateY(-1px);
+    }
+
+    .mascot-3d-switch-btn.is-active {
+        border-color: rgba(123, 240, 190, 0.6);
+        background: rgba(123, 240, 190, 0.09);
+        box-shadow: 0 0 0 1px rgba(123, 240, 190, 0.25);
+    }
+
+    .mascot-3d-switch-btn:focus-visible {
+        outline: 2px solid #58d7ff;
+        outline-offset: 2px;
+    }
+
+    .mv-switch-label {
+        font-size: 0.95rem;
+        font-weight: 700;
+    }
+
+    .mv-switch-note {
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        color: var(--muted, #8b949e);
+    }
+
     .mascot-3d-stage {
         position: relative;
         width: 100%;
@@ -218,6 +392,10 @@ const STAT_SIZE = '0.3 MB';
         grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
         gap: 0.75rem;
         margin: 1.25rem 0;
+    }
+
+    .stats-row[hidden] {
+        display: none;
     }
 
     .stats-row > div {

@@ -112,6 +112,22 @@ def template_path(name):
     return p
 
 
+def file_uri(path):
+    """Windows 本機路徑 → SVG <image> 用的 file:// URI。
+
+    Inkscape 讀的是 href，不吃 Windows 反斜線路徑，所以要轉成
+    file:///D:/... 的形式。
+
+    只編碼會破壞 URI 的字元（% # & ?），中文保持原樣 —— 實測 Inkscape
+    能直接吃未編碼的中文路徑，不必 percent-encode 全形。
+    """
+    p = str(path).replace("\\", "/")
+    if not p.startswith("/"):
+        p = "/" + p
+    p = p.replace("%", "%25").replace("#", "%23").replace("&", "%26").replace("?", "%3F")
+    return "file://" + p
+
+
 def render(template, out_png, values, width=None, height=None, timeout=240):
     """填模板 → Inkscape 匯出 PNG。回傳 (ok, detail)。"""
     src = template_path(template) if not os.path.isabs(template) else template
@@ -174,13 +190,25 @@ LAYOUTS = {
     "card_yt":      {"lyric_x": 76,  "lyric_y": 232, "lh": 48, "size": 38, "chars": 17, "lines": 3},
     "og_image":     {"lyric_x": 80,  "lyric_y": 436, "lh": 50, "size": 36, "chars": 21, "lines": 3},
     "share_square": {"lyric_x": 110, "lyric_y": 356, "lh": 58, "size": 48, "chars": 13, "lines": 4},
+    # ── 帶場景背景的版本（scene_1x1.png 當底）────────────────────────
+    # 版面座標跟無背景版一致，只是文字改成米白压在圖上。
+    "og_image_bg":     {"lyric_x": 80,  "lyric_y": 436, "lh": 50, "size": 36, "chars": 21, "lines": 3},
+    "share_square_bg": {"lyric_x": 110, "lyric_y": 356, "lh": 58, "size": 48, "chars": 13, "lines": 4},
+    "card_square_bg":  {"lyric_x": 96,  "lyric_y": 336, "lh": 56, "size": 46, "chars": 14, "lines": 4},
+    "card_story_bg":   {"lyric_x": 110, "lyric_y": 548, "lh": 62, "size": 52, "chars": 13, "lines": 5},
+    "card_yt_bg":      {"lyric_x": 76,  "lyric_y": 232, "lh": 48, "size": 38, "chars": 17, "lines": 3},
 }
 
 FONT_CJK = "Microsoft JhengHei, Microsoft JhengHei UI, Noto Sans CJK TC, sans-serif"
 
 
-def build_values(song, template_name, base=None):
-    """把一筆歌曲資料 + 模板版面 → SVG placeholder 字典。"""
+def build_values(song, template_name, base=None, bg_image=None):
+    """把一筆歌曲資料 + 模板版面 → SVG placeholder 字典。
+
+    bg_image 不為 None 時，會多填一個 BG_IMAGE（file:// URI），
+    並把文字色固定成米白——場景圖上不能再用「依背景亮度選色」那套，
+    因為背景是照片不是色塊，readable_on 對照片沒意義。
+    """
     lay = LAYOUTS[template_name]
     base = base or {}
 
@@ -191,20 +219,24 @@ def build_values(song, template_name, base=None):
     lyric = song.get("lyric") or ""
     lines = wrap_cjk(lyric, lay["chars"], lay["lines"])
 
+    text_color = "#F5F1E8" if bg_image else readable_on(c2)
+
     vals = {
         "COLOR1": c1,
         "COLOR2": c2,
         "COLOR3": c3,
-        "TEXTCOLOR": readable_on(c2),
+        "TEXTCOLOR": text_color,
         "TITLE": esc(song.get("title") or base.get("title") or ""),
         "ARTIST": esc(song.get("artist") or base.get("artist") or ""),
         "SUBTITLE": esc(song.get("subtitle") or base.get("url") or ""),
         "FONT": FONT_CJK,
         "LYRIC_LINES": tspans(
             lines, lay["lyric_x"], lay["lyric_y"], lay["lh"],
-            font_size=lay["size"], fill=readable_on(c2), font_family=FONT_CJK,
-            opacity=0.88),
+            font_size=lay["size"], fill=text_color, font_family=FONT_CJK,
+            opacity=0.9),
     }
+    if bg_image:
+        vals["BG_IMAGE"] = file_uri(bg_image)
     return vals
 
 

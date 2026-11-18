@@ -7,6 +7,9 @@
  *   重產一次這三個數就會漂移（2026-10-23 當天就漂了兩次）。頁面註解寫著
  *   「真實數據（直接解析 GLB 得出，勿手填）」，但沒有任何機制保證它真的被重算過。
  *
+ *   2026-11-11：頁面多了第二顆模型（本機 photo→3D 重建版 mascot-photo-v1.glb），
+ *   所以這支腳本改成同時處理兩組常數：STAT_*（手工 chibi）與 PHOTO_STAT_*（照片版）。
+ *
  * 用法（在 astro/ 下）：
  *   node scripts/sync-mascot-stats.mjs          # 更新 3d-mascot.astro
  *   node scripts/sync-mascot-stats.mjs --check  # 只檢查不寫入，有落差就 exit 1
@@ -27,8 +30,16 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ASTRO_DIR = resolve(__dirname, '..');
 
-const GLB_REL = 'public/models/mascot-3d.glb';
 const PAGE_REL = 'src/pages/3d-mascot.astro';
+
+/**
+ * 頁面上的每一組統計常數，對應一個模型檔。
+ * prefix 決定常數名（STAT_TRIS / PHOTO_STAT_TRIS …），glb 是被解析的模型。
+ */
+const MODELS = [
+  { prefix: 'STAT', glb: 'public/models/mascot-3d.glb', label: '手工 chibi' },
+  { prefix: 'PHOTO_STAT', glb: 'public/models/mascot-photo-v1.glb', label: '照片重建版' },
+];
 
 const GLB_MAGIC = 0x46546c67; // 'glTF' little-endian
 const CHUNK_JSON = 0x4e4f534a; // 'JSON'
@@ -97,84 +108,115 @@ function fmtMb(bytes, round) {
   return `${v.toFixed(1)} MB`;
 }
 
-function main() {
-  const glbPath = resolve(ASTRO_DIR, GLB_REL);
-  const pagePath = resolve(ASTRO_DIR, PAGE_REL);
-
-  if (!existsSync(glbPath)) throw new Error(`找不到模型：${glbPath}`);
-  if (!existsSync(pagePath)) throw new Error(`找不到頁面：${pagePath}`);
-
-  const { json, byteLength } = readGlb(glbPath);
-  const tris = countTriangles(json);
-  const mats = (json.materials ?? []).length;
-
-  if (tris === 0) throw new Error('解析到 0 個三角面，GLB 結構可能不是預期的');
-  if (mats === 0) throw new Error('解析到 0 個材質，GLB 結構可能不是預期的');
-
-  const next = {
-    STAT_TRIS: fmtTris(tris),
-    STAT_MATS: String(mats),
-    STAT_SIZE: fmtMb(byteLength, USE_ROUND),
-  };
-
-  const generator = json.asset?.generator ?? '(無)';
-  console.log(`GLB   : ${GLB_REL}`);
-  console.log(`       ${byteLength.toLocaleString('en-US')} bytes = ${(byteLength / 1048576).toFixed(3)} MB`);
-  console.log(`       generator = ${generator}`);
-  console.log(`解析值 : ${tris.toLocaleString('en-US')} tris / ${mats} materials`);
-  console.log(`大小慣例: ${USE_ROUND ? '四捨五入' : '截尾'}（${next.STAT_SIZE}）`);
-  console.log('');
-
-  let page = readFileSync(pagePath, 'utf8');
-  const before = {};
-  const changed = [];
-
-  for (const [key, value] of Object.entries(next)) {
-    const re = new RegExp(`(const\\s+${key}\\s*=\\s*')([^']*)(')`);
-    const m = re.exec(page);
-    if (!m) {
-      console.error(`✗ 頁面裡找不到 ${key} 的宣告，跳過`);
-      process.exitCode = 1;
-      continue;
-    }
-    before[key] = m[2];
-    if (m[2] !== value) {
-      page = page.replace(re, `$1${value}$3`);
-      changed.push(`${key}: ${m[2]} -> ${value}`);
-    }
-  }
-
-  // ── 取代 STAT_TRIS 上方整段連續的 // 註解 ──
-  // 只換第一行的話，人工補的舊筆記會殘留下來，跟新產生的數字互相矛盾。
-  // 這段必須獨立於「數字有沒有變」來判斷：數字沒變但註解過期時也要清。
-  const lines = page.split('\n');
-  const trisIdx = lines.findIndex((l) => /^\s*const\s+STAT_TRIS\s*=/.test(l));
+/**
+ * 取代某個 *_TRIS 常數上方整段連續的 // 註解。
+ * 只換第一行的話，人工補的舊筆記會殘留下來，跟新產生的數字互相矛盾。
+ * 這段必須獨立於「數字有沒有變」來判斷：數字沒變但註解過期時也要清。
+ */
+function replaceCommentBlock(lines, prefix, newBlock) {
+  const trisIdx = lines.findIndex((l) => new RegExp(`^\\s*const\\s+${prefix}_TRIS\\s*=`).test(l));
   if (trisIdx === -1) {
-    console.error('✗ 頁面裡找不到 const STAT_TRIS 的宣告位置');
-    process.exitCode = 1;
-    return;
+    return { ok: false, reason: `找不到 const ${prefix}_TRIS 的宣告位置` };
   }
   let blockStart = trisIdx;
   while (blockStart > 0 && /^\s*\/\//.test(lines[blockStart - 1])) blockStart--;
   const oldBlock = lines.slice(blockStart, trisIdx);
 
-  const newBlock = [
-    `// 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 ${GLB_REL} 得出，不要手填。`,
-    `// 解析結果：${tris.toLocaleString('en-US')} tris / ${mats} materials / ${byteLength.toLocaleString('en-US')} bytes`,
-    `// 大小用${USE_ROUND ? '四捨五入' : '截尾'}（${fmtMb(byteLength, USE_ROUND)}）；改用另一種請加 --round 後重跑。`,
-  ];
-
-  const commentStale =
+  const stale =
     oldBlock.length !== newBlock.length ||
     oldBlock.some((l, i) => l.trim() !== newBlock[i].trim());
 
-  if (changed.length === 0 && !commentStale) {
+  lines.splice(blockStart, trisIdx - blockStart, ...newBlock);
+  return { ok: true, stale, oldCount: oldBlock.length, newCount: newBlock.length };
+}
+
+function main() {
+  const pagePath = resolve(ASTRO_DIR, PAGE_REL);
+  if (!existsSync(pagePath)) throw new Error(`找不到頁面：${pagePath}`);
+
+  const stats = [];
+  for (const model of MODELS) {
+    const glbPath = resolve(ASTRO_DIR, model.glb);
+    if (!existsSync(glbPath)) throw new Error(`找不到模型：${glbPath}`);
+
+    const { json, byteLength } = readGlb(glbPath);
+    const tris = countTriangles(json);
+    const mats = (json.materials ?? []).length;
+
+    if (tris === 0) throw new Error(`${model.glb}：解析到 0 個三角面，GLB 結構可能不是預期的`);
+    if (mats === 0) throw new Error(`${model.glb}：解析到 0 個材質，GLB 結構可能不是預期的`);
+
+    const next = {
+      [`${model.prefix}_TRIS`]: fmtTris(tris),
+      [`${model.prefix}_MATS`]: String(mats),
+      [`${model.prefix}_SIZE`]: fmtMb(byteLength, USE_ROUND),
+    };
+
+    const newBlock = [
+      `// 真實數據 —— 由 scripts/sync-mascot-stats.mjs 直接解析 ${model.glb} 得出，不要手填。`,
+      `// 解析結果：${tris.toLocaleString('en-US')} tris / ${mats} materials / ${byteLength.toLocaleString('en-US')} bytes`,
+      `// 大小用${USE_ROUND ? '四捨五入' : '截尾'}（${next[`${model.prefix}_SIZE`]}）；改用另一種請加 --round 後重跑。`,
+    ];
+
+    stats.push({ model, glbPath, json, byteLength, tris, mats, next, newBlock });
+  }
+
+  console.log(`大小慣例: ${USE_ROUND ? '四捨五入' : '截尾'}`);
+  console.log('');
+  for (const s of stats) {
+    console.log(`GLB   : ${s.model.glb}（${s.model.label}）`);
+    console.log(`       ${s.byteLength.toLocaleString('en-US')} bytes = ${(s.byteLength / 1048576).toFixed(3)} MB`);
+    console.log(`       generator = ${s.json.asset?.generator ?? '(無)'}`);
+    console.log(`解析值 : ${s.tris.toLocaleString('en-US')} tris / ${s.mats} materials`);
+    console.log('');
+  }
+
+  let page = readFileSync(pagePath, 'utf8');
+  const before = {};
+  const changed = [];
+  const missing = [];
+
+  for (const s of stats) {
+    for (const [key, value] of Object.entries(s.next)) {
+      const re = new RegExp(`(const\\s+${key}\\s*=\\s*')([^']*)(')`);
+      const m = re.exec(page);
+      if (!m) {
+        console.error(`✗ 頁面裡找不到 ${key} 的宣告，跳過`);
+        missing.push(key);
+        process.exitCode = 1;
+        continue;
+      }
+      before[key] = m[2];
+      if (m[2] !== value) {
+        page = page.replace(re, `$1${value}$3`);
+        changed.push(`${key}: ${m[2]} -> ${value}`);
+      }
+    }
+  }
+
+  // ── 取代每個 *_TRIS 上方整段連續的 // 註解 ──
+  const lines = page.split('\n');
+  let commentStale = false;
+  for (const s of stats) {
+    const r = replaceCommentBlock(lines, s.model.prefix, s.newBlock);
+    if (!r.ok) {
+      console.error(`✗ ${r.reason}`);
+      process.exitCode = 1;
+      continue;
+    }
+    if (r.stale) {
+      commentStale = true;
+      console.log(`  註解區塊（${s.model.label}）：${r.oldCount} 行 -> ${r.newCount} 行`);
+    }
+  }
+
+  if (changed.length === 0 && !commentStale && missing.length === 0) {
     console.log('✓ 頁面統計已經跟 GLB 一致，沒有要改的。');
     return;
   }
 
   if (changed.length === 0) console.log('  （數字沒變，只清理過期註解）');
-  console.log(`  註解區塊：${oldBlock.length} 行 -> ${newBlock.length} 行`);
+  for (const c of changed) console.log(`  ${c}`);
 
   if (CHECK_ONLY) {
     console.log('');
@@ -183,10 +225,9 @@ function main() {
     return;
   }
 
-  lines.splice(blockStart, trisIdx - blockStart, ...newBlock);
   writeFileSync(pagePath, lines.join('\n'), 'utf8');
   console.log('');
-  console.log(`✓ 已更新 ${PAGE_REL}（含 STAT_TRIS 上方的註解區塊）`);
+  console.log(`✓ 已更新 ${PAGE_REL}（含每個 *_TRIS 上方的註解區塊）`);
 }
 
 try {

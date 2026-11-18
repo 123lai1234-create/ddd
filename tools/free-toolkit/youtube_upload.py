@@ -35,6 +35,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 import webbrowser
@@ -123,9 +124,60 @@ def save_token(data):
 
 
 # ------------------------------------------------------------------ 授權
+LANDING_HTML = """<!DOCTYPE html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<title>YouTube 上傳 - 不說</title>
+<style>
+ body{{font-family:"Microsoft JhengHei",sans-serif;background:#0d1224;color:#e6edf3;
+      display:flex;align-items:center;justify-content:center;height:100vh;margin:0}}
+ .card{{text-align:center;max-width:620px;padding:48px}}
+ h1{{font-size:28px;margin:0 0 10px}}
+ p{{color:#9fb0c4;line-height:1.9}}
+ a.btn{{display:inline-block;margin-top:26px;padding:20px 46px;border-radius:14px;
+   background:linear-gradient(135deg,#e8a33d,#d97b2c);color:#101820;font-weight:700;
+   font-size:20px;text-decoration:none}}
+ small{{display:block;margin-top:22px;color:#5f7285}}
+ .ok{{color:#7fd6a3}}
+</style></head><body>
+<div class="card">
+  <h1>MV 上架 YouTube</h1>
+  <p>按下面按鈕 → 在 Google 頁面選 <b>JT Lai</b> 頻道 → 按「允許」<br>
+     接下來會自動上傳 {count} 支影片（全部先設為 private，不會公開上架）</p>
+  <a class="btn" href="{url}" target="_self">▶ 一鍵授權並上傳</a>
+  <small>授權完會跳回這個頁面；上傳進度看指令視窗</small>
+</div></body></html>"""
+
+DONE_HTML = """<!DOCTYPE html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><title>完成</title>
+<style>
+ body{{font-family:"Microsoft JhengHei",sans-serif;background:#0d1224;color:#e6edf3;
+      display:flex;align-items:center;justify-content:center;height:100vh;margin:0}}
+ .card{{text-align:center;max-width:640px;padding:48px}}
+ h1{{font-size:30px;color:#7fd6a3}}
+ pre{{background:#111a2e;border:1px solid #1e2c45;border-radius:10px;padding:18px;
+     text-align:left;color:#c7d4e2;font-size:13px;max-height:50vh;overflow:auto}}
+</style></head><body><div class="card">
+<h1>✅ 授權完成</h1>
+<p>影片正在上傳（全部 private），進度如下：</p>
+<pre>{log}</pre>
+<p>上傳完會出現在你的 YouTube Studio → 影片 → 私人。</p>
+</div></body></html>"""
+
+
 class _Callback(BaseHTTPRequestHandler):
     code = None
     error = None
+    auth_url = ""
+    count = 38
+    log_lines = []
+
+    def _send(self, html, code=200):
+        body = html.encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def do_GET(self):
         q = self.path.split("?", 1)[-1]
@@ -133,28 +185,94 @@ class _Callback(BaseHTTPRequestHandler):
         e = re.search(r"[?&]error=([^&]+)", q)
         if m:
             _Callback.code = m.group(1)
-            body = ("<html><body style='font-family:sans-serif;padding:40px'>"
-                    "<h2>YT 授權完成 ✅</h2>"
-                    "<p>可以關掉這個分頁了。</p></body></html>")
-            code = 200
-        else:
-            if e:
-                _Callback.error = e.group(1)
-                body = ("<html><body style='font-family:sans-serif;padding:40px'>"
-                        "<h2>授權沒有完成 ❌</h2><p>Google 回的錯誤：%s</p>"
-                        "<p>把這個錯誤告訴智能體，換一種 redirect URI 再試。</p>"
-                        "</body></html>" % _Callback.error)
-            else:
-                body = ("<html><body style='font-family:sans-serif;padding:40px'>"
-                        "<h2>沒有拿到 code ❌</h2><p>請重跑 auth 子命令。</p></body></html>")
-            code = 400
-        self.send_response(code)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.end_headers()
-        self.wfile.write(body.encode("utf-8"))
+            self._send(DONE_HTML.format(log="\n".join(_Callback.log_lines[-12:]) or "（準備上傳中…）"))
+            return
+        if e:
+            _Callback.error = e.group(1)
+            self._send("<h1>授權沒有完成 ❌</h1><p>Google 回的錯誤：%s</p>"
+                       "<p>把這個錯誤告訴智能體，換一種方式再試。</p>" % _Callback.error, 400)
+            return
+        if q.startswith("state=") or q:
+            self._send("<h1>請回到本頁</h1>")
+            return
+        self._send(LANDING_HTML.format(url=_Callback.auth_url, count=_Callback.count))
 
     def log_message(self, *a):
         pass
+
+
+# --------------------------------------------------------- Stirling 埠管理
+STIRLING_JAVA = r"C:\Program Files\Stirling PDF\runtime\jre\bin\java.exe"
+STIRLING_JAR = r"C:\Program Files\Stirling PDF\libs\stirling-pdf-3.2.2.jar"
+STIRLING_WORK = r"D:\Tools\stirling-pdf\work"
+
+
+def stirling_pids():
+    """找出佔用 8080 的 Stirling java 行程。"""
+    out = subprocess.run(
+        ["netstat", "-ano", "-p", "TCP"], capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=30)
+    pids = set()
+    for line in (out.stdout or "").splitlines():
+        if ":8080" not in line or "LISTENING" not in line.upper():
+            continue
+        parts = line.split()
+        if len(parts) >= 5:
+            try:
+                pids.add(int(parts[-1]))
+            except ValueError:
+                pass
+    return pids
+
+
+def stop_stirling():
+    """把 Stirling-PDF 停掉（OAuth 回呼要跟它搶 8080）。"""
+    stopped = []
+    for pid in stirling_pids():
+        try:
+            p = psutil_process_name(pid)
+        except Exception:
+            p = ""
+        if "java" not in p.lower() and "stirling" not in p.lower():
+            continue
+        try:
+            subprocess.run(["taskkill", "/PID", str(pid), "/F"],
+                           capture_output=True, timeout=30)
+            stopped.append(pid)
+        except Exception:
+            pass
+    if stopped:
+        time.sleep(2)
+    return stopped
+
+
+def psutil_process_name(pid):
+    """用 wmic/powershell 查行程名稱（不依賴 psutil）。"""
+    r = subprocess.run(
+        ["powershell", "-NoProfile", "-Command",
+         "(Get-Process -Id %d -ErrorAction SilentlyContinue).ProcessName" % pid],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
+    return (r.stdout or "").strip()
+
+
+def start_stirling():
+    """把 Stirling-PDF 開回來。"""
+    if not (os.path.exists(STIRLING_JAVA) and os.path.exists(STIRLING_JAR)):
+        return False
+    subprocess.Popen(
+        [STIRLING_JAVA, "-Xmx2g", "-DBROWSER_OPEN=false", "-Dserver.port=8080",
+         "-Dsecurity.enableLogin=false", "-jar", STIRLING_JAR],
+        cwd=STIRLING_WORK, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    for _ in range(60):
+        time.sleep(2)
+        try:
+            r = requests.get("http://127.0.0.1:8080/", timeout=5)
+            if r.status_code < 400:
+                return True
+        except Exception:
+            continue
+    return False
 
 
 def cmd_auth(args):
@@ -173,6 +291,14 @@ def cmd_auth(args):
     print("")
     print("（授權頁會回到 %s；也可以複製上面網址到任何瀏覽器）" % redirect)
     print("GCP 端 Authorized redirect URIs 必須有 %s" % redirect)
+    print("")
+    print("最省事的做法：直接開 %s 這個本機頁面，點上面那顆按鈕。" % redirect)
+
+    _Callback.auth_url = url
+    try:
+        _Callback.count = len(build_meta(args))
+    except Exception:
+        _Callback.count = 38
 
     if args.open:
         try:
@@ -180,22 +306,38 @@ def cmd_auth(args):
         except Exception:
             pass
 
+    # 埠被佔用 → 先把 Stirling 停掉，授權完自動開回來
+    stopped_stirling = []
     try:
         srv = HTTPServer(("127.0.0.1", args.port), _Callback)
     except OSError as e:
-        print("[ERROR] 埠 %d  bind 失敗：%s" % (args.port, e))
-        print("       換一個：--port 8765（但 GCP 端必須有對應的 redirect URI）")
-        return 1
+        print("埠 %d 被佔用（%s），嘗試停掉 Stirling-PDF…" % (args.port, e))
+        stopped_stirling = stop_stirling()
+        try:
+            srv = HTTPServer(("127.0.0.1", args.port), _Callback)
+            print("Stirling 已停，埠騰出來了。")
+        except OSError as e2:
+            print("[ERROR] 仍 bind 失敗：%s" % e2)
+            print("       換一個：--port 8765（但 GCP 端必須有對應的 redirect URI）")
+            if stopped_stirling:
+                start_stirling()
+            return 1
+
     print("等待瀏覽器回呼（最多 %d 秒）…" % args.timeout)
     srv.timeout = 5
     deadline = time.time() + args.timeout
     code = None
-    while time.time() < deadline:
-        srv.handle_request()
-        if _Callback.code:
-            code = _Callback.code
-            break
-    srv.server_close()
+    try:
+        while time.time() < deadline:
+            srv.handle_request()
+            if _Callback.code:
+                code = _Callback.code
+                break
+    finally:
+        srv.server_close()
+        if stopped_stirling:
+            print("把 Stirling-PDF 開回來…")
+            print("  Stirling：%s" % ("已恢復" if start_stirling() else "啟動失敗，請手動開"))
     if not code:
         if _Callback.error:
             print("[ERROR] Google 回傳錯誤：%s" % _Callback.error)
@@ -228,6 +370,14 @@ def cmd_auth(args):
     data["created_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
     p = save_token(data)
     print("✅ refresh token 已存：%s" % p)
+
+    if args.upload_after:
+        print("")
+        print("開始上傳（全部先設 private）…")
+        try:
+            cmd_upload(args)
+        except Exception as e:
+            print("[ERROR] 上傳階段失敗：%s" % e)
     return 0
 
 
@@ -524,10 +674,12 @@ def cmd_upload(args):
             url = "https://www.youtube.com/watch?v=%s" % vid
             note = "%s | %s | %.0fs" % (vid, thumb_note, time.time() - t0)
             rep.step(row["title"][:40], True, note)
+            _Callback.log_lines.append("✅ %s → %s" % (row["title"][:28], vid))
             log.append({"title": row["title"], "video_id": vid, "url": url,
                         "kind": row["kind"], "privacy": row["privacy"]})
         except Exception as e:
             rep.step(row["title"][:40], False, str(e)[:200])
+            _Callback.log_lines.append("❌ %s：%s" % (row["title"][:28], str(e)[:80]))
             log.append({"title": row["title"], "error": str(e)[:300]})
 
     lp = os.path.join(OUT_DIR, "uploaded.json")

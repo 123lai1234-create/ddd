@@ -192,6 +192,134 @@ def _paint_face(cv, m):
     cv.paint(_stroke(X, Y, pts, wid, 1.5), MOUTH)
 
 
+def _linear_to_srgb(x):
+    """Blender hands back linear float pixels, but every threshold worth
+    talking about - "is this backdrop grey or is it the white of an eye" -
+    lives in sRGB. Compare in sRGB or the thresholds are off by a factor."""
+    return np.where(x <= 0.0031308, x * 12.92,
+                    1.055 * np.power(np.clip(x, 0.0, 1.0), 1.0 / 2.4) - 0.055)
+
+
+def _srgb_to_linear(x):
+    x = np.clip(x, 0.0, 1.0)
+    return np.where(x <= 0.04045, x / 12.92, ((x + 0.055) / 1.055) ** 2.4)
+
+
+def _border_flood(mask):
+    """True for the pixels of mask that are connected to the image border.
+
+    The reference is a cut-out standing on a checkerboard, and the two tones
+    of that checkerboard sit right next to the white of the eyes in value, so
+    colour alone cannot tell them apart.  Reachability can: the whites are
+    ringed by the lash and never touch the edge of the picture, while the
+    checkerboard wraps all the way around the character.  Only the reachable
+    part of the checkerboard is really background.
+
+    Runs are unioned row by row, which keeps this to a few thousand pairs
+    instead of a few million pixels.
+    """
+    h, w = mask.shape
+    parent = [0]                                   # index 0 is a dummy root
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            if ra < rb:
+                parent[rb] = ra
+            else:
+                parent[ra] = rb
+
+    runs = []                                      # (y, start, end, id)
+    prev = []
+    for y in range(h):
+        row = mask[y]
+        d = np.diff(row.astype(np.int8))
+        starts = np.flatnonzero(d == 1) + 1
+        ends = np.flatnonzero(d == -1)
+        if row[0]:
+            starts = np.concatenate(([0], starts))
+        if row[-1]:
+            ends = np.concatenate((ends, [w - 1]))
+        cur = []
+        for s, e in zip(starts.tolist(), ends.tolist()):
+            # The id has to be the index this run gets in parent, or find()
+            # reads the wrong slot and the whole union-find is nonsense.
+            rid = len(parent)
+            runs.append((y, s, e, rid))
+            parent.append(rid)
+            cur.append((s, e, rid))
+        i = j = 0
+        while i < len(prev) and j < len(cur):
+            ps, pe, pid = prev[i]
+            cs, ce, cid = cur[j]
+            if pe < cs:
+                i += 1
+            elif ce < ps:
+                j += 1
+            else:
+                union(pid, cid)
+                if pe < ce:
+                    i += 1
+                else:
+                    j += 1
+        prev = cur
+
+    border = set()
+    for y, s, e, rid in runs:
+        if y == 0 or y == h - 1 or s == 0 or e == w - 1:
+            border.add(find(rid))
+    out = np.zeros_like(mask)
+    for y, s, e, rid in runs:
+        if find(rid) in border:
+            out[y, s:e + 1] = True
+    return out
+
+
+def _fill_backdrop(rgb, backdrop):
+    """Replace the backdrop with the nearest character pixel.
+
+    The cut-out is smeared outwards along its own row, so the checkerboard
+    never reaches the texture.  Rows with no character at all - everything
+    under the chin - are copied from the nearest row that has some.
+    """
+    good = ~backdrop
+    h, w = good.shape
+    out = rgb.copy()
+
+    # Vertically first.  The rows under the chin have no character in them at
+    # all, and filling those sideways smears the row's edge pixels across the
+    # whole row - which is what put the grey stripes under the jaw.
+    idx = np.arange(h)[:, None]
+    fwd_v = np.maximum.accumulate(np.where(good, idx, -1), axis=0)
+    bwd_v = np.minimum.accumulate(np.where(good, idx, h)[::-1], axis=0)[::-1]
+    use_v = np.clip(np.where(fwd_v >= 0, fwd_v, bwd_v), 0, h - 1)
+    out = np.take_along_axis(out, use_v[:, :, None], axis=0)
+
+    # Then sideways, for the columns that are nothing but backdrop.
+    idx = np.arange(w)[None, :]
+    fwd = np.maximum.accumulate(np.where(good, idx, -1), axis=1)
+    bwd = np.minimum.accumulate(np.where(good, idx, w)[:, ::-1], axis=1)[:, ::-1]
+    use = np.clip(np.where(fwd >= 0, fwd, bwd), 0, w - 1)
+    # use holds a *column* for every pixel, so the gather has to run along
+    # the columns - a flat row-major gather would read the wrong pixel.
+    out = np.take_along_axis(out, use[:, :, None], axis=1)
+    has = good.any(axis=1)
+    if not has.all():
+        rows = np.flatnonzero(has)
+        if len(rows):
+            src = rows[np.clip(np.searchsorted(rows, np.arange(h)), 0, len(rows) - 1)]
+            out[~has] = out[src[~has]]
+        else:
+            out[~has] = SKIN
+    return out
+
+
 def project_reference(m, ref_path):
     """Build the head texture by projecting the reference photo onto the skull.
 
@@ -205,12 +333,15 @@ def project_reference(m, ref_path):
     where they are on the model. Vertical stays linear - the head is tall enough
     there that sin() buys nothing and costs the jaw.
 
-    Measured off ref/chibi-ref-meshy.png (1920x1920): chin 882, hairline 526.
-    cx/K describe the *cheek* span, not the head: the ears sit outside it and
-    painting them onto the canvas edge smeared their red inner ear across both
-    sides of the face. Cheek skin runs x 700..1230, so cx 965 and
-    K = 265/sin(55 deg) = 323 - which at the canvas edge (+/-58 deg) samples
-    x 691..1239, still inside the cheeks.
+    K is the scale that ties the photo to the model: it is the number of photo
+    pixels per radian of head rotation. It is measured, not guessed - see
+    chibi_restyle.face_scale(), which reads the model's own head width and the
+    photo's eye spacing and solves for it.
+
+    Measured off ref/chibi-ref-meshy.png (1920x1920), which is a JPEG cut-out
+    with the checkerboard backdrop baked into the pixels - there is no alpha
+    channel to mask with, so the backdrop is found by colour and by
+    reachability, then painted over before anything is sampled.
     """
     src = bpy.data.images.load(ref_path)
     src.colorspace_settings.name = "sRGB"
@@ -218,50 +349,73 @@ def project_reference(m, ref_path):
     buf = np.empty(sw * sh * 4, dtype=np.float32)
     src.pixels.foreach_get(buf)
     flat = buf.reshape(sh, sw, 4)
-    ref = flat[::-1, :, :3]                  # top-down rows
-    alpha = flat[::-1, :, 3]                # the cut-out mask
+    lin = flat[::-1, :, :3]                       # top-down rows, linear
 
-    # The reference is a cut-out on a transparent background, so alpha says
-    # exactly where the face is. Clamp the vertical sample to the opaque span
-    # of each column: the jaw curves up at the sides, and a flat chin line
-    # samples straight through it onto the backdrop - which is what put the
-    # pale patches beside the jaw.
-    opaque = alpha > 0.5
-    top_row = np.argmax(opaque, axis=0)
-    bot_row = sh - 1 - np.argmax(opaque[::-1], axis=0)
-    any_op = opaque.any(axis=0)
+    srgb = _linear_to_srgb(lin)
+    mx = srgb.max(axis=2)
+    mn = srgb.min(axis=2)
+    # Loose on purpose.  Neutral and bright covers the whole checkerboard and
+    # also the whites of the eyes, and that is fine: the flood below only
+    # claims the part of the backdrop that is connected to the edge of the
+    # picture, and the whites are ringed by the lash, so they are not.
+    checker = ((mx - mn) < (12.0 / 255.0)) & (mx > (150.0 / 255.0))
+    backdrop = _border_flood(checker)
+    ref = _fill_backdrop(lin, backdrop)
+    print(f"[face] backdrop {int(backdrop.sum())} of {sw * sh} px "
+          f"({100.0 * backdrop.mean():.1f}%)")
 
     z0, z1, R = m["z0"], m["z1"], m["radius"]
     W = max(64, int(2.0 * AZ_HALF * R * PX_PER_UNIT // 32 + 1) * 32)
     H = max(64, int((z1 - z0) * PX_PER_UNIT // 32 + 1) * 32)
 
-    chin_y, hair_y, cx, K = 868.0, 526.0, 965.0, 300.0
-    CHEEK_L, CHEEK_R = 732, 1198      # inside the ears, clear of the backdrop
+    chin_y, hair_y = 893.0, 550.0
+    cx = 960.0
+    K = m.get("K", 340.0)
 
     u = (np.arange(W) + 0.5) / W
-    # Clamp the sample to the cheek span. The reference is cut out on a
-    # transparent checkerboard, so the columns just past the cheeks are the
-    # background - sampling them painted grey-blue patches beside the ears.
     xs = np.clip(np.round(cx + K * np.sin((u - 0.5) * 2.0 * AZ_HALF)).astype(int),
-                 CHEEK_L, CHEEK_R)
-    xs = np.where(any_op[xs], xs, CHEEK_L)
+                 0, sw - 1)
 
+    # Vertical: the texture's rows are the model's uniform height grid. The
+    # model's chin (z0) is the photo's chin row and its hairline (z1) is the
+    # photo's hairline row, so the warp is one straight line between them.
     v = (np.arange(H) + 0.5) / H                    # 0 = chin = canvas bottom
     ys = np.clip(np.round(chin_y - v * (chin_y - hair_y)).astype(int), 0, sh - 1)
-    # per column, stay inside the cut-out
-    ys2 = np.clip(ys[:, None], top_row[xs][None, :], bot_row[xs][None, :])
+    # No per-column clamp. The reference is a cut-out, and the column of a
+    # cut-out is not a single span - it is the hair, then a gap of backdrop
+    # between the strands, then the face. Clamping a row into the span of
+    # the backdrop that happens to be in that column drags the sample onto
+    # the wrong row of the photo, and since the eye is the highest contrast
+    # thing in it, the result is a stack of horizontal bands right across
+    # the eye. The backdrop that does slip through is replaced below.
+    ys2 = np.broadcast_to(ys[:, None], (H, W))
 
     rgb = ref[ys2, xs[None, :]].copy()
+
+    # The backdrop was painted over in the photo itself, so every sample below
+    # is already a character pixel.  This is only a tripwire: if the flood
+    # fill ever misses a square of checkerboard, say so instead of shipping
+    # it as a stripe.
+    print(f"[face] {int(backdrop[ys2, xs[None, :]].sum())} of {H * W} samples "
+          f"came from the backdrop region (already painted over)")
 
     # The photo already carries baked 3D shading. Left at full strength the
     # render's own lighting lands on top of it and the face goes muddy - the
     # blush in particular turns into a red mask. Pull the contrast back so the
     # realtime lighting is what shades the face.
-    rgb = 0.5 + (rgb - 0.5) * 0.72
-    rgb[:, :, 0] *= 0.94                          # blush reads far too hot
+    #
+    # In sRGB, not in linear. The eye of the reference is almost black, and
+    # squeezing the range in linear space lifts those blacks into grey: the
+    # iris comes out as a flat grey disc instead of the deep black of the
+    # photo. Perceptual compression keeps the blacks where they are.
+    srgb = _linear_to_srgb(rgb)
+    srgb = 0.5 + (srgb - 0.5) * 0.86
+    srgb[:, :, 0] *= 0.94                          # blush reads far too hot
+    rgb = _srgb_to_linear(srgb)
 
     bpy.data.images.remove(src)
-    print(f"[face] projected {ref_path} -> {W}x{H} texture")
+    print(f"[face] projected {ref_path} -> {W}x{H} texture  K={K:.1f} "
+          f"cx={cx:.0f} chin={chin_y:.0f} hair={hair_y:.0f}")
     return rgb
 
 
@@ -286,11 +440,20 @@ def bake(m, skin_mat, out_dir=None, ref_path=None):
     img.pixels.foreach_set(np.ascontiguousarray(rgba).ravel())
     img.file_format = "PNG"
     img.update()
-    img.pack()
     if out_dir:
         img.filepath_raw = os.path.join(out_dir, "face_paint.png")
         img.save()
-        img.filepath_raw = ""
+        # Reload it. An image whose pixels were written straight into memory
+        # never had its mipmaps built, and a broken mipmap chain draws as
+        # fine horizontal bands wherever the texture is minified - which is
+        # exactly what the white of the eyes did.
+        path = img.filepath_raw
+        bpy.data.images.remove(img)
+        img = bpy.data.images.load(path)
+        img.name = "FacePaint"
+        img.colorspace_settings.name = "sRGB"
+    img.pack()
+    img.filepath_raw = ""
 
     mat = bpy.data.materials.new("Face")
     mat.use_nodes = True
@@ -313,7 +476,7 @@ def bake(m, skin_mat, out_dir=None, ref_path=None):
     return mat
 
 
-def apply(objs, m, mat, slot, z_neck, skin_slot):
+def apply(objs, m, mat, slot, z_neck, skin_slots, keep_regions=None):
     """Give the skull its material and the cylindrical UVs that go with it.
 
     Only *skin* above the neck switches over - the bangs and the side locks are
@@ -321,14 +484,26 @@ def apply(objs, m, mat, slot, z_neck, skin_slot):
     too turns the whole hairstyle into forehead. Everything else falls outside
     the painted region anyway and clamps onto its plain-skin border, which is
     exactly what the cheeks, ears and jaw want.
+
+    `keep_regions` is a list of (x, z, rx, rz) ellipses - the painted eyes -
+    where the "inside of the skull" rule is suspended. The wall of the eye
+    socket faces inwards, so it would be thrown out of the face material and
+    come back as plain skin, and then poke through the black of the painted
+    iris as a pale shard.
     """
+    if isinstance(skin_slots, int):
+        skin_slots = (skin_slots,)
+    if keep_regions is None:
+        keep_regions = []
     for ob in objs:
         uvl = ob.data.uv_layers.get("HeadUV") or ob.data.uv_layers.new(name="HeadUV")
         ob.data.uv_layers.active = uvl
         cx, cy = m["cx"], m["cy"]
+        zc = 0.5 * (m["z0"] + m["z1"])
         du = 1.0 / (2.0 * AZ_HALF)
         inv = 1.0 / (m["z1"] - m["z0"])
         cos = [v.co.copy() for v in ob.data.vertices]
+        nos = [p.normal.copy() for p in ob.data.polygons]
         data = uvl.data
 
         n = 0
@@ -337,12 +512,50 @@ def apply(objs, m, mat, slot, z_neck, skin_slot):
             # per-loop whatever we do, but a body full of zeros quantises down
             # to almost nothing, while projected coordinates on a mesh this
             # dense add a megabyte of noise to the GLB.
-            if p.center.z > z_neck and p.material_index == skin_slot:
-                p.material_index = slot
-                n += 1
+            if p.center.z > z_neck and p.material_index in skin_slots:
+                us = []
                 for li in p.loop_indices:
                     c = cos[ob.data.loops[li].vertex_index]
                     u = math.atan2(c.x - cx, -(c.y - cy)) * du + 0.5
+                    us.append(u)
+                # The inside of the skull. Meshy leaves the head as an open
+                # shell and the inside of the back of it shows through the
+                # opening under the chin. Those faces point inwards, so they
+                # are the ones whose normal disagrees with the direction away
+                # from the middle of the head - and they must not wear the
+                # photo, which would smear the picture across them.
+                radial = (p.center.x - cx, p.center.y - cy, p.center.z - zc)
+                nrm = nos[p.index]
+                keep = any(((p.center.x - ex) / rx) ** 2
+                           + ((p.center.z - ez) / rz) ** 2 <= 1.0
+                           for ex, ez, rx, rz in keep_regions)
+                if (radial[0] * nrm.x + radial[1] * nrm.y + radial[2] * nrm.z) < 0.0 \
+                        and not keep:
+                    p.material_index = skin_slots[0]
+                    for li in p.loop_indices:
+                        data[li].uv = (0.0, 0.0)
+                    continue
+                # A polygon that falls outside the face is not the face. The
+                # ears sit past the edge of the photo, and the inside of the
+                # skull shows through the gaps Meshy left in the sockets.
+                # Both of them clamp onto one column of the photo, and that
+                # column is the reference's hair: the ears come out grey and
+                # the inside of the head draws as a stack of horizontal bands
+                # over the eye. So neither gets the face material at all.
+                #
+                # The material has to be put back to plain skin here, not just
+                # the UV: the face material is a texture, and its corner is
+                # the photo's backdrop, so a face-material polygon that kept
+                # the painted UVs would still read as a grey patch.
+                if min(us) < 0.08 or max(us) > 0.92:
+                    p.material_index = skin_slots[0]
+                    for li in p.loop_indices:
+                        data[li].uv = (0.0, 0.0)
+                    continue
+                p.material_index = slot
+                n += 1
+                for li, u in zip(p.loop_indices, us):
+                    c = cos[ob.data.loops[li].vertex_index]
                     v = (c.z - m["z0"]) * inv
                     data[li].uv = (min(max(u, 0.0), 1.0),
                                    min(max(v, 0.0), 1.0))

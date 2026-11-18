@@ -1,0 +1,106 @@
+{
+  "_comment": "每首歌的場景提示詞（SDXL）。scene 用於橫式/直式影片背景，cover 用於方形封面。沒給 cover 就用 scene 自動推導。",
+  "_style": "cinematic film still, shallow depth of field, moody atmospheric lighting, subtle film grain, no text, no watermark, no logo, no people faces in focus",
+  "_negative": "text, watermark, signature, logo, chinese characters, english letters, subtitles, caption, blurry, lowres, jpeg artifacts, deformed, extra fingers, bad anatomy, oversaturated, cartoon, anime, 3d render, cgi",
+  "scenes": {
+    "03_不服輸": {
+      "scene": "a lone runner sprinting up a steep concrete staircase toward the sky at dawn, back view, arms pumping, city skyline hazy in the distance behind, cold morning light with a warm orange rim, wide angle",
+      "cover": "album cover art, a determined young runner silhouette climbing upward against a pale dawn sky, minimal, bold, centered",
+      "motion": "push_in"
+    },
+    "03_不服輸(優化版)": {
+      "scene": "a lone runner sprinting up a steep concrete staircase toward the sky at dawn, back view, arms pumping, city skyline hazy in the distance behind, cold morning light with a warm orange rim, wide angle",
+      "cover": "album cover art, a determined young runner silhouette climbing upward against a pale dawn sky, minimal, bold, centered",
+      "motion": "push_in"
+    },
+    "04_老家的巷子": {
+      "scene": "a narrow sunlit alley in an old Taiwanese town at golden hour, tiled walls, a parked scooter, laundry overhead, warm light across the ground, a stray dog, nostalgic, lens flare",
+      "cover": "album cover art, a sunlit old alley with warm golden light, nostalgic, minimal, centered",
+      "motion": "push_in"
+    },
+    "05_雨夜出租": {
+      "scene": "the empty back seat of a taxi at night seen from inside the car, rain streaking the rear window, city neon lights dissolved into soft bokeh outside, wet reflections on the glass, lonely, cold blue and magenta glow, shallow depth of field, cinematic",
+      "cover": "album cover art, rain on a taxi window at night with neon bokeh, lonely, moody, centered",
+      "negative": "text, watermark, signature, logo, chinese characters, english letters, subtitles, caption, blurry, lowres, jpeg artifacts, deformed, extra fingers, bad anatomy, oversaturated, cartoon, anime, 3d render, cgi, text, words, letters, typography, gibberish, license plate, plate number, signage, sign, shop sign, billboard, poster, brand name, taxi roof sign, roof light lettering, illuminated letters, illuminated text, rooftop lettering, windshield decal, sticker, badge lettering, number plate, garbled characters, broken text, car exterior, street view, vehicle exterior, taxi exterior",
+      "seed_9x16": 111,
+      "motion": "push_in"
+    },
+    "07_愛的模樣": {
+      "scene": "a tender quiet moment between two people seen from behind, soft focus, warm golden hour light, blurred background of trees and drifting particles, intimate, gentle bloom, their hands almost touching",
+      "cover": "album cover art, two silhouettes close together in warm golden backlight, tender, minimal, centered",
+      "motion": "push_in"
+    },
+    "08_三十歲的懸賞令": {
+      "scene": "an open highway stretching to the horizon at sunrise, a lone car driving away, vast sky with warm gradient clouds, road markings leading forward, freedom, wide cinematic landscape",
+      "cover": "album cover art, an empty highway at sunrise with a tiny car, freedom, minimal, centered",
+      "motion": "drift"
+    },
+    "08_給爸媽的電話": {
+      "scene": "a dim bedroom at night, a smartphone lying face up on the wooden nightstand, a small lamp casting warm light, an old photograph frame in shadow, hesitation, melancholy, very shallow focus",
+      "cover": "album cover art, a phone glowing on a nightstand in a dark room, hesitation, minimal, centered",
+      "motion": "push_in"
+    },
+    "09_我一個人也很好": {
+      "scene": "a single person sitting by a large apartment window at dusk, city lights below, a half-eaten meal and a turned-off television, composed solitude, cool blue interior, quiet",
+      "cover": "album cover art, one person alone by a window at dusk, composed solitude, minimal, centered",
+      "motion": "push_in"
+    },
+    "09_機場的最後一夜": {
+      "scene": "an airport departure lounge late at night, rows of empty seats, cold blue overhead lighting, huge windows reflecting the runway, a single suitcase abandoned, farewell, stillness",
+      "cover": "album cover art, an empty airport lounge at night with cold blue light, farewell, minimal, centered",
+      "motion": "drift"
+    },
+    "10_十年後的重逢": {
+      "scene": "an old cafe interior in the afternoon, a wooden table with two cups, one chair opposite empty, dust motes in a shaft of warm window light, long time passing, nostalgia",
+      "cover": "album cover art, an old cafe table with two cups in warm afternoon light, reunion, minimal, centered",
+      "motion": "push_in"
+    },
+    "10_十年後的重逢(優化版)": {
+      "scene": "an old cafe interior in the afternoon, a wooden table with two cups, one chair opposite empty, dust motes in a shaft of warm window light, long time passing, nostalgia",
+      "cover": "album cover art, an old cafe table with two cups in warm afternoon light, reunion, minimal, centered",
+      "motion": "push_in"
+    },
+    "10_城市的夜": {
+      "scene": "a rain-soaked empty city street at three in the morning, soft colorful neon light smeared and reflected across wet asphalt, blurred distant glow, lone shadow stretching under streetlights, urban loneliness, rain haze, no storefronts",
+      "cover": "album cover art, a neon city street at 3am reflected on wet asphalt, urban loneliness, minimal, centered",
+      "negative": "text, words, letters, typography, gibberish, signage, sign, neon sign, storefront sign, shop sign, billboard, poster, brand name, logo, watermark, signature, chinese characters, english letters, license plate, street sign, shop window text, subtitles, caption, blurry, lowres, jpeg artifacts, deformed, extra fingers, bad anatomy, oversaturated, cartoon, anime, 3d render, cgi",
+      "motion": "drift"
+    },
+    "11_如果有一天": {
+      "scene": "a suitcase standing by a large window at sunrise, beyond it an airport departure board and distant clouds, an old photo tucked in the handle, a promise about someday, warm hopeful light",
+      "cover": "album cover art, a suitcase by a window at sunrise with a promise of travel, hopeful, minimal, centered",
+      "motion": "push_in"
+    },
+    "12_故鄉的雲": {
+      "scene": "low hanging clouds drifting over rice fields at golden hour, a dirt path leading to a distant village, wide sky dominating the frame, warm amber and green, homesick, wide landscape",
+      "cover": "album cover art, low clouds over a rice field at golden hour, homesick, minimal, centered",
+      "motion": "tilt_up"
+    },
+    "13_時光膠囊": {
+      "scene": "an old rusty tin box opened on a wooden desk, faded photographs and old train tickets spilling out, a pair of dusty glasses beside it, warm nostalgic light, the past preserved",
+      "cover": "album cover art, an open rusty tin box with old photographs and tickets, time capsule, minimal, centered",
+      "motion": "push_in"
+    },
+    "15_風箏的故鄉": {
+      "scene": "a colorful kite flying high over green spring fields, a small figure running with arms outstretched in the distance, cumulus clouds, boyhood spring, bright airy light",
+      "cover": "album cover art, a kite in the sky above green fields, boyhood spring, minimal, centered",
+      "negative": "cartoon, anime, illustration, drawing, painting, flat colors, vector art, childish, low detail, simple, clip art, cel shading, text, watermark, signature, logo, chinese characters, english letters, subtitles, caption, blurry, lowres, jpeg artifacts, deformed, extra fingers, bad anatomy, oversaturated, 3d render, cgi",
+      "motion": "tilt_up"
+    },
+    "18_遇見你之前": {
+      "scene": "a lone figure walking along an empty park path at dusk, bare trees, long shadow, a distant bench, quiet solitude before everything changed, muted cool tones",
+      "cover": "album cover art, a lone figure walking alone in an empty park at dusk, solitude, minimal, centered",
+      "motion": "push_in"
+    },
+    "20_等天亮(優化版)": {
+      "scene": "a sleepless night by a window, an unmade bed and a glowing phone face down on the sheets, the sky outside slowly turning from deep blue to pale grey before dawn, waiting, exhaustion",
+      "cover": "album cover art, a sleepless window before dawn, waiting, minimal, centered",
+      "motion": "push_in"
+    },
+    "20_等天亮": {
+      "scene": "a sleepless night by a window, an unmade bed and a glowing phone face down on the sheets, the sky outside slowly turning from deep blue to pale grey before dawn, waiting, exhaustion",
+      "cover": "album cover art, a sleepless window before dawn, waiting, minimal, centered",
+      "motion": "push_in"
+    }
+  }
+}

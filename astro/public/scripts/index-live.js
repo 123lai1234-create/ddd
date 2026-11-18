@@ -101,8 +101,10 @@ async function portfolioApiJson(path, options) {
         throw new Error('目前找不到可用的後端 API。');
     }
 
-    const response = await fetch(`${apiBase}${path}`, options);
+    const response = await fetch(`${apiBase}${path}`, { ...options, credentials: 'omit' });
     if (!response.ok) {
+        // Return null on 404 to trigger fallback in caller without throwing
+        if (response.status === 404) return null;
         const data = await response.json().catch(() => null);
         throw new Error(data?.detail || `HTTP ${response.status}`);
     }
@@ -216,15 +218,15 @@ async function loadPortfolioSequenceFeed() {
             portfolioApiJson('/api/sequences?sequence_type=gene&limit=3')
         ]);
 
-        portfolioSetText('portfolioProteinCount', String(summary.proteinCount ?? 0));
-        portfolioSetText('portfolioGeneCount', String(summary.geneCount ?? 0));
-        portfolioSetText('portfolioLatestFetched', portfolioFormatDateTime(summary.latestFetchedAt));
+        portfolioSetText('portfolioProteinCount', String(summary?.proteinCount ?? 0));
+        portfolioSetText('portfolioGeneCount', String(summary?.geneCount ?? 0));
+        portfolioSetText('portfolioLatestFetched', portfolioFormatDateTime(summary?.latestFetchedAt));
 
-        renderPortfolioSequenceList('portfolioProteinFeed', proteinPayload.records || [], 'protein');
-        renderPortfolioSequenceList('portfolioGeneFeed', genePayload.records || [], 'gene');
+        renderPortfolioSequenceList('portfolioProteinFeed', proteinPayload?.records || [], 'protein');
+        renderPortfolioSequenceList('portfolioGeneFeed', genePayload?.records || [], 'gene');
 
         // Auto-sync if DB is empty
-        const totalSeq = (summary.proteinCount ?? 0) + (summary.geneCount ?? 0);
+        const totalSeq = (summary?.proteinCount ?? 0) + (summary?.geneCount ?? 0);
         if (totalSeq === 0) {
             setPortfolioSequenceStatus('資料庫為空，正在自動同步 UniProt / Ensembl…', 'info');
             try {
@@ -267,16 +269,16 @@ async function loadPortfolioKnowledgeFeed() {
             portfolioApiJson('/api/rag/documents?include_sequences=true&limit=3&chunk_size=680&chunk_overlap=100')
         ]);
 
-        portfolioSetText('portfolioKnowledgeProteinCount', String(summary.proteinAnnotationCount ?? 0));
-        portfolioSetText('portfolioKnowledgeLiteratureCount', String(summary.literatureCount ?? 0));
-        portfolioSetText('portfolioKnowledgeLatestFetched', portfolioFormatDateTime(summary.latestFetchedAt));
+        portfolioSetText('portfolioKnowledgeProteinCount', String(summary?.proteinAnnotationCount ?? 0));
+        portfolioSetText('portfolioKnowledgeLiteratureCount', String(summary?.literatureCount ?? 0));
+        portfolioSetText('portfolioKnowledgeLatestFetched', portfolioFormatDateTime(summary?.latestFetchedAt));
 
-        renderPortfolioKnowledgeList('portfolioKnowledgeProteinFeed', annotationPayload.records || [], 'protein_annotation');
-        renderPortfolioKnowledgeList('portfolioKnowledgeLiteratureFeed', literaturePayload.records || [], 'literature');
-        renderPortfolioRagPreview(ragPayload.documents || []);
+        renderPortfolioKnowledgeList('portfolioKnowledgeProteinFeed', annotationPayload?.records || [], 'protein_annotation');
+        renderPortfolioKnowledgeList('portfolioKnowledgeLiteratureFeed', literaturePayload?.records || [], 'literature');
+        renderPortfolioRagPreview(ragPayload?.documents || []);
 
         // Auto-sync if DB is empty
-        const totalKnow = (summary.proteinAnnotationCount ?? 0) + (summary.literatureCount ?? 0);
+        const totalKnow = (summary?.proteinAnnotationCount ?? 0) + (summary?.literatureCount ?? 0);
         if (totalKnow === 0) {
             setPortfolioKnowledgeStatus('知識庫為空，正在自動同步 UniProt / PubMed…', 'info');
             try {

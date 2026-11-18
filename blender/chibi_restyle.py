@@ -21,6 +21,8 @@ import os
 import sys
 from mathutils import Vector
 
+import numpy as np
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import face_texture
@@ -82,14 +84,14 @@ def set_input(node, name, value):
 
 
 def make_material(name, color, roughness=0.55, metallic=0.0, subsurface=0.0,
-                  coat=0.0, emission=0.0):
+                  coat=0.0, emission=0.0, specular=0.5):
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     b = mat.node_tree.nodes["Principled BSDF"]
     set_input(b, "Base Color", (*color, 1.0))
     set_input(b, "Roughness", roughness)
     set_input(b, "Metallic", metallic)
-    set_input(b, "Specular IOR Level", 0.5)
+    set_input(b, "Specular IOR Level", specular)
     if subsurface:
         set_input(b, "Subsurface Weight", subsurface)
         set_input(b, "Subsurface Radius", (0.34, 0.11, 0.07))
@@ -99,6 +101,917 @@ def make_material(name, color, roughness=0.55, metallic=0.0, subsurface=0.0,
         set_input(b, "Emission Color", (*color, 1.0))
         set_input(b, "Emission Strength", emission)
     return mat
+
+
+def _box_blur(a, r):
+    """Box blur with a radius of r cells, separable and edge-padded."""
+    k = 2 * r + 1
+    p = np.pad(a, ((r, r), (r, r)), mode="edge")
+    c = np.cumsum(p, axis=0)
+    c = np.vstack([np.zeros((1, c.shape[1])), c])
+    a1 = (c[k:, :] - c[:-k, :]) / k
+    c = np.cumsum(a1, axis=1)
+    c = np.hstack([np.zeros((c.shape[0], 1)), c])
+    return (c[:, k:] - c[:, :-k]) / k
+
+
+def _median_filter(a, k):
+    pad = np.pad(a, k // 2, mode="edge")
+    win = np.lib.stride_tricks.sliding_window_view(pad, (k, k))
+    return np.median(win, axis=(-2, -1))
+
+
+def _max_filter(a, k):
+    pad = np.pad(a, k // 2, mode="edge")
+    win = np.lib.stride_tricks.sliding_window_view(pad, (k, k))
+    return win.max(axis=(-2, -1))
+
+
+def _min_filter(a, k):
+    pad = np.pad(a, k // 2, mode="edge")
+    win = np.lib.stride_tricks.sliding_window_view(pad, (k, k))
+    return win.min(axis=(-2, -1))
+
+
+def face_dome(objs, m, x_half=0.26, step=0.005, z_lo=1.085, z_hi=1.285,
+              tol=0.004):
+    """The smooth dome the face would have if its features were not there.
+
+    The face is sampled by casting rays at it onto a grid. A first median
+    filter finds the eye sockets - they are the only deep depressions, and a
+    median ignores them - and then the dome is built from everything that is
+    *not* a socket, by a normalised box blur. That is a local estimate, which
+    matters: a single polynomial fitted over the whole face is hopeless,
+    because the head is much wider than it is deep and the two ends of the
+    band pull the fit somewhere no part of the face ever was.
+    """
+    nx = int(2 * x_half / step) + 1
+    nz = int((z_hi - z_lo) / step) + 1
+    Y = np.full((nz, nx), np.nan, dtype=np.float64)
+    for j in range(nz):
+        z = z_lo + j * step
+        for i in range(nx):
+            x = -x_half + i * step
+            h = face_hit(objs, x, z)
+            if h is None:
+                continue
+            # A ray that comes back from behind the head has fallen through
+            # a hole in the skin.
+            if h[0].y > -0.30:
+                continue
+            Y[j, i] = h[0].y
+
+    good = ~np.isnan(Y)
+    if good.sum() < 50:
+        return None
+    # fill the holes in the grid so the filters have something to work with
+    idx = np.arange(nx)
+    for j in range(nz):
+        row = good[j]
+        if not row.any():
+            continue
+        Y[j] = np.interp(idx, idx[row], Y[j][row])
+    for i in range(nx):
+        col = good[:, i]
+        if not col.any():
+            continue
+        zidx = np.arange(nz)
+        Y[:, i] = np.interp(zidx, zidx[col], Y[:, i][col])
+
+    # The eye sockets are pits, and the face is convex. A morphological
+    # closing - the maximum over a window, then the minimum of that - fills
+    # the pits that are smaller than its window and leaves the bumps alone,
+    # so the difference between the face and its closing is negative exactly
+    # where the sockets are. Plain depth will not do it: on a convex surface
+    # every point reads as "recessed" relative to the far side of the window,
+    # and the middle of the face comes out as one enormous socket.
+    k = 25
+    closed = _min_filter(_max_filter(Y, k), k)
+    pits = (closed - Y) > 0.010
+    j_lo = max(0, int((1.09 - z_lo) / step) - 2)
+    j_hi = min(pits.shape[0], int((1.29 - z_lo) / step) + 3)
+    pits[:j_lo] = False
+    pits[j_hi:] = False
+    cols = int(0.05 / step)
+    pits[:, :cols] = False
+    pits[:, -cols:] = False
+
+    # The rim of the socket stands proud of the dome, so it is not a pit -
+    # but it sits right against one, and growing the pit by a couple of
+    # millimetres picks it up.
+    feature = _max_filter(pits.astype(np.float64), 9) > 0.5
+
+    # The dome is the face with the sockets taken out, by a normalised
+    # blur: only the cells that are not socket contribute, so the dome
+    # follows the face around the eye and not across it.
+    solid = ~feature
+    num = _box_blur(np.where(solid, Y, 0.0), 8)
+    den = _box_blur(solid.astype(np.float64), 8)
+    dome = num / np.maximum(den, 1e-9)
+
+    seen = np.zeros_like(pits)
+    clusters = []
+    for j0 in range(pits.shape[0]):
+        for i0 in range(pits.shape[1]):
+            if not pits[j0, i0] or seen[j0, i0]:
+                continue
+            stack = [(j0, i0)]
+            seen[j0, i0] = True
+            cells = []
+            while stack:
+                j, i = stack.pop()
+                cells.append((j, i))
+                for dj, di in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    jj, ii = j + dj, i + di
+                    if (0 <= jj < pits.shape[0] and 0 <= ii < pits.shape[1]
+                            and pits[jj, ii] and not seen[jj, ii]):
+                        seen[jj, ii] = True
+                        stack.append((jj, ii))
+            if len(cells) >= 15:
+                clusters.append(cells)
+
+    sockets = []
+    for cells in clusters:
+        jj = np.array([c[0] for c in cells])
+        ii = np.array([c[1] for c in cells])
+        sockets.append((float(-x_half + ii.mean() * step),
+                        float(z_lo + jj.mean() * step),
+                        float((closed - Y)[jj, ii].sum()), len(cells)))
+    sockets.sort(key=lambda s: -s[2])
+    print("[face] sockets:", [(round(s[0], 3), round(s[1], 3), s[3])
+                              for s in sockets[:4]])
+
+    return {"Y": Y, "dome": dome, "mask": feature, "sockets": sockets[:4],
+            "x_half": x_half, "z_lo": z_lo, "step": step,
+            "nx": nx, "nz": nz}
+
+
+def dome_y(dome, x, z):
+    """Sample the dome's depth at (x, z)."""
+    fx = (x + dome["x_half"]) / dome["step"]
+    fz = (z - dome["z_lo"]) / dome["step"]
+    i = int(np.clip(fx, 0, dome["nx"] - 1))
+    j = int(np.clip(fz, 0, dome["nz"] - 1))
+    return float(dome["dome"][j, i])
+
+
+def dome_mask_at(dome, x, z):
+    """Is (x, z) inside one of the detected eye sockets?"""
+    fx = (x + dome["x_half"]) / dome["step"]
+    fz = (z - dome["z_lo"]) / dome["step"]
+    i = int(np.clip(fx, 0, dome["nx"] - 1))
+    j = int(np.clip(fz, 0, dome["nz"] - 1))
+    return bool(dome["mask"][j, i])
+
+
+def flatten_face_features(objs, m, half_width=0.205, nose=None, tol=0.004,
+                          fill_only=False, max_loop=500):
+    """Take the face back to the smooth dome the reference has.
+
+    The reference's face is a painted dome: the eyes, the brows, the nose and
+    the mouth are all artwork on one smooth surface. Meshy rebuilt the eyes
+    as a flat plate sitting in a raised rim, and left the rim and the mouth
+    as real geometry, so the projected photo lands on top of a second set of
+    features - the socket rim arcs around the painted eye and the mouth slit
+    cuts across the painted smile.
+
+    Smoothing the face was tried first and does not work here. This mesh is a
+    soup - 45k separate shells with 240k open edges - and a Laplacian pass
+    over it tears the head apart long before it flattens anything. Pulling
+    the outliers onto a fitted dome does not iterate and cannot tear.
+
+    The cracks the sockets left in the skin are closed first: Meshy failed to
+    weld them and the unfilled gaps show the inside of the head as black
+    specks.
+    """
+    import bmesh
+
+    z0, z1 = m["z0"], m["z1"]
+    slots = (ORDER.index("skin"), ORDER.index("face"))
+    nz = nose[1] if nose else None
+    nr = nose[2] if nose else 0.0
+
+    def is_nose(c):
+        return (nz is not None and abs(c.x) < nr * 0.80
+                and abs(c.z - nz) < nr * 0.70)
+
+    dome = None
+    if not fill_only:
+        dome = face_dome(objs, m)
+        if dome is None:
+            print("[face] no depth grid, face untouched")
+            return
+
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.verts.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+
+        def in_face(c):
+            return (z0 - 0.012 <= c.z <= z1 + 0.012
+                    and abs(c.x) <= half_width)
+
+        # ---- 1. close the cracks the eye sockets left in the skin
+        boundary = [e for e in bm.edges
+                    if len(e.link_faces) == 1
+                    and in_face((e.verts[0].co + e.verts[1].co) * 0.5)]
+        by_vert = {}
+        for e in boundary:
+            for v in e.verts:
+                by_vert.setdefault(v, []).append(e)
+        seen = set()
+        loops = []
+        for e in boundary:
+            if e in seen:
+                continue
+            chain, stack = [], [e]
+            seen.add(e)
+            verts = set()
+            while stack:
+                cur = stack.pop()
+                chain.append(cur)
+                verts.update(cur.verts)
+                for v in cur.verts:
+                    for nb in by_vert[v]:
+                        if nb is cur or nb in seen:
+                            continue
+                        seen.add(nb)
+                        stack.append(nb)
+            # The socket rims come out as long open chains rather than tidy
+            # loops - a crack where the mesh was never welded. A chain that
+            # is closed everywhere but at a handful of vertices is still a
+            # crack that can be filled.
+            tight = sum(1 for v in verts if len(by_vert[v]) == 2)
+            closed = tight >= 0.9 * len(verts)
+            if not closed or len(chain) < 3 or len(chain) > max_loop:
+                continue
+            xs = [v.co.x for v in verts]
+            ys = [v.co.y for v in verts]
+            zs = [v.co.z for v in verts]
+            # A chain that runs along the edge of the face is not a crack in
+            # the skin - it is the gap between the face and the hair, and
+            # filling that welds the head shut.
+            if (max(xs) - min(xs) > 0.135 or max(zs) - min(zs) > 0.135
+                    or max(ys) - min(ys) > 0.135):
+                continue
+            loops.extend(chain)
+        if loops:
+            before = set(bm.faces)
+            bmesh.ops.holes_fill(bm, edges=loops, sides=0)
+            # The n-gons that come back can face into the head, and a face
+            # whose normal points the wrong way renders black. That is what
+            # the black cracks around the eyes turned out to be.
+            fresh = [f for f in bm.faces if f not in before]
+            if fresh:
+                bmesh.ops.recalc_face_normals(bm, faces=fresh)
+
+        # ---- 1b. stitch the slit around the eye sockets
+        #
+        # The sockets are not closed rings of holes but long open chains of
+        # boundary edges, and a chain cannot be filled - it has to be
+        # stitched to the edge on the other side of the gap. Blender's
+        # bridge_loops pairs the chains up and lays a strip of quads across.
+        stitch = []
+        for e in bm.edges:
+            if len(e.link_faces) != 1:
+                continue
+            c = (e.verts[0].co + e.verts[1].co) * 0.5
+            if not (1.105 <= c.z <= 1.285 and 0.045 <= abs(c.x) <= 0.225
+                    and c.y < -0.515):
+                continue
+            stitch.append(e)
+        if len(stitch) >= 6:
+            try:
+                bmesh.ops.bridge_loops(bm, edges=stitch, use_pairs=True,
+                                       use_cyclic=False)
+                print(f"[face] stitched {len(stitch)} edges across the sockets")
+            except (RuntimeError, TypeError) as exc:
+                print(f"[face] stitch failed: {exc}")
+
+        # ---- 2. the face patch
+        pf = set()
+        for f in bm.faces:
+            if f.material_index not in slots:
+                continue
+            if not in_face(f.calc_center_median()):
+                continue
+            pf.add(f)
+        if len(pf) < 50:
+            bm.free()
+            continue
+        patch = set()
+        for f in pf:
+            patch.update(f.verts)
+
+        if fill_only:
+            bm.to_mesh(ob.data)
+            bm.free()
+            ob.data.update()
+            print(f"[face] filled {len(loops)} hole edges, "
+                  f"{len(patch)} patch verts, no flattening")
+            continue
+
+        # ---- 3. pull the socket outliers onto the dome
+        moved = 0
+        for v in patch:
+            c = v.co
+            if is_nose(c):
+                continue
+            if not dome_mask_at(dome, c.x, c.z):
+                continue
+            d = c.y - dome_y(dome, c.x, c.z)
+            if abs(d) <= tol:
+                continue
+            # ease the last millimetre so the rim does not leave a crease
+            t = min(1.0, (abs(d) - tol) / (2.0 * tol))
+            v.co.y -= d * t
+            moved += 1
+
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+        print(f"[face] flattened {moved} of {len(patch)} verts onto the dome, "
+              f"{len(loops)} hole edges closed")
+
+
+def smooth_socket_surface(objs, m, x_lo=0.055, x_hi=0.260, z_lo=1.100,
+                          z_hi=1.285, iterations=6, factor=0.35):
+    """Take the sawtooth out of the surface around the eye sockets.
+
+    Meshy rebuilt the sockets as a corrugated sheet: the surface ripples, and
+    the ripple is fine enough that the azimuth - and with it the texture's
+    horizontal coordinate - swings back and forth from one row to the next.
+    The texture then lands on it smeared into horizontal bands, which is the
+    venetian blind across the right eye.
+
+    A few gentle passes of smoothing are enough to take the teeth out. It has
+    to stay gentle: the whole head is a soup of 45k separate shells, and a
+    Laplacian pass over all of it tears the head apart. This touches a few
+    hundred vertices near the eyes and nothing else.
+    """
+    import bmesh
+
+    slots = (ORDER.index("skin"), ORDER.index("face"))
+
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.verts.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+
+        target = set()
+        for f in bm.faces:
+            if f.material_index not in slots:
+                continue
+            c = f.calc_center_median()
+            if not (z_lo <= c.z <= z_hi):
+                continue
+            if not (x_lo <= abs(c.x) <= x_hi):
+                continue
+            target.update(f.verts)
+        if len(target) < 20:
+            bm.free()
+            continue
+
+        for _ in range(iterations):
+            bmesh.ops.smooth_vert(bm, verts=list(target), factor=factor,
+                                  use_axis_x=True, use_axis_y=True,
+                                  use_axis_z=True)
+
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+        print(f"[face] smoothed {len(target)} verts around the sockets")
+
+
+def remove_degenerate_faces(objs, slots=None, area_frac=0.02):
+    """Delete the sliver faces Meshy left on the face.
+
+    The reconstruction is full of them - thousands of triangles that are a
+    few thousandths of the size of their neighbours, and a few of them
+    collapsed all the way to a point. On their own they are invisible, but
+    where they pile up on the eye sockets they lie across the surface and
+    fight it for the depth buffer, and the fight draws as fine horizontal
+    bands across the right eye. Flat-shaded they are invisible, which is
+    what made them so confusing to track down.
+    """
+    import bmesh
+
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+
+        pool = [f for f in bm.faces
+                if slots is None or f.material_index in slots]
+        if not pool:
+            bm.free()
+            continue
+        areas = sorted(f.calc_area() for f in pool)
+        median = areas[len(areas) // 2]
+        if median <= 0:
+            bm.free()
+            continue
+        limit = median * area_frac
+
+        doomed = set()
+        for f in pool:
+            if f.calc_area() < limit:
+                doomed.add(f)
+        if not doomed:
+            bm.free()
+            continue
+        bmesh.ops.delete(bm, geom=list(doomed), context="FACES")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+        print(f"[face] removed {len(doomed)} sliver faces")
+
+
+def bury_brows(objs, m, z_lo=1.150, z_hi=1.320, x_lo=0.075, x_hi=0.205,
+               margin=0.014, max_push=0.10):
+    """Sink Meshy's reconstructed eyebrows into the skull.
+
+    The reference's eyebrows are painted - they are part of the photo, not
+    geometry - and they land on the face once the photo is projected. Meshy
+    read that dark paint as hair and rebuilt it as a separate shell of strands
+    that sits in front of the face. Left alone, the two copies overlap and
+    the brow reads as a grey smudge instead of the crisp black shape in the
+    reference.
+
+    The strands have to go *behind* the skin, so where they end up is
+    measured rather than guessed: the front of the face is found per height
+    band, and a strand is pushed back until it is just inside it.  Pushing
+    them a fixed distance is not enough - the forehead is not flat, and a
+    strand that clears the face at one height pokes through it at another.
+    """
+    import bmesh
+
+    hair_slot = ORDER.index("hair")
+    skin_slot = ORDER.index("skin")
+    face_slot = ORDER.index("face")
+    step = 0.01
+
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.verts.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+
+        # The front of the face, per height band.  The median, not the
+        # extreme: the fringe hangs a hundred millimetres further forward
+        # than the forehead does, and taking the extreme would put the target
+        # so far forward that nothing counts as being in front of it.
+        front = {}
+        for f in bm.faces:
+            if f.material_index not in (skin_slot, face_slot):
+                continue
+            c = f.calc_center_median()
+            if not (z_lo - 0.08 <= c.z <= z_hi + 0.08):
+                continue
+            if not (x_lo - 0.04 <= abs(c.x) <= x_hi + 0.04):
+                continue
+            front.setdefault(int(round(c.z / step)), []).append(c.y)
+        if not front:
+            bm.free()
+            continue
+
+        def skin_front(z):
+            lo = int(round((z - 0.03) / step))
+            hi = int(round((z + 0.03) / step))
+            vals = [y for k in range(lo, hi + 1) for y in front.get(k, ())]
+            if not vals:
+                return None
+            vals.sort()
+            return vals[len(vals) // 2]
+
+        doomed = set()
+        for f in bm.faces:
+            if f.material_index != hair_slot:
+                continue
+            c = f.calc_center_median()
+            if not (z_lo <= c.z <= z_hi):
+                continue
+            if not (x_lo <= abs(c.x) <= x_hi):
+                continue
+            doomed.update(f.verts)
+        if not doomed:
+            bm.free()
+            continue
+
+        moved = 0
+        for v in doomed:
+            fy = skin_front(v.co.z)
+            if fy is None:
+                continue
+            target = fy + margin
+            if v.co.y < target:
+                v.co.y = min(target, v.co.y + max_push)
+                moved += 1
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+        print(f"[face] buried {moved} of {len(doomed)} brow verts")
+
+
+def plug_head_bottom(objs, mats, m, lift=0.040, drop=0.030, min_pts=48):
+    """Close the open bottom of the skull.
+
+    Meshy hands the head back as a shell that simply stops at the chin: the
+    surface runs up the face, over the top and down the inside of the back of
+    the skull, and its lowest edge is the chin.  Everything under the chin and
+    in front of the neck is therefore a hole, and from the front you look
+    straight through the head and out the back of it - the background, with a
+    few black hair spikes in front of it.
+
+    The fix is a skin-coloured cone across the opening.  Its rim is the head's
+    own outline a little above the chin, so it cannot poke out of the
+    silhouette, and it falls away to a point below, which reads as the
+    underside of the jaw rather than as a flat lid.
+    """
+    import bmesh
+
+    skin_slot = ORDER.index("skin")
+    face_slot = ORDER.index("face")
+    z0 = m["z0"]
+    cx, cy = m["cx"], m["cy"]
+    z_rim = z0 + lift
+
+    # The head's outline just above the chin.
+    pts = []
+    for ob in objs:
+        for p in ob.data.polygons:
+            if p.material_index not in (skin_slot, face_slot):
+                continue
+            if abs(p.center.z - z_rim) > 0.012:
+                continue
+            for vi in p.vertices:
+                c = ob.data.vertices[vi].co
+                if abs(c.z - z_rim) <= 0.016:
+                    pts.append((c.x, c.y))
+    if len(pts) < min_pts:
+        print(f"[plug] only {len(pts)} outline points, skipping")
+        return None
+
+    # Keep the outermost point per direction so the rim is the silhouette.
+    step = 2.0 * math.pi / 180.0
+    buckets = {}
+    for px, py in pts:
+        dx, dy = px - cx, py - cy
+        r = math.hypot(dx, dy)
+        if r < 1e-6:
+            continue
+        a = (math.atan2(dy, dx) + math.pi) % (2.0 * math.pi)
+        k = int(a / step)
+        if k not in buckets or r > buckets[k][0]:
+            buckets[k] = (r, a)
+    if len(buckets) < min_pts:
+        print(f"[plug] only {len(buckets)} rim buckets, skipping")
+        return None
+    rim = sorted(buckets.values(), key=lambda t: t[1])
+
+    bm = bmesh.new()
+    apex = bm.verts.new((cx, cy, z0 - drop))
+    ring = []
+    for r, a in rim:
+        ring.append(bm.verts.new((cx + r * math.cos(a), cy + r * math.sin(a), z_rim)))
+    n = len(ring)
+    for i in range(n):
+        # Wound so the normal points down and out, away from the inside of
+        # the jaw. The other way round the cap is backfacing, and it renders
+        # as a grey plate hanging under the chin.
+        bm.faces.new((apex, ring[(i + 1) % n], ring[i]))
+    bm.normal_update()
+    me = bpy.data.meshes.new("JawPlug")
+    bm.to_mesh(me)
+    bm.free()
+    for p in me.polygons:
+        p.use_smooth = True
+    ob = bpy.data.objects.new("JawPlug", me)
+    bpy.context.collection.objects.link(ob)
+    ob.data.materials.append(mats["skin"])
+    for p in ob.data.polygons:
+        p.material_index = 0
+    ob.data.update()
+    print(f"[plug] jaw closed: {n} rim points, max radius "
+          f"{max(r for r, _ in rim):.3f} at z={z_rim:.3f}")
+    return ob
+
+
+# photo measurements, in the reference's own pixels
+REF_EYE_OFFSET = 125.75      # iris centre from the face centre
+REF_FACE_HALF = 337.5        # face incl. ears, at the eye row
+REF_EYE_FRAC = 0.650         # eye height above the chin, chin to hairline
+# The reference's chin and the top of its forehead. Measured off the photo:
+# the smile's widest row is 786, the iris sits at 668, and the chin ends at
+# about 895 - row 943 is the *neck*, and row 493 is the scalp between the
+# locks, not the hairline. Anchoring on those two wrong rows stretched the
+# face over the neck and the white shirt, which is where the grey band under
+# the jaw came from, and put the painted eye 27 px above the socket it was
+# meant to land on.
+REF_CHIN_Y = 893.0           # the reference's chin row
+REF_HAIR_Y = 550.0           # the reference's hairline row
+REF_IRIS_R = 48.0            # painted iris radius
+
+
+def photo_scale(objs, m):
+    """Solve the photo-to-model horizontal scale K.
+
+    The photo's irises sit 125.75 px either side of the face centre and the
+    face there is 337.5 px wide, so the painted iris has to land at 0.3725 of
+    the model's own face half width. That fixes the azimuth it sits at, and
+    the azimuth fixes K, because the texture maps azimuth to photo pixels as
+    x = cx + K*sin(az) with sin(az) = (x - cx)/R on the head's circle.
+
+    Getting this wrong is what squeezed the painted eyes into the middle of
+    the face while the socket rims stayed where the reconstruction had put
+    them - two sets of eyes, far apart.
+    """
+    z_eye = m["z0"] + REF_EYE_FRAC * (m["z1"] - m["z0"])
+    half = 0.0
+    slots = (ORDER.index("skin"), ORDER.index("face"))
+    for ob in objs:
+        for p in ob.data.polygons:
+            if p.material_index not in slots:
+                continue
+            if abs(p.center.z - z_eye) > 0.03:
+                continue
+            half = max(half, abs(p.center.x))
+    if half <= 1e-4:
+        return 340.0
+    target_x = REF_EYE_OFFSET / REF_FACE_HALF * half
+    K = REF_EYE_OFFSET * m["radius"] / max(target_x - m["cx"], 1e-4)
+    print(f"[scale] face half={half:.4f} target iris x={target_x:.4f} "
+          f"R={m['radius']:.4f} K={K:.1f}")
+    return K
+
+
+def eye_regions(m, K):
+    """The two painted eyes, as ellipses in the model's own coordinates.
+
+    The reference's eyes are artwork, not geometry, so the only place the eye
+    *is* in the model is where the photo will put it. The photo's iris centre
+    is REF_EYE_OFFSET pixels either side of the face centre, and the texture
+    maps azimuth to photo pixels as x = cx + K*sin(az) - so the azimuth of the
+    painted iris is asin(offset / K), and the model's x follows from that.
+
+    Taking the region from the photo rather than from the geometry is the
+    whole point: Meshy rebuilt the sockets wherever it felt like, and chasing
+    those with a depth filter is what made the old dome fit land on the nose.
+    """
+    z0, z1, R, cx = m["z0"], m["z1"], m["radius"], m["cx"]
+    s = max(-0.95, min(0.95, REF_EYE_OFFSET / max(K, 1.0)))
+    az = math.asin(s)
+    # The painted eye is bigger than the iris: there is the white of the eye
+    # on the outer side and the lash above it, and the socket rim stands
+    # outside all of that.
+    edge = REF_IRIS_R * 1.28
+    daz = edge / max(K * math.cos(az), 1.0)
+    rx = R * math.sin(daz)
+    rz = (edge / (REF_CHIN_Y - REF_HAIR_Y)) * (z1 - z0)
+    ez = z0 + REF_EYE_FRAC * (z1 - z0)
+    out = []
+    for sgn in (-1.0, 1.0):
+        ex = cx + sgn * R * math.sin(az)
+        out.append({"x": ex, "z": ez, "rx": rx, "rz": rz})
+    print(f"[dome] painted eyes at x {out[0]['x']:+.3f}/{out[1]['x']:+.3f} "
+          f"z {ez:.3f}  rx {rx:.3f} rz {rz:.3f}")
+    return out
+
+
+def _dome_basis(u, v):
+    """A small polynomial basis in the eye's own normalised coordinates."""
+    import numpy as np
+    return np.stack([np.ones_like(u), u, v, u * u, u * v, v * v,
+                     u * u * u, u * u * v, v * v * v], axis=1)
+
+
+def _fit_dome(pts, ex, ez, rx, rz, iters=8):
+    """Robust polynomial fit of the face surface around one eye.
+
+    Cauchy weights, so the brow ridge, the nose bridge and the stray shards
+    Meshy left in the socket cannot drag the fit off the face.
+    """
+    import numpy as np
+    u = (pts[:, 0] - ex) / rx
+    v = (pts[:, 1] - ez) / rz
+    basis = _dome_basis(u, v)
+    y = pts[:, 2]
+    w = np.ones_like(y)
+    coef = None
+    for _ in range(iters):
+        A = basis * w[:, None]
+        coef, *_ = np.linalg.lstsq(A, y * w, rcond=None)
+        r = y - basis @ coef
+        s = 1.4826 * np.median(np.abs(r - np.median(r))) + 1e-6
+        w = 1.0 / (1.0 + (r / (2.5 * s)) ** 2)
+    return coef
+
+
+def flatten_eye_dome(objs, m, K, regions=None, move=1.0, gap=1.18, blend=0.86,
+                     prune=0.012, drop_inward=True, drop_scale=1.0,
+                     drop_skin=False):
+    """Pull the eye sockets back onto the smooth dome the reference paints on.
+
+    The reference's face is a painted dome: the eye is a lash shape, an iris
+    gradient and two speculars, all drawn on one smooth surface. Meshy rebuilt
+    the eyes as a ball in a socket with a raised rim, and when the photo is
+    projected onto that, the rim arcs across the painted eye and the socket's
+    inner wall - which faces inwards, so it is excluded from the photo and
+    comes out as plain skin - pokes through the black of the iris as a pale
+    shard.
+
+    So the whole socket is taken out and put back on the dome. The dome itself
+    is fitted to the face *around* the eye, robustly, so the paint lands on a
+    smooth continuous surface with nothing sticking through it.
+
+    `move` scales the painted eye into the region that gets flattened - it has
+    to be larger than the iris, because the rim stands outside it - and `gap`
+    is how much wider the ring the dome is fitted on is than the hole it has
+    to reach across.
+    """
+    import bmesh
+    import numpy as np
+
+    if regions is None:
+        regions = eye_regions(m, K)
+
+    hair_slot = ORDER.index("hair")
+    moved = 0
+    pruned = 0
+
+    for reg in regions:
+        ex, ez = reg["x"], reg["z"]
+        mrx, mrz = reg["rx"] * move, reg["rz"] * move
+        fx, fz = mrx * gap, mrz * gap
+        bx, bz = fx * 2.0, fz * 2.4
+
+        pts = []
+        for ob in objs:
+            for v in ob.data.vertices:
+                c = v.co
+                if abs(c.x - ex) > bx or abs(c.z - ez) > bz:
+                    continue
+                if c.y > -0.35:
+                    continue
+                u = (c.x - ex) / fx
+                v = (c.z - ez) / fz
+                if u * u + v * v <= 1.0:
+                    continue
+                pts.append((c.x, c.z, c.y))
+        if len(pts) < 60:
+            print(f"[dome] eye at {ex:+.3f}: only {len(pts)} sample points, skipped")
+            continue
+        pts = np.array(pts, dtype=np.float64)
+        coef = _fit_dome(pts, ex, ez, fx, fz)
+
+        def dome_y(x, z, _ex=ex, _ez=ez, _fx=fx, _fz=fz, _c=coef):
+            u = np.atleast_1d((x - _ex) / _fx)
+            v = np.atleast_1d((z - _ez) / _fz)
+            return (_dome_basis(u, v) @ _c)
+
+        for ob in objs:
+            me = ob.data
+            bm = bmesh.new()
+            bm.from_mesh(me)
+            bm.verts.ensure_lookup_table()
+            hit = 0
+            for v in bm.verts:
+                c = v.co
+                if abs(c.x - ex) > mrx or abs(c.z - ez) > mrz:
+                    continue
+                u = (c.x - ex) / mrx
+                w = (c.z - ez) / mrz
+                t = u * u + w * w
+                if t > 1.0:
+                    continue
+                total = hit
+                hit += 1
+                ty = float(dome_y(np.array([c.x]), np.array([c.z]))[0])
+                # ease the last stretch so the rim does not leave a crease
+                k = 1.0 if (blend >= 1.0 or t < blend) \
+                    else (1.0 - t) / (1.0 - blend)
+                v.co.y = c.y + (ty - c.y) * max(0.0, min(1.0, k))
+            if hit:
+                bm.to_mesh(me)
+                bm.free()
+                me.update()
+                moved += hit
+            else:
+                bm.free()
+
+        # ---- take the rest of the socket away ---------------------------
+        #
+        # Flattening leaves the socket's rim standing proud of the dome and
+        # its inner wall hanging behind it, and both of them cross the
+        # painted eye: the rim as a dark arc, the wall as pale shards. What
+        # is left on the dome is the eyeball itself, which is the only layer
+        # that should be there - the reference's eye is artwork on one smooth
+        # surface, with no socket in it at all.
+        for ob in objs:
+            me = ob.data
+            bm = bmesh.new()
+            bm.from_mesh(me)
+            bm.faces.ensure_lookup_table()
+            bm.normal_update()
+            doomed = []
+            for f in bm.faces:
+                c = f.calc_center_median()
+                u = (c.x - ex) / (mrx * drop_scale)
+                w = (c.z - ez) / (mrz * drop_scale)
+                if u * u + w * w > 1.0:
+                    continue
+                ty = float(dome_y(np.array([c.x]), np.array([c.z]))[0])
+                if prune > 0.0 and abs(c.y - ty) > prune:
+                    doomed.append(f)
+                    continue
+                if drop_inward:
+                    # The socket's inner wall points inwards, so once the
+                    # socket has been flattened it lies on the dome as a
+                    # second surface - and two surfaces at the same depth
+                    # fight for the depth buffer, which is what draws the
+                    # eye as torn paper. The reference has no socket: the eye
+                    # is paint on one surface.
+                    radial = (c.x - m["cx"], c.y - m["cy"],
+                              c.z - 0.5 * (m["z0"] + m["z1"]))
+                    nrm = f.normal
+                    if (radial[0] * nrm.x + radial[1] * nrm.y
+                            + radial[2] * nrm.z) < -0.02:
+                        doomed.append(f)
+                        continue
+                if drop_skin and f.material_index == ORDER.index("skin") \
+                        and abs(c.y - ty) > 0.005:
+                    # The socket's rim flares out past the eye, and it is the
+                    # one piece of the face the photo has no paint for: it
+                    # comes out as a ring of pale torn paper around the eye.
+                    # The eye is artwork on a smooth dome, so the rim goes.
+                    doomed.append(f)
+            if doomed:
+                bmesh.ops.delete(bm, geom=doomed, context="FACES")
+                bm.to_mesh(me)
+                bm.free()
+                me.update()
+                pruned += len(doomed)
+
+    print(f"[dome] flattened {moved} eye-socket verts onto the face dome, "
+          f"pruned {pruned} leftover socket faces")
+    return moved
+
+def eye_ridge_report(objs, m, K, regions=None, move=1.5, tol=0.002):
+    """What is still standing in front of the dome around the eyes.
+
+    Anything more than a couple of millimetres proud of the fitted dome will
+    poke through the painted eye, so this is the number that says whether the
+    socket has been taken out far enough.
+    """
+    import numpy as np
+
+    if regions is None:
+        regions = eye_regions(m, K)
+    worst = []
+    for reg in regions:
+        ex, ez = reg["x"], reg["z"]
+        mrx, mrz = reg["rx"] * move, reg["rz"] * move
+        fx, fz = mrx * 1.18, mrz * 1.18
+        bx, bz = fx * 2.0, fz * 2.4
+        pts = []
+        for ob in objs:
+            for v in ob.data.vertices:
+                c = v.co
+                if abs(c.x - ex) > bx or abs(c.z - ez) > bz or c.y > -0.35:
+                    continue
+                u = (c.x - ex) / fx
+                w = (c.z - ez) / fz
+                if u * u + w * w <= 1.0:
+                    continue
+                pts.append((c.x, c.z, c.y))
+        if len(pts) < 60:
+            continue
+        pts = np.array(pts, dtype=np.float64)
+        coef = _fit_dome(pts, ex, ez, fx, fz)
+        inside = []
+        for ob in objs:
+            for v in ob.data.vertices:
+                c = v.co
+                if abs(c.x - ex) > mrx or abs(c.z - ez) > mrz or c.y > -0.35:
+                    continue
+                inside.append((c.x, c.z, c.y))
+        if not inside:
+            continue
+        arr = np.array(inside, dtype=np.float64)
+        u = (arr[:, 0] - ex) / fx
+        w = (arr[:, 1] - ez) / fz
+        dome = _dome_basis(u, w) @ coef
+        d = arr[:, 2] - dome          # negative = in front of the dome
+        for i in np.nonzero(d < -tol)[0]:
+            worst.append((float(d[i]), float(arr[i, 0]), float(arr[i, 1])))
+    worst.sort()
+    print(f"[dome] {len(worst)} verts still proud of the dome by more than "
+          f"{tol * 1000:.0f} mm")
+    for d, x, z in worst[:6]:
+        print(f"[dome]   {d * 1000:+.1f} mm at x {x:+.3f} z {z:.3f}")
+    return worst
 
 
 def make_plaid_image(name="PlaidTex", size=512, cells=8,
@@ -182,7 +1095,11 @@ def uv_plaid(objs, lo, hi, slot, tiles=4.0, cx=0.0, cy=-0.05, radius=0.35):
 def materials():
     return {
         "skin": make_material("Skin", (0.975, 0.660, 0.575), 0.50, subsurface=0.34),
-        "hair": make_material("Hair", (0.028, 0.026, 0.034), 0.38, coat=0.40),
+        # The hair is a shell of thin sheets, and at a grazing angle a glossy
+        # black surface turns into brushed metal. Matte, or the side locks
+        # read as steel plating.
+        "hair": make_material("Hair", (0.028, 0.026, 0.034), 0.58, coat=0.0,
+                              specular=0.04),
         "tee": make_material("Tee", (0.935, 0.935, 0.948), 0.68),
         "plaid": make_plaid("Plaid", (0.560, 0.062, 0.055), (0.030, 0.026, 0.026)),
         "pants": make_material("Pants", (0.430, 0.064, 0.057), 0.58),
@@ -673,12 +1590,14 @@ def shell_map(objs):
 
         cid = [find(f.index) for f in bm.faces]
         boxes = {}
+        centres = {}
         for f in bm.faces:
             c = f.calc_center_median()
+            centres.setdefault(cid[f.index], []).append(c)
             b = boxes.get(cid[f.index])
             if b is None:
                 b = boxes[cid[f.index]] = [1e18, -1e18, 1e18, -1e18, 1e18,
-                                           -1e18, 0]
+                                           -1e18, 0, 0]
             b[0] = min(b[0], c.x)
             b[1] = max(b[1], c.x)
             b[2] = min(b[2], c.y)
@@ -686,6 +1605,24 @@ def shell_map(objs):
             b[4] = min(b[4], c.z)
             b[5] = max(b[5], c.z)
             b[6] += 1
+        # A frame has a hole in the middle. Meshy rebuilt the eye sockets as
+        # rings, and a ring's bounding box is as big as the eye it circles -
+        # so it passes any size test and ends up filed under hair, which is
+        # what drew the black ring around every painted eye. A lock is solid:
+        # its own faces are near the middle of its own bounding box.
+        for key, b in boxes.items():
+            dims = (b[1] - b[0], b[3] - b[2], b[5] - b[4])
+            smallest = min(dims)
+            if smallest <= 1e-6:
+                b[7] = 1
+                continue
+            mx = (b[0] + b[1]) * 0.5
+            my = (b[2] + b[3]) * 0.5
+            mz = (b[4] + b[5]) * 0.5
+            reach = 0.30 * smallest
+            solid = any(abs(c.x - mx) <= reach and abs(c.y - my) <= reach
+                        and abs(c.z - mz) <= reach for c in centres[key])
+            b[7] = 0 if solid else 1
         bm.free()
         out.append((cid, boxes))
     return out
@@ -708,7 +1645,30 @@ def hair_shell_faces(objs, z_neck, front_y=-0.10):
         for key, b in boxes.items():
             if b[6] > biggest * 0.5:
                 continue                       # the fused body, not a sheet
+            # A shell only counts as hair if it is a *lock*, not a shard.
+            # Meshy's reconstruction is a soup of 45k components and most of
+            # the little ones are single slivers of the face surface itself.
+            # Filing them under hair painted the face with black specks, drew
+            # a black ring around each eye and a black dashed line across the
+            # mouth - the face count does not tell them apart (a shard can be
+            # twenty degenerate triangles), but the shape does: a lock has
+            # extent in at least two directions, a sliver in one.
+            dims = (b[1] - b[0], b[3] - b[2], b[5] - b[4])
+            if sum(1 for d in dims if d >= 0.010) < 2:
+                continue
+            if b[7]:
+                continue                       # a frame around a hole, not a lock
             if b[2] < front_y and b[4] > z_neck:
+                hair_shells.add(key)
+            elif (b[2] < front_y and b[4] <= z_neck
+                    and b[5] > z_neck - 0.02
+                    and (b[0] > 0.02 or b[1] < -0.02)):
+                # A side lock that hangs past the neck line. It does not
+                # clear the height test, so it used to be filed under skin -
+                # and a sheet of skin-coloured shards hanging beside the ear
+                # is exactly the pale broken glass the render showed there.
+                # The neck is excluded because it straddles the centre line,
+                # and the legs because they end far below the neck.
                 hair_shells.add(key)
         out.append({i for i, c in enumerate(cid) if c in hair_shells})
         for key in sorted(hair_shells):
@@ -739,6 +1699,133 @@ def mark_hair_shells(objs, faces_by_obj):
         ob.data.update()
     print(f"[shells] {total} polygons forced back to hair")
     return total
+
+
+def unmark_stray_hair(objs, z_neck, lo=None, hi=None):
+    """Take the hair material off the shells that are not hair.
+
+    A saved .blend carries the labels the pipeline gave it. When the shell
+    test was too loose, every stray shard of the face was filed under hair,
+    and that is what drew the black ring around the eyes and the black dashes
+    across the mouth. The quick-iteration script works on a saved .blend, so
+    it needs to be able to undo that on its own.
+
+    Only the shards *below the hairline* are taken off it. The hair on the
+    skull itself is part of the fused body, not a separate shell, so the shell
+    test never claimed it - and taking it off would strip the whole hairstyle
+    and leave pink horns where the side locks are.
+    """
+    import bmesh
+    import math as _math
+
+    hair_shells = hair_shell_faces(objs, z_neck)
+    hair_slot = ORDER.index("hair")
+    skin_slot = ORDER.index("skin")
+    moved = 0
+    kept_above = 0
+    for oi, ob in enumerate(objs):
+        keep = hair_shells[oi]
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        for f in bm.faces:
+            if f.material_index != hair_slot:
+                continue
+            if keep and f.index in keep:
+                continue
+            c = f.calc_center_median()
+            if lo is not None and hi is not None:
+                H = hi.z - lo.z
+                az = min(abs(_math.atan2(c.x, -c.y)) / (_math.pi * 0.5), 1.0)
+                hairline = lo.z + H * (0.712 - (0.712 - 0.655) * az * az)
+                if c.z >= hairline:
+                    kept_above += 1
+                    continue
+            f.material_index = skin_slot
+            moved += 1
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    print(f"[hair] {moved} stray polygons taken off the hair material, "
+          f"{kept_above} kept because they are above the hairline")
+    return moved
+
+
+def trim_eye_hair(objs, m, regions=None, K=None, grow=1.06, y_front=-0.40):
+    """Cut the hair back off the painted eyes.
+
+    The reference's bangs stop above the eyes; only the lock between them runs
+    down to the nose bridge. Meshy's left lock hangs across the whole eye, and
+    a sheet of black hair lying over the painted iris is the one thing the
+    photo can never fix.
+
+    The zone comes from the photo, not from the geometry: the painted eye is
+    where the eye is, and the hair has to get out of its way.
+    """
+    import bmesh
+
+    if regions is None:
+        regions = eye_regions(m, K or 340.0)
+    # A box, not an ellipse: Meshy left shards of hair lying flat across the
+    # eye, and they are wider than they are tall, so an ellipse around the
+    # iris misses most of them. The box stops short of the centre line, so
+    # the lock that hangs between the eyes - which the reference has - stays.
+    zones = []
+    for r in regions:
+        zones.append((r["x"], r["z"], r["rx"] * 1.18, r["rz"] * 1.55, 0.055))
+    zones.append((m["cx"], m["mouth_z"], m["mouth_hw"] * 1.25, 0.050, 0.0))
+
+    hair_slot = ORDER.index("hair")
+    removed = 0
+    for ob in objs:
+        slot_names = [s.material.name if s.material else ""
+                      for s in ob.material_slots]
+        hair_slots = {i for i, n in enumerate(slot_names)
+                      if n.lower().startswith("hair")}
+        if not hair_slots:
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        doomed = []
+        for f in bm.faces:
+            if f.material_index not in hair_slots:
+                continue
+            c = f.calc_center_median()
+            if c.y > y_front:
+                continue
+            hit = False
+            for zx, zz, rx, rz, up in zones:
+                x0, x1 = zx - rx, zx + rx
+                z0, z1 = zz - rz, zz + up
+                if abs(c.x - zx) <= rx and zz - rz <= c.z <= zz + up:
+                    hit = True
+                    break
+                # The lock over the eye is a handful of very big triangles, so
+                # the centre of a face can sit well outside the eye while the
+                # face still covers it. The face's own bounding box is the
+                # only honest test.
+                fx0 = fx1 = c.x
+                fz0 = fz1 = c.z
+                for v in f.verts:
+                    p = v.co
+                    fx0 = min(fx0, p.x)
+                    fx1 = max(fx1, p.x)
+                    fz0 = min(fz0, p.z)
+                    fz1 = max(fz1, p.z)
+                if fx1 >= x0 and fx0 <= x1 and fz1 >= z0 and fz0 <= z1:
+                    hit = True
+                    break
+            if hit:
+                doomed.append(f)
+        if doomed:
+            bmesh.ops.delete(bm, geom=doomed, context="FACES")
+            removed += len(doomed)
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    print(f"[fringe] {removed} hair polygons cut back off the eyes")
+    return removed
 
 
 def assign_by_region(objs, mats, lo, hi):
@@ -884,6 +1971,96 @@ def face_hit(objs, x, z):
     return best
 
 
+def find_eye_sockets(objs, lo, hi, m, x_half=0.32, nx=65, nz=45, blur=0.055):
+    """Locate the two eye sockets on the face, from the geometry alone.
+
+    The painted eyes have to land ON the model's sockets. If they do not,
+    every feature reads twice - the socket rim arcs over the painted eye -
+    and the face looks like a misaligned double image rather than a face.
+
+    The sockets are the only deep depressions on the face, so they can be
+    found by casting rays over the face and looking for the two spots that
+    sit far below the locally smoothed surface. The nose and the brow
+    ridges are protrusions, so they score negative and are never picked.
+
+    Returns {"x", "y", "z", "az"} for one socket (the left one) plus the
+    average row of the pair, or None if nothing convincing turns up.
+    """
+    import numpy as np
+
+    z_lo = m["z0"] + 0.02
+    z_hi = m["z1"] - 0.01
+    xs = np.linspace(-x_half, x_half, nx)
+    zs = np.linspace(z_lo, z_hi, nz)
+
+    depth = np.full((nz, nx), np.nan)
+    for j, z in enumerate(zs):
+        for i, x in enumerate(xs):
+            h = face_hit(objs, float(x), float(z))
+            if h is not None:
+                depth[j, i] = h[0].y
+
+    if np.all(np.isnan(depth)):
+        return None
+    # fill the holes so the blur does not bleed across them
+    grid_z, grid_x = np.mgrid[0:nz, 0:nx]
+    good = ~np.isnan(depth)
+    if good.sum() < 50:
+        return None
+    filled = depth.copy()
+    idx = np.where(good, grid_x, np.nan)
+    for j in range(nz):
+        row = good[j]
+        if not row.any():
+            continue
+        xs_row = np.arange(nx)
+        filled[j] = np.interp(xs_row, xs_row[row], depth[j][row])
+    for i in range(nx):
+        col = good[:, i]
+        if not col.any():
+            continue
+        zs_col = np.arange(nz)
+        filled[:, i] = np.interp(zs_col, zs_col[col], depth[:, i][col])
+
+    # box blur (separable, three passes) -> the "expected" face surface
+    k = max(3, int(blur / (xs[1] - xs[0])) | 1)
+    kz = max(3, int(blur / (zs[1] - zs[0])) | 1)
+    sm = filled
+    for _ in range(3):
+        sm = (np.apply_along_axis(
+            lambda r: np.convolve(r, np.ones(k) / k, mode="same"), 1, sm))
+        sm = (np.apply_along_axis(
+            lambda r: np.convolve(r, np.ones(kz) / kz, mode="same"), 0, sm))
+    resid = filled - sm          # > 0 where the surface dips in
+
+    # only the outer halves: the middle is the nose bridge
+    left = np.where((xs < -0.06))[0]
+    right = np.where((xs > 0.06))[0]
+    if not len(left) or not len(right):
+        return None
+
+    out = {}
+    for tag, cols in (("L", left), ("R", right)):
+        sub = resid[:, cols]
+        j, i = np.unravel_index(np.argmax(sub), sub.shape)
+        out[tag] = (float(xs[cols[i]]), float(zs[j]), float(resid[j, cols[i]]))
+        if out[tag][2] <= 0.0:
+            return None
+
+    x_l, z_l, _ = out["L"]
+    x_r, z_r, _ = out["R"]
+    # the socket floor's y, for the azimuth
+    hit = face_hit(objs, x_l, z_l)
+    y_l = hit[0].y if hit else 0.0
+    az = math.atan2(x_l - m["cx"], -(y_l - m["cy"]))
+
+    print(f"[sockets] left x={x_l:+.3f} z={z_l:.3f} depth={out['L'][2]:+.4f}  "
+          f"right x={x_r:+.3f} z={z_r:.3f} depth={out['R'][2]:+.4f}  "
+          f"az={math.degrees(az):.1f}deg")
+    return {"x": x_l, "y": y_l, "z": (z_l + z_r) * 0.5, "az": abs(az),
+            "z_left": z_l, "z_right": z_r}
+
+
 def face_metrics(objs, lo, hi):
     """Head frame plus feature placement, measured off the painted skin patch.
 
@@ -892,11 +2069,16 @@ def face_metrics(objs, lo, hi):
     third too wide and every feature drifted out toward the sides of the head.
     """
     z_neck = lo.z + Z_NECK_FRAC * (hi.z - lo.z)
+    # Both slots count. The pipeline measures before paint_face moves the head
+    # front into "face", but a re-opened .blend already has it there.
     idx = ORDER.index("skin")
+    idx_face = ORDER.index("face")
     xs, zs, probe = [], [], []
     for ob in objs:
         for p in ob.data.polygons:
-            if p.material_index != idx or p.center.z <= z_neck:
+            if p.material_index not in (idx, idx_face):
+                continue
+            if p.center.z <= z_neck:
                 continue
             if p.normal.y > -0.35:
                 continue
@@ -908,7 +2090,10 @@ def face_metrics(objs, lo, hi):
 
     x_lo, x_hi = min(xs), max(xs)
     z_lo, z_hi = min(zs), max(zs)
-    cx = (x_lo + x_hi) * 0.5
+    # The head's axis, not the skin patch's: the patch runs into the ears, and
+    # the reconstruction is a shade asymmetric there, which would tilt the
+    # whole unwrap.
+    cx = (lo.x + hi.x) * 0.5
     fw = (x_hi - x_lo) * 0.5
     span = z_hi - z_lo
 
@@ -948,9 +2133,18 @@ def face_metrics(objs, lo, hi):
         "mouth_hw": fw * 0.150,
         "nose_z": z_lo + span * 0.42,
     }
+    # The painted eyes must land on the model's own sockets, so find them.
+    sock = find_eye_sockets(objs, lo, hi, m)
+    if sock:
+        m["socket_x"] = sock["x"]
+        m["socket_y"] = sock["y"]
+        m["socket_z"] = sock["z"]
+        m["socket_az"] = sock["az"]
     print(f"[face] fw={fw:.4f} R={R:.4f} span={span:.4f} "
           f"z={z_lo:.3f}..{z_hi:.3f} eye_z={eye_z:.3f} "
-          f"eye_az={math.degrees(az_e):.1f}deg corr={corr:.2f}")
+          f"eye_az={math.degrees(az_e):.1f}deg corr={corr:.2f}"
+          + (f" socket_z={m['socket_z']:.3f} socket_az="
+             f"{math.degrees(m['socket_az']):.1f}deg" if sock else ""))
     return m
 
 
@@ -1057,7 +2251,7 @@ def flatten_hem_edges(objs, lo, hi, mats):
         ob.data.update()
 
 
-def paint_face(objs, mats, lo, hi, m=None):
+def paint_face(objs, mats, lo, hi, m=None, regions=None):
     """Bake the face texture, then hand the skull its material and UVs."""
     if m is None:
         m = face_metrics(objs, lo, hi)
@@ -1065,8 +2259,12 @@ def paint_face(objs, mats, lo, hi, m=None):
     z_neck = lo.z + Z_NECK_FRAC * (hi.z - lo.z)
     for ob in objs:
         ob.data.materials.append(mats["face"])
+    keep = []
+    for r in (regions or []):
+        keep.append((r["x"], r["z"], r["rx"], r["rz"]))
     face_texture.apply(objs, m, mats["face"], len(ORDER) - 1, z_neck,
-                       ORDER.index("skin"))
+                       (ORDER.index("skin"), len(ORDER) - 1),
+                       keep_regions=keep)
     return m
 
 
@@ -1192,6 +2390,558 @@ def render_views(cam):
     print("[render] restyle_head.png")
 
 
+# --------------------------------------------------------------------------
+# Face-zone clean-up
+#
+# The reference's face is one painted dome: the eyes, the brows, the nose and
+# the mouth are artwork on a single smooth surface.  Meshy's reconstruction is
+# not.  It rebuilt the eyes as a ball in a socket, left the socket's rim
+# standing proud of the face as a flat card, read the painted brows as hair
+# and rebuilt them as strands floating in front of the forehead, and left
+# holes all over the face where the shells did not meet.
+#
+# Projecting the photo onto that does not produce a face.  It produces the
+# photo with shards of geometry standing in front of it - which is what the
+# black blocks in the viewport turned out to be.  The texture is perfect; the
+# geometry is the problem.  So the face zone is taken back to the one shell
+# that is actually the head: the hair Meshy grew out of the painted brows
+# goes, the socket rim card goes, and the holes that is left behind close.
+# --------------------------------------------------------------------------
+
+
+def _raster_front(objs, slots, x_half=0.27, z_lo=1.00, z_hi=1.31, step=0.005):
+    """Front-most surface depth per (x, z) cell, for the given material slots.
+
+    The head is a soup of separate shells, so the mesh cannot answer "what is
+    the surface at (x, z)" on its own.  Rasterising the triangles onto an
+    (x, z) grid answers it the way a camera would: a ray along +Y hits the
+    triangle with the smallest y first.
+    """
+    import numpy as np
+
+    nx = int(round(2 * x_half / step)) + 1
+    nz = int(round((z_hi - z_lo) / step)) + 1
+    gx = -x_half + np.arange(nx) * step
+    gz = z_lo + np.arange(nz) * step
+    best = np.full((nz, nx), np.inf)
+    for ob in objs:
+        me = ob.data
+        for poly in me.polygons:
+            if poly.material_index not in slots:
+                continue
+            vs = [me.vertices[i].co for i in poly.vertices]
+            for i in range(1, len(vs) - 1):
+                p0, p1, p2 = vs[0], vs[i], vs[i + 1]
+                xs = (p0.x, p1.x, p2.x)
+                zs = (p0.z, p1.z, p2.z)
+                i0 = max(0, int(np.ceil((min(xs) + x_half) / step)))
+                i1 = min(nx - 1, int(np.floor((max(xs) + x_half) / step)))
+                j0 = max(0, int(np.ceil((min(zs) - z_lo) / step)))
+                j1 = min(nz - 1, int(np.floor((max(zs) - z_lo) / step)))
+                if i1 < i0 or j1 < j0:
+                    continue
+                X, Z = np.meshgrid(gx[i0:i1 + 1], gz[j0:j1 + 1])
+                det = ((zs[1] - zs[2]) * (xs[0] - xs[2])
+                       + (xs[2] - xs[1]) * (zs[0] - zs[2]))
+                if abs(det) < 1e-12:
+                    continue
+                a = ((zs[1] - zs[2]) * (X - xs[2])
+                     + (xs[2] - xs[1]) * (Z - zs[2])) / det
+                b = ((zs[2] - zs[0]) * (X - xs[2])
+                     + (xs[0] - xs[2]) * (Z - zs[2])) / det
+                c = 1.0 - a - b
+                inside = (a >= 0.0) & (b >= 0.0) & (c >= 0.0)
+                if not inside.any():
+                    continue
+                Y = a * p0.y + b * p1.y + c * p2.y
+                sub = best[j0:j1 + 1, i0:i1 + 1]
+                np.minimum(sub, np.where(inside, Y, np.inf), out=sub)
+    return {"Y": best, "gx": gx, "gz": gz, "step": step,
+            "x_half": x_half, "z_lo": z_lo, "nx": nx, "nz": nz}
+
+
+def _grid_fill(Y):
+    """Interpolate across the cells a depth grid never hit."""
+    import numpy as np
+
+    Z = np.array(Y, dtype=np.float64)
+    Z[~np.isfinite(Z)] = np.nan
+    nz, nx = Z.shape
+    for j in range(nz):
+        row = ~np.isnan(Z[j])
+        if row.any() and not row.all():
+            Z[j] = np.interp(np.arange(nx), np.arange(nx)[row], Z[j][row])
+    for i in range(nx):
+        col = ~np.isnan(Z[:, i])
+        if col.any() and not col.all():
+            Z[:, i] = np.interp(np.arange(nz), np.arange(nz)[col], Z[:, i][col])
+    return Z
+
+
+def _fbox(f):
+    """The face's bounding box in the (x, z) plane."""
+    xs = [v.co.x for v in f.verts]
+    zs = [v.co.z for v in f.verts]
+    return min(xs), max(xs), min(zs), max(zs)
+
+
+def _head_shells(objs, face_slots):
+    """Label every skin/face polygon with the shell it belongs to.
+
+    Meshy's head is not one surface, it is thousands of separate shells, and
+    the only way to tell the head from the junk lying on top of it is to see
+    which shell each polygon is welded to.
+    """
+    import bmesh
+
+    comp = {}
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        bm.faces.index_update()
+        num = len(bm.faces)
+        par = list(range(num))
+
+        def find(a):
+            while par[a] != a:
+                par[a] = par[par[a]]
+                a = par[a]
+            return a
+
+        for f in bm.faces:
+            if f.material_index not in face_slots:
+                continue
+            for e in f.edges:
+                for nf in e.link_faces:
+                    if nf is f or nf.material_index not in face_slots:
+                        continue
+                    ra, rb = find(f.index), find(nf.index)
+                    if ra != rb:
+                        par[ra] = rb
+        for f in bm.faces:
+            comp[(ob.name, f.index)] = find(f.index)
+        bm.free()
+    return comp
+
+
+def _face_dome_grid(objs, slots, x_half=0.27, z_lo=1.00, z_hi=1.31, step=0.005):
+    """The smooth surface the face would have if it had no features in it.
+
+    The eye sockets are pits and the face is convex, so the front depth is
+    sampled, the pits are found by a morphological closing, and the dome is
+    built from everything that is *not* a pit.  The result is the surface the
+    reference's paint was drawn on.
+    """
+    import numpy as np
+
+    g = _raster_front(objs, slots, x_half, z_lo, z_hi, step)
+    Y = _grid_fill(g["Y"])
+    k = 25
+    closed = _min_filter(_max_filter(Y, k), k)
+    pits = (closed - Y) > 0.008
+    solid = ~pits
+    num = _box_blur(np.where(solid, Y, 0.0), 9)
+    den = _box_blur(solid.astype(np.float64), 9)
+    g["dome"] = num / np.maximum(den, 1e-9)
+    g["Yf"] = Y
+    return g
+
+
+def _grid_sample(g, x, z):
+    """Sample the dome's depth at (x, z)."""
+    import numpy as np
+
+    i = int(np.clip(int(round((x + g["x_half"]) / g["step"])),
+                    0, g["nx"] - 1))
+    j = int(np.clip(int(round((z - g["z_lo"]) / g["step"])),
+                    0, g["nz"] - 1))
+    return float(g["dome"][j, i])
+
+
+def _loop_order(chain):
+    """The vertex indices of a boundary chain, in order along it.
+
+    A closed loop comes back to where it started, so the last index repeats
+    the first; an open chain does not.
+    """
+    order = [chain[0].verts[0].index, chain[0].verts[1].index]
+    rest = list(chain[1:])
+    while rest:
+        last = order[-1]
+        pick = None
+        for k, e in enumerate(rest):
+            if e.verts[0].index == last or e.verts[1].index == last:
+                pick = k
+                break
+        if pick is None:
+            break
+        e = rest.pop(pick)
+        other = (e.verts[1].index if e.verts[0].index == last
+                 else e.verts[0].index)
+        order.append(other)
+    return order
+
+
+def _poly_area(poly):
+    a = 0.0
+    n = len(poly)
+    for i in range(n):
+        x1, z1 = poly[i]
+        x2, z2 = poly[(i + 1) % n]
+        a += x1 * z2 - x2 * z1
+    return abs(a) * 0.5
+
+
+def _poly_inside(poly, px, pz):
+    inside = False
+    n = len(poly)
+    j = n - 1
+    for i in range(n):
+        xi, zi = poly[i]
+        xj, zj = poly[j]
+        if (zi > pz) != (zj > pz):
+            if px < (xj - xi) * (pz - zi) / (zj - zi) + xi:
+                inside = not inside
+        j = i
+    return inside
+
+
+def _close_zone_holes(objs, in_zone, mat_slot, snap=None, y_front=None,
+                      max_ring=160, max_span=0.110):
+    """Close the holes the clean-up opened.
+
+    A hole in the face is not a small thing: the camera looks straight through
+    it and sees the inside of the head, and it reads as a black speck punched
+    into the face.
+
+    Two things make this harder than it sounds.  The first is that a hole has
+    to be followed *out* of the face zone to be found at all - a chain cut off
+    at the edge of the zone is not a loop, and a loop that is not closed
+    cannot be filled.  The second is the eye socket: what is left of it is a
+    ragged ring around the painted eye, and the reference paints that eye on
+    one smooth surface, so the ring has to come back as a smooth patch of
+    face rather than as a flat lid.
+
+    So the hole is filled with a fan of triangles whose centre sits on the
+    dome - the surface the reference's paint was drawn on - and every vertex
+    of the patch is pulled onto it.  The socket stops being a socket.
+    """
+    import bmesh
+
+    total = 0
+    for ob in objs:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        bm.faces.index_update()
+        bm.verts.index_update()
+        bm.edges.index_update()
+        # The vertex index is the key everything else is looked up by, and
+        # the sequence's own lookup table goes stale the moment anything is
+        # created, so the map is built once and used from then on.
+        vmap = {v.index: v for v in bm.verts}
+
+        # Every boundary edge, not only the ones inside the zone: a hole
+        # that runs out of the zone has to be followed out of it, or the
+        # loop is cut in half and cannot be filled.
+        bedges = [e for e in bm.edges if len(e.link_faces) == 1]
+        if not bedges:
+            bm.free()
+            continue
+        by_vert = {}
+        for e in bedges:
+            for v in e.verts:
+                by_vert.setdefault(v.index, []).append(e)
+        seen = set()
+        chains = []
+        for e in bedges:
+            if e.index in seen:
+                continue
+            stack = [e]
+            seen.add(e.index)
+            chain = []
+            while stack:
+                cur = stack.pop()
+                chain.append(cur)
+                for v in cur.verts:
+                    for nb in by_vert.get(v.index, ()):
+                        if nb.index in seen:
+                            continue
+                        seen.add(nb.index)
+                        stack.append(nb)
+            chains.append(chain)
+
+        keep = []
+        for chain in chains:
+            verts = {v.index for e in chain for v in e.verts}
+            if not any(in_zone(vmap[i].co) for i in verts):
+                continue
+            if y_front is not None:
+                ys = [vmap[i].co.y for i in verts]
+                if sum(ys) / len(ys) > y_front:
+                    # the inside of the skull - not a hole a camera can see
+                    continue
+            keep.append(chain)
+        if not keep:
+            bm.free()
+            continue
+
+        fresh = []
+        for chain in keep:
+            order = _loop_order(chain)
+            if not order or len(order) < 3:
+                continue
+            closed = order[0] == order[-1]
+            ring = [vmap[i] for i in (order[:-1] if closed else order)]
+            # A chain that runs halfway round the head is not a hole in the
+            # face, it is the open bottom of the skull, and filling it with a
+            # fan would lay a sheet of triangles across the inside of the
+            # mouth.  Only the small ones are real holes.
+            xs = [v.co.x for v in ring]
+            zs = [v.co.z for v in ring]
+            if (len(ring) > max_ring
+                    or max(xs) - min(xs) > max_span
+                    or max(zs) - min(zs) > max_span):
+                continue
+            cx = sum(v.co.x for v in ring) / len(ring)
+            cz = sum(v.co.z for v in ring) / len(ring)
+            ys = [v.co.y for v in ring]
+            # The boundary of the hole is already sitting on the face, so
+            # the patch is grown inward from it: an outer ring welded to the
+            # rim, an inner ring halfway to the middle, and a fan in the
+            # centre.  The middle of a hole in a convex face is a little
+            # further forward than the rim - that is what the face does.
+            half = max(max(v.co.x for v in ring) - min(v.co.x for v in ring),
+                        max(v.co.z for v in ring) - min(v.co.z for v in ring)) * 0.5
+            cy = sum(ys) / len(ys) - (half * half) / (2.0 * 0.344)
+            centre = bm.verts.new((cx, cy, cz))
+            inner = []
+            for v in ring:
+                inner.append(bm.verts.new((
+                    v.co.x + (cx - v.co.x) * 0.45,
+                    v.co.y + (cy - v.co.y) * 0.45,
+                    v.co.z + (cz - v.co.z) * 0.45)))
+            n = len(ring)
+            for i in range(n):
+                j = (i + 1) % n
+                for quad in ((ring[i], ring[j], inner[j], inner[i]),
+                             (centre, inner[i], inner[j])):
+                    try:
+                        fresh.append(bm.faces.new(quad))
+                    except ValueError:
+                        pass
+        if fresh:
+            # A patch whose normal points the wrong way renders black, and
+            # recalc_face_normals cannot tell which way is out on an open
+            # shell, so the outward direction is decided here.
+            bmesh.ops.recalc_face_normals(bm, faces=fresh)
+            bm.normal_update()
+            for f in fresh:
+                c = f.calc_center_median()
+                radial = (c.x - 0.0, c.y + 0.314, c.z - 1.14)
+                if (radial[0] * f.normal.x + radial[1] * f.normal.y
+                        + radial[2] * f.normal.z) < 0.0:
+                    bmesh.ops.reverse_faces(bm, faces=[f])
+            for f in fresh:
+                f.material_index = mat_slot
+        print(f"[zone] {len(keep)} holes, {len(fresh)} new faces")
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+        total += len(fresh)
+    print(f"[zone] closed {total} hole faces")
+    return total
+
+
+
+def clean_face_zone(objs, m, regions=None, K=None, zone_x=0.225,
+                    zone_z_lo=None, zone_z_hi=None, eye_grow=1.55,
+                    keep_shell_frac=0.20, do_fill=True, drop_socket=False,
+                    socket_tol=0.006):
+    """Take everything off the face that is not the face.
+
+    Three things are living on the face that have no business being there:
+
+    * **Hair.**  Meshy read the painted brows in the photo as real hair and
+      rebuilt them as a sheet of strands floating in front of the forehead,
+      and the lock over the eye is a handful of very large triangles.  A black
+      strand lying across the painted iris is the one thing a photo can never
+      fix, so the hair in the face zone goes - the photo has its own brows
+      and its own fringe, and they are already in the texture.
+    * **The socket rim.**  Meshy rebuilt the eyes as a ball in a socket with a
+      raised rim, and that rim is a flat card of skin standing proud of the
+      cheek.  It is the one piece of the face the photo has no paint for, so
+      it comes back as a pale sheet on the side of the face.
+    * **Holes.**  The shells never met, and every gap is a window straight
+      through the head.
+
+    The hair goes by height: the fringe above the brow line is the hairstyle
+    and it stays, because it is what gives the head its shape.  The rim card
+    and the rest go by shell: of everything welded to the face, only the one
+    shell that *is* the head is kept.
+    """
+    import bmesh
+
+    hair_slot = ORDER.index("hair")
+    skin_slot = ORDER.index("skin")
+    face_slot = ORDER.index("face")
+    face_slots = (skin_slot, face_slot)
+
+    if regions is None:
+        regions = eye_regions(m, K or 340.0)
+    ez = regions[0]["z"]
+    rz = max(r["rz"] for r in regions)
+    if zone_z_hi is None:
+        zone_z_hi = ez + rz * 1.70
+    if zone_z_lo is None:
+        zone_z_lo = m["z0"] + 0.004
+
+    def in_zone(c, pad=0.0):
+        return (zone_z_lo - pad <= c.z <= zone_z_hi + pad
+                and abs(c.x) <= zone_x + pad)
+
+    eye_boxes = [(r["x"], r["z"], r["rx"] * eye_grow, r["rz"] * eye_grow * 1.1)
+                 for r in regions]
+
+    # ---- 1. which shell is the head? -----------------------------------
+    comp = _head_shells(objs, face_slots)
+    counts = {}
+    for ob in objs:
+        for poly in ob.data.polygons:
+            if poly.material_index not in face_slots:
+                continue
+            if not in_zone(poly.center):
+                continue
+            k = comp[(ob.name, poly.index)]
+            counts[k] = counts.get(k, 0) + 1
+    if not counts:
+        print("[zone] no face shells found, face zone left alone")
+        return 0
+    head = max(counts, key=counts.get)
+    keep_min = counts[head] * keep_shell_frac
+    print(f"[zone] face zone x<={zone_x:.3f} z {zone_z_lo:.3f}..{zone_z_hi:.3f}; "
+          f"{len(counts)} shells, head has {counts[head]} faces")
+
+    # ---- 2. take it off -----------------------------------------------
+    dropped = 0
+    flipped = 0
+    for ob in objs:
+        names = [s.material.name if s.material else ""
+                 for s in ob.material_slots]
+        hair_slots = {i for i, n in enumerate(names)
+                      if n.lower().startswith("hair")}
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.faces.ensure_lookup_table()
+        bm.faces.index_update()
+        doomed = []
+        flip = []
+        for f in bm.faces:
+            c = f.calc_center_median()
+            if f.material_index in hair_slots:
+                if in_zone(c):
+                    doomed.append(f)
+                    continue
+                # a single bang triangle can reach across the eye while its
+                # own centre sits well above it, so the centre is not the
+                # only test - the face's own box is the honest one.
+                x0, x1, z0, z1 = _fbox(f)
+                for ex, ez2, rx, rz2 in eye_boxes:
+                    if (x0 <= ex + rx and x1 >= ex - rx
+                            and z0 <= ez2 + rz2 and z1 >= ez2 - rz2):
+                        doomed.append(f)
+                        break
+                continue
+            if f.material_index in face_slots:
+                if not in_zone(c):
+                    continue
+                k = comp[(ob.name, f.index)]
+                if k == head or counts.get(k, 0) >= keep_min:
+                    # A face that looks at the inside of the head cannot wear
+                    # the photo - face_texture.apply throws those back to
+                    # plain skin, and a patch of plain skin sitting on a
+                    # painted face reads as a grey card.  It is turned the
+                    # right way round rather than deleted: it is part of the
+                    # face, and once it points outwards it wears the photo
+                    # like its neighbours and disappears into the paint.
+                    if c.y < m["cy"] - 0.04:
+                        radial = (c.x - m["cx"], c.y - m["cy"],
+                                  c.z - 0.5 * (m["z0"] + m["z1"]))
+                        if (radial[0] * f.normal.x + radial[1] * f.normal.y
+                                + radial[2] * f.normal.z) < 0.0:
+                            flip.append(f)
+                    continue
+                doomed.append(f)
+        if flip:
+            bmesh.ops.reverse_faces(bm, faces=flip)
+            flipped += len(flip)
+        if doomed:
+            bmesh.ops.delete(bm, geom=doomed, context="FACES")
+            dropped += len(doomed)
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    print(f"[zone] took {dropped} faces off the face, turned {flipped} round")
+
+    # ---- 2b. the socket's rim and its wall ------------------------------
+    #
+    # What is still standing in the eye region is the socket Meshy built: a
+    # rim of skin standing proud of the cheek, and a wall behind it sinking
+    # into the head.  Neither of them is in the reference - the eye is
+    # artwork on one smooth surface - so they are measured against the dome
+    # and taken away.  The face itself sits barely two millimetres in front
+    # of the dome, because the dome is the face with its bumps rounded off,
+    # so anything further out than that is not the face.
+    if drop_socket:
+        dome = _face_dome_grid(objs, face_slots)
+        socket = [(r["x"], r["z"], r["rx"] * 1.90, r["rz"] * 1.90 * 1.05)
+                  for r in regions]
+        socket.append((m["cx"], m.get("nose_z", 1.12), 0.075, 0.075))
+        off = 0
+        for ob in objs:
+            bm = bmesh.new()
+            bm.from_mesh(ob.data)
+            bm.faces.ensure_lookup_table()
+            doomed = []
+            for f in bm.faces:
+                if f.material_index not in face_slots:
+                    continue
+                c = f.calc_center_median()
+                if not in_zone(c):
+                    continue
+                hit = False
+                for sx, sz, srx, srz in socket:
+                    if ((c.x - sx) / srx) ** 2 + ((c.z - sz) / srz) ** 2 <= 1.0:
+                        hit = True
+                        break
+                if not hit:
+                    continue
+                d = c.y - _grid_sample(dome, c.x, c.z)
+                # Only what stands *in front* of the dome goes.  The socket's
+                # inner wall sits behind it and is harmless; the rim card
+                # standing proud of the cheek is what catches the light.
+                if d < -socket_tol:
+                    doomed.append(f)
+            if doomed:
+                bmesh.ops.delete(bm, geom=doomed, context="FACES")
+                off += len(doomed)
+            bm.to_mesh(ob.data)
+            bm.free()
+            ob.data.update()
+        print(f"[zone] took {off} socket faces off the dome")
+
+    # ---- 3. close what that opened -------------------------------------
+    if do_fill:
+        # A patch that closes a hole has to land on the surface the paint was
+        # drawn on, or it catches the light like a card lying on the cheek.
+        dome = _face_dome_grid(objs, face_slots)
+        _close_zone_holes(objs, in_zone, skin_slot,
+                          snap=lambda x, z: _grid_sample(dome, x, z),
+                          y_front=m["cy"] - 0.06)
+    return dropped
+
+
 def main():
     src = SRC if os.path.exists(SRC) else SRC_LOW
     objs = load_source(src)
@@ -1227,9 +2977,44 @@ def main():
     # no longer point at the same faces.
     mark_hair_shells(objs, hair_shell_faces(
         objs, lo.z + Z_NECK_FRAC * (hi.z - lo.z)))
-    paint_face(objs, mats, lo, hi, m)
+    # The hair has to come off the painted eyes, and it can only be found by
+    # its place - the locks Meshy left over the eye are small shells that the
+    # region test files under hair.
+    m["K"] = photo_scale(objs, m)
+    eyes = eye_regions(m, m["K"])
+    trim_eye_hair(objs, m, regions=eyes)
+    # The reference's face is painted, not modelled. Clean up what Meshy
+    # left there - the sliver triangles, the sawtooth around the sockets,
+    # the cracks in the skin, the rebuilt eyebrows - so that the projected
+    # photo is the only set of features on the face.
+    remove_degenerate_faces(
+        objs, slots=(ORDER.index("skin"), ORDER.index("face")))
+    smooth_socket_surface(objs, m)
+    flatten_face_features(objs, m, fill_only=True,
+                          nose=(0.0, m.get("nose_z", 1.12), 0.055))
+    # The painted eye has to land on a smooth surface, and Meshy rebuilt the
+    # socket as a ball in a raised rim. Put the whole socket back on the dome
+    # the reference paints on, and the rim and the shards stop crossing the
+    # painted eye.
+    m["K"] = photo_scale(objs, m)
+    eyes = eye_regions(m, m["K"])
+    flatten_eye_dome(objs, m, m["K"], regions=eyes,
+                     move=1.35, gap=1.18, blend=1.0, prune=0.020,
+                     drop_scale=1.30)
+    bury_brows(objs, m)
+    # The face itself has to be there before anything is painted on it: the
+    # hair Meshy grew out of the painted brows, the card of skin the eye
+    # socket left standing proud of the cheek, and the holes between the
+    # shells all have to go first.
+    clean_face_zone(objs, m, regions=eyes)
+    m["K"] = photo_scale(objs, m)
+    paint_face(objs, mats, lo, hi, m, regions=eyes)
     # after paint_face: the face pass flattens every non-face UV to (0,0)
     uv_plaid(objs, lo, hi, ORDER.index("plaid"))
+
+    # The skull is an open shell; without a floor you can see straight through
+    # the head under the chin and out the back of it.
+    plug_head_bottom(objs, mats, m)
 
     for ob in objs:
         if ob.type == "MESH":
@@ -1264,4 +3049,5 @@ def main():
     render_views(setup_scene())
 
 
-main()
+if os.environ.get("CHIBI_RUN", "1") == "1":
+    main()

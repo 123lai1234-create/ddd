@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="band" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#04070C" stop-opacity="0"/>
+      <stop offset="12%" stop-color="#04070C" stop-opacity="0.74"/>
+      <stop offset="88%" stop-color="#04070C" stop-opacity="0.74"/>
+      <stop offset="100%" stop-color="#04070C" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="vig" cx="0.5" cy="0.5" r="0.72">
+      <stop offset="52%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.6"/>
+    </radialGradient>
+  </defs>
+
+  <image href="{{BG_IMAGE}}" xlink:href="{{BG_IMAGE}}" x="0" y="0" width="1080" height="1920" preserveAspectRatio="xMidYMid slice"/>
+  <rect width="1080" height="1920" fill="#04070C" opacity="0.3"/>
+  <rect x="0" y="440" width="1080" height="1400" fill="url(#band)"/>
+  <rect width="1080" height="1920" fill="url(#vig)"/>
+
+  <g opacity="0.2" fill="none" stroke="{{COLOR1}}" stroke-width="2">
+    <circle cx="540" cy="700" r="300"/>
+    <circle cx="540" cy="700" r="380"/>
+    <circle cx="540" cy="700" r="460"/>
+  </g>
+
+  <g opacity="0.92" fill="none" stroke="{{COLOR1}}" stroke-width="7">
+    <circle cx="130" cy="426" r="28"/>
+    <circle cx="203" cy="426" r="28"/>
+  </g>
+
+  {{LYRIC_LINES}}
+
+  <rect x="110" y="1290" width="104" height="12" rx="6" fill="{{COLOR1}}"/>
+
+  <text x="110" y="1430" font-family="{{FONT}}" font-size="118" font-weight="bold"
+        fill="{{TEXTCOLOR}}" letter-spacing="2">{{TITLE}}</text>
+
+  <text x="110" y="1524" font-family="{{FONT}}" font-size="46" fill="{{COLOR1}}"
+        letter-spacing="8">{{ARTIST}}</text>
+
+  <g opacity="0.55">
+    <text x="110" y="1790" font-family="{{FONT}}" font-size="30" fill="{{TEXTCOLOR}}" opacity="0.65">{{SUBTITLE}}</text>
+  </g>
+  <line x1="110" y1="1822" x2="970" y2="1822" stroke="{{COLOR1}}" stroke-width="1" opacity="0.3"/>
+</svg>
