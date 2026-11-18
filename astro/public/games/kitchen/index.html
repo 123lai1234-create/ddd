@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>不說廚房｜多人合作料理遊戲</title>
+<meta name="description" content="1–6 人即時合作料理遊戲：開房拿房號、朋友加入一起接單做菜、出餐賺錢。香菇柯基當主廚，台灣家常菜 8 道，零下載免安裝。" />
+<meta name="theme-color" content="#c65d21" />
+<!-- 無尾斜線網址也會由 Vercel 回 index.html，沒有 base 時 ./style.css、./game.js
+     會被解析到 /games/ 下 404。跟農場、小茶坊同一招：base 釘死在遊戲資料夾。 -->
+<base href="/games/kitchen/" />
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<div class="kc-app" id="app">
+  <header class="kc-top">
+    <button class="kc-title" id="titleBtn" type="button" aria-label="不說廚房">
+      <span class="kc-title-icon">🍄🐶</span>
+      <span class="kc-title-name">不說廚房</span>
+      <span class="kc-title-sub">多人合作料理</span>
+    </button>
+    <div class="kc-stats" id="topStats" role="status" hidden>
+      <span title="金錢">🪙<b id="goldVal">0</b></span>
+      <span title="班次">🕐<b id="shiftVal">第 1 班</b></span>
+      <span title="出餐">🍽️<b id="servedVal">0</b></span>
+    </div>
+    <button class="kc-icon-btn" id="helpBtn" type="button" aria-label="玩法說明">❓</button>
+    <button class="kc-icon-btn" id="leaveBtn" type="button" aria-label="離開房間" hidden>🚪</button>
+  </header>
+
+  <!-- 加入畫面 -->
+  <main class="kc-screen" id="screen-join">
+    <div class="kc-recovery" id="recoveryNote" hidden></div>
+    <section class="kc-card kc-hero">
+      <div class="kc-hero-emoji">🧑‍🍳🍲</div>
+      <h1>不說廚房</h1>
+      <p class="kc-hero-desc">香菇柯基當主廚，1–6 人一起開伙！<br />開房拿房號，朋友輸入房號加入，<br />接單、備料、煎煮、出餐，兩班半內賺飽飽。</p>
+    </section>
+
+    <section class="kc-card">
+      <label class="kc-label" for="nickInput">你的暱稱</label>
+      <input id="nickInput" class="kc-input" type="text" maxlength="12" placeholder="例如：阿哲" autocomplete="off" />
+      <p class="kc-hint" id="nickHint">暱稱會顯示在廚房裡，第一次進來會幫你記住。</p>
+
+      <span class="kc-label">難度</span>
+      <div class="kc-diff" role="radiogroup" aria-label="難度">
+        <label class="kc-diff-opt"><input type="radio" name="diff" value="easy" /> <b>簡單</b><span>客人少・等得久</span></label>
+        <label class="kc-diff-opt"><input type="radio" name="diff" value="normal" checked /> <b>普通</b><span>正常客流・8 道菜</span></label>
+        <label class="kc-diff-opt"><input type="radio" name="diff" value="hard" /> <b>困難</b><span>客人多・煮得慢</span></label>
+      </div>
+
+      <button class="kc-btn primary big" id="createBtn" type="button">🍳 開一間廚房</button>
+      <div class="kc-join-row">
+        <input id="codeInput" class="kc-input code" type="text" maxlength="4" placeholder="房號 4 碼" autocomplete="off" autocapitalize="characters" />
+        <button class="kc-btn" id="joinBtn" type="button">加入朋友的廚房</button>
+      </div>
+      <button class="kc-btn ghost" id="resumeBtn" type="button" hidden>↩️ 回到上次的廚房</button>
+    </section>
+
+    <section class="kc-card">
+      <h2>公開廚房</h2>
+      <p class="kc-hint">還在等人的廚房，點一個直接加入。</p>
+      <div id="publicRooms"><p class="kc-hint">載入中…</p></div>
+      <button class="kc-btn ghost small" id="refreshRoomsBtn" type="button">重新整理</button>
+    </section>
+  </main>
+
+  <!-- 大廳 -->
+  <main class="kc-screen" id="screen-lobby" hidden>
+    <div class="kc-recovery" id="recoveryNoteLobby" hidden></div>
+    <section class="kc-card kc-lobby">
+      <p class="kc-hint">把房號告訴朋友，一起來開伙</p>
+      <div class="kc-code" id="roomCodeBig">----</div>
+      <button class="kc-btn" id="copyCodeBtn" type="button">📋 複製房號</button>
+      <p class="kc-hint" id="lobbyDiff"></p>
+    </section>
+    <section class="kc-card">
+      <h2>廚師們 <span class="kc-count" id="playerCount"></span></h2>
+      <ul class="kc-players" id="lobbyPlayers"></ul>
+      <button class="kc-btn primary big" id="startBtn" type="button">🔥 開工！</button>
+      <p class="kc-hint" id="startHint">只有房主可以開工，1 個人也能先練手。</p>
+    </section>
+  </main>
+
+  <!-- 遊戲畫面 -->
+  <main class="kc-screen" id="screen-game" hidden>
+    <div class="kc-shiftbar">
+      <span id="shiftLabel">第 1 班</span>
+      <div class="kc-shift-track"><div class="kc-shift-fill" id="shiftFill"></div></div>
+      <b id="shiftClock">2:30</b>
+    </div>
+    <section>
+      <h2 class="kc-sec">📋 客人的單 <span class="kc-hint" id="orderHint"></span></h2>
+      <div class="kc-orders" id="orders"></div>
+    </section>
+    <section>
+      <h2 class="kc-sec">🧑‍🍳 廚房工作站</h2>
+      <div class="kc-stations" id="stations"></div>
+    </section>
+    <section>
+      <h2 class="kc-sec">🧑‍🍳 廚師們</h2>
+      <ul class="kc-players" id="gamePlayers"></ul>
+    </section>
+    <section>
+      <h2 class="kc-sec">📜 廚房日誌</h2>
+      <ul class="kc-log" id="gameLog"></ul>
+    </section>
+  </main>
+
+  <!-- 結算 -->
+  <main class="kc-screen" id="screen-settle" hidden>
+    <section class="kc-card kc-settle">
+      <div class="kc-hero-emoji">🎉</div>
+      <h1>打烊了！</h1>
+      <p class="kc-settle-line">三班共賺 <b id="finalMoney">0</b> 元・出餐 <b id="finalServed">0</b> 道</p>
+      <p class="kc-settle-line">總分 <b id="finalScore">0</b></p>
+      <h2>本日貢獻榜</h2>
+      <ol class="kc-rank" id="finalRank"></ol>
+      <button class="kc-btn primary big" id="againBtn" type="button">再開一間廚房</button>
+    </section>
+  </main>
+</div>
+
+<div class="kc-modal-root" id="modalRoot"></div>
+<div class="kc-toast" id="toast" role="status"></div>
+
+<script src="./game.js"></script>
+</body>
+</html>
