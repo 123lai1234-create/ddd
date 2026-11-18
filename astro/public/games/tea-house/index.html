@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>我的小茶坊｜採茶製茶經營小遊戲</title>
+<meta name="description" content="單人採茶製茶經營小遊戲：手採茶芽、製茶販售、抽籤收集設備。純前端、免登入，進度存在你的瀏覽器裡。" />
+<meta name="theme-color" content="#2f5d3a" />
+<!-- 無尾斜線網址也會由 Vercel 回 index.html，沒有 base 時 ./style.css、./game.js
+     會被解析到 /games/ 下 404。跟 lockdown-survival 同一招：base 釘死在遊戲資料夾。 -->
+<base href="/games/tea-house/" />
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<div class="th-app" id="app">
+  <header class="th-top">
+    <button class="th-shop" id="shopBtn" type="button" aria-label="成績單">
+      <span class="th-shop-icon" id="shopIcon">🧑‍🌾</span>
+      <span class="th-shop-name">我的小茶坊</span>
+      <span class="th-shop-lv" id="shopLv">Lv.1</span>
+    </button>
+    <div class="th-stamina" id="staminaBox" title="體力：每 4 分鐘回復 1 點">
+      <span>⚡</span><b id="staminaVal">50/50</b><small id="staminaTimer"></small>
+    </div>
+    <button class="th-icon-btn" id="taskBtn" type="button" aria-label="今日任務">📋<i class="th-dot" id="taskDot" hidden></i></button>
+    <button class="th-icon-btn" id="ledgerBtn" type="button" aria-label="我的帳本">📒</button>
+    <button class="th-icon-btn" id="settingsBtn" type="button" aria-label="設定">⚙️</button>
+  </header>
+
+  <main class="th-main" id="main">
+    <section class="th-tab" id="tab-map" data-tab="map"></section>
+    <section class="th-tab" id="tab-make" data-tab="make" hidden></section>
+    <section class="th-tab" id="tab-gacha" data-tab="gacha" hidden></section>
+    <section class="th-tab" id="tab-equip" data-tab="equip" hidden></section>
+    <section class="th-tab" id="tab-cabinet" data-tab="cabinet" hidden></section>
+    <section class="th-tab" id="tab-rank" data-tab="rank" hidden></section>
+  </main>
+
+  <nav class="th-bottom" aria-label="分頁">
+    <button type="button" data-tab="map" class="active">🌿<span>茶菁</span></button>
+    <button type="button" data-tab="make">🍵<span>製茶</span></button>
+    <button type="button" data-tab="gacha">🎲<span>抽籤</span></button>
+    <button type="button" data-tab="equip">🧰<span>設備</span></button>
+    <button type="button" data-tab="cabinet">🗄️<span>茶櫃</span></button>
+    <button type="button" data-tab="rank">🏆<span>排行</span></button>
+  </nav>
+</div>
+
+<!-- 採茶小遊戲 -->
+<div class="th-harvest" id="harvestOverlay" hidden>
+  <div class="th-harvest-box">
+    <div class="th-harvest-top">
+      <div class="th-harvest-info">
+        <b id="hvLevel">1-1</b>
+        <span id="hvScore">0 分</span>
+        <span id="hvCombo"></span>
+      </div>
+      <div class="th-harvest-time"><span id="hvTime">60</span>s</div>
+      <button type="button" class="th-harvest-pause" id="hvPause" aria-label="暫停">⏸</button>
+    </div>
+    <div class="th-harvest-progress"><i id="hvProgress"></i></div>
+    <div class="th-harvest-grid" id="hvGrid"></div>
+    <div class="th-harvest-hint" id="hvHint">茶芽冒出來、發亮時，往上拉起來！點按不算喔。</div>
+    <button type="button" class="th-harvest-monkey" id="hvMonkey" hidden>🐒🍌</button>
+  </div>
+</div>
+
+<div class="th-modal-root" id="modalRoot"></div>
+<div class="th-toast" id="toast" role="status"></div>
+
+<script src="./game.js"></script>
+</body>
+</html>

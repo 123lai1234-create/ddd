@@ -6,6 +6,11 @@
 <title>禁閉逃殺 Lockdown Survival</title>
 <meta name="description" content="封閉設施裡的六天。基因、物資、毒氣、暗影——六回合後按生命值排名。" />
 <meta name="theme-color" content="#0b0f14" />
+<!-- 無尾斜線網址（/games/lockdown-survival）也會由 Vercel 回 index.html，
+     沒有 base 時 ./styles.css、./js/* 會被解析到 /games/ 下 404，
+     造成無樣式、隱藏區塊全現形、難度／對手選項空白。跟 confinement-escape
+     鏡像同一招：base 釘死在遊戲資料夾，兩種網址都通。 -->
+<base href="/games/lockdown-survival/" />
 <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="ls-body">

@@ -24,6 +24,22 @@ already-patched file is a no-op, and each step prints how many times it fired.
    music/: battles fall back to the Epic Boss Battle loop, escape success to the
    Triumphant fanfare.
 
+4. 3D viewer (2026-11-10). The 51 Q-style doll characters have GLBs at
+   models/<id>.glb. The card detail modal (showCard) gains a "3D 檢視" button
+   under the name/stats in the detail header that opens a model-viewer overlay
+   (drag to rotate, scroll to zoom). The viewer and its Draco decoder are
+   vendored in the game folder (model-viewer.min.js, draco/) - no third-party
+   requests. Anchors are upstream text, so a re-sync + re-run of this script
+   re-applies it. (2026-11-10 晚：按鈕從底部列移到頭部；手機 390px 上詳情內容
+   951px、可見框 715px，底部按鈕落在折疊線下點不到。）
+   (2026-11-11: GLBs moved out of the deployment to jsDelivr CDN
+   (github.com/123lai1234-create/ddd-models, tag v1) so the 51 models
+   (~26 MB) no longer count against the Vercel Hobby 100 MB upload limit.
+   model-viewer + draco/ stay vendored locally; only the .glb files come
+   from the CDN. The URL is assembled in VIEWER_JS via GLB_CDN_BASE, and a
+   migration rule below rewrites the old relative models/<id>.glb URL in an
+   already-patched index.html.)
+
 Reads and writes UTF-8 without a BOM, because the file is a faithful mirror of
 upstream and the byte layout matters for future re-syncs.
 """
@@ -39,6 +55,18 @@ TARGET = os.path.join(
 )
 
 OGG_SRC = re.compile(r'(src="music/)([^"]+)\.ogg(")')
+
+# 5. BGM credits removal (2026-11-17). The footer <div> lists every BGM
+# track's author / OpenGameArt source / CC0 licence plus a "toggle BGM in
+# settings" hint. The user asked for that whole text block to go. The
+# 🐞 "game stuck / report problem" button lives in the same <div>, so the
+# pattern stops right before it - the button and the <audio> elements stay,
+# only the credit text is removed. Idempotent: once removed the anchor
+# (🎵 背景音樂) is gone, so re-runs are no-ops.
+BGM_CREDIT = re.compile(
+    r'    <div>🎵 背景音樂<br>.*?右上角 ⚙ 設定裡可以開關背景音樂。<br>\n',
+    re.DOTALL,
+)
 
 # The mirror is served from /games/confinement-escape/, so every relative asset
 # path (images/, music/, sfx/, voice/) has to resolve from that folder. Upstream
@@ -158,6 +186,68 @@ YOUTUBE_REMOVALS = [
     ),
 ]
 
+# ---- 4. 3D viewer (2026-11-10) ----
+# GLB 模型走 jsDelivr CDN（2026-11-11）：新版 51 隻臉貼圖 GLB 合計約 26 MB，
+# 放進部署會讓整包衝破 Vercel Hobby 100 MB 上限，所以模型本體放在公開 repo
+# 123lai1234-create/ddd-models（models/<id>.glb），用固定 tag v4 當正式網址
+# （tag 網址是 immutable 快取，不怕 @main 的同步延遲；新版模型出新 tag 再改
+# 這裡，並把舊 tag 加進 OLD_GLB_CDN_BASES 讓遷移規則換掉它）。model-viewer
+# 與 Draco 解碼器仍是本站自帶檔案，不連外站的只有模型。
+GLB_CDN_BASE = 'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v4/models'
+OLD_GLB_CDN_BASES = ['https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v1/models',
+                     'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v2/models',
+                     'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v3/models']
+VIEWER_CSS_ANCHOR = '#modal.show{display:flex}\n'
+VIEWER_CSS = '''/* 3D 檢視浮層（model-viewer；按需載入，不影響首屏） */
+.mvwrap{position:relative;width:100%;height:62vh;height:62dvh;min-height:320px;background:#0b0d10;border-radius:12px;overflow:hidden}
+.mvwrap model-viewer{width:100%;height:100%;display:block;background:radial-gradient(circle at 50% 30%,#232830,#0b0d10 70%)}
+.mvloading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--dim)}
+.mverr{padding:12px;text-align:center;color:var(--dim)}
+@media (max-width:480px){.mvwrap{height:56vh;height:56dvh;min-height:280px}}
+'''
+VIEWER_JS_ANCHOR = 'function closeModal(){$("#modal").classList.remove("show");}\n'
+VIEWER_JS = '''// ---- 3D 檢視：51 隻 Q 版娃娃風角色 GLB（jsDelivr CDN，見 GLB_CDN_BASE），按需載入 ----
+// model-viewer 與 Draco 解碼器皆為本站自帶檔案（model-viewer.min.js、draco/）；
+// 模型本體走 jsDelivr CDN（github.com/123lai1234-create/ddd-models@v2），
+// 不放進 Vercel 部署，避開 Hobby 100 MB 上限。
+const GLB3D=new Set(['arsonist','ashen','assassin','bartender','berserker','bodyguard','bomb','boss','butcher','chair','chef','chemist','climber','courier','detective','diver','exorcist','fatty','fatty2','gambler','geneFreak','gourmet','hacker','herbalist','hunter','janitor','leader','locker','lucky','medic','mediocre','merc','miner','paramedic','qing','quilt','runner','scavenger','sentinel','shade','sniper','sock','survivor','tamer','tin','torch','trucker','tycoon','vampire','veteran','witch']);
+let MV_READY=null;
+function mvLoad(){
+  if(MV_READY)return MV_READY;
+  self.ModelViewerElement=Object.assign(self.ModelViewerElement||{},{dracoDecoderLocation:'draco/'});
+  MV_READY=import('./model-viewer.min.js').then(()=>{
+    const MV=customElements.get('model-viewer');
+    if(MV&&MV.setDRACODecoderLocation)MV.setDRACODecoderLocation('draco/');
+  }).catch(e=>{MV_READY=null;throw e;});
+  return MV_READY;
+}
+function open3D(id){
+  const c=CARDS[id];
+  openModal(`<h3 style="margin:0 0 8px">🎥 ${c.name} · 3D 檢視</h3>
+  <div class="mvwrap"><div class="mvloading">載入 3D 模型中…</div></div>
+  <div class="dim small" style="margin-top:8px">拖曳旋轉、滾輪／雙指縮放</div>
+  <div class="row" style="margin-top:12px"><button onclick="showCard('${id}')">← 返回角色</button><button onclick="closeModal()" style="margin-left:auto">關閉</button></div>`);
+  mvLoad().then(()=>{
+    const wrap=document.querySelector('.mvwrap');
+    if(!wrap)return;
+    wrap.innerHTML=`<model-viewer src="__GLB_CDN_BASE__/${id}.glb" alt="${c.name} 3D" camera-controls camera-orbit="0deg 82deg 5.2m" camera-target="0m 1.0m 0m" field-of-view="30deg" exposure="0.85" shadow-intensity="0.7" interaction-prompt="none" ar-modes="none"></model-viewer>`;
+    const mv=wrap.querySelector('model-viewer');
+    mv.addEventListener('error',()=>{
+      if(document.querySelector('.mvwrap')===wrap)wrap.innerHTML=`<div class="mverr">3D 模型載入失敗，請檢查連線後再試一次。</div>`;
+    });
+  }).catch(()=>{
+    const el=document.querySelector('.mvloading');
+    if(el)el.textContent='3D 檢視器載入失敗，請檢查連線後再試一次。';
+  });
+}
+'''.replace('__GLB_CDN_BASE__', GLB_CDN_BASE)
+VIEWER_BTN_OLD = '${canBreak(id)?`<button class="gold" onclick="BR_RES=null;confirmBreak(\'${id}\')">✨ 突破（${brOf(id)}→${brOf(id)+1}）</button>`:""}\n      <button onclick="closeModal()" style="margin-left:auto">關閉</button></div>'
+VIEWER_BTN_NEW = '${canBreak(id)?`<button class="gold" onclick="BR_RES=null;confirmBreak(\'${id}\')">✨ 突破（${brOf(id)}→${brOf(id)+1}）</button>`:""}\n      ${GLB3D.has(id)?`<button class="pri" onclick="open3D(\'${id}\')">🎥 3D 檢視</button>`:""}\n      <button onclick="closeModal()" style="margin-left:auto">關閉</button></div>'
+# 2026-11-10 晚：按鈕從底部列移到詳情頭部（名字／數值列下方）。手機 390px 上
+# 詳情內容 951px、可見框 715px，底部按鈕落在折疊線下點不到；頭部按鈕不捲動
+# 就看得到。錨點取數值列尾端（全檔唯一），避開全形空白比對。
+VIEWER_BTN_TOP_ANCHOR = '💨 ${sv("spd",s.spd)}</div>\n'
+VIEWER_BTN_TOP = '    ${GLB3D.has(id)?`<div class="row" style="margin-top:8px"><button class="pri" onclick="open3D(\'${id}\')">🎥 3D 檢視</button></div>`:""}\n'
 
 def main():
     with io.open(TARGET, 'r', encoding='utf-8', newline='') as fh:
@@ -186,6 +276,46 @@ def main():
             youtube_hits += n
             fired += 1
 
+    # 5. BGM credits removal (2026-11-17): footer credit text only.
+    bgm_hits = len(BGM_CREDIT.findall(src))
+    if bgm_hits:
+        src = BGM_CREDIT.sub('    <div>\n', src, count=1)
+
+    # 4. 3D viewer: CSS, JS, and the showCard button. Each fires only when
+    # its marker is absent, so re-running on an already-patched file is a
+    # no-op (and a re-sync that wipes the viewer gets all four back).
+    viewer_fired = 0
+    if '/* 3D 檢視浮層' not in src and VIEWER_CSS_ANCHOR in src:
+        src = src.replace(VIEWER_CSS_ANCHOR, VIEWER_CSS_ANCHOR + VIEWER_CSS, 1)
+        viewer_fired += 1
+    if 'function open3D(id)' not in src and VIEWER_JS_ANCHOR in src:
+        src = src.replace(VIEWER_JS_ANCHOR, VIEWER_JS_ANCHOR + VIEWER_JS, 1)
+        viewer_fired += 1
+    # 2026-11-10 晚：按鈕改放詳情頭部（名字／數值列下方）。舊版在底部列的按鈕
+    # 若還在，先拆掉；再把按鈕插到頭部。只有頭部錨點存在時才拆底部按鈕，
+    # 避免錨點失效時按鈕整個消失。
+    top_present = VIEWER_BTN_TOP in src
+    if VIEWER_BTN_NEW in src and (top_present or VIEWER_BTN_TOP_ANCHOR in src):
+        src = src.replace(VIEWER_BTN_NEW, VIEWER_BTN_OLD, 1)
+        viewer_fired += 1
+    if not top_present and VIEWER_BTN_TOP_ANCHOR in src:
+        src = src.replace(VIEWER_BTN_TOP_ANCHOR, VIEWER_BTN_TOP_ANCHOR + VIEWER_BTN_TOP, 1)
+        viewer_fired += 1
+    # 2026-11-11: GLB 改走 jsDelivr CDN。已套過舊版補丁的 index.html 裡還
+    # 留著相對路徑 src="models/${id}.glb"，把它改成 CDN 網址；新鮮重同步的
+    # 檔案則由上面新版 VIEWER_JS 直接帶 CDN 網址，不需要這條。
+    if 'src="models/${id}.glb"' in src:
+        src = src.replace('src="models/${id}.glb"',
+                          'src="' + GLB_CDN_BASE + '/${id}.glb"', 1)
+        viewer_fired += 1
+    # 2026-11-11: GLB 改走 v2 tag。已套過 v1 補丁的 index.html 裡 VIEWER_JS
+    # 已存在（不會重插），裡面 baked 的 v1 網址要換成新版 GLB_CDN_BASE；
+    # 舊 tag 之後都加進 OLD_GLB_CDN_BASES。
+    for old_base in OLD_GLB_CDN_BASES:
+        if old_base in src:
+            src = src.replace(old_base, GLB_CDN_BASE)
+            viewer_fired += 1
+
     with io.open(TARGET, 'w', encoding='utf-8', newline='') as fh:
         fh.write(src)
 
@@ -204,6 +334,8 @@ def main():
     print('audio src  .ogg -> .mp3 : %d' % before_audio)
     print('img loading hints added : %d' % before_img)
     print('youtube edits applied   : %d (%d rule(s) fired)' % (youtube_hits, fired))
+    print('bgm credits removed     : %d' % bgm_hits)
+    print('3d viewer rules applied : %d (of 4)' % viewer_fired)
     print('remaining .ogg refs     : %d' % len(OGG_SRC.findall(src)))
     print('youtube leftovers       : %d' % leftovers)
     print('BOM present             : %s' % (raw[:3] == b'\xef\xbb\xbf'))

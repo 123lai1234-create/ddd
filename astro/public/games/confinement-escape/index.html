@@ -81,6 +81,12 @@ h3{margin:14px 0 8px;font-size:16px;color:#c9ced5}
 /* modal */
 #modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 #modal.show{display:flex}
+/* 3D 檢視浮層（model-viewer；按需載入，不影響首屏） */
+.mvwrap{position:relative;width:100%;height:62vh;height:62dvh;min-height:320px;background:#0b0d10;border-radius:12px;overflow:hidden}
+.mvwrap model-viewer{width:100%;height:100%;display:block;background:radial-gradient(circle at 50% 30%,#232830,#0b0d10 70%)}
+.mvloading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--dim)}
+.mverr{padding:12px;text-align:center;color:var(--dim)}
+@media (max-width:480px){.mvwrap{height:56vh;height:56dvh;min-height:280px}}
 .mbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:520px;width:100%;max-height:85vh;max-height:85dvh;overflow:auto;padding:18px}
 button,.door,.ccard,.ucard,.gcard,.chap,.bosscard,.item,.pull{touch-action:manipulation}
 .detail{display:flex;gap:14px}
@@ -510,27 +516,7 @@ footer.credit a{color:var(--gold)}
   <main id="view"></main>
   <footer class="credit">
     
-    <div>🎵 背景音樂<br>
-      ・主頁等選單：<b>Ambient Horror Track 01</b> — Music by Cleyton Kauffman（<a href="https://soundcloud.com/cleytonkauffman" target="_blank" rel="noopener">soundcloud.com/cleytonkauffman</a>）・
-      出處 <a href="https://opengameart.org/content/ambient-horror-track-01" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      ・遠征探索：<b>Determined Pursuit (epic orchestra loop)</b> — by Emma_MA・
-      出處 <a href="https://opengameart.org/content/determined-pursuit-epic-orchestra-loop" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      ・招募／隊伍／裝備：<b>Medieval: King's Feast</b> — by RandomMind（<a href="http://www.patreon.com/randommind" target="_blank" rel="noopener">Patreon</a>）・
-      出處 <a href="https://opengameart.org/content/medieval-kings-feast" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      ・故事頁（老國王）：<b>Fantasy Choir 2</b> — by cesisco（César da Rocha）・
-      出處 <a href="https://opengameart.org/content/fantasy-choir-3-orchestral-pieces" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      ・練功房：<b>Megasong</b> — by Emma_MA・
-      出處 <a href="https://opengameart.org/content/megasong" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      ・成就：<b>Triumphant</b> — by Emma_MA・
-      出處 <a href="https://opengameart.org/content/triumphant" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      ・商店：<b>Bossa Nova</b> — by Joth・
-      出處 <a href="https://opengameart.org/content/bossa-nova" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      ・競技場：<b>Epic Boss Battle [Seamlessly Looping]</b> — by Juhani Junkala（<a href="https://opengameart.org/content/boss-battle-music" target="_blank" rel="noopener">OpenGameArt</a>，上傳者 SubspaceAudio）・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      ・雙人對決：<b>JRPG Epic Rock Battle Theme #1</b> — by HydroGene・
-      出處 <a href="https://opengameart.org/content/jrpg-epic-rock-battle-theme-1" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      ・無盡深淵：<b>Dark Cavern Ambient</b> — by Paul Wortmann・
-      出處 <a href="https://opengameart.org/content/dark-cavern-ambient" target="_blank" rel="noopener">OpenGameArt</a>・授權 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a><br>
-      右上角 ⚙ 設定裡可以開關背景音樂。<br>
+    <div>
       <button class="mini" style="margin-top:6px" onclick="openStuck()">🐞 遊戲卡住了／回報問題</button></div>
     <audio id="bgm_main" src="music/ambient_horror_track01.mp3" loop preload="auto"></audio>
     <audio id="bgm_run" src="music/determined_pursuit_loop.mp3" loop preload="none"></audio>
@@ -827,7 +813,8 @@ const MONSTERS={
   eraser:{name:"抹除者",emoji:"🫥",r:"R",hp:38,atk:13,def:5,spd:7,dr:1,
     skill:{name:"抹除",cd:2,t:"enemy",kind:"dmg",desc:"造成1.5倍攻擊傷害，目標攻擊-2（2回合）。",use(B,u,t){hit(B,u,t,1.5);if(t.alive)buff(B,t,"atk",-2,2);}},
     passive:{name:"空白之軀",desc:"受到的傷害-1。"}},
-  editor:{name:"剪輯師",emoji:"✂️",r:"SSR",hp:150,atk:18,def:7,spd:7,dr:2,
+  /* ===== MIRROR FEATURE: BOSS RENAME 魔王改名「編輯者」（原上游名「剪輯師」；第 14 章劇情同步改名，見 MIRROR_FEATURES.md D 節）===== */
+  editor:{name:"編輯者",emoji:"✂️",r:"SSR",hp:150,atk:18,def:7,spd:7,dr:2,
     skill:{name:"剪掉",cd:3,t:"enemy",kind:"dmg",desc:"造成1.8倍攻擊傷害，並把目標的名字剪掉：標記2回合，受到的傷害+50%。",
       use(B,u,t){blog(B,"✂️ 「這個人，不需要出現。」","bad");hit(B,u,t,1.8);if(t.alive){t.st.mark=2;fx(B,t,"被剪掉","sk");}}},
     passive:{name:"無情剪輯",desc:"受到的傷害-2；對被標記的目標，造成的傷害+25%。擴散攻擊：單體攻擊造成傷害時，其餘敵人各受到該傷害的20%（固定傷害，不吃防禦）。"}},
@@ -1493,6 +1480,38 @@ function toast(msg){
 }
 function openModal(html){$("#mbox").innerHTML=html;$("#modal").classList.add("show");}
 function closeModal(){$("#modal").classList.remove("show");}
+// ---- 3D 檢視：51 隻 Q 版娃娃風角色 GLB（models/<id>.glb），按需載入 ----
+// model-viewer 與 Draco 解碼器皆為本站自帶檔案（model-viewer.min.js、draco/），不連外站。
+const GLB3D=new Set(['arsonist','ashen','assassin','bartender','berserker','bodyguard','bomb','boss','butcher','chair','chef','chemist','climber','courier','detective','diver','exorcist','fatty','fatty2','gambler','geneFreak','gourmet','hacker','herbalist','hunter','janitor','leader','locker','lucky','medic','mediocre','merc','miner','paramedic','qing','quilt','runner','scavenger','sentinel','shade','sniper','sock','survivor','tamer','tin','torch','trucker','tycoon','vampire','veteran','witch']);
+let MV_READY=null;
+function mvLoad(){
+  if(MV_READY)return MV_READY;
+  self.ModelViewerElement=Object.assign(self.ModelViewerElement||{},{dracoDecoderLocation:'draco/'});
+  MV_READY=import('./model-viewer.min.js').then(()=>{
+    const MV=customElements.get('model-viewer');
+    if(MV&&MV.setDRACODecoderLocation)MV.setDRACODecoderLocation('draco/');
+  }).catch(e=>{MV_READY=null;throw e;});
+  return MV_READY;
+}
+function open3D(id){
+  const c=CARDS[id];
+  openModal(`<h3 style="margin:0 0 8px">🎥 ${c.name} · 3D 檢視</h3>
+  <div class="mvwrap"><div class="mvloading">載入 3D 模型中…</div></div>
+  <div class="dim small" style="margin-top:8px">拖曳旋轉、滾輪／雙指縮放</div>
+  <div class="row" style="margin-top:12px"><button onclick="showCard('${id}')">← 返回角色</button><button onclick="closeModal()" style="margin-left:auto">關閉</button></div>`);
+  mvLoad().then(()=>{
+    const wrap=document.querySelector('.mvwrap');
+    if(!wrap)return;
+    wrap.innerHTML=`<model-viewer src="https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@v4/models/${id}.glb" alt="${c.name} 3D" camera-controls camera-orbit="0deg 82deg 5.2m" camera-target="0m 1.0m 0m" field-of-view="30deg" exposure="0.85" shadow-intensity="0.7" interaction-prompt="none" ar-modes="none"></model-viewer>`;
+    const mv=wrap.querySelector('model-viewer');
+    mv.addEventListener('error',()=>{
+      if(document.querySelector('.mvwrap')===wrap)wrap.innerHTML=`<div class="mverr">3D 模型載入失敗，請檢查連線後再試一次。</div>`;
+    });
+  }).catch(()=>{
+    const el=document.querySelector('.mvloading');
+    if(el)el.textContent='3D 檢視器載入失敗，請檢查連線後再試一次。';
+  });
+}
 
 /* ===================== GUIDE ===================== */
 // 超簡單導引：第一次進來自動打開，之後按右上角 ⚙ 設定裡的「玩法導引」重看
@@ -1899,6 +1918,7 @@ function showCard(id){
     <div class="r${c.r}">${c.r} ${o?starStr(o.stars,brOf(id)):""}</div><h2 style="margin:2px 0">${c.name}</h2>
     <div>${clsTag(id)} <span class="dim small">${CLASSES[c.cls].desc}</span></div>${o?lvBar(id):""}
     <div class="small">❤ ${sv("hp",s.maxHp)}　⚔ ${sv("atk",s.atk)}　🛡 ${sv("def",s.def)}　💨 ${sv("spd",s.spd)}</div>
+    ${GLB3D.has(id)?`<div class="row" style="margin-top:8px"><button class="pri" onclick="open3D('${id}')">🎥 3D 檢視</button></div>`:""}
     ${o?`<div class="gslots">${Object.keys(SLOTS).map(sl=>{const g=gearById(o.eq&&o.eq[sl]);
       return `<div class="gslot ${g?"has "+GEAR[g.base].q:""}" onclick="openSlot('${id}','${sl}')"><div class="gi">${g?gearImg(g.base):"＋"}</div>${g?`<b class="r${GEAR[g.base].q}">${qTag(GEAR[g.base].q)}${GEAR[g.base].name}${g.lv?" +"+g.lv:""}</b>${lvOk(id,g.base)?"":`<div class="req bad">⚠ 需 Lv.${GEAR_REQ[GEAR[g.base].q]}，未生效</div>`}`:`<span class="dim">${SLOTS[sl]}</span>`}</div>`;}).join("")}${lockedSlotsHtml()}</div>
     ${setHtml(id)}${e.crit||e.steal||e.dodge||e.dr?`<div class="gfx">裝備特效：${statStr({crit:e.crit,steal:e.steal,dodge:e.dodge,dr:e.dr})}</div>`:""}`:""}
@@ -3054,7 +3074,7 @@ function hit(B,a,t,mult,o={}){
   }
   if(a.flags&&a.flags.frenzy)d*=1.1; // 激動模式
   if(t.st.mark)d*=1.5;
-  if(a.id==="editor"&&t.st.mark)d*=1.25; // 剪輯師「無情剪輯」
+  if(a.id==="editor"&&t.st.mark)d*=1.25; // 編輯者「無情剪輯」
   if(t.st.guard&&!o.pierce)d*=.5;
   if(B.wall[t.side]){const w=B.units.find(x=>x.uid===B.wall[t.side]);if(w&&w.alive)d*=.5;}
   if(t.id==="fatty")d-=2;
@@ -4815,7 +4835,7 @@ const ABYSS_ROOMS={ration:"配給站",pharmacy:"藥房",armory:"武器庫",black
   granary:"糧倉",prisoncell:"牢房",wine:"酒窖",scrap:"回收廠",forge:"重鑄爐"};
 // 平衡：主線全破約需 40 次遠征（機器人模擬）。金條收入刻意壓低，抽卡要省著用
 const FIRST_CLEAR=[40,50,60,70,80,90,100,120,150,200,250,300,350,400,450,500];
-const CH_POW=[1,1.3,1.5,1.6,1.65,1.45,1.8,1.6,1.95,2.0,2.45,1.75,1.85,1.95,2.05,2.15]; // 第6、8章魔王會復活，倍數稍低以免變成高牆；第9、10章刻意偏難
+const CH_POW=[1,1.3,1.5,1.6,1.65,1.45,1.8,1.6,1.95,2.0,2.45,1.75,1.85,1.95,2.05,2.05]; // 第6、8章魔王會復活，倍數稍低以免變成高牆；第9、10章刻意偏難
 function chPow(){return RUN&&RUN.ch!==ABYSS?CH_POW[effCh()]*((CHAPTERS[RUN.ch]&&CHAPTERS[RUN.ch].pw)||1):1;}
 const CHAPTERS=[
   {name:"禁閉室",sub:"B7 停屍間 → 2F 停機坪",icon:"⛓",floors:FLOORS,minion:"ghost",boss:"warden",bossScale:1,bossHp:n=>48+n*12,
@@ -4993,14 +5013,14 @@ const CHAPTERS=[
     shade:["書架之間有東西在動，一個沒有五官的白色人形，正把一頁紙從牆上抹掉。","整排的名牌被一隻白色的手撫過，字跡像被橡皮擦過一樣，一個一個消失了。","空白的人影從書架後面走出來。它們手裡什麼也沒拿，卻讓人覺得，有什麼東西正在被拿走。"],
     prep:"最後一張小桌。有人在這裡留下了乾淨的繃帶、半杯涼掉的茶，和一張字條：「受傷的人，先坐下。」只夠用一次。",
     bossTitle:"✂️ 剪輯室",bossLines:["最深處的剪輯室裡，數不清的底片從天花板垂下來，像一片白色的簾幕。簾幕後面，一個拿著巨大剪刀的身影慢慢轉過身。",
-      "<b style='color:var(--red)'>剪輯師</b>。「這一段，不合格。」剪刀合上的聲音，像是什麼東西被剪斷了。"],
-    story:["剪輯師最初只是節目的後製人員，負責把每一季的畫面剪成好看的版本。","製作人給了他一條規則：觀眾不想看的，就不用留下。於是失敗的人、哭泣的人、被丟下的人，一個一個被剪掉了。",
+      "<b style='color:var(--red)'>編輯者</b>。「這一段，不合格。」剪刀合上的聲音，像是什麼東西被剪斷了。"],
+    story:["編輯者最初只是節目的後製人員，負責把每一季的畫面剪成好看的版本。","製作人給了他一條規則：觀眾不想看的，就不用留下。於是失敗的人、哭泣的人、被丟下的人，一個一個被剪掉了。",
       "剪得多了，他自己也忘了，那些人曾經存在過。他不是壞人，他只是太習慣把人當成多餘的畫面。","晴說：他剪掉的每一個，我都還記得。這一次，換我們讓他想起來。"],
     recap:["升降梯停在檔案館，這裡存放著節目裡所有被寫下、也被刪掉的名字。","在封存的牢房裡，你們遇見了晴。她抱著一本名冊，用羽毛筆，一個一個寫下被刪除的人。",
-      "在剪輯室，剪輯師最後一剪，剪向的是阿燼。他的名字差點從名冊上消失，晴一筆一畫，把它寫了回去。"],
-    bossIntro:"「這一段，不合格。」剪刀合上。",lose:"剪輯師把你們一個個剪出了畫面。",
-    fall:"剪輯師手裡的剪刀斷成兩截，垂下的底片全部掉落，露出牆後那些被塗掉的名字。",
-    escape:"剪輯師倒下的前一刻，他最後一剪，剪向的是阿燼。一道白光掠過，阿燼的名字，從名冊上消失了半個字。<br>晴握緊羽毛筆，一筆一畫，把那個字寫了回去。「我記得你。」她說。<br>阿燼站在原地，很久沒有動。最後，他低聲說：「……我以為，沒有人會再寫了。」<br>晴笑了笑，把名冊貼在胸口。「從今以後，由我寫。」<br>升降梯的燈再度亮起。名冊翻到了新的一頁，上面已經寫好了下一個地方的名字：<b>第三十七個座位</b>。"},
+      "在剪輯室，編輯者最後一剪，剪向的是阿燼。他的名字差點從名冊上消失，晴一筆一畫，把它寫了回去。"],
+    bossIntro:"「這一段，不合格。」剪刀合上。",lose:"編輯者把你們一個個剪出了畫面。",
+    fall:"編輯者手裡的剪刀斷成兩截，垂下的底片全部掉落，露出牆後那些被塗掉的名字。",
+    escape:"編輯者倒下的前一刻，他最後一剪，剪向的是阿燼。一道白光掠過，阿燼的名字，從名冊上消失了半個字。<br>晴握緊羽毛筆，一筆一畫，把那個字寫了回去。「我記得你。」她說。<br>阿燼站在原地，很久沒有動。最後，他低聲說：「……我以為，沒有人會再寫了。」<br>晴笑了笑，把名冊貼在胸口。「從今以後，由我寫。」<br>升降梯的燈再度亮起。名冊翻到了新的一頁，上面已經寫好了下一個地方的名字：<b>第三十七個座位</b>。"},
   {name:"第三十七個座位",sub:"N1 沉默的階梯 → N15 舞台",icon:"🪑",floors:FLOORS_SEAT,minion:"shadowling",boss:"nameless",bossScale:2.1,bossHp:n=>190+n*42,noSeats:true,mates:["ashen","qing"],
     veh:"升降梯",vehIcon:"🛗",bossLoc:"N15 · N1502 舞台",bossRoom:"舞台",prepLoc:"N15 · N1501 舞台後方的小桌",
     startLoc:"N101 · 沉默的階梯",startTitle:"🪑 最深處",
@@ -5021,7 +5041,7 @@ const CHAPTERS=[
     fall:"無名者的身影一個一個散開。每散開一個，晴就輕聲唸出一個名字。",
     escape:"晴翻開名冊，把最後一個名字也唸了出來。大廳裡，影子一個一個，變回了人的樣子。有人哭了，有人沒有說話，有人只是站在原地，像是第一次聽見自己的名字。<br>阿燼站在晴的身邊，一直沒有放下劍，直到最後一個人也被唸完。<br>升降梯的門打開了。這一次，往上的燈，是亮著的。<br>往上升的時候，有人輕聲問：「外面……有天亮嗎？」阿燼看著樓層的數字，一格一格往上跳。「……會有的。」<br>數字停在了最後一格之前。螢幕閃了一下，跳出一行字：<b>【第三季・參賽名單更新中——新成員：你們。】</b><br>晴合上名冊。「……故事，還沒有結束。」"},
   /* ===== MIRROR FEATURE: CHAPTER 16「最後一頁」：接續第 15 章《名冊》劇情；魔王沿用編輯者（editor），小怪沿用抹除者（eraser），同伴沿用阿燼與晴 ===== */
-  {name:"最後一頁",sub:"M1 未寫完的走廊 → M14 終章之間",icon:"🪶",floors:FLOORS_LAST,minion:"eraser",boss:"editor",bossScale:2.15,bossHp:n=>200+n*44,noSeats:true,mates:["ashen","qing"],
+  {name:"最後一頁",sub:"M1 未寫完的走廊 → M14 終章之間",icon:"🪶",floors:FLOORS_LAST,minion:"eraser",boss:"editor",bossScale:2.1,bossHp:n=>190+n*42,noSeats:true,mates:["ashen","qing"],
     veh:"升降梯",vehIcon:"🛗",bossLoc:"M14 · M1402 終章之間",bossRoom:"終章之間",prepLoc:"M14 · M1401 未寫完的桌子",
     startLoc:"M101 · 未寫完的走廊",startTitle:"🪶 還沒寫完",
     intro:it=>["升降梯又往下了一層。這一層沒有廣播，也沒有守衛，只有一條鋪著白紙的走廊——紙上寫滿了名字，又被一條一條劃掉。",
@@ -6043,7 +6063,7 @@ function qingLastPage(ch,L){
     {label:"🕯️ 安靜地陪著他們（全隊恢復 25% 生命）",cls:"pri",act(){
       aliveMembers().forEach(m=>m.hp=Math.min(m.maxHp,m.hp+Math.ceil(m.maxHp*.25)));SFX.heal();
       setScene(where,"📖 最後一頁",["沒有人說話。燈下，晴一筆一畫，把「未歸」兩個字輕輕劃掉，在旁邊寫上：<b>歸來</b>。","阿燼轉過身，背對著大家，肩膀很輕地動了一下。全隊恢復了一些體力。"],cont([restOpt(ch)]));render();}},
-    {label:"🛡 「剪輯師就在前面。我們替你把名字守住。」（本次遠征全隊攻擊 +2）",act(){
+    {label:"🛡 「編輯者就在前面。我們替你把名字守住。」（本次遠征全隊攻擊 +2）",act(){
       aliveMembers().forEach(m=>m.bonus.atk=(m.bonus.atk||0)+2);SFX.sr();
       setScene(where,"📖 最後一頁",["阿燼抬起頭，看向走廊盡頭的剪輯室，手慢慢握緊了劍柄。","「……好。」他說。這是他第一次，把『好』說得這麼用力。本次遠征全隊攻擊 +2。"],cont([restOpt(ch)]));render();}}]);
   RUN.scene.npc=ASHEN_NPC(["……那一頁，是怎麼來的。","我在深淵喊過很多次。沒有人回答。","後來，我就不喊了。","……原來，有人聽見。"]);

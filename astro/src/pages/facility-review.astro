@@ -1,0 +1,23 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="回顧｜封鎖設施求生" description="封鎖設施求生累計戰績與成就：不是逐局重播，而是帳號累計勝負、最佳生命與成就清單。">
+  <div data-site-nav></div>
+  <main style="max-width:720px;margin:0 auto;padding:80px 24px">
+    <h1 style="font-size:2rem;font-weight:700;margin-bottom:8px">回顧</h1>
+    <p style="line-height:1.8;color:#9ca3af">這裡是累計戰績與成就，不是逐局重播。登入後輸入帳號 ID，或在遊戲頁登入後回來看。</p>
+    <p><a href="/facility-survival">回到遊戲</a></p>
+    <div style="margin-top:16px"><input id="acc-id" placeholder="帳號 ID" style="background:#0f172a;border:1px solid #334155;color:#e5e7eb;border-radius:10px;padding:10px" /> <button id="btn-rec" style="background:#2563eb;border:0;color:#fff;border-radius:10px;padding:10px 16px">查詢</button></div>
+    <div id="rec" style="margin-top:24px"></div>
+  </main>
+  <div data-site-footer></div>
+  <script>
+    document.getElementById('btn-rec').onclick = async () => {
+      const id = document.getElementById('acc-id').value.trim(); const el = document.getElementById('rec');
+      if (!id) { el.textContent = '請先輸入帳號 ID'; return; }
+      try { const res = await fetch('/api/games/records?accountId=' + encodeURIComponent(id)); const data = await res.json(); const r = data.record || {};
+        el.innerHTML = '<p>對局 ' + (r.games || 0) + '　勝 ' + (r.wins || 0) + '　負 ' + (r.losses || 0) + '　最佳生命 ' + (r.best_final_hp || 0) + '</p><p>成就：' + ((r.achievements || []).join('、') || '尚無') + '</p>';
+      } catch (e) { el.textContent = '查詢失敗'; }
+    };
+  </script>
+</Base>

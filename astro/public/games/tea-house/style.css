@@ -1,0 +1,218 @@
+/* 我的小茶坊 — 自寫樣式，零外部請求 */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#2f5d3a; --green2:#3e7a4e; --green3:#5d9151;
+  --cream:#f6efdc; --cream2:#fdf8ea; --paper:#fffdf4;
+  --ink:#2a201c; --ink-soft:#6a554a; --rule:#3a2f2a;
+  --red:#c44536; --gold:#e9b949; --teal:#2e7f8a;
+  --card:#fffdf4; --line:rgba(58,47,42,.16);
+  --shadow:0 4px 16px rgba(42,32,28,.14);
+}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:"Inter","Microsoft JhengHei","PingFang TC",system-ui,sans-serif;
+  background:#1e3a26;
+  background-image:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(127,176,105,.35),transparent);
+  color:var(--ink); font-size:15px; line-height:1.6;
+  min-height:100vh; min-height:100dvh;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+.th-app{
+  max-width:430px;margin:0 auto;min-height:100vh;min-height:100dvh;
+  background:var(--cream);display:flex;flex-direction:column;
+  box-shadow:0 0 0 1px rgba(0,0,0,.25),0 0 48px rgba(0,0,0,.45);
+  position:relative;
+}
+/* ── 頂部 ── */
+.th-top{
+  display:flex;align-items:center;gap:8px;padding:10px 12px;
+  background:var(--green);color:#f6efdc;position:sticky;top:0;z-index:30;
+}
+.th-shop{display:flex;align-items:center;gap:6px;min-width:0;flex:1;text-align:left}
+.th-shop-icon{font-size:24px;line-height:1}
+.th-shop-name{font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.th-shop-lv{font-size:11px;background:rgba(255,255,255,.2);border-radius:99px;padding:2px 7px;white-space:nowrap}
+.th-stamina{display:flex;align-items:center;gap:3px;font-size:13px;white-space:nowrap;background:rgba(0,0,0,.22);border-radius:99px;padding:4px 9px}
+.th-stamina small{opacity:.85;font-size:11px}
+.th-icon-btn{position:relative;font-size:19px;line-height:1;padding:6px;border-radius:10px;background:rgba(255,255,255,.12)}
+.th-dot{position:absolute;top:2px;right:2px;width:9px;height:9px;border-radius:50%;background:#ff5a4e;border:1.5px solid var(--green)}
+/* ── 主區 ── */
+.th-main{flex:1;padding:14px 14px 20px;overflow-y:auto}
+.th-tab h2{font-size:19px;margin:2px 0 4px}
+.th-tab .th-sub{color:var(--ink-soft);font-size:13px;margin-bottom:12px}
+.th-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.th-card h3{font-size:15px;margin-bottom:6px}
+.th-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.th-row.between{justify-content:space-between}
+.th-muted{color:var(--ink-soft);font-size:13px}
+.th-small{font-size:12px;color:var(--ink-soft)}
+.th-btn{
+  display:inline-block;background:var(--green);color:#fff;font-weight:700;
+  border-radius:10px;padding:9px 16px;font-size:14px;border:2px solid #24492c;
+  box-shadow:0 2px 0 #24492c;
+}
+.th-btn:active{transform:translateY(2px);box-shadow:none}
+.th-btn.gold{background:var(--gold);color:#3a2a00;border-color:#a8842a;box-shadow:0 2px 0 #a8842a}
+.th-btn.ghost{background:#fff;color:var(--green);border:2px solid var(--green);box-shadow:none}
+.th-btn.small{padding:6px 10px;font-size:13px}
+.th-btn.danger{background:var(--red);border-color:#8f2f24;box-shadow:0 2px 0 #8f2f24}
+.th-chip{display:inline-block;background:rgba(47,93,58,.12);color:var(--green);border-radius:99px;padding:2px 9px;font-size:12px;font-weight:700}
+.th-chip.lock{background:rgba(196,69,54,.12);color:var(--red)}
+.th-chip.gold{background:rgba(233,185,73,.25);color:#7a5b00}
+.th-bar{height:8px;background:rgba(58,47,42,.12);border-radius:99px;overflow:hidden}
+.th-bar i{display:block;height:100%;background:var(--green3);border-radius:99px}
+.th-bar.warn i{background:var(--red)}
+/* ── 底部導覽 ── */
+.th-bottom{
+  display:flex;background:var(--paper);border-top:1.5px solid var(--rule);
+  position:sticky;bottom:0;z-index:30;padding-bottom:env(safe-area-inset-bottom);
+}
+.th-bottom button{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:8px 0 7px;font-size:19px;color:var(--ink-soft);
+}
+.th-bottom button span{font-size:11px;font-weight:700}
+.th-bottom button.active{color:var(--green);background:rgba(47,93,58,.08)}
+/* ── 地圖 ── */
+.th-alt{font-size:11px;color:var(--ink-soft)}
+.th-levels{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.th-level{
+  border:2px solid var(--line);border-radius:12px;padding:10px;background:#fff;
+  text-align:left;display:flex;flex-direction:column;gap:2px;min-height:76px;
+}
+.th-level b{font-size:15px}
+.th-level.locked{opacity:.55;background:#f0ebe0}
+.th-level .stars{color:var(--gold);letter-spacing:1px;font-size:13px}
+.th-chapter{margin-bottom:16px}
+.th-chapter-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px}
+.th-chapter-head h3{font-size:16px}
+.th-warehouse{font-size:14px}
+.th-basket{
+  display:flex;justify-content:space-between;gap:8px;align-items:center;
+  border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:6px;background:#fff;
+}
+.th-basket.sel{border-color:var(--green);background:rgba(47,93,58,.07)}
+.th-basket input{width:18px;height:18px;accent-color:var(--green)}
+.th-kv{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.th-kv:last-child{border-bottom:none}
+/* ── 製茶 ── */
+.th-tea{
+  display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);
+  border-radius:12px;padding:10px;background:#fff;margin-bottom:8px;text-align:left;width:100%;
+}
+.th-tea.sel{border-color:var(--green);box-shadow:0 0 0 2px rgba(47,93,58,.25)}
+.th-tea.locked{opacity:.6}
+.th-tea-icon{font-size:26px;line-height:1.2}
+.th-tea-body{flex:1;min-width:0}
+.th-tea-body b{font-size:15px}
+.th-tea-body .th-recipe{font-size:12px;color:var(--ink-soft)}
+.th-dims{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.th-dim{font-size:13px}
+.th-dim .th-bar{margin-top:3px}
+/* ── 抽籤／設備／茶櫃 ── */
+.th-rarity{font-weight:800}
+.th-rarity.普通{color:#6a554a}.th-rarity.精緻{color:#2e7f8a}.th-rarity.稀有{color:#7a5fc0}
+.th-rarity.傳說{color:#c07a00}.th-rarity.神話{color:#c44536}
+.th-equip{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-bottom:6px;background:#fff;width:100%;text-align:left;
+}
+.th-equip.sel{border-color:var(--green);background:rgba(47,93,58,.07)}
+.th-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.th-bud{
+  border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center;background:#fff;font-size:13px;
+}
+.th-bud.locked{opacity:.45}
+.th-bud .th-bud-icon{font-size:24px}
+.th-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.th-tabs button{padding:7px 13px;border-radius:99px;border:1.5px solid var(--green);color:var(--green);font-weight:700;font-size:13px}
+.th-tabs button.active{background:var(--green);color:#fff}
+.th-rank-row{display:flex;justify-content:space-between;gap:8px;padding:8px 4px;border-bottom:1px dashed var(--line);font-size:14px}
+.th-rank-row.me{font-weight:800;color:var(--green)}
+/* ── 採茶 ── */
+.th-harvest{
+  position:fixed;inset:0;z-index:60;background:rgba(20,40,24,.92);
+  display:flex;align-items:center;justify-content:center;padding:12px;
+}
+.th-harvest[hidden]{display:none}
+.th-harvest-box{
+  width:100%;max-width:430px;background:#e9f2df;border-radius:18px;padding:12px;
+  display:flex;flex-direction:column;gap:8px;max-height:94vh;max-height:94dvh;
+}
+.th-harvest-top{display:flex;align-items:center;gap:8px}
+.th-harvest-info{flex:1;display:flex;gap:10px;align-items:baseline;font-size:14px;flex-wrap:wrap}
+.th-harvest-time{font-size:20px;font-weight:800;color:var(--red)}
+.th-harvest-pause{font-size:20px;padding:4px 8px;background:#fff;border-radius:10px;border:1px solid var(--line)}
+.th-harvest-progress{height:8px;background:rgba(58,47,42,.15);border-radius:99px;overflow:hidden}
+.th-harvest-progress i{display:block;height:100%;background:var(--green3)}
+.th-harvest-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+}
+.th-bush{
+  aspect-ratio:1/1.05;border-radius:16px 16px 12px 12px;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#8fbf7a 0%,#5d9151 55%,#4c7a45 100%);
+  border:2px solid #38652f;
+}
+.th-bush::after{
+  content:"";position:absolute;left:8%;right:8%;bottom:-4px;height:34%;
+  background:radial-gradient(ellipse at center,#3c6b34 0%,transparent 75%);
+}
+.th-bud-sprout{
+  position:absolute;left:50%;bottom:26%;transform:translateX(-50%) scale(.4);
+  font-size:40px;line-height:1;cursor:grab;touch-action:none;z-index:2;
+  transition:transform .12s ease;filter:drop-shadow(0 3px 3px rgba(0,0,0,.3));
+  animation:sproutIn .25s ease forwards;
+}
+@keyframes sproutIn{from{transform:translateX(-50%) scale(.1)}to{transform:translateX(-50%) scale(.55)}}
+.th-bud-sprout.grow{transform:translateX(-50%) scale(.85)}
+.th-bud-sprout.perfect{transform:translateX(-50%) scale(1.05);filter:drop-shadow(0 0 10px #ffd94d) drop-shadow(0 3px 3px rgba(0,0,0,.3))}
+.th-bud-sprout.old{transform:translateX(-50%) scale(.95);opacity:.75;filter:grayscale(.5)}
+.th-bud-sprout.golden{filter:drop-shadow(0 0 12px #ffd94d)}
+.th-bud-sprout.insect{font-size:34px}
+.th-bud-sprout.pulled{animation:pullUp .3s ease forwards}
+@keyframes pullUp{to{transform:translateX(-50%) translateY(-70px) scale(1.1);opacity:0}}
+.th-harvest-hint{text-align:center;font-size:13px;color:var(--ink-soft);min-height:20px}
+.th-harvest-monkey{
+  position:absolute;right:14px;top:120px;font-size:34px;z-index:5;
+  background:#fff;border-radius:50%;padding:6px;border:2px solid var(--gold);
+  animation:monkeyBob 1s ease-in-out infinite;
+}
+@keyframes monkeyBob{50%{transform:translateY(-6px)}}
+.th-float{
+  position:absolute;left:50%;top:30%;transform:translateX(-50%);
+  font-weight:800;font-size:20px;color:var(--red);z-index:6;pointer-events:none;
+  animation:floatUp .8s ease forwards;text-shadow:0 1px 0 #fff;
+}
+.th-float.good{color:var(--green)}
+@keyframes floatUp{to{transform:translateX(-50%) translateY(-34px);opacity:0}}
+/* ── 彈窗 ── */
+.th-modal-root:empty{display:none}
+.th-modal-back{
+  position:fixed;inset:0;z-index:70;background:rgba(20,28,20,.55);
+  display:flex;align-items:flex-end;justify-content:center;padding:0;
+}
+.th-modal{
+  width:100%;max-width:430px;max-height:88vh;max-height:88dvh;overflow-y:auto;
+  background:var(--cream2);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+  box-shadow:0 -8px 32px rgba(0,0,0,.3);
+}
+.th-modal h3{font-size:18px;margin-bottom:8px}
+.th-modal .th-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.th-modal .th-close-x{float:right;font-size:20px;padding:2px 8px}
+.th-tutor-face{font-size:44px;text-align:center}
+.th-tutor-text{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;margin:8px 0}
+.th-score-big{font-size:34px;font-weight:800;text-align:center;margin:6px 0}
+.th-score-big small{font-size:14px;color:var(--ink-soft)}
+/* ── 提示 ── */
+.th-toast{
+  position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);
+  background:#2a201c;color:#fff;padding:9px 16px;border-radius:99px;font-size:14px;
+  opacity:0;pointer-events:none;transition:all .25s ease;z-index:90;max-width:88vw;text-align:center;
+}
+.th-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (min-width:500px){
+  .th-modal-back{align-items:center;padding:20px}
+  .th-modal{border-radius:18px}
+}

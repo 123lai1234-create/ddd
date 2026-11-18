@@ -78,6 +78,35 @@ nav {
   color: var(--text);
 }
 
+/* --- Nav CTA：Uiverse 按鈕 giant-donkey-36（by adamgiebl，MIT） ------
+   https://uiverse.io/adamgiebl/giant-donkey-36
+   全站導覽的「🧊 3D 模型」連結共用此樣式：暖黃 #fbca1f＋3px 深棕邊＋硬陰影，
+   hover 浮起、active 下壓。邊框與陰影色用本站深棕 #3a2f2a 代替原樣的純黑。
+   注意：gene-ai 頁有自己的 .nav-links .nav-cta 規則（權重較高），該頁維持原樣。 */
+nav .nav-cta,
+nav a.nav-cta {
+  background: #fbca1f;
+  color: #3a2f2a;
+  border: 3px solid #3a2f2a;
+  border-radius: 0.4em;
+  padding: 0.6em 1.3em;
+  font-weight: 900;
+  font-size: 18px;
+  box-shadow: 0.1em 0.1em #3a2f2a;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+nav .nav-cta:hover {
+  background: #fbca1f;
+  color: #3a2f2a;
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: 0.15em 0.15em #3a2f2a;
+}
+nav .nav-cta:active {
+  transform: translate(0.05em, 0.05em);
+  box-shadow: 0.05em 0.05em #3a2f2a;
+}
+
 /* ─── Nav dot pulse animation ─────────────────────────────── */
 @keyframes pulse {
   0%,

@@ -109,8 +109,10 @@ const pickIndex = dayOfYear % rides.length;
             </div>
         </header>
 
+        <!-- Dolls playground: 六隻人偶在遊樂園玩耍，點一隻去 3D 頁 -->
+
         <!-- Theme Park Map -->
-        <section class="park-map" aria-label="8 個 app 入口設施">
+        <section class="park-map" aria-label="7 個 app 入口設施">
             <div class="park-sky">
                 <div class="park-sun" aria-hidden="true">
                     <svg viewBox="0 0 60 60" width="60" height="60">
@@ -161,117 +163,81 @@ const pickIndex = dayOfYear % rides.length;
                         <span class="ride-facility-tag">設施</span>
                         <div class="ride-art" aria-hidden="true">
                             {ride.id === 'ferris' && (
-                                <svg viewBox="0 0 120 140" class="ride-svg">
-                                    {/* base ground */}
-                                    <line x1="20" y1="135" x2="100" y2="135" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                                    {/* A-frame support legs */}
-                                    <line x1="40" y1="135" x2="60" y2="55" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                                    <line x1="80" y1="135" x2="60" y2="55" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                                    {/* cross brace */}
-                                    <line x1="48" y1="105" x2="72" y2="105" stroke="currentColor" stroke-width="0.8" />
-                                    {/* central post (visible behind the wheel) */}
-                                    <line x1="60" y1="55" x2="60" y2="135" stroke="currentColor" stroke-width="1.4" />
-                                    {/* wheel — rotating */}
-                                    <g class="ferris-spin" style="transform-origin: 60px 60px;">
-                                        {/* outer rim */}
-                                        <circle cx="60" cy="60" r="32" fill="none" stroke="currentColor" stroke-width="2" />
-                                        <circle cx="60" cy="60" r="30" fill="none" stroke="currentColor" stroke-width="0.6" />
-                                        {/* hub */}
-                                        <circle cx="60" cy="60" r="3.5" fill="currentColor" />
-                                        {/* 6 spokes */}
-                                        <line x1="60" y1="28" x2="60" y2="92" stroke="currentColor" stroke-width="1" />
-                                        <line x1="28" y1="60" x2="92" y2="60" stroke="currentColor" stroke-width="1" />
-                                        <line x1="38" y1="38" x2="82" y2="82" stroke="currentColor" stroke-width="1" />
-                                        <line x1="38" y1="82" x2="82" y2="38" stroke="currentColor" stroke-width="1" />
-                                        {/* 6 cabins on the outside of the rim (12, 2, 4, 6, 8, 10 o'clock) */}
-                                        {Array.from({ length: 6 }).map((_, k) => {
-                                            const a = (k * Math.PI) / 3 - Math.PI / 2;
-                                            const cx = 60 + 38 * Math.cos(a);
-                                            const cy = 60 + 38 * Math.sin(a);
-                                            return <rect x={cx - 5} y={cy - 5} width="10" height="10" fill={ride.softColor} stroke="currentColor" stroke-width="1.2" rx="1.5" />;
-                                        })}
-                                    </g>
-                                </svg>
+                                <svg viewBox="0 0 220 210" class="ride-svg">
+                        <line x1="82" y1="210" x2="110" y2="105" stroke="#3a2f2a" stroke-width="1.6" stroke-linecap="round" />
+                        <line x1="138" y1="210" x2="110" y2="105" stroke="#3a2f2a" stroke-width="1.6" stroke-linecap="round" />
+                        <line x1="20" y1="210" x2="200" y2="210" stroke="#3a2f2a" stroke-width="1.6" stroke-linecap="round" />
+                        <g class="ferris-spin" style="transform-origin: 110px 105px;">
+                            <circle cx="110" cy="105" r="68" fill="none" stroke="#3a2f2a" stroke-width="2" />
+                            <circle cx="110" cy="105" r="66" fill="none" stroke="#3a2f2a" stroke-width="0.6" />
+                            <line x1="110" y1="37" x2="110" y2="173" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="42" y1="105" x2="178" y2="105" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="62" y1="57" x2="158" y2="153" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="62" y1="153" x2="158" y2="57" stroke="#3a2f2a" stroke-width="1" />
+                            <circle cx="110" cy="105" r="4" fill="#c44536" />
+                            <rect x="170" y="61" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="170" y="137" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="104" y="175" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="38" y="137" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <rect x="38" y="61" width="12" height="12" rx="1.5" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.2" />
+                            <g class="ferris-counter" style="transform-origin: 110px 29px;">
+                                <image href="/images/characters/corgi.png" x="86" y="5" width="48" height="48" />
+                            </g>
+                        </g>
+                    </svg>
                             )}
                             {ride.id === 'balloon' && (
-                                <svg viewBox="0 0 120 140" class="ride-svg">
-                                    <line x1="60" y1="2" x2="60" y2="14" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 2" />
-                                    <g class="balloon-float">
-                                        <path d="M 40 60 Q 30 30 60 20 Q 90 30 80 60 Q 75 80 60 80 Q 45 80 40 60 Z"
-                                              fill={ride.softColor} stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-                                        <line x1="60" y1="20" x2="60" y2="80" stroke="currentColor" stroke-width="0.8" />
-                                        <path d="M 45 32 Q 60 24 75 32" fill="none" stroke="currentColor" stroke-width="0.8" />
-                                        <path d="M 42 46 Q 60 38 78 46" fill="none" stroke="currentColor" stroke-width="0.8" />
-                                        <path d="M 44 60 Q 60 54 76 60" fill="none" stroke="currentColor" stroke-width="0.8" />
-                                        <line x1="55" y1="80" x2="52" y2="100" stroke="currentColor" stroke-width="1" />
-                                        <line x1="65" y1="80" x2="68" y2="100" stroke="currentColor" stroke-width="1" />
-                                        <rect x="50" y="100" width="20" height="14" fill="none" stroke="currentColor" stroke-width="1.4" rx="1" />
-                                        <line x1="50" y1="106" x2="70" y2="106" stroke="currentColor" stroke-width="0.8" />
-                                    </g>
-                                </svg>
+                                <svg viewBox="0 0 200 200" class="ride-svg">
+                        <g class="balloon-float">
+                            <path d="M 75 115 Q 60 55 100 40 Q 140 55 125 115 Q 118 138 100 138 Q 82 138 75 115 Z" fill="#a8dadc" stroke="#3a2f2a" stroke-width="1.6" stroke-linejoin="round" />
+                            <line x1="100" y1="40" x2="100" y2="138" stroke="#3a2f2a" stroke-width="0.8" />
+                            <path d="M 82 58 Q 100 48 118 58" fill="none" stroke="#3a2f2a" stroke-width="0.8" />
+                            <path d="M 78 82 Q 100 72 122 82" fill="none" stroke="#3a2f2a" stroke-width="0.8" />
+                            <line x1="86" y1="132" x2="80" y2="148" stroke="#3a2f2a" stroke-width="1" />
+                            <line x1="114" y1="132" x2="120" y2="148" stroke="#3a2f2a" stroke-width="1" />
+                            <image href="/images/characters/cat.png" x="70" y="110" width="60" height="60" />
+                            <rect x="74" y="148" width="52" height="22" fill="#faf6ec" stroke="#3a2f2a" stroke-width="1.4" rx="1" />
+                        </g>
+                    </svg>
                             )}
                             {ride.id === 'carousel' && (
-                                <svg viewBox="0 0 120 140" class="ride-svg">
-                                    {/* ground */}
-                                    <line x1="14" y1="130" x2="106" y2="130" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                                    {/* static support frame (does NOT rotate) */}
-                                    <line x1="22" y1="130" x2="22" y2="116" stroke="currentColor" stroke-width="1.4" />
-                                    <line x1="98" y1="130" x2="98" y2="116" stroke="currentColor" stroke-width="1.4" />
-                                    <line x1="14" y1="116" x2="106" y2="116" stroke="currentColor" stroke-width="1.4" />
-                                    {/* base platform (static) */}
-                                    <ellipse cx="60" cy="116" rx="38" ry="4" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" />
-                                    {/* central pole (static) */}
-                                    <line x1="60" y1="38" x2="60" y2="116" stroke="currentColor" stroke-width="1.6" />
-                                    {/* canopy (static — conical, looks the same from any angle) */}
-                                    <path d="M 22 58 Q 60 24 98 58 Z" fill={ride.color} stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                                    <path d="M 22 58 Q 60 70 98 58" fill="none" stroke="currentColor" stroke-width="1.2" />
-                                    {/* flag (static position, wave in place) */}
-                                    <line x1="60" y1="24" x2="60" y2="14" stroke="currentColor" stroke-width="1.4" />
-                                    <g class="carousel-flag" style="transform-origin: 60px 16px;">
-                                        <path d="M 60 14 L 72 16 L 60 19 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
-                                    </g>
-                                    {/* horse 1 - left (bobs up and down) */}
-                                    <g class="carousel-horse carousel-horse-1">
-                                        <line x1="38" y1="58" x2="38" y2="78" stroke="currentColor" stroke-width="1.2" />
-                                        <path d="M 28 92 L 28 84 Q 28 78 34 78 L 42 78 Q 48 78 48 84 L 48 92 L 44 92 L 44 86 L 38 86 L 38 92 L 34 92 L 34 86 L 28 86 Z M 48 81 L 52 78 L 48 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-                                    </g>
-                                    {/* horse 2 - center (bobs with offset phase) */}
-                                    <g class="carousel-horse carousel-horse-2">
-                                        <line x1="60" y1="58" x2="60" y2="78" stroke="currentColor" stroke-width="1.2" />
-                                        <path d="M 50 92 L 50 84 Q 50 78 56 78 L 64 78 Q 70 78 70 84 L 70 92 L 66 92 L 66 86 L 60 86 L 60 92 L 56 92 L 56 86 L 50 86 Z M 70 81 L 74 78 L 70 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-                                    </g>
-                                    {/* horse 3 - right (bobs with another offset) */}
-                                    <g class="carousel-horse carousel-horse-3">
-                                        <line x1="82" y1="58" x2="82" y2="78" stroke="currentColor" stroke-width="1.2" />
-                                        <path d="M 72 92 L 72 84 Q 72 78 78 78 L 86 78 Q 92 78 92 84 L 92 92 L 88 92 L 88 86 L 82 86 L 82 92 L 78 92 L 78 86 L 72 86 Z M 92 81 L 96 78 L 92 78 Z" fill={ride.softColor} stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-                                    </g>
-                                </svg>
+                                <svg viewBox="0 0 200 170" class="ride-svg">
+                        <path d="M 30 62 Q 100 28 170 62 Z" fill="#d4a5a5" stroke="#3a2f2a" stroke-width="1.8" stroke-linejoin="round" />
+                        <line x1="100" y1="40" x2="100" y2="150" stroke="#3a2f2a" stroke-width="1.6" />
+                        <ellipse cx="100" cy="150" rx="70" ry="6" fill="#f1a7c0" stroke="#3a2f2a" stroke-width="1.4" />
+                        <line x1="20" y1="150" x2="180" y2="150" stroke="#3a2f2a" stroke-width="1.4" stroke-linecap="round" />
+                        <g class="carousel-orbit carousel-orbit-1">
+                        <line x1="50" y1="62" x2="50" y2="130" stroke="#3a2f2a" stroke-width="1.2" />
+                        <g transform="translate(-14,0) scale(1.6)">
+                            <g class="carousel-horse carousel-horse-1">
+                                <path d="M 28 92 L 28 84 Q 28 78 34 78 L 42 78 Q 48 78 48 84 L 48 92 L 44 92 L 44 86 L 38 86 L 38 92 L 34 92 L 34 86 L 28 86 Z M 48 81 L 52 78 L 48 78 Z" fill="#f1a7c0" stroke="#3a2f2a" stroke-width="1.4" stroke-linejoin="round" />
+                            </g>
+                        </g>
+                        </g>
+                        <g class="carousel-orbit carousel-orbit-2">
+                        <line x1="150" y1="62" x2="150" y2="130" stroke="#3a2f2a" stroke-width="1.2" />
+                        <g transform="translate(86,0) scale(1.6)">
+                            <g class="carousel-horse carousel-horse-2">
+                                <path d="M 28 92 L 28 84 Q 28 78 34 78 L 42 78 Q 48 78 48 84 L 48 92 L 44 92 L 44 86 L 38 86 L 38 92 L 34 92 L 34 86 L 28 86 Z M 48 81 L 52 78 L 48 78 Z" fill="#f1a7c0" stroke="#3a2f2a" stroke-width="1.4" stroke-linejoin="round" />
+                            </g>
+                        </g>
+                        </g>
+                        <image href="/images/characters/philosopher.png" x="70" y="92" width="60" height="60" class="doll-bob" />
+                    </svg>
                             )}
                             {ride.id === 'coaster' && (
-                                <svg viewBox="0 0 120 140" class="ride-svg">
-                                    {/* ground */}
-                                    <line x1="10" y1="135" x2="110" y2="135" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-                                    {/* support pillars (2 trestles, simple) */}
-                                    <line x1="30" y1="135" x2="30" y2="100" stroke="currentColor" stroke-width="1.2" />
-                                    <line x1="22" y1="100" x2="38" y2="100" stroke="currentColor" stroke-width="1.2" />
-                                    <line x1="90" y1="135" x2="90" y2="100" stroke="currentColor" stroke-width="1.2" />
-                                    <line x1="82" y1="100" x2="98" y2="100" stroke="currentColor" stroke-width="1.2" />
-                                    {/* main track - clear hill shape */}
-                                    <path d="M 10 130 L 30 100 L 60 50 L 90 100 L 110 130" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
-                                    {/* car — drawn at origin, animated to follow the track */}
-                                    <g class="coaster-car">
-                                        {/* main body */}
-                                        <rect x="-10" y="-4" width="20" height="9" rx="2" fill={ride.softColor} stroke="currentColor" stroke-width="1.6" />
-                                        {/* window strip */}
-                                        <rect x="-7" y="-2" width="14" height="4" rx="0.8" fill={ride.color} stroke="currentColor" stroke-width="0.8" />
-                                        {/* two small passengers (head silhouettes) */}
-                                        <circle cx="-3" cy="-0.5" r="1.2" fill="#faf6ec" />
-                                        <circle cx="3" cy="-0.5" r="1.2" fill="#faf6ec" />
-                                        {/* wheels (clearly visible under the body) */}
-                                        <circle cx="-6" cy="5" r="2.2" fill="#faf6ec" stroke="currentColor" stroke-width="1.2" />
-                                        <circle cx="6" cy="5" r="2.2" fill="#faf6ec" stroke="currentColor" stroke-width="1.2" />
-                                    </g>
-                                </svg>
+                                <svg viewBox="0 0 200 170" class="ride-svg">
+                        <path d="M 25 140 L 70 90 L 105 55 L 145 95 L 180 140" fill="none" stroke="#3a2f2a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <line x1="70" y1="90" x2="70" y2="140" stroke="#3a2f2a" stroke-width="1" />
+                        <line x1="145" y1="95" x2="145" y2="140" stroke="#3a2f2a" stroke-width="1" />
+                        <line x1="10" y1="140" x2="190" y2="140" stroke="#3a2f2a" stroke-width="1.4" stroke-linecap="round" />
+                        <g class="coaster-move" transform="translate(4,86)">
+                            <image href="/images/characters/robot.png" x="0" y="0" width="52" height="52" />
+                            <rect x="0" y="32" width="52" height="20" rx="6" fill="#f9c74f" stroke="#3a2f2a" stroke-width="1.6" />
+                            <circle cx="10" cy="50" r="4.5" fill="#3a2f2a" />
+                            <circle cx="42" cy="50" r="4.5" fill="#3a2f2a" />
+                        </g>
+                    </svg>
                             )}
                             {ride.id === 'tower' && (
                                 <svg viewBox="0 0 120 140" class="ride-svg">
@@ -282,6 +248,7 @@ const pickIndex = dayOfYear % rides.length;
                                     <circle cx="60" cy="50" r="13" fill="#f0ebe0" stroke="currentColor" stroke-width="1.6" />
                                     <line x1="60" y1="50" x2="60" y2="40" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" class="clock-hand-min" />
                                     <line x1="60" y1="50" x2="68" y2="50" stroke="currentColor" stroke-width="1" stroke-linecap="round" class="clock-hand-hour" />
+                                    <line x1="60" y1="50" x2="60" y2="41" stroke="#c44536" stroke-width="0.8" stroke-linecap="round" class="clock-hand-sec" />
                                     <circle cx="60" cy="50" r="1.5" fill="currentColor" />
                                     <rect x="55" y="78" width="10" height="8" fill="currentColor" opacity="0.85" />
                                     <rect x="55" y="92" width="10" height="8" fill="currentColor" opacity="0.6" />
@@ -422,26 +389,8 @@ const pickIndex = dayOfYear % rides.length;
     --purple:   #8b6f9c;
 }
 
-/* ─── Nav CTA：實心紅塊改成外框式 ─────────────────────────────────
-   原本是一塊 #c44536 實心紅夾在整排純文字連結中間，視覺上像警示或壞掉，
-   跟紙感主題的「細線 + 米白」語言不一致。改成米白底 + 深色虛線框 + 磚紅字。 ── */
-body[data-page="index"] nav .nav-cta,
-body[data-page="index"] nav a.nav-cta {
-    background: #faf6ec !important;
-    color: var(--accent) !important;
-    border: 1.5px dashed var(--rule) !important;
-    border-radius: 4px !important;
-    padding: 4px 12px !important;
-    font-weight: 600 !important;
-    box-shadow: 2px 2px 0 rgba(58, 47, 42, 0.18);
-    transition: background 0.2s, box-shadow 0.2s, transform 0.2s !important;
-}
-body[data-page="index"] nav .nav-cta:hover {
-    background: var(--accent) !important;
-    color: #faf6ec !important;
-    transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0 rgba(58, 47, 42, 0.35);
-}
+/* Nav CTA（Uiverse 黃按鈕）已改由共用樣式 public/styles/shared.css 全站統一，
+   這裡不再重複寫，只留註解避免後人以為漏掉。 */
 
 .minion-park {
     min-height: calc(100vh - 64px);
@@ -580,7 +529,7 @@ body[data-page="index"] nav .nav-cta:hover {
 
 .sun-spin {
     transform-origin: 30px 30px;
-    transform-box: fill-box;
+    transform-box: view-box;
     animation: sun-rotate 40s linear infinite;
 }
 
@@ -591,8 +540,8 @@ body[data-page="index"] nav .nav-cta:hover {
 
 .cloud {
     position: absolute;
-    background: rgba(255, 255, 255, 0.55);
-    border: 1.2px dashed #3a2f2a;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1.2px solid #3a2f2a;
     border-radius: 30px;
     pointer-events: none;
 }
@@ -600,8 +549,8 @@ body[data-page="index"] nav .nav-cta:hover {
 .cloud::before, .cloud::after {
     content: "";
     position: absolute;
-    background: rgba(255, 255, 255, 0.55);
-    border: 1.2px dashed #3a2f2a;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1.2px solid #3a2f2a;
     border-radius: 50%;
 }
 
@@ -681,8 +630,10 @@ body[data-page="index"] nav .nav-cta:hover {
 }
 
 .ride:hover {
-    transform: translate(-2px, -3px) rotate(-0.6deg) perspective(800px) rotateX(2deg);
-    box-shadow: 6px 8px 0 #3a2f2a, 0 14px 30px rgba(58, 47, 42, 0.18);
+    /* 注意：不要加 perspective＋rotateX——實測它會把 translateY 吃掉大半，
+       卡片看起來只浮 3px；純 2D 位移才真的浮 8px。 */
+    transform: translate(-3px, -8px) rotate(-0.8deg);
+    box-shadow: 8px 12px 0 #3a2f2a, 0 20px 40px rgba(58, 47, 42, 0.22);
     background: #fffcf3;
 }
 
@@ -697,6 +648,17 @@ body[data-page="index"] nav .nav-cta:hover {
     border-width: 2.2px;
     box-shadow: 4px 5px 0 #3a2f2a, 0 0 0 4px rgba(196, 69, 54, 0.12);
 }
+
+/* ─── Uiverse 卡片 chilly-bird-79（by andrew-demchenk0，MIT）取其視覺語言 ──
+   https://uiverse.io/andrew-demchenk0/chilly-bird-79
+   原型是個人檔案卡，頭像 SVG 與進度條跟設施連結卡不合，不整張照搬（頭像
+   是原作者的插畫，也未複製）；取暖黃底 #EBD18D＋20px 圓角＋粗標題，套在
+   「今日推薦」那張卡上試效果，其餘 6 張不動。 */
+.ride[data-pick="true"] {
+    background: #ebd18d;
+    border-radius: 20px;
+}
+.ride[data-pick="true"] .ride-name { font-weight: 900; }
 
 .ride[data-pick="true"]::after {
     content: "★ 今日推薦";
@@ -798,7 +760,7 @@ body[data-page="index"] nav .nav-cta:hover {
 }
 
 .ride:hover .ride-arrow {
-    transform: translateX(4px);
+    transform: translateX(7px);
 }
 
 /* Per-ride subtle tilt for organic feel */
@@ -813,7 +775,9 @@ body[data-page="index"] nav .nav-cta:hover {
 .ride-ferris:hover, .ride-balloon:hover, .ride-carousel:hover,
 .ride-coaster:hover, .ride-tower:hover, .ride-castle:hover,
 .ride-lab:hover {
-    transform: translate(-2px, -3px) rotate(-0.6deg);
+    /* 注意：這條與 .ride:hover 同權重、寫在後面，會蓋掉它的 transform，
+       改 hover 幅度時兩邊要一起改。 */
+    transform: translate(-3px, -8px) rotate(-0.8deg);
 }
 
 /* ════════ Animations (SVG groups) ════════ */
@@ -842,8 +806,8 @@ body[data-page="index"] nav .nav-cta:hover {
 }
 
 .carousel-spin {
-    /* v6: carousel 不再整個旋轉，改成馬各自 bob + 旗子擺動
-       真實旋轉木馬的馬不會跟著轉，只會上下 */
+    /* v6: carousel 不再整個旋轉；馬改由 .carousel-orbit 繞行 + 各自 bob
+       （馬會跟著平台繞，之前「馬不會跟著轉」的說法是錯的） */
     animation: none;
 }
 
@@ -859,7 +823,22 @@ body[data-page="index"] nav .nav-cta:hover {
     50%      { transform: rotate(10deg); }
 }
 
-/* 馬上下 bob — 3 隻不同 phase 模擬「在繞圈」 */
+/* 馬繞平台水平繞行 — 外層 .carousel-orbit 平移（內層 .carousel-horse 保留上下 bob） */
+.carousel-orbit {
+    animation: carousel-orbit 7.2s ease-in-out infinite;
+}
+.carousel-orbit-2 { animation-delay: -2.4s; }  /* 1/3 週期前移 */
+.carousel-orbit-3 { animation-delay: -4.8s; }  /* 2/3 週期前移 */
+
+@keyframes carousel-orbit {
+    0%   { transform: translateX(-14px); }
+    25%  { transform: translateX(0); }
+    50%  { transform: translateX(14px); }
+    75%  { transform: translateX(0); }
+    100% { transform: translateX(-14px); }
+}
+
+/* 馬上下 bob — 3 隻不同 phase */
 .carousel-horse {
     animation: horse-bob 2.4s ease-in-out infinite;
     transform-box: view-box;
@@ -895,7 +874,7 @@ body[data-page="index"] nav .nav-cta:hover {
 .clock-hand-min {
     transform-origin: 60px 50px;
     animation: clock-tick-min 8s steps(60) infinite;
-    transform-box: fill-box;
+    transform-box: view-box;
 }
 
 @keyframes clock-tick-min {
@@ -906,7 +885,18 @@ body[data-page="index"] nav .nav-cta:hover {
 .clock-hand-hour {
     transform-origin: 60px 50px;
     animation: clock-tick-hour 60s steps(12) infinite;
-    transform-box: fill-box;
+    transform-box: view-box;
+}
+
+.clock-hand-sec {
+    transform-origin: 60px 50px;
+    animation: clock-tick-sec 4s steps(60) infinite;
+    transform-box: view-box;
+}
+
+@keyframes clock-tick-sec {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
 }
 
 @keyframes clock-tick-hour {
@@ -981,6 +971,7 @@ body[data-page="index"] nav .nav-cta:hover {
     transform: translateY(-50%) scale(0.85);
 }
 
+
 @media (max-width: 700px) {
     .park-tree-left, .park-tree-right { display: none; }
 }
@@ -1047,7 +1038,9 @@ body[data-page="index"] nav .nav-cta:hover {
 }
 
 @media (max-width: 480px) {
-    .minion-park { padding: 32px 16px 64px; }
+    /* 上方留 72px：導覽列 fixed 高 64px，32px 會讓標頭眉題＋標題頂部
+       被導覽列蓋住（390px 下標題頂被切 14px） */
+    .minion-park { padding: 72px 16px 64px; }
     .park-rides { gap: 14px; }
     .ride { flex-basis: 100%; min-height: 180px; }
     .park-title { font-size: 2.2rem; }
@@ -1098,6 +1091,21 @@ body[data-page="index"] #hamburger {
     background: transparent !important;
     border-color: #3a2f2a !important;
 }
+/* Mobile nav drawer: paper background + dark text.
+   抽屜底色是 shared.css 寫死的深色 rgba(8,12,16,0.97)，但首頁紙感主題
+   把 --text 改成深棕墨色 #2a201c，抽屜連結用 var(--text) 會變成深字印黑底、
+   手機上幾乎看不見。抽屜改成跟上方導覽列一樣的米白底＋深字。 */
+body[data-page="index"] .nav-drawer {
+    background: #f0ebe0 !important;
+    border-bottom: 1.5px dashed #3a2f2a !important;
+}
+body[data-page="index"] .nav-drawer a {
+    color: #2a201c !important;
+    border-bottom-color: rgba(58, 47, 42, 0.16) !important;
+}
+body[data-page="index"] .nav-drawer a:hover {
+    color: #c44536 !important;
+}
 
 /* Site footer — paper theme.
    ⚠ 舊寫法是 `body[data-page="index"] body > footer:not(.park-footer)`，
@@ -1114,7 +1122,9 @@ body[data-page="index"] > footer:not(.park-footer) {
     justify-content: space-between !important;
     flex-wrap: wrap !important;
     gap: 20px 36px !important;
-    padding: 34px 24px 44px !important;
+    /* 右側留 104px：右下角固定搜尋鈕 #pf-btn 佔了右緣 24px + 56px 寬，
+       1920px 下最後一個連結「幹細胞研究」尾端會被鈕蓋住 */
+    padding: 34px 104px 44px !important;
     font-family: "Inter", "Microsoft JhengHei", system-ui, sans-serif !important;
 }
 body[data-page="index"] > footer:not(.park-footer) > div:first-child {
@@ -1203,19 +1213,77 @@ body[data-page="index"] #pf-modal #pf-results a {
     border-bottom-color: rgba(58, 47, 42, 0.15) !important;
 }
 
+/* ════════ Reel 方法：首頁動效主視覺（只動主視覺，不改版面／內容） ════════
+   靈感取自 MotionSite＋Stitch 那種「進場＋互動視差」動效頁，但不搬任何外部素材、
+   不用外部服務：進場改由 Anime.js（MIT，見下方 module script）驅動，標題逐字、
+   設施卡依序浮現；滑鼠視差仍用原本 CSS 變數＋inline script。
+   注意：進場初始狀態只由 JS 在允許動效時設定，CSS 不藏元素，關閉動效或
+   JS 失效時內容仍直接可見。視差只動天空容器與樹（雲本身已有 drift 動畫，
+   不動它以免覆蓋），且尊重 reduced-motion。 */
+.park-title-char { display: inline-block; }
+.park-sky { transform: translate(calc(var(--mx, 0) * 8px), calc(var(--my, 0) * 4px)); transition: transform 0.3s ease-out; }
+.park-tree-left { transform: translate(calc(var(--mx, 0) * -6px), 0); transition: transform 0.3s ease-out; }
+.park-tree-right { transform: translate(calc(var(--mx, 0) * 6px), 0); transition: transform 0.3s ease-out; }
+
+
+/* 摩天輪：輪子轉、柯基反向轉保持正立（與 .ferris-spin 同 24s） */
+.ferris-counter {
+    animation: ferris-counter 24s linear infinite;
+    transform-box: view-box;
+}
+
+@keyframes ferris-counter {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(-360deg); }
+}
+
+/* 雲霄飛車：機器人沿軌道滑行，來回（translate 用 SVG user units） */
+.coaster-move {
+    animation: coaster-doll 4.5s ease-in-out infinite alternate;
+}
+
+@keyframes coaster-doll {
+    0%   { transform: translate(4px, 86px); }
+    25%  { transform: translate(46px, 36px); }
+    50%  { transform: translate(79px, 1px); }
+    75%  { transform: translate(119px, 41px); }
+    100% { transform: translate(152px, 86px); }
+}
+
+/* 旋轉木馬：哲學家上下 bob（跟卡片裡的馬同節奏） */
+.doll-bob {
+    animation: doll-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes doll-bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-4px); }
+}
+
+
 /* ════════ Polish: smooth scroll + reduced-motion respect ════════ */
 html {
     scroll-behavior: smooth;
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .park-header,
+    .ride { animation: none !important; }
+    .park-sky,
+    .park-tree-left,
+    .park-tree-right { transform: none !important; transition: none !important; }
     .ferris-spin,
+    .ferris-counter,
+    .coaster-move,
+    .doll-bob,
     .balloon-float,
     .carousel-flag,
     .carousel-horse,
+    .carousel-orbit,
     .coaster-car,
     .clock-hand-min,
     .clock-hand-hour,
+    .clock-hand-sec,
     .flag,
     .lab-smoke,
     .prize-hang,
@@ -1225,7 +1293,7 @@ html {
         animation: none !important;
     }
     .ride:hover {
-        transform: rotate(-0.6deg);
+        transform: rotate(-0.8deg);
     }
     html { scroll-behavior: auto; }
 }
@@ -1256,5 +1324,88 @@ html {
             if (dayEl) dayEl.textContent = day;
             if (dateEl) dateEl.textContent = mm + '.' + dd;
         }
+        // 首頁動效主視覺：滑鼠視差（只在精確指標＋未開 reduced-motion 時啟用）
+        var map = document.querySelector('.park-map');
+        if (map && window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            var raf = null;
+            map.addEventListener('pointermove', function (e) {
+                var r = map.getBoundingClientRect();
+                var mx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+                var my = ((e.clientY - r.top) / r.height - 0.5) * 2;
+                if (raf) return;
+                raf = requestAnimationFrame(function () {
+                    raf = null;
+                    map.style.setProperty('--mx', mx.toFixed(3));
+                    map.style.setProperty('--my', my.toFixed(3));
+                });
+            });
+            map.addEventListener('pointerleave', function () {
+                map.style.setProperty('--mx', '0');
+                map.style.setProperty('--my', '0');
+            });
+        }
+    })();
+</script>
+
+<script>
+    // 首頁進場動效改由 Anime.js v4（MIT）驅動：標題逐字升起、眉題／副標跟進、
+    // 問候與日期淡入、7 張設施卡依序浮現。reduced-motion 時整段跳過，內容直接可見。
+    // 注意：動畫跑完要清掉 Anime.js 留下的行內 transform／opacity，否則會蓋掉
+    // CSS 的 hover 浮起與每張卡的微傾斜（.ride-ferris 等）。
+    import { animate, stagger } from 'animejs';
+    (function () {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        function clearInline(sel) {
+            document.querySelectorAll(sel).forEach(function (el) {
+                el.style.removeProperty('transform');
+                el.style.removeProperty('opacity');
+            });
+        }
+        var title = document.querySelector('.park-title');
+        if (title) {
+            var text = title.textContent;
+            title.setAttribute('aria-label', text);
+            title.textContent = '';
+            Array.from(text).forEach(function (ch) {
+                var s = document.createElement('span');
+                s.className = 'park-title-char';
+                s.setAttribute('aria-hidden', 'true');
+                s.textContent = ch;
+                title.appendChild(s);
+            });
+            animate('.park-title-char', {
+                y: [18, 0],
+                opacity: [0, 1],
+                duration: 650,
+                delay: stagger(55),
+                ease: 'outExpo',
+                onComplete: function () { clearInline('.park-title-char'); },
+            });
+        }
+        animate('.park-eyebrow, .park-subtitle', {
+            opacity: [0, 1],
+            y: [8, 0],
+            duration: 500,
+            delay: stagger(90),
+            ease: 'outQuad',
+            onComplete: function () { clearInline('.park-eyebrow, .park-subtitle'); },
+        });
+        animate('.park-greeting-block, .park-date-block', {
+            opacity: [0, 1],
+            y: [10, 0],
+            duration: 550,
+            delay: 350,
+            ease: 'outQuad',
+            onComplete: function () { clearInline('.park-greeting-block, .park-date-block'); },
+        });
+        animate('.ride', {
+            y: [18, 0],
+            opacity: [0, 1],
+            scale: [0.97, 1],
+            duration: 650,
+            delay: stagger(70, { start: 200 }),
+            ease: 'outExpo',
+            onComplete: function () { clearInline('.ride'); },
+        });
     })();
 </script>

@@ -18,7 +18,7 @@ const bodyHtml = `
                 <span class="ck-project-label">作品混音</span>
                 <button class="ck-btn-orange ck-btn-sm" id="open-playlist-btn" title="開啟播放清單">切換曲目</button>
                 <a class="ck-btn-orange ck-btn-sm" href="/music/songs/" title="瀏覽全部歌詞與社群素材">歌曲作品集</a>
-                <span class="ck-version">版本編號 <b>0</b></span>
+                <span class="ck-version">版本編號 <b>3</b></span>
             </div>
             <div class="ck-topbar-right">
                 <label class="ck-toggle">
@@ -33,7 +33,7 @@ const bodyHtml = `
         <!-- ── Track Info Bar ──────────────────────────────────── -->
         <section class="ck-trackbar">
             <div class="ck-tb-controls">
-                <button class="ck-ctrl-btn" id="shuffle-btn" title="隨機">🔀</button>
+                <button class="ck-ctrl-btn" id="shuffle-btn" title="隨機：關閉" aria-pressed="false">🔀</button>
                 <button class="ck-ctrl-btn" id="prev-btn" title="上一首">⏮</button>
                 <button class="ck-play-btn" id="play-btn" title="播放 (Space)" aria-label="播放/暫停" aria-pressed="false">▶</button>
                 <button class="ck-ctrl-btn" id="next-btn" title="下一首">⏭</button>
@@ -556,7 +556,7 @@ const bodyHtml = `
             </div>
         </div>
         <footer class="ck-drawer-stats">
-            <span id="total-songs">0</span> 首歌曲 · <span id="total-duration">0:00</span>
+            <span id="total-songs-drawer">0</span> 首歌曲 · <span id="total-duration">0:00</span>
         </footer>
     </aside>
     <div class="ck-drawer-backdrop" id="drawer-backdrop"></div>
@@ -626,13 +626,12 @@ const headInline = "<script is:inline>if ('serviceWorker' in navigator) navigato
     title="🎵 音樂混音台"
     description="ChillKara 風格音樂混音台：人聲對位、降噪、速度、音準、音量穩定，內建 8 段 EQ、Reverb、人聲風格、即時頻譜"
     bodyPage="music"
-    pageStyles={["/styles/music.css?v=20261007a"]}
+    pageStyles={["/styles/music.css?v=20261117a"]}
     pageScripts={[
-        "/scripts/app-config.js?v=20260910b",
         "/scripts/reverb-irs.js?v=20260910b",
         "/scripts/audio-engine.js?v=20260910b",
         "/scripts/visualizer.js?v=20261007a",
-        "/scripts/music-player.js?v=20260910b",
+        "/scripts/music-player.js?v=20261117d",
         "/scripts/music-mv.js?v=20260918b",
         "/scripts/mixing-console.js?v=20260910b",
         "/scripts/music-shortcuts.js?v=20261007a"

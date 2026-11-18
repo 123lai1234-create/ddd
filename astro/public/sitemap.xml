@@ -10,4 +10,6 @@
   <url><loc>https://donttalk.vercel.app/firmware.html</loc><priority>0.7</priority></url>
   <url><loc>https://donttalk.vercel.app/interview_prep.html</loc><priority>0.6</priority></url>
   <url><loc>https://donttalk.vercel.app/facility-survival</loc><priority>0.7</priority></url>
+  <url><loc>https://donttalk.vercel.app/facility-world</loc><priority>0.5</priority></url>
+  <url><loc>https://donttalk.vercel.app/facility-review</loc><priority>0.5</priority></url>
 </urlset>
