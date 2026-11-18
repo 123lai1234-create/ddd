@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>禁閉逃殺 Lockdown Survival</title>
+<meta name="description" content="封閉設施裡的六天。基因、物資、毒氣、暗影——六回合後按生命值排名。" />
+<meta name="theme-color" content="#0b0f14" />
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="ls-body">
+<div class="ls-app">
+
+  <!-- ── 標題 / 設定 ─────────────────────────────────────────── -->
+  <section class="ls-screen" id="screen-title">
+    <div class="ls-title-card">
+      <div class="ls-kicker">LOCKDOWN SURVIVAL</div>
+      <h1 class="ls-title">禁閉逃殺</h1>
+      <p class="ls-lede">
+        封閉設施裡的六天。各自在手機上決定，系統結算，投影幕公布。<br />
+        單人模式：你 + 最多 7 名機器人，共用一張地圖與一組規則。
+      </p>
+
+      <div class="ls-form">
+        <label class="ls-field">
+          <span>你的代號</span>
+          <input id="in-name" type="text" maxlength="10" value="不說" autocomplete="off" />
+        </label>
+
+        <div class="ls-field">
+          <span>難度</span>
+          <div class="ls-choice" id="choice-difficulty"></div>
+        </div>
+
+        <div class="ls-field">
+          <span>對手數</span>
+          <div class="ls-choice" id="choice-bots"></div>
+        </div>
+      </div>
+
+      <div class="ls-title-actions">
+        <button class="ls-btn primary" id="btn-start">開始遊戲 →</button>
+        <button class="ls-btn ghost" id="btn-rules">規則說明</button>
+      </div>
+
+      <div class="ls-title-foot">
+        <span>純前端・離線可玩・進度存在本機</span>
+        <a href="../" class="ls-backlink">← 回遊戲列表</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 出生點 / 基因 ───────────────────────────────────────── -->
+  <section class="ls-screen hidden" id="screen-setup">
+    <div class="ls-setup-wrap">
+      <div class="ls-setup-head">
+        <h2 id="setup-title">選擇出生點</h2>
+        <p id="setup-desc">出生點決定你一開始離哪些資源多近。選到同一個出生點的人，落地就會先打一場。</p>
+      </div>
+      <div class="ls-spawns" id="spawn-list"></div>
+      <div class="ls-genes" id="gene-panel"></div>
+      <div class="ls-setup-foot">
+        <button class="ls-btn ghost" id="btn-setup-back">← 重來</button>
+        <button class="ls-btn primary" id="btn-setup-next">下一步：分配基因</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 主遊戲 ─────────────────────────────────────────────── -->
+  <section class="ls-screen hidden" id="screen-game">
+    <header class="ls-top">
+      <div class="ls-top-left">
+        <span class="ls-badge" id="round-badge">第 1 / 6 回合</span>
+        <span class="ls-badge phase" id="phase-badge">行動階段</span>
+      </div>
+      <div class="ls-top-mid">
+        <div class="ls-hp">
+          <span class="ls-hp-label">HP</span>
+          <div class="ls-hp-bar"><i id="hp-fill"></i></div>
+          <span class="ls-hp-num" id="hp-num">10</span>
+        </div>
+      </div>
+      <div class="ls-top-right">
+        <button class="ls-icon-btn" id="btn-help" title="規則">?</button>
+        <button class="ls-icon-btn" id="btn-quit" title="離開">✕</button>
+      </div>
+    </header>
+
+    <main class="ls-main">
+      <section class="ls-map-panel">
+        <div class="ls-map-head">
+          <div class="ls-floor-legend" id="floor-legend"></div>
+          <div class="ls-gas-legend" id="gas-legend"></div>
+        </div>
+        <div class="ls-map-scroll">
+          <svg id="map" viewBox="0 0 1245 712" role="img" aria-label="設施地圖"></svg>
+        </div>
+        <div class="ls-map-foot" id="map-foot"></div>
+      </section>
+
+      <aside class="ls-side">
+        <div class="ls-players" id="player-list"></div>
+        <div class="ls-action" id="action-panel"></div>
+      </aside>
+    </main>
+
+    <section class="ls-broadcast" id="broadcast"></section>
+  </section>
+
+  <!-- ── 結果 ───────────────────────────────────────────────── -->
+  <section class="ls-screen hidden" id="screen-result">
+    <div class="ls-result-wrap">
+      <div class="ls-result-head">
+        <div class="ls-kicker">FINAL</div>
+        <h2 id="result-title">六回合結束</h2>
+        <p id="result-desc"></p>
+      </div>
+      <div class="ls-rank" id="rank-list"></div>
+      <div class="ls-ach" id="ach-list"></div>
+      <div class="ls-result-actions">
+        <button class="ls-btn primary" id="btn-again">再玩一局</button>
+        <button class="ls-btn ghost" id="btn-leaderboard">看排行榜</button>
+        <button class="ls-btn ghost" id="btn-home">回首頁</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 排行榜 ─────────────────────────────────────────────── -->
+  <section class="ls-screen hidden" id="screen-board">
+    <div class="ls-board-wrap">
+      <div class="ls-result-head">
+        <div class="ls-kicker">LEADERBOARD</div>
+        <h2>禁閉逃殺排行榜</h2>
+        <p id="board-note">只統計通過伺服器上傳的分數（本機成績不會上傳）。</p>
+      </div>
+      <div class="ls-board" id="board-list"></div>
+      <div class="ls-result-actions">
+        <button class="ls-btn ghost" id="btn-board-back">← 返回</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 規則說明 modal ─────────────────────────────────────── -->
+  <div class="ls-modal hidden" id="modal">
+    <div class="ls-modal-box">
+      <div class="ls-modal-head">
+        <h3 id="modal-title">規則</h3>
+        <button class="ls-icon-btn" id="modal-close">✕</button>
+      </div>
+      <div class="ls-modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <div class="ls-toast" id="toast"></div>
+</div>
+
+<script src="./js/data.js"></script>
+<script src="./js/engine.js"></script>
+<script src="./js/bots.js"></script>
+<script src="./js/cloud.js"></script>
+<script src="./js/ui.js"></script>
+</body>
+</html>

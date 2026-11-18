@@ -12,12 +12,19 @@
     原始碼在 git 裡，2026-11-02 實測兩者都逾時不回應（`/api/healthz` 連線逾時、
     `/api/stock/2330` 404、`/api/games/*` 逾時），Render 同一支則 200。
   - ⚠️ **多段 `/api/*` 在 git build 上通不了**（2026-11-02 實測，16 小時前的部署也一樣，
-    不是當天改壞的）：`api/[...catchall].mjs` 只被路由到**單一段**路徑。
+    不是當天改壞的）：`api/` 底下的 **catch-all 檔只被路由到「單一段」路徑**。
+    2026-11-03 用 catchall 內建的 `debug-all-200` 除錯端點確認過：
+    `/api/debug-all-200` → 200（函式有吃到）、`/api/debug-all-200/extra` → **平台 404**（沒吃到）；
+    同樣地 `api/games/[...all].mjs` 只吃 `/api/games/<一段>`（`/api/games/a/b/c/d/e` → 平台 404），
+    但 `/api/games/rooms/201` → 有吃到（那是**明確檔案路由** `api/games/rooms/[code].mjs`）。
     `/api/healthz` → 200、`/api/stock` → 200、`/api/og` → 410（函式自己的回應），
     但 `/api/stock/2330`、`/api/healthz/extra` → Vercel 平台的 404（79 bytes NOT_FOUND）。
-    → **多段路徑要通，根 `vercel.json` 得加 rewrite**（`/api/(.*)` → `/api/[...catchall]`，
-      但要先想辦法讓 `/api/games/*` 不被吃掉），或走 prebuilt（它的 config.json 有
-      `{'src': '/api/(.*)', 'dest': '/api/catchall'}` 這條 rewrite，所以以前是通的）。
+    → **多段路徑的解法是「明確檔案路由」**（跟 commit 7d152609 修 join／輪詢同一套做法）：
+      新增多段端點要另外開一個檔案（例：`api/game/[...all].mjs` 吃 `/api/game/score`、
+      `/api/game/leaderboard`），**只往 catchall 的 TABLE 加一條是不會通的**。
+      根 `vercel.json` 加 rewrite（`/api/(.*)` → `/api/[...catchall]`）也曾被考慮過，
+      但要先處理 `/api/games/*` 會不會被吃掉；prebuilt 的 config.json 有
+      `{'src': '/api/(.*)', 'dest': '/api/catchall'}` 這條 rewrite，所以以前是通的。
   - ⚠️ **`prepare-deploy.ps1` 對現在的架構已經過時**：它從 Vercel CLI 快取複製
     `.vercel/.vercel/output/functions/api/catchall.func/catchall.mjs`，那是 **2026-08 的 229KB 舊版**，
     而 main 上是 477KB 新版；新的 `api/games/[...all].mjs` **也不在 prebuilt 輸出裡**。
