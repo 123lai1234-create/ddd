@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#fff1dc"/>
+  <rect y="280" width="640" height="80" fill="#f0dcc0"/>
+  <!-- 背景窗 -->
+  <rect x="40" y="30" width="150" height="110" rx="14" fill="#cfe8f5"/>
+  <circle cx="100" cy="75" r="22" fill="#ffd66b"/>
+  <rect x="40" y="30" width="150" height="110" rx="14" fill="none" stroke="#e8a13c" stroke-width="6"/>
+  <!-- 鍋子 -->
+  <path d="M250 190 h180 a20 20 0 0 1 20 20 v40 a30 30 0 0 1 -30 30 h-160 a30 30 0 0 1 -30 -30 v-40 a20 20 0 0 1 20 -20 z" fill="#5b8dd9"/>
+  <rect x="230" y="185" width="220" height="16" rx="8" fill="#3a6db0"/>
+  <path d="M270 170 q10 -22 0 -40 M310 170 q10 -22 0 -40 M350 170 q10 -22 0 -40 M390 170 q10 -22 0 -40" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.85"/>
+  <circle cx="290" cy="235" r="16" fill="#ff8a5c"/>
+  <circle cx="340" cy="240" r="14" fill="#7bc47f"/>
+  <circle cx="385" cy="232" r="15" fill="#ffd66b"/>
+  <!-- 廚師帽 -->
+  <path d="M480 120 a42 42 0 0 1 84 0 a30 30 0 0 1 -10 24 h-64 a30 30 0 0 1 -10 -24 z" fill="#fff"/>
+  <rect x="486" y="140" width="72" height="16" rx="6" fill="#fff" stroke="#e8a13c" stroke-width="3"/>
+  <!-- 香菇柯基頭 -->
+  <circle cx="522" cy="205" r="46" fill="#f6c177"/>
+  <circle cx="506" cy="200" r="6" fill="#3a2a1a"/>
+  <circle cx="538" cy="200" r="6" fill="#3a2a1a"/>
+  <ellipse cx="522" cy="222" rx="10" ry="7" fill="#3a2a1a"/>
+  <path d="M500 168 q22 -30 44 0 q-8 -18 -22 -18 q-14 0 -22 18z" fill="#e2574c"/>
+  <circle cx="522" cy="156" r="7" fill="#fff"/>
+  <!-- 標題 -->
+  <text x="320" y="330" text-anchor="middle" font-family="sans-serif" font-size="34" font-weight="900" fill="#c65d21">不說廚房</text>
+</svg>

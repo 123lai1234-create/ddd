@@ -1,0 +1,203 @@
+/* 不說廚房 — 多人合作料理遊戲
+   暖色廚房主題，手機優先，大按鈕好點。跟農場同一套版式習慣。 */
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+:root {
+  --bg: #fff7ec;
+  --card: #fffdf8;
+  --ink: #3a2a1a;
+  --muted: #8a6f52;
+  --line: #f0dcc0;
+  --brand: #c65d21;
+  --brand-soft: #fbe3cf;
+  --green: #4c9a5b;
+  --red: #d64541;
+  --amber: #e8a13c;
+}
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  line-height: 1.5;
+}
+button { font: inherit; cursor: pointer; }
+input { font: inherit; }
+
+.kc-app { max-width: 860px; margin: 0 auto; padding: 0 12px 48px; }
+
+/* 頂列 */
+.kc-top {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 0; background: var(--bg);
+}
+.kc-title {
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: 0; padding: 4px 2px; text-align: left;
+}
+.kc-title-icon { font-size: 28px; line-height: 1; }
+.kc-title-name { font-size: 20px; font-weight: 800; }
+.kc-title-sub { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; background: var(--card); }
+.kc-stats { margin-left: auto; display: flex; gap: 10px; font-size: 15px; }
+.kc-stats b { margin-left: 2px; }
+.kc-icon-btn {
+  width: 40px; height: 40px; border-radius: 12px; font-size: 18px;
+  border: 1px solid var(--line); background: var(--card);
+}
+
+/* 卡片與按鈕 */
+.kc-card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  padding: 16px; margin: 12px 0;
+}
+.kc-card h1 { margin: 4px 0 8px; font-size: 26px; }
+.kc-card h2 { margin: 0 0 10px; font-size: 17px; }
+.kc-hero { text-align: center; }
+.kc-hero-emoji { font-size: 44px; line-height: 1.1; }
+.kc-hero-desc { color: var(--muted); margin: 0; }
+.kc-label { display: block; font-weight: 700; margin: 12px 0 6px; }
+.kc-input {
+  width: 100%; padding: 12px; border: 1.5px solid var(--line); border-radius: 12px;
+  background: #fff; color: var(--ink);
+}
+.kc-input.code { text-transform: uppercase; letter-spacing: .2em; font-weight: 800; text-align: center; }
+.kc-hint { color: var(--muted); font-size: 13px; margin: 6px 0; }
+.kc-btn {
+  display: inline-block; border: 1.5px solid var(--brand); background: #fff; color: var(--brand);
+  border-radius: 12px; padding: 11px 16px; font-weight: 700; min-height: 46px;
+}
+.kc-btn.primary { background: var(--brand); color: #fff; }
+.kc-btn.ghost { border-color: var(--line); color: var(--muted); background: var(--card); }
+.kc-btn.big { display: block; width: 100%; font-size: 17px; margin-top: 14px; }
+.kc-btn.small { padding: 7px 12px; min-height: 38px; font-size: 14px; }
+.kc-btn:disabled { opacity: .45; cursor: not-allowed; }
+.kc-join-row { display: flex; gap: 8px; margin-top: 10px; }
+.kc-join-row .kc-input { flex: 0 0 110px; }
+.kc-join-row .kc-btn { flex: 1; }
+.kc-diff { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.kc-diff-opt {
+  border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; background: #fff;
+}
+.kc-diff-opt:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
+.kc-diff-opt span { font-size: 12px; color: var(--muted); text-align: center; }
+.kc-diff-opt input { accent-color: var(--brand); }
+
+/* 大廳 */
+.kc-lobby { text-align: center; }
+.kc-code {
+  font-size: 52px; font-weight: 900; letter-spacing: .3em; color: var(--brand);
+  background: var(--brand-soft); border-radius: 16px; padding: 8px 0 8px .3em; margin: 8px 0;
+}
+.kc-players { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.kc-players li {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fff;
+}
+.kc-dot { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+.kc-pname { font-weight: 700; }
+.kc-ptag { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.kc-count { color: var(--muted); font-size: 13px; font-weight: 400; }
+.kc-off { color: var(--muted); }
+
+/* 班次條 */
+.kc-shiftbar {
+  display: flex; align-items: center; gap: 10px; margin: 12px 0 4px;
+  font-weight: 700;
+}
+.kc-shift-track { flex: 1; height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.kc-shift-fill { height: 100%; background: var(--brand); border-radius: 999px; transition: width .5s linear; }
+.kc-sec { font-size: 16px; margin: 18px 0 8px; }
+
+/* 訂單 */
+.kc-orders { display: grid; gap: 10px; }
+.kc-order {
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 12px;
+}
+.kc-order.mine { border-color: var(--brand); }
+.kc-order-head { display: flex; align-items: center; gap: 8px; }
+.kc-order-emoji { font-size: 30px; }
+.kc-order-name { font-weight: 800; font-size: 17px; }
+.kc-order-price { margin-left: auto; font-weight: 800; color: var(--brand); white-space: nowrap; }
+.kc-patience { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 8px 0; }
+.kc-patience-fill { height: 100%; background: var(--green); }
+.kc-patience-fill.low { background: var(--red); }
+.kc-order-taker { font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+.kc-steps { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; font-size: 14px; }
+.kc-steps li.done { color: var(--green); text-decoration: line-through; }
+.kc-steps li.now { font-weight: 700; }
+.kc-steps li .st { color: var(--muted); font-size: 12px; }
+.kc-order-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.kc-order-actions .kc-btn { flex: 1; min-width: 120px; }
+.kc-ready {
+  background: #fff3cd; border: 1.5px dashed var(--amber); border-radius: 10px;
+  padding: 8px 10px; font-weight: 800; margin-bottom: 8px; animation: kc-pulse 1s infinite;
+}
+@keyframes kc-pulse { 50% { opacity: .55; } }
+.kc-cooking { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.kc-empty { color: var(--muted); text-align: center; padding: 18px 0; }
+
+/* 工作站 */
+.kc-stations { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.kc-station {
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 14px;
+  padding: 12px 10px; text-align: center;
+}
+.kc-station.busy { border-color: var(--amber); }
+.kc-station-emoji { font-size: 30px; }
+.kc-station-name { font-weight: 800; }
+.kc-station-state { font-size: 13px; color: var(--muted); margin-top: 4px; min-height: 38px; }
+.kc-station-bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 6px; }
+.kc-station-fill { height: 100%; background: var(--amber); }
+
+/* 日誌 */
+.kc-log { list-style: none; margin: 0; padding: 0; font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+.kc-log li { border-bottom: 1px dashed var(--line); padding-bottom: 4px; }
+
+/* 結算 */
+.kc-settle { text-align: center; }
+.kc-settle-line { font-size: 17px; margin: 4px 0; }
+.kc-settle-line b { color: var(--brand); font-size: 20px; }
+.kc-rank { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; text-align: left; }
+.kc-rank li {
+  display: flex; gap: 10px; align-items: center;
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fff;
+}
+.kc-rank .pts { margin-left: auto; font-weight: 800; }
+
+/* 恢復碼提示條（不擋畫面的小橫條，取代蓋住全畫面的 modal） */
+.kc-recovery {
+  background: #fff3cd; border: 1.5px solid var(--amber); border-radius: 12px;
+  padding: 10px 12px; margin: 12px 0; font-size: 14px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.kc-recovery b { letter-spacing: .1em; }
+.kc-recovery .kc-btn { margin-left: auto; }
+.kc-modal-root:empty { display: none; }
+.kc-modal-back {
+  position: fixed; inset: 0; background: rgba(58, 42, 26, .45);
+  display: flex; align-items: flex-end; justify-content: center; z-index: 50; padding: 12px;
+}
+.kc-modal {
+  background: var(--card); border-radius: 18px; padding: 20px; width: 100%; max-width: 520px;
+  max-height: 82vh; overflow: auto;
+}
+.kc-modal h2 { margin-top: 0; }
+.kc-modal .kc-btn { width: 100%; margin-top: 12px; }
+.kc-toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+  background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 999px;
+  font-size: 14px; opacity: 0; pointer-events: none; transition: .25s; z-index: 60;
+  max-width: calc(100vw - 32px); text-align: center;
+}
+.kc-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.kc-room-item {
+  display: flex; gap: 8px; align-items: center; width: 100%; text-align: left;
+  border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
+}
+.kc-room-item b { font-size: 17px; letter-spacing: .15em; }
+
+@media (min-width: 640px) {
+  .kc-orders { grid-template-columns: 1fr 1fr; }
+  .kc-modal-back { align-items: center; }
+}

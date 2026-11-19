@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-label="不說農場封面">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#aee2f5"/>
+      <stop offset="1" stop-color="#e8f7d9"/>
+    </linearGradient>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fce6a"/>
+      <stop offset="1" stop-color="#5b8c3e"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#sky)"/>
+  <circle cx="540" cy="62" r="38" fill="#ffd94d"/>
+  <circle cx="540" cy="62" r="52" fill="#ffd94d" opacity="0.25"/>
+  <ellipse cx="120" cy="70" rx="58" ry="18" fill="#ffffff" opacity="0.9"/>
+  <ellipse cx="300" cy="48" rx="46" ry="14" fill="#ffffff" opacity="0.8"/>
+  <path d="M0 210 L640 210 L640 360 L0 360 Z" fill="url(#field)"/>
+  <g stroke="#4a7a33" stroke-width="4" opacity="0.7">
+    <line x1="0" y1="250" x2="640" y2="250"/>
+    <line x1="0" y1="300" x2="640" y2="300"/>
+  </g>
+  <g>
+    <rect x="60" y="226" width="46" height="14" rx="6" fill="#8a5a33"/>
+    <text x="83" y="238" font-size="14" text-anchor="middle">🥬</text>
+    <rect x="130" y="226" width="46" height="14" rx="6" fill="#8a5a33"/>
+    <text x="153" y="238" font-size="14" text-anchor="middle">🥕</text>
+    <rect x="200" y="226" width="46" height="14" rx="6" fill="#8a5a33"/>
+    <text x="223" y="238" font-size="14" text-anchor="middle">🍅</text>
+    <rect x="60" y="276" width="46" height="14" rx="6" fill="#8a5a33"/>
+    <text x="83" y="288" font-size="14" text-anchor="middle">🌽</text>
+    <rect x="130" y="276" width="46" height="14" rx="6" fill="#8a5a33"/>
+    <text x="153" y="288" font-size="14" text-anchor="middle">🎃</text>
+    <rect x="200" y="276" width="46" height="14" rx="6" fill="#8a5a33"/>
+    <text x="223" y="288" font-size="14" text-anchor="middle">🍓</text>
+  </g>
+  <ellipse cx="470" cy="330" rx="90" ry="14" fill="#3d9ccb" opacity="0.55"/>
+  <text x="470" y="326" font-size="26" text-anchor="middle">🎣🐟</text>
+  <g>
+    <ellipse cx="400" cy="300" rx="46" ry="34" fill="#f6c98a"/>
+    <ellipse cx="368" cy="316" rx="14" ry="18" fill="#f6c98a"/>
+    <ellipse cx="432" cy="316" rx="14" ry="18" fill="#f6c98a"/>
+    <circle cx="384" cy="292" r="6" fill="#3a2f1d"/>
+    <circle cx="416" cy="292" r="6" fill="#3a2f1d"/>
+    <circle cx="386" cy="290" r="2" fill="#fff"/>
+    <circle cx="418" cy="290" r="2" fill="#fff"/>
+    <ellipse cx="400" cy="308" rx="8" ry="5" fill="#3a2f1d"/>
+    <path d="M372 268 Q400 236 428 268 L420 276 Q400 252 380 276 Z" fill="#c98d5f"/>
+    <path d="M386 262 Q400 246 414 262 L408 268 Q400 256 392 268 Z" fill="#a06a3c"/>
+    <rect x="392" y="330" width="8" height="16" rx="3" fill="#8a5a33"/>
+    <rect x="408" y="330" width="8" height="16" rx="3" fill="#8a5a33"/>
+  </g>
+  <text x="90" y="330" font-size="30" text-anchor="middle">🦋</text>
+  <text x="560" y="180" font-size="26" text-anchor="middle">⛏️</text>
+  <text x="40" y="120" font-size="22">🌻</text>
+  <text x="600" y="120" font-size="22">🌻</text>
+  <rect x="0" y="0" width="640" height="360" fill="none"/>
+  <text x="320" y="52" font-size="44" font-weight="bold" text-anchor="middle" fill="#3a2f1d" font-family="sans-serif">不說農場</text>
+  <text x="320" y="86" font-size="17" text-anchor="middle" fill="#5b6b4a" font-family="sans-serif">香菇柯基的種田生活・種田・捕蟲・釣魚・挖寶</text>
+</svg>
