@@ -1,4 +1,4 @@
-# deploy-production.ps1 - 一鍵把目前的內容送上正式站
+﻿# deploy-production.ps1 - 一鍵把目前的內容送上正式站
 #
 # 流程（跟「git push 自動部署」同一條路徑，只是多了驗證）：
 #   1. 檢查工作區乾淨、且分支已包含 origin/main（否則會退版，見下方警語）
@@ -100,17 +100,19 @@ $urls = @(
 )
 $bad = 0
 foreach ($u in $urls) {
+    # 308 是尾斜線正規化（cleanUrls），Invoke-WebRequest 不會跟隨 → 會落到 catch，
+    # 所以 catch 裡只取狀態碼、不計數，計數統一由下面的 flag 決定。
+    $code = 0
+    $len = ''
     try {
         $r = Invoke-WebRequest -Uri $u -Method Head -TimeoutSec 25 -UseBasicParsing
         $code = $r.StatusCode
         $len = $r.Headers['Content-Length']
     } catch {
         $code = $_.Exception.Response.StatusCode.value__
-        $len = ''
-        $bad++
     }
-    $flag = if ($code -eq 200 -or $code -eq 308) { '✓' } else { '✗' }
-    if ($flag -eq '✗') { $bad++ }
+    $flag = if ($code -eq 200 -or $code -eq 308) { 'OK  ' } else { 'FAIL' }
+    if ($flag -eq 'FAIL') { $bad++ }
     "  {0} {1,-4} {2,10}  {3}" -f $flag, $code, $len, $u
 }
 if ($bad -gt 0) { Write-Host "  ✗ $bad 個路徑異常" -ForegroundColor Red; exit 1 }
