@@ -702,6 +702,17 @@ Invoke-WebRequest -Uri 'https://donttalk.vercel.app/music/cards/05_雨夜出租/
     push 到其他分支（例如 `123lai1234-create`）→ 只有 **Preview** 部署，
     正式站不會變動。這個欄位**只能用 Vercel API 的 `link` 改（已被 v9 拒絕），
     只能走 Dashboard**。
+54. **`vercel deploy --prebuilt` 會打出「退版」版本**：它用**本地工作區** build，
+    不含 `origin/main` 還沒合併進來的 commit。2026-11-18 就是這樣把線上打成
+    缺 firmware、浮動人偶、小豬等功能的舊版（首頁 78643 vs main 的 85313）。
+    → **部署前必須先 `git merge origin/main`**，否則線上會退版。
+    → 正確做法是走 git push（見 `astro/scripts/deploy-production.ps1`：
+    檢查分支是否含 origin/main → push main → 等部署 → 驗證 alias 與關鍵路徑）。
+55. **manual alias 移除後，git push 的自動指派就會恢復**（實測 2026-11-18 22:09）：
+    `vercel alias rm donttalk.vercel.app` 之後，下一次 push main 的 production 部署
+    自動把 `donttalk.vercel.app`、`donttalk-donttalk.vercel.app`、
+    `donttalk-git-main-donttalk.vercel.app` 三個 alias 全部指過去，
+    正式站自動換版（內容含「不說廚房」那次 push 的成果）。
 
 ---
 
