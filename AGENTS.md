@@ -6,7 +6,17 @@
 ## 部署（Vercel Hobby plan）
 
 - 🚨🚨 **2026-11-02 起 API 搬到 Render，部署以 `git push origin main` 為準，不要盲目跑 prebuilt。**
-  - **現況**：真正的後端是 `https://donttalk-catchall.onrender.com/api/*`；
+  - ⚠️ **2026-11-20 再搬一次：現在的後端是 `https://donttalk-api.fly.dev`（不是 Render）。**
+    - `frontend/scripts/app-config.js` 的 `defaultApiCandidates` 已是
+      `['https://donttalk-api.fly.dev', 'https://donttalk.vercel.app']`，這是**正確**的現況。
+      fly.dev 根路徑回 `{"service":"donttalk-api","databaseConfigured":true,"connected":true}`，
+      `/openapi.json` 有 73 條路由（`/api/sequences`、`/api/training/logs`、`/api/games/scores`…），
+      站台實際會打的那幾條都測得到 200 → **不要把它當成 sync 的回退改回 Render**。
+    - 健康檢查路徑兩邊不同：fly.dev 用 `/healthz`（**沒有** `/api/healthz`，那是 404）。
+    - `https://donttalk-catchall.onrender.com` 仍活著（`/api/healthz` 200、`/api/stock/2330` 200），
+      **stock-app 的靜態頁把 Render 網址寫死**（`astro/public/stock*/` 內的 `_RENDER` 變數），
+      所以 stock 走 Render、其它頁走 fly.dev，兩套並存是現況不是 bug。
+  - **現況**：真正的後端是 `https://donttalk-api.fly.dev/api/*`；
     `astro/src/pages/stock.astro` 會先探 Render 再退回 `/api/healthz`，所以頁面還能用。
     Vercel 端仍留著 `api/[...catchall].mjs`（477KB）與 `api/games/[...all].mjs` 兩個 function
     原始碼在 git 裡，2026-11-02 實測兩者都逾時不回應（`/api/healthz` 連線逾時、
@@ -212,6 +222,21 @@
 - `frontend/scripts|styles|games|templates/` 是前端 **canonical source**，`astro/public/` 是鏡像
   → 改 JS/CSS **只改 `frontend/`**，再跑 `node astro/scripts/sync_frontend.mjs`（會 wipe + 重拷 `astro/public/scripts/`）
   → 兩份都手動改會漂移；diving 的 `cwa-loader.js` 2026-10-20 就是這樣才兩邊都改到
+- 🚨 **`sync_frontend.mjs` 是 `rm -rf astro/public/{scripts,styles,templates}` + 重拷，會靜默吃掉
+  只存在於 `astro/public/` 的檔案**（2026-11-20 實測釀成線上 404，見下）。
+  - `prebuild` 腳本只是 `echo`（不會自動 sync），所以是**手動**跑 `npm run sync-frontend` 後
+    把 wipe 結果 commit 進去 → 線上才壞。
+  - ⚠️ **修檔順序反了會一直復發**：先改 `frontend/`，再 sync。只改 `astro/public/` 的話，
+    下一次 sync 會把你的修改刪掉。
+  - 檢查兩側是否漂移：`git log -1 --date=short -- frontend/<f>` 對 `astro/public/<f>`，
+    **日期較舊的那一側才是被 wipe 吃掉的版本**。
+  - 若已漂移：把 `astro/public/` 的版本 copy 回 `frontend/`，再跑 sync，
+    直到 `git status --short -- astro/public` 乾淨（sync 變成 no-op）。
+  - 2026-11-20 已收斂完成：當時 `frontend/` 落後於 `astro/public/` 的檔案有
+    `scripts/music-player.js`、`scripts/music-mv.js`、`styles/music.css`、`styles/shared.css`、
+    `games/lockdown-survival/*`，以及只在 `astro/public/` 存在的 9 個音訊/動效腳本
+    （`audio-engine` / `reverb-irs` / `visualizer` / `mixing-console` / `music-shortcuts` /
+    `chibi-3d` / `hero-network.js` + `hero-network.css` + `demo.css`）—— 兩側已對齊。
 - 不要動 `node_modules/` `.venv/` `.wrangler/` `.mavis/` `.opencode/`
 - 寫 UTF-8 檔案**不要**用 PowerShell `Add-Content`（會腐蝕編碼）
 
