@@ -118,6 +118,8 @@ a {
   opacity: 0.7;
 }
 
+/* 0.88（原 0.97）：讓 hero-network.js 的網格從玻璃後面透出來。
+   卡片本來就有 backdrop-filter: blur(18px)，透出來是霧面的，不會干擾閱讀。 */
 .hero-copy {
   padding: 36px 32px;
   background:
@@ -126,7 +128,7 @@ a {
       rgba(123, 240, 190, 0.1),
       transparent
     ),
-    linear-gradient(180deg, rgba(20, 31, 39, 0.97), rgba(10, 17, 23, 0.97));
+    linear-gradient(180deg, rgba(20, 31, 39, 0.88), rgba(10, 17, 23, 0.88));
 }
 
 .eyebrow {
@@ -275,7 +277,7 @@ h1 span {
       rgba(88, 215, 255, 0.06),
       transparent
     ),
-    linear-gradient(180deg, rgba(23, 34, 44, 0.97), rgba(12, 19, 25, 0.97));
+    linear-gradient(180deg, rgba(23, 34, 44, 0.88), rgba(12, 19, 25, 0.88));
 }
 
 .panel-title {

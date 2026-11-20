@@ -1,0 +1,31 @@
+/* hero-network.css — 給 scripts/hero-network.js 的堆疊層級
+ *
+ * 單獨一個檔案，這樣其他頁要開這個效果只要加進 pageStyles 就行，
+ * 不需要去動各頁自己的 CSS。
+ */
+
+/* isolation:isolate 開一個新的堆疊情境，讓 canvas 的 z-index:-1
+   不會掉到 .hero 的背景「後面」—— 我們要的是它在卡片「後面」。 */
+.hero {
+    position: relative;
+    isolation: isolate;
+}
+
+.hero-network-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    /* 純裝飾，不能擋任何點擊或焦點 */
+    pointer-events: none;
+    /* 沒有 JS 觸發時也別佔位 */
+    display: block;
+}
+
+/* 畫面很小就別畫了 — 節點數本來就會被 clamp，這裡再少一階省電 */
+@media (max-width: 480px) {
+    .hero-network-canvas {
+        opacity: 0.6;
+    }
+}
