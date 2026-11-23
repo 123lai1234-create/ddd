@@ -82,7 +82,7 @@
     <b>三視圖規格</b>：轉面角度 0°（正面）→ 90°（左側面）→ 180°（背面），同張內三視圖等高、同接地線；
     背景為暖米褐垂直漸層，角色以緊貼短深的橢圓陰影接地。
     <b>物件角色</b>（椅／鐵櫃／棉被／襪子／罐頭／手電筒）已改為與其他 45 隻相同的人物角色美術。
-    <br>遊戲頁：<a href="/games/confinement-escape/">禁閉逃殺：文字獄</a>　·　3D 模型來源：
+    <br>遊戲頁：<a href="/games/confinement-escape">禁閉逃殺：文字獄</a>　·　3D 模型來源：
     <a href="https://github.com/123lai1234-create/ddd-models">123lai1234-create/ddd-models</a>
   </div>
 </div>
@@ -100,14 +100,19 @@
     <div id="panev" class="hide"><img class="sheet" id="sheetimg" alt=""></div>
     <div class="mfoot">
       <button class="btn" onclick="closeM()">關閉</button>
-      <a class="btn" id="gamelink" href="/games/confinement-escape/">前往遊戲</a>
+      <a class="btn" id="gamelink" href="/games/confinement-escape">前往遊戲</a>
     </div>
   </div>
 </div>
 
 <script>
 const ROSTER = [{"id": "arsonist", "num": 1, "name": "縱火犯", "r": "R", "rc": "rR", "kind": "角色", "cls": "🔮 術士"}, {"id": "ashen", "num": 2, "name": "阿燼", "r": "SSR", "rc": "rSSR", "kind": "角色", "cls": "⚔ 戰士"}, {"id": "assassin", "num": 3, "name": "刺客", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "🗡 刺客"}, {"id": "bartender", "num": 4, "name": "飲品師", "r": "R", "rc": "rR", "kind": "角色", "cls": "✚ 輔助"}, {"id": "berserker", "num": 5, "name": "狂戰士", "r": "SSR", "rc": "rSSR", "kind": "角色", "cls": "⚔ 戰士"}, {"id": "bodyguard", "num": 6, "name": "保鑣", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "🛡 坦克"}, {"id": "bomb", "num": 7, "name": "橡膠人", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "🛡 坦克"}, {"id": "boss", "num": 8, "name": "黑社會老大", "r": "SSR", "rc": "rSSR", "kind": "角色", "cls": "✚ 輔助"}, {"id": "butcher", "num": 9, "name": "屠夫", "r": "SSR", "rc": "rSSR", "kind": "角色", "cls": "⚔ 戰士"}, {"id": "chair", "num": 10, "name": "斷腿椅子", "r": "N", "rc": "rN", "kind": "物件", "cls": ""}, {"id": "chef", "num": 11, "name": "廚師", "r": "R", "rc": "rR", "kind": "角色", "cls": "✚ 輔助"}, {"id": "chemist", "num": 12, "name": "化學家", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "🔮 術士"}, {"id": "climber", "num": 13, "name": "攀岩者", "r": "R", "rc": "rR", "kind": "角色", "cls": "🗡 刺客"}, {"id": "courier", "num": 14, "name": "郵差", "r": "R", "rc": "rR", "kind": "角色", "cls": "✚ 輔助"}, {"id": "detective", "num": 15, "name": "私家偵探", "r": "R", "rc": "rR", "kind": "角色", "cls": "🎯 射手"}, {"id": "diver", "num": 16, "name": "潛水員", "r": "R", "rc": "rR", "kind": "角色", "cls": "🗡 刺客"}, {"id": "exorcist", "num": 17, "name": "還魂師", "r": "SSR", "rc": "rSSR", "kind": "角色", "cls": "✚ 輔助"}, {"id": "fatty", "num": 18, "name": "肥宅", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "🛡 坦克"}, {"id": "fatty2", "num": 19, "name": "肥宅", "r": "SSR", "rc": "rSSR", "kind": "角色", "cls": "🛡 坦克"}, {"id": "gambler", "num": 20, "name": "賭徒", "r": "R", "rc": "rR", "kind": "角色", "cls": "⚔ 戰士"}, {"id": "geneFreak", "num": 21, "name": "基因怪人", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "⚔ 戰士"}, {"id": "gourmet", "num": 22, "name": "老饕", "r": "R", "rc": "rR", "kind": "角色", "cls": "🛡 坦克"}, {"id": "hacker", "num": 23, "name": "黑客", "r": "R", "rc": "rR", "kind": "角色", "cls": "🔮 術士"}, {"id": "herbalist", "num": 24, "name": "草藥師", "r": "R", "rc": "rR", "kind": "角色", "cls": "✚ 輔助"}, {"id": "hunter", "num": 25, "name": "獵人", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "🎯 射手"}, {"id": "janitor", "num": 26, "name": "清潔工", "r": "R", "rc": "rR", "kind": "角色", "cls": "✚ 輔助"}, {"id": "leader", "num": 27, "name": "團長", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "✚ 輔助"}, {"id": "locker", "num": 28, "name": "空的鐵櫃", "r": "N", "rc": "rN", "kind": "物件", "cls": ""}, {"id": "lucky", "num": 29, "name": "幸運兒", "r": "R", "rc": "rR", "kind": "角色", "cls": "🎯 射手"}, {"id": "medic", "num": 30, "name": "醫官", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "✚ 輔助"}, {"id": "mediocre", "num": 31, "name": "庸才", "r": "R", "rc": "rR", "kind": "角色", "cls": "⚔ 戰士"}, {"id": "merc", "num": 32, "name": "雇傭兵", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "🎯 射手"}, {"id": "miner", "num": 33, "name": "礦工", "r": "R", "rc": "rR", "kind": "角色", "cls": "⚔ 戰士"}, {"id": "paramedic", "num": 34, "name": "急救員", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "✚ 輔助"}, {"id": "qing", "num": 35, "name": "晴", "r": "SSR", "rc": "rSSR", "kind": "角色", "cls": "✚ 輔助"}, {"id": "quilt", "num": 36, "name": "發霉棉被", "r": "N", "rc": "rN", "kind": "物件", "cls": ""}, {"id": "runner", "num": 37, "name": "馬拉松跑者", "r": "R", "rc": "rR", "kind": "角色", "cls": "🗡 刺客"}, {"id": "scavenger", "num": 38, "name": "拾荒者", "r": "R", "rc": "rR", "kind": "角色", "cls": "🎯 射手"}, {"id": "sentinel", "num": 39, "name": "哨兵", "r": "R", "rc": "rR", "kind": "角色", "cls": "🛡 坦克"}, {"id": "shade", "num": 40, "name": "暗影使者", "r": "SSR", "rc": "rSSR", "kind": "角色", "cls": "🗡 刺客"}, {"id": "sniper", "num": 41, "name": "狙擊手", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "🎯 射手"}, {"id": "sock", "num": 42, "name": "一雙襪子", "r": "N", "rc": "rN", "kind": "物件", "cls": ""}, {"id": "survivor", "num": 43, "name": "求生教官", "r": "R", "rc": "rR", "kind": "角色", "cls": "🛡 坦克"}, {"id": "tamer", "num": 44, "name": "馴獸師", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "🔮 術士"}, {"id": "tin", "num": 45, "name": "過期罐頭", "r": "N", "rc": "rN", "kind": "物件", "cls": ""}, {"id": "torch", "num": 46, "name": "壞掉的手電筒", "r": "N", "rc": "rN", "kind": "物件", "cls": ""}, {"id": "trucker", "num": 47, "name": "貨車司機", "r": "R", "rc": "rR", "kind": "角色", "cls": "🛡 坦克"}, {"id": "tycoon", "num": 48, "name": "富豪", "r": "R", "rc": "rR", "kind": "角色", "cls": "🔮 術士"}, {"id": "vampire", "num": 49, "name": "吸血鬼", "r": "SSR", "rc": "rSSR", "kind": "角色", "cls": "⚔ 戰士"}, {"id": "veteran", "num": 50, "name": "鐵血老兵", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "⚔ 戰士"}, {"id": "witch", "num": 51, "name": "女巫", "r": "SR", "rc": "rSR", "kind": "角色", "cls": "🔮 術士"}];
-const MV_BASE = "../games/confinement-escape/";
+// ⚠️ 站台 trailingSlash=false，/3d-gallery/ 會被 308 轉成 /3d-gallery，
+// 相對路徑因此從「根目錄」解析（thumbs/xxx 會變成 /thumbs/xxx → 404）。
+// 所以這頁所有資源路徑一律用絕對路徑。
+const MV_BASE = "/games/confinement-escape/";
+const THUMB_BASE = "/3d-gallery/thumbs/";
+const SHEET_BASE = "/games/confinement-escape/images/views/";
 let FILTER = "all", CUR = null, MV_READY = null;
 
 const grid = document.getElementById("grid");
@@ -124,7 +129,7 @@ function render(){
   cnt.textContent = list.length + " / " + ROSTER.length + " 隻";
   grid.innerHTML = list.map(c=>`
     <button class="card" data-id="${c.id}">
-      <img class="thumb" loading="lazy" decoding="async" src="thumbs/${c.id}.webp" alt="${c.name}">
+      <img class="thumb" loading="lazy" decoding="async" src="${THUMB_BASE}${c.id}.webp" alt="${c.name}">
       <div class="meta">
         <div class="nm"><span class="r ${c.rc}">${c.r}</span>${c.name}${c.kind==="物件"?'<span class="obj">物件</span>':""}</div>
         <div class="tag">${c.num>0?String(c.num).padStart(2,"0")+" · ":""}${c.cls||""}</div>
@@ -155,10 +160,9 @@ function openM(id){
   CUR = c;
   document.getElementById("mname").innerHTML =
     `<span class="r ${c.rc}">${c.r}</span>${c.name}`;
-  document.getElementById("sheetimg").src =
-    "/games/confinement-escape/images/views/" + c.id + ".webp";
+  document.getElementById("sheetimg").src = SHEET_BASE + c.id + ".webp";
   document.getElementById("sheetimg").alt = c.name + " 三視圖設計稿";
-  document.getElementById("gamelink").href = "/games/confinement-escape/";
+  document.getElementById("gamelink").href = "/games/confinement-escape";
   document.getElementById("modal").classList.add("on");
   showTab("3d");
   mvLoad().then(()=>{

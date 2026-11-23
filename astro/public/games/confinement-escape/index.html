@@ -1522,7 +1522,7 @@ function openView(id){
   openModal(`<h3 style="margin:0 0 8px">📐 ${nm} · 設計稿</h3>
   <img src="images/views/${id}.webp" alt="${nm} 三視圖設計稿" loading="lazy" decoding="async" style="width:100%;border-radius:10px;background:#0e1014;display:block">
   <div class="dim small" style="margin-top:8px">左：角色主視覺　右：正面／側面／背面（轉面 0° → 90° → 180°）</div>
-  <div class="row" style="margin-top:12px"><button onclick="closeModal()">關閉</button>${GLB3D.has(id)?`<button class="pri" style="margin-left:auto" onclick="open3D('${id}')">🎥 3D 檢視</button>`:""}</div>`);
+  <div class="row" style="margin-top:12px"><button onclick="closeModal()">關閉</button><button onclick="location.href='/3d-gallery'">📚 51 隻一覽</button>${GLB3D.has(id)?`<button class="pri" style="margin-left:auto" onclick="open3D('${id}')">🎥 3D 檢視</button>`:""}</div>`);
 }
 function viewBtn(id){
   return `<button onclick="openView('${id}')">📐 設計稿</button>`;

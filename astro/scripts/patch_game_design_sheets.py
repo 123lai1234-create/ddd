@@ -71,6 +71,10 @@ JUNK_NEW = '''<button class="mini" onclick="openView('${k}')">📐 設計稿</bu
 AVATAR_OLD = '''if(JUNK[id])return `<img loading="lazy" decoding="async" class="avimg" src="images/avatars/${id}.webp" alt="" draggable="false" onerror="this.outerHTML='<span class=emo>${JUNK[id].emoji}</span>'">`;'''
 AVATAR_NEW = '''if(JUNK[id])return `<img loading="lazy" decoding="async" class="avimg" src="images/avatars-v2/${id}.webp" alt="" draggable="false" onerror="this.outerHTML='<span class=emo>${JUNK[id].emoji}</span>'">`;'''
 
+# 設計稿 modal 的底部列：加一個「51 隻一覽」按鈕導到獨立頁 /3d-gallery
+FOOTER_OLD = '''<button onclick="closeModal()">關閉</button>${GLB3D.has(id)?`<button class="pri" style="margin-left:auto" onclick="open3D('${id}')">🎥 3D 檢視</button>`:""}</div>`);'''
+FOOTER_NEW = '''<button onclick="closeModal()">關閉</button><button onclick="location.href='/3d-gallery'">📚 51 隻一覽</button>${GLB3D.has(id)?`<button class="pri" style="margin-left:auto" onclick="open3D('${id}')">🎥 3D 檢視</button>`:""}</div>`);'''
+
 
 def patch(src):
     """回傳 (新內容, 套用幾條規則)。"""
@@ -99,6 +103,11 @@ def patch(src):
     # 4) 6 隻物件角色卡面
     if AVATAR_NEW not in src and AVATAR_OLD in src:
         src = src.replace(AVATAR_OLD, AVATAR_NEW, 1)
+        fired += 1
+
+    # 5) 設計稿 modal 加「51 隻一覽」按鈕（獨立頁 /3d-gallery）
+    if FOOTER_NEW not in src and FOOTER_OLD in src:
+        src = src.replace(FOOTER_OLD, FOOTER_NEW, 1)
         fired += 1
 
     return src, fired
