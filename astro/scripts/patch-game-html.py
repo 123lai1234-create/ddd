@@ -248,6 +248,11 @@ VIEWER_BTN_NEW = '${canBreak(id)?`<button class="gold" onclick="BR_RES=null;conf
 # 就看得到。錨點取數值列尾端（全檔唯一），避開全形空白比對。
 VIEWER_BTN_TOP_ANCHOR = '💨 ${sv("spd",s.spd)}</div>\n'
 VIEWER_BTN_TOP = '    ${GLB3D.has(id)?`<div class="row" style="margin-top:8px"><button class="pri" onclick="open3D(\'${id}\')">🎥 3D 檢視</button></div>`:""}\n'
+# 2026-11-23: 設計稿補丁（patch_game_design_sheets.py）會把上面那行整行換成
+# 「3D 檢視 + 📐 設計稿」兩個按鈕的版本。所以判斷「按鈕列是否已經在」時，
+# 這個版本也要算數 —— 否則會在錨點後再插一次舊的 3D 檢視按鈕列，
+# 變成同一個角色頁面出現兩個按鈕列（2026-11-23 實際踩到）。
+VIEWER_BTN_TOP_DESIGN = '    ${(GLB3D.has(id)||VIEWS.has(id))?'
 
 def main():
     with io.open(TARGET, 'r', encoding='utf-8', newline='') as fh:
@@ -294,7 +299,7 @@ def main():
     # 2026-11-10 晚：按鈕改放詳情頭部（名字／數值列下方）。舊版在底部列的按鈕
     # 若還在，先拆掉；再把按鈕插到頭部。只有頭部錨點存在時才拆底部按鈕，
     # 避免錨點失效時按鈕整個消失。
-    top_present = VIEWER_BTN_TOP in src
+    top_present = (VIEWER_BTN_TOP in src) or (VIEWER_BTN_TOP_DESIGN in src)
     if VIEWER_BTN_NEW in src and (top_present or VIEWER_BTN_TOP_ANCHOR in src):
         src = src.replace(VIEWER_BTN_NEW, VIEWER_BTN_OLD, 1)
         viewer_fired += 1
@@ -316,6 +321,19 @@ def main():
             src = src.replace(old_base, GLB_CDN_BASE)
             viewer_fired += 1
 
+    # 5. 三視圖設計稿（2026-11-23）。51 隻角色的造型設計稿（主視覺 + 正側背）
+    #    接進遊戲頁：showCard 加「📐 設計稿」按鈕、junkPanel 的 6 隻 N 白卡物件
+    #    也能看設計稿、6 隻物件角色的卡面換成新版 Format A 畫風。
+    #    獨立頁 /3d-gallery/ 是 51 隻一覽（可旋轉 3D 模型 + 設計稿切換）。
+    #    這是加值功能：套用失敗只警告，不應該擋住整個上游同步流程。
+    design_fired = 0
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import patch_game_design_sheets
+        src, design_fired = patch_game_design_sheets.patch(src)
+    except Exception as exc:  # noqa: BLE001
+        print('design sheets patch failed: %r' % (exc,))
+
     with io.open(TARGET, 'w', encoding='utf-8', newline='') as fh:
         fh.write(src)
 
@@ -336,6 +354,7 @@ def main():
     print('youtube edits applied   : %d (%d rule(s) fired)' % (youtube_hits, fired))
     print('bgm credits removed     : %d' % bgm_hits)
     print('3d viewer rules applied : %d (of 4)' % viewer_fired)
+    print('design sheets rules     : %d (of 4)' % design_fired)
     print('remaining .ogg refs     : %d' % len(OGG_SRC.findall(src)))
     print('youtube leftovers       : %d' % leftovers)
     print('BOM present             : %s' % (raw[:3] == b'\xef\xbb\xbf'))

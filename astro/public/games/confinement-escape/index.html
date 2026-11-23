@@ -1028,7 +1028,7 @@ function gearName(g){return `${GEAR[g.base].icon}${GEAR[g.base].name}${g.lv?" +"
 function gearCls(base){const c=GEAR[base].cls;return c?c.map(k=>CLASSES[k].icon+CLASSES[k].name).join("／"):"全職業";}
 
 function avatar(id,p2){
-  if(JUNK[id])return `<img loading="lazy" decoding="async" class="avimg" src="images/avatars/${id}.webp" alt="" draggable="false" onerror="this.outerHTML='<span class=emo>${JUNK[id].emoji}</span>'">`;
+  if(JUNK[id])return `<img loading="lazy" decoding="async" class="avimg" src="images/avatars-v2/${id}.webp" alt="" draggable="false" onerror="this.outerHTML='<span class=emo>${JUNK[id].emoji}</span>'">`;
   const d=DEF(id);
   if(d.img) return `<img loading="lazy" decoding="async" class="avimg" src="images/bosses/${id}_${p2?2:1}.webp" alt="" draggable="false">`;
   if(d.pic) return `<img loading="lazy" decoding="async" class="avimg" src="images/monsters/${id}.webp" alt="" draggable="false" onerror="this.outerHTML='<span class=emo>${d.emoji}</span>'">`;
@@ -1513,6 +1513,22 @@ function open3D(id){
   });
 }
 
+/* ===== MIRROR FEATURE: DESIGN SHEETS ===== */
+// 51 隻角色的三視圖設計稿（主視覺 + 正面／側面／背面），放在 images/views/<id>.webp。
+// 6 隻 N 白卡（物件角色）另有新版 Format A 畫風卡面，放在 images/avatars-v2/<id>.webp。
+const VIEWS=new Set(['arsonist', 'ashen', 'assassin', 'bartender', 'berserker', 'bodyguard', 'bomb', 'boss', 'butcher', 'chair', 'chef', 'chemist', 'climber', 'courier', 'detective', 'diver', 'exorcist', 'fatty', 'fatty2', 'gambler', 'geneFreak', 'gourmet', 'hacker', 'herbalist', 'hunter', 'janitor', 'leader', 'locker', 'lucky', 'medic', 'mediocre', 'merc', 'miner', 'paramedic', 'qing', 'quilt', 'runner', 'scavenger', 'sentinel', 'shade', 'sniper', 'sock', 'survivor', 'tamer', 'tin', 'torch', 'trucker', 'tycoon', 'vampire', 'veteran', 'witch']);
+function openView(id){
+  const nm=(CARDS[id]&&CARDS[id].name)||(JUNK[id]&&JUNK[id].name)||id;
+  openModal(`<h3 style="margin:0 0 8px">📐 ${nm} · 設計稿</h3>
+  <img src="images/views/${id}.webp" alt="${nm} 三視圖設計稿" loading="lazy" decoding="async" style="width:100%;border-radius:10px;background:#0e1014;display:block">
+  <div class="dim small" style="margin-top:8px">左：角色主視覺　右：正面／側面／背面（轉面 0° → 90° → 180°）</div>
+  <div class="row" style="margin-top:12px"><button onclick="closeModal()">關閉</button>${GLB3D.has(id)?`<button class="pri" style="margin-left:auto" onclick="open3D('${id}')">🎥 3D 檢視</button>`:""}</div>`);
+}
+function viewBtn(id){
+  return `<button onclick="openView('${id}')">📐 設計稿</button>`;
+}
+/* ===== END MIRROR FEATURE: DESIGN SHEETS ===== */
+
 /* ===================== GUIDE ===================== */
 // 超簡單導引：第一次進來自動打開，之後按右上角 ⚙ 設定裡的「玩法導引」重看
 const GUIDE=[
@@ -1844,7 +1860,7 @@ function junkPanel(){
     <button class="mini" onclick="sellJunk()">💰 一鍵遣散全部（🪙${junkCount()*JUNK_PRICE}）</button></div>
     <div class="small dim" style="margin:4px 0 8px">白卡可以遣散（每張 🪙${JUNK_PRICE}），或任意 ${JUNK_COST} 張（可混搭）合成 1 名隨機 R 角色；不能組隊、升星或熔煉。</div>
     <div class="cardgrid">${JUNK_IDS.filter(k=>SAVE.junk[k]).map(k=>`<div class="ccard N" style="cursor:default"><div class="av">${avatar(k)}</div><div class="nm">${JUNK[k].name}</div>
-      <div class="small">×${SAVE.junk[k]}</div><button class="mini" onclick="sellJunk('${k}')">遣散 🪙${SAVE.junk[k]*JUNK_PRICE}</button></div>`).join("")}</div></div>`;
+      <div class="small">×${SAVE.junk[k]}</div><button class="mini" onclick="openView('${k}')">📐 設計稿</button> <button class="mini" onclick="sellJunk('${k}')">遣散 🪙${SAVE.junk[k]*JUNK_PRICE}</button></div>`).join("")}</div></div>`;
 }
 const JUNK_COST=5; // N 白卡合成：5 張（可混搭）→ 1 名隨機 R，每名 R 機率相同
 function sellJunk(id){
@@ -1918,7 +1934,7 @@ function showCard(id){
     <div class="r${c.r}">${c.r} ${o?starStr(o.stars,brOf(id)):""}</div><h2 style="margin:2px 0">${c.name}</h2>
     <div>${clsTag(id)} <span class="dim small">${CLASSES[c.cls].desc}</span></div>${o?lvBar(id):""}
     <div class="small">❤ ${sv("hp",s.maxHp)}　⚔ ${sv("atk",s.atk)}　🛡 ${sv("def",s.def)}　💨 ${sv("spd",s.spd)}</div>
-    ${GLB3D.has(id)?`<div class="row" style="margin-top:8px"><button class="pri" onclick="open3D('${id}')">🎥 3D 檢視</button></div>`:""}
+    ${(GLB3D.has(id)||VIEWS.has(id))?`<div class="row" style="margin-top:8px">${GLB3D.has(id)?`<button class="pri" onclick="open3D('${id}')">🎥 3D 檢視</button>`:""}${VIEWS.has(id)?viewBtn(id):""}</div>`:""}
     ${o?`<div class="gslots">${Object.keys(SLOTS).map(sl=>{const g=gearById(o.eq&&o.eq[sl]);
       return `<div class="gslot ${g?"has "+GEAR[g.base].q:""}" onclick="openSlot('${id}','${sl}')"><div class="gi">${g?gearImg(g.base):"＋"}</div>${g?`<b class="r${GEAR[g.base].q}">${qTag(GEAR[g.base].q)}${GEAR[g.base].name}${g.lv?" +"+g.lv:""}</b>${lvOk(id,g.base)?"":`<div class="req bad">⚠ 需 Lv.${GEAR_REQ[GEAR[g.base].q]}，未生效</div>`}`:`<span class="dim">${SLOTS[sl]}</span>`}</div>`;}).join("")}${lockedSlotsHtml()}</div>
     ${setHtml(id)}${e.crit||e.steal||e.dodge||e.dr?`<div class="gfx">裝備特效：${statStr({crit:e.crit,steal:e.steal,dodge:e.dodge,dr:e.dr})}</div>`:""}`:""}

@@ -83,12 +83,38 @@
   `grep -o 編輯者 index.html | wc -l` 應為 18 處（`grep -c` 計行是 17 行：第 16 章 recap 那行有 2 處）。
   同步重套時：上游覆蓋會把 9 處還原成「剪輯師」，照上面清單重改一次即可。
 
+## E. 三視圖設計稿（DESIGN SHEETS，2026-11-23）
+
+51 隻角色的造型設計稿（左側主視覺 + 右側正面／側面／背面）接進遊戲頁。
+
+- **素材**（都在本鏡像專屬資料夾，上游沒有，不會被同步覆蓋）：
+  - `images/views/<id>.webp` — 51 張設計稿（1400px WebP，合計約 7.4 MB）
+  - `images/avatars-v2/<id>.webp` — 6 隻物件角色的新卡面（新版 Format A 畫風）
+- **程式改動**（`index.html`）：
+  1. 新增 `openView(id)` 與 `viewBtn(id)`（標記：`MIRROR FEATURE: DESIGN SHEETS`）
+     → modal 顯示設計稿，並可一鍵跳到 3D 檢視。
+  2. `showCard()`：在「🎥 3D 檢視」旁加「📐 設計稿」按鈕（兩者同一列）。
+  3. `junkPanel()`：6 隻 N 白卡（tin／chair／quilt／torch／sock／locker）也加「📐 設計稿」按鈕。
+  4. `avatar()`：6 隻物件角色的卡面改走 `images/avatars-v2/`，跟其他 45 隻美術統一。
+- **重套方式**：跑 `python astro/scripts/patch-game-html.py`（已內含第 5 步，
+  會 import `patch_game_design_sheets.py`）。單獨重跑設計稿那步：
+  `python astro/scripts/patch_game_design_sheets.py`。
+  兩支都是 idempotent，重複執行不會重複套用。
+- ⚠️ **踩過的坑**：第 4 步（3D viewer 補丁）與第 5 步會搶同一行按鈕列。
+  第 4 步原本只認「只有 3D 檢視按鈕」的那一行，套過第 5 步後它認不出來，
+  就會在錨點後**再插一次**舊的 3D 檢視按鈕列 → 同一頁出現兩個按鈕列。
+  修法：第 4 步的 `top_present` 也要算上第 5 步的版本
+  （`VIEWER_BTN_TOP_DESIGN`，2026-11-23 已修）。
+- **獨立頁**：`/3d-gallery/` — 51 隻一覽，卡片可切換「🎥 3D 模型」與「📐 三視圖設計稿」。
+
 ## 日後上游同步時如何重套
 
 1. 先同步上游檔案（照舊流程：轉 mp3、加 `<base href>`、lazy loading、右上角按鈕等在地化調整）。
-2. `grep "MIRROR FEATURE" index.html` 會列出本份文件對應的全部改動點——目前共 15 處標記
-   （含 ABYSS 哨兵、FIVE_REQ／FATTY_REQ 解耦、遷移區塊、D 節改名標記在內）。
-3. 依 A／B／C 三節把程式碼區塊、章節資料、卡片、成就、房間名對應逐一貼回；
+2. `grep "MIRROR FEATURE" index.html` 會列出本份文件對應的全部改動點——目前共 17 處標記
+   （含 ABYSS 哨兵、FIVE_REQ／FATTY_REQ 解耦、遷移區塊、D 節改名標記、E 節設計稿標記在內）。
+3. 依 A／B／C／E 四節把程式碼區塊、章節資料、卡片、成就、房間名對應逐一貼回；
    特別注意 B 節的哨兵與門檻解耦，漏了 `FIVE_REQ` 會造成舊玩家存檔被清空。
+   E 節不用手動貼：跑 `python astro/scripts/patch-game-html.py` 就會一併重套
+   （它已內含設計稿那一步，會 import `patch_game_design_sheets.py`）。
 4. 重套後跑驗證：抽出 inline `<script>` 用 `node --check` 檢查語法；
    並確認 `CHAPTERS[15]` 為「最後一頁」、`CHAPTERS[16].abyss` 為真、`ABYSS === 16`。
