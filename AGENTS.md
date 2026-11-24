@@ -203,6 +203,27 @@
   同步後用 `git status` 看既有 mp3 有沒有變成 `M`；有變就要 bump 版本或另命名。
 - 遊戲資料夾約 38MB，部署 payload 目前 69.6MB（Vercel Hobby 上限 100MB）。
   新增大檔前先算一下餘裕。
+- **三視圖設計稿（2026-11-23 第五步補丁）**：51 隻角色造型設計稿接進遊戲頁。
+  - 補丁程式是 `astro/scripts/patch_game_design_sheets.py`（由 `patch-game-html.py` 自動 import，
+    不用另外手動跑）。素材在 `images/views/<id>.webp`（51 張）與 `images/avatars-v2/<id>.webp`（6 張）——
+    這兩個資料夾上游沒有，**同步不會覆蓋**。
+  - ⚠️ **第五步與第四步會搶同一行按鈕列**：第四步（3D viewer）原本只認「只有 3D 檢視按鈕」那一行，
+    套過第五步後認不出來，會在錨點後**再插一次**舊按鈕列 → 同一頁出現兩個按鈕列。
+    第四步的 `top_present` 已加上 `VIEWER_BTN_TOP_DESIGN` 判斷（2026-11-23 修）。
+    **新增第五步類的補丁時要一起想這件事。**
+  - 獨立頁 `/3d-gallery`（`astro/public/3d-gallery/`）：51 隻一覽，可切換可旋轉 3D 模型與設計稿。
+
+## 靜態頁面的資源路徑（⚠️ 一律用絕對路徑）
+
+- 根 `vercel.json` 是 `cleanUrls: true` + `trailingSlash: false` → **`/xxx/` 會被 308 轉成 `/xxx`**。
+  瀏覽器拿到的是**沒有尾斜線**的網址，所以頁面裡的**相對路徑會從根目錄 `/` 解析**，不是從頁面目錄。
+  - 實測（2026-11-23）：`/3d-gallery/` 頁面裡寫 `thumbs/x.webp` → 實際請求 `/thumbs/x.webp` → 全 404。
+  - **規則**：`astro/public/` 下自製的靜態頁（不是 Astro 頁），所有 `src`／`href` 資源路徑
+    一律寫成絕對路徑（`/games/...`、`/3d-gallery/thumbs/...`），不要用相對路徑。
+  - 站內連結同理，寫無尾斜線（`/3d-gallery`），才不會多一次 308。
+- 例外：遊戲鏡像頁有自己的 `<base href="/games/confinement-escape/">`（補丁第 1 步），
+  那頁的相對路徑由 `<base>` 決定，正常。
+
 
 ## Branch 策略
 
