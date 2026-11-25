@@ -168,7 +168,7 @@ function openM(id){
   mvLoad().then(()=>{
     const wrap = document.querySelector("#pane3d .mvwrap");
     if(!wrap || CUR.id!==id) return;
-    var ver = (id === 'sentinel') ? 'v4' : 'v7';
+    var ver = 'v8';
     wrap.innerHTML = '<model-viewer src="https://cdn.jsdelivr.net/gh/123lai1234-create/ddd-models@'+ver+'/models/'+id+'.glb"'
       + ' alt="'+c.name+' 3D" camera-controls camera-orbit="0deg 82deg 5.2m" camera-target="0m 1.0m 0m"'
       + ' field-of-view="30deg" exposure="0.85" shadow-intensity="0.7" interaction-prompt="none" ar-modes="none"></model-viewer>';
