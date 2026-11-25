@@ -1,0 +1,95 @@
+/* 阿瓦隆發牌工具：手機優先，零對外請求 */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+  background: #0f1b2d;
+  color: #eef2f7;
+  min-height: 100vh;
+}
+.av-app { max-width: 520px; margin: 0 auto; padding: calc(20px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom)); }
+.av-screen[hidden] { display: none; }
+/* display 被作者樣式蓋掉的元素，hidden 屬性本身壓不住，要明寫 */
+.av-card-back[hidden], .av-card-face[hidden], .av-big[hidden] { display: none; }
+
+.av-hero { text-align: center; margin: 12px 0 4px; }
+.av-emblem svg { display: block; margin: 0 auto; }
+h1 { font-size: 40px; letter-spacing: 10px; margin: 8px 0 0; color: #e8c95a; }
+h2 { font-size: 28px; margin: 8px 0; }
+.av-sub { color: #9fb0c3; margin: 4px 0 0; letter-spacing: 2px; }
+.av-intro { text-align: center; color: #c6d2df; line-height: 1.7; margin: 18px 0; }
+.av-note { text-align: center; color: #8fa1b3; font-size: 13px; }
+.av-back { text-align: center; margin-top: 20px; }
+.av-back a { color: #9fb0c3; }
+
+.av-counts { display: grid; gap: 12px; margin: 8px 0 16px; }
+.av-count {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  min-height: 72px; padding: 14px;
+  background: #1a2c44; color: #eef2f7;
+  border: 2px solid #33507a; border-radius: 14px;
+  font-size: 20px; cursor: pointer;
+}
+.av-count:active { background: #24395a; }
+.av-count b { font-size: 24px; letter-spacing: 4px; }
+.av-count span { font-size: 14px; color: #9fb0c3; }
+
+.av-resume {
+  width: 100%; min-height: 56px; margin-bottom: 12px;
+  background: #3a2f10; color: #e8c95a;
+  border: 2px solid #c9a227; border-radius: 14px;
+  font-size: 17px; cursor: pointer;
+}
+
+.av-rules { background: #132238; border: 1px solid #22385a; border-radius: 12px; padding: 12px 16px; margin: 8px 0; }
+.av-rules summary { cursor: pointer; font-size: 16px; padding: 4px 0; }
+.av-rules ul { margin: 10px 0; padding-left: 20px; line-height: 1.8; font-size: 15px; }
+.av-rules p { line-height: 1.8; font-size: 15px; color: #c6d2df; }
+.good { color: #7fb3ff; }
+.evil { color: #ff8f8f; }
+
+.av-deal-top { display: flex; justify-content: space-between; align-items: center; color: #9fb0c3; }
+.av-quit {
+  background: none; border: 1px solid #33507a; color: #9fb0c3;
+  border-radius: 8px; padding: 8px 14px; font-size: 15px; cursor: pointer;
+}
+.av-player { text-align: center; font-size: 34px; letter-spacing: 4px; margin: 20px 0 4px; }
+.av-step { text-align: center; color: #9fb0c3; margin: 0 0 18px; }
+
+.av-card {
+  width: 100%; max-width: 340px; min-height: 420px; margin: 0 auto 20px;
+  border-radius: 18px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 24px;
+}
+.av-card-back {
+  width: 100%; min-height: 372px;
+  background: linear-gradient(160deg, #1b3a5e, #0f1b2d 70%);
+  border: 3px solid #c9a227; border-radius: 14px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+}
+.av-card-back span { font-size: 26px; letter-spacing: 12px; color: #e8c95a; padding-left: 12px; }
+.av-card-face { width: 100%; min-height: 372px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.av-card-face.side-good { background: linear-gradient(160deg, #1d4ed8, #17294d 75%); border: 3px solid #7fb3ff; }
+.av-card-face.side-evil { background: linear-gradient(160deg, #b91c1c, #3d0f0f 75%); border: 3px solid #ff8f8f; }
+.av-side { font-size: 15px; letter-spacing: 6px; padding: 4px 14px; border-radius: 999px; background: rgba(0,0,0,.35); }
+.av-card-face h3 { font-size: 38px; letter-spacing: 8px; margin: 6px 0; padding-left: 8px; }
+.av-role-desc { font-size: 16px; line-height: 1.8; color: #eef2f7; margin: 0 8px; }
+.av-role-hint { font-size: 17px; line-height: 1.8; font-weight: 700; color: #ffe9a8; margin: 8px; }
+
+.av-big {
+  display: block; width: 100%; min-height: 64px;
+  background: #c9a227; color: #1a1405; border: none; border-radius: 14px;
+  font-size: 22px; font-weight: 700; letter-spacing: 4px; cursor: pointer;
+}
+.av-big:active { background: #d9b73c; }
+.av-big.ghost { background: #1a2c44; color: #eef2f7; border: 2px solid #33507a; margin-top: 12px; }
+.av-progress { text-align: center; color: #8fa1b3; margin: 14px 0 0; }
+.av-done-btns { margin-top: 20px; }
+.av-done-btns .av-big + .av-big { margin-top: 12px; }
+.av-screen#screen-done p { line-height: 1.9; color: #c6d2df; }
+
+@media (min-width: 560px) {
+  .av-card { min-height: 440px; }
+}

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b3a5e"/>
+      <stop offset="1" stop-color="#0f1b2d"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="180" fill="url(#bg)"/>
+  <circle cx="160" cy="82" r="58" fill="none" stroke="#c9a227" stroke-width="3"/>
+  <circle cx="160" cy="82" r="48" fill="none" stroke="#c9a227" stroke-width="1" opacity="0.5"/>
+  <circle cx="160" cy="82" r="38" fill="none" stroke="#c9a227" stroke-width="1" opacity="0.3"/>
+  <!-- 交叉雙劍 -->
+  <g stroke="#e8c95a" stroke-width="4" stroke-linecap="round">
+    <line x1="128" y1="52" x2="192" y2="112"/>
+    <line x1="192" y1="52" x2="128" y2="112"/>
+  </g>
+  <g fill="#e8c95a">
+    <rect x="122" y="46" width="14" height="6" rx="2" transform="rotate(-45 129 49)"/>
+    <rect x="184" y="46" width="14" height="6" rx="2" transform="rotate(45 191 49)"/>
+    <rect x="122" y="106" width="14" height="6" rx="2" transform="rotate(45 129 109)"/>
+    <rect x="184" y="106" width="14" height="6" rx="2" transform="rotate(-45 191 109)"/>
+  </g>
+  <circle cx="160" cy="82" r="7" fill="#0f1b2d" stroke="#e8c95a" stroke-width="2"/>
+  <text x="160" y="160" text-anchor="middle" font-family="sans-serif" font-size="24" font-weight="bold" letter-spacing="8" fill="#e8c95a">阿瓦隆</text>
+</svg>

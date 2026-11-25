@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>阿瓦隆｜發牌工具</title>
+<meta name="description" content="阿瓦隆發牌工具：8／9／10 人局，一支手機輪流看牌。純前端、免登入，發牌記錄存在你的瀏覽器裡。" />
+<meta name="theme-color" content="#0f1b2d" />
+<!-- 無尾斜線網址也會由 Vercel 回 index.html，沒有 base 時 ./style.css、./game.js
+     會被解析到 /games/ 下 404。跟茶坊同一招：base 釘死在遊戲資料夾。 -->
+<base href="/games/avalon/" />
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<div class="av-app" id="app">
+
+  <!-- 主畫面 -->
+  <section class="av-screen" id="screen-home">
+    <header class="av-hero">
+      <div class="av-emblem" aria-hidden="true">
+        <svg viewBox="0 0 120 120" width="96" height="96">
+          <circle cx="60" cy="60" r="56" fill="none" stroke="#c9a227" stroke-width="3"/>
+          <circle cx="60" cy="60" r="46" fill="none" stroke="#c9a227" stroke-width="1" opacity="0.5"/>
+          <path d="M60 22 L66 52 L60 98 L54 52 Z" fill="#c9a227"/>
+          <path d="M60 22 L60 98" stroke="#0f1b2d" stroke-width="1.5"/>
+          <rect x="48" y="52" width="24" height="5" rx="2" fill="#c9a227"/>
+          <circle cx="60" cy="60" r="4" fill="#0f1b2d" stroke="#c9a227" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <h1>阿瓦隆</h1>
+      <p class="av-sub">發牌工具 · 傳閱式看牌</p>
+    </header>
+    <p class="av-intro">一支手機在玩家間傳遞，每人輪流看自己的角色。選人數，開始發牌。</p>
+    <div class="av-counts">
+      <button type="button" class="av-count" data-count="8"><b>8人局</b><span>好人 5 · 壞人 3</span></button>
+      <button type="button" class="av-count" data-count="9"><b>9人局</b><span>好人 6 · 壞人 3</span></button>
+      <button type="button" class="av-count" data-count="10"><b>10人局</b><span>好人 6 · 壞人 4</span></button>
+    </div>
+    <button type="button" class="av-resume" id="resumeBtn" hidden></button>
+    <details class="av-rules">
+      <summary>角色一覽與玩法</summary>
+      <ul>
+        <li><b class="good">梅林（好人）</b>：看得見壞人，但看不見莫德雷德。</li>
+        <li><b class="good">派西維爾（好人）</b>：看得見梅林與魔甘娜兩人，但分不出誰是誰。</li>
+        <li><b class="good">忠臣（好人）</b>：只知道自己的身份。</li>
+        <li><b class="evil">魔甘娜（壞人）</b>：假扮梅林，誤導派西維爾；與壞人隊友互認。</li>
+        <li><b class="evil">莫德雷德（壞人）</b>：梅林看不見他；與壞人隊友互認。</li>
+        <li><b class="evil">刺客（壞人）</b>：遊戲最後可指認梅林一次，猜中壞人直接獲勝。</li>
+        <li><b class="evil">奧伯倫（壞人，10人局）</b>：不認識其他壞人，其他壞人也不認識他。</li>
+      </ul>
+      <p>發完牌請面對面進行組隊、投票與出征：好人要完成三次任務，壞人要讓三次任務失敗。第四次任務在 7 人以上需要兩張失敗票才算失敗。</p>
+    </details>
+    <p class="av-note">本工具只負責發牌，不連線、不登入。</p>
+    <p class="av-back"><a href="/games">← 回遊戲列表</a></p>
+  </section>
+
+  <!-- 發牌畫面 -->
+  <section class="av-screen" id="screen-deal" hidden>
+    <header class="av-deal-top">
+      <span id="dealCount"></span>
+      <button type="button" class="av-quit" id="quitBtn">離開</button>
+    </header>
+    <h2 class="av-player" id="playerLabel">1號玩家</h2>
+    <p class="av-step" id="stepLabel">輪到你了，請確認四周沒人偷看</p>
+    <div class="av-card" id="card">
+      <div class="av-card-back" id="cardBack" aria-hidden="false">
+        <svg viewBox="0 0 120 120" width="72" height="72">
+          <circle cx="60" cy="60" r="56" fill="none" stroke="#c9a227" stroke-width="3"/>
+          <circle cx="60" cy="60" r="46" fill="none" stroke="#c9a227" stroke-width="1" opacity="0.5"/>
+          <path d="M60 22 L66 52 L60 98 L54 52 Z" fill="#c9a227"/>
+          <rect x="48" y="52" width="24" height="5" rx="2" fill="#c9a227"/>
+        </svg>
+        <span>阿瓦隆</span>
+      </div>
+      <div class="av-card-face" id="cardFace" hidden>
+        <span class="av-side" id="roleSide"></span>
+        <h3 id="roleName"></h3>
+        <p class="av-role-desc" id="roleDesc"></p>
+        <p class="av-role-hint" id="roleHint"></p>
+      </div>
+    </div>
+    <button type="button" class="av-big" id="revealBtn">看角色</button>
+    <button type="button" class="av-big" id="nextBtn" hidden>記住了</button>
+    <p class="av-progress" id="progressLabel"></p>
+  </section>
+
+  <!-- 結束畫面 -->
+  <section class="av-screen" id="screen-done" hidden>
+    <h2>發牌完成</h2>
+    <p>所有玩家都看過自己的角色了。接下來請面對面開始組隊、投票與出征：好人要完成三次任務，壞人要讓三次任務失敗；最後刺客有一次猜梅林的機會。</p>
+    <div class="av-done-btns">
+      <button type="button" class="av-big" id="againBtn">再發一局（同人數）</button>
+      <button type="button" class="av-big ghost" id="homeBtn">回主畫面</button>
+    </div>
+  </section>
+
+</div>
+<script src="./game.js"></script>
+</body>
+</html>
