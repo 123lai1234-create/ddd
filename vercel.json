@@ -137,6 +137,21 @@
                           "source":  "/music.html",
                           "destination":  "/music",
                           "permanent":  true
+                      },
+                      {
+                          "source":  "/demo_notebook.ipynb",
+                          "destination":  "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@main/astro/public/demo_notebook.ipynb",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/protein-mpnn/demo_notebook.ipynb",
+                          "destination":  "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@main/astro/public/protein-mpnn/demo_notebook.ipynb",
+                          "permanent":  true
+                      },
+                      {
+                          "source":  "/report/demo_notebook.ipynb",
+                          "destination":  "https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@main/astro/public/report/demo_notebook.ipynb",
+                          "permanent":  true
                       }
                   ]
 }
