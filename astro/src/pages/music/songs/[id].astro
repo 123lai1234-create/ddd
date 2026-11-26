@@ -13,9 +13,13 @@ const { song } = Astro.props;
 const SITE = 'https://donttalk.vercel.app';
 const canonical = `${SITE}/music/songs/${song.slug}/`;
 
-const card = (file: string) => `/music/cards/${song.slug}/${file}`;
+const CDN = 'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@main/astro/public';
+// 歌詞卡圖改走 jsDelivr（與音樂音檔、3D 模型同一模式）：dist 排除後仍有 149.5MB，
+// 超過 Vercel Hobby 100MB 上限，部署會靜默掉檔（2026-11-26 掉了 demo_notebook.ipynb
+// 與 13 個 pagefind 檔）；cards 佔 53MB，移出後約 96.5MB。本地副本由排除清單擋下不部署。
+const card = (file: string) => `${CDN}/music/cards/${song.slug}/${file}`;
 /** og:image / JSON-LD 會送到外部爬蟲，中文路徑必須 percent-encode 才是一個合法 URL。 */
-const cardAbs = (file: string) => `${SITE}${encodeURI(card(file))}`;
+const cardAbs = (file: string) => encodeURI(card(file));
 const hasCards = song.hasCards;
 
 const SOCIAL = [

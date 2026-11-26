@@ -74,6 +74,7 @@ EXCLUDE = [
     'music/*.mp3',               # the player streams audio from jsDelivr (tracks.json url field)
     'music/*.txt',               # legacy plain-text lyrics
     'music/*.lrc',               # timed lyrics are embedded in tracks.json (lyricsTimed field)
+    'music/cards/**/*.jpg',      # song lyric-card images now served from jsDelivr (see vercel-build.mjs)
 ]
 
 def to_re(p):

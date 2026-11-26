@@ -7,10 +7,10 @@ const withAudio = songs.filter((s) => s.audio).length;
 const withCover = songs.filter((s) => s.cover).length;
 const withCards = songs.filter((s) => s.hasCards).length;
 
-const SITE = 'https://donttalk.vercel.app';
+const CDN = 'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@main/astro/public';
 const firstWithCards = songs.find((s) => s.hasCards);
 const ogImage = firstWithCards
-    ? `${SITE}${encodeURI(`/music/cards/${firstWithCards.slug}/og-image.jpg`)}`
+    ? encodeURI(`${CDN}/music/cards/${firstWithCards.slug}/og-image.jpg`)
     : undefined;
 ---
 

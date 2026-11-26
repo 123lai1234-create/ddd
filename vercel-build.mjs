@@ -61,6 +61,11 @@ const EXCLUDE = [
     // 站台音檔走 jsDelivr CDN（tracks.json 的 url 欄位），歌詞已內嵌在 tracks.json
     // 的 lyricsTimed —— 本地副本不需要部署。
     (rel) => /^music\/[^/]*\.(?:mp3|txt|lrc)$/.test(rel),
+    // 歌曲歌詞卡圖（music/cards/，53MB）改走 jsDelivr，頁面已改吃 CDN 連結 ——
+    // 本地副本不需要部署。2026-11-26：排除後 dist 仍有 149.5MB，超過 Vercel Hobby
+    // 100MB 上限，部署靜默掉檔（demo_notebook.ipynb ×3、pagefind zh-tw 13 檔）；
+    // 移出 cards 後約 96.5MB。
+    (rel) => rel.startsWith('music/cards/'),
 ];
 
 console.log('[build] applying exclude list to dist...');
