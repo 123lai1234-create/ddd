@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>蛋白質 3D 結構與序列註解</title>
+    <style>
+        * { box-sizing: border-box; }
+        [hidden] { display: none !important; }
+        body { margin: 0; padding: 12px; background: #f8fafc; color: #15253b; font: 15px system-ui, sans-serif; }
+        form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        input, button { font: inherit; }
+        input { width: 8em; padding: 6px 8px; }
+        form button { padding: 7px 14px; border: 0; border-radius: 5px; background: #173d66; color: white; cursor: pointer; }
+        a { color: #184e86; }
+        #annotation-status { margin: 8px 0; min-height: 1.4em; }
+        #annotation-viewer { display: block; width: 100%; height: 570px; border: 0; }
+        @media (max-width: 720px) {
+            #annotation-viewer { height: 710px; }
+        }
+    </style>
+    <script defer src="/scripts/protein-annotations.js"></script>
+</head>
+<body>
+    <form method="get">
+        <label for="annotation-pdb">PDB ID</label>
+        <input id="annotation-pdb" name="pdb" required maxlength="4" pattern="[1-9][A-Za-z0-9]{3}"
+            placeholder="4HHB" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        <button type="submit">載入結構</button>
+        <a id="annotation-source" href="https://www.rcsb.org/3d-sequence/4HHB" target="_blank" rel="noopener">在 RCSB PDB 開啟</a>
+    </form>
+    <p id="annotation-status" role="status"></p>
+    <iframe id="annotation-viewer" title="RCSB PDB 蛋白質 3D 結構與序列註解" hidden></iframe>
+</body>
+</html>
