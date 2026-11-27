@@ -1,0 +1,233 @@
+/* 千本鳥居回家路 — 手繪暖色風，手機優先 */
+* { box-sizing: border-box; }
+
+:root {
+  --ink: #4a3226;
+  --ink-soft: #7a5c48;
+  --paper: #fff6e8;
+  --paper-deep: #ffe9c9;
+  --red: #d9382b;
+  --red-deep: #a82318;
+  --gold: #f2b544;
+  --leaf: #e05a3a;
+  --card: #fffdf7;
+}
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+  background: linear-gradient(180deg, #ffe9c9 0%, #fff6e8 55%, #ffe0b8 100%);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+.tw-app {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 14px 14px 40px;
+}
+
+.tw-back, .tw-back2 a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: 14px;
+}
+.tw-back:hover, .tw-back2 a:hover { color: var(--red); }
+
+.tw-head { text-align: center; margin: 8px 0 14px; }
+.tw-head h1 {
+  margin: 6px 0 4px;
+  font-size: clamp(26px, 6vw, 38px);
+  letter-spacing: 3px;
+  color: var(--red-deep);
+}
+.tw-sub { margin: 0; color: var(--ink-soft); font-size: 15px; }
+
+/* HUD */
+.tw-hud {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.tw-stat {
+  background: var(--card);
+  border: 2px solid #f0d9b8;
+  border-radius: 12px;
+  padding: 8px 6px;
+  text-align: center;
+  box-shadow: 0 2px 0 rgba(74, 50, 38, 0.08);
+}
+.tw-label { display: block; font-size: 11px; color: var(--ink-soft); letter-spacing: 2px; }
+.tw-stat strong { font-size: 20px; }
+.tw-stat strong small { font-size: 12px; color: var(--ink-soft); }
+.tw-hearts { letter-spacing: 1px; font-size: 16px !important; }
+.tw-hearts .lost { opacity: 0.25; filter: grayscale(1); }
+.tw-best { font-size: 13px; color: var(--ink-soft); }
+.tw-best span { display: block; margin-top: 2px; line-height: 1.4; }
+
+/* 進度條 */
+.tw-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.tw-track {
+  position: relative;
+  flex: 1;
+  height: 14px;
+  background: #f0d9b8;
+  border-radius: 999px;
+  overflow: visible;
+}
+.tw-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), var(--red));
+  transition: width 0.2s linear;
+}
+.tw-walker {
+  position: absolute;
+  left: 0%;
+  top: -16px;
+  font-size: 18px;
+  transform: translateX(-50%);
+  transition: left 0.2s linear;
+}
+.tw-home { font-size: 20px; }
+.tw-goal { font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
+
+/* 舞台 */
+.tw-stage {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 3px solid #e8b98a;
+  box-shadow: 0 6px 18px rgba(74, 50, 38, 0.18);
+  background: #ffd9a8;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tw-stage canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: pointer;
+}
+
+/* 覆蓋畫面 */
+.tw-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+  background: rgba(255, 246, 232, 0.88);
+  backdrop-filter: blur(2px);
+  z-index: 2;
+}
+.tw-overlay[hidden] { display: none; }
+.tw-overlay h2 {
+  margin: 0;
+  font-size: clamp(24px, 6vw, 32px);
+  color: var(--red-deep);
+  letter-spacing: 2px;
+}
+.tw-overlay p { margin: 0; line-height: 1.8; font-size: 15px; }
+.tw-rule { font-size: 13px !important; color: var(--ink-soft); }
+
+.tw-big {
+  margin-top: 6px;
+  padding: 13px 34px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #fff;
+  background: var(--red);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--red-deep);
+  font-family: inherit;
+}
+.tw-big:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--red-deep); }
+.tw-big.ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  border: 2px solid #d8c0a4;
+  box-shadow: none;
+  font-size: 15px;
+  padding: 10px 26px;
+}
+
+/* 按鈕列 */
+.tw-controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.tw-jump {
+  flex: 1;
+  padding: 16px 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: #fff;
+  background: var(--red);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--red-deep);
+  font-family: inherit;
+  touch-action: manipulation;
+}
+.tw-jump:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--red-deep); }
+.tw-small {
+  padding: 0 16px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  background: var(--card);
+  border: 2px solid #e8d3b2;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.tw-small:active { background: #f7ead2; }
+
+/* 玩法說明 */
+.tw-how {
+  margin-top: 16px;
+  background: var(--card);
+  border: 2px solid #f0d9b8;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.tw-how summary { cursor: pointer; font-weight: 700; color: var(--red-deep); }
+.tw-how ul { margin: 8px 0; padding-left: 20px; }
+.tw-credit { color: var(--ink-soft); font-size: 12px; margin: 8px 0 0; }
+
+.tw-back2 { text-align: center; margin: 18px 0 0; }
+
+/* 被撞到的紅閃 */
+.tw-stage.hit { animation: tw-shake 0.25s ease; }
+@keyframes tw-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@media (min-width: 700px) {
+  .tw-app { padding-top: 24px; }
+  .tw-jump { padding: 14px 0; font-size: 20px; }
+}

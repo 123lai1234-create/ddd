@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>千本鳥居回家路｜線上遊戲</title>
+<meta name="description" content="千本鳥居回家路：一個小孩，一隻狗，走長長的路回家。點一下跳過石頭與水窪，收集飄落的楓葉，走滿 1000 公尺就到家。純前端、免登入，紀錄存在你的瀏覽器裡。" />
+<meta name="theme-color" content="#e8572a" />
+<!-- 無尾斜線網址也會由 Vercel 回 index.html，沒有 base 時 ./style.css、./game.js
+     會被解析到 /games/ 下 404。跟阿瓦隆同一招：base 釘死在遊戲資料夾。 -->
+<base href="/games/torii-walk/" />
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<div class="tw-app" id="app">
+  <header class="tw-head">
+    <a class="tw-back" href="/games">← 回遊戲列表</a>
+    <h1>千本鳥居回家路</h1>
+    <p class="tw-sub">一個小孩，一隻狗，走長長的路回家。</p>
+  </header>
+
+  <div class="tw-hud" role="status" aria-live="polite">
+    <div class="tw-stat">
+      <span class="tw-label">距離</span>
+      <strong><span id="hudDist">0</span> <small>m</small></strong>
+    </div>
+    <div class="tw-stat">
+      <span class="tw-label">楓葉</span>
+      <strong>🍁 <span id="hudLeaves">0</span></strong>
+    </div>
+    <div class="tw-stat">
+      <span class="tw-label">體力</span>
+      <strong class="tw-hearts" id="hudHearts" aria-label="體力 3 顆心">❤️❤️❤️</strong>
+    </div>
+    <div class="tw-stat tw-best">
+      <span class="tw-label">最佳</span>
+      <span id="hudBest">—</span>
+    </div>
+  </div>
+
+  <div class="tw-progress" aria-hidden="true">
+    <div class="tw-track">
+      <div class="tw-fill" id="progressFill"></div>
+      <span class="tw-walker" id="progressWalker" aria-hidden="true">🚶</span>
+    </div>
+    <span class="tw-home" aria-hidden="true">🏠</span>
+    <span class="tw-goal">1000 m 到家</span>
+  </div>
+
+  <div class="tw-stage" id="stage">
+    <canvas id="game" width="720" height="420" aria-label="千本鳥居回家路遊戲畫面"></canvas>
+
+    <!-- 開始畫面 -->
+    <section class="tw-overlay" id="screenMenu">
+      <h2>出發囉！</h2>
+      <p>穿過一座座紅色鳥居，沿著楓葉小路走回家。<br />點一下畫面（或按空白鍵）跳起來，<br />跳過石頭、水窪和倒下的樹枝，<br />別忘了接住飄落的楓葉。</p>
+      <p class="tw-rule">被絆到 3 次就走不動了 · 走滿 1000 m 就到家</p>
+      <button type="button" class="tw-big" id="startBtn">開始走路</button>
+    </section>
+
+    <!-- 到家畫面 -->
+    <section class="tw-overlay" id="screenWin" hidden>
+      <h2>到家了！🏠</h2>
+      <p id="winStats">走了 1000 m</p>
+      <p class="tw-rule" id="winBest"></p>
+      <button type="button" class="tw-big" id="winAgainBtn">再走一次</button>
+      <button type="button" class="tw-big ghost" id="winHomeBtn">回主畫面</button>
+    </section>
+
+    <!-- 失敗畫面 -->
+    <section class="tw-overlay" id="screenOver" hidden>
+      <h2>走不動了…</h2>
+      <p id="overStats">走了 0 m</p>
+      <p class="tw-rule" id="overBest"></p>
+      <button type="button" class="tw-big" id="overAgainBtn">再走一次</button>
+      <button type="button" class="tw-big ghost" id="overHomeBtn">回主畫面</button>
+    </section>
+
+    <!-- 暫停畫面 -->
+    <section class="tw-overlay" id="screenPause" hidden>
+      <h2>暫停中</h2>
+      <p>切回來了嗎？點一下繼續走。</p>
+      <button type="button" class="tw-big" id="resumeBtn">繼續走</button>
+    </section>
+  </div>
+
+  <div class="tw-controls">
+    <button type="button" class="tw-jump" id="jumpBtn" aria-label="跳">跳 ↑</button>
+    <button type="button" class="tw-small" id="soundBtn" aria-label="音效開關">🔊 音效開</button>
+    <button type="button" class="tw-small" id="restartBtn">↺ 重新開始</button>
+  </div>
+
+  <details class="tw-how">
+    <summary>玩法說明</summary>
+    <ul>
+      <li><b>跳躍</b>：點一下畫面、按「跳」鈕、或按空白鍵／↑ 鍵。</li>
+      <li><b>障礙</b>：石頭、水窪、倒下的樹枝都要跳過去，被絆到扣 1 顆心，3 顆心扣完就走不動了。</li>
+      <li><b>楓葉</b>：接住飄落的楓葉加分，跳起來的時候也接得到。</li>
+      <li><b>到家</b>：走滿 1000 m 就到家了，越走越快，小心腳下。</li>
+      <li><b>紀錄</b>：最遠距離與最多楓葉存在你的瀏覽器裡（localStorage），關掉再開還在。</li>
+    </ul>
+    <p class="tw-credit">靈感：IG Reel《XI THE THOUSAND GATES》——一個小孩，一隻狗，走長長的路回家。</p>
+  </details>
+
+  <p class="tw-back2"><a href="/games">← 回遊戲列表</a></p>
+</div>
+<script src="./game.js"></script>
+</body>
+</html>
