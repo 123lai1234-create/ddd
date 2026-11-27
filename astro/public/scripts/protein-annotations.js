@@ -1,7 +1,11 @@
 (async function(){
-const $=id=>document.getElementById(id), status=$('annotation-status'), id=(new URLSearchParams(location.search).get('pdb')||'4HHB').trim().toUpperCase();
-$('annotation-pdb').value=id;
-if(!/^[1-9][A-Z0-9]{3}$/.test(id)){status.textContent='請輸入有效 PDB ID';return;}
+const $=id=>document.getElementById(id), status=$('annotation-status');
+const pdbSelect = $('annotation-pdb');
+const requestedId = (new URLSearchParams(location.search).get('pdb') || '').trim().toUpperCase();
+if (Array.from(pdbSelect.options).some(option => option.value === requestedId)) {
+  pdbSelect.value = requestedId;
+}
+const id = pdbSelect.value;
 $('annotation-source').href='https://www.rcsb.org/3d-sequence/'+id;
 $('download').href='https://files.rcsb.org/download/'+id+'.pdb';
 $('fasta').href='https://www.rcsb.org/fasta/entry/'+id+'/display';
