@@ -13,7 +13,7 @@ const rides = [
         url: '/stock',
         color: '#e07a5f',
         softColor: '#f4a261',
-        sub: 'K 線 · 訊號 · 自選股',
+        sub: '行情視覺化 · 指標計算 · 自選股',
     },
     {
         id: 'balloon',
@@ -22,7 +22,7 @@ const rides = [
         url: '/music',
         color: '#81b29a',
         softColor: '#a8dadc',
-        sub: 'LRC · 播放清單',
+        sub: 'LRC 歌詞同步 · 播放清單',
     },
     {
         id: 'carousel',
@@ -31,7 +31,7 @@ const rides = [
         url: '/blog',
         color: '#d4a5a5',
         softColor: '#f1a7c0',
-        sub: '技術筆記 · 研究',
+        sub: '後端架構 · 資料庫 · 研究筆記',
     },
     {
         id: 'coaster',
@@ -40,7 +40,7 @@ const rides = [
         url: '/protein-mpnn',
         color: '#c44536',
         softColor: '#e76f51',
-        sub: 'ESM-2 · MPNN',
+        sub: 'ESM-2 · ProteinMPNN · 序列設計',
     },
     {
         id: 'tower',
@@ -49,7 +49,7 @@ const rides = [
         url: '/interview',
         color: '#5b8ca8',
         softColor: '#a3b5d9',
-        sub: '六週衝刺 · Q&A',
+        sub: 'Java · Spring · SQL · 系統設計',
     },
     {
         id: 'castle',
@@ -58,7 +58,7 @@ const rides = [
         url: '/gene-ai',
         color: '#8b6f9c',
         softColor: '#b58ecc',
-        sub: '序列 · RAG · 變異',
+        sub: '生物序列 · RAG · 變異分析',
     },
     {
         id: 'lab',
@@ -67,7 +67,7 @@ const rides = [
         url: '/ngs',
         color: '#6a8c4f',
         softColor: '#7fb069',
-        sub: '定序 · QC · 圖表',
+        sub: '定序品質控管 · QC · 視覺化',
     },
 ];
 
@@ -79,8 +79,8 @@ const pickIndex = dayOfYear % rides.length;
 ---
 
 <Base
-    title="不說樂園 — App 入口"
-    description="不說的 7 個 app 入口：股票、音樂、部落格、Protein AI、Gene AI、NGS、面試準備一站直達。"
+    title="不說樂園 — Java 後端與 AI 工程作品集"
+    description="6 年 Java 企業後端與金融系統經驗，結合 AI、生醫資訊及量化研究的互動工程作品集。"
     ogTag="App Portal"
     bodyPage="index"
     schemaType="WebPage"
@@ -96,7 +96,7 @@ const pickIndex = dayOfYear % rides.length;
             <div class="park-titles">
                 <p class="park-eyebrow">MINION SYSTEM</p>
                 <h1 class="park-title">不說樂園</h1>
-                <p class="park-subtitle">BuShuo Park · App 入口網站</p>
+                <p class="park-subtitle">Java 後端 × AI 應用 × 生醫資訊</p>
             </div>
             <div class="park-greeting-block">
                 <p class="park-greeting" data-park-greeting>早安，今天想先去哪一區？</p>
@@ -109,6 +109,12 @@ const pickIndex = dayOfYear % rides.length;
             </div>
         </header>
 
+        <section class="career-intro" aria-label="工程師快速導覽">
+            <p class="career-kicker">ENGINEERING · AI · RESEARCH</p>
+            <h2>把複雜邏輯轉成可運行的系統</h2>
+            <p>6 年 Java 企業後端與金融系統經驗，結合電子與生醫雙碩士背景，延伸至 AI 應用、自動化與量化研究。</p>
+            <nav aria-label="專業作品導覽"><a href="/about">關於不說</a><a href="/works">代表作品</a><a href="/protein-mpnn">AI 工作台</a><a href="/thesis">研究成果</a></nav>
+        </section>
         <!-- Dolls playground: 六隻人偶在遊樂園玩耍，點一隻去 3D 頁 -->
 
         <!-- Theme Park Map -->
@@ -330,6 +336,14 @@ const pickIndex = dayOfYear % rides.length;
 </Base>
 
 <style is:global>
+.career-intro { margin: 16px auto; padding: 20px; max-width: 1100px; border: 1px solid currentColor; border-radius: 16px; color: inherit; overflow-wrap: anywhere; }
+.career-intro h2 { font-size: clamp(1.2rem, 3vw, 1.8rem); margin: 6px 0; }
+.career-intro p { line-height: 1.65; }
+.career-kicker { font-size: .75rem; letter-spacing: .12em; }
+.career-intro nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.career-intro nav a { color: inherit; border: 1px solid currentColor; padding: 8px 12px; border-radius: 8px; text-decoration: none; }
+.career-intro nav a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+
 /* ════════ 不說樂園 — Theme Park Portal ════════ */
 
 /* ─── Design tokens ─────────────────────────────────────────────────
