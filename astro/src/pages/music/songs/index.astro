@@ -25,15 +25,11 @@ const ogImage = firstWithCards
 
     <main class="ms-main">
         <header class="ms-head">
-            <a href="/music/" class="ms-back">← 回到混音台</a>
+            <a href="/music" class="ms-back">← 回到播放器</a>
             <h1 class="ms-title">歌曲作品集</h1>
             <p class="ms-sub">
                 {songs.length} 首原創詞曲 · {withAudio} 首有完整音檔 · {withCover} 首有封面圖 ·
                 {withCards} 首備妥社群素材
-            </p>
-            <p class="ms-note">
-                每首歌的歌詞卡、封面與社群分享圖，都由
-                <code>tools/free-toolkit</code> 的批次產線自動產出（Inkscape 向量模板 → GIMP 無頭轉檔）。
             </p>
             <a class="ms-book" href="/music/lyric-book.pdf" download>
                 <span class="ms-book-title">歌詞手冊 PDF</span>
@@ -51,14 +47,25 @@ const ogImage = firstWithCards
                 aria-label="搜尋歌曲"
                 autocomplete="off"
             />
-            <span class="ms-count" id="ms-count">{songs.length} 首</span>
+            <select id="ms-assets" class="ms-filter ms-assets" aria-label="依歌曲資源篩選">
+                <option value="">全部資源</option>
+                <option value="audio">有音檔</option>
+                <option value="cover">有封面</option>
+                <option value="cards">有分享素材</option>
+            </select>
+            <div class="ms-view" role="group" aria-label="作品集顯示模式">
+                <button type="button" data-ms-view="cards" aria-pressed="true">卡片</button>
+                <button type="button" data-ms-view="list" aria-pressed="false">清單</button>
+            </div>
+            <span class="ms-count" id="ms-count" role="status">{songs.length} 首</span>
         </div>
 
-        <ul class="ms-grid" id="ms-grid">
+        <ul class="ms-grid" id="ms-grid" data-view="cards">
             {
                 songs.map((s) => (
                     <li
                         class="ms-item"
+                        data-assets={[s.audio && 'audio', s.cover && 'cover', s.hasCards && 'cards'].filter(Boolean).join(' ')}
                         data-search={`${s.title} ${s.hook} ${s.lyrics.join(' ')}`.toLowerCase()}
                     >
                         <a href={`/music/songs/${s.slug}/`} class="ms-card">
@@ -77,36 +84,56 @@ const ogImage = firstWithCards
             }
         </ul>
 
-        <p class="ms-empty" id="ms-empty" hidden>找不到符合的歌曲。</p>
+        <p class="ms-empty" id="ms-empty" hidden>找不到符合的歌曲。試試其他關鍵字或資源。</p>
     </main>
 
     <div data-site-footer></div>
 
     <script is:inline>
-        (function () {
-            var input = document.getElementById('ms-filter');
-            var grid = document.getElementById('ms-grid');
-            var count = document.getElementById('ms-count');
-            var empty = document.getElementById('ms-empty');
-            if (!input || !grid) return;
+        (() => {
+            const input = document.getElementById('ms-filter');
+            const assets = document.getElementById('ms-assets');
+            const grid = document.getElementById('ms-grid');
+            const count = document.getElementById('ms-count');
+            const empty = document.getElementById('ms-empty');
+            if (!input || !assets || !grid || !count || !empty) return;
 
-            var items = Array.prototype.slice.call(grid.querySelectorAll('.ms-item'));
-            var total = items.length;
+            const items = Array.from(grid.querySelectorAll('.ms-item'));
+            const buttons = Array.from(document.querySelectorAll('[data-ms-view]'));
+            const preferenceKey = 'chillkara.songsView';
+            let savedView;
+            try { savedView = localStorage.getItem(preferenceKey); } catch {}
 
-            function apply() {
-                var q = input.value.trim().toLowerCase();
-                var shown = 0;
-                items.forEach(function (el) {
-                    var hit = !q || el.getAttribute('data-search').indexOf(q) !== -1;
-                    el.hidden = !hit;
-                    if (hit) shown++;
-                });
-                count.textContent = shown + ' 首';
-                if (empty) empty.hidden = shown !== 0;
+            function setView(view) {
+                grid.dataset.view = view;
+                for (const button of buttons) {
+                    button.setAttribute('aria-pressed', String(button.dataset.msView === view));
+                }
             }
 
-            input.addEventListener('input', apply);
-            apply();
+            function applyFilters() {
+                const query = input.value.trim().toLowerCase();
+                let shown = 0;
+                for (const item of items) {
+                    const matchesSearch = item.dataset.search.includes(query);
+                    const matchesAssets = !assets.value || item.dataset.assets.split(' ').includes(assets.value);
+                    item.hidden = !(matchesSearch && matchesAssets);
+                    if (!item.hidden) shown++;
+                }
+                count.textContent = shown + ' 首';
+                empty.hidden = shown !== 0;
+            }
+
+            setView(savedView === 'list' ? 'list' : 'cards');
+            for (const button of buttons) {
+                button.addEventListener('click', () => {
+                    setView(button.dataset.msView);
+                    try { localStorage.setItem(preferenceKey, button.dataset.msView); } catch {}
+                });
+            }
+            input.addEventListener('input', applyFilters);
+            assets.addEventListener('change', applyFilters);
+            applyFilters();
         })();
     </script>
 </Base>
@@ -139,26 +166,13 @@ const ogImage = firstWithCards
     .ms-sub {
         color: var(--muted, #8b949e);
         font-size: 0.92rem;
-        margin: 0 0 8px;
-    }
-    .ms-note {
-        color: var(--muted, #8b949e);
-        font-size: 0.82rem;
-        margin: 0 0 32px;
-        line-height: 1.7;
-        max-width: 640px;
-    }
-    .ms-note code {
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        padding: 1px 5px;
-        font-size: 0.78rem;
+        margin: 0 0 20px;
     }
     .ms-toolbar {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
+        flex-wrap: wrap;
         margin-bottom: 20px;
     }
     .ms-book {
@@ -220,7 +234,7 @@ const ogImage = firstWithCards
         padding: 0;
         margin: 0;
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
         gap: 12px;
     }
     .ms-item[hidden] {
@@ -298,5 +312,54 @@ const ogImage = firstWithCards
         font-size: 0.9rem;
         padding: 40px 0;
         text-align: center;
+    }
+    .ms-assets { flex: 0 1 auto; }
+    .ms-view {
+        display: inline-flex;
+        gap: 2px;
+        padding: 3px;
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.18));
+        border-radius: 10px;
+    }
+    .ms-view button {
+        min-height: 38px;
+        padding: 4px 14px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--text, #e6edf3);
+        font: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .ms-view button[aria-pressed="true"] {
+        background: #f8b26a;
+        color: #23150d;
+        font-weight: 650;
+    }
+    .ms-view button:focus-visible,
+    .ms-card:focus-visible {
+        outline: 2px solid var(--accent, #58d7ff);
+        outline-offset: 2px;
+    }
+    .ms-grid[data-view="list"] { grid-template-columns: 1fr; gap: 6px; }
+    .ms-grid[data-view="list"] .ms-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        padding-block: 10px;
+    }
+    .ms-grid[data-view="list"] .ms-tags { margin-top: 0; }
+    .ms-grid[data-view="list"] .ms-hook { -webkit-line-clamp: 1; }
+    @media (max-width: 480px) {
+        .ms-main { padding-inline: 16px; }
+        #ms-filter { flex: 1 0 100%; max-width: none; }
+        .ms-book { flex-wrap: wrap; }
+        .ms-view button { min-height: 44px; }
+        .ms-grid[data-view="list"] .ms-card { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .ms-card { transition: none; }
+        .ms-card:hover { transform: none; }
     }
 </style>
