@@ -14,6 +14,7 @@ const rides = [
         color: '#e07a5f',
         softColor: '#f4a261',
         sub: '行情視覺化 · 指標計算 · 自選股',
+        detail: '行情資料處理、技術指標計算與互動圖表。',
     },
     {
         id: 'balloon',
@@ -23,6 +24,7 @@ const rides = [
         color: '#81b29a',
         softColor: '#a8dadc',
         sub: 'LRC 歌詞同步 · 播放清單',
+        detail: '歌詞同步、播放狀態與多媒體互動。',
     },
     {
         id: 'carousel',
@@ -32,6 +34,7 @@ const rides = [
         color: '#d4a5a5',
         softColor: '#f1a7c0',
         sub: '後端架構 · 資料庫 · 研究筆記',
+        detail: '將系統架構、資料庫與研究經驗結構化。',
     },
     {
         id: 'coaster',
@@ -41,6 +44,7 @@ const rides = [
         color: '#c44536',
         softColor: '#e76f51',
         sub: 'ESM-2 · ProteinMPNN · 序列設計',
+        detail: '模型串接、序列評分與最佳化研究流程。',
     },
     {
         id: 'tower',
@@ -50,6 +54,7 @@ const rides = [
         color: '#5b8ca8',
         softColor: '#a3b5d9',
         sub: 'Java · Spring · SQL · 系統設計',
+        detail: '系統化整理後端、資料庫、資安與設計考題。',
     },
     {
         id: 'castle',
@@ -59,6 +64,7 @@ const rides = [
         color: '#8b6f9c',
         softColor: '#b58ecc',
         sub: '生物序列 · RAG · 變異分析',
+        detail: '領域知識檢索、序列分析與 AI 輔助查詢。',
     },
     {
         id: 'lab',
@@ -68,6 +74,7 @@ const rides = [
         color: '#6a8c4f',
         softColor: '#7fb069',
         sub: '定序品質控管 · QC · 視覺化',
+        detail: '定序品質控管與生醫資料視覺化。',
     },
 ];
 
@@ -301,6 +308,7 @@ const pickIndex = dayOfYear % rides.length;
                             <span class="ride-tag">{ride.tag}</span>
                             <span class="ride-name">{ride.name}</span>
                             <span class="ride-sub">{ride.sub}</span>
+                            <span class="ride-detail">{ride.detail}</span>
                         </div>
                         <span class="ride-arrow" aria-hidden="true">→</span>
                     </a>
@@ -318,7 +326,7 @@ const pickIndex = dayOfYear % rides.length;
         <footer class="park-footer">
             <div class="park-footer-row">
                 <span class="park-footer-label">GAME 賣場</span>
-                <span class="park-footer-text">點任一設施 → 直達 app</span>
+                <span class="park-footer-text">互動玩法實驗 · 規則設計、狀態管理與前端回饋</span>
             </div>
             <div class="park-footer-row">
                 <span class="park-footer-label">每日儀式</span>
@@ -757,6 +765,7 @@ const pickIndex = dayOfYear % rides.length;
     line-height: 1.2;
 }
 
+.ride-detail { font-size: .75rem; line-height: 1.5; color: #57443a; padding: 3px 16px 8px 0; overflow-wrap: anywhere; }
 .ride-sub {
     font-size: 0.75rem;
     color: #6a554a;
