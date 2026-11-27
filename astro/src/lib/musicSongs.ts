@@ -30,6 +30,7 @@ export interface Song {
     lyrics: string[];
     /** 音檔的站台路徑，沒有就 null */
     audio: string | null;
+    mvVideoId: string | null;
     /** 封面圖的站台路徑，沒有就 null */
     cover: string | null;
     /** free-toolkit 是否已產出這首的社群素材 */
@@ -135,10 +136,10 @@ function parseLyrics(text: string, fallbackTitle: string): Parsed {
  * 音檔走 jsDelivr CDN，不是本站。
  *
  * donttalk 的音檔放在 astro/public/music/*.mp3，但站上不直接供檔——
- * tracks.json 裡每一首的 url 都指向 jsDelivr（分支 @123lai1234-create）。
+ * 作品集用 main 上已存在的音檔；其餘沿用播放清單提供的正式來源。
  * 本站的 /music/*.mp3 回 404 是正常的，頁面也必須跟著走 CDN。
  */
-const CDN_BASE = 'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@123lai1234-create/astro/public/music';
+const CDN_BASE = 'https://cdn.jsdelivr.net/gh/123lai1234-create/ddd@main/astro/public/music';
 
 function findAudio(id: string): string | null {
     if (!MUSIC_DIR) return null;
@@ -159,6 +160,15 @@ function findAudio(id: string): string | null {
     return null;
 }
 
+function trackForSong(musicDir: string, id: string, track: TrackMedia | undefined): TrackMedia | undefined {
+    if (!track?.url) return track;
+    const filename = decodeURIComponent(new URL(track.url).pathname.split('/').pop() ?? '');
+    const recordedId = path.basename(filename, path.extname(filename));
+    // A recording with a matching lyric file belongs to that edition only.
+    if (recordedId !== id && fs.existsSync(path.join(musicDir, recordedId + '.txt'))) return undefined;
+    return track;
+}
+
 function findCover(id: string): string | null {
     if (!MUSIC_DIR) return null;
     const coversDir = path.join(MUSIC_DIR, 'covers');
@@ -170,6 +180,27 @@ function findCover(id: string): string | null {
         }
     }
     return null;
+}
+
+interface TrackMedia {
+    title: string;
+    url?: string;
+    mvVideoId?: string;
+}
+
+function mediaByTitle(musicDir: string): Map<string, TrackMedia> {
+    const manifest = path.join(musicDir, 'tracks.json');
+    if (!fs.existsSync(manifest)) return new Map();
+    const { tracks } = JSON.parse(fs.readFileSync(manifest, 'utf-8')) as { tracks: TrackMedia[] };
+    const media = new Map<string, TrackMedia>();
+    const ambiguous = new Set<string>();
+    for (const track of tracks) {
+        const title = track.title.trim().normalize('NFC');
+        if (media.has(title)) ambiguous.add(title);
+        media.set(title, track);
+    }
+    for (const title of ambiguous) media.delete(title);
+    return media;
 }
 
 let cache: Song[] | null = null;
@@ -188,6 +219,7 @@ export function loadSongs(): Song[] {
         return songs;
     }
 
+    const media = mediaByTitle(MUSIC_DIR);
     const files = fs
         .readdirSync(MUSIC_DIR)
         .filter((fn) => fn.toLowerCase().endsWith('.txt') && !SKIP_NAMES.has(fn.toLowerCase()))
@@ -207,6 +239,7 @@ export function loadSongs(): Song[] {
         const parsed = parseLyrics(text, id.replace(/^\d+[-_]/, ''));
         const slug = slugify(id);
 
+        const track = trackForSong(MUSIC_DIR, id, media.get(parsed.title.trim().normalize('NFC')));
         songs.push({
             id,
             slug,
@@ -215,6 +248,7 @@ export function loadSongs(): Song[] {
             sections: parsed.sections,
             lyrics: parsed.lyrics,
             audio: findAudio(id),
+            mvVideoId: track?.mvVideoId && /^[A-Za-z0-9_-]{11}$/.test(track.mvVideoId) ? track.mvVideoId : null,
             cover: findCover(id),
             hasCards: fs.existsSync(path.join(CARDS_DIR, slug)),
         });

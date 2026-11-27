@@ -85,6 +85,12 @@ const jsonLd = {
                     )
                 }
 
+                {song.mvVideoId && (
+                    <a class="sg-audio-link" href={`https://www.youtube.com/watch?v=${song.mvVideoId}`} target="_blank" rel="noopener">
+                        在 YouTube 觀看 MV ↗
+                    </a>
+                )}
+
                 {
                     hasCards && (
                         <section class="sg-assets">

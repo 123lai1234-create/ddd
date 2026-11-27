@@ -2,8 +2,8 @@
 import Base from '../../../layouts/Base.astro';
 import { loadSongs } from '../../../lib/musicSongs';
 
-const songs = loadSongs();
-const withAudio = songs.filter((s) => s.audio).length;
+const songs = loadSongs().filter((song) => song.audio);
+const withMV = songs.filter((s) => s.mvVideoId).length;
 const withCover = songs.filter((s) => s.cover).length;
 const withCards = songs.filter((s) => s.hasCards).length;
 
@@ -28,7 +28,7 @@ const ogImage = firstWithCards
             <a href="/music" class="ms-back">← 回到播放器</a>
             <h1 class="ms-title">歌曲作品集</h1>
             <p class="ms-sub">
-                {songs.length} 首原創詞曲 · {withAudio} 首有完整音檔 · {withCover} 首有封面圖 ·
+                {songs.length} 首有完整音檔 · {withMV} 首有 MV · {withCover} 首有封面圖 ·
                 {withCards} 首備妥社群素材
             </p>
             <a class="ms-book" href="/music/lyric-book.pdf" download>
@@ -49,7 +49,7 @@ const ogImage = firstWithCards
             />
             <select id="ms-assets" class="ms-filter ms-assets" aria-label="依歌曲資源篩選">
                 <option value="">全部資源</option>
-                <option value="audio">有音檔</option>
+                <option value="mv">有 MV</option>
                 <option value="cover">有封面</option>
                 <option value="cards">有分享素材</option>
             </select>
@@ -65,7 +65,7 @@ const ogImage = firstWithCards
                 songs.map((s) => (
                     <li
                         class="ms-item"
-                        data-assets={[s.audio && 'audio', s.cover && 'cover', s.hasCards && 'cards'].filter(Boolean).join(' ')}
+                        data-assets={[s.audio && 'audio', s.mvVideoId && 'mv', s.cover && 'cover', s.hasCards && 'cards'].filter(Boolean).join(' ')}
                         data-search={`${s.title} ${s.hook} ${s.lyrics.join(' ')}`.toLowerCase()}
                     >
                         <a href={`/music/songs/${s.slug}/`} class="ms-card">
@@ -75,6 +75,7 @@ const ogImage = firstWithCards
                             </span>
                             <span class="ms-tags">
                                 {s.audio && <span class="ms-tag ms-tag-audio">音檔</span>}
+                                {s.mvVideoId && <span class="ms-tag ms-tag-cover">MV</span>}
                                 {s.cover && <span class="ms-tag ms-tag-cover">封面</span>}
                                 {s.hasCards && <span class="ms-tag ms-tag-card">素材</span>}
                             </span>
