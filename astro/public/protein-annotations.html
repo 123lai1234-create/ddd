@@ -1,35 +1,7 @@
 <!doctype html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>蛋白質 3D 結構與序列註解</title>
-    <style>
-        * { box-sizing: border-box; }
-        [hidden] { display: none !important; }
-        body { margin: 0; padding: 12px; background: #f8fafc; color: #15253b; font: 15px system-ui, sans-serif; }
-        form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-        input, button { font: inherit; }
-        input { width: 8em; padding: 6px 8px; }
-        form button { padding: 7px 14px; border: 0; border-radius: 5px; background: #173d66; color: white; cursor: pointer; }
-        a { color: #184e86; }
-        #annotation-status { margin: 8px 0; min-height: 1.4em; }
-        #annotation-viewer { display: block; width: 100%; height: 570px; border: 0; }
-        @media (max-width: 720px) {
-            #annotation-viewer { height: 710px; }
-        }
-    </style>
-    <script defer src="/scripts/protein-annotations.js"></script>
-</head>
-<body>
-    <form method="get">
-        <label for="annotation-pdb">PDB ID</label>
-        <input id="annotation-pdb" name="pdb" required maxlength="4" pattern="[1-9][A-Za-z0-9]{3}"
-            placeholder="4HHB" autocomplete="off" autocapitalize="characters" spellcheck="false">
-        <button type="submit">載入結構</button>
-        <a id="annotation-source" href="https://www.rcsb.org/3d-sequence/4HHB" target="_blank" rel="noopener">在 RCSB PDB 開啟</a>
-    </form>
-    <p id="annotation-status" role="status"></p>
-    <iframe id="annotation-viewer" title="RCSB PDB 蛋白質 3D 結構與序列註解" hidden></iframe>
-</body>
-</html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Protein Studio</title><style>
+*{box-sizing:border-box}body{margin:0;padding:16px;background:#f8fafc;color:#15253b;font:15px system-ui,sans-serif}header,section,aside{background:white;border:1px solid #dbe4ee;border-radius:12px;padding:16px}h1,h2{margin:0 0 12px}h1{font-size:22px}h2{font-size:17px}form,.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}button,input,select{font:inherit;padding:8px;border:1px solid #cbd5e1;border-radius:6px}button{cursor:pointer;background:#173d66;color:white}a{color:#184e86}main{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px;margin:12px 0}#annotation-viewer{height:420px;position:relative}#sequence{display:flex;flex-wrap:wrap;gap:4px;margin-top:12px}#sequence button{font:13px monospace;background:#e2e8f0;color:#15253b;padding:5px;min-width:32px}#sequence button[aria-pressed=true]{background:#facc15}#sequence small{display:block;font-size:9px}#sequence button.helix{border-bottom:4px solid #0d9488}#sequence button.sheet{border-bottom:4px solid #a855f7}#sequence button.missing{opacity:.5}#annotation-status{min-height:1.4em}#details{overflow-wrap:anywhere} @media(max-width:720px){main{grid-template-columns:1fr}#annotation-viewer{height:340px}}
+</style><script defer src="https://3Dmol.org/build/3Dmol-min.js"></script><script defer src="/scripts/protein-annotations.js"></script></head><body>
+<header><h1>Protein Studio · 蛋白質結構分析</h1><form><label for="annotation-pdb">PDB ID</label><input id="annotation-pdb" name="pdb" required maxlength="4" pattern="[1-9][A-Za-z0-9]{3}" value="4HHB"><button>載入結構</button><a id="annotation-source" target="_blank" rel="noopener">RCSB 原始資料</a></form><p id="annotation-status" role="status"></p></header>
+<main><section><h2>3D 結構</h2><div class="toolbar"><label>顯示方式 <select id="style"><option value="cartoon">Cartoon</option><option value="stick">Stick</option><option value="sphere">Sphere</option></select></label><button id="reset" type="button">重設視角</button></div><div id="annotation-viewer"></div></section><aside><h2>結構資訊</h2><div id="details"></div><p id="selected" aria-live="polite">選取序列或模型中的殘基</p><p><a id="download">下載 PDB</a> · <a id="fasta">FASTA</a></p></aside></main>
+<section><h2>序列與二級結構</h2><label>蛋白質鏈 <select id="chain"></select></label><p>綠色：α-Helix · 紫色：β-Sheet · 淡色：未解析殘基（若可判定）</p><div id="sequence"></div></section></body></html>
