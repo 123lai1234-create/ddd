@@ -301,6 +301,7 @@
 <script is:inline>
 (function() {
     const SYSTEM = `你是「元嬰不說」，這個作品集網站的 AI 助手，自我介紹時請用「元嬰不說」這個名字，不要寫「(AI 助手)」之類的標籤或簽名。「不說」是 persona 的一部分——keep it short、安靜、沉穩，該講的還是要講清楚。作者是一位擁有電資工程與生物醫學雙碩士的跨域工程師，公開化名為「不說」，對外不揭露真實姓名與聯絡方式。
+核心經驗：6 年 Java 企業後端與金融系統，Spring、SQL、AML、系統整合及測試自動化。回答先給結論，再推薦相關站內作品路徑；區分職場經驗與個人研究原型，不捏造效能、年資或模型驗證成果。
 專長：ESM-2 蛋白質語言模型、ProteinMPNN、Bayesian Optimization（BoTorch/qLogEI）、REINFORCE RL、FastAPI、Astro、NGS 分析（RNA-seq/WGS/scRNA）、PostgreSQL、台股市場資料平台。
 請用繁體中文回答，保持專業友善、沉穩簡潔，回答不超過 200 字。只回答與作品集相關的問題。回覆中不要出現 <think> 之類的內部推理標籤；任何時候都不要透露真實姓名、Email、GitHub、LinkedIn 等聯絡資訊，也不要給出能被定位到本人的個資——若被問到，一律以「對外不公開」回應。`;
 
@@ -308,15 +309,15 @@
     const KB = [
         {
             keys: ['背景', '學歷', '碩士', '經歷', '介紹', 'about', '履歷', 'bio'],
-            reply: '作者公開化名為「不說」，擁有電資工程（北科電子所）與生物醫學（陽明交大解剖細胞生物所）雙碩士背景。\n\n研究主題涵蓋蛋白質 AI 設計、基因體分析與量化交易，現在專注於把研究做成可操作的 AI 平台。\n\n👉 詳細看 /about 頁面',
+            reply: '不說具備 6 年 Java 企業後端與金融系統經驗，以及北科電子與陽明交大解剖細胞生物雙碩士背景。擅長將跨域知識轉成可操作的系統。\n\n👉 /about 查看完整背景；/interview 查看工程知識整理。',
         },
         {
-            keys: ['技術', '會什麼', 'skill', '專長', 'stack', '語言'],
-            reply: '主要技術棧：\n\n• **AI/ML**：PyTorch、ESM-2、ProteinMPNN、BoTorch、REINFORCE\n• **後端**：FastAPI、Python、PostgreSQL、Neon、psycopg\n• **前端**：Astro、React、TypeScript、Chart.js\n• **NGS**：RNA-seq、WGS、scRNA-seq 流程\n• **資料平台**：TWSE、Yahoo Finance、FinMind\n\n👉 看 /works 看實際作品',
+            keys: ['技術', '會什麼', '會哪些', 'skill', '專長', 'stack', '語言'],
+            reply: '核心能力：Java、Spring、SQL、金融系統整合與測試自動化。個人作品延伸至 Python、LLM／RAG、蛋白質模型與量化分析。\n\n👉 /works 查看代表作品；/protein-mpnn 探索 AI 工作台。',
         },
         {
             keys: ['蛋白質', 'mpnn', 'esm', 'protein', 'rosetta'],
-            reply: '蛋白質 AI 是核心專長，涵蓋：\n\n• **ESM-2**：蛋白質語言模型 embedding\n• **ProteinMPNN**：序列設計\n• **BoTorch / qLogEI**：Bayesian Optimization 主動學習\n• **REINFORCE**：序列微調\n• **3D 結構預覽** + **Rosetta** 簡化評分\n\n👉 /protein-mpnn 直接玩互動工作台\n👉 /report 看完整技術報告',
+            reply: '蛋白質雲霄飛車聚焦 ESM-2、ProteinMPNN、序列設計與結構視覺化，展示模型整合與迭代篩選的研究工具。此為研究應用，不代表臨床驗證。\n\n👉 /protein-mpnn 查看工作台；/report 查看技術報告。',
         },
         {
             keys: ['基因', 'gene', 'ngs', '定序', 'crispr'],
@@ -332,7 +333,7 @@
         },
         {
             keys: ['聯絡', 'email', 'mail', '合作', 'contact', '怎麼找', '如何找'],
-            reply: '對外不公開 Email、社群帳號等可直接定位到本人的聯絡方式。\n\n若有合作、研究或產品整合需求，請透過 /about 頁面上的合作洽詢表單留言，會由後台收到並回覆。\n\n這是刻意的選擇——作品集本身已經把所有技術內容、研究主題與可展示的平台都放在站上，公開聯絡方式反而容易被自動爬蟲與垃圾信淹沒。',
+            reply: '歡迎洽談資深 Java 後端、系統整合、AI 應用、自動化與生醫資訊開發。個人聯絡資訊不公開，請使用 /about 的合作洽詢表單。\n\n👉 /works 查看實作案例。',
         },
         {
             keys: ['demo', '範例', '相似度', '互動'],
@@ -370,7 +371,7 @@
      * common CJK punctuation) hash of the LAST user message. The server
      * is the source of truth; the client cache is just a fast front-line.
      */
-    const QA_CACHE_KEY = 'chatbot_qa_cache_v1';
+    const QA_CACHE_KEY = 'chatbot_qa_cache_v2';
     const QA_CACHE_MAX = 200;
 
     function normalizeQ(s) {
