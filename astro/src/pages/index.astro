@@ -120,7 +120,7 @@ const pickIndex = dayOfYear % rides.length;
             <p class="career-kicker">ENGINEERING · AI · RESEARCH</p>
             <h2>把複雜邏輯轉成可運行的系統</h2>
             <p>6 年 Java 企業後端與金融系統經驗，結合電子與生醫雙碩士背景，延伸至 AI 應用、自動化與量化研究。</p>
-            <nav aria-label="專業作品導覽"><a href="/about">關於不說</a><a href="/works">代表作品</a><a href="/protein-mpnn">AI 工作台</a><a href="/thesis">研究成果</a></nav>
+            <div class="career-links" aria-label="專業作品導覽"><a href="/about">關於不說</a><a href="/works">代表作品</a><a href="/protein-mpnn">AI 工作台</a><a href="/thesis">研究成果</a></div>
         </section>
         <!-- Dolls playground: 六隻人偶在遊樂園玩耍，點一隻去 3D 頁 -->
 
@@ -348,9 +348,10 @@ const pickIndex = dayOfYear % rides.length;
 .career-intro h2 { font-size: clamp(1.2rem, 3vw, 1.8rem); margin: 6px 0; }
 .career-intro p { line-height: 1.65; }
 .career-kicker { font-size: .75rem; letter-spacing: .12em; }
-.career-intro nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.career-intro nav a { color: inherit; border: 1px solid currentColor; padding: 8px 12px; border-radius: 8px; text-decoration: none; }
-.career-intro nav a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.career-intro .career-links { position: static; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 16px; height: auto; width: 100%; border: 0; }
+@media (max-width: 600px) { .career-intro .career-links { grid-template-columns: repeat(2, minmax(0, 1fr)); } .career-intro { padding: 16px; } }
+.career-intro .career-links a { color: inherit; border: 1px solid currentColor; padding: 8px 12px; border-radius: 8px; text-decoration: none; text-align: center; min-width: 0; }
+.career-intro .career-links a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 
 /* ════════ 不說樂園 — Theme Park Portal ════════ */
 
